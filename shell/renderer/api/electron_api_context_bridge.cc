@@ -28,7 +28,9 @@
 #include "third_party/blink/public/web/web_blob.h"
 #include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_local_frame.h"
+#include "third_party/blink/renderer/bindings/modules/v8/v8_video_frame.h"  // nogncheck
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
+#include "third_party/blink/renderer/modules/webcodecs/video_frame.h"  // nogncheck
 
 namespace features {
 BASE_FEATURE(kContextBridgeMutability,
@@ -38,7 +40,8 @@ BASE_FEATURE(kContextBridgeMutability,
 
 namespace electron {
 
-content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value);
+content::RenderFrame* GetRenderFrame(v8::Isolate* const isolate,
+                                     v8::Local<v8::Object> value);
 
 namespace api {
 
@@ -111,26 +114,24 @@ bool IsPlainArray(const v8::Local<v8::Value>& arr) {
   return !arr->IsTypedArray();
 }
 
-void SetPrivate(v8::Local<v8::Context> context,
+void SetPrivate(v8::Isolate* const isolate,
+                v8::Local<v8::Context> context,
                 v8::Local<v8::Object> target,
                 const std::string_view key,
                 v8::Local<v8::Value> value) {
   target
-      ->SetPrivate(
-          context,
-          v8::Private::ForApi(context->GetIsolate(),
-                              gin::StringToV8(context->GetIsolate(), key)),
-          value)
+      ->SetPrivate(context,
+                   v8::Private::ForApi(isolate, gin::StringToV8(isolate, key)),
+                   value)
       .Check();
 }
 
-v8::MaybeLocal<v8::Value> GetPrivate(v8::Local<v8::Context> context,
+v8::MaybeLocal<v8::Value> GetPrivate(v8::Isolate* const isolate,
+                                     v8::Local<v8::Context> context,
                                      v8::Local<v8::Object> target,
                                      const std::string_view key) {
   return target->GetPrivate(
-      context,
-      v8::Private::ForApi(context->GetIsolate(),
-                          gin::StringToV8(context->GetIsolate(), key)));
+      context, v8::Private::ForApi(isolate, gin::StringToV8(isolate, key)));
 }
 
 }  // namespace
@@ -139,8 +140,10 @@ v8::MaybeLocal<v8::Value> GetPrivate(v8::Local<v8::Context> context,
 void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info);
 v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     const v8::Local<v8::Object>& api_object,
+    v8::Isolate* const source_isolate,
     const v8::Local<v8::Context>& source_context,
     const blink::ExecutionContext* source_execution_context,
+    v8::Isolate* const destination_isolate,
     const v8::Local<v8::Context>& destination_context,
     context_bridge::ObjectCache* object_cache,
     bool support_dynamic_properties,
@@ -148,8 +151,10 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     BridgeErrorTarget error_target);
 
 v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
+    v8::Isolate* const source_isolate,
     v8::Local<v8::Context> source_context,
     const blink::ExecutionContext* source_execution_context,
+    v8::Isolate* const destination_isolate,
     v8::Local<v8::Context> destination_context,
     v8::Local<v8::Value> value,
     v8::Local<v8::Value> parent_value,
@@ -162,8 +167,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     v8::Context::Scope error_scope(error_target == BridgeErrorTarget::kSource
                                        ? source_context
                                        : destination_context);
-    source_context->GetIsolate()->ThrowException(v8::Exception::TypeError(
-        gin::StringToV8(source_context->GetIsolate(),
+    source_isolate->ThrowException(v8::Exception::TypeError(
+        gin::StringToV8(source_isolate,
                         "Electron contextBridge recursion depth exceeded.  "
                         "Nested objects "
                         "deeper than 1000 are not supported.")));
@@ -190,8 +195,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
   // the global handle at the right time.
   if (value->IsFunction()) {
     auto func = value.As<v8::Function>();
-    v8::MaybeLocal<v8::Value> maybe_original_fn =
-        GetPrivate(source_context, func, kOriginalFunctionPrivateKey);
+    v8::MaybeLocal<v8::Value> maybe_original_fn = GetPrivate(
+        source_isolate, source_context, func, kOriginalFunctionPrivateKey);
 
     {
       v8::Context::Scope destination_scope(destination_context);
@@ -205,26 +210,27 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
       // creation context of the original method.  If it's not we proceed
       // with the proxy logic
       if (maybe_original_fn.ToLocal(&proxy_func) && proxy_func->IsFunction() &&
-          proxy_func.As<v8::Object>()->GetCreationContextChecked() ==
-              destination_context) {
+          proxy_func.As<v8::Object>()->GetCreationContextChecked(
+              source_isolate) == destination_context) {
         return v8::MaybeLocal<v8::Value>(proxy_func);
       }
 
-      v8::Local<v8::Object> state =
-          v8::Object::New(destination_context->GetIsolate());
-      SetPrivate(destination_context, state, kProxyFunctionPrivateKey, func);
-      SetPrivate(destination_context, state, kProxyFunctionReceiverPrivateKey,
-                 parent_value);
-      SetPrivate(destination_context, state,
-                 kSupportsDynamicPropertiesPrivateKey,
-                 gin::ConvertToV8(destination_context->GetIsolate(),
-                                  support_dynamic_properties));
+      v8::Local<v8::Object> state = v8::Object::New(destination_isolate);
+      SetPrivate(destination_isolate, destination_context, state,
+                 kProxyFunctionPrivateKey, func);
+      SetPrivate(destination_isolate, destination_context, state,
+                 kProxyFunctionReceiverPrivateKey, parent_value);
+      SetPrivate(
+          destination_isolate, destination_context, state,
+          kSupportsDynamicPropertiesPrivateKey,
+          gin::ConvertToV8(destination_isolate, support_dynamic_properties));
 
       if (!v8::Function::New(destination_context, ProxyFunctionWrapper, state)
                .ToLocal(&proxy_func))
         return {};
-      SetPrivate(destination_context, proxy_func.As<v8::Object>(),
-                 kOriginalFunctionPrivateKey, func);
+      SetPrivate(destination_isolate, destination_context,
+                 proxy_func.As<v8::Object>(), kOriginalFunctionPrivateKey,
+                 func);
       object_cache->CacheProxiedObject(value, proxy_func);
       return v8::MaybeLocal<v8::Value>(proxy_func);
     }
@@ -239,14 +245,14 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     // left dangling
     auto proxied_promise =
         std::make_shared<gin_helper::Promise<v8::Local<v8::Value>>>(
-            destination_context->GetIsolate());
+            destination_isolate);
     v8::Local<v8::Promise> proxied_promise_handle =
         proxied_promise->GetHandle();
 
-    v8::Global<v8::Context> global_then_source_context(
-        source_context->GetIsolate(), source_context);
+    v8::Global<v8::Context> global_then_source_context(source_isolate,
+                                                       source_context);
     v8::Global<v8::Context> global_then_destination_context(
-        destination_context->GetIsolate(), destination_context);
+        destination_isolate, destination_context);
     global_then_source_context.SetWeak();
     global_then_destination_context.SetWeak();
     auto then_cb = base::BindOnce(
@@ -263,10 +269,11 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
             v8::TryCatch try_catch(isolate);
             v8::Local<v8::Context> source_context =
                 global_source_context.Get(isolate);
-            val = PassValueToOtherContext(
-                source_context, global_destination_context.Get(isolate), result,
-                source_context->Global(), false,
-                BridgeErrorTarget::kDestination);
+            val =
+                PassValueToOtherContext(isolate, source_context, isolate,
+                                        global_destination_context.Get(isolate),
+                                        result, source_context->Global(), false,
+                                        BridgeErrorTarget::kDestination);
             if (try_catch.HasCaught()) {
               if (try_catch.Message().IsEmpty()) {
                 proxied_promise->RejectWithErrorMessage(
@@ -286,14 +293,14 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
           if (!val.IsEmpty())
             proxied_promise->Resolve(val.ToLocalChecked());
         },
-        proxied_promise, destination_context->GetIsolate(),
+        proxied_promise, destination_isolate,
         std::move(global_then_source_context),
         std::move(global_then_destination_context));
 
-    v8::Global<v8::Context> global_catch_source_context(
-        source_context->GetIsolate(), source_context);
+    v8::Global<v8::Context> global_catch_source_context(source_isolate,
+                                                        source_context);
     v8::Global<v8::Context> global_catch_destination_context(
-        destination_context->GetIsolate(), destination_context);
+        destination_isolate, destination_context);
     global_catch_source_context.SetWeak();
     global_catch_destination_context.SetWeak();
     auto catch_cb = base::BindOnce(
@@ -310,10 +317,11 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
             v8::TryCatch try_catch(isolate);
             v8::Local<v8::Context> source_context =
                 global_source_context.Get(isolate);
-            val = PassValueToOtherContext(
-                source_context, global_destination_context.Get(isolate), result,
-                source_context->Global(), false,
-                BridgeErrorTarget::kDestination);
+            val =
+                PassValueToOtherContext(isolate, source_context, isolate,
+                                        global_destination_context.Get(isolate),
+                                        result, source_context->Global(), false,
+                                        BridgeErrorTarget::kDestination);
             if (try_catch.HasCaught()) {
               if (try_catch.Message().IsEmpty()) {
                 proxied_promise->RejectWithErrorMessage(
@@ -332,15 +340,15 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
           if (!val.IsEmpty())
             proxied_promise->Reject(val.ToLocalChecked());
         },
-        proxied_promise, destination_context->GetIsolate(),
+        proxied_promise, destination_isolate,
         std::move(global_catch_source_context),
         std::move(global_catch_destination_context));
 
     std::ignore = source_promise->Then(
         source_context,
-        gin::ConvertToV8(destination_context->GetIsolate(), std::move(then_cb))
+        gin::ConvertToV8(destination_isolate, std::move(then_cb))
             .As<v8::Function>(),
-        gin::ConvertToV8(destination_context->GetIsolate(), std::move(catch_cb))
+        gin::ConvertToV8(destination_isolate, std::move(catch_cb))
             .As<v8::Function>());
 
     object_cache->CacheProxiedObject(value, proxied_promise_handle);
@@ -356,16 +364,14 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     // crosses the bridge we fallback to the v8::Message approach if we can't
     // pull "message" for some reason
     v8::MaybeLocal<v8::Value> maybe_message = value.As<v8::Object>()->Get(
-        source_context,
-        gin::ConvertToV8(source_context->GetIsolate(), "message"));
+        source_context, gin::ConvertToV8(source_isolate, "message"));
     v8::Local<v8::Value> message;
     if (maybe_message.ToLocal(&message) && message->IsString()) {
       return v8::MaybeLocal<v8::Value>(
           v8::Exception::Error(message.As<v8::String>()));
     }
     return v8::MaybeLocal<v8::Value>(v8::Exception::Error(
-        v8::Exception::CreateMessage(destination_context->GetIsolate(), value)
-            ->Get()));
+        v8::Exception::CreateMessage(destination_isolate, value)->Get()));
   }
 
   // Manually go through the array and pass each value individually into a new
@@ -376,10 +382,11 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     v8::Local<v8::Array> arr = value.As<v8::Array>();
     size_t length = arr->Length();
     v8::Local<v8::Array> cloned_arr =
-        v8::Array::New(destination_context->GetIsolate(), length);
+        v8::Array::New(destination_isolate, length);
     for (size_t i = 0; i < length; i++) {
       auto value_for_array = PassValueToOtherContextInner(
-          source_context, source_execution_context, destination_context,
+          source_isolate, source_context, source_execution_context,
+          destination_isolate, destination_context,
           arr->Get(source_context, i).ToLocalChecked(), value, object_cache,
           support_dynamic_properties, recursion_depth + 1, error_target);
       if (value_for_array.IsEmpty())
@@ -397,21 +404,30 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
   // Clone certain DOM APIs only within Window contexts.
   if (source_execution_context->IsWindow()) {
     // Custom logic to "clone" Element references
-    blink::WebElement elem = blink::WebElement::FromV8Value(
-        destination_context->GetIsolate(), value);
+    blink::WebElement elem =
+        blink::WebElement::FromV8Value(destination_isolate, value);
     if (!elem.IsNull()) {
       v8::Context::Scope destination_context_scope(destination_context);
-      return v8::MaybeLocal<v8::Value>(
-          elem.ToV8Value(destination_context->GetIsolate()));
+      return v8::MaybeLocal<v8::Value>(elem.ToV8Value(destination_isolate));
     }
 
     // Custom logic to "clone" Blob references
     blink::WebBlob blob =
-        blink::WebBlob::FromV8Value(destination_context->GetIsolate(), value);
+        blink::WebBlob::FromV8Value(destination_isolate, value);
     if (!blob.IsNull()) {
       v8::Context::Scope destination_context_scope(destination_context);
+      return v8::MaybeLocal<v8::Value>(blob.ToV8Value(destination_isolate));
+    }
+
+    // Custom logic to "clone" VideoFrame references
+    blink::VideoFrame* video_frame =
+        blink::V8VideoFrame::ToWrappable(source_isolate, value);
+    if (video_frame != nullptr) {
+      blink::ScriptState* script_state =
+          blink::ScriptState::ForCurrentRealm(destination_isolate);
       return v8::MaybeLocal<v8::Value>(
-          blob.ToV8Value(destination_context->GetIsolate()));
+          blink::ToV8Traits<blink::VideoFrame>::ToV8(script_state,
+                                                     video_frame));
     }
   }
 
@@ -419,9 +435,9 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
   if (IsPlainObject(value)) {
     auto object_value = value.As<v8::Object>();
     auto passed_value = CreateProxyForAPI(
-        object_value, source_context, source_execution_context,
-        destination_context, object_cache, support_dynamic_properties,
-        recursion_depth + 1, error_target);
+        object_value, source_isolate, source_context, source_execution_context,
+        destination_isolate, destination_context, object_cache,
+        support_dynamic_properties, recursion_depth + 1, error_target);
     if (passed_value.IsEmpty())
       return {};
     return v8::MaybeLocal<v8::Value>(passed_value.ToLocalChecked());
@@ -433,9 +449,12 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     v8::Local<v8::Context> error_context =
         error_target == BridgeErrorTarget::kSource ? source_context
                                                    : destination_context;
-    v8::Context::Scope error_scope(error_context);
+    v8::Context::Scope error_scope{error_context};
     // V8 serializer will throw an error if required
-    if (!gin::ConvertFromV8(error_context->GetIsolate(), value, &ret)) {
+    v8::Isolate* const error_isolate =
+        error_target == BridgeErrorTarget::kSource ? source_isolate
+                                                   : destination_isolate;
+    if (!gin::ConvertFromV8(error_isolate, value, &ret)) {
       return {};
     }
   }
@@ -443,14 +462,16 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
   {
     v8::Context::Scope destination_context_scope(destination_context);
     v8::Local<v8::Value> cloned_value =
-        gin::ConvertToV8(destination_context->GetIsolate(), ret);
+        gin::ConvertToV8(destination_isolate, ret);
     object_cache->CacheProxiedObject(value, cloned_value);
     return v8::MaybeLocal<v8::Value>(cloned_value);
   }
 }
 
 v8::MaybeLocal<v8::Value> PassValueToOtherContext(
+    v8::Isolate* source_isolate,
     v8::Local<v8::Context> source_context,
+    v8::Isolate* destination_isolate,
     v8::Local<v8::Context> destination_context,
     v8::Local<v8::Value> value,
     v8::Local<v8::Value> parent_value,
@@ -467,8 +488,9 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
       blink::ExecutionContext::From(source_context);
   DCHECK(source_execution_context);
   return PassValueToOtherContextInner(
-      source_context, source_execution_context, destination_context, value,
-      parent_value, object_cache, support_dynamic_properties, 0, error_target);
+      source_isolate, source_context, source_execution_context,
+      destination_isolate, destination_context, value, parent_value,
+      object_cache, support_dynamic_properties, 0, error_target);
 }
 
 void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
@@ -476,27 +498,28 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
   CHECK(info.Data()->IsObject());
   v8::Local<v8::Object> data = info.Data().As<v8::Object>();
   bool support_dynamic_properties = false;
-  gin::Arguments args(info);
+  gin::Arguments args{info};
+  v8::Isolate* const isolate = args.isolate();
   // Context the proxy function was called from
-  v8::Local<v8::Context> calling_context = args.isolate()->GetCurrentContext();
+  v8::Local<v8::Context> calling_context = isolate->GetCurrentContext();
 
   // Pull the original function and its context off of the data private key
-  v8::MaybeLocal<v8::Value> sdp_value =
-      GetPrivate(calling_context, data, kSupportsDynamicPropertiesPrivateKey);
+  v8::MaybeLocal<v8::Value> sdp_value = GetPrivate(
+      isolate, calling_context, data, kSupportsDynamicPropertiesPrivateKey);
   v8::MaybeLocal<v8::Value> maybe_func =
-      GetPrivate(calling_context, data, kProxyFunctionPrivateKey);
-  v8::MaybeLocal<v8::Value> maybe_recv =
-      GetPrivate(calling_context, data, kProxyFunctionReceiverPrivateKey);
+      GetPrivate(isolate, calling_context, data, kProxyFunctionPrivateKey);
+  v8::MaybeLocal<v8::Value> maybe_recv = GetPrivate(
+      isolate, calling_context, data, kProxyFunctionReceiverPrivateKey);
   v8::Local<v8::Value> func_value;
   if (sdp_value.IsEmpty() || maybe_func.IsEmpty() || maybe_recv.IsEmpty() ||
-      !gin::ConvertFromV8(args.isolate(), sdp_value.ToLocalChecked(),
+      !gin::ConvertFromV8(isolate, sdp_value.ToLocalChecked(),
                           &support_dynamic_properties) ||
       !maybe_func.ToLocal(&func_value))
     return;
 
   v8::Local<v8::Function> func = func_value.As<v8::Function>();
   v8::Local<v8::Context> func_owning_context =
-      func->GetCreationContextChecked();
+      func->GetCreationContextChecked(isolate);
 
   {
     v8::Context::Scope func_owning_context_scope(func_owning_context);
@@ -510,7 +533,7 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
     for (auto value : original_args) {
       auto arg = PassValueToOtherContext(
-          calling_context, func_owning_context, value,
+          isolate, calling_context, isolate, func_owning_context, value,
           calling_context->Global(), support_dynamic_properties,
           BridgeErrorTarget::kSource, &object_cache);
       if (arg.IsEmpty())
@@ -522,7 +545,7 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
     bool did_error = false;
     v8::Local<v8::Value> error_message;
     {
-      v8::TryCatch try_catch(args.isolate());
+      v8::TryCatch try_catch(isolate);
       maybe_return_value =
           func->Call(func_owning_context, maybe_recv.ToLocalChecked(),
                      proxied_args.size(), proxied_args.data());
@@ -537,22 +560,21 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
         if (!exception->IsNull() && exception->IsObject()) {
           v8::MaybeLocal<v8::Value> maybe_message =
               exception.As<v8::Object>()->Get(
-                  func_owning_context,
-                  gin::ConvertToV8(args.isolate(), "message"));
+                  func_owning_context, gin::ConvertToV8(isolate, "message"));
 
           if (!maybe_message.ToLocal(&error_message) ||
               !error_message->IsString()) {
-            error_message = gin::StringToV8(args.isolate(), err_msg);
+            error_message = gin::StringToV8(isolate, err_msg);
           }
         } else {
-          error_message = gin::StringToV8(args.isolate(), err_msg);
+          error_message = gin::StringToV8(isolate, err_msg);
         }
       }
     }
 
     if (did_error) {
       v8::Context::Scope calling_context_scope(calling_context);
-      args.isolate()->ThrowException(
+      isolate->ThrowException(
           v8::Exception::Error(error_message.As<v8::String>()));
       return;
     }
@@ -577,9 +599,9 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
     v8::MaybeLocal<v8::Value> ret;
     v8::Local<v8::String> exception;
     {
-      v8::TryCatch try_catch(args.isolate());
+      v8::TryCatch try_catch(isolate);
       ret = PassValueToOtherContext(
-          func_owning_context, calling_context,
+          isolate, func_owning_context, isolate, calling_context,
           maybe_return_value.ToLocalChecked(), func_owning_context->Global(),
           support_dynamic_properties, BridgeErrorTarget::kDestination);
       if (try_catch.HasCaught()) {
@@ -596,10 +618,10 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
             "An unknown exception occurred while sending a function return "
             "value over the context bridge, an error "
             "occurred but a valid exception was not thrown.";
-        args.isolate()->ThrowException(v8::Exception::Error(
-            gin::StringToV8(args.isolate(), err_msg).As<v8::String>()));
+        isolate->ThrowException(v8::Exception::Error(
+            gin::StringToV8(isolate, err_msg).As<v8::String>()));
       } else {
-        args.isolate()->ThrowException(v8::Exception::Error(exception));
+        isolate->ThrowException(v8::Exception::Error(exception));
       }
       return;
     }
@@ -612,19 +634,20 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
 v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     const v8::Local<v8::Object>& api_object,
+    v8::Isolate* const source_isolate,
     const v8::Local<v8::Context>& source_context,
     const blink::ExecutionContext* source_execution_context,
+    v8::Isolate* const destination_isolate,
     const v8::Local<v8::Context>& destination_context,
     context_bridge::ObjectCache* object_cache,
     bool support_dynamic_properties,
     int recursion_depth,
     BridgeErrorTarget error_target) {
-  gin_helper::Dictionary api(source_context->GetIsolate(), api_object);
+  gin_helper::Dictionary api{source_isolate, api_object};
 
   {
     v8::Context::Scope destination_context_scope(destination_context);
-    auto proxy =
-        gin_helper::Dictionary::CreateEmpty(destination_context->GetIsolate());
+    auto proxy = gin_helper::Dictionary::CreateEmpty(destination_isolate);
     object_cache->CacheProxiedObject(api.GetHandle(), proxy.GetHandle());
     auto maybe_keys = api.GetHandle()->GetOwnPropertyNames(
         source_context, static_cast<v8::PropertyFilter>(v8::ONLY_ENUMERABLE));
@@ -658,19 +681,19 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
             v8::Local<v8::Value> setter_proxy;
             if (!getter.IsEmpty()) {
               if (!PassValueToOtherContextInner(
-                       source_context, source_execution_context,
-                       destination_context, getter, api.GetHandle(),
-                       object_cache, support_dynamic_properties, 1,
-                       error_target)
+                       source_isolate, source_context, source_execution_context,
+                       destination_isolate, destination_context, getter,
+                       api.GetHandle(), object_cache,
+                       support_dynamic_properties, 1, error_target)
                        .ToLocal(&getter_proxy))
                 continue;
             }
             if (!setter.IsEmpty()) {
               if (!PassValueToOtherContextInner(
-                       source_context, source_execution_context,
-                       destination_context, setter, api.GetHandle(),
-                       object_cache, support_dynamic_properties, 1,
-                       error_target)
+                       source_isolate, source_context, source_execution_context,
+                       destination_isolate, destination_context, setter,
+                       api.GetHandle(), object_cache,
+                       support_dynamic_properties, 1, error_target)
                        .ToLocal(&setter_proxy))
                 continue;
             }
@@ -690,9 +713,10 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
           continue;
 
         auto passed_value = PassValueToOtherContextInner(
-            source_context, source_execution_context, destination_context,
-            value, api.GetHandle(), object_cache, support_dynamic_properties,
-            recursion_depth + 1, error_target);
+            source_isolate, source_context, source_execution_context,
+            destination_isolate, destination_context, value, api.GetHandle(),
+            object_cache, support_dynamic_properties, recursion_depth + 1,
+            error_target);
         if (passed_value.IsEmpty())
           return {};
 
@@ -712,14 +736,14 @@ namespace {
 
 void ExposeAPI(v8::Isolate* isolate,
                v8::Local<v8::Context> source_context,
+               v8::Isolate* target_isolate,
                v8::Local<v8::Context> target_context,
                const std::string& key,
                v8::Local<v8::Value> api,
                gin_helper::Arguments* args) {
   DCHECK(!target_context.IsEmpty());
   v8::Context::Scope target_context_scope(target_context);
-  gin_helper::Dictionary global(target_context->GetIsolate(),
-                                target_context->Global());
+  gin_helper::Dictionary global(target_isolate, target_context->Global());
 
   if (global.Has(key)) {
     args->ThrowError(
@@ -729,8 +753,8 @@ void ExposeAPI(v8::Isolate* isolate,
   }
 
   v8::MaybeLocal<v8::Value> maybe_proxy = PassValueToOtherContext(
-      source_context, target_context, api, source_context->Global(), false,
-      BridgeErrorTarget::kSource);
+      isolate, source_context, target_isolate, target_context, api,
+      source_context->Global(), false, BridgeErrorTarget::kSource);
   if (maybe_proxy.IsEmpty())
     return;
   auto proxy = maybe_proxy.ToLocalChecked();
@@ -753,14 +777,15 @@ void ExposeAPI(v8::Isolate* isolate,
 // world ID. For service workers, Electron only supports one isolated
 // context and the main worker context. Anything else is invalid.
 v8::MaybeLocal<v8::Context> GetTargetContext(v8::Isolate* isolate,
-                                             const int world_id) {
+                                             const int world_id,
+                                             v8::Isolate* target_isolate) {
   v8::Local<v8::Context> source_context = isolate->GetCurrentContext();
   v8::MaybeLocal<v8::Context> maybe_target_context;
 
   blink::ExecutionContext* execution_context =
       blink::ExecutionContext::From(source_context);
   if (execution_context->IsWindow()) {
-    auto* render_frame = GetRenderFrame(source_context->Global());
+    auto* render_frame = GetRenderFrame(isolate, source_context->Global());
     CHECK(render_frame);
     auto* frame = render_frame->GetWebFrame();
     CHECK(frame);
@@ -775,8 +800,8 @@ v8::MaybeLocal<v8::Context> GetTargetContext(v8::Isolate* isolate,
           isolate, "Isolated worlds are not supported in preload realms.")));
       return maybe_target_context;
     }
-    maybe_target_context =
-        electron::preload_realm::GetInitiatorContext(source_context);
+    maybe_target_context = electron::preload_realm::GetInitiatorContext(
+        source_context, target_isolate);
   } else {
     NOTREACHED();
   }
@@ -794,12 +819,14 @@ void ExposeAPIInWorld(v8::Isolate* isolate,
                "worldId", world_id);
   v8::Local<v8::Context> source_context = isolate->GetCurrentContext();
   CHECK(!source_context.IsEmpty());
+  v8::Isolate* target_isolate = isolate;
   v8::MaybeLocal<v8::Context> maybe_target_context =
-      GetTargetContext(isolate, world_id);
-  if (maybe_target_context.IsEmpty())
+      GetTargetContext(isolate, world_id, target_isolate);
+  if (maybe_target_context.IsEmpty() || !target_isolate)
     return;
   v8::Local<v8::Context> target_context = maybe_target_context.ToLocalChecked();
-  ExposeAPI(isolate, source_context, target_context, key, api, args);
+  ExposeAPI(isolate, source_context, target_isolate, target_context, key, api,
+            args);
 }
 
 gin_helper::Dictionary TraceKeyPath(const gin_helper::Dictionary& start,
@@ -812,29 +839,31 @@ gin_helper::Dictionary TraceKeyPath(const gin_helper::Dictionary& start,
 }
 
 void OverrideGlobalValueFromIsolatedWorld(
+    v8::Isolate* isolate,
     const std::vector<std::string>& key_path,
     v8::Local<v8::Object> value,
     bool support_dynamic_properties) {
   if (key_path.empty())
     return;
 
-  auto* render_frame = GetRenderFrame(value);
+  auto* render_frame = GetRenderFrame(isolate, value);
   CHECK(render_frame);
   auto* frame = render_frame->GetWebFrame();
   CHECK(frame);
   v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
-  gin_helper::Dictionary global(main_context->GetIsolate(),
-                                main_context->Global());
+  gin_helper::Dictionary global(isolate, main_context->Global());
 
   const std::string final_key = key_path[key_path.size() - 1];
   gin_helper::Dictionary target_object = TraceKeyPath(global, key_path);
 
   {
     v8::Context::Scope main_context_scope(main_context);
-    v8::Local<v8::Context> source_context = value->GetCreationContextChecked();
+    v8::Local<v8::Context> source_context =
+        value->GetCreationContextChecked(isolate);
     v8::MaybeLocal<v8::Value> maybe_proxy = PassValueToOtherContext(
-        source_context, main_context, value, source_context->Global(),
-        support_dynamic_properties, BridgeErrorTarget::kSource);
+        isolate, source_context, isolate, main_context, value,
+        source_context->Global(), support_dynamic_properties,
+        BridgeErrorTarget::kSource);
     DCHECK(!maybe_proxy.IsEmpty());
     auto proxy = maybe_proxy.ToLocalChecked();
 
@@ -843,6 +872,7 @@ void OverrideGlobalValueFromIsolatedWorld(
 }
 
 bool OverrideGlobalPropertyFromIsolatedWorld(
+    v8::Isolate* const isolate,
     const std::vector<std::string>& key_path,
     v8::Local<v8::Object> getter,
     v8::Local<v8::Value> setter,
@@ -850,13 +880,12 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
   if (key_path.empty())
     return false;
 
-  auto* render_frame = GetRenderFrame(getter);
+  auto* render_frame = GetRenderFrame(isolate, getter);
   CHECK(render_frame);
   auto* frame = render_frame->GetWebFrame();
   CHECK(frame);
   v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
-  gin_helper::Dictionary global(main_context->GetIsolate(),
-                                main_context->Global());
+  gin_helper::Dictionary global(isolate, main_context->Global());
 
   const std::string final_key = key_path[key_path.size() - 1];
   v8::Local<v8::Object> target_object =
@@ -869,19 +898,19 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
     v8::Local<v8::Value> setter_proxy;
     if (!getter->IsNullOrUndefined()) {
       v8::Local<v8::Context> source_context =
-          getter->GetCreationContextChecked();
+          getter->GetCreationContextChecked(isolate);
       v8::MaybeLocal<v8::Value> maybe_getter_proxy = PassValueToOtherContext(
-          source_context, main_context, getter, source_context->Global(), false,
-          BridgeErrorTarget::kSource);
+          isolate, source_context, isolate, main_context, getter,
+          source_context->Global(), false, BridgeErrorTarget::kSource);
       DCHECK(!maybe_getter_proxy.IsEmpty());
       getter_proxy = maybe_getter_proxy.ToLocalChecked();
     }
     if (!setter->IsNullOrUndefined() && setter->IsObject()) {
       v8::Local<v8::Context> source_context =
-          getter->GetCreationContextChecked();
+          getter->GetCreationContextChecked(isolate);
       v8::MaybeLocal<v8::Value> maybe_setter_proxy = PassValueToOtherContext(
-          source_context, main_context, setter, source_context->Global(), false,
-          BridgeErrorTarget::kSource);
+          isolate, source_context, isolate, main_context, setter,
+          source_context->Global(), false, BridgeErrorTarget::kSource);
       DCHECK(!maybe_setter_proxy.IsEmpty());
       setter_proxy = maybe_setter_proxy.ToLocalChecked();
     }
@@ -943,8 +972,9 @@ v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* isolate,
   }
 
   // Get the target context
+  v8::Isolate* target_isolate = isolate;
   v8::MaybeLocal<v8::Context> maybe_target_context =
-      GetTargetContext(isolate, world_id);
+      GetTargetContext(isolate, world_id, target_isolate);
   v8::Local<v8::Context> target_context;
   if (!maybe_target_context.ToLocal(&target_context)) {
     isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
@@ -1030,9 +1060,9 @@ v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* isolate,
       }
 
       auto proxied_arg = PassValueToOtherContext(
-          source_context, target_context, arg, source_context->Global(),
-          support_dynamic_properties, BridgeErrorTarget::kSource,
-          &object_cache);
+          isolate, source_context, target_isolate, target_context, arg,
+          source_context->Global(), support_dynamic_properties,
+          BridgeErrorTarget::kSource, &object_cache);
       if (proxied_arg.IsEmpty()) {
         gin_helper::ErrorThrower(isolate).ThrowError(
             absl::StrFormat("Failed to proxy argument at index %d", i));
@@ -1077,8 +1107,8 @@ v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* isolate,
       v8::TryCatch try_catch(isolate);
       // Pass value from target context back to source context
       maybe_cloned_result = PassValueToOtherContext(
-          target_context, source_context, result, target_context->Global(),
-          false, BridgeErrorTarget::kSource);
+          target_isolate, target_context, isolate, source_context, result,
+          target_context->Global(), false, BridgeErrorTarget::kSource);
       if (try_catch.HasCaught()) {
         v8::String::Utf8Value utf8(isolate, try_catch.Exception());
         error_message = *utf8 ? *utf8 : "Unknown error cloning result";
@@ -1106,8 +1136,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("executeInWorld", &electron::api::ExecuteInWorld);
   dict.SetMethod("exposeAPIInWorld", &electron::api::ExposeAPIInWorld);
   dict.SetMethod("_overrideGlobalValueFromIsolatedWorld",

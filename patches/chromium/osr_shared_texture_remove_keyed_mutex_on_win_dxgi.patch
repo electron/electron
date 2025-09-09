@@ -11,10 +11,10 @@ For resolving complex conflict please pin @reitowo
 For more reason please see: https://crrev.com/c/5465148
 
 diff --git a/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc b/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
-index c821349f35116f07988b2b58a6521e73a514548c..2b8f41a584c5d14ea9d72d67c2abe71eed4a54ac 100644
+index bb33e469e2d38ee4a23b19acfa52f962a5e9c854..6e83c65334f1ce0134dc4efc1dc40eb7ffed028d 100644
 --- a/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
 +++ b/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
-@@ -178,7 +178,8 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateGpuMemoryBuffer(
+@@ -152,7 +152,8 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateNativeGmbHandle(
    // so make sure that the usage is one that we support.
    DCHECK(usage == gfx::BufferUsage::GPU_READ ||
           usage == gfx::BufferUsage::SCANOUT ||
@@ -24,7 +24,7 @@ index c821349f35116f07988b2b58a6521e73a514548c..2b8f41a584c5d14ea9d72d67c2abe71e
        << "Incorrect usage, usage=" << gfx::BufferUsageToString(usage);
  
    D3D11_TEXTURE2D_DESC desc = {
-@@ -192,7 +193,9 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateGpuMemoryBuffer(
+@@ -166,7 +167,9 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateNativeGmbHandle(
        D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
        0,
        D3D11_RESOURCE_MISC_SHARED_NTHANDLE |
@@ -36,21 +36,12 @@ index c821349f35116f07988b2b58a6521e73a514548c..2b8f41a584c5d14ea9d72d67c2abe71e
    Microsoft::WRL::ComPtr<ID3D11Texture2D> d3d11_texture;
  
 diff --git a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-index 673ccbc445cd05486f0337a3e27190ee90f54e6b..4dba267259e3cbed64aa7828a5eb4e0c70665c64 100644
+index 4de36674acee427da3a43891f780102d7e08d9cb..d32bf712107f02991717da626b5dd25c6e6973d3 100644
 --- a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
 +++ b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-@@ -189,7 +189,7 @@ gfx::Size GetBufferSizeInPixelsForVideoPixelFormat(
- bool FrameResources::Initialize() {
-   auto* context = pool_->GetContext();
- 
--  constexpr gfx::BufferUsage kBufferUsage =
-+  gfx::BufferUsage buffer_usage =
- #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_CHROMEOS)
-       gfx::BufferUsage::SCANOUT_VEA_CPU_READ
- #else
-@@ -203,6 +203,23 @@ bool FrameResources::Initialize() {
-   const gfx::Size buffer_size_in_pixels =
-       GetBufferSizeInPixelsForVideoPixelFormat(format_, coded_size_);
+@@ -209,6 +209,23 @@ bool FrameResources::Initialize(VideoPixelFormat format,
+   const gfx::Size coded_size =
+       GetCodedSizeForVideoPixelFormat(format, visible_size_);
  
 +#if BUILDFLAG(IS_WIN)
 +  // For CEF OSR feature, currently there's no other place in chromium use RGBA.
@@ -58,7 +49,7 @@ index 673ccbc445cd05486f0337a3e27190ee90f54e6b..4dba267259e3cbed64aa7828a5eb4e0c
 +  // once the GMB is returned from CopyRequest. So there will be no race
 +  // condition on that texture. We can request a GMB without a keyed mutex to
 +  // accelerate and probably prevent some driver deadlock.
-+  if (format_ == PIXEL_FORMAT_ARGB || format_ == PIXEL_FORMAT_ABGR) {
++  if (format == PIXEL_FORMAT_ARGB || format == PIXEL_FORMAT_ABGR) {
 +    // This value is 'borrowed', SCANOUT_VEA_CPU_READ is probably invalid
 +    // cause there's no real SCANOUT on Windows. We simply use this enum as a
 +    // flag to disable mutex in the GMBFactoryDXGI because this enum is also
@@ -72,12 +63,3 @@ index 673ccbc445cd05486f0337a3e27190ee90f54e6b..4dba267259e3cbed64aa7828a5eb4e0c
    gpu::SharedImageUsageSet usage =
  #if BUILDFLAG(IS_MAC)
        gpu::SHARED_IMAGE_USAGE_MACOS_VIDEO_TOOLBOX |
-@@ -243,7 +260,7 @@ bool FrameResources::Initialize() {
-       viz::GetSharedImageFormat(buffer_format);
- 
-   shared_image_ =
--      context->CreateSharedImage(buffer_size_in_pixels, kBufferUsage, si_format,
-+      context->CreateSharedImage(buffer_size_in_pixels, buffer_usage, si_format,
-                                  color_space_, usage, sync_token_);
-   if (!shared_image_) {
-     DLOG(ERROR) << "Failed to allocate shared image for frame: coded_size="

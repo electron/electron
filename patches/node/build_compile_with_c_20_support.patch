@@ -10,10 +10,10 @@ V8 requires C++20 support as of https://chromium-review.googlesource.com/c/v8/v8
 This can be removed when Electron upgrades to a version of Node.js containing the required V8 version.
 
 diff --git a/common.gypi b/common.gypi
-index 03fefab4b0a9727925411b95310831ffdc33e8d9..f9b5e47f1d67807435529c99d12f419d0fd4269f 100644
+index 3a1d2fc9d147a8c89f7b5231d63d37f29979965d..6425ee9e8dba993f3e899362ce9bd7b097f08883 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -538,7 +538,7 @@
+@@ -539,7 +539,7 @@
            '-fno-rtti',
            '-fno-exceptions',
            '-fno-strict-aliasing',
@@ -22,7 +22,7 @@ index 03fefab4b0a9727925411b95310831ffdc33e8d9..f9b5e47f1d67807435529c99d12f419d
          ],
          'defines': [ '__STDC_FORMAT_MACROS' ],
          'ldflags': [ '-rdynamic' ],
-@@ -708,7 +708,7 @@
+@@ -709,7 +709,7 @@
            ['clang==1', {
              'xcode_settings': {
                'GCC_VERSION': 'com.apple.compilers.llvm.clang.1_0',

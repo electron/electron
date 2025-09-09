@@ -17,13 +17,13 @@
 #include "chrome/browser/media/webrtc/window_icon_util.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_capture.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/node_includes.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capturer.h"
@@ -504,8 +504,9 @@ void DesktopCapturer::HandleFailure() {
 }
 
 // static
-gin::Handle<DesktopCapturer> DesktopCapturer::Create(v8::Isolate* isolate) {
-  auto handle = gin::CreateHandle(isolate, new DesktopCapturer(isolate));
+gin_helper::Handle<DesktopCapturer> DesktopCapturer::Create(
+    v8::Isolate* isolate) {
+  auto handle = gin_helper::CreateHandle(isolate, new DesktopCapturer(isolate));
 
   // Keep reference alive until capturing has finished.
   handle->Pin(isolate);
@@ -522,8 +523,8 @@ bool DesktopCapturer::IsDisplayMediaSystemPickerAvailable() {
 
 gin::ObjectTemplateBuilder DesktopCapturer::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::DeprecatedWrappable<DesktopCapturer>::GetObjectTemplateBuilder(
-             isolate)
+  return gin_helper::DeprecatedWrappable<
+             DesktopCapturer>::GetObjectTemplateBuilder(isolate)
       .SetMethod("startHandling", &DesktopCapturer::StartHandling);
 }
 
@@ -539,7 +540,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  gin_helper::Dictionary dict(context->GetIsolate(), exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("createDesktopCapturer",
                  &electron::api::DesktopCapturer::Create);
   dict.SetMethod(

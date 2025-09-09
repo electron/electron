@@ -98,7 +98,7 @@ void ElectronApiServiceImpl::Message(bool internal,
 
   v8::Local<v8::Value> args = gin::ConvertToV8(isolate, arguments);
 
-  ipc_native::EmitIPCEvent(context, internal, channel, {}, args);
+  ipc_native::EmitIPCEvent(isolate, context, internal, channel, {}, args);
 }
 
 void ElectronApiServiceImpl::ReceivePostMessage(
@@ -120,12 +120,12 @@ void ElectronApiServiceImpl::ReceivePostMessage(
   for (auto& port : message.ports) {
     ports.emplace_back(
         blink::WebMessagePortConverter::EntangleAndInjectMessagePortChannel(
-            context, std::move(port)));
+            isolate, context, std::move(port)));
   }
 
   std::vector<v8::Local<v8::Value>> args = {message_value};
 
-  ipc_native::EmitIPCEvent(context, false, channel, ports,
+  ipc_native::EmitIPCEvent(isolate, context, false, channel, ports,
                            gin::ConvertToV8(isolate, args));
 }
 

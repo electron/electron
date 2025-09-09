@@ -24,6 +24,11 @@ class RenderFrameHost;
 class WebContents;
 }  // namespace content
 
+namespace gin {
+template <typename T>
+class WeakCell;
+}  // namespace gin
+
 namespace electron {
 
 namespace api {
@@ -64,7 +69,7 @@ class SerialChooserController final
                              bool powered) override;
 
  private:
-  api::Session* GetSession();
+  gin::WeakCell<api::Session>* GetSession();
   void GetDevices();
   void OnGetDevices(std::vector<device::mojom::SerialPortInfoPtr> ports);
   bool DisplayDevice(const device::mojom::SerialPortInfo& port) const;

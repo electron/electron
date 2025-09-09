@@ -49,7 +49,7 @@ index ae9aba26ee56e8a0d48f81994f964b278c9019d3..758f1b44e01adb6807bc7c5f673d06ff
          options, CaptureType::kAnyScreenContent);
    }
 diff --git a/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc b/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc
-index b2864eeee599c2932b33cf380cd614977da80143..4148907763eeb3567fcb3424a80d7c21d28bd16c 100644
+index 361b465dad2a53f4dac774fa2d6d6d9e3fc5fc31..ef05a35bc4f2c2352b12c0af0b09193b6cd53244 100644
 --- a/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc
 +++ b/modules/desktop_capture/linux/wayland/base_capturer_pipewire.cc
 @@ -123,6 +123,7 @@ void BaseCapturerPipeWire::OnScreenCastRequestResult(RequestResponse result,

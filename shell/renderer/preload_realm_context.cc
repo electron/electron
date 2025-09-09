@@ -98,6 +98,12 @@ class PreloadRealmLifetimeController
                : v8::MaybeLocal<v8::Context>();
   }
 
+  v8::Isolate* GetInitiatorIsolate() {
+    return initiator_script_state_->ContextIsValid()
+               ? initiator_script_state_->GetIsolate()
+               : nullptr;
+  }
+
   electron::ServiceWorkerData* service_worker_data() {
     return service_worker_data_;
   }
@@ -181,7 +187,7 @@ class PreloadRealmLifetimeController
 
     v8::LocalVector<v8::Value> preload_realm_bundle_args(isolate, {binding});
 
-    util::CompileAndCall(context, "electron/js2c/preload_realm_bundle",
+    util::CompileAndCall(isolate, context, "electron/js2c/preload_realm_bundle",
                          &preload_realm_bundle_params,
                          &preload_realm_bundle_args);
   }
@@ -199,16 +205,19 @@ class PreloadRealmLifetimeController
 
 }  // namespace
 
-v8::MaybeLocal<v8::Context> GetInitiatorContext(
-    v8::Local<v8::Context> context) {
+v8::MaybeLocal<v8::Context> GetInitiatorContext(v8::Local<v8::Context> context,
+                                                v8::Isolate* target_isolate) {
   DCHECK(!context.IsEmpty());
+  DCHECK(target_isolate);
   blink::ExecutionContext* execution_context =
       blink::ExecutionContext::From(context);
   if (!execution_context->IsShadowRealmGlobalScope())
     return v8::MaybeLocal<v8::Context>();
   auto* controller = PreloadRealmLifetimeController::From(context);
-  if (controller)
+  if (controller) {
+    target_isolate = controller->GetInitiatorIsolate();
     return controller->GetInitiatorContext();
+  }
   return v8::MaybeLocal<v8::Context>();
 }
 
@@ -232,9 +241,9 @@ electron::ServiceWorkerData* GetServiceWorkerData(
 }
 
 void OnCreatePreloadableV8Context(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> initiator_context,
     electron::ServiceWorkerData* service_worker_data) {
-  v8::Isolate* isolate = initiator_context->GetIsolate();
   blink::ScriptState* initiator_script_state =
       blink::ScriptState::MaybeFrom(isolate, initiator_context);
   DCHECK(initiator_script_state);

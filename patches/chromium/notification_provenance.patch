@@ -7,7 +7,7 @@ Pass RenderFrameHost through to PlatformNotificationService
 so Electron can identify which renderer a notification came from.
 
 diff --git a/chrome/browser/notifications/platform_notification_service_impl.cc b/chrome/browser/notifications/platform_notification_service_impl.cc
-index 1f1997967691cb8d712ff3b604e24f77b5ad357c..aca2866f34b8ba9c66074767a14a62f886ba6ed7 100644
+index 03d15ec6e6f4adb6339501472de27b7bec5f50e3..364c95a765a0cbf568f14ebd4dce347e3c54f70d 100644
 --- a/chrome/browser/notifications/platform_notification_service_impl.cc
 +++ b/chrome/browser/notifications/platform_notification_service_impl.cc
 @@ -252,6 +252,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
@@ -133,10 +133,10 @@ index 5be62a3fb27e37f3c1db6b811172f6dfebe18f61..34349f9832fe4b9a3d48db613a789afb
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index a7171b7074311ac5a09b21927c2f71b0b5502d6e..d26bc2d74f085dc5a0bdb52b016f1fa6fc6ecb8f 100644
+index 8e2c92d1cef7f76ec8e2fadb2be7c0e0aa288a15..9d5c6428a0f35d678f8723dd0b959fa34e8fc32c 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2220,7 +2220,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2249,7 +2249,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      case RenderProcessHost::NotificationServiceCreatorType::kSharedWorker:
      case RenderProcessHost::NotificationServiceCreatorType::kDedicatedWorker: {
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
@@ -145,7 +145,7 @@ index a7171b7074311ac5a09b21927c2f71b0b5502d6e..d26bc2d74f085dc5a0bdb52b016f1fa6
            creator_type, std::move(receiver));
        break;
      }
-@@ -2228,7 +2228,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2257,7 +2257,7 @@ void RenderProcessHostImpl::CreateNotificationService(
        CHECK(rfh);
  
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(

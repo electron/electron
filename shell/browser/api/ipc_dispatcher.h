@@ -9,15 +9,16 @@
 
 #include "base/trace_event/trace_event.h"
 #include "base/values.h"
-#include "gin/handle.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/reply_channel.h"
 #include "shell/common/v8_util.h"
+#include "v8/include/cppgc/macros.h"
 
 namespace electron {
 
@@ -25,15 +26,17 @@ namespace electron {
 // See ipc-dispatch.ts for JS listeners.
 template <typename T>
 class IpcDispatcher {
+  CPPGC_DISALLOW_NEW();
+
  public:
-  void Message(gin::Handle<gin_helper::internal::Event>& event,
+  void Message(v8::Local<v8::Object> event,
                const std::string& channel,
                blink::CloneableMessage args) {
     TRACE_EVENT1("electron", "IpcDispatcher::Message", "channel", channel);
     emitter()->EmitWithoutEvent("-ipc-message", event, channel, args);
   }
 
-  void Invoke(gin::Handle<gin_helper::internal::Event>& event,
+  void Invoke(v8::Local<v8::Object> event,
               const std::string& channel,
               blink::CloneableMessage arguments) {
     TRACE_EVENT1("electron", "IpcDispatcher::Invoke", "channel", channel);
@@ -41,7 +44,7 @@ class IpcDispatcher {
                                 std::move(arguments));
   }
 
-  void ReceivePostMessage(gin::Handle<gin_helper::internal::Event>& event,
+  void ReceivePostMessage(v8::Local<v8::Object> event,
                           const std::string& channel,
                           blink::TransferableMessage message) {
     TRACE_EVENT1("electron", "IpcDispatcher::ReceivePostMessage", "channel",
@@ -56,7 +59,7 @@ class IpcDispatcher {
                                 std::move(wrapped_ports));
   }
 
-  void MessageSync(gin::Handle<gin_helper::internal::Event>& event,
+  void MessageSync(v8::Local<v8::Object> event,
                    const std::string& channel,
                    blink::CloneableMessage arguments) {
     TRACE_EVENT1("electron", "IpcDispatcher::MessageSync", "channel", channel);
@@ -64,7 +67,7 @@ class IpcDispatcher {
                                 std::move(arguments));
   }
 
-  void MessageHost(gin::Handle<gin_helper::internal::Event>& event,
+  void MessageHost(v8::Local<v8::Object> event,
                    const std::string& channel,
                    blink::CloneableMessage arguments) {
     TRACE_EVENT1("electron", "IpcDispatcher::MessageHost", "channel", channel);

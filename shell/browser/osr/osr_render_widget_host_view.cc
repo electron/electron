@@ -332,9 +332,7 @@ void OffScreenRenderWidgetHostView::Hide() {
     return;
 
   if (render_widget_host_) {
-    // TODO(codebytere) - remove when CL:6250383 is released.
-    if (render_widget_host_->delegate())
-      render_widget_host_->WasHidden();
+    render_widget_host_->WasHidden();
 
     auto* provider = content::RenderWidgetHostImpl::From(render_widget_host_)
                          ->render_frame_metadata_provider();
@@ -835,7 +833,7 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
   mouse_wheel_phase_handler_.SendWheelEndForTouchpadScrollingIfNeeded(
       should_route_event);
   mouse_wheel_phase_handler_.AddPhaseIfNeededAndScheduleEndEvent(
-      mouse_wheel_event, false);
+      mouse_wheel_event, false, true);
 
   if (!IsPopupWidget()) {
     if (popup_host_view_) {

@@ -9,12 +9,12 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
-#include "gin/handle.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_helper/event.h"
+#include "shell/common/gin_helper/handle.h"
 
 namespace electron {
 ElectronApiIPCHandlerImpl::ElectronApiIPCHandlerImpl(
@@ -44,75 +44,87 @@ void ElectronApiIPCHandlerImpl::OnConnectionError() {
 void ElectronApiIPCHandlerImpl::Message(bool internal,
                                         const std::string& channel,
                                         blink::CloneableMessage arguments) {
-  auto* session = GetSession();
-  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  auto event = MakeIPCEvent(isolate, session, internal);
-  if (event.IsEmpty())
-    return;
-  session->Message(event, channel, std::move(arguments));
+  gin::WeakCell<api::Session>* session = GetSession();
+  if (session && session->Get()) {
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    v8::HandleScope handle_scope(isolate);
+    auto* event = MakeIPCEvent(isolate, session->Get(), internal);
+    v8::Local<v8::Object> event_object =
+        event->GetWrapper(isolate).ToLocalChecked();
+    session->Get()->Message(event_object, channel, std::move(arguments));
+  }
 }
 void ElectronApiIPCHandlerImpl::Invoke(bool internal,
                                        const std::string& channel,
                                        blink::CloneableMessage arguments,
                                        InvokeCallback callback) {
-  auto* session = GetSession();
-  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  auto event = MakeIPCEvent(isolate, session, internal, std::move(callback));
-  if (event.IsEmpty())
-    return;
-  session->Invoke(event, channel, std::move(arguments));
+  gin::WeakCell<api::Session>* session = GetSession();
+  if (session && session->Get()) {
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    v8::HandleScope handle_scope(isolate);
+    auto* event =
+        MakeIPCEvent(isolate, session->Get(), internal, std::move(callback));
+    v8::Local<v8::Object> event_object =
+        event->GetWrapper(isolate).ToLocalChecked();
+    session->Get()->Invoke(event_object, channel, std::move(arguments));
+  }
 }
 
 void ElectronApiIPCHandlerImpl::ReceivePostMessage(
     const std::string& channel,
     blink::TransferableMessage message) {
-  auto* session = GetSession();
-  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  auto event = MakeIPCEvent(isolate, session, false);
-  if (event.IsEmpty())
-    return;
-  session->ReceivePostMessage(event, channel, std::move(message));
+  gin::WeakCell<api::Session>* session = GetSession();
+  if (session && session->Get()) {
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    v8::HandleScope handle_scope(isolate);
+    auto* event = MakeIPCEvent(isolate, session->Get(), false);
+    v8::Local<v8::Object> event_object =
+        event->GetWrapper(isolate).ToLocalChecked();
+    session->Get()->ReceivePostMessage(event_object, channel,
+                                       std::move(message));
+  }
 }
 
 void ElectronApiIPCHandlerImpl::MessageSync(bool internal,
                                             const std::string& channel,
                                             blink::CloneableMessage arguments,
                                             MessageSyncCallback callback) {
-  auto* session = GetSession();
-  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  auto event = MakeIPCEvent(isolate, session, internal, std::move(callback));
-  if (event.IsEmpty())
-    return;
-  session->MessageSync(event, channel, std::move(arguments));
+  gin::WeakCell<api::Session>* session = GetSession();
+  if (session && session->Get()) {
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    v8::HandleScope handle_scope(isolate);
+    auto* event =
+        MakeIPCEvent(isolate, session->Get(), internal, std::move(callback));
+    v8::Local<v8::Object> event_object =
+        event->GetWrapper(isolate).ToLocalChecked();
+    session->Get()->MessageSync(event_object, channel, std::move(arguments));
+  }
 }
 
 void ElectronApiIPCHandlerImpl::MessageHost(const std::string& channel,
                                             blink::CloneableMessage arguments) {
-  auto* session = GetSession();
-  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  auto event = MakeIPCEvent(isolate, session, false);
-  if (event.IsEmpty())
-    return;
-  session->MessageHost(event, channel, std::move(arguments));
+  gin::WeakCell<api::Session>* session = GetSession();
+  if (session && session->Get()) {
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    v8::HandleScope handle_scope(isolate);
+    auto* event = MakeIPCEvent(isolate, session->Get(), false);
+    v8::Local<v8::Object> event_object =
+        event->GetWrapper(isolate).ToLocalChecked();
+    session->Get()->MessageHost(event_object, channel, std::move(arguments));
+  }
 }
 
 content::RenderFrameHost* ElectronApiIPCHandlerImpl::GetRenderFrameHost() {
   return content::RenderFrameHost::FromID(render_frame_host_id_);
 }
 
-api::Session* ElectronApiIPCHandlerImpl::GetSession() {
+gin::WeakCell<api::Session>* ElectronApiIPCHandlerImpl::GetSession() {
   auto* rfh = GetRenderFrameHost();
   return rfh ? api::Session::FromBrowserContext(rfh->GetBrowserContext())
              : nullptr;
 }
 
-gin::Handle<gin_helper::internal::Event>
-ElectronApiIPCHandlerImpl::MakeIPCEvent(
+gin_helper::internal::Event* ElectronApiIPCHandlerImpl::MakeIPCEvent(
     v8::Isolate* isolate,
     api::Session* session,
     bool internal,
@@ -147,9 +159,11 @@ ElectronApiIPCHandlerImpl::MakeIPCEvent(
   }
 
   content::RenderFrameHost* frame = GetRenderFrameHost();
-  gin::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  gin_helper::Dictionary dict(isolate, event.ToV8().As<v8::Object>());
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
+  gin_helper::Dictionary dict(isolate, event_object);
   dict.Set("type", "frame");
   dict.Set("sender", web_contents());
   if (internal)

@@ -6,25 +6,29 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_
 
 #include "base/memory/raw_ptr.h"
-#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "ui/native_theme/native_theme.h"
 #include "ui/native_theme/native_theme_observer.h"
 
-namespace gin {
+#if BUILDFLAG(IS_WIN)
+#include "base/win/registry.h"
+#endif
+
+namespace gin_helper {
 template <typename T>
-class handle;
-}  // namespace gin
+class Handle;
+}  // namespace gin_helper
 
 namespace electron::api {
 
-class NativeTheme final : public gin::DeprecatedWrappable<NativeTheme>,
+class NativeTheme final : public gin_helper::DeprecatedWrappable<NativeTheme>,
                           public gin_helper::EventEmitterMixin<NativeTheme>,
                           private ui::NativeThemeObserver {
  public:
-  static gin::Handle<NativeTheme> Create(v8::Isolate* isolate);
+  static gin_helper::Handle<NativeTheme> Create(v8::Isolate* isolate);
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
@@ -58,6 +62,11 @@ class NativeTheme final : public gin::DeprecatedWrappable<NativeTheme>,
   void OnNativeThemeUpdatedOnUI();
 
  private:
+#if BUILDFLAG(IS_WIN)
+  base::win::RegKey hkcu_themes_regkey_;
+#endif
+  std::optional<bool> should_use_dark_colors_for_system_integrated_ui_ =
+      std::nullopt;
   raw_ptr<ui::NativeTheme> ui_theme_;
   raw_ptr<ui::NativeTheme> web_theme_;
 };

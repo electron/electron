@@ -8,9 +8,9 @@
 
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
-#include "gin/handle.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "ui/native_theme/native_theme.h"
@@ -25,6 +25,12 @@ NativeTheme::NativeTheme(v8::Isolate* isolate,
                          ui::NativeTheme* web_theme)
     : ui_theme_(ui_theme), web_theme_(web_theme) {
   ui_theme_->AddObserver(this);
+#if BUILDFLAG(IS_WIN)
+  std::ignore = hkcu_themes_regkey_.Open(HKEY_CURRENT_USER,
+                                         L"Software\\Microsoft\\Windows\\"
+                                         L"CurrentVersion\\Themes\\Personalize",
+                                         KEY_READ);
+#endif
 }
 
 NativeTheme::~NativeTheme() {
@@ -32,6 +38,16 @@ NativeTheme::~NativeTheme() {
 }
 
 void NativeTheme::OnNativeThemeUpdatedOnUI() {
+#if BUILDFLAG(IS_WIN)
+  if (hkcu_themes_regkey_.Valid()) {
+    DWORD system_uses_light_theme = 1;
+    hkcu_themes_regkey_.ReadValueDW(L"SystemUsesLightTheme",
+                                    &system_uses_light_theme);
+    bool system_dark_mode_enabled = (system_uses_light_theme == 0);
+    should_use_dark_colors_for_system_integrated_ui_ =
+        std::make_optional<bool>(system_dark_mode_enabled);
+  }
+#endif
   Emit("updated");
 }
 
@@ -65,7 +81,8 @@ bool NativeTheme::ShouldUseHighContrastColors() {
 }
 
 bool NativeTheme::ShouldUseDarkColorsForSystemIntegratedUI() {
-  return ui_theme_->ShouldUseDarkColorsForSystemIntegratedUI();
+  return should_use_dark_colors_for_system_integrated_ui_.value_or(
+      ShouldUseDarkColors());
 }
 
 bool NativeTheme::InForcedColorsMode() {
@@ -98,11 +115,11 @@ bool NativeTheme::ShouldUseInvertedColorScheme() {
 }
 
 // static
-gin::Handle<NativeTheme> NativeTheme::Create(v8::Isolate* isolate) {
+gin_helper::Handle<NativeTheme> NativeTheme::Create(v8::Isolate* isolate) {
   ui::NativeTheme* ui_theme = ui::NativeTheme::GetInstanceForNativeUi();
   ui::NativeTheme* web_theme = ui::NativeTheme::GetInstanceForWeb();
-  return gin::CreateHandle(isolate,
-                           new NativeTheme(isolate, ui_theme, web_theme));
+  return gin_helper::CreateHandle(
+      isolate, new NativeTheme(isolate, ui_theme, web_theme));
 }
 
 gin::ObjectTemplateBuilder NativeTheme::GetObjectTemplateBuilder(
@@ -137,8 +154,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin::Dictionary dict{isolate, exports};
   dict.Set("nativeTheme", NativeTheme::Create(isolate));
 }
 

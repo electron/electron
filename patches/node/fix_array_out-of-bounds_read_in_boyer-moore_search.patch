@@ -16,10 +16,18 @@ While this worked by accident in practice, it's undefined behavior that the CL
 correctly prohibits.
 
 diff --git a/deps/nbytes/include/nbytes.h b/deps/nbytes/include/nbytes.h
-index b012729c6cca8e42c94fd9b6a9c72301b4370de4..fec831840fc00eba27dd0b44e628b870301b6f10 100644
+index b012729c6cca8e42c94fd9b6a9c72301b4370de4..bb2e2e5fd2781f9e3db7f0b0699e1b0513e6782d 100644
 --- a/deps/nbytes/include/nbytes.h
 +++ b/deps/nbytes/include/nbytes.h
-@@ -548,7 +548,11 @@ size_t StringSearch<Char>::BoyerMooreSearch(Vector subject,
+@@ -4,6 +4,7 @@
+ #include <cmath>
+ #include <cstddef>
+ #include <cstdint>
++#include <cstdlib>
+ #include <cstring>
+ #include <string>
+ 
+@@ -548,7 +549,11 @@ size_t StringSearch<Char>::BoyerMooreSearch(Vector subject,
    size_t start = start_;
  
    int *bad_char_occurrence = bad_char_shift_table_;
@@ -32,7 +40,7 @@ index b012729c6cca8e42c94fd9b6a9c72301b4370de4..fec831840fc00eba27dd0b44e628b870
  
    Char last_char = pattern_[pattern_length - 1];
    size_t index = start_index;
-@@ -575,7 +579,7 @@ size_t StringSearch<Char>::BoyerMooreSearch(Vector subject,
+@@ -575,7 +580,7 @@ size_t StringSearch<Char>::BoyerMooreSearch(Vector subject,
        index +=
            pattern_length - 1 - CharOccurrence(bad_char_occurrence, last_char);
      } else {
@@ -41,7 +49,7 @@ index b012729c6cca8e42c94fd9b6a9c72301b4370de4..fec831840fc00eba27dd0b44e628b870
        int bc_occ = CharOccurrence(bad_char_occurrence, c);
        int shift = j - bc_occ;
        if (gs_shift > shift) {
-@@ -596,17 +600,22 @@ void StringSearch<Char>::PopulateBoyerMooreTable() {
+@@ -596,17 +601,22 @@ void StringSearch<Char>::PopulateBoyerMooreTable() {
    const size_t start = start_;
    const size_t length = pattern_length - start;
  
@@ -71,7 +79,7 @@ index b012729c6cca8e42c94fd9b6a9c72301b4370de4..fec831840fc00eba27dd0b44e628b870
  
    if (pattern_length <= start) {
      return;
-@@ -620,22 +629,22 @@ void StringSearch<Char>::PopulateBoyerMooreTable() {
+@@ -620,22 +630,22 @@ void StringSearch<Char>::PopulateBoyerMooreTable() {
      while (i > start) {
        Char c = pattern_[i - 1];
        while (suffix <= pattern_length && c != pattern_[suffix - 1]) {
@@ -102,7 +110,7 @@ index b012729c6cca8e42c94fd9b6a9c72301b4370de4..fec831840fc00eba27dd0b44e628b870
          }
        }
      }
-@@ -643,11 +652,11 @@ void StringSearch<Char>::PopulateBoyerMooreTable() {
+@@ -643,11 +653,11 @@ void StringSearch<Char>::PopulateBoyerMooreTable() {
    // Build shift table using suffixes.
    if (suffix < pattern_length) {
      for (size_t i = start; i <= pattern_length; i++) {

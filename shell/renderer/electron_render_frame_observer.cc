@@ -122,8 +122,9 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
   v8::MicrotasksScope microtasks_scope(
       context, v8::MicrotasksScope::kDoNotRunMicrotasks);
 
+  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   if (ShouldNotifyClient(world_id))
-    renderer_client_->DidCreateScriptContext(context, render_frame_);
+    renderer_client_->DidCreateScriptContext(isolate, context, render_frame_);
 
   auto prefs = render_frame_->GetBlinkPreferences();
   bool use_context_isolation = prefs.context_isolation;
@@ -140,16 +141,18 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
 
   if (should_create_isolated_context) {
     CreateIsolatedWorldContext();
-    if (!renderer_client_->IsWebViewFrame(context, render_frame_))
-      renderer_client_->SetupMainWorldOverrides(context, render_frame_);
+    if (!renderer_client_->IsWebViewFrame(isolate, context, render_frame_))
+      renderer_client_->SetupMainWorldOverrides(isolate, context,
+                                                render_frame_);
   }
 }
 
 void ElectronRenderFrameObserver::WillReleaseScriptContext(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     int world_id) {
   if (ShouldNotifyClient(world_id))
-    renderer_client_->WillReleaseScriptContext(context, render_frame_);
+    renderer_client_->WillReleaseScriptContext(isolate, context, render_frame_);
 }
 
 void ElectronRenderFrameObserver::OnDestruct() {

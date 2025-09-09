@@ -20,7 +20,7 @@ index afb657b7c9e1ede1273532b16428d37cc5d75c59..16707cf516cd34682c84ea2ccebddaa0
      requested_format_.pixel_format = media::PIXEL_FORMAT_NV12;
      DCHECK_GT(requested_format_.frame_size.GetArea(), 0);
 diff --git a/content/browser/media/capture/io_surface_capture_device_base_mac.cc b/content/browser/media/capture/io_surface_capture_device_base_mac.cc
-index 4ec4c895423151d2c907d97de1461cbde8c8a639..0e59797833b81c07299b8c342f591e192183c6f1 100644
+index 7a76550922d97a835dae15be6a951c91a9b351b0..ce3e22e437fa208652326798e12952c40372197a 100644
 --- a/content/browser/media/capture/io_surface_capture_device_base_mac.cc
 +++ b/content/browser/media/capture/io_surface_capture_device_base_mac.cc
 @@ -20,7 +20,7 @@ void IOSurfaceCaptureDeviceBase::AllocateAndStart(
@@ -46,7 +46,7 @@ index e2771b7b281274cdcb601a5bc78a948ad592087b..48d116823a28213e50775f378e6ce04c
    // OnStop is called by StopAndDeAllocate.
    virtual void OnStop() = 0;
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index 7e17594c30ac3cf8cb484b53563b03fc75bd2e0b..0e4a68f2fd8179640f877cb258b4049610fd49da 100644
+index 86128a6555798e8380ffebd635e02329ccb96a12..7733e2d70b604efd41ce42638dd3472cba0b78ad 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
 @@ -27,6 +27,61 @@
@@ -134,7 +134,7 @@ index 7e17594c30ac3cf8cb484b53563b03fc75bd2e0b..0e4a68f2fd8179640f877cb258b40496
      _errorCallback = errorCallback;
    }
    return self;
-@@ -211,29 +270,53 @@ + (SCStreamConfiguration*)streamConfigurationWithFrameSize:(gfx::Size)frameSize
+@@ -210,29 +269,53 @@ + (SCStreamConfiguration*)streamConfigurationWithFrameSize:(gfx::Size)frameSize
  
  class API_AVAILABLE(macos(12.3)) ScreenCaptureKitDeviceMac
      : public IOSurfaceCaptureDeviceBase,
@@ -192,7 +192,7 @@ index 7e17594c30ac3cf8cb484b53563b03fc75bd2e0b..0e4a68f2fd8179640f877cb258b40496
  
    void OnShareableContentCreated(SCShareableContent* content) {
      DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
-@@ -301,7 +384,7 @@ void CreateStream(SCContentFilter* filter) {
+@@ -300,7 +383,7 @@ void CreateStream(SCContentFilter* filter) {
        return;
      }
  
@@ -201,7 +201,7 @@ index 7e17594c30ac3cf8cb484b53563b03fc75bd2e0b..0e4a68f2fd8179640f877cb258b40496
        // Update the content size. This step is neccessary when used together
        // with SCContentSharingPicker. If the Chrome picker is used, it will
        // change to retina resolution if applicable.
-@@ -310,6 +393,9 @@ void CreateStream(SCContentFilter* filter) {
+@@ -309,6 +392,9 @@ void CreateStream(SCContentFilter* filter) {
                      filter.contentRect.size.height * filter.pointPixelScale);
      }
  
@@ -211,7 +211,7 @@ index 7e17594c30ac3cf8cb484b53563b03fc75bd2e0b..0e4a68f2fd8179640f877cb258b40496
      gfx::RectF dest_rect_in_frame;
      actual_capture_format_ = capture_params().requested_format;
      actual_capture_format_.pixel_format = media::PIXEL_FORMAT_NV12;
-@@ -323,6 +409,7 @@ void CreateStream(SCContentFilter* filter) {
+@@ -322,6 +408,7 @@ void CreateStream(SCContentFilter* filter) {
      stream_ = [[SCStream alloc] initWithFilter:filter
                                   configuration:config
                                        delegate:helper_];
@@ -219,7 +219,7 @@ index 7e17594c30ac3cf8cb484b53563b03fc75bd2e0b..0e4a68f2fd8179640f877cb258b40496
      {
        NSError* error = nil;
        bool add_stream_output_result =
-@@ -480,7 +567,7 @@ void OnStreamError() {
+@@ -479,7 +566,7 @@ void OnStreamError() {
        if (fullscreen_module_) {
          fullscreen_module_->Reset();
        }
@@ -228,7 +228,7 @@ index 7e17594c30ac3cf8cb484b53563b03fc75bd2e0b..0e4a68f2fd8179640f877cb258b40496
      } else {
        client()->OnError(media::VideoCaptureError::kScreenCaptureKitStreamError,
                          FROM_HERE, "Stream delegate called didStopWithError");
-@@ -503,23 +590,41 @@ void OnUpdateConfigurationError() {
+@@ -502,23 +589,41 @@ void OnUpdateConfigurationError() {
    }
  
    // IOSurfaceCaptureDeviceBase:
@@ -285,7 +285,7 @@ index 7e17594c30ac3cf8cb484b53563b03fc75bd2e0b..0e4a68f2fd8179640f877cb258b40496
    }
    void OnStop() override {
      DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
-@@ -577,8 +682,9 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -576,8 +681,9 @@ void ResetStreamTo(SCWindow* window) override {
    }
  
   private:
@@ -296,7 +296,7 @@ index 7e17594c30ac3cf8cb484b53563b03fc75bd2e0b..0e4a68f2fd8179640f877cb258b40496
    const scoped_refptr<base::SingleThreadTaskRunner> device_task_runner_;
  
    // The actual format of the video frames that are sent to `client`.
-@@ -594,6 +700,10 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -593,6 +699,10 @@ void ResetStreamTo(SCWindow* window) override {
    // Helper class that acts as output and delegate for `stream_`.
    ScreenCaptureKitDeviceHelper* __strong helper_;
  
@@ -307,7 +307,7 @@ index 7e17594c30ac3cf8cb484b53563b03fc75bd2e0b..0e4a68f2fd8179640f877cb258b40496
    // This is used to detect when a captured presentation enters fullscreen mode.
    // If this happens, the module will call the ResetStreamTo function.
    std::unique_ptr<ScreenCaptureKitFullscreenModule> fullscreen_module_;
-@@ -606,6 +716,8 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -605,6 +715,8 @@ void ResetStreamTo(SCWindow* window) override {
    base::WeakPtrFactory<ScreenCaptureKitDeviceMac> weak_factory_{this};
  };
  
@@ -317,10 +317,10 @@ index 7e17594c30ac3cf8cb484b53563b03fc75bd2e0b..0e4a68f2fd8179640f877cb258b40496
  
  // Although ScreenCaptureKit is available in 12.3 there were some bugs that
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index a5bc6f63c771fdf68ed9251285eac9d2c91acdc0..f719ff68e18093791bf13e434f40a3d1a9626dca 100644
+index 7c8f4b60a9299114ac5e71ede6f602643326507a..203422ff6ab9cf98c3e76820e230321c3cafb5ef 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-@@ -321,8 +321,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -322,8 +322,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
          break;
        }
  
@@ -338,7 +338,7 @@ index a5bc6f63c771fdf68ed9251285eac9d2c91acdc0..f719ff68e18093791bf13e434f40a3d1
          // For the other capturers, when a bug reports the type of capture it's
          // easy enough to determine which capturer was used, but it's a little
          // fuzzier with window capture.
-@@ -338,13 +346,15 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -339,13 +347,15 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
        }
  #endif  // defined(USE_AURA) || BUILDFLAG(IS_MAC)
  
@@ -369,10 +369,10 @@ index 294b5f79955ba72976f8ba127fd19556c81e322c..27553e51b281575c5cb7a4ba4dab06d1
  #if defined(USE_AURA) || BUILDFLAG(IS_MAC)
    // Assigns integer identifier to the |window| and returns its DesktopMediaID.
 diff --git a/media/capture/video_capture_types.h b/media/capture/video_capture_types.h
-index 53e8077c9c0b635df0abdeca43fa9a6373c68252..2805e36cc42190d8197d83f5df235094570e3d5d 100644
+index accd52db0cf7cb043d7d767b778079b5d1160cfb..357ee6111471405d1f860ea6d5000ac65f4ecb9a 100644
 --- a/media/capture/video_capture_types.h
 +++ b/media/capture/video_capture_types.h
-@@ -355,6 +355,8 @@ struct CAPTURE_EXPORT VideoCaptureParams {
+@@ -358,6 +358,8 @@ struct CAPTURE_EXPORT VideoCaptureParams {
    // Flag indicating whether HiDPI mode should be enabled for tab capture
    // sessions.
    bool is_high_dpi_enabled = true;

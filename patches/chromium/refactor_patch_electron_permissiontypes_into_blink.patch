@@ -6,10 +6,10 @@ Subject: refactor: patch electron PermissionTypes into blink
 6387077: [PermissionOptions] Generalize PermissionRequestDescription | https://chromium-review.googlesource.com/c/chromium/src/+/6387077
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index fee80a0e6036b3b73110ec495ac5546beca0585a..3a079619f770c628e882c7e5b587171e043cfd72 100644
+index 83b0237a56d5ea7555ae989bd7bd13886f0c8f13..0377c8c0c3a112ec40132b8441747652b0c15870 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -519,7 +519,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -536,7 +536,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::WEB_APP_INSTALLATION;
      case PermissionType::LOCAL_NETWORK_ACCESS:
        return ContentSettingsType::LOCAL_NETWORK_ACCESS;
@@ -28,10 +28,10 @@ index fee80a0e6036b3b73110ec495ac5546beca0585a..3a079619f770c628e882c7e5b587171e
        break;
    }
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index b9590ecbb95da6858eac104fbf69df056ccbf449..61cdfa6549c539ec73437d221ffdd82fbef39e23 100644
+index d92f15f9ff1bf8dc23361e668f6d48199540c4e6..aa13c5e85fef3de67e41889b0ea1c751c5144f85 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
-@@ -87,7 +87,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+@@ -88,7 +88,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
      case PermissionType::AUTOMATIC_FULLSCREEN:
      case PermissionType::WEB_APP_INSTALLATION:
      case PermissionType::LOCAL_NETWORK_ACCESS:
@@ -185,10 +185,10 @@ index 47c73522cbd7c1d12dabfecf6f55a74690ebc189..6b8ed935e8c440cbf655d122a398d33e
  
  struct MidiPermissionDescriptor {
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index a980ed6afb84eceef9c9b594b325e8e3783821ec..ff2898ca035ae5f2bc218615a87ec148e3764385 100644
+index 63df740efad1e407f0990d2ba48a9cbcb8bdb6f8..3973be677468b36124b88293c46cab615a4a63c5 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-@@ -145,8 +145,22 @@ String PermissionNameToString(PermissionName name) {
+@@ -146,8 +146,22 @@ String PermissionNameToString(PermissionName name) {
        return "web-printing";
      case PermissionName::SMART_CARD:
        return "smart-card";

@@ -162,17 +162,29 @@ void Browser::Show() {
 }
 
 void Browser::AddRecentDocument(const base::FilePath& path) {
-  NSString* path_string = base::apple::FilePathToNSString(path);
-  if (!path_string)
+  NSURL* url = base::apple::FilePathToNSURL(path);
+  if (!url) {
+    LOG(WARNING) << "Failed to convert file path " << path.value()
+                 << " to NSURL";
     return;
-  NSURL* u = [NSURL fileURLWithPath:path_string];
-  if (!u)
-    return;
-  [[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:u];
+  }
+
+  [[NSDocumentController sharedDocumentController]
+      noteNewRecentDocumentURL:url];
 }
 
 void Browser::ClearRecentDocuments() {
   [[NSDocumentController sharedDocumentController] clearRecentDocuments:nil];
+}
+
+std::vector<std::string> Browser::GetRecentDocuments() {
+  NSArray<NSURL*>* recentURLs =
+      [[NSDocumentController sharedDocumentController] recentDocumentURLs];
+  std::vector<std::string> documents;
+  documents.reserve([recentURLs count]);
+  for (NSURL* url in recentURLs)
+    documents.push_back(std::string([url.path UTF8String]));
+  return documents;
 }
 
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
@@ -414,19 +426,18 @@ v8::Local<v8::Value> Browser::GetLoginItemSettings(
 #else
   // If the app was previously set as a LoginItem with the deprecated API,
   // we should report its LoginItemSettings via the old API.
-  LoginItemSettings settings_deprecated = GetLoginItemSettingsDeprecated();
   if (@available(macOS 13, *)) {
     const std::string status =
         platform_util::GetLoginItemEnabled(options.type, options.service_name);
     if (status == "enabled-deprecated") {
-      settings = settings_deprecated;
+      settings = GetLoginItemSettingsDeprecated();
     } else {
       settings.open_at_login = status == "enabled";
       settings.opened_at_login = was_launched_at_login_;
       settings.status = status;
     }
   } else {
-    settings = settings_deprecated;
+    settings = GetLoginItemSettingsDeprecated();
   }
 #endif
   return gin::ConvertToV8(isolate, settings);

@@ -174,6 +174,7 @@ class InspectableWebContents
   void RecordPerformanceHistogramMedium(const std::string& name,
                                         double duration) override {}
   void RecordUserMetricsAction(const std::string& name) override {}
+  void RecordNewBadgeUsage(const std::string& feature_name) override {}
   void RecordImpression(const ImpressionEvent& event) override {}
   void RecordResize(const ResizeEvent& event) override {}
   void RecordClick(const ClickEvent& event) override {}
@@ -191,10 +192,12 @@ class InspectableWebContents
                           const std::string& request,
                           int stream_id) override {}
   void AidaCodeComplete(DispatchCallback callback,
-                        const std::string& request,
-                        int stream_id) override {}
+                        const std::string& request) override {}
   void RegisterAidaClientEvent(DispatchCallback callback,
                                const std::string& request) override {}
+  void DispatchHttpRequest(
+      DispatchCallback callback,
+      const DevToolsDispatchHttpRequestParams& params) override {}
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(base::Value::Dict message);

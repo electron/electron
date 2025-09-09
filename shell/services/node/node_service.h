@@ -11,6 +11,7 @@
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
+#include "net/base/network_change_notifier.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/mojom/host_resolver.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
@@ -84,6 +85,8 @@ class NodeService : public node::mojom::NodeService {
 
   // depends-on: js_env_'s isolate
   std::shared_ptr<node::Environment> node_env_;
+
+  std::unique_ptr<net::NetworkChangeNotifier> network_change_notifier_;
 };
 
 }  // namespace electron

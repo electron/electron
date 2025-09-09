@@ -262,10 +262,10 @@ index 61683d0eddb04c494ca5e650e7d556b44968ec49..5492456a9138b250e97a5479838bb443
  
  }  // namespace ui
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index 9853bac93511ff5f790833528829a2c0017ed505..8cd68dddc2de3ecc393858194e825283fcd544db 100644
+index 54cefe5b6236b24cd9c4625d603fe9a7205676f5..1f70697a2f9ddba8151b4c4f497fbc007ee5fed8 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-@@ -30,6 +30,7 @@
+@@ -25,6 +25,7 @@
  #include "dbus/message.h"
  #include "dbus/object_path.h"
  #include "dbus/object_proxy.h"
@@ -273,7 +273,7 @@ index 9853bac93511ff5f790833528829a2c0017ed505..8cd68dddc2de3ecc393858194e825283
  #include "ui/aura/window_tree_host.h"
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/native_widget_types.h"
-@@ -101,7 +102,7 @@ void OnGetPropertyReply(dbus::Response* response) {
+@@ -96,7 +97,7 @@ void OnGetPropertyReply(dbus::Response* response) {
                                 : ServiceAvailability::kNotAvailable;
  }
  
@@ -282,7 +282,7 @@ index 9853bac93511ff5f790833528829a2c0017ed505..8cd68dddc2de3ecc393858194e825283
    if (!service_started.value_or(false)) {
      g_service_availability = ServiceAvailability::kNotAvailable;
      return;
-@@ -120,9 +121,12 @@ void OnServiceStarted(std::optional<bool> service_started) {
+@@ -115,9 +116,12 @@ void OnServiceStarted(std::optional<bool> service_started) {
  }
  
  void OnSystemdUnitStarted(dbus_xdg::SystemdUnitStatus) {
@@ -295,7 +295,7 @@ index 9853bac93511ff5f790833528829a2c0017ed505..8cd68dddc2de3ecc393858194e825283
  }
  
  DbusByteArray PathToByteArray(const base::FilePath& path) {
-@@ -175,17 +179,20 @@ void SelectFileDialogLinuxPortal::StartAvailabilityTestInBackground() {
+@@ -170,17 +174,20 @@ void SelectFileDialogLinuxPortal::StartAvailabilityTestInBackground() {
    GetMainTaskRunner() = base::SequencedTaskRunner::GetCurrentDefault();
  
    dbus_xdg::SetSystemdScopeUnitNameForXdgPortal(
@@ -318,7 +318,7 @@ index 9853bac93511ff5f790833528829a2c0017ed505..8cd68dddc2de3ecc393858194e825283
  }
  
  bool SelectFileDialogLinuxPortal::IsRunning(
-@@ -390,11 +397,14 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -385,11 +392,14 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
      const PortalFilterSet& filter_set) {
    DbusDictionary dict;
  
@@ -336,7 +336,7 @@ index 9853bac93511ff5f790833528829a2c0017ed505..8cd68dddc2de3ecc393858194e825283
        [[fallthrough]];
      case SelectFileDialog::SELECT_FOLDER:
      case SelectFileDialog::Type::SELECT_EXISTING_FOLDER:
-@@ -407,6 +417,10 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -402,6 +412,10 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
        break;
    }
  

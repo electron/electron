@@ -20,10 +20,10 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index ef87899fb7569f8b7de13d63ff123e9ad245d5af..fee80a0e6036b3b73110ec495ac5546beca0585a 100644
+index 2b132446e1e384de0e51355a44fab38dbaf64f53..83b0237a56d5ea7555ae989bd7bd13886f0c8f13 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -519,6 +519,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -536,6 +536,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::WEB_APP_INSTALLATION;
      case PermissionType::LOCAL_NETWORK_ACCESS:
        return ContentSettingsType::LOCAL_NETWORK_ACCESS;
@@ -32,10 +32,10 @@ index ef87899fb7569f8b7de13d63ff123e9ad245d5af..fee80a0e6036b3b73110ec495ac5546b
        break;
    }
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 8fed0c928df594a80bebf0017d47e1bfef841c16..b9590ecbb95da6858eac104fbf69df056ccbf449 100644
+index 8af9381691776fd7968cab890e32546c285979e4..d92f15f9ff1bf8dc23361e668f6d48199540c4e6 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
-@@ -87,6 +87,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+@@ -88,6 +88,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
      case PermissionType::AUTOMATIC_FULLSCREEN:
      case PermissionType::WEB_APP_INSTALLATION:
      case PermissionType::LOCAL_NETWORK_ACCESS:
@@ -119,10 +119,10 @@ index 36410ff29d9c82e59f93fbb82968064bd330dfde..6c3f994e0b184f78bd9442002bb4dfae
    virtual void PassiveInsecureContentFound(const WebURL&) {}
  
 diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-index c269698764bb8ae7f85c5d476436f5ae5209576d..65d7fd94128a755609192784722074c6c2b7b7cf 100644
+index a5ac9d4a417ac8e75e761c40841f41ab9057c761..292bd1f9de78828e739dae24a45a1dd3d6585240 100644
 --- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 +++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-@@ -122,7 +122,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
+@@ -123,7 +123,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
      return true;
    }
    return frame.GetContentSettingsClient() &&
@@ -131,7 +131,7 @@ index c269698764bb8ae7f85c5d476436f5ae5209576d..65d7fd94128a755609192784722074c6
  }
  
  bool ClipboardCommands::CanWriteClipboard(LocalFrame& frame,
-@@ -311,7 +311,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
+@@ -312,7 +312,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
      return true;
    }
    return frame->GetContentSettingsClient() &&
@@ -141,10 +141,10 @@ index c269698764bb8ae7f85c5d476436f5ae5209576d..65d7fd94128a755609192784722074c6
  
  bool ClipboardCommands::ExecuteCopy(LocalFrame& frame,
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index 691726eb23434005adc559534fc0aeede937cc92..a980ed6afb84eceef9c9b594b325e8e3783821ec 100644
+index b533436f91ba67c6060d4a1976f7c197b6db3afc..63df740efad1e407f0990d2ba48a9cbcb8bdb6f8 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-@@ -145,6 +145,8 @@ String PermissionNameToString(PermissionName name) {
+@@ -146,6 +146,8 @@ String PermissionNameToString(PermissionName name) {
        return "web-printing";
      case PermissionName::SMART_CARD:
        return "smart-card";

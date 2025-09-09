@@ -26,6 +26,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/common/color_parser.h"
+#include "shell/browser/api/electron_api_system_preferences.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/views/root_view.h"
@@ -84,7 +85,6 @@
 #include "shell/common/color_util.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/display/win/screen_win.h"
-#include "ui/gfx/color_utils.h"
 #include "ui/gfx/win/hwnd_util.h"
 #include "ui/gfx/win/msg_util.h"
 #endif
@@ -215,8 +215,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (transparent())
     thick_frame_ = false;
 
-  overlay_button_color_ = color_utils::GetSysSkColor(COLOR_BTNFACE);
-  overlay_symbol_color_ = color_utils::GetSysSkColor(COLOR_BTNTEXT);
+  overlay_button_color_ = GetSysSkColor(COLOR_BTNFACE);
+  overlay_symbol_color_ = GetSysSkColor(COLOR_BTNTEXT);
 
   if (std::string str; options.Get(options::kAccentColor, &str)) {
     std::optional<SkColor> parsed_color = ParseCSSColor(str);
@@ -1282,12 +1282,7 @@ void NativeWindowViews::SetOpacity(const double opacity) {
 #if BUILDFLAG(IS_WIN)
   const double boundedOpacity = std::clamp(opacity, 0.0, 1.0);
   HWND hwnd = GetAcceleratedWidget();
-  if (!layered_) {
-    LONG ex_style = ::GetWindowLong(hwnd, GWL_EXSTYLE);
-    ex_style |= WS_EX_LAYERED;
-    ::SetWindowLong(hwnd, GWL_EXSTYLE, ex_style);
-    layered_ = true;
-  }
+  SetLayered();
   ::SetLayeredWindowAttributes(hwnd, 0, boundedOpacity * 255, LWA_ALPHA);
   opacity_ = boundedOpacity;
 #else
@@ -1728,6 +1723,16 @@ void NativeWindowViews::UpdateThickFrame() {
     FlipWindowStyle(GetAcceleratedWidget(), true, WS_THICKFRAME);
   } else if (has_frame()) {
     FlipWindowStyle(GetAcceleratedWidget(), resizable_, WS_THICKFRAME);
+  }
+}
+
+void NativeWindowViews::SetLayered() {
+  HWND hwnd = GetAcceleratedWidget();
+  if (!layered_) {
+    LONG ex_style = ::GetWindowLong(hwnd, GWL_EXSTYLE);
+    ex_style |= WS_EX_LAYERED;
+    ::SetWindowLong(hwnd, GWL_EXSTYLE, ex_style);
+    layered_ = true;
   }
 }
 #endif

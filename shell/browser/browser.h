@@ -23,6 +23,7 @@
 #endif
 
 #if BUILDFLAG(IS_MAC)
+#include "base/time/time.h"
 #include "ui/base/cocoa/secure_password_input.h"
 #endif
 
@@ -124,6 +125,9 @@ class Browser : private WindowListObserver {
 
   // Clear the recent documents list.
   void ClearRecentDocuments();
+
+  // Return the recent documents list.
+  std::vector<std::string> GetRecentDocuments();
 
 #if BUILDFLAG(IS_WIN)
   // Set the application user model ID.

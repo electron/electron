@@ -8,6 +8,12 @@
 #include <optional>
 #include <string>
 
+#include "build/build_config.h"
+
+#if BUILDFLAG(IS_WIN)
+#include <windows.h>
+#endif
+
 #include "third_party/skia/include/core/SkColor.h"
 
 // SkColor is a typedef for uint32_t, this wrapper is to tag an SkColor for
@@ -30,6 +36,11 @@ std::string ToRGBHex(SkColor color);
 
 // Convert color to RGBA hex value like "#RRGGBBAA".
 std::string ToRGBAHex(SkColor color, bool include_hash = true);
+
+#if BUILDFLAG(IS_WIN)
+std::optional<DWORD> GetSystemAccentColor();
+SkColor GetSysSkColor(int which);
+#endif
 
 }  // namespace electron
 

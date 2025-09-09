@@ -402,6 +402,15 @@ describe('webContents module', () => {
     let w: BrowserWindow;
     let s: http.Server;
 
+    before(function () {
+      session.fromPartition('loadurl-webcontents-spec').setPermissionRequestHandler((webContents, permission, callback) => {
+        if (permission === 'openExternal') {
+          return callback(false);
+        }
+        callback(true);
+      });
+    });
+
     afterEach(() => {
       if (s) {
         s.close();
@@ -410,9 +419,18 @@ describe('webContents module', () => {
     });
 
     beforeEach(async () => {
-      w = new BrowserWindow({ show: false });
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'loadurl-webcontents-spec'
+        }
+      });
     });
     afterEach(closeAllWindows);
+
+    after(async () => {
+      session.fromPartition('loadurl-webcontents-spec').setPermissionRequestHandler(null);
+    });
 
     it('resolves when done loading', async () => {
       await expect(w.loadURL('about:blank')).to.eventually.be.fulfilled();
@@ -484,7 +502,7 @@ describe('webContents module', () => {
       }
     });
 
-    it('fails if loadURL is called inside a non-reentrant critical section', (done) => {
+    it('fails if loadURL is called inside did-start-loading', (done) => {
       w.webContents.once('did-fail-load', (_event, _errorCode, _errorDescription, validatedURL) => {
         expect(validatedURL).to.contain('blank.html');
         done();
@@ -495,6 +513,49 @@ describe('webContents module', () => {
       });
 
       w.loadURL('data:text/html,<h1>HELLO</h1>');
+    });
+
+    it('fails if loadurl is called after the navigation is ready to commit', () => {
+      w.webContents.once('did-fail-load', (_event, _errorCode, _errorDescription, validatedURL) => {
+        expect(validatedURL).to.contain('blank.html');
+      });
+
+      // @ts-expect-error internal-only event.
+      w.webContents.once('-ready-to-commit-navigation', () => {
+        w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      });
+
+      w.loadURL('data:text/html,<h1>HELLO</h1>');
+    });
+
+    it('fails if loadURL is called inside did-redirect-navigation', (done) => {
+      const server = http.createServer((req, res) => {
+        if (req.url === '/302') {
+          res.statusCode = 302;
+          res.setHeader('Location', '/200');
+          res.end();
+        } else if (req.url === '/200') {
+          res.end('ok');
+        } else {
+          res.end();
+        }
+      });
+
+      w.webContents.once('did-fail-load', (_event, _errorCode, _errorDescription, validatedURL) => {
+        expect(validatedURL).to.contain('blank.html');
+        server.close();
+        done();
+      });
+
+      listen(server).then(({ url }) => {
+        w.webContents.once('did-redirect-navigation', () => {
+          w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+        });
+        w.loadURL(`${url}/302`);
+      }).catch(e => {
+        server.close();
+        done(e);
+      });
     });
 
     it('sets appropriate error information on rejection', async () => {

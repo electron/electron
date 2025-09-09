@@ -8,20 +8,21 @@
 #include <memory>
 #include <string>
 
+#include "base/functional/bind.h"
 #include "base/values.h"
-#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_observer.h"
-#include "ui/gfx/sys_color_change_listener.h"
+#include "ui/gfx/win/singleton_hwnd_observer.h"
 #endif
 
-namespace gin {
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace gin_helper {
 class ErrorThrower;
@@ -38,25 +39,24 @@ enum class NotificationCenterKind {
 #endif
 
 class SystemPreferences final
-    : public gin::DeprecatedWrappable<SystemPreferences>,
+    : public gin_helper::DeprecatedWrappable<SystemPreferences>,
       public gin_helper::EventEmitterMixin<SystemPreferences>
 #if BUILDFLAG(IS_WIN)
     ,
-      public BrowserObserver,
-      public gfx::SysColorChangeListener
+      public BrowserObserver
 #endif
 {
  public:
-  static gin::Handle<SystemPreferences> Create(v8::Isolate* isolate);
+  static gin_helper::Handle<SystemPreferences> Create(v8::Isolate* isolate);
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
-  std::string GetAccentColor();
+  static std::string GetAccentColor();
   std::string GetColor(gin_helper::ErrorThrower thrower,
                        const std::string& color);
   std::string GetMediaAccessStatus(gin_helper::ErrorThrower thrower,
@@ -65,8 +65,8 @@ class SystemPreferences final
 #if BUILDFLAG(IS_WIN)
   void InitializeWindow();
 
-  // gfx::SysColorChangeListener:
-  void OnSysColorChange() override;
+  // Called by `singleton_hwnd_observer_`.
+  void OnWndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
   // BrowserObserver:
   void OnFinishLaunching(base::Value::Dict launch_info) override;
@@ -159,7 +159,8 @@ class SystemPreferences final
 
   std::string current_color_;
 
-  std::unique_ptr<gfx::ScopedSysColorChangeListener> color_change_listener_;
+  // Color/high contrast mode change observer.
+  std::unique_ptr<gfx::SingletonHwndObserver> singleton_hwnd_observer_;
 #endif
 };
 

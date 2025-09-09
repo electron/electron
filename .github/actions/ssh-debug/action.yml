@@ -1,0 +1,20 @@
+name: Debug via SSH
+description: Setup a SSH server with a tunnel to access it to debug via SSH.
+inputs:
+  tunnel:
+    description: 'Enable SSH tunneling via cloudflared'
+    required: true
+    default: 'false'
+  timeout:
+    description: 'SSH session timeout in seconds'
+    required: false
+    type: number
+    default: 3600
+runs:
+  using: composite
+  steps:
+    - run: $GITHUB_ACTION_PATH/setup-ssh.sh
+      shell: bash
+      env:
+        TUNNEL: ${{ inputs.tunnel }}
+        TIMEOUT: ${{ inputs.timeout }}

@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index 6f9406eecacb7411a2e84a7b51e60b726d1961f3..bffdb0259eeed7389adb54a8ff13a1ac4e767d90 100644
+index 6f9406eecacb7411a2e84a7b51e60b726d1961f3..a0cfb0bc3776dc3682cdb332ed418286d3243bd1 100644
 --- a/deps/ncrypto/ncrypto.cc
 +++ b/deps/ncrypto/ncrypto.cc
 @@ -786,7 +786,7 @@ bool SafeX509SubjectAltNamePrint(const BIOPointer& out, X509_EXTENSION* ext) {
@@ -110,7 +110,7 @@ index 6f9406eecacb7411a2e84a7b51e60b726d1961f3..bffdb0259eeed7389adb54a8ff13a1ac
    if (len + 2 != rem) return {};
    return reinterpret_cast<const char*>(buf + 3);
 +#endif
-+  return nullptr;
++  return {};
  }
  
  const std::string_view SSLPointer::getClientHelloServerName() const {
@@ -128,7 +128,7 @@ index 6f9406eecacb7411a2e84a7b51e60b726d1961f3..bffdb0259eeed7389adb54a8ff13a1ac
    if (len + 2 > rem) return {};
    return reinterpret_cast<const char*>(buf + 5);
 +#endif
-+  return nullptr;
++  return {};
  }
  
  std::optional<const std::string_view> SSLPointer::GetServerName(
@@ -172,7 +172,7 @@ index e5bf2b529bf23914677e25d7468aad58a4684557..9a3c6029ff3319cce58c79782a7bd5d1
    };
    // Check to see if the given public key is suitable for this DH instance.
 diff --git a/node.gni b/node.gni
-index 62cd49c6a87074912a1cb6792576c8d4f239b669..165b26a79a7f2b74d2a2252dc2350b2e10c091e6 100644
+index e2407027ab05e59b2f0f1c213b98ea469db7a91b..c64761b730e61edcdc0e46a48699f2fd5bb1c0a6 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -11,7 +11,7 @@ declare_args() {
@@ -228,10 +228,10 @@ index d94f6e1c82c4a62547b3b395f375c86ce4deb5de..b81b9005365272217c77e2b9289bd9f8
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index a054e4c1285208c9ba8b9679c284f459f1ace690..3de8ef4fafcdbdc2cb0ce31de162663d5272340f 100644
+index 5e368e3fd93b560c629aef720acd576f118cb1d6..ea5179ad5155cb599891d7421cd61df719ac4cae 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -123,7 +123,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
+@@ -141,7 +141,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
      // the CA certificates.
      SSL_CTX_clear_extra_chain_certs(ctx);
  
@@ -240,7 +240,7 @@ index a054e4c1285208c9ba8b9679c284f459f1ace690..3de8ef4fafcdbdc2cb0ce31de162663d
        X509* ca = sk_X509_value(extra_certs, i);
  
        // NOTE: Increments reference count on `ca`
-@@ -1584,11 +1584,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
+@@ -1752,11 +1752,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
    // If the user specified "auto" for dhparams, the JavaScript layer will pass
    // true to this function instead of the original string. Any other string
    // value will be interpreted as custom DH parameters below.
@@ -254,7 +254,7 @@ index a054e4c1285208c9ba8b9679c284f459f1ace690..3de8ef4fafcdbdc2cb0ce31de162663d
    DHPointer dh;
    {
      BIOPointer bio(LoadBIO(env, args[0]));
-@@ -1814,7 +1815,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
+@@ -1982,7 +1983,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
    }
  
    // Add CA certs too
@@ -396,7 +396,7 @@ index 471fee77531139ce988292470dff443fdfb05b07..931f7c2ae3d7e12afce471545d610d22
      return EVPKeyCtxPointer();
  
 diff --git a/src/crypto/crypto_keys.cc b/src/crypto/crypto_keys.cc
-index b38a9a377738fd5fe6cc89c3a27c403bf6a97715..0cd43c2005b431e180b7483cb89825a75e1fe03f 100644
+index 7238cda445fd663e6b45fa134f31d017bb267dfc..522655555cdb2ab2083797f736bf167d1f42c15e 100644
 --- a/src/crypto/crypto_keys.cc
 +++ b/src/crypto/crypto_keys.cc
 @@ -949,6 +949,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
@@ -541,21 +541,6 @@ index c42493ad958508f650917bf5ca92088714a5056c..07accfbcca491966c6c8ad9c20e146db
  #if OPENSSL_VERSION_MAJOR >= 3
    // We declare another alias here to avoid having to include crypto_util.h
    using EVPMDPointer = DeleteFnPtr<EVP_MD, EVP_MD_free>;
-diff --git a/src/node_config.cc b/src/node_config.cc
-index 6032bbd10f41da7bae44828a8e908c1bec0ea0b6..2013de54f0f6a036e8378deefbff8d7cb5f7cfb2 100644
---- a/src/node_config.cc
-+++ b/src/node_config.cc
-@@ -7,6 +7,10 @@
- #include "node_options.h"
- #include "util-inl.h"
- 
-+#if HAVE_OPENSSL
-+#include <openssl/base.h>
-+#endif
-+
- namespace node {
- 
- using v8::Context;
 diff --git a/src/node_metadata.h b/src/node_metadata.h
 index 7b2072ad39c3f1a7c73101b25b69beb781141e26..d23536d88d21255d348175425a59e2424332cd19 100644
 --- a/src/node_metadata.h
@@ -570,7 +555,7 @@ index 7b2072ad39c3f1a7c73101b25b69beb781141e26..d23536d88d21255d348175425a59e242
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index da39abf79c53fcc3d83d3431deda9dbdf3b0621e..14f7764c995e8de6582faf58c9b98a9cbe4fab73 100644
+index 249361e351946c16452124029c60fca52782adf9..653112fbaea59fe8b446236085dcae8be671c6e5 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -7,7 +7,7 @@
@@ -583,7 +568,7 @@ index da39abf79c53fcc3d83d3431deda9dbdf3b0621e..14f7764c995e8de6582faf58c9b98a9c
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index 165950c207ca752ec942ef27a671af66cbd2b938..eb18fdd617fd19e5b97cd67f351e70c28fee3e75 100644
+index 2a1a6aaf9f2d358ffffb0a8171df470686b9450e..3ff1f4b4baa64b8ee2a4587e150ea14cb2fdfdf4 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@

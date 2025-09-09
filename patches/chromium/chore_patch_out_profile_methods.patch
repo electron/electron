@@ -7,7 +7,7 @@ Electron does not support Profiles, so we need to patch it out of any
 code that we use.
 
 diff --git a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
-index e3b9f14a4cf2167064ce6716053e663adffa1542..65f13a4607c8145858fd47d81cb9960c44272d79 100644
+index c390a83277f564f1a67a7dcffa36b9d77a35bc0b..b13273a4b194ad5e8ca2d1639ebca831f9607b1e 100644
 --- a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
 +++ b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
 @@ -45,6 +45,7 @@ namespace {
@@ -27,12 +27,12 @@ index e3b9f14a4cf2167064ce6716053e663adffa1542..65f13a4607c8145858fd47d81cb9960c
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index ecacb93a2eb0765e43ac984498b72a5d0900e669..dc9870130befc742287475cf05b4caa00413d6f3 100644
+index 32e9d7e81ee8008b7e8fd491ec16afc01b5ff35e..51213f193cc5977f9f30dd39548eaf012a4857fa 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
-@@ -245,10 +245,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
+@@ -234,10 +234,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
  
- #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(ENABLE_PDF_INK2)
+ #if BUILDFLAG(ENABLE_PDF_INK2)
  bool IsPdfAnnotationsEnabledByPolicy(content::BrowserContext* context) {
 +# if 0
    PrefService* prefs =
@@ -42,7 +42,7 @@ index ecacb93a2eb0765e43ac984498b72a5d0900e669..dc9870130befc742287475cf05b4caa0
 +#endif
 +  return true;
  }
- #endif  // BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(ENABLE_PDF_INK2)
+ #endif  // BUILDFLAG(ENABLE_PDF_INK2)
  
 diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
 index bc0bad82ebcdceadc505e912ff27202b452fefab..6b77c57fccc4619a1df3b4ed661d2bdd60960228 100644

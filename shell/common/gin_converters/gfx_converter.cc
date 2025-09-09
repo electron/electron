@@ -177,7 +177,10 @@ v8::Local<v8::Value> Converter<display::Display>::ToV8(
   dict.Set("accelerometerSupport", val.accelerometer_support());
   dict.Set("bounds", val.bounds());
   dict.Set("colorDepth", val.color_depth());
-  dict.Set("colorSpace", val.GetColorSpaces().GetRasterColorSpace().ToString());
+  dict.Set("colorSpace", val.GetColorSpaces()
+                             .GetRasterAndCompositeColorSpace(
+                                 gfx::ContentColorUsage::kWideColorGamut)
+                             .ToString());
   dict.Set("depthPerComponent", val.depth_per_component());
   dict.Set("detected", val.detected());
   dict.Set("displayFrequency", val.display_frequency());

@@ -15,10 +15,50 @@ Reviewed-By: Benjamin Gruenbaum <benjamingr@gmail.com>
 Reviewed-By: Yagiz Nizipli <yagiz.nizipli@sentry.io>
 
 diff --git a/doc/api/cli.md b/doc/api/cli.md
-index d924287df3ca29681cf71e2fbd402314ce8edd97..f2f4d25a838b9758234cd667b0fb537d0d0fcced 100644
+index 8cabb58e621a9951acd5551afb85c192f2b1c690..b69bacebef3e5e5e5b191c61aa5fe0f71c1edfb3 100644
 --- a/doc/api/cli.md
 +++ b/doc/api/cli.md
-@@ -3386,7 +3386,6 @@ one is included in the list below.
+@@ -2712,39 +2712,6 @@ added: v12.0.0
+ Set default [`tls.DEFAULT_MIN_VERSION`][] to 'TLSv1.3'. Use to disable support
+ for TLSv1.2, which is not as secure as TLSv1.3.
+ 
+-### `--trace-atomics-wait`
+-
+-<!-- YAML
+-added: v14.3.0
+-deprecated:
+-  - v18.8.0
+-  - v16.18.0
+--->
+-
+-> Stability: 0 - Deprecated
+-
+-Print short summaries of calls to [`Atomics.wait()`][] to stderr.
+-The output could look like this:
+-
+-```text
+-(node:15701) [Thread 0] Atomics.wait(&lt;address> + 0, 1, inf) started
+-(node:15701) [Thread 0] Atomics.wait(&lt;address> + 0, 1, inf) did not wait because the values mismatched
+-(node:15701) [Thread 0] Atomics.wait(&lt;address> + 0, 0, 10) started
+-(node:15701) [Thread 0] Atomics.wait(&lt;address> + 0, 0, 10) timed out
+-(node:15701) [Thread 0] Atomics.wait(&lt;address> + 4, 0, inf) started
+-(node:15701) [Thread 1] Atomics.wait(&lt;address> + 4, -1, inf) started
+-(node:15701) [Thread 0] Atomics.wait(&lt;address> + 4, 0, inf) was woken up by another thread
+-(node:15701) [Thread 1] Atomics.wait(&lt;address> + 4, -1, inf) was woken up by another thread
+-```
+-
+-The fields here correspond to:
+-
+-* The thread id as given by [`worker_threads.threadId`][]
+-* The base address of the `SharedArrayBuffer` in question, as well as the
+-  byte offset corresponding to the index passed to `Atomics.wait()`
+-* The expected value that was passed to `Atomics.wait()`
+-* The timeout passed to `Atomics.wait`
+-
+ ### `--trace-deprecation`
+ 
+ <!-- YAML
+@@ -3429,7 +3396,6 @@ one is included in the list below.
  * `--tls-min-v1.1`
  * `--tls-min-v1.2`
  * `--tls-min-v1.3`
@@ -27,7 +67,7 @@ index d924287df3ca29681cf71e2fbd402314ce8edd97..f2f4d25a838b9758234cd667b0fb537d
  * `--trace-env-js-stack`
  * `--trace-env-native-stack`
 diff --git a/doc/node.1 b/doc/node.1
-index 663d123ac728f097e8a76c94cf10c53d059983d7..497f5a61182beafbaa26b945181056353674cfc3 100644
+index 6913992a5476d2317a34fb69d3c6af63b686f9a6..1faef5ba1d4206a5cc4c71cb71f7a08f613fbf17 100644
 --- a/doc/node.1
 +++ b/doc/node.1
 @@ -539,11 +539,6 @@ but the option is supported for compatibility with older Node.js versions.
@@ -43,7 +83,7 @@ index 663d123ac728f097e8a76c94cf10c53d059983d7..497f5a61182beafbaa26b94518105635
  Print stack traces for deprecations.
  .
 diff --git a/src/node.cc b/src/node.cc
-index 0c2a4d344c991c2ca0d9d90934cf7921abf2a629..19d9fb77f1aaf003e43b7d7016f45e6c35df06b3 100644
+index 0d383dcdb80fe30e3c2d6880b44f626f065bb1f3..9d9992dacbc595c987827f55eb12ea8af0480df6 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -232,44 +232,6 @@ void Environment::WaitForInspectorFrontendByOptions() {
@@ -110,7 +150,7 @@ index 0c2a4d344c991c2ca0d9d90934cf7921abf2a629..19d9fb77f1aaf003e43b7d7016f45e6c
      isolate_->SetPromiseHook(TracePromises);
    }
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 9829b0b2b2d013b93ac14d3ec6d46c35abcc4635..5fb2e713a50185b997935cb15fddd7b8b65a5b82 100644
+index cfb95f65ccb0c6d150be8a4039caf26faf7cd06d..cb0ecd81b33abd7743e66e225a6cb96b4094f935 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -773,10 +773,6 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
@@ -125,7 +165,7 @@ index 9829b0b2b2d013b93ac14d3ec6d46c35abcc4635..5fb2e713a50185b997935cb15fddd7b8
              "show stack traces on deprecations",
              &EnvironmentOptions::trace_deprecation,
 diff --git a/src/node_options.h b/src/node_options.h
-index eb18fdd617fd19e5b97cd67f351e70c28fee3e75..216c0f92167bd131e5ef2ea96ad47425ff51c3f7 100644
+index 3ff1f4b4baa64b8ee2a4587e150ea14cb2fdfdf4..26ac54c4b18dd00b2c1f915dc1ba0e90ca70b48f 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -204,7 +204,6 @@ class EnvironmentOptions : public Options {

@@ -29,7 +29,7 @@
 
 #if BUILDFLAG(IS_LINUX) && (defined(ARCH_CPU_X86_64) || defined(ARCH_CPU_ARM64))
 #define ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX
-#include "components/crash/core/app/crashpad.h"
+#include "components/crash/core/app/crashpad.h"  // nogncheck
 #include "content/public/common/content_switches.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #endif
@@ -90,6 +90,7 @@ void ElectronRendererClient::UndeferLoad(content::RenderFrame* render_frame) {
 }
 
 void ElectronRendererClient::DidCreateScriptContext(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> renderer_context,
     content::RenderFrame* render_frame) {
   // TODO(zcbenz): Do not create Node environment if node integration is not
@@ -97,14 +98,14 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   // Only load Node.js if we are a main frame or a devtools extension
   // unless Node.js support has been explicitly enabled for subframes.
-  if (!ShouldLoadPreload(renderer_context, render_frame))
+  if (!ShouldLoadPreload(isolate, renderer_context, render_frame))
     return;
 
   injected_frames_.insert(render_frame);
 
   if (!node_integration_initialized_) {
     node_integration_initialized_ = true;
-    node_bindings_->Initialize(renderer_context);
+    node_bindings_->Initialize(isolate, renderer_context);
     node_bindings_->PrepareEmbedThread();
   }
 
@@ -126,7 +127,7 @@ void ElectronRendererClient::DidCreateScriptContext(
       blink::LoaderFreezeMode::kStrict);
 
   std::shared_ptr<node::Environment> env = node_bindings_->CreateEnvironment(
-      renderer_context, nullptr, 0,
+      isolate, renderer_context, nullptr, 0,
       base::BindRepeating(&ElectronRendererClient::UndeferLoad,
                           base::Unretained(this), render_frame));
 
@@ -134,7 +135,6 @@ void ElectronRendererClient::DidCreateScriptContext(
   // Node.js deletes the global fetch function when their fetch implementation
   // is disabled, so we need to save and re-add it after the Node.js environment
   // is loaded. See corresponding change in node/init.ts.
-  v8::Isolate* isolate = env->isolate();
   v8::Local<v8::Object> global = renderer_context->Global();
 
   std::vector<std::string> keys = {"fetch",   "Response", "FormData",
@@ -178,6 +178,7 @@ void ElectronRendererClient::DidCreateScriptContext(
 }
 
 void ElectronRendererClient::WillReleaseScriptContext(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) {
   if (injected_frames_.erase(render_frame) == 0)
@@ -189,7 +190,7 @@ void ElectronRendererClient::WillReleaseScriptContext(
   if (iter == environments_.end())
     return;
 
-  gin_helper::EmitEvent(env->isolate(), env->process_object(), "exit");
+  gin_helper::EmitEvent(isolate, env->process_object(), "exit");
 
   // The main frame may be replaced.
   if (env == node_bindings_->uv_env())

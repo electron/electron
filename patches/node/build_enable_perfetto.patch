@@ -64,10 +64,10 @@ index 251f51ec454f9cba4023b8b6729241ee753aac13..1de8cac6e3953ce9cab9db03530da327
  
  module.exports = {
 diff --git a/node.gyp b/node.gyp
-index 0434887c363a586cbfa0438765fc8800d4237057..20fbf03cee24e66f9ad0d394dbcfa3ad03348890 100644
+index d604e0ddd973174aa7be6f2d250af7b9c2b0fcfd..8e97aa3f44087213425927113fe72bca9ddef45b 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -175,7 +175,6 @@
+@@ -176,7 +176,6 @@
        'src/timers.cc',
        'src/timer_wrap.cc',
        'src/tracing/agent.cc',
@@ -75,7 +75,7 @@ index 0434887c363a586cbfa0438765fc8800d4237057..20fbf03cee24e66f9ad0d394dbcfa3ad
        'src/tracing/node_trace_writer.cc',
        'src/tracing/trace_event.cc',
        'src/tracing/traced_value.cc',
-@@ -302,7 +301,6 @@
+@@ -304,7 +303,6 @@
        'src/tcp_wrap.h',
        'src/timers.h',
        'src/tracing/agent.h',

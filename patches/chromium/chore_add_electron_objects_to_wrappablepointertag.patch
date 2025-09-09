@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 20 Aug 2025 04:03:11 +0900
+Subject: chore: add electron objects to WrappablePointerTag
+
+Extends gin::WrappablePointerTag with tags needed for
+electron objects that extend gin::Wrappable and gets
+allocated on the cpp heap
+
+diff --git a/gin/public/wrappable_pointer_tags.h b/gin/public/wrappable_pointer_tags.h
+index 80ec409efe1635390887d1324be661643818abff..112a23f81680f5fcc2b016d8f5362e3a03507c8a 100644
+--- a/gin/public/wrappable_pointer_tags.h
++++ b/gin/public/wrappable_pointer_tags.h
+@@ -66,7 +66,10 @@ enum WrappablePointerTag : uint16_t {
+   kTextInputControllerBindings,         // content::TextInputControllerBindings
+   kWebAXObjectProxy,                    // content::WebAXObjectProxy
+   kWrappedExceptionHandler,             // extensions::WrappedExceptionHandler
+-  kLastPointerTag = kWrappedExceptionHandler,
++  kElectronApp,                         // electron::api::App
++  kElectronSession,                     // electron::api::Session
++  kElectronEvent,                       // gin_helper::internal::Event
++  kLastPointerTag = kElectronEvent,
+ };
+ 
+ static_assert(kLastPointerTag <

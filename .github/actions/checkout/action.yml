@@ -40,7 +40,7 @@ runs:
     if: ${{ inputs.generate-sas-token == 'true' }}
     shell: bash
     run: |
-      curl --unix-socket /var/run/sas/sas.sock --fail "http://foo/$CACHE_FILE?platform=${{ inputs.target-platform }}" > sas-token
+      curl --unix-socket /var/run/sas/sas.sock --fail "http://foo/$CACHE_FILE?platform=${{ inputs.target-platform }}&getAccountName=true" > sas-token
   - name: Save SAS Key
     if: ${{ inputs.generate-sas-token == 'true' }}
     uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3

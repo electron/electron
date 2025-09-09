@@ -8,9 +8,7 @@
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/worker_thread.h"
 #include "gin/dictionary.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
-#include "gin/wrappable.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
@@ -18,7 +16,9 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
@@ -55,12 +55,12 @@ bool IsWorkerThread() {
 }
 
 template <typename T>
-class IPCBase : public gin::DeprecatedWrappable<T> {
+class IPCBase : public gin_helper::DeprecatedWrappable<T> {
  public:
   static gin::DeprecatedWrapperInfo kWrapperInfo;
 
-  static gin::Handle<T> Create(v8::Isolate* isolate) {
-    return gin::CreateHandle(isolate, new T(isolate));
+  static gin_helper::Handle<T> Create(v8::Isolate* isolate) {
+    return gin_helper::CreateHandle(isolate, new T(isolate));
   }
 
   void SendMessage(v8::Isolate* isolate,
@@ -181,10 +181,10 @@ class IPCBase : public gin::DeprecatedWrappable<T> {
     return electron::DeserializeV8Value(isolate, result);
   }
 
-  // gin::Wrappable:
+  // gin_helper::Wrappable:
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override {
-    return gin::DeprecatedWrappable<T>::GetObjectTemplateBuilder(isolate)
+    return gin_helper::DeprecatedWrappable<T>::GetObjectTemplateBuilder(isolate)
         .SetMethod("send", &T::SendMessage)
         .SetMethod("sendSync", &T::SendSync)
         .SetMethod("sendToHost", &T::SendToHost)
@@ -221,10 +221,10 @@ class IPCRenderFrame : public IPCBase<IPCRenderFrame>,
 
   void OnDestruct() override { electron_ipc_remote_.reset(); }
 
-  void WillReleaseScriptContext(v8::Local<v8::Context> context,
+  void WillReleaseScriptContext(v8::Isolate* const isolate,
+                                v8::Local<v8::Context> context,
                                 int32_t world_id) override {
-    if (weak_context_.IsEmpty() ||
-        weak_context_.Get(context->GetIsolate()) == context) {
+    if (weak_context_.IsEmpty() || weak_context_.Get(isolate) == context) {
       OnDestruct();
     }
   }
@@ -267,7 +267,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  gin_helper::Dictionary dict(context->GetIsolate(), exports);
+  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("createForRenderFrame", &IPCRenderFrame::Create);
   dict.SetMethod("createForServiceWorker", &IPCServiceWorker::Create);
 }

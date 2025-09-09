@@ -167,6 +167,26 @@ describe('WebContentsView', () => {
     });
   });
 
+  it('does not crash when closed via window.close()', async () => {
+    const bw = new BrowserWindow();
+    const wcv = new WebContentsView();
+
+    await bw.loadURL('data:text/html,<h1>Main Window</h1>');
+    bw.contentView.addChildView(wcv);
+
+    const dto = new Promise<boolean>((resolve) => {
+      wcv.webContents.on('blur', () => {
+        const devToolsOpen = wcv.webContents.isDevToolsOpened();
+        resolve(devToolsOpen);
+      });
+    });
+
+    wcv.webContents.loadURL('data:text/html,<script>window.close()</script>');
+
+    const open = await dto;
+    expect(open).to.be.false();
+  });
+
   it('can be fullscreened', async () => {
     const w = new BaseWindow();
     const v = new WebContentsView();
@@ -317,9 +337,12 @@ describe('WebContentsView', () => {
         v.webContents.loadURL(backgroundUrl);
 
         const inset = 10;
+        // Adjust for macOS menu bar height which seems to be about 24px
+        // based on the results from accessibility inspector.
+        const platformInset = process.platform === 'darwin' ? 15 : 0;
         corners = [
-          { x: display.workArea.x + inset, y: display.workArea.y + inset }, // top-left
-          { x: display.workArea.x + display.workArea.width - inset, y: display.workArea.y + inset }, // top-right
+          { x: display.workArea.x + inset, y: display.workArea.y + inset + platformInset }, // top-left
+          { x: display.workArea.x + display.workArea.width - inset, y: display.workArea.y + inset + platformInset }, // top-right
           { x: display.workArea.x + display.workArea.width - inset, y: display.workArea.y + display.workArea.height - inset }, // bottom-right
           { x: display.workArea.x + inset, y: display.workArea.y + display.workArea.height - inset } // bottom-left
         ];

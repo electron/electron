@@ -4,7 +4,6 @@
 
 #include <string>
 
-#include "gin/handle.h"
 #include "net/base/filename_util.h"
 #include "net/base/network_change_notifier.h"
 #include "net/http/http_util.h"
@@ -17,6 +16,7 @@
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
@@ -80,9 +80,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
+  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
 
-  gin_helper::Dictionary dict(isolate, exports);
+  gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("isOnline", &IsOnline);
   dict.SetMethod("isValidHeaderName", &IsValidHeaderName);
   dict.SetMethod("isValidHeaderValue", &IsValidHeaderValue);

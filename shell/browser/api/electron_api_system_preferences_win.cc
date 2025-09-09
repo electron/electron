@@ -5,7 +5,6 @@
 #include <iomanip>
 #include <string_view>
 
-#include <dwmapi.h>
 #include <windows.devices.enumeration.h>
 #include <wrl/client.h>
 
@@ -17,7 +16,6 @@
 #include "base/win/wrapped_window_proc.h"
 #include "shell/common/color_util.h"
 #include "shell/common/process_util.h"
-#include "ui/gfx/color_utils.h"
 #include "ui/gfx/win/hwnd_util.h"
 
 namespace electron {
@@ -84,14 +82,12 @@ std::string hexColorDWORDToRGBA(DWORD color) {
 }
 
 std::string SystemPreferences::GetAccentColor() {
-  DWORD color = 0;
-  BOOL opaque = FALSE;
+  std::optional<DWORD> color = GetSystemAccentColor();
 
-  if (FAILED(DwmGetColorizationColor(&color, &opaque))) {
+  if (!color.has_value())
     return "";
-  }
 
-  return hexColorDWORDToRGBA(color);
+  return hexColorDWORDToRGBA(color.value());
 }
 
 std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
@@ -130,7 +126,7 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
   });
 
   if (auto iter = Lookup.find(color); iter != Lookup.end())
-    return ToRGBAHex(color_utils::GetSysSkColor(iter->second));
+    return ToRGBAHex(GetSysSkColor(iter->second));
 
   thrower.ThrowError("Unknown color: " + color);
   return "";
@@ -161,8 +157,9 @@ void SystemPreferences::InitializeWindow() {
   // Creating this listener before the app is ready causes global shortcuts
   // to not fire
   if (Browser::Get()->is_ready())
-    color_change_listener_ =
-        std::make_unique<gfx::ScopedSysColorChangeListener>(this);
+    singleton_hwnd_observer_ =
+        std::make_unique<gfx::SingletonHwndObserver>(base::BindRepeating(
+            &SystemPreferences::OnWndProc, base::Unretained(this)));
   else
     Browser::Get()->AddObserver(this);
 
@@ -211,13 +208,21 @@ LRESULT CALLBACK SystemPreferences::WndProc(HWND hwnd,
   return ::DefWindowProc(hwnd, message, wparam, lparam);
 }
 
-void SystemPreferences::OnSysColorChange() {
+void SystemPreferences::OnWndProc(HWND hwnd,
+                                  UINT message,
+                                  WPARAM wparam,
+                                  LPARAM lparam) {
+  if (message != WM_SYSCOLORCHANGE &&
+      (message != WM_SETTINGCHANGE || wparam != SPI_SETHIGHCONTRAST)) {
+    return;
+  }
   Emit("color-changed");
 }
 
 void SystemPreferences::OnFinishLaunching(base::Value::Dict launch_info) {
-  color_change_listener_ =
-      std::make_unique<gfx::ScopedSysColorChangeListener>(this);
+  singleton_hwnd_observer_ =
+      std::make_unique<gfx::SingletonHwndObserver>(base::BindRepeating(
+          &SystemPreferences::OnWndProc, base::Unretained(this)));
 }
 
 }  // namespace api

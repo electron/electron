@@ -8,13 +8,13 @@
 #include <string_view>
 
 #include "base/functional/bind.h"
-#include "gin/handle.h"
 #include "shell/browser/browser.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/native_window_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "ui/display/display.h"
@@ -185,8 +185,8 @@ v8::Local<v8::Value> Screen::Create(gin_helper::ErrorThrower error_thrower) {
     return v8::Null(error_thrower.isolate());
   }
 
-  return gin::CreateHandle(error_thrower.isolate(),
-                           new Screen(error_thrower.isolate(), screen))
+  return gin_helper::CreateHandle(error_thrower.isolate(),
+                                  new Screen(error_thrower.isolate(), screen))
       .ToV8();
 }
 
@@ -223,7 +223,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.SetMethod("createScreen", base::BindRepeating(&Screen::Create));
 }

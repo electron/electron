@@ -4,11 +4,11 @@
 
 #include "shell/browser/api/electron_api_system_preferences.h"
 
-#include "gin/handle.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/node_includes.h"
 #include "ui/gfx/animation/animation.h"
 
@@ -46,8 +46,9 @@ v8::Local<v8::Value> SystemPreferences::GetAnimationSettings(
 }
 
 // static
-gin::Handle<SystemPreferences> SystemPreferences::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new SystemPreferences());
+gin_helper::Handle<SystemPreferences> SystemPreferences::Create(
+    v8::Isolate* isolate) {
+  return gin_helper::CreateHandle(isolate, new SystemPreferences());
 }
 
 gin::ObjectTemplateBuilder SystemPreferences::GetObjectTemplateBuilder(
@@ -115,7 +116,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("systemPreferences", SystemPreferences::Create(isolate));
 }

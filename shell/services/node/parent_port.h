@@ -7,10 +7,10 @@
 
 #include <memory>
 
-#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/connector.h"
 #include "mojo/public/cpp/bindings/message.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "third_party/blink/public/common/messaging/message_port_descriptor.h"
 
 namespace v8 {
@@ -22,21 +22,24 @@ class Isolate;
 
 namespace gin {
 class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace electron {
 
 // There is only a single instance of this class
 // for the lifetime of a Utility Process which
 // also means that GC lifecycle is ignored by this class.
-class ParentPort final : public gin::DeprecatedWrappable<ParentPort>,
+class ParentPort final : public gin_helper::DeprecatedWrappable<ParentPort>,
                          public gin_helper::CleanedUpAtExit,
                          private mojo::MessageReceiver {
  public:
   static ParentPort* GetInstance();
-  static gin::Handle<ParentPort> Create(v8::Isolate* isolate);
+  static gin_helper::Handle<ParentPort> Create(v8::Isolate* isolate);
 
   ParentPort(const ParentPort&) = delete;
   ParentPort& operator=(const ParentPort&) = delete;
@@ -45,7 +48,7 @@ class ParentPort final : public gin::DeprecatedWrappable<ParentPort>,
   ~ParentPort() override;
   void Initialize(blink::MessagePortDescriptor port);
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;

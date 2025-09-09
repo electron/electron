@@ -19,7 +19,6 @@
 #include "base/strings/escape.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
-#include "chrome/browser/predictors/preconnect_manager.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
@@ -34,6 +33,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cors_origin_pattern_setter.h"
 #include "content/public/browser/host_zoom_map.h"
+#include "content/public/browser/preconnect_manager.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
@@ -49,6 +49,7 @@
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_download_manager_delegate.h"
 #include "shell/browser/electron_permission_manager.h"
+#include "shell/browser/electron_preconnect_manager_delegate.h"
 #include "shell/browser/file_system_access/file_system_access_permission_context_factory.h"
 #include "shell/browser/media/media_device_id_salt.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
@@ -498,7 +499,7 @@ void ElectronBrowserContext::SetUserAgent(const std::string& user_agent) {
   user_agent_ = user_agent;
 }
 
-base::FilePath ElectronBrowserContext::GetPath() {
+base::FilePath ElectronBrowserContext::GetPath() const {
   return path_;
 }
 
@@ -557,10 +558,12 @@ std::string ElectronBrowserContext::GetUserAgent() const {
   return user_agent_.value_or(ElectronBrowserClient::Get()->GetUserAgent());
 }
 
-predictors::PreconnectManager* ElectronBrowserContext::GetPreconnectManager() {
+content::PreconnectManager* ElectronBrowserContext::GetPreconnectManager() {
   if (!preconnect_manager_) {
-    preconnect_manager_ =
-        std::make_unique<predictors::PreconnectManager>(nullptr, this);
+    preconnect_manager_delegate_ =
+        std::make_unique<ElectronPreconnectManagerDelegate>();
+    preconnect_manager_ = content::PreconnectManager::Create(
+        preconnect_manager_delegate_->GetWeakPtr(), this);
   }
   return preconnect_manager_.get();
 }

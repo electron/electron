@@ -13,10 +13,10 @@ if the override has been disabled.
 This will be upstreamed.
 
 diff --git a/lib/internal/assert/utils.js b/lib/internal/assert/utils.js
-index 59b5a16f1309a5e4055bccfdb7a529045ad30402..bfdaf6211466a01b64b7942f7b16c480283278ff 100644
+index 13e41d67c635c27bd5e69eb4960eace34beaef0d..9a99c9ca93907630f9f3ba7ba24577a11465661c 100644
 --- a/lib/internal/assert/utils.js
 +++ b/lib/internal/assert/utils.js
-@@ -25,6 +25,7 @@ const AssertionError = require('internal/assert/assertion_error');
+@@ -24,6 +24,7 @@ const AssertionError = require('internal/assert/assertion_error');
  const { openSync, closeSync, readSync } = require('fs');
  const { EOL } = require('internal/constants');
  const { BuiltinModule } = require('internal/bootstrap/realm');
@@ -24,7 +24,7 @@ index 59b5a16f1309a5e4055bccfdb7a529045ad30402..bfdaf6211466a01b64b7942f7b16c480
  const { isError } = require('internal/util');
  
  const errorCache = new SafeMap();
-@@ -167,8 +168,16 @@ function getErrMessage(message, fn) {
+@@ -166,8 +167,16 @@ function getErrMessage(message, fn) {
    ErrorCaptureStackTrace(err, fn);
    if (errorStackTraceLimitIsWritable) Error.stackTraceLimit = tmpLimit;
  
@@ -44,10 +44,10 @@ index 59b5a16f1309a5e4055bccfdb7a529045ad30402..bfdaf6211466a01b64b7942f7b16c480
    let filename = call.getFileName();
    const line = call.getLineNumber() - 1;
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 14f7764c995e8de6582faf58c9b98a9cbe4fab73..d2e945b1d6ef6729709cc73c238cfae46d4e56b6 100644
+index 653112fbaea59fe8b446236085dcae8be671c6e5..415d4e34f29bc303674dccbfdc231b251401961b 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -1560,14 +1560,16 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
+@@ -1566,14 +1566,16 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
    }
    Isolate* isolate = args.GetIsolate();
  

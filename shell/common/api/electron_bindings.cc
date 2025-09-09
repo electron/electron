@@ -165,28 +165,31 @@ v8::Local<v8::Value> ElectronBindings::GetCreationTime(v8::Isolate* isolate) {
 v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
     v8::Isolate* isolate,
     gin_helper::Arguments* args) {
-  base::SystemMemoryInfoKB mem_info;
+  base::SystemMemoryInfo mem_info;
   if (!base::GetSystemMemoryInfo(&mem_info)) {
     args->ThrowError("Unable to retrieve system memory information");
     return v8::Undefined(isolate);
   }
 
   auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-  dict.Set("total", mem_info.total);
+  dict.Set("total", mem_info.total.InKiB());
 
   // See Chromium's "base/process/process_metrics.h" for an explanation.
-  int free =
+  base::ByteCount free =
 #if BUILDFLAG(IS_WIN)
       mem_info.avail_phys;
 #else
       mem_info.free;
 #endif
-  dict.Set("free", free);
+  dict.Set("free", free.InKiB());
 
+#if BUILDFLAG(IS_MAC)
+  dict.Set("fileBacked", mem_info.file_backed.InKiB());
+  dict.Set("purgeable", mem_info.purgeable.InKiB());
+#else
   // NB: These return bogus values on macOS
-#if !BUILDFLAG(IS_MAC)
-  dict.Set("swapTotal", mem_info.swap_total);
-  dict.Set("swapFree", mem_info.swap_free);
+  dict.Set("swapTotal", mem_info.swap_total.InKiB());
+  dict.Set("swapFree", mem_info.swap_free.InKiB());
 #endif
 
   return dict.GetHandle();

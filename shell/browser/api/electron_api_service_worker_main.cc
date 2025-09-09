@@ -11,7 +11,6 @@
 #include "base/no_destructor.h"
 #include "content/browser/service_worker/service_worker_context_wrapper.h"  // nogncheck
 #include "content/browser/service_worker/service_worker_version.h"  // nogncheck
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/message_port.h"
@@ -23,6 +22,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
@@ -289,12 +289,13 @@ GURL ServiceWorkerMain::ScriptURL() const {
 }
 
 // static
-gin::Handle<ServiceWorkerMain> ServiceWorkerMain::New(v8::Isolate* isolate) {
-  return gin::Handle<ServiceWorkerMain>();
+gin_helper::Handle<ServiceWorkerMain> ServiceWorkerMain::New(
+    v8::Isolate* isolate) {
+  return gin_helper::Handle<ServiceWorkerMain>();
 }
 
 // static
-gin::Handle<ServiceWorkerMain> ServiceWorkerMain::From(
+gin_helper::Handle<ServiceWorkerMain> ServiceWorkerMain::From(
     v8::Isolate* isolate,
     content::ServiceWorkerContext* sw_context,
     const content::StoragePartition* storage_partition,
@@ -303,15 +304,15 @@ gin::Handle<ServiceWorkerMain> ServiceWorkerMain::From(
 
   auto* service_worker = FromServiceWorkerKey(service_worker_key);
   if (service_worker)
-    return gin::CreateHandle(isolate, service_worker);
+    return gin_helper::CreateHandle(isolate, service_worker);
 
   // Ensure ServiceWorkerVersion exists and is not redundant (pending deletion)
   auto* live_version = GetLiveVersion(sw_context, version_id);
   if (!live_version || live_version->is_redundant()) {
-    return gin::Handle<ServiceWorkerMain>();
+    return gin_helper::Handle<ServiceWorkerMain>();
   }
 
-  auto handle = gin::CreateHandle(
+  auto handle = gin_helper::CreateHandle(
       isolate,
       new ServiceWorkerMain(sw_context, version_id, service_worker_key));
 
@@ -354,9 +355,10 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("ServiceWorkerMain", ServiceWorkerMain::GetConstructor(context));
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
+  dict.Set("ServiceWorkerMain",
+           ServiceWorkerMain::GetConstructor(isolate, context));
 }
 
 }  // namespace

@@ -41,7 +41,6 @@
 #include "content/public/browser/render_frame_host.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/mas.h"
-#include "gin/handle.h"
 #include "media/audio/audio_manager.h"
 #include "net/dns/public/dns_over_https_config.h"
 #include "net/dns/public/dns_over_https_server_config.h"
@@ -83,6 +82,8 @@
 #include "shell/common/thread_restrictions.h"
 #include "shell/common/v8_util.h"
 #include "ui/gfx/image/image.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-traced-handle.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "base/strings/utf_string_conversions.h"
@@ -365,7 +366,8 @@ struct Converter<net::SecureDnsMode> {
 
 namespace electron::api {
 
-gin::DeprecatedWrapperInfo App::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo App::kWrapperInfo = {{gin::kEmbedderNativeGin},
+                                      gin::kElectronApp};
 
 namespace {
 
@@ -383,6 +385,9 @@ int GetPathConstant(std::string_view name) {
   // clang-format off
   constexpr auto Lookup = base::MakeFixedFlatMap<std::string_view, int>({
       {"appData", DIR_APP_DATA},
+#if !BUILDFLAG(IS_MAC)
+      {"assets", base::DIR_ASSETS},
+#endif
 #if BUILDFLAG(IS_POSIX)
       {"cache", base::DIR_CACHE},
 #else
@@ -558,7 +563,6 @@ App::App() {
 App::~App() {
   static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
       ->set_delegate(nullptr);
-  Browser::Get()->RemoveObserver(this);
   content::GpuDataManager::GetInstance()->RemoveObserver(this);
   content::BrowserChildProcessObserver::Remove(this);
 }
@@ -1156,7 +1160,8 @@ void App::DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower) {
 
 bool App::IsAccessibilitySupportEnabled() {
   auto* ax_state = content::BrowserAccessibilityState::GetInstance();
-  return ax_state->GetAccessibilityMode() == ui::kAXModeComplete;
+  auto mode = ax_state->GetAccessibilityMode();
+  return mode.has_mode(ui::kAXModeComplete.flags());
 }
 
 void App::SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
@@ -1578,7 +1583,7 @@ void DockSetMenu(electron::api::Menu* menu) {
 }
 
 v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
-  if (dock_.IsEmpty()) {
+  if (dock_.IsEmptyThreadSafe()) {
     // Initialize the Dock API, the methods are bound to "dock" which exists
     // for the lifetime of "app"
     auto browser = base::Unretained(Browser::Get());
@@ -1606,7 +1611,7 @@ v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
 
     dock_.Reset(isolate, dock_obj.GetHandle());
   }
-  return v8::Local<v8::Value>::New(isolate, dock_);
+  return dock_.Get(isolate);
 }
 #endif
 
@@ -1693,18 +1698,31 @@ void ConfigureHostResolver(v8::Isolate* isolate,
 
 // static
 App* App::Get() {
-  static base::NoDestructor<App> app;
-  return app.get();
+  return Create(nullptr);
 }
 
 // static
-gin::Handle<App> App::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, Get());
+App* App::Create(v8::Isolate* isolate) {
+  static base::NoDestructor<cppgc::Persistent<App>> instance(
+      cppgc::MakeGarbageCollected<App>(
+          isolate->GetCppHeap()->GetAllocationHandle()));
+  return instance->Get();
+}
+
+const gin::WrapperInfo* App::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+void App::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<App>::Trace(visitor);
+#if BUILDFLAG(IS_MAC)
+  visitor->Trace(dock_);
+#endif
 }
 
 gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
   auto browser = base::Unretained(Browser::Get());
-  return gin_helper::EventEmitterMixin<App>::GetObjectTemplateBuilder(isolate)
+  return gin::Wrappable<App>::GetObjectTemplateBuilder(isolate)
       .SetMethod("quit", base::BindRepeating(&Browser::Quit, browser))
       .SetMethod("exit", base::BindRepeating(&Browser::Exit, browser))
       .SetMethod("focus", base::BindRepeating(&Browser::Focus, browser))
@@ -1720,6 +1738,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::AddRecentDocument, browser))
       .SetMethod("clearRecentDocuments",
                  base::BindRepeating(&Browser::ClearRecentDocuments, browser))
+      .SetMethod("getRecentDocuments",
+                 base::BindRepeating(&Browser::GetRecentDocuments, browser))
 #if BUILDFLAG(IS_WIN)
       .SetMethod("setAppUserModelId",
                  base::BindRepeating(&Browser::SetAppUserModelID, browser))
@@ -1844,8 +1864,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("resolveProxy", &App::ResolveProxy);
 }
 
-const char* App::GetTypeName() {
-  return "App";
+const char* App::GetHumanReadableName() const {
+  return "Electron / App";
 }
 
 }  // namespace electron::api
@@ -1856,8 +1876,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.Set("app", electron::api::App::Create(isolate));
 }
 

@@ -204,8 +204,8 @@ bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
   if (node::Environment::GetCurrent(context) == nullptr) {
     if (!electron::IsRendererProcess())
       return false;
-    return blink::V8Initializer::WasmCodeGenerationCheckCallbackInMainThread(
-        context, source);
+    return blink::V8Initializer::WasmCodeGenerationCheckCallback(context,
+                                                                 source);
   }
 
   return node::AllowWasmCodeGenerationCallback(context, source);
@@ -377,8 +377,17 @@ bool IsAllowedOption(const std::string_view option) {
       "--no-experimental-global-navigator",
   });
 
+  // This should be aligned with what's possible to set via the process object.
+  static constexpr auto unpacked_options =
+      base::MakeFixedFlatSet<std::string_view>({
+          "--expose-internals",
+      });
+
   if (debug_options.contains(option))
     return electron::fuses::IsNodeCliInspectEnabled();
+
+  if (unpacked_options.contains(option))
+    return !electron::api::App::IsPackaged();
 
   return options.contains(option);
 }
@@ -456,11 +465,10 @@ base::FilePath GetResourcesPath() {
 #if BUILDFLAG(IS_MAC)
   return MainApplicationBundlePath().Append("Contents").Append("Resources");
 #else
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  base::FilePath exec_path(command_line->GetProgram());
-  base::PathService::Get(base::FILE_EXE, &exec_path);
+  base::FilePath assets_path;
+  base::PathService::Get(base::DIR_ASSETS, &assets_path);
 
-  return exec_path.DirName().Append(FILE_PATH_LITERAL("resources"));
+  return assets_path.Append(FILE_PATH_LITERAL("resources"));
 #endif
 }
 }  // namespace
@@ -576,7 +584,8 @@ std::vector<std::string> NodeBindings::ParseNodeCliFlags() {
   return args;
 }
 
-void NodeBindings::Initialize(v8::Local<v8::Context> context) {
+void NodeBindings::Initialize(v8::Isolate* const isolate,
+                              v8::Local<v8::Context> context) {
   TRACE_EVENT0("electron", "NodeBindings::Initialize");
   // Open node's error reporting system for browser process.
 
@@ -601,6 +610,7 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
   node::per_process::cli_options->disable_wasm_trap_handler = true;
 
   uint64_t process_flags =
+      node::ProcessInitializationFlags::kNoInitializeCppgc |
       node::ProcessInitializationFlags::kNoInitializeV8 |
       node::ProcessInitializationFlags::kNoInitializeNodeV8Platform;
 
@@ -610,8 +620,7 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
     process_flags |= node::ProcessInitializationFlags::kEnableStdioInheritance;
 
   if (browser_env_ == BrowserEnvironment::kRenderer)
-    process_flags |= node::ProcessInitializationFlags::kNoInitializeCppgc |
-                     node::ProcessInitializationFlags::kNoDefaultSignalHandling;
+    process_flags |= node::ProcessInitializationFlags::kNoDefaultSignalHandling;
 
   if (!fuses::IsNodeOptionsEnabled())
     process_flags |= node::ProcessInitializationFlags::kDisableNodeOptionsEnv;
@@ -635,12 +644,14 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
     SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
 
-  gin_helper::internal::Event::GetConstructor(context);
+  gin_helper::internal::Event::GetConstructor(
+      isolate, context, &gin_helper::internal::Event::kWrapperInfo);
 
   g_is_initialized = true;
 }
 
 std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
+    v8::Isolate* isolate,
     v8::Local<v8::Context> context,
     node::MultiIsolatePlatform* platform,
     size_t max_young_generation_size,
@@ -664,7 +675,6 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
       break;
   }
 
-  v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary global(isolate, context->Global());
 
   if (browser_env_ == BrowserEnvironment::kBrowser) {
@@ -766,7 +776,7 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     // could be either kExplicit or kScoped depending on whether we're executing
     // from within a Node.js or a Blink entrypoint. Instead, the policy is
     // toggled to kExplicit when entering Node.js through UvRunOnce.
-    is.policy = context->GetIsolate()->GetMicrotasksPolicy();
+    is.policy = isolate->GetMicrotasksPolicy();
 
     // We do not want to use Node.js' message listener as it interferes with
     // Blink's.
@@ -775,8 +785,8 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     // Isolate message listeners are additive (you can add multiple), so instead
     // we add an extra one here to ensure that the async hook stack is properly
     // cleared when errors are thrown.
-    context->GetIsolate()->AddMessageListenerWithErrorLevel(
-        ErrorMessageListener, v8::Isolate::kMessageError);
+    isolate->AddMessageListenerWithErrorLevel(ErrorMessageListener,
+                                              v8::Isolate::kMessageError);
 
     // We do not want to use the promise rejection callback that Node.js uses,
     // because it does not send PromiseRejectionEvents to the global script
@@ -792,15 +802,14 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
         node::IsolateSettingsFlags::SHOULD_NOT_SET_PREPARE_STACK_TRACE_CALLBACK;
   }
 
-  node::SetIsolateUpForNode(context->GetIsolate(), is);
-  context->GetIsolate()->SetHostImportModuleDynamicallyCallback(
-      HostImportModuleDynamically);
-  context->GetIsolate()->SetHostImportModuleWithPhaseDynamicallyCallback(
+  node::SetIsolateUpForNode(isolate, is);
+  isolate->SetHostImportModuleDynamicallyCallback(HostImportModuleDynamically);
+  isolate->SetHostImportModuleWithPhaseDynamicallyCallback(
       HostImportModuleWithPhaseDynamically);
-  context->GetIsolate()->SetHostInitializeImportMetaObjectCallback(
+  isolate->SetHostInitializeImportMetaObjectCallback(
       HostInitializeImportMetaObject);
 
-  gin_helper::Dictionary process(context->GetIsolate(), env->process_object());
+  gin_helper::Dictionary process(isolate, env->process_object());
   process.SetReadOnly("type", process_type);
 
   if (browser_env_ == BrowserEnvironment::kBrowser ||
@@ -833,13 +842,14 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 }
 
 std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     node::MultiIsolatePlatform* platform,
     size_t max_young_generation_size,
     std::optional<base::RepeatingCallback<void()>> on_app_code_ready) {
-  return CreateEnvironment(context, platform, max_young_generation_size,
-                           ElectronCommandLine::AsUtf8(), {},
-                           on_app_code_ready);
+  return CreateEnvironment(
+      isolate, context, platform, max_young_generation_size,
+      ElectronCommandLine::AsUtf8(), {}, on_app_code_ready);
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
@@ -1006,8 +1016,9 @@ void OnNodePreload(node::Environment* env,
       env->isolate(), {node::FIXED_ONE_BYTE_STRING(env->isolate(), "process"),
                        node::FIXED_ONE_BYTE_STRING(env->isolate(), "require")});
   v8::LocalVector<v8::Value> bundle_args(env->isolate(), {process, require});
-  electron::util::CompileAndCall(env->context(), "electron/js2c/node_init",
-                                 &bundle_params, &bundle_args);
+  electron::util::CompileAndCall(env->isolate(), env->context(),
+                                 "electron/js2c/node_init", &bundle_params,
+                                 &bundle_args);
 }
 
 }  // namespace electron

@@ -6,10 +6,10 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 80ccb50098f642f4ce7bd97de20d821decd8fab6..1874493c21087f1cf3a565956bd48ebac6892135 100644
+index 817b5da3f10faf0770274f3e03a3a0cd3400f135..27131371845a81c0af16d59334a98656095f4aeb 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -834,6 +834,10 @@ void RenderWidgetHostImpl::WasHidden() {
+@@ -847,6 +847,10 @@ void RenderWidgetHostImpl::WasHidden() {
      return;
    }
  
@@ -21,24 +21,24 @@ index 80ccb50098f642f4ce7bd97de20d821decd8fab6..1874493c21087f1cf3a565956bd48eba
    // Prompts should remain open and functional across tab switches.
    if (!delegate_ || !delegate_->IsWaitingForPointerLockPrompt(this)) {
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index ad3b28d343c6c7c454bb6deb2459ba807e992ca5..65431096f65d6bb3f4c3efeae7f80617ed596cad 100644
+index 43c840283b1f7ac39c2ecec5741cc206c64a064e..c8b2a66eccc2ca0b2be1f338f6c77b906db69faa 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -1020,6 +1020,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
-   // Requests a commit and forced redraw in the renderer compositor.
-   void ForceRedrawForTesting();
+@@ -1029,6 +1029,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+   // cpu-priority boosted to run discard logic.
+   void SetIsDiscarding(bool is_discarding);
  
 +  // Electron: Prevents the widget from getting hidden.
 +  bool disable_hidden_ = false;
 +
   protected:
-   // |routing_id| must not be MSG_ROUTING_NONE.
+   // |routing_id| must not be IPC::mojom::kRoutingIdNone.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 45348adb79a183c39a739caf87c052c87be55451..9d8f184777507395eb0361b6654083a77fdacfcc 100644
+index 1ae2c9328679f12cfe7068c6ea0f1589314bc6f0..e98d74fecf4275ef8e7c6d23e5ea5ec3af80b926 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -644,7 +644,7 @@ void RenderWidgetHostViewAura::HideImpl() {
+@@ -643,7 +643,7 @@ void RenderWidgetHostViewAura::HideImpl() {
    CHECK(visibility_ == Visibility::HIDDEN ||
          visibility_ == Visibility::OCCLUDED);
  

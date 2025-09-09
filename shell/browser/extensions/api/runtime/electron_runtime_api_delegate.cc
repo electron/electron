@@ -72,18 +72,6 @@ bool ElectronRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
     NOTREACHED();
   }
 
-  if (const std::string_view nacl_arch =
-          update_client::UpdateQueryParams::GetNaclArch();
-      nacl_arch == "arm") {
-    info->nacl_arch = extensions::api::runtime::PlatformNaclArch::kArm;
-  } else if (nacl_arch == "x86-32") {
-    info->nacl_arch = extensions::api::runtime::PlatformNaclArch::kX86_32;
-  } else if (nacl_arch == "x86-64") {
-    info->nacl_arch = extensions::api::runtime::PlatformNaclArch::kX86_64;
-  } else {
-    NOTREACHED();
-  }
-
   return true;
 }
 

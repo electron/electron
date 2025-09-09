@@ -22,10 +22,6 @@
     "extension_types": ["extension"],
     "platforms": ["win", "mac"]
   },
-  "chrome_url_overrides": {
-    "channel": "stable",
-    "extension_types": ["extension", "legacy_packaged_app"]
-  },
   "content_scripts": {
     "channel": "stable",
     "extension_types": ["extension", "legacy_packaged_app"]
@@ -35,10 +31,6 @@
     "extension_types": [
       "extension", "legacy_packaged_app", "hosted_app"
     ]
-  },
-  "devtools_page": {
-    "channel": "stable",
-    "extension_types": ["extension", "legacy_packaged_app"]
   },
   "file_browser_handlers": {
     "channel": "stable",

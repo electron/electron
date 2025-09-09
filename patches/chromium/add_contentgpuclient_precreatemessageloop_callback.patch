@@ -10,10 +10,10 @@ Allows Electron to restore WER when ELECTRON_DEFAULT_ERROR_MODE is set.
 This should be upstreamed.
 
 diff --git a/content/gpu/gpu_main.cc b/content/gpu/gpu_main.cc
-index b6403600631c97100c7356265b88ed32d9d7716b..9225d26c2eb46d4a70a1e08ce34e02c32c15ea92 100644
+index 558575cf06b10b59e114a9f53b90f01d8ecf63c4..0204ce5351a5190a20317f0cef6d3e8421541cac 100644
 --- a/content/gpu/gpu_main.cc
 +++ b/content/gpu/gpu_main.cc
-@@ -267,6 +267,10 @@ int GpuMain(MainFunctionParams parameters) {
+@@ -272,6 +272,10 @@ int GpuMain(MainFunctionParams parameters) {
    // to the GpuProcessHost once the GpuServiceImpl has started.
    viz::GpuLogMessageManager::GetInstance()->InstallPreInitializeLogHandler();
  
@@ -24,7 +24,7 @@ index b6403600631c97100c7356265b88ed32d9d7716b..9225d26c2eb46d4a70a1e08ce34e02c3
    // We are experiencing what appear to be memory-stomp issues in the GPU
    // process. These issues seem to be impacting the task executor and listeners
    // registered to it. Create the task executor on the heap to guard against
-@@ -376,7 +380,6 @@ int GpuMain(MainFunctionParams parameters) {
+@@ -381,7 +385,6 @@ int GpuMain(MainFunctionParams parameters) {
  #endif
    const bool dead_on_arrival = !init_success;
  
@@ -33,10 +33,10 @@ index b6403600631c97100c7356265b88ed32d9d7716b..9225d26c2eb46d4a70a1e08ce34e02c3
      client->PostSandboxInitialized();
    }
 diff --git a/content/public/gpu/content_gpu_client.h b/content/public/gpu/content_gpu_client.h
-index 47de52a1c9d34753ec27c33d976987cd2550cd27..bdc35a9d6fab02502715ed2bf27bd65990239bd6 100644
+index e5389b44df98ab1a5c976524a66a26c763e5c436..4a183b4959fae18e6875440e6570b8ada6823d81 100644
 --- a/content/public/gpu/content_gpu_client.h
 +++ b/content/public/gpu/content_gpu_client.h
-@@ -35,6 +35,10 @@ class CONTENT_EXPORT ContentGpuClient {
+@@ -36,6 +36,10 @@ class CONTENT_EXPORT ContentGpuClient {
   public:
    virtual ~ContentGpuClient() {}
  

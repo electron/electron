@@ -16,7 +16,6 @@
 #include "base/strings/pattern.h"
 #include "base/strings/utf_string_conversions.h"
 #include "gin/arguments.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "gin/per_isolate_data.h"
 #include "net/base/data_url.h"
@@ -29,6 +28,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -338,8 +338,8 @@ float NativeImage::GetAspectRatio(const std::optional<float> scale_factor) {
     return static_cast<float>(size.width()) / static_cast<float>(size.height());
 }
 
-gin::Handle<NativeImage> NativeImage::Resize(gin::Arguments* args,
-                                             base::Value::Dict options) {
+gin_helper::Handle<NativeImage> NativeImage::Resize(gin::Arguments* args,
+                                                    base::Value::Dict options) {
   float scale_factor = GetScaleFactorFromOptions(args);
 
   gfx::Size size = GetSize(scale_factor);
@@ -375,8 +375,8 @@ gin::Handle<NativeImage> NativeImage::Resize(gin::Arguments* args,
                     image_.AsImageSkia(), method, size)});
 }
 
-gin::Handle<NativeImage> NativeImage::Crop(v8::Isolate* isolate,
-                                           const gfx::Rect& rect) {
+gin_helper::Handle<NativeImage> NativeImage::Crop(v8::Isolate* isolate,
+                                                  const gfx::Rect& rect) {
   return Create(isolate, gfx::Image{gfx::ImageSkiaOperations::ExtractSubset(
                              image_.AsImageSkia(), rect)});
 }
@@ -424,18 +424,18 @@ bool NativeImage::IsTemplateImage() {
 #endif
 
 // static
-gin::Handle<NativeImage> NativeImage::CreateEmpty(v8::Isolate* isolate) {
+gin_helper::Handle<NativeImage> NativeImage::CreateEmpty(v8::Isolate* isolate) {
   return Create(isolate, gfx::Image{});
 }
 
 // static
-gin::Handle<NativeImage> NativeImage::Create(v8::Isolate* isolate,
-                                             const gfx::Image& image) {
-  return gin::CreateHandle(isolate, new NativeImage(isolate, image));
+gin_helper::Handle<NativeImage> NativeImage::Create(v8::Isolate* isolate,
+                                                    const gfx::Image& image) {
+  return gin_helper::CreateHandle(isolate, new NativeImage(isolate, image));
 }
 
 // static
-gin::Handle<NativeImage> NativeImage::CreateFromPNG(
+gin_helper::Handle<NativeImage> NativeImage::CreateFromPNG(
     v8::Isolate* isolate,
     const base::span<const uint8_t> data) {
   gfx::ImageSkia image_skia;
@@ -444,7 +444,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromPNG(
 }
 
 // static
-gin::Handle<NativeImage> NativeImage::CreateFromJPEG(
+gin_helper::Handle<NativeImage> NativeImage::CreateFromJPEG(
     v8::Isolate* isolate,
     const base::span<const uint8_t> buffer) {
   gfx::ImageSkia image_skia;
@@ -453,19 +453,20 @@ gin::Handle<NativeImage> NativeImage::CreateFromJPEG(
 }
 
 // static
-gin::Handle<NativeImage> NativeImage::CreateFromPath(
+gin_helper::Handle<NativeImage> NativeImage::CreateFromPath(
     v8::Isolate* isolate,
     const base::FilePath& path) {
   base::FilePath image_path = NormalizePath(path);
 #if BUILDFLAG(IS_WIN)
   if (image_path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
-    return gin::CreateHandle(isolate, new NativeImage(isolate, image_path));
+    return gin_helper::CreateHandle(isolate,
+                                    new NativeImage(isolate, image_path));
   }
 #endif
   gfx::ImageSkia image_skia;
   electron::util::PopulateImageSkiaRepsFromPath(&image_skia, image_path);
   gfx::Image image(image_skia);
-  gin::Handle<NativeImage> handle = Create(isolate, image);
+  gin_helper::Handle<NativeImage> handle = Create(isolate, image);
 #if BUILDFLAG(IS_MAC)
   if (IsTemplateFilename(image_path))
     handle->SetTemplateImage(true);
@@ -474,7 +475,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromPath(
 }
 
 // static
-gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
+gin_helper::Handle<NativeImage> NativeImage::CreateFromBitmap(
     gin_helper::ErrorThrower thrower,
     v8::Local<v8::Value> buffer,
     const gin_helper::Dictionary& options) {
@@ -520,7 +521,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
 }
 
 // static
-gin::Handle<NativeImage> NativeImage::CreateFromBuffer(
+gin_helper::Handle<NativeImage> NativeImage::CreateFromBuffer(
     gin_helper::ErrorThrower thrower,
     v8::Local<v8::Value> buffer,
     gin::Arguments* args) {
@@ -548,8 +549,9 @@ gin::Handle<NativeImage> NativeImage::CreateFromBuffer(
 }
 
 // static
-gin::Handle<NativeImage> NativeImage::CreateFromDataURL(v8::Isolate* isolate,
-                                                        const GURL& url) {
+gin_helper::Handle<NativeImage> NativeImage::CreateFromDataURL(
+    v8::Isolate* isolate,
+    const GURL& url) {
   std::string mime_type, charset, data;
   if (net::DataURL::Parse(url, &mime_type, &charset, &data)) {
     if (mime_type == "image/png")
@@ -562,8 +564,9 @@ gin::Handle<NativeImage> NativeImage::CreateFromDataURL(v8::Isolate* isolate,
 }
 
 #if !BUILDFLAG(IS_MAC)
-gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
-                                                           std::string name) {
+gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
+    gin::Arguments* args,
+    std::string name) {
   return CreateEmpty(args->isolate());
 }
 #endif
@@ -574,11 +577,11 @@ gin::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
   gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
   auto* wrapper_info = &kWrapperInfo;
   v8::Local<v8::FunctionTemplate> constructor =
-      data->GetFunctionTemplate(wrapper_info);
+      data->DeprecatedGetFunctionTemplate(wrapper_info);
   if (constructor.IsEmpty()) {
     constructor = v8::FunctionTemplate::New(isolate);
     constructor->SetClassName(gin::StringToV8(isolate, GetTypeName()));
-    data->SetFunctionTemplate(wrapper_info, constructor);
+    data->DeprecatedSetFunctionTemplate(wrapper_info, constructor);
   }
   return gin::ObjectTemplateBuilder(isolate, GetTypeName(),
                                     constructor->InstanceTemplate())
@@ -619,8 +622,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
+  gin_helper::Dictionary dict{isolate, exports};
   auto native_image = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("nativeImage", native_image);
 

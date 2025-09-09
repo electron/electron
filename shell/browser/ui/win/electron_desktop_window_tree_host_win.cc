@@ -142,6 +142,7 @@ bool ElectronDesktopWindowTreeHostWin::HandleMouseEvent(ui::MouseEvent* event) {
     if (prevent_default) {
       electron::api::WebContents::SetDisableDraggableRegions(true);
       views::DesktopWindowTreeHostWin::HandleMouseEvent(event);
+      electron::api::WebContents::SetDisableDraggableRegions(false);
     }
     return prevent_default;
   }
@@ -176,6 +177,11 @@ void ElectronDesktopWindowTreeHostWin::UpdateAllowScreenshots() {
   if (allowed == allow_screenshots_)
     return;
 
+  // On some older Windows versions, setting the display affinity
+  // to WDA_EXCLUDEFROMCAPTURE won't prevent the window from being
+  // captured - setting WS_EX_LAYERED mitigates this issue.
+  if (base::win::GetVersion() < base::win::Version::WIN11_22H2)
+    native_window_view_->SetLayered();
   ::SetWindowDisplayAffinity(
       GetAcceleratedWidget(),
       allow_screenshots_ ? WDA_NONE : WDA_EXCLUDEFROMCAPTURE);

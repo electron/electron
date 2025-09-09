@@ -124,10 +124,6 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
       const scoped_refptr<base::SingleThreadTaskRunner>& task_runner);
 #endif
 
-#if BUILDFLAG(IS_LINUX)
-  void DetectOzonePlatform();
-#endif
-
 #if BUILDFLAG(IS_MAC)
   void FreeAppDelegate();
   void RegisterURLHandler();

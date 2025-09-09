@@ -39,7 +39,7 @@ index aed835411f5728c5685baa43eda2dd1585119b18..0e66085b1c457c1f1f6be241c7d331d7
      gpu::SurfaceHandle child_window) {
    NOTREACHED();
 diff --git a/components/viz/host/host_display_client.h b/components/viz/host/host_display_client.h
-index 9e94f648060e9873a120f2c45591ad599a2e62df..93dabe09e44bda68644dcab568a827a92c550e4a 100644
+index 7236eee85fdbb285a9873138075183d37c129666..2ecb1a92fb3216211e8d429254f5b18e3dcc7346 100644
 --- a/components/viz/host/host_display_client.h
 +++ b/components/viz/host/host_display_client.h
 @@ -39,6 +39,9 @@ class VIZ_HOST_EXPORT HostDisplayClient : public mojom::DisplayClient {
@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index e0a9427743c283aec398b4bf3f09f95a09346e55..6bdcec238d0bec79aca6ef76e76bb8b1c8ba4866 100644
+index de0ed691367bda45e5310b1f132171e3a1f2dd3f..53848189bc02cd73446409667ad918e456727ce9 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -174,6 +174,8 @@ viz_component("service") {
@@ -204,10 +204,10 @@ index e4b46a79560e7698a6400b2ab8a57f38205a8718..3cb2518c6644cf0618f625d981befd46
    const raw_ptr<GpuServiceImpl> gpu_service_impl_;
  
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.cc b/components/viz/service/display_embedder/software_output_device_mac.cc
-index 80b4d99c08b622b080cf6d725ebc3cdfbcad7d32..d9c56e04dfd771368a82b852daae297a47fde80e 100644
+index 44c58bde0ddf7b0a4678e7950de6ae3e9e9e5e1e..7c26e293a5b9e16b1cb9ac9c8fbb1e46c78838c3 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.cc
 +++ b/components/viz/service/display_embedder/software_output_device_mac.cc
-@@ -112,6 +112,8 @@ void SoftwareOutputDeviceMac::UpdateAndCopyBufferDamage(
+@@ -113,6 +113,8 @@ void SoftwareOutputDeviceMac::UpdateAndCopyBufferDamage(
  
  SkCanvas* SoftwareOutputDeviceMac::BeginPaint(
      const gfx::Rect& new_damage_rect) {
@@ -216,7 +216,7 @@ index 80b4d99c08b622b080cf6d725ebc3cdfbcad7d32..d9c56e04dfd771368a82b852daae297a
    // Record the previous paint buffer.
    Buffer* previous_paint_buffer =
        buffer_queue_.empty() ? nullptr : buffer_queue_.back().get();
-@@ -202,6 +204,7 @@ void SoftwareOutputDeviceMac::EndPaint() {
+@@ -203,6 +205,7 @@ void SoftwareOutputDeviceMac::EndPaint() {
      ca_layer_params.is_empty = false;
      ca_layer_params.scale_factor = scale_factor_;
      ca_layer_params.pixel_size = pixel_size_;
@@ -509,10 +509,10 @@ index 0000000000000000000000000000000000000000..e1a22ee881c0fd679ac2d2d4d11a3c93
 +
 +#endif  // COMPONENTS_VIZ_SERVICE_DISPLAY_EMBEDDER_SOFTWARE_OUTPUT_DEVICE_PROXY_H_
 diff --git a/components/viz/service/display_embedder/software_output_device_win.cc b/components/viz/service/display_embedder/software_output_device_win.cc
-index f0aca972c4a81c3dfb536e14244daafae21ee716..a15afbc1a3519e657121b4952444d2f47d872e42 100644
+index 9119e302ad073a3b22ba47f800e7214b580e122b..0d5b95a424a62a77785088dbd759af4f977b010e 100644
 --- a/components/viz/service/display_embedder/software_output_device_win.cc
 +++ b/components/viz/service/display_embedder/software_output_device_win.cc
-@@ -156,7 +156,7 @@ void SoftwareOutputDeviceWinProxy::EndPaintDelegated(
+@@ -157,7 +157,7 @@ void SoftwareOutputDeviceWinProxy::EndPaintDelegated(
    if (!canvas_)
      return;
  
@@ -522,7 +522,7 @@ index f0aca972c4a81c3dfb536e14244daafae21ee716..a15afbc1a3519e657121b4952444d2f4
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 13de9eb98059014213af8fb9b73875fb38868eaf..58084dc5b827450c3d969e485bd9a4f69104a8ef 100644
+index 346e41638ffefe5e5945aa3cfe0ec38887041a0b..38ed2eb97132201eb0adfd8b855c1611eab777f0 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -131,7 +131,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -564,10 +564,10 @@ index 399fba1a3d4e601dc2cdd5f1f4def8b7fd7a3011..8bcbe0d26c80323155d536c0d3a177a1
    gpu::SyncPointManager* GetSyncPointManager() override;
    gpu::Scheduler* GetGpuScheduler() override;
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 130067b91baa360a7234fecfe6342c8239d587b5..d701328102f9a53e12b1b2e2a86265910692ca59 100644
+index 0c9dabd7e85042499b60d0a27a506745771bea6f..5f1896f4494b86c8385d3f5415863f5a7167715a 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -387,8 +387,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -386,8 +386,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();
@@ -597,7 +597,7 @@ index e063835e87f08e6a2359886a96d7b78954e3d5b2..34bcf67726f64466d11a56d7a315ce7e
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index 7bceb91dda2d75deda772b257f07921b903510f3..e93f9214064526e510ef1ff0bc2dc4a0e999b30e 100644
+index 4f1e9c6c4aad3a4c3d52d57f1234841471a4649e..cda1963ca4119db70c94b64365ab67fea89e9255 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 @@ -39,6 +39,7 @@ struct RootCompositorFrameSinkParams {
@@ -620,7 +620,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index f1a4674323d96bc6a1a291b0aaa4c2a35b20648e..682b23f083eff17bc36cdc4698e35d853beb90cc 100644
+index 0d1fd44c615041039579691802012b8ef96dc9b5..11e6186b8e06008564246e8034b780a09a498838 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -87,6 +87,7 @@ class DisplayPrivate;
@@ -647,7 +647,7 @@ index f1a4674323d96bc6a1a291b0aaa4c2a35b20648e..682b23f083eff17bc36cdc4698e35d85
  
  // Compositor object to take care of GPU painting.
  // A Browser compositor object is responsible for generating the final
-@@ -189,6 +199,9 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -195,6 +205,9 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
    // Schedules a redraw of the layer tree associated with this compositor.
    void ScheduleDraw();
  
@@ -657,7 +657,7 @@ index f1a4674323d96bc6a1a291b0aaa4c2a35b20648e..682b23f083eff17bc36cdc4698e35d85
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -630,6 +643,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -636,6 +649,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
        simple_begin_frame_observers_;
    std::unique_ptr<ui::HostBeginFrameObserver> host_begin_frame_observer_;
  

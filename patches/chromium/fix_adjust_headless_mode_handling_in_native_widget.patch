@@ -15,7 +15,7 @@ We also need to ensure that an initial paint is scheduled when
 the compositor is unsuspended in headles mode.
 
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 48dfca966a594f54523c129fa49d2a561cb41dec..049cf4f1adcf4f64cd8692f6e6eda7418008e799 100644
+index eafa32f62cac0627a4e32aa2301c2cbe0b18ede9..8e20b757a1d6d15e5ab2d633b2c8fd65a6cb88b3 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -664,9 +664,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
@@ -31,10 +31,10 @@ index 48dfca966a594f54523c129fa49d2a561cb41dec..049cf4f1adcf4f64cd8692f6e6eda741
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index 7c68a1ac747a7a83d5bba473682e7507c3bf46b7..f4a1f9d8868217f7faf4d37f7295a692f1e0070f 100644
+index 31709448e70a4213d1e9dedcb26ac27c4829a32c..3b9da80b4673faae16d8ef7722cd7804e3fac82e 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
-@@ -1248,6 +1248,8 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1302,6 +1302,8 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // True if widget was created in headless mode.
    bool is_headless() const { return is_headless_; }
  

@@ -8,7 +8,7 @@ WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index c207ad535db9310dcb473b7269ccc577e40448c2..bf7e7b89d3f30ac9ce6999e6d2a810fb94ba121a 100644
+index e66a1b104fbcb6ac81b745a28588a994533745ff..08abd32cebf89d434bf60b4fd420430e88540adc 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 @@ -148,6 +148,19 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
@@ -32,7 +32,7 @@ index c207ad535db9310dcb473b7269ccc577e40448c2..bf7e7b89d3f30ac9ce6999e6d2a810fb
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index f17fb9ec701d1a5ef3deb728f8e97d53331978db..d5563e79944827fa3a68dd621445899349295f59 100644
+index 39eefd4970a93bef42487d51e9c0bdfd76a001a0..a76da90ca59e07ad57ae85ee765b90875b82819c 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -9,6 +9,7 @@
@@ -43,9 +43,9 @@ index f17fb9ec701d1a5ef3deb728f8e97d53331978db..d5563e79944827fa3a68dd6214458993
  #include "build/build_config.h"
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
-@@ -453,6 +454,20 @@ struct BLINK_COMMON_EXPORT WebPreferences {
-   // fingerprinting are enabled.
-   bool api_based_fingerprinting_interventions_enabled = false;
+@@ -462,6 +463,19 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+   bool increment_local_surface_id_for_mainframe_same_doc_navigation = true;
+ #endif  // BUILDFLAG(IS_ANDROID)
  
 +  // Begin Electron-specific WebPreferences.
 +  bool context_isolation = false;
@@ -59,13 +59,12 @@ index f17fb9ec701d1a5ef3deb728f8e97d53331978db..d5563e79944827fa3a68dd6214458993
 +  bool enable_plugins = false;
 +  bool enable_websql = false;
 +  bool webview_tag = false;
-+  // End Electron-specific WebPreferences.
 +
    // We try to keep the default values the same as the default values in
    // chrome, except for the cases where it would require lots of extra work for
    // the embedder to use the same default value.
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index 61451bfeb59780dba5d41650619d13f4639fb752..ff9a431ae3c7adf6d79912ab9edc41884a99dd26 100644
+index 36e04a5f887fd9102b3d74a4230132ecee780c1b..8e53242f1be83920ca64c95c31aa674e04d2bb81 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -8,6 +8,7 @@
@@ -130,7 +129,7 @@ index 61451bfeb59780dba5d41650619d13f4639fb752..ff9a431ae3c7adf6d79912ab9edc4188
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index e0c02352054a112bef293aa9eaa2b18daa768048..82eff7fed067ab3cda80ca950756232b15d8d090 100644
+index dd6185b0eacf942d902505ac23bf88059bf2786a..f3f1c71f241db0a90144909971412009e5510b6e 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 @@ -8,9 +8,11 @@ import "third_party/blink/public/mojom/css/preferred_color_scheme.mojom";

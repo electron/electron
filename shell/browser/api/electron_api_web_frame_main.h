@@ -11,15 +11,17 @@
 
 #include "base/memory/weak_ptr.h"
 #include "base/process/process.h"
+#include "base/values.h"
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/global_routing_id.h"
-#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
+#include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "third_party/blink/public/mojom/page/page_visibility_state.mojom-forward.h"
 
 class GURL;
@@ -30,10 +32,12 @@ class RenderFrameHost;
 
 namespace gin {
 class Arguments;
+}  // namespace gin
 
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace gin_helper {
 template <typename T>
@@ -45,15 +49,15 @@ namespace electron::api {
 class WebContents;
 
 // Bindings for accessing frames from the main process.
-class WebFrameMain final : public gin::DeprecatedWrappable<WebFrameMain>,
+class WebFrameMain final : public gin_helper::DeprecatedWrappable<WebFrameMain>,
                            public gin_helper::EventEmitterMixin<WebFrameMain>,
                            public gin_helper::Pinnable<WebFrameMain>,
                            public gin_helper::Constructible<WebFrameMain> {
  public:
   // Create a new WebFrameMain and return the V8 wrapper of it.
-  static gin::Handle<WebFrameMain> New(v8::Isolate* isolate);
+  static gin_helper::Handle<WebFrameMain> New(v8::Isolate* isolate);
 
-  static gin::Handle<WebFrameMain> From(
+  static gin_helper::Handle<WebFrameMain> From(
       v8::Isolate* isolate,
       content::RenderFrameHost* render_frame_host);
   static WebFrameMain* FromFrameTreeNodeId(
@@ -67,7 +71,7 @@ class WebFrameMain final : public gin::DeprecatedWrappable<WebFrameMain>,
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "WebFrameMain"; }
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 

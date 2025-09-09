@@ -29,9 +29,11 @@ class ElectronRendererClient : public RendererClientBase {
   ElectronRendererClient& operator=(const ElectronRendererClient&) = delete;
 
   // electron::RendererClientBase:
-  void DidCreateScriptContext(v8::Local<v8::Context> context,
+  void DidCreateScriptContext(v8::Isolate* isolate,
+                              v8::Local<v8::Context> context,
                               content::RenderFrame* render_frame) override;
-  void WillReleaseScriptContext(v8::Local<v8::Context> context,
+  void WillReleaseScriptContext(v8::Isolate* isolate,
+                                v8::Local<v8::Context> context,
                                 content::RenderFrame* render_frame) override;
 
  private:

@@ -17,6 +17,7 @@
 
 namespace content {
 struct ContextMenuParams;
+struct PermissionResult;
 class RenderFrameHost;
 class WebContents;
 }  // namespace content
@@ -53,10 +54,10 @@ struct Converter<ui::mojom::MenuSourceType> {
 };
 
 template <>
-struct Converter<blink::mojom::PermissionStatus> {
+struct Converter<content::PermissionResult> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     blink::mojom::PermissionStatus* out);
+                     content::PermissionResult* out);
 };
 
 template <>

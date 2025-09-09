@@ -102,7 +102,8 @@
 
 namespace electron {
 
-content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value);
+content::RenderFrame* GetRenderFrame(v8::Isolate* const isolate,
+                                     v8::Local<v8::Object> value);
 
 namespace {
 
@@ -195,6 +196,7 @@ void RendererClientBase::BindProcess(v8::Isolate* isolate,
 }
 
 bool RendererClientBase::ShouldLoadPreload(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) const {
   auto prefs = render_frame->GetBlinkPreferences();
@@ -204,7 +206,7 @@ bool RendererClientBase::ShouldLoadPreload(
   bool allow_node_in_sub_frames = prefs.node_integration_in_sub_frames;
 
   return (is_main_frame || is_devtools || allow_node_in_sub_frames) &&
-         !IsWebViewFrame(context, render_frame);
+         !IsWebViewFrame(isolate, context, render_frame);
 }
 
 void RendererClientBase::RenderThreadStarted() {
@@ -487,6 +489,7 @@ void RendererClientBase::DidInitializeServiceWorkerContextOnWorkerThread(
 
 void RendererClientBase::WillEvaluateServiceWorkerOnWorkerThread(
     blink::WebServiceWorkerContextProxy* context_proxy,
+    v8::Isolate* const v8_isolate,
     v8::Local<v8::Context> v8_context,
     int64_t service_worker_version_id,
     const GURL& service_worker_scope,
@@ -495,7 +498,7 @@ void RendererClientBase::WillEvaluateServiceWorkerOnWorkerThread(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions_renderer_client_->dispatcher()
       ->WillEvaluateServiceWorkerOnWorkerThread(
-          context_proxy, v8_context, service_worker_version_id,
+          context_proxy, v8_isolate, v8_context, service_worker_version_id,
           service_worker_scope, script_url, service_worker_token);
 #endif
 }
@@ -544,10 +547,9 @@ v8::Local<v8::Context> RendererClientBase::GetContext(
 }
 
 bool RendererClientBase::IsWebViewFrame(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) const {
-  auto* isolate = context->GetIsolate();
-
   if (render_frame->IsMainFrame())
     return false;
 
@@ -565,6 +567,7 @@ bool RendererClientBase::IsWebViewFrame(
 }
 
 void RendererClientBase::SetupMainWorldOverrides(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) {
   auto prefs = render_frame->GetBlinkPreferences();
@@ -575,9 +578,8 @@ void RendererClientBase::SetupMainWorldOverrides(
   // Setup window overrides in the main world context
   // Wrap the bundle into a function that receives the isolatedApi as
   // an argument.
-  auto* isolate = context->GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  v8::Context::Scope context_scope(context);
+  v8::HandleScope handle_scope{isolate};
+  v8::Context::Scope context_scope{context};
 
   auto isolated_api = gin_helper::Dictionary::CreateEmpty(isolate);
   isolated_api.SetMethod("allowGuestViewElementDefinition",
@@ -590,8 +592,8 @@ void RendererClientBase::SetupMainWorldOverrides(
   v8::Local<v8::Value> guest_view_internal;
   if (global.GetHidden("guestViewInternal", &guest_view_internal)) {
     auto result = api::PassValueToOtherContext(
-        source_context, context, guest_view_internal, source_context->Global(),
-        false, api::BridgeErrorTarget::kSource);
+        isolate, source_context, isolate, context, guest_view_internal,
+        source_context->Global(), false, api::BridgeErrorTarget::kSource);
     if (!result.IsEmpty()) {
       isolated_api.Set("guestViewInternal", result.ToLocalChecked());
     }
@@ -603,7 +605,7 @@ void RendererClientBase::SetupMainWorldOverrides(
   v8::LocalVector<v8::Value> isolated_bundle_args(isolate,
                                                   {isolated_api.GetHandle()});
 
-  util::CompileAndCall(context, "electron/js2c/isolated_bundle",
+  util::CompileAndCall(isolate, context, "electron/js2c/isolated_bundle",
                        &isolated_bundle_params, &isolated_bundle_args);
 }
 
@@ -613,16 +615,16 @@ void RendererClientBase::AllowGuestViewElementDefinition(
     v8::Local<v8::Object> context,
     v8::Local<v8::Function> register_cb) {
   v8::HandleScope handle_scope(isolate);
-  v8::Context::Scope context_scope(context->GetCreationContextChecked());
+  v8::Context::Scope context_scope(context->GetCreationContextChecked(isolate));
   blink::WebCustomElement::EmbedderNamesAllowedScope embedder_names_scope;
 
-  content::RenderFrame* render_frame = GetRenderFrame(context);
+  content::RenderFrame* render_frame = GetRenderFrame(isolate, context);
   if (!render_frame)
     return;
 
   render_frame->GetWebFrame()->RequestExecuteV8Function(
-      context->GetCreationContextChecked(), register_cb, v8::Null(isolate), 0,
-      nullptr, base::NullCallback());
+      context->GetCreationContextChecked(isolate), register_cb,
+      v8::Null(isolate), 0, nullptr, base::NullCallback());
 }
 
 }  // namespace electron

@@ -9,7 +9,7 @@ don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/close_image_button.cc b/chrome/browser/ui/views/overlay/close_image_button.cc
-index 8168b4cfbafd42fa93a5aa9a3691c2552fabfb86..ba49212bd76d209f99c1cee649fc1466215a13c1 100644
+index 85df555841ac0d32d2f097547c9991cecf0f4b1a..7a108339448fad3105e87c9d9af678c2f85b8ed5 100644
 --- a/chrome/browser/ui/views/overlay/close_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/close_image_button.cc
 @@ -5,9 +5,12 @@
@@ -22,10 +22,10 @@ index 8168b4cfbafd42fa93a5aa9a3691c2552fabfb86..ba49212bd76d209f99c1cee649fc1466
 +#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
  #include "components/vector_icons/vector_icons.h"
 +#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
- #include "media/base/media_switches.h"
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
-@@ -29,7 +32,10 @@ CloseImageButton::CloseImageButton(PressedCallback callback)
+ #include "ui/base/models/image_model.h"
+@@ -28,7 +31,10 @@ CloseImageButton::CloseImageButton(PressedCallback callback)
      : OverlayWindowImageButton(std::move(callback)) {
    SetSize(gfx::Size(kCloseButtonSize, kCloseButtonSize));
  
@@ -38,11 +38,16 @@ index 8168b4cfbafd42fa93a5aa9a3691c2552fabfb86..ba49212bd76d209f99c1cee649fc1466
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 1cf3d510a165ff8de195eb9b835490cd3a5f7389..8cf36280324ddcbdffe6396baeb13828251b285a 100644
+index fcb7d2c18f39acb174fc456362de51c484de398c..fea71317b41429dd3bbd50947673124f7c230394 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-@@ -20,9 +20,11 @@
+@@ -18,12 +18,16 @@
+ #include "base/time/time.h"
+ #include "base/timer/timer.h"
  #include "build/build_config.h"
++#if 0
+ #include "chrome/browser/media/media_engagement_service.h"
++#endif
  #include "chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker.h"
  #include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
 +#if 0
@@ -53,7 +58,7 @@ index 1cf3d510a165ff8de195eb9b835490cd3a5f7389..8cf36280324ddcbdffe6396baeb13828
  #include "chrome/browser/ui/color/chrome_color_id.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_button.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_label_button.h"
-@@ -73,7 +75,7 @@
+@@ -79,7 +83,7 @@
  #include "ui/aura/window.h"
  #endif
  
@@ -62,7 +67,7 @@ index 1cf3d510a165ff8de195eb9b835490cd3a5f7389..8cf36280324ddcbdffe6396baeb13828
  #include "chrome/browser/shell_integration_win.h"
  #include "content/public/browser/render_widget_host_view.h"
  #include "ui/aura/window.h"
-@@ -428,7 +430,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -434,7 +438,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  
@@ -71,11 +76,12 @@ index 1cf3d510a165ff8de195eb9b835490cd3a5f7389..8cf36280324ddcbdffe6396baeb13828
    std::wstring app_user_model_id;
    Browser* browser = chrome::FindBrowserWithTab(controller->GetWebContents());
    if (browser) {
-@@ -1153,10 +1155,12 @@ void VideoOverlayWindowViews::SetUpViews() {
-         l10n_util::GetStringUTF16(
-             IDS_PICTURE_IN_PICTURE_LIVE_CAPTION_CONTROL_TEXT));
+@@ -1270,11 +1274,13 @@ void VideoOverlayWindowViews::SetUpViews() {
+             &VideoOverlayWindowViews::OnLiveCaptionButtonPressed,
+             base::Unretained(this)));
      live_caption_button->SetSize(kActionButtonSize);
 +#if 0
+     live_caption_button->SetIsLiveCaptionDialogOpen(false);
      live_caption_dialog = std::make_unique<OverlayWindowLiveCaptionDialog>(
          Profile::FromBrowserContext(
              controller_->GetWebContents()->GetBrowserContext()));
@@ -84,3 +90,20 @@ index 1cf3d510a165ff8de195eb9b835490cd3a5f7389..8cf36280324ddcbdffe6396baeb13828
      toggle_microphone_button =
          std::make_unique<ToggleMicrophoneButton>(base::BindRepeating(
              [](VideoOverlayWindowViews* overlay) {
+@@ -2561,6 +2567,7 @@ gfx::Rect VideoOverlayWindowViews::GetLiveCaptionDialogBounds() {
+ 
+ bool VideoOverlayWindowViews::HasHighMediaEngagement(
+     const url::Origin& origin) const {
++#if 0
+   MediaEngagementService* service =
+       MediaEngagementService::Get(Profile::FromBrowserContext(
+           GetController()->GetWebContents()->GetBrowserContext()));
+@@ -2569,6 +2576,8 @@ bool VideoOverlayWindowViews::HasHighMediaEngagement(
+   }
+ 
+   return service->HasHighEngagement(origin);
++#endif
++  return true;
+ }
+ 
+ bool VideoOverlayWindowViews::IsTrustedForMediaPlayback() const {
