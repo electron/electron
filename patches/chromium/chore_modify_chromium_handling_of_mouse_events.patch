@@ -34,10 +34,10 @@ index 2dc44d4787d5198cff7be2cf98ad5acf2d3a9a0b..27a0335aac2bd4239616cf71f5d015c9
  
  class ScrollEvent;
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 9616ae7490ea350b3cd0e2347afa81086ae3549e..a0671ababe6d0559306d710a7a1376c1e6ad3aa9 100644
+index c60e51f4e1a789caf5ad9c54e496f3e72a327b51..f4fa30c1621e2eb78913ea97a993eb0a3528f36c 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -1367,6 +1367,10 @@ HBRUSH DesktopWindowTreeHostWin::GetBackgroundPaintBrush() {
+@@ -1363,6 +1363,10 @@ HBRUSH DesktopWindowTreeHostWin::GetBackgroundPaintBrush() {
    return background_paint_brush_;
  }
  
@@ -49,10 +49,10 @@ index 9616ae7490ea350b3cd0e2347afa81086ae3549e..a0671ababe6d0559306d710a7a1376c1
  DesktopWindowTreeHostWin::GetSingletonDesktopNativeCursorManager() {
    return new DesktopNativeCursorManagerWin();
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index dcda976f4c3cc0ba6bcf015d5bf7435df009ae30..13cfa18bf406f244ec361a1230ccce440ad9785a 100644
+index baee602a2ce7207ba937c4e46ad8b896bec7ca92..cef7afbf408e38798c398c23dc3e964bd1d95d17 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-@@ -273,6 +273,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+@@ -272,6 +272,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
    void HandleWindowScaleFactorChanged(float window_scale_factor) override;
    void HandleHeadlessWindowBoundsChanged(const gfx::Rect& bounds) override;
    HBRUSH GetBackgroundPaintBrush() override;

@@ -986,10 +986,10 @@ index 5eda5e58b30b84795ec3827aad7ce97171400097..60bf6c34e8d824ea6d4e02b295156860
  }  // namespace
  #endif
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index 7f9f28b70a4cf5323fdbb01567170e8856113031..ba1da643abd8ba9db6f144e24b927116233dabc1 100644
+index 4428896957be15908ce992189db2a0fe95ba3bbd..07987fad41d194bf38a6f4265ccbd853c1273689 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
-@@ -193,6 +193,8 @@ source_set("dns") {
+@@ -195,6 +195,8 @@ source_set("dns") {
      ":host_resolver_manager",
      ":mdns_client",
    ]
