@@ -21,7 +21,7 @@ index 696319bb0dfa91453c61480946638a4cc14c08e9..57788fe1ab4235115e5cc91354c44583
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 1bb10cdcf148372de42f5ca202d130e27bb7b68e..e887e6168247045e56b4d0185e199847e7ddb6dc 100644
+index f587346fd0a279477195513528c3ca45f2986fbe..52221943756b38a4e5ccf30ecab5cae6fce4979b 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5310,6 +5310,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -35,7 +35,7 @@ index 1bb10cdcf148372de42f5ca202d130e27bb7b68e..e887e6168247045e56b4d0185e199847
    // Even though all codepaths leading here are in response to a renderer
    // trying to open a new window, if the new window ends up in a different
    // browsing instance, then the RenderViewHost, RenderWidgetHost,
-@@ -5365,6 +5369,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5364,6 +5368,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // Sets the newly created WebContents WindowOpenDisposition.
    new_contents_impl->original_window_open_disposition_ = params.disposition;
  
@@ -48,7 +48,7 @@ index 1bb10cdcf148372de42f5ca202d130e27bb7b68e..e887e6168247045e56b4d0185e199847
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -5406,12 +5416,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5405,12 +5415,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -111,7 +111,7 @@ index 72537035efe0e93d86f7f5d36678b7a5e202ddb0..07351d4b712d8e397f1ec18fa9c5dfd1
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index e4d69675afe63b0eab3cd6890bfcce6ebdbb52b4..b118ceab6a2afddd02b6a6effc201a101e8a6692 100644
+index 87e310a5473bec20b1326f3202cf2bf603227c04..968cddc769e2bf0bb56359b36bc03cbce6539da1 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -34,6 +34,17 @@ namespace content {
@@ -133,7 +133,7 @@ index e4d69675afe63b0eab3cd6890bfcce6ebdbb52b4..b118ceab6a2afddd02b6a6effc201a10
      WebContents* source,
      const OpenURLParams& params,
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 726ae29bf5ffe8b645236256c4a4988576ed7353..f0200bbb9944d6e4b8b8ccee1fe0ab4b62071853 100644
+index e02c45b302d1350db31d304cb9c40d7b08e40d3b..4d91c8405dde070a70dcd9233b4ab4363c844a6c 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -18,6 +18,7 @@
@@ -152,7 +152,7 @@ index 726ae29bf5ffe8b645236256c4a4988576ed7353..f0200bbb9944d6e4b8b8ccee1fe0ab4b
  #include "content/public/common/window_container_type.mojom-forward.h"
  #include "third_party/blink/public/common/input/web_mouse_event.h"
  #include "third_party/blink/public/common/mediastream/media_stream_request.h"
-@@ -381,6 +383,16 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -389,6 +391,16 @@ class CONTENT_EXPORT WebContentsDelegate {
        const StoragePartitionConfig& partition_config,
        SessionStorageNamespace* session_storage_namespace);
  

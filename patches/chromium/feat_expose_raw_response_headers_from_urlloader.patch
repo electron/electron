@@ -112,10 +112,10 @@ index 3a5fbaea905e7c01caee3659ff3be06e8def5615..89da9461e8290b8099456e5222f27877
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index bfe2666ce5788300d2c8fe1139b698f33aa4fa22..0b55850c07311b82da07f3a740521d2ae341ac43 100644
+index c00cdc0399a55f03828de4919f57c9612c26e0a6..51b5018ed46ee17074db55b08deba2e44239f142 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -400,6 +400,9 @@ URLLoader::URLLoader(
+@@ -403,6 +403,9 @@ URLLoader::URLLoader(
                                    mojo::SimpleWatcher::ArmingPolicy::MANUAL,
                                    TaskRunner(request.priority)),
        per_factory_orb_state_(context.GetMutableOrbState()),
@@ -125,7 +125,7 @@ index bfe2666ce5788300d2c8fe1139b698f33aa4fa22..0b55850c07311b82da07f3a740521d2a
        devtools_request_id_(request.devtools_request_id),
        options_(PopulateOptions(options,
                                 factory_params_->is_orb_enabled,
-@@ -539,7 +542,7 @@ void URLLoader::SetUpUrlRequestCallbacks(
+@@ -542,7 +545,7 @@ void URLLoader::SetUpUrlRequestCallbacks(
          &URLLoader::IsSharedDictionaryReadAllowed, base::Unretained(this)));
    }
  
@@ -134,7 +134,7 @@ index bfe2666ce5788300d2c8fe1139b698f33aa4fa22..0b55850c07311b82da07f3a740521d2a
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1154,6 +1157,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1161,6 +1164,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
