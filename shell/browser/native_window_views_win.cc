@@ -509,7 +509,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       WINDOWPLACEMENT wp;
       wp.length = sizeof(WINDOWPLACEMENT);
 
-      if (GetWindowPlacement(GetAcceleratedWidget(), &wp)) {
+      if (GetWindowPlacement(GetAcceleratedWidget(), &wp) && !was_snapped_) {
         last_normal_placement_bounds_ = gfx::Rect(wp.rcNormalPosition);
       }
 
@@ -518,11 +518,9 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       if (w_param == SIZE_MAXIMIZED &&
           last_window_state_ != ui::mojom::WindowShowState::kMaximized) {
         if (last_window_state_ == ui::mojom::WindowShowState::kMinimized) {
-          if (was_snapped_) {
-            SetRoundedCorners(false);
-            was_snapped_ = false;
-          }
           NotifyWindowRestore();
+          if (was_snapped_)
+            was_snapped_ = false;
         }
         last_window_state_ = ui::mojom::WindowShowState::kMaximized;
         NotifyWindowMaximize();
@@ -545,12 +543,10 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
             last_window_state_ = ui::mojom::WindowShowState::kFullscreen;
             NotifyWindowEnterFullScreen();
           } else {
-            if (was_snapped_) {
-              SetRoundedCorners(false);
-              was_snapped_ = false;
-            }
             last_window_state_ = ui::mojom::WindowShowState::kNormal;
             NotifyWindowRestore();
+            if (was_snapped_)
+              was_snapped_ = false;
           }
           break;
         default:
