@@ -24,9 +24,7 @@ class NotificationPresenterMac : public NotificationPresenter {
   NotificationPresenterMac();
   ~NotificationPresenterMac() override;
 
-  NotificationImageRetainer* image_retainer() {
-    return image_retainer_.get();
-  }
+  NotificationImageRetainer* image_retainer() { return image_retainer_.get(); }
   scoped_refptr<base::SequencedTaskRunner> image_task_runner() {
     return image_task_runner_;
   }
