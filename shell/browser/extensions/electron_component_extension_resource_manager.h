@@ -47,8 +47,7 @@ class ElectronComponentExtensionResourceManager
   std::map<base::FilePath, int> path_to_resource_id_;
 
   // A map from an extension ID to its i18n template replacements.
-  std::map<std::string, ui::TemplateReplacements>
-      extension_template_replacements_;
+  std::map<std::string, ui::TemplateReplacements> template_replacements_;
 };
 
 }  // namespace extensions
