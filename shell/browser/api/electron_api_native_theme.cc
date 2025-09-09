@@ -77,7 +77,7 @@ bool NativeTheme::ShouldUseDarkColors() {
 }
 
 bool NativeTheme::ShouldUseHighContrastColors() {
-  return ui_theme_->UserHasContrastPreference();
+  return ui_theme_->GetPreferredContrast() == ui::NativeTheme::PreferredContrast::kMore;
 }
 
 bool NativeTheme::ShouldUseDarkColorsForSystemIntegratedUI() {
