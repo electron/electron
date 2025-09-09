@@ -138,8 +138,7 @@ void CocoaNotification::Show(const NotificationOptions& options) {
             [](NotificationPresenterMac* mac_presenter,
                gfx::Image icon) -> UNNotificationAttachment* {
               base::FilePath path =
-                  mac_presenter->image_retainer()->RegisterTemporaryImage(
-                      icon);
+                  mac_presenter->image_retainer()->RegisterTemporaryImage(icon);
               if (path.empty()) {
                 return nil;
               }
