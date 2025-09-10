@@ -16,7 +16,6 @@
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
-#include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
@@ -80,7 +79,6 @@ struct ServiceWorkerKey {
 // the default StoragePartition for the associated BrowserContext.
 class ServiceWorkerMain final
     : public gin_helper::DeprecatedWrappable<ServiceWorkerMain>,
-      public gin_helper::EventEmitterMixin<ServiceWorkerMain>,
       public gin_helper::Pinnable<ServiceWorkerMain>,
       public gin_helper::Constructible<ServiceWorkerMain> {
  public:
