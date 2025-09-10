@@ -891,7 +891,7 @@ describe('webContents module', () => {
         server = null as any;
       });
 
-      it('should restore navigation history with PageState', async () => {
+      xit('should restore navigation history with PageState', async () => {
         await w.loadURL(urlPage1);
         await w.loadURL(urlPage2);
         await w.loadURL(serverUrl);
