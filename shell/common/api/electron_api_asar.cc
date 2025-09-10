@@ -191,13 +191,15 @@ class Archive : public node::ObjectWrap {
 static void SplitPath(const v8::FunctionCallbackInfo<v8::Value>& args) {
   auto* isolate = args.GetIsolate();
 
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
+  args.GetReturnValue().Set(dict.GetHandle());
+
   base::FilePath path;
   if (!gin::ConvertFromV8(isolate, args[0], &path)) {
-    args.GetReturnValue().Set(v8::False(isolate));
+    dict.Set("isAsar", false);
     return;
   }
 
-  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   base::FilePath asar_path, file_path;
   if (asar::GetAsarArchivePath(path, &asar_path, &file_path, true)) {
     dict.Set("isAsar", true);
@@ -206,7 +208,6 @@ static void SplitPath(const v8::FunctionCallbackInfo<v8::Value>& args) {
   } else {
     dict.Set("isAsar", false);
   }
-  args.GetReturnValue().Set(dict.GetHandle());
 }
 
 void Initialize(v8::Local<v8::Object> exports,
