@@ -1,0 +1,17 @@
+name: 'Install Workflow Dependencies'
+description: 'Installs npm dependencies for GHA workflows'
+runs:
+  using: "composite"
+  steps:
+    - name: Move package files to root
+      shell: bash
+      run: |
+        cp ${GITHUB_ACTION_PATH}/package.json .
+        cp ${GITHUB_ACTION_PATH}/package-lock.json .
+    - name: Setup Node.js
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      with:
+        node-version: 22.17.x
+    - name: Install dependencies
+      shell: bash
+      run: npm ci

@@ -20,6 +20,7 @@
 node_modules/
 SHASUMS256.txt
 **/package-lock.json
+!.github/actions/install-workflow-dependencies/package-lock.json
 compile_commands.json
 .envrc
 
