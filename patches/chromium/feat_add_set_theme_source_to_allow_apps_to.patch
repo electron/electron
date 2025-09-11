@@ -13,7 +13,7 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 4ab7a387ca8cb9d98bc2b8d003148398ae983937..d7adbcb2dc477d31feca4528309922d71222f0b3 100644
+index d8d5b23b0cfc1066ab1f8b2f7272350bf2443993..f7f30eb7cb229f336e61856508db557bd27f2e33 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -433,6 +433,24 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
@@ -41,7 +41,7 @@ index 4ab7a387ca8cb9d98bc2b8d003148398ae983937..d7adbcb2dc477d31feca4528309922d7
    // Returns a shared instance of the default native theme for native UI.
    static NativeTheme* GetInstanceForNativeUi();
  
-@@ -662,6 +678,7 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+@@ -646,6 +664,7 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
    std::optional<base::TimeDelta> caret_blink_interval_;
    bool use_overlay_scrollbars_ = false;
@@ -49,4 +49,3 @@ index 4ab7a387ca8cb9d98bc2b8d003148398ae983937..d7adbcb2dc477d31feca4528309922d7
  
    SEQUENCE_CHECKER(sequence_checker_);
  };
- 
