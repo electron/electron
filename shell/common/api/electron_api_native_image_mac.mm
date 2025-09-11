@@ -124,7 +124,7 @@ gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
     NSString* ns_name = base::SysUTF8ToNSString(name);
 
     // Treat non-Cocoa-prefixed names as SF Symbols first.
-    if (!base::StartsWith(name, "NS")) {
+    if (!base::StartsWith(name, "NS") && !base::StartsWith(name, "NX")) {
       image = [NSImage imageWithSystemSymbolName:ns_name
                         accessibilityDescription:nil];
     } else {
