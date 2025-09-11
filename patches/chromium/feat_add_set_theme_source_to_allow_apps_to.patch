@@ -13,10 +13,10 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index b0b1295e926c129b5e179888431867568684f513..2dcb9f99b9585faf33777cd2499779534fa671e0 100644
+index a03fac27bfb1176d466bfd530552c5319527508d..8afba3d61c972f3d5cbeb53cc18706caaf2f9d34 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
-@@ -242,6 +242,8 @@ void NativeTheme::PaintMenuItemBackground(
+@@ -304,6 +304,8 @@ void NativeTheme::PaintMenuItemBackground(
  }
  
  bool NativeTheme::ShouldUseDarkColors() const {
@@ -26,7 +26,7 @@ index b0b1295e926c129b5e179888431867568684f513..2dcb9f99b9585faf33777cd249977953
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index be4fb3658ddf1aaa6c0c2159410be82805f2ca95..792d3a6a760079de4cb114aa4abdead31d601e00 100644
+index 4ab7a387ca8cb9d98bc2b8d003148398ae983937..d7adbcb2dc477d31feca4528309922d71222f0b3 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -433,6 +433,22 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
@@ -52,7 +52,7 @@ index be4fb3658ddf1aaa6c0c2159410be82805f2ca95..792d3a6a760079de4cb114aa4abdead3
    // Returns a shared instance of the default native theme for native UI.
    static NativeTheme* GetInstanceForNativeUi();
  
-@@ -671,6 +688,7 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+@@ -662,6 +678,7 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
    std::optional<base::TimeDelta> caret_blink_interval_;
    bool use_overlay_scrollbars_ = false;
@@ -61,10 +61,10 @@ index be4fb3658ddf1aaa6c0c2159410be82805f2ca95..792d3a6a760079de4cb114aa4abdead3
    SEQUENCE_CHECKER(sequence_checker_);
  };
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 5e58f6861936c2dc1788120362d270b2129a48f4..71c58b1a881b8f5023337cec82303c6d0c4b9384 100644
+index 9d9094dd4a96f39cf94c3de4aae6b8708968dd08..5a5bf5d522ccf4ca30fbfd3ed26b6d1f208db792 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -689,6 +689,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
+@@ -679,6 +679,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
    if (forced_colors() && !IsForcedDarkMode()) {
      return false;
    }

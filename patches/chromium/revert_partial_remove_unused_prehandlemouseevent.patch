@@ -22,7 +22,7 @@ index 74fea36ea7f9a345b3474ea18be00704831a685e..c75785d5a26fa52a39d1a3552da9a762
      const input::NativeWebKeyboardEvent& event) {
    return KeyboardEventProcessingResult::NOT_HANDLED;
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index 7db3a07ff9e0f52f1232c25f8e4e72d3c299e623..af763ad4e441e54556854cd40c4cb9098f84bb58 100644
+index ce071c6acd6027ad27cee597f56e865f0d5172f9..be4eb55837d2b9bda96b1408f84f646d7da18e59 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -103,6 +103,12 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
@@ -54,10 +54,10 @@ index d211d8dc92c16e8ad2e9b1b37cb25dd05bf7e3e1..1756d5e81e9bf5ba20fc596901bb3cfe
      if (mouse_event_callback.Run(mouse_event)) {
        return;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index edacc08cbbcb3cc643cf0bc1c85b38e1add6168e..c14653a3ed277ebe216425d406a349649d289b2d 100644
+index 6ae3da46893ae57fce7b3fc5f05398a5e7783f06..3b644a13c1839cf82e8f6b3c46438577de66b2bb 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4438,6 +4438,12 @@ void WebContentsImpl::RenderWidgetWasResized(
+@@ -4436,6 +4436,12 @@ void WebContentsImpl::RenderWidgetWasResized(
                               width_changed);
  }
  
@@ -100,7 +100,7 @@ index 08c983ac6a8e5733431ba00e1288f6d6b087eee6..3e2a9fb6a768c57ddb813c5c7a1df8bb
      WebContents* source,
      const input::NativeWebKeyboardEvent& event) {
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index bf7b19868781ca8015a3750bd206f8cb60fc402b..0976217c8d629c71becc494ee73bc1466e6d0185 100644
+index 040397e55f2d8b3fb3228083bd307149b1fec317..945cbdd78a9b73ca42eff55ccc37c529d86c11f3 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -314,6 +314,13 @@ class CONTENT_EXPORT WebContentsDelegate {

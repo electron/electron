@@ -44,7 +44,7 @@ index adf8545f5690223df73d61918dc3022fe63b6b8f..35ad59782691d2d254907df1d4f07788
    }
    return ret;
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.h b/content/browser/renderer_host/legacy_render_widget_host_win.h
-index 459abf7bfd4434389c26b588da611d2681e57965..aed953e1dd500e0e4d4fe54344db3a4da3bd1fec 100644
+index 28600fe212930c2b9833cb10e1fcc209a38d5a20..b004858bc2ba14cc417ed81d191d874e62bfe0fa 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.h
 +++ b/content/browser/renderer_host/legacy_render_widget_host_win.h
 @@ -106,6 +106,7 @@ class CONTENT_EXPORT LegacyRenderWidgetHostHWND
