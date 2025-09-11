@@ -655,6 +655,7 @@ source_set("electron_lib") {
       "//ui/events/devices/x11",
       "//ui/events/platform/x11",
       "//ui/gtk:gtk_config",
+      "//ui/linux:display_server_utils",
       "//ui/linux:linux_ui",
       "//ui/linux:linux_ui_factory",
       "//ui/wm",
