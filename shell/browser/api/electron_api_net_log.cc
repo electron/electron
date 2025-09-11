@@ -194,8 +194,8 @@ bool NetLog::IsCurrentlyLogging() const {
   return !!net_log_exporter_;
 }
 
-v8::Local<v8::Promise> NetLog::StopLogging(gin::Arguments* args) {
-  gin_helper::Promise<void> promise(args->isolate());
+v8::Local<v8::Promise> NetLog::StopLogging(v8::Isolate* const isolate) {
+  gin_helper::Promise<void> promise{isolate};
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (net_log_exporter_) {

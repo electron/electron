@@ -45,7 +45,7 @@ class NetLog final : public gin_helper::DeprecatedWrappable<NetLog> {
 
   v8::Local<v8::Promise> StartLogging(base::FilePath log_path,
                                       gin::Arguments* args);
-  v8::Local<v8::Promise> StopLogging(gin::Arguments* args);
+  v8::Local<v8::Promise> StopLogging(v8::Isolate* isolate);
   bool IsCurrentlyLogging() const;
 
   // gin_helper::Wrappable
