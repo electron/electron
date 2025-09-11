@@ -3259,21 +3259,19 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
 }
 #endif
 
-void WebContents::AddWorkSpace(gin::Arguments* args,
+void WebContents::AddWorkSpace(v8::Isolate* const isolate,
                                const base::FilePath& path) {
   if (path.empty()) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("path cannot be empty");
+    gin_helper::ErrorThrower{isolate}.ThrowError("path cannot be empty");
     return;
   }
   DevToolsAddFileSystem(std::string(), path);
 }
 
-void WebContents::RemoveWorkSpace(gin::Arguments* args,
+void WebContents::RemoveWorkSpace(v8::Isolate* const isolate,
                                   const base::FilePath& path) {
   if (path.empty()) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("path cannot be empty");
+    gin_helper::ErrorThrower{isolate}.ThrowError("path cannot be empty");
     return;
   }
   DevToolsRemoveFileSystem(path);

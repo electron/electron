@@ -267,8 +267,8 @@ class WebContents final : public ExclusiveAccessContext,
   void SetNextChildWebPreferences(const gin_helper::Dictionary);
 
   // DevTools workspace api.
-  void AddWorkSpace(gin::Arguments* args, const base::FilePath& path);
-  void RemoveWorkSpace(gin::Arguments* args, const base::FilePath& path);
+  void AddWorkSpace(v8::Isolate* isolate, const base::FilePath& path);
+  void RemoveWorkSpace(v8::Isolate* isolate, const base::FilePath& path);
 
   // Editing commands.
   void Undo();
