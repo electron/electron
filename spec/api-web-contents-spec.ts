@@ -891,6 +891,7 @@ describe('webContents module', () => {
         server = null as any;
       });
 
+      // TODO: fix and re-enable. Info @ https://github.com/electron/electron/issues/48291
       xit('should restore navigation history with PageState', async () => {
         await w.loadURL(urlPage1);
         await w.loadURL(urlPage2);
