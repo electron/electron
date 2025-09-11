@@ -357,7 +357,7 @@ describe('web security', () => {
     });
   });
 
-  describe.only('csp', () => {
+  describe('csp', () => {
     for (const sandbox of [true, false]) {
       describe(`when sandbox: ${sandbox}`, () => {
         for (const contextIsolation of [true, false]) {
