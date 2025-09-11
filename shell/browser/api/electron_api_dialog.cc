@@ -42,9 +42,8 @@ void ResolvePromiseObject(gin_helper::Promise<gin_helper::Dictionary> promise,
 }
 
 v8::Local<v8::Promise> ShowMessageBox(
-    const electron::MessageBoxSettings& settings,
-    gin::Arguments* args) {
-  v8::Isolate* isolate = args->isolate();
+    v8::Isolate* const isolate,
+    const electron::MessageBoxSettings& settings) {
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
