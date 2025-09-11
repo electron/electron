@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
 
 #include <string_view>
+#include <type_traits>
 #include <utility>
 
 #include "gin/object_template_builder.h"
@@ -57,17 +58,37 @@ class EventEmitterMixin {
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate) {
     gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
     auto* wrapper_info = &(static_cast<T*>(this)->kWrapperInfo);
-    v8::Local<v8::FunctionTemplate> constructor =
-        data->DeprecatedGetFunctionTemplate(wrapper_info);
+
+    // DeprecatedWrapperInfo support will be removed as part of
+    // https://github.com/electron/electron/issues/47922
+    constexpr bool is_deprecated_wrapper =
+        std::is_same_v<decltype(wrapper_info), gin::DeprecatedWrapperInfo*>;
+
+    v8::Local<v8::FunctionTemplate> constructor;
+    if constexpr (is_deprecated_wrapper) {
+      constructor = data->DeprecatedGetFunctionTemplate(wrapper_info);
+    } else {
+      constructor = data->GetFunctionTemplate(wrapper_info);
+    }
+
+    const char* class_name = "";
+    if constexpr (is_deprecated_wrapper) {
+      class_name = static_cast<T*>(this)->GetTypeName();
+    } else {
+      class_name = static_cast<T*>(this)->GetClassName();
+    }
+
     if (constructor.IsEmpty()) {
       constructor = v8::FunctionTemplate::New(isolate);
-      constructor->SetClassName(
-          gin::StringToV8(isolate, static_cast<T*>(this)->GetTypeName()));
+      constructor->SetClassName(gin::StringToV8(isolate, class_name));
       constructor->Inherit(internal::GetEventEmitterTemplate(isolate));
-      data->DeprecatedSetFunctionTemplate(wrapper_info, constructor);
+      if constexpr (is_deprecated_wrapper) {
+        data->DeprecatedSetFunctionTemplate(wrapper_info, constructor);
+      } else {
+        data->SetFunctionTemplate(wrapper_info, constructor);
+      }
     }
-    return gin::ObjectTemplateBuilder(isolate,
-                                      static_cast<T*>(this)->GetTypeName(),
+    return gin::ObjectTemplateBuilder(isolate, class_name,
                                       constructor->InstanceTemplate());
   }
 };

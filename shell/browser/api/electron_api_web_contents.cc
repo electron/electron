@@ -3804,11 +3804,16 @@ v8::Local<v8::Value> WebContents::DevToolsWebContents(v8::Isolate* isolate) {
 }
 
 v8::Local<v8::Value> WebContents::Debugger(v8::Isolate* isolate) {
-  if (debugger_.IsEmpty()) {
-    auto handle = electron::api::Debugger::Create(isolate, web_contents());
-    debugger_.Reset(isolate, handle.ToV8());
+  if (!debugger_) {
+    debugger_ = electron::api::Debugger::Create(isolate, web_contents());
   }
-  return v8::Local<v8::Value>::New(isolate, debugger_);
+
+  v8::HandleScope handle_scope{isolate};
+  v8::Local<v8::Object> wrapper;
+  if (!debugger_->GetWrapper(isolate).ToLocal(&wrapper)) {
+    return v8::Null(isolate);
+  }
+  return v8::Local<v8::Value>::New(isolate, wrapper);
 }
 
 content::RenderFrameHost* WebContents::MainFrame() {
