@@ -303,7 +303,7 @@ class WebContents final : public ExclusiveAccessContext,
   void EndFrameSubscription();
 
   // Dragging native items.
-  void StartDrag(const gin_helper::Dictionary& item, gin::Arguments* args);
+  void StartDrag(v8::Isolate* isolate, const gin_helper::Dictionary& item);
 
   // Captures the page with |rect|, |callback| would be called when capturing is
   // done.

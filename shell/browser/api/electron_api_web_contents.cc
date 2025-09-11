@@ -3506,8 +3506,8 @@ void WebContents::EndFrameSubscription() {
   frame_subscriber_.reset();
 }
 
-void WebContents::StartDrag(const gin_helper::Dictionary& item,
-                            gin::Arguments* args) {
+void WebContents::StartDrag(v8::Isolate* const isolate,
+                            const gin_helper::Dictionary& item) {
   base::FilePath file;
   std::vector<base::FilePath> files;
   if (!item.Get("files", &files) && item.Get("file", &file)) {
@@ -3516,13 +3516,13 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
 
   v8::Local<v8::Value> icon_value;
   if (!item.Get("icon", &icon_value)) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("'icon' parameter is required");
+    gin_helper::ErrorThrower{isolate}.ThrowError(
+        "'icon' parameter is required");
     return;
   }
 
   NativeImage* icon = nullptr;
-  if (!NativeImage::TryConvertNativeImage(args->isolate(), icon_value, &icon) ||
+  if (!NativeImage::TryConvertNativeImage(isolate, icon_value, &icon) ||
       icon->image().IsEmpty()) {
     return;
   }
@@ -3532,8 +3532,8 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
     base::CurrentThread::ScopedAllowApplicationTasksInNativeNestedLoop allow;
     DragFileItems(files, icon->image(), web_contents()->GetNativeView());
   } else {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("Must specify either 'file' or 'files' option");
+    gin_helper::ErrorThrower{isolate}.ThrowError(
+        "Must specify either 'file' or 'files' option");
   }
 }
 
