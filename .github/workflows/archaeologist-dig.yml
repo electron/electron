@@ -13,7 +13,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup Node.js/npm
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: 20.19.x
       - name: Setting Up Dig Site
