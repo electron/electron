@@ -134,19 +134,16 @@ index 2e9e3e0330b50e51eb4e23f86051a81d14ef9ece..b9ee1b855465e0c73ff3fcf87b5cf9c5
      _errorCallback = errorCallback;
    }
    return self;
-@@ -212,29 +271,53 @@ + (SCStreamConfiguration*)streamConfigurationWithFrameSize:(gfx::Size)frameSize
+@@ -216,28 +216,50 @@ class API_AVAILABLE(macos(12.3)) ScreenCaptureKitDeviceMac
+       base::OnceCallback<void(content::DesktopMediaID::Id, SCStream*)>;
  
- class API_AVAILABLE(macos(12.3)) ScreenCaptureKitDeviceMac
-     : public IOSurfaceCaptureDeviceBase,
--      public ScreenCaptureKitResetStreamInterface {
-+      public ScreenCaptureKitResetStreamInterface
-+       {
-  public:
    explicit ScreenCaptureKitDeviceMac(const DesktopMediaID& source,
--                                     SCContentFilter* filter)
-+                                     [[maybe_unused]] SCContentFilter* filter)
+-                                     SCContentFilter* filter,
++                                     [[maybe_unused]] SCContentFilter* filter,
+                                      StreamCallback stream_created_callback)
        : source_(source),
 -        filter_(filter),
+         stream_created_callback_(std::move(stream_created_callback)),
          device_task_runner_(base::SingleThreadTaskRunner::GetCurrentDefault()) {
      SampleCallback sample_callback = base::BindPostTask(
          device_task_runner_,
@@ -164,7 +161,6 @@ index 2e9e3e0330b50e51eb4e23f86051a81d14ef9ece..b9ee1b855465e0c73ff3fcf87b5cf9c5
          initWithSampleCallback:sample_callback
 +                 cancelCallback:cancel_callback
                   errorCallback:error_callback];
-+
 +    if (@available(macOS 15.0, *)) {
 +      auto picker_callback = base::BindPostTask(
 +        device_task_runner_,
@@ -285,17 +281,15 @@ index 2e9e3e0330b50e51eb4e23f86051a81d14ef9ece..b9ee1b855465e0c73ff3fcf87b5cf9c5
    }
    void OnStop() override {
      DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
-@@ -578,8 +683,9 @@ void ResetStreamTo(SCWindow* window) override {
-   }
+@@ -576,7 +576,7 @@ class API_AVAILABLE(macos(12.3)) ScreenCaptureKitDeviceMac
  
   private:
-+  static int active_streams_;
-+
    const DesktopMediaID source_;
 -  SCContentFilter* const filter_;
++  static int active_streams_;
+   StreamCallback stream_created_callback_;
    const scoped_refptr<base::SingleThreadTaskRunner> device_task_runner_;
  
-   // The actual format of the video frames that are sent to `client`.
 @@ -595,6 +701,10 @@ void ResetStreamTo(SCWindow* window) override {
    // Helper class that acts as output and delegate for `stream_`.
    ScreenCaptureKitDeviceHelper* __strong helper_;
