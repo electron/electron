@@ -267,8 +267,8 @@ class WebContents final : public ExclusiveAccessContext,
   void SetNextChildWebPreferences(const gin_helper::Dictionary);
 
   // DevTools workspace api.
-  void AddWorkSpace(gin::Arguments* args, const base::FilePath& path);
-  void RemoveWorkSpace(gin::Arguments* args, const base::FilePath& path);
+  void AddWorkSpace(v8::Isolate* isolate, const base::FilePath& path);
+  void RemoveWorkSpace(v8::Isolate* isolate, const base::FilePath& path);
 
   // Editing commands.
   void Undo();
@@ -303,7 +303,7 @@ class WebContents final : public ExclusiveAccessContext,
   void EndFrameSubscription();
 
   // Dragging native items.
-  void StartDrag(const gin_helper::Dictionary& item, gin::Arguments* args);
+  void StartDrag(v8::Isolate* isolate, const gin_helper::Dictionary& item);
 
   // Captures the page with |rect|, |callback| would be called when capturing is
   // done.

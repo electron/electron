@@ -875,8 +875,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
     v8::Isolate* const isolate,
     const std::vector<std::string>& key_path,
     v8::Local<v8::Object> getter,
-    v8::Local<v8::Value> setter,
-    gin_helper::Arguments* args) {
+    v8::Local<v8::Value> setter) {
   if (key_path.empty())
     return false;
 
@@ -917,7 +916,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
 
     v8::PropertyDescriptor desc(getter_proxy, setter_proxy);
     bool success = IsTrue(target_object->DefineProperty(
-        main_context, gin::StringToV8(args->isolate(), final_key), desc));
+        main_context, gin::StringToV8(isolate, final_key), desc));
     DCHECK(success);
     return success;
   }
