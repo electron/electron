@@ -81,7 +81,7 @@ namespace api {
 
 gin::DeprecatedWrapperInfo NetLog::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-NetLog::NetLog(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
+NetLog::NetLog(ElectronBrowserContext* const browser_context)
     : browser_context_(browser_context) {
   file_task_runner_ = CreateFileTaskRunner();
 }
@@ -234,8 +234,7 @@ const char* NetLog::GetTypeName() {
 gin_helper::Handle<NetLog> NetLog::Create(
     v8::Isolate* isolate,
     ElectronBrowserContext* browser_context) {
-  return gin_helper::CreateHandle(isolate,
-                                  new NetLog(isolate, browser_context));
+  return gin_helper::CreateHandle(isolate, new NetLog{browser_context});
 }
 
 }  // namespace api
