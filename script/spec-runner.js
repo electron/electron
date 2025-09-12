@@ -2,6 +2,7 @@
 
 const { ElectronVersions, Installer } = require('@electron/fiddle-core');
 
+const { DOMParser } = require('@xmldom/xmldom');
 const chalk = require('chalk');
 const { hashElement } = require('folder-hash');
 const minimist = require('minimist');
@@ -21,6 +22,7 @@ const FAILURE_STATUS_KEY = 'Electron_Spec_Runner_Failures';
 
 const args = minimist(process.argv, {
   string: ['runners', 'target', 'electronVersion'],
+  boolean: ['enableRerun'],
   unknown: arg => unknownFlags.push(arg)
 });
 
@@ -191,7 +193,149 @@ async function asyncSpawn (exe, runnerArgs) {
   });
 }
 
-async function runTestUsingElectron (specDir, testName) {
+function parseJUnitXML (specDir) {
+  if (!fs.existsSync(process.env.MOCHA_FILE)) {
+    console.error('JUnit XML file not found:', process.env.MOCHA_FILE);
+    return [];
+  }
+
+  const xmlContent = fs.readFileSync(process.env.MOCHA_FILE, 'utf8');
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+
+  const failedTests = [];
+  // find failed tests by looking for all testsuite nodes with failure > 0
+  const testSuites = xmlDoc.getElementsByTagName('testsuite');
+  for (let i = 0; i < testSuites.length; i++) {
+    const testSuite = testSuites[i];
+    const failures = testSuite.getAttribute('failures');
+    if (failures > 0) {
+      const testcases = testSuite.getElementsByTagName('testcase');
+
+      for (let i = 0; i < testcases.length; i++) {
+        const testcase = testcases[i];
+        const failures = testcase.getElementsByTagName('failure');
+        const errors = testcase.getElementsByTagName('error');
+
+        if (failures.length > 0 || errors.length > 0) {
+          const testName = testcase.getAttribute('name');
+          const filePath = testSuite.getAttribute('file');
+          const fileName = filePath ? path.relative(specDir, filePath) : 'unknown file';
+          const failureInfo = {
+            name: testName,
+            file: fileName,
+            filePath
+          };
+          if (failures.length > 0) {
+            failureInfo.failure = failures[0].textContent || failures[0].nodeValue || 'No failure message';
+          }
+
+          if (errors.length > 0) {
+            failureInfo.error = errors[0].textContent || errors[0].nodeValue || 'No error message';
+          }
+
+          failedTests.push(failureInfo);
+        }
+      }
+    }
+  }
+
+  return failedTests;
+}
+
+async function rerunFailedTest (specDir, testName, testInfo) {
+  console.log('\n========================================');
+  console.log(`Rerunning failed test: ${testInfo.name} (${testInfo.file})`);
+  console.log('========================================');
+
+  let grepPattern = testInfo.name;
+
+  // Escape special regex characters in test name
+  grepPattern = grepPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  const args = [];
+  if (testInfo.filePath) {
+    args.push('--files', testInfo.filePath);
+  }
+  args.push('-g', grepPattern);
+
+  const success = await runTestUsingElectron(specDir, testName, false, args);
+
+  if (success) {
+    console.log(`✅ Test passed: ${testInfo.name}`);
+    return true;
+  } else {
+    console.log(`❌ Test failed again: ${testInfo.name}`);
+    return false;
+  }
+}
+
+async function rerunFailedTests (specDir, testName) {
+  console.log('\n📋 Parsing JUnit XML for failed tests...');
+  const failedTests = parseJUnitXML(specDir);
+
+  if (failedTests.length === 0) {
+    console.log('No failed tests could be found.');
+    process.exit(1);
+    return;
+  }
+
+  // Save off the original junit xml file
+  if (fs.existsSync(process.env.MOCHA_FILE)) {
+    fs.copyFileSync(process.env.MOCHA_FILE, `${process.env.MOCHA_FILE}.save`);
+  }
+
+  console.log(`\n📊 Found ${failedTests.length} failed test(s):`);
+  failedTests.forEach((test, index) => {
+    console.log(`  ${index + 1}. ${test.name} (${test.file})`);
+  });
+
+  // Step 3: Rerun each failed test individually
+  console.log('\n🔄 Rerunning failed tests individually...\n');
+
+  const results = {
+    total: failedTests.length,
+    passed: 0,
+    failed: 0
+  };
+
+  let index = 0;
+  for (const testInfo of failedTests) {
+    const success = await rerunFailedTest(specDir, testName, testInfo);
+    if (success) {
+      results.passed++;
+    } else {
+      results.failed++;
+    }
+
+    // Add a small delay between tests
+    if (index < failedTests.length - 1) {
+      console.log('\nWaiting 2 seconds before next test...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+    index++;
+  };
+
+  // Step 4: Summary
+  console.log('\n📈 Summary:');
+  console.log(`Total failed tests: ${results.total}`);
+  console.log(`Passed on rerun: ${results.passed}`);
+  console.log(`Still failing: ${results.failed}`);
+
+  // Restore the original junit xml file
+  if (fs.existsSync(`${process.env.MOCHA_FILE}.save`)) {
+    fs.renameSync(`${process.env.MOCHA_FILE}.save`, process.env.MOCHA_FILE);
+  }
+
+  if (results.failed === 0) {
+    console.log('🎉 All previously failed tests now pass!');
+  } else {
+    console.log(`⚠️  ${results.failed} test(s) are still failing`);
+    process.exit(1);
+  }
+}
+
+async function runTestUsingElectron (specDir, testName, shouldRerun, additionalArgs = []) {
   let exe;
   if (args.electronVersion) {
     const installer = new Installer();
@@ -199,11 +343,16 @@ async function runTestUsingElectron (specDir, testName) {
   } else {
     exe = path.resolve(BASE, utils.getElectronExec());
   }
-  const runnerArgs = [`electron/${specDir}`, ...unknownArgs.slice(2)];
+  let argsToPass = unknownArgs.slice(2);
+  if (additionalArgs.includes('--files')) {
+    argsToPass = argsToPass.filter(arg => (arg.toString().indexOf('--files') === -1 && arg.toString().indexOf('spec/') === -1));
+  }
+  const runnerArgs = [`electron/${specDir}`, ...argsToPass, ...additionalArgs];
   if (process.platform === 'linux') {
     runnerArgs.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe);
     exe = 'python3';
   }
+  console.log(`Running: ${exe} ${runnerArgs.join(' ')}`);
   const { status, signal } = await asyncSpawn(exe, runnerArgs);
   if (status !== 0) {
     if (status) {
@@ -212,13 +361,18 @@ async function runTestUsingElectron (specDir, testName) {
     } else {
       console.log(`${fail} Electron tests failed with kill signal ${signal}.`);
     }
-    process.exit(1);
+    if (shouldRerun) {
+      await rerunFailedTests(specDir, testName);
+    } else {
+      return false;
+    }
   }
   console.log(`${pass} Electron ${testName} process tests passed.`);
+  return true;
 }
 
 async function runMainProcessElectronTests () {
-  await runTestUsingElectron('spec', 'main');
+  await runTestUsingElectron('spec', 'main', args.enableRerun);
 }
 
 async function installSpecModules (dir) {
