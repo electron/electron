@@ -210,7 +210,7 @@ class Session final : public gin::Wrappable<Session>,
   v8::TracedReference<v8::Value> cookies_;
   v8::TracedReference<v8::Value> extensions_;
   v8::TracedReference<v8::Value> protocol_;
-  cppgc::Persistent<api::NetLog> net_log_;
+  cppgc::Member<api::NetLog> net_log_;
   v8::TracedReference<v8::Value> service_worker_context_;
   v8::TracedReference<v8::Value> web_request_;
 

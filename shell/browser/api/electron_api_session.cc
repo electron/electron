@@ -1847,6 +1847,7 @@ void Session::Trace(cppgc::Visitor* visitor) const {
   visitor->Trace(cookies_);
   visitor->Trace(extensions_);
   visitor->Trace(protocol_);
+  visitor->Trace(net_log_);
   visitor->Trace(service_worker_context_);
   visitor->Trace(web_request_);
   visitor->Trace(weak_factory_);
