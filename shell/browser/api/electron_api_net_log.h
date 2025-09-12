@@ -59,8 +59,7 @@ class NetLog final : public gin_helper::DeprecatedWrappable<NetLog> {
   NetLog& operator=(const NetLog&) = delete;
 
  protected:
-  explicit NetLog(v8::Isolate* isolate,
-                  ElectronBrowserContext* browser_context);
+  explicit NetLog(ElectronBrowserContext* browser_context);
   ~NetLog() override;
 
   void OnConnectionError();
