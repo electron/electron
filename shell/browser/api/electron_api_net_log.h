@@ -10,11 +10,11 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/values.h"
+#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "net/log/net_log_capture_mode.h"
 #include "services/network/public/mojom/net_log.mojom.h"
 #include "shell/common/gin_helper/promise.h"
-#include "shell/common/gin_helper/wrappable.h"
 
 namespace base {
 class FilePath;
@@ -37,31 +37,32 @@ class ElectronBrowserContext;
 namespace api {
 
 // The code is referenced from the net_log::NetExportFileWriter class.
-class NetLog final : public gin_helper::DeprecatedWrappable<NetLog> {
+class NetLog final : public gin::Wrappable<NetLog> {
  public:
-  static gin_helper::Handle<NetLog> Create(
-      v8::Isolate* isolate,
-      ElectronBrowserContext* browser_context);
+  static NetLog* Create(v8::Isolate* isolate,
+                        ElectronBrowserContext* browser_context);
+
+  // Make public for cppgc::MakeGarbageCollected.
+  explicit NetLog(ElectronBrowserContext* browser_context);
+  ~NetLog() override;
+
+  // disable copy
+  NetLog(const NetLog&) = delete;
+  NetLog& operator=(const NetLog&) = delete;
+
+  // gin_helper::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
 
   v8::Local<v8::Promise> StartLogging(base::FilePath log_path,
                                       gin::Arguments* args);
   v8::Local<v8::Promise> StopLogging(v8::Isolate* isolate);
   bool IsCurrentlyLogging() const;
 
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
-  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
-
-  // disable copy
-  NetLog(const NetLog&) = delete;
-  NetLog& operator=(const NetLog&) = delete;
-
  protected:
-  explicit NetLog(ElectronBrowserContext* browser_context);
-  ~NetLog() override;
-
   void OnConnectionError();
 
   void StartNetLogAfterCreateFile(net::NetLogCaptureMode capture_mode,

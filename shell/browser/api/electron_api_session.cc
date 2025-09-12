@@ -1361,11 +1361,15 @@ v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
 }
 
 v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
-  if (net_log_.IsEmptyThreadSafe()) {
-    auto handle = NetLog::Create(isolate, browser_context());
-    net_log_.Reset(isolate, handle.ToV8());
-  }
-  return net_log_.Get(isolate);
+  if (!net_log_)
+    net_log_ = NetLog::Create(isolate, browser_context());
+
+  v8::EscapableHandleScope scope{isolate};
+  v8::Local<v8::Object> wrapper;
+  v8::Local<v8::Value> ret = net_log_->GetWrapper(isolate).ToLocal(&wrapper)
+                                 ? wrapper.As<v8::Value>()
+                                 : v8::Null(isolate);
+  return scope.Escape(ret);
 }
 
 static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
@@ -1843,7 +1847,6 @@ void Session::Trace(cppgc::Visitor* visitor) const {
   visitor->Trace(cookies_);
   visitor->Trace(extensions_);
   visitor->Trace(protocol_);
-  visitor->Trace(net_log_);
   visitor->Trace(service_worker_context_);
   visitor->Trace(web_request_);
   visitor->Trace(weak_factory_);

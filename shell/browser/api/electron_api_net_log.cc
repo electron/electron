@@ -22,6 +22,8 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/handle.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace gin {
 
@@ -79,7 +81,8 @@ void ResolvePromiseWithNetError(gin_helper::Promise<void> promise,
 
 namespace api {
 
-gin::DeprecatedWrapperInfo NetLog::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo NetLog::kWrapperInfo = {{gin::kEmbedderNativeGin},
+                                         gin::kElectronNetLog};
 
 NetLog::NetLog(ElectronBrowserContext* const browser_context)
     : browser_context_(browser_context) {
@@ -219,22 +222,25 @@ v8::Local<v8::Promise> NetLog::StopLogging(v8::Isolate* const isolate) {
 
 gin::ObjectTemplateBuilder NetLog::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin_helper::DeprecatedWrappable<NetLog>::GetObjectTemplateBuilder(
-             isolate)
+  return gin::Wrappable<NetLog>::GetObjectTemplateBuilder(isolate)
       .SetProperty("currentlyLogging", &NetLog::IsCurrentlyLogging)
       .SetMethod("startLogging", &NetLog::StartLogging)
       .SetMethod("stopLogging", &NetLog::StopLogging);
 }
 
-const char* NetLog::GetTypeName() {
-  return "NetLog";
+const gin::WrapperInfo* NetLog::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* NetLog::GetHumanReadableName() const {
+  return "Electron / NetLog";
 }
 
 // static
-gin_helper::Handle<NetLog> NetLog::Create(
-    v8::Isolate* isolate,
-    ElectronBrowserContext* browser_context) {
-  return gin_helper::CreateHandle(isolate, new NetLog{browser_context});
+NetLog* NetLog::Create(v8::Isolate* isolate,
+                       ElectronBrowserContext* browser_context) {
+  return cppgc::MakeGarbageCollected<NetLog>(
+      isolate->GetCppHeap()->GetAllocationHandle(), browser_context);
 }
 
 }  // namespace api
