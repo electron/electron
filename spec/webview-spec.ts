@@ -157,6 +157,23 @@ describe('<webview> tag', function () {
 
       expect(type).to.equal('undefined', 'WebView still exists');
     });
+
+    it('does not reload when moved', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+      const webviewReloadCount = once(ipcMain, 'webview-reload-count');
+      w.loadFile(path.join(fixtures, 'pages', 'webview-move.html'));
+
+      const [, [moveCount, reloadCount]] = await webviewReloadCount;
+      expect(moveCount).to.equal(1);
+      expect(reloadCount).to.equal(1);
+    });
   });
 
   // FIXME(deepak1556): Ch69 follow up.

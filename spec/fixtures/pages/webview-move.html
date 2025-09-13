@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+  </head>
+  <body>
+    <webview src="./a.html"></webview>
+    <div id="move-target"></div>
+    <script>
+      var {ipcRenderer} = require('electron')
+      var wv = document.querySelector('webview')
+      var moveTarget = document.getElementById('move-target')
+
+      var moveCount = 0
+      moveElement = () => {
+        moveCount++
+        moveTarget.moveBefore(wv, null)
+        wv.removeEventListener('dom-ready', moveElement)
+      }
+      wv.addEventListener('dom-ready', moveElement)
+
+      var reloadCount = 0
+      wv.addEventListener('page-title-updated', () => {
+        reloadCount++
+      })
+
+      setTimeout(() => {
+        ipcRenderer.send('webview-reload-count', [moveCount, reloadCount])
+      }, 1000)
+    </script>
+  </body>
+</html>
