@@ -34,9 +34,11 @@ class OffScreenWebContentsView : public content::WebContentsView,
                                  public content::RenderViewHostDelegateView,
                                  private NativeWindowObserver {
  public:
-  OffScreenWebContentsView(bool transparent,
-                           bool offscreen_use_shared_texture,
-                           const OnPaintCallback& callback);
+  OffScreenWebContentsView(
+      bool transparent,
+      bool offscreen_use_shared_texture,
+      const std::string& offscreen_shared_texture_pixel_format,
+      const OnPaintCallback& callback);
   ~OffScreenWebContentsView() override;
 
   void SetWebContents(content::WebContents*);
@@ -109,6 +111,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
 
   const bool transparent_;
   const bool offscreen_use_shared_texture_;
+  const std::string offscreen_shared_texture_pixel_format_;
   bool painting_ = true;
   int frame_rate_ = 60;
   OnPaintCallback callback_;
