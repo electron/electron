@@ -99,6 +99,17 @@ bool ElectronMenuModel::WorksWhenHiddenAt(size_t index) const {
 }
 
 #if BUILDFLAG(IS_MAC)
+void ElectronMenuModel::SetAlternate(size_t index, bool alternate) {
+  int command_id = GetCommandIdAt(index);
+  alternates_[command_id] = alternate;
+}
+
+bool ElectronMenuModel::IsAlternateAt(size_t index) const {
+  int command_id = GetCommandIdAt(index);
+  const auto iter = alternates_.find(command_id);
+  return iter != std::end(alternates_) && iter->second;
+}
+
 bool ElectronMenuModel::GetSharingItemAt(size_t index,
                                          SharingItem* item) const {
   if (delegate_)
