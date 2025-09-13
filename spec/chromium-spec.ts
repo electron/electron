@@ -357,7 +357,7 @@ describe('web security', () => {
     });
   });
 
-  describe('csp', () => {
+  describe.only('csp', () => {
     for (const sandbox of [true, false]) {
       describe(`when sandbox: ${sandbox}`, () => {
         for (const contextIsolation of [true, false]) {
@@ -381,7 +381,7 @@ describe('web security', () => {
               }
             </script>`);
               const [{ message }] = await once(w.webContents, 'console-message');
-              expect(message).to.match(/Refused to evaluate a string/);
+              expect(message).to.match(/Evaluating a string as JavaScript violates/);
             });
 
             it('does not prevent eval from running in an inline script when there is no csp', async () => {

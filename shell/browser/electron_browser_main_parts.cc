@@ -325,7 +325,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 #if defined(USE_AURA)
   // NB: must be called _after_ locale resource bundle is loaded,
   // because ui lib makes use of it in X11
-  if (!display::Screen::GetScreen()) {
+  if (!display::Screen::Get()) {
     screen_ = views::CreateDesktopScreen();
   }
 #endif

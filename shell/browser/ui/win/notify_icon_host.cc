@@ -120,8 +120,7 @@ class NotifyIconHost::MouseEnteredExitedDetector {
   }
 
   bool IsCursorOverIcon(raw_ptr<NotifyIcon> icon) {
-    gfx::Point cursor_pos =
-        display::Screen::GetScreen()->GetCursorScreenPoint();
+    gfx::Point cursor_pos = display::Screen::Get()->GetCursorScreenPoint();
     return icon->GetBounds().Contains(cursor_pos);
   }
 

@@ -125,6 +125,7 @@ class SimpleURLLoaderWrapper final
                        int64_t recv_bytes,
                        int64_t sent_bytes) override {}
   void OnWebSocketConnectedToPrivateNetwork(
+      const GURL& request_url,
       network::mojom::IPAddressSpace ip_address_space) override {}
   void Clone(
       mojo::PendingReceiver<network::mojom::URLLoaderNetworkServiceObserver>

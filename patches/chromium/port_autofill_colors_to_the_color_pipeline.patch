@@ -31,10 +31,10 @@ index b6fe461a04dfabab9b114b4a0c0c6cc08718cdaf..e57d928023a2defe5c2586aa6bd8385b
    /* ui::NativeThemeBase::ControlColorId. */ \
    E_CPONLY(kColorWebNativeControlAccent) \
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index f606d2a058ed9ebf86b5f020b6897be718a40b68..003e95ca8bb6364fb6b937871b2c78b9ec798bd0 100644
+index 8817142344cc9abed442f07b5cbe759b82901c06..edf6d4ca1bfce93f8dcbeb2585c9ec07e3ff7f76 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
-@@ -180,6 +180,17 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
+@@ -181,6 +181,17 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
    mixer[kColorProgressBarPaused] = {kColorDisabledForeground};
    mixer[kColorRadioButtonForegroundChecked] = {kColorButtonForeground};
    mixer[kColorRadioButtonForegroundUnchecked] = {kColorSecondaryForeground};
@@ -52,19 +52,19 @@ index f606d2a058ed9ebf86b5f020b6897be718a40b68..003e95ca8bb6364fb6b937871b2c78b9
    mixer[kColorSeparator] = {kColorMidground};
    mixer[kColorShadowBase] = {dark_mode ? SK_ColorBLACK : gfx::kGoogleGrey800};
    mixer[kColorShadowValueAmbientShadowElevationThree] =
-@@ -276,6 +287,7 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
+@@ -277,6 +288,7 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
    mixer[kColorTreeNodeForegroundSelectedFocused] = {kColorTreeNodeForeground};
    mixer[kColorTreeNodeForegroundSelectedUnfocused] = {
        kColorTreeNodeForegroundSelectedFocused};
 +  mixer[kColorUnfocusedBorder] = {kColorMidground};
-   mixer[kColorWebNativeControlAccent] = {dark_mode
-                                              ? SkColorSetRGB(0x99, 0xC8, 0xFF)
-                                              : SkColorSetRGB(0x00, 0x75, 0xFF)};
+   mixer[kColorWindowBackground] = {kColorPrimaryBackground};
+   CompleteDefaultWebNativeRendererColorIdsDefinition(
+       mixer, dark_mode,
 diff --git a/ui/color/win/native_color_mixers_win.cc b/ui/color/win/native_color_mixers_win.cc
-index 179dc53711ed96421a66cb6c1651983af5f49c6a..686661965ebb56d2de7ff5279669491d95f81cca 100644
+index f18031fa9ff490edc690cb3a79654ddfde4f1000..58e49a832b64dd45ff08775021e6f049c5679833 100644
 --- a/ui/color/win/native_color_mixers_win.cc
 +++ b/ui/color/win/native_color_mixers_win.cc
-@@ -146,6 +146,10 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -145,6 +145,10 @@ void AddNativeUiColorMixer(ColorProvider* provider,
        SetAlpha(kColorNotificationInputForeground, gfx::kGoogleGreyAlpha700);
    mixer[kColorSliderTrack] = AlphaBlend(
        kColorNativeHighlight, kColorNativeWindow, gfx::kGoogleGreyAlpha400);
@@ -75,7 +75,7 @@ index 179dc53711ed96421a66cb6c1651983af5f49c6a..686661965ebb56d2de7ff5279669491d
  
    // Window Background
    mixer[kColorBubbleFooterBackground] = {kColorNativeWindow};
-@@ -154,6 +158,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -153,6 +157,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
    mixer[kColorFrameInactive] = {kColorNativeWindow};
    mixer[kColorPrimaryBackground] = {kColorNativeWindow};
    mixer[kColorTooltipBackground] = {kColorNativeWindow};
@@ -83,7 +83,7 @@ index 179dc53711ed96421a66cb6c1651983af5f49c6a..686661965ebb56d2de7ff5279669491d
  
    // Window Text
    mixer[kColorAlertLowSeverity] = {kColorNativeWindowText};
-@@ -167,6 +172,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -166,6 +171,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
    mixer[kColorTableGroupingIndicator] = {kColorNativeWindowText};
    mixer[kColorThrobber] = {kColorNativeWindowText};
    mixer[kColorTooltipForeground] = {kColorNativeWindowText};
@@ -91,7 +91,7 @@ index 179dc53711ed96421a66cb6c1651983af5f49c6a..686661965ebb56d2de7ff5279669491d
  
    // Hyperlinks
    mixer[kColorLinkForegroundDefault] = {kColorNativeHotlight};
-@@ -209,6 +215,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -208,6 +214,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
    mixer[kColorTextfieldForeground] = {kColorNativeBtnText};
    mixer[kColorTextfieldForegroundPlaceholder] = {kColorNativeBtnText};
    mixer[kColorTextfieldForegroundDisabled] = {kColorNativeBtnText};

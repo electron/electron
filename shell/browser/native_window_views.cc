@@ -687,8 +687,8 @@ void NativeWindowViews::Maximize() {
 #if BUILDFLAG(IS_WIN)
   if (transparent()) {
     restore_bounds_ = GetBounds();
-    auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
-        GetNativeWindow());
+    auto display =
+        display::Screen::Get()->GetDisplayNearestWindow(GetNativeWindow());
     SetBounds(display.work_area(), false);
     NotifyWindowMaximize();
     return;
@@ -732,8 +732,8 @@ bool NativeWindowViews::IsMaximized() const {
   if (transparent() && !IsMinimized()) {
     // If the window is the same dimensions and placement as the
     // display, we consider it maximized.
-    auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
-        GetNativeWindow());
+    auto display =
+        display::Screen::Get()->GetDisplayNearestWindow(GetNativeWindow());
     return GetBounds() == display.work_area();
   }
 #endif
@@ -798,7 +798,7 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
     if (fullscreen) {
       restore_bounds_ = GetBounds();
       auto display =
-          display::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
+          display::Screen::Get()->GetDisplayNearestPoint(GetPosition());
       SetBounds(display.bounds(), false);
     } else {
       SetBounds(restore_bounds_, false);
@@ -1163,7 +1163,7 @@ ui::ZOrderLevel NativeWindowViews::GetZOrderLevel() const {
 void NativeWindowViews::Center() {
 #if BUILDFLAG(IS_LINUX)
   auto display =
-      display::Screen::GetScreen()->GetDisplayNearestWindow(GetNativeWindow());
+      display::Screen::Get()->GetDisplayNearestWindow(GetNativeWindow());
   gfx::Rect window_bounds_in_screen = display.work_area();
   window_bounds_in_screen.ClampToCenteredSize(GetSize());
   widget()->SetBounds(window_bounds_in_screen);

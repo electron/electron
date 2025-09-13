@@ -173,7 +173,7 @@ index 213eaa5ec6d657a659726cb38103e8bd671fe907..f497447c598198bf690758b1d1c5c6fe
    void OnFileChooserDestroy(GtkWidget* dialog);
  
 diff --git a/ui/shell_dialogs/select_file_dialog.h b/ui/shell_dialogs/select_file_dialog.h
-index eb3d997598631b220c3566748f23a5cdac3e4692..b4b2f7294ce6e9349a4a8a05f614e93359eca25a 100644
+index b0f4b3df0a4f10b306ba2d25e5fd51440a25bcd4..4ac06587203d2d2adf1390d9256e537e8cf7b21d 100644
 --- a/ui/shell_dialogs/select_file_dialog.h
 +++ b/ui/shell_dialogs/select_file_dialog.h
 @@ -224,6 +224,21 @@ class SHELL_DIALOGS_EXPORT SelectFileDialog
@@ -262,7 +262,7 @@ index 61683d0eddb04c494ca5e650e7d556b44968ec49..5492456a9138b250e97a5479838bb443
  
  }  // namespace ui
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index 54cefe5b6236b24cd9c4625d603fe9a7205676f5..1f70697a2f9ddba8151b4c4f497fbc007ee5fed8 100644
+index 66f66edcbf72afe9deb4df4661e81b3a9eb6b8b3..3e5bf08b8b5b4a076af9e0d717ed08293b17383a 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 @@ -25,6 +25,7 @@
@@ -272,7 +272,7 @@ index 54cefe5b6236b24cd9c4625d603fe9a7205676f5..1f70697a2f9ddba8151b4c4f497fbc00
 +#include "electron/shell/browser/ui/file_dialog.h"
  #include "ui/aura/window_tree_host.h"
  #include "ui/base/l10n/l10n_util.h"
- #include "ui/gfx/native_widget_types.h"
+ #include "ui/gfx/native_ui_types.h"
 @@ -96,7 +97,7 @@ void OnGetPropertyReply(dbus::Response* response) {
                                 : ServiceAvailability::kNotAvailable;
  }

@@ -77,7 +77,8 @@ bool NativeTheme::ShouldUseDarkColors() {
 }
 
 bool NativeTheme::ShouldUseHighContrastColors() {
-  return ui_theme_->UserHasContrastPreference();
+  return ui_theme_->preferred_contrast() ==
+         ui::NativeTheme::PreferredContrast::kMore;
 }
 
 bool NativeTheme::ShouldUseDarkColorsForSystemIntegratedUI() {
@@ -86,11 +87,11 @@ bool NativeTheme::ShouldUseDarkColorsForSystemIntegratedUI() {
 }
 
 bool NativeTheme::InForcedColorsMode() {
-  return ui_theme_->InForcedColorsMode();
+  return ui_theme_->forced_colors();
 }
 
 bool NativeTheme::GetPrefersReducedTransparency() {
-  return ui_theme_->GetPrefersReducedTransparency();
+  return ui_theme_->prefers_reduced_transparency();
 }
 
 #if BUILDFLAG(IS_MAC)
@@ -109,8 +110,9 @@ bool NativeTheme::ShouldUseInvertedColorScheme() {
     return false;
   return is_inverted;
 #else
-  return ui_theme_->GetPlatformHighContrastColorScheme() ==
-         ui::NativeTheme::PlatformHighContrastColorScheme::kDark;
+  return ui_theme_->forced_colors() &&
+         ui_theme_->preferred_color_scheme() ==
+             ui::NativeTheme::PreferredColorScheme::kDark;
 #endif
 }
 

@@ -19,7 +19,7 @@ to STDOUT_FILENO/STD_OUTPUT_HANDLE and STDERR_FILENO/STD_ERROR_HANDLE allowing t
 parent process to read from the pipe.
 
 diff --git a/content/browser/child_process_launcher.h b/content/browser/child_process_launcher.h
-index 0a7e292f77a30f76eb413785551d7fa57acf1799..091628a0dd3ca9b4bdf06d484595342bc70e4427 100644
+index 4490b007072cbdb5d5d42bc74ad1eb3c183e86ed..0f365510982d897bc089ab3c97643109a4fcc8af 100644
 --- a/content/browser/child_process_launcher.h
 +++ b/content/browser/child_process_launcher.h
 @@ -33,6 +33,7 @@

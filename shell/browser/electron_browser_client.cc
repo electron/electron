@@ -427,7 +427,7 @@ void ElectronBrowserClient::OverrideWebPreferences(
   renderer_prefs->can_accept_load_drops = false;
 
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
-  prefs->in_forced_colors = native_theme->InForcedColorsMode();
+  prefs->in_forced_colors = native_theme->forced_colors();
   prefs->preferred_color_scheme =
       native_theme->ShouldUseDarkColors()
           ? blink::mojom::PreferredColorScheme::kDark
@@ -446,7 +446,7 @@ bool ElectronBrowserClient::WebPreferencesNeedUpdateForColorRelatedStateChanges(
     const content::SiteInstance& main_frame_site) const {
   const auto& prefs = web_contents.GetOrCreateWebPreferences();
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
-  bool in_forced_colors = native_theme->InForcedColorsMode();
+  bool in_forced_colors = native_theme->forced_colors();
   blink::mojom::PreferredColorScheme preferred_color_scheme =
       native_theme->ShouldUseDarkColors()
           ? blink::mojom::PreferredColorScheme::kDark

@@ -34,7 +34,7 @@ void MenuViews::PopupAt(BaseWindow* window,
   // (-1, -1) means showing on mouse location.
   gfx::Point location;
   if (x == -1 || y == -1) {
-    location = display::Screen::GetScreen()->GetCursorScreenPoint();
+    location = display::Screen::Get()->GetCursorScreenPoint();
   } else {
     gfx::Point origin = native_window->GetContentBounds().origin();
     location = gfx::Point(origin.x() + x, origin.y() + y);
