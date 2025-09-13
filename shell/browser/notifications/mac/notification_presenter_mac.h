@@ -6,24 +6,28 @@
 #ifndef ELECTRON_SHELL_BROWSER_NOTIFICATIONS_MAC_NOTIFICATION_PRESENTER_MAC_H_
 #define ELECTRON_SHELL_BROWSER_NOTIFICATIONS_MAC_NOTIFICATION_PRESENTER_MAC_H_
 
+#include "chrome/common/notifications/notification_image_retainer.h"
 #include "shell/browser/notifications/mac/notification_center_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
+
+#import <UserNotifications/UserNotifications.h>
 
 namespace electron {
 
 class CocoaNotification;
 
-// NSUserNotification is deprecated; all calls should be replaced with
-// UserNotifications.frameworks API
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-
 class NotificationPresenterMac : public NotificationPresenter {
  public:
-  CocoaNotification* GetNotification(NSUserNotification* ns_notification);
+  CocoaNotification* GetNotification(
+      UNNotificationRequest* un_notification_request);
 
   NotificationPresenterMac();
   ~NotificationPresenterMac() override;
+
+  NotificationImageRetainer* image_retainer() { return image_retainer_.get(); }
+  scoped_refptr<base::SequencedTaskRunner> image_task_runner() {
+    return image_task_runner_;
+  }
 
  private:
   // NotificationPresenter
@@ -31,10 +35,9 @@ class NotificationPresenterMac : public NotificationPresenter {
       NotificationDelegate* delegate) override;
 
   NotificationCenterDelegate* __strong notification_center_delegate_;
+  std::unique_ptr<NotificationImageRetainer> image_retainer_;
+  scoped_refptr<base::SequencedTaskRunner> image_task_runner_;
 };
-
-// -Wdeprecated-declarations
-#pragma clang diagnostic pop
 
 }  // namespace electron
 
