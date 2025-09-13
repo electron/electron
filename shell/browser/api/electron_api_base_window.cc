@@ -39,6 +39,7 @@
 #endif
 
 #if BUILDFLAG(IS_WIN)
+#include <variant>
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/taskbar_host.h"
 #include "ui/base/win/shell.h"
@@ -1095,7 +1096,12 @@ bool BaseWindow::IsSnapped() const {
 void BaseWindow::SetAccentColor(gin_helper::Arguments* args) {
   bool accent_color = false;
   std::string accent_color_string;
-  if (args->GetNext(&accent_color_string)) {
+
+  if (!args->PeekNext().IsEmpty() && args->PeekNext()->IsNull()) {
+    window_->SetAccentColor(std::monostate{});
+    window_->UpdateWindowAccentColor(window_->IsActive());
+  } else if (args->GetNext(&accent_color_string) &&
+             !accent_color_string.empty()) {
     std::optional<SkColor> maybe_color = ParseCSSColor(accent_color_string);
     if (maybe_color.has_value()) {
       window_->SetAccentColor(maybe_color.value());
@@ -1106,7 +1112,7 @@ void BaseWindow::SetAccentColor(gin_helper::Arguments* args) {
     window_->UpdateWindowAccentColor(window_->IsActive());
   } else {
     args->ThrowError(
-        "Invalid accent color value - must be a string or boolean");
+        "Invalid accent color value - must be null, hex string, or boolean");
   }
 }
 

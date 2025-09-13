@@ -2562,7 +2562,22 @@ describe('BrowserWindow module', () => {
       expect(() => {
         // @ts-ignore this is wrong on purpose.
         w.setAccentColor([1, 2, 3]);
-      }).to.throw('Invalid accent color value - must be a string or boolean');
+      }).to.throw('Invalid accent color value - must be null, hex string, or boolean');
+    });
+
+    it('throws if called with an invalid parameter', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(() => {
+        w.setAccentColor('');
+      }).to.throw('Invalid accent color value - must be null, hex string, or boolean');
+    });
+
+    it('can be reset with null', () => {
+      const w = new BrowserWindow({ show: false });
+      w.setAccentColor('#FF0000');
+      expect(w.getAccentColor()).to.equal('#FF0000');
+      w.setAccentColor(null);
+      expect(w.getAccentColor()).to.not.equal('#FF0000');
     });
 
     it('returns the accent color after setting it to a string', () => {
