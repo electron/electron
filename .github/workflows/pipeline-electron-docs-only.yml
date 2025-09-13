@@ -8,6 +8,8 @@ on:
         description: 'Container to run the docs-only ts compile in'
         type: string
 
+permissions: {}
+
 concurrency:
   group: electron-docs-only-${{ github.ref }}
   cancel-in-progress: true
@@ -19,6 +21,8 @@ jobs:
   docs-only:
     name: Docs Only Compile
     runs-on: electron-arc-centralus-linux-amd64-4core
+    permissions:
+      contents: read
     timeout-minutes: 20
     container: ${{ fromJSON(inputs.container) }}
     steps:

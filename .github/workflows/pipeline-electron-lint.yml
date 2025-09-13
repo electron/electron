@@ -8,6 +8,8 @@ on:
         description: 'Container to run lint in'
         type: string
 
+permissions: {}
+
 concurrency:
   group: electron-lint-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
@@ -19,6 +21,8 @@ jobs:
   lint:
     name: Lint
     runs-on: electron-arc-centralus-linux-amd64-4core
+    permissions:
+      contents: read
     timeout-minutes: 20
     container: ${{ fromJSON(inputs.container) }}
     steps:
