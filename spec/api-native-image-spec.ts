@@ -33,6 +33,12 @@ describe('nativeImage module', () => {
     height: 3,
     width: 3
   };
+  const image128x128ColorSpace1 = {
+    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAAAAXNSR0IArs4c6QAAATBJREFUeJzt0TENACAAwDBACnowi0Nk9GBVsGRz3zPiLB3wuwZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAagDUAawDWAOwB3+ACH2yDfGoAAAAASUVORK5CYII='
+  };
+  const image128x128ColorSpace2 = {
+    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAABK2lDQ1BTa2lhAAAokX2QMUvDUBSFv1cKomYRFR0cMnbRppWmDdahqbXo2Cqk3dI0FLFNQxrRvas/wtlNcBGhs4uT4CTi4i4IrpXXDClIPNPHuQfuPRdSmwBpDQZeGDTqpmq12urCBwLBTLYz8kmWgJ/XKPuy/U8uSYtdd+QAX0AYWK02iC6w1ov4SnIn4mvJl6EfgriRHJw0qiDugUxvjjtz7PiBzL8B5UH/wonvRnG90yZgAVvUGTKkRx+XLE3OOcMmi0YNgxK71KhQoUCFHHlKGOgU0KhiUqRKkUN0SuTJcTBjA13+M1o5fof9yXQ6fYy94wnc6bD0EHuZPVhR4Ok59uIf+3Zgz6w0kHJN+F4H5RZWP2F5DGzIcUJX9U9XlSM8HHZQyaORQ/8FDJRN2vTWQQEAAAEvSURBVHic7dFBCQAgAMBAtaNgSysa4x7uEgw29z0jztIBv2sA1gCsAVgDsAZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAewL8CXIWdMtwAAAAASUVORK5CYII='
+  };
 
   const dataUrlImages = [
     image1x1,
@@ -416,6 +422,77 @@ describe('nativeImage module', () => {
       const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
       const crop = image.crop({ width: 25, height: 64, x: 0, y: 0 });
       expect(crop.toBitmap().length).to.equal(25 * 64 * 4);
+    });
+
+    it('toBitmap() normalizes color space for consistent pixel values', () => {
+      const img1 = nativeImage.createFromDataURL(image128x128ColorSpace1.dataUrl);
+      const img2 = nativeImage.createFromDataURL(image128x128ColorSpace2.dataUrl);
+      const bitmap1 = img1.toBitmap();
+      const bitmap2 = img2.toBitmap();
+
+      expect(img1.getSize()).to.deep.equal(img2.getSize());
+
+      // The images are visually identical (both are gray squares)
+      // After color space normalization, the pixel values should be very similar
+      const size = img1.getSize();
+      const pixelCount = size.width * size.height;
+
+      let maxDifference = 0;
+      let totalDifference = 0;
+
+      for (let i = 0; i < bitmap1.length; i += 4) {
+        const b1 = bitmap1[i]; // Blue
+        const g1 = bitmap1[i + 1]; // Green
+        const r1 = bitmap1[i + 2]; // Red
+        const a1 = bitmap1[i + 3]; // Alpha
+
+        const b2 = bitmap2[i];
+        const g2 = bitmap2[i + 1];
+        const r2 = bitmap2[i + 2];
+        const a2 = bitmap2[i + 3];
+
+        const diff = Math.max(
+          Math.abs(b1 - b2),
+          Math.abs(g1 - g2),
+          Math.abs(r1 - r2)
+        );
+
+        maxDifference = Math.max(maxDifference, diff);
+        totalDifference += diff;
+
+        expect(a1).to.equal(a2, `Alpha channel should match at pixel ${i / 4}`);
+      }
+
+      const avgDifference = pixelCount > 0 ? (totalDifference / (pixelCount * 3)) : 0; // Average per channel per pixel
+
+      // After color space normalization, we expect small differences in most pixels
+      // The important thing is that the differences are small and consistent
+      expect(maxDifference).to.be.at.most(3,
+        'Maximum pixel difference should be small after color space normalization (≤3 units)');
+      expect(avgDifference).to.be.below(1,
+        'Average pixel difference should be minimal (<1 unit per channel)');
+
+      let significantDifferences = 0;
+      for (let i = 0; i < bitmap1.length; i += 4) {
+        const maxChannelDiff = Math.max(
+          Math.abs(bitmap1[i] - bitmap2[i]),
+          Math.abs(bitmap1[i + 1] - bitmap2[i + 1]),
+          Math.abs(bitmap1[i + 2] - bitmap2[i + 2])
+        );
+        if (maxChannelDiff > 3) {
+          significantDifferences++;
+        }
+      }
+      const significantDiffPercent = (significantDifferences / pixelCount) * 100;
+
+      expect(significantDiffPercent).to.equal(0,
+        'No pixels should differ by more than 3 units after color space normalization');
+
+      const bitmap1Again = img1.toBitmap();
+      const bitmap2Again = img2.toBitmap();
+
+      expect(bitmap1.equals(bitmap1Again)).to.be.true('toBitmap should be deterministic for img1');
+      expect(bitmap2.equals(bitmap2Again)).to.be.true('toBitmap should be deterministic for img2');
     });
   });
 
