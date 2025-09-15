@@ -1697,14 +1697,11 @@ Session* Session::CreateFrom(v8::Isolate* isolate,
     return nullptr;
   }
 
-  {
-    v8::HandleScope handle_scope(isolate);
-    v8::Local<v8::Object> wrapper;
-    if (!session->GetWrapper(isolate).ToLocal(&wrapper)) {
-      return nullptr;
-    }
-    App::Get()->EmitWithoutEvent("session-created", wrapper);
+  v8::Local<v8::Object> wrapper;
+  if (!session->GetWrapper(isolate).ToLocal(&wrapper)) {
+    return nullptr;
   }
+  App::Get()->EmitWithoutEvent("session-created", wrapper);
 
   return session;
 }
@@ -1883,7 +1880,6 @@ v8::Local<v8::Value> FromPartition(const std::string& partition,
       Session::FromPartition(args->isolate(), partition, std::move(options));
 
   if (session) {
-    v8::HandleScope handle_scope(args->isolate());
     v8::Local<v8::Object> wrapper;
     if (!session->GetWrapper(args->isolate()).ToLocal(&wrapper)) {
       return v8::Null(args->isolate());
@@ -1905,7 +1901,6 @@ v8::Local<v8::Value> FromPath(const base::FilePath& path,
   Session* session = Session::FromPath(args, path, std::move(options));
 
   if (session) {
-    v8::HandleScope handle_scope(args->isolate());
     v8::Local<v8::Object> wrapper;
     if (!session->GetWrapper(args->isolate()).ToLocal(&wrapper)) {
       return v8::Null(args->isolate());
