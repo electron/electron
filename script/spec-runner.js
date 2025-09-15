@@ -22,7 +22,7 @@ const FAILURE_STATUS_KEY = 'Electron_Spec_Runner_Failures';
 
 const args = minimist(process.argv, {
   string: ['runners', 'target', 'electronVersion'],
-  boolean: ['enableRerun'],
+  number: ['enableRerun'],
   unknown: arg => unknownFlags.push(arg)
 });
 
@@ -301,17 +301,28 @@ async function rerunFailedTests (specDir, testName) {
 
   let index = 0;
   for (const testInfo of failedTests) {
-    const success = await rerunFailedTest(specDir, testName, testInfo);
-    if (success) {
-      results.passed++;
-    } else {
-      results.failed++;
-    }
+    let runCount = 0;
+    let success = false;
+    let retryTest = false;
+    while (!success && (runCount < args.enableRerun)) {
+      success = await rerunFailedTest(specDir, testName, testInfo);
+      if (success) {
+        results.passed++;
+      } else {
+        if (runCount === args.enableRerun - 1) {
+          results.failed++;
+        } else {
+          retryTest = true;
+          console.log(`Retrying test (${runCount + 1}/${args.enableRerun})...`);
+        }
+      }
 
-    // Add a small delay between tests
-    if (index < failedTests.length - 1) {
-      console.log('\nWaiting 2 seconds before next test...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Add a small delay between tests
+      if (retryTest || index < failedTests.length - 1) {
+        console.log('\nWaiting 2 seconds before next test...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      runCount++;
     }
     index++;
   };
@@ -372,7 +383,11 @@ async function runTestUsingElectron (specDir, testName, shouldRerun, additionalA
 }
 
 async function runMainProcessElectronTests () {
-  await runTestUsingElectron('spec', 'main', args.enableRerun);
+  let shouldRerun = false;
+  if (args.enableRerun && args.enableRerun > 0) {
+    shouldRerun = true;
+  }
+  await runTestUsingElectron('spec', 'main', shouldRerun);
 }
 
 async function installSpecModules (dir) {
