@@ -53,7 +53,7 @@ v8::Local<v8::Promise> GetPrinterListAsync(v8::Isolate* isolate) {
         printing::mojom::ResultCode code =
             print_backend->EnumeratePrinters(printers);
         if (code != printing::mojom::ResultCode::kSuccess)
-          LOG(INFO) << "Failed to enumerate printers";
+          LOG(INFO) << "Failed to enumerate printers - this could be a problem";
         return printers;
       }),
       base::BindOnce(
