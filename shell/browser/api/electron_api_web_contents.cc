@@ -3756,7 +3756,6 @@ v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow(
 }
 
 v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
-  v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Object> wrapper;
   if (!session_->GetWrapper(isolate).ToLocal(&wrapper)) {
     return v8::Null(isolate);
@@ -3806,7 +3805,6 @@ v8::Local<v8::Value> WebContents::Debugger(v8::Isolate* isolate) {
     debugger_ = electron::api::Debugger::Create(isolate, web_contents());
   }
 
-  v8::HandleScope handle_scope{isolate};
   v8::Local<v8::Object> wrapper;
   if (!debugger_->GetWrapper(isolate).ToLocal(&wrapper)) {
     return v8::Null(isolate);
