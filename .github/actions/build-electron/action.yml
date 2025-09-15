@@ -44,11 +44,14 @@ runs:
     - name: Add Clang problem matcher
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
-    - name: Setup Siso for anonymous access for fork pull requests
+    - name: Setup Siso for fork pull requests
       if: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
       shell: bash
       run: |
-        echo "RBE_service_no_security=true" >> $GITHUB_ENV
+        # Use Local Execution, Remote Caching (LERC). Checks the remote cache for action
+        # matches and uses existing results if a match is found. If not, execution of the
+        # action is performed locally.
+        echo "RBE_exec_strategy=local" >> $GITHUB_ENV
     - name: Build Electron ${{ inputs.step-suffix }}
       shell: bash
       run: |
