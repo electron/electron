@@ -110,6 +110,7 @@ runs:
         installation-dir: src/third_party/siso/cipd
         target-platform: ${{ inputs.target-platform }}
         package: build/siso/${platform}
+        dependency-version: 048d034deea3d2e27a9caae89dd14a644d9e8eb5
     - name: Fixup angle git
       if: ${{ inputs.target-platform != 'linux' }}
       shell: bash

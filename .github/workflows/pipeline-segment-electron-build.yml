@@ -163,7 +163,6 @@ jobs:
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Fix Sync
-      if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/fix-sync
       with:
         target-platform: ${{ inputs.target-platform }}

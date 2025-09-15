@@ -44,6 +44,11 @@ runs:
     - name: Add Clang problem matcher
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
+    - name: Setup Siso for anonymous access for fork pull requests
+      if: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
+      shell: bash
+      run: |
+        echo "RBE_service_no_security=true" >> $GITHUB_ENV
     - name: Build Electron ${{ inputs.step-suffix }}
       shell: bash
       run: |
