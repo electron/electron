@@ -1364,12 +1364,10 @@ v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
   if (!net_log_)
     net_log_ = NetLog::Create(isolate, browser_context());
 
-  v8::EscapableHandleScope scope{isolate};
   v8::Local<v8::Object> wrapper;
-  v8::Local<v8::Value> ret = net_log_->GetWrapper(isolate).ToLocal(&wrapper)
-                                 ? wrapper.As<v8::Value>()
-                                 : v8::Null(isolate);
-  return scope.Escape(ret);
+  return net_log_->GetWrapper(isolate).ToLocal(&wrapper)
+             ? wrapper.As<v8::Value>()
+             : v8::Null(isolate);
 }
 
 static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
