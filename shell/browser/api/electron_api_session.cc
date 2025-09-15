@@ -1361,8 +1361,9 @@ v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
 }
 
 v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
-  if (!net_log_)
+  if (!net_log_) {
     net_log_ = NetLog::Create(isolate, browser_context());
+  }
 
   v8::Local<v8::Object> wrapper;
   return net_log_->GetWrapper(isolate).ToLocal(&wrapper)
