@@ -13,10 +13,10 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index d8d5b23b0cfc1066ab1f8b2f7272350bf2443993..f7f30eb7cb229f336e61856508db557bd27f2e33 100644
+index 19a92706da599d44348652b8e9c3eeea1f99f356..b771f6d206a258de54b9f6a29531fe0f14d1ec36 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -433,6 +433,24 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+@@ -420,6 +420,24 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
        scoped_refptr<ColorProviderKey::ThemeInitializerSupplier> custom_theme,
        bool use_custom_frame = true) const;
  
@@ -38,14 +38,14 @@ index d8d5b23b0cfc1066ab1f8b2f7272350bf2443993..f7f30eb7cb229f336e61856508db557b
 +   }
 + }
 +
-   // Returns a shared instance of the default native theme for native UI.
+   // Returns shared instances of the default native theme for native UI or the
+   // web, respectively.
    static NativeTheme* GetInstanceForNativeUi();
- 
-@@ -646,6 +664,7 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+@@ -591,6 +609,7 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
-   std::optional<base::TimeDelta> caret_blink_interval_;
+   base::TimeDelta caret_blink_interval_;
    bool use_overlay_scrollbars_ = false;
 +  ThemeSource theme_source_ = ThemeSource::kSystem;
  
-   SEQUENCE_CHECKER(sequence_checker_);
- };
+   raw_ptr<NativeTheme> associated_web_instance_ = nullptr;
+ 
