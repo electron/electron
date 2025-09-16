@@ -1,7 +1,7 @@
-From ec6c184783824fa8f974013aae28a45c36c0112f Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Darius Mercadier <dmercadier@chromium.org>
 Date: Tue, 16 Sep 2025 16:40:24 +0200
-Subject: [PATCH] [compiler] Don't assume that upper 32-bit of Int32MulOvfCheck are 0
+Subject: Don't assume that upper 32-bit of Int32MulOvfCheck are 0
 
 Because Arm64 doesn't have a flag-setting 32-bit multiplication,
 which means that instead with use a 64-bit multiplication, and compare
@@ -15,13 +15,12 @@ Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
 Commit-Queue: Leszek Swirski <leszeks@chromium.org>
 Reviewed-by: Leszek Swirski <leszeks@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#102530}
----
 
 diff --git a/src/compiler/backend/arm64/instruction-selector-arm64.cc b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-index 2b6d584..0aad1ef 100644
+index db5624f078fa7591d86cd9c6ce33f49ef0eaa6fe..49e8c82f118b89d2bc74144f10803ba2c53ee0b5 100644
 --- a/src/compiler/backend/arm64/instruction-selector-arm64.cc
 +++ b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-@@ -2973,9 +2973,19 @@
+@@ -2972,9 +2972,19 @@ bool InstructionSelector::ZeroExtendsWord32ToWord64NoPhis(OpIndex node) {
        return op.Cast<ShiftOp>().rep == WordRepresentation::Word32();
      case Opcode::kComparison:
        return op.Cast<ComparisonOp>().rep == RegisterRepresentation::Word32();
