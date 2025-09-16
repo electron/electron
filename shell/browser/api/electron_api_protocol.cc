@@ -251,24 +251,23 @@ bool Protocol::IsProtocolIntercepted(const std::string& scheme) {
   return protocol_registry_->FindIntercepted(scheme) != nullptr;
 }
 
-v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme,
-                                                   gin::Arguments* args) {
-  util::EmitWarning(args->isolate(),
+v8::Local<v8::Promise> Protocol::IsProtocolHandled(v8::Isolate* const isolate,
+                                                   const std::string& scheme) {
+  util::EmitWarning(isolate,
                     "The protocol.isProtocolHandled API is deprecated, "
                     "use protocol.isProtocolRegistered "
                     "or protocol.isProtocolIntercepted instead.",
                     "ProtocolDeprecateIsProtocolHandled");
   return gin_helper::Promise<bool>::ResolvedPromise(
-      args->isolate(),
-      IsProtocolRegistered(scheme) || IsProtocolIntercepted(scheme) ||
-          // The |isProtocolHandled| should return true for builtin
-          // schemes, however with NetworkService it is impossible to
-          // know which schemes are registered until a real network
-          // request is sent.
-          // So we have to test against a hard-coded builtin schemes
-          // list make it work with old code. We should deprecate
-          // this API with the new |isProtocolRegistered| API.
-          base::Contains(kBuiltinSchemes, scheme));
+      isolate, IsProtocolRegistered(scheme) || IsProtocolIntercepted(scheme) ||
+                   // The |isProtocolHandled| should return true for builtin
+                   // schemes, however with NetworkService it is impossible to
+                   // know which schemes are registered until a real network
+                   // request is sent.
+                   // So we have to test against a hard-coded builtin schemes
+                   // list make it work with old code. We should deprecate
+                   // this API with the new |isProtocolRegistered| API.
+                   base::Contains(kBuiltinSchemes, scheme));
 }
 
 void Protocol::HandleOptionalCallback(gin::Arguments* args, Error error) {

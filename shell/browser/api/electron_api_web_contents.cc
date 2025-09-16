@@ -3259,21 +3259,19 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
 }
 #endif
 
-void WebContents::AddWorkSpace(gin::Arguments* args,
+void WebContents::AddWorkSpace(v8::Isolate* const isolate,
                                const base::FilePath& path) {
   if (path.empty()) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("path cannot be empty");
+    gin_helper::ErrorThrower{isolate}.ThrowError("path cannot be empty");
     return;
   }
   DevToolsAddFileSystem(std::string(), path);
 }
 
-void WebContents::RemoveWorkSpace(gin::Arguments* args,
+void WebContents::RemoveWorkSpace(v8::Isolate* const isolate,
                                   const base::FilePath& path) {
   if (path.empty()) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("path cannot be empty");
+    gin_helper::ErrorThrower{isolate}.ThrowError("path cannot be empty");
     return;
   }
   DevToolsRemoveFileSystem(path);
@@ -3508,8 +3506,8 @@ void WebContents::EndFrameSubscription() {
   frame_subscriber_.reset();
 }
 
-void WebContents::StartDrag(const gin_helper::Dictionary& item,
-                            gin::Arguments* args) {
+void WebContents::StartDrag(v8::Isolate* const isolate,
+                            const gin_helper::Dictionary& item) {
   base::FilePath file;
   std::vector<base::FilePath> files;
   if (!item.Get("files", &files) && item.Get("file", &file)) {
@@ -3518,13 +3516,13 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
 
   v8::Local<v8::Value> icon_value;
   if (!item.Get("icon", &icon_value)) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("'icon' parameter is required");
+    gin_helper::ErrorThrower{isolate}.ThrowError(
+        "'icon' parameter is required");
     return;
   }
 
   NativeImage* icon = nullptr;
-  if (!NativeImage::TryConvertNativeImage(args->isolate(), icon_value, &icon) ||
+  if (!NativeImage::TryConvertNativeImage(isolate, icon_value, &icon) ||
       icon->image().IsEmpty()) {
     return;
   }
@@ -3534,8 +3532,8 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
     base::CurrentThread::ScopedAllowApplicationTasksInNativeNestedLoop allow;
     DragFileItems(files, icon->image(), web_contents()->GetNativeView());
   } else {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("Must specify either 'file' or 'files' option");
+    gin_helper::ErrorThrower{isolate}.ThrowError(
+        "Must specify either 'file' or 'files' option");
   }
 }
 
@@ -3758,7 +3756,6 @@ v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow(
 }
 
 v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
-  v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Object> wrapper;
   if (!session_->GetWrapper(isolate).ToLocal(&wrapper)) {
     return v8::Null(isolate);
@@ -3804,11 +3801,15 @@ v8::Local<v8::Value> WebContents::DevToolsWebContents(v8::Isolate* isolate) {
 }
 
 v8::Local<v8::Value> WebContents::Debugger(v8::Isolate* isolate) {
-  if (debugger_.IsEmpty()) {
-    auto handle = electron::api::Debugger::Create(isolate, web_contents());
-    debugger_.Reset(isolate, handle.ToV8());
+  if (!debugger_) {
+    debugger_ = electron::api::Debugger::Create(isolate, web_contents());
   }
-  return v8::Local<v8::Value>::New(isolate, debugger_);
+
+  v8::Local<v8::Object> wrapper;
+  if (!debugger_->GetWrapper(isolate).ToLocal(&wrapper)) {
+    return v8::Null(isolate);
+  }
+  return v8::Local<v8::Value>::New(isolate, wrapper);
 }
 
 content::RenderFrameHost* WebContents::MainFrame() {

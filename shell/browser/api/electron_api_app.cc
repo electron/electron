@@ -1241,14 +1241,13 @@ v8::Local<v8::Value> App::GetJumpListSettings() {
   return dict.GetHandle();
 }
 
-JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
-                                gin::Arguments* args) {
+JumpListResult App::SetJumpList(v8::Isolate* const isolate,
+                                v8::Local<v8::Value> val) {
   std::vector<JumpListCategory> categories;
   bool delete_jump_list = val->IsNull();
-  if (!delete_jump_list &&
-      !gin::ConvertFromV8(args->isolate(), val, &categories)) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowTypeError("Argument must be null or an array of categories");
+  if (!delete_jump_list && !gin::ConvertFromV8(isolate, val, &categories)) {
+    gin_helper::ErrorThrower{isolate}.ThrowTypeError(
+        "Argument must be null or an array of categories");
     return JumpListResult::kArgumentError;
   }
 

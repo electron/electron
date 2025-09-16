@@ -89,8 +89,8 @@ class Protocol final : public gin_helper::DeprecatedWrappable<Protocol>,
   bool IsProtocolIntercepted(const std::string& scheme);
 
   // Old async version of IsProtocolRegistered.
-  v8::Local<v8::Promise> IsProtocolHandled(const std::string& scheme,
-                                           gin::Arguments* args);
+  v8::Local<v8::Promise> IsProtocolHandled(v8::Isolate* isolate,
+                                           const std::string& scheme);
 
   // Helper for converting old registration APIs to new RegisterProtocol API.
   template <ProtocolType type>

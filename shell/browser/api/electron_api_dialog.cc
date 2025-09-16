@@ -42,9 +42,8 @@ void ResolvePromiseObject(gin_helper::Promise<gin_helper::Dictionary> promise,
 }
 
 v8::Local<v8::Promise> ShowMessageBox(
-    const electron::MessageBoxSettings& settings,
-    gin::Arguments* args) {
-  v8::Isolate* isolate = args->isolate();
+    v8::Isolate* const isolate,
+    const electron::MessageBoxSettings& settings) {
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
@@ -62,9 +61,9 @@ void ShowOpenDialogSync(const file_dialog::DialogSettings& settings,
 }
 
 v8::Local<v8::Promise> ShowOpenDialog(
-    const file_dialog::DialogSettings& settings,
-    gin::Arguments* args) {
-  gin_helper::Promise<gin_helper::Dictionary> promise(args->isolate());
+    v8::Isolate* const isolate,
+    const file_dialog::DialogSettings& settings) {
+  gin_helper::Promise<gin_helper::Dictionary> promise{isolate};
   v8::Local<v8::Promise> handle = promise.GetHandle();
   file_dialog::ShowOpenDialog(settings, std::move(promise));
   return handle;
