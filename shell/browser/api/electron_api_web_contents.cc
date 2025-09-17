@@ -3758,7 +3758,6 @@ v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow(
 }
 
 v8::Local<v8::Value> WebContents::Session(v8::Isolate* isolate) {
-  v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Object> wrapper;
   if (!session_->GetWrapper(isolate).ToLocal(&wrapper)) {
     return v8::Null(isolate);
