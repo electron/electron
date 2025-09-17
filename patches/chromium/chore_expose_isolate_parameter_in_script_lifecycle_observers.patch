@@ -103,10 +103,10 @@ index 1f5e24bc38d6ced52e4773236522e9520efc6f6d..a22ca5968fce5e6a0c436ec9b40f0e2f
    void WillInitializeWorkerContext() override;
    void WillDestroyWorkerContext(v8::Local<v8::Context> context) override;
 diff --git a/extensions/renderer/dispatcher.cc b/extensions/renderer/dispatcher.cc
-index 3e6f83c318a43367979732b9fec927ed4abd0ff7..a60c8cbcbd6a8c1faddf7ca503fb630c986a8a99 100644
+index 22fdb490c7803f3bf864d9e0e6dc618e4d83480b..3f3367b5039e28b07acd1b326724958d764171c2 100644
 --- a/extensions/renderer/dispatcher.cc
 +++ b/extensions/renderer/dispatcher.cc
-@@ -612,6 +612,7 @@ void Dispatcher::DidInitializeServiceWorkerContextOnWorkerThread(
+@@ -615,6 +615,7 @@ void Dispatcher::DidInitializeServiceWorkerContextOnWorkerThread(
  
  void Dispatcher::WillEvaluateServiceWorkerOnWorkerThread(
      blink::WebServiceWorkerContextProxy* context_proxy,

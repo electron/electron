@@ -597,7 +597,7 @@ index 78a96bff9ba9e24dababf758ba38f9b430b39a14..7b46e68f52e3c13f731ce48670600442
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index 5c5381caa2bfcc66bd0af185ae9ce0019a546b04..d7d1b3fc3552bbe4e5af22144d189aba293243c9 100644
+index ad6f66db209484678e74807f091f03683307e7ce..73a5100e4e2f321f88829ba9a311f1c2f04823c6 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 @@ -39,6 +39,7 @@ struct RootCompositorFrameSinkParams {
@@ -620,7 +620,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 846cabbcab16cce7b41f8a9051768799dc74577a..291a43163fb4f3f22e9f078d9e54c24244aa5287 100644
+index 986569ff285a2a5be21e715dacf6072de92ebe79..2544d15677ac20c83118d5552c94eed103ac1eaa 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -87,6 +87,7 @@ class DisplayPrivate;
