@@ -42,8 +42,8 @@ bool IsDarkModeSupported() {
 
 void SetDarkModeForWindow(HWND hWnd) {
   ui::NativeTheme* theme = ui::NativeTheme::GetInstanceForNativeUi();
-  bool has_contrast_preference = theme->GetPreferredContrast() ==
-                                 ui::NativeTheme::PreferredContrast::kMore;
+  bool has_contrast_preference =
+      theme->preferred_contrast() == ui::NativeTheme::PreferredContrast::kMore;
   bool prefers_dark = theme->preferred_color_scheme() ==
                       ui::NativeTheme::PreferredColorScheme::kDark;
   bool dark = prefers_dark && !has_contrast_preference;
