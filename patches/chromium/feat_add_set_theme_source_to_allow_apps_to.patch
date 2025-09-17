@@ -13,12 +13,12 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 19a92706da599d44348652b8e9c3eeea1f99f356..b771f6d206a258de54b9f6a29531fe0f14d1ec36 100644
+index 8391cd1469516e83b2cc1466e121bfeed5497c8e..0dea88619582ad526ba1694e162492ae2d11cc2a 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -420,6 +420,24 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
-       scoped_refptr<ColorProviderKey::ThemeInitializerSupplier> custom_theme,
-       bool use_custom_frame = true) const;
+@@ -536,6 +536,24 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+   // Whether dark mode is forced via command-line flag.
+   static bool IsForcedDarkMode();
  
 +  enum ThemeSource {
 +    kSystem,
@@ -30,21 +30,21 @@ index 19a92706da599d44348652b8e9c3eeea1f99f356..b771f6d206a258de54b9f6a29531fe0f
 +    return theme_source_;
 +  }
 +
-+ void set_theme_source(ThemeSource theme_source) {
-+   bool was_dark = preferred_color_scheme() == PreferredColorScheme::kDark;
-+   theme_source_ = theme_source;
-+   if ((preferred_color_scheme() == PreferredColorScheme::kDark) != was_dark) {
-+     NotifyOnNativeThemeUpdated();
-+   }
-+ }
++  void set_theme_source(ThemeSource theme_source) {
++    bool was_dark = preferred_color_scheme() == PreferredColorScheme::kDark;
++    theme_source_ = theme_source;
++    if ((preferred_color_scheme() == PreferredColorScheme::kDark) != was_dark) {
++      NotifyOnNativeThemeUpdated();
++    }
++  }
 +
-   // Returns shared instances of the default native theme for native UI or the
-   // web, respectively.
-   static NativeTheme* GetInstanceForNativeUi();
-@@ -591,6 +609,7 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
-   PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
+  protected:
+   explicit NativeTheme(
+       ui::SystemTheme system_theme = ui::SystemTheme::kDefault);
+@@ -590,6 +608,7 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+   std::optional<ui::ColorProviderKey::SchemeVariant> scheme_variant_;
+   bool should_use_system_accent_color_ = true;
    base::TimeDelta caret_blink_interval_;
-   bool use_overlay_scrollbars_ = false;
 +  ThemeSource theme_source_ = ThemeSource::kSystem;
  
    raw_ptr<NativeTheme> associated_web_instance_ = nullptr;
