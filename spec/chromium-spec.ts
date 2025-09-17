@@ -343,12 +343,12 @@ describe('web security', () => {
             });
           }
         </script>`);
-      return await w.webContents.executeJavaScript('loadWasm()');
+      return (await w.webContents.executeJavaScript('loadWasm()')).trim();
     }
 
     it('wasm codegen is disallowed by default', async () => {
       const r = await loadWasm('');
-      expect(r).to.equal('WebAssembly.instantiate(): Refused to compile or instantiate WebAssembly module because \'unsafe-eval\' is not an allowed source of script in the following Content Security Policy directive: "script-src \'self\' \'unsafe-inline\'"');
+      expect(r).to.equal('WebAssembly.instantiate(): Compiling or instantiating WebAssembly module violates the following Content Security policy directive because \'unsafe-eval\' is not an allowed source of script in the following Content Security Policy directive:');
     });
 
     it('wasm codegen is allowed with "wasm-unsafe-eval" csp', async () => {
