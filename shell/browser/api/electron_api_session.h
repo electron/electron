@@ -60,6 +60,7 @@ struct PreloadScript;
 
 namespace api {
 
+class Cookies;
 class NetLog;
 
 class Session final : public gin::Wrappable<Session>,
@@ -207,7 +208,7 @@ class Session final : public gin::Wrappable<Session>,
                                      v8::Local<v8::Value> val);
 
   // Cached gin_helper::Wrappable objects.
-  v8::TracedReference<v8::Value> cookies_;
+  cppgc::Member<api::Cookies> cookies_;
   v8::TracedReference<v8::Value> extensions_;
   v8::TracedReference<v8::Value> protocol_;
   cppgc::Member<api::NetLog> net_log_;

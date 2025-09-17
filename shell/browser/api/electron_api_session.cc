@@ -1321,11 +1321,14 @@ v8::Local<v8::Promise> Session::GetSharedDictionaryUsageInfo() {
 }
 
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
-  if (cookies_.IsEmptyThreadSafe()) {
-    auto handle = Cookies::Create(isolate, browser_context());
-    cookies_.Reset(isolate, handle.ToV8());
+  if (!cookies_) {
+    cookies_ = Cookies::Create(isolate, browser_context());
   }
-  return cookies_.Get(isolate);
+
+  v8::Local<v8::Object> wrapper;
+  return cookies_->GetWrapper(isolate).ToLocal(&wrapper)
+             ? wrapper.As<v8::Value>()
+             : v8::Null(isolate);
 }
 
 v8::Local<v8::Value> Session::Extensions(v8::Isolate* isolate) {

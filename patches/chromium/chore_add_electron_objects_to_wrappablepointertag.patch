@@ -8,20 +8,21 @@ electron objects that extend gin::Wrappable and gets
 allocated on the cpp heap
 
 diff --git a/gin/public/wrappable_pointer_tags.h b/gin/public/wrappable_pointer_tags.h
-index 80ec409efe1635390887d1324be661643818abff..2e20b63d1fca56efb43c18d0fa04b1e2b4cf339a 100644
+index 80ec409efe1635390887d1324be661643818abff..c730ac82e94c2d380f5172e36e5422530e776e0d 100644
 --- a/gin/public/wrappable_pointer_tags.h
 +++ b/gin/public/wrappable_pointer_tags.h
-@@ -66,7 +66,12 @@ enum WrappablePointerTag : uint16_t {
+@@ -66,7 +66,13 @@ enum WrappablePointerTag : uint16_t {
    kTextInputControllerBindings,         // content::TextInputControllerBindings
    kWebAXObjectProxy,                    // content::WebAXObjectProxy
    kWrappedExceptionHandler,             // extensions::WrappedExceptionHandler
 -  kLastPointerTag = kWrappedExceptionHandler,
 +  kElectronApp,                         // electron::api::App
++  kElectronCookies,                     // electron::api::Cookies
 +  kElectronDebugger,                    // electron::api::Debugger
 +  kElectronEvent,                       // gin_helper::internal::Event
 +  kElectronNetLog,                      // electron::api::NetLog
 +  kElectronSession,                     // electron::api::Session
-+  kLastPointerTag = kElectronEvent,
++  kLastPointerTag = ElectronSession,
  };
  
  static_assert(kLastPointerTag <
