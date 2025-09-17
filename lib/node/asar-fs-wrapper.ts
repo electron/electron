@@ -1,5 +1,5 @@
 import { Buffer } from 'buffer';
-import { Dirent, constants } from 'fs';
+import { type Dirent, constants } from 'fs';
 import * as path from 'path';
 import * as util from 'util';
 
@@ -123,12 +123,12 @@ const fileTypeToMode = new Map<AsarFileType, number>([
   [AsarFileType.kLink, constants.S_IFLNK]
 ]);
 
-const asarStatsToFsStats = function (stats: NodeJS.AsarFileStat) {
+const asarStatsToFsStats = function (stats: NodeJS.AsarFileStat, options?: any) {
   const { Stats } = require('fs');
 
   const mode = constants.S_IROTH | constants.S_IRGRP | constants.S_IRUSR | constants.S_IWUSR | fileTypeToMode.get(stats.type)!;
 
-  return new Stats(
+  const statsObject = new Stats(
     1, // dev
     mode, // mode
     1, // nlink
@@ -144,6 +144,16 @@ const asarStatsToFsStats = function (stats: NodeJS.AsarFileStat) {
     fakeTime.getTime(), // ctim_msec
     fakeTime.getTime() // birthtim_msec
   );
+
+  if (options?.bigint === true) {
+    Object.entries(statsObject).forEach(([key, value]) => {
+      if (typeof value === 'number') {
+        statsObject[key] = BigInt(value);
+      }
+    });
+  }
+
+  return statsObject;
 };
 
 const enum AsarError {
@@ -299,14 +309,6 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     fs.writeSync(logFDs.get(asarPath), `${offset}: ${filePath}\n`);
   };
 
-  const shouldThrowStatError = (options: any) => {
-    if (options && typeof options === 'object' && options.throwIfNoEntry === false) {
-      return false;
-    }
-
-    return true;
-  };
-
   const { lstatSync } = fs;
   fs.lstatSync = (pathArgument: string, options: any) => {
     const pathInfo = splitPath(pathArgument);
@@ -315,7 +317,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
     const archive = getOrCreateArchive(asarPath);
     if (!archive) {
-      if (shouldThrowStatError(options)) {
+      if (options?.throwIfNoEntry !== false) {
         throw createError(AsarError.INVALID_ARCHIVE, { asarPath });
       };
       return null;
@@ -323,13 +325,13 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
     const stats = archive.stat(filePath);
     if (!stats) {
-      if (shouldThrowStatError(options)) {
+      if (options?.throwIfNoEntry !== false) {
         throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
       };
       return null;
     }
 
-    return asarStatsToFsStats(stats);
+    return asarStatsToFsStats(stats, options);
   };
 
   const { lstat } = fs;
@@ -356,7 +358,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       return;
     }
 
-    const fsStats = asarStatsToFsStats(stats);
+    const fsStats = asarStatsToFsStats(stats, options);
     nextTick(callback, [null, fsStats]);
   };
 
