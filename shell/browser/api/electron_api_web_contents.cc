@@ -572,8 +572,8 @@ std::optional<base::TimeDelta> GetCursorBlinkInterval() {
   if (system_value)
     return *system_value;
 #elif BUILDFLAG(IS_LINUX)
-  if (auto* linux_ui = ui::LinuxUi::instance())
-    return linux_ui->GetCursorBlinkInterval();
+  if (auto* native_theme = ui::NativeTheme::GetInstanceForNativeUi())
+    return native_theme->caret_blink_interval();
 #elif BUILDFLAG(IS_WIN)
   const auto system_msec = ::GetCaretBlinkTime();
   if (system_msec != 0) {
