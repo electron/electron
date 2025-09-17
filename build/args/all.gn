@@ -24,9 +24,7 @@ enable_printing = true
 angle_enable_vulkan_validation_layers = false
 dawn_enable_vulkan_validation_layers = false
 
-# Removes dxc dll's that are only used experimentally.
-# See https://bugs.chromium.org/p/chromium/issues/detail?id=1474897
-dawn_use_built_dxc = false
+dawn_use_built_dxc = true
 
 # These are disabled because they cause the zip manifest to differ between
 # testing and release builds.
