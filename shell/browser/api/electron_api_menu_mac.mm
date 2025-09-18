@@ -20,6 +20,8 @@
 #include "shell/common/keyboard_util.h"
 #include "shell/common/node_includes.h"
 #include "ui/base/cocoa/menu_utils.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace {
 
@@ -289,10 +291,11 @@ void Menu::SendActionToFirstResponder(const std::string& action) {
 
 // static
 gin_helper::Handle<Menu> Menu::New(gin::Arguments* args) {
-  auto handle = gin_helper::CreateHandle(args->isolate(),
-                                         static_cast<Menu*>(new MenuMac(args)));
-  gin_helper::CallMethod(args->isolate(), handle.get(), "_init");
-  return handle;
+  v8::Isolate* const isolate = args->isolate();
+  Menu* menu = cppgc::MakeGarbageCollected<MenuMac>(
+      isolate->GetCppHeap()->GetAllocationHandle(), args);
+  gin_helper::CallMethod(isolate, menu, "_init");
+  return menu;
 }
 
 }  // namespace electron::api

@@ -50,7 +50,8 @@ struct Converter<SharingItem> {
 
 namespace electron::api {
 
-gin::DeprecatedWrapperInfo Menu::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo Menu::kWrapperInfo = {{gin::kEmbedderNativeGin},
+                                       gin::kElectronMenu};
 
 Menu::Menu(gin::Arguments* args)
     : model_(std::make_unique<ElectronMenuModel>(this)) {
@@ -311,8 +312,12 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .Build();
 }
 
-const char* Menu::GetTypeName() {
-  return GetClassName();
+const gin::WrapperInfo* Menu::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* Menu::GetHumanReadableName() const {
+  return "Electron / Menu";
 }
 
 }  // namespace electron::api

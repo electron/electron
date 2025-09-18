@@ -44,8 +44,19 @@ class Constructible {
       v8::Local<v8::Context> context) {
     gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
     auto* wrapper_info = &T::kWrapperInfo;
-    v8::Local<v8::FunctionTemplate> constructor =
-        data->DeprecatedGetFunctionTemplate(wrapper_info);
+
+    // DeprecatedWrapperInfo support will be removed as part of
+    // https://github.com/electron/electron/issues/47922
+    constexpr bool is_deprecated_wrapper =
+        std::is_same_v<decltype(wrapper_info), gin::DeprecatedWrapperInfo*>;
+
+    v8::Local<v8::FunctionTemplate> constructor;
+    if constexpr (is_deprecated_wrapper) {
+      constructor = data->DeprecatedGetFunctionTemplate(wrapper_info);
+    } else {
+      constructor = data->GetFunctionTemplate(wrapper_info);
+    }
+
     if (constructor.IsEmpty()) {
       constructor = gin::CreateConstructorFunctionTemplate(
           isolate, base::BindRepeating(&T::New));
@@ -57,9 +68,14 @@ class Constructible {
           gin::kNumberOfInternalFields);
       constructor->SetClassName(gin::StringToV8(isolate, T::GetClassName()));
       T::FillObjectTemplate(isolate, constructor->PrototypeTemplate());
-      data->DeprecatedSetObjectTemplate(wrapper_info,
-                                        constructor->InstanceTemplate());
-      data->DeprecatedSetFunctionTemplate(wrapper_info, constructor);
+      if constexpr (is_deprecated_wrapper) {
+        data->DeprecatedSetObjectTemplate(wrapper_info,
+                                          constructor->InstanceTemplate());
+        data->DeprecatedSetFunctionTemplate(wrapper_info, constructor);
+      } else {
+        data->SetObjectTemplate(wrapper_info, constructor->InstanceTemplate());
+        data->SetFunctionTemplate(wrapper_info, constructor);
+      }
     }
     return constructor->GetFunction(context).ToLocalChecked();
   }
