@@ -46,6 +46,24 @@ class PdfViewerPrivateIsAllowedLocalFileAccessFunction
   ResponseAction Run() override;
 };
 
+class PdfViewerPrivateSaveToDriveFunction : public ExtensionFunction {
+ public:
+  DECLARE_EXTENSION_FUNCTION("pdfViewerPrivate.saveToDrive",
+                             PDFVIEWERPRIVATE_SAVETODRIVE)
+
+  PdfViewerPrivateSaveToDriveFunction();
+  PdfViewerPrivateSaveToDriveFunction(
+      const PdfViewerPrivateSaveToDriveFunction&) = delete;
+  PdfViewerPrivateSaveToDriveFunction& operator=(
+      const PdfViewerPrivateSaveToDriveFunction&) = delete;
+
+ protected:
+  ~PdfViewerPrivateSaveToDriveFunction() override;
+
+  // Override from ExtensionFunction:
+  ResponseAction Run() override;
+};
+
 class PdfViewerPrivateSetPdfDocumentTitleFunction : public ExtensionFunction {
  public:
   DECLARE_EXTENSION_FUNCTION("pdfViewerPrivate.setPdfDocumentTitle",

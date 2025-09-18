@@ -6,6 +6,14 @@
 // functionality that the PDF Viewer needs from outside the PDF plugin. This API
 // is exclusively for the PDF Viewer.
 namespace pdfViewerPrivate {
+  // Must match `SaveRequestType` in `pdf/pdf_view_web_plugin.h` and
+  // `tools/typescript/definitions/pdf_viewer_private.d.ts`.
+  enum SaveRequestType {
+    ANNOTATION,
+    ORIGINAL,
+    EDITED,
+    SEARCHIFIED
+  };
   // Nearly identical to mimeHandlerPrivate.StreamInfo, but without a mime type
   // nor a response header field. Those fields are unused by the PDF viewer.
   dictionary StreamInfo {
@@ -51,6 +59,11 @@ namespace pdfViewerPrivate {
     static void isAllowedLocalFileAccess(
         DOMString url,
         IsAllowedLocalFileAccessCallback callback);
+
+    // Sends a request to save the PDF to Google Drive.
+    static void saveToDrive(
+        SaveRequestType saveRequestType,
+        optional VoidCallback callback);
 
     // Sets the current tab title to `title` for a full-page PDF.
     static void setPdfDocumentTitle(
