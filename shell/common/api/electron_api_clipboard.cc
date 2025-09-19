@@ -97,10 +97,10 @@ std::string Clipboard::Read(const std::string& format_string) {
   return data;
 }
 
-v8::Local<v8::Value> Clipboard::ReadBuffer(const std::string& format_string,
-                                           gin_helper::Arguments* args) {
+v8::Local<v8::Value> Clipboard::ReadBuffer(v8::Isolate* const isolate,
+                                           const std::string& format_string) {
   std::string data = Read(format_string);
-  return electron::Buffer::Copy(args->isolate(), data).ToLocalChecked();
+  return electron::Buffer::Copy(isolate, data).ToLocalChecked();
 }
 
 void Clipboard::WriteBuffer(const std::string& format,

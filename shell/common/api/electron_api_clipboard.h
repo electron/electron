@@ -61,8 +61,8 @@ class Clipboard {
   static std::u16string ReadFindText();
   static void WriteFindText(const std::u16string& text);
 
-  static v8::Local<v8::Value> ReadBuffer(const std::string& format_string,
-                                         gin_helper::Arguments* args);
+  static v8::Local<v8::Value> ReadBuffer(v8::Isolate* isolate,
+                                         const std::string& format_string);
   static void WriteBuffer(const std::string& format_string,
                           const v8::Local<v8::Value> buffer,
                           gin_helper::Arguments* args);
