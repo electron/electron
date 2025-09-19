@@ -118,7 +118,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsMinimized() const;
   void SetFullScreen(bool fullscreen);
   bool IsFullscreen() const;
-  void SetBounds(const gfx::Rect& bounds, gin_helper::Arguments* args);
+  void SetBounds(const gfx::Rect& bounds, gin::Arguments* args);
   gfx::Rect GetBounds() const;
   void SetSize(int width, int height, gin_helper::Arguments* args);
   std::array<int, 2U> GetSize() const;

@@ -444,7 +444,7 @@ bool BaseWindow::IsFullscreen() const {
 }
 
 void BaseWindow::SetBounds(const gfx::Rect& bounds,
-                           gin_helper::Arguments* args) {
+                           gin::Arguments* const args) {
   bool animate = false;
   args->GetNext(&animate);
   window_->SetBounds(bounds, animate);
