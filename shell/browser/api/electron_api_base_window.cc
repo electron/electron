@@ -485,12 +485,12 @@ std::array<int, 2U> BaseWindow::GetSize() const {
   return ToArray(window_->GetSize());
 }
 
-void BaseWindow::SetContentSize(int width,
-                                int height,
-                                gin_helper::Arguments* args) {
+void BaseWindow::SetContentSize(const int width,
+                                const int height,
+                                gin::Arguments* const args) {
   bool animate = false;
   args->GetNext(&animate);
-  window_->SetContentSize(gfx::Size(width, height), animate);
+  window_->SetContentSize(gfx::Size{width, height}, animate);
 }
 
 std::array<int, 2U> BaseWindow::GetContentSize() const {
