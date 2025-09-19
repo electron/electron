@@ -43,7 +43,7 @@ class Menu : public gin::Wrappable<Menu>,
   Menu& operator=(const Menu&) = delete;
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static const gin::WrapperInfo kWrapperInfo;
   const gin::WrapperInfo* wrapper_info() const override;
   const char* GetHumanReadableName() const override;
 
