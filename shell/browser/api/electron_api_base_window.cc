@@ -817,7 +817,7 @@ void BaseWindow::SetOverlayIcon(const gfx::Image& overlay,
 }
 
 void BaseWindow::SetVisibleOnAllWorkspaces(bool visible,
-                                           gin_helper::Arguments* args) {
+                                           gin::Arguments* const args) {
   gin_helper::Dictionary options;
   bool visibleOnFullScreen = false;
   bool skipTransformProcessType = false;

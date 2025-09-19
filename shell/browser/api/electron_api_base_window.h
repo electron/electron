@@ -190,7 +190,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetProgressBar(double progress, gin::Arguments* args);
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description);
-  void SetVisibleOnAllWorkspaces(bool visible, gin_helper::Arguments* args);
+  void SetVisibleOnAllWorkspaces(bool visible, gin::Arguments* args);
   bool IsVisibleOnAllWorkspaces() const;
   void SetAutoHideCursor(bool auto_hide);
   virtual void SetVibrancy(v8::Isolate* isolate,
