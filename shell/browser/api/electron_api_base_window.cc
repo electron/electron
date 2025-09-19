@@ -463,7 +463,7 @@ gfx::Rect BaseWindow::GetNormalBounds() const {
 }
 
 void BaseWindow::SetContentBounds(const gfx::Rect& bounds,
-                                  gin_helper::Arguments* args) {
+                                  gin::Arguments* const args) {
   bool animate = false;
   args->GetNext(&animate);
   window_->SetContentBounds(bounds, animate);
