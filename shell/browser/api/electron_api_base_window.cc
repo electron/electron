@@ -999,7 +999,7 @@ bool BaseWindow::IsModal() const {
   return window_->is_modal();
 }
 
-bool BaseWindow::SetThumbarButtons(gin_helper::Arguments* args) {
+bool BaseWindow::SetThumbarButtons(gin::Arguments* args) {
 #if BUILDFLAG(IS_WIN)
   std::vector<TaskbarHost::ThumbarButton> buttons;
   if (!args->GetNext(&buttons)) {

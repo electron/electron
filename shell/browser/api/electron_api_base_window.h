@@ -236,7 +236,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsModal() const;
 
   // Extra APIs added in JS.
-  bool SetThumbarButtons(gin_helper::Arguments* args);
+  bool SetThumbarButtons(gin::Arguments* args);
 #if defined(TOOLKIT_VIEWS)
   void SetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon);
   void SetIconImpl(v8::Isolate* isolate,
