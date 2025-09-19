@@ -29,7 +29,6 @@ class Clipboard {
   Clipboard(const Clipboard&) = delete;
   Clipboard& operator=(const Clipboard&) = delete;
 
-  static ui::ClipboardBuffer GetClipboardBuffer(gin_helper::Arguments* args);
   static std::vector<std::u16string> AvailableFormats(
       gin_helper::Arguments* args);
   static bool Has(const std::string& format_string,
@@ -69,6 +68,9 @@ class Clipboard {
                           gin_helper::Arguments* args);
 
   static void WriteFilesForTesting(const std::vector<base::FilePath>& files);
+
+ private:
+  static ui::ClipboardBuffer GetClipboardBuffer(gin_helper::Arguments* args);
 };
 
 }  // namespace electron::api
