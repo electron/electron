@@ -962,7 +962,7 @@ void BaseWindow::SetAspectRatio(const double aspect_ratio,
 }
 
 void BaseWindow::PreviewFile(const std::string& path,
-                             gin_helper::Arguments* args) {
+                             gin::Arguments* const args) {
   std::string display_name;
   if (!args->GetNext(&display_name))
     display_name = path;
