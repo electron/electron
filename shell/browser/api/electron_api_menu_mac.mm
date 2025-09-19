@@ -49,7 +49,7 @@ ui::Accelerator GetAcceleratorFromKeyEquivalentAndModifierMask(
 
 namespace electron::api {
 
-MenuMac::MenuMac(gin::Arguments* args) : Menu(args) {}
+MenuMac::MenuMac(gin::Arguments* args) : Menu{args} {}
 
 MenuMac::~MenuMac() = default;
 
