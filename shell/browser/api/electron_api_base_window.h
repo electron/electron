@@ -136,7 +136,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetResizable(bool resizable);
   bool IsResizable() const;
   void SetMovable(bool movable);
-  void MoveAbove(const std::string& sourceId, gin_helper::Arguments* args);
+  void MoveAbove(const std::string& sourceId, gin::Arguments* args);
   void MoveTop();
   bool IsMovable() const;
   void SetMinimizable(bool minimizable);
@@ -147,7 +147,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsFullScreenable() const;
   void SetClosable(bool closable);
   bool IsClosable() const;
-  void SetAlwaysOnTop(bool top, gin_helper::Arguments* args);
+  void SetAlwaysOnTop(bool top, gin::Arguments* args);
   bool IsAlwaysOnTop() const;
   void Center();
   void SetPosition(int x, int y, gin_helper::Arguments* args);
@@ -177,7 +177,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   std::string GetRepresentedFilename() const;
   void SetDocumentEdited(bool edited);
   bool IsDocumentEdited() const;
-  void SetIgnoreMouseEvents(bool ignore, gin_helper::Arguments* args);
+  void SetIgnoreMouseEvents(bool ignore, gin::Arguments* args);
   void SetContentProtection(bool enable);
   bool IsContentProtected() const;
   void SetFocusable(bool focusable);

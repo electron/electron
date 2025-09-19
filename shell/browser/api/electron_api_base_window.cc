@@ -567,7 +567,7 @@ bool BaseWindow::IsClosable() const {
   return window_->IsClosable();
 }
 
-void BaseWindow::SetAlwaysOnTop(bool top, gin_helper::Arguments* args) {
+void BaseWindow::SetAlwaysOnTop(bool top, gin::Arguments* args) {
   std::string level = "floating";
   int relative_level = 0;
   args->GetNext(&level);
@@ -596,9 +596,9 @@ std::array<int, 2U> BaseWindow::GetPosition() const {
   return ToArray(window_->GetPosition());
 }
 void BaseWindow::MoveAbove(const std::string& sourceId,
-                           gin_helper::Arguments* args) {
+                           gin::Arguments* const args) {
   if (!window_->MoveAbove(sourceId))
-    args->ThrowError("Invalid media source id");
+    args->ThrowTypeError("Invalid media source id");
 }
 
 void BaseWindow::MoveTop() {
@@ -706,8 +706,7 @@ bool BaseWindow::IsDocumentEdited() const {
   return window_->IsDocumentEdited();
 }
 
-void BaseWindow::SetIgnoreMouseEvents(bool ignore,
-                                      gin_helper::Arguments* args) {
+void BaseWindow::SetIgnoreMouseEvents(bool ignore, gin::Arguments* const args) {
   gin_helper::Dictionary options;
   bool forward = false;
   args->GetNext(&options) && options.Get("forward", &forward);
