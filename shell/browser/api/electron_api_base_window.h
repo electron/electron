@@ -37,7 +37,7 @@ class View;
 class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
                    private NativeWindowObserver {
  public:
-  static gin_helper::WrappableBase* New(gin_helper::Arguments* args);
+  static gin_helper::WrappableBase* New(gin::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
@@ -49,8 +49,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   // Common constructor.
   BaseWindow(v8::Isolate* isolate, const gin_helper::Dictionary& options);
   // Creating independent BaseWindow instance.
-  BaseWindow(gin_helper::Arguments* args,
-             const gin_helper::Dictionary& options);
+  BaseWindow(gin::Arguments* args, const gin_helper::Dictionary& options);
   ~BaseWindow() override;
 
   // TrackableObject:

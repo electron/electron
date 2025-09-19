@@ -123,7 +123,7 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
 #endif
 }
 
-BaseWindow::BaseWindow(gin_helper::Arguments* args,
+BaseWindow::BaseWindow(gin::Arguments* args,
                        const gin_helper::Dictionary& options)
     : BaseWindow(args->isolate(), options) {
   InitWithArgs(args);
@@ -1147,7 +1147,7 @@ void BaseWindow::RemoveFromParentChildWindows() {
 }
 
 // static
-gin_helper::WrappableBase* BaseWindow::New(gin_helper::Arguments* args) {
+gin_helper::WrappableBase* BaseWindow::New(gin::Arguments* const args) {
   auto options = gin_helper::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
