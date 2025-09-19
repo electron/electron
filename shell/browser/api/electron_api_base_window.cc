@@ -761,9 +761,9 @@ void BaseWindow::RemoveMenu() {
 }
 
 void BaseWindow::SetParentWindow(v8::Local<v8::Value> value,
-                                 gin_helper::Arguments* args) {
+                                 gin::Arguments* const args) {
   if (IsModal()) {
-    args->ThrowError("Can not be called for modal window");
+    args->ThrowTypeError("Can not be called for modal window");
     return;
   }
 
@@ -778,7 +778,7 @@ void BaseWindow::SetParentWindow(v8::Local<v8::Value> value,
     window_->SetParentWindow(parent->window_.get());
     parent->child_windows_.Set(isolate(), weak_map_id(), GetWrapper());
   } else {
-    args->ThrowError("Must pass BaseWindow instance or null");
+    args->ThrowTypeError("Must pass BaseWindow instance or null");
   }
 }
 
