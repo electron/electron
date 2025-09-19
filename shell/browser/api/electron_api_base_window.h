@@ -218,7 +218,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void MergeAllWindows();
   void MoveTabToNewWindow();
   void ToggleTabBar();
-  void AddTabbedWindow(NativeWindow* window, gin_helper::Arguments* args);
+  void AddTabbedWindow(NativeWindow* window, gin::Arguments* args);
   v8::Local<v8::Value> GetTabbingIdentifier();
   void SetAutoHideMenuBar(bool auto_hide);
   bool IsMenuBarAutoHide() const;

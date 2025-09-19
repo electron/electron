@@ -927,10 +927,11 @@ void BaseWindow::ToggleTabBar() {
   window_->ToggleTabBar();
 }
 
-void BaseWindow::AddTabbedWindow(NativeWindow* window,
-                                 gin_helper::Arguments* args) {
+void BaseWindow::AddTabbedWindow(NativeWindow* const window,
+                                 gin::Arguments* const args) {
   if (!window_->AddTabbedWindow(window))
-    args->ThrowError("AddTabbedWindow cannot be called by a window on itself.");
+    args->ThrowTypeError(
+        "AddTabbedWindow cannot be called by a window on itself.");
 }
 
 v8::Local<v8::Value> BaseWindow::GetTabbingIdentifier() {
