@@ -224,7 +224,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsMenuBarAutoHide() const;
   void SetMenuBarVisibility(bool visible);
   bool IsMenuBarVisible() const;
-  void SetAspectRatio(double aspect_ratio, gin_helper::Arguments* args);
+  void SetAspectRatio(double aspect_ratio, gin::Arguments* args);
   void PreviewFile(const std::string& path, gin_helper::Arguments* args);
   void CloseFilePreview();
   void SetGTKDarkThemeEnabled(bool use_dark_theme);

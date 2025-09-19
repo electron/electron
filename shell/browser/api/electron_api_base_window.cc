@@ -954,8 +954,8 @@ bool BaseWindow::IsMenuBarVisible() const {
   return window_->IsMenuBarVisible();
 }
 
-void BaseWindow::SetAspectRatio(double aspect_ratio,
-                                gin_helper::Arguments* args) {
+void BaseWindow::SetAspectRatio(const double aspect_ratio,
+                                gin::Arguments* const args) {
   gfx::Size extra_size;
   args->GetNext(&extra_size);
   window_->SetAspectRatio(aspect_ratio, extra_size);
