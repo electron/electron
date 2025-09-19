@@ -206,10 +206,10 @@ void Clipboard::WriteHTML(const std::u16string& html,
   writer.WriteHTML(html, std::string());
 }
 
-v8::Local<v8::Value> Clipboard::ReadBookmark(gin_helper::Arguments* args) {
+v8::Local<v8::Value> Clipboard::ReadBookmark(v8::Isolate* const isolate) {
   std::u16string title;
   std::string url;
-  auto dict = gin_helper::Dictionary::CreateEmpty(args->isolate());
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   clipboard->ReadBookmark(/* data_dst = */ nullptr, &title, &url);
   dict.Set("title", title);
