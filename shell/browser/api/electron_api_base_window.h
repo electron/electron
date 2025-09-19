@@ -187,7 +187,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetParentWindow(v8::Local<v8::Value> value, gin_helper::Arguments* args);
   std::string GetMediaSourceId() const;
   v8::Local<v8::Value> GetNativeWindowHandle();
-  void SetProgressBar(double progress, gin_helper::Arguments* args);
+  void SetProgressBar(double progress, gin::Arguments* args);
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description);
   void SetVisibleOnAllWorkspaces(bool visible, gin_helper::Arguments* args);

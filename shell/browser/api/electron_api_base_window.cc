@@ -793,7 +793,7 @@ v8::Local<v8::Value> BaseWindow::GetNativeWindowHandle() {
 }
 #endif
 
-void BaseWindow::SetProgressBar(double progress, gin_helper::Arguments* args) {
+void BaseWindow::SetProgressBar(double progress, gin::Arguments* args) {
   gin_helper::Dictionary options;
   std::string mode;
   args->GetNext(&options) && options.Get("mode", &mode);
