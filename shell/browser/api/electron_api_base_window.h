@@ -19,6 +19,10 @@
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/gin_helper/trackable_object.h"
 
+namespace gin {
+class Arguments;
+}  // namespace gin
+
 namespace gin_helper {
 class Arguments;
 class PersistentDictionary;
@@ -254,7 +258,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool SetThumbnailToolTip(const std::string& tooltip);
   void SetAppDetails(const gin_helper::Dictionary& options);
   bool IsSnapped() const;
-  void SetAccentColor(gin_helper::Arguments* args);
+  void SetAccentColor(gin::Arguments* args);
   v8::Local<v8::Value> GetAccentColor() const;
 #endif
 

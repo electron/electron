@@ -1095,22 +1095,29 @@ bool BaseWindow::IsSnapped() const {
   return window_->IsSnapped();
 }
 
-void BaseWindow::SetAccentColor(gin_helper::Arguments* args) {
-  bool accent_color = false;
-  std::string accent_color_string;
-  if (args->GetNext(&accent_color_string)) {
-    std::optional<SkColor> maybe_color = ParseCSSColor(accent_color_string);
-    if (maybe_color.has_value()) {
-      window_->SetAccentColor(maybe_color.value());
+void BaseWindow::SetAccentColor(gin::Arguments* const args) {
+  v8::Local<v8::Value> ac_val;
+  args->GetNext(&ac_val);
+
+  if (!ac_val.IsEmpty() && ac_val->IsBoolean()) {
+    const bool ac_flag = ac_val->BooleanValue(args->isolate());
+    window_->SetAccentColor(ac_flag);
+    window_->UpdateWindowAccentColor(window_->IsActive());
+    return;
+  }
+
+  if (!ac_val.IsEmpty() && ac_val->IsString()) {
+    std::string ac_str;
+    gin::ConvertFromV8(args->isolate(), ac_val, &ac_str);
+    if (const std::optional<SkColor> ac_color = ParseCSSColor(ac_str)) {
+      window_->SetAccentColor(*ac_color);
       window_->UpdateWindowAccentColor(window_->IsActive());
     }
-  } else if (args->GetNext(&accent_color)) {
-    window_->SetAccentColor(accent_color);
-    window_->UpdateWindowAccentColor(window_->IsActive());
-  } else {
-    args->ThrowError(
-        "Invalid accent color value - must be a string or boolean");
+    return;
   }
+
+  args->ThrowTypeError(
+      "Invalid accent color value - must be a string or boolean");
 }
 
 v8::Local<v8::Value> BaseWindow::GetAccentColor() const {
