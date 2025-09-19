@@ -473,7 +473,7 @@ gfx::Rect BaseWindow::GetContentBounds() const {
   return window_->GetContentBounds();
 }
 
-void BaseWindow::SetSize(int width, int height, gin_helper::Arguments* args) {
+void BaseWindow::SetSize(int width, int height, gin::Arguments* args) {
   bool animate = false;
   gfx::Size size = window_->GetMinimumSize();
   size.SetToMax(gfx::Size(width, height));
