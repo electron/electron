@@ -837,9 +837,9 @@ void BaseWindow::SetAutoHideCursor(bool auto_hide) {
   window_->SetAutoHideCursor(auto_hide);
 }
 
-void BaseWindow::SetVibrancy(v8::Isolate* isolate,
+void BaseWindow::SetVibrancy(v8::Isolate* const isolate,
                              v8::Local<v8::Value> value,
-                             gin_helper::Arguments* args) {
+                             gin::Arguments* const args) {
   std::string type = gin::V8ToString(isolate, value);
   gin_helper::Dictionary options;
   int animation_duration_ms = 0;

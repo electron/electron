@@ -195,7 +195,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetAutoHideCursor(bool auto_hide);
   virtual void SetVibrancy(v8::Isolate* isolate,
                            v8::Local<v8::Value> value,
-                           gin_helper::Arguments* args);
+                           gin::Arguments* args);
   virtual void SetBackgroundMaterial(const std::string& material);
 
 #if BUILDFLAG(IS_MAC)
