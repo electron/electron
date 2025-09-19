@@ -22,15 +22,18 @@
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/image/image.h"
 
-namespace electron::api {
+namespace {
 
-ui::ClipboardBuffer Clipboard::GetClipboardBuffer(gin_helper::Arguments* args) {
+[[nodiscard]] ui::ClipboardBuffer GetClipboardBuffer(gin::Arguments* args) {
   std::string type;
-  if (args->GetNext(&type) && type == "selection")
-    return ui::ClipboardBuffer::kSelection;
-  else
-    return ui::ClipboardBuffer::kCopyPaste;
+  return args->GetNext(&type) && type == "selection"
+             ? ui::ClipboardBuffer::kSelection
+             : ui::ClipboardBuffer::kCopyPaste;
 }
+
+}  // namespace
+
+namespace electron::api {
 
 std::vector<std::u16string> Clipboard::AvailableFormats(
     gin_helper::Arguments* args) {

@@ -68,9 +68,6 @@ class Clipboard {
                           gin_helper::Arguments* args);
 
   static void WriteFilesForTesting(const std::vector<base::FilePath>& files);
-
- private:
-  static ui::ClipboardBuffer GetClipboardBuffer(gin_helper::Arguments* args);
 };
 
 }  // namespace electron::api
