@@ -587,10 +587,12 @@ void BaseWindow::Center() {
   window_->Center();
 }
 
-void BaseWindow::SetPosition(int x, int y, gin_helper::Arguments* args) {
+void BaseWindow::SetPosition(const int x,
+                             const int y,
+                             gin::Arguments* const args) {
   bool animate = false;
   args->GetNext(&animate);
-  window_->SetPosition(gfx::Point(x, y), animate);
+  window_->SetPosition(gfx::Point{x, y}, animate);
 }
 
 std::array<int, 2U> BaseWindow::GetPosition() const {

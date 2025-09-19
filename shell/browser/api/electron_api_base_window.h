@@ -150,7 +150,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetAlwaysOnTop(bool top, gin::Arguments* args);
   bool IsAlwaysOnTop() const;
   void Center();
-  void SetPosition(int x, int y, gin_helper::Arguments* args);
+  void SetPosition(int x, int y, gin::Arguments* args);
   std::array<int, 2U> GetPosition() const;
   void SetTitle(const std::string& title);
   std::string GetTitle() const;
