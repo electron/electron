@@ -513,7 +513,8 @@ std::array<int, 2U> BaseWindow::GetMaximumSize() const {
   return ToArray(window_->GetMaximumSize());
 }
 
-void BaseWindow::SetSheetOffset(double offsetY, gin_helper::Arguments* args) {
+void BaseWindow::SetSheetOffset(const double offsetY,
+                                gin::Arguments* const args) {
   double offsetX = 0.0;
   args->GetNext(&offsetX);
   window_->SetSheetOffset(offsetX, offsetY);
