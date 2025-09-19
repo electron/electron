@@ -24,7 +24,6 @@ class Arguments;
 }  // namespace gin
 
 namespace gin_helper {
-class Arguments;
 class PersistentDictionary;
 template <typename T>
 class Handle;
@@ -264,7 +263,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
   void SetTitleBarOverlay(const gin_helper::Dictionary& options,
-                          gin_helper::Arguments* args);
+                          gin::Arguments* args);
 #endif
   [[nodiscard]] constexpr int32_t GetID() const { return weak_map_id(); }
 

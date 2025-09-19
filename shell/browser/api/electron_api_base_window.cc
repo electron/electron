@@ -1132,7 +1132,7 @@ v8::Local<v8::Value> BaseWindow::GetAccentColor() const {
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
 void BaseWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
-                                    gin_helper::Arguments* args) {
+                                    gin::Arguments* args) {
   static_cast<NativeWindowViews*>(window_.get())
       ->SetTitleBarOverlay(options, args);
 }
