@@ -290,9 +290,9 @@ void Menu::SendActionToFirstResponder(const std::string& action) {
 }
 
 // static
-gin_helper::Handle<Menu> Menu::New(gin::Arguments* args) {
+Menu* Menu::New(gin::Arguments* args) {
   v8::Isolate* const isolate = args->isolate();
-  Menu* menu = cppgc::MakeGarbageCollected<MenuMac>(
+  Menu* const menu = cppgc::MakeGarbageCollected<MenuMac>(
       isolate->GetCppHeap()->GetAllocationHandle(), args);
   gin_helper::CallMethod(isolate, menu, "_init");
   return menu;
