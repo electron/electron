@@ -48,7 +48,7 @@ v8::Local<v8::Object> WrappableBase::GetWrapper() const {
     return {};
 }
 
-void WrappableBase::InitWithArgs(gin::Arguments* args) {
+void WrappableBase::InitWithArgs(const gin::Arguments* const args) {
   v8::Local<v8::Object> holder;
   args->GetHolder(&holder);
   InitWith(args->isolate(), holder);
