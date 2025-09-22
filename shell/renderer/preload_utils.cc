@@ -6,7 +6,6 @@
 
 #include "base/process/process.h"
 #include "base/strings/strcat.h"
-#include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "v8/include/v8-context.h"
