@@ -739,14 +739,13 @@ void ExposeAPI(v8::Isolate* isolate,
                v8::Isolate* target_isolate,
                v8::Local<v8::Context> target_context,
                const std::string& key,
-               v8::Local<v8::Value> api,
-               gin_helper::Arguments* args) {
+               v8::Local<v8::Value> api) {
   DCHECK(!target_context.IsEmpty());
   v8::Context::Scope target_context_scope(target_context);
   gin_helper::Dictionary global(target_isolate, target_context->Global());
 
   if (global.Has(key)) {
-    args->ThrowError(
+    gin_helper::ErrorThrower{isolate}.ThrowError(
         "Cannot bind an API on top of an existing property on the window "
         "object");
     return;
@@ -813,8 +812,7 @@ v8::MaybeLocal<v8::Context> GetTargetContext(v8::Isolate* isolate,
 void ExposeAPIInWorld(v8::Isolate* isolate,
                       const int world_id,
                       const std::string& key,
-                      v8::Local<v8::Value> api,
-                      gin_helper::Arguments* args) {
+                      v8::Local<v8::Value> api) {
   TRACE_EVENT2("electron", "ContextBridge::ExposeAPIInWorld", "key", key,
                "worldId", world_id);
   v8::Local<v8::Context> source_context = isolate->GetCurrentContext();
@@ -825,8 +823,7 @@ void ExposeAPIInWorld(v8::Isolate* isolate,
   if (maybe_target_context.IsEmpty() || !target_isolate)
     return;
   v8::Local<v8::Context> target_context = maybe_target_context.ToLocalChecked();
-  ExposeAPI(isolate, source_context, target_isolate, target_context, key, api,
-            args);
+  ExposeAPI(isolate, source_context, target_isolate, target_context, key, api);
 }
 
 gin_helper::Dictionary TraceKeyPath(const gin_helper::Dictionary& start,
