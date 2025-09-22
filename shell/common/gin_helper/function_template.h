@@ -13,7 +13,6 @@
 #include "base/memory/raw_ptr.h"
 #include "gin/arguments.h"
 #include "gin/per_isolate_data.h"
-#include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/destroyable.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "v8/include/v8-context.h"
@@ -151,15 +150,6 @@ inline bool GetNextArgument(gin::Arguments* args,
                             bool is_first,
                             ErrorThrower* result) {
   *result = ErrorThrower(args->isolate());
-  return true;
-}
-
-// Electron-specific GetNextArgument that supports the gin_helper::Arguments.
-inline bool GetNextArgument(gin::Arguments* args,
-                            const InvokerOptions& invoker_options,
-                            bool is_first,
-                            gin_helper::Arguments** result) {
-  *result = static_cast<gin_helper::Arguments*>(args);
   return true;
 }
 
