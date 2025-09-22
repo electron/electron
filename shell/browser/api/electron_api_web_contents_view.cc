@@ -153,36 +153,37 @@ v8::Local<v8::Function> WebContentsView::GetConstructor(v8::Isolate* isolate) {
 }
 
 // static
-gin_helper::WrappableBase* WebContentsView::New(gin_helper::Arguments* args) {
+gin_helper::WrappableBase* WebContentsView::New(gin::Arguments* const args) {
+  v8::Isolate* const isolate = args->isolate();
   gin_helper::Dictionary web_preferences;
   v8::Local<v8::Value> existing_web_contents_value;
   {
     v8::Local<v8::Value> options_value;
     if (args->GetNext(&options_value)) {
       gin_helper::Dictionary options;
-      if (!gin::ConvertFromV8(args->isolate(), options_value, &options)) {
-        args->ThrowError("options must be an object");
+      if (!gin::ConvertFromV8(isolate, options_value, &options)) {
+        args->ThrowTypeError("options must be an object");
         return nullptr;
       }
       v8::Local<v8::Value> web_preferences_value;
       if (options.Get("webPreferences", &web_preferences_value)) {
-        if (!gin::ConvertFromV8(args->isolate(), web_preferences_value,
+        if (!gin::ConvertFromV8(isolate, web_preferences_value,
                                 &web_preferences)) {
-          args->ThrowError("options.webPreferences must be an object");
+          args->ThrowTypeError("options.webPreferences must be an object");
           return nullptr;
         }
       }
 
       if (options.Get("webContents", &existing_web_contents_value)) {
         gin_helper::Handle<WebContents> existing_web_contents;
-        if (!gin::ConvertFromV8(args->isolate(), existing_web_contents_value,
+        if (!gin::ConvertFromV8(isolate, existing_web_contents_value,
                                 &existing_web_contents)) {
-          args->ThrowError("options.webContents must be a WebContents");
+          args->ThrowTypeError("options.webContents must be a WebContents");
           return nullptr;
         }
 
         if (existing_web_contents->owner_window() != nullptr) {
-          args->ThrowError(
+          args->ThrowTypeError(
               "options.webContents is already attached to a window");
           return nullptr;
         }
@@ -191,7 +192,7 @@ gin_helper::WrappableBase* WebContentsView::New(gin_helper::Arguments* args) {
   }
 
   if (web_preferences.IsEmpty())
-    web_preferences = gin_helper::Dictionary::CreateEmpty(args->isolate());
+    web_preferences = gin_helper::Dictionary::CreateEmpty(isolate);
   if (!web_preferences.Has(options::kShow))
     web_preferences.Set(options::kShow, false);
 
@@ -200,10 +201,10 @@ gin_helper::WrappableBase* WebContentsView::New(gin_helper::Arguments* args) {
   }
 
   auto web_contents =
-      WebContents::CreateFromWebPreferences(args->isolate(), web_preferences);
+      WebContents::CreateFromWebPreferences(isolate, web_preferences);
 
   // Constructor call.
-  auto* view = new WebContentsView(args->isolate(), web_contents);
+  auto* view = new WebContentsView{isolate, web_contents};
   view->InitWithArgs(args);
   return view;
 }
