@@ -637,12 +637,10 @@ class WebFrameRenderer final
     return !context->GetContentSecurityPolicy()->ShouldCheckEval();
   }
 
-  v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* gin_args,
+  v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* const gin,
                                            const std::u16string& code) {
-    gin_helper::Arguments* args = static_cast<gin_helper::Arguments*>(gin_args);
-
-    v8::Isolate* isolate = args->isolate();
-    gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+    v8::Isolate* const isolate = args->isolate();
+    gin_helper::Promise<v8::Local<v8::Value>> promise{isolate};
     v8::Local<v8::Promise> handle = promise.GetHandle();
 
     content::RenderFrame* render_frame;
