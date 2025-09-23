@@ -26,7 +26,6 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
@@ -436,11 +435,10 @@ raw_ptr<UtilityProcessWrapper> UtilityProcessWrapper::FromProcessId(
 
 // static
 gin_helper::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
-    gin::Arguments* args) {
+    gin::Arguments* const args) {
   if (!Browser::Get()->is_ready()) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowTypeError(
-            "utilityProcess cannot be created before app is ready.");
+    args->ThrowTypeError(
+        "utilityProcess cannot be created before app is ready.");
     return {};
   }
 
