@@ -919,7 +919,7 @@ describe('webContents module', () => {
           return w.webContents.navigationHistory.restore({ index: 2, entries });
         });
 
-        expect(formValue).to.equal('Hi!');
+        await waitUntil(() => formValue === 'Hi!');
       });
 
       it('should handle invalid base64 pageState', async () => {

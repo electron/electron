@@ -34,10 +34,10 @@ index 18714ce8fc27c8d56c5deac27ba335078c452d0a..263405c605a0477b7a39bc274d7ee03b
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index addef4de8a95f47964a895e1d1cc4763f565a028..8bef2220b9a416011cebf4da672c15d117a34efa 100644
+index f337d61906651359eeb5228c112ad948f4f7a752..82cbd10f0817a85d1275519a3f93c687c0314aaa 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4685,10 +4685,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4684,10 +4684,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
      observer.DidInstallConditionalFeatures(context, world_id);
  }
  
@@ -103,10 +103,10 @@ index 1f5e24bc38d6ced52e4773236522e9520efc6f6d..a22ca5968fce5e6a0c436ec9b40f0e2f
    void WillInitializeWorkerContext() override;
    void WillDestroyWorkerContext(v8::Local<v8::Context> context) override;
 diff --git a/extensions/renderer/dispatcher.cc b/extensions/renderer/dispatcher.cc
-index 37fc43bfc6804c2abb0cf107e2575c72cfca9023..9f3c88be38b9c8960a38649c7f3bf71dff182383 100644
+index 22fdb490c7803f3bf864d9e0e6dc618e4d83480b..3f3367b5039e28b07acd1b326724958d764171c2 100644
 --- a/extensions/renderer/dispatcher.cc
 +++ b/extensions/renderer/dispatcher.cc
-@@ -612,6 +612,7 @@ void Dispatcher::DidInitializeServiceWorkerContextOnWorkerThread(
+@@ -615,6 +615,7 @@ void Dispatcher::DidInitializeServiceWorkerContextOnWorkerThread(
  
  void Dispatcher::WillEvaluateServiceWorkerOnWorkerThread(
      blink::WebServiceWorkerContextProxy* context_proxy,
@@ -259,10 +259,10 @@ index d8f3b11c98fd58baa9995762a29847b9fd760c84..5a9c9356a2098dfa9d28a5d30b19b492
    bool AllowScriptExtensions() override { return false; }
  
 diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-index eff817cda59a7b6e746813d5c42911d80547b5bd..217c4f76d62dd4910e89d4cb4cff4206fc84cfb1 100644
+index 17860c80651c526e03fd06e4b644c3332b241be7..741a8587e95789038168eb500d3995724e11b47d 100644
 --- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
 +++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-@@ -180,6 +180,7 @@ void ServiceWorkerGlobalScopeProxy::WillEvaluateScript() {
+@@ -181,6 +181,7 @@ void ServiceWorkerGlobalScopeProxy::WillEvaluateScript() {
    ScriptState::Scope scope(
        WorkerGlobalScope()->ScriptController()->GetScriptState());
    Client().WillEvaluateScript(

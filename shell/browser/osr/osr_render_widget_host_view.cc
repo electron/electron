@@ -961,7 +961,7 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   SetupFrameRate(false);
 
   display::Display display =
-      display::Screen::GetScreen()->GetDisplayNearestView(GetNativeView());
+      display::Screen::Get()->GetDisplayNearestView(GetNativeView());
   const float scaleFactor = display.device_scale_factor();
   float sf = GetDeviceScaleFactor();
   const bool sf_did_change = scaleFactor != sf;
