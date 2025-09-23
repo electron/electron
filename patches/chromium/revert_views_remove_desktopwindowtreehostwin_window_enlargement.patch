@@ -10,10 +10,10 @@ on Windows.  We should refactor our code so that this patch isn't
 necessary.
 
 diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
-index b0a5320cff87d4bf85827213b8899e3edb47ec70..e910fde821a079a339856dc0ce3482f30969a35c 100644
+index caa5ad950b8c1520aff49ddae256bcf3e68fb5b4..c9a1d306679aa26466a27a68753f648a21c1d4e2 100644
 --- a/testing/variations/fieldtrial_testing_config.json
 +++ b/testing/variations/fieldtrial_testing_config.json
-@@ -25348,6 +25348,21 @@
+@@ -25368,6 +25368,21 @@
              ]
          }
      ],
@@ -67,7 +67,7 @@ index 58063f2452dc484a97c79b382067d9b34875e344..d586436498263c595a17454f54644d2d
  
  }  // namespace views::features
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index a0671ababe6d0559306d710a7a1376c1e6ad3aa9..cf4e7ab258d2b1fb065f91f2168a437629749351 100644
+index f4fa30c1621e2eb78913ea97a993eb0a3528f36c..f142ce65c5c0e22b968c98082d11d9922e3a0cfa 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 @@ -84,6 +84,23 @@ namespace {
@@ -94,7 +94,7 @@ index a0671ababe6d0559306d710a7a1376c1e6ad3aa9..cf4e7ab258d2b1fb065f91f2168a4376
  // Updates the cursor clip region. Used for mouse locking.
  void UpdateMouseLockRegion(aura::Window* window, bool locked) {
    if (!locked) {
-@@ -333,9 +350,14 @@ bool DesktopWindowTreeHostWin::IsVisible() const {
+@@ -329,9 +346,14 @@ bool DesktopWindowTreeHostWin::IsVisible() const {
  }
  
  void DesktopWindowTreeHostWin::SetSize(const gfx::Size& size) {
@@ -111,7 +111,7 @@ index a0671ababe6d0559306d710a7a1376c1e6ad3aa9..cf4e7ab258d2b1fb065f91f2168a4376
  }
  
  void DesktopWindowTreeHostWin::StackAbove(aura::Window* window) {
-@@ -350,30 +372,40 @@ void DesktopWindowTreeHostWin::StackAtTop() {
+@@ -346,30 +368,40 @@ void DesktopWindowTreeHostWin::StackAtTop() {
  }
  
  void DesktopWindowTreeHostWin::CenterWindow(const gfx::Size& size) {
@@ -154,7 +154,7 @@ index a0671ababe6d0559306d710a7a1376c1e6ad3aa9..cf4e7ab258d2b1fb065f91f2168a4376
    return display::win::GetScreenWin()->ScreenToDIPRect(GetHWND(), pixel_bounds);
  }
  
-@@ -682,37 +714,44 @@ void DesktopWindowTreeHostWin::HideImpl() {
+@@ -678,37 +710,44 @@ void DesktopWindowTreeHostWin::HideImpl() {
  // other get/set methods work in DIP.
  
  gfx::Rect DesktopWindowTreeHostWin::GetBoundsInPixels() const {
@@ -219,7 +219,7 @@ index a0671ababe6d0559306d710a7a1376c1e6ad3aa9..cf4e7ab258d2b1fb065f91f2168a4376
  }
  
  gfx::Rect
-@@ -922,21 +961,29 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
+@@ -918,21 +957,29 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
  
  void DesktopWindowTreeHostWin::GetWindowMask(const gfx::Size& size_px,
                                               SkPath* path) {
@@ -264,10 +264,10 @@ index a0671ababe6d0559306d710a7a1376c1e6ad3aa9..cf4e7ab258d2b1fb065f91f2168a4376
  }
  
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index 13cfa18bf406f244ec361a1230ccce440ad9785a..d8be4dffee3947e7ac6dc09cb8e1f2a6a834789b 100644
+index cef7afbf408e38798c398c23dc3e964bd1d95d17..74f0f6e485f4cc6be2c292f4b364d9796d9ce20b 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-@@ -176,7 +176,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+@@ -175,7 +175,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
    void ShowImpl() override;
    void HideImpl() override;
    gfx::Rect GetBoundsInPixels() const override;
@@ -276,7 +276,7 @@ index 13cfa18bf406f244ec361a1230ccce440ad9785a..d8be4dffee3947e7ac6dc09cb8e1f2a6
    gfx::Rect GetBoundsInAcceleratedWidgetPixelCoordinates() override;
    gfx::Point GetLocationOnScreenInPixels() const override;
    void SetCapture() override;
-@@ -328,6 +328,12 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+@@ -327,6 +327,12 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
    gfx::Vector2d window_expansion_top_left_delta_;
    gfx::Vector2d window_expansion_bottom_right_delta_;
  
