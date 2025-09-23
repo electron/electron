@@ -363,13 +363,13 @@ index b90a88a115247bd0c62abb18771220e37a441d2f..f908a95727633e903bd56d2bc8608bba
  #if defined(USE_AURA) || BUILDFLAG(IS_MAC)
    // Assigns integer identifier to the |window| and returns its DesktopMediaID.
 diff --git a/media/capture/video_capture_types.h b/media/capture/video_capture_types.h
-index accd52db0cf7cb043d7d767b778079b5d1160cfb..357ee6111471405d1f860ea6d5000ac65f4ecb9a 100644
+index 949af1a45ab1b0180a767d89f8837df531041dfe..81d0550107f1d5f38b5ef7d658099ea2ca35d3a6 100644
 --- a/media/capture/video_capture_types.h
 +++ b/media/capture/video_capture_types.h
-@@ -358,6 +358,8 @@ struct CAPTURE_EXPORT VideoCaptureParams {
-   // Flag indicating whether HiDPI mode should be enabled for tab capture
-   // sessions.
-   bool is_high_dpi_enabled = true;
+@@ -364,6 +364,8 @@ struct CAPTURE_EXPORT VideoCaptureParams {
+   // of the capture is dynamically changed, as for example when using
+   // share-this-tab-instead.
+   uint32_t capture_version_source = 0;
 +
 +  std::optional<bool> use_native_picker;
  };
