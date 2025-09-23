@@ -33,7 +33,7 @@ index e648bb4ed2ff72441faa8773e449e0b6174f5af5..fd2c1d3ac575d10de7d5c09e4418d172
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 87624cca740e68551bcaa5b4aaf068657d8cb96c..d7fd94e137b0d4044ebcb42d4f62fe5b840467ab 100644
+index f35db7250cc2c0db38303744f66a4491b9537619..40a73b849a17e9803bb8913aa4ad0d81bdc9bfb7 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
 @@ -4819,7 +4819,7 @@ static_library("browser") {
@@ -46,10 +46,10 @@ index 87624cca740e68551bcaa5b4aaf068657d8cb96c..d7fd94e137b0d4044ebcb42d4f62fe5b
        # than here in :chrome_dll.
        deps += [ "//chrome:packed_resources_integrity_header" ]
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 9e5a4adfcbf7625065c98dae951e78caa6b1edc1..2d4e8674fd066f4b16c8e305259ec392c7b92477 100644
+index ff5c80e9c1c2be29cd9b3b219e41603a18017d3d..d76142d91a681d29164ee422fbb6a5ce49074995 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -7528,9 +7528,12 @@ test("unit_tests") {
+@@ -7526,9 +7526,12 @@ test("unit_tests") {
        "//chrome/notification_helper",
      ]
  
@@ -63,7 +63,7 @@ index 9e5a4adfcbf7625065c98dae951e78caa6b1edc1..2d4e8674fd066f4b16c8e305259ec392
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:win_unit_tests",
-@@ -8462,6 +8465,10 @@ test("unit_tests") {
+@@ -8460,6 +8463,10 @@ test("unit_tests") {
        "../browser/performance_manager/policies/background_tab_loading_policy_unittest.cc",
      ]
  
@@ -74,7 +74,7 @@ index 9e5a4adfcbf7625065c98dae951e78caa6b1edc1..2d4e8674fd066f4b16c8e305259ec392
      sources += [
        # The importer code is not used on Android.
        "../common/importer/firefox_importer_utils_unittest.cc",
-@@ -8518,7 +8525,6 @@ test("unit_tests") {
+@@ -8516,7 +8523,6 @@ test("unit_tests") {
      # TODO(crbug.com/417513088): Maybe merge with the non-android `deps` declaration above?
      deps += [
        "../browser/screen_ai:screen_ai_install_state",

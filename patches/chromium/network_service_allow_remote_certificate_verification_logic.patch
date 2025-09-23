@@ -190,7 +190,7 @@ index f8ad2e666e6584a237edcbae129567eca0d889d3..e627ac14d46cdd39f7667c1f7421a832
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index b330c666ea95a2dba8a086c55864bf8d574920fb..8e89a24e54403fe77d4b787371def43869c35f8b 100644
+index ddd4d6cf7571c6ea55db8571c8c22265092dba9c..ebdbc817d767c9b71f30d4cf8c0f953752c579ce 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -317,6 +317,17 @@ struct SocketBrokerRemotes {
