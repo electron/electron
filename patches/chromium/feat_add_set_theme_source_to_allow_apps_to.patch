@@ -29,11 +29,10 @@ diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
 index be4fb3658ddf1aaa6c0c2159410be82805f2ca95..792d3a6a760079de4cb114aa4abdead31d601e00 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -442,6 +442,23 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+@@ -433,6 +433,22 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
        scoped_refptr<ColorProviderKey::ThemeInitializerSupplier> custom_theme,
        bool use_custom_frame = true) const;
  
-+
 +  enum ThemeSource {
 +    kSystem,
 +    kForcedDark,
@@ -50,9 +49,9 @@ index be4fb3658ddf1aaa6c0c2159410be82805f2ca95..792d3a6a760079de4cb114aa4abdead3
 +    if (ShouldUseDarkColors() != original) NotifyOnNativeThemeUpdated();
 +  }
 +
-   // Returns a shared instance of the native theme that should be used for web
-   // rendering. Do not use it in a normal application context (i.e. browser).
-   // The returned object should not be deleted by the caller. This function is
+   // Returns a shared instance of the default native theme for native UI.
+   static NativeTheme* GetInstanceForNativeUi();
+ 
 @@ -671,6 +688,7 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
    std::optional<base::TimeDelta> caret_blink_interval_;
