@@ -53,7 +53,7 @@ index a0e6ea08b4918c057d69f15acad717f71d49747d..39e54cff7e13bddda0f37a4b87cbae2a
  void Compositor::SetSeamlessRefreshRates(
      const std::vector<float>& seamless_refresh_rates) {
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index c300c347507c35ebb18f0944f6072ff0d1c18a31..7a4e2ce3f4219c7b5cb3fae7dcb2f3fd4f1fdd07 100644
+index 291a43163fb4f3f22e9f078d9e54c24244aa5287..e2942f969092c9282c542a7f63959b7ff21ba4f6 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -519,6 +519,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,

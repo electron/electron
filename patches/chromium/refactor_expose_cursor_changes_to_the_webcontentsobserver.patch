@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index 27b51f78f4676071a8fdc2340f650cb7df1d883b..7db3a07ff9e0f52f1232c25f8e4e72d3c299e623 100644
+index 9a4195a3e53353342c75d6c4372ed4c27ef13fd3..ce071c6acd6027ad27cee597f56e865f0d5172f9 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -27,6 +27,7 @@
@@ -44,10 +44,10 @@ index 0bae000a3491e03196bbba033621d389c6150225..a6abe25611c82da8c55998f74c982274
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 52221943756b38a4e5ccf30ecab5cae6fce4979b..941ba6dc18d298ed2c11dd25d161695e86bc74a3 100644
+index 387d423c8baaf279a23e7fa58f5ef767a2bce08b..10198e24e5ea3d9c974c2dc79d8f0e67838558b4 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -6121,6 +6121,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -6119,6 +6119,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
