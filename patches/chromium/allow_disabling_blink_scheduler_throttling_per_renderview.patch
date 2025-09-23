@@ -6,7 +6,7 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl_unittest.cc b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-index c262294b7a12cbef3620d29969d97ea31130206d..c61f07d0c2b9c83edbfe6f7568bbf31364f78169 100644
+index 1d002528ba2b90d9c361c77ab00aeb1ccd000177..77f3b011f9c3710ac93ad20a92eafea0d35bb9a7 100644
 --- a/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 @@ -168,6 +168,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
@@ -92,7 +92,7 @@ index 0dc1cd52dec74ede2117eb244e423d7f3ad322ea..352c64b3aec50546451a0033114e3a35
    mojo::AssociatedReceiver<blink::mojom::PageBroadcast> receiver_;
  };
 diff --git a/third_party/blink/public/mojom/page/page.mojom b/third_party/blink/public/mojom/page/page.mojom
-index bcf8559d759e73e4f3f00710d263fe24cc801828..556f990868b862452156cec2354a90ae75352251 100644
+index 761013198bf0b7b9f006fa877e13a6c981ee34b0..df216653fa8d6b4d122023092ec18b384c0fca1e 100644
 --- a/third_party/blink/public/mojom/page/page.mojom
 +++ b/third_party/blink/public/mojom/page/page.mojom
 @@ -180,4 +180,7 @@ interface PageBroadcast {
@@ -116,7 +116,7 @@ index b3553c0783a7b00e055f82ef0b72bd866284473d..c91e49807ec0b56d8675048311182691
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 714b713cd466ac289b3d172ac484ddfd2b46190b..be43ac07eb6563dcb72374dfc4f3bd34913e98c3 100644
+index 601091f375b953e7d64be132a4aa120be45c26b4..1096fbd749fc551815a35d1939efe06b12f84b3f 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -2500,6 +2500,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
@@ -130,7 +130,7 @@ index 714b713cd466ac289b3d172ac484ddfd2b46190b..be43ac07eb6563dcb72374dfc4f3bd34
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -4009,10 +4013,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -4008,10 +4012,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  

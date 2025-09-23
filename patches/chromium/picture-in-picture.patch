@@ -38,7 +38,7 @@ index 85df555841ac0d32d2f097547c9991cecf0f4b1a..7a108339448fad3105e87c9d9af678c2
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index f14ba4d32cb7e79b390e221b79bf03904af709fa..6a5be646c777654d364dc6ae116ca25c3544cfc9 100644
+index 5c978e3dcc862456d129e85e82236d899dbb5504..c5552aa0dedf6adbe10409f32c6eeca28f11c0b6 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -18,12 +18,16 @@
@@ -102,7 +102,7 @@ index f14ba4d32cb7e79b390e221b79bf03904af709fa..6a5be646c777654d364dc6ae116ca25c
      return;
    }
  
-@@ -2567,6 +2574,7 @@ gfx::Rect VideoOverlayWindowViews::GetLiveCaptionDialogBounds() {
+@@ -2573,6 +2580,7 @@ gfx::Rect VideoOverlayWindowViews::GetLiveCaptionDialogBounds() {
  
  bool VideoOverlayWindowViews::HasHighMediaEngagement(
      const url::Origin& origin) const {
@@ -110,7 +110,7 @@ index f14ba4d32cb7e79b390e221b79bf03904af709fa..6a5be646c777654d364dc6ae116ca25c
    MediaEngagementService* service =
        MediaEngagementService::Get(Profile::FromBrowserContext(
            GetController()->GetWebContents()->GetBrowserContext()));
-@@ -2575,6 +2583,8 @@ bool VideoOverlayWindowViews::HasHighMediaEngagement(
+@@ -2581,6 +2589,8 @@ bool VideoOverlayWindowViews::HasHighMediaEngagement(
    }
  
    return service->HasHighEngagement(origin);
