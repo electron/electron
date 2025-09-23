@@ -66,7 +66,6 @@
 #include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/thread_restrictions.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
