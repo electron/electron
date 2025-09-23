@@ -6,7 +6,7 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index b70623b56267f..0bae000a3491e 100644
+index b70623b56267fb7df71519a2c19a04a658f766e2..0bae000a3491e03196bbba033621d389c6150225 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -840,6 +840,10 @@ void RenderWidgetHostImpl::WasHidden() {
@@ -21,7 +21,7 @@ index b70623b56267f..0bae000a3491e 100644
    // Prompts should remain open and functional across tab switches.
    if (!delegate_ || !delegate_->IsWaitingForPointerLockPrompt(this)) {
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index b657b7a5c4558..eee64e476281f 100644
+index b657b7a5c4558428667777dee21ecc59768c01a1..eee64e476281f9acdbe616058425148dec5afe9b 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
 @@ -1031,6 +1031,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
@@ -34,7 +34,7 @@ index b657b7a5c4558..eee64e476281f 100644
    // |routing_id| must not be IPC::mojom::kRoutingIdNone.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 956acd14d22ef..444be39250d1c 100644
+index 956acd14d22efc44ef82ffbbff24be3b4455a013..444be39250d1cd2be9ecafe29d6bbd7209e3a630 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -645,7 +645,7 @@ void RenderWidgetHostViewAura::HideImpl() {

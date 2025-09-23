@@ -38,7 +38,7 @@ index 85df555841ac0d32d2f097547c9991cecf0f4b1a..7a108339448fad3105e87c9d9af678c2
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index fcb7d2c18f39acb174fc456362de51c484de398c..fea71317b41429dd3bbd50947673124f7c230394 100644
+index f14ba4d32cb7e79b390e221b79bf03904af709fa..9b76a718529d16abe149e34deaeae3006e05c6ed 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -18,12 +18,16 @@
@@ -76,7 +76,7 @@ index fcb7d2c18f39acb174fc456362de51c484de398c..fea71317b41429dd3bbd50947673124f
    std::wstring app_user_model_id;
    Browser* browser = chrome::FindBrowserWithTab(controller->GetWebContents());
    if (browser) {
-@@ -1270,11 +1274,13 @@ void VideoOverlayWindowViews::SetUpViews() {
+@@ -1271,11 +1275,13 @@ void VideoOverlayWindowViews::SetUpViews() {
              &VideoOverlayWindowViews::OnLiveCaptionButtonPressed,
              base::Unretained(this)));
      live_caption_button->SetSize(kActionButtonSize);
@@ -90,7 +90,7 @@ index fcb7d2c18f39acb174fc456362de51c484de398c..fea71317b41429dd3bbd50947673124f
      toggle_microphone_button =
          std::make_unique<ToggleMicrophoneButton>(base::BindRepeating(
              [](VideoOverlayWindowViews* overlay) {
-@@ -2561,6 +2567,7 @@ gfx::Rect VideoOverlayWindowViews::GetLiveCaptionDialogBounds() {
+@@ -2567,6 +2573,7 @@ gfx::Rect VideoOverlayWindowViews::GetLiveCaptionDialogBounds() {
  
  bool VideoOverlayWindowViews::HasHighMediaEngagement(
      const url::Origin& origin) const {
@@ -98,7 +98,7 @@ index fcb7d2c18f39acb174fc456362de51c484de398c..fea71317b41429dd3bbd50947673124f
    MediaEngagementService* service =
        MediaEngagementService::Get(Profile::FromBrowserContext(
            GetController()->GetWebContents()->GetBrowserContext()));
-@@ -2569,6 +2576,8 @@ bool VideoOverlayWindowViews::HasHighMediaEngagement(
+@@ -2575,6 +2582,8 @@ bool VideoOverlayWindowViews::HasHighMediaEngagement(
    }
  
    return service->HasHighEngagement(origin);
