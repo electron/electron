@@ -60,7 +60,8 @@ runs:
           sudo launchctl limit maxfiles 65536 200000
         fi
 
-        e build
+        NINJA_SUMMARIZE_BUILD=1 e build
+        cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
     - name: Build Electron dist.zip ${{ inputs.step-suffix }}
       shell: bash
