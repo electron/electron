@@ -71,7 +71,7 @@ class Protocol final : public gin_helper::DeprecatedWrappable<Protocol>,
       base::RepeatingCallback<void(v8::Local<v8::Value>)>;
 
   explicit Protocol(ProtocolRegistry* protocol_registry);
-  ~Protocol() override = default;
+  ~Protocol() override;
 
   [[nodiscard]] static std::string_view ErrorCodeToString(Error error);
 
