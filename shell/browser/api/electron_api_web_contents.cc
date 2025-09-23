@@ -3580,7 +3580,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
   // current system, increase the requested bitmap size to capture it all.
   gfx::Size bitmap_size = view_size;
   const gfx::NativeView native_view = view->GetNativeView();
-  const float scale = display::Screen::GetScreen()
+  const float scale = display::Screen::Get()
                           ->GetDisplayNearestView(native_view)
                           .device_scale_factor();
   if (scale > 1.0f)
