@@ -73,7 +73,13 @@ ui::NativeTheme::ThemeSource NativeTheme::GetThemeSource() const {
 }
 
 bool NativeTheme::ShouldUseDarkColors() {
-  return ui_theme_->ShouldUseDarkColors();
+  auto theme_source = GetThemeSource();
+  if (theme_source == ui::NativeTheme::ThemeSource::kForcedLight)
+    return false;
+  if (theme_source == ui::NativeTheme::ThemeSource::kForcedDark)
+    return true;
+  return ui_theme_->preferred_color_scheme() ==
+         ui::NativeTheme::PreferredColorScheme::kDark;
 }
 
 bool NativeTheme::ShouldUseHighContrastColors() {

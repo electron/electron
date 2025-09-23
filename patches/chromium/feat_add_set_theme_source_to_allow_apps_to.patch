@@ -12,24 +12,11 @@ uses internally for things like menus and devtools.
 
 We can remove this patch once it has in some shape been upstreamed.
 
-diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index a03fac27bfb1176d466bfd530552c5319527508d..8afba3d61c972f3d5cbeb53cc18706caaf2f9d34 100644
---- a/ui/native_theme/native_theme.cc
-+++ b/ui/native_theme/native_theme.cc
-@@ -304,6 +304,8 @@ void NativeTheme::PaintMenuItemBackground(
- }
- 
- bool NativeTheme::ShouldUseDarkColors() const {
-+  if (theme_source() == ThemeSource::kForcedLight) return false;
-+  if (theme_source() == ThemeSource::kForcedDark) return true;
-   return should_use_dark_colors_;
- }
- 
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
 index 4ab7a387ca8cb9d98bc2b8d003148398ae983937..d7adbcb2dc477d31feca4528309922d71222f0b3 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -433,6 +433,22 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+@@ -433,6 +433,24 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
        scoped_refptr<ColorProviderKey::ThemeInitializerSupplier> custom_theme,
        bool use_custom_frame = true) const;
  
@@ -43,11 +30,13 @@ index 4ab7a387ca8cb9d98bc2b8d003148398ae983937..d7adbcb2dc477d31feca4528309922d7
 +    return theme_source_;
 +  }
 +
-+  void set_theme_source(ThemeSource theme_source) {
-+    bool original = ShouldUseDarkColors();
-+    theme_source_ = theme_source;
-+    if (ShouldUseDarkColors() != original) NotifyOnNativeThemeUpdated();
-+  }
++ void set_theme_source(ThemeSource theme_source) {
++   bool was_dark = preferred_color_scheme() == PreferredColorScheme::kDark;
++   theme_source_ = theme_source;
++   if ((preferred_color_scheme() == PreferredColorScheme::kDark) != was_dark) {
++     NotifyOnNativeThemeUpdated();
++   }
++ }
 +
    // Returns a shared instance of the default native theme for native UI.
    static NativeTheme* GetInstanceForNativeUi();
@@ -60,16 +49,4 @@ index 4ab7a387ca8cb9d98bc2b8d003148398ae983937..d7adbcb2dc477d31feca4528309922d7
  
    SEQUENCE_CHECKER(sequence_checker_);
  };
-diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 9d9094dd4a96f39cf94c3de4aae6b8708968dd08..5a5bf5d522ccf4ca30fbfd3ed26b6d1f208db792 100644
---- a/ui/native_theme/native_theme_win.cc
-+++ b/ui/native_theme/native_theme_win.cc
-@@ -679,6 +679,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
-   if (forced_colors() && !IsForcedDarkMode()) {
-     return false;
-   }
-+  if (theme_source() == ThemeSource::kForcedLight) return false;
-+  if (theme_source() == ThemeSource::kForcedDark) return true;
-   return NativeTheme::ShouldUseDarkColors();
- }
  
