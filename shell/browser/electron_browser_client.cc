@@ -450,7 +450,7 @@ bool ElectronBrowserClient::WebPreferencesNeedUpdateForColorRelatedStateChanges(
   bool in_forced_colors = native_theme->forced_colors();
   blink::mojom::PreferredColorScheme preferred_color_scheme =
       native_theme->preferred_color_scheme() ==
-             ui::NativeTheme::PreferredColorScheme::kDark
+              ui::NativeTheme::PreferredColorScheme::kDark
           ? blink::mojom::PreferredColorScheme::kDark
           : blink::mojom::PreferredColorScheme::kLight;
   return prefs.in_forced_colors != in_forced_colors ||
