@@ -262,7 +262,7 @@ index 61683d0eddb04c494ca5e650e7d556b44968ec49..5492456a9138b250e97a5479838bb443
  
  }  // namespace ui
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index 66f66edcbf72afe9deb4df4661e81b3a9eb6b8b3..3e5bf08b8b5b4a076af9e0d717ed08293b17383a 100644
+index 37e3d53abeca3a90649064053100cf9938b1f406..87dfa1e1c230f3aba90ba9520684828e958de093 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 @@ -25,6 +25,7 @@
@@ -294,8 +294,8 @@ index 66f66edcbf72afe9deb4df4661e81b3a9eb6b8b3..3e5bf08b8b5b4a076af9e0d717ed0829
 +  file_dialog::StartPortalAvailabilityTestInBackground();
  }
  
- DbusByteArray PathToByteArray(const base::FilePath& path) {
-@@ -170,17 +174,20 @@ void SelectFileDialogLinuxPortal::StartAvailabilityTestInBackground() {
+ std::vector<uint8_t> PathToByteArray(const base::FilePath& path) {
+@@ -171,17 +175,20 @@ void SelectFileDialogLinuxPortal::StartAvailabilityTestInBackground() {
    GetMainTaskRunner() = base::SequencedTaskRunner::GetCurrentDefault();
  
    dbus_xdg::SetSystemdScopeUnitNameForXdgPortal(
@@ -318,17 +318,17 @@ index 66f66edcbf72afe9deb4df4661e81b3a9eb6b8b3..3e5bf08b8b5b4a076af9e0d717ed0829
  }
  
  bool SelectFileDialogLinuxPortal::IsRunning(
-@@ -385,11 +392,14 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -386,11 +393,14 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
      const PortalFilterSet& filter_set) {
-   DbusDictionary dict;
+   dbus_xdg::Dictionary dict;
  
 +  std::string accept_label = button_label().empty() ? "" : button_label();
 +
    switch (type_) {
      case SelectFileDialog::SELECT_UPLOAD_FOLDER:
--      dict.PutAs(kFileChooserOptionAcceptLabel,
--                 DbusString(l10n_util::GetStringUTF8(
--                     IDS_SELECT_UPLOAD_FOLDER_DIALOG_UPLOAD_BUTTON)));
+-      dict[kFileChooserOptionAcceptLabel] =
+-          dbus_utils::Variant::Wrap<"s">(l10n_util::GetStringUTF8(
+-              IDS_SELECT_UPLOAD_FOLDER_DIALOG_UPLOAD_BUTTON));
 +      if (accept_label.empty()) {
 +        accept_label = l10n_util::GetStringUTF8(
 +            IDS_SELECT_UPLOAD_FOLDER_DIALOG_UPLOAD_BUTTON);
@@ -336,12 +336,13 @@ index 66f66edcbf72afe9deb4df4661e81b3a9eb6b8b3..3e5bf08b8b5b4a076af9e0d717ed0829
        [[fallthrough]];
      case SelectFileDialog::SELECT_FOLDER:
      case SelectFileDialog::Type::SELECT_EXISTING_FOLDER:
-@@ -402,6 +412,10 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -403,6 +413,11 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
        break;
    }
  
 +  if (!accept_label.empty()) {
-+    dict.PutAs(kFileChooserOptionAcceptLabel, DbusString(accept_label));
++    dict[kFileChooserOptionAcceptLabel] =
++        dbus_utils::Variant::Wrap<"s">(accept_label);
 +  }
 +
    if (!default_path.empty() && base::IsStringUTF8(default_path.value())) {
