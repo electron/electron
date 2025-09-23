@@ -34,7 +34,7 @@ diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
 index f606d2a058ed9ebf86b5f020b6897be718a40b68..003e95ca8bb6364fb6b937871b2c78b9ec798bd0 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
-@@ -180,6 +180,17 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
+@@ -181,6 +181,17 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
    mixer[kColorProgressBarPaused] = {kColorDisabledForeground};
    mixer[kColorRadioButtonForegroundChecked] = {kColorButtonForeground};
    mixer[kColorRadioButtonForegroundUnchecked] = {kColorSecondaryForeground};
@@ -52,14 +52,14 @@ index f606d2a058ed9ebf86b5f020b6897be718a40b68..003e95ca8bb6364fb6b937871b2c78b9
    mixer[kColorSeparator] = {kColorMidground};
    mixer[kColorShadowBase] = {dark_mode ? SK_ColorBLACK : gfx::kGoogleGrey800};
    mixer[kColorShadowValueAmbientShadowElevationThree] =
-@@ -276,6 +287,7 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
+@@ -277,6 +288,7 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
    mixer[kColorTreeNodeForegroundSelectedFocused] = {kColorTreeNodeForeground};
    mixer[kColorTreeNodeForegroundSelectedUnfocused] = {
        kColorTreeNodeForegroundSelectedFocused};
 +  mixer[kColorUnfocusedBorder] = {kColorMidground};
-   mixer[kColorWebNativeControlAccent] = {dark_mode
-                                              ? SkColorSetRGB(0x99, 0xC8, 0xFF)
-                                              : SkColorSetRGB(0x00, 0x75, 0xFF)};
+   mixer[kColorWindowBackground] = {kColorPrimaryBackground};
+   CompleteDefaultWebNativeRendererColorIdsDefinition(
+       mixer, dark_mode,
 diff --git a/ui/color/win/native_color_mixers_win.cc b/ui/color/win/native_color_mixers_win.cc
 index 179dc53711ed96421a66cb6c1651983af5f49c6a..686661965ebb56d2de7ff5279669491d95f81cca 100644
 --- a/ui/color/win/native_color_mixers_win.cc
