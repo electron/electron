@@ -324,5 +324,5 @@ index 8325c24ea4549b6e1ba5404f4756aaf3d9408e2f..9e25ca9f0fbcc3819149c10c6bfd8a5e
 +      status: "stable",
 +    },
      {
-       name: "Accelerated2dCanvas",
-       settable_from_internals: true,
+       // crbug.com/439682405
+       name: "AbortByPlaceholderLayout",
