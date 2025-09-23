@@ -233,11 +233,11 @@ index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7ce
  }
  
 diff --git a/content/common/features.cc b/content/common/features.cc
-index 8b654f3630b34488bfc52f5f20f5d484e01e9b23..3365c330d28019013c34b672b6fcde9fe4727954 100644
+index 97f8f8088a149a6c20ea5cf0193cb48034a4d7fb..3e5ed6c1e9df1f6e56076b80c8be2b016f242635 100644
 --- a/content/common/features.cc
 +++ b/content/common/features.cc
-@@ -335,6 +335,14 @@ BASE_FEATURE(kIOSurfaceCapturer,
-              base::FEATURE_ENABLED_BY_DEFAULT);
+@@ -276,6 +276,14 @@ BASE_FEATURE(kInterestGroupUpdateIfOlderThan, base::FEATURE_ENABLED_BY_DEFAULT);
+ BASE_FEATURE(kIOSurfaceCapturer, base::FEATURE_ENABLED_BY_DEFAULT);
  #endif
  
 +// Feature that controls whether WebContentsOcclusionChecker should handle
@@ -249,8 +249,8 @@ index 8b654f3630b34488bfc52f5f20f5d484e01e9b23..3365c330d28019013c34b672b6fcde9f
 +#endif
 +
  // When enabled, child process will not terminate itself when IPC is reset.
- BASE_FEATURE(kKeepChildProcessAfterIPCReset,
-              "KeepChildProcessAfterIPCReset",
+ BASE_FEATURE(kKeepChildProcessAfterIPCReset, base::FEATURE_DISABLED_BY_DEFAULT);
+ 
 diff --git a/content/common/features.h b/content/common/features.h
 index 933536411d1f1c2f2b7dec6dacd75a1c940a68aa..797937ce2d58d95a8aa5003323b5af8bd714ff01 100644
 --- a/content/common/features.h
