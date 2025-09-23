@@ -681,7 +681,7 @@ void ElectronBrowserContext::SetDisplayMediaRequestHandler(
 void ElectronBrowserContext::DisplayMediaDeviceChosen(
     const content::MediaStreamRequest& request,
     content::MediaResponseCallback callback,
-    gin::Arguments* args) {
+    gin::Arguments* const args) {
   blink::mojom::StreamDevicesSetPtr stream_devices_set =
       blink::mojom::StreamDevicesSet::New();
   v8::Local<v8::Value> result;
@@ -693,10 +693,9 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
   }
   gin_helper::Dictionary result_dict;
   if (!gin::ConvertFromV8(args->isolate(), result, &result_dict)) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowTypeError(
-            "Display Media Request streams callback must be called with null "
-            "or a valid object");
+    args->ThrowTypeError(
+        "Display Media Request streams callback must be called with null "
+        "or a valid object");
     std::move(callback).Run(
         blink::mojom::StreamDevicesSet(),
         blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
@@ -735,9 +734,8 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
           content::DesktopMediaID::Parse(video_device.id));
       devices.video_device = video_device;
     } else {
-      gin_helper::ErrorThrower(args->isolate())
-          .ThrowTypeError(
-              "video must be a WebFrameMain or DesktopCapturerSource");
+      args->ThrowTypeError(
+          "video must be a WebFrameMain or DesktopCapturerSource");
       std::move(callback).Run(
           blink::mojom::StreamDevicesSet(),
           blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
@@ -784,10 +782,9 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
           GetAudioDesktopMediaId(request.requested_audio_device_ids));
       devices.audio_device = audio_device;
     } else {
-      gin_helper::ErrorThrower(args->isolate())
-          .ThrowTypeError(
-              "audio must be a WebFrameMain, \"loopback\" or "
-              "\"loopbackWithMute\"");
+      args->ThrowTypeError(
+          "audio must be a WebFrameMain, \"loopback\" or "
+          "\"loopbackWithMute\"");
       std::move(callback).Run(
           blink::mojom::StreamDevicesSet(),
           blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
@@ -796,9 +793,8 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
   }
 
   if ((video_requested && !has_video)) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowTypeError(
-            "Video was requested, but no video stream was provided");
+    args->ThrowTypeError(
+        "Video was requested, but no video stream was provided");
     std::move(callback).Run(
         blink::mojom::StreamDevicesSet(),
         blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
