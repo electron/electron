@@ -77,7 +77,8 @@ bool NativeTheme::ShouldUseDarkColors() {
 }
 
 bool NativeTheme::ShouldUseHighContrastColors() {
-  return ui_theme_->GetPreferredContrast() == ui::NativeTheme::PreferredContrast::kMore;
+  return ui_theme_->GetPreferredContrast() ==
+         ui::NativeTheme::PreferredContrast::kMore;
 }
 
 bool NativeTheme::ShouldUseDarkColorsForSystemIntegratedUI() {
@@ -109,8 +110,9 @@ bool NativeTheme::ShouldUseInvertedColorScheme() {
     return false;
   return is_inverted;
 #else
-  return ui_theme_->GetPlatformHighContrastColorScheme() ==
-         ui::NativeTheme::PlatformHighContrastColorScheme::kDark;
+  return ui_theme_->InForcedColorsMode() &&
+         ui_theme_->GetPreferredColorScheme() ==
+             ui::NativeTheme::PreferredColorScheme::kDark;
 #endif
 }
 
