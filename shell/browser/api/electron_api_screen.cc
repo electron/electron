@@ -179,7 +179,7 @@ v8::Local<v8::Value> Screen::Create(gin_helper::ErrorThrower error_thrower) {
     return v8::Null(error_thrower.isolate());
   }
 
-  display::Screen* screen = display::Screen::GetScreen();
+  display::Screen* screen = display::Screen::Get();
   if (!screen) {
     error_thrower.ThrowError("Failed to get screen information");
     return v8::Null(error_thrower.isolate());

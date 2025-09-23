@@ -9,7 +9,7 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index 1673dd4966365f31f1073a4c90743e6fe73880b6..cb3d3da5bc9da99c950521d18f28aa438467fdf4 100644
+index b798ae06446d68fe74e7fef3ade515e9c77f1f73..0b0ecebef9e34986a95e4d9f3b52fcce19f2d686 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
 @@ -8,6 +8,7 @@
@@ -28,21 +28,11 @@ index 1673dd4966365f31f1073a4c90743e6fe73880b6..cb3d3da5bc9da99c950521d18f28aa43
  
  using storage::BigIOBuffer;
  
-@@ -43,7 +45,7 @@ constexpr char kSeparator[] = " \n";
- 
- // We always expect to receive valid URLs that can be used as keys to the code
- // cache. The relevant checks (for ex: resource_url is valid, origin_lock is
--// not opque etc.,) must be done prior to requesting the code cache.
-+// not opaque etc.,) must be done prior to requesting the code cache.
- //
- // This function doesn't enforce anything in the production code. It is here
- // to make the assumptions explicit and to catch any errors when DCHECKs are
-@@ -53,33 +55,55 @@ void CheckValidKeys(const GURL& resource_url,
-                     GeneratedCodeCache::CodeCacheType cache_type) {
+@@ -53,39 +55,55 @@ void CheckValidResource(const GURL& resource_url,
+                         GeneratedCodeCache::CodeCacheType cache_type) {
    // If the resource url is invalid don't cache the code.
    DCHECK(resource_url.is_valid());
 -  bool resource_url_is_chrome_or_chrome_untrusted =
-+
 +  // There are 3 kind of URL scheme compatible for the `resource_url`.
 +  // 1. http: and https: URLs.
 +  // 2. chrome: and chrome-untrusted: URLs.
@@ -55,16 +45,22 @@ index 1673dd4966365f31f1073a4c90743e6fe73880b6..cb3d3da5bc9da99c950521d18f28aa43
 -         resource_url_is_chrome_or_chrome_untrusted ||
 -         blink::CommonSchemeRegistry::IsExtensionScheme(resource_url.scheme()));
 -
+-  // The chrome and chrome-untrusted schemes are only used with the WebUI
+-  // code cache type.
+-  DCHECK_EQ(resource_url_is_chrome_or_chrome_untrusted,
+-            cache_type == GeneratedCodeCache::kWebUIJavaScript);
++  const bool resource_url_embedder =
++      base::Contains(url::GetCodeCacheSchemes(), resource_url.scheme());
++  DCHECK(resource_url_http || resource_url_webui || resource_url_embedder);
+ }
+ 
+ void CheckValidContext(const GURL& origin_lock,
+                        GeneratedCodeCache::CodeCacheType cache_type) {
 -  // |origin_lock| should be either empty or should have
 -  // Http/Https/chrome/chrome-untrusted schemes and it should not be a URL with
 -  // opaque origin. Empty origin_locks are allowed when the renderer is not
 -  // locked to an origin.
 -  bool origin_lock_is_chrome_or_chrome_untrusted =
-+
-+  const bool resource_url_embedder =
-+      base::Contains(url::GetCodeCacheSchemes(), resource_url.scheme());
-+  DCHECK(resource_url_http || resource_url_webui || resource_url_embedder);
-+
 +  // |origin_lock| should be either empty or should have code cache allowed
 +  // schemes (http/https/chrome/chrome-untrusted or other custom schemes added
 +  // by url::AddCodeCacheScheme), and it should not be a URL with opaque
@@ -86,8 +82,7 @@ index 1673dd4966365f31f1073a4c90743e6fe73880b6..cb3d3da5bc9da99c950521d18f28aa43
 -  // code cache type.
 -  DCHECK_EQ(origin_lock_is_chrome_or_chrome_untrusted,
 -            cache_type == GeneratedCodeCache::kWebUIJavaScript);
--  DCHECK_EQ(resource_url_is_chrome_or_chrome_untrusted,
--            cache_type == GeneratedCodeCache::kWebUIJavaScript);
++
 +  const bool origin_lock_for_embedder =
 +      base::Contains(url::GetCodeCacheSchemes(), origin_lock.scheme());
 +
@@ -100,16 +95,14 @@ index 1673dd4966365f31f1073a4c90743e6fe73880b6..cb3d3da5bc9da99c950521d18f28aa43
 +    case GeneratedCodeCache::kJavaScript:
 +    case GeneratedCodeCache::kWebAssembly:
 +      DCHECK(!origin_lock_for_webui);
-+      DCHECK(!resource_url_webui);
 +      break;
 +    case GeneratedCodeCache::kWebUIJavaScript:
 +      DCHECK(origin_lock_for_webui);
-+      DCHECK(resource_url_webui);
 +      break;
 +  }
 +
 +  // The custom schemes share the cache type with http(s).
-+  if (origin_lock_for_embedder || resource_url_embedder) {
++  if (origin_lock_for_embedder) {
 +    DCHECK(cache_type == GeneratedCodeCache::kJavaScript ||
 +           cache_type == GeneratedCodeCache::kWebAssembly);
 +  }
@@ -117,7 +110,7 @@ index 1673dd4966365f31f1073a4c90743e6fe73880b6..cb3d3da5bc9da99c950521d18f28aa43
  
  // Generates the cache key for the given |resource_url|, |origin_lock| and
 diff --git a/content/browser/code_cache/generated_code_cache.h b/content/browser/code_cache/generated_code_cache.h
-index 94602e2319d3f7ed557da98e0598c9f96d986260..0a9a856d8bd9d702eb49e45a54c141a39f5ec622 100644
+index a01f0d96ef33ce9460a851b072b7ceed5227dee3..f7e39b28cc0ba2251123925c01083a7935f46f56 100644
 --- a/content/browser/code_cache/generated_code_cache.h
 +++ b/content/browser/code_cache/generated_code_cache.h
 @@ -51,12 +51,14 @@ class CONTENT_EXPORT GeneratedCodeCache {
@@ -259,28 +252,28 @@ index 28556e56f2fd591c46ce6f48d39eb907876a499d..f5737ba60fb9e182459066ffa62c7c58
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index 404ff1e48a990570dc411a714e570d4f8e1a9ef1..916c5d350cfabae0bfd3da97d6a058f2fb93530d 100644
+index 7b4408f3480bd062ab9221f524633c177a212790..8d283d84b0817a937845b221bb13c6ed12bfade6 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
-@@ -6,6 +6,7 @@
- 
+@@ -7,6 +7,7 @@
+ #include <string_view>
  #include <utility>
  
 +#include "base/containers/contains.h"
+ #include "base/feature_list.h"
  #include "base/functional/bind.h"
  #include "base/functional/callback_helpers.h"
- #include "base/metrics/histogram_functions.h"
-@@ -29,6 +30,7 @@
- #include "third_party/blink/public/common/scheme_registry.h"
+@@ -36,6 +37,7 @@
+ #include "third_party/blink/public/mojom/loader/code_cache.mojom-data-view.h"
  #include "url/gurl.h"
  #include "url/origin.h"
 +#include "url/url_util.h"
  
  using blink::mojom::CacheStorageError;
  
-@@ -36,6 +38,11 @@ namespace content {
- 
- namespace {
+@@ -55,6 +57,11 @@ GeneratedCodeCache::CodeCacheType MojoCacheTypeToCodeCacheType(
+   }
+ }
  
 +bool ProcessLockURLIsCodeCacheScheme(const ProcessLock& process_lock) {
 +  return base::Contains(url::GetCodeCacheSchemes(),
@@ -290,7 +283,7 @@ index 404ff1e48a990570dc411a714e570d4f8e1a9ef1..916c5d350cfabae0bfd3da97d6a058f2
  bool CheckSecurityForAccessingCodeCacheData(
      const GURL& resource_url,
      int render_process_id,
-@@ -46,39 +53,57 @@ bool CheckSecurityForAccessingCodeCacheData(
+@@ -65,39 +72,56 @@ bool CheckSecurityForAccessingCodeCacheData(
  
    // Code caching is only allowed for http(s) and chrome/chrome-untrusted
    // scripts. Furthermore, there is no way for http(s) pages to load chrome or
@@ -303,9 +296,17 @@ index 404ff1e48a990570dc411a714e570d4f8e1a9ef1..916c5d350cfabae0bfd3da97d6a058f2
    // chrome-untrusted scripts, so any http(s) page attempting to store data
    // about a chrome or chrome-untrusted script would be an indication of
    // suspicious activity.
+-  if (resource_url.SchemeIs(content::kChromeUIScheme) ||
+-      resource_url.SchemeIs(content::kChromeUIUntrustedScheme)) {
+-    if (!process_lock.IsLockedToSite()) {
+-      // We can't tell for certain whether this renderer is doing something
+-      // malicious, but we don't trust it enough to store data.
+-      return false;
+-    }
 +  if (resource_url.SchemeIsHTTPOrHTTPS()) {
-+    if (process_lock.MatchesScheme(url::kHttpScheme) ||
-+        process_lock.MatchesScheme(url::kHttpsScheme)) {
+     if (process_lock.MatchesScheme(url::kHttpScheme) ||
+         process_lock.MatchesScheme(url::kHttpsScheme)) {
+-      if (operation == CodeCacheHostImpl::Operation::kWrite) {
 +      return true;
 +    }
 +    // Pages in custom schemes like isolated-app: are allowed to load http(s)
@@ -319,19 +320,12 @@ index 404ff1e48a990570dc411a714e570d4f8e1a9ef1..916c5d350cfabae0bfd3da97d6a058f2
 +    return false;
 +  }
 +
-   if (resource_url.SchemeIs(content::kChromeUIScheme) ||
-       resource_url.SchemeIs(content::kChromeUIUntrustedScheme)) {
--    if (!process_lock.IsLockedToSite()) {
--      // We can't tell for certain whether this renderer is doing something
--      // malicious, but we don't trust it enough to store data.
--      return false;
++  if (resource_url.SchemeIs(content::kChromeUIScheme) ||
++      resource_url.SchemeIs(content::kChromeUIUntrustedScheme)) {
 +    if (process_lock.MatchesScheme(content::kChromeUIScheme) ||
 +        process_lock.MatchesScheme(content::kChromeUIUntrustedScheme)) {
 +      return true;
-     }
--    if (process_lock.MatchesScheme(url::kHttpScheme) ||
--        process_lock.MatchesScheme(url::kHttpsScheme)) {
--      if (operation == CodeCacheHostImpl::Operation::kWrite) {
++     }
 +    if (operation == CodeCacheHostImpl::Operation::kWrite) {
 +      if (process_lock.MatchesScheme(url::kHttpScheme) ||
 +          process_lock.MatchesScheme(url::kHttpsScheme)) {
@@ -362,13 +356,12 @@ index 404ff1e48a990570dc411a714e570d4f8e1a9ef1..916c5d350cfabae0bfd3da97d6a058f2
 -      return false;
 -    }
 -    return true;
-+
 +  if (base::Contains(url::GetCodeCacheSchemes(), resource_url.scheme())) {
 +    return ProcessLockURLIsCodeCacheScheme(process_lock);
    }
  
    if (operation == CodeCacheHostImpl::Operation::kWrite) {
-@@ -433,6 +458,7 @@ std::optional<GURL> CodeCacheHostImpl::GetSecondaryKeyForCodeCache(
+@@ -530,6 +554,7 @@ std::optional<GURL> CodeCacheHostImpl::GetSecondaryKeyForCodeCache(
        process_lock.MatchesScheme(url::kHttpsScheme) ||
        process_lock.MatchesScheme(content::kChromeUIScheme) ||
        process_lock.MatchesScheme(content::kChromeUIUntrustedScheme) ||
