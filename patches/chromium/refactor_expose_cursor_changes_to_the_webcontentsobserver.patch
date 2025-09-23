@@ -16,7 +16,7 @@ index 27b51f78f4676071a8fdc2340f650cb7df1d883b..7db3a07ff9e0f52f1232c25f8e4e72d3
  #include "ui/base/ui_base_types.h"
  #include "ui/gfx/mojom/delegated_ink_point_renderer.mojom.h"
 +#include "ui/base/cursor/cursor.h"
- #include "ui/gfx/native_widget_types.h"
+ #include "ui/gfx/native_ui_types.h"
  
  namespace blink {
 @@ -293,6 +294,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
