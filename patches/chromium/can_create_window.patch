@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index fe786aea2c11318dd32176453ac4f73a61346ed8..0d919edebfe6b0d545f5a7b79ec10e463b059a7a 100644
+index 25bc5fd2f2158b95a7d6dff6a9a30c967c052149..ff0406154e44a3b12ec732e836fc1e65dadfd326 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -9826,6 +9826,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -62,10 +62,10 @@ index 29597a3a6f01fcff65de5624e583b03a1e34dd6f..6c067803c35a4e98ec99df6e28015f3b
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 90cc84198b7f23c6a07ab503f60a577fdfba5baa..722b27b8adaf86624058ace5f9b5871ff0ede627 100644
+index 15a83f61ed4e31ba34cbc19995cd9d68b1599f1d..9cf9fefad46a6c2ead4085adc76e0c07369f641a 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -661,6 +661,10 @@ struct CreateNewWindowParams {
+@@ -662,6 +662,10 @@ struct CreateNewWindowParams {
    pending_associated_remote<blink.mojom.Widget> widget;
    pending_associated_receiver<blink.mojom.FrameWidgetHost> frame_widget_host;
    pending_associated_remote<blink.mojom.FrameWidget> frame_widget;
