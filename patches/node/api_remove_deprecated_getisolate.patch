@@ -1,0 +1,908 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Mon, 1 Sep 2025 03:13:53 +0900
+Subject: Remove deprecated `GetIsolate`
+
+https://chromium-review.googlesource.com/c/v8/v8/+/6905244
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index 244d747f010c51366e44dec705ae304423038a85..796be2ce65af31af20994cad63a9ec4843caf89a 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -620,7 +620,7 @@ std::unique_ptr<MultiIsolatePlatform> MultiIsolatePlatform::Create(
+ 
+ MaybeLocal<Object> GetPerContextExports(Local<Context> context,
+                                         IsolateData* isolate_data) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   EscapableHandleScope handle_scope(isolate);
+ 
+   Local<Object> global = context->Global();
+@@ -666,7 +666,7 @@ void ProtoThrower(const FunctionCallbackInfo<Value>& info) {
+ // This runs at runtime, regardless of whether the context
+ // is created from a snapshot.
+ Maybe<void> InitializeContextRuntime(Local<Context> context) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   HandleScope handle_scope(isolate);
+ 
+   // When `IsCodeGenerationFromStringsAllowed` is true, V8 takes the fast path
+@@ -745,7 +745,7 @@ Maybe<void> InitializeContextRuntime(Local<Context> context) {
+ }
+ 
+ Maybe<void> InitializeBaseContextForSnapshot(Local<Context> context) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   HandleScope handle_scope(isolate);
+ 
+   // Delete `Intl.v8BreakIterator`
+@@ -770,7 +770,7 @@ Maybe<void> InitializeBaseContextForSnapshot(Local<Context> context) {
+ }
+ 
+ Maybe<void> InitializeMainContextForSnapshot(Local<Context> context) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   HandleScope handle_scope(isolate);
+ 
+   // Initialize the default values.
+@@ -788,7 +788,7 @@ Maybe<void> InitializeMainContextForSnapshot(Local<Context> context) {
+ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
+                                             IsolateData* isolate_data) {
+   CHECK(isolate_data);
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   EscapableHandleScope scope(isolate);
+   Context::Scope context_scope(context);
+ 
+@@ -812,7 +812,7 @@ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
+ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
+                                                IsolateData* isolate_data) {
+   CHECK(isolate_data);
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   EscapableHandleScope scope(isolate);
+   Context::Scope context_scope(context);
+ 
+@@ -838,7 +838,7 @@ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
+ Maybe<void> InitializePrimordials(Local<Context> context,
+                                   IsolateData* isolate_data) {
+   // Run per-context JS files.
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   Context::Scope context_scope(context);
+   Local<Object> exports;
+ 
+diff --git a/src/base_object-inl.h b/src/base_object-inl.h
+index 6f731b17fe0b84dd3d2c9bc9cfef1f8062a2c5f7..71a1072ed2decbee08d40eda7c47456be5093bc2 100644
+--- a/src/base_object-inl.h
++++ b/src/base_object-inl.h
+@@ -55,7 +55,6 @@ v8::Local<v8::Object> BaseObject::object() const {
+ v8::Local<v8::Object> BaseObject::object(v8::Isolate* isolate) const {
+   v8::Local<v8::Object> handle = object();
+ 
+-  DCHECK_EQ(handle->GetCreationContextChecked()->GetIsolate(), isolate);
+   DCHECK_EQ(env()->isolate(), isolate);
+ 
+   return handle;
+diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
+index ea5179ad5155cb599891d7421cd61df719ac4cae..ee5380fd055663e5d58491943532ec1dfa11a3c3 100644
+--- a/src/crypto/crypto_context.cc
++++ b/src/crypto/crypto_context.cc
+@@ -946,7 +946,7 @@ bool ArrayOfStringsToX509s(Local<Context> context,
+                            Local<Array> cert_array,
+                            std::vector<X509*>* certs) {
+   ClearErrorOnReturn clear_error_on_return;
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   Environment* env = Environment::GetCurrent(context);
+   uint32_t array_length = cert_array->Length();
+ 
+diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
+index eb6dad44a49d997097c8fb5009eeb60a7305da27..fd29d17de195017970856ce30d7a9c5785b0b8ee 100644
+--- a/src/crypto/crypto_x509.cc
++++ b/src/crypto/crypto_x509.cc
+@@ -97,7 +97,7 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, BIOPointer&& bio) {
+   if (!bio) return {};
+   BUF_MEM* mem = bio;
+   Local<Value> ret;
+-  if (!String::NewFromUtf8(context->GetIsolate(),
++  if (!String::NewFromUtf8(Isolate::GetCurrent(),
+                            mem->data,
+                            NewStringType::kNormal,
+                            mem->length)
+@@ -121,7 +121,7 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, const ASN1_OBJECT* obj) {
+   }
+ 
+   Local<Value> result;
+-  if (!String::NewFromUtf8(context->GetIsolate(), str).ToLocal(&result)) {
++  if (!String::NewFromUtf8(Isolate::GetCurrent(), str).ToLocal(&result)) {
+     return {};
+   }
+   return result;
+@@ -136,12 +136,12 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, const ASN1_STRING* str) {
+   unsigned char* value_str;
+   int value_str_size = ASN1_STRING_to_UTF8(&value_str, str);
+   if (value_str_size < 0) {
+-    return Undefined(context->GetIsolate());
++    return Undefined(Isolate::GetCurrent());
+   }
+   DataPointer free_value_str(value_str, value_str_size);
+ 
+   Local<Value> result;
+-  if (!String::NewFromUtf8(context->GetIsolate(),
++  if (!String::NewFromUtf8(Isolate::GetCurrent(),
+                            reinterpret_cast<const char*>(value_str),
+                            NewStringType::kNormal,
+                            value_str_size)
+@@ -155,7 +155,7 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, const BIOPointer& bio) {
+   if (!bio) return {};
+   BUF_MEM* mem = bio;
+   Local<Value> ret;
+-  if (!String::NewFromUtf8(context->GetIsolate(),
++  if (!String::NewFromUtf8(Isolate::GetCurrent(),
+                            mem->data,
+                            NewStringType::kNormal,
+                            mem->length)
+diff --git a/src/encoding_binding.cc b/src/encoding_binding.cc
+index 31ed995714bb99ab534f26ba9ebc6051c258a1c9..5ace688bb7ffc86eedf5aff11ab0ab487ad9440e 100644
+--- a/src/encoding_binding.cc
++++ b/src/encoding_binding.cc
+@@ -73,7 +73,7 @@ void BindingData::Deserialize(Local<Context> context,
+                               int index,
+                               InternalFieldInfoBase* info) {
+   DCHECK_IS_SNAPSHOT_SLOT(index);
+-  v8::HandleScope scope(context->GetIsolate());
++  v8::HandleScope scope(Isolate::GetCurrent());
+   Realm* realm = Realm::GetCurrent(context);
+   // Recreate the buffer in the constructor.
+   InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
+diff --git a/src/env.cc b/src/env.cc
+index 8cdfbac602796cabbd8a2f673385b93bea9bd7cc..a0097a4af25f760ba4b31865d9a800d1974a454c 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -1744,10 +1744,10 @@ void AsyncHooks::Deserialize(Local<Context> context) {
+         context->GetDataFromSnapshotOnce<Array>(
+             info_->js_execution_async_resources).ToLocalChecked();
+   } else {
+-    js_execution_async_resources = Array::New(context->GetIsolate());
++    js_execution_async_resources = Array::New(Isolate::GetCurrent());
+   }
+   js_execution_async_resources_.Reset(
+-      context->GetIsolate(), js_execution_async_resources);
++      Isolate::GetCurrent(), js_execution_async_resources);
+ 
+   // The native_execution_async_resources_ field requires v8::Local<> instances
+   // for async calls whose resources were on the stack as JS objects when they
+@@ -1787,7 +1787,7 @@ AsyncHooks::SerializeInfo AsyncHooks::Serialize(Local<Context> context,
+   info.async_id_fields = async_id_fields_.Serialize(context, creator);
+   if (!js_execution_async_resources_.IsEmpty()) {
+     info.js_execution_async_resources = creator->AddData(
+-        context, js_execution_async_resources_.Get(context->GetIsolate()));
++        context, js_execution_async_resources_.Get(Isolate::GetCurrent()));
+     CHECK_NE(info.js_execution_async_resources, 0);
+   } else {
+     info.js_execution_async_resources = 0;
+diff --git a/src/inspector/network_agent.cc b/src/inspector/network_agent.cc
+index 3b5d9615021101ad03d9dfef83e0c56b462b59ad..823e7b8d3d07eb2afa1cc62d3d9e2af20f4e2e89 100644
+--- a/src/inspector/network_agent.cc
++++ b/src/inspector/network_agent.cc
+@@ -29,31 +29,31 @@ using v8::Value;
+ Maybe<protocol::String> ObjectGetProtocolString(v8::Local<v8::Context> context,
+                                                 Local<Object> object,
+                                                 Local<v8::String> property) {
+-  HandleScope handle_scope(context->GetIsolate());
++  HandleScope handle_scope(v8::Isolate::GetCurrent());
+   Local<Value> value;
+   if (!object->Get(context, property).ToLocal(&value) || !value->IsString()) {
+     return Nothing<protocol::String>();
+   }
+   Local<v8::String> str = value.As<v8::String>();
+-  return Just(ToProtocolString(context->GetIsolate(), str));
++  return Just(ToProtocolString(v8::Isolate::GetCurrent(), str));
+ }
+ 
+ // Get a protocol string property from the object.
+ Maybe<protocol::String> ObjectGetProtocolString(v8::Local<v8::Context> context,
+                                                 Local<Object> object,
+                                                 const char* property) {
+-  HandleScope handle_scope(context->GetIsolate());
++  HandleScope handle_scope(v8::Isolate::GetCurrent());
+   return ObjectGetProtocolString(
+-      context, object, OneByteString(context->GetIsolate(), property));
++      context, object, OneByteString(v8::Isolate::GetCurrent(), property));
+ }
+ 
+ // Get a protocol double property from the object.
+ Maybe<double> ObjectGetDouble(v8::Local<v8::Context> context,
+                               Local<Object> object,
+                               const char* property) {
+-  HandleScope handle_scope(context->GetIsolate());
++  HandleScope handle_scope(v8::Isolate::GetCurrent());
+   Local<Value> value;
+-  if (!object->Get(context, OneByteString(context->GetIsolate(), property))
++  if (!object->Get(context, OneByteString(v8::Isolate::GetCurrent(), property))
+            .ToLocal(&value) ||
+       !value->IsNumber()) {
+     return Nothing<double>();
+@@ -65,9 +65,9 @@ Maybe<double> ObjectGetDouble(v8::Local<v8::Context> context,
+ Maybe<int> ObjectGetInt(v8::Local<v8::Context> context,
+                         Local<Object> object,
+                         const char* property) {
+-  HandleScope handle_scope(context->GetIsolate());
++  HandleScope handle_scope(v8::Isolate::GetCurrent());
+   Local<Value> value;
+-  if (!object->Get(context, OneByteString(context->GetIsolate(), property))
++  if (!object->Get(context, OneByteString(v8::Isolate::GetCurrent(), property))
+            .ToLocal(&value) ||
+       !value->IsInt32()) {
+     return Nothing<int>();
+@@ -79,9 +79,9 @@ Maybe<int> ObjectGetInt(v8::Local<v8::Context> context,
+ Maybe<bool> ObjectGetBool(v8::Local<v8::Context> context,
+                           Local<Object> object,
+                           const char* property) {
+-  HandleScope handle_scope(context->GetIsolate());
++  HandleScope handle_scope(v8::Isolate::GetCurrent());
+   Local<Value> value;
+-  if (!object->Get(context, OneByteString(context->GetIsolate(), property))
++  if (!object->Get(context, OneByteString(v8::Isolate::GetCurrent(), property))
+            .ToLocal(&value) ||
+       !value->IsBoolean()) {
+     return Nothing<bool>();
+@@ -93,9 +93,9 @@ Maybe<bool> ObjectGetBool(v8::Local<v8::Context> context,
+ MaybeLocal<v8::Object> ObjectGetObject(v8::Local<v8::Context> context,
+                                        Local<Object> object,
+                                        const char* property) {
+-  EscapableHandleScope handle_scope(context->GetIsolate());
++  EscapableHandleScope handle_scope(v8::Isolate::GetCurrent());
+   Local<Value> value;
+-  if (!object->Get(context, OneByteString(context->GetIsolate(), property))
++  if (!object->Get(context, OneByteString(v8::Isolate::GetCurrent(), property))
+            .ToLocal(&value) ||
+       !value->IsObject()) {
+     return {};
+@@ -106,7 +106,7 @@ MaybeLocal<v8::Object> ObjectGetObject(v8::Local<v8::Context> context,
+ // Create a protocol::Network::Headers from the v8 object.
+ std::unique_ptr<protocol::Network::Headers> createHeadersFromObject(
+     v8::Local<v8::Context> context, Local<Object> headers_obj) {
+-  HandleScope handle_scope(context->GetIsolate());
++  HandleScope handle_scope(v8::Isolate::GetCurrent());
+ 
+   std::unique_ptr<protocol::DictionaryValue> dict =
+       protocol::DictionaryValue::create();
+@@ -127,7 +127,7 @@ std::unique_ptr<protocol::Network::Headers> createHeadersFromObject(
+              .To(&property_value)) {
+       return {};
+     }
+-    dict->setString(ToProtocolString(context->GetIsolate(), property_name),
++    dict->setString(ToProtocolString(v8::Isolate::GetCurrent(), property_name),
+                     property_value);
+   }
+ 
+@@ -137,7 +137,7 @@ std::unique_ptr<protocol::Network::Headers> createHeadersFromObject(
+ // Create a protocol::Network::Request from the v8 object.
+ std::unique_ptr<protocol::Network::Request> createRequestFromObject(
+     v8::Local<v8::Context> context, Local<Object> request) {
+-  HandleScope handle_scope(context->GetIsolate());
++  HandleScope handle_scope(v8::Isolate::GetCurrent());
+   protocol::String url;
+   if (!ObjectGetProtocolString(context, request, "url").To(&url)) {
+     return {};
+@@ -169,7 +169,7 @@ std::unique_ptr<protocol::Network::Request> createRequestFromObject(
+ // Create a protocol::Network::Response from the v8 object.
+ std::unique_ptr<protocol::Network::Response> createResponseFromObject(
+     v8::Local<v8::Context> context, Local<Object> response) {
+-  HandleScope handle_scope(context->GetIsolate());
++  HandleScope handle_scope(v8::Isolate::GetCurrent());
+   protocol::String url;
+   if (!ObjectGetProtocolString(context, response, "url").To(&url)) {
+     return {};
+diff --git a/src/js_native_api_v8.h b/src/js_native_api_v8.h
+index 27aeac589b19cd681923fb848ce5f36c66fc05e2..5f2900869763f40cac54e3cb3fe2e24eda615410 100644
+--- a/src/js_native_api_v8.h
++++ b/src/js_native_api_v8.h
+@@ -53,7 +53,7 @@ class RefTracker {
+ struct napi_env__ {
+   explicit napi_env__(v8::Local<v8::Context> context,
+                       int32_t module_api_version)
+-      : isolate(context->GetIsolate()),
++      : isolate(v8::Isolate::GetCurrent()),
+         context_persistent(isolate, context),
+         module_api_version(module_api_version) {
+     napi_clear_last_error(this);
+diff --git a/src/module_wrap.cc b/src/module_wrap.cc
+index e3880111172363feafb53b51deb08c93596cd4f4..6ab85bb74d708037274e08df343559a37db384dc 100644
+--- a/src/module_wrap.cc
++++ b/src/module_wrap.cc
+@@ -859,7 +859,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
+     Local<String> specifier,
+     Local<FixedArray> import_attributes,
+     Local<Module> referrer) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   Environment* env = Environment::GetCurrent(context);
+   if (env == nullptr) {
+     THROW_ERR_EXECUTION_ENVIRONMENT_NOT_AVAILABLE(isolate);
+@@ -901,7 +901,7 @@ MaybeLocal<Promise> ImportModuleDynamically(
+     Local<Value> resource_name,
+     Local<String> specifier,
+     Local<FixedArray> import_attributes) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   Environment* env = Environment::GetCurrent(context);
+   if (env == nullptr) {
+     THROW_ERR_EXECUTION_ENVIRONMENT_NOT_AVAILABLE(isolate);
+@@ -1125,7 +1125,7 @@ MaybeLocal<Module> LinkRequireFacadeWithOriginal(
+     Local<FixedArray> import_attributes,
+     Local<Module> referrer) {
+   Environment* env = Environment::GetCurrent(context);
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   CHECK(specifier->Equals(context, env->original_string()).ToChecked());
+   CHECK(!env->temporary_required_module_facade_original.IsEmpty());
+   return env->temporary_required_module_facade_original.Get(isolate);
+diff --git a/src/node.h b/src/node.h
+index 4335c7cf53b7e08c95dcee3461384ac12c8ebe41..16ba26ff9babd719b6807bc01339183866c8cf33 100644
+--- a/src/node.h
++++ b/src/node.h
+@@ -1034,7 +1034,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
+ 
+ #define NODE_DEFINE_CONSTANT(target, constant)                                 \
+   do {                                                                         \
+-    v8::Isolate* isolate = target->GetIsolate();                               \
++    v8::Isolate* isolate = v8::Isolate::GetCurrent();                          \
+     v8::Local<v8::Context> context = isolate->GetCurrentContext();             \
+     v8::Local<v8::String> constant_name = v8::String::NewFromUtf8Literal(      \
+         isolate, #constant, v8::NewStringType::kInternalized);                 \
+@@ -1050,7 +1050,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
+ 
+ #define NODE_DEFINE_HIDDEN_CONSTANT(target, constant)                          \
+   do {                                                                         \
+-    v8::Isolate* isolate = target->GetIsolate();                               \
++    v8::Isolate* isolate = v8::Isolate::GetCurrent();                          \
+     v8::Local<v8::Context> context = isolate->GetCurrentContext();             \
+     v8::Local<v8::String> constant_name = v8::String::NewFromUtf8Literal(      \
+         isolate, #constant, v8::NewStringType::kInternalized);                 \
+diff --git a/src/node_blob.cc b/src/node_blob.cc
+index 9b9956f5ee3150a80f040cd0dbb9ef6589295600..14de0dad25fbf854ea23eb25abd6f9f2179e0dad 100644
+--- a/src/node_blob.cc
++++ b/src/node_blob.cc
+@@ -554,7 +554,7 @@ void BlobBindingData::Deserialize(Local<Context> context,
+                                   int index,
+                                   InternalFieldInfoBase* info) {
+   DCHECK_IS_SNAPSHOT_SLOT(index);
+-  HandleScope scope(context->GetIsolate());
++  HandleScope scope(Isolate::GetCurrent());
+   Realm* realm = Realm::GetCurrent(context);
+   BlobBindingData* binding = realm->AddBindingData<BlobBindingData>(holder);
+   CHECK_NOT_NULL(binding);
+diff --git a/src/node_builtins.cc b/src/node_builtins.cc
+index 557972987abeaa56918362638a17a9b6e0763238..b639f788981c5503c22c471eefd225c26a79c3f8 100644
+--- a/src/node_builtins.cc
++++ b/src/node_builtins.cc
+@@ -275,7 +275,7 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileInternal(
+     const char* id,
+     LocalVector<String>* parameters,
+     Realm* optional_realm) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   EscapableHandleScope scope(isolate);
+ 
+   Local<String> source;
+@@ -397,7 +397,7 @@ void BuiltinLoader::SaveCodeCache(const char* id, Local<Function> fun) {
+ MaybeLocal<Function> BuiltinLoader::LookupAndCompile(Local<Context> context,
+                                                      const char* id,
+                                                      Realm* optional_realm) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   LocalVector<String> parameters(isolate);
+   // Detects parameters of the scripts based on module ids.
+   // internal/bootstrap/realm: process, getLinkedBinding,
+@@ -451,7 +451,7 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompile(Local<Context> context,
+ MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,
+                                                 const char* id,
+                                                 Realm* realm) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   // Detects parameters of the scripts based on module ids.
+   // internal/bootstrap/realm: process, getLinkedBinding,
+   //                           getInternalBinding, primordials
+@@ -507,7 +507,7 @@ MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,
+   if (!maybe_fn.ToLocal(&fn)) {
+     return MaybeLocal<Value>();
+   }
+-  Local<Value> undefined = Undefined(context->GetIsolate());
++  Local<Value> undefined = Undefined(Isolate::GetCurrent());
+   return fn->Call(context, undefined, argc, argv);
+ }
+ 
+@@ -546,14 +546,14 @@ bool BuiltinLoader::CompileAllBuiltinsAndCopyCodeCache(
+       to_eager_compile_.emplace(id);
+     }
+ 
+-    v8::TryCatch bootstrapCatch(context->GetIsolate());
++    v8::TryCatch bootstrapCatch(Isolate::GetCurrent());
+     auto fn = LookupAndCompile(context, id.data(), nullptr);
+     if (bootstrapCatch.HasCaught()) {
+       per_process::Debug(DebugCategory::CODE_CACHE,
+                          "Failed to compile code cache for %s\n",
+                          id.data());
+       all_succeeded = false;
+-      PrintCaughtException(context->GetIsolate(), context, bootstrapCatch);
++      PrintCaughtException(Isolate::GetCurrent(), context, bootstrapCatch);
+     } else {
+       // This is used by the snapshot builder, so save the code cache
+       // unconditionally.
+diff --git a/src/node_constants.cc b/src/node_constants.cc
+index d193725ea9a3270ed9affea12d11467fb14efdf8..24364b7458c822ff84ac9123843aea1f01d84bc0 100644
+--- a/src/node_constants.cc
++++ b/src/node_constants.cc
+@@ -1268,7 +1268,7 @@ void CreatePerContextProperties(Local<Object> target,
+                                 Local<Value> unused,
+                                 Local<Context> context,
+                                 void* priv) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   Environment* env = Environment::GetCurrent(context);
+ 
+   CHECK(target->SetPrototype(env->context(), Null(env->isolate())).FromJust());
+diff --git a/src/node_contextify.cc b/src/node_contextify.cc
+index 386102dfe7e4d9136f47058b03f3702126cd5063..7f4917c3bb73bb333ba85ae11a4be6e6968a7e36 100644
+--- a/src/node_contextify.cc
++++ b/src/node_contextify.cc
+@@ -111,7 +111,7 @@ namespace {
+ 
+ // Convert an int to a V8 Name (String or Symbol).
+ MaybeLocal<String> Uint32ToName(Local<Context> context, uint32_t index) {
+-  return Uint32::New(context->GetIsolate(), index)->ToString(context);
++  return Uint32::New(Isolate::GetCurrent(), index)->ToString(context);
+ }
+ 
+ }  // anonymous namespace
+@@ -682,7 +682,7 @@ Intercepted ContextifyContext::PropertyDefinerCallback(
+   }
+ 
+   Local<Context> context = ctx->context();
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+ 
+   PropertyAttribute attributes = PropertyAttribute::None;
+   bool is_declared =
+@@ -1651,7 +1651,7 @@ static MaybeLocal<Function> CompileFunctionForCJSLoader(
+     bool* cache_rejected,
+     bool is_cjs_scope,
+     ScriptCompiler::CachedData* cached_data) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   EscapableHandleScope scope(isolate);
+ 
+   Local<Symbol> symbol = env->vm_dynamic_import_default_internal();
+diff --git a/src/node_env_var.cc b/src/node_env_var.cc
+index 492d5f455f45a5c8a957ecdabed38709a633f640..48f9917113555c7ed87e37750c45d152fa4b68f8 100644
+--- a/src/node_env_var.cc
++++ b/src/node_env_var.cc
+@@ -295,7 +295,7 @@ std::shared_ptr<KVStore> KVStore::CreateMapKVStore() {
+ 
+ Maybe<void> KVStore::AssignFromObject(Local<Context> context,
+                                       Local<Object> entries) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   HandleScope handle_scope(isolate);
+   Local<Array> keys;
+   if (!entries->GetOwnPropertyNames(context).ToLocal(&keys))
+diff --git a/src/node_errors.cc b/src/node_errors.cc
+index befb642f1effa3c4139e4cd99ff64d9c5175fd72..9c068afd1c4c3fadeee4ba035e67ec4ae72c7f73 100644
+--- a/src/node_errors.cc
++++ b/src/node_errors.cc
+@@ -633,7 +633,7 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
+     v8::Local<v8::Context> context,
+     v8::Local<v8::Value> source,
+     bool is_code_like) {
+-  HandleScope scope(context->GetIsolate());
++  HandleScope scope(Isolate::GetCurrent());
+ 
+   if (context->GetNumberOfEmbedderDataFields() <=
+       ContextEmbedderIndex::kAllowCodeGenerationFromStrings) {
+@@ -1000,7 +1000,7 @@ const char* errno_string(int errorno) {
+ }
+ 
+ void PerIsolateMessageListener(Local<Message> message, Local<Value> error) {
+-  Isolate* isolate = message->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   switch (message->ErrorLevel()) {
+     case Isolate::MessageErrorLevel::kMessageWarning: {
+       Environment* env = Environment::GetCurrent(isolate);
+@@ -1118,7 +1118,7 @@ void Initialize(Local<Object> target,
+   SetMethod(
+       context, target, "triggerUncaughtException", TriggerUncaughtException);
+ 
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   Local<Object> exit_codes = Object::New(isolate);
+   READONLY_PROPERTY(target, "exitCodes", exit_codes);
+ 
+diff --git a/src/node_file.cc b/src/node_file.cc
+index 7221708a2296ff44c19ed01dc52d78653ecc4e58..e9ddf73af28a62245291d9d1eb452eeb39312dff 100644
+--- a/src/node_file.cc
++++ b/src/node_file.cc
+@@ -3755,7 +3755,7 @@ void BindingData::Deserialize(Local<Context> context,
+                               int index,
+                               InternalFieldInfoBase* info) {
+   DCHECK_IS_SNAPSHOT_SLOT(index);
+-  HandleScope scope(context->GetIsolate());
++  HandleScope scope(Isolate::GetCurrent());
+   Realm* realm = Realm::GetCurrent(context);
+   InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
+   BindingData* binding =
+diff --git a/src/node_messaging.cc b/src/node_messaging.cc
+index 66c8868b9d8e69812464ca9eca53434321f8ec4a..0146a0ee909d570e840e8ae7dc448bcd1c6b31e4 100644
+--- a/src/node_messaging.cc
++++ b/src/node_messaging.cc
+@@ -253,7 +253,7 @@ namespace {
+ 
+ MaybeLocal<Function> GetEmitMessageFunction(Local<Context> context,
+                                             IsolateData* isolate_data) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   Local<Object> per_context_bindings;
+   Local<Value> emit_message_val;
+   if (!GetPerContextExports(context, isolate_data)
+@@ -268,7 +268,7 @@ MaybeLocal<Function> GetEmitMessageFunction(Local<Context> context,
+ }
+ 
+ MaybeLocal<Function> GetDOMException(Local<Context> context) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   Local<Object> per_context_bindings;
+   Local<Value> domexception_ctor_val;
+   if (!GetPerContextExports(context).ToLocal(&per_context_bindings) ||
+@@ -283,7 +283,7 @@ MaybeLocal<Function> GetDOMException(Local<Context> context) {
+ }
+ 
+ void ThrowDataCloneException(Local<Context> context, Local<String> message) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   Local<Value> argv[] = {message,
+                          FIXED_ONE_BYTE_STRING(isolate, "DataCloneError")};
+   Local<Value> exception;
+@@ -1465,7 +1465,7 @@ BaseObjectPtr<BaseObject> JSTransferable::Data::Deserialize(
+ 
+ Maybe<bool> JSTransferable::Data::FinalizeTransferWrite(
+     Local<Context> context, ValueSerializer* serializer) {
+-  HandleScope handle_scope(context->GetIsolate());
++  HandleScope handle_scope(Isolate::GetCurrent());
+   auto ret = serializer->WriteValue(context, PersistentToLocal::Strong(data_));
+   data_.Reset();
+   return ret;
+diff --git a/src/node_modules.cc b/src/node_modules.cc
+index 6204986dc97686a248d6ae483f3a413ee5c51e47..c0108310df81c9bd1756a6fb92466a7f84e53f7c 100644
+--- a/src/node_modules.cc
++++ b/src/node_modules.cc
+@@ -64,7 +64,7 @@ void BindingData::Deserialize(v8::Local<v8::Context> context,
+                               int index,
+                               InternalFieldInfoBase* info) {
+   DCHECK_IS_SNAPSHOT_SLOT(index);
+-  HandleScope scope(context->GetIsolate());
++  HandleScope scope(Isolate::GetCurrent());
+   Realm* realm = Realm::GetCurrent(context);
+   BindingData* binding = realm->AddBindingData<BindingData>(holder);
+   CHECK_NOT_NULL(binding);
+@@ -706,7 +706,7 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
+   Realm* realm = Realm::GetCurrent(context);
+   realm->AddBindingData<BindingData>(target);
+ 
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   LocalVector<Value> compile_cache_status_values(isolate);
+ 
+ #define V(status)                                                              \
+diff --git a/src/node_process_methods.cc b/src/node_process_methods.cc
+index 1cb08b715865f8337e0292fc8e2a26488ba21694..2bd20fc173d4110282ee736e49b49ce0859088f3 100644
+--- a/src/node_process_methods.cc
++++ b/src/node_process_methods.cc
+@@ -736,7 +736,7 @@ void BindingData::Deserialize(Local<Context> context,
+                               int index,
+                               InternalFieldInfoBase* info) {
+   DCHECK_IS_SNAPSHOT_SLOT(index);
+-  v8::HandleScope scope(context->GetIsolate());
++  v8::HandleScope scope(Isolate::GetCurrent());
+   Realm* realm = Realm::GetCurrent(context);
+   // Recreate the buffer in the constructor.
+   InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
+diff --git a/src/node_realm.cc b/src/node_realm.cc
+index e87c6e2da4936827a8426a4d09589afa261c8cba..dabb8836add263088a919a6a3529c9aca47f1ef9 100644
+--- a/src/node_realm.cc
++++ b/src/node_realm.cc
+@@ -19,7 +19,7 @@ using v8::String;
+ using v8::Value;
+ 
+ Realm::Realm(Environment* env, v8::Local<v8::Context> context, Kind kind)
+-    : env_(env), isolate_(context->GetIsolate()), kind_(kind) {
++    : env_(env), isolate_(v8::Isolate::GetCurrent()), kind_(kind) {
+   context_.Reset(isolate_, context);
+   env->AssignToContext(context, this, ContextInfo(""));
+ }
+diff --git a/src/node_report.cc b/src/node_report.cc
+index da7b846d555ba63c30b5700c081ee38685dcaa83..53ac70f319796efafaeea9b4bd314b2f4de3cb06 100644
+--- a/src/node_report.cc
++++ b/src/node_report.cc
+@@ -399,7 +399,7 @@ static void PrintJavaScriptErrorProperties(JSONWriter* writer,
+   if (!error.IsEmpty() && error->IsObject()) {
+     TryCatch try_catch(isolate);
+     Local<Object> error_obj = error.As<Object>();
+-    Local<Context> context = error_obj->GetIsolate()->GetCurrentContext();
++    Local<Context> context = Isolate::GetCurrent()->GetCurrentContext();
+     Local<Array> keys;
+     if (!error_obj->GetOwnPropertyNames(context).ToLocal(&keys)) {
+       return writer->json_objectend();  // the end of 'errorProperties'
+diff --git a/src/node_snapshotable.cc b/src/node_snapshotable.cc
+index a500204c4768e26a4d2476e7b99e173389e8e1ef..949201e7ddce501b7135fb1c4a907e3ad3ab1146 100644
+--- a/src/node_snapshotable.cc
++++ b/src/node_snapshotable.cc
+@@ -1584,7 +1584,7 @@ void BindingData::Deserialize(Local<Context> context,
+                               int index,
+                               InternalFieldInfoBase* info) {
+   DCHECK_IS_SNAPSHOT_SLOT(index);
+-  v8::HandleScope scope(context->GetIsolate());
++  v8::HandleScope scope(Isolate::GetCurrent());
+   Realm* realm = Realm::GetCurrent(context);
+   // Recreate the buffer in the constructor.
+   InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
+diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
+index f5704bc13d415853316d72661e9d5584c2432b9f..62f280c1e0e860ae3a3c8b48eda31a3cc8f0c216 100644
+--- a/src/node_sqlite.cc
++++ b/src/node_sqlite.cc
+@@ -1856,7 +1856,7 @@ bool StatementSync::BindParams(const FunctionCallbackInfo<Value>& args) {
+ 
+   if (args[0]->IsObject() && !args[0]->IsArrayBufferView()) {
+     Local<Object> obj = args[0].As<Object>();
+-    Local<Context> context = obj->GetIsolate()->GetCurrentContext();
++    Local<Context> context = Isolate::GetCurrent()->GetCurrentContext();
+     Local<Array> keys;
+     if (!obj->GetOwnPropertyNames(context).ToLocal(&keys)) {
+       return false;
+diff --git a/src/node_task_queue.cc b/src/node_task_queue.cc
+index 0a5aba6e31fa799a77267aa81d8324f8a5ea6f05..794c802ec09f5e20176816fcdde7152eb24ac27b 100644
+--- a/src/node_task_queue.cc
++++ b/src/node_task_queue.cc
+@@ -48,7 +48,7 @@ void PromiseRejectCallback(PromiseRejectMessage message) {
+   static std::atomic<uint64_t> rejectionsHandledAfter{0};
+ 
+   Local<Promise> promise = message.GetPromise();
+-  Isolate* isolate = promise->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   PromiseRejectEvent event = message.GetEvent();
+ 
+   Environment* env = Environment::GetCurrent(isolate);
+diff --git a/src/node_url.cc b/src/node_url.cc
+index 09589e85e8bc131811204833d9a76f98c7b2a102..1154b452151b6b597aed67effbb3796c635d236b 100644
+--- a/src/node_url.cc
++++ b/src/node_url.cc
+@@ -69,7 +69,7 @@ void BindingData::Deserialize(Local<Context> context,
+                               int index,
+                               InternalFieldInfoBase* info) {
+   DCHECK_IS_SNAPSHOT_SLOT(index);
+-  HandleScope scope(context->GetIsolate());
++  HandleScope scope(Isolate::GetCurrent());
+   Realm* realm = Realm::GetCurrent(context);
+   BindingData* binding = realm->AddBindingData<BindingData>(holder);
+   CHECK_NOT_NULL(binding);
+diff --git a/src/node_v8.cc b/src/node_v8.cc
+index 430d5dd4f808af7b1790bd62f06d47b86100d4e9..08a741216d88c95d580e9281e174550001ff2b21 100644
+--- a/src/node_v8.cc
++++ b/src/node_v8.cc
+@@ -157,7 +157,7 @@ void BindingData::Deserialize(Local<Context> context,
+                               int index,
+                               InternalFieldInfoBase* info) {
+   DCHECK_IS_SNAPSHOT_SLOT(index);
+-  HandleScope scope(context->GetIsolate());
++  HandleScope scope(Isolate::GetCurrent());
+   Realm* realm = Realm::GetCurrent(context);
+   // Recreate the buffer in the constructor.
+   InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
+diff --git a/src/node_wasi.cc b/src/node_wasi.cc
+index 3f91b651b83a20e70d5b368e012f5ee4b9d16092..40c601acd752b559f7ffbc00c15728fbb5275ac5 100644
+--- a/src/node_wasi.cc
++++ b/src/node_wasi.cc
+@@ -49,7 +49,7 @@ using v8::WasmMemoryObject;
+ static MaybeLocal<Value> WASIException(Local<Context> context,
+                                        int errorno,
+                                        const char* syscall) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   Environment* env = Environment::GetCurrent(context);
+   CHECK_NOT_NULL(env);
+   const char* err_name = uvwasi_embedder_err_code_to_string(errorno);
+@@ -275,7 +275,7 @@ R WASI::WasiFunction<FT, F, R, Args...>::FastCallback(
+     return EinvalError<R>();
+   }
+ 
+-  v8::Isolate* isolate = receiver->GetIsolate();
++  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+   v8::HandleScope handle_scope(isolate);
+   if (wasi->memory_.IsEmpty()) {
+     THROW_ERR_WASI_NOT_STARTED(isolate);
+diff --git a/src/node_webstorage.cc b/src/node_webstorage.cc
+index 74ece724e207a69e2457598a199c12f1cebcfd4a..1705e430099c5a363e02010f83d729b0aa54f8e5 100644
+--- a/src/node_webstorage.cc
++++ b/src/node_webstorage.cc
+@@ -58,7 +58,7 @@ using v8::Value;
+   } while (0)
+ 
+ static void ThrowQuotaExceededException(Local<Context> context) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   auto dom_exception_str = FIXED_ONE_BYTE_STRING(isolate, "DOMException");
+   auto err_name = FIXED_ONE_BYTE_STRING(isolate, "QuotaExceededError");
+   auto err_message =
+@@ -434,7 +434,7 @@ Maybe<void> Storage::Store(Local<Name> key, Local<Value> value) {
+ }
+ 
+ static MaybeLocal<String> Uint32ToName(Local<Context> context, uint32_t index) {
+-  return Uint32::New(context->GetIsolate(), index)->ToString(context);
++  return Uint32::New(Isolate::GetCurrent(), index)->ToString(context);
+ }
+ 
+ static void Clear(const FunctionCallbackInfo<Value>& info) {
+diff --git a/src/node_worker.cc b/src/node_worker.cc
+index 6c43928ba5a9752c78544d1c77198278eb11ccd7..d1faec81602bbe41c1239b8abb82b592821b4fa4 100644
+--- a/src/node_worker.cc
++++ b/src/node_worker.cc
+@@ -1149,8 +1149,6 @@ void GetEnvMessagePort(const FunctionCallbackInfo<Value>& args) {
+   Local<Object> port = env->message_port();
+   CHECK_IMPLIES(!env->is_main_thread(), !port.IsEmpty());
+   if (!port.IsEmpty()) {
+-    CHECK_EQ(port->GetCreationContextChecked()->GetIsolate(),
+-             args.GetIsolate());
+     args.GetReturnValue().Set(port);
+   }
+ }
+diff --git a/src/timers.cc b/src/timers.cc
+index bf90e68479da141265f748775acacab513b8d437..5f0d07b4ac1d9b8df6c8bb059e5d07ac1a882b36 100644
+--- a/src/timers.cc
++++ b/src/timers.cc
+@@ -117,7 +117,7 @@ void BindingData::Deserialize(Local<Context> context,
+                               int index,
+                               InternalFieldInfoBase* info) {
+   DCHECK_IS_SNAPSHOT_SLOT(index);
+-  v8::HandleScope scope(context->GetIsolate());
++  v8::HandleScope scope(Isolate::GetCurrent());
+   Realm* realm = Realm::GetCurrent(context);
+   // Recreate the buffer in the constructor.
+   BindingData* binding = realm->AddBindingData<BindingData>(holder);
+diff --git a/src/util-inl.h b/src/util-inl.h
+index b21f7a8260ca6a4701f8904b9cb641428db80772..16fe55f3054fd20544babd63ff204330cb47c1a7 100644
+--- a/src/util-inl.h
++++ b/src/util-inl.h
+@@ -326,14 +326,14 @@ v8::Maybe<void> FromV8Array(v8::Local<v8::Context> context,
+                             std::vector<v8::Global<v8::Value>>* out) {
+   uint32_t count = js_array->Length();
+   out->reserve(count);
+-  ArrayIterationData data{out, context->GetIsolate()};
++  ArrayIterationData data{out, v8::Isolate::GetCurrent()};
+   return js_array->Iterate(context, PushItemToVector, &data);
+ }
+ 
+ v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
+                                     std::string_view str,
+                                     v8::Isolate* isolate) {
+-  if (isolate == nullptr) isolate = context->GetIsolate();
++  if (isolate == nullptr) isolate = v8::Isolate::GetCurrent();
+   if (str.size() >= static_cast<size_t>(v8::String::kMaxLength)) [[unlikely]] {
+     // V8 only has a TODO comment about adding an exception when the maximum
+     // string size is exceeded.
+@@ -349,7 +349,7 @@ v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
+ v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
+                                     v8_inspector::StringView str,
+                                     v8::Isolate* isolate) {
+-  if (isolate == nullptr) isolate = context->GetIsolate();
++  if (isolate == nullptr) isolate = v8::Isolate::GetCurrent();
+   if (str.length() >= static_cast<size_t>(v8::String::kMaxLength))
+       [[unlikely]] {
+     // V8 only has a TODO comment about adding an exception when the maximum
+@@ -376,7 +376,7 @@ template <typename T>
+ v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
+                                     const std::vector<T>& vec,
+                                     v8::Isolate* isolate) {
+-  if (isolate == nullptr) isolate = context->GetIsolate();
++  if (isolate == nullptr) isolate = v8::Isolate::GetCurrent();
+   v8::EscapableHandleScope handle_scope(isolate);
+ 
+   MaybeStackBuffer<v8::Local<v8::Value>, 128> arr(vec.size());
+@@ -393,7 +393,7 @@ template <typename T>
+ v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
+                                     const std::set<T>& set,
+                                     v8::Isolate* isolate) {
+-  if (isolate == nullptr) isolate = context->GetIsolate();
++  if (isolate == nullptr) isolate = v8::Isolate::GetCurrent();
+   v8::Local<v8::Set> set_js = v8::Set::New(isolate);
+   v8::HandleScope handle_scope(isolate);
+ 
+@@ -412,7 +412,7 @@ template <typename T, typename U>
+ v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
+                                     const std::unordered_map<T, U>& map,
+                                     v8::Isolate* isolate) {
+-  if (isolate == nullptr) isolate = context->GetIsolate();
++  if (isolate == nullptr) isolate = v8::Isolate::GetCurrent();
+   v8::EscapableHandleScope handle_scope(isolate);
+ 
+   v8::Local<v8::Map> ret = v8::Map::New(isolate);
+@@ -455,7 +455,7 @@ template <typename T, typename>
+ v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
+                                     const T& number,
+                                     v8::Isolate* isolate) {
+-  if (isolate == nullptr) isolate = context->GetIsolate();
++  if (isolate == nullptr) isolate = v8::Isolate::GetCurrent();
+   return ConvertNumberToV8Value(isolate, number);
+ }
+ 
+@@ -468,7 +468,7 @@ v8::Local<v8::Array> ToV8ValuePrimitiveArray(v8::Local<v8::Context> context,
+           std::is_floating_point_v<T>,
+       "Only primitive types (bool, integral, floating-point) are supported.");
+ 
+-  if (isolate == nullptr) isolate = context->GetIsolate();
++  if (isolate == nullptr) isolate = v8::Isolate::GetCurrent();
+   v8::EscapableHandleScope handle_scope(isolate);
+ 
+   v8::LocalVector<v8::Value> elements(isolate);
+diff --git a/src/util.cc b/src/util.cc
+index 5ca32f026f9f001ddadc14965705fe005600eddd..1b38f22b930b77d80aa53f9b12299d3cc469a46d 100644
+--- a/src/util.cc
++++ b/src/util.cc
+@@ -393,7 +393,7 @@ void SetMethod(Local<v8::Context> context,
+                Local<v8::Object> that,
+                const std::string_view name,
+                v8::FunctionCallback callback) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   Local<v8::Function> function =
+       NewFunctionTemplate(isolate,
+                           callback,
+@@ -454,7 +454,7 @@ void SetFastMethod(Local<v8::Context> context,
+                    const std::string_view name,
+                    v8::FunctionCallback slow_callback,
+                    const v8::CFunction* c_function) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   Local<v8::Function> function =
+       NewFunctionTemplate(isolate,
+                           slow_callback,
+@@ -476,7 +476,7 @@ void SetFastMethodNoSideEffect(Local<v8::Context> context,
+                                const std::string_view name,
+                                v8::FunctionCallback slow_callback,
+                                const v8::CFunction* c_function) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   Local<v8::Function> function =
+       NewFunctionTemplate(isolate,
+                           slow_callback,
+@@ -564,7 +564,7 @@ void SetMethodNoSideEffect(Local<v8::Context> context,
+                            Local<v8::Object> that,
+                            const std::string_view name,
+                            v8::FunctionCallback callback) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   Local<v8::Function> function =
+       NewFunctionTemplate(isolate,
+                           callback,
+@@ -665,7 +665,7 @@ void SetConstructorFunction(Local<v8::Context> context,
+                             const char* name,
+                             Local<v8::FunctionTemplate> tmpl,
+                             SetConstructorFunctionFlag flag) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   SetConstructorFunction(
+       context, that, OneByteString(isolate, name), tmpl, flag);
+ }
+diff --git a/src/util.h b/src/util.h
+index efeb12d837db7b88093e4a6a2e20df562180ca1e..2631765cb7fded77d70ac3012d63867deb6f2be7 100644
+--- a/src/util.h
++++ b/src/util.h
+@@ -752,7 +752,7 @@ inline v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
+ // Variation on NODE_DEFINE_CONSTANT that sets a String value.
+ #define NODE_DEFINE_STRING_CONSTANT(target, name, constant)                    \
+   do {                                                                         \
+-    v8::Isolate* isolate = target->GetIsolate();                               \
++    v8::Isolate* isolate = v8::Isolate::GetCurrent();                              \
+     v8::Local<v8::String> constant_name =                                      \
+         v8::String::NewFromUtf8(isolate, name).ToLocalChecked();               \
+     v8::Local<v8::String> constant_value =                                     \

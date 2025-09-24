@@ -10,10 +10,10 @@ on Windows.  We should refactor our code so that this patch isn't
 necessary.
 
 diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
-index 64da47969f25d5ba71f850e85cdb96eb0d66a5d7..056991b98af53190f0229e3ce84a22b2aa0f55f7 100644
+index 051104ddca1a1dbc89199a74d08b94b1134a6e60..378056aaa1e84125d8a2a8b464e2bdf226655722 100644
 --- a/testing/variations/fieldtrial_testing_config.json
 +++ b/testing/variations/fieldtrial_testing_config.json
-@@ -25306,6 +25306,21 @@
+@@ -25209,6 +25209,21 @@
              ]
          }
      ],
@@ -36,12 +36,12 @@ index 64da47969f25d5ba71f850e85cdb96eb0d66a5d7..056991b98af53190f0229e3ce84a22b2
          {
              "platforms": [
 diff --git a/ui/views/views_features.cc b/ui/views/views_features.cc
-index 52c03930806efdb180d45bb68d4b6cd72cb8bec7..8307938f271c46b57aeceb6e4faaad88f45add5e 100644
+index 88ca7f0b1fc025ee41653004dc10ed48cbd59d32..b8ec7177ced38773b96f7d44277bba383d0ff8ca 100644
 --- a/ui/views/views_features.cc
 +++ b/ui/views/views_features.cc
-@@ -31,6 +31,14 @@ BASE_FEATURE(kEnableTouchDragCursorSync,
-              "EnableTouchDragCursorSync",
-              base::FEATURE_ENABLED_BY_DEFAULT);
+@@ -27,6 +27,14 @@ BASE_FEATURE(kEnablePlatformHighContrastInkDrop,
+ // crbug.com/370856871.
+ BASE_FEATURE(kEnableTouchDragCursorSync, base::FEATURE_ENABLED_BY_DEFAULT);
  
 +// Enables enlargement of HWNDs to a minimum size of 64x64 to handle reported
 +// graphical glitches on certain hardware.
@@ -67,7 +67,7 @@ index 58063f2452dc484a97c79b382067d9b34875e344..d586436498263c595a17454f54644d2d
  
  }  // namespace views::features
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 4c626e026e5b19db737533607957d0ff2fbeae28..7d899eef72721c6f3e27c9892ba963fd6b5aaeef 100644
+index f4fa30c1621e2eb78913ea97a993eb0a3528f36c..f142ce65c5c0e22b968c98082d11d9922e3a0cfa 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 @@ -84,6 +84,23 @@ namespace {
@@ -94,7 +94,7 @@ index 4c626e026e5b19db737533607957d0ff2fbeae28..7d899eef72721c6f3e27c9892ba963fd
  // Updates the cursor clip region. Used for mouse locking.
  void UpdateMouseLockRegion(aura::Window* window, bool locked) {
    if (!locked) {
-@@ -333,9 +350,14 @@ bool DesktopWindowTreeHostWin::IsVisible() const {
+@@ -329,9 +346,14 @@ bool DesktopWindowTreeHostWin::IsVisible() const {
  }
  
  void DesktopWindowTreeHostWin::SetSize(const gfx::Size& size) {
@@ -111,7 +111,7 @@ index 4c626e026e5b19db737533607957d0ff2fbeae28..7d899eef72721c6f3e27c9892ba963fd
  }
  
  void DesktopWindowTreeHostWin::StackAbove(aura::Window* window) {
-@@ -350,30 +372,40 @@ void DesktopWindowTreeHostWin::StackAtTop() {
+@@ -346,30 +368,40 @@ void DesktopWindowTreeHostWin::StackAtTop() {
  }
  
  void DesktopWindowTreeHostWin::CenterWindow(const gfx::Size& size) {
@@ -154,7 +154,7 @@ index 4c626e026e5b19db737533607957d0ff2fbeae28..7d899eef72721c6f3e27c9892ba963fd
    return display::win::GetScreenWin()->ScreenToDIPRect(GetHWND(), pixel_bounds);
  }
  
-@@ -682,37 +714,44 @@ void DesktopWindowTreeHostWin::HideImpl() {
+@@ -678,37 +710,44 @@ void DesktopWindowTreeHostWin::HideImpl() {
  // other get/set methods work in DIP.
  
  gfx::Rect DesktopWindowTreeHostWin::GetBoundsInPixels() const {
@@ -219,7 +219,7 @@ index 4c626e026e5b19db737533607957d0ff2fbeae28..7d899eef72721c6f3e27c9892ba963fd
  }
  
  gfx::Rect
-@@ -922,21 +961,29 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
+@@ -918,21 +957,29 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
  
  void DesktopWindowTreeHostWin::GetWindowMask(const gfx::Size& size_px,
                                               SkPath* path) {
@@ -264,10 +264,10 @@ index 4c626e026e5b19db737533607957d0ff2fbeae28..7d899eef72721c6f3e27c9892ba963fd
  }
  
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index 13cfa18bf406f244ec361a1230ccce440ad9785a..d8be4dffee3947e7ac6dc09cb8e1f2a6a834789b 100644
+index cef7afbf408e38798c398c23dc3e964bd1d95d17..74f0f6e485f4cc6be2c292f4b364d9796d9ce20b 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-@@ -176,7 +176,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+@@ -175,7 +175,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
    void ShowImpl() override;
    void HideImpl() override;
    gfx::Rect GetBoundsInPixels() const override;
@@ -276,7 +276,7 @@ index 13cfa18bf406f244ec361a1230ccce440ad9785a..d8be4dffee3947e7ac6dc09cb8e1f2a6
    gfx::Rect GetBoundsInAcceleratedWidgetPixelCoordinates() override;
    gfx::Point GetLocationOnScreenInPixels() const override;
    void SetCapture() override;
-@@ -328,6 +328,12 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+@@ -327,6 +327,12 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
    gfx::Vector2d window_expansion_top_left_delta_;
    gfx::Vector2d window_expansion_bottom_right_delta_;
  

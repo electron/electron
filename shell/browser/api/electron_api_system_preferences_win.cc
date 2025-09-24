@@ -17,6 +17,7 @@
 #include "shell/common/color_util.h"
 #include "shell/common/process_util.h"
 #include "ui/gfx/win/hwnd_util.h"
+#include "ui/gfx/win/singleton_hwnd.h"
 
 namespace electron {
 
@@ -157,8 +158,8 @@ void SystemPreferences::InitializeWindow() {
   // Creating this listener before the app is ready causes global shortcuts
   // to not fire
   if (Browser::Get()->is_ready())
-    singleton_hwnd_observer_ =
-        std::make_unique<gfx::SingletonHwndObserver>(base::BindRepeating(
+    hwnd_subscription_ =
+        gfx::SingletonHwnd::GetInstance()->RegisterCallback(base::BindRepeating(
             &SystemPreferences::OnWndProc, base::Unretained(this)));
   else
     Browser::Get()->AddObserver(this);
@@ -220,8 +221,8 @@ void SystemPreferences::OnWndProc(HWND hwnd,
 }
 
 void SystemPreferences::OnFinishLaunching(base::Value::Dict launch_info) {
-  singleton_hwnd_observer_ =
-      std::make_unique<gfx::SingletonHwndObserver>(base::BindRepeating(
+  hwnd_subscription_ =
+      gfx::SingletonHwnd::GetInstance()->RegisterCallback(base::BindRepeating(
           &SystemPreferences::OnWndProc, base::Unretained(this)));
 }
 
