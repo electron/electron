@@ -13,7 +13,7 @@
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/common/gin_helper/constructible.h"
-#include "shell/common/gin_helper/pinnable.h"
+#include "shell/common/gin_helper/self_keep_alive.h"
 #include "ui/base/mojom/menu_source_type.mojom-forward.h"
 
 namespace gin {
@@ -28,7 +28,6 @@ class WebFrameMain;
 class Menu : public gin::Wrappable<Menu>,
              public gin_helper::EventEmitterMixin<Menu>,
              public gin_helper::Constructible<Menu>,
-             public gin_helper::Pinnable<Menu>,
              public ElectronMenuModel::Delegate,
              private ElectronMenuModel::Observer {
  public:
@@ -132,6 +131,8 @@ class Menu : public gin::Wrappable<Menu>,
   bool IsEnabledAt(int index) const;
   bool IsVisibleAt(int index) const;
   bool WorksWhenHiddenAt(int index) const;
+
+  gin_helper::SelfKeepAlive<Menu> keep_alive_{this};
 };
 
 }  // namespace electron::api

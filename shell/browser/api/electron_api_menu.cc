@@ -269,12 +269,11 @@ bool Menu::WorksWhenHiddenAt(int index) const {
 }
 
 void Menu::OnMenuWillClose() {
-  Unpin();
+  keep_alive_.Clear();
   Emit("menu-will-close");
 }
 
 void Menu::OnMenuWillShow() {
-  Pin(JavascriptEnvironment::GetIsolate());
   Emit("menu-will-show");
 }
 
