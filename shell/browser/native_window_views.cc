@@ -451,10 +451,10 @@ NativeWindowViews::~NativeWindowViews() {
 
 void NativeWindowViews::SetTitleBarOverlay(
     const gin_helper::Dictionary& options,
-    gin_helper::Arguments* args) {
+    gin::Arguments* args) {
   // Ensure WCO is already enabled on this window
   if (!IsWindowControlsOverlayEnabled()) {
-    args->ThrowError("Titlebar overlay is not enabled");
+    args->ThrowTypeError("Titlebar overlay is not enabled");
     return;
   }
 
@@ -465,7 +465,7 @@ void NativeWindowViews::SetTitleBarOverlay(
     // Parse the string as a CSS color
     SkColor color;
     if (!content::ParseCssColorString(val, &color)) {
-      args->ThrowError("Could not parse color as CSS color");
+      args->ThrowTypeError("Could not parse color as CSS color");
       return;
     }
 
@@ -479,7 +479,7 @@ void NativeWindowViews::SetTitleBarOverlay(
     // Parse the string as a CSS color
     SkColor color;
     if (!content::ParseCssColorString(val, &color)) {
-      args->ThrowError("Could not parse symbol color as CSS color");
+      args->ThrowTypeError("Could not parse symbol color as CSS color");
       return;
     }
 
