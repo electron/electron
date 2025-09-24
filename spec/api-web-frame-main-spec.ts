@@ -599,6 +599,7 @@ describe('webFrameMain module', () => {
       expect(subframe).to.exist();
       await insertVideoInFrame(subframe);
       await copyVideoFrameInFrame(subframe);
+      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
     });
   });
 
