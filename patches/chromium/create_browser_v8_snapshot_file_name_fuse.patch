@@ -7,10 +7,10 @@ By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This
 to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 46c7c57b5ff40b0e40d66bbeb8ec3f2b7f86cea0..46d144563983dee5a793948d9fd11852fb311088 100644
+index 9240e8485a8dc895eb455b1418fc7559e52a5dd5..e9444e765ac8ac595b799be7feeb6a483c6acf9f 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -272,8 +272,13 @@ void AsanProcessInfoCB(const char*, bool*) {
+@@ -273,8 +273,13 @@ void AsanProcessInfoCB(const char*, bool*) {
  }
  #endif  // defined(ADDRESS_SANITIZER)
  
@@ -25,7 +25,7 @@ index 46c7c57b5ff40b0e40d66bbeb8ec3f2b7f86cea0..46d144563983dee5a793948d9fd11852
  #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
    base::FileDescriptorStore& file_descriptor_store =
        base::FileDescriptorStore::GetInstance();
-@@ -302,11 +307,12 @@ bool ShouldLoadV8Snapshot(const base::CommandLine& command_line,
+@@ -303,11 +308,12 @@ bool ShouldLoadV8Snapshot(const base::CommandLine& command_line,
  
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  
@@ -40,7 +40,7 @@ index 46c7c57b5ff40b0e40d66bbeb8ec3f2b7f86cea0..46d144563983dee5a793948d9fd11852
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  }
  
-@@ -950,7 +956,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
+@@ -951,7 +957,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
      return TerminateForFatalInitializationError();
  #endif  // BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
  
@@ -50,7 +50,7 @@ index 46c7c57b5ff40b0e40d66bbeb8ec3f2b7f86cea0..46d144563983dee5a793948d9fd11852
    blink::TrialTokenValidator::SetOriginTrialPolicyGetter(
        base::BindRepeating([]() -> blink::OriginTrialPolicy* {
 diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
-index 8b02f553e2fc29da88c3e14c05a7ee82210eab51..14f2e66d5ecda6e860724a3ab946eaaffba33d6d 100644
+index fee2fab8ab33a3829f055b0408e9e763443016cc..678c636c9ca08f8113dc67aafaf9761f33a7f0e5 100644
 --- a/content/public/app/content_main_delegate.cc
 +++ b/content/public/app/content_main_delegate.cc
 @@ -5,6 +5,7 @@
@@ -73,7 +73,7 @@ index 8b02f553e2fc29da88c3e14c05a7ee82210eab51..14f2e66d5ecda6e860724a3ab946eaaf
    return new ContentClient();
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index db611d99a6c0f18f39967b38791822fda7d175b5..cc150475de655d5ef20a107ae3ef80c08af8c7fb 100644
+index 8151396412bf6981f3424526386ad6257b8c895d..ac5041c1666ac968251768f604f92434d92e374d 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
 @@ -9,6 +9,7 @@
@@ -84,8 +84,8 @@ index db611d99a6c0f18f39967b38791822fda7d175b5..cc150475de655d5ef20a107ae3ef80c0
  #include <vector>
  
  #include "base/notreached.h"
-@@ -174,6 +175,8 @@ class CONTENT_EXPORT ContentMainDelegate {
-   virtual bool ShouldHandleConsoleControlEvents();
+@@ -181,6 +182,8 @@ class CONTENT_EXPORT ContentMainDelegate {
+   virtual bool ShouldInitializePerfetto(InvokedIn invoked_in);
  #endif
  
 +  virtual std::string_view GetBrowserV8SnapshotFilename();

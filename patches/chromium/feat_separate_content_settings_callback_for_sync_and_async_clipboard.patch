@@ -20,7 +20,7 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 2b132446e1e384de0e51355a44fab38dbaf64f53..83b0237a56d5ea7555ae989bd7bd13886f0c8f13 100644
+index a82088f96079c3d5ddfbd35df98b2ebb2c0e62a4..668012a5e422059f52815fadf3c7d1d99af55032 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
 @@ -536,6 +536,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
@@ -32,10 +32,10 @@ index 2b132446e1e384de0e51355a44fab38dbaf64f53..83b0237a56d5ea7555ae989bd7bd1388
        break;
    }
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 8af9381691776fd7968cab890e32546c285979e4..d92f15f9ff1bf8dc23361e668f6d48199540c4e6 100644
+index 17a10ffc53c5700bb907f68142a6d6f403415099..dda07e1d45bf49b1fc3970a34a17bf65abc79e60 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
-@@ -88,6 +88,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+@@ -89,6 +89,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
      case PermissionType::AUTOMATIC_FULLSCREEN:
      case PermissionType::WEB_APP_INSTALLATION:
      case PermissionType::LOCAL_NETWORK_ACCESS:
@@ -91,7 +91,7 @@ index 5c82a641538802bc459782ea422a1186045b054a..c286d87043ec4cb2e51ec9d82d08e4c8
    // Always keep this at the end.
    NUM,
 diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
-index 66270fa219491e0b9f09113e45452cd8c2890b52..47c73522cbd7c1d12dabfecf6f55a74690ebc189 100644
+index 1591cba375920ef3bdaa5698658ac386cbed248c..6fc349a2f4633d1338fbfcf8d0d0fb6fa3180b0d 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
 @@ -43,7 +43,8 @@ enum PermissionName {

@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 26019db9116d02a3ef4899ff697b7d1060eba046..3998bb0849cd5bec52c6148ccf1e1a30511b32fb 100644
+index c2f19cf408ebcd0bc5311cf221acde09ab558ed4..95822f635b61da7c63b5a1babf93bb61cb786293 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -166,6 +166,11 @@
@@ -148,7 +148,7 @@ index 26019db9116d02a3ef4899ff697b7d1060eba046..3998bb0849cd5bec52c6148ccf1e1a30
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2662,6 +2779,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2679,6 +2796,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      cert_verifier = std::make_unique<net::CachingCertVerifier>(
          std::make_unique<net::CoalescingCertVerifier>(
              std::move(cert_verifier)));
@@ -160,7 +160,7 @@ index 26019db9116d02a3ef4899ff697b7d1060eba046..3998bb0849cd5bec52c6148ccf1e1a30
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index c8d877b36343d10b0ba7fe75f15ee91851e43f59..f7831633a286f7c4aec2dd269b02561275b008c7 100644
+index 5998b6a64a0bbfa22723d57a9fe1f31afd6e7435..56f1eec94a33c2c9a6289b12ac20323b4bef13d9 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -117,6 +117,7 @@ class URLMatcher;
@@ -180,7 +180,7 @@ index c8d877b36343d10b0ba7fe75f15ee91851e43f59..f7831633a286f7c4aec2dd269b025612
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -987,6 +990,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -988,6 +991,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
@@ -190,7 +190,7 @@ index c8d877b36343d10b0ba7fe75f15ee91851e43f59..f7831633a286f7c4aec2dd269b025612
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index a28ff5cd43ef84d3b0d24d2828b7fdad628f8d27..6885ff48db5ddfb8e8ec09e91a4c01231261f8e5 100644
+index 422024e12926ea70450b43253fbb60c2ce217c11..840eff6ece73983a3b98673adbbb3cfd825565fe 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -317,6 +317,17 @@ struct SocketBrokerRemotes {
@@ -211,7 +211,7 @@ index a28ff5cd43ef84d3b0d24d2828b7fdad628f8d27..6885ff48db5ddfb8e8ec09e91a4c0123
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // The user agent string.
-@@ -985,6 +996,9 @@ interface NetworkContext {
+@@ -992,6 +1003,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  
@@ -222,7 +222,7 @@ index a28ff5cd43ef84d3b0d24d2828b7fdad628f8d27..6885ff48db5ddfb8e8ec09e91a4c0123
    CreateURLLoaderFactory(
        pending_receiver<URLLoaderFactory> url_loader_factory,
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index e0289f9f74fc9e9b4480dd8ecae45fcde66bed61..cfd21ce01b7db6a4912de8e4ce0799825fd27e77 100644
+index 9139ca8b0139b19804bc2efe866f2019e8ef5652..6f0fe6423e8be903d4e38b783d31443c6ce89db5 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
 @@ -63,6 +63,8 @@ class TestNetworkContext : public mojom::NetworkContext {

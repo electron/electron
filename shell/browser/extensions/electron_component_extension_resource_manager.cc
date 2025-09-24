@@ -28,14 +28,12 @@ ElectronComponentExtensionResourceManager::
   AddComponentResourceEntries(kPdfResources);
 
   // Register strings for the PDF viewer, so that $i18n{} replacements work.
-  base::Value::Dict pdf_strings;
-  pdf_extension_util::AddStrings(
-      pdf_extension_util::PdfViewerContext::kPdfViewer, &pdf_strings);
+  base::Value::Dict dict = pdf_extension_util::GetStrings(
+      pdf_extension_util::PdfViewerContext::kPdfViewer);
 
   ui::TemplateReplacements pdf_viewer_replacements;
-  ui::TemplateReplacementsFromDictionaryValue(pdf_strings,
-                                              &pdf_viewer_replacements);
-  extension_template_replacements_[extension_misc::kPdfExtensionId] =
+  ui::TemplateReplacementsFromDictionaryValue(dict, &pdf_viewer_replacements);
+  template_replacements_[extension_misc::kPdfExtensionId] =
       std::move(pdf_viewer_replacements);
 #endif
 }
@@ -69,8 +67,8 @@ bool ElectronComponentExtensionResourceManager::IsComponentExtensionResource(
 const ui::TemplateReplacements*
 ElectronComponentExtensionResourceManager::GetTemplateReplacementsForExtension(
     const std::string& extension_id) const {
-  auto it = extension_template_replacements_.find(extension_id);
-  if (it == extension_template_replacements_.end()) {
+  auto it = template_replacements_.find(extension_id);
+  if (it == template_replacements_.end()) {
     return nullptr;
   }
   return &it->second;

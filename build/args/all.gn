@@ -72,3 +72,6 @@ enterprise_cloud_content_analysis = false
 
 # We don't use anything from here, and it causes target collisions
 enable_linux_installer = false
+
+# Disable "Save to Drive" feature in PDF viewer
+enable_pdf_save_to_drive = false

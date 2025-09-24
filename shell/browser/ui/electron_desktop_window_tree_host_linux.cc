@@ -283,7 +283,7 @@ void ElectronDesktopWindowTreeHostLinux::DispatchEvent(ui::Event* event) {
                   ->GetPlatformRuntimeProperties()
                   .supports_server_window_menus) {
             views::DesktopWindowTreeHostLinux::ShowWindowControlsMenu(
-                display::Screen::GetScreen()->GetCursorScreenPoint());
+                display::Screen::Get()->GetCursorScreenPoint());
           }
         }
         return;

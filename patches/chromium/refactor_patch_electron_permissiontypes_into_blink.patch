@@ -6,7 +6,7 @@ Subject: refactor: patch electron PermissionTypes into blink
 6387077: [PermissionOptions] Generalize PermissionRequestDescription | https://chromium-review.googlesource.com/c/chromium/src/+/6387077
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 83b0237a56d5ea7555ae989bd7bd13886f0c8f13..0377c8c0c3a112ec40132b8441747652b0c15870 100644
+index 668012a5e422059f52815fadf3c7d1d99af55032..753e519eb3ca094205b3e280b381960d805b3e24 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
 @@ -536,7 +536,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
@@ -28,10 +28,10 @@ index 83b0237a56d5ea7555ae989bd7bd13886f0c8f13..0377c8c0c3a112ec40132b8441747652
        break;
    }
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index d92f15f9ff1bf8dc23361e668f6d48199540c4e6..aa13c5e85fef3de67e41889b0ea1c751c5144f85 100644
+index dda07e1d45bf49b1fc3970a34a17bf65abc79e60..0e75eff7a65fc4eb921d41d0c4689b0157308ff6 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
-@@ -88,7 +88,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+@@ -89,7 +89,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
      case PermissionType::AUTOMATIC_FULLSCREEN:
      case PermissionType::WEB_APP_INSTALLATION:
      case PermissionType::LOCAL_NETWORK_ACCESS:
@@ -164,7 +164,7 @@ index c286d87043ec4cb2e51ec9d82d08e4c84f5a270c..164a2a446947dae687922363d324a6d3
    // Always keep this at the end.
    NUM,
 diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
-index 47c73522cbd7c1d12dabfecf6f55a74690ebc189..6b8ed935e8c440cbf655d122a398d33e3e4ad89b 100644
+index 6fc349a2f4633d1338fbfcf8d0d0fb6fa3180b0d..ebb5d84848cee735990f06f6add2b38ebd8734ef 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
 @@ -44,7 +44,15 @@ enum PermissionName {

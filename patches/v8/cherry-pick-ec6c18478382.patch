@@ -17,10 +17,10 @@ Reviewed-by: Leszek Swirski <leszeks@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#102530}
 
 diff --git a/src/compiler/backend/arm64/instruction-selector-arm64.cc b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-index 60ff1ee97931edfcca28b6f5f7c4918d015af974..0212f4570750599bc266a1cd8c9efa19ea26e85c 100644
+index 541b81352fb302dcac812df4da42a3c4ce3a0fb9..eed3ee9764e78fa6b0402a1b86165bd7a61edee9 100644
 --- a/src/compiler/backend/arm64/instruction-selector-arm64.cc
 +++ b/src/compiler/backend/arm64/instruction-selector-arm64.cc
-@@ -2958,9 +2958,19 @@ bool InstructionSelector::ZeroExtendsWord32ToWord64NoPhis(OpIndex node) {
+@@ -2966,9 +2966,19 @@ bool InstructionSelector::ZeroExtendsWord32ToWord64NoPhis(OpIndex node) {
        return op.Cast<ShiftOp>().rep == WordRepresentation::Word32();
      case Opcode::kComparison:
        return op.Cast<ComparisonOp>().rep == RegisterRepresentation::Word32();

@@ -572,8 +572,8 @@ std::optional<base::TimeDelta> GetCursorBlinkInterval() {
   if (system_value)
     return *system_value;
 #elif BUILDFLAG(IS_LINUX)
-  if (auto* linux_ui = ui::LinuxUi::instance())
-    return linux_ui->GetCursorBlinkInterval();
+  if (auto* native_theme = ui::NativeTheme::GetInstanceForNativeUi())
+    return native_theme->caret_blink_interval();
 #elif BUILDFLAG(IS_WIN)
   const auto system_msec = ::GetCaretBlinkTime();
   if (system_msec != 0) {
@@ -3578,7 +3578,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
   // current system, increase the requested bitmap size to capture it all.
   gfx::Size bitmap_size = view_size;
   const gfx::NativeView native_view = view->GetNativeView();
-  const float scale = display::Screen::GetScreen()
+  const float scale = display::Screen::Get()
                           ->GetDisplayNearestView(native_view)
                           .device_scale_factor();
   if (scale > 1.0f)

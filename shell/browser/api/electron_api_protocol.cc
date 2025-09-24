@@ -198,6 +198,8 @@ const char* const kBuiltinSchemes[] = {
 Protocol::Protocol(ProtocolRegistry* protocol_registry)
     : protocol_registry_{protocol_registry} {}
 
+Protocol::~Protocol() = default;
+
 // Convert error code to string.
 // static
 std::string_view Protocol::ErrorCodeToString(Error error) {

@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index c835d9ea235070abaca36b38dc5f573da98fd469..a8d867b18c73abfe55da053a93696eb43c848dde 100644
+index 7f98c195c12b141a792913b3e9888d8eeabc74ed..901119f3fdc81800592b6f5a987054c3c62374c6 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1058,6 +1058,7 @@ component("base") {
+@@ -1059,6 +1059,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -195,10 +195,10 @@ index e12c1d078147d956a1d9b1bc498c1b1d6fe7b974..233362259dc4e728ed37435e65041764
  
  }  // namespace base
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index ff1e356ff696d3830d02644969c36a71fdf32ff6..b39c716c52524b95f2d3417a98e60c0c41147c93 100644
+index bbaf1143e725a1b6c49eef705b1e62c4133bfa27..81fc444043b67858371142075f98ad9aff162fc3 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
-@@ -38,6 +38,8 @@ component("sync") {
+@@ -75,6 +75,8 @@ component("sync") {
        "os_crypt_mac.mm",
      ]
      deps += [ "//crypto:mock_apple_keychain" ]
@@ -385,7 +385,7 @@ index 71158ca9a7101911bb76f0c1b5300b0ff0e326b3..1441b9d4f9560c8b26d4beffe31449ed
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 0f65c4272547f31890b872dc208cd01d02848e20..2634fddf9b7b71cd4b97e9ecb5de06bff7217355 100644
+index 433f12928857e288b6b0d4f4dd3d1f29da08cf6c..bb95aabec2e0d5c7b3a5d315c9a3f8cb3a45c8d2 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -21,6 +21,7 @@
@@ -452,7 +452,7 @@ index 0f65c4272547f31890b872dc208cd01d02848e20..2634fddf9b7b71cd4b97e9ecb5de06bf
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 6ea211c221d74f26be924334ac8b5b007f38e7a3..c5171b3f1a0b25825dded8828ed683282c06e151 100644
+index e90c5a7cbb852ba33df47209cfb7890472f1fbb1..53881e0efdf8f868245dbca7040cd6aac899d50c 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -477,10 +477,10 @@ index 6ea211c221d74f26be924334ac8b5b007f38e7a3..c5171b3f1a0b25825dded8828ed68328
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 4017fef63c549b535c1eedd3571e69b7fac6f3e2..de0ed691367bda45e5310b1f132171e3a1f2dd3f 100644
+index 9f487674f174e69c749c93e030de66e954947a73..88b4d3e2d965ee6930b4d5dd49c75af079c1bcff 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -383,6 +383,7 @@ viz_component("service") {
+@@ -385,6 +385,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -488,7 +488,7 @@ index 4017fef63c549b535c1eedd3571e69b7fac6f3e2..de0ed691367bda45e5310b1f132171e3
    }
  
    if (is_ios) {
-@@ -706,6 +707,7 @@ viz_source_set("unit_tests") {
+@@ -708,6 +709,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -548,7 +548,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index e5b59a9d364dd5a8f847d9543b19fdc068098754..86abd01371ce8a9c21d020f1a69a5d33b656d72b 100644
+index d3f833904a7a056235d4bd4b3e7c5297a60861f5..8986ec2405541a43ca34d47f9ac0ffbf875ae63a 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -34,6 +34,7 @@
@@ -559,7 +559,7 @@ index e5b59a9d364dd5a8f847d9543b19fdc068098754..86abd01371ce8a9c21d020f1a69a5d33
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2086,15 +2087,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2095,15 +2096,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -582,10 +582,10 @@ index e5b59a9d364dd5a8f847d9543b19fdc068098754..86abd01371ce8a9c21d020f1a69a5d33
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index c92c7110c747cc575c94cf941cf9131987ef4fd6..08bd7dc0663b7d3a7fa327e8795db13129e891de 100644
+index bb12a1600ddda11abb6485f685564e2d5a7a5837..a1bcbbaca764ae901dad961c94a8a33432a92bd2 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -344,6 +344,7 @@ source_set("browser") {
+@@ -347,6 +347,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -594,7 +594,7 @@ index c92c7110c747cc575c94cf941cf9131987ef4fd6..08bd7dc0663b7d3a7fa327e8795db131
  
    public_deps = [
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index e7007a9a7788cbc89a0bbb2387ff2c62bb7d2c79..c2b672a3bd1e61089b411d139f7083714a345a9c 100644
+index 319e58e5c3cad4ec47fca2c7cb0d59d4c5fd460c..d17bdb51081cee80f6f43199057de557063ecf1a 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -24,6 +24,7 @@
@@ -615,7 +615,7 @@ index e7007a9a7788cbc89a0bbb2387ff2c62bb7d2c79..c2b672a3bd1e61089b411d139f708371
  @class RenderWidgetHostViewCocoa;
  
  namespace content {
-@@ -671,9 +674,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+@@ -675,9 +678,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
    // EnsureSurfaceSynchronizedForWebTest().
    uint32_t latest_capture_sequence_number_ = 0u;
  
@@ -628,7 +628,7 @@ index e7007a9a7788cbc89a0bbb2387ff2c62bb7d2c79..c2b672a3bd1e61089b411d139f708371
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index d667fdd34ba42be6a7d6486bb9add2bd65953101..57103054e874017bf9926dcdf71786c679f9aac0 100644
+index 8b53385eacb73bbafa1a095bd2db833ecfd930bb..3798a24ce4aedb6aa2954d8f99b603bf08f1179d 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -52,6 +52,7 @@
@@ -650,7 +650,7 @@ index d667fdd34ba42be6a7d6486bb9add2bd65953101..57103054e874017bf9926dcdf71786c6
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1630,10 +1633,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1638,10 +1641,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -663,7 +663,7 @@ index d667fdd34ba42be6a7d6486bb9add2bd65953101..57103054e874017bf9926dcdf71786c6
    return gfx::NativeViewAccessible([GetInProcessNSView() window]);
  }
  
-@@ -1685,9 +1690,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1693,9 +1698,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -675,7 +675,7 @@ index d667fdd34ba42be6a7d6486bb9add2bd65953101..57103054e874017bf9926dcdf71786c6
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2190,20 +2197,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2198,20 +2205,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -703,7 +703,7 @@ index d667fdd34ba42be6a7d6486bb9add2bd65953101..57103054e874017bf9926dcdf71786c6
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 733ae2d15c3ff85faa06db70dc24fdc611113fa4..2424410cc68fe14db6024b6ec41aa73da02fc120 100644
+index 8c293f5bb0e859f438a7ab50b70b4d5449dc1358..d58c73427935127fdec173224bcb970964a9f14d 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -275,6 +275,7 @@ source_set("common") {
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 8e939c6c74a016779cc2a9da2ce68f3ebb11a05a..4c4fb37276f58ba32baaddb5b9e61b95eab8336f 100644
+index 6232ce7ac3676b0b7e15e5a3f41e2e44c4dab787..21d29e74a9c3a5d085bf451b2b5ae2fdae165c50 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -673,6 +673,7 @@ static_library("test_support") {
@@ -817,7 +817,7 @@ index 8e939c6c74a016779cc2a9da2ce68f3ebb11a05a..4c4fb37276f58ba32baaddb5b9e61b95
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2029,6 +2032,7 @@ test("content_browsertests") {
+@@ -2030,6 +2033,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -825,7 +825,7 @@ index 8e939c6c74a016779cc2a9da2ce68f3ebb11a05a..4c4fb37276f58ba32baaddb5b9e61b95
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3354,6 +3358,7 @@ test("content_unittests") {
+@@ -3356,6 +3360,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -986,10 +986,10 @@ index 5eda5e58b30b84795ec3827aad7ce97171400097..60bf6c34e8d824ea6d4e02b295156860
  }  // namespace
  #endif
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index 7f9f28b70a4cf5323fdbb01567170e8856113031..ba1da643abd8ba9db6f144e24b927116233dabc1 100644
+index 4428896957be15908ce992189db2a0fe95ba3bbd..07987fad41d194bf38a6f4265ccbd853c1273689 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
-@@ -193,6 +193,8 @@ source_set("dns") {
+@@ -195,6 +195,8 @@ source_set("dns") {
      ":host_resolver_manager",
      ":mdns_client",
    ]
@@ -1428,10 +1428,10 @@ index c771cee7be34f36521de34ef893ee578b648a8c8..b0bd447b848bfdb7a9ff9cd98ba95574
    blink_core_sources_editing += [ "kill_ring_none.cc" ]
  }
 diff --git a/ui/accelerated_widget_mac/BUILD.gn b/ui/accelerated_widget_mac/BUILD.gn
-index 4a2e4211864cd93cdf3f1e065fedd01d0ddd18f2..8c8916f2a424fea3508a3c0c8266d73c539b16fd 100644
+index 0f8a6f75b7f01029adc2f5fd23559bacce19cf72..cf66c2f4f02a8e21cc83c3b7389fc5156bcd93ba 100644
 --- a/ui/accelerated_widget_mac/BUILD.gn
 +++ b/ui/accelerated_widget_mac/BUILD.gn
-@@ -85,6 +85,7 @@ component("accelerated_widget_mac") {
+@@ -83,6 +83,7 @@ component("accelerated_widget_mac") {
      "//ui/gfx",
      "//ui/gfx/geometry",
      "//ui/gl",
@@ -1472,7 +1472,7 @@ index ce6a061b57cce101c103527dbbbe5ed47b2ecaf8..616922c34e1f3bc50584c0417129b78e
    // The root CALayer to display the current frame. This does not change
    // over the lifetime of the object.
 diff --git a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
-index 54651172993f7d07f21a395511f773bff40115d8..295d8bef6e9ec966db570d7537abfc049324512d 100644
+index e1b1b0965669cae54565719f9ad6ba808416c2f7..ef7e6fd0d23626db303199ae5c79c8fd55ebba71 100644
 --- a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 +++ b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 @@ -10,6 +10,7 @@
@@ -1483,7 +1483,7 @@ index 54651172993f7d07f21a395511f773bff40115d8..295d8bef6e9ec966db570d7537abfc04
  #include "ui/base/cocoa/animation_utils.h"
  #include "ui/base/cocoa/remote_layer_api.h"
  #include "ui/gfx/ca_layer_params.h"
-@@ -32,6 +33,7 @@
+@@ -31,6 +32,7 @@
            allow_av_sample_buffer_display_layer),
        buffer_presented_callback_(buffer_presented_callback),
        metal_device_(metal_device) {
@@ -1491,7 +1491,7 @@ index 54651172993f7d07f21a395511f773bff40115d8..295d8bef6e9ec966db570d7537abfc04
    if (allow_remote_layers_) {
      root_ca_layer_ = [[CALayer alloc] init];
  #if BUILDFLAG(IS_MAC)
-@@ -60,6 +62,7 @@
+@@ -59,6 +61,7 @@
  #endif
      ca_context_.layer = root_ca_layer_;
    }
@@ -1499,7 +1499,7 @@ index 54651172993f7d07f21a395511f773bff40115d8..295d8bef6e9ec966db570d7537abfc04
  }
  
  CALayerTreeCoordinator::~CALayerTreeCoordinator() = default;
-@@ -163,9 +166,13 @@
+@@ -162,9 +165,13 @@
      TRACE_EVENT_INSTANT2("test_gpu", "SwapBuffers", TRACE_EVENT_SCOPE_THREAD,
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
@@ -1722,10 +1722,10 @@ index 59dc2f82214cfd883b6ebef3b0fb25af6387a9cd..912c5252d1b30d943a1552739b9eef9a
  
  // This function will check if all of the interfaces listed above are supported
 diff --git a/ui/base/cocoa/remote_layer_api.mm b/ui/base/cocoa/remote_layer_api.mm
-index fc25ba79d2b0e1acdb7ba54b89e7d6e16f94771b..de771ef414b9a69e331261524f08e9a12145ec60 100644
+index 93e90c4eba9bc9b93d68e834eb6baabeb2d0ecf0..1b90f41d05f847a94adf2f4da827b1d0143b7bcf 100644
 --- a/ui/base/cocoa/remote_layer_api.mm
 +++ b/ui/base/cocoa/remote_layer_api.mm
-@@ -5,11 +5,13 @@
+@@ -5,18 +5,22 @@
  #include "ui/base/cocoa/remote_layer_api.h"
  
  #include "base/feature_list.h"
@@ -1739,9 +1739,7 @@ index fc25ba79d2b0e1acdb7ba54b89e7d6e16f94771b..de771ef414b9a69e331261524f08e9a1
  namespace {
  // Control use of cross-process CALayers to display content directly from the
  // GPU process on Mac.
-@@ -17,8 +19,10 @@
-              "RemoteCoreAnimationAPI",
-              base::FEATURE_ENABLED_BY_DEFAULT);
+ BASE_FEATURE(kRemoteCoreAnimationAPI, base::FEATURE_ENABLED_BY_DEFAULT);
  }  // namespace
 +#endif
  
@@ -1750,7 +1748,7 @@ index fc25ba79d2b0e1acdb7ba54b89e7d6e16f94771b..de771ef414b9a69e331261524f08e9a1
    if (!base::FeatureList::IsEnabled(kRemoteCoreAnimationAPI))
      return false;
  
-@@ -55,6 +59,9 @@ bool RemoteLayerAPISupported() {
+@@ -53,6 +57,9 @@ bool RemoteLayerAPISupported() {
  
    // If everything is there, we should be able to use the API.
    return true;
@@ -1761,10 +1759,10 @@ index fc25ba79d2b0e1acdb7ba54b89e7d6e16f94771b..de771ef414b9a69e331261524f08e9a1
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 5c78ec26210044b8c556431212e9b201dbf0fd8b..a23edba020ca7cd34f7f806d923ad5f1464061b2 100644
+index ca9b2b6f9a4e070d2fd40a6fec672d612ff757e0..87eee402eb38270690b798b67a368e113008d8cc 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
-@@ -129,6 +129,12 @@ component("display") {
+@@ -131,6 +131,12 @@ component("display") {
      "//ui/gfx/geometry",
    ]
  
@@ -1778,7 +1776,7 @@ index 5c78ec26210044b8c556431212e9b201dbf0fd8b..a23edba020ca7cd34f7f806d923ad5f1
      deps += [ "//build:ios_buildflags" ]
    }
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index 85d9170ae8de43ec0fa18c033d66c0583c26ec2f..c4f76301818404ce853583adf01af85cddd6a6e5 100644
+index a76d09dd2a2a71d0b8397f4abe30fe7bbb6e513d..eba69f4c6e72b36e799ce902cdffd2dd1f2387d6 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
 @@ -33,6 +33,7 @@
@@ -1808,10 +1806,10 @@ index 85d9170ae8de43ec0fa18c033d66c0583c26ec2f..c4f76301818404ce853583adf01af85c
    // Query the display's refresh rate.
    double refresh_rate = 1.0 / screen.minimumRefreshInterval;
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 6f09aea6a492f44f5771c635b8d766bb1868938c..bd82e70622e04d83d5d07a9f5e08a1ddacb568e4 100644
+index 300079ed71ff990396d419ed55755f128dda6695..464682fd86764adbef54faaa5894a55be87ee5cf 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -337,6 +337,12 @@ component("gfx") {
+@@ -335,6 +335,12 @@ component("gfx") {
      "//ui/base:ui_data_pack",
    ]
  
@@ -1825,7 +1823,7 @@ index 6f09aea6a492f44f5771c635b8d766bb1868938c..bd82e70622e04d83d5d07a9f5e08a1dd
      sources += [
        "platform_font_skia.cc",
 diff --git a/ui/gfx/platform_font_mac.mm b/ui/gfx/platform_font_mac.mm
-index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8eccdefd4d7 100644
+index bbe355cf69f160866188216cc274d75bd35603db..06ee100d7ea2e892dbf3c0b1adc96c5013ef678a 100644
 --- a/ui/gfx/platform_font_mac.mm
 +++ b/ui/gfx/platform_font_mac.mm
 @@ -19,6 +19,7 @@
@@ -1863,7 +1861,7 @@ index fe3f85073e31de487a08e57d7f9b07aa4eccf8f3..cf5b07203c8bd559a404600cc98cc8ec
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index a7ba817422eb2b82f7a722e8e5df886acd4012aa..1fd81ae13caefbc0950a6c5d87d959455fbf9ce9 100644
+index f4651d57e9f1ac76c0e93ce3859f4169cd689200..d07439f78ac914d6daeb54dbc5beea80f1fb11bd 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -720,6 +720,8 @@ component("views") {
@@ -1875,7 +1873,7 @@ index a7ba817422eb2b82f7a722e8e5df886acd4012aa..1fd81ae13caefbc0950a6c5d87d95945
    }
  
    if (is_win) {
-@@ -1151,6 +1153,8 @@ source_set("test_support") {
+@@ -1150,6 +1152,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
@@ -1920,7 +1918,7 @@ index 4cc9db3ae1ef2443b1ecf923c9c572b7d0e85662..f7bf6a6bb63f9c38cc21c03da1c884d6
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 4c83545e75535469ccdf2bdf7ec3266f4acd64c4..eafa32f62cac0627a4e32aa2301c2cbe0b18ede9 100644
+index 5fc62f87b842f6aca7082b3957f2adb9f44e2114..7befaf18ae9c922ccd8d36a006b9105cb55b1a32 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -21,6 +21,7 @@
@@ -1999,7 +1997,7 @@ index 4c83545e75535469ccdf2bdf7ec3266f4acd64c4..eafa32f62cac0627a4e32aa2301c2cbe
  }
  
 diff --git a/ui/views/controls/webview/BUILD.gn b/ui/views/controls/webview/BUILD.gn
-index 7f4eff1017119fc90107c2d86436f7bbf596ac72..688d8a17625765c63151117554933627427829f1 100644
+index 50bb38a38dca67f9f393c48efe123f7dd7ca2594..2062e479581d63325de3c3398844acca0601c86c 100644
 --- a/ui/views/controls/webview/BUILD.gn
 +++ b/ui/views/controls/webview/BUILD.gn
 @@ -46,6 +46,12 @@ component("webview") {

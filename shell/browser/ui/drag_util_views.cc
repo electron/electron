@@ -38,7 +38,7 @@ void DragFileItems(const std::vector<base::FilePath>& files,
   }
   data->SetFilenames(file_infos);
 
-  gfx::Point location = display::Screen::GetScreen()->GetCursorScreenPoint();
+  gfx::Point location = display::Screen::Get()->GetCursorScreenPoint();
   // TODO(varunjain): Properly determine and send DragEventSource below.
   aura::client::GetDragDropClient(root_window)
       ->StartDragAndDrop(

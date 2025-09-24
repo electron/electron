@@ -38,7 +38,7 @@ index 85df555841ac0d32d2f097547c9991cecf0f4b1a..7a108339448fad3105e87c9d9af678c2
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index fcb7d2c18f39acb174fc456362de51c484de398c..fea71317b41429dd3bbd50947673124f7c230394 100644
+index 5c978e3dcc862456d129e85e82236d899dbb5504..c5552aa0dedf6adbe10409f32c6eeca28f11c0b6 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -18,12 +18,16 @@
@@ -76,7 +76,7 @@ index fcb7d2c18f39acb174fc456362de51c484de398c..fea71317b41429dd3bbd50947673124f
    std::wstring app_user_model_id;
    Browser* browser = chrome::FindBrowserWithTab(controller->GetWebContents());
    if (browser) {
-@@ -1270,11 +1274,13 @@ void VideoOverlayWindowViews::SetUpViews() {
+@@ -1271,11 +1275,13 @@ void VideoOverlayWindowViews::SetUpViews() {
              &VideoOverlayWindowViews::OnLiveCaptionButtonPressed,
              base::Unretained(this)));
      live_caption_button->SetSize(kActionButtonSize);
@@ -90,7 +90,19 @@ index fcb7d2c18f39acb174fc456362de51c484de398c..fea71317b41429dd3bbd50947673124f
      toggle_microphone_button =
          std::make_unique<ToggleMicrophoneButton>(base::BindRepeating(
              [](VideoOverlayWindowViews* overlay) {
-@@ -2561,6 +2567,7 @@ gfx::Rect VideoOverlayWindowViews::GetLiveCaptionDialogBounds() {
+@@ -2412,9 +2418,10 @@ void VideoOverlayWindowViews::OnGestureEvent(ui::GestureEvent* event) {
+       event->SetHandled();
+       return;
+     }
+-
++#if 0
+     // Otherwise, let the live caption dialog handle the gesture.
+     live_caption_dialog_->OnGestureTapEvent(event);
++#endif
+     return;
+   }
+ 
+@@ -2573,6 +2580,7 @@ gfx::Rect VideoOverlayWindowViews::GetLiveCaptionDialogBounds() {
  
  bool VideoOverlayWindowViews::HasHighMediaEngagement(
      const url::Origin& origin) const {
@@ -98,7 +110,7 @@ index fcb7d2c18f39acb174fc456362de51c484de398c..fea71317b41429dd3bbd50947673124f
    MediaEngagementService* service =
        MediaEngagementService::Get(Profile::FromBrowserContext(
            GetController()->GetWebContents()->GetBrowserContext()));
-@@ -2569,6 +2576,8 @@ bool VideoOverlayWindowViews::HasHighMediaEngagement(
+@@ -2581,6 +2589,8 @@ bool VideoOverlayWindowViews::HasHighMediaEngagement(
    }
  
    return service->HasHighEngagement(origin);

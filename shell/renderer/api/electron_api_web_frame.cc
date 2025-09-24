@@ -700,20 +700,6 @@ class WebFrameRenderer final
     bool has_user_gesture = false;
     args->GetNext(&has_user_gesture);
 
-    blink::mojom::EvaluationTiming script_execution_type =
-        blink::mojom::EvaluationTiming::kSynchronous;
-    blink::mojom::LoadEventBlockingOption load_blocking_option =
-        blink::mojom::LoadEventBlockingOption::kDoNotBlock;
-    std::string execution_type;
-    args->GetNext(&execution_type);
-
-    if (execution_type == "asynchronous") {
-      script_execution_type = blink::mojom::EvaluationTiming::kAsynchronous;
-    } else if (execution_type == "asynchronousBlockingOnload") {
-      script_execution_type = blink::mojom::EvaluationTiming::kAsynchronous;
-      load_blocking_option = blink::mojom::LoadEventBlockingOption::kBlock;
-    }
-
     ScriptExecutionCallback::CompletionCallback completion_callback;
     args->GetNext(&completion_callback);
 
@@ -749,7 +735,9 @@ class WebFrameRenderer final
         world_id, base::span(sources),
         has_user_gesture ? blink::mojom::UserActivationOption::kActivate
                          : blink::mojom::UserActivationOption::kDoNotActivate,
-        script_execution_type, load_blocking_option, base::NullCallback(),
+        blink::mojom::EvaluationTiming::kSynchronous,
+        blink::mojom::LoadEventBlockingOption::kDoNotBlock,
+        base::NullCallback(),
         base::BindOnce(&ScriptExecutionCallback::Completed,
                        base::Unretained(self)),
         blink::BackForwardCacheAware::kPossiblyDisallow,
