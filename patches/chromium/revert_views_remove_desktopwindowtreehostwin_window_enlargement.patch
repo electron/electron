@@ -10,10 +10,10 @@ on Windows.  We should refactor our code so that this patch isn't
 necessary.
 
 diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
-index 051104ddca1a1dbc89199a74d08b94b1134a6e60..378056aaa1e84125d8a2a8b464e2bdf226655722 100644
+index 406ccbfec9bddb6800f0ad7c14fc4534a4b58eb4..9f0dd7fd41d41c2e4ffd92eecacb4a4a1d8a1318 100644
 --- a/testing/variations/fieldtrial_testing_config.json
 +++ b/testing/variations/fieldtrial_testing_config.json
-@@ -25209,6 +25209,21 @@
+@@ -25248,6 +25248,21 @@
              ]
          }
      ],
@@ -67,7 +67,7 @@ index 58063f2452dc484a97c79b382067d9b34875e344..d586436498263c595a17454f54644d2d
  
  }  // namespace views::features
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index f4fa30c1621e2eb78913ea97a993eb0a3528f36c..f142ce65c5c0e22b968c98082d11d9922e3a0cfa 100644
+index d58b59288d881a2d74ea357f1e9e27870d24ac72..956dc87cb07559038a63cec0b5174cec09619bdb 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 @@ -84,6 +84,23 @@ namespace {
@@ -154,7 +154,7 @@ index f4fa30c1621e2eb78913ea97a993eb0a3528f36c..f142ce65c5c0e22b968c98082d11d992
    return display::win::GetScreenWin()->ScreenToDIPRect(GetHWND(), pixel_bounds);
  }
  
-@@ -678,37 +710,44 @@ void DesktopWindowTreeHostWin::HideImpl() {
+@@ -677,37 +709,44 @@ void DesktopWindowTreeHostWin::HideImpl() {
  // other get/set methods work in DIP.
  
  gfx::Rect DesktopWindowTreeHostWin::GetBoundsInPixels() const {
@@ -219,7 +219,7 @@ index f4fa30c1621e2eb78913ea97a993eb0a3528f36c..f142ce65c5c0e22b968c98082d11d992
  }
  
  gfx::Rect
-@@ -918,21 +957,29 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
+@@ -917,21 +956,29 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
  
  void DesktopWindowTreeHostWin::GetWindowMask(const gfx::Size& size_px,
                                               SkPath* path) {
@@ -264,7 +264,7 @@ index f4fa30c1621e2eb78913ea97a993eb0a3528f36c..f142ce65c5c0e22b968c98082d11d992
  }
  
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index cef7afbf408e38798c398c23dc3e964bd1d95d17..74f0f6e485f4cc6be2c292f4b364d9796d9ce20b 100644
+index e8acd2828ed05deefa335ce2bb461f0c3be8d7b7..0cd07fd5fb55dcc0d972de4c027fcb895d156592 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 @@ -175,7 +175,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
@@ -276,7 +276,7 @@ index cef7afbf408e38798c398c23dc3e964bd1d95d17..74f0f6e485f4cc6be2c292f4b364d979
    gfx::Rect GetBoundsInAcceleratedWidgetPixelCoordinates() override;
    gfx::Point GetLocationOnScreenInPixels() const override;
    void SetCapture() override;
-@@ -327,6 +327,12 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+@@ -328,6 +328,12 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
    gfx::Vector2d window_expansion_top_left_delta_;
    gfx::Vector2d window_expansion_bottom_right_delta_;
  

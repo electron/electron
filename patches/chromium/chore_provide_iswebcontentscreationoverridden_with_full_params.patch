@@ -145,10 +145,10 @@ index 3fc06be01f20e8cd314d95d73a3f58c2f0742fe9..c07910ae59a185442f37ea6e7b96fdf3
    // The profile used for the presentation.
    raw_ptr<Profile, DanglingUntriaged> otr_profile_;
 diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-index 46382dbe43df6abb75ca7825de116d7ed2d1cea6..b07cfad74ec54ad251012dca57c8f44760ba13c1 100644
+index 96236cd9bdd3f03ebb7e5428e809f8dff2654e60..d17758e94043afcbd3b45884fac127e0ad82daf5 100644
 --- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 +++ b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-@@ -103,8 +103,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
+@@ -104,8 +104,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -222,10 +222,10 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d7cf36715b036c29d881c84a07c0d3b7f73d609f..11c0124b6f3f1599b5a56ba7817e946a871316cc 100644
+index 7c943f0775ec6f4d6590eae0fac34b5286e21c97..9699decf133b6b586e4cd82f90636d757e03f09a 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5253,8 +5253,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5256,8 +5256,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    if (delegate_ &&
        delegate_->IsWebContentsCreationOverridden(
            opener, source_site_instance, params.window_container_type,
@@ -250,7 +250,7 @@ index 968cddc769e2bf0bb56359b36bc03cbce6539da1..08c983ac6a8e5733431ba00e1288f6d6
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 23b9c84175fd44f0da2ef398c8bf68cf6e3d3ef8..2e8e60c8ebe837fc68318bd5c13dbd0c873c4292 100644
+index bf5169e7a79e74309ff592252914ec012e4178c5..466f78504376c1fb8684faa08aacabba1987ec7a 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -368,8 +368,7 @@ class CONTENT_EXPORT WebContentsDelegate {
@@ -398,10 +398,10 @@ index 64ecdeb50b861825c9b55a930ff18c36818cad0b..e037d5607f8e1f3acb4ed018080de1b3
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index 0e0f67908ca8c97bd0dfe4c4a8e008c74010c623..27ecb428739e2548a42f1485f8b7279a84f7190c 100644
+index f56882565de72fa9ab660b4a8d86f08c7392becd..439586a03288822bab8f5f21d0c38b678ed52fb6 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
-@@ -490,8 +490,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
+@@ -489,8 +489,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -412,10 +412,10 @@ index 0e0f67908ca8c97bd0dfe4c4a8e008c74010c623..27ecb428739e2548a42f1485f8b7279a
      return delegate_->HandleShouldOverrideWebContentsCreation();
    }
 diff --git a/ui/views/controls/webview/web_dialog_view.h b/ui/views/controls/webview/web_dialog_view.h
-index 0fa7e807d22f6f04b84f2d949fbdf892b94996bf..b0490ae36c9999a766bbf346e35807740f4f9af6 100644
+index 720611a58300a0252d5dd66e1e7c98282dc82646..eb0abf978651266fe7e4d6a8e9af30024fceb7d1 100644
 --- a/ui/views/controls/webview/web_dialog_view.h
 +++ b/ui/views/controls/webview/web_dialog_view.h
-@@ -168,8 +168,7 @@ class WEBVIEW_EXPORT WebDialogView : public ClientView,
+@@ -167,8 +167,7 @@ class WEBVIEW_EXPORT WebDialogView : public ClientView,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

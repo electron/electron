@@ -8,10 +8,10 @@ was removed as part of the Raw Clipboard API scrubbing.
 https://bugs.chromium.org/p/chromium/issues/detail?id=1217643
 
 diff --git a/ui/base/clipboard/scoped_clipboard_writer.cc b/ui/base/clipboard/scoped_clipboard_writer.cc
-index 2d612b3a8ceb61f02fbd96023140bc2c702db589..bb5b17fc884b78aa65c3885e11309a9c50f8e786 100644
+index e104f4d7814b6f6a0e1f5cf49ae24d5571e30fb1..cc7e9064b21f8f2c45690454805901c0c56e2aa1 100644
 --- a/ui/base/clipboard/scoped_clipboard_writer.cc
 +++ b/ui/base/clipboard/scoped_clipboard_writer.cc
-@@ -246,6 +246,16 @@ void ScopedClipboardWriter::WriteData(std::u16string_view format,
+@@ -244,6 +244,16 @@ void ScopedClipboardWriter::WriteData(std::u16string_view format,
    }
  }
  

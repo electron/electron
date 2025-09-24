@@ -11,10 +11,25 @@ enlarge window above dimensions set during creation of the
 BrowserWindow.
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index f3f42f2c3ae4b185b0647902a2409bc9b25a152f..8c70c5ecef8c352e7cd5b9a986bd45d670760069 100644
+index 9963bcea4487e52157bf61eaf7d6772256fac717..3a50c77bb4ffffb370d76153bd3d26b2213b7beb 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -3848,15 +3848,30 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
+@@ -2060,12 +2060,10 @@ void HWNDMessageHandler::OnGetMinMaxInfo(MINMAXINFO* minmax_info) {
+     min_window_size.Enlarge(window_rect.right - window_rect.left,
+                             window_rect.bottom - window_rect.top);
+     // Either axis may be zero, so enlarge them independently.
+-    if (max_window_size.width()) {
++    if (max_window_size.width())
+       max_window_size.Enlarge(window_rect.right - window_rect.left, 0);
+-    }
+-    if (max_window_size.height()) {
++    if (max_window_size.height())
+       max_window_size.Enlarge(0, window_rect.bottom - window_rect.top);
+-    }
+   }
+   minmax_info->ptMinTrackSize.x = min_window_size.width();
+   minmax_info->ptMinTrackSize.y = min_window_size.height();
+@@ -3848,17 +3846,31 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
    delegate_->GetMinMaxSize(&min_window_size, &max_window_size);
    min_window_size = delegate_->DIPToScreenSize(min_window_size);
    max_window_size = delegate_->DIPToScreenSize(max_window_size);
@@ -25,13 +40,14 @@ index f3f42f2c3ae4b185b0647902a2409bc9b25a152f..8c70c5ecef8c352e7cd5b9a986bd45d6
 +    GetClientRect(hwnd(), &client_rect);
 +    GetWindowRect(hwnd(), &rect);
 +    CR_DEFLATE_RECT(&rect, &client_rect);
-+    min_window_size.Enlarge(rect.right - rect.left,
-+                            rect.bottom - rect.top);
++    min_window_size.Enlarge(rect.right - rect.left, rect.bottom - rect.top);
 +    // Either axis may be zero, so enlarge them independently.
-+    if (max_window_size.width())
++    if (max_window_size.width()) {
 +      max_window_size.Enlarge(rect.right - rect.left, 0);
-+    if (max_window_size.height())
++    }
++    if (max_window_size.height()) {
 +      max_window_size.Enlarge(0, rect.bottom - rect.top);
++    }
 +  }
  
    std::optional<gfx::Size> max_size_param;
@@ -39,10 +55,12 @@ index f3f42f2c3ae4b185b0647902a2409bc9b25a152f..8c70c5ecef8c352e7cd5b9a986bd45d6
      max_size_param = max_window_size;
    }
  
+-  gfx::Size excluded_margin = delegate_->DIPToScreenSize(excluded_margin_dip_);
+-
 -  gfx::SizeRectToAspectRatioWithExcludedMargin(
 +  gfx::SizeRectToAspectRatio(
        GetWindowResizeEdge(param), aspect_ratio_.value(), min_window_size,
--      max_size_param, excluded_margin_, *window_rect);
+-      max_size_param, excluded_margin, *window_rect);
 +      max_size_param, window_rect);
  }
  

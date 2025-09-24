@@ -22,7 +22,7 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index a76db23484dabda64b7eaf2e8b6c6f22faf2719f..004bfd9456a1b235fd6d6abcd5d2a7ca5e070807 100644
+index a34deb7535b867d7dcfb97894050cbde7fd4528a..d4d3e13a25b0d2d36545711645e8a135a77cb2e7 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -1870,6 +1870,10 @@ bool RenderProcessHostImpl::Init() {
@@ -37,7 +37,7 @@ index a76db23484dabda64b7eaf2e8b6c6f22faf2719f..004bfd9456a1b235fd6d6abcd5d2a7ca
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegate>();
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
-index 33c2fb1dde3cc92383c085fc1277c71ccfffedc0..033a3692e59e9a220a635462542f4f34e7a14f26 100644
+index 0936beb23188f0d07cd5750f3a2e56dc560fdef2..996eab5dae4ffa6b7898cc070de8162ad2130d70 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 @@ -35,6 +35,9 @@ namespace content {
@@ -50,7 +50,7 @@ index 33c2fb1dde3cc92383c085fc1277c71ccfffedc0..033a3692e59e9a220a635462542f4f34
    const base::CommandLine& browser_command_line =
        *base::CommandLine::ForCurrentProcess();
    base::CommandLine::StringType renderer_prefix =
-@@ -73,6 +76,9 @@ RendererSandboxedProcessLauncherDelegateWin::
+@@ -71,6 +74,9 @@ RendererSandboxedProcessLauncherDelegateWin::
                                   ->ShouldRestrictCoreSharingOnRenderer()) {
    // PDF renderers must be jitless.
    CHECK(!is_pdf_renderer || is_jit_disabled);
@@ -61,7 +61,7 @@ index 33c2fb1dde3cc92383c085fc1277c71ccfffedc0..033a3692e59e9a220a635462542f4f34
      dynamic_code_can_be_disabled_ = true;
      return;
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
-index 85e9366a5bb28da302e475c99feb59863890ca09..ce29836e57dc72e0719998e1fa8734fd256e5633 100644
+index b98b23a95003c3e3dd7b2da6a48b956cdbeb5251..0597eca8efa2bea2cb800c6919b59dfb64c87083 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 @@ -18,6 +18,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate

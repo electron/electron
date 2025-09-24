@@ -20,7 +20,7 @@ index 79d59c3f4d3d2d5ff39bd65ded489183247656a8..20b49742578ccf363738ee032228f30a
        int64_t service_worker_version_id,
        const GURL& service_worker_scope,
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index 18714ce8fc27c8d56c5deac27ba335078c452d0a..263405c605a0477b7a39bc274d7ee03be0b9cac5 100644
+index 5bfb0c1767e017dbd6b1d5c5b64dc20b899e095a..03a9efc7917a44f68aefd9361119275aea6e48fb 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
 @@ -141,7 +141,8 @@ class CONTENT_EXPORT RenderFrameObserver {
@@ -34,10 +34,10 @@ index 18714ce8fc27c8d56c5deac27ba335078c452d0a..263405c605a0477b7a39bc274d7ee03b
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index f337d61906651359eeb5228c112ad948f4f7a752..82cbd10f0817a85d1275519a3f93c687c0314aaa 100644
+index cf4fa71d5064e7b187f7913e5db2ddbfb126878e..4c3f44dc13e7022de4ec343e6fe5c542369c83de 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4684,10 +4684,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4694,10 +4694,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
      observer.DidInstallConditionalFeatures(context, world_id);
  }
  
@@ -52,7 +52,7 @@ index f337d61906651359eeb5228c112ad948f4f7a752..82cbd10f0817a85d1275519a3f93c687
  
  void RenderFrameImpl::DidChangeScrollOffset() {
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index f0f4335aa815ea50dbf9b720b41e4eb31f27fb90..319f222565e4ef25206cc44d33ec5e291b8ea089 100644
+index 33915d468e9a01f77cbbdfbad4eb4275e819a8ab..8c031cabaade10c4d2b535c7843c3a0d1b810e29 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
 @@ -604,7 +604,8 @@ class CONTENT_EXPORT RenderFrameImpl
