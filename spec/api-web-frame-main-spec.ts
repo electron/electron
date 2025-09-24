@@ -589,6 +589,7 @@ describe('webFrameMain module', () => {
       await w.webContents.loadFile(path.join(fixtures, 'blank.html'));
       await insertVideoInFrame(w.webContents.mainFrame);
       await copyVideoFrameInFrame(w.webContents.mainFrame);
+      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
     });
 
     it('copies video frame in subframe', async () => {
