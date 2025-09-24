@@ -80,10 +80,10 @@ index b6582b4013d9682d32bd524b4053b443a4df00f8..afcbce72e0f247b4d5a637b27c9f25d9
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 2b9d9a80fb34b5083b6b038ff12714ad6bd363d7..85197b1500bbcdfbd2286b32a0188c0ca2436e07 100644
+index 53eb1dd3029cb7a8f6d9762294dd9c1435bed313..107b838bdc1919e120944bf345cf725e81cb4a79 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2386,7 +2386,8 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2388,7 +2388,8 @@ bool Browser::IsWebContentsCreationOverridden(
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
      const std::string& frame_name,
@@ -93,7 +93,7 @@ index 2b9d9a80fb34b5083b6b038ff12714ad6bd363d7..85197b1500bbcdfbd2286b32a0188c0c
    if (actor::IsActorOperatingOnWebContents(
            profile(), content::WebContents::FromRenderFrameHost(opener))) {
      // If an ExecutionEngine is acting on the opener, prevent it from creating
-@@ -2398,7 +2399,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2400,7 +2401,7 @@ bool Browser::IsWebContentsCreationOverridden(
    return (window_container_type ==
                content::mojom::WindowContainerType::BACKGROUND &&
            ShouldCreateBackgroundContents(source_site_instance, opener_url,

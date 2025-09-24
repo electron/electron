@@ -7,7 +7,7 @@ Pass RenderFrameHost through to PlatformNotificationService
 so Electron can identify which renderer a notification came from.
 
 diff --git a/chrome/browser/notifications/platform_notification_service_impl.cc b/chrome/browser/notifications/platform_notification_service_impl.cc
-index 03d15ec6e6f4adb6339501472de27b7bec5f50e3..364c95a765a0cbf568f14ebd4dce347e3c54f70d 100644
+index 674f6e77c376fc6107c648e1195e6022743a44da..5d82b4ff652ee2f31ad3e2a3996d5b2ac464819b 100644
 --- a/chrome/browser/notifications/platform_notification_service_impl.cc
 +++ b/chrome/browser/notifications/platform_notification_service_impl.cc
 @@ -252,6 +252,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
@@ -19,7 +19,7 @@ index 03d15ec6e6f4adb6339501472de27b7bec5f50e3..364c95a765a0cbf568f14ebd4dce347e
      const GURL& origin,
      const GURL& document_url,
 diff --git a/chrome/browser/notifications/platform_notification_service_impl.h b/chrome/browser/notifications/platform_notification_service_impl.h
-index ec5ca87810d590fc95eda2006b8653bb12711b8e..203cd9645523c4f0adf90e78fa3d8f3d0aad54dc 100644
+index e94fccc1b564c349eb2d2c9acd0574c3589a2eaf..a75a55b6c54f5aacc915a27d2aa99395a44da34e 100644
 --- a/chrome/browser/notifications/platform_notification_service_impl.h
 +++ b/chrome/browser/notifications/platform_notification_service_impl.h
 @@ -57,6 +57,7 @@ class PlatformNotificationServiceImpl
