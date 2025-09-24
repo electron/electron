@@ -19,32 +19,32 @@ https://chromium-review.googlesource.com/c/chromium/src/+/6936895
 as we depend on the removed functionality in this patch.
 
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 7befaf18ae9c922ccd8d36a006b9105cb55b1a32..953a683a7057e3be8181be197486709a55d04e9a 100644
+index 911f5879896a50e3d505b4aa9070c128e043a7d7..31b0c97b339fd7139d080e04bf82554aa646ac9f 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -464,7 +464,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -464,6 +464,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    if (!is_tooltip) {
      tooltip_manager_ = std::make_unique<TooltipManagerMac>(GetNSWindowMojo());
    }
--  is_headless_mode_window_ = display::Screen::Get()->IsHeadless();
 +  is_headless_mode_window_ = params.ShouldInitAsHeadless();
  
    if (params.workspace.length()) {
      std::string restoration_data;
-@@ -664,9 +664,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -662,9 +663,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // case it will never become visible but we want its compositor to produce
    // frames for screenshooting and screencasting.
    UpdateCompositorProperties();
 -  layer()->SetVisible(is_visible_);
+-  if (is_visible_ || display::Screen::Get()->IsHeadless()) {
 +  layer()->SetVisible(is_visible_ || is_headless_mode_window_);
-   if (is_visible_ || is_headless_mode_window_) {
++  if (is_visible_ || is_headless_mode_window_) {
      compositor_->Unsuspend();
 +    layer()->SchedulePaint(layer()->bounds());
    }
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index d24b78b50700f9f627c12cd5f339c7dcc0c173e5..77fd8b2f409e8f9151eb81c6a0da786babcdee6b 100644
+index 0c45970caf0a9e82bea1115f9ad678bca00d3365..3d9c7f79a4f187d92e7df5d243fbfd6323dd8317 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
 @@ -222,6 +222,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
@@ -75,7 +75,7 @@ index d24b78b50700f9f627c12cd5f339c7dcc0c173e5..77fd8b2f409e8f9151eb81c6a0da786b
  
    if (params.opacity == views::Widget::InitParams::WindowOpacity::kInferred &&
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index 89e00e8d2a456634beee8c72fcb753ab67e16c9e..473240be0c9168dc7a5fe771f1d473d9e2a9d978 100644
+index 9f55b5bd8466c9220471b18f3baf50d9d3f9b219..3f774055e4b6f9f960ba3f8b06e7e113553b5964 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
 @@ -324,6 +324,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
@@ -112,7 +112,7 @@ index 89e00e8d2a456634beee8c72fcb753ab67e16c9e..473240be0c9168dc7a5fe771f1d473d9
    // True if the window size will follow the content preferred size.
    bool is_autosized() const { return is_autosized_; }
  
-@@ -1718,6 +1731,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1712,6 +1725,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // If true, the mouse is currently down.
    bool is_mouse_button_pressed_ = false;
  
