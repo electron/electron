@@ -24,6 +24,7 @@
 #include "base/trace_event/trace_event.h"
 #include "chrome/common/chrome_version.h"
 #include "content/public/common/content_paths.h"
+#include "content/public/renderer/render_frame.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/electron_version.h"
 #include "electron/fuses.h"
@@ -41,7 +42,9 @@
 #include "shell/common/node_util.h"
 #include "shell/common/process_util.h"
 #include "shell/common/world_ids.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/web/web_local_frame.h"
+#include "third_party/blink/renderer/bindings/core/v8/referrer_script_info.h"  // nogncheck
 #include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
 #include "third_party/electron_node/src/debug_utils.h"
 #include "third_party/electron_node/src/module_wrap.h"
@@ -211,6 +214,61 @@ bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
   return node::AllowWasmCodeGenerationCallback(context, source);
 }
 
+enum ESMHandlerPlatform {
+  kNone,
+  kNodeJS,
+  kBlink,
+};
+
+static ESMHandlerPlatform SelectESMHandlerPlatform(
+    v8::Local<v8::Context> context,
+    v8::Local<v8::Data> raw_host_defined_options) {
+  if (node::Environment::GetCurrent(context) == nullptr) {
+    if (electron::IsBrowserProcess() || electron::IsUtilityProcess())
+      return ESMHandlerPlatform::kNone;
+
+    return ESMHandlerPlatform::kBlink;
+  }
+
+  if (!electron::IsRendererProcess())
+    return ESMHandlerPlatform::kNodeJS;
+
+  blink::WebLocalFrame* frame = blink::WebLocalFrame::FrameForContext(context);
+
+  if (frame == nullptr)
+    return ESMHandlerPlatform::kBlink;
+
+  auto prefs = content::RenderFrame::FromWebFrame(frame)->GetBlinkPreferences();
+
+  // If we're running with contextIsolation enabled in the renderer process,
+  // fall back to Blink's logic when the frame is not in the isolated world.
+  if (prefs.context_isolation) {
+    return frame->GetScriptContextWorldId(context) ==
+                   electron::WorldIDs::ISOLATED_WORLD_ID
+               ? ESMHandlerPlatform::kNodeJS
+               : ESMHandlerPlatform::kBlink;
+  }
+
+  if (raw_host_defined_options.IsEmpty() ||
+      !raw_host_defined_options->IsFixedArray()) {
+    return ESMHandlerPlatform::kBlink;
+  }
+
+  // Since the routing is based on the `host_defined_options` length -
+  // make sure that Node's host defined options are different from Blink's.
+  static_assert(
+      static_cast<size_t>(node::loader::HostDefinedOptions::kLength) !=
+      blink::ReferrerScriptInfo::HostDefinedOptionsIndex::kLength);
+
+  // Use Node.js resolver only if host options were created by it.
+  auto options = v8::Local<v8::FixedArray>::Cast(raw_host_defined_options);
+  if (options->Length() == node::loader::HostDefinedOptions::kLength) {
+    return ESMHandlerPlatform::kNodeJS;
+  }
+
+  return ESMHandlerPlatform::kBlink;
+}
+
 v8::MaybeLocal<v8::Promise> HostImportModuleWithPhaseDynamically(
     v8::Local<v8::Context> context,
     v8::Local<v8::Data> v8_host_defined_options,
@@ -218,33 +276,22 @@ v8::MaybeLocal<v8::Promise> HostImportModuleWithPhaseDynamically(
     v8::Local<v8::String> v8_specifier,
     v8::ModuleImportPhase import_phase,
     v8::Local<v8::FixedArray> v8_import_attributes) {
-  if (node::Environment::GetCurrent(context) == nullptr) {
-    if (electron::IsBrowserProcess() || electron::IsUtilityProcess())
-      return {};
-    return blink::V8Initializer::HostImportModuleWithPhaseDynamically(
-        context, v8_host_defined_options, v8_referrer_resource_url,
-        v8_specifier, import_phase, v8_import_attributes);
-  }
-
-  // If we're running with contextIsolation enabled in the renderer process,
-  // fall back to Blink's logic.
-  if (electron::IsRendererProcess()) {
-    blink::WebLocalFrame* frame =
-        blink::WebLocalFrame::FrameForContext(context);
-    if (!frame || frame->GetScriptContextWorldId(context) !=
-                      electron::WorldIDs::ISOLATED_WORLD_ID) {
+  switch (SelectESMHandlerPlatform(context, v8_host_defined_options)) {
+    case ESMHandlerPlatform::kBlink:
       return blink::V8Initializer::HostImportModuleWithPhaseDynamically(
           context, v8_host_defined_options, v8_referrer_resource_url,
           v8_specifier, import_phase, v8_import_attributes);
-    }
+    case ESMHandlerPlatform::kNodeJS:
+      // TODO: Switch to node::loader::ImportModuleDynamicallyWithPhase
+      // once we land the Node.js version that has it in upstream.
+      CHECK(import_phase == v8::ModuleImportPhase::kEvaluation);
+      return node::loader::ImportModuleDynamically(
+          context, v8_host_defined_options, v8_referrer_resource_url,
+          v8_specifier, v8_import_attributes);
+    case ESMHandlerPlatform::kNone:
+    default:
+      return {};
   }
-
-  // TODO: Switch to node::loader::ImportModuleDynamicallyWithPhase
-  // once we land the Node.js version that has it in upstream.
-  CHECK(import_phase == v8::ModuleImportPhase::kEvaluation);
-  return node::loader::ImportModuleDynamically(
-      context, v8_host_defined_options, v8_referrer_resource_url, v8_specifier,
-      v8_import_attributes);
 }
 
 v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
