@@ -1,4 +1,4 @@
-import { BrowserWindow, session, ipcMain, app, WebContents, screen } from 'electron/main';
+import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 
 import * as auth from 'basic-auth';
 import { expect } from 'chai';
@@ -782,7 +782,6 @@ describe('<webview> tag', function () {
 
     let w: BrowserWindow;
     before(async () => {
-      const display = screen.getPrimaryDisplay();
       w = new BrowserWindow({
         webPreferences: {
           webviewTag: true,
@@ -790,7 +789,6 @@ describe('<webview> tag', function () {
           contextIsolation: false
         }
       });
-      w.setBounds(display.bounds);
       await w.loadURL(`file://${fixtures}/pages/flex-webview.html`);
       w.setBackgroundColor(WINDOW_BACKGROUND_COLOR);
     });

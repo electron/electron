@@ -50,7 +50,8 @@ struct Converter<SharingItem> {
 
 namespace electron::api {
 
-gin::DeprecatedWrapperInfo Menu::kWrapperInfo = {gin::kEmbedderNativeGin};
+const gin::WrapperInfo Menu::kWrapperInfo = {{gin::kEmbedderNativeGin},
+                                             gin::kElectronMenu};
 
 Menu::Menu(gin::Arguments* args)
     : model_(std::make_unique<ElectronMenuModel>(this)) {
@@ -268,12 +269,11 @@ bool Menu::WorksWhenHiddenAt(int index) const {
 }
 
 void Menu::OnMenuWillClose() {
-  Unpin();
+  keep_alive_.Clear();
   Emit("menu-will-close");
 }
 
 void Menu::OnMenuWillShow() {
-  Pin(JavascriptEnvironment::GetIsolate());
   Emit("menu-will-show");
 }
 
@@ -311,8 +311,12 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .Build();
 }
 
-const char* Menu::GetTypeName() {
-  return GetClassName();
+const gin::WrapperInfo* Menu::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* Menu::GetHumanReadableName() const {
+  return "Electron / Menu";
 }
 
 }  // namespace electron::api
@@ -327,7 +331,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.Set("Menu", Menu::GetConstructor(isolate, context));
+  dict.Set("Menu", Menu::GetConstructor(isolate, context, &Menu::kWrapperInfo));
 #if BUILDFLAG(IS_MAC)
   dict.SetMethod("setApplicationMenu", &Menu::SetApplicationMenu);
   dict.SetMethod("sendActionToFirstResponder",
