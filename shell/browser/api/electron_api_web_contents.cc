@@ -3031,23 +3031,24 @@ void OnPDFCreated(gin_helper::Promise<v8::Local<v8::Value>> promise,
 }
 }  // namespace
 
-void WebContents::Print(gin::Arguments* args) {
-  auto options = gin_helper::Dictionary::CreateEmpty(args->isolate());
-  base::Value::Dict settings;
+void WebContents::Print(gin::Arguments* const args) {
+  v8::Isolate* const isolate = args->isolate();
+  auto options = gin_helper::Dictionary::CreateEmpty(isolate);
 
   if (args->Length() >= 1 && !args->GetNext(&options)) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("webContents.print(): Invalid print settings specified.");
+    args->ThrowTypeError(
+        "webContents.print(): Invalid print settings specified.");
     return;
   }
 
   printing::CompletionCallback callback;
   if (args->Length() == 2 && !args->GetNext(&callback)) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("webContents.print(): Invalid optional callback provided.");
+    args->ThrowTypeError(
+        "webContents.print(): Invalid optional callback provided.");
     return;
   }
 
+  base::Value::Dict settings;
   if (options.IsEmptyObject()) {
     content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents());
     if (!rfh)
@@ -3069,7 +3070,7 @@ void WebContents::Print(gin::Arguments* args) {
                options.ValueOrDefault("printBackground", false));
 
   // Set custom margin settings
-  auto margins = gin_helper::Dictionary::CreateEmpty(args->isolate());
+  auto margins = gin_helper::Dictionary::CreateEmpty(isolate);
   if (options.Get("margins", &margins)) {
     printing::mojom::MarginType margin_type =
         printing::mojom::MarginType::kDefaultMargins;
@@ -3349,11 +3350,10 @@ void WebContents::ReplaceMisspelling(const std::u16string& word) {
   web_contents()->ReplaceMisspelling(word);
 }
 
-uint32_t WebContents::FindInPage(gin::Arguments* args) {
+uint32_t WebContents::FindInPage(gin::Arguments* const args) {
   std::u16string search_text;
   if (!args->GetNext(&search_text) || search_text.empty()) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("Must provide a non-empty search content");
+    args->ThrowTypeError("Must provide a non-empty search content");
     return 0;
   }
 
