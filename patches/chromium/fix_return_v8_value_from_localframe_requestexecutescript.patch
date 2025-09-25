@@ -59,7 +59,7 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..a54f1b3351efd2d8f324436f7f35cd43
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 75975a8d48b05ba25b169b93b62bb7d34eb3f5b7..31a876e234f4228220ab6cf5b41c22de31779c84 100644
+index 902f472c8c52dd4fe52f46fbb97034b041153f65..bebd52c6868b78588ded811b621e9c30b0152ad2 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -3194,6 +3194,7 @@ void LocalFrame::RequestExecuteScript(
@@ -248,15 +248,3 @@ index a2850434615d5439fa25bcb75c8d23811564d1bc..2be52adcae8ec252a1274ccf0ca21838
                              BackForwardCacheAware back_forward_cache_aware,
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption) override;
-diff --git a/third_party/blink/renderer/core/scheduler_integration_tests/virtual_time_test.cc b/third_party/blink/renderer/core/scheduler_integration_tests/virtual_time_test.cc
-index 5e66719cf6d8170039c011ad03d56ea55ee8f2cb..5a71dd5172c88aed1498dea02f790a7f278ac174 100644
---- a/third_party/blink/renderer/core/scheduler_integration_tests/virtual_time_test.cc
-+++ b/third_party/blink/renderer/core/scheduler_integration_tests/virtual_time_test.cc
-@@ -59,6 +59,7 @@ class VirtualTimeTest : public SimTest {
-         mojom::blink::LoadEventBlockingOption::kDoNotBlock,
-         WTF::BindOnce(&ScriptExecutionCallbackHelper::Completed,
-                       base::Unretained(&callback_helper)),
-+        base::NullCallback(),
-         BackForwardCacheAware::kAllow,
-         mojom::blink::WantResultOption::kWantResult,
-         mojom::blink::PromiseResultOption::kDoNotWait);

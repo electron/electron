@@ -15,7 +15,7 @@ Ideally we could add an embedder observer pattern here but that can be
 done in future work.
 
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index be43ac07eb6563dcb72374dfc4f3bd34913e98c3..099297e6fac7962eb731ba50cb51b868fa7070ac 100644
+index 68a102327e22302587f7cc402cb26ef2f02b261e..ccdbf101d07b9f8baa043894ea7f48a56e7d3ecb 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -1900,6 +1900,8 @@ void WebView::ApplyWebPreferences(const web_pref::WebPreferences& prefs,
