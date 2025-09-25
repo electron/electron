@@ -577,7 +577,19 @@ describe('webFrameMain module', () => {
         point.y += framePosition.y;
       }
 
+      expect(clipboard.readImage().isEmpty()).to.be.true();
+      // wait for video to load
+      await frame.executeJavaScript(`(${() => {
+        const video = document.querySelector('video');
+        if (!video) return;
+        return new Promise(resolve => {
+          if (video.readyState >= 4) resolve(null);
+          else video.addEventListener('canplaythrough', resolve, { once: true });
+        });
+      }})()`);
       frame.copyVideoFrameAt(point.x, point.y);
+      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
+      expect(clipboard.readImage().isEmpty()).to.be.false();
     };
 
     beforeEach(() => {
