@@ -47,7 +47,7 @@ index 9e1b8d147a99fda962d75c343d0687ffea3c9c69..244d747f010c51366e44dec705ae3044
                      event_loop,
                      platform,
 diff --git a/src/env.cc b/src/env.cc
-index b6ad3ca99c8b0c656ce726fbc3455ba554bc3bd1..0922f7fb9c120482b6ee825f5f1ad10dea11fe30 100644
+index 56eb42643f26f3ebb447cb625d5422dcfa872189..8cdfbac602796cabbd8a2f673385b93bea9bd7cc 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -577,14 +577,6 @@ IsolateData::IsolateData(Isolate* isolate,
@@ -102,10 +102,10 @@ index 1079e3beb02e5f5d71a15fd2db65cb93ebd175d6..a7be609c3ab9093cec5145367b95ae68
    worker::Worker* worker_context_ = nullptr;
    PerIsolateWrapperData* wrapper_data_;
 diff --git a/src/node.cc b/src/node.cc
-index a43d36c731693b9d2ed1ba13f6b4bb33bf6c4ca4..0c2a4d344c991c2ca0d9d90934cf7921abf2a629 100644
+index 61d65094aebd7f3016d51a8e7c9c761fc69cecba..0d383dcdb80fe30e3c2d6880b44f626f065bb1f3 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -1257,6 +1257,14 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+@@ -1271,6 +1271,14 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
      result->platform_ = per_process::v8_platform.Platform();
    }
  
@@ -120,7 +120,7 @@ index a43d36c731693b9d2ed1ba13f6b4bb33bf6c4ca4..0c2a4d344c991c2ca0d9d90934cf7921
    if (!(flags & ProcessInitializationFlags::kNoInitializeV8)) {
      V8::Initialize();
  
-@@ -1266,14 +1274,6 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+@@ -1280,14 +1288,6 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
      absl::SetMutexDeadlockDetectionMode(absl::OnDeadlockCycle::kIgnore);
    }
  
@@ -174,10 +174,10 @@ index 4119ac1b002681d39711eac810ca2fcc2702ffc7..790347056cde949ffe6cf8498a7eca0c
  
  ExitCode NodeMainInstance::Run() {
 diff --git a/src/node_worker.cc b/src/node_worker.cc
-index 9d56d8f793ef48a79867f465530554ae0226f2cd..842eb999c6ef0cb877cc2ee4acf75bb597a117da 100644
+index e2dbdd39b06c4f2f85eba46cbf1383af144456c6..6c43928ba5a9752c78544d1c77198278eb11ccd7 100644
 --- a/src/node_worker.cc
 +++ b/src/node_worker.cc
-@@ -162,6 +162,9 @@ class WorkerThreadData {
+@@ -163,6 +163,9 @@ class WorkerThreadData {
      SetIsolateCreateParamsForNode(&params);
      w->UpdateResourceConstraints(&params.constraints);
      params.array_buffer_allocator_shared = allocator;
@@ -187,7 +187,7 @@ index 9d56d8f793ef48a79867f465530554ae0226f2cd..842eb999c6ef0cb877cc2ee4acf75bb5
      Isolate* isolate =
          NewIsolate(&params, &loop_, w->platform_, w->snapshot_data());
      if (isolate == nullptr) {
-@@ -230,13 +233,8 @@ class WorkerThreadData {
+@@ -231,13 +234,8 @@ class WorkerThreadData {
          *static_cast<bool*>(data) = true;
        }, &platform_finished);
  

@@ -16,7 +16,7 @@ remove this patch once gin::Wrappable can be managed by V8 Oilpan
 via https://github.com/electron/electron/issues/47922
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 5255c1094c88761c19af1ea294ceccaca63b5ae4..bb1639d73070a99984b72eb61afd001dec5b08ff 100644
+index 656267caef2d515f8c3f77535b308108a0b30be1..083d59f78c542f4900e1b210a0935276516b894b 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
 @@ -35,6 +35,8 @@ v8::ArrayBuffer::Allocator* g_array_buffer_allocator = nullptr;
@@ -28,7 +28,7 @@ index 5255c1094c88761c19af1ea294ceccaca63b5ae4..bb1639d73070a99984b72eb61afd001d
  
  std::unique_ptr<v8::Isolate::CreateParams> getModifiedIsolateParams(
      std::unique_ptr<v8::Isolate::CreateParams> params,
-@@ -203,10 +205,26 @@ IsolateHolder::getDefaultIsolateParams() {
+@@ -204,10 +206,26 @@ IsolateHolder::getDefaultIsolateParams() {
    return params;
  }
  

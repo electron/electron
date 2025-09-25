@@ -12,6 +12,7 @@
 #include <string>
 
 #include "base/memory/raw_ptr.h"
+#include "base/no_destructor.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "ui/base/ozone_buildflags.h"
@@ -24,9 +25,9 @@
 #include "shell/browser/ui/win/taskbar_host.h"
 #endif
 
-namespace gin_helper {
+namespace gin {
 class Arguments;
-}  // namespace gin_helper
+}  // namespace gin
 
 namespace electron {
 
@@ -157,7 +158,7 @@ class NativeWindowViews : public NativeWindow,
   void DecrementChildModals();
 
   void SetTitleBarOverlay(const gin_helper::Dictionary& options,
-                          gin_helper::Arguments* args);
+                          gin::Arguments* args);
 
 #if BUILDFLAG(IS_WIN)
   // Catch-all message handling and filtering. Called before
@@ -302,7 +303,8 @@ class NativeWindowViews : public NativeWindow,
   base::win::ScopedGDIObject<HICON> app_icon_;
 
   // The set of windows currently forwarding mouse messages.
-  static inline absl::flat_hash_set<NativeWindowViews*> forwarding_windows_;
+  static inline base::NoDestructor<absl::flat_hash_set<NativeWindowViews*>>
+      forwarding_windows_;
   static HHOOK mouse_hook_;
   bool forwarding_mouse_messages_ = false;
   HWND legacy_window_ = nullptr;

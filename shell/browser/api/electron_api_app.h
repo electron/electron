@@ -258,7 +258,7 @@ class App final : public gin::Wrappable<App>,
   v8::Local<v8::Value> GetJumpListSettings();
 
   // Set or remove a custom Jump List for the application.
-  JumpListResult SetJumpList(v8::Local<v8::Value> val, gin::Arguments* args);
+  JumpListResult SetJumpList(v8::Isolate* isolate, v8::Local<v8::Value> val);
 #endif  // BUILDFLAG(IS_WIN)
 
   std::unique_ptr<ProcessSingleton> process_singleton_;
@@ -282,8 +282,6 @@ class App final : public gin::Wrappable<App>,
   bool watch_singleton_socket_on_ready_ = false;
 
   std::unique_ptr<content::ScopedAccessibilityMode> scoped_accessibility_mode_;
-
-  static cppgc::Persistent<App> instance_;
 };
 
 }  // namespace api

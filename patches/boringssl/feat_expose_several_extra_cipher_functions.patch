@@ -28,7 +28,7 @@ RC2 Ciphers: rc2-40-cbc
 It's unclear whether this would be accepted upstream. We should try regardless.
 
 diff --git a/crypto/cipher/get_cipher.cc b/crypto/cipher/get_cipher.cc
-index 2622dc78d1da236862312f55bc0a40f26116486e..ac7aff6518ad5c2a0e48bd91d60a1f825851b634 100644
+index 6513df01c4b3e4d33fc6b521d9aae78ec5499e73..52eb7fea420e3d81d274fd5c1e21e4da0229687f 100644
 --- a/crypto/cipher/get_cipher.cc
 +++ b/crypto/cipher/get_cipher.cc
 @@ -31,6 +31,7 @@ static const struct {

@@ -335,9 +335,7 @@ void OffScreenRenderWidgetHostView::Hide() {
     return;
 
   if (render_widget_host_) {
-    // TODO(codebytere) - remove when CL:6250383 is released.
-    if (render_widget_host_->delegate())
-      render_widget_host_->WasHidden();
+    render_widget_host_->WasHidden();
 
     auto* provider = content::RenderWidgetHostImpl::From(render_widget_host_)
                          ->render_frame_metadata_provider();
@@ -967,7 +965,7 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   SetupFrameRate(false);
 
   display::Display display =
-      display::Screen::GetScreen()->GetDisplayNearestView(GetNativeView());
+      display::Screen::Get()->GetDisplayNearestView(GetNativeView());
   const float scaleFactor = display.device_scale_factor();
   float sf = GetDeviceScaleFactor();
   const bool sf_did_change = scaleFactor != sf;

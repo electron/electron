@@ -60,6 +60,8 @@ struct PreloadScript;
 
 namespace api {
 
+class NetLog;
+
 class Session final : public gin::Wrappable<Session>,
                       public gin_helper::Constructible<Session>,
                       public gin_helper::EventEmitterMixin<Session>,
@@ -168,8 +170,7 @@ class Session final : public gin::Wrappable<Session>,
   v8::Local<v8::Value> GetPath(v8::Isolate* isolate);
   void SetCodeCachePath(gin::Arguments* args);
   v8::Local<v8::Promise> ClearCodeCaches(const gin_helper::Dictionary& options);
-  v8::Local<v8::Value> ClearData(gin_helper::ErrorThrower thrower,
-                                 gin::Arguments* args);
+  v8::Local<v8::Value> ClearData(gin::Arguments* args);
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   base::Value GetSpellCheckerLanguages();
   void SetSpellCheckerLanguages(gin_helper::ErrorThrower thrower,
@@ -208,7 +209,7 @@ class Session final : public gin::Wrappable<Session>,
   v8::TracedReference<v8::Value> cookies_;
   v8::TracedReference<v8::Value> extensions_;
   v8::TracedReference<v8::Value> protocol_;
-  v8::TracedReference<v8::Value> net_log_;
+  cppgc::Member<api::NetLog> net_log_;
   v8::TracedReference<v8::Value> service_worker_context_;
   v8::TracedReference<v8::Value> web_request_;
 

@@ -173,7 +173,7 @@ index 213eaa5ec6d657a659726cb38103e8bd671fe907..f497447c598198bf690758b1d1c5c6fe
    void OnFileChooserDestroy(GtkWidget* dialog);
  
 diff --git a/ui/shell_dialogs/select_file_dialog.h b/ui/shell_dialogs/select_file_dialog.h
-index eb3d997598631b220c3566748f23a5cdac3e4692..b4b2f7294ce6e9349a4a8a05f614e93359eca25a 100644
+index b0f4b3df0a4f10b306ba2d25e5fd51440a25bcd4..4ac06587203d2d2adf1390d9256e537e8cf7b21d 100644
 --- a/ui/shell_dialogs/select_file_dialog.h
 +++ b/ui/shell_dialogs/select_file_dialog.h
 @@ -224,6 +224,21 @@ class SHELL_DIALOGS_EXPORT SelectFileDialog
@@ -262,7 +262,7 @@ index 61683d0eddb04c494ca5e650e7d556b44968ec49..5492456a9138b250e97a5479838bb443
  
  }  // namespace ui
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index 54cefe5b6236b24cd9c4625d603fe9a7205676f5..1f70697a2f9ddba8151b4c4f497fbc007ee5fed8 100644
+index 37e3d53abeca3a90649064053100cf9938b1f406..87dfa1e1c230f3aba90ba9520684828e958de093 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 @@ -25,6 +25,7 @@
@@ -272,7 +272,7 @@ index 54cefe5b6236b24cd9c4625d603fe9a7205676f5..1f70697a2f9ddba8151b4c4f497fbc00
 +#include "electron/shell/browser/ui/file_dialog.h"
  #include "ui/aura/window_tree_host.h"
  #include "ui/base/l10n/l10n_util.h"
- #include "ui/gfx/native_widget_types.h"
+ #include "ui/gfx/native_ui_types.h"
 @@ -96,7 +97,7 @@ void OnGetPropertyReply(dbus::Response* response) {
                                 : ServiceAvailability::kNotAvailable;
  }
@@ -294,8 +294,8 @@ index 54cefe5b6236b24cd9c4625d603fe9a7205676f5..1f70697a2f9ddba8151b4c4f497fbc00
 +  file_dialog::StartPortalAvailabilityTestInBackground();
  }
  
- DbusByteArray PathToByteArray(const base::FilePath& path) {
-@@ -170,17 +174,20 @@ void SelectFileDialogLinuxPortal::StartAvailabilityTestInBackground() {
+ std::vector<uint8_t> PathToByteArray(const base::FilePath& path) {
+@@ -171,17 +175,20 @@ void SelectFileDialogLinuxPortal::StartAvailabilityTestInBackground() {
    GetMainTaskRunner() = base::SequencedTaskRunner::GetCurrentDefault();
  
    dbus_xdg::SetSystemdScopeUnitNameForXdgPortal(
@@ -318,17 +318,17 @@ index 54cefe5b6236b24cd9c4625d603fe9a7205676f5..1f70697a2f9ddba8151b4c4f497fbc00
  }
  
  bool SelectFileDialogLinuxPortal::IsRunning(
-@@ -385,11 +392,14 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -386,11 +393,14 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
      const PortalFilterSet& filter_set) {
-   DbusDictionary dict;
+   dbus_xdg::Dictionary dict;
  
 +  std::string accept_label = button_label().empty() ? "" : button_label();
 +
    switch (type_) {
      case SelectFileDialog::SELECT_UPLOAD_FOLDER:
--      dict.PutAs(kFileChooserOptionAcceptLabel,
--                 DbusString(l10n_util::GetStringUTF8(
--                     IDS_SELECT_UPLOAD_FOLDER_DIALOG_UPLOAD_BUTTON)));
+-      dict[kFileChooserOptionAcceptLabel] =
+-          dbus_utils::Variant::Wrap<"s">(l10n_util::GetStringUTF8(
+-              IDS_SELECT_UPLOAD_FOLDER_DIALOG_UPLOAD_BUTTON));
 +      if (accept_label.empty()) {
 +        accept_label = l10n_util::GetStringUTF8(
 +            IDS_SELECT_UPLOAD_FOLDER_DIALOG_UPLOAD_BUTTON);
@@ -336,12 +336,13 @@ index 54cefe5b6236b24cd9c4625d603fe9a7205676f5..1f70697a2f9ddba8151b4c4f497fbc00
        [[fallthrough]];
      case SelectFileDialog::SELECT_FOLDER:
      case SelectFileDialog::Type::SELECT_EXISTING_FOLDER:
-@@ -402,6 +412,10 @@ DbusDictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -403,6 +413,11 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
        break;
    }
  
 +  if (!accept_label.empty()) {
-+    dict.PutAs(kFileChooserOptionAcceptLabel, DbusString(accept_label));
++    dict[kFileChooserOptionAcceptLabel] =
++        dbus_utils::Variant::Wrap<"s">(accept_label);
 +  }
 +
    if (!default_path.empty() && base::IsStringUTF8(default_path.value())) {

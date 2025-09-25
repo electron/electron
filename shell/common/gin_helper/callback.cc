@@ -28,15 +28,14 @@ struct TranslatorHolder {
     delete data.GetParameter();
   }
 
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
+
   v8::Global<v8::External> handle;
   Translator translator;
 };
 
-// Cached JavaScript version of |CallTranslator|.
-// v8::Persistent handles are bound to a specific v8::Isolate. Require
-// initializing per-thread to avoid using the wrong isolate from service
-// worker preload scripts.
-thread_local v8::Persistent<v8::FunctionTemplate> g_call_translator;
+gin::DeprecatedWrapperInfo TranslatorHolder::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 void CallTranslator(v8::Local<v8::External> external,
                     v8::Local<v8::Object> state,
@@ -117,14 +116,17 @@ v8::Local<v8::Function> SafeV8Function::NewHandle(v8::Isolate* isolate) const {
 v8::Local<v8::Value> CreateFunctionFromTranslator(v8::Isolate* isolate,
                                                   const Translator& translator,
                                                   bool one_time) {
+  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
+  auto* wrapper_info = &TranslatorHolder::kWrapperInfo;
+  v8::Local<v8::FunctionTemplate> constructor =
+      data->DeprecatedGetFunctionTemplate(wrapper_info);
   // The FunctionTemplate is cached.
-  if (g_call_translator.IsEmpty())
-    g_call_translator.Reset(
-        isolate,
-        CreateFunctionTemplate(isolate, base::BindRepeating(&CallTranslator)));
+  if (constructor.IsEmpty()) {
+    constructor =
+        CreateFunctionTemplate(isolate, base::BindRepeating(&CallTranslator));
+    data->DeprecatedSetFunctionTemplate(wrapper_info, constructor);
+  }
 
-  v8::Local<v8::FunctionTemplate> call_translator =
-      v8::Local<v8::FunctionTemplate>::New(isolate, g_call_translator);
   auto* holder = new TranslatorHolder(isolate);
   holder->translator = translator;
   auto state = gin::Dictionary::CreateEmpty(isolate);
@@ -132,7 +134,7 @@ v8::Local<v8::Value> CreateFunctionFromTranslator(v8::Isolate* isolate,
     state.Set("oneTime", true);
   auto context = isolate->GetCurrentContext();
   return BindFunctionWith(
-      isolate, context, call_translator->GetFunction(context).ToLocalChecked(),
+      isolate, context, constructor->GetFunction(context).ToLocalChecked(),
       holder->handle.Get(isolate), gin::ConvertToV8(isolate, state));
 }
 

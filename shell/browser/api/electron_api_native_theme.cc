@@ -25,6 +25,12 @@ NativeTheme::NativeTheme(v8::Isolate* isolate,
                          ui::NativeTheme* web_theme)
     : ui_theme_(ui_theme), web_theme_(web_theme) {
   ui_theme_->AddObserver(this);
+#if BUILDFLAG(IS_WIN)
+  std::ignore = hkcu_themes_regkey_.Open(HKEY_CURRENT_USER,
+                                         L"Software\\Microsoft\\Windows\\"
+                                         L"CurrentVersion\\Themes\\Personalize",
+                                         KEY_READ);
+#endif
 }
 
 NativeTheme::~NativeTheme() {
@@ -32,6 +38,16 @@ NativeTheme::~NativeTheme() {
 }
 
 void NativeTheme::OnNativeThemeUpdatedOnUI() {
+#if BUILDFLAG(IS_WIN)
+  if (hkcu_themes_regkey_.Valid()) {
+    DWORD system_uses_light_theme = 1;
+    hkcu_themes_regkey_.ReadValueDW(L"SystemUsesLightTheme",
+                                    &system_uses_light_theme);
+    bool system_dark_mode_enabled = (system_uses_light_theme == 0);
+    should_use_dark_colors_for_system_integrated_ui_ =
+        std::make_optional<bool>(system_dark_mode_enabled);
+  }
+#endif
   Emit("updated");
 }
 
@@ -57,23 +73,31 @@ ui::NativeTheme::ThemeSource NativeTheme::GetThemeSource() const {
 }
 
 bool NativeTheme::ShouldUseDarkColors() {
-  return ui_theme_->ShouldUseDarkColors();
+  auto theme_source = GetThemeSource();
+  if (theme_source == ui::NativeTheme::ThemeSource::kForcedLight)
+    return false;
+  if (theme_source == ui::NativeTheme::ThemeSource::kForcedDark)
+    return true;
+  return ui_theme_->preferred_color_scheme() ==
+         ui::NativeTheme::PreferredColorScheme::kDark;
 }
 
 bool NativeTheme::ShouldUseHighContrastColors() {
-  return ui_theme_->UserHasContrastPreference();
+  return ui_theme_->preferred_contrast() ==
+         ui::NativeTheme::PreferredContrast::kMore;
 }
 
 bool NativeTheme::ShouldUseDarkColorsForSystemIntegratedUI() {
-  return ui_theme_->ShouldUseDarkColorsForSystemIntegratedUI();
+  return should_use_dark_colors_for_system_integrated_ui_.value_or(
+      ShouldUseDarkColors());
 }
 
 bool NativeTheme::InForcedColorsMode() {
-  return ui_theme_->InForcedColorsMode();
+  return ui_theme_->forced_colors();
 }
 
 bool NativeTheme::GetPrefersReducedTransparency() {
-  return ui_theme_->GetPrefersReducedTransparency();
+  return ui_theme_->prefers_reduced_transparency();
 }
 
 #if BUILDFLAG(IS_MAC)
@@ -92,8 +116,9 @@ bool NativeTheme::ShouldUseInvertedColorScheme() {
     return false;
   return is_inverted;
 #else
-  return ui_theme_->GetPlatformHighContrastColorScheme() ==
-         ui::NativeTheme::PlatformHighContrastColorScheme::kDark;
+  return ui_theme_->forced_colors() &&
+         ui_theme_->preferred_color_scheme() ==
+             ui::NativeTheme::PreferredColorScheme::kDark;
 #endif
 }
 

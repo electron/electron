@@ -351,7 +351,7 @@ app.whenReady().then(() => {
 // https://github.com/electron/electron/blob/main/docs/api/command-line-switches.md
 
 app.commandLine.appendSwitch('remote-debugging-port', '8315');
-app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
+app.commandLine.appendSwitch('host-resolver-rules', 'MAP * 127.0.0.1');
 app.commandLine.appendSwitch('vmodule', 'console=0');
 
 // systemPreferences

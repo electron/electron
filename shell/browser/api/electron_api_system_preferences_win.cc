@@ -16,8 +16,8 @@
 #include "base/win/wrapped_window_proc.h"
 #include "shell/common/color_util.h"
 #include "shell/common/process_util.h"
-#include "ui/gfx/color_utils.h"
 #include "ui/gfx/win/hwnd_util.h"
+#include "ui/gfx/win/singleton_hwnd.h"
 
 namespace electron {
 
@@ -127,7 +127,7 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
   });
 
   if (auto iter = Lookup.find(color); iter != Lookup.end())
-    return ToRGBAHex(color_utils::GetSysSkColor(iter->second));
+    return ToRGBAHex(GetSysSkColor(iter->second));
 
   thrower.ThrowError("Unknown color: " + color);
   return "";
@@ -158,8 +158,9 @@ void SystemPreferences::InitializeWindow() {
   // Creating this listener before the app is ready causes global shortcuts
   // to not fire
   if (Browser::Get()->is_ready())
-    color_change_listener_ =
-        std::make_unique<gfx::ScopedSysColorChangeListener>(this);
+    hwnd_subscription_ =
+        gfx::SingletonHwnd::GetInstance()->RegisterCallback(base::BindRepeating(
+            &SystemPreferences::OnWndProc, base::Unretained(this)));
   else
     Browser::Get()->AddObserver(this);
 
@@ -208,13 +209,21 @@ LRESULT CALLBACK SystemPreferences::WndProc(HWND hwnd,
   return ::DefWindowProc(hwnd, message, wparam, lparam);
 }
 
-void SystemPreferences::OnSysColorChange() {
+void SystemPreferences::OnWndProc(HWND hwnd,
+                                  UINT message,
+                                  WPARAM wparam,
+                                  LPARAM lparam) {
+  if (message != WM_SYSCOLORCHANGE &&
+      (message != WM_SETTINGCHANGE || wparam != SPI_SETHIGHCONTRAST)) {
+    return;
+  }
   Emit("color-changed");
 }
 
 void SystemPreferences::OnFinishLaunching(base::Value::Dict launch_info) {
-  color_change_listener_ =
-      std::make_unique<gfx::ScopedSysColorChangeListener>(this);
+  hwnd_subscription_ =
+      gfx::SingletonHwnd::GetInstance()->RegisterCallback(base::BindRepeating(
+          &SystemPreferences::OnWndProc, base::Unretained(this)));
 }
 
 }  // namespace api

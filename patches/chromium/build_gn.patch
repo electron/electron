@@ -7,7 +7,7 @@ These are variables we add to the root BUILDCONFIG so that they're available
 everywhere, without having to import("//electron/.../flags.gni").
 
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index 5af795411d1ddf92238abdf27e649f33951cf6b2..9c11c173d70408f54c1c18ae4306e01a4558aef7 100644
+index 24a1d143954ae05ae0b79b0994b76ef9218fb848..5c9b2ed8ba48a1056560ca1cd1d5b976aee4815c 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -123,6 +123,9 @@ if (current_os == "") {

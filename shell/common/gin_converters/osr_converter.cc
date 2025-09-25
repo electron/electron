@@ -16,7 +16,6 @@
 #endif
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/optional_converter.h"
-#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 

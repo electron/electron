@@ -1,0 +1,119 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Mon, 1 Sep 2025 23:31:49 +0900
+Subject: Revert: partial "Remove unused PreHandleMouseEvent"
+
+Refs https://chromium-review.googlesource.com/c/chromium/src/+/6880411
+
+diff --git a/content/browser/renderer_host/render_widget_host_delegate.cc b/content/browser/renderer_host/render_widget_host_delegate.cc
+index 74fea36ea7f9a345b3474ea18be00704831a685e..c75785d5a26fa52a39d1a3552da9a7621e4c8430 100644
+--- a/content/browser/renderer_host/render_widget_host_delegate.cc
++++ b/content/browser/renderer_host/render_widget_host_delegate.cc
+@@ -13,6 +13,11 @@
+ 
+ namespace content {
+ 
++bool RenderWidgetHostDelegate::PreHandleMouseEvent(
++    const blink::WebMouseEvent& event) {
++  return false;
++}
++
+ KeyboardEventProcessingResult RenderWidgetHostDelegate::PreHandleKeyboardEvent(
+     const input::NativeWebKeyboardEvent& event) {
+   return KeyboardEventProcessingResult::NOT_HANDLED;
+diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
+index ce071c6acd6027ad27cee597f56e865f0d5172f9..be4eb55837d2b9bda96b1408f84f646d7da18e59 100644
+--- a/content/browser/renderer_host/render_widget_host_delegate.h
++++ b/content/browser/renderer_host/render_widget_host_delegate.h
+@@ -103,6 +103,12 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+   virtual void ResizeDueToAutoResize(RenderWidgetHostImpl* render_widget_host,
+                                      const gfx::Size& new_size) {}
+ 
++  // Callback to give the browser a chance to handle the specified mouse
++  // event before sending it to the renderer. Returns true if the event was
++  // handled, false otherwise. A true value means no more processing should
++  // happen on the event. The default return value is false.
++  virtual bool PreHandleMouseEvent(const blink::WebMouseEvent& event);
++
+   // Callback to give the browser a chance to handle the specified keyboard
+   // event before sending it to the renderer. See enum for details on return
+   // value.
+diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
+index d211d8dc92c16e8ad2e9b1b37cb25dd05bf7e3e1..1756d5e81e9bf5ba20fc596901bb3cfe244ff903 100644
+--- a/content/browser/renderer_host/render_widget_host_impl.cc
++++ b/content/browser/renderer_host/render_widget_host_impl.cc
+@@ -1588,6 +1588,10 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(
+   CHECK_GE(mouse_event.GetType(), WebInputEvent::Type::kMouseTypeFirst);
+   CHECK_LE(mouse_event.GetType(), WebInputEvent::Type::kMouseTypeLast);
+ 
++  if (delegate_ && delegate_->PreHandleMouseEvent(mouse_event)) {
++    return;
++  }
++
+   for (auto& mouse_event_callback : mouse_event_callbacks_) {
+     if (mouse_event_callback.Run(mouse_event)) {
+       return;
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 87a3fc1ff0fdd3e25595b539b7f09b5b3e403beb..20112cfa786e487811453947d0e2c797962484cb 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -4447,6 +4447,12 @@ void WebContentsImpl::RenderWidgetWasResized(
+                              width_changed);
+ }
+ 
++bool WebContentsImpl::PreHandleMouseEvent(const blink::WebMouseEvent& event) {
++  OPTIONAL_TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("content.verbose"),
++                        "WebContentsImpl::PreHandleMouseEvent");
++  return delegate_ ? delegate_->PreHandleMouseEvent(this, event) : false;
++}
++
+ void WebContentsImpl::PreHandleDragUpdate(const DropData& drop_data,
+                                           const gfx::PointF& client_pt) {
+   if (delegate_) {
+diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
+index 034797826196560ab6b71f885d52c8e1c94c1a67..55db63b3f99e465d2c77bb25dca5d50005df5ce7 100644
+--- a/content/browser/web_contents/web_contents_impl.h
++++ b/content/browser/web_contents/web_contents_impl.h
+@@ -1110,6 +1110,7 @@ class CONTENT_EXPORT WebContentsImpl
+ 
+   double GetPendingZoomLevel(RenderWidgetHostImpl* rwh) override;
+ 
++  bool PreHandleMouseEvent(const blink::WebMouseEvent& event) override;
+   void PreHandleDragUpdate(const DropData& drop_data,
+                            const gfx::PointF& client_pt);
+   void PreHandleDragExit();
+diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
+index 08c983ac6a8e5733431ba00e1288f6d6b087eee6..3e2a9fb6a768c57ddb813c5c7a1df8bb3c2f8ddd 100644
+--- a/content/public/browser/web_contents_delegate.cc
++++ b/content/public/browser/web_contents_delegate.cc
+@@ -126,6 +126,12 @@ bool WebContentsDelegate::HandleContextMenu(RenderFrameHost& render_frame_host,
+   return false;
+ }
+ 
++bool WebContentsDelegate::PreHandleMouseEvent(
++    WebContents* source,
++    const blink::WebMouseEvent& event) {
++  return false;
++}
++
+ KeyboardEventProcessingResult WebContentsDelegate::PreHandleKeyboardEvent(
+     WebContents* source,
+     const input::NativeWebKeyboardEvent& event) {
+diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
+index 2e8e60c8ebe837fc68318bd5c13dbd0c873c4292..7bd26bc9460a11d717deb596722942ba55830c5d 100644
+--- a/content/public/browser/web_contents_delegate.h
++++ b/content/public/browser/web_contents_delegate.h
+@@ -313,6 +313,13 @@ class CONTENT_EXPORT WebContentsDelegate {
+   virtual bool HandleContextMenu(RenderFrameHost& render_frame_host,
+                                  const ContextMenuParams& params);
+ 
++  // Allows delegates to handle mouse events before sending to the renderer.
++  // Returns true if the event was handled, false otherwise. A true value means
++  // no more processing should happen on the event. The default return value is
++  // false.
++  virtual bool PreHandleMouseEvent(WebContents* source,
++                                   const blink::WebMouseEvent& event);
++
+   // Allows delegates to handle mouse drag events before sending to the
+   // renderer. Returns true if the event was handled, false otherwise. A true
+   // value means no more processing should happen on the event. The default

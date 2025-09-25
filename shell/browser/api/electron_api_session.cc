@@ -1361,11 +1361,14 @@ v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
 }
 
 v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
-  if (net_log_.IsEmptyThreadSafe()) {
-    auto handle = NetLog::Create(isolate, browser_context());
-    net_log_.Reset(isolate, handle.ToV8());
+  if (!net_log_) {
+    net_log_ = NetLog::Create(isolate, browser_context());
   }
-  return net_log_.Get(isolate);
+
+  v8::Local<v8::Object> wrapper;
+  return net_log_->GetWrapper(isolate).ToLocal(&wrapper)
+             ? wrapper.As<v8::Value>()
+             : v8::Null(isolate);
 }
 
 static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
@@ -1466,9 +1469,8 @@ v8::Local<v8::Promise> Session::ClearCodeCaches(
   return handle;
 }
 
-v8::Local<v8::Value> Session::ClearData(gin_helper::ErrorThrower thrower,
-                                        gin::Arguments* args) {
-  auto* isolate = JavascriptEnvironment::GetIsolate();
+v8::Local<v8::Value> Session::ClearData(gin::Arguments* const args) {
+  v8::Isolate* const isolate = JavascriptEnvironment::GetIsolate();
 
   BrowsingDataRemover::DataType data_type_mask = kClearDataTypeAll;
   std::vector<url::Origin> origins;
@@ -1498,7 +1500,7 @@ v8::Local<v8::Value> Session::ClearData(gin_helper::ErrorThrower thrower,
           options.Get("excludeOrigins", &exclude_origin_urls);
 
       if (has_origins_key && has_exclude_origins_key) {
-        thrower.ThrowError(
+        args->ThrowTypeError(
             "Cannot provide both 'origins' and 'excludeOrigins'");
         return v8::Undefined(isolate);
       }
@@ -1517,7 +1519,7 @@ v8::Local<v8::Value> Session::ClearData(gin_helper::ErrorThrower thrower,
 
         // Opaque origins cannot be used with this API
         if (origin.opaque()) {
-          thrower.ThrowError(absl::StrFormat(
+          args->ThrowTypeError(absl::StrFormat(
               "Invalid origin: '%s'", origin_url.possibly_invalid_spec()));
           return v8::Undefined(isolate);
         }
@@ -1697,14 +1699,11 @@ Session* Session::CreateFrom(v8::Isolate* isolate,
     return nullptr;
   }
 
-  {
-    v8::HandleScope handle_scope(isolate);
-    v8::Local<v8::Object> wrapper;
-    if (!session->GetWrapper(isolate).ToLocal(&wrapper)) {
-      return nullptr;
-    }
-    App::Get()->EmitWithoutEvent("session-created", wrapper);
+  v8::Local<v8::Object> wrapper;
+  if (!session->GetWrapper(isolate).ToLocal(&wrapper)) {
+    return nullptr;
   }
+  App::Get()->EmitWithoutEvent("session-created", wrapper);
 
   return session;
 }
@@ -1883,7 +1882,6 @@ v8::Local<v8::Value> FromPartition(const std::string& partition,
       Session::FromPartition(args->isolate(), partition, std::move(options));
 
   if (session) {
-    v8::HandleScope handle_scope(args->isolate());
     v8::Local<v8::Object> wrapper;
     if (!session->GetWrapper(args->isolate()).ToLocal(&wrapper)) {
       return v8::Null(args->isolate());
@@ -1905,7 +1903,6 @@ v8::Local<v8::Value> FromPath(const base::FilePath& path,
   Session* session = Session::FromPath(args, path, std::move(options));
 
   if (session) {
-    v8::HandleScope handle_scope(args->isolate());
     v8::Local<v8::Object> wrapper;
     if (!session->GetWrapper(args->isolate()).ToLocal(&wrapper)) {
       return v8::Null(args->isolate());

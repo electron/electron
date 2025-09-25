@@ -11,6 +11,7 @@
 
 #include "base/containers/span.h"
 #include "base/memory/memory_pressure_listener.h"
+#include "base/no_destructor.h"
 #include "base/strings/strcat.h"
 #include "base/strings/utf_string_conversions.h"
 #include "components/spellcheck/renderer/spellcheck.h"
@@ -107,6 +108,13 @@ namespace api {
 
 namespace {
 
+class SpellCheckerHolder;
+
+std::set<SpellCheckerHolder*>& GetSpellCheckerHolderInstances() {
+  static base::NoDestructor<std::set<SpellCheckerHolder*>> instances;
+  return *instances;
+}
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 
 bool SpellCheckWord(content::RenderFrame* render_frame,
@@ -160,8 +168,8 @@ class ScriptExecutionCallback {
       v8::Local<v8::Context> source_context =
           result->GetCreationContextChecked(isolate);
       maybe_result = PassValueToOtherContext(
-          source_context, promise_.GetContext(), result,
-          source_context->Global(), false, BridgeErrorTarget::kSource);
+          isolate, source_context, promise_.isolate(), promise_.GetContext(),
+          result, source_context->Global(), false, BridgeErrorTarget::kSource);
       if (maybe_result.IsEmpty() || try_catch.HasCaught()) {
         success = false;
       }
@@ -282,7 +290,7 @@ class SpellCheckerHolder final : private content::RenderFrameObserver {
   // Find existing holder for the |render_frame|.
   static SpellCheckerHolder* FromRenderFrame(
       content::RenderFrame* render_frame) {
-    for (auto* holder : instances_) {
+    for (auto* holder : GetSpellCheckerHolderInstances()) {
       if (holder->render_frame() == render_frame)
         return holder;
     }
@@ -294,10 +302,10 @@ class SpellCheckerHolder final : private content::RenderFrameObserver {
       : content::RenderFrameObserver(render_frame),
         spell_check_client_(std::move(spell_check_client)) {
     DCHECK(!FromRenderFrame(render_frame));
-    instances_.insert(this);
+    GetSpellCheckerHolderInstances().insert(this);
   }
 
-  ~SpellCheckerHolder() final { instances_.erase(this); }
+  ~SpellCheckerHolder() final { GetSpellCheckerHolderInstances().erase(this); }
 
   void UnsetAndDestroy() {
     FrameSetSpellChecker set_spell_checker(nullptr, render_frame());
@@ -319,7 +327,8 @@ class SpellCheckerHolder final : private content::RenderFrameObserver {
     delete this;
   }
 
-  void WillReleaseScriptContext(v8::Local<v8::Context> context,
+  void WillReleaseScriptContext(v8::Isolate* const isolate,
+                                v8::Local<v8::Context> context,
                                 int world_id) final {
     // Unset spell checker when the script context is going to be released, as
     // the spell check implementation lives there.
@@ -327,8 +336,6 @@ class SpellCheckerHolder final : private content::RenderFrameObserver {
   }
 
  private:
-  static std::set<SpellCheckerHolder*> instances_;
-
   std::unique_ptr<SpellCheckClient> spell_check_client_;
 };
 
@@ -693,20 +700,6 @@ class WebFrameRenderer final
     bool has_user_gesture = false;
     args->GetNext(&has_user_gesture);
 
-    blink::mojom::EvaluationTiming script_execution_type =
-        blink::mojom::EvaluationTiming::kSynchronous;
-    blink::mojom::LoadEventBlockingOption load_blocking_option =
-        blink::mojom::LoadEventBlockingOption::kDoNotBlock;
-    std::string execution_type;
-    args->GetNext(&execution_type);
-
-    if (execution_type == "asynchronous") {
-      script_execution_type = blink::mojom::EvaluationTiming::kAsynchronous;
-    } else if (execution_type == "asynchronousBlockingOnload") {
-      script_execution_type = blink::mojom::EvaluationTiming::kAsynchronous;
-      load_blocking_option = blink::mojom::LoadEventBlockingOption::kBlock;
-    }
-
     ScriptExecutionCallback::CompletionCallback completion_callback;
     args->GetNext(&completion_callback);
 
@@ -742,7 +735,9 @@ class WebFrameRenderer final
         world_id, base::span(sources),
         has_user_gesture ? blink::mojom::UserActivationOption::kActivate
                          : blink::mojom::UserActivationOption::kDoNotActivate,
-        script_execution_type, load_blocking_option, base::NullCallback(),
+        blink::mojom::EvaluationTiming::kSynchronous,
+        blink::mojom::LoadEventBlockingOption::kDoNotBlock,
+        base::NullCallback(),
         base::BindOnce(&ScriptExecutionCallback::Completed,
                        base::Unretained(self)),
         blink::BackForwardCacheAware::kPossiblyDisallow,
@@ -940,9 +935,6 @@ class WebFrameRenderer final
 
 gin::DeprecatedWrapperInfo WebFrameRenderer::kWrapperInfo = {
     gin::kEmbedderNativeGin};
-
-// static
-std::set<SpellCheckerHolder*> SpellCheckerHolder::instances_;
 
 }  // namespace api
 

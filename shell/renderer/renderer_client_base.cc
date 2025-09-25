@@ -233,7 +233,7 @@ void RendererClientBase::RenderThreadStarted() {
   extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
   extensions_renderer_client_->RenderThreadStarted();
 
-  WTF::String extension_scheme(extensions::kExtensionScheme);
+  blink::String extension_scheme(extensions::kExtensionScheme);
   // Extension resources are HTTP-like and safe to expose to the fetch API. The
   // rules for the fetch API are consistent with XHR.
   blink::SchemeRegistry::RegisterURLSchemeAsSupportingFetchAPI(
@@ -270,7 +270,7 @@ void RendererClientBase::RenderThreadStarted() {
       ParseSchemesCLISwitch(command_line, switches::kBypassCSPSchemes);
   for (const std::string& scheme : csp_bypassing_schemes)
     blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
-        WTF::String::FromUTF8(scheme));
+        blink::String::FromUTF8(scheme));
 
   std::vector<std::string> code_cache_schemes_list =
       ParseSchemesCLISwitch(command_line, switches::kCodeCacheSchemes);
@@ -489,6 +489,7 @@ void RendererClientBase::DidInitializeServiceWorkerContextOnWorkerThread(
 
 void RendererClientBase::WillEvaluateServiceWorkerOnWorkerThread(
     blink::WebServiceWorkerContextProxy* context_proxy,
+    v8::Isolate* const v8_isolate,
     v8::Local<v8::Context> v8_context,
     int64_t service_worker_version_id,
     const GURL& service_worker_scope,
@@ -497,7 +498,7 @@ void RendererClientBase::WillEvaluateServiceWorkerOnWorkerThread(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions_renderer_client_->dispatcher()
       ->WillEvaluateServiceWorkerOnWorkerThread(
-          context_proxy, v8_context, service_worker_version_id,
+          context_proxy, v8_isolate, v8_context, service_worker_version_id,
           service_worker_scope, script_url, service_worker_token);
 #endif
 }
@@ -591,8 +592,8 @@ void RendererClientBase::SetupMainWorldOverrides(
   v8::Local<v8::Value> guest_view_internal;
   if (global.GetHidden("guestViewInternal", &guest_view_internal)) {
     auto result = api::PassValueToOtherContext(
-        source_context, context, guest_view_internal, source_context->Global(),
-        false, api::BridgeErrorTarget::kSource);
+        isolate, source_context, isolate, context, guest_view_internal,
+        source_context->Global(), false, api::BridgeErrorTarget::kSource);
     if (!result.IsEmpty()) {
       isolated_api.Set("guestViewInternal", result.ToLocalChecked());
     }

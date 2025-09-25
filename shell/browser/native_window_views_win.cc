@@ -324,11 +324,6 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
 
       return false;
     }
-    case WM_RBUTTONUP: {
-      if (!has_frame())
-        electron::api::WebContents::SetDisableDraggableRegions(false);
-      return false;
-    }
     case WM_GETMINMAXINFO: {
       WINDOWPLACEMENT wp;
       wp.length = sizeof(WINDOWPLACEMENT);
@@ -668,7 +663,7 @@ void NativeWindowViews::SetRoundedCorners(bool rounded) {
 void NativeWindowViews::SetForwardMouseMessages(bool forward) {
   if (forward && !forwarding_mouse_messages_) {
     forwarding_mouse_messages_ = true;
-    forwarding_windows_.insert(this);
+    forwarding_windows_->insert(this);
 
     // Subclassing is used to fix some issues when forwarding mouse messages;
     // see comments in |SubclassProc|.
@@ -680,11 +675,11 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
     }
   } else if (!forward && forwarding_mouse_messages_) {
     forwarding_mouse_messages_ = false;
-    forwarding_windows_.erase(this);
+    forwarding_windows_->erase(this);
 
     RemoveWindowSubclass(legacy_window_, SubclassProc, 1);
 
-    if (forwarding_windows_.empty()) {
+    if (forwarding_windows_->empty()) {
       UnhookWindowsHookEx(mouse_hook_);
       mouse_hook_ = nullptr;
     }
@@ -731,7 +726,7 @@ LRESULT CALLBACK NativeWindowViews::MouseHookProc(int n_code,
   // the cursor since they are in a state where they would otherwise ignore all
   // mouse input.
   if (w_param == WM_MOUSEMOVE) {
-    for (auto* window : forwarding_windows_) {
+    for (auto* window : *forwarding_windows_) {
       // At first I considered enumerating windows to check whether the cursor
       // was directly above the window, but since nothing bad seems to happen
       // if we post the message even if some other window occludes it I have

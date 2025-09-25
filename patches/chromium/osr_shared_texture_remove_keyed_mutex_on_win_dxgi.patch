@@ -11,10 +11,10 @@ For resolving complex conflict please pin @reitowo
 For more reason please see: https://crrev.com/c/5465148
 
 diff --git a/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc b/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
-index 31543b5b018313d2e5890f599109bd48d7bc5e64..2f4003b0557ae275ee3697062fafb6428f5da010 100644
+index bb33e469e2d38ee4a23b19acfa52f962a5e9c854..6e83c65334f1ce0134dc4efc1dc40eb7ffed028d 100644
 --- a/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
 +++ b/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
-@@ -166,7 +166,8 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateNativeGmbHandle(
+@@ -152,7 +152,8 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateNativeGmbHandle(
    // so make sure that the usage is one that we support.
    DCHECK(usage == gfx::BufferUsage::GPU_READ ||
           usage == gfx::BufferUsage::SCANOUT ||
@@ -24,7 +24,7 @@ index 31543b5b018313d2e5890f599109bd48d7bc5e64..2f4003b0557ae275ee3697062fafb642
        << "Incorrect usage, usage=" << gfx::BufferUsageToString(usage);
  
    D3D11_TEXTURE2D_DESC desc = {
-@@ -180,7 +181,9 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateNativeGmbHandle(
+@@ -166,7 +167,9 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateNativeGmbHandle(
        D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
        0,
        D3D11_RESOURCE_MISC_SHARED_NTHANDLE |
@@ -36,7 +36,7 @@ index 31543b5b018313d2e5890f599109bd48d7bc5e64..2f4003b0557ae275ee3697062fafb642
    Microsoft::WRL::ComPtr<ID3D11Texture2D> d3d11_texture;
  
 diff --git a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-index 4de36674acee427da3a43891f780102d7e08d9cb..d32bf712107f02991717da626b5dd25c6e6973d3 100644
+index 5e025cfae4ac056791fab1b7016b5f7da3204239..ac428cffba7854c28c5e71fefa67c51bbeb34248 100644
 --- a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
 +++ b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
 @@ -209,6 +209,23 @@ bool FrameResources::Initialize(VideoPixelFormat format,
