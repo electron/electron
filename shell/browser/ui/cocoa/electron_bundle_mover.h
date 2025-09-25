@@ -26,8 +26,7 @@ class ElectronBundleMover {
   static bool IsCurrentAppInApplicationsFolder();
 
  private:
-  static bool ShouldContinueMove(gin_helper::ErrorThrower thrower,
-                                 BundlerMoverConflictType type,
+  static bool ShouldContinueMove(BundlerMoverConflictType type,
                                  gin::Arguments* args);
 };
 

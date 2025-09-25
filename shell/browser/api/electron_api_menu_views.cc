@@ -11,6 +11,8 @@
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/native_window_views.h"
 #include "ui/display/screen.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 using views::MenuRunner;
 
@@ -84,11 +86,12 @@ void MenuViews::OnClosed(int32_t window_id, base::OnceClosure callback) {
 }
 
 // static
-gin_helper::Handle<Menu> Menu::New(gin::Arguments* args) {
-  auto handle = gin_helper::CreateHandle(
-      args->isolate(), static_cast<Menu*>(new MenuViews(args)));
-  gin_helper::CallMethod(args->isolate(), handle.get(), "_init");
-  return handle;
+Menu* Menu::New(gin::Arguments* args) {
+  v8::Isolate* const isolate = args->isolate();
+  Menu* menu = cppgc::MakeGarbageCollected<MenuViews>(
+      isolate->GetCppHeap()->GetAllocationHandle(), args);
+  gin_helper::CallMethod(isolate, menu, "_init");
+  return menu;
 }
 
 }  // namespace electron::api

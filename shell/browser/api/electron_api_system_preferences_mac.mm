@@ -367,13 +367,11 @@ void SystemPreferences::SetUserDefault(const std::string& name,
       }
     }
   } else {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowTypeError("Invalid type: " + type);
+    args->ThrowTypeError("Invalid type: " + type);
     return;
   }
 
-  gin_helper::ErrorThrower(args->isolate())
-      .ThrowTypeError("Unable to convert value to: " + type);
+  args->ThrowTypeError("Unable to convert value to: " + type);
 }
 
 std::string SystemPreferences::GetAccentColor() {

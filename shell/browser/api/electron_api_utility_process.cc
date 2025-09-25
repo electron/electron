@@ -26,7 +26,6 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
@@ -329,17 +328,17 @@ void UtilityProcessWrapper::Shutdown(uint64_t exit_code) {
   HandleTermination(exit_code);
 }
 
-void UtilityProcessWrapper::PostMessage(gin::Arguments* args) {
+void UtilityProcessWrapper::PostMessage(gin::Arguments* const args) {
   if (!node_service_remote_.is_connected())
     return;
 
   blink::TransferableMessage transferable_message;
-  gin_helper::ErrorThrower thrower(args->isolate());
+  v8::Isolate* const isolate = args->isolate();
 
   // |message| is any value that can be serialized to StructuredClone.
   v8::Local<v8::Value> message_value;
   if (args->GetNext(&message_value)) {
-    if (!electron::SerializeV8Value(args->isolate(), message_value,
+    if (!electron::SerializeV8Value(isolate, message_value,
                                     &transferable_message)) {
       // SerializeV8Value sets an exception.
       return;
@@ -350,31 +349,30 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* args) {
   std::vector<gin_helper::Handle<MessagePort>> wrapped_ports;
   if (args->GetNext(&transferables)) {
     std::vector<v8::Local<v8::Value>> wrapped_port_values;
-    if (!gin::ConvertFromV8(args->isolate(), transferables,
-                            &wrapped_port_values)) {
-      thrower.ThrowTypeError("transferables must be an array of MessagePorts");
+    if (!gin::ConvertFromV8(isolate, transferables, &wrapped_port_values)) {
+      args->ThrowTypeError("transferables must be an array of MessagePorts");
       return;
     }
 
     for (size_t i = 0; i < wrapped_port_values.size(); ++i) {
       if (!gin_helper::IsValidWrappable(wrapped_port_values[i],
                                         &MessagePort::kWrapperInfo)) {
-        thrower.ThrowTypeError(
+        args->ThrowTypeError(
             base::StrCat({"Port at index ", base::NumberToString(i),
                           " is not a valid port"}));
         return;
       }
     }
 
-    if (!gin::ConvertFromV8(args->isolate(), transferables, &wrapped_ports)) {
-      thrower.ThrowTypeError("Passed an invalid MessagePort");
+    if (!gin::ConvertFromV8(isolate, transferables, &wrapped_ports)) {
+      args->ThrowTypeError("Passed an invalid MessagePort");
       return;
     }
   }
 
   bool threw_exception = false;
-  transferable_message.ports = MessagePort::DisentanglePorts(
-      args->isolate(), wrapped_ports, &threw_exception);
+  transferable_message.ports =
+      MessagePort::DisentanglePorts(isolate, wrapped_ports, &threw_exception);
   if (threw_exception)
     return;
 
@@ -436,11 +434,10 @@ raw_ptr<UtilityProcessWrapper> UtilityProcessWrapper::FromProcessId(
 
 // static
 gin_helper::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
-    gin::Arguments* args) {
+    gin::Arguments* const args) {
   if (!Browser::Get()->is_ready()) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowTypeError(
-            "utilityProcess cannot be created before app is ready.");
+    args->ThrowTypeError(
+        "utilityProcess cannot be created before app is ready.");
     return {};
   }
 

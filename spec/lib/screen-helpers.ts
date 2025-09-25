@@ -78,13 +78,9 @@ function areColorsSimilar (
 }
 
 function displayCenter (display: Electron.Display): Electron.Point {
-  // On macOS, we get system prompt to ask permission for screen capture
-  // taking up space in the center. As a workaround, choose
-  // area of the application window which is not covered by the prompt.
-  // TODO: Remove this when the prompt situation is resolved.
   return {
-    x: display.size.width / (process.platform === 'darwin' ? 4 : 2),
-    y: display.size.height / (process.platform === 'darwin' ? 4 : 2)
+    x: display.size.width / 2,
+    y: display.size.height / 2
   };
 }
 
