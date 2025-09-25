@@ -1469,9 +1469,8 @@ v8::Local<v8::Promise> Session::ClearCodeCaches(
   return handle;
 }
 
-v8::Local<v8::Value> Session::ClearData(gin_helper::ErrorThrower thrower,
-                                        gin::Arguments* args) {
-  auto* isolate = JavascriptEnvironment::GetIsolate();
+v8::Local<v8::Value> Session::ClearData(gin::Arguments* const args) {
+  v8::Isolate* const isolate = JavascriptEnvironment::GetIsolate();
 
   BrowsingDataRemover::DataType data_type_mask = kClearDataTypeAll;
   std::vector<url::Origin> origins;
@@ -1501,7 +1500,7 @@ v8::Local<v8::Value> Session::ClearData(gin_helper::ErrorThrower thrower,
           options.Get("excludeOrigins", &exclude_origin_urls);
 
       if (has_origins_key && has_exclude_origins_key) {
-        thrower.ThrowError(
+        args->ThrowTypeError(
             "Cannot provide both 'origins' and 'excludeOrigins'");
         return v8::Undefined(isolate);
       }
@@ -1520,7 +1519,7 @@ v8::Local<v8::Value> Session::ClearData(gin_helper::ErrorThrower thrower,
 
         // Opaque origins cannot be used with this API
         if (origin.opaque()) {
-          thrower.ThrowError(absl::StrFormat(
+          args->ThrowTypeError(absl::StrFormat(
               "Invalid origin: '%s'", origin_url.possibly_invalid_spec()));
           return v8::Undefined(isolate);
         }
