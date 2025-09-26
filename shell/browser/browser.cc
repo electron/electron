@@ -13,13 +13,13 @@
 #include "base/task/single_thread_task_runner.h"
 #include "base/threading/thread_restrictions.h"
 #include "chrome/common/chrome_paths.h"
+#include "gin/arguments.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_converters/login_item_settings_converter.h"
-#include "shell/common/gin_helper/arguments.h"
 #include "shell/common/thread_restrictions.h"
 
 namespace electron {

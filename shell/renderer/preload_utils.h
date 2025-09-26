@@ -14,8 +14,7 @@ class Arguments;
 namespace electron::preload_utils {
 
 v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
-                                v8::Local<v8::String> key,
-                                gin_helper::Arguments* margs);
+                                v8::Local<v8::String> key);
 
 v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
                                          v8::Local<v8::String> source);

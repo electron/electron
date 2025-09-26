@@ -98,8 +98,8 @@ void StopTracing(gin_helper::Promise<base::FilePath> promise,
   }
 }
 
-v8::Local<v8::Promise> StopRecording(gin_helper::Arguments* args) {
-  gin_helper::Promise<base::FilePath> promise(args->isolate());
+v8::Local<v8::Promise> StopRecording(gin::Arguments* const args) {
+  gin_helper::Promise<base::FilePath> promise{args->isolate()};
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   base::FilePath path;

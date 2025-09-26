@@ -13,8 +13,11 @@ namespace gfx {
 class Image;
 }
 
-namespace gin_helper {
+namespace gin {
 class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
 class WrappableBase;
 }  // namespace gin_helper
 
@@ -22,7 +25,7 @@ namespace electron::api {
 
 class ImageView : public View {
  public:
-  static gin_helper::WrappableBase* New(gin_helper::Arguments* args);
+  static gin_helper::WrappableBase* New(gin::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
