@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Fedor Indutny <indutny@signal.org>
+Date: Wed, 24 Sep 2025 10:08:48 -0700
+Subject: Expose ReferrerScriptInfo::HostDefinedOptionsIndex
+
+In `shell/common/node_bindings.cc`'s
+`HostImportModuleWithPhaseDynamically` we route dynamic imports to
+either Node.js's or Blink's resolver based on presence of Node.js
+environment, process type, etc. Exporting `HostDefinedOptionsIndex`
+allows us to route based on the size of `v8_host_defined_options` data
+which enables us to support dynamic imports in non-context-isolated
+preload scripts.
+
+diff --git a/third_party/blink/renderer/bindings/core/v8/referrer_script_info.cc b/third_party/blink/renderer/bindings/core/v8/referrer_script_info.cc
+index 1b797783987255622735047bd78ca0e8bb635d5e..b209c736bb80c186ed51999af1dac0a1d50fc232 100644
+--- a/third_party/blink/renderer/bindings/core/v8/referrer_script_info.cc
++++ b/third_party/blink/renderer/bindings/core/v8/referrer_script_info.cc
+@@ -12,15 +12,6 @@ namespace blink {
+ 
+ namespace {
+ 
+-enum HostDefinedOptionsIndex : size_t {
+-  kBaseURL,
+-  kCredentialsMode,
+-  kNonce,
+-  kParserState,
+-  kReferrerPolicy,
+-  kLength
+-};
+-
+ // Omit storing base URL if it is same as ScriptOrigin::ResourceName().
+ // Note: This improves chance of getting into a fast path in
+ //       ReferrerScriptInfo::ToV8HostDefinedOptions.
+diff --git a/third_party/blink/renderer/bindings/core/v8/referrer_script_info.h b/third_party/blink/renderer/bindings/core/v8/referrer_script_info.h
+index 0119624a028bec3e53e4e402938a98fe6def1483..743865839448748fe00e3e7d5027587cb65393c9 100644
+--- a/third_party/blink/renderer/bindings/core/v8/referrer_script_info.h
++++ b/third_party/blink/renderer/bindings/core/v8/referrer_script_info.h
+@@ -23,6 +23,15 @@ class CORE_EXPORT ReferrerScriptInfo {
+   STACK_ALLOCATED();
+ 
+  public:
++  enum HostDefinedOptionsIndex : size_t {
++    kBaseURL,
++    kCredentialsMode,
++    kNonce,
++    kParserState,
++    kReferrerPolicy,
++    kLength
++  };
++
+   ReferrerScriptInfo() {}
+   ReferrerScriptInfo(const KURL& base_url,
+                      network::mojom::CredentialsMode credentials_mode,
