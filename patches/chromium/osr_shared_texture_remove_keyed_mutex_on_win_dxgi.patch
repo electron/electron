@@ -10,11 +10,11 @@ The keyed mutex introduce extra performance cost and spikes. However, at offscre
 For resolving complex conflict please pin @reitowo
 For more reason please see: https://crrev.com/c/5465148
 
-diff --git a/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc b/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
-index 020013be15b47cec891c8895ea1b598ba5c749e1..c729498f4773cd896eec25878c76fd2db5c6692d 100644
---- a/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
-+++ b/gpu/ipc/service/gpu_memory_buffer_factory_dxgi.cc
-@@ -172,7 +172,8 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateNativeGmbHandle(
+diff --git a/gpu/command_buffer/service/shared_image/gpu_memory_buffer_factory_dxgi.cc b/gpu/command_buffer/service/shared_image/gpu_memory_buffer_factory_dxgi.cc
+index d000749c9ca25c4b668afd399cd2fb30cef2c66f..6623a8cb23f09d2485173e3a20e3cd3ce7a39e01 100644
+--- a/gpu/command_buffer/service/shared_image/gpu_memory_buffer_factory_dxgi.cc
++++ b/gpu/command_buffer/service/shared_image/gpu_memory_buffer_factory_dxgi.cc
+@@ -170,7 +170,8 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateNativeGmbHandle(
    // so make sure that the usage is one that we support.
    DCHECK(usage == gfx::BufferUsage::GPU_READ ||
           usage == gfx::BufferUsage::SCANOUT ||
@@ -24,7 +24,7 @@ index 020013be15b47cec891c8895ea1b598ba5c749e1..c729498f4773cd896eec25878c76fd2d
        << "Incorrect usage, usage=" << gfx::BufferUsageToString(usage);
  
    D3D11_TEXTURE2D_DESC desc = {
-@@ -186,7 +187,9 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateNativeGmbHandle(
+@@ -184,7 +185,9 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateNativeGmbHandle(
        D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET,
        0,
        D3D11_RESOURCE_MISC_SHARED_NTHANDLE |

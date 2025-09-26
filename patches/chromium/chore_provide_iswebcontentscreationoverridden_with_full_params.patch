@@ -159,7 +159,7 @@ index 96236cd9bdd3f03ebb7e5428e809f8dff2654e60..d17758e94043afcbd3b45884fac127e0
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index 73008c08f2b4fd31636b0df232fc7cd66a69fcaf..a09bfe9af4cb4cd7e1e70b4df4900901a8336894 100644
+index 19d64c899ff85565b7c000d27f60dccd71c43e9d..1f0839b02c39d46fd54e7c780d9c79c3e1fad516 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -205,14 +205,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
@@ -180,10 +180,10 @@ index 73008c08f2b4fd31636b0df232fc7cd66a69fcaf..a09bfe9af4cb4cd7e1e70b4df4900901
                                                                    java_gurl);
  }
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.h b/components/embedder_support/android/delegate/web_contents_delegate_android.h
-index fb21bd2cd47618838fb449df5fcf63ee28206146..b0faf6ee23fdc3b104e780e445202350fa155946 100644
+index 58bf1a6fc5e42050304d9d16e3414e8f7549c47d..042d2ee5e2c3d77488e7cffb84db548314b64b95 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.h
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.h
-@@ -84,8 +84,7 @@ class WebContentsDelegateAndroid : public content::WebContentsDelegate {
+@@ -78,8 +78,7 @@ class WebContentsDelegateAndroid : public content::WebContentsDelegate {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

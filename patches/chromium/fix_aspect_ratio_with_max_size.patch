@@ -11,10 +11,10 @@ enlarge window above dimensions set during creation of the
 BrowserWindow.
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 9963bcea4487e52157bf61eaf7d6772256fac717..3a50c77bb4ffffb370d76153bd3d26b2213b7beb 100644
+index 72deb1604939a31ee06c6baa84372861b258724a..c0520033811f001c17bfba69691b0e190eacd5c7 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -2060,12 +2060,10 @@ void HWNDMessageHandler::OnGetMinMaxInfo(MINMAXINFO* minmax_info) {
+@@ -2061,12 +2061,10 @@ void HWNDMessageHandler::OnGetMinMaxInfo(MINMAXINFO* minmax_info) {
      min_window_size.Enlarge(window_rect.right - window_rect.left,
                              window_rect.bottom - window_rect.top);
      // Either axis may be zero, so enlarge them independently.
@@ -29,7 +29,7 @@ index 9963bcea4487e52157bf61eaf7d6772256fac717..3a50c77bb4ffffb370d76153bd3d26b2
    }
    minmax_info->ptMinTrackSize.x = min_window_size.width();
    minmax_info->ptMinTrackSize.y = min_window_size.height();
-@@ -3848,17 +3846,31 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
+@@ -3849,17 +3847,31 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
    delegate_->GetMinMaxSize(&min_window_size, &max_window_size);
    min_window_size = delegate_->DIPToScreenSize(min_window_size);
    max_window_size = delegate_->DIPToScreenSize(max_window_size);

@@ -89,7 +89,7 @@ index 362c4d558ad0c1af4f905bee759096c7afdf5e6b..7b764dc1988f8992d2b88e9d4d68d8b1
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index 59b890ea244473d1fc7968686401cf48c652c7ef..decaf4a345cfad3155bf8402820bb038f582f506 100644
+index 178477d4187c1e4d399084bc77d97ad19fe37548..c5a27efd3eff7511afd5f33ecdd8dc77df983301 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 @@ -12410,5 +12410,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
@@ -201,10 +201,10 @@ index 0802c73aa4aaf4e1fb5efd367758f19c36691f71..5f06c0af277a7c937e694470beac707a
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index fd35c58cfa8844d907583b76f6f4bcdddd4f6035..1fd66ed65e335f6292f3a46986a1f810d6d50f28 100644
+index 10147f4be56e9b9cf08ee5f44b2b8fd06df9c8af..536b81d05fb8163e9a4aa4421e0f70590ccbcaf6 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
-@@ -1673,6 +1673,8 @@ component("platform") {
+@@ -1672,6 +1672,8 @@ component("platform") {
      "widget/widget_base.h",
      "widget/widget_base_client.h",
      "windows_keyboard_codes.h",
@@ -312,7 +312,7 @@ index 7e3d46902fbf736b4240eb3fcb89975a7b222197..57fdc89fc265ad70cb0bff8443cc1026
  
    auto DrawAsSinglePath = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index bf1bdfe27b6b6b805680603810e87319f15f377f..c2e3d24fe253d66d0369e5f458b2420bc8640372 100644
+index 3cc0735b5132b424453eab0fac1539f35f4acf02..199df9c34d0d967aa03259a5f561f7cd5f9e46d8 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -214,6 +214,10 @@

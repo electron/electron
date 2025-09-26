@@ -548,7 +548,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index d3f833904a7a056235d4bd4b3e7c5297a60861f5..8986ec2405541a43ca34d47f9ac0ffbf875ae63a 100644
+index e2b316223ee5cbd99cb5f9f69c5454600cb8f74f..3d5cf1f31281e8412e6cdb441e6aa7954ad2d601 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -34,6 +34,7 @@
@@ -559,7 +559,7 @@ index d3f833904a7a056235d4bd4b3e7c5297a60861f5..8986ec2405541a43ca34d47f9ac0ffbf
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2095,15 +2096,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2085,15 +2086,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -582,7 +582,7 @@ index d3f833904a7a056235d4bd4b3e7c5297a60861f5..8986ec2405541a43ca34d47f9ac0ffbf
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index cc5762322e435f5aae5826d347381a8ca1daabdb..ea590193fe522aeadc2ee7613c41bb5c7ba93d4e 100644
+index ff32b8dcf80c61b42f9f7c8275500666fae4d7f0..e00ed956939d944f02349bdb560f85d1cfdd1b3c 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -347,6 +347,7 @@ source_set("browser") {
@@ -797,10 +797,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 35f32d2233d76cf04df3d85577d757f4c35fb8a5..110a45766476070dadffcbcf14e19d80e0b3608b 100644
+index ac8df1d1f36ef54a750c41c68882d8988fec7832..385bb6a05594c39b58cf4292606f1b8fdbb63b50 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -673,6 +673,7 @@ static_library("test_support") {
+@@ -701,6 +701,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -808,7 +808,7 @@ index 35f32d2233d76cf04df3d85577d757f4c35fb8a5..110a45766476070dadffcbcf14e19d80
    ]
  
    data_deps = [
-@@ -1143,6 +1144,8 @@ static_library("browsertest_support") {
+@@ -1173,6 +1174,8 @@ static_library("browsertest_support") {
    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
    # enable the diagnostic by removing this line.
    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -817,7 +817,7 @@ index 35f32d2233d76cf04df3d85577d757f4c35fb8a5..110a45766476070dadffcbcf14e19d80
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2032,6 +2035,7 @@ test("content_browsertests") {
+@@ -2062,6 +2065,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -825,7 +825,7 @@ index 35f32d2233d76cf04df3d85577d757f4c35fb8a5..110a45766476070dadffcbcf14e19d80
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3360,6 +3364,7 @@ test("content_unittests") {
+@@ -3390,6 +3394,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -904,10 +904,10 @@ index f300e8d331057e894b43b74944e5052c39206844..4ff5277d550485cd79c5b5316d89c730
  
  base::WeakPtr<BluetoothLowEnergyAdapterApple>
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index a09f0dcaf6a3e1f384d34c12d03094ae2767ee3f..33421164b54fc5991dc1636a741f1f0361608cd7 100644
+index 97e32dddd06ce6e6d3e5c13cc8ae4386ed216818..2e4684f6bf4a2729c0b4a5fcceeca503555ce7c3 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
-@@ -128,6 +128,7 @@ component("service") {
+@@ -122,6 +122,7 @@ component("service") {
          "QuartzCore.framework",
        ]
        defines += [ "GL_SILENCE_DEPRECATION" ]
@@ -1396,10 +1396,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 8a6672a8cacbd45c745c5320856df464ab87f4f3..4909041f27d93dec995f52cc0580c2d4fc263b65 100644
+index 267e8ddfe2905f169a7cf9a819a4baa82b47770e..3a9fe67e684df903c256b396ce024c0c6f7c92a7 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -428,6 +428,7 @@ component("core") {
+@@ -427,6 +427,7 @@ component("core") {
      "//ui/gfx/geometry",
      "//ui/gfx/geometry:geometry_skia",
      "//ui/strings",

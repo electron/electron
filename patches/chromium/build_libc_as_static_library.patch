@@ -7,10 +7,10 @@ Build libc++ as static library to compile and pass
 nan tests
 
 diff --git a/buildtools/third_party/libc++/BUILD.gn b/buildtools/third_party/libc++/BUILD.gn
-index 61035269bde7195c6500bdb09739e99ae4a0d27e..c862e7cc867f4f477d3d7559f784fe57bb5d703a 100644
+index 9efdf51d6cffb03eb37106387a304ed7e5024e1b..a1f4c605f351e792885ebdf316d6482e13bfdbe4 100644
 --- a/buildtools/third_party/libc++/BUILD.gn
 +++ b/buildtools/third_party/libc++/BUILD.gn
-@@ -845,6 +845,7 @@ target(libcxx_target_type, "libc++") {
+@@ -820,6 +820,7 @@ target(libcxx_target_type, "libc++") {
    # need to explicitly depend on libc++.
    visibility = [
      "//build/config:common_deps",
