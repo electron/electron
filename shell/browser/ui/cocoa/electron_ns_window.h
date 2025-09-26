@@ -40,7 +40,6 @@ class ElectronNativeWindowObserver;
 @property BOOL disableAutoHideCursor;
 @property BOOL disableKeyOrMainWindow;
 @property(nonatomic, retain) NSVisualEffectView* vibrantView;
-@property(nonatomic, retain) NSImage* cornerMask;
 - (id)initWithShell:(electron::NativeWindowMac*)shell
           styleMask:(NSUInteger)styleMask;
 - (void)cleanup;
@@ -48,7 +47,6 @@ class ElectronNativeWindowObserver;
 - (id)accessibilityFocusedUIElement;
 - (NSRect)originalContentRectForFrameRect:(NSRect)frameRect;
 - (BOOL)toggleFullScreenMode:(id)sender;
-- (NSImage*)_cornerMask;
 - (void)disableHeadlessMode;
 @end
 
