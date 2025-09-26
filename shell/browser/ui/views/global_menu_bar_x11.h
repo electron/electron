@@ -10,7 +10,7 @@
 #include "base/memory/raw_ptr.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "ui/base/glib/scoped_gsignal.h"
-#include "ui/gfx/native_widget_types.h"
+#include "ui/gfx/native_ui_types.h"
 #include "ui/gfx/x/xproto.h"
 
 typedef struct _DbusmenuMenuitem DbusmenuMenuitem;
