@@ -16,6 +16,7 @@
 #include "components/pdf/common/constants.h"
 #include "components/prefs/pref_service.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
+#include "pdf/buildflags.h"
 #include "url/url_constants.h"
 
 namespace extensions {
@@ -24,6 +25,8 @@ namespace {
 
 namespace IsAllowedLocalFileAccess =
     api::pdf_viewer_private::IsAllowedLocalFileAccess;
+
+namespace SaveToDrive = api::pdf_viewer_private::SaveToDrive;
 
 namespace SetPdfPluginAttributes =
     api::pdf_viewer_private::SetPdfPluginAttributes;
@@ -105,6 +108,24 @@ PdfViewerPrivateIsAllowedLocalFileAccessFunction::Run() {
 
   return RespondNow(WithArguments(
       IsUrlAllowedToEmbedLocalFiles(GURL(params->url), base::Value::List())));
+}
+
+PdfViewerPrivateSaveToDriveFunction::PdfViewerPrivateSaveToDriveFunction() =
+    default;
+
+PdfViewerPrivateSaveToDriveFunction::~PdfViewerPrivateSaveToDriveFunction() =
+    default;
+
+ExtensionFunction::ResponseAction PdfViewerPrivateSaveToDriveFunction::Run() {
+#if BUILDFLAG(ENABLE_PDF_SAVE_TO_DRIVE)
+  std::optional<SaveToDrive::Params> params =
+      SaveToDrive::Params::Create(args());
+  EXTENSION_FUNCTION_VALIDATE(params);
+  // TODO(crbug.com/424208776): Start the save to drive flow.
+  return RespondNow(NoArguments());
+#else
+  return RespondNow(Error("Not supported"));
+#endif  // BUILDFLAG(ENABLE_PDF_SAVE_TO_DRIVE)
 }
 
 PdfViewerPrivateSetPdfDocumentTitleFunction::
