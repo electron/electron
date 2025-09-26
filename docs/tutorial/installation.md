@@ -112,12 +112,29 @@ cache also in `~/.electron`.
 You can also override the local cache location by providing a `electron_config_cache`
 environment variable.
 
-The cache contains the version's official zip file as well as a checksum, and is stored as
-`[checksum]/[filename]`. A typical cache might look like this:
+**Important:**  
+The cache directory for each Electron binary is calculated using the SHA256 hash of the download URL (not the checksum from `SHASUMS256.txt`).  
+For example, for Electron v35.0.1 on Linux x64, the download URL is:
+`https://github.com/electron/electron/releases/download/v35.0.1/electron-v35.0.1-linux-x64.zip`
+
+The cache directory will be:
+`~/.cache/electron/<SHA256_OF_URL>/electron-v35.0.1-linux-x64.zip`
+
+To get the correct hash, you can run:
+```sh
+echo -n "https://github.com/electron/electron/releases/download/v35.0.1/electron-v35.0.1-linux-x64.zip" | sha256sum
+```
+This will output:
+`1dafae12d714b3c9cdf2dd18c3b8e737927d09477e3f6712bd0c4b77bc87f428`
+
+So the full path should be:
+`~/.cache/electron/1dafae12d714b3c9cdf2dd18c3b8e737927d09477e3f6712bd0c4b77bc87f428/electron-v35.0.1-linux-x64.zip`
+
+A typical cache might look like this:
 
 ```sh
-├── a91b089b5dc5b1279966511344b805ec84869b6cd60af44f800b363bba25b915
-│   └── electron-v15.3.1-darwin-x64.zip
+├── 1dafae12d714b3c9cdf2dd18c3b8e737927d09477e3f6712bd0c4b77bc87f428
+│   └── electron-v35.0.1-linux-x64.zip
 ```
 
 ## Skip binary download
