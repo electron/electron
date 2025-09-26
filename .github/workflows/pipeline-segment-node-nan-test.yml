@@ -26,6 +26,8 @@ on:
         type: string
         default: testing
 
+permissions: {}
+
 concurrency:
   group: electron-node-nan-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
@@ -39,6 +41,8 @@ jobs:
   node-tests:
     name: Run Node.js Tests
     runs-on: electron-arc-centralus-linux-amd64-8core
+    permissions:
+      contents: read
     timeout-minutes: 30
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
@@ -93,6 +97,8 @@ jobs:
   nan-tests:
     name: Run Nan Tests
     runs-on: electron-arc-centralus-linux-amd64-4core
+    permissions:
+      contents: read
     timeout-minutes: 30
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
