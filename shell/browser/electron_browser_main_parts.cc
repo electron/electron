@@ -184,7 +184,13 @@ ElectronBrowserMainParts::ElectronBrowserMainParts()
   self_ = this;
 }
 
-ElectronBrowserMainParts::~ElectronBrowserMainParts() = default;
+ElectronBrowserMainParts::~ElectronBrowserMainParts() {
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
+      base::BindOnce(
+          [](std::unique_ptr<JavascriptEnvironment> js_env) { js_env.reset(); },
+          std::move(js_env_)));
+}
 
 // static
 ElectronBrowserMainParts* ElectronBrowserMainParts::Get() {
