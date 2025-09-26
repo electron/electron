@@ -10,13 +10,17 @@
   <script>
     const { ipcRenderer } = require('electron')
 
-    let fileHandle = null;
+    let handle = null;
     let sent = false;
     window.document.onpaste = async (event) => {
       const fileItem = event.clipboardData.items[0];
-      fileHandle = await fileItem.getAsFileSystemHandle();
+      handle = await fileItem.getAsFileSystemHandle();
       if (!sent) {
-        ipcRenderer.send('did-create-file-handle');
+        if (handle.kind === 'file') {
+          ipcRenderer.send('did-create-file-handle');
+        } else {
+          ipcRenderer.send('did-create-directory-handle');
+        }
         sent = true;
       }
     };
