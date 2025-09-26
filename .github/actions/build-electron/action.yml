@@ -96,8 +96,17 @@ runs:
           powershell mkdir mktmp\\gen\\v8
           powershell Copy-Item gen\\v8\\embedded.S mktmp\\gen\\v8
           powershell Compress-Archive -update -Path mktmp\\gen mksnapshot.zip
+          cd ../../
         else
           (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
+        fi
+
+        if [ "${{ inputs.is-asan }}" != "true" ]; then
+          target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
+          if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
+            target_os="${target_os}_mas"
+          fi
+          electron/script/zip_manifests/check-zip-manifest.py out/Default/mksnapshot.zip electron/script/zip_manifests/mksnapshot_zip.$target_os.${{ inputs.target-arch }}.manifest
         fi
     - name: Generate Cross-Arch Snapshot (arm/arm64)  ${{ inputs.step-suffix }}
       shell: bash
