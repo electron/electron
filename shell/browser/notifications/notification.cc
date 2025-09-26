@@ -16,6 +16,15 @@ const bool debug_notifications =
 NotificationOptions::NotificationOptions() = default;
 NotificationOptions::~NotificationOptions() = default;
 
+NotificationAction::NotificationAction() = default;
+NotificationAction::~NotificationAction() = default;
+NotificationAction::NotificationAction(const NotificationAction&) = default;
+NotificationAction& NotificationAction::operator=(const NotificationAction&) =
+    default;
+NotificationAction::NotificationAction(NotificationAction&&) noexcept = default;
+NotificationAction& NotificationAction::operator=(
+    NotificationAction&&) noexcept = default;
+
 Notification::Notification(NotificationDelegate* delegate,
                            NotificationPresenter* presenter)
     : delegate_(delegate), presenter_(presenter) {}

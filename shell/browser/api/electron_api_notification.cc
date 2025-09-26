@@ -31,6 +31,9 @@ struct Converter<electron::NotificationAction> {
       return false;
     }
     dict.Get("text", &(out->text));
+    std::vector<std::u16string> items;
+    if (dict.Get("items", &items))
+      out->items = std::move(items);
     return true;
   }
 
@@ -39,6 +42,9 @@ struct Converter<electron::NotificationAction> {
     auto dict = gin::Dictionary::CreateEmpty(isolate);
     dict.Set("text", val.text);
     dict.Set("type", val.type);
+    if (!val.items.empty()) {
+      dict.Set("items", val.items);
+    }
     return ConvertToV8(isolate, dict);
   }
 };
@@ -138,8 +144,20 @@ void Notification::SetToastXml(const std::u16string& new_toast_xml) {
   toast_xml_ = new_toast_xml;
 }
 
-void Notification::NotificationAction(int index) {
-  Emit("action", index);
+void Notification::NotificationAction(int action_index, int selection_index) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  gin_helper::internal::Event* event =
+      gin_helper::internal::Event::New(isolate);
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
+
+  gin_helper::Dictionary dict(isolate, event_object);
+  dict.Set("selectionIndex", selection_index);
+  dict.Set("actionIndex", action_index);
+
+  EmitWithoutEvent("action", event_object, action_index, selection_index);
 }
 
 void Notification::NotificationClick() {
@@ -147,7 +165,18 @@ void Notification::NotificationClick() {
 }
 
 void Notification::NotificationReplied(const std::string& reply) {
-  Emit("reply", reply);
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  gin_helper::internal::Event* event =
+      gin_helper::internal::Event::New(isolate);
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
+
+  gin_helper::Dictionary dict(isolate, event_object);
+  dict.Set("reply", reply);
+
+  EmitWithoutEvent("reply", event_object, reply);
 }
 
 void Notification::NotificationDisplayed() {
