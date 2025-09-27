@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index ce4217b12cbbc6babf12ebdebda87558731945ca..a824726186e49a9ac5697eaa42c57e3792609d8e 100644
+index a99954b72a808cfaf4bde7a400a163f3bd7da690..cef5622119b18bde3a8ca913fce1c0b34b67a2fb 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1059,6 +1059,7 @@ component("base") {
@@ -452,7 +452,7 @@ index 433f12928857e288b6b0d4f4dd3d1f29da08cf6c..bb95aabec2e0d5c7b3a5d315c9a3f8cb
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 7044cee1310edaf9131fe980a584f644a1cdef69..0104b7c12d1a6069cf25dbaea18ae5341e640d4e 100644
+index f9f453e713b1beff8fda2fcd2a21907640c19817..f651286bc85f3640ec072b05eb2f0d118e02417a 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -477,7 +477,7 @@ index 7044cee1310edaf9131fe980a584f644a1cdef69..0104b7c12d1a6069cf25dbaea18ae534
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 9f487674f174e69c749c93e030de66e954947a73..88b4d3e2d965ee6930b4d5dd49c75af079c1bcff 100644
+index f7fef3a3792cf881321b591fefc8290b4b73f6e0..9d6a8589a395c4b3901aace4dac981681c5f97e5 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -385,6 +385,7 @@ viz_component("service") {
@@ -582,7 +582,7 @@ index e2b316223ee5cbd99cb5f9f69c5454600cb8f74f..3d5cf1f31281e8412e6cdb441e6aa795
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index ff32b8dcf80c61b42f9f7c8275500666fae4d7f0..e00ed956939d944f02349bdb560f85d1cfdd1b3c 100644
+index ce95c6bd2e494cba5ae822865cfe1ee82ab9b866..ff13f05bf579b41b5d98214671557fe802de5482 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -347,6 +347,7 @@ source_set("browser") {
@@ -797,10 +797,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index ac8df1d1f36ef54a750c41c68882d8988fec7832..385bb6a05594c39b58cf4292606f1b8fdbb63b50 100644
+index 0cb62bf470099d1f9b324c9ce4bdb403f710edf0..b1c219d8e905cbaee8b280d62e625705759151a1 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -701,6 +701,7 @@ static_library("test_support") {
+@@ -703,6 +703,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -808,7 +808,7 @@ index ac8df1d1f36ef54a750c41c68882d8988fec7832..385bb6a05594c39b58cf4292606f1b8f
    ]
  
    data_deps = [
-@@ -1173,6 +1174,8 @@ static_library("browsertest_support") {
+@@ -1175,6 +1176,8 @@ static_library("browsertest_support") {
    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
    # enable the diagnostic by removing this line.
    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -817,7 +817,7 @@ index ac8df1d1f36ef54a750c41c68882d8988fec7832..385bb6a05594c39b58cf4292606f1b8f
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2062,6 +2065,7 @@ test("content_browsertests") {
+@@ -2064,6 +2067,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -825,7 +825,7 @@ index ac8df1d1f36ef54a750c41c68882d8988fec7832..385bb6a05594c39b58cf4292606f1b8f
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3390,6 +3394,7 @@ test("content_unittests") {
+@@ -3393,6 +3397,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1883,7 +1883,7 @@ index 5129f310e4220ed770ce2f890f550119fc0a3c53..c0f987749ffea063b42b0527e026d9aa
      sources += [
        "test/desktop_window_tree_host_win_test_api.cc",
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index 5ac5ede24a573e75486619142a5c2cb4c8665354..b4d19220bb6712d41e0f3c81e0745494315c87d9 100644
+index e855d05f466059f20a31022a1a2810eeadeb4fff..e523151fb670af28cf2c54548c5009825fdbed92 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -19,6 +19,7 @@
@@ -1904,7 +1904,7 @@ index 5ac5ede24a573e75486619142a5c2cb4c8665354..b4d19220bb6712d41e0f3c81e0745494
  @class NSView;
  
  namespace remote_cocoa {
-@@ -502,10 +505,12 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+@@ -504,10 +507,12 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
    mojo::AssociatedRemote<remote_cocoa::mojom::NativeWidgetNSWindow>
        remote_ns_window_remote_;
  
@@ -1918,7 +1918,7 @@ index 5ac5ede24a573e75486619142a5c2cb4c8665354..b4d19220bb6712d41e0f3c81e0745494
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index a3246d7eb0e850ddc97ff28e0028b086dc29d4e7..911f5879896a50e3d505b4aa9070c128e043a7d7 100644
+index 240bf8ce57ffce734263ecc62bda1ad70b1b60ce..7459d4c241e914248261c62b63652fd7139dd54e 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -21,6 +21,7 @@
@@ -1929,7 +1929,7 @@ index a3246d7eb0e850ddc97ff28e0028b086dc29d4e7..911f5879896a50e3d505b4aa9070c128
  #include "mojo/public/cpp/bindings/self_owned_associated_receiver.h"
  #include "ui/accelerated_widget_mac/window_resize_helper_mac.h"
  #include "ui/accessibility/accessibility_features.h"
-@@ -359,8 +360,12 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -360,8 +361,12 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    if (in_process_ns_window_bridge_) {
      return gfx::NativeViewAccessible(in_process_ns_window_bridge_->ns_view());
    }
@@ -1942,7 +1942,7 @@ index a3246d7eb0e850ddc97ff28e0028b086dc29d4e7..911f5879896a50e3d505b4aa9070c128
  }
  
  gfx::NativeViewAccessible
-@@ -376,8 +381,12 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -377,8 +382,12 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
          [in_process_ns_window_bridge_->ns_view() window]);
    }
  
@@ -1955,7 +1955,7 @@ index a3246d7eb0e850ddc97ff28e0028b086dc29d4e7..911f5879896a50e3d505b4aa9070c128
  }
  
  remote_cocoa::mojom::NativeWidgetNSWindow*
-@@ -1443,9 +1452,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1445,9 +1454,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // for PWAs. However this breaks accessibility on in-process windows,
    // so set it back to NO when a local window gains focus. See
    // https://crbug.com/41485830.
@@ -1967,7 +1967,7 @@ index a3246d7eb0e850ddc97ff28e0028b086dc29d4e7..911f5879896a50e3d505b4aa9070c128
    // Explicitly set the keyboard accessibility state on regaining key
    // window status.
    if (is_key && is_content_first_responder) {
-@@ -1586,17 +1597,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1588,17 +1599,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -1988,7 +1988,7 @@ index a3246d7eb0e850ddc97ff28e0028b086dc29d4e7..911f5879896a50e3d505b4aa9070c128
    *pid = getpid();
    id element_id = GetNativeViewAccessible();
  
-@@ -1609,6 +1623,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1611,6 +1625,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    }
  
    *token = ui::RemoteAccessibility::GetTokenForLocalElement(element_id);

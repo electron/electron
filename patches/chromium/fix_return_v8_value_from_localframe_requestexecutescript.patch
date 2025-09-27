@@ -59,7 +59,7 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..a54f1b3351efd2d8f324436f7f35cd43
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 9c6ad08f86fcd780ae9c9c8f0972c7140ff0c996..c9c1daa87edf942046e9f561524ee25382ceb5f2 100644
+index e96fca375fc3eb2504dd6f82e5be2c025d23089e..62615df61435da20f7c93adf71a98c91ae151d5d 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -3185,6 +3185,7 @@ void LocalFrame::RequestExecuteScript(
@@ -203,7 +203,7 @@ index fa65331f40b90d812b71a489fd560e9359152d2b..390714d631dc88ef92d59ef9618a5706
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
 diff --git a/third_party/blink/renderer/core/frame/web_frame_test.cc b/third_party/blink/renderer/core/frame/web_frame_test.cc
-index afee60b061eb816286f34323f6dad8cb81d8f203..0d81f7e997225f25c17f3ec2c16962ab5ecfe465 100644
+index 3af13895e6538c7f27a0475244708818fb36af91..b6ccb9686bfff3caf8620c3c20e8f1ef6cafad52 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_test.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_test.cc
 @@ -295,6 +295,7 @@ void ExecuteScriptsInMainWorld(
@@ -215,10 +215,10 @@ index afee60b061eb816286f34323f6dad8cb81d8f203..0d81f7e997225f25c17f3ec2c16962ab
        mojom::blink::WantResultOption::kWantResult, wait_for_promise);
  }
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index 8035d2ee0dbef988f87de48a6aa5371b74377637..30e3a7613bc7c951faccc44b5989d2840a6ce6ad 100644
+index 6f5745a56ad0a64649c726355808095e96567915..0cc0203f0bf1016c29ca508a7fc23f21f5c85234 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-@@ -1122,14 +1122,15 @@ void WebLocalFrameImpl::RequestExecuteScript(
+@@ -1123,14 +1123,15 @@ void WebLocalFrameImpl::RequestExecuteScript(
      mojom::blink::EvaluationTiming evaluation_timing,
      mojom::blink::LoadEventBlockingOption blocking_option,
      WebScriptExecutionCallback callback,

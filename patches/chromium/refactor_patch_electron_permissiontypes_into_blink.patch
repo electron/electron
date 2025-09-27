@@ -28,10 +28,10 @@ index 668012a5e422059f52815fadf3c7d1d99af55032..753e519eb3ca094205b3e280b381960d
        break;
    }
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index dda07e1d45bf49b1fc3970a34a17bf65abc79e60..0e75eff7a65fc4eb921d41d0c4689b0157308ff6 100644
+index 0a72093709ae8f56cc7b8d1649efe23050423054..0d7ad32add07e4c8f61d8df08de9e1c176bba6d6 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
-@@ -89,7 +89,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+@@ -94,7 +94,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
      case PermissionType::AUTOMATIC_FULLSCREEN:
      case PermissionType::WEB_APP_INSTALLATION:
      case PermissionType::LOCAL_NETWORK_ACCESS:
