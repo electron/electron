@@ -20,6 +20,7 @@
     "@types/temp": "^0.9.4",
     "@typescript-eslint/eslint-plugin": "^8.32.1",
     "@typescript-eslint/parser": "^8.7.0",
+    "@xmldom/xmldom": "^0.8.11",
     "buffer": "^6.0.3",
     "chalk": "^4.1.0",
     "check-for-leaks": "^1.2.1",
