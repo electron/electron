@@ -68,6 +68,7 @@
 #include "ui/base/ui_base_switches.h"
 #include "ui/color/color_provider_manager.h"
 #include "ui/display/screen.h"
+#include "ui/linux/display_server_utils.h"
 #include "ui/views/layout/layout_provider.h"
 #include "url/url_util.h"
 
@@ -209,9 +210,14 @@ int ElectronBrowserMainParts::PreEarlyInitialization() {
 #if BUILDFLAG(IS_POSIX)
   HandleSIGCHLD();
 #endif
+#if BUILDFLAG(IS_OZONE)
+  // Initialize Ozone platform and add required feature flags as per platform's
+  // properties.
 #if BUILDFLAG(IS_LINUX)
-  ui::OzonePlatform::PreEarlyInitialization();
+  ui::SetOzonePlatformForLinuxIfNeeded(*base::CommandLine::ForCurrentProcess());
 #endif
+  ui::OzonePlatform::PreEarlyInitialization();
+#endif  // BUILDFLAG(IS_OZONE)
 #if BUILDFLAG(IS_MAC)
   screen_ = std::make_unique<display::ScopedNativeScreen>();
 #endif
