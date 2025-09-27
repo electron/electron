@@ -25,7 +25,6 @@ int ScopedDisableResize::disable_resize_ = 0;
 }  // namespace electron
 
 @interface NSWindow (PrivateAPI)
-- (NSImage*)_cornerMask;
 - (int64_t)_resizeDirectionForMouseLocation:(CGPoint)location;
 @end
 
@@ -123,7 +122,6 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 @synthesize disableAutoHideCursor;
 @synthesize disableKeyOrMainWindow;
 @synthesize vibrantView;
-@synthesize cornerMask;
 
 - (id)initWithShell:(electron::NativeWindowMac*)shell
           styleMask:(NSUInteger)styleMask {
@@ -306,16 +304,6 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   if ([item action] == @selector(performClose:))
     return shell_ && shell_->IsClosable();
   return [super validateUserInterfaceItem:item];
-}
-
-// By overriding this built-in method the corners of the vibrant view (if set)
-// will be smooth.
-- (NSImage*)_cornerMask {
-  if (self.vibrantView != nil) {
-    return [self cornerMask];
-  } else {
-    return [super _cornerMask];
-  }
 }
 
 - (void)disableHeadlessMode {
