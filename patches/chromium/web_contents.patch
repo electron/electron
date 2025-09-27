@@ -9,7 +9,7 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 11c0124b6f3f1599b5a56ba7817e946a871316cc..b45610acc74a069c12cec3d0e9e737923ba059b2 100644
+index dba0e35eff87691704442414c1ce1e69fc6a8e5e..501023e48449e37b5203875d4b54dad895349874 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4181,6 +4181,13 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
