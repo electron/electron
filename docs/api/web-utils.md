@@ -2,7 +2,7 @@
 
 > A utility layer to interact with Web API objects (Files, Blobs, etc.)
 
-Process: [Renderer](../glossary.md#renderer-process)
+Process: [Preload](../glossary.md#preload-script)
 
 ## Methods
 
@@ -17,11 +17,19 @@ Returns `string` - The file system path that this `File` object points to. In th
 This method superseded the previous augmentation to the `File` object with the `path` property.  An example is included below.
 
 ```js @ts-nocheck
-// Before
+// Before, in renderer
 const oldPath = document.querySelector('input').files[0].path
+```
 
-// After
-const { webUtils } = require('electron')
+```js @ts-nocheck
+// After, in preload.ts
+import { ipcRenderer, contextBridge, webUtils } from "electron";
+contextBridge.exposeInMainWorld("webUtils", {
+  getPathForFile: webUtils.getPathForFile,
+});
+```
 
-const newPath = webUtils.getPathForFile(document.querySelector('input').files[0])
+```js @ts-nocheck
+// After, in renderer
+const newPath = window.webUtils.getPathForFile(document.querySelector('input').files[0])
 ```
