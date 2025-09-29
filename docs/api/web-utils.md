@@ -24,7 +24,9 @@ const oldPath = document.querySelector('input[type=file]').files[0].path
 ```
 
 ```js @ts-nocheck
-// After (renderer)
+// After
+
+// Renderer:
 const file = document.querySelector('input[type=file]').files[0]
 electronApi.doSomethingWithPath(file)
 
