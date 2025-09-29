@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Perry <perryuwang@tencent.com>
+Date: Wed, 24 Sep 2025 09:56:23 -0700
+Subject: Disable NSAutoFillHeuristicController on macOS 26
+
+The reason for this issue is that NSAutoFillHeuristicController is
+enabled by default on macOS 26. In pages with <input> tags, browser
+process sends synchronized IPC messages to renderer process. At this
+point, if the renderer process also sends synchronized IPC messages to
+the browser process, it will cause a deadlock.
+
+This bug can be reproduced on many websites. From the perspective of
+user experience, we should first disable this feature on macOS 26.
+
+Bug: 446070423, 446481994
+Change-Id: I2d3855648980a22678548e373756fc156e28ecd7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6965487
+Reviewed-by: Mark Mentovai <mark@chromium.org>
+Commit-Queue: Mark Mentovai <mark@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1520058}
+
+diff --git a/content/app/mac_init.mm b/content/app/mac_init.mm
+index 603c25a1bd4a11b9dbe57ac6add81647302e63be..963f45a8936850b59013390faf7890bc4215f2d9 100644
+--- a/content/app/mac_init.mm
++++ b/content/app/mac_init.mm
+@@ -6,6 +6,7 @@
+ 
+ #import <Cocoa/Cocoa.h>
+ 
++#include "base/mac/mac_util.h"
+ #include "content/common/mac/system_policy.h"
+ 
+ namespace content {
+@@ -29,6 +30,19 @@ void InitializeMac() {
+     @"NSAppSleepDisabled" : @YES,
+   }];
+ 
++  if (base::mac::MacOSVersion() >= 26'00'00) {
++    [NSUserDefaults.standardUserDefaults registerDefaults:@{
++      // Disable NSAutoFillHeuristicController on macOS 26. On macOS 26, the
++      // browser process sends synchronized IPC messages to the renderer process
++      // on pages with <input> tags. At this point, if the renderer process
++      // sends a synchronized IPC message to the browser process, it will cause
++      // a deadlock.
++      // https://crbug.com/446070423
++      // https://crbug.com/446481994
++      @"NSAutoFillHeuristicControllerEnabled" : @NO,
++    }];
++  }
++
+   SetSystemPolicyCrashKeys();
+ }
+ 
