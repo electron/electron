@@ -27,7 +27,7 @@ const oldPath = document.querySelector('input[type=file]').files[0].path
 ```js @ts-nocheck
 // After (renderer)
 const file = document.querySelector('input[type=file]').files[0]
-electron.showFilePath(file)
+electronApi.doSomethingWithPath(file)
 
 // (preload script)
 const { contextBridge, webUtils } = require('electron')
