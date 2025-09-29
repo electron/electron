@@ -37,7 +37,7 @@ contextBridge.exposeInMainWorld('electronApi', {
     // It's best not to expose the full file path to the web content if
     // possible.
     const path = webUtils.getPathForFile(file)
-    // do something with the path
+    // Do something with the path
   }
 })
 ```
