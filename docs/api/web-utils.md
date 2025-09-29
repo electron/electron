@@ -21,7 +21,6 @@ This method superseded the previous augmentation to the `File` object with the `
 ```js @ts-nocheck
 // Before (renderer)
 const oldPath = document.querySelector('input[type=file]').files[0].path
-// Do something with the path
 ```
 
 ```js @ts-nocheck
