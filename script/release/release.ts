@@ -210,8 +210,10 @@ function assetsForVersion (version: string, validatingRelease: boolean) {
 const cloudStoreFilePaths = (version: string) => [
   `iojs-${version}-headers.tar.gz`,
   `iojs-${version}.tar.gz`,
+  `node-${version}-headers.tar.gz`,
   `node-${version}.tar.gz`,
   'node.lib',
+  'arm64/node.lib',
   'x64/node.lib',
   'win-x64/iojs.lib',
   'win-x86/iojs.lib',
@@ -219,7 +221,6 @@ const cloudStoreFilePaths = (version: string) => [
   'win-x64/node.lib',
   'win-x86/node.lib',
   'win-arm64/node.lib',
-  'arm64/node.lib',
   'SHASUMS.txt',
   'SHASUMS256.txt'
 ];
