@@ -30,7 +30,7 @@ const oldPath = document.querySelector('input[type=file]').files[0].path
 const file = document.querySelector('input[type=file]').files[0]
 electronApi.doSomethingWithPath(file)
 
-// (preload script)
+// Preload script:
 const { contextBridge, webUtils } = require('electron')
 
 contextBridge.exposeInMainWorld('electronApi', {
