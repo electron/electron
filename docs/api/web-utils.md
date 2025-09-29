@@ -27,10 +27,12 @@ const oldPath = document.querySelector('input[type=file]').files[0].path
 // After
 
 // Renderer:
+
 const file = document.querySelector('input[type=file]').files[0]
 electronApi.doSomethingWithPath(file)
 
 // Preload script:
+
 const { contextBridge, webUtils } = require('electron')
 
 contextBridge.exposeInMainWorld('electronApi', {
