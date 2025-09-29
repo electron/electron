@@ -32,7 +32,7 @@ electronApi.doSomethingWithPath(file)
 // (preload script)
 const { contextBridge, webUtils } = require('electron')
 
-contextBridge.exposeInMainWorld('electron', {
+contextBridge.exposeInMainWorld('electronApi', {
   showFilePath (file) {
     // It's best not to expose the full file path to the web content if
     // possible.
