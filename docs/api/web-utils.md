@@ -20,7 +20,7 @@ This method superseded the previous augmentation to the `File` object with the `
 
 ```js @ts-nocheck
 // Before (renderer)
-const file = document.querySelector('input[type=file]').files[0]
+const oldPath = document.querySelector('input[type=file]').files[0].path
 // do something with the path
 ```
 
