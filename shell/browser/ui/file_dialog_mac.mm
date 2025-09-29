@@ -27,6 +27,24 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/thread_restrictions.h"
 
+// Custom class to hold both the original extension and the UTType
+@interface FileTypeInfo : NSObject
+@property (nonatomic, strong) NSString* originalExtension;
+@property (nonatomic, strong) UTType* uttype;
+- (instancetype)initWithExtension:(NSString*)ext uttype:(UTType*)type;
+@end
+
+@implementation FileTypeInfo
+- (instancetype)initWithExtension:(NSString*)ext uttype:(UTType*)type {
+  self = [super init];
+  if (self) {
+    _originalExtension = ext;
+    _uttype = type;
+  }
+  return self;
+}
+@end
+
 @interface PopUpButtonHandler : NSObject
 
 @property(nonatomic, weak) NSSavePanel* savePanel;
@@ -61,14 +79,19 @@
 
   __block BOOL allowAllFiles = NO;
   [content_types
-      enumerateObjectsUsingBlock:^(UTType* type, NSUInteger idx, BOOL* stop) {
-        if ([[type preferredFilenameExtension] isEqual:@"*"]) {
+      enumerateObjectsUsingBlock:^(FileTypeInfo* info, NSUInteger idx, BOOL* stop) {
+        if ([info.originalExtension isEqual:@"*"]) {
           allowAllFiles = YES;
           *stop = YES;
         }
       }];
 
-  [[self savePanel] setAllowedContentTypes:allowAllFiles ? @[] : content_types];
+  // Extract just the UTTypes for setting allowed content types
+  NSMutableArray* utTypes = [NSMutableArray array];
+  for (FileTypeInfo* info in content_types) {
+    [utTypes addObject:info.uttype];
+  }
+  [[self savePanel] setAllowedContentTypes:allowAllFiles ? @[] : utTypes];
 }
 
 @end
@@ -105,8 +128,8 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
 
   // Create array to keep file types and their name.
   for (const Filter& filter : filters) {
-    NSMutableOrderedSet* content_types_set =
-        [NSMutableOrderedSet orderedSetWithCapacity:filters.size()];
+    NSMutableArray* content_types_set =
+        [NSMutableArray arrayWithCapacity:filter.second.size()];
     [filter_names addObject:@(filter.first.c_str())];
 
     for (std::string ext : filter.second) {
@@ -119,9 +142,11 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
         ext.erase(0, pos + 1);
       }
 
+      NSString* originalExt = @(ext.c_str());
+      UTType* utt = nil;
+
       if (ext == "*") {
-        [content_types_set addObject:[UTType typeWithFilenameExtension:@"*"]];
-        break;
+        utt = [UTType typeWithFilenameExtension:@"*"];
       } else if (ext == "app") {
         // This handles a bug on macOS where the "app" extension by default
         // maps to "com.apple.application-file", which is for an Application
@@ -130,13 +155,16 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
         // applications).
         UTType* superType =
             [UTType typeWithIdentifier:@"com.apple.application-bundle"];
-        if (UTType* utt = [UTType typeWithFilenameExtension:@"app"
-                                           conformingToType:superType]) {
-          [content_types_set addObject:utt];
-        }
+        utt = [UTType typeWithFilenameExtension:@"app"
+                               conformingToType:superType];
       } else {
-        if (UTType* utt = [UTType typeWithFilenameExtension:@(ext.c_str())])
-          [content_types_set addObject:utt];
+        utt = [UTType typeWithFilenameExtension:originalExt];
+      }
+
+      if (utt) {
+        FileTypeInfo* info = [[FileTypeInfo alloc] initWithExtension:originalExt
+                                                              uttype:utt];
+        [content_types_set addObject:info];
       }
     }
 
@@ -147,14 +175,19 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
 
   __block BOOL allowAllFiles = NO;
   [content_types
-      enumerateObjectsUsingBlock:^(UTType* type, NSUInteger idx, BOOL* stop) {
-        if ([[type preferredFilenameExtension] isEqual:@"*"]) {
+      enumerateObjectsUsingBlock:^(FileTypeInfo* info, NSUInteger idx, BOOL* stop) {
+        if ([info.originalExtension isEqual:@"*"]) {
           allowAllFiles = YES;
           *stop = YES;
         }
       }];
 
-  [dialog setAllowedContentTypes:allowAllFiles ? @[] : content_types];
+  // Extract just the UTTypes for setting allowed content types
+  NSMutableArray* utTypes = [NSMutableArray array];
+  for (FileTypeInfo* info in content_types) {
+    [utTypes addObject:info.uttype];
+  }
+  [dialog setAllowedContentTypes:allowAllFiles ? @[] : utTypes];
 
   // Don't add file format picker.
   if ([file_types_list count] <= 1)
