@@ -21,7 +21,7 @@ This method superseded the previous augmentation to the `File` object with the `
 ```js @ts-nocheck
 // Before (renderer)
 const file = document.querySelector('input[type=file]').files[0]
-alert(`Uploaded file path was: ${file.path}`)
+// do something with the path
 ```
 
 ```js @ts-nocheck
@@ -37,7 +37,7 @@ contextBridge.exposeInMainWorld('electron', {
     // It's best not to expose the full file path to the web content if
     // possible.
     const path = webUtils.getPathForFile(file)
-    alert(`Uploaded file path was: ${path}`)
+    // do something with the path
   }
 })
 ```
