@@ -4,8 +4,6 @@
 
 Process: [Renderer](../glossary.md#renderer-process)
 
-`webUtils` is only available in preload scripts.
-
 ## Methods
 
 The `webUtils` module has the following methods:
