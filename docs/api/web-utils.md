@@ -29,7 +29,7 @@ const oldPath = document.querySelector('input[type=file]').files[0].path
 // Renderer:
 
 const file = document.querySelector('input[type=file]').files[0]
-electronApi.doSomethingWithPath(file)
+electronApi.doSomethingWithFile(file)
 
 // Preload script:
 
