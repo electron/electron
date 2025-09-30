@@ -40,7 +40,8 @@ contextBridge.exposeInMainWorld('electronApi', {
     // It's best not to expose the full file path to the web content if
     // possible.
     const path = webUtils.getPathForFile(file)
-    // Do something with the path. E.g. Send it over IPC to the main process
+    // Do something with the path, e.g., send it over IPC to the main process.
+    // It's best not to expose the full file path to the web content if possible.
   }
 })
 ```
