@@ -563,7 +563,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
 }
 
 void NativeWindowViews::UpdateWindowAccentColor(bool active) {
-  if (base::win::GetVersion() < base::win::Version::WIN11 || !thick_frame_)
+  if (base::win::GetVersion() < base::win::Version::WIN11)
     return;
 
   std::optional<COLORREF> border_color;
