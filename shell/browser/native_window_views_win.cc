@@ -595,7 +595,8 @@ void NativeWindowViews::UpdateWindowAccentColor(bool active) {
   }
 
   COLORREF final_color = border_color.value_or(DWMWA_COLOR_DEFAULT);
-  SetWindowBorderAndCaptionColor(GetAcceleratedWidget(), final_color, has_frame());
+  SetWindowBorderAndCaptionColor(GetAcceleratedWidget(), final_color,
+                                 has_frame());
 }
 
 void NativeWindowViews::SetAccentColor(
