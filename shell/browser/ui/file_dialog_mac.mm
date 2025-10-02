@@ -29,8 +29,8 @@
 
 // Custom class to hold both the original extension and the UTType
 @interface FileTypeInfo : NSObject
-@property (nonatomic, strong) NSString* originalExtension;
-@property (nonatomic, strong) UTType* uttype;
+@property(nonatomic, strong) NSString* originalExtension;
+@property(nonatomic, strong) UTType* uttype;
 - (instancetype)initWithExtension:(NSString*)ext uttype:(UTType*)type;
 @end
 
@@ -49,6 +49,7 @@
 
 @property(nonatomic, weak) NSSavePanel* savePanel;
 @property(nonatomic, strong) NSArray* contentTypesList;
+@property(nonatomic, strong) NSDictionary* extensionCorrections;
 
 - (instancetype)initWithPanel:(NSSavePanel*)panel
                  andTypesList:(NSArray*)typesList;
@@ -60,6 +61,7 @@
 
 @synthesize savePanel;
 @synthesize contentTypesList;
+@synthesize extensionCorrections;
 
 - (instancetype)initWithPanel:(NSSavePanel*)panel
                  andTypesList:(NSArray*)typesList {
@@ -78,20 +80,37 @@
   NSArray* content_types = [list objectAtIndex:selectedItemIndex];
 
   __block BOOL allowAllFiles = NO;
-  [content_types
-      enumerateObjectsUsingBlock:^(FileTypeInfo* info, NSUInteger idx, BOOL* stop) {
-        if ([info.originalExtension isEqual:@"*"]) {
-          allowAllFiles = YES;
-          *stop = YES;
-        }
-      }];
+  [content_types enumerateObjectsUsingBlock:^(FileTypeInfo* info,
+                                              NSUInteger idx, BOOL* stop) {
+    if ([info.originalExtension isEqual:@"*"]) {
+      allowAllFiles = YES;
+      *stop = YES;
+    }
+  }];
 
-  // Extract just the UTTypes for setting allowed content types
-  NSMutableArray* utTypes = [NSMutableArray array];
-  for (FileTypeInfo* info in content_types) {
-    [utTypes addObject:info.uttype];
+  // Check if we need to use extension workarounds
+  if (self.extensionCorrections && [self.extensionCorrections count] > 0 &&
+      !allowAllFiles) {
+    NSMutableArray* correctExtensions = [NSMutableArray array];
+    for (UTType* type in content_types) {
+      NSString* preferredExt = [type preferredFilenameExtension];
+      NSString* correctExt = self.extensionCorrections[preferredExt];
+
+      if (correctExt) {
+        [correctExtensions addObject:correctExt];
+      } else if (preferredExt) {
+        [correctExtensions addObject:preferredExt];
+      }
+    }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    [[self savePanel] setAllowedFileTypes:correctExtensions];
+#pragma clang diagnostic pop
+  } else {
+    [[self savePanel]
+        setAllowedContentTypes:allowAllFiles ? @[] : content_types];
   }
-  [[self savePanel] setAllowedContentTypes:allowAllFiles ? @[] : utTypes];
 }
 
 @end
@@ -126,6 +145,11 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   NSMutableArray* file_types_list = [NSMutableArray array];
   NSMutableArray* filter_names = [NSMutableArray array];
 
+  // Track extensions that have the macOS bug where preferredFilenameExtension
+  // is wrong
+  NSMutableDictionary* extensionBugWorkarounds =
+      [NSMutableDictionary dictionary];
+
   // Create array to keep file types and their name.
   for (const Filter& filter : filters) {
     NSMutableArray* content_types_set =
@@ -158,13 +182,29 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
         utt = [UTType typeWithFilenameExtension:@"app"
                                conformingToType:superType];
       } else {
-        utt = [UTType typeWithFilenameExtension:originalExt];
-      }
+        if (UTType* utt = [UTType typeWithFilenameExtension:@(ext.c_str())]) {
+          NSString* preferredExt = [utt preferredFilenameExtension];
 
-      if (utt) {
-        FileTypeInfo* info = [[FileTypeInfo alloc] initWithExtension:originalExt
-                                                              uttype:utt];
-        [content_types_set addObject:info];
+          // Check if there's a mismatch between provided and preferred
+          // extension
+          if (preferredExt && ![preferredExt isEqualToString:@(ext.c_str())]) {
+            // Create UTType from the preferred extension to check if it's the
+            // same canonical type
+            UTType* preferredType =
+                [UTType typeWithFilenameExtension:preferredExt];
+            if (preferredType) {
+              // If both extensions map to the same UTType, it's a macOS bug
+              // where the preferredFilenameExtension is wrong
+              if ([[utt identifier]
+                      isEqualToString:[preferredType identifier]]) {
+                // Store the correct extension to apply as a workaround later
+                extensionBugWorkarounds[preferredExt] = @(ext.c_str());
+              }
+            }
+          }
+
+          [content_types_set addObject:utt];
+        }
       }
     }
 
@@ -174,20 +214,38 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   NSArray* content_types = [file_types_list objectAtIndex:0];
 
   __block BOOL allowAllFiles = NO;
-  [content_types
-      enumerateObjectsUsingBlock:^(FileTypeInfo* info, NSUInteger idx, BOOL* stop) {
-        if ([info.originalExtension isEqual:@"*"]) {
-          allowAllFiles = YES;
-          *stop = YES;
-        }
-      }];
+  [content_types enumerateObjectsUsingBlock:^(FileTypeInfo* info,
+                                              NSUInteger idx, BOOL* stop) {
+    if ([info.originalExtension isEqual:@"*"]) {
+      allowAllFiles = YES;
+      *stop = YES;
+    }
+  }];
 
-  // Extract just the UTTypes for setting allowed content types
-  NSMutableArray* utTypes = [NSMutableArray array];
-  for (FileTypeInfo* info in content_types) {
-    [utTypes addObject:info.uttype];
+  // Check if we have extension bug workarounds
+  if ([extensionBugWorkarounds count] > 0 && !allowAllFiles) {
+    // Build array of correct extensions
+    NSMutableArray* correctExtensions = [NSMutableArray array];
+    for (UTType* type in content_types) {
+      NSString* preferredExt = [type preferredFilenameExtension];
+      NSString* correctExt = extensionBugWorkarounds[preferredExt];
+
+      if (correctExt) {
+        [correctExtensions addObject:correctExt];
+      } else if (preferredExt) {
+        [correctExtensions addObject:preferredExt];
+      }
+    }
+
+    // Use the deprecated but working setAllowedFileTypes for correct extensions
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    [dialog setAllowedFileTypes:correctExtensions];
+#pragma clang diagnostic pop
+  } else {
+    // Use the modern UTType-based API for non-buggy cases
+    [dialog setAllowedContentTypes:allowAllFiles ? @[] : content_types];
   }
-  [dialog setAllowedContentTypes:allowAllFiles ? @[] : utTypes];
 
   // Don't add file format picker.
   if ([file_types_list count] <= 1)
@@ -211,6 +269,12 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   PopUpButtonHandler* popUpButtonHandler =
       [[PopUpButtonHandler alloc] initWithPanel:dialog
                                    andTypesList:file_types_list];
+
+  // Pass extension corrections to the handler if we have any
+  if ([extensionBugWorkarounds count] > 0) {
+    popUpButtonHandler.extensionCorrections = extensionBugWorkarounds;
+  }
+
   [popupButton addItemsWithTitles:filter_names];
   [popupButton setTarget:popUpButtonHandler];
   [popupButton setAction:@selector(selectFormat:)];
