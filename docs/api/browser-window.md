@@ -1464,11 +1464,14 @@ win.setAccentColor('#ff0000')
 // RGB format (alpha ignored if present).
 win.setAccentColor('rgba(255,0,0,0.5)')
 
-// Use system accent color.
+// Enable accent color using the color specified in System Settings.
 win.setAccentColor(true)
 
 // Disable accent color.
 win.setAccentColor(false)
+
+// Reset window accent color behavior to follow behavior set in System Settings.
+win.setAccentColor(null)
 ```
 
 #### `win.getAccentColor()` _Windows_
