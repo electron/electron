@@ -5,7 +5,7 @@ slug: asar-integrity
 hide_title: false
 ---
 
-ASAR integrity is an security feature that validates the contents of your app's
+ASAR integrity is a security feature that validates the contents of your app's
 [ASAR archives](./asar-archives.md) at runtime.
 
 ## Version support
