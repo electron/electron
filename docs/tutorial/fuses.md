@@ -7,7 +7,7 @@
 From a security perspective, it makes sense to disable certain unused Electron features
 that are powerful but may make your app's security posture weaker. For example, any app that doesn't
 use the `ELECTRON_RUN_AS_NODE` environment variable would want to disable the feature to prevent a
-subset of ["living off the land" attacks](https://electronjs.org/blog/statement-run-as-node-cves).
+subset of "living off the land" attacks.
 
 We also don't want Electron consumers forking to achieve this goal, as building from source and
 maintaining a fork is a massive technical challenge and costs a lot of time and money.
