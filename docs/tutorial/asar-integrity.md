@@ -5,7 +5,7 @@ slug: asar-integrity
 hide_title: false
 ---
 
-ASAR integrity is an experimental feature that validates the contents of your app's
+ASAR integrity is an security feature that validates the contents of your app's
 [ASAR archives](./asar-archives.md) at runtime.
 
 ## Version support
@@ -80,7 +80,7 @@ on package time. The process of providing this packaged hash is different for ma
 ### Using Electron tooling
 
 Electron Forge and Electron Packager do this setup automatically for you with no additional
-configuration. The minimum required versions for ASAR integrity are:
+configuration whenever `asar` is enabled. The minimum required versions for ASAR integrity are:
 
 * `@electron/packager@18.3.1`
 * `@electron/forge@7.4.0`
@@ -125,9 +125,6 @@ in the form included below:
 ]
 ```
 
-:::info
-
-For an implementation example, see [`src/resedit.ts`](https://github.com/electron/packager/blob/main/src/resedit.ts)
-in the Electron Packager code.
-
-:::
+> [!NOTE]
+> For an implementation example, see [`src/resedit.ts`](https://github.com/electron/packager/blob/main/src/resedit.ts)
+> in the Electron Packager code.
