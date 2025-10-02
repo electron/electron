@@ -63,10 +63,8 @@ The `contextBridge` module has the following methods:
 
 ### `contextBridge.executeInMainWorld(executionScript)` _Experimental_
 
-<!-- TODO(samuelmaddock): add generics to map the `args` types to the `func` params  -->
-
 * `executionScript` Object
-  * `func` (...args: any[]) => any - A JavaScript function to execute. This function will be serialized which means
+  * `func` <T extends any[] = any[], R = any>(...args: T) => R - A JavaScript function to execute. This function will be serialized which means
       that any bound parameters and execution context will be lost.
   * `args` any[] (optional) - An array of arguments to pass to the provided function. These
       arguments will be copied between worlds in accordance with

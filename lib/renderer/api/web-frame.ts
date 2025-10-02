@@ -14,6 +14,7 @@ Object.defineProperty(WebFramePrototype, 'routingId', {
   configurable: true,
   get: function (this: Electron.WebFrame) {
     routingIdDeprecated();
+    // @ts-expect-error - WebFrame types are incomplete
     return ipcRendererUtils.invokeSync<number>(
       IPC_MESSAGES.BROWSER_GET_FRAME_ROUTING_ID_SYNC,
       this.frameToken
@@ -26,10 +27,12 @@ WebFramePrototype.findFrameByRoutingId = function (
   routingId: number
 ): Electron.WebFrame | null {
   findFrameByRoutingIdDeprecated();
+  // @ts-expect-error - WebFrame types are incomplete
   const frameToken = ipcRendererUtils.invokeSync<string | undefined>(
     IPC_MESSAGES.BROWSER_GET_FRAME_TOKEN_SYNC,
     routingId
   );
+  // @ts-expect-error - WebFrame types are incomplete
   return frameToken ? this.findFrameByToken(frameToken) : null;
 };
 
