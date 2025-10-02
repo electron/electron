@@ -64,13 +64,10 @@ flipFuses(
 )
 ```
 
-:::tip Fuses in Electron Forge
-
-With Electron Forge, you can configure your app's fuses with
-[@electron-forge/plugin-fuses](https://www.electronforge.io/config/plugins/fuses)
-in your Forge configuration file.
-
-:::
+> [!TIP]
+> With Electron Forge, you can configure your app's fuses with
+> [@electron-forge/plugin-fuses](https://www.electronforge.io/config/plugins/fuses)
+> in your Forge configuration file.
 
 ## Providing the header hash
 
@@ -109,7 +106,7 @@ Valid `algorithm` values are currently `SHA256` only. The `hash` is a hash of th
 The `@electron/asar` package exposes a `getRawHeader` method whose result can then be hashed to generate this value
 (e.g. using the [`node:crypto`](https://nodejs.org/api/crypto.html) module).
 
-### Windows
+#### Windows
 
 When packaging for Windows, you must populate a valid [resource](https://learn.microsoft.com/en-us/windows/win32/menurc/resources)
 entry of type `Integrity` and name `ElectronAsar`. The value of this resource should be a JSON encoded dictionary
@@ -125,9 +122,6 @@ in the form included below:
 ]
 ```
 
-:::info
-
-For an implementation example, see [`src/resedit.ts`](https://github.com/electron/packager/blob/main/src/resedit.ts)
-in the Electron Packager code.
-
-:::
+> [!NOTE]
+> For an implementation example, see [`src/resedit.ts`](https://github.com/electron/packager/blob/main/src/resedit.ts)
+> in the Electron Packager code.
