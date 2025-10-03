@@ -6,7 +6,6 @@
 
 #include "base/process/process.h"
 #include "base/strings/strcat.h"
-#include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "v8/include/v8-context.h"
@@ -34,20 +33,19 @@ v8::Local<v8::Object> GetBindingCache(v8::Isolate* isolate) {
 
 // adapted from node.cc
 v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
-                                v8::Local<v8::String> key,
-                                gin_helper::Arguments* margs) {
+                                v8::Local<v8::String> key) {
   v8::Local<v8::Object> exports;
-  std::string binding_key = gin::V8ToString(isolate, key);
+  const std::string binding_key = gin::V8ToString(isolate, key);
   gin_helper::Dictionary cache(isolate, GetBindingCache(isolate));
 
   if (cache.Get(binding_key, &exports)) {
     return exports;
   }
 
-  auto* mod = node::binding::get_linked_module(binding_key.c_str());
-
+  auto* const mod = node::binding::get_linked_module(binding_key.c_str());
   if (!mod) {
-    margs->ThrowError(base::StrCat({"No such binding: ", binding_key}));
+    gin_helper::ErrorThrower{isolate}.ThrowError(
+        base::StrCat({"No such binding: ", binding_key}));
     return exports;
   }
 

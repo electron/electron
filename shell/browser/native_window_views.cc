@@ -35,7 +35,6 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/image_converter.h"
-#include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
 #include "ui/aura/window_tree_host.h"

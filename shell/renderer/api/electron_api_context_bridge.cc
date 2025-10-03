@@ -739,14 +739,13 @@ void ExposeAPI(v8::Isolate* isolate,
                v8::Isolate* target_isolate,
                v8::Local<v8::Context> target_context,
                const std::string& key,
-               v8::Local<v8::Value> api,
-               gin_helper::Arguments* args) {
+               v8::Local<v8::Value> api) {
   DCHECK(!target_context.IsEmpty());
   v8::Context::Scope target_context_scope(target_context);
   gin_helper::Dictionary global(target_isolate, target_context->Global());
 
   if (global.Has(key)) {
-    args->ThrowError(
+    gin_helper::ErrorThrower{isolate}.ThrowError(
         "Cannot bind an API on top of an existing property on the window "
         "object");
     return;
@@ -813,8 +812,7 @@ v8::MaybeLocal<v8::Context> GetTargetContext(v8::Isolate* isolate,
 void ExposeAPIInWorld(v8::Isolate* isolate,
                       const int world_id,
                       const std::string& key,
-                      v8::Local<v8::Value> api,
-                      gin_helper::Arguments* args) {
+                      v8::Local<v8::Value> api) {
   TRACE_EVENT2("electron", "ContextBridge::ExposeAPIInWorld", "key", key,
                "worldId", world_id);
   v8::Local<v8::Context> source_context = isolate->GetCurrentContext();
@@ -825,8 +823,7 @@ void ExposeAPIInWorld(v8::Isolate* isolate,
   if (maybe_target_context.IsEmpty() || !target_isolate)
     return;
   v8::Local<v8::Context> target_context = maybe_target_context.ToLocalChecked();
-  ExposeAPI(isolate, source_context, target_isolate, target_context, key, api,
-            args);
+  ExposeAPI(isolate, source_context, target_isolate, target_context, key, api);
 }
 
 gin_helper::Dictionary TraceKeyPath(const gin_helper::Dictionary& start,
@@ -923,24 +920,23 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
 }
 
 // Serialize script to be executed in the given world.
-v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* isolate,
+v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* const isolate,
                                     const int world_id,
-                                    gin_helper::Arguments* args) {
+                                    gin::Arguments* const args) {
   // Get context of caller
   v8::Local<v8::Context> source_context = isolate->GetCurrentContext();
 
   // Get execution script argument
   gin_helper::Dictionary exec_script;
   if (args->Length() >= 1 && !args->GetNext(&exec_script)) {
-    gin_helper::ErrorThrower(args->isolate()).ThrowError("Invalid script");
+    args->ThrowTypeError("Invalid script");
     return v8::Undefined(isolate);
   }
 
   // Get "func" from execution script
   v8::Local<v8::Function> func;
   if (!exec_script.Get("func", &func)) {
-    gin_helper::ErrorThrower(isolate).ThrowError(
-        "Function 'func' is required in script");
+    args->ThrowTypeError("Function 'func' is required in script");
     return v8::Undefined(isolate);
   }
 
@@ -949,7 +945,7 @@ v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* isolate,
   v8::Local<v8::Value> args_value;
   if (exec_script.Get("args", &args_value)) {
     if (!args_value->IsArray()) {
-      gin_helper::ErrorThrower(isolate).ThrowError("'args' must be an array");
+      args->ThrowTypeError("'args' must be an array");
       return v8::Undefined(isolate);
     }
     args_array = args_value.As<v8::Array>();
@@ -961,7 +957,7 @@ v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* isolate,
     v8::Local<v8::String> serialized_function;
     if (!func->FunctionProtoToString(isolate->GetCurrentContext())
              .ToLocal(&serialized_function)) {
-      gin_helper::ErrorThrower(isolate).ThrowError(
+      gin_helper::ErrorThrower{isolate}.ThrowError(
           "Failed to serialize function");
       return v8::Undefined(isolate);
     }
