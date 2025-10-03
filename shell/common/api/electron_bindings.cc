@@ -21,6 +21,7 @@
 #include "shell/common/application_info.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/heap_snapshot.h"
@@ -163,11 +164,11 @@ v8::Local<v8::Value> ElectronBindings::GetCreationTime(v8::Isolate* isolate) {
 
 // static
 v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
-    v8::Isolate* isolate,
-    gin_helper::Arguments* args) {
+    v8::Isolate* const isolate) {
   base::SystemMemoryInfo mem_info;
   if (!base::GetSystemMemoryInfo(&mem_info)) {
-    args->ThrowError("Unable to retrieve system memory information");
+    gin_helper::ErrorThrower{isolate}.ThrowError(
+        "Unable to retrieve system memory information");
     return v8::Undefined(isolate);
   }
 
