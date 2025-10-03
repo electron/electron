@@ -64,14 +64,13 @@ concurrency:
   group: electron-build-and-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
 
-permissions:
-  contents: read
-  issues: read
-  pull-requests: read  
+permissions: {}
 
 jobs:
   build:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    permissions:
+      contents: read
     with:
       build-runs-on: ${{ inputs.build-runs-on }}
       build-container: ${{ inputs.build-container }}
@@ -86,6 +85,10 @@ jobs:
     secrets: inherit
   test:
     uses: ./.github/workflows/pipeline-segment-electron-test.yml
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
     needs: build
     with:
       target-arch: ${{ inputs.target-arch }}
