@@ -638,6 +638,7 @@ class WebFrameRenderer final
     return !context->GetContentSecurityPolicy()->ShouldCheckEval();
   }
 
+  // webFrame.executeJavaScript(code[, userGesture][, callback])
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* const args,
                                            const std::u16string& code) {
     v8::Isolate* const isolate = args->isolate();
@@ -654,10 +655,14 @@ class WebFrameRenderer final
     const blink::WebScriptSource source{blink::WebString::FromUTF16(code)};
 
     bool has_user_gesture = false;
-    args->GetNext(&has_user_gesture);
+    if (auto next = args->PeekNext(); !next.IsEmpty() && next->IsBoolean()) {
+      args->GetNext(&has_user_gesture);
+    }
 
     ScriptExecutionCallback::CompletionCallback completion_callback;
-    args->GetNext(&completion_callback);
+    if (auto next = args->PeekNext(); !next.IsEmpty() && next->IsFunction()) {
+      args->GetNext(&completion_callback);
+    }
 
     auto* self = new ScriptExecutionCallback(std::move(promise),
                                              std::move(completion_callback));
@@ -678,6 +683,8 @@ class WebFrameRenderer final
     return handle;
   }
 
+  // executeJavaScriptInIsolatedWorld(
+  //   worldId, scripts[, userGesture][, callback])
   v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
       gin::Arguments* const args,
       const int world_id,
@@ -695,10 +702,14 @@ class WebFrameRenderer final
     }
 
     bool has_user_gesture = false;
-    args->GetNext(&has_user_gesture);
+    if (auto next = args->PeekNext(); !next.IsEmpty() && next->IsBoolean()) {
+      args->GetNext(&has_user_gesture);
+    }
 
     ScriptExecutionCallback::CompletionCallback completion_callback;
-    args->GetNext(&completion_callback);
+    if (auto next = args->PeekNext(); !next.IsEmpty() && next->IsFunction()) {
+      args->GetNext(&completion_callback);
+    }
 
     std::vector<blink::WebScriptSource> sources;
     sources.reserve(scripts.size());
