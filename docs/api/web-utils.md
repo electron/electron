@@ -17,11 +17,27 @@ Returns `string` - The file system path that this `File` object points to. In th
 This method superseded the previous augmentation to the `File` object with the `path` property.  An example is included below.
 
 ```js @ts-nocheck
-// Before
-const oldPath = document.querySelector('input').files[0].path
+// Before (renderer)
+const oldPath = document.querySelector('input[type=file]').files[0].path
+```
 
+```js @ts-nocheck
 // After
-const { webUtils } = require('electron')
 
-const newPath = webUtils.getPathForFile(document.querySelector('input').files[0])
+// Renderer:
+
+const file = document.querySelector('input[type=file]').files[0]
+electronApi.doSomethingWithFile(file)
+
+// Preload script:
+
+const { contextBridge, webUtils } = require('electron')
+
+contextBridge.exposeInMainWorld('electronApi', {
+  doSomethingWithFile (file) {
+    const path = webUtils.getPathForFile(file)
+    // Do something with the path, e.g., send it over IPC to the main process.
+    // It's best not to expose the full file path to the web content if possible.
+  }
+})
 ```
