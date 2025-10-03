@@ -535,7 +535,7 @@ describe('webFrameMain module', () => {
 
   describe('webFrameMain.copyVideoFrameAt', () => {
     const insertVideoInFrame = async (frame: WebFrameMain) => {
-      const videoPath = path.join(fixtures, 'cat-spin.mp4');
+      const videoPath = path.join(fixtures, 'cat-spin.webm');
       await frame.executeJavaScript(`
         const video = document.createElement('video');
         video.src = '${videoPath}';
