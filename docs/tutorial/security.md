@@ -98,7 +98,7 @@ either `process.env` or the `window` object.
 You should at least follow these steps to improve the security of your application:
 
 1. [Only load secure content](#1-only-load-secure-content)
-2. [Disable the Node.js integration in all renderers that display remote content](#2-do-not-enable-nodejs-integration-for-remote-content)
+2. [Do not enable Node.js integration for remote content](#2-do-not-enable-nodejs-integration-for-remote-content)
 3. [Enable context isolation in all renderers](#3-enable-context-isolation)
 4. [Enable process sandboxing](#4-enable-process-sandboxing)
 5. [Use `ses.setPermissionRequestHandler()` in all sessions that load remote content](#5-handle-session-permission-requests-from-remote-content)
@@ -804,10 +804,10 @@ that your application might have the rights for.
 
 #### How?
 
-We've made a module, [`@electron/fuses`](https://npmjs.com/package/@electron/fuses), to make
+[`@electron/fuses`](https://npmjs.com/package/@electron/fuses) is a module we made to make
 flipping these fuses easy. Check out the README of that module for more details on usage and
 potential error cases, and refer to
-[How do I flip the fuses?](./fuses.md#how-do-i-flip-the-fuses) in our documentation.
+[How do I flip fuses?](./fuses.md#how-do-i-flip-fuses) in our documentation.
 
 ### 20. Do not expose Electron APIs to untrusted web content
 
