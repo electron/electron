@@ -20,6 +20,12 @@ changes:
 
 Process: [Renderer](../glossary.md#renderer-process)
 
+> [!IMPORTANT]
+> If you want to call this API from a renderer process with context isolation enabled,
+> place the API call in your preload script and
+> [expose](../tutorial/context-isolation.md#after-context-isolation-enabled) it using the
+> [`contextBridge`](context-bridge.md) API.
+
 The `ipcRenderer` module is an  [EventEmitter][event-emitter]. It provides a few
 methods so you can send synchronous and asynchronous messages from the render
 process (web page) to the main process. You can also receive replies from the
