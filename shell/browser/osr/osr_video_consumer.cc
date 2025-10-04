@@ -16,6 +16,22 @@
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/gfx/skbitmap_operations.h"
 
+namespace {
+
+media::VideoPixelFormat GetTargetPixelFormatFromOption(
+    const std::string& pixel_format_option) {
+  if (pixel_format_option == "argb") {
+    return media::PIXEL_FORMAT_ARGB;
+  } else if (pixel_format_option == "rgbaf16") {
+    return media::PIXEL_FORMAT_RGBAF16;
+  }
+
+  // Use ARGB as default.
+  return media::PIXEL_FORMAT_ARGB;
+}
+
+}  // namespace
+
 namespace electron {
 
 OffScreenVideoConsumer::OffScreenVideoConsumer(
@@ -26,7 +42,10 @@ OffScreenVideoConsumer::OffScreenVideoConsumer(
       video_capturer_(view->CreateVideoCapturer()) {
   video_capturer_->SetAutoThrottlingEnabled(false);
   video_capturer_->SetMinSizeChangePeriod(base::TimeDelta());
-  video_capturer_->SetFormat(media::PIXEL_FORMAT_ARGB);
+
+  auto format = GetTargetPixelFormatFromOption(
+      view->offscreen_shared_texture_pixel_format());
+  video_capturer_->SetFormat(format);
 
   // https://crrev.org/c/6438681
   // Disable capturer's animation lock-in feature for offscreen capture to
