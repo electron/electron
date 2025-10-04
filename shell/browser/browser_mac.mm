@@ -543,6 +543,9 @@ v8::Local<v8::Promise> Browser::DockShow(v8::Isolate* isolate) {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
+  for (auto* const& window : WindowList::GetWindows())
+    [window->GetNativeWindow().GetNativeNSWindow() setCanHide:YES];
+
   BOOL active = [[NSRunningApplication currentApplication] isActive];
   ProcessSerialNumber psn = {0, kCurrentProcess};
   if (active) {
