@@ -139,7 +139,7 @@ by its key, which is returned from `webFrame.insertCSS(css)`.
 
 Inserts `text` to the focused element.
 
-### `webFrame.executeJavaScript(code[, userGesture, callback])`
+### `webFrame.executeJavaScript(code[, userGesture][, callback])`
 
 * `code` string
 * `userGesture` boolean (optional) - Default is `false`.
@@ -160,7 +160,7 @@ In the browser window some HTML APIs like `requestFullScreen` can only be
 invoked by a gesture from the user. Setting `userGesture` to `true` will remove
 this limitation.
 
-### `webFrame.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture, callback])`
+### `webFrame.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture][, callback])`
 
 * `worldId` Integer - The ID of the world to run the javascript
             in, `0` is the default main world (where content runs), `999` is the
