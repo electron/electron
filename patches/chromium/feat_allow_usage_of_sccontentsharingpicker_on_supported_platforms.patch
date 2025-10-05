@@ -311,7 +311,7 @@ index c2d8bbafa39c05f25641f2fd3491ef7f84f4f6a1..5506583824e10d664f32c71d63fda1aa
  
  // Although ScreenCaptureKit is available in 12.3 there were some bugs that
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index 7381b0a0b4c602a91e99c8e3e465ca0de1a6a261..97a1702daf9be3265146646e9d64dcd45e34d042 100644
+index c07b61c6736798b3b8efd79a27fb6546dde24cc2..889c0876394bc973f86cc6f5f2d3ce3902103b41 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 @@ -310,8 +310,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(

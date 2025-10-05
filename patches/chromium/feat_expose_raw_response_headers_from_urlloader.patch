@@ -90,7 +90,7 @@ index 950d6e0fa3e5304b2d28db0e284f9697d0c9f45c..048900b092875f3dd01b8a3cd813f5a4
    // when it receives the AcceptCHFrame.
    EnabledClientHints? enabled_client_hints;
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index 3a5fbaea905e7c01caee3659ff3be06e8def5615..89da9461e8290b8099456e5222f278770e09f883 100644
+index 96fe8a372fa6a166db928c61b2c983b86a74b1a3..2a10810d50d083ab0a7340757d544a40484a4b7e 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -14,6 +14,7 @@ import "services/network/public/mojom/encoded_body_length.mojom";

@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index a99954b72a808cfaf4bde7a400a163f3bd7da690..cef5622119b18bde3a8ca913fce1c0b34b67a2fb 100644
+index f96e2575849490fa8b2060b00c092ce90d540324..3babc3bbf4b7af1833254e8b92d7cd669877e168 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1059,6 +1059,7 @@ component("base") {
+@@ -1060,6 +1060,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -195,10 +195,10 @@ index e12c1d078147d956a1d9b1bc498c1b1d6fe7b974..233362259dc4e728ed37435e65041764
  
  }  // namespace base
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index bbaf1143e725a1b6c49eef705b1e62c4133bfa27..81fc444043b67858371142075f98ad9aff162fc3 100644
+index 45d8e77cdfe6539563d16dd93fd48f8241f4bfca..e9fffc2e3f0520a56ff5753a4a1abfc11c795b83 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
-@@ -75,6 +75,8 @@ component("sync") {
+@@ -76,6 +76,8 @@ component("sync") {
        "os_crypt_mac.mm",
      ]
      deps += [ "//crypto:mock_apple_keychain" ]
@@ -477,10 +477,10 @@ index f9f453e713b1beff8fda2fcd2a21907640c19817..f651286bc85f3640ec072b05eb2f0d11
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index f7fef3a3792cf881321b591fefc8290b4b73f6e0..9d6a8589a395c4b3901aace4dac981681c5f97e5 100644
+index 40718df4d3d7092309ea7027ae6c59a7963fd03c..89f08e2693d9101e89dd007df80881ff726195ad 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -385,6 +385,7 @@ viz_component("service") {
+@@ -387,6 +387,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -488,7 +488,7 @@ index f7fef3a3792cf881321b591fefc8290b4b73f6e0..9d6a8589a395c4b3901aace4dac98168
    }
  
    if (is_ios) {
-@@ -708,6 +709,7 @@ viz_source_set("unit_tests") {
+@@ -710,6 +711,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -582,7 +582,7 @@ index e2b316223ee5cbd99cb5f9f69c5454600cb8f74f..3d5cf1f31281e8412e6cdb441e6aa795
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index ce95c6bd2e494cba5ae822865cfe1ee82ab9b866..ff13f05bf579b41b5d98214671557fe802de5482 100644
+index fbcca47f273a226fbed885f7dc56662778ecff8c..37b070c55bdda55136e1ed76771e10eb883a3a0e 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -347,6 +347,7 @@ source_set("browser") {
@@ -628,7 +628,7 @@ index 319e58e5c3cad4ec47fca2c7cb0d59d4c5fd460c..d17bdb51081cee80f6f43199057de557
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index cfa84b0b3a2c27f6be155fa7c578ca6358f3fa41..6f1214fc18a2089a6f711bd03bd083fd318e2792 100644
+index 439cb7e93e802c689e16a24853f3ce75216ec74f..1fde0953bdc8bf3cd777206d7d340188ebf946fb 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -52,6 +52,7 @@
@@ -715,10 +715,10 @@ index 8c293f5bb0e859f438a7ab50b70b4d5449dc1358..d58c73427935127fdec173224bcb9709
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index b31aef089e03d530831df59327936785f026a300..457f5c907169da132cfd6304241dcecae779fc69 100644
+index b6a99875ce151b5a517e2c850ba50d8ba9749e0f..b88b411d7d5430200c88203e727c49ab90233140 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -320,6 +320,7 @@ target(link_target_type, "renderer") {
+@@ -323,6 +323,7 @@ target(link_target_type, "renderer") {
      "//ui/surface",
      "//url",
      "//v8",
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 0cb62bf470099d1f9b324c9ce4bdb403f710edf0..b1c219d8e905cbaee8b280d62e625705759151a1 100644
+index c9e14f94e0f713b09db8ec3e29702f7b948f1e3b..f52984c0ad9611933a75b7e359bc2d35ff0cd575 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -703,6 +703,7 @@ static_library("test_support") {
@@ -817,7 +817,7 @@ index 0cb62bf470099d1f9b324c9ce4bdb403f710edf0..b1c219d8e905cbaee8b280d62e625705
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2064,6 +2067,7 @@ test("content_browsertests") {
+@@ -2065,6 +2068,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -825,7 +825,7 @@ index 0cb62bf470099d1f9b324c9ce4bdb403f710edf0..b1c219d8e905cbaee8b280d62e625705
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3393,6 +3397,7 @@ test("content_unittests") {
+@@ -3395,6 +3399,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -904,7 +904,7 @@ index f300e8d331057e894b43b74944e5052c39206844..4ff5277d550485cd79c5b5316d89c730
  
  base::WeakPtr<BluetoothLowEnergyAdapterApple>
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index 97e32dddd06ce6e6d3e5c13cc8ae4386ed216818..2e4684f6bf4a2729c0b4a5fcceeca503555ce7c3 100644
+index 74134d9b3d6d50146b97086385b8b4ee71d6cca4..014ce3738f354e360519d52b5ec2f99feebf3afe 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
 @@ -122,6 +122,7 @@ component("service") {
@@ -938,7 +938,7 @@ index d288ffce5c1265adbdefc571f840851026e7479e..e9a6e8c31401750d270fcc55ef1116b2
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 7bc208697690ac36a3fc546748a05cbe952f1003..2fa14c45a5f3ce23985b7e9e9b2c2a14d3596d63 100644
+index cbda18b7646aacd6f15284faaefeafd452bb5ce9..9e60819fd389aed880b314f7152190c7cacf4429 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -203,6 +203,7 @@ source_set("audio") {
@@ -1556,7 +1556,7 @@ index 54d483d6b3f1a56573e21b1f873b8dee8fc25a0f..33bc8c9ef097a907060ed347dca2ad46
  
      if (is_ios) {
 diff --git a/ui/accessibility/platform/browser_accessibility_manager_mac.mm b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
-index 8ef5c8c7ac9a555fe41e6146997833ae43164951..4c17f1d29dac780195e07bcdb7e12a8fdd3f2130 100644
+index 3e6426f895b55168834809ed6b91916f447d7ea3..33ec3f6ce4e5a69760779d28a3ae2b07a183afa4 100644
 --- a/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 +++ b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 @@ -14,6 +14,7 @@
@@ -1776,7 +1776,7 @@ index ca9b2b6f9a4e070d2fd40a6fec672d612ff757e0..87eee402eb38270690b798b67a368e11
      deps += [ "//build:ios_buildflags" ]
    }
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index a76d09dd2a2a71d0b8397f4abe30fe7bbb6e513d..eba69f4c6e72b36e799ce902cdffd2dd1f2387d6 100644
+index 4be0d3508981ca6e7f06134b9c44e8eff39799fc..688c60025bd5ce14f9b790760e537bf7b5651268 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
 @@ -33,6 +33,7 @@
@@ -1806,7 +1806,7 @@ index a76d09dd2a2a71d0b8397f4abe30fe7bbb6e513d..eba69f4c6e72b36e799ce902cdffd2dd
    // Query the display's refresh rate.
    double refresh_rate = 1.0 / screen.minimumRefreshInterval;
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index f6a40abfe998cbc9bce0672222f1d6ee6d844a8d..2161cf483eb76508bda48f541c0665bf6e43733f 100644
+index a00134fb815bd413dca8ae9581f488a3d3f42910..26c83b597a3e6846c1c1c11eefe6f9d7a8ac2619 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -335,6 +335,12 @@ component("gfx") {
@@ -1861,7 +1861,7 @@ index bbe355cf69f160866188216cc274d75bd35603db..06ee100d7ea2e892dbf3c0b1adc96c50
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 5129f310e4220ed770ce2f890f550119fc0a3c53..c0f987749ffea063b42b0527e026d9aa557a8ee8 100644
+index 95a2d5d04ac69b48f59fa4c8c940b1075436bca7..1af7790524bd0c25f6384f7fb55f3df0fe03cfc1 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -722,6 +722,8 @@ component("views") {

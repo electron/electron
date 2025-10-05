@@ -11,7 +11,7 @@ For resolving complex conflict please pin @reitowo
 For more reason please see: https://crrev.com/c/5465148
 
 diff --git a/gpu/command_buffer/service/shared_image/gpu_memory_buffer_factory_dxgi.cc b/gpu/command_buffer/service/shared_image/gpu_memory_buffer_factory_dxgi.cc
-index d000749c9ca25c4b668afd399cd2fb30cef2c66f..6623a8cb23f09d2485173e3a20e3cd3ce7a39e01 100644
+index e0b94914e0cf7dc83503fa4a4b7fa75442e5b404..b8ffc6ce4973a3d2ef194e4289ad8bba122f315a 100644
 --- a/gpu/command_buffer/service/shared_image/gpu_memory_buffer_factory_dxgi.cc
 +++ b/gpu/command_buffer/service/shared_image/gpu_memory_buffer_factory_dxgi.cc
 @@ -170,7 +170,8 @@ gfx::GpuMemoryBufferHandle GpuMemoryBufferFactoryDXGI::CreateNativeGmbHandle(

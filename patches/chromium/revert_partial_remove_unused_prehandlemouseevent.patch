@@ -22,10 +22,10 @@ index 74fea36ea7f9a345b3474ea18be00704831a685e..c75785d5a26fa52a39d1a3552da9a762
      const input::NativeWebKeyboardEvent& event) {
    return KeyboardEventProcessingResult::NOT_HANDLED;
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index ce071c6acd6027ad27cee597f56e865f0d5172f9..be4eb55837d2b9bda96b1408f84f646d7da18e59 100644
+index 9a4195a3e53353342c75d6c4372ed4c27ef13fd3..b5933f0b0d516efc03fe4e72b2bb702dac7804f8 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
-@@ -103,6 +103,12 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+@@ -102,6 +102,12 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
    virtual void ResizeDueToAutoResize(RenderWidgetHostImpl* render_widget_host,
                                       const gfx::Size& new_size) {}
  
@@ -39,7 +39,7 @@ index ce071c6acd6027ad27cee597f56e865f0d5172f9..be4eb55837d2b9bda96b1408f84f646d
    // event before sending it to the renderer. See enum for details on return
    // value.
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index d211d8dc92c16e8ad2e9b1b37cb25dd05bf7e3e1..1756d5e81e9bf5ba20fc596901bb3cfe244ff903 100644
+index 8b23c47a6b542ec3d43a6aa65d80cee78dd8388e..45e0d4ba75b7b5ae39236f3b67f4168127a3aaf9 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -1588,6 +1588,10 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(
@@ -54,10 +54,10 @@ index d211d8dc92c16e8ad2e9b1b37cb25dd05bf7e3e1..1756d5e81e9bf5ba20fc596901bb3cfe
      if (mouse_event_callback.Run(mouse_event)) {
        return;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 58de6588848c41bbecb9331e40fc2a2d2e24b0f4..ca56812da205b44b79945c9d3d9bb2b52aefa945 100644
+index 37e3db92d23c6e1592d3b984f08189849213e882..eb9ab94888dcc992d584996de3477933eeb86738 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4450,6 +4450,12 @@ void WebContentsImpl::RenderWidgetWasResized(
+@@ -4451,6 +4451,12 @@ void WebContentsImpl::RenderWidgetWasResized(
                               width_changed);
  }
  
@@ -71,7 +71,7 @@ index 58de6588848c41bbecb9331e40fc2a2d2e24b0f4..ca56812da205b44b79945c9d3d9bb2b5
                                            const gfx::PointF& client_pt) {
    if (delegate_) {
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 034797826196560ab6b71f885d52c8e1c94c1a67..55db63b3f99e465d2c77bb25dca5d50005df5ce7 100644
+index 342a5f984838eba5aef7a535c3758bb96c0f89a3..8ad2060c9de648c674455cfa775e350d6993654d 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1110,6 +1110,7 @@ class CONTENT_EXPORT WebContentsImpl
@@ -83,7 +83,7 @@ index 034797826196560ab6b71f885d52c8e1c94c1a67..55db63b3f99e465d2c77bb25dca5d500
                             const gfx::PointF& client_pt);
    void PreHandleDragExit();
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 08c983ac6a8e5733431ba00e1288f6d6b087eee6..3e2a9fb6a768c57ddb813c5c7a1df8bb3c2f8ddd 100644
+index df972f1ce594f2d4651202b650ff2d41fe19ecd0..7d43e55091ec05fb9783cc9266470a52316af67d 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -126,6 +126,12 @@ bool WebContentsDelegate::HandleContextMenu(RenderFrameHost& render_frame_host,
@@ -100,7 +100,7 @@ index 08c983ac6a8e5733431ba00e1288f6d6b087eee6..3e2a9fb6a768c57ddb813c5c7a1df8bb
      WebContents* source,
      const input::NativeWebKeyboardEvent& event) {
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 466f78504376c1fb8684faa08aacabba1987ec7a..543c1f5a0dc04fdaaf7a332ec9869d286f736763 100644
+index 38b61d04446736bcc44a412f633c01ed9aca5399..b6b6888af24f51b64f37036950314783ff170d31 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -313,6 +313,13 @@ class CONTENT_EXPORT WebContentsDelegate {

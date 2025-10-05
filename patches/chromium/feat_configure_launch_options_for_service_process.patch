@@ -19,7 +19,7 @@ to STDOUT_FILENO/STD_OUTPUT_HANDLE and STDERR_FILENO/STD_ERROR_HANDLE allowing t
 parent process to read from the pipe.
 
 diff --git a/content/browser/child_process_launcher.h b/content/browser/child_process_launcher.h
-index 969cd3df9ae2b0db46d432c5489709f981c77f4e..3c16b8dbd68b6be49fc9df52cfab24ef76859282 100644
+index dbbf190cbbb24d07b338a991b2432aae70247b05..66d114b5cf1fcf8237a49ae6e61c3b0580c735bb 100644
 --- a/content/browser/child_process_launcher.h
 +++ b/content/browser/child_process_launcher.h
 @@ -33,6 +33,7 @@
@@ -187,7 +187,7 @@ index d9c14f91747bde0e76056d7f2f2ada166e67f994..53be16879777a3b9bef58ead5f7e420c
  
    UtilityProcessHost::Start(std::move(utility_options),
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index ab48c8b88a7cf311205b221169308d96e95f239f..d714d2022f685052e1def3b0d242d2ea596d790b 100644
+index b4d84672b85e7c070eafacc602acae5590337854..0d7c270217a7906a7f3c4c6e0afdc1386613578c 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
 @@ -245,13 +245,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
