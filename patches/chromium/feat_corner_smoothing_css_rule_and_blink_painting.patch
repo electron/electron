@@ -130,10 +130,10 @@ index 77350eb608ab3af30f9eac3bb0f16ba57b79d049..bea246503fc77eb3c9f2a5dbc67094cc
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index 02a72b17de07e185859f9ee3b8aaf732e839370f..02d166b2e9c580d7ced64258b40e8884a9d3667e 100644
+index aaf3b23f63e6bd5d5c8259feeff9f6202ea07f17..64772649927c94949cae132e502ef882c92d8f14 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-@@ -4074,6 +4074,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
+@@ -4080,6 +4080,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
    return PositionTryFallback(scoped_name, tactic_list);
  }
  
@@ -150,13 +150,13 @@ index 02a72b17de07e185859f9ee3b8aaf732e839370f..02d166b2e9c580d7ced64258b40e8884
                                                const CSSValue& value) {
    const auto& list = To<CSSValueList>(value);
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-index ea7ac20c5449e3d1d753ccf8a14c20c73d53a8aa..608bcfe6511b27c602092c9aad28f0cfc765796d 100644
+index 4b08af59fc8e4b2721e343d0dbf3270c0df24326..052435ac938069a734f5bbb984006c5d6b9b19b2 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-@@ -445,6 +445,7 @@ class StyleBuilderConverter {
-   static PositionTryFallback ConvertSinglePositionTryFallback(
+@@ -448,6 +448,7 @@ class StyleBuilderConverter {
        StyleResolverState&,
-       const CSSValue&);
+       const CSSValue&,
+       bool allow_any_keyword_in_position_area = false);
 +  static Length ConvertCornerSmoothing(StyleResolverState&, const CSSValue&);
    static FitText ConvertFitText(StyleResolverState&, const CSSValue&);
    static TextOverflowData ConvertTextOverflow(StyleResolverState&,
@@ -201,10 +201,10 @@ index 0802c73aa4aaf4e1fb5efd367758f19c36691f71..5f06c0af277a7c937e694470beac707a
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 10147f4be56e9b9cf08ee5f44b2b8fd06df9c8af..536b81d05fb8163e9a4aa4421e0f70590ccbcaf6 100644
+index 009aede9ab946ac2a0b661611e9e6832c3b50c00..be3af08956d6b4c60547e6a6722342b4591b555d 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
-@@ -1672,6 +1672,8 @@ component("platform") {
+@@ -1676,6 +1676,8 @@ component("platform") {
      "widget/widget_base.h",
      "widget/widget_base_client.h",
      "windows_keyboard_codes.h",
@@ -312,7 +312,7 @@ index 7e3d46902fbf736b4240eb3fcb89975a7b222197..57fdc89fc265ad70cb0bff8443cc1026
  
    auto DrawAsSinglePath = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 60df0175b8bd9a2e6e154b901bd1c7928b431041..6fe7ac5f6919d5e7b31d2bc9bca3e0c88034b358 100644
+index 2551bd7880118119921379f932cd6af5feee9a05..940a7f9eb953f8c0868ef1fdd8e3261befdbc511 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -214,6 +214,10 @@
