@@ -1,7 +1,10 @@
-From 2f564f1ca07b1d2668d8639d98ea5ad51cc9cd35 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Mark Mentovai <mark@chromium.org>
 Date: Tue, 16 Sep 2025 16:46:36 -0400
-Subject: [PATCH] mac: handle Metal toolchain being unbundled from Xcode 26
+Subject: mac: handle Metal toolchain being unbundled from Xcode 26
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 The Metal toolchain was formerly part of Xcode, but in Xcode 26, it has
 been unbundled and is now a separate install. Attempting to use the
@@ -29,13 +32,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/6955000
 Auto-Submit: Mark Mentovai <mark@chromium.org>
 Commit-Queue: Mark Mentovai <mark@chromium.org>
 Reviewed-by: Geoff Lang <geofflang@chromium.org>
----
 
 diff --git a/src/libANGLE/renderer/metal/BUILD.gn b/src/libANGLE/renderer/metal/BUILD.gn
-index 96e9ee8..50ac42a 100644
+index 96e9ee8420810f6a3ca9a0c290d4a654200eb7b9..50ac42a5b9a0f7c8b3b161af40c598cb34ff132a 100644
 --- a/src/libANGLE/renderer/metal/BUILD.gn
 +++ b/src/libANGLE/renderer/metal/BUILD.gn
-@@ -24,20 +24,56 @@
+@@ -24,20 +24,56 @@ config("angle_metal_backend_config") {
  }
  
  if (metal_internal_shader_compilation_supported) {
@@ -98,7 +100,7 @@ index 96e9ee8..50ac42a 100644
        "-c",
        rebase_path(_metal_internal_shaders_metal_source, root_build_dir),
        "-o",
-@@ -60,17 +96,16 @@
+@@ -60,17 +96,16 @@ if (metal_internal_shader_compilation_supported) {
    _metal_internal_shaders_metallib_file =
        "$root_gen_dir/angle/mtl_internal_shaders_autogen.metallib"
  
