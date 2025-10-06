@@ -22,10 +22,10 @@ index 74fea36ea7f9a345b3474ea18be00704831a685e..c75785d5a26fa52a39d1a3552da9a762
      const input::NativeWebKeyboardEvent& event) {
    return KeyboardEventProcessingResult::NOT_HANDLED;
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index 9a4195a3e53353342c75d6c4372ed4c27ef13fd3..b5933f0b0d516efc03fe4e72b2bb702dac7804f8 100644
+index bc1bfa1ac381ec94121a264d9dcbae9e02ab5a81..c6fc03ae158b3ce87fd684d765a3f1b0e9f79212 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
-@@ -102,6 +102,12 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+@@ -103,6 +103,12 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
    virtual void ResizeDueToAutoResize(RenderWidgetHostImpl* render_widget_host,
                                       const gfx::Size& new_size) {}
  
@@ -39,7 +39,7 @@ index 9a4195a3e53353342c75d6c4372ed4c27ef13fd3..b5933f0b0d516efc03fe4e72b2bb702d
    // event before sending it to the renderer. See enum for details on return
    // value.
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 8b23c47a6b542ec3d43a6aa65d80cee78dd8388e..45e0d4ba75b7b5ae39236f3b67f4168127a3aaf9 100644
+index 0e2b978b3f35e5805d380da398bba58fcd256310..39dfc8593da452bc40caca94cbb38eca57364d92 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -1588,6 +1588,10 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(
@@ -54,7 +54,7 @@ index 8b23c47a6b542ec3d43a6aa65d80cee78dd8388e..45e0d4ba75b7b5ae39236f3b67f41681
      if (mouse_event_callback.Run(mouse_event)) {
        return;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 37e3db92d23c6e1592d3b984f08189849213e882..eb9ab94888dcc992d584996de3477933eeb86738 100644
+index fefe40186f436f3117543f8c6d0c7c67f358bd2a..2bff527424f3aa98f032743e8ea5a33b439555ad 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4451,6 +4451,12 @@ void WebContentsImpl::RenderWidgetWasResized(
@@ -71,7 +71,7 @@ index 37e3db92d23c6e1592d3b984f08189849213e882..eb9ab94888dcc992d584996de3477933
                                            const gfx::PointF& client_pt) {
    if (delegate_) {
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 342a5f984838eba5aef7a535c3758bb96c0f89a3..8ad2060c9de648c674455cfa775e350d6993654d 100644
+index 034797826196560ab6b71f885d52c8e1c94c1a67..55db63b3f99e465d2c77bb25dca5d50005df5ce7 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1110,6 +1110,7 @@ class CONTENT_EXPORT WebContentsImpl
@@ -83,7 +83,7 @@ index 342a5f984838eba5aef7a535c3758bb96c0f89a3..8ad2060c9de648c674455cfa775e350d
                             const gfx::PointF& client_pt);
    void PreHandleDragExit();
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index df972f1ce594f2d4651202b650ff2d41fe19ecd0..7d43e55091ec05fb9783cc9266470a52316af67d 100644
+index a92305042eef86fbabeae6fe02b48668a349be99..5a50203f2df5724fe7bae5dc9ea211fd2cfe6171 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -126,6 +126,12 @@ bool WebContentsDelegate::HandleContextMenu(RenderFrameHost& render_frame_host,
@@ -100,7 +100,7 @@ index df972f1ce594f2d4651202b650ff2d41fe19ecd0..7d43e55091ec05fb9783cc9266470a52
      WebContents* source,
      const input::NativeWebKeyboardEvent& event) {
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 38b61d04446736bcc44a412f633c01ed9aca5399..b6b6888af24f51b64f37036950314783ff170d31 100644
+index 3c982afb1af048618506a36ca3532b15720d8869..5966331e9fa7413ce8d8321a04f829e75361ec59 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -313,6 +313,13 @@ class CONTENT_EXPORT WebContentsDelegate {
