@@ -31,15 +31,15 @@ namespace electron {
 
 namespace {
 
-void SetWindowBorderAndCaptionColor(HWND hwnd, COLORREF color) {
-  if (base::win::GetVersion() < base::win::Version::WIN11)
-    return;
+void SetWindowBorderAndCaptionColor(HWND hwnd, COLORREF color, bool has_frame) {
+  HRESULT result;
+  if (has_frame) {
+    result =
+        DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, &color, sizeof(color));
 
-  HRESULT result =
-      DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, &color, sizeof(color));
-
-  if (FAILED(result))
-    LOG(WARNING) << "Failed to set caption color";
+    if (FAILED(result))
+      LOG(WARNING) << "Failed to set caption color";
+  }
 
   result =
       DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &color, sizeof(color));
@@ -509,7 +509,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       WINDOWPLACEMENT wp;
       wp.length = sizeof(WINDOWPLACEMENT);
 
-      if (GetWindowPlacement(GetAcceleratedWidget(), &wp)) {
+      if (GetWindowPlacement(GetAcceleratedWidget(), &wp) && !was_snapped_) {
         last_normal_placement_bounds_ = gfx::Rect(wp.rcNormalPosition);
       }
 
@@ -518,11 +518,9 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       if (w_param == SIZE_MAXIMIZED &&
           last_window_state_ != ui::mojom::WindowShowState::kMaximized) {
         if (last_window_state_ == ui::mojom::WindowShowState::kMinimized) {
-          if (was_snapped_) {
-            SetRoundedCorners(false);
-            was_snapped_ = false;
-          }
           NotifyWindowRestore();
+          if (was_snapped_)
+            was_snapped_ = false;
         }
         last_window_state_ = ui::mojom::WindowShowState::kMaximized;
         NotifyWindowMaximize();
@@ -545,12 +543,10 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
             last_window_state_ = ui::mojom::WindowShowState::kFullscreen;
             NotifyWindowEnterFullScreen();
           } else {
-            if (was_snapped_) {
-              SetRoundedCorners(false);
-              was_snapped_ = false;
-            }
             last_window_state_ = ui::mojom::WindowShowState::kNormal;
             NotifyWindowRestore();
+            if (was_snapped_)
+              was_snapped_ = false;
           }
           break;
         default:
@@ -595,7 +591,8 @@ void NativeWindowViews::UpdateWindowAccentColor(bool active) {
   }
 
   COLORREF final_color = border_color.value_or(DWMWA_COLOR_DEFAULT);
-  SetWindowBorderAndCaptionColor(GetAcceleratedWidget(), final_color);
+  SetWindowBorderAndCaptionColor(GetAcceleratedWidget(), final_color,
+                                 has_frame());
 }
 
 void NativeWindowViews::SetAccentColor(

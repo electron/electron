@@ -29,7 +29,7 @@ base::CommandLine::StringType GetSwitchValue(gin_helper::ErrorThrower thrower,
 }
 
 void AppendSwitch(const std::string& switch_string,
-                  gin_helper::Arguments* args) {
+                  gin::Arguments* const args) {
   auto switch_str = base::ToLowerASCII(switch_string);
   auto* command_line = base::CommandLine::ForCurrentProcess();
   if (base::EndsWith(switch_string, "-path",
