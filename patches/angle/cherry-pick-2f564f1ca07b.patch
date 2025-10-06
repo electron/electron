@@ -1,0 +1,123 @@
+From 2f564f1ca07b1d2668d8639d98ea5ad51cc9cd35 Mon Sep 17 00:00:00 2001
+From: Mark Mentovai <mark@chromium.org>
+Date: Tue, 16 Sep 2025 16:46:36 -0400
+Subject: [PATCH] mac: handle Metal toolchain being unbundled from Xcode 26
+
+The Metal toolchain was formerly part of Xcode, but in Xcode 26, it has
+been unbundled and is now a separate install. Attempting to use the
+Metal toolchain without installing it results in a build error, such as:
+
+error: error: cannot execute tool 'metal' due to missing Metal
+Toolchain; use: xcodebuild -downloadComponent MetalToolchain
+
+By running the suggested command, the Metal toolchain can be installed,
+but the existing angle build does not know how to find it correctly.
+
+For system Xcode installations, tools from the Metal toolchain (`metal`
+and `metallib`) can be run via `xcrun`. This construct should work
+equally well for older Xcode versions, for situations where it’s still
+in use.
+
+For the hermetic toolchain, we’ll continue splicing the Metal toolchain
+into the location it had previously been avialable (see
+https://chromium-review.googlesource.com/c/6950738), although this is
+subject to change in the future.
+
+Bug: chromium:423933062, chromium:445400016
+Change-Id: I139eca51938f7cecfec9b90fd488947160ef4ec9
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/6955000
+Auto-Submit: Mark Mentovai <mark@chromium.org>
+Commit-Queue: Mark Mentovai <mark@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+---
+
+diff --git a/src/libANGLE/renderer/metal/BUILD.gn b/src/libANGLE/renderer/metal/BUILD.gn
+index 96e9ee8..50ac42a 100644
+--- a/src/libANGLE/renderer/metal/BUILD.gn
++++ b/src/libANGLE/renderer/metal/BUILD.gn
+@@ -24,20 +24,56 @@
+ }
+ 
+ if (metal_internal_shader_compilation_supported) {
++  template("run_metal_tool") {
++    action(target_name) {
++      forward_variables_from(invoker,
++                             [
++                               "deps",
++                               "sources",
++                               "outputs",
++                               "metal_tool",
++                             ])
++      script = "shaders/metal_wrapper.py"
++      if (use_system_xcode) {
++        # System Xcode: run metal and metallib via xcrun. Since Xcode 26.0, the
++        # Metal toolchain has been unbundled from Xcode, and must be installed
++        # separately by running `xcodebuild -downloadComponent MetalToolchain`.
++        # There is a vestigial metal executable in mac_bin_path, but it’s
++        # incapable of running successfuly without the
++        # rest of the Metal toolchain surrounding it. `xcrun` is able to find
++        # and run the correct Metal toolchain when properly installed.
++        #
++        # If you’re using system Xcode and your build fails with this message:
++        #   error: error: cannot execute tool 'metal' due to missing Metal Toolchain; use: xcodebuild -downloadComponent MetalToolchain
++        # then do what the error message suggests, and then retry your build.
++        args = [
++          "xcrun",
++          metal_tool,
++        ]
++      } else {
++        # Hermetic Xcode: at least for now, the Metal toolchain is
++        # “spliced” into the location in the hermetic toolchain where it lived
++        # before Xcode 26.0, so it can be run directly from there.
++        args = [ mac_bin_path + metal_tool ]
++      }
++
++      args += invoker.args
++    }
++  }
++
+   _metal_internal_shaders_air_file =
+       "$root_gen_dir/angle/mtl_internal_shaders_autogen.air"
+ 
+-  action("angle_metal_internal_shaders_to_air") {
+-    script = "shaders/metal_wrapper.py"
+-
+-    outputs = [ _metal_internal_shaders_air_file ]
+-
++  run_metal_tool("angle_metal_internal_shaders_to_air") {
+     _metal_internal_shaders_metal_source =
+         "shaders/mtl_internal_shaders_autogen.metal"
+     sources = [ _metal_internal_shaders_metal_source ]
+ 
++    outputs = [ _metal_internal_shaders_air_file ]
++
++    metal_tool = "metal"
++
+     args = [
+-      mac_bin_path + "metal",
+       "-c",
+       rebase_path(_metal_internal_shaders_metal_source, root_build_dir),
+       "-o",
+@@ -60,17 +96,16 @@
+   _metal_internal_shaders_metallib_file =
+       "$root_gen_dir/angle/mtl_internal_shaders_autogen.metallib"
+ 
+-  action("angle_metal_internal_shaders_to_mtllib") {
+-    script = "shaders/metal_wrapper.py"
+-
+-    outputs = [ _metal_internal_shaders_metallib_file ]
++  run_metal_tool("angle_metal_internal_shaders_to_mtllib") {
++    deps = [ ":angle_metal_internal_shaders_to_air" ]
+ 
+     sources = [ _metal_internal_shaders_air_file ]
+ 
+-    deps = [ ":angle_metal_internal_shaders_to_air" ]
++    outputs = [ _metal_internal_shaders_metallib_file ]
++
++    metal_tool = "metallib"
+ 
+     args = [
+-      mac_bin_path + "metallib",
+       rebase_path(_metal_internal_shaders_air_file, root_build_dir),
+       "-o",
+       rebase_path(_metal_internal_shaders_metallib_file, root_build_dir),
