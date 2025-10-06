@@ -217,6 +217,7 @@ libcxx_headers = [
   "//third_party/libc++/src/include/__atomic/check_memory_order.h",
   "//third_party/libc++/src/include/__atomic/contention_t.h",
   "//third_party/libc++/src/include/__atomic/fence.h",
+  "//third_party/libc++/src/include/__atomic/floating_point_helper.h",
   "//third_party/libc++/src/include/__atomic/is_always_lock_free.h",
   "//third_party/libc++/src/include/__atomic/kill_dependency.h",
   "//third_party/libc++/src/include/__atomic/memory_order.h",
