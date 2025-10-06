@@ -49,7 +49,7 @@ index 7f70b4f6062e369e2198fc12ff507786283a13c7..22cae8f202357d848bd57aff1ee22abf
      // These existing cases are "grandfathered in", but there shouldn't be more.
      // See comments atop class.
 diff --git a/ui/views/widget/widget_delegate.h b/ui/views/widget/widget_delegate.h
-index ff9c5abfdb02d9798b1491e2bbc296f2c7c74398..47d8a897d58b0d3829734105e81b887684dd009b 100644
+index 1f9c24adbdbe5d2bbd72099d234569c9fdbf863d..b437dd07f15f99cfaa35874f69fd4f19a1b343ba 100644
 --- a/ui/views/widget/widget_delegate.h
 +++ b/ui/views/widget/widget_delegate.h
 @@ -168,6 +168,12 @@ namespace crostini {
@@ -81,7 +81,7 @@ index ff9c5abfdb02d9798b1491e2bbc296f2c7c74398..47d8a897d58b0d3829734105e81b8876
      // DO NOT ADD TO THIS LIST!
      // These existing cases are "grandfathered in", but there shouldn't be more.
      // See comments atop `RegisterDeleteDelegateCallback()`.
-@@ -921,6 +929,7 @@ class VIEWS_EXPORT WidgetDelegateView : public WidgetDelegate, public View {
+@@ -920,6 +928,7 @@ class VIEWS_EXPORT WidgetDelegateView : public WidgetDelegate, public View {
    View* GetContentsView() override;
  
   private:
