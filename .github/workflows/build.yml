@@ -189,7 +189,7 @@ jobs:
     with:
       target-platform: macos
       target-archs: x64 arm64
-      check-runs-on: macos-15-xlarge
+      check-runs-on: macos-15
       gn-build-type: testing
     secrets: inherit
 
