@@ -57,7 +57,7 @@ class WebContentsView : public View,
   void OnViewRemovedFromWidget(views::View* view) override;
 
  private:
-  static gin_helper::WrappableBase* New(gin_helper::Arguments* args);
+  static gin_helper::WrappableBase* New(gin::Arguments* args);
 
   void ApplyBorderRadius();
 

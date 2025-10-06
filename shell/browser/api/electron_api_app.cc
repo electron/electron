@@ -455,10 +455,10 @@ void GotPrivateKey(std::shared_ptr<content::ClientCertificateDelegate> delegate,
 }
 
 void OnClientCertificateSelected(
-    v8::Isolate* isolate,
+    v8::Isolate* const isolate,
     std::shared_ptr<content::ClientCertificateDelegate> delegate,
     std::shared_ptr<net::ClientCertIdentityList> identities,
-    gin::Arguments* args) {
+    gin::Arguments* const args) {
   if (args->Length() == 2) {
     delegate->ContinueWithCertificate(nullptr, nullptr);
     return;
@@ -473,8 +473,7 @@ void OnClientCertificateSelected(
 
   gin_helper::Dictionary cert_data;
   if (!gin::ConvertFromV8(isolate, val, &cert_data)) {
-    gin_helper::ErrorThrower(isolate).ThrowError(
-        "Must pass valid certificate object.");
+    args->ThrowTypeError("Must pass valid certificate object.");
     return;
   }
 
@@ -871,28 +870,33 @@ void App::SetAppPath(const base::FilePath& app_path) {
   app_path_ = app_path;
 }
 
-#if !BUILDFLAG(IS_MAC)
-void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
-                         std::optional<base::FilePath> custom_path) {
-  if (custom_path.has_value()) {
-    if (!custom_path->IsAbsolute()) {
-      thrower.ThrowError("Path must be absolute");
-      return;
-    }
-    {
-      ScopedAllowBlockingForElectron allow_blocking;
-      base::PathService::Override(DIR_APP_LOGS, custom_path.value());
-    }
-  } else {
-    base::FilePath path;
-    if (base::PathService::Get(chrome::DIR_USER_DATA, &path)) {
-      path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
-      {
-        ScopedAllowBlockingForElectron allow_blocking;
-        base::PathService::Override(DIR_APP_LOGS, path);
-      }
-    }
+void App::SetAppLogsPath(gin::Arguments* const args) {
+  base::FilePath path;
+
+  // if caller provided a path, it must be absolute
+  if (args->GetNext(&path) && !path.IsAbsolute()) {
+    args->ThrowTypeError("Path must be absolute");
+    return;
   }
+
+  // if caller did not provide a path, then use a default one
+  if (path.empty()) {
+    path = GetDefaultAppLogPath();
+  }
+
+  ScopedAllowBlockingForElectron allow_blocking;
+  base::PathService::Override(DIR_APP_LOGS, path);
+}
+
+#if !BUILDFLAG(IS_MAC)
+// static
+// default to `${DIR_USER_DATA}/logs`
+base::FilePath App::GetDefaultAppLogPath() {
+  base::FilePath path;
+  if (base::PathService::Get(chrome::DIR_USER_DATA, &path)) {
+    path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
+  }
+  return path;
 }
 #endif
 

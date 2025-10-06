@@ -25,9 +25,9 @@
 #include "shell/browser/ui/win/taskbar_host.h"
 #endif
 
-namespace gin_helper {
+namespace gin {
 class Arguments;
-}  // namespace gin_helper
+}  // namespace gin
 
 namespace electron {
 
@@ -158,7 +158,7 @@ class NativeWindowViews : public NativeWindow,
   void DecrementChildModals();
 
   void SetTitleBarOverlay(const gin_helper::Dictionary& options,
-                          gin_helper::Arguments* args);
+                          gin::Arguments* args);
 
 #if BUILDFLAG(IS_WIN)
   // Catch-all message handling and filtering. Called before
