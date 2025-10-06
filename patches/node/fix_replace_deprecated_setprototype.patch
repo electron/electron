@@ -6,7 +6,7 @@ Subject: fix: replace deprecated SetPrototype
 https://chromium-review.googlesource.com/c/v8/v8/+/6983465
 
 This is already applied in newer versions of Node so we can drop
-this patch once we upgrade.
+this patch once we upgrade to v23.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
 index d3f02f4b56f035e7fa2a596a029795cd84b71c28..43838863294e954f10bb01f9b2de1b0e9f5ed7af 100644
@@ -29,4 +29,30 @@ index d3f02f4b56f035e7fa2a596a029795cd84b71c28..43838863294e954f10bb01f9b2de1b0e
 +      per_isolate_symbols_object->SetPrototypeV2(context, Null(isolate))
            .IsNothing()) {
      return MaybeLocal<Object>();
+   }
+diff --git a/src/node_constants.cc b/src/node_constants.cc
+index 428700c91457cd087d6b9fc6fd3db420e103dd92..2029b7835bcf506900ea28fa137316af6c97e655 100644
+--- a/src/node_constants.cc
++++ b/src/node_constants.cc
+@@ -1311,7 +1311,7 @@ void CreatePerContextProperties(Local<Object> target,
+             .FromJust());
+ 
+   Local<Object> internal_constants = Object::New(isolate);
+-  CHECK(internal_constants->SetPrototype(env->context(),
++  CHECK(internal_constants->SetPrototypeV2(env->context(),
+                                          Null(env->isolate())).FromJust());
+ 
+   DefineErrnoConstants(err_constants);
+diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
+index 62f280c1e0e860ae3a3c8b48eda31a3cc8f0c216..7b3a15f4be4b4cc0b817d60ba8675e553989ec61 100644
+--- a/src/node_sqlite.cc
++++ b/src/node_sqlite.cc
+@@ -2103,7 +2103,7 @@ void StatementSync::Iterate(const FunctionCallbackInfo<Value>& args) {
+   if (iter->object()
+           ->GetPrototype()
+           .As<Object>()
+-          ->SetPrototype(context, js_iterator_prototype)
++          ->SetPrototypeV2(context, js_iterator_prototype)
+           .IsNothing()) {
+     return;
    }
