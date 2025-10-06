@@ -133,7 +133,7 @@ index a01f0d96ef33ce9460a851b072b7ceed5227dee3..f7e39b28cc0ba2251123925c01083a79
  
      // JavaScript from chrome and chrome-untrusted pages. The resource URLs are
 diff --git a/content/browser/code_cache/generated_code_cache_browsertest.cc b/content/browser/code_cache/generated_code_cache_browsertest.cc
-index 28556e56f2fd591c46ce6f48d39eb907876a499d..f5737ba60fb9e182459066ffa62c7c589f379954 100644
+index 659501d6a0ab4573ede8e91050bef88710e401d7..92cb39b7140fb815b1c56aca3be0db032c5699eb 100644
 --- a/content/browser/code_cache/generated_code_cache_browsertest.cc
 +++ b/content/browser/code_cache/generated_code_cache_browsertest.cc
 @@ -16,17 +16,22 @@
@@ -159,7 +159,7 @@ index 28556e56f2fd591c46ce6f48d39eb907876a499d..f5737ba60fb9e182459066ffa62c7c58
  #include "net/base/features.h"
  #include "net/dns/mock_host_resolver.h"
  #include "third_party/blink/public/common/features.h"
-@@ -37,6 +42,8 @@ namespace content {
+@@ -38,6 +43,8 @@ namespace content {
  
  namespace {
  
@@ -168,7 +168,7 @@ index 28556e56f2fd591c46ce6f48d39eb907876a499d..f5737ba60fb9e182459066ffa62c7c58
  bool SupportsSharedWorker() {
    return base::FeatureList::IsEnabled(blink::features::kSharedWorker);
  }
-@@ -1044,4 +1051,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
+@@ -1063,4 +1070,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
    }
  }
  
@@ -252,10 +252,10 @@ index 28556e56f2fd591c46ce6f48d39eb907876a499d..f5737ba60fb9e182459066ffa62c7c58
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index 7b4408f3480bd062ab9221f524633c177a212790..8d283d84b0817a937845b221bb13c6ed12bfade6 100644
+index 863c06383209bde7945bcce487161a64408bfcb0..5e0a0583c937d3eb4e993f51bdcd4351e1f3dfeb 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
-@@ -7,6 +7,7 @@
+@@ -8,6 +8,7 @@
  #include <string_view>
  #include <utility>
  
@@ -263,7 +263,7 @@ index 7b4408f3480bd062ab9221f524633c177a212790..8d283d84b0817a937845b221bb13c6ed
  #include "base/feature_list.h"
  #include "base/functional/bind.h"
  #include "base/functional/callback_helpers.h"
-@@ -36,6 +37,7 @@
+@@ -38,6 +39,7 @@
  #include "third_party/blink/public/mojom/loader/code_cache.mojom-data-view.h"
  #include "url/gurl.h"
  #include "url/origin.h"
@@ -271,8 +271,8 @@ index 7b4408f3480bd062ab9221f524633c177a212790..8d283d84b0817a937845b221bb13c6ed
  
  using blink::mojom::CacheStorageError;
  
-@@ -55,6 +57,11 @@ GeneratedCodeCache::CodeCacheType MojoCacheTypeToCodeCacheType(
-   }
+@@ -112,6 +114,11 @@ std::optional<std::string> GetContextKeyForPersistentCacheCollection(
+   return context_key;
  }
  
 +bool ProcessLockURLIsCodeCacheScheme(const ProcessLock& process_lock) {
@@ -283,7 +283,7 @@ index 7b4408f3480bd062ab9221f524633c177a212790..8d283d84b0817a937845b221bb13c6ed
  bool CheckSecurityForAccessingCodeCacheData(
      const GURL& resource_url,
      int render_process_id,
-@@ -65,39 +72,56 @@ bool CheckSecurityForAccessingCodeCacheData(
+@@ -122,39 +129,56 @@ bool CheckSecurityForAccessingCodeCacheData(
  
    // Code caching is only allowed for http(s) and chrome/chrome-untrusted
    // scripts. Furthermore, there is no way for http(s) pages to load chrome or
@@ -361,7 +361,7 @@ index 7b4408f3480bd062ab9221f524633c177a212790..8d283d84b0817a937845b221bb13c6ed
    }
  
    if (operation == CodeCacheHostImpl::Operation::kWrite) {
-@@ -530,6 +554,7 @@ std::optional<GURL> CodeCacheHostImpl::GetSecondaryKeyForCodeCache(
+@@ -589,6 +613,7 @@ std::optional<GURL> CodeCacheHostImpl::GetSecondaryKeyForCodeCache(
        process_lock.MatchesScheme(url::kHttpsScheme) ||
        process_lock.MatchesScheme(content::kChromeUIScheme) ||
        process_lock.MatchesScheme(content::kChromeUIUntrustedScheme) ||

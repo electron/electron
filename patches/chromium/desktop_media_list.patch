@@ -82,7 +82,7 @@ index 786c526588d81b8b5b1b5dd3760719a53e005995..f66b7d0b4dfcbb8ed3dde5a9ff463ae2
    const Source& GetSource(int index) const override;
    DesktopMediaList::Type GetMediaListType() const override;
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 1f5672f1aae610f2511a5a40885750f987871c8c..199a69a9c45e066a50f48298dae2dbcd06560d5b 100644
+index 3be638f1032815d39634b5725031d7f3124e1ad2..fce3e30bc736ac72a42d24956d4abf9f49c8fc41 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -216,9 +216,13 @@ content::DesktopMediaID::Id GetUpdatedWindowId(
