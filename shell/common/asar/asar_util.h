@@ -8,6 +8,8 @@
 #include <memory>
 #include <string>
 
+#include "base/containers/span.h"
+
 namespace base {
 class FilePath;
 }
@@ -20,9 +22,6 @@ struct IntegrityPayload;
 // Gets or creates and caches a new Archive from the path.
 std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path);
 
-// Destroy cached Archive objects.
-void ClearArchives();
-
 // Separates the path to Archive out.
 bool GetAsarArchivePath(const base::FilePath& full_path,
                         base::FilePath* asar_path,
@@ -32,8 +31,7 @@ bool GetAsarArchivePath(const base::FilePath& full_path,
 // Same with base::ReadFileToString but supports asar Archive.
 bool ReadFileToString(const base::FilePath& path, std::string* contents);
 
-void ValidateIntegrityOrDie(const char* data,
-                            size_t size,
+void ValidateIntegrityOrDie(base::span<const uint8_t> input,
                             const IntegrityPayload& integrity);
 
 }  // namespace asar

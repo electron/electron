@@ -11,6 +11,7 @@
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
+#include "net/base/network_change_notifier.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/mojom/host_resolver.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
@@ -39,13 +40,16 @@ class URLLoaderBundle {
   static URLLoaderBundle* GetInstance();
   void SetURLLoaderFactory(
       mojo::PendingRemote<network::mojom::URLLoaderFactory> factory,
-      mojo::Remote<network::mojom::HostResolver> host_resolver);
+      mojo::Remote<network::mojom::HostResolver> host_resolver,
+      bool use_network_observer_from_url_loader_factory);
   scoped_refptr<network::SharedURLLoaderFactory> GetSharedURLLoaderFactory();
   network::mojom::HostResolver* GetHostResolver();
+  bool ShouldUseNetworkObserverfromURLLoaderFactory() const;
 
  private:
   scoped_refptr<network::SharedURLLoaderFactory> factory_;
   mojo::Remote<network::mojom::HostResolver> host_resolver_;
+  bool should_use_network_observer_from_url_loader_factory_ = false;
 };
 
 class NodeService : public node::mojom::NodeService {
@@ -58,7 +62,9 @@ class NodeService : public node::mojom::NodeService {
   NodeService& operator=(const NodeService&) = delete;
 
   // mojom::NodeService implementation:
-  void Initialize(node::mojom::NodeServiceParamsPtr params) override;
+  void Initialize(node::mojom::NodeServiceParamsPtr params,
+                  mojo::PendingRemote<node::mojom::NodeServiceClient>
+                      client_pending_remote) override;
 
  private:
   // This needs to be initialized first so that it can be destroyed last
@@ -79,6 +85,8 @@ class NodeService : public node::mojom::NodeService {
 
   // depends-on: js_env_'s isolate
   std::shared_ptr<node::Environment> node_env_;
+
+  std::unique_ptr<net::NetworkChangeNotifier> network_change_notifier_;
 };
 
 }  // namespace electron

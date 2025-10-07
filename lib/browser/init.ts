@@ -1,8 +1,9 @@
+import type * as defaultMenuModule from '@electron/internal/browser/default-menu';
+
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import type * as defaultMenuModule from '@electron/internal/browser/default-menu';
 import type * as url from 'url';
 import type * as v8 from 'v8';
 
@@ -145,6 +146,9 @@ require('@electron/internal/browser/devtools');
 // Load protocol module to ensure it is populated on app ready
 require('@electron/internal/browser/api/protocol');
 
+// Load service-worker-main module to ensure it is populated on app ready
+require('@electron/internal/browser/api/service-worker-main');
+
 // Load web-contents module to ensure it is populated on app ready
 require('@electron/internal/browser/api/web-contents');
 
@@ -200,7 +204,7 @@ delete process.appCodeLoaded;
 if (packagePath) {
   // Finally load app's main.js and transfer control to C++.
   if ((packageJson.type === 'module' && !mainStartupScript.endsWith('.cjs')) || mainStartupScript.endsWith('.mjs')) {
-    const { runEntryPointWithESMLoader } = __non_webpack_require__('internal/modules/run_main');
+    const { runEntryPointWithESMLoader } = __non_webpack_require__('internal/modules/run_main') as typeof import('@node/lib/internal/modules/run_main');
     const main = (require('url') as typeof url).pathToFileURL(path.join(packagePath, mainStartupScript));
     runEntryPointWithESMLoader(async (cascadedLoader: any) => {
       try {
@@ -212,9 +216,8 @@ if (packagePath) {
       }
     });
   } else {
-    // Call appCodeLoaded before just for safety, it doesn't matter here as _load is syncronous
+    // Call appCodeLoaded before just for safety, it doesn't matter here as _load is synchronous
     appCodeLoaded!();
-    process._firstFileName = Module._resolveFilename(path.join(packagePath, mainStartupScript), null, false);
     Module._load(path.join(packagePath, mainStartupScript), Module, true);
   }
 } else {

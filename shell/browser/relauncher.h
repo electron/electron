@@ -41,7 +41,6 @@ struct MainFunctionParams;
 
 namespace relauncher {
 
-using CharType = base::CommandLine::CharType;
 using StringType = base::CommandLine::StringType;
 using StringVector = base::CommandLine::StringVector;
 
@@ -82,18 +81,6 @@ namespace internal {
 // stderr.
 extern const int kRelauncherSyncFD;
 #endif
-
-// The "type" argument identifying a relauncher process ("--type=relauncher").
-extern const CharType* kRelauncherTypeArg;
-
-// The argument separating arguments intended for the relauncher process from
-// those intended for the relaunched process. "---" is chosen instead of "--"
-// because CommandLine interprets "--" as meaning "end of switches", but
-// for many purposes, the relauncher process' CommandLine ought to interpret
-// arguments intended for the relaunched process, to get the correct settings
-// for such things as logging and the user-data-dir in case it affects crash
-// reporting.
-extern const CharType* kRelauncherArgSeparator;
 
 #if BUILDFLAG(IS_WIN)
 StringType GetWaitEventName(base::ProcessId pid);

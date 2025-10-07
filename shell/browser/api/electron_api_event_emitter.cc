@@ -5,9 +5,9 @@
 #include "shell/browser/api/electron_api_event_emitter.h"
 
 #include "base/functional/bind.h"
-#include "base/functional/callback.h"
 #include "base/no_destructor.h"
 #include "gin/dictionary.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
 #include "v8/include/v8.h"
@@ -28,9 +28,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-
-  gin::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin::Dictionary dict{isolate, exports};
   dict.Set("setEventEmitterPrototype",
            base::BindRepeating(&SetEventEmitterPrototype));
 }

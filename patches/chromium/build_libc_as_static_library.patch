@@ -7,40 +7,14 @@ Build libc++ as static library to compile and pass
 nan tests
 
 diff --git a/buildtools/third_party/libc++/BUILD.gn b/buildtools/third_party/libc++/BUILD.gn
-index 30fad21ed77fc063cb14ec109885b9533999c69a..e7060d599f4c84b135a824454f5d260907e5427a 100644
+index 7dcefd2bceb209c6e74445259fac00e3e2280ff7..3a233d2e9dafc2093ead8f9c9104d06fe6176252 100644
 --- a/buildtools/third_party/libc++/BUILD.gn
 +++ b/buildtools/third_party/libc++/BUILD.gn
-@@ -45,7 +45,11 @@ config("winver") {
- if (libcxx_is_shared) {
-   _libcxx_target_type = "shared_library"
- } else {
--  _libcxx_target_type = "source_set"
-+  if (is_win) {
-+    _libcxx_target_type = "source_set"
-+  } else {
-+    _libcxx_target_type = "static_library"
-+  }
- }
- target(_libcxx_target_type, "libc++") {
-   # Most things that need to depend on libc++ should do so via the implicit
-@@ -53,6 +57,7 @@ target(_libcxx_target_type, "libc++") {
+@@ -841,6 +841,7 @@ target(libcxx_target_type, "libc++") {
    # need to explicitly depend on libc++.
    visibility = [
      "//build/config:common_deps",
 +    "//electron:libcxx_objects_zip",
-     "//third_party/catapult/devil:devil",
+     "//third_party/catapult/devil",
    ]
    if (is_linux) {
-diff --git a/buildtools/third_party/libc++abi/BUILD.gn b/buildtools/third_party/libc++abi/BUILD.gn
-index bf3db7adc340d82ade8514a19d1bb033ec38538f..c8bcc73d8b1eefbd7851552c1e8431746c1f4b62 100644
---- a/buildtools/third_party/libc++abi/BUILD.gn
-+++ b/buildtools/third_party/libc++abi/BUILD.gn
-@@ -6,7 +6,7 @@ import("//build/config/android/config.gni")
- import("//build/config/c++/c++.gni")
- import("//build/config/unwind.gni")
- 
--source_set("libc++abi") {
-+static_library("libc++abi") {
-   if (export_libcxxabi_from_executables) {
-     visibility = [ "//build/config:executable_deps" ]
-   } else {

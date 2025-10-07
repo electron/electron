@@ -8,12 +8,12 @@ was removed as part of the Raw Clipboard API scrubbing.
 https://bugs.chromium.org/p/chromium/issues/detail?id=1217643
 
 diff --git a/ui/base/clipboard/scoped_clipboard_writer.cc b/ui/base/clipboard/scoped_clipboard_writer.cc
-index 6022a0af4241fe65bd03d7cbf95785e8879dc78e..ec9e4c6ece9014b66e7d65e99cda2b956a9a5d80 100644
+index 2d612b3a8ceb61f02fbd96023140bc2c702db589..bb5b17fc884b78aa65c3885e11309a9c50f8e786 100644
 --- a/ui/base/clipboard/scoped_clipboard_writer.cc
 +++ b/ui/base/clipboard/scoped_clipboard_writer.cc
-@@ -229,6 +229,16 @@ void ScopedClipboardWriter::WriteEncodedDataTransferEndpointForTesting(
+@@ -246,6 +246,16 @@ void ScopedClipboardWriter::WriteData(std::u16string_view format,
+   }
  }
- #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
  
 +void ScopedClipboardWriter::WriteUnsafeRawData(const std::u16string& format,
 +                                               mojo_base::BigBuffer data) {
@@ -27,14 +27,14 @@ index 6022a0af4241fe65bd03d7cbf95785e8879dc78e..ec9e4c6ece9014b66e7d65e99cda2b95
 +
  void ScopedClipboardWriter::Reset() {
    objects_.clear();
-   platform_representations_.clear();
+   raw_objects_.clear();
 diff --git a/ui/base/clipboard/scoped_clipboard_writer.h b/ui/base/clipboard/scoped_clipboard_writer.h
-index 96ba9abb9b7efab79adbf299c6bd3b4f7a4501e1..0916b81ec5b3cb123185b7cff332120ee498fb57 100644
+index 8c2be540757856a3e704764fe56003205b24812f..e31fbc01f68c0e92284a72298cac878d7247e7fb 100644
 --- a/ui/base/clipboard/scoped_clipboard_writer.h
 +++ b/ui/base/clipboard/scoped_clipboard_writer.h
-@@ -89,6 +89,10 @@ class COMPONENT_EXPORT(UI_BASE_CLIPBOARD) ScopedClipboardWriter {
+@@ -91,6 +91,10 @@ class COMPONENT_EXPORT(UI_BASE_CLIPBOARD) ScopedClipboardWriter {
    // This is only used to write custom format data.
-   void WriteData(const std::u16string& format, mojo_base::BigBuffer data);
+   void WriteData(std::u16string_view format, mojo_base::BigBuffer data);
  
 +  // write raw (non-pickled) data to the clipboard
 +  void WriteUnsafeRawData(const std::u16string& format,
@@ -42,4 +42,4 @@ index 96ba9abb9b7efab79adbf299c6bd3b4f7a4501e1..0916b81ec5b3cb123185b7cff332120e
 +
    void WriteImage(const SkBitmap& bitmap);
  
- #if BUILDFLAG(IS_CHROMEOS_LACROS)
+   // Mark the data to be written as confidential.

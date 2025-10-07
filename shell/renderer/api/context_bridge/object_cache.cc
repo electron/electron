@@ -4,44 +4,30 @@
 
 #include "shell/renderer/api/context_bridge/object_cache.h"
 
-#include "shell/common/api/object_life_monitor.h"
+#include "v8/include/v8-local-handle.h"
+#include "v8/include/v8-object.h"
 
 namespace electron::api::context_bridge {
 
 ObjectCache::ObjectCache() = default;
 ObjectCache::~ObjectCache() = default;
 
-void ObjectCache::CacheProxiedObject(v8::Local<v8::Value> from,
+void ObjectCache::CacheProxiedObject(const v8::Local<v8::Value> from,
                                      v8::Local<v8::Value> proxy_value) {
-  if (from->IsObject() && !from->IsNullOrUndefined()) {
-    auto obj = from.As<v8::Object>();
-    int hash = obj->GetIdentityHash();
-
-    proxy_map_[hash].emplace_front(from, proxy_value);
-  }
+  if (from->IsObject() && !from->IsNullOrUndefined())
+    proxy_map_.insert_or_assign(from.As<v8::Object>(), proxy_value);
 }
 
 v8::MaybeLocal<v8::Value> ObjectCache::GetCachedProxiedObject(
-    v8::Local<v8::Value> from) const {
+    const v8::Local<v8::Value> from) const {
   if (!from->IsObject() || from->IsNullOrUndefined())
-    return v8::MaybeLocal<v8::Value>();
+    return {};
 
-  auto obj = from.As<v8::Object>();
-  int hash = obj->GetIdentityHash();
-  auto iter = proxy_map_.find(hash);
-  if (iter == proxy_map_.end())
-    return v8::MaybeLocal<v8::Value>();
+  const auto iter = proxy_map_.find(from.As<v8::Object>());
+  if (iter == proxy_map_.end() || iter->second.IsEmpty())
+    return {};
 
-  auto& list = iter->second;
-  for (const auto& pair : list) {
-    auto from_cmp = pair.first;
-    if (from_cmp == from) {
-      if (pair.second.IsEmpty())
-        return v8::MaybeLocal<v8::Value>();
-      return pair.second;
-    }
-  }
-  return v8::MaybeLocal<v8::Value>();
+  return iter->second;
 }
 
 }  // namespace electron::api::context_bridge

@@ -1,17 +1,31 @@
-import { BrowserWindow, app } from 'electron/main';
 import { shell } from 'electron/common';
-import { closeAllWindows } from './lib/window-helpers';
-import { ifdescribe, ifit, listen } from './lib/spec-helpers';
-import * as http from 'node:http';
+import { BrowserWindow, app } from 'electron/main';
+
+import { expect } from 'chai';
+
+import { execSync } from 'node:child_process';
+import { once } from 'node:events';
 import * as fs from 'node:fs';
+import * as http from 'node:http';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { expect } from 'chai';
-import { once } from 'node:events';
+
+import { ifdescribe, ifit, listen } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 describe('shell module', () => {
   describe('shell.openExternal()', () => {
     let envVars: Record<string, string | undefined> = {};
+    let server: http.Server;
+
+    after(function () {
+      this.timeout(60000);
+      if (process.env.CI && process.platform === 'win32') {
+        // Edge may cause issues with visibility tests, so make sure it is closed after testing.
+        const killEdge = 'Get-Process | Where Name -Like "msedge" | Stop-Process';
+        execSync(killEdge, { shell: 'powershell.exe' });
+      }
+    });
 
     beforeEach(function () {
       envVars = {
@@ -28,8 +42,12 @@ describe('shell module', () => {
         process.env.BROWSER = envVars.browser;
         process.env.DISPLAY = envVars.display;
       }
+      await closeAllWindows();
+      if (server) {
+        server.close();
+        server = null as unknown as http.Server;
+      }
     });
-    afterEach(closeAllWindows);
 
     async function urlOpened () {
       let url = 'http://127.0.0.1';
@@ -47,7 +65,7 @@ describe('shell module', () => {
         const w = new BrowserWindow({ show: true });
         requestReceived = once(w, 'blur');
       } else {
-        const server = http.createServer((req, res) => {
+        server = http.createServer((req, res) => {
           res.end();
         });
         url = (await listen(server)).url;
@@ -72,6 +90,21 @@ describe('shell module', () => {
         w.webContents.executeJavaScript(`require("electron").shell.openExternal(${JSON.stringify(url)})`),
         requestReceived
       ]);
+    });
+
+    ifit(process.platform === 'darwin')('removes focus from the electron window after opening an external link', async () => {
+      const url = 'http://127.0.0.1';
+      const w = new BrowserWindow({ show: true });
+
+      await once(w, 'focus');
+      expect(w.isFocused()).to.be.true();
+
+      await Promise.all<void>([
+        shell.openExternal(url),
+        once(w, 'blur') as Promise<any>
+      ]);
+
+      expect(w.isFocused()).to.be.false();
     });
   });
 

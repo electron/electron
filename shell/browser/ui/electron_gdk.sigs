@@ -1,0 +1,1 @@
+void gdk_display_beep(GdkDisplay* display);

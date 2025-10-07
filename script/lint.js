@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
-const crypto = require('node:crypto');
 const { GitProcess } = require('dugite');
-const childProcess = require('node:child_process');
 const { ESLint } = require('eslint');
-const fs = require('node:fs');
 const minimist = require('minimist');
+
+const childProcess = require('node:child_process');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
 const path = require('node:path');
-const { getCodeBlocks } = require('@electron/lint-roller/dist/lib/markdown');
 
 const { chunkFilenames, findMatchingFiles } = require('./lib/utils');
 
@@ -73,6 +73,24 @@ function spawnAndCheckExitCode (cmd, args, opts) {
   }
 }
 
+async function runEslint (eslint, filenames, { fix, verbose }) {
+  const formatter = await eslint.loadFormatter();
+  let successCount = 0;
+  const results = await eslint.lintFiles(filenames);
+  for (const result of results) {
+    successCount += result.errorCount === 0 ? 1 : 0;
+    if (verbose && result.errorCount === 0 && result.warningCount === 0) {
+      console.log(`${result.filePath}: no errors or warnings`);
+    }
+  }
+  console.log(formatter.format(results));
+  if (fix) {
+    await ESLint.outputFixes(results);
+  }
+
+  return successCount === filenames.length;
+}
+
 function cpplint (args) {
   args.unshift(`--root=${SOURCE_ROOT}`);
   const cmd = IS_WINDOWS ? 'cpplint.bat' : 'cpplint.py';
@@ -136,7 +154,7 @@ const LINTERS = [{
   key: 'javascript',
   roots: ['build', 'default_app', 'lib', 'npm', 'script', 'spec'],
   ignoreRoots: ['spec/node_modules'],
-  test: filename => filename.endsWith('.js') || filename.endsWith('.ts'),
+  test: filename => filename.endsWith('.js') || filename.endsWith('.ts') || filename.endsWith('.mjs'),
   run: async (opts, filenames) => {
     const eslint = new ESLint({
       // Do not use the lint cache on CI builds
@@ -144,23 +162,10 @@ const LINTERS = [{
       cacheLocation: `node_modules/.eslintcache.${crypto.createHash('md5').update(fs.readFileSync(__filename)).digest('hex')}`,
       extensions: ['.js', '.ts'],
       fix: opts.fix,
-      overrideConfigFile: path.join(ELECTRON_ROOT, '.eslintrc.json'),
       resolvePluginsRelativeTo: ELECTRON_ROOT
     });
-    const formatter = await eslint.loadFormatter();
-    let successCount = 0;
-    const results = await eslint.lintFiles(filenames);
-    for (const result of results) {
-      successCount += result.errorCount === 0 ? 1 : 0;
-      if (opts.verbose && result.errorCount === 0 && result.warningCount === 0) {
-        console.log(`${result.filePath}: no errors or warnings`);
-      }
-    }
-    console.log(formatter.format(results));
-    if (opts.fix) {
-      await ESLint.outputFixes(results);
-    }
-    if (successCount !== filenames.length) {
+    const clean = await runEslint(eslint, filenames, { fix: opts.fix, verbose: opts.verbose });
+    if (!clean) {
       console.error('Linting had errors');
       process.exit(1);
     }
@@ -277,9 +282,10 @@ const LINTERS = [{
 }, {
   key: 'md',
   roots: ['.'],
-  ignoreRoots: ['node_modules', 'spec/node_modules'],
+  ignoreRoots: ['.git', 'node_modules', 'spec/node_modules'],
   test: filename => filename.endsWith('.md'),
   run: async (opts, filenames) => {
+    const { getCodeBlocks } = await import('@electron/lint-roller/dist/lib/markdown.js');
     let errors = false;
 
     // Run markdownlint on all Markdown files
@@ -362,6 +368,26 @@ const LINTERS = [{
         }
       }
     }
+
+    const eslint = new ESLint({
+      // Do not use the lint cache on CI builds
+      cache: !process.env.CI,
+      cacheLocation: `node_modules/.eslintcache.${crypto.createHash('md5').update(fs.readFileSync(__filename)).digest('hex')}`,
+      fix: opts.fix,
+      overrideConfigFile: path.join(ELECTRON_ROOT, 'docs', '.eslintrc.json'),
+      resolvePluginsRelativeTo: ELECTRON_ROOT
+    });
+    const clean = await runEslint(
+      eslint,
+      docs.filter(
+        // TODO(dsanders11): Once we move to newer ESLint and the flat config,
+        // switch to using `ignorePatterns` and `warnIgnore: false` instead of
+        // explicitly filtering out this file that we don't want to lint
+        (filename) => !filename.endsWith('docs/breaking-changes.md')
+      ),
+      { fix: opts.fix, verbose: opts.verbose }
+    );
+    errors ||= !clean;
 
     if (errors) {
       process.exit(1);

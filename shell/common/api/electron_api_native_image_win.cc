@@ -90,7 +90,7 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   icon_info.hbmMask = hBitmap;
   icon_info.hbmColor = hBitmap;
 
-  base::win::ScopedHICON icon(CreateIconIndirect(&icon_info));
+  base::win::ScopedGDIObject<HICON> icon(CreateIconIndirect(&icon_info));
   SkBitmap skbitmap = IconUtil::CreateSkBitmapFromHICON(icon.get());
   gfx::ImageSkia image_skia =
       gfx::ImageSkia::CreateFromBitmap(skbitmap, 1.0 /*scale factor*/);

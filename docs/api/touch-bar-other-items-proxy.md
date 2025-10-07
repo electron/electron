@@ -4,8 +4,9 @@
 > from Chromium at the space indicated by the proxy. By default, this proxy is added
 > to each TouchBar at the end of the input. For more information, see the AppKit docs on
 > [NSTouchBarItemIdentifierOtherItemsProxy](https://developer.apple.com/documentation/appkit/nstouchbaritemidentifierotheritemsproxy)
->
-> Note: Only one instance of this class can be added per TouchBar.
+
+> [!NOTE]
+> Only one instance of this class can be added per TouchBar.
 
 Process: [Main](../glossary.md#main-process)<br />
 _This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._

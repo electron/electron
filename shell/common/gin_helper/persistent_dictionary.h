@@ -6,7 +6,11 @@
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_PERSISTENT_DICTIONARY_H_
 
 #include "base/memory/raw_ptr.h"
-#include "shell/common/gin_helper/dictionary.h"
+#include "gin/converter.h"
+#include "v8/include/v8-context.h"
+#include "v8/include/v8-isolate.h"
+#include "v8/include/v8-local-handle.h"
+#include "v8/include/v8-object.h"
 
 namespace gin_helper {
 
@@ -28,14 +32,22 @@ class PersistentDictionary {
 
   template <typename K, typename V>
   bool Get(const K& key, V* out) const {
+    const auto handle = GetHandle();
     v8::Local<v8::Context> context = isolate_->GetCurrentContext();
     v8::Local<v8::Value> v8_key = gin::ConvertToV8(isolate_, key);
     v8::Local<v8::Value> value;
-    v8::Maybe<bool> result = GetHandle()->Has(context, v8_key);
-    if (result.IsJust() && result.FromJust() &&
-        GetHandle()->Get(context, v8_key).ToLocal(&value))
-      return gin::ConvertFromV8(isolate_, value, out);
-    return false;
+    return handle->Has(context, v8_key).FromMaybe(false) &&
+           handle->Get(context, v8_key).ToLocal(&value) &&
+           gin::ConvertFromV8(isolate_, value, out);
+  }
+
+  // Convenience function for using a default value if the
+  // specified key isn't present in the dictionary.
+  template <typename T>
+  T ValueOrDefault(const std::string_view key, T default_value) const {
+    if (auto value = T{}; Get(key, &value))
+      return value;
+    return default_value;
   }
 
  private:

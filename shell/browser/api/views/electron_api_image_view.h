@@ -5,16 +5,27 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_VIEWS_ELECTRON_API_IMAGE_VIEW_H_
 #define ELECTRON_SHELL_BROWSER_API_VIEWS_ELECTRON_API_IMAGE_VIEW_H_
 
-#include "gin/handle.h"
 #include "shell/browser/api/electron_api_view.h"
-#include "ui/gfx/image/image.h"
+#include "shell/common/gin_helper/handle.h"
 #include "ui/views/controls/image_view.h"
+
+namespace gfx {
+class Image;
+}
+
+namespace gin {
+class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
+class WrappableBase;
+}  // namespace gin_helper
 
 namespace electron::api {
 
 class ImageView : public View {
  public:
-  static gin_helper::WrappableBase* New(gin_helper::Arguments* args);
+  static gin_helper::WrappableBase* New(gin::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);

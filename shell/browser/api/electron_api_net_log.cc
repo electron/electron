@@ -21,7 +21,9 @@
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/gin_helper/handle.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace gin {
 
@@ -63,8 +65,7 @@ scoped_refptr<base::SequencedTaskRunner> CreateFileTaskRunner() {
 }
 
 base::File OpenFileForWriting(base::FilePath path) {
-  return base::File(path,
-                    base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
+  return {path, base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE};
 }
 
 void ResolvePromiseWithNetError(gin_helper::Promise<void> promise,
@@ -80,9 +81,10 @@ void ResolvePromiseWithNetError(gin_helper::Promise<void> promise,
 
 namespace api {
 
-gin::WrapperInfo NetLog::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo NetLog::kWrapperInfo = {{gin::kEmbedderNativeGin},
+                                         gin::kElectronNetLog};
 
-NetLog::NetLog(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
+NetLog::NetLog(ElectronBrowserContext* const browser_context)
     : browser_context_(browser_context) {
   file_task_runner_ = CreateFileTaskRunner();
 }
@@ -93,7 +95,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
                                             gin::Arguments* args) {
   if (log_path.empty()) {
     args->ThrowTypeError("The first parameter must be a valid string");
-    return v8::Local<v8::Promise>();
+    return {};
   }
 
   net::NetLogCaptureMode capture_mode = net::NetLogCaptureMode::kDefault;
@@ -106,7 +108,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
       if (!gin::ConvertFromV8(args->isolate(), capture_mode_v8,
                               &capture_mode)) {
         args->ThrowTypeError("Invalid value for captureMode");
-        return v8::Local<v8::Promise>();
+        return {};
       }
     }
     v8::Local<v8::Value> max_file_size_v8;
@@ -114,14 +116,14 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
       if (!gin::ConvertFromV8(args->isolate(), max_file_size_v8,
                               &max_file_size)) {
         args->ThrowTypeError("Invalid value for maxFileSize");
-        return v8::Local<v8::Promise>();
+        return {};
       }
     }
   }
 
   if (net_log_exporter_) {
     args->ThrowTypeError("There is already a net log running");
-    return v8::Local<v8::Promise>();
+    return {};
   }
 
   pending_start_promise_ =
@@ -166,6 +168,7 @@ void NetLog::StartNetLogAfterCreateFile(net::NetLogCaptureMode capture_mode,
     std::move(*pending_start_promise_)
         .RejectWithErrorMessage(
             base::File::ErrorToString(output_file.error_details()));
+    pending_start_promise_.reset();
     net_log_exporter_.reset();
     return;
   }
@@ -178,6 +181,7 @@ void NetLog::StartNetLogAfterCreateFile(net::NetLogCaptureMode capture_mode,
 void NetLog::NetLogStarted(int32_t error) {
   DCHECK(pending_start_promise_);
   ResolvePromiseWithNetError(std::move(*pending_start_promise_), error);
+  pending_start_promise_.reset();
 }
 
 void NetLog::OnConnectionError() {
@@ -185,6 +189,7 @@ void NetLog::OnConnectionError() {
   if (pending_start_promise_) {
     std::move(*pending_start_promise_)
         .RejectWithErrorMessage("Failed to start net log exporter");
+    pending_start_promise_.reset();
   }
 }
 
@@ -192,8 +197,8 @@ bool NetLog::IsCurrentlyLogging() const {
   return !!net_log_exporter_;
 }
 
-v8::Local<v8::Promise> NetLog::StopLogging(gin::Arguments* args) {
-  gin_helper::Promise<void> promise(args->isolate());
+v8::Local<v8::Promise> NetLog::StopLogging(v8::Isolate* const isolate) {
+  gin_helper::Promise<void> promise{isolate};
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (net_log_exporter_) {
@@ -223,14 +228,19 @@ gin::ObjectTemplateBuilder NetLog::GetObjectTemplateBuilder(
       .SetMethod("stopLogging", &NetLog::StopLogging);
 }
 
-const char* NetLog::GetTypeName() {
-  return "NetLog";
+const gin::WrapperInfo* NetLog::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* NetLog::GetHumanReadableName() const {
+  return "Electron / NetLog";
 }
 
 // static
-gin::Handle<NetLog> NetLog::Create(v8::Isolate* isolate,
-                                   ElectronBrowserContext* browser_context) {
-  return gin::CreateHandle(isolate, new NetLog(isolate, browser_context));
+NetLog* NetLog::Create(v8::Isolate* isolate,
+                       ElectronBrowserContext* browser_context) {
+  return cppgc::MakeGarbageCollected<NetLog>(
+      isolate->GetCppHeap()->GetAllocationHandle(), browser_context);
 }
 
 }  // namespace api

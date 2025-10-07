@@ -7,12 +7,6 @@
   <title>Document</title>
 </head>
 <body>
-  <script>
-    const { ipcRenderer } = require('electron')
-    ipcRenderer.send('initial-visibility-state', document.visibilityState)
-    document.addEventListener('visibilitychange', () => {
-      ipcRenderer.send(`visibility-change-${document.visibilityState}`)
-    })
-  </script>
+  <h1>Visibility Test</h1>
 </body>
 </html>

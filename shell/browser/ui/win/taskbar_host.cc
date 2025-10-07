@@ -5,15 +5,17 @@
 #include "shell/browser/ui/win/taskbar_host.h"
 
 #include <objbase.h>
+#include <array>
 #include <string>
 
-#include "base/stl_util.h"
+#include "base/containers/span.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/scoped_gdi_object.h"
 #include "shell/browser/native_window.h"
 #include "skia/ext/image_operations.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkCanvas.h"
+#include "third_party/skia/include/core/SkImage.h"
 #include "third_party/skia/include/core/SkRRect.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/icon_util.h"
@@ -25,10 +27,10 @@ namespace {
 // From MSDN:
 // https://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#thumbbars
 // The thumbnail toolbar has a maximum of seven buttons due to the limited room.
-const size_t kMaxButtonsCount = 7;
+constexpr size_t kMaxButtonsCount = 7U;
 
 // The base id of Thumbar button.
-const int kButtonIdBase = 40001;
+constexpr int kButtonIdBase = 40001;
 
 bool GetThumbarButtonFlags(const std::vector<std::string>& flags,
                            THUMBBUTTONFLAGS* out) {
@@ -51,6 +53,18 @@ bool GetThumbarButtonFlags(const std::vector<std::string>& flags,
   return true;
 }
 
+template <typename CharT, size_t N>
+void CopyStringToBuf(CharT (&tgt_buf)[N],
+                     const std::basic_string<CharT> src_str) {
+  if constexpr (N < 1U)
+    return;
+
+  const auto src = base::span{src_str};
+  const auto n_chars = std::min(src.size(), N - 1U);
+  auto tgt = base::span{tgt_buf};
+  tgt.first(n_chars).copy_from(src.first(n_chars));
+  tgt[n_chars] = CharT{};  // zero-terminate the string
+}
 }  // namespace
 
 TaskbarHost::ThumbarButton::ThumbarButton() = default;
@@ -72,10 +86,11 @@ bool TaskbarHost::SetThumbarButtons(HWND window,
   // The number of buttons in thumbar can not be changed once it is created,
   // so we have to claim kMaxButtonsCount buttons initially in case users add
   // more buttons later.
-  base::win::ScopedHICON icons[kMaxButtonsCount] = {};
-  THUMBBUTTON thumb_buttons[kMaxButtonsCount] = {};
+  auto icons =
+      std::array<base::win::ScopedGDIObject<HICON>, kMaxButtonsCount>{};
+  auto thumb_buttons = std::array<THUMBBUTTON, kMaxButtonsCount>{};
 
-  for (size_t i = 0; i < kMaxButtonsCount; ++i) {
+  for (size_t i = 0U; i < kMaxButtonsCount; ++i) {
     THUMBBUTTON& thumb_button = thumb_buttons[i];
 
     // Set ID.
@@ -107,8 +122,7 @@ bool TaskbarHost::SetThumbarButtons(HWND window,
     // Set tooltip.
     if (!button.tooltip.empty()) {
       thumb_button.dwMask |= THB_TOOLTIP;
-      wcsncpy_s(thumb_button.szTip, base::UTF8ToWide(button.tooltip).c_str(),
-                _TRUNCATE);
+      CopyStringToBuf(thumb_button.szTip, base::UTF8ToWide(button.tooltip));
     }
 
     // Save callback.
@@ -118,10 +132,11 @@ bool TaskbarHost::SetThumbarButtons(HWND window,
   // Finally add them to taskbar.
   HRESULT r;
   if (thumbar_buttons_added_) {
-    r = taskbar_->ThumbBarUpdateButtons(window, kMaxButtonsCount,
-                                        thumb_buttons);
+    r = taskbar_->ThumbBarUpdateButtons(window, thumb_buttons.size(),
+                                        thumb_buttons.data());
   } else {
-    r = taskbar_->ThumbBarAddButtons(window, kMaxButtonsCount, thumb_buttons);
+    r = taskbar_->ThumbBarAddButtons(window, thumb_buttons.size(),
+                                     thumb_buttons.data());
   }
 
   thumbar_buttons_added_ = true;
@@ -231,7 +246,7 @@ bool TaskbarHost::SetThumbnailClip(HWND window, const gfx::Rect& region) {
     return SUCCEEDED(taskbar_->SetThumbnailClip(window, nullptr));
   } else {
     RECT rect =
-        display::win::ScreenWin::DIPToScreenRect(window, region).ToRECT();
+        display::win::GetScreenWin()->DIPToScreenRect(window, region).ToRECT();
     return SUCCEEDED(taskbar_->SetThumbnailClip(window, &rect));
   }
 }

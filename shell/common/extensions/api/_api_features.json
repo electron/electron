@@ -1,3 +1,15 @@
+// Copyright 2012 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// This features file defines extension APIs implemented under src/chrome.
+// See chrome/common/extensions/api/_features.md to understand this file, as
+// well as feature.h, simple_feature.h, and feature_provider.h.
+//
+// Note that specifying "web_page", "privileged_web_page", or "all" as a context
+// type will require manually updating javascript bindings code in the
+// renderer.
+
 {
   "action": {
     "dependencies": ["manifest:action"],
@@ -11,20 +23,6 @@
   },
   "action.setBadgeTextColor": {
     "channel": "stable"
-  },
-  "tabs": {
-    "channel": "stable",
-    "extension_types": ["extension"],
-    "contexts": ["privileged_extension"]
-  },
-  "tabs.executeScript": {
-    "max_manifest_version": 2
-  },
-  "tabs.insertCSS": {
-    "max_manifest_version": 2
-  },
-  "tabs.removeCSS": {
-    "max_manifest_version": 2
   },
   "extension": {
     "channel": "stable",
@@ -46,12 +44,6 @@
       "content_script"
     ],
     "max_manifest_version": 2
-  },
-  "i18n": {
-    "channel": "stable",
-    "extension_types": ["extension"],
-    "contexts": ["privileged_extension", "unprivileged_extension", "content_script"],
-    "disallow_for_service_workers": true
   },
   "mimeHandlerViewGuestInternal": {
     "internal": true,
@@ -81,5 +73,19 @@
     "channel": "trunk",
     "dependencies": ["permission:scripting"],
     "contexts": ["content_script"]
+  },
+  "tabs": {
+    "channel": "stable",
+    "extension_types": ["extension"],
+    "contexts": ["privileged_extension"]
+  },
+  "tabs.executeScript": {
+    "max_manifest_version": 2
+  },
+  "tabs.insertCSS": {
+    "max_manifest_version": 2
+  },
+  "tabs.removeCSS": {
+    "max_manifest_version": 2
   }
 }

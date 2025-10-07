@@ -6,9 +6,11 @@
 
 #include <utility>
 
+#include "content/public/browser/page.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
+#include "content/public/browser/web_contents.h"
 #include "media/capture/mojom/video_capture_buffer.mojom.h"
 #include "media/capture/mojom/video_capture_types.mojom.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -37,13 +39,14 @@ void FrameSubscriber::AttachToHost(content::RenderWidgetHost* host) {
 
   // The view can be null if the renderer process has crashed.
   // (https://crbug.com/847363)
-  if (!host_->GetView())
+  auto* rwhv = host_->GetView();
+  if (!rwhv)
     return;
 
   // Create and configure the video capturer.
   gfx::Size size = GetRenderViewSize();
   DCHECK(!size.IsEmpty());
-  video_capturer_ = host_->GetView()->CreateVideoCapturer();
+  video_capturer_ = rwhv->CreateVideoCapturer();
   video_capturer_->SetResolutionConstraints(size, size, true);
   video_capturer_->SetAutoThrottlingEnabled(false);
   video_capturer_->SetMinSizeChangePeriod(base::TimeDelta());
@@ -141,14 +144,6 @@ void FrameSubscriber::OnFrameCaptured(
 
   Done(content_rect, bitmap);
 }
-
-void FrameSubscriber::OnNewSubCaptureTargetVersion(uint32_t crop_version) {}
-
-void FrameSubscriber::OnFrameWithEmptyRegionCapture() {}
-
-void FrameSubscriber::OnStopped() {}
-
-void FrameSubscriber::OnLog(const std::string& message) {}
 
 void FrameSubscriber::Done(const gfx::Rect& damage, const SkBitmap& frame) {
   if (frame.drawsNothing())

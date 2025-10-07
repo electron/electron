@@ -5,7 +5,7 @@ on:
     inputs:
       target-platform:
         type: string
-        description: 'Platform to run on, can be macos or linux'
+        description: 'Platform to run on, can be macos, win or linux'
         required: true
       target-arch:
         type: string
@@ -54,10 +54,15 @@ on:
         required: false
         type: boolean
         default: false
+      enable-ssh:
+        description: 'Enable SSH debugging'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
-  group: electron-build-and-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
+  group: electron-build-and-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref_protected != true }}
 
 permissions:
   contents: read
@@ -76,17 +81,8 @@ jobs:
       gn-build-type: ${{ inputs.gn-build-type }}
       generate-symbols: ${{ inputs.generate-symbols }}
       upload-to-storage: ${{ inputs.upload-to-storage }}
-      is-asan: ${{ inputs.is-asan}}
-    secrets: inherit
-  gn-check:
-    uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
-    with:
-      target-platform: ${{ inputs.target-platform }}
-      target-arch: ${{ inputs.target-arch }}
-      check-runs-on: ${{ inputs.build-runs-on }}
-      check-container: ${{ inputs.build-container }}
-      gn-build-type: ${{ inputs.gn-build-type }}
       is-asan: ${{ inputs.is-asan }}
+      enable-ssh: ${{ inputs.enable-ssh }}
     secrets: inherit
   test:
     uses: ./.github/workflows/pipeline-segment-electron-test.yml
@@ -96,5 +92,6 @@ jobs:
       target-platform: ${{ inputs.target-platform }}
       test-runs-on: ${{ inputs.test-runs-on }}
       test-container: ${{ inputs.test-container }}
-      is-asan: ${{ inputs.is-asan}}
+      is-asan: ${{ inputs.is-asan }}
+      enable-ssh: ${{ inputs.enable-ssh }}
     secrets: inherit

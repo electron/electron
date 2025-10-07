@@ -11,10 +11,10 @@ its own blended handler between Node and Blink.
 Not upstreamable.
 
 diff --git a/lib/internal/modules/esm/utils.js b/lib/internal/modules/esm/utils.js
-index d7867864bba7141b7ba12b171d185a94ed25d01d..d93a248d8a96fe1dffa08b39cfe3ea7b368db54a 100644
+index 9b41db8b0714b7408f79cbd5b4c460d9bc08f239..35ecfb9bbaf2c8e7351e1c69da84c82a4a7cb049 100644
 --- a/lib/internal/modules/esm/utils.js
 +++ b/lib/internal/modules/esm/utils.js
-@@ -24,7 +24,7 @@ const {
+@@ -30,7 +30,7 @@ const {
    ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING,
    ERR_INVALID_ARG_VALUE,
  } = require('internal/errors').codes;
@@ -23,7 +23,7 @@ index d7867864bba7141b7ba12b171d185a94ed25d01d..d93a248d8a96fe1dffa08b39cfe3ea7b
  const {
    loadPreloadModules,
    initializeFrozenIntrinsics,
-@@ -236,12 +236,13 @@ let _forceDefaultLoader = false;
+@@ -281,12 +281,13 @@ let _forceDefaultLoader = false;
   * @param {boolean} [forceDefaultLoader=false] - A boolean indicating disabling custom loaders.
   */
  function initializeESM(forceDefaultLoader = false) {
@@ -40,19 +40,19 @@ index d7867864bba7141b7ba12b171d185a94ed25d01d..d93a248d8a96fe1dffa08b39cfe3ea7b
  
  /**
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 501e4d7b7ea180588737fcbb2bf6ff79abfb9d9a..cce67100588bf6b47d26ee9168a123cb813b822e 100644
+index e317a84e55714af0a93719336d02ac26410ad724..e3880111172363feafb53b51deb08c93596cd4f4 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
-@@ -561,7 +561,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
+@@ -895,7 +895,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
    return module->module_.Get(isolate);
  }
  
 -static MaybeLocal<Promise> ImportModuleDynamically(
 +MaybeLocal<Promise> ImportModuleDynamically(
      Local<Context> context,
-     Local<v8::Data> host_defined_options,
+     Local<Data> host_defined_options,
      Local<Value> resource_name,
-@@ -626,12 +626,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
+@@ -967,12 +967,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
    Realm* realm = Realm::GetCurrent(args);
    HandleScope handle_scope(isolate);
  
@@ -68,7 +68,7 @@ index 501e4d7b7ea180588737fcbb2bf6ff79abfb9d9a..cce67100588bf6b47d26ee9168a123cb
  }
  
  void ModuleWrap::HostInitializeImportMetaObjectCallback(
-@@ -673,13 +674,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
+@@ -1014,13 +1015,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
    Realm* realm = Realm::GetCurrent(args);
    Isolate* isolate = realm->isolate();
  
@@ -87,18 +87,18 @@ index 501e4d7b7ea180588737fcbb2bf6ff79abfb9d9a..cce67100588bf6b47d26ee9168a123cb
  
  MaybeLocal<Value> ModuleWrap::SyntheticModuleEvaluationStepsCallback(
 diff --git a/src/module_wrap.h b/src/module_wrap.h
-index e17048357feca2419087621ed280de30882a90bc..63682be31ce00a3bf7b9be909cac4b7f9ec02a8e 100644
+index 9363ce73e51cde3d3a94f9912f072d532d0f8560..c0e972ed293157726efc5fa76dfa62d3da51c22a 100644
 --- a/src/module_wrap.h
 +++ b/src/module_wrap.h
-@@ -7,6 +7,7 @@
- #include <string>
+@@ -8,6 +8,7 @@
+ #include <unordered_map>
  #include <vector>
  #include "base_object.h"
 +#include "node.h"
+ #include "v8-script.h"
  
  namespace node {
- 
-@@ -31,7 +32,14 @@ enum HostDefinedOptions : int {
+@@ -33,7 +34,14 @@ enum HostDefinedOptions : int {
    kLength = 9,
  };
  
@@ -114,20 +114,20 @@ index e17048357feca2419087621ed280de30882a90bc..63682be31ce00a3bf7b9be909cac4b7f
   public:
    enum InternalFields {
      kModuleSlot = BaseObject::kInternalFieldCount,
-@@ -68,6 +76,8 @@ class ModuleWrap : public BaseObject {
-     return true;
-   }
+@@ -92,6 +100,8 @@ class ModuleWrap : public BaseObject {
+   static void CreateRequiredModuleFacade(
+       const v8::FunctionCallbackInfo<v8::Value>& args);
  
 +  static ModuleWrap* GetFromModule(node::Environment*, v8::Local<v8::Module>);
 +
   private:
    ModuleWrap(Realm* realm,
               v8::Local<v8::Object> object,
-@@ -102,7 +112,6 @@ class ModuleWrap : public BaseObject {
+@@ -131,7 +141,6 @@ class ModuleWrap : public BaseObject {
        v8::Local<v8::String> specifier,
        v8::Local<v8::FixedArray> import_attributes,
        v8::Local<v8::Module> referrer);
 -  static ModuleWrap* GetFromModule(node::Environment*, v8::Local<v8::Module>);
  
    v8::Global<v8::Module> module_;
-   std::unordered_map<std::string, v8::Global<v8::Promise>> resolve_cache_;
+   std::unordered_map<std::string, v8::Global<v8::Object>> resolve_cache_;

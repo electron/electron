@@ -7,15 +7,7 @@
 
 #include <string>
 
-namespace node {
-class Environment;
-}
-
 namespace electron {
-
-void EmitWarning(node::Environment* env,
-                 const std::string& warning_msg,
-                 const std::string& warning_type);
 
 std::string GetProcessType();
 

@@ -1,31 +1,39 @@
+import { BrowserView, BrowserWindow, screen, session, webContents } from 'electron/main';
+
 import { expect } from 'chai';
-import * as path from 'node:path';
-import { BrowserView, BrowserWindow, screen, webContents } from 'electron/main';
-import { closeWindow } from './lib/window-helpers';
-import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers';
-import { ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
+
 import { once } from 'node:events';
+import * as path from 'node:path';
+
+import { ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
+import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers';
+import { closeWindow } from './lib/window-helpers';
 
 describe('BrowserView module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
+  const ses = session.fromPartition(crypto.randomUUID());
 
   let w: BrowserWindow;
   let view: BrowserView;
 
+  const getSessionWebContents = () =>
+    webContents.getAllWebContents().filter(wc => wc.session === ses);
+
   beforeEach(() => {
-    expect(webContents.getAllWebContents().length).to.equal(0, 'expected no webContents to exist');
+    expect(getSessionWebContents().length).to.equal(0, 'expected no webContents to exist');
     w = new BrowserWindow({
       show: false,
       width: 400,
       height: 400,
       webPreferences: {
-        backgroundThrottling: false
+        backgroundThrottling: false,
+        session: ses
       }
     });
   });
 
   afterEach(async () => {
-    if (!w.isDestroyed()) {
+    if (w && !w.isDestroyed()) {
       const p = once(w.webContents, 'destroyed');
       await closeWindow(w);
       w = null as any;
@@ -39,7 +47,7 @@ describe('BrowserView module', () => {
       await p;
     }
 
-    expect(webContents.getAllWebContents().length).to.equal(0, 'expected no webContents to exist');
+    expect(getSessionWebContents().length).to.equal(0, 'expected no webContents to exist');
   });
 
   it('sets the correct class name on the prototype', () => {
@@ -47,7 +55,7 @@ describe('BrowserView module', () => {
   });
 
   it('can be created with an existing webContents', async () => {
-    const wc = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
+    const wc = (webContents as typeof ElectronInternal.WebContents).create({ session: ses, sandbox: true });
     await wc.loadURL('about:blank');
 
     view = new BrowserView({ webContents: wc } as any);
@@ -462,6 +470,39 @@ describe('BrowserView module', () => {
 
       w.webContents.loadURL('about:blank');
       await once(w.webContents, 'did-finish-load');
+    });
+
+    it('document visibilitychange does not change when adding the same BrowserView multiple times', async () => {
+      w.show();
+      expect(w.isVisible()).to.be.true('w is visible');
+
+      const view = new BrowserView();
+      const [width, height] = w.getSize();
+      view.setBounds({ x: 0, y: 0, width, height });
+      w.addBrowserView(view);
+      expect(view.ownerWindow).to.equal(w);
+
+      await view.webContents.loadURL(`data:text/html,
+        <html>
+          <body>
+            <h1>HELLO BROWSERVIEW</h1>
+            <script>
+              document.visibilityChangeCount = 0;
+              document.addEventListener('visibilitychange', () => {
+                document.visibilityChangeCount++;
+              })
+            </script>
+          </body>
+        </html>
+      `);
+      const query = 'document.visibilityChangeCount';
+      const countBefore = await view.webContents.executeJavaScript(query);
+      expect(countBefore).to.equal(0);
+
+      w.addBrowserView(view);
+      w.addBrowserView(view);
+      const countAfter = await view.webContents.executeJavaScript(query);
+      expect(countAfter).to.equal(countBefore);
     });
   });
 

@@ -10,8 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include "base/command_line.h"
-#include "base/functional/bind.h"
+#include "base/containers/to_vector.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/strings/utf_string_conversions.h"
@@ -19,9 +18,10 @@
 #include "chrome/common/chrome_paths.h"
 #include "components/upload_list/crash_upload_list.h"
 #include "components/upload_list/text_log_upload_list.h"
-#include "content/public/common/content_switches.h"
+#include "electron/mas.h"
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -41,7 +41,6 @@
 #endif
 
 #if BUILDFLAG(IS_LINUX)
-#include "base/containers/span.h"
 #include "base/files/file_util.h"
 #include "base/uuid.h"
 #include "components/crash/core/common/crash_keys.h"
@@ -83,6 +82,8 @@ const std::map<std::string, std::string>& GetGlobalCrashKeys() {
   return GetGlobalCrashKeysMutable();
 }
 
+namespace {
+
 bool GetClientIdPath(base::FilePath* path) {
   if (base::PathService::Get(electron::DIR_CRASH_DUMPS, path)) {
     *path = path->Append("client_id");
@@ -99,7 +100,7 @@ std::string ReadClientId() {
   if (GetClientIdPath(&client_id_path) &&
       (!base::ReadFileToStringWithMaxSize(client_id_path, &client_id, 36) ||
        client_id.size() != 36))
-    return std::string();
+    return {};
   return client_id;
 }
 
@@ -110,6 +111,8 @@ void WriteClientId(const std::string& client_id) {
   if (GetClientIdPath(&client_id_path))
     base::WriteFile(client_id_path, client_id);
 }
+
+}  // namespace
 
 std::string GetClientId() {
   static base::NoDestructor<std::string> client_id;
@@ -219,18 +222,17 @@ v8::Local<v8::Value> GetUploadedReports(v8::Isolate* isolate) {
     list->LoadSync();
   }
 
+  auto to_obj = [isolate](const UploadList::UploadInfo* upload) {
+    return gin::DataObjectBuilder{isolate}
+        .Set("date", upload->upload_time)
+        .Set("id", upload->upload_id)
+        .Build();
+  };
+
   constexpr size_t kMaxUploadReportsToList = std::numeric_limits<size_t>::max();
-  const std::vector<const UploadList::UploadInfo*> uploads =
-      list->GetUploads(kMaxUploadReportsToList);
-  std::vector<v8::Local<v8::Object>> result;
-  for (auto* const upload : uploads) {
-    result.push_back(gin::DataObjectBuilder(isolate)
-                         .Set("date", upload->upload_time)
-                         .Set("id", upload->upload_id)
-                         .Build());
-  }
-  v8::Local<v8::Value> v8_result = gin::ConvertToV8(isolate, result);
-  return v8_result;
+  return gin::ConvertToV8(
+      isolate,
+      base::ToVector(list->GetUploads(kMaxUploadReportsToList), to_obj));
 }
 #endif
 
@@ -260,7 +262,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  gin_helper::Dictionary dict(context->GetIsolate(), exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict(isolate, exports);
   dict.SetMethod("start", &electron::api::crash_reporter::Start);
 #if IS_MAS_BUILD()
   dict.SetMethod("addExtraParameter", &electron::api::crash_reporter::NoOp);

@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_BROWSER_OSR_OSR_RENDER_WIDGET_HOST_VIEW_H_
 
 #include <memory>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -16,9 +15,8 @@
 #include <windows.h>
 #endif
 
+#include "base/functional/callback_forward.h"
 #include "base/memory/raw_ptr.h"
-#include "base/process/kill.h"
-#include "base/threading/thread.h"
 #include "components/viz/common/quads/compositor_frame.h"
 #include "components/viz/common/surfaces/parent_local_surface_id_allocator.h"
 #include "content/browser/renderer_host/delegated_frame_host.h"  // nogncheck
@@ -29,8 +27,8 @@
 #include "shell/browser/osr/osr_host_display_client.h"
 #include "shell/browser/osr/osr_video_consumer.h"
 #include "shell/browser/osr/osr_view_proxy.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "third_party/blink/public/mojom/widget/record_content_to_visible_time_request.mojom-forward.h"
-#include "third_party/blink/public/platform/web_vector.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/ime/text_input_client.h"
 #include "ui/compositor/compositor.h"
@@ -44,20 +42,26 @@
 #include "ui/gfx/win/window_impl.h"
 #endif
 
+class SkBitmap;
+
+namespace gfx {
+class Point;
+class PointF;
+class Rect;
+}  // namespace gfx
+
 namespace input {
 class CursorManager;
 }
 
 namespace electron {
 
-class ElectronCopyFrameGenerator;
 class ElectronBeginFrameTimer;
-
+class ElectronCopyFrameGenerator;
 class ElectronDelegatedFrameHostClient;
+class OffScreenHostDisplayClient;
 
-typedef base::RepeatingCallback<void(const gfx::Rect&, const SkBitmap&)>
-    OnPaintCallback;
-typedef base::RepeatingCallback<void(const gfx::Rect&)> OnPopupPaintCallback;
+using OnPopupPaintCallback = base::RepeatingCallback<void(const gfx::Rect&)>;
 
 class OffScreenRenderWidgetHostView
     : public content::RenderWidgetHostViewBase,
@@ -66,6 +70,7 @@ class OffScreenRenderWidgetHostView
       private OffscreenViewProxyObserver {
  public:
   OffScreenRenderWidgetHostView(bool transparent,
+                                bool offscreen_use_shared_texture,
                                 bool painting,
                                 int frame_rate,
                                 const OnPaintCallback& callback,
@@ -83,39 +88,39 @@ class OffScreenRenderWidgetHostView
   void InitAsChild(gfx::NativeView) override;
   void SetSize(const gfx::Size&) override;
   void SetBounds(const gfx::Rect&) override;
-  gfx::NativeView GetNativeView(void) override;
-  gfx::NativeViewAccessible GetNativeViewAccessible(void) override;
+  gfx::NativeView GetNativeView() override;
+  gfx::NativeViewAccessible GetNativeViewAccessible() override;
   ui::TextInputClient* GetTextInputClient() override;
-  void Focus(void) override;
-  bool HasFocus(void) override;
+  void Focus() override {}
+  bool HasFocus() override;
   uint32_t GetCaptureSequenceNumber() const override;
-  bool IsSurfaceAvailableForCopy(void) override;
-  void Hide(void) override;
-  bool IsShowing(void) override;
+  bool IsSurfaceAvailableForCopy() override;
+  void Hide() override;
+  bool IsShowing() override;
   void EnsureSurfaceSynchronizedForWebTest() override;
-  gfx::Rect GetViewBounds(void) override;
+  gfx::Rect GetViewBounds() override;
   gfx::Size GetVisibleViewportSize() override;
-  void SetInsets(const gfx::Insets&) override;
+  void SetInsets(const gfx::Insets&) override {}
   void SetBackgroundColor(SkColor color) override;
   std::optional<SkColor> GetBackgroundColor() override;
-  void UpdateBackgroundColor() override;
+  void UpdateBackgroundColor() override {}
   blink::mojom::PointerLockResult LockPointer(
       bool request_unadjusted_movement) override;
   blink::mojom::PointerLockResult ChangePointerLock(
       bool request_unadjusted_movement) override;
-  void UnlockPointer(void) override;
+  void UnlockPointer() override {}
   void TakeFallbackContentFrom(content::RenderWidgetHostView* view) override;
 #if BUILDFLAG(IS_MAC)
-  void SetActive(bool active) override;
-  void ShowDefinitionForSelection() override;
-  void SpeakSelection() override;
-  void SetWindowFrameInScreen(const gfx::Rect& rect) override;
+  void SetActive(bool active) override {}
+  void ShowDefinitionForSelection() override {}
+  void SpeakSelection() override {}
+  void SetWindowFrameInScreen(const gfx::Rect& rect) override {}
   void ShowSharePicker(
       const std::string& title,
       const std::string& text,
-      const std::string& url,
+      const GURL& url,
       const std::vector<std::string>& file_paths,
-      blink::mojom::ShareService::ShareCallback callback) override;
+      blink::mojom::ShareService::ShareCallback callback) override {}
   uint64_t GetNSViewId() const override;
   bool UpdateNSViewAndDisplay();
 #endif  // BUILDFLAG(IS_MAC)
@@ -127,25 +132,27 @@ class OffScreenRenderWidgetHostView
   void InitAsPopup(content::RenderWidgetHostView* parent_host_view,
                    const gfx::Rect& bounds,
                    const gfx::Rect& anchor_rect) override;
-  void UpdateCursor(const ui::Cursor&) override;
-  void SetIsLoading(bool is_loading) override;
-  void TextInputStateChanged(const ui::mojom::TextInputState& params) override;
-  void ImeCancelComposition(void) override;
+  void UpdateCursor(const ui::Cursor&) override {}
+  void SetIsLoading(bool is_loading) override {}
+  void TextInputStateChanged(const ui::mojom::TextInputState& params) override {
+  }
+  void ImeCancelComposition() override {}
   void RenderProcessGone() override;
   void ShowWithVisibility(content::PageVisibilityState page_visibility) final;
-  void Destroy(void) override;
-  void UpdateTooltipUnderCursor(const std::u16string&) override;
+  void Destroy() override;
+  void UpdateTooltipUnderCursor(const std::u16string&) override {}
   input::CursorManager* GetCursorManager() override;
   void CopyFromSurface(
       const gfx::Rect& src_rect,
       const gfx::Size& output_size,
       base::OnceCallback<void(const SkBitmap&)> callback) override;
   display::ScreenInfo GetScreenInfo() const override;
-  void TransformPointToRootSurface(gfx::PointF* point) override;
-  gfx::Rect GetBoundsInRootWindow(void) override;
+  void TransformPointToRootSurface(gfx::PointF* point) override {}
+  gfx::Rect GetBoundsInRootWindow() override;
   std::optional<content::DisplayFeature> GetDisplayFeature() override;
-  void SetDisplayFeatureForTesting(
-      const content::DisplayFeature* display_feature) override;
+  void DisableDisplayFeatureOverrideForEmulation() override {}
+  void OverrideDisplayFeatureForEmulation(
+      const content::DisplayFeature* display_feature) override {}
   void NotifyHostAndDelegateOnWasShown(
       blink::mojom::RecordContentToVisibleTimeRequestPtr) final;
   void RequestSuccessfulPresentationTimeFromHostOrDelegate(
@@ -156,15 +163,14 @@ class OffScreenRenderWidgetHostView
   CreateSyntheticGestureTarget() override;
   void ImeCompositionRangeChanged(
       const gfx::Range&,
-      const std::optional<std::vector<gfx::Rect>>& character_bounds,
-      const std::optional<std::vector<gfx::Rect>>& line_bounds) override;
+      const std::optional<std::vector<gfx::Rect>>& character_bounds) override {}
   gfx::Size GetCompositorViewportPixelSize() override;
   ui::Compositor* GetCompositor() override;
 
   content::RenderWidgetHostViewBase* CreateViewForWidget(
       content::RenderWidgetHost*,
       content::RenderWidgetHost*,
-      content::WebContentsView*) override;
+      content::WebContentsView*);
 
   const viz::LocalSurfaceId& GetLocalSurfaceId() const override;
   const viz::FrameSinkId& GetFrameSinkId() const override;
@@ -199,7 +205,9 @@ class OffScreenRenderWidgetHostView
   void RemoveViewProxy(OffscreenViewProxy* proxy);
   void ProxyViewDestroyed(OffscreenViewProxy* proxy) override;
 
-  void OnPaint(const gfx::Rect& damage_rect, const SkBitmap& bitmap);
+  void OnPaint(const gfx::Rect& damage_rect,
+               const SkBitmap& bitmap,
+               const OffscreenSharedTexture& texture);
   void OnPopupPaint(const gfx::Rect& damage_rect);
   void OnProxyViewPaint(const gfx::Rect& damage_rect) override;
 
@@ -226,6 +234,10 @@ class OffScreenRenderWidgetHostView
   void SetFrameRate(int frame_rate);
   int frame_rate() const { return frame_rate_; }
 
+  bool offscreen_use_shared_texture() const {
+    return offscreen_use_shared_texture_;
+  }
+
   ui::Layer* root_layer() const { return root_layer_.get(); }
 
   content::DelegatedFrameHost* delegated_frame_host() const {
@@ -250,6 +262,7 @@ class OffScreenRenderWidgetHostView
   }
 
  private:
+  void ReleaseCompositor();
   void SetupFrameRate(bool force);
   void ResizeRootLayer(bool force);
 
@@ -265,10 +278,11 @@ class OffScreenRenderWidgetHostView
   raw_ptr<OffScreenRenderWidgetHostView> parent_host_view_ = nullptr;
   raw_ptr<OffScreenRenderWidgetHostView> popup_host_view_ = nullptr;
   raw_ptr<OffScreenRenderWidgetHostView> child_host_view_ = nullptr;
-  std::set<OffScreenRenderWidgetHostView*> guest_host_views_;
-  std::set<OffscreenViewProxy*> proxy_views_;
+  absl::flat_hash_set<OffScreenRenderWidgetHostView*> guest_host_views_;
+  absl::flat_hash_set<OffscreenViewProxy*> proxy_views_;
 
   const bool transparent_;
+  const bool offscreen_use_shared_texture_;
   OnPaintCallback callback_;
   OnPopupPaintCallback parent_callback_;
 
@@ -301,7 +315,7 @@ class OffScreenRenderWidgetHostView
       delegated_frame_host_client_;
 
   // depends-on: delegated_frame_host_client_
-  const std::unique_ptr<content::DelegatedFrameHost> delegated_frame_host_;
+  std::unique_ptr<content::DelegatedFrameHost> delegated_frame_host_;
 
   std::unique_ptr<input::CursorManager> cursor_manager_;
 

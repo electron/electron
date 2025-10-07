@@ -11,7 +11,10 @@
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/ui/drag_util.h"
-#include "shell/common/gin_helper/error_thrower.h"
+
+namespace gin_helper {
+class ErrorThrower;
+}  // namespace gin_helper
 
 namespace electron::api {
 
@@ -28,10 +31,6 @@ class BrowserWindow : public BaseWindow,
   // Returns the BrowserWindow object from |native_window|.
   static v8::Local<v8::Value> From(v8::Isolate* isolate,
                                    NativeWindow* native_window);
-
-  base::WeakPtr<BrowserWindow> GetWeakPtr() {
-    return weak_factory_.GetWeakPtr();
-  }
 
   // disable copy
   BrowserWindow(const BrowserWindow&) = delete;
@@ -65,6 +64,7 @@ class BrowserWindow : public BaseWindow,
   void Focus() override;
   void Blur() override;
   void SetBackgroundColor(const std::string& color_name) override;
+  void SetBackgroundMaterial(const std::string& material) override;
   void OnWindowShow() override;
   void OnWindowHide() override;
 

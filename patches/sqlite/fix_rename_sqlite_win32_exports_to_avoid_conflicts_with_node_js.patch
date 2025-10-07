@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Sun, 27 Oct 2024 21:01:11 +0100
+Subject: fix: rename sqlite win32 exports to avoid conflicts with Node.js
+
+As of https://github.com/nodejs/node/pull/53752, a number of symbols
+exported by SQLite are now exported by Node.js. This change renames
+the exported symbols in SQLite to avoid conflicts with Node.js.
+
+This should be upstreamed to SQLite.
+
+diff --git a/amalgamation/rename_exports.h b/amalgamation/rename_exports.h
+index f61b7c38dcfa3a69ccc392c3e808fc8c2622773f..f4d5bb88a176ccb28c37420d30ac88c690486f96 100644
+--- a/amalgamation/rename_exports.h
++++ b/amalgamation/rename_exports.h
+@@ -367,6 +367,15 @@
+ #define sqlite3session_patchset chrome_sqlite3session_patchset  // Lines 11682-11686
+ #define sqlite3session_patchset_strm chrome_sqlite3session_patchset_strm  // Lines 12948-12952
+ #define sqlite3session_table_filter chrome_sqlite3session_table_filter  // Lines 11450-11457
++#define sqlite3_win32_write_debug chrome_sqlite3_win32_write_debug
++#define sqlite3_win32_sleep chrome_sqlite3_win32_sleep
++#define sqlite3_win32_is_nt chrome_sqlite3_win32_is_nt
++#define sqlite3_win32_utf8_to_unicode chrome_sqlite3_win32_utf8_to_unicode
++#define sqlite3_win32_unicode_to_utf8 chrome_sqlite3_win32_unicode_to_utf8
++#define sqlite3_win32_mbcs_to_utf8 chrome_sqlite3_win32_mbcs_to_utf8
++#define sqlite3_win32_utf8_to_mbcs_v2 chrome_sqlite3_win32_utf8_to_mbcs_v2
++#define sqlite3_win32_utf8_to_mbcs chrome_sqlite3_win32_utf8_to_mbcs
++#define sqlite3_win32_mbcs_to_utf8_v2 chrome_sqlite3_win32_mbcs_to_utf8_v2
+ 
+ #endif  // THIRD_PARTY_SQLITE_AMALGAMATION_RENAME_EXPORTS_H_
+ 

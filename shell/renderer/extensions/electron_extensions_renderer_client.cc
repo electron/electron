@@ -4,8 +4,6 @@
 
 #include "shell/renderer/extensions/electron_extensions_renderer_client.h"
 
-#include <string>
-
 #include "content/public/renderer/render_thread.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/manifest_handlers/background_info.h"
@@ -15,12 +13,6 @@
 namespace electron {
 
 ElectronExtensionsRendererClient::ElectronExtensionsRendererClient() {}
-
-void ElectronExtensionsRendererClient::RenderThreadStarted() {
-  dispatcher_ =
-      std::make_unique<extensions::Dispatcher>(std::move(api_providers_));
-  dispatcher_->OnRenderThreadStarted(content::RenderThread::Get());
-}
 
 ElectronExtensionsRendererClient::~ElectronExtensionsRendererClient() = default;
 
@@ -33,10 +25,6 @@ int ElectronExtensionsRendererClient::GetLowestIsolatedWorldId() const {
   return WorldIDs::ISOLATED_WORLD_ID_EXTENSIONS;
 }
 
-extensions::Dispatcher* ElectronExtensionsRendererClient::GetDispatcher() {
-  return dispatcher_.get();
-}
-
 bool ElectronExtensionsRendererClient::AllowPopup() {
   // TODO(samuelmaddock):
   return false;
@@ -44,17 +32,17 @@ bool ElectronExtensionsRendererClient::AllowPopup() {
 
 void ElectronExtensionsRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
-  dispatcher_->RunScriptsAtDocumentStart(render_frame);
+  dispatcher()->RunScriptsAtDocumentStart(render_frame);
 }
 
 void ElectronExtensionsRendererClient::RunScriptsAtDocumentEnd(
     content::RenderFrame* render_frame) {
-  dispatcher_->RunScriptsAtDocumentEnd(render_frame);
+  dispatcher()->RunScriptsAtDocumentEnd(render_frame);
 }
 
 void ElectronExtensionsRendererClient::RunScriptsAtDocumentIdle(
     content::RenderFrame* render_frame) {
-  dispatcher_->RunScriptsAtDocumentIdle(render_frame);
+  dispatcher()->RunScriptsAtDocumentIdle(render_frame);
 }
 
 }  // namespace electron

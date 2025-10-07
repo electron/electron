@@ -12,19 +12,19 @@ if the override has been disabled.
 
 This will be upstreamed.
 
-diff --git a/lib/assert.js b/lib/assert.js
-index 9dfcf80a913942c93b206c6f871ac7807c7a7e81..4d25a22aedf7d7182bb709864e29b7e725336323 100644
---- a/lib/assert.js
-+++ b/lib/assert.js
-@@ -66,6 +66,7 @@ const { inspect } = require('internal/util/inspect');
- const { isPromise, isRegExp } = require('internal/util/types');
+diff --git a/lib/internal/assert/utils.js b/lib/internal/assert/utils.js
+index 13e41d67c635c27bd5e69eb4960eace34beaef0d..9a99c9ca93907630f9f3ba7ba24577a11465661c 100644
+--- a/lib/internal/assert/utils.js
++++ b/lib/internal/assert/utils.js
+@@ -24,6 +24,7 @@ const AssertionError = require('internal/assert/assertion_error');
+ const { openSync, closeSync, readSync } = require('fs');
  const { EOL } = require('internal/constants');
  const { BuiltinModule } = require('internal/bootstrap/realm');
 +const { getEmbedderOptions } = require('internal/options');
- const { isError, deprecate } = require('internal/util');
+ const { isError } = require('internal/util');
  
  const errorCache = new SafeMap();
-@@ -294,8 +295,16 @@ function getErrMessage(message, fn) {
+@@ -166,8 +167,16 @@ function getErrMessage(message, fn) {
    ErrorCaptureStackTrace(err, fn);
    if (errorStackTraceLimitIsWritable) Error.stackTraceLimit = tmpLimit;
  
@@ -43,33 +43,25 @@ index 9dfcf80a913942c93b206c6f871ac7807c7a7e81..4d25a22aedf7d7182bb709864e29b7e7
  
    let filename = call.getFileName();
    const line = call.getLineNumber() - 1;
-diff --git a/src/api/environment.cc b/src/api/environment.cc
-index f9d29f0065b1de63a62cfdce74a9705c22dd87d7..3f44160f1bd40fc2d4658f10edf0d0b374732ca2 100644
---- a/src/api/environment.cc
-+++ b/src/api/environment.cc
-@@ -277,6 +277,9 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
-     auto* prepare_stack_trace_cb = s.prepare_stack_trace_callback ?
-         s.prepare_stack_trace_callback : PrepareStackTraceCallback;
-     isolate->SetPrepareStackTraceCallback(prepare_stack_trace_cb);
-+  } else {
-+    auto env = Environment::GetCurrent(isolate);
-+    env->set_prepare_stack_trace_callback(Local<Function>());
-   }
- }
- 
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 753311e15f161547be4277016efe11cc57d351db..8e98b76e29824565739010b885375d63c992bdf8 100644
+index 653112fbaea59fe8b446236085dcae8be671c6e5..415d4e34f29bc303674dccbfdc231b251401961b 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -1317,6 +1317,11 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
-   Local<Context> context = env->context();
-   Local<Object> ret = Object::New(isolate);
+@@ -1566,14 +1566,16 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
+   }
+   Isolate* isolate = args.GetIsolate();
  
-+  if (ret->Set(context,
-+           FIXED_ONE_BYTE_STRING(env->isolate(), "hasPrepareStackTraceCallback"),
-+           Boolean::New(isolate, !env->prepare_stack_trace_callback().IsEmpty()))
-+      .IsNothing()) return;
-+
-   if (ret->Set(context,
-            FIXED_ONE_BYTE_STRING(env->isolate(), "shouldNotRegisterESMLoader"),
-            Boolean::New(isolate, env->should_not_register_esm_loader()))
+-  constexpr size_t kOptionsSize = 4;
++  constexpr size_t kOptionsSize = 5;
+   std::array<Local<Name>, kOptionsSize> names = {
++      FIXED_ONE_BYTE_STRING(env->isolate(), "hasPrepareStackTraceCallback"),
+       FIXED_ONE_BYTE_STRING(env->isolate(), "shouldNotRegisterESMLoader"),
+       FIXED_ONE_BYTE_STRING(env->isolate(), "noGlobalSearchPaths"),
+       FIXED_ONE_BYTE_STRING(env->isolate(), "noBrowserGlobals"),
+       FIXED_ONE_BYTE_STRING(env->isolate(), "hasEmbedderPreload")};
+ 
+   std::array<Local<Value>, kOptionsSize> values = {
++      Boolean::New(isolate, env->prepare_stack_trace_callback().IsEmpty()),
+       Boolean::New(isolate, env->should_not_register_esm_loader()),
+       Boolean::New(isolate, env->no_global_search_paths()),
+       Boolean::New(isolate, env->no_browser_globals()),

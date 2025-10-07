@@ -9,9 +9,12 @@
 
 #include <string>
 
-#include "base/functional/callback.h"
+#include "base/functional/callback_forward.h"
 #include "ui/base/glib/scoped_gsignal.h"
-#include "ui/gfx/image/image.h"
+
+namespace gfx {
+class Image;
+}
 
 namespace ui {
 class MenuModel;
@@ -23,8 +26,6 @@ using MenuActivatedCallback = base::RepeatingCallback<void(GtkWidget*)>;
 
 // Builds GtkImageMenuItems.
 GtkWidget* BuildMenuItemWithImage(const std::string& label, GtkWidget* image);
-GtkWidget* BuildMenuItemWithImage(const std::string& label,
-                                  const gfx::Image& icon);
 GtkWidget* BuildMenuItemWithLabel(const std::string& label);
 
 ui::MenuModel* ModelForMenuItem(GtkMenuItem* menu_item);

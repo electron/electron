@@ -12,28 +12,23 @@ uses internally for things like menus and devtools.
 
 We can remove this patch once it has in some shape been upstreamed.
 
-diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index f62df6eb7d12b9decea1b3c0f29f557aa0ccddac..c977daee5622f67013a52dc4e77a6fe482b153c8 100644
---- a/ui/native_theme/native_theme.cc
-+++ b/ui/native_theme/native_theme.cc
-@@ -209,6 +209,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
- NativeTheme::~NativeTheme() = default;
- 
- bool NativeTheme::ShouldUseDarkColors() const {
-+  if (theme_source() == ThemeSource::kForcedLight) return false;
-+  if (theme_source() == ThemeSource::kForcedDark) return true;
-   return should_use_dark_colors_;
- }
- 
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index fc32dfb0de44f0c174012c535dc8f06656795d5c..7011061bc8a64979cda3c558dff98aa4e3f84660 100644
+index 8391cd1469516e83b2cc1466e121bfeed5497c8e..6bed02855d0917805a43fab111d41702af94368e 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -434,6 +434,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
-       scoped_refptr<ColorProviderKey::ThemeInitializerSupplier> custom_theme,
-       bool use_custom_frame = true) const;
+@@ -493,6 +493,8 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+   void set_page_colors(PageColors page_colors) { page_colors_ = page_colors; }
  
-+
+   PreferredColorScheme preferred_color_scheme() const {
++    if (theme_source() == ThemeSource::kForcedLight) return PreferredColorScheme::kLight;
++    if (theme_source() == ThemeSource::kForcedDark) return PreferredColorScheme::kDark;
+     return preferred_color_scheme_;
+   }
+   void set_preferred_color_scheme(PreferredColorScheme preferred_color_scheme) {
+@@ -536,6 +538,24 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+   // Whether dark mode is forced via command-line flag.
+   static bool IsForcedDarkMode();
+ 
 +  enum ThemeSource {
 +    kSystem,
 +    kForcedDark,
@@ -45,32 +40,21 @@ index fc32dfb0de44f0c174012c535dc8f06656795d5c..7011061bc8a64979cda3c558dff98aa4
 +  }
 +
 +  void set_theme_source(ThemeSource theme_source) {
-+    bool original = ShouldUseDarkColors();
++    bool was_dark = preferred_color_scheme() == PreferredColorScheme::kDark;
 +    theme_source_ = theme_source;
-+    if (ShouldUseDarkColors() != original) NotifyOnNativeThemeUpdated();
++    if ((preferred_color_scheme() == PreferredColorScheme::kDark) != was_dark) {
++      NotifyOnNativeThemeUpdated();
++    }
 +  }
 +
-   // Returns a shared instance of the native theme that should be used for web
-   // rendering. Do not use it in a normal application context (i.e. browser).
-   // The returned object should not be deleted by the caller. This function is
-@@ -656,6 +673,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
-   PreferredColorScheme preferred_color_scheme_ = PreferredColorScheme::kLight;
-   PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
-   std::optional<base::TimeDelta> caret_blink_interval_;
+  protected:
+   explicit NativeTheme(
+       ui::SystemTheme system_theme = ui::SystemTheme::kDefault);
+@@ -590,6 +610,7 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+   std::optional<ui::ColorProviderKey::SchemeVariant> scheme_variant_;
+   bool should_use_system_accent_color_ = true;
+   base::TimeDelta caret_blink_interval_;
 +  ThemeSource theme_source_ = ThemeSource::kSystem;
  
-   SEQUENCE_CHECKER(sequence_checker_);
- };
-diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index b5bdcf72d8b337b53dc3adbc579b9701e649cd7d..063014273fb23544518873887283a664cb13e396 100644
---- a/ui/native_theme/native_theme_win.cc
-+++ b/ui/native_theme/native_theme_win.cc
-@@ -677,6 +677,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
-   // ...unless --force-dark-mode was specified in which case caveat emptor.
-   if (InForcedColorsMode() && !IsForcedDarkMode())
-     return false;
-+  if (theme_source() == ThemeSource::kForcedLight) return false;
-+  if (theme_source() == ThemeSource::kForcedDark) return true;
-   return NativeTheme::ShouldUseDarkColors();
- }
+   raw_ptr<NativeTheme> associated_web_instance_ = nullptr;
  

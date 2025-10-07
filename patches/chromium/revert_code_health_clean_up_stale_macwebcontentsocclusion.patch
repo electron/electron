@@ -1,0 +1,267 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Sanders <dsanders11@ucsbalum.com>
+Date: Wed, 8 Jan 2025 23:53:27 -0800
+Subject: Revert "Code Health: Clean up stale MacWebContentsOcclusion"
+
+Chrome has removed this WebContentsOcclusion feature flag upstream,
+which is now causing our visibility tests to break. This patch
+restores the legacy occlusion behavior to ensure the roll can continue
+while we debug the issue.
+
+This patch can be removed when the root cause because the visibility
+specs failing on MacOS only is debugged and fixed. It should be removed
+before Electron 35's stable date.
+
+Refs: https://chromium-review.googlesource.com/c/chromium/src/+/6078344
+
+This partially (leaves the removal of the feature flag) reverts
+ef865130abd5539e7bce12308659b19980368f12.
+
+diff --git a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.h b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.h
+index 428902f90950b2e9434c8a624a313268ebb80cd4..afcc3bc481be6a16119f7e2af647276cb0dafa1e 100644
+--- a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.h
++++ b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.h
+@@ -12,6 +12,8 @@
+ #import "content/app_shim_remote_cocoa/web_contents_view_cocoa.h"
+ #include "content/common/web_contents_ns_view_bridge.mojom.h"
+ 
++extern CONTENT_EXPORT const base::FeatureParam<bool>
++    kEnhancedWindowOcclusionDetection;
+ extern CONTENT_EXPORT const base::FeatureParam<bool>
+     kDisplaySleepAndAppHideDetection;
+ 
+diff --git a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
+index 32523e6a6f800de3917d18825f94c66ef4ea4388..634d68b9a2840d7c9e7c3b5e23d8b1b8ac02456b 100644
+--- a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
++++ b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
+@@ -19,6 +19,12 @@
+ #include "content/public/browser/content_browser_client.h"
+ #include "content/public/common/content_client.h"
+ 
++using features::kMacWebContentsOcclusion;
++
++// Experiment features.
++const base::FeatureParam<bool> kEnhancedWindowOcclusionDetection{
++    &kMacWebContentsOcclusion, "EnhancedWindowOcclusionDetection", false};
++
+ namespace {
+ 
+ NSString* const kWindowDidChangePositionInWindowList =
+@@ -127,7 +133,8 @@ - (void)dealloc {
+ 
+ - (BOOL)isManualOcclusionDetectionEnabled {
+   return [WebContentsOcclusionCheckerMac
+-      manualOcclusionDetectionSupportedForCurrentMacOSVersion];
++             manualOcclusionDetectionSupportedForCurrentMacOSVersion] &&
++         kEnhancedWindowOcclusionDetection.Get();
+ }
+ 
+ // Alternative implementation of orderWindow:relativeTo:. Replaces
+diff --git a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
+index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7cef78ca4ee 100644
+--- a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
++++ b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
+@@ -29,6 +29,7 @@
+ #include "ui/resources/grit/ui_resources.h"
+ 
+ using content::DropData;
++using features::kMacWebContentsOcclusion;
+ using remote_cocoa::mojom::DraggingInfo;
+ using remote_cocoa::mojom::SelectionDirection;
+ 
+@@ -124,12 +125,15 @@ @implementation WebContentsViewCocoa {
+   WebDragSource* __strong _dragSource;
+   NSDragOperation _dragOperation;
+ 
++  BOOL _inFullScreenTransition;
+   BOOL _willSetWebContentsOccludedAfterDelay;
+ }
+ 
+ + (void)initialize {
+-  // Create the WebContentsOcclusionCheckerMac shared instance.
+-  [WebContentsOcclusionCheckerMac sharedInstance];
++  if (base::FeatureList::IsEnabled(kMacWebContentsOcclusion)) {
++    // Create the WebContentsOcclusionCheckerMac shared instance.
++    [WebContentsOcclusionCheckerMac sharedInstance];
++  }
+ }
+ 
+ - (instancetype)initWithViewsHostableView:(ui::ViewsHostableView*)v {
+@@ -440,6 +444,7 @@ - (void)updateWebContentsVisibility:
+     (remote_cocoa::mojom::Visibility)visibility {
+   using remote_cocoa::mojom::Visibility;
+ 
++  DCHECK(base::FeatureList::IsEnabled(kMacWebContentsOcclusion));
+   if (!_host)
+     return;
+ 
+@@ -485,6 +490,20 @@ - (void)updateWebContentsVisibility {
+   [self updateWebContentsVisibility:visibility];
+ }
+ 
++- (void)legacyUpdateWebContentsVisibility {
++  using remote_cocoa::mojom::Visibility;
++  if (!_host || _inFullScreenTransition)
++    return;
++  Visibility visibility = Visibility::kVisible;
++  if ([self isHiddenOrHasHiddenAncestor] || ![self window])
++    visibility = Visibility::kHidden;
++  else if ([[self window] occlusionState] & NSWindowOcclusionStateVisible)
++    visibility = Visibility::kVisible;
++  else
++    visibility = Visibility::kOccluded;
++  _host->OnWindowVisibilityChanged(visibility);
++}
++
+ - (void)resizeSubviewsWithOldSize:(NSSize)oldBoundsSize {
+   // Subviews do not participate in auto layout unless the the size this view
+   // changes. This allows RenderWidgetHostViewMac::SetBounds(..) to select a
+@@ -507,11 +526,39 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
+ 
+   NSWindow* oldWindow = [self window];
+ 
++  if (base::FeatureList::IsEnabled(kMacWebContentsOcclusion)) {
++    if (oldWindow) {
++      [notificationCenter
++          removeObserver:self
++                    name:NSWindowDidChangeOcclusionStateNotification
++                  object:oldWindow];
++    }
++
++    if (newWindow) {
++      [notificationCenter
++          addObserver:self
++             selector:@selector(windowChangedOcclusionState:)
++                 name:NSWindowDidChangeOcclusionStateNotification
++               object:newWindow];
++    }
++
++    return;
++  }
++
++  _inFullScreenTransition = NO;
+   if (oldWindow) {
+-    [notificationCenter
+-        removeObserver:self
+-                  name:NSWindowDidChangeOcclusionStateNotification
+-                object:oldWindow];
++    NSArray* notificationsToRemove = @[
++      NSWindowDidChangeOcclusionStateNotification,
++      NSWindowWillEnterFullScreenNotification,
++      NSWindowDidEnterFullScreenNotification,
++      NSWindowWillExitFullScreenNotification,
++      NSWindowDidExitFullScreenNotification
++    ];
++    for (NSString* notificationName in notificationsToRemove) {
++      [notificationCenter removeObserver:self
++                                    name:notificationName
++                                  object:oldWindow];
++    }
+   }
+ 
+   if (newWindow) {
+@@ -519,26 +566,66 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
+                            selector:@selector(windowChangedOcclusionState:)
+                                name:NSWindowDidChangeOcclusionStateNotification
+                              object:newWindow];
++    // The fullscreen transition causes spurious occlusion notifications.
++    // See https://crbug.com/1081229
++    [notificationCenter addObserver:self
++                           selector:@selector(fullscreenTransitionStarted:)
++                               name:NSWindowWillEnterFullScreenNotification
++                             object:newWindow];
++    [notificationCenter addObserver:self
++                           selector:@selector(fullscreenTransitionComplete:)
++                               name:NSWindowDidEnterFullScreenNotification
++                             object:newWindow];
++    [notificationCenter addObserver:self
++                           selector:@selector(fullscreenTransitionStarted:)
++                               name:NSWindowWillExitFullScreenNotification
++                             object:newWindow];
++    [notificationCenter addObserver:self
++                           selector:@selector(fullscreenTransitionComplete:)
++                               name:NSWindowDidExitFullScreenNotification
++                             object:newWindow];
+   }
+ }
+ 
+ - (void)windowChangedOcclusionState:(NSNotification*)aNotification {
+-  // Only respond to occlusion notifications sent by the occlusion checker.
+-  NSDictionary* userInfo = [aNotification userInfo];
+-  NSString* occlusionCheckerKey = [WebContentsOcclusionCheckerMac className];
+-  if (userInfo[occlusionCheckerKey] != nil)
+-    [self updateWebContentsVisibility];
++  if (!base::FeatureList::IsEnabled(kMacWebContentsOcclusion)) {
++    [self legacyUpdateWebContentsVisibility];
++    return;
++  }
++}
++
++- (void)fullscreenTransitionStarted:(NSNotification*)notification {
++  _inFullScreenTransition = YES;
++}
++
++- (void)fullscreenTransitionComplete:(NSNotification*)notification {
++  _inFullScreenTransition = NO;
+ }
+ 
+ - (void)viewDidMoveToWindow {
++  if (!base::FeatureList::IsEnabled(kMacWebContentsOcclusion)) {
++    [self legacyUpdateWebContentsVisibility];
++    return;
++  }
++
+   [self updateWebContentsVisibility];
+ }
+ 
+ - (void)viewDidHide {
++  if (!base::FeatureList::IsEnabled(kMacWebContentsOcclusion)) {
++    [self legacyUpdateWebContentsVisibility];
++    return;
++  }
++
+   [self updateWebContentsVisibility];
+ }
+ 
+ - (void)viewDidUnhide {
++  if (!base::FeatureList::IsEnabled(kMacWebContentsOcclusion)) {
++    [self legacyUpdateWebContentsVisibility];
++    return;
++  }
++
+   [self updateWebContentsVisibility];
+ }
+ 
+diff --git a/content/common/features.cc b/content/common/features.cc
+index 97f8f8088a149a6c20ea5cf0193cb48034a4d7fb..3e5ed6c1e9df1f6e56076b80c8be2b016f242635 100644
+--- a/content/common/features.cc
++++ b/content/common/features.cc
+@@ -276,6 +276,14 @@ BASE_FEATURE(kInterestGroupUpdateIfOlderThan, base::FEATURE_ENABLED_BY_DEFAULT);
+ BASE_FEATURE(kIOSurfaceCapturer, base::FEATURE_ENABLED_BY_DEFAULT);
+ #endif
+ 
++// Feature that controls whether WebContentsOcclusionChecker should handle
++// occlusion notifications.
++#if BUILDFLAG(IS_MAC)
++BASE_FEATURE(kMacWebContentsOcclusion,
++             "MacWebContentsOcclusion",
++             base::FEATURE_ENABLED_BY_DEFAULT);
++#endif
++
+ // When enabled, child process will not terminate itself when IPC is reset.
+ BASE_FEATURE(kKeepChildProcessAfterIPCReset, base::FEATURE_DISABLED_BY_DEFAULT);
+ 
+diff --git a/content/common/features.h b/content/common/features.h
+index 933536411d1f1c2f2b7dec6dacd75a1c940a68aa..797937ce2d58d95a8aa5003323b5af8bd714ff01 100644
+--- a/content/common/features.h
++++ b/content/common/features.h
+@@ -103,6 +103,9 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(kInterestGroupUpdateIfOlderThan);
+ #if BUILDFLAG(IS_MAC)
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kIOSurfaceCapturer);
+ #endif
++#if BUILDFLAG(IS_MAC)
++CONTENT_EXPORT BASE_DECLARE_FEATURE(kMacWebContentsOcclusion);
++#endif
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kKeepChildProcessAfterIPCReset);
+ 
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kLocalNetworkAccessForWorkers);

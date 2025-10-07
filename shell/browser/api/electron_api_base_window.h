@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
 
+#include <array>
 #include <map>
 #include <memory>
 #include <optional>
@@ -14,35 +15,44 @@
 
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
-#include "gin/handle.h"
-#include "shell/browser/native_window.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/common/api/electron_api_native_image.h"
-#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/trackable_object.h"
 
-namespace electron::api {
+namespace gin {
+class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
+class PersistentDictionary;
+template <typename T>
+class Handle;
+}  // namespace gin_helper
+
+namespace electron {
+
+class NativeWindow;
+
+namespace api {
 
 class View;
 
 class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
                    private NativeWindowObserver {
  public:
-  static gin_helper::WrappableBase* New(gin_helper::Arguments* args);
+  static gin_helper::WrappableBase* New(gin::Arguments* args);
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
-  base::WeakPtr<BaseWindow> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
-
-  NativeWindow* window() const { return window_.get(); }
+  const NativeWindow* window() const { return window_.get(); }
+  NativeWindow* window() { return window_.get(); }
 
  protected:
   // Common constructor.
   BaseWindow(v8::Isolate* isolate, const gin_helper::Dictionary& options);
   // Creating independent BaseWindow instance.
-  BaseWindow(gin_helper::Arguments* args,
-             const gin_helper::Dictionary& options);
+  BaseWindow(gin::Arguments* args, const gin_helper::Dictionary& options);
   ~BaseWindow() override;
 
   // TrackableObject:
@@ -51,7 +61,9 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   // NativeWindowObserver:
   void WillCloseWindow(bool* prevent_default) override;
   void OnWindowClosed() override;
-  void OnWindowEndSession() override;
+  void OnWindowQueryEndSession(const std::vector<std::string>& reasons,
+                               bool* prevent_default) override;
+  void OnWindowEndSession(const std::vector<std::string>& reasons) override;
   void OnWindowBlur() override;
   void OnWindowFocus() override;
   void OnWindowShow() override;
@@ -61,7 +73,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowMinimize() override;
   void OnWindowRestore() override;
   void OnWindowWillResize(const gfx::Rect& new_bounds,
-                          const gfx::ResizeEdge& edge,
+                          gfx::ResizeEdge edge,
                           bool* prevent_default) override;
   void OnWindowResize() override;
   void OnWindowResized() override;
@@ -78,7 +90,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowEnterHtmlFullScreen() override;
   void OnWindowLeaveHtmlFullScreen() override;
   void OnWindowAlwaysOnTopChanged() override;
-  void OnExecuteAppCommand(const std::string& command_name) override;
+  void OnExecuteAppCommand(std::string_view command_name) override;
   void OnTouchBarItemResult(const std::string& item_id,
                             const base::Value::Dict& details) override;
   void OnNewWindowForTab() override;
@@ -88,7 +100,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 #endif
 
   // Public APIs of NativeWindow.
-  void SetContentView(gin::Handle<View> view);
+  void SetContentView(gin_helper::Handle<View> view);
   void Close();
   virtual void CloseImmediately();
   virtual void Focus();
@@ -108,25 +120,25 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsMinimized() const;
   void SetFullScreen(bool fullscreen);
   bool IsFullscreen() const;
-  void SetBounds(const gfx::Rect& bounds, gin_helper::Arguments* args);
+  void SetBounds(const gfx::Rect& bounds, gin::Arguments* args);
   gfx::Rect GetBounds() const;
-  void SetSize(int width, int height, gin_helper::Arguments* args);
-  std::vector<int> GetSize() const;
-  void SetContentSize(int width, int height, gin_helper::Arguments* args);
-  std::vector<int> GetContentSize() const;
-  void SetContentBounds(const gfx::Rect& bounds, gin_helper::Arguments* args);
+  void SetSize(int width, int height, gin::Arguments* args);
+  std::array<int, 2U> GetSize() const;
+  void SetContentSize(int width, int height, gin::Arguments* args);
+  std::array<int, 2U> GetContentSize() const;
+  void SetContentBounds(const gfx::Rect& bounds, gin::Arguments* args);
   gfx::Rect GetContentBounds() const;
   bool IsNormal() const;
   gfx::Rect GetNormalBounds() const;
   void SetMinimumSize(int width, int height);
-  std::vector<int> GetMinimumSize() const;
+  std::array<int, 2U> GetMinimumSize() const;
   void SetMaximumSize(int width, int height);
-  std::vector<int> GetMaximumSize() const;
-  void SetSheetOffset(double offsetY, gin_helper::Arguments* args);
+  std::array<int, 2U> GetMaximumSize() const;
+  void SetSheetOffset(double offsetY, gin::Arguments* args);
   void SetResizable(bool resizable);
   bool IsResizable() const;
   void SetMovable(bool movable);
-  void MoveAbove(const std::string& sourceId, gin_helper::Arguments* args);
+  void MoveAbove(const std::string& sourceId, gin::Arguments* args);
   void MoveTop();
   bool IsMovable() const;
   void SetMinimizable(bool minimizable);
@@ -137,11 +149,11 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsFullScreenable() const;
   void SetClosable(bool closable);
   bool IsClosable() const;
-  void SetAlwaysOnTop(bool top, gin_helper::Arguments* args);
+  void SetAlwaysOnTop(bool top, gin::Arguments* args);
   bool IsAlwaysOnTop() const;
   void Center();
-  void SetPosition(int x, int y, gin_helper::Arguments* args);
-  std::vector<int> GetPosition() const;
+  void SetPosition(int x, int y, gin::Arguments* args);
+  std::array<int, 2U> GetPosition() const;
   void SetTitle(const std::string& title);
   std::string GetTitle() const;
   void SetAccessibleTitle(const std::string& title);
@@ -156,7 +168,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsKiosk() const;
   bool IsTabletMode() const;
   virtual void SetBackgroundColor(const std::string& color_name);
-  std::string GetBackgroundColor(gin_helper::Arguments* args) const;
+  std::string GetBackgroundColor() const;
   void InvalidateShadow();
   void SetHasShadow(bool has_shadow);
   bool HasShadow() const;
@@ -167,23 +179,26 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   std::string GetRepresentedFilename() const;
   void SetDocumentEdited(bool edited);
   bool IsDocumentEdited() const;
-  void SetIgnoreMouseEvents(bool ignore, gin_helper::Arguments* args);
+  void SetIgnoreMouseEvents(bool ignore, gin::Arguments* args);
   void SetContentProtection(bool enable);
+  bool IsContentProtected() const;
   void SetFocusable(bool focusable);
   bool IsFocusable() const;
   void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
   void RemoveMenu();
-  void SetParentWindow(v8::Local<v8::Value> value, gin_helper::Arguments* args);
+  void SetParentWindow(v8::Local<v8::Value> value, gin::Arguments* args);
   std::string GetMediaSourceId() const;
   v8::Local<v8::Value> GetNativeWindowHandle();
-  void SetProgressBar(double progress, gin_helper::Arguments* args);
+  void SetProgressBar(double progress, gin::Arguments* args);
   void SetOverlayIcon(const gfx::Image& overlay,
                       const std::string& description);
-  void SetVisibleOnAllWorkspaces(bool visible, gin_helper::Arguments* args);
+  void SetVisibleOnAllWorkspaces(bool visible, gin::Arguments* args);
   bool IsVisibleOnAllWorkspaces() const;
   void SetAutoHideCursor(bool auto_hide);
-  virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
-  void SetBackgroundMaterial(const std::string& vibrancy);
+  virtual void SetVibrancy(v8::Isolate* isolate,
+                           v8::Local<v8::Value> value,
+                           gin::Arguments* args);
+  virtual void SetBackgroundMaterial(const std::string& material);
 
 #if BUILDFLAG(IS_MAC)
   std::string GetAlwaysOnTopLevel() const;
@@ -205,14 +220,14 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void MergeAllWindows();
   void MoveTabToNewWindow();
   void ToggleTabBar();
-  void AddTabbedWindow(NativeWindow* window, gin_helper::Arguments* args);
+  void AddTabbedWindow(NativeWindow* window, gin::Arguments* args);
   v8::Local<v8::Value> GetTabbingIdentifier();
   void SetAutoHideMenuBar(bool auto_hide);
   bool IsMenuBarAutoHide() const;
   void SetMenuBarVisibility(bool visible);
   bool IsMenuBarVisible() const;
-  void SetAspectRatio(double aspect_ratio, gin_helper::Arguments* args);
-  void PreviewFile(const std::string& path, gin_helper::Arguments* args);
+  void SetAspectRatio(double aspect_ratio, gin::Arguments* args);
+  void PreviewFile(const std::string& path, gin::Arguments* args);
   void CloseFilePreview();
   void SetGTKDarkThemeEnabled(bool use_dark_theme);
 
@@ -223,7 +238,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsModal() const;
 
   // Extra APIs added in JS.
-  bool SetThumbarButtons(gin_helper::Arguments* args);
+  bool SetThumbarButtons(gin::Arguments* args);
 #if defined(TOOLKIT_VIEWS)
   void SetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon);
   void SetIconImpl(v8::Isolate* isolate,
@@ -241,14 +256,18 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool SetThumbnailClip(const gfx::Rect& region);
   bool SetThumbnailToolTip(const std::string& tooltip);
   void SetAppDetails(const gin_helper::Dictionary& options);
+  bool IsSnapped() const;
+  void SetAccentColor(gin::Arguments* args);
+  v8::Local<v8::Value> GetAccentColor() const;
 #endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
   void SetTitleBarOverlay(const gin_helper::Dictionary& options,
-                          gin_helper::Arguments* args);
+                          gin::Arguments* args);
 #endif
-  int32_t GetID() const;
+  [[nodiscard]] constexpr int32_t GetID() const { return weak_map_id(); }
 
+ private:
   // Helpers.
 
   // Remove this window from parent window's |child_windows_|.
@@ -280,6 +299,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   base::WeakPtrFactory<BaseWindow> weak_factory_{this};
 };
 
-}  // namespace electron::api
+}  // namespace api
+}  // namespace electron
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_

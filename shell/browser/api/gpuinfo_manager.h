@@ -11,12 +11,18 @@
 #include "content/browser/gpu/gpu_data_manager_impl.h"  // nogncheck
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
-#include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/cleaned_up_at_exit.h"
+
+namespace gin_helper {
+template <typename T>
+class Promise;
+}  // namespace gin_helper
 
 namespace electron {
 
 // GPUInfoManager is a singleton used to manage and fetch GPUInfo
-class GPUInfoManager : private content::GpuDataManagerObserver {
+class GPUInfoManager : private content::GpuDataManagerObserver,
+                       public gin_helper::CleanedUpAtExit {
  public:
   static GPUInfoManager* GetInstance();
 

@@ -55,6 +55,7 @@ These methods can be accessed from the `webContents` module:
 
 ```js
 const { webContents } = require('electron')
+
 console.log(webContents)
 ```
 
@@ -242,8 +243,9 @@ Returns:
   * `isSameDocument` boolean - This event does not fire for same document navigations using window.history api and reference fragment navigations.
     This property is always set to `false` for this event.
   * `isMainFrame` boolean - True if the navigation is taking place in a main frame.
-  * `frame` WebFrameMain - The frame to be navigated.
-  * `initiator` WebFrameMain (optional) - The frame which initiated the
+  * `frame` WebFrameMain | null - The frame to be navigated.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
+  * `initiator` WebFrameMain | null (optional) - The frame which initiated the
     navigation, which can be a parent frame (e.g. via `window.open` with a
     frame's name), or null if the navigation was not initiated by a frame. This
     can also be null if the initiating frame was deleted before the event was
@@ -275,8 +277,9 @@ Returns:
   * `isSameDocument` boolean - This event does not fire for same document navigations using window.history api and reference fragment navigations.
     This property is always set to `false` for this event.
   * `isMainFrame` boolean - True if the navigation is taking place in a main frame.
-  * `frame` WebFrameMain - The frame to be navigated.
-  * `initiator` WebFrameMain (optional) - The frame which initiated the
+  * `frame` WebFrameMain | null - The frame to be navigated.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
+  * `initiator` WebFrameMain | null (optional) - The frame which initiated the
     navigation, which can be a parent frame (e.g. via `window.open` with a
     frame's name), or null if the navigation was not initiated by a frame. This
     can also be null if the initiating frame was deleted before the event was
@@ -306,8 +309,9 @@ Returns:
     document. Examples of same document navigations are reference fragment
     navigations, pushState/replaceState, and same page history navigation.
   * `isMainFrame` boolean - True if the navigation is taking place in a main frame.
-  * `frame` WebFrameMain - The frame to be navigated.
-  * `initiator` WebFrameMain (optional) - The frame which initiated the
+  * `frame` WebFrameMain | null - The frame to be navigated.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
+  * `initiator` WebFrameMain | null (optional) - The frame which initiated the
     navigation, which can be a parent frame (e.g. via `window.open` with a
     frame's name), or null if the navigation was not initiated by a frame. This
     can also be null if the initiating frame was deleted before the event was
@@ -330,8 +334,9 @@ Returns:
     document. Examples of same document navigations are reference fragment
     navigations, pushState/replaceState, and same page history navigation.
   * `isMainFrame` boolean - True if the navigation is taking place in a main frame.
-  * `frame` WebFrameMain - The frame to be navigated.
-  * `initiator` WebFrameMain (optional) - The frame which initiated the
+  * `frame` WebFrameMain | null - The frame to be navigated.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
+  * `initiator` WebFrameMain | null (optional) - The frame which initiated the
     navigation, which can be a parent frame (e.g. via `window.open` with a
     frame's name), or null if the navigation was not initiated by a frame. This
     can also be null if the initiating frame was deleted before the event was
@@ -361,8 +366,9 @@ Returns:
     document. Examples of same document navigations are reference fragment
     navigations, pushState/replaceState, and same page history navigation.
   * `isMainFrame` boolean - True if the navigation is taking place in a main frame.
-  * `frame` WebFrameMain - The frame to be navigated.
-  * `initiator` WebFrameMain (optional) - The frame which initiated the
+  * `frame` WebFrameMain | null - The frame to be navigated.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
+  * `initiator` WebFrameMain | null (optional) - The frame which initiated the
     navigation, which can be a parent frame (e.g. via `window.open` with a
     frame's name), or null if the navigation was not initiated by a frame. This
     can also be null if the initiating frame was deleted before the event was
@@ -441,6 +447,7 @@ and allow the page to be unloaded.
 
 ```js
 const { BrowserWindow, dialog } = require('electron')
+
 const win = new BrowserWindow({ width: 800, height: 600 })
 win.webContents.on('will-prevent-unload', (event) => {
   const choice = dialog.showMessageBoxSync(win, {
@@ -458,7 +465,8 @@ win.webContents.on('will-prevent-unload', (event) => {
 })
 ```
 
-**Note:** This will be emitted for `BrowserViews` but will _not_ be respected - this is because we have chosen not to tie the `BrowserView` lifecycle to its owning BrowserWindow should one exist per the [specification](https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event).
+> [!NOTE]
+> This will be emitted for `BrowserViews` but will _not_ be respected - this is because we have chosen not to tie the `BrowserView` lifecycle to its owning BrowserWindow should one exist per the [specification](https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event).
 
 #### Event: 'render-process-gone'
 
@@ -477,16 +485,6 @@ Emitted when the web page becomes unresponsive.
 #### Event: 'responsive'
 
 Emitted when the unresponsive web page becomes responsive again.
-
-#### Event: 'plugin-crashed'
-
-Returns:
-
-* `event` Event
-* `name` string
-* `version` string
-
-Emitted when a plugin process has crashed.
 
 #### Event: 'destroyed'
 
@@ -528,14 +526,55 @@ To only prevent the menu shortcuts, use
 [`setIgnoreMenuShortcuts`](#contentssetignoremenushortcutsignore):
 
 ```js
-const { BrowserWindow } = require('electron')
+const { app, BrowserWindow } = require('electron')
 
-const win = new BrowserWindow({ width: 800, height: 600 })
+app.whenReady().then(() => {
+  const win = new BrowserWindow({ width: 800, height: 600 })
 
-win.webContents.on('before-input-event', (event, input) => {
-  // For example, only enable application menu keyboard shortcuts when
-  // Ctrl/Cmd are down.
-  win.webContents.setIgnoreMenuShortcuts(!input.control && !input.meta)
+  win.webContents.on('before-input-event', (event, input) => {
+    // Enable application menu keyboard shortcuts when Ctrl/Cmd are down.
+    win.webContents.setIgnoreMenuShortcuts(!input.control && !input.meta)
+  })
+})
+```
+
+#### Event: 'before-mouse-event'
+
+Returns:
+
+* `event` Event
+* `mouse` [MouseInputEvent](structures/mouse-input-event.md)
+
+Emitted before dispatching mouse events in the page.
+
+Calling `event.preventDefault` will prevent the page mouse events.
+
+```js
+const { app, BrowserWindow } = require('electron')
+
+app.whenReady().then(() => {
+  const win = new BrowserWindow({ width: 800, height: 600 })
+
+  win.webContents.on('before-mouse-event', (event, mouse) => {
+    // Prevent mouseDown events.
+    if (mouse.type === 'mouseDown') {
+      console.log(mouse)
+      /*
+      {
+        type: 'mouseDown',
+        clickCount: 1,
+        movementX: 0,
+        movementY: 0,
+        button: 'left',
+        x: 632.359375,
+        y: 480.6875,
+        globalX: 168.359375,
+        globalY: 193.6875
+      }
+      */
+      event.preventDefault()
+    }
+  })
 })
 ```
 
@@ -743,7 +782,8 @@ Returns:
 * `params` Object
   * `x` Integer - x coordinate.
   * `y` Integer - y coordinate.
-  * `frame` WebFrameMain - Frame from which the context menu was invoked.
+  * `frame` WebFrameMain | null - Frame from which the context menu was invoked.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
   * `linkURL` string - URL of the link that encloses the node the context menu
     was invoked on.
   * `linkText` string - Text associated with the link. May be an empty
@@ -832,9 +872,10 @@ Emitted when a bluetooth device needs to be selected when a call to
 the `deviceId` of the device to be selected.  Passing an empty string to
 `callback` will cancel the request.
 
-If an event listener is not added for this event, or if `event.preventDefault`
-is not called when handling this event, the first available device will be
-automatically selected.
+If no event listener is added for this event, all bluetooth requests will be cancelled.
+
+If `event.preventDefault` is not called when handling this event, the first available
+device will be automatically selected.
 
 Due to the nature of bluetooth, scanning for devices when
 `navigator.bluetooth.requestDevice` is called may take time and will cause
@@ -869,19 +910,48 @@ app.whenReady().then(() => {
 
 Returns:
 
-* `event` Event
+* `details` Event\<\>
+  * `texture` [OffscreenSharedTexture](structures/offscreen-shared-texture.md) (optional) _Experimental_ - The GPU shared texture of the frame, when `webPreferences.offscreen.useSharedTexture` is `true`.
 * `dirtyRect` [Rectangle](structures/rectangle.md)
 * `image` [NativeImage](native-image.md) - The image data of the whole frame.
 
-Emitted when a new frame is generated. Only the dirty area is passed in the
-buffer.
+Emitted when a new frame is generated. Only the dirty area is passed in the buffer.
 
 ```js
 const { BrowserWindow } = require('electron')
 
 const win = new BrowserWindow({ webPreferences: { offscreen: true } })
 win.webContents.on('paint', (event, dirty, image) => {
-  // updateBitmap(dirty, image.getBitmap())
+  // updateBitmap(dirty, image.toBitmap())
+})
+win.loadURL('https://github.com')
+```
+
+When using shared texture (set `webPreferences.offscreen.useSharedTexture` to `true`) feature, you can pass the texture handle to external rendering pipeline without the overhead of
+copying data between CPU and GPU memory, with Chromium's hardware acceleration support. This feature is helpful for high-performance rendering scenarios.
+
+Only a limited number of textures can exist at the same time, so it's important that you call `texture.release()` as soon as you're done with the texture.
+By managing the texture lifecycle by yourself, you can safely pass the `texture.textureInfo` to other processes through IPC.
+
+More details can be found in the [offscreen rendering tutorial](../tutorial/offscreen-rendering.md). To learn about how to handle the texture in native code, refer to [offscreen rendering's code documentation.](https://github.com/electron/electron/blob/main/shell/browser/osr/README.md).
+
+```js
+const { BrowserWindow } = require('electron')
+
+const win = new BrowserWindow({ webPreferences: { offscreen: { useSharedTexture: true } } })
+win.webContents.on('paint', async (e, dirty, image) => {
+  if (e.texture) {
+    // By managing lifecycle yourself, you can handle the event in async handler or pass the `e.texture.textureInfo`
+    // to other processes (not `e.texture`, the `e.texture.release` function is not passable through IPC).
+    await new Promise(resolve => setTimeout(resolve, 50))
+
+    // You can send the native texture handle to native code for importing into your rendering pipeline.
+    // Read more at https://github.com/electron/electron/blob/main/shell/browser/osr/README.md
+    // importTextureHandle(dirty, e.texture.textureInfo)
+
+    // You must call `e.texture.release()` as soon as possible, before the underlying frame pool is drained.
+    e.texture.release()
+  }
 })
 win.loadURL('https://github.com')
 ```
@@ -922,11 +992,17 @@ Emitted when a `<webview>` has been attached to this web contents.
 
 Returns:
 
-* `event` Event
-* `level` Integer - The log level, from 0 to 3. In order it matches `verbose`, `info`, `warning` and `error`.
-* `message` string - The actual console message
-* `line` Integer - The line number of the source that triggered this console message
-* `sourceId` string
+* `details` Event\<\>
+  * `message` string - Message text
+  * `level` string - Message severity
+    Possible values include `info`, `warning`, `error`, and `debug`.
+  * `lineNumber` Integer - Line number in the log source
+  * `sourceId` string - URL of the log source
+  * `frame` WebFrameMain - Frame that logged the message
+* `level` Integer _Deprecated_ - The log level, from 0 to 3. In order it matches `verbose`, `info`, `warning` and `error`.
+* `message` string _Deprecated_ - The actual console message
+* `line` Integer _Deprecated_ - The line number of the source that triggered this console message
+* `sourceId` string _Deprecated_
 
 Emitted when the associated window logs a console message.
 
@@ -983,7 +1059,8 @@ Returns:
 
 * `event` Event
 * `details` Object
-  * `frame` WebFrameMain
+  * `frame` WebFrameMain | null - The created frame.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
 
 Emitted when the [mainFrame](web-contents.md#contentsmainframe-readonly), an `<iframe>`, or a nested `<iframe>` is loaded within the page.
 
@@ -1060,6 +1137,7 @@ Returns `string` - The URL of the current web page.
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({ width: 800, height: 600 })
 win.loadURL('https://github.com').then(() => {
   const currentURL = win.webContents.getURL()
@@ -1126,17 +1204,41 @@ Reloads current page and ignores cache.
 
 #### `contents.canGoBack()` _Deprecated_
 
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/41752
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
+```
+-->
+
 Returns `boolean` - Whether the browser can go back to previous web page.
 
 **Deprecated:** Should use the new [`contents.navigationHistory.canGoBack`](navigation-history.md#navigationhistorycangoback) API.
 
 #### `contents.canGoForward()` _Deprecated_
 
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/41752
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
+```
+-->
+
 Returns `boolean` - Whether the browser can go forward to next web page.
 
 **Deprecated:** Should use the new [`contents.navigationHistory.canGoForward`](navigation-history.md#navigationhistorycangoforward) API.
 
 #### `contents.canGoToOffset(offset)` _Deprecated_
+
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/41752
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
+```
+-->
 
 * `offset` Integer
 
@@ -1146,11 +1248,27 @@ Returns `boolean` - Whether the web page can go to `offset`.
 
 #### `contents.clearHistory()` _Deprecated_
 
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/41752
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
+```
+-->
+
 Clears the navigation history.
 
 **Deprecated:** Should use the new [`contents.navigationHistory.clear`](navigation-history.md#navigationhistoryclear) API.
 
 #### `contents.goBack()` _Deprecated_
+
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/41752
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
+```
+-->
 
 Makes the browser go back a web page.
 
@@ -1158,11 +1276,27 @@ Makes the browser go back a web page.
 
 #### `contents.goForward()` _Deprecated_
 
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/41752
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
+```
+-->
+
 Makes the browser go forward a web page.
 
 **Deprecated:** Should use the new [`contents.navigationHistory.goForward`](navigation-history.md#navigationhistorygoforward) API.
 
 #### `contents.goToIndex(index)` _Deprecated_
+
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/41752
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
+```
+-->
 
 * `index` Integer
 
@@ -1171,6 +1305,14 @@ Navigates browser to the specified absolute web page index.
 **Deprecated:** Should use the new [`contents.navigationHistory.goToIndex`](navigation-history.md#navigationhistorygotoindexindex) API.
 
 #### `contents.goToOffset(offset)` _Deprecated_
+
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/41752
+    breaking-changes-header: deprecated-clearhistory-cangoback-goback-cangoforward-goforward-gotoindex-cangotooffset-gotooffset-on-webcontents
+```
+-->
 
 * `offset` Integer
 
@@ -1385,7 +1527,8 @@ increment above or below represents zooming 20% larger or smaller to default
 limits of 300% and 50% of original size, respectively. The formula for this is
 `scale := 1.2 ^ level`.
 
-> **NOTE**: The zoom policy at the Chromium level is same-origin, meaning that the
+> [!NOTE]
+> The zoom policy at the Chromium level is same-origin, meaning that the
 > zoom level for a specific domain propagates across all instances of windows with
 > the same domain. Differentiating the window URLs will make zoom work per-window.
 
@@ -1402,7 +1545,8 @@ Returns `Promise<void>`
 
 Sets the maximum and minimum pinch-to-zoom level.
 
-> **NOTE**: Visual zoom is disabled by default in Electron. To re-enable it, call:
+> [!NOTE]
+> Visual zoom is disabled by default in Electron. To re-enable it, call:
 >
 > ```js
 > const win = new BrowserWindow()
@@ -1613,6 +1757,12 @@ When a custom `pageSize` is passed, Chromium attempts to validate platform speci
 Prints window's web page. When `silent` is set to `true`, Electron will pick
 the system's default printer if `deviceName` is empty and the default settings for printing.
 
+Some possible `failureReason`s for print failure include:
+
+* "Invalid printer settings"
+* "Print job canceled"
+* "Print job failed"
+
 Use `page-break-before: always;` CSS style to force to print to a new page.
 
 Example usage:
@@ -1663,9 +1813,10 @@ An example of `webContents.printToPDF`:
 
 ```js
 const { app, BrowserWindow } = require('electron')
+
 const fs = require('node:fs')
-const path = require('node:path')
 const os = require('node:os')
+const path = require('node:path')
 
 app.whenReady().then(() => {
   const win = new BrowserWindow()
@@ -1697,6 +1848,7 @@ creation:
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 win.webContents.on('devtools-opened', () => {
   win.webContents.addWorkSpace(__dirname)
@@ -1763,6 +1915,7 @@ An example of showing devtools in a `<webview>` tag:
 ```js
 // Main process
 const { ipcMain, webContents } = require('electron')
+
 ipcMain.on('open-devtools', (event, targetContentsId, devtoolsContentsId) => {
   const target = webContents.fromId(targetContentsId)
   const devtools = webContents.fromId(devtoolsContentsId)
@@ -1970,7 +2123,9 @@ Disable device emulation enabled by `webContents.enableDeviceEmulation`.
 * `inputEvent` [MouseInputEvent](structures/mouse-input-event.md) | [MouseWheelInputEvent](structures/mouse-wheel-input-event.md) | [KeyboardInputEvent](structures/keyboard-input-event.md)
 
 Sends an input `event` to the page.
-**Note:** The [`BrowserWindow`](browser-window.md) containing the contents needs to be focused for
+
+> [!NOTE]
+> The [`BrowserWindow`](browser-window.md) containing the contents needs to be focused for
 `sendInputEvent()` to work.
 
 #### `contents.beginFrameSubscription([onlyDirty ,]callback)`
@@ -2020,6 +2175,7 @@ Returns `Promise<void>` - resolves if the page is saved.
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 
 win.loadURL('https://github.com')
@@ -2112,7 +2268,9 @@ By default this value is `{ min: 0, max: 0 }` , which would apply no restriction
   * `max` Integer - The maximum UDP port number that WebRTC should use.
 
 Setting the WebRTC UDP Port Range allows you to restrict the udp port range used by WebRTC. By default the port range is unrestricted.
-**Note:** To reset to an unrestricted port range this value should be set to `{ min: 0, max: 0 }`.
+
+> [!NOTE]
+> To reset to an unrestricted port range this value should be set to `{ min: 0, max: 0 }`.
 
 #### `contents.getMediaSourceId(requestWebContents)`
 
@@ -2147,6 +2305,15 @@ Returns `boolean` - whether or not this WebContents will throttle animations and
 when the page becomes backgrounded. This also affects the Page Visibility API.
 
 #### `contents.setBackgroundThrottling(allowed)`
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/38924
+    description: "`WebContents.backgroundThrottling` set to false affects all `WebContents` in the host `BrowserWindow`"
+    breaking-changes-header: behavior-changed-webcontentsbackgroundthrottling-set-to-false-affects-all-webcontents-in-the-host-browserwindow
+```
+-->
 
 * `allowed` boolean
 
@@ -2249,14 +2416,24 @@ A [`WebContents`](web-contents.md) instance that might own this `WebContents`.
 
 A `WebContents | null` property that represents the of DevTools `WebContents` associated with a given `WebContents`.
 
-**Note:** Users should never store this object because it may become `null`
-when the DevTools has been closed.
+> [!NOTE]
+> Users should never store this object because it may become `null`
+> when the DevTools has been closed.
 
 #### `contents.debugger` _Readonly_
 
 A [`Debugger`](debugger.md) instance for this webContents.
 
 #### `contents.backgroundThrottling`
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/38924
+    description: "`WebContents.backgroundThrottling` set to false affects all `WebContents` in the host `BrowserWindow`"
+    breaking-changes-header: behavior-changed-webcontentsbackgroundthrottling-set-to-false-affects-all-webcontents-in-the-host-browserwindow
+```
+-->
 
 A `boolean` property that determines whether or not this WebContents will throttle animations and timers
 when the page becomes backgrounded. This also affects the Page Visibility API.
@@ -2267,8 +2444,13 @@ A [`WebFrameMain`](web-frame-main.md) property that represents the top frame of 
 
 #### `contents.opener` _Readonly_
 
-A [`WebFrameMain`](web-frame-main.md) property that represents the frame that opened this WebContents, either
+A [`WebFrameMain | null`](web-frame-main.md) property that represents the frame that opened this WebContents, either
 with open(), or by navigating a link with a target attribute.
+
+#### `contents.focusedFrame` _Readonly_
+
+A [`WebFrameMain | null`](web-frame-main.md) property that represents the currently focused frame in this WebContents.
+Can be the top frame, an inner `<iframe>`, or `null` if nothing is focused.
 
 [keyboardevent]: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

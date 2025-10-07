@@ -8,9 +8,7 @@
 #include <memory>
 #include <string>
 
-#include "base/compiler_specific.h"
 #include "base/memory/raw_ptr.h"
-#include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "base/one_shot_event.h"
 #include "components/value_store/value_store_factory.h"
@@ -82,8 +80,6 @@ class ElectronExtensionSystem : public ExtensionSystem {
                      const base::FilePath& temp_dir,
                      bool install_immediately,
                      InstallUpdateCallback install_update_callback) override;
-  bool FinishDelayedInstallationIfReady(const std::string& extension_id,
-                                        bool install_immediately) override;
   void PerformActionBasedOnOmahaAttributes(
       const std::string& extension_id,
       const base::Value::Dict& attributes) override;

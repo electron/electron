@@ -1,16 +1,23 @@
 import { expect } from 'chai';
+
 import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { ifit } from './lib/spec-helpers';
+
+import { ifit, waitUntil } from './lib/spec-helpers';
 
 const fixturePath = path.resolve(__dirname, 'fixtures', 'crash-cases');
 
 let children: cp.ChildProcessWithoutNullStreams[] = [];
 
-const runFixtureAndEnsureCleanExit = async (args: string[]) => {
+const runFixtureAndEnsureCleanExit = async (args: string[], customEnv: NodeJS.ProcessEnv) => {
   let out = '';
-  const child = cp.spawn(process.execPath, args);
+  const child = cp.spawn(process.execPath, args, {
+    env: {
+      ...process.env,
+      ...customEnv
+    }
+  });
   children.push(child);
   child.stdout.on('data', (chunk: Buffer) => {
     out += chunk.toString();
@@ -55,11 +62,11 @@ const shouldRunCase = (crashCase: string) => {
 };
 
 describe('crash cases', () => {
-  afterEach(() => {
+  afterEach(async () => {
     for (const child of children) {
       child.kill();
     }
-    expect(children).to.have.lengthOf(0, 'all child processes should have exited cleanly');
+    await waitUntil(() => (children.length === 0));
     children.length = 0;
   });
   const cases = fs.readdirSync(fixturePath);
@@ -68,11 +75,16 @@ describe('crash cases', () => {
     ifit(shouldRunCase(crashCase))(`the "${crashCase}" case should not crash`, () => {
       const fixture = path.resolve(fixturePath, crashCase);
       const argsFile = path.resolve(fixture, 'electron.args');
+      const envFile = path.resolve(fixture, 'electron.env.json');
       const args = [fixture];
+      let env = process.env;
       if (fs.existsSync(argsFile)) {
         args.push(...fs.readFileSync(argsFile, 'utf8').trim().split('\n'));
       }
-      return runFixtureAndEnsureCleanExit(args);
+      if (fs.existsSync(envFile)) {
+        env = JSON.parse(fs.readFileSync(envFile, 'utf8'));
+      }
+      return runFixtureAndEnsureCleanExit(args, env);
     });
   }
 });

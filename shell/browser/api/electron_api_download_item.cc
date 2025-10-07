@@ -13,8 +13,8 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
-#include "shell/common/node_includes.h"
 #include "url/gurl.h"
 
 namespace gin {
@@ -68,7 +68,8 @@ const void* kElectronApiDownloadItemKey = &kElectronApiDownloadItemKey;
 
 }  // namespace
 
-gin::WrapperInfo DownloadItem::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo DownloadItem::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 // static
 DownloadItem* DownloadItem::FromDownloadItem(download::DownloadItem* item) {
@@ -209,7 +210,7 @@ const GURL& DownloadItem::GetURL() const {
 
 v8::Local<v8::Value> DownloadItem::GetURLChain() const {
   if (!CheckAlive())
-    return v8::Local<v8::Value>();
+    return {};
   return gin::ConvertToV8(isolate_, download_item_->GetUrlChain());
 }
 
@@ -306,14 +307,15 @@ const char* DownloadItem::GetTypeName() {
 }
 
 // static
-gin::Handle<DownloadItem> DownloadItem::FromOrCreate(
+gin_helper::Handle<DownloadItem> DownloadItem::FromOrCreate(
     v8::Isolate* isolate,
     download::DownloadItem* item) {
   DownloadItem* existing = FromDownloadItem(item);
   if (existing)
-    return gin::CreateHandle(isolate, existing);
+    return gin_helper::CreateHandle(isolate, existing);
 
-  auto handle = gin::CreateHandle(isolate, new DownloadItem(isolate, item));
+  auto handle =
+      gin_helper::CreateHandle(isolate, new DownloadItem(isolate, item));
 
   handle->Pin(isolate);
 

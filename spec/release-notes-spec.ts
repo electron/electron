@@ -1,8 +1,10 @@
-import { GitProcess, IGitExecutionOptions, IGitResult } from 'dugite';
 import { expect } from 'chai';
-import * as notes from '../script/release/notes/notes.js';
-import * as path from 'node:path';
+import { GitProcess, IGitExecutionOptions, IGitResult } from 'dugite';
 import * as sinon from 'sinon';
+
+import * as path from 'node:path';
+
+import * as notes from '../script/release/notes/notes';
 
 /* Fake a Dugite GitProcess that only returns the specific
    commits that we want to test */

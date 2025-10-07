@@ -10,17 +10,19 @@
 #include <vector>
 
 #include "base/containers/contains.h"
-#include "base/logging.h"
+#include "base/files/file.h"
 #include "base/process/process.h"
 #include "base/process/process_handle.h"
 #include "base/system/sys_info.h"
+#include "electron/mas.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/global_memory_dump.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
 #include "shell/browser/browser.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/microtasks_scope.h"
+#include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/heap_snapshot.h"
 #include "shell/common/node_includes.h"
@@ -162,30 +164,33 @@ v8::Local<v8::Value> ElectronBindings::GetCreationTime(v8::Isolate* isolate) {
 
 // static
 v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
-    v8::Isolate* isolate,
-    gin_helper::Arguments* args) {
-  base::SystemMemoryInfoKB mem_info;
+    v8::Isolate* const isolate) {
+  base::SystemMemoryInfo mem_info;
   if (!base::GetSystemMemoryInfo(&mem_info)) {
-    args->ThrowError("Unable to retrieve system memory information");
+    gin_helper::ErrorThrower{isolate}.ThrowError(
+        "Unable to retrieve system memory information");
     return v8::Undefined(isolate);
   }
 
   auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-  dict.Set("total", mem_info.total);
+  dict.Set("total", mem_info.total.InKiB());
 
   // See Chromium's "base/process/process_metrics.h" for an explanation.
-  int free =
+  base::ByteCount free =
 #if BUILDFLAG(IS_WIN)
       mem_info.avail_phys;
 #else
       mem_info.free;
 #endif
-  dict.Set("free", free);
+  dict.Set("free", free.InKiB());
 
+#if BUILDFLAG(IS_MAC)
+  dict.Set("fileBacked", mem_info.file_backed.InKiB());
+  dict.Set("purgeable", mem_info.purgeable.InKiB());
+#else
   // NB: These return bogus values on macOS
-#if !BUILDFLAG(IS_MAC)
-  dict.Set("swapTotal", mem_info.swap_total);
-  dict.Set("swapFree", mem_info.swap_free);
+  dict.Set("swapTotal", mem_info.swap_total.InKiB());
+  dict.Set("swapFree", mem_info.swap_free.InKiB());
 #endif
 
   return dict.GetHandle();
@@ -233,12 +238,11 @@ void ElectronBindings::DidReceiveMemoryDump(
     base::ProcessId target_pid,
     bool success,
     std::unique_ptr<memory_instrumentation::GlobalMemoryDump> global_dump) {
+  DCHECK(electron::IsBrowserProcess());
   v8::Isolate* isolate = promise.isolate();
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> local_context =
       v8::Local<v8::Context>::New(isolate, context);
-  gin_helper::MicrotasksScope microtasks_scope(
-      isolate, local_context->GetMicrotaskQueue(), true);
   v8::Context::Scope context_scope(local_context);
 
   if (!success) {

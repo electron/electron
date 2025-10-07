@@ -5,8 +5,6 @@
 #ifndef ELECTRON_SHELL_RENDERER_EXTENSIONS_ELECTRON_EXTENSIONS_RENDERER_CLIENT_H_
 #define ELECTRON_SHELL_RENDERER_EXTENSIONS_ELECTRON_EXTENSIONS_RENDERER_CLIENT_H_
 
-#include <memory>
-
 #include "extensions/renderer/extensions_renderer_client.h"
 
 namespace content {
@@ -31,20 +29,15 @@ class ElectronExtensionsRendererClient
   ElectronExtensionsRendererClient& operator=(
       const ElectronExtensionsRendererClient&) = delete;
 
-  // ExtensionsRendererClient implementation.
-  void RenderThreadStarted() override;
+  // extensions::ExtensionsRendererClient:
   bool IsIncognitoProcess() const override;
   int GetLowestIsolatedWorldId() const override;
-  extensions::Dispatcher* GetDispatcher() override;
 
   bool AllowPopup();
 
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame);
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame);
   void RunScriptsAtDocumentIdle(content::RenderFrame* render_frame);
-
- private:
-  std::unique_ptr<extensions::Dispatcher> dispatcher_;
 };
 
 }  // namespace electron

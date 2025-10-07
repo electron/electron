@@ -4,8 +4,6 @@
 
 #include "shell/browser/fake_location_provider.h"
 
-#include "base/functional/callback.h"
-#include "base/time/time.h"
 #include "services/device/public/mojom/geoposition.mojom-shared.h"
 #include "services/device/public/mojom/geoposition.mojom.h"
 

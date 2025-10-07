@@ -11,6 +11,7 @@ namespace electron {
 void InitializeFeatureList();
 void InitializeFieldTrials();
 std::string EnablePlatformSpecificFeatures();
+std::string DisablePlatformSpecificFeatures();
 }  // namespace electron
 
 #endif  // ELECTRON_SHELL_BROWSER_FEATURE_LIST_H_

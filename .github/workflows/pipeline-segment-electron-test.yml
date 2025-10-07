@@ -5,7 +5,7 @@ on:
     inputs:
       target-platform:
         type: string
-        description: 'Platform to run on, can be macos or linux'
+        description: 'Platform to run on, can be macos, win or linux'
         required: true
       target-arch:
         type: string
@@ -25,10 +25,15 @@ on:
         required: false
         type: boolean
         default: false
+      enable-ssh:
+        description: 'Enable SSH debugging'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
-  group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
+  group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref_protected != true }}
 
 permissions:
   contents: read
@@ -36,31 +41,42 @@ permissions:
   pull-requests: read
 
 env:
+  CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+  CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
   ELECTRON_OUT_DIR: Default
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
-  ELECTRON_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
 
 jobs:
   test:
+    defaults:
+      run:
+        shell: bash
     runs-on: ${{ inputs.test-runs-on }}
     container: ${{ fromJSON(inputs.test-container) }}
     strategy:
       fail-fast: false
       matrix:
-        build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || fromJSON('["linux"]') }}
-        shard: ${{ inputs.target-platform == 'macos' && fromJSON('[1, 2]') || fromJSON('[1, 2, 3]') }}
+        build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
+        shard: ${{ inputs.target-platform == 'linux' && fromJSON('[1, 2, 3]') || fromJSON('[1, 2]') }}
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
       ARTIFACT_KEY: ${{ matrix.build-type }}_${{ inputs.target-arch }}
     steps:
     - name: Fix node20 on arm32 runners
-      if: ${{ inputs.target-arch == 'arm' }}
+      if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
       run: |
         cp $(which node) /mnt/runner-externals/node20/bin/
+    - name: Setup Node.js/npm
+      if: ${{ inputs.target-platform == 'win' }}
+      uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+      with:
+        node-version: 20.19.x
     - name: Add TCC permissions on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
+        epochdate=$(($(date +'%s * 1000 + %-N / 1000000')))
         configure_user_tccdb () {
           local values=$1
           local dbPath="$HOME/Library/Application Support/com.apple.TCC/TCC.db"
@@ -76,14 +92,17 @@ jobs:
         }
 
         userValuesArray=(
-            "'kTCCServiceMicrophone','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
             "'kTCCServiceCamera','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
             "'kTCCServiceBluetoothAlways','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
+            "'kTCCServiceAppleEvents','/usr/local/opt/runner/provisioner/provisioner',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
+            "'kTCCServiceCamera','/opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
+            "'kTCCServiceBluetoothAlways','/opt/hca/hosted-compute-agent',1,2,4,1,NULL,NULL,0,'UNUSED',NULL,0,1687786159"
+            "'kTCCServiceScreenCapture','/bin/bash',1,2,3,1,NULL,NULL,NULL,'UNUSED',NULL,0,$epochdate"
         )
         for values in "${userValuesArray[@]}"; do
           # Sonoma and higher have a few extra values
           # Ref: https://github.com/actions/runner-images/blob/main/images/macos/scripts/build/configure-tccdb-macos.sh
-          if [ "$OSTYPE" = "darwin23" ]; then
+          if [ "$OSTYPE" = "darwin23" ] || [ "$OSTYPE" = "darwin24" ]; then
             configure_user_tccdb "$values,NULL,NULL,'UNUSED',${values##*,}"
             configure_sys_tccdb "$values,NULL,NULL,'UNUSED',${values##*,}"
           else
@@ -91,28 +110,50 @@ jobs:
             configure_sys_tccdb "$values"
           fi
         done
+    - name: Turn off the unexpectedly quit dialog on macOS
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: defaults write com.apple.CrashReporter DialogType server
+    - name: Set xcode to 16.4
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: sudo xcode-select --switch /Applications/Xcode_16.4.app
     - name: Checkout Electron
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
         path: src/electron
         fetch-depth: 0
-    - name: Install Dependencies
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Turn off screenshot nag on macOS
+      if: ${{ inputs.target-platform == 'macos' }}
       run: |
-        cd src/electron
-        node script/yarn install --frozen-lockfile
+        defaults write ~/Library/Group\ Containers/group.com.apple.replayd/ScreenCaptureApprovals.plist "/bin/bash" -date "3024-09-23 12:00:00 +0000"
+        src/electron/script/actions/screencapture-nag-remover.sh -a $(which bash)
+        src/electron/script/actions/screencapture-nag-remover.sh -a /opt/hca/hosted-compute-agent
+    - name: Setup SSH Debugging
+      if: ${{ inputs.target-platform == 'macos' && (inputs.enable-ssh || env.ACTIONS_STEP_DEBUG == 'true') }}
+      uses: ./src/electron/.github/actions/ssh-debug
+      with:
+        tunnel: 'true'
+      env:
+        CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+        CLOUDFLARE_TUNNEL_HOSTNAME: ${{ vars.CLOUDFLARE_TUNNEL_HOSTNAME }}
+        CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+        AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Install Dependencies
+      uses: ./src/electron/.github/actions/install-dependencies
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Get Depot Tools
       timeout-minutes: 5
       run: |
-        git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-        if [ "`uname`" = "Darwin" ]; then
-          # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
-          sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-        else
-          sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-          # Remove swift-format dep from cipd on macOS until we send a patch upstream.
-          cd depot_tools
-          git apply --3way ../src/electron/.github/workflows/config/gclient.diff
-        fi
+        git config --global core.filemode false
+        git config --global core.autocrlf false
+        git config --global branch.autosetuprebase always
+        git config --global core.fscache true
+        git config --global core.longpaths true
+        git config --global core.preloadindex true
+        git config --global core.longpaths true
+        git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
         # Ensure depot_tools does not update.
         test -d depot_tools && cd depot_tools
         touch .disable_auto_update
@@ -125,47 +166,65 @@ jobs:
         echo "DISABLE_CRASH_REPORTER_TESTS=true" >> $GITHUB_ENV
         echo "IS_ASAN=true" >> $GITHUB_ENV
     - name: Download Generated Artifacts
-      uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
+      uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
       with:
         name: generated_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./generated_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
     - name: Download Src Artifacts
-      uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
+      uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
       with:
         name: src_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./src_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
     - name: Restore Generated Artifacts
       run: ./src/electron/script/actions/restore-artifacts.sh
-    - name: Unzip Dist, Mksnapshot & Chromedriver
+    - name: Unzip Dist (win)
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: powershell
+      run: |
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        cd src/out/Default
+        Expand-Archive -Force dist.zip -DestinationPath ./
+    - name: Unzip Dist (unix)
+      if: ${{ inputs.target-platform != 'win' }}
       run: |
         cd src/out/Default
         unzip -:o dist.zip
-        unzip -:o chromedriver.zip
-        unzip -:o mksnapshot.zip
-    - name: Import & Trust Self-Signed Codesigning Cert on MacOS
-      if: ${{ inputs.target-platform == 'macos' && inputs.target-arch == 'x64' }}
+    #- name: Import & Trust Self-Signed Codesigning Cert on MacOS
+    #  if: ${{ inputs.target-platform == 'macos' && inputs.target-arch == 'x64' }}
+    #  run: |
+    #    sudo security authorizationdb write com.apple.trust-settings.admin allow
+    #    cd src/electron
+    #    ./script/codesign/generate-identity.sh
+    - name: Install Datadog CLI
       run: |
-        sudo security authorizationdb write com.apple.trust-settings.admin allow
         cd src/electron
-        ./script/codesign/generate-identity.sh
+        node script/yarn global add @datadog/datadog-ci
     - name: Run Electron Tests
       shell: bash
       env:
         MOCHA_REPORTER: mocha-multi-reporters
-        ELECTRON_TEST_RESULTS_DIR: junit
         MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
-        ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
         DISPLAY: ':99.0'
+        NPM_CONFIG_MSVS_VERSION: '2022'
       run: |
         cd src/electron
+        export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
         # Get which tests are on this shard
-        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'macos' && 2 || 3 }})
+        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'linux' && 3 || 2 }})
 
         # Run tests
-        if [ "`uname`" = "Darwin" ]; then
+        if [ "${{ inputs.target-platform }}" != "linux" ]; then
           echo "About to start tests"
-          node script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
+          if [ "${{ inputs.target-platform }}" = "win" ]; then
+            if [ "${{ inputs.target-arch }}" = "x86" ]; then
+              export npm_config_arch="ia32"
+            fi
+            if [ "${{ inputs.target-arch }}" = "arm64" ]; then
+              export ELECTRON_FORCE_TEST_SUITE_EXIT="true"
+            fi
+          fi
+          node script/yarn test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
         else
           chown :builduser .. && chmod g+w ..
           chown -R :builduser . && chmod -R g+w .
@@ -187,15 +246,29 @@ jobs:
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
           fi
         fi
+    - name: Upload Test results to Datadog
+      env:
+        DD_ENV: ci
+        DD_SERVICE: electron
+        DD_API_KEY: ${{ secrets.DD_API_KEY }}
+        DD_CIVISIBILITY_LOGS_ENABLED: true
+        DD_TAGS: "os.architecture:${{ inputs.target-arch }},os.family:${{ inputs.target-platform }},os.platform:${{ inputs.target-platform }},asan:${{ inputs.is-asan }}"
+      run: |
+        if ! [ -z $DD_API_KEY ] && [ -f src/electron/junit/test-results-main.xml ]; then
+          export DATADOG_PATH=`node src/electron/script/yarn global bin`
+          $DATADOG_PATH/datadog-ci junit upload src/electron/junit/test-results-main.xml
+        fi          
+      if: always() && !cancelled()
     - name: Upload Test Artifacts
       if: always() && !cancelled()
-      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
       with:
-        name: test_artifacts_${{ env.ARTIFACT_KEY }}
+        name: test_artifacts_${{ env.ARTIFACT_KEY }}_${{ matrix.shard }}
         path: src/electron/spec/artifacts
         if-no-files-found: ignore
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
+      shell: bash
       run: |
         while [ -f /var/.ssh-lock ]
         do

@@ -1,6 +1,6 @@
 # Experimental APIs
 
-Some of Electrons APIs are tagged with `_Experimental_` in the documentation.
+Some of Electron's APIs are tagged with `_Experimental_` in the documentation.
 This tag indicates that the API may not be considered stable and the API may
 be removed or modified more frequently than other APIs with less warning.
 

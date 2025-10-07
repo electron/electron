@@ -5,9 +5,6 @@
 #include "shell/browser/ui/views/caption_button_placeholder_container.h"
 
 #include "ui/base/metadata/metadata_impl_macros.h"
-#include "ui/gfx/canvas.h"
-#include "ui/gfx/scoped_canvas.h"
-#include "ui/views/view.h"
 
 CaptionButtonPlaceholderContainer::CaptionButtonPlaceholderContainer() {
   SetPaintToLayer();

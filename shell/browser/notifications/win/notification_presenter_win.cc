@@ -10,14 +10,12 @@
 #include <string>
 #include <vector>
 
-#include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/hash/md5.h"
 #include "base/logging.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/time/time.h"
-#include "base/win/windows_version.h"
 #include "shell/browser/notifications/win/windows_toast_notification.h"
 #include "shell/common/thread_restrictions.h"
 #include "third_party/skia/include/core/SkBitmap.h"
@@ -29,34 +27,29 @@ namespace electron {
 
 namespace {
 
-bool IsDebuggingNotifications() {
-  return base::Environment::Create()->HasVar("ELECTRON_DEBUG_NOTIFICATIONS");
-}
-
 bool SaveIconToPath(const SkBitmap& bitmap, const base::FilePath& path) {
-  std::vector<unsigned char> png_data;
-  if (!gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, false, &png_data))
+  std::optional<std::vector<uint8_t>> png_data =
+      gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, false);
+  if (!png_data.has_value())
     return false;
 
-  char* data = reinterpret_cast<char*>(&png_data[0]);
-  int size = static_cast<int>(png_data.size());
-  return base::WriteFile(path, data, size) == size;
+  return base::WriteFile(path, png_data.value());
 }
 
 }  // namespace
 
 // static
-NotificationPresenter* NotificationPresenter::Create() {
+std::unique_ptr<NotificationPresenter> NotificationPresenter::Create() {
   if (!WindowsToastNotification::Initialize())
-    return nullptr;
+    return {};
   auto presenter = std::make_unique<NotificationPresenterWin>();
   if (!presenter->Init())
-    return nullptr;
+    return {};
 
-  if (IsDebuggingNotifications())
+  if (electron::debug_notifications)
     LOG(INFO) << "Successfully created Windows notifications presenter";
 
-  return presenter.release();
+  return presenter;
 }
 
 NotificationPresenterWin::NotificationPresenterWin() = default;

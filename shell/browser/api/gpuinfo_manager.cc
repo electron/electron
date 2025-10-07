@@ -8,16 +8,18 @@
 
 #include "base/memory/singleton.h"
 #include "base/task/single_thread_task_runner.h"
-#include "content/public/browser/browser_thread.h"
 #include "gpu/config/gpu_info_collector.h"
 #include "shell/browser/api/gpu_info_enumerator.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/thread_restrictions.h"
 
 namespace electron {
 
 GPUInfoManager* GPUInfoManager::GetInstance() {
-  return base::Singleton<GPUInfoManager>::get();
+  // will be deleted by CleanedUpAtExit::DoCleanup
+  static GPUInfoManager* instance = new GPUInfoManager();
+  return instance;
 }
 
 GPUInfoManager::GPUInfoManager()

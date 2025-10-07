@@ -14,9 +14,10 @@
     "allowJs": true,
     "noUnusedLocals": true,
     "outDir": "ts-gen",
-    "typeRoots" : ["./node_modules/@types"],
+    "typeRoots" : ["./node_modules/@types", "./spec/node_modules/@types"],
     "paths": {
-      "@electron/internal/*": ["lib/*"]
+      "@electron/internal/*": ["lib/*"],
+      "@node/*": ["../third_party/electron_node/*"]
     }
   },
   "exclude": [

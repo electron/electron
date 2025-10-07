@@ -1,16 +1,19 @@
+import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
+
 import { expect } from 'chai';
+import * as WebSocket from 'ws';
+
+import { once } from 'node:events';
+import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as http2 from 'node:http2';
-import * as qs from 'node:querystring';
-import * as path from 'node:path';
-import * as fs from 'node:fs';
-import * as url from 'node:url';
-import * as WebSocket from 'ws';
-import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
 import { Socket } from 'node:net';
-import { listen, defer } from './lib/spec-helpers';
-import { once } from 'node:events';
+import * as path from 'node:path';
+import * as qs from 'node:querystring';
 import { ReadableStream } from 'node:stream/web';
+import * as url from 'node:url';
+
+import { listen, defer } from './lib/spec-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -98,11 +101,47 @@ describe('webRequest module', () => {
       await expect(ajax(defaultURL)).to.eventually.be.rejected();
     });
 
+    it('matches all requests when no filters are defined', async () => {
+      ses.webRequest.onBeforeRequest(cancel);
+      await expect(ajax(`${defaultURL}nofilter/test`)).to.eventually.be.rejected();
+      await expect(ajax(`${defaultURL}nofilter2/test`)).to.eventually.be.rejected();
+    });
+
     it('can filter URLs', async () => {
       const filter = { urls: [defaultURL + 'filter/*'] };
       ses.webRequest.onBeforeRequest(filter, cancel);
       const { data } = await ajax(`${defaultURL}nofilter/test`);
       expect(data).to.equal('/nofilter/test');
+      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+    });
+
+    it('can filter all URLs with syntax <all_urls>', async () => {
+      const filter = { urls: ['<all_urls>'] };
+      ses.webRequest.onBeforeRequest(filter, cancel);
+      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+      await expect(ajax(`${defaultURL}nofilter/test`)).to.eventually.be.rejected();
+    });
+
+    it('can filter URLs with overlapping patterns of urls and excludeUrls', async () => {
+      // If filter matches both urls and excludeUrls, it should be excluded.
+      const filter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'filter/test'] };
+      ses.webRequest.onBeforeRequest(filter, cancel);
+      const { data } = await ajax(`${defaultURL}filter/test`);
+      expect(data).to.equal('/filter/test');
+    });
+
+    it('can filter URLs with multiple excludeUrls patterns', async () => {
+      const filter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'filter/exclude1/*', defaultURL + 'filter/exclude2/*'] };
+      ses.webRequest.onBeforeRequest(filter, cancel);
+      expect((await ajax(`${defaultURL}filter/exclude1/test`)).data).to.equal('/filter/exclude1/test');
+      expect((await ajax(`${defaultURL}filter/exclude2/test`)).data).to.equal('/filter/exclude2/test');
+      // expect non-excluded URL to pass filter
+      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+    });
+
+    it('can filter URLs with empty excludeUrls', async () => {
+      const filter = { urls: [defaultURL + 'filter/*'], excludeUrls: [] };
+      ses.webRequest.onBeforeRequest(filter, cancel);
       await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
     });
 
@@ -117,6 +156,21 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeRequest(filter2, cancel);
       expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
       expect((await ajax(`${defaultURL}filter/test`)).data).to.equal('/filter/test');
+    });
+
+    it('can filter URLs, excludeUrls and types', async () => {
+      const filter1: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'exclude/*'], types: ['xhr'] };
+      ses.webRequest.onBeforeRequest(filter1, cancel);
+
+      expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
+      expect((await ajax(`${defaultURL}exclude/test`)).data).to.equal('/exclude/test');
+      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+
+      const filter2: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'exclude/*'], types: ['stylesheet'] };
+      ses.webRequest.onBeforeRequest(filter2, cancel);
+      expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
+      expect((await ajax(`${defaultURL}filter/test`)).data).to.equal('/filter/test');
+      expect((await ajax(`${defaultURL}exclude/test`)).data).to.equal('/exclude/test');
     });
 
     it('receives details object', async () => {
@@ -295,7 +349,7 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
         const requestHeaders = details.requestHeaders;
         requestHeaders.Accept = '*/*;test/header';
-        callback({ requestHeaders: requestHeaders });
+        callback({ requestHeaders });
       });
       const { data } = await ajax(defaultURL);
       expect(data).to.equal('/header/received');
@@ -362,7 +416,7 @@ describe('webRequest module', () => {
         Test: 'header'
       };
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
-        callback({ requestHeaders: requestHeaders });
+        callback({ requestHeaders });
       });
       ses.webRequest.onSendHeaders((details) => {
         expect(details.requestHeaders).to.deep.equal(requestHeaders);
@@ -388,7 +442,7 @@ describe('webRequest module', () => {
       };
       let onSendHeadersCalled = false;
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
-        callback({ requestHeaders: requestHeaders });
+        callback({ requestHeaders });
       });
       ses.webRequest.onSendHeaders((details) => {
         expect(details.requestHeaders).to.deep.equal(requestHeaders);
@@ -437,7 +491,7 @@ describe('webRequest module', () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders!;
         responseHeaders.Custom = ['Changed'] as any;
-        callback({ responseHeaders: responseHeaders });
+        callback({ responseHeaders });
       });
       const { headers } = await ajax(defaultURL);
       expect(headers).to.to.have.property('custom', 'Changed');
@@ -447,7 +501,7 @@ describe('webRequest module', () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders!;
         responseHeaders['access-control-allow-origin'] = ['http://new-origin'] as any;
-        callback({ responseHeaders: responseHeaders });
+        callback({ responseHeaders });
       });
       const { headers } = await ajax(defaultURL);
       expect(headers).to.to.have.property('access-control-allow-origin', 'http://new-origin');
@@ -457,7 +511,7 @@ describe('webRequest module', () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders!;
         responseHeaders.Custom = ['Changed'] as any;
-        callback({ responseHeaders: responseHeaders });
+        callback({ responseHeaders });
       });
       const { headers } = await ajax('cors://host');
       expect(headers).to.to.have.property('custom', 'Changed');
@@ -474,7 +528,7 @@ describe('webRequest module', () => {
 
     it('does not change content-disposition header by default', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
-        expect(details.responseHeaders!['content-disposition']).to.deep.equal([' attachment; filename="aa中aa.txt"']);
+        expect(details.responseHeaders!['content-disposition']).to.deep.equal(['attachment; filename=aa中aa.txt']);
         callback({});
       });
       const { data, headers } = await ajax(defaultURL + 'contentDisposition');
@@ -486,7 +540,7 @@ describe('webRequest module', () => {
     it('follows server redirect', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders;
-        callback({ responseHeaders: responseHeaders });
+        callback({ responseHeaders });
       });
       const { headers } = await ajax(defaultURL + 'serverRedirect');
       expect(headers).to.to.have.property('custom', 'Header');
@@ -496,7 +550,7 @@ describe('webRequest module', () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders;
         callback({
-          responseHeaders: responseHeaders,
+          responseHeaders,
           statusLine: 'HTTP/1.1 404 Not Found'
         });
       });
@@ -533,7 +587,7 @@ describe('webRequest module', () => {
       const redirectURL = defaultURL + 'redirect';
       ses.webRequest.onBeforeRequest((details, callback) => {
         if (details.url === defaultURL) {
-          callback({ redirectURL: redirectURL });
+          callback({ redirectURL });
         } else {
           callback({});
         }
@@ -586,12 +640,12 @@ describe('webRequest module', () => {
     it('can be proxyed', async () => {
       // Setup server.
       const reqHeaders : { [key: string] : any } = {};
-      const server = http.createServer((req, res) => {
+      let server = http.createServer((req, res) => {
         reqHeaders[req.url!] = req.headers;
         res.setHeader('foo1', 'bar1');
         res.end('ok');
       });
-      const wss = new WebSocket.Server({ noServer: true });
+      let wss = new WebSocket.Server({ noServer: true });
       wss.on('connection', function connection (ws) {
         ws.on('message', function incoming (message) {
           if (message === 'foo') {
@@ -600,7 +654,7 @@ describe('webRequest module', () => {
         });
       });
       server.on('upgrade', function upgrade (request, socket, head) {
-        const pathname = require('node:url').parse(request.url).pathname;
+        const pathname = new URL(request.url!, `http://${request.headers.host}`).pathname;
         if (pathname === '/websocket') {
           reqHeaders[request.url!] = request.headers;
           wss.handleUpgrade(request, socket as Socket, head, function done (ws) {
@@ -622,7 +676,7 @@ describe('webRequest module', () => {
         callback({ requestHeaders: details.requestHeaders });
       });
       ses.webRequest.onHeadersReceived((details, callback) => {
-        const pathname = require('node:url').parse(details.url).pathname;
+        const pathname = new URL(details.url).pathname;
         receivedHeaders[pathname] = details.responseHeaders;
         callback({ cancel: false });
       });
@@ -657,9 +711,12 @@ describe('webRequest module', () => {
       });
 
       // Cleanup.
-      after(() => {
+      defer(() => {
         contents.destroy();
         server.close();
+        server = null as unknown as http.Server;
+        wss.close();
+        wss = null as unknown as WebSocket.Server;
         ses.webRequest.onBeforeRequest(null);
         ses.webRequest.onBeforeSendHeaders(null);
         ses.webRequest.onHeadersReceived(null);

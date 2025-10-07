@@ -6,21 +6,18 @@
 
 #include <algorithm>
 
-#include "base/logging.h"
+#include "base/containers/to_vector.h"
 #include "base/no_destructor.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list_observer.h"
 
 namespace {
+
 template <typename T>
-std::vector<base::WeakPtr<T>> ConvertToWeakPtrVector(std::vector<T*> raw_ptrs) {
-  std::vector<base::WeakPtr<T>> converted_to_weak;
-  converted_to_weak.reserve(raw_ptrs.size());
-  for (auto* raw_ptr : raw_ptrs) {
-    converted_to_weak.push_back(raw_ptr->GetWeakPtr());
-  }
-  return converted_to_weak;
+auto ConvertToWeakPtrVector(const std::vector<T*>& raw_ptrs) {
+  return base::ToVector(raw_ptrs, [](T* t) { return t->GetWeakPtr(); });
 }
+
 }  // namespace
 
 namespace electron {
@@ -51,9 +48,6 @@ void WindowList::AddWindow(NativeWindow* window) {
   // Push |window| on the appropriate list instance.
   WindowVector& windows = GetInstance()->windows_;
   windows.push_back(window);
-
-  for (WindowListObserver& observer : GetObservers())
-    observer.OnWindowAdded(window);
 }
 
 // static
@@ -61,19 +55,13 @@ void WindowList::RemoveWindow(NativeWindow* window) {
   WindowVector& windows = GetInstance()->windows_;
   std::erase(windows, window);
 
-  for (WindowListObserver& observer : GetObservers())
-    observer.OnWindowRemoved(window);
-
-  if (windows.empty()) {
-    for (WindowListObserver& observer : GetObservers())
-      observer.OnWindowAllClosed();
-  }
+  if (windows.empty())
+    GetObservers().Notify(&WindowListObserver::OnWindowAllClosed);
 }
 
 // static
 void WindowList::WindowCloseCancelled(NativeWindow* window) {
-  for (WindowListObserver& observer : GetObservers())
-    observer.OnWindowCloseCancelled(window);
+  GetObservers().Notify(&WindowListObserver::OnWindowCloseCancelled, window);
 }
 
 // static
@@ -91,7 +79,7 @@ void WindowList::CloseAllWindows() {
   std::vector<base::WeakPtr<NativeWindow>> weak_windows =
       ConvertToWeakPtrVector(GetInstance()->windows_);
 #if BUILDFLAG(IS_MAC)
-  std::reverse(weak_windows.begin(), weak_windows.end());
+  std::ranges::reverse(weak_windows);
 #endif
   for (const auto& window : weak_windows) {
     if (window && !window->IsClosed())

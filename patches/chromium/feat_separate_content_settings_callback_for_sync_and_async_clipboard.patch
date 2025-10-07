@@ -1,0 +1,155 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 30 Jan 2025 20:28:38 +0900
+Subject: feat: separate content settings callback for sync and async clipboard
+
+`AllowReadFromClipboard` is called from both the types without a way to differentiate.
+
+[sync path] - third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
+[async path] - third_party/blink/renderer/modules/clipboard/clipboard_promise.cc
+
+This patch adds a new callback to separate these two paths so that we
+can have sync permission checks for the sync path.
+
+Additionally, `blink::PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ`
+has been added to support type conversion in permission policy checks. We have extended
+`blink::PermissionType` in `electron::WebContentsPermissionHelper::PermissionType`
+but it is hard to import the latter into the content permission layer checks.
+
+This patch will be removed when the deprecated sync api support is
+removed.
+
+diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
+index a82088f96079c3d5ddfbd35df98b2ebb2c0e62a4..668012a5e422059f52815fadf3c7d1d99af55032 100644
+--- a/components/permissions/permission_util.cc
++++ b/components/permissions/permission_util.cc
+@@ -536,6 +536,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+       return ContentSettingsType::WEB_APP_INSTALLATION;
+     case PermissionType::LOCAL_NETWORK_ACCESS:
+       return ContentSettingsType::LOCAL_NETWORK_ACCESS;
++    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
+     case PermissionType::NUM:
+       break;
+   }
+diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
+index 17a10ffc53c5700bb907f68142a6d6f403415099..dda07e1d45bf49b1fc3970a34a17bf65abc79e60 100644
+--- a/content/browser/permissions/permission_controller_impl.cc
++++ b/content/browser/permissions/permission_controller_impl.cc
+@@ -89,6 +89,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+     case PermissionType::AUTOMATIC_FULLSCREEN:
+     case PermissionType::WEB_APP_INSTALLATION:
+     case PermissionType::LOCAL_NETWORK_ACCESS:
++    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
+       return std::nullopt;
+   }
+ }
+diff --git a/content/browser/permissions/permission_descriptor_util.cc b/content/browser/permissions/permission_descriptor_util.cc
+index 6c36ada80f6f225b84a8f3832405128f8ba83224..714d582d1060873765b24770b18eddcbbdcf5506 100644
+--- a/content/browser/permissions/permission_descriptor_util.cc
++++ b/content/browser/permissions/permission_descriptor_util.cc
+@@ -171,6 +171,9 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
+     case blink::PermissionType::LOCAL_NETWORK_ACCESS:
+       return CreatePermissionDescriptor(
+           blink::mojom::PermissionName::LOCAL_NETWORK_ACCESS);
++    case blink::PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
++      return CreatePermissionDescriptor(
++          blink::mojom::PermissionName::DEPRECATED_SYNC_CLIPBOARD_READ);
+     case blink::PermissionType::NUM:
+       NOTREACHED();
+   }
+diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
+index 4dd8b8d4498cbe00b5739f620037ebe6915b6033..2d7d9e96522208835a867e0be12df4da56141ab1 100644
+--- a/third_party/blink/common/permissions/permission_utils.cc
++++ b/third_party/blink/common/permissions/permission_utils.cc
+@@ -102,6 +102,8 @@ std::string GetPermissionString(PermissionType permission) {
+       return "WebAppInstallation";
+     case PermissionType::LOCAL_NETWORK_ACCESS:
+       return "LocalNetworkAccess";
++    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
++      return "DeprecatedSyncClipboardRead";
+     case PermissionType::NUM:
+       NOTREACHED();
+   }
+@@ -176,6 +178,7 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
+     case PermissionType::NOTIFICATIONS:
+     case PermissionType::KEYBOARD_LOCK:
+     case PermissionType::POINTER_LOCK:
++    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
+       return std::nullopt;
+ 
+     case PermissionType::NUM:
+diff --git a/third_party/blink/public/common/permissions/permission_utils.h b/third_party/blink/public/common/permissions/permission_utils.h
+index 5c82a641538802bc459782ea422a1186045b054a..c286d87043ec4cb2e51ec9d82d08e4c84f5a270c 100644
+--- a/third_party/blink/public/common/permissions/permission_utils.h
++++ b/third_party/blink/public/common/permissions/permission_utils.h
+@@ -65,6 +65,7 @@ enum class PermissionType {
+   HAND_TRACKING = 41,
+   WEB_APP_INSTALLATION = 42,
+   LOCAL_NETWORK_ACCESS = 43,
++  DEPRECATED_SYNC_CLIPBOARD_READ = 44,
+ 
+   // Always keep this at the end.
+   NUM,
+diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
+index 1591cba375920ef3bdaa5698658ac386cbed248c..6fc349a2f4633d1338fbfcf8d0d0fb6fa3180b0d 100644
+--- a/third_party/blink/public/mojom/permissions/permission.mojom
++++ b/third_party/blink/public/mojom/permissions/permission.mojom
+@@ -43,7 +43,8 @@ enum PermissionName {
+   AR,
+   HAND_TRACKING,
+   WEB_PRINTING,
+-  SMART_CARD
++  SMART_CARD,
++  DEPRECATED_SYNC_CLIPBOARD_READ
+ };
+ 
+ struct MidiPermissionDescriptor {
+diff --git a/third_party/blink/public/platform/web_content_settings_client.h b/third_party/blink/public/platform/web_content_settings_client.h
+index 36410ff29d9c82e59f93fbb82968064bd330dfde..6c3f994e0b184f78bd9442002bb4dfae66e50518 100644
+--- a/third_party/blink/public/platform/web_content_settings_client.h
++++ b/third_party/blink/public/platform/web_content_settings_client.h
+@@ -54,6 +54,9 @@ class WebContentSettingsClient {
+   // Controls whether access to write the clipboard is allowed for this frame.
+   virtual bool AllowWriteToClipboard() { return false; }
+ 
++  // Controls whether synchronous access to read the clipboard is allowed for this frame.
++  virtual bool AllowReadFromClipboardSync() { return false; }
++
+   // Reports that passive mixed content was found at the provided URL.
+   virtual void PassiveInsecureContentFound(const WebURL&) {}
+ 
+diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
+index a5ac9d4a417ac8e75e761c40841f41ab9057c761..292bd1f9de78828e739dae24a45a1dd3d6585240 100644
+--- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
++++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
+@@ -123,7 +123,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
+     return true;
+   }
+   return frame.GetContentSettingsClient() &&
+-         frame.GetContentSettingsClient()->AllowReadFromClipboard();
++         frame.GetContentSettingsClient()->AllowReadFromClipboardSync();
+ }
+ 
+ bool ClipboardCommands::CanWriteClipboard(LocalFrame& frame,
+@@ -312,7 +312,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
+     return true;
+   }
+   return frame->GetContentSettingsClient() &&
+-         frame->GetContentSettingsClient()->AllowReadFromClipboard();
++         frame->GetContentSettingsClient()->AllowReadFromClipboardSync();
+ }
+ 
+ bool ClipboardCommands::ExecuteCopy(LocalFrame& frame,
+diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
+index b533436f91ba67c6060d4a1976f7c197b6db3afc..63df740efad1e407f0990d2ba48a9cbcb8bdb6f8 100644
+--- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
++++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
+@@ -146,6 +146,8 @@ String PermissionNameToString(PermissionName name) {
+       return "web-printing";
+     case PermissionName::SMART_CARD:
+       return "smart-card";
++    case PermissionName::DEPRECATED_SYNC_CLIPBOARD_READ:
++      return "deprecated-sync-clipboard-read";
+   }
+ }
+ 

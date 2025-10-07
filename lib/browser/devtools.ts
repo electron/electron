@@ -1,29 +1,36 @@
-import { dialog, Menu } from 'electron/main';
-import * as fs from 'fs';
-
+import { IPC_MESSAGES } from '@electron/internal//common/ipc-messages';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
-import { IPC_MESSAGES } from '@electron/internal//common/ipc-messages';
+
+import { dialog, Menu } from 'electron/main';
+
+import * as fs from 'fs';
 
 const convertToMenuTemplate = function (items: ContextMenuItem[], handler: (id: number) => void) {
   return items.map(function (item) {
-    const transformed: Electron.MenuItemConstructorOptions = item.type === 'subMenu' ? {
-      type: 'submenu',
-      label: item.label,
-      enabled: item.enabled,
-      submenu: convertToMenuTemplate(item.subItems, handler)
-    } : item.type === 'separator' ? {
-      type: 'separator'
-    } : item.type === 'checkbox' ? {
-      type: 'checkbox',
-      label: item.label,
-      enabled: item.enabled,
-      checked: item.checked
-    } : {
-      type: 'normal',
-      label: item.label,
-      enabled: item.enabled
-    };
+    const transformed: Electron.MenuItemConstructorOptions = item.type === 'subMenu'
+      ? {
+          type: 'submenu',
+          label: item.label,
+          enabled: item.enabled,
+          submenu: convertToMenuTemplate(item.subItems, handler)
+        }
+      : item.type === 'separator'
+        ? {
+            type: 'separator'
+          }
+        : item.type === 'checkbox'
+          ? {
+              type: 'checkbox',
+              label: item.label,
+              enabled: item.enabled,
+              checked: item.checked
+            }
+          : {
+              type: 'normal',
+              label: item.label,
+              enabled: item.enabled
+            };
 
     if (item.id != null) {
       transformed.click = () => handler(item.id);
@@ -62,6 +69,7 @@ const assertChromeDevTools = function (contents: Electron.WebContents, api: stri
 
 ipcMainInternal.handle(IPC_MESSAGES.INSPECTOR_CONTEXT_MENU, function (event, items: ContextMenuItem[], isEditMenu: boolean) {
   return new Promise<number | void>(resolve => {
+    if (event.type !== 'frame') return;
     assertChromeDevTools(event.sender, 'window.InspectorFrontendHost.showContextMenuAtPoint()');
 
     const template = isEditMenu ? getEditMenuItems() : convertToMenuTemplate(items, resolve);
@@ -73,6 +81,7 @@ ipcMainInternal.handle(IPC_MESSAGES.INSPECTOR_CONTEXT_MENU, function (event, ite
 });
 
 ipcMainInternal.handle(IPC_MESSAGES.INSPECTOR_SELECT_FILE, async function (event) {
+  if (event.type !== 'frame') return [];
   assertChromeDevTools(event.sender, 'window.UI.createFileSelectorElement()');
 
   const result = await dialog.showOpenDialog({});
@@ -85,6 +94,7 @@ ipcMainInternal.handle(IPC_MESSAGES.INSPECTOR_SELECT_FILE, async function (event
 });
 
 ipcMainUtils.handleSync(IPC_MESSAGES.INSPECTOR_CONFIRM, async function (event, message: string = '', title: string = '') {
+  if (event.type !== 'frame') return;
   assertChromeDevTools(event.sender, 'window.confirm()');
 
   const options = {

@@ -10,19 +10,19 @@ This change removes the usage of these constants to fix a compilation failure du
 See: https://github.com/llvm/llvm-project/pull/80542
 
 diff --git a/deps/uv/include/uv.h b/deps/uv/include/uv.h
-index 3375600023e39ddacf62cc17deb4f206db942084..cc106422dd36aa0564e74dd8a16eec496433d3bd 100644
+index 0295eeddbb4eb1cffd9dbcd02e037907fadc1b7e..7c2f9d2a8b13584ff6b33cd3ff4745e9fb3c4170 100644
 --- a/deps/uv/include/uv.h
 +++ b/deps/uv/include/uv.h
-@@ -155,7 +155,6 @@ struct uv__queue {
+@@ -156,7 +156,6 @@ struct uv__queue {
    XX(EFTYPE, "inappropriate file type or format")                             \
    XX(EILSEQ, "illegal byte sequence")                                         \
    XX(ESOCKTNOSUPPORT, "socket type not supported")                            \
 -  XX(ENODATA, "no data available")                                            \
    XX(EUNATCH, "protocol driver not attached")                                 \
+   XX(ENOEXEC, "exec format error")                                            \
  
- #define UV_HANDLE_TYPE_MAP(XX)                                                \
 diff --git a/deps/uv/include/uv/errno.h b/deps/uv/include/uv/errno.h
-index 127278ef916161a96e23e645927d16bedfdaca5b..b36da3daa5744e6f994e32d9d82aaef689008a5f 100644
+index ac00778cfc59fb55e361b24fc81a965a5e8f97e7..f0c4d6dfc9f03bee59e656b2da9ac325bced7b69 100644
 --- a/deps/uv/include/uv/errno.h
 +++ b/deps/uv/include/uv/errno.h
 @@ -456,18 +456,6 @@
@@ -45,7 +45,7 @@ index 127278ef916161a96e23e645927d16bedfdaca5b..b36da3daa5744e6f994e32d9d82aaef6
  # define UV__EUNATCH UV__ERR(EUNATCH)
  #else
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index 149c7c107322919dfeea1dfe89dc223f78b0e979..e4e8dac6b8b5924a7eae83935031e09142554747 100644
+index 8c44e32381a44675792ca0922e47df1adda48e41..d193725ea9a3270ed9affea12d11467fb14efdf8 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
 @@ -241,10 +241,6 @@ void DefineErrnoConstants(Local<Object> target) {
@@ -86,10 +86,10 @@ index 149c7c107322919dfeea1dfe89dc223f78b0e979..e4e8dac6b8b5924a7eae83935031e091
    NODE_DEFINE_CONSTANT(target, ETIMEDOUT);
  #endif
 diff --git a/src/node_errors.cc b/src/node_errors.cc
-index ff091fd20d915b58a7a23dd393d46e1021bdb2f5..8c2cf5d65bb8b1d9461286c9a54be8ac9786900a 100644
+index 5f51add4cdf68a9487edfc9382f586cc94539571..befb642f1effa3c4139e4cd99ff64d9c5175fd72 100644
 --- a/src/node_errors.cc
 +++ b/src/node_errors.cc
-@@ -852,10 +852,6 @@ const char* errno_string(int errorno) {
+@@ -862,10 +862,6 @@ const char* errno_string(int errorno) {
      ERRNO_CASE(ENOBUFS);
  #endif
  
@@ -100,7 +100,7 @@ index ff091fd20d915b58a7a23dd393d46e1021bdb2f5..8c2cf5d65bb8b1d9461286c9a54be8ac
  #ifdef ENODEV
      ERRNO_CASE(ENODEV);
  #endif
-@@ -894,14 +890,6 @@ const char* errno_string(int errorno) {
+@@ -904,14 +900,6 @@ const char* errno_string(int errorno) {
      ERRNO_CASE(ENOSPC);
  #endif
  
@@ -115,7 +115,7 @@ index ff091fd20d915b58a7a23dd393d46e1021bdb2f5..8c2cf5d65bb8b1d9461286c9a54be8ac
  #ifdef ENOSYS
      ERRNO_CASE(ENOSYS);
  #endif
-@@ -984,10 +972,6 @@ const char* errno_string(int errorno) {
+@@ -994,10 +982,6 @@ const char* errno_string(int errorno) {
      ERRNO_CASE(ESTALE);
  #endif
  

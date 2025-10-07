@@ -43,7 +43,7 @@ NodeStreamLoader::~NodeStreamLoader() {
   }
 
   // Destroy the stream if not already ended
-  if (!ended_) {
+  if (!destroyed_) {
     node::MakeCallback(isolate_, emitter_.Get(isolate_), "destroy", 0, nullptr,
                        {0, 0});
   }
@@ -63,11 +63,19 @@ void NodeStreamLoader::Start(network::mojom::URLResponseHeadPtr head) {
                              std::nullopt);
 
   auto weak = weak_factory_.GetWeakPtr();
-  On("end",
-     base::BindRepeating(&NodeStreamLoader::NotifyComplete, weak, net::OK));
-  On("error", base::BindRepeating(&NodeStreamLoader::NotifyComplete, weak,
-                                  net::ERR_FAILED));
+  On("end", base::BindRepeating(&NodeStreamLoader::NotifyEnd, weak));
+  On("error", base::BindRepeating(&NodeStreamLoader::NotifyError, weak));
   On("readable", base::BindRepeating(&NodeStreamLoader::NotifyReadable, weak));
+}
+
+void NodeStreamLoader::NotifyEnd() {
+  destroyed_ = true;
+  NotifyComplete(net::OK);
+}
+
+void NodeStreamLoader::NotifyError() {
+  destroyed_ = true;
+  NotifyComplete(net::ERR_FAILED);
 }
 
 void NodeStreamLoader::NotifyReadable() {
@@ -81,7 +89,7 @@ void NodeStreamLoader::NotifyReadable() {
 void NodeStreamLoader::NotifyComplete(int result) {
   // Wait until write finishes or fails.
   if (is_reading_ || is_writing_) {
-    ended_ = true;
+    pending_result_ = true;
     result_ = result;
     return;
   }
@@ -121,7 +129,7 @@ void NodeStreamLoader::ReadMore() {
     }
 
     readable_ = false;
-    if (ended_) {
+    if (pending_result_) {
       NotifyComplete(result_);
     }
     return;
@@ -146,7 +154,7 @@ void NodeStreamLoader::ReadMore() {
 void NodeStreamLoader::DidWrite(MojoResult result) {
   is_writing_ = false;
   // We were told to end streaming.
-  if (ended_) {
+  if (pending_result_) {
     NotifyComplete(result_);
     return;
   }

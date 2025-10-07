@@ -10,49 +10,53 @@
 #include <string>
 #include <vector>
 
-#include "gin/handle.h"
-#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
-#include "shell/browser/javascript_environment.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/tray_icon_observer.h"
 #include "shell/common/gin_converters/guid_converter.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
-#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/pinnable.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 namespace gfx {
 class Image;
-}
+class Image;
+}  // namespace gfx
 
 namespace gin_helper {
 class Dictionary;
-}
+class ErrorThrower;
+template <typename T>
+class Handle;
+}  // namespace gin_helper
 
 namespace electron::api {
 
 class Menu;
 
-class Tray : public gin::Wrappable<Tray>,
-             public gin_helper::EventEmitterMixin<Tray>,
-             public gin_helper::Constructible<Tray>,
-             public gin_helper::CleanedUpAtExit,
-             public gin_helper::Pinnable<Tray>,
-             private TrayIconObserver {
+class Tray final : public gin_helper::DeprecatedWrappable<Tray>,
+                   public gin_helper::EventEmitterMixin<Tray>,
+                   public gin_helper::Constructible<Tray>,
+                   public gin_helper::CleanedUpAtExit,
+                   public gin_helper::Pinnable<Tray>,
+                   private TrayIconObserver {
  public:
   // gin_helper::Constructible
-  static gin::Handle<Tray> New(gin_helper::ErrorThrower thrower,
-                               v8::Local<v8::Value> image,
-                               std::optional<UUID> guid,
-                               gin::Arguments* args);
+  static gin_helper::Handle<Tray> New(gin_helper::ErrorThrower thrower,
+                                      v8::Local<v8::Value> image,
+                                      std::optional<base::Uuid> guid,
+                                      gin::Arguments* args);
 
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "Tray"; }
 
-  // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  // gin_helper::Wrappable
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
+
+  // gin_helper::CleanedUpAtExit
+  void WillBeDestroyed() override;
 
   // disable copy
   Tray(const Tray&) = delete;
@@ -61,7 +65,7 @@ class Tray : public gin::Wrappable<Tray>,
  private:
   Tray(v8::Isolate* isolate,
        v8::Local<v8::Value> image,
-       std::optional<UUID> guid);
+       std::optional<base::Uuid> guid);
   ~Tray() override;
 
   // TrayIconObserver:
@@ -107,10 +111,12 @@ class Tray : public gin::Wrappable<Tray>,
   void SetContextMenu(gin_helper::ErrorThrower thrower,
                       v8::Local<v8::Value> arg);
   gfx::Rect GetBounds();
+  v8::Local<v8::Value> GetGUID();
 
   bool CheckAlive();
 
   v8::Global<v8::Value> menu_;
+  std::optional<base::Uuid> guid_;
   std::unique_ptr<TrayIcon> tray_icon_;
 };
 

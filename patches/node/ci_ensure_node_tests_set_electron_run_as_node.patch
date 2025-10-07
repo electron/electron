@@ -7,73 +7,19 @@ Some node tests / test fixtures spawn other tests that clobber env,
 which causes the `ELECTRON_RUN_AS_NODE` variable to be lost. This patch
 re-injects it.
 
-diff --git a/test/common/assertSnapshot.js b/test/common/assertSnapshot.js
-index 88f40281e069b77ac071ac872c4491f749b64e21..0fa102da111fa370406ca74069316fa7a7a3a050 100644
---- a/test/common/assertSnapshot.js
-+++ b/test/common/assertSnapshot.js
-@@ -80,6 +80,7 @@ async function spawnAndAssert(filename, transform = (x) => x, { tty = false, ...
-   const flags = common.parseTestFlags(filename);
-   const executable = tty ? 'tools/pseudo-tty.py' : process.execPath;
-   const args = tty ? [process.execPath, ...flags, filename] : [...flags, filename];
-+  if (options && options.env) options.env.ELECTRON_RUN_AS_NODE = 1;
-   const { stdout, stderr } = await common.spawnPromisified(executable, args, options);
-   await assertSnapshot(transform(`${stdout}${stderr}`), filename);
- }
 diff --git a/test/fixtures/test-runner/output/arbitrary-output-colored.js b/test/fixtures/test-runner/output/arbitrary-output-colored.js
-index af23e674cb361ed81dafa22670d5633559cd1144..1dd59990cb7cdba8aecf4f499ee6b92e7cd41b30 100644
+index 444531da1df2f9bbbc19bb8a43fb6eb2d1802d1a..81b3b3e37e5664dc53bec987a2ce3a83a8da105f 100644
 --- a/test/fixtures/test-runner/output/arbitrary-output-colored.js
 +++ b/test/fixtures/test-runner/output/arbitrary-output-colored.js
-@@ -7,6 +7,6 @@ const fixtures = require('../../../common/fixtures');
+@@ -7,9 +7,9 @@ const fixtures = require('../../../common/fixtures');
  (async function run() {
    const test = fixtures.path('test-runner/output/arbitrary-output-colored-1.js');
    const reset = fixtures.path('test-runner/output/reset-color-depth.js');
 -  await once(spawn(process.execPath, ['-r', reset, '--test', test], { stdio: 'inherit' }), 'exit');
--  await once(spawn(process.execPath, ['-r', reset, '--test', '--test-reporter', 'tap', test], { stdio: 'inherit'  }), 'exit');
 +  await once(spawn(process.execPath, ['-r', reset, '--test', test], { stdio: 'inherit', env: { ELECTRON_RUN_AS_NODE: 1 }}), 'exit');
-+  await once(spawn(process.execPath, ['-r', reset, '--test', '--test-reporter', 'tap', test], { stdio: 'inherit', env: { ELECTRON_RUN_AS_NODE: 1 }  }), 'exit');
+   await once(
+-    spawn(process.execPath, ['-r', reset, '--test', '--test-reporter', 'tap', test], { stdio: 'inherit' }),
++    spawn(process.execPath, ['-r', reset, '--test', '--test-reporter', 'tap', test], { stdio: 'inherit', env: { ELECTRON_RUN_AS_NODE: 1 }}),
+     'exit',
+   );
  })().then(common.mustCall());
-diff --git a/test/parallel/test-node-output-console.mjs b/test/parallel/test-node-output-console.mjs
-index f995c170540ffaa80b1b5f8b95dbd8f52bbd5431..6455dbdd015477e16c414b6d2113139327fea4b3 100644
---- a/test/parallel/test-node-output-console.mjs
-+++ b/test/parallel/test-node-output-console.mjs
-@@ -31,6 +31,7 @@ describe('console output', { concurrency: true }, () => {
-     .transform(snapshot.replaceWindowsLineEndings, snapshot.replaceWindowsPaths, replaceStackTrace);
-   for (const { name, transform, env } of tests) {
-     it(name, async () => {
-+      if (env) env.ELECTRON_RUN_AS_NODE = 1;
-       await snapshot.spawnAndAssert(
-         fixtures.path(name),
-         transform ?? defaultTransform,
-diff --git a/test/parallel/test-node-output-errors.mjs b/test/parallel/test-node-output-errors.mjs
-index c0acee2bfc8c124e9d9b254041589a49c8301b8f..0e266899ffc0918b2f94e8f636043a6ec5f0870f 100644
---- a/test/parallel/test-node-output-errors.mjs
-+++ b/test/parallel/test-node-output-errors.mjs
-@@ -61,21 +61,22 @@ describe('errors output', { concurrency: true }, () => {
-     { name: 'errors/events_unhandled_error_subclass.js', transform: errTransform },
-     { name: 'errors/if-error-has-good-stack.js', transform: errTransform },
-     { name: 'errors/throw_custom_error.js', transform: errTransform },
--    { name: 'errors/throw_error_with_getter_throw.js', transform: errTransform },
-+    // { name: 'errors/throw_error_with_getter_throw.js', transform: errTransform },
-     { name: 'errors/throw_in_line_with_tabs.js', transform: errTransform },
-     { name: 'errors/throw_non_error.js', transform: errTransform },
--    { name: 'errors/throw_null.js', transform: errTransform },
--    { name: 'errors/throw_undefined.js', transform: errTransform },
-+    // { name: 'errors/throw_null.js', transform: errTransform },
-+    // { name: 'errors/throw_undefined.js', transform: errTransform },
-     { name: 'errors/timeout_throw.js', transform: errTransform },
-     { name: 'errors/undefined_reference_in_new_context.js', transform: errTransform },
-     { name: 'errors/promise_always_throw_unhandled.js', transform: promiseTransform },
--    { name: 'errors/promise_unhandled_warn_with_error.js', transform: promiseTransform },
-+    // { name: 'errors/promise_unhandled_warn_with_error.js', transform: promiseTransform },
-     { name: 'errors/unhandled_promise_trace_warnings.js', transform: promiseTransform },
--    { skip: skipForceColors, name: 'errors/force_colors.js',
--      transform: forceColorsTransform, env: { FORCE_COLOR: 1 } },
-+    // { skip: skipForceColors, name: 'errors/force_colors.js',
-+      // transform: forceColorsTransform, env: { FORCE_COLOR: 1 } },
-   ];
-   for (const { name, transform = defaultTransform, env, skip = false } of tests) {
-     it(name, { skip }, async () => {
-+      if (env) env.ELECTRON_RUN_AS_NODE = 1;
-       await snapshot.spawnAndAssert(fixtures.path(name), transform, { env });
-     });
-   }

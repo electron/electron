@@ -9,11 +9,21 @@ their generator to run ours immediately after.
 This can't be upstreamed though may be replaceable later with some upstream refactors
 around reclient config generation.
 
+diff --git a/buildtools/reclient_cfgs/.gitignore b/buildtools/reclient_cfgs/.gitignore
+index 17103061c4752e6fcac07413dbf574e0c6fd6d39..848be71fa6dc81a64b7274b31d461f9dcc4697fc 100644
+--- a/buildtools/reclient_cfgs/.gitignore
++++ b/buildtools/reclient_cfgs/.gitignore
+@@ -1,4 +1,5 @@
+ /chromium-browser-clang/
+ /python/
++/nacl/
+ /win-cross/
+ reproxy.cfg
 diff --git a/buildtools/reclient_cfgs/configure_reclient_cfgs.py b/buildtools/reclient_cfgs/configure_reclient_cfgs.py
-index 672f5a99575b69469137c5cf086471ec20401916..92fbfcbd119c48c2d8a09628ac4d73fcdb232870 100755
+index 128bda296c91eac5f0c2fcfeed0c553deb5514dd..f1e33d36810dba80a42608655beb27c6e197a888 100755
 --- a/buildtools/reclient_cfgs/configure_reclient_cfgs.py
 +++ b/buildtools/reclient_cfgs/configure_reclient_cfgs.py
-@@ -382,4 +382,13 @@ def main():
+@@ -344,4 +344,13 @@ def main():
  
  
  if __name__ == "__main__":

@@ -19,7 +19,40 @@
     "prefer-const": ["error", {
       "destructuring": "all"
     }],
-    "standard/no-callback-literal": "off"
+    "n/no-callback-literal": "off",
+    "import/newline-after-import": "error",
+    "import/order": ["error", {
+      "alphabetize": {
+        "order": "asc"
+      },
+      "newlines-between": "always",
+      "pathGroups": [
+        {
+          "pattern": "@electron/internal/**",
+          "group": "external",
+          "position": "before"
+        },
+        {
+          "pattern": "@electron/**",
+          "group": "external",
+          "position": "before"
+        },
+        {
+          "pattern": "{electron,electron/**}",
+          "group": "external",
+          "position": "before"
+        }
+      ],
+      "pathGroupsExcludedImportTypes": [],
+      "distinctGroup": true,
+      "groups": [
+        "external",
+        "builtin",
+        ["sibling", "parent"],
+        "index",
+        "type"
+      ]
+    }]
   },
   "parserOptions": {
     "ecmaVersion": 6,

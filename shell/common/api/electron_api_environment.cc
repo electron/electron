@@ -9,9 +9,9 @@
 namespace {
 
 v8::Local<v8::Value> GetVar(v8::Isolate* isolate, const std::string& name) {
-  std::string value;
-  if (base::Environment::Create()->GetVar(name, &value)) {
-    return gin::StringToV8(isolate, value);
+  if (std::optional<std::string> value =
+          base::Environment::Create()->GetVar(name)) {
+    return gin::StringToV8(isolate, *value);
   } else {
     return v8::Null(isolate);
   }
@@ -25,19 +25,15 @@ bool SetVar(const std::string& name, const std::string& value) {
   return base::Environment::Create()->SetVar(name, value);
 }
 
-bool UnSetVar(const std::string& name) {
-  return base::Environment::Create()->UnSetVar(name);
-}
-
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  gin_helper::Dictionary dict(context->GetIsolate(), exports);
+  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("getVar", &GetVar);
   dict.SetMethod("hasVar", &HasVar);
   dict.SetMethod("setVar", &SetVar);
-  dict.SetMethod("unSetVar", &UnSetVar);
 }
 
 }  // namespace

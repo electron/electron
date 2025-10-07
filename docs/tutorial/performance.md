@@ -175,6 +175,7 @@ you might write code that eagerly loads dependencies:
 
 ```js title='parser.js' @ts-expect-error=[2]
 const fs = require('node:fs')
+
 const fooParser = require('foo-parser')
 
 class Parser {

@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import {
   app,
   autoUpdater,
@@ -228,11 +230,12 @@ const dockMenu = Menu.buildFromTemplate([
     ]
   }
 ]);
-app.dock.setMenu(dockMenu);
-app.dock.setBadge('foo');
-const dockid = app.dock.bounce('informational');
-app.dock.cancelBounce(dockid);
-app.dock.setIcon('/path/to/icon.png');
+
+app.dock?.setMenu(dockMenu);
+app.dock?.setBadge('foo');
+const dockid = app.dock?.bounce('informational');
+app.dock?.cancelBounce(dockid);
+app.dock?.setIcon('/path/to/icon.png');
 
 app.setBadgeCount(app.getBadgeCount() + 1);
 
@@ -348,7 +351,7 @@ app.whenReady().then(() => {
 // https://github.com/electron/electron/blob/main/docs/api/command-line-switches.md
 
 app.commandLine.appendSwitch('remote-debugging-port', '8315');
-app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1');
+app.commandLine.appendSwitch('host-resolver-rules', 'MAP * 127.0.0.1');
 app.commandLine.appendSwitch('vmodule', 'console=0');
 
 // systemPreferences
@@ -357,15 +360,9 @@ app.commandLine.appendSwitch('vmodule', 'console=0');
 const browserOptions = {
   width: 1000,
   height: 800,
-  transparent: false,
-  frame: true
+  transparent: true,
+  frame: false
 };
-
-// Make the window transparent only if the platform supports it.
-if (process.platform !== 'win32' || systemPreferences.isAeroGlassEnabled()) {
-  browserOptions.transparent = true;
-  browserOptions.frame = false;
-}
 
 if (process.platform === 'win32') {
   systemPreferences.on('color-changed', () => { console.log('color changed'); });
@@ -374,6 +371,8 @@ if (process.platform === 'win32') {
   // @ts-expect-error Removed API
   systemPreferences.on('high-contrast-color-scheme-changed', (_, highContrast) => console.log(highContrast ? 'high contrast' : 'not high contrast'));
   console.log('Color for menu is', systemPreferences.getColor('menu'));
+  // @ts-expect-error Removed API
+  systemPreferences.isAeroGlassEnabled();
 }
 
 if (process.platform === 'darwin') {
@@ -717,7 +716,7 @@ const template = <Electron.MenuItemConstructorOptions[]> [
         label: 'Reload',
         accelerator: 'Command+R',
         click: (item, focusedWindow) => {
-          if (focusedWindow) {
+          if (focusedWindow instanceof BrowserWindow) {
             focusedWindow.webContents.reloadIgnoringCache();
           }
         }
@@ -726,7 +725,7 @@ const template = <Electron.MenuItemConstructorOptions[]> [
         label: 'Toggle DevTools',
         accelerator: 'Alt+Command+I',
         click: (item, focusedWindow) => {
-          if (focusedWindow) {
+          if (focusedWindow instanceof BrowserWindow) {
             focusedWindow.webContents.toggleDevTools();
           }
         }
@@ -738,7 +737,7 @@ const template = <Electron.MenuItemConstructorOptions[]> [
         label: 'Actual Size',
         accelerator: 'CmdOrCtrl+0',
         click: (item, focusedWindow) => {
-          if (focusedWindow) {
+          if (focusedWindow instanceof BrowserWindow) {
             focusedWindow.webContents.zoomLevel = 0;
           }
         }
@@ -747,7 +746,7 @@ const template = <Electron.MenuItemConstructorOptions[]> [
         label: 'Zoom In',
         accelerator: 'CmdOrCtrl+Plus',
         click: (item, focusedWindow) => {
-          if (focusedWindow) {
+          if (focusedWindow instanceof BrowserWindow) {
             const { webContents } = focusedWindow;
             webContents.zoomLevel += 0.5;
           }
@@ -757,7 +756,7 @@ const template = <Electron.MenuItemConstructorOptions[]> [
         label: 'Zoom Out',
         accelerator: 'CmdOrCtrl+-',
         click: (item, focusedWindow) => {
-          if (focusedWindow) {
+          if (focusedWindow instanceof BrowserWindow) {
             const { webContents } = focusedWindow;
             webContents.zoomLevel -= 0.5;
           }
@@ -1179,7 +1178,7 @@ session.defaultSession.clearStorageData({ storages: ['shadercache', 'cachestorag
 // @ts-expect-error Invalid type value
 session.defaultSession.clearStorageData({ storages: ['wrong_path'] });
 
-session.defaultSession.clearStorageData({ quotas: ['syncable', 'temporary'] });
+session.defaultSession.clearStorageData({ quotas: ['temporary'] });
 // @ts-expect-error Invalid type value
 session.defaultSession.clearStorageData({ quotas: ['bad_type'] });
 
@@ -1292,7 +1291,7 @@ const win4 = new BrowserWindow({
 });
 
 win4.webContents.on('paint', (event, dirty, _image) => {
-  console.log(dirty, _image.getBitmap());
+  console.log(dirty, _image.toBitmap());
 });
 
 win4.webContents.on('devtools-open-url', (event, url) => {

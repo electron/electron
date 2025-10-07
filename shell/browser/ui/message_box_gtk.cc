@@ -2,12 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <iostream>
+#include <string_view>
+
 #include "shell/browser/ui/message_box.h"
 
-#include "base/containers/contains.h"
 #include "base/containers/flat_map.h"
 #include "base/functional/bind.h"
-#include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
 #include "base/no_destructor.h"
@@ -26,12 +27,6 @@
 #if defined(USE_OZONE)
 #include "ui/base/ui_base_features.h"
 #endif
-
-#define ANSI_FOREGROUND_RED "\x1b[31m"
-#define ANSI_FOREGROUND_BLACK "\x1b[30m"
-#define ANSI_TEXT_BOLD "\x1b[1m"
-#define ANSI_BACKGROUND_GRAY "\x1b[47m"
-#define ANSI_RESET "\x1b[0m"
 
 namespace electron {
 
@@ -102,11 +97,10 @@ class GtkMessageBox : private NativeWindowObserver {
     // Add buttons.
     GtkDialog* dialog = GTK_DIALOG(dialog_);
     if (settings.buttons.size() == 0) {
-      gtk_dialog_add_button(dialog, TranslateToStock(0, "OK"), 0);
+      gtk_dialog_add_button(dialog, TranslateToStock("OK"), 0);
     } else {
       for (size_t i = 0; i < settings.buttons.size(); ++i) {
-        gtk_dialog_add_button(dialog, TranslateToStock(i, settings.buttons[i]),
-                              i);
+        gtk_dialog_add_button(dialog, TranslateToStock(settings.buttons[i]), i);
       }
     }
     gtk_dialog_set_default_response(dialog, settings.default_id);
@@ -147,16 +141,20 @@ class GtkMessageBox : private NativeWindowObserver {
     }
   }
 
-  const char* TranslateToStock(int id, const std::string& text) {
+  static const char* TranslateToStock(const std::string& text) {
     const std::string lower = base::ToLowerASCII(text);
-    if (lower == "cancel")
+    if (lower == "cancel") {
       return gtk_util::GetCancelLabel();
-    if (lower == "no")
+    }
+    if (lower == "no") {
       return gtk_util::GetNoLabel();
-    if (lower == "ok")
+    }
+    if (lower == "ok") {
       return gtk_util::GetOkLabel();
-    if (lower == "yes")
+    }
+    if (lower == "yes") {
       return gtk_util::GetYesLabel();
+    }
     return text.c_str();
   }
 
@@ -230,7 +228,7 @@ int ShowMessageBoxSync(const MessageBoxSettings& settings) {
 
 void ShowMessageBox(const MessageBoxSettings& settings,
                     MessageBoxCallback callback) {
-  if (settings.id && base::Contains(GetDialogsMap(), *settings.id))
+  if (settings.id && GetDialogsMap().contains(*settings.id))
     CloseMessageBox(*settings.id);
   (new GtkMessageBox(settings))->RunAsynchronous(std::move(callback));
 }
@@ -255,11 +253,15 @@ void ShowErrorBox(const std::u16string& title, const std::u16string& content) {
 
     GtkMessageBox(settings).RunSynchronous();
   } else {
-    fprintf(stderr,
-            ANSI_TEXT_BOLD ANSI_BACKGROUND_GRAY ANSI_FOREGROUND_RED
-            "%s\n" ANSI_FOREGROUND_BLACK "%s" ANSI_RESET "\n",
-            base::UTF16ToUTF8(title).c_str(),
-            base::UTF16ToUTF8(content).c_str());
+    static constexpr std::string_view ANSI_FG_RED = "\x1b[31m";
+    static constexpr std::string_view ANSI_FG_BLACK = "\x1b[30m";
+    static constexpr std::string_view ANSI_TEXT_BOLD = "\x1b[1m";
+    static constexpr std::string_view ANSI_BG_GRAY = "\x1b[47m";
+    static constexpr std::string_view ANSI_RESET = "\x1b[0m";
+    std::cerr << ANSI_TEXT_BOLD << ANSI_BG_GRAY << ANSI_FG_RED
+              << base::UTF16ToUTF8(title) << '\n'
+              << ANSI_FG_BLACK << base::UTF16ToUTF8(content) << '\n'
+              << ANSI_RESET;
   }
 }
 

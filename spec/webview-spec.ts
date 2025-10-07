@@ -1,15 +1,18 @@
-import * as path from 'node:path';
-import * as url from 'node:url';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
-import { closeAllWindows } from './lib/window-helpers';
-import { emittedUntil } from './lib/events-helpers';
-import { ifit, ifdescribe, defer, itremote, useRemoteContext, listen } from './lib/spec-helpers';
-import { expect } from 'chai';
-import * as http from 'node:http';
+
 import * as auth from 'basic-auth';
+import { expect } from 'chai';
+
 import { once } from 'node:events';
+import * as http from 'node:http';
+import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
+import * as url from 'node:url';
+
+import { emittedUntil } from './lib/events-helpers';
 import { HexColors, ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
+import { ifit, ifdescribe, defer, itremote, useRemoteContext, listen } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 declare let WebView: any;
 const features = process._linkedBinding('electron_common_features');
@@ -326,8 +329,8 @@ describe('<webview> tag', function () {
 
     before(() => {
       const protocol = webviewSession.protocol;
-      protocol.registerStringProtocol(zoomScheme, (request, callback) => {
-        callback('hello');
+      protocol.registerStringProtocol(zoomScheme, (request, respond) => {
+        respond('hello');
       });
     });
 
@@ -838,13 +841,13 @@ describe('<webview> tag', function () {
 
     function setUpRequestHandler (webContentsId: number, requestedPermission: string) {
       return new Promise<void>((resolve, reject) => {
-        session.fromPartition(partition).setPermissionRequestHandler(function (webContents, permission, callback) {
+        session.fromPartition(partition).setPermissionRequestHandler(function (webContents, permission, allow) {
           if (webContents.id === webContentsId) {
             // All midi permission requests are blocked or allowed as midiSysex permissions
             // since https://chromium-review.googlesource.com/c/chromium/src/+/5154368
             if (permission === 'midiSysex') {
               const allowed = requestedPermission === 'midi' || requestedPermission === 'midiSysex';
-              return callback(!allowed);
+              return allow(!allowed);
             }
 
             try {
@@ -852,7 +855,7 @@ describe('<webview> tag', function () {
             } catch (e) {
               return reject(e);
             }
-            callback(false);
+            allow(false);
             resolve();
           }
         });
@@ -904,7 +907,7 @@ describe('<webview> tag', function () {
       const [, webViewContents] = await once(app, 'web-contents-created') as [any, WebContents];
       setUpRequestHandler(webViewContents.id, 'midi');
       const [, error] = await errorFromRenderer;
-      expect(error).to.equal('SecurityError');
+      expect(error).to.equal('NotAllowedError');
     });
 
     it('emits when using navigator.requestMIDIAccess with sysex api', async () => {
@@ -918,7 +921,7 @@ describe('<webview> tag', function () {
       const [, webViewContents] = await once(app, 'web-contents-created') as [any, WebContents];
       setUpRequestHandler(webViewContents.id, 'midiSysex');
       const [, error] = await errorFromRenderer;
-      expect(error).to.equal('SecurityError');
+      expect(error).to.equal('NotAllowedError');
     });
 
     it('emits when accessing external protocol', async () => {
@@ -1697,6 +1700,7 @@ describe('<webview> tag', function () {
         await loadWebViewAndWaitForEvent(w, {
           src: `file://${fixtures}/pages/dom-ready.html?port=${port}`
         }, 'dom-ready');
+        defer(() => { server.close(); });
       });
 
       itremote('throws a custom error when an API method is called before the event is emitted', () => {
@@ -1890,6 +1894,28 @@ describe('<webview> tag', function () {
         })`);
 
         expect(channel).to.equal('onbeforeunload');
+      });
+
+      it('does not crash when renderer process crashes', async function () {
+        // It takes more time to wait for the rendering process to crash
+        this.timeout(120000);
+        await loadWebView(w, {
+          nodeintegration: 'on',
+          webpreferences: 'contextIsolation=no',
+          src: blankPageUrl
+        });
+        // Create a crash in the rendering process of a webview
+        await w.executeJavaScript(`new Promise((resolve, reject) => {
+          webview.addEventListener('render-process-gone', (e) => resolve({...e}), {once: true})
+          webview.executeJavaScript('process.crash()', true)
+        })`);
+        // Reload the webview and the main process will not crash.
+        await w.executeJavaScript(`new Promise((resolve, reject) => {
+          webview.reload()
+          webview.addEventListener('did-finish-load', () => {
+            resolve()
+          })
+        })`);
       });
     });
 

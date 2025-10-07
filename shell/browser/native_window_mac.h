@@ -12,8 +12,9 @@
 #include <string>
 #include <vector>
 
-#include "electron/shell/common/api/api.mojom.h"
+#include "base/memory/raw_ptr.h"
 #include "shell/browser/native_window.h"
+#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/display/display_observer.h"
 #include "ui/native_theme/native_theme_observer.h"
 #include "ui/views/controls/native/native_view_host.h"
@@ -27,6 +28,7 @@
 namespace electron {
 
 class RootViewMac;
+class NativeAppWindowFrameViewMacClient;
 
 class NativeWindowMac : public NativeWindow,
                         public ui::NativeThemeObserver,
@@ -36,6 +38,7 @@ class NativeWindowMac : public NativeWindow,
   ~NativeWindowMac() override;
 
   // NativeWindow:
+  void OnTitleChanged() override;
   void SetContentView(views::View* view) override;
   void Close() override;
   void CloseImmediately() override;
@@ -84,8 +87,6 @@ class NativeWindowMac : public NativeWindow,
   ui::ZOrderLevel GetZOrderLevel() const override;
   void Center() override;
   void Invalidate() override;
-  void SetTitle(const std::string& title) override;
-  std::string GetTitle() const override;
   void FlashFrame(bool flash) override;
   void SetSkipTaskbar(bool skip) override;
   void SetExcludedFromShownWindowsMenu(bool excluded) override;
@@ -109,6 +110,7 @@ class NativeWindowMac : public NativeWindow,
   bool IsHiddenInMissionControl() const override;
   void SetHiddenInMissionControl(bool hidden) override;
   void SetContentProtection(bool enable) override;
+  bool IsContentProtected() const override;
   void SetFocusable(bool focusable) override;
   bool IsFocusable() const override;
   void SetParentWindow(NativeWindow* parent) override;
@@ -125,7 +127,7 @@ class NativeWindowMac : public NativeWindow,
                                  bool skipTransformProcessType) override;
   bool IsVisibleOnAllWorkspaces() const override;
   void SetAutoHideCursor(bool auto_hide) override;
-  void SetVibrancy(const std::string& type) override;
+  void SetVibrancy(const std::string& type, int duration) override;
   void SetWindowButtonVisibility(bool visible) override;
   bool GetWindowButtonVisibility() const override;
   void SetWindowButtonPosition(std::optional<gfx::Point> position) override;
@@ -165,12 +167,15 @@ class NativeWindowMac : public NativeWindow,
   void DetachChildren() override;
 
   void NotifyWindowWillEnterFullScreen();
+  void NotifyWindowDidFailToEnterFullScreen();
   void NotifyWindowWillLeaveFullScreen();
 
   // Cleanup observers when window is getting closed. Note that the destructor
   // can be called much later after window gets closed, so we should not do
   // cleanup in destructor.
   void Cleanup();
+
+  void SetBorderless(bool borderless);
 
   void UpdateVibrancyRadii(bool fullscreen);
 
@@ -222,6 +227,7 @@ class NativeWindowMac : public NativeWindow,
   bool CanMaximize() const override;
   std::unique_ptr<views::NonClientFrameView> CreateNonClientFrameView(
       views::Widget* widget) override;
+  void OnWidgetInitialized() override;
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
@@ -299,8 +305,14 @@ class NativeWindowMac : public NativeWindow,
 
   std::string vibrancy_type_;
 
+  // A views::NativeViewHost wrapping the vibrant view. Owned by the root view.
+  raw_ptr<views::NativeViewHost> vibrant_native_view_host_ = nullptr;
+
   // The presentation options before entering simple fullscreen mode.
   NSApplicationPresentationOptions simple_fullscreen_options_;
+
+  // Client that provides app-specific frame behaviors to NativeFrameViewMac.
+  std::unique_ptr<NativeAppWindowFrameViewMacClient> frame_view_client_;
 };
 
 }  // namespace electron

@@ -1,14 +1,17 @@
-import * as childProcess from 'node:child_process';
-import * as path from 'node:path';
-import * as http from 'node:http';
-import * as https from 'node:https';
-import * as http2 from 'node:http2';
-import * as net from 'node:net';
-import * as v8 from 'node:v8';
-import * as url from 'node:url';
-import { SuiteFunction, TestFunction } from 'mocha';
 import { BrowserWindow } from 'electron/main';
+
 import { AssertionError } from 'chai';
+import { SuiteFunction, TestFunction } from 'mocha';
+
+import * as childProcess from 'node:child_process';
+import * as http from 'node:http';
+import * as http2 from 'node:http2';
+import * as https from 'node:https';
+import * as net from 'node:net';
+import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
+import * as url from 'node:url';
+import * as v8 from 'node:v8';
 
 const addOnly = <T>(fn: Function): T => {
   const wrapped = (...args: any[]) => {
@@ -92,49 +95,50 @@ export async function startRemoteControlApp (extraArgs: string[] = [], options?:
 }
 
 export function waitUntil (
-  callback: () => boolean,
+  callback: () => boolean|Promise<boolean>,
   opts: { rate?: number, timeout?: number } = {}
 ) {
   const { rate = 10, timeout = 10000 } = opts;
-  return new Promise<void>((resolve, reject) => {
-    let intervalId: NodeJS.Timeout | undefined; // eslint-disable-line prefer-const
-    let timeoutId: NodeJS.Timeout | undefined;
+  return (async () => {
+    const ac = new AbortController();
+    const signal = ac.signal;
+    let checkCompleted = false;
+    let timedOut = false;
 
-    const cleanup = () => {
-      if (intervalId) clearInterval(intervalId);
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-
-    const check = () => {
+    const check = async () => {
       let result;
 
       try {
-        result = callback();
+        result = await callback();
       } catch (e) {
-        cleanup();
-        reject(e);
-        return;
+        ac.abort();
+        throw e;
       }
 
-      if (result === true) {
-        cleanup();
-        resolve();
-        return true;
-      }
+      return result;
     };
 
-    if (check()) {
-      return;
+    setTimeout(timeout, { signal })
+      .then(() => {
+        timedOut = true;
+        checkCompleted = true;
+      });
+
+    while (checkCompleted === false) {
+      const checkSatisfied = await check();
+      if (checkSatisfied === true) {
+        ac.abort();
+        checkCompleted = true;
+        return;
+      } else {
+        await setTimeout(rate);
+      }
     }
 
-    intervalId = setInterval(check, rate);
-
-    timeoutId = setTimeout(() => {
-      timeoutId = undefined;
-      cleanup();
-      reject(new Error(`waitUntil timed out after ${timeout}ms`));
-    }, timeout);
-  });
+    if (timedOut) {
+      throw new Error(`waitUntil timed out after ${timeout}ms`);
+    }
+  })();
 }
 
 export async function repeatedly<T> (

@@ -1,0 +1,5 @@
+{
+  "main": "./lib/osr-gpu.js",
+  "name": "@electron-ci/osr-gpu",
+  "version": "0.0.1"
+}

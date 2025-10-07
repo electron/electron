@@ -12,7 +12,6 @@
 #include <dwmapi.h>
 #include <memory>
 
-#include "base/win/windows_version.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/win_caption_button_container.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
@@ -69,9 +68,10 @@ gfx::Rect WinFrameView::GetWindowBoundsForClientBounds(
 }
 
 int WinFrameView::FrameBorderThickness() const {
-  return (IsMaximized() || frame()->IsFullscreen())
-             ? 0
-             : display::win::ScreenWin::GetSystemMetricsInDIP(SM_CXSIZEFRAME);
+  if (frame()->IsFullscreen() || IsMaximized())
+    return 0;
+
+  return display::win::GetScreenWin()->GetSystemMetricsInDIP(SM_CXSIZEFRAME);
 }
 
 views::View* WinFrameView::TargetForRect(views::View* root,
@@ -179,7 +179,7 @@ int WinFrameView::FrameTopBorderThickness(bool restored) const {
   // to fail when it ought to succeed.
   return std::floor(
       FrameTopBorderThicknessPx(restored) /
-      display::win::ScreenWin::GetScaleFactorForHWND(HWNDForView(this)));
+      display::win::GetScreenWin()->GetScaleFactorForHWND(HWNDForView(this)));
 }
 
 int WinFrameView::FrameTopBorderThicknessPx(bool restored) const {
@@ -198,13 +198,13 @@ int WinFrameView::FrameTopBorderThicknessPx(bool restored) const {
   // Note that this method assumes an equal resize handle thickness on all
   // sides of the window.
   // TODO(dfried): Consider having it return a gfx::Insets object instead.
-  return ui::GetFrameThickness(
-      MonitorFromWindow(HWNDForView(this), MONITOR_DEFAULTTONEAREST));
+  return ui::GetFrameThicknessFromWindow(HWNDForView(this),
+                                         MONITOR_DEFAULTTONEAREST);
 }
 
 int WinFrameView::TitlebarMaximizedVisualHeight() const {
   int maximized_height =
-      display::win::ScreenWin::GetSystemMetricsInDIP(SM_CYCAPTION);
+      display::win::GetScreenWin()->GetSystemMetricsInDIP(SM_CYCAPTION);
   return maximized_height;
 }
 

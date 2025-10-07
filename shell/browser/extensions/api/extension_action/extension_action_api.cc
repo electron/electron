@@ -6,12 +6,9 @@
 
 #include <stddef.h>
 
-#include <memory>
 #include <utility>
 
-#include "base/functional/bind.h"
 #include "base/no_destructor.h"
-#include "base/observer_list.h"
 #include "extensions/browser/event_router.h"
 #include "extensions/browser/extension_prefs.h"
 #include "extensions/browser/extension_util.h"
@@ -32,16 +29,12 @@ void ExtensionActionAPI::Observer::OnExtensionActionUpdated(
 
 void ExtensionActionAPI::Observer::OnExtensionActionAPIShuttingDown() {}
 
-ExtensionActionAPI::Observer::~Observer() {}
-
 //
 // ExtensionActionAPI
 //
 
 ExtensionActionAPI::ExtensionActionAPI(content::BrowserContext* context)
     : browser_context_(context), extension_prefs_(nullptr) {}
-
-ExtensionActionAPI::~ExtensionActionAPI() {}
 
 // static
 BrowserContextKeyedAPIFactory<ExtensionActionAPI>*
@@ -67,8 +60,6 @@ void ExtensionActionAPI::Shutdown() {}
 //
 
 ExtensionActionFunction::ExtensionActionFunction() {}
-
-ExtensionActionFunction::~ExtensionActionFunction() {}
 
 ExtensionFunction::ResponseAction ExtensionActionFunction::Run() {
   return RunExtensionAction();
@@ -100,6 +91,13 @@ ExtensionActionSetIconFunction::RunExtensionAction() {
   LOG(INFO) << "chrome.action.setIcon is not supported in Electron";
 
   return RespondNow(NoArguments());
+}
+
+ExtensionFunction::ResponseAction
+ExtensionActionOpenPopupFunction::RunExtensionAction() {
+  LOG(INFO) << "chrome.action.openPopup is not supported in Electron";
+
+  return RespondNow(WithArguments(""));
 }
 
 ExtensionFunction::ResponseAction

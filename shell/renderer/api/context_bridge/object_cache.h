@@ -5,20 +5,17 @@
 #ifndef ELECTRON_SHELL_RENDERER_API_CONTEXT_BRIDGE_OBJECT_CACHE_H_
 #define ELECTRON_SHELL_RENDERER_API_CONTEXT_BRIDGE_OBJECT_CACHE_H_
 
-#include <forward_list>
-#include <unordered_map>
-#include <utility>
-
-#include "base/containers/linked_list.h"
-#include "content/public/renderer/render_frame.h"
-#include "content/public/renderer/render_frame_observer.h"
-#include "shell/renderer/electron_render_frame_observer.h"
-#include "third_party/blink/public/web/web_local_frame.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
+#include "v8/include/v8-local-handle.h"
+#include "v8/include/v8-object.h"
 
 namespace electron::api::context_bridge {
 
-using ObjectCachePair = std::pair<v8::Local<v8::Value>, v8::Local<v8::Value>>;
-
+/**
+ * NB: This is designed for context_bridge. Beware using it elsewhere!
+ * Since it's a v8::Local-to-v8::Local cache, be careful to destroy it
+ * before destroying the HandleScope that keeps the locals alive.
+ */
 class ObjectCache final {
  public:
   ObjectCache();
@@ -30,8 +27,15 @@ class ObjectCache final {
       v8::Local<v8::Value> from) const;
 
  private:
-  // object_identity ==> [from_value, proxy_value]
-  std::unordered_map<int, std::forward_list<ObjectCachePair>> proxy_map_;
+  struct Hash {
+    std::size_t operator()(const v8::Local<v8::Object>& obj) const {
+      return obj->GetIdentityHash();
+    }
+  };
+
+  // from_object ==> proxy_value
+  absl::flat_hash_map<v8::Local<v8::Object>, v8::Local<v8::Value>, Hash>
+      proxy_map_;
 };
 
 }  // namespace electron::api::context_bridge

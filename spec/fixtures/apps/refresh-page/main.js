@@ -1,7 +1,8 @@
-const path = require('node:path');
-const { once } = require('node:events');
-const { pathToFileURL } = require('node:url');
 const { BrowserWindow, app, protocol, net, session } = require('electron');
+
+const { once } = require('node:events');
+const path = require('node:path');
+const { pathToFileURL } = require('node:url');
 
 if (process.argv.length < 4) {
   console.error('Must pass allow_code_cache code_cache_dir');

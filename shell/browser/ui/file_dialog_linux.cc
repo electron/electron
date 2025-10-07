@@ -2,24 +2,23 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include <memory>
-#include <string>
+#include <algorithm>
+#include <vector>
 
 #include "base/files/file_util.h"
 #include "base/functional/bind.h"
 #include "base/functional/callback.h"
-#include "base/memory/raw_ptr.h"
-#include "base/memory/raw_ptr_exclusion.h"
 #include "base/run_loop.h"
-#include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
-#include "ui/gtk/select_file_dialog_linux_gtk.h"  // nogncheck
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/promise.h"
 #include "ui/shell_dialogs/select_file_dialog.h"
+#include "ui/shell_dialogs/select_file_policy.h"
 #include "ui/shell_dialogs/selected_file_info.h"
 
 namespace file_dialog {
@@ -44,19 +43,29 @@ ui::SelectFileDialog::FileTypeInfo GetFilterInfo(const Filters& filters) {
   ui::SelectFileDialog::FileTypeInfo file_type_info;
 
   for (const auto& [name, extension_group] : filters) {
-    file_type_info.extension_description_overrides.push_back(
-        base::UTF8ToUTF16(name));
-
-    const bool has_all_files_wildcard = base::ranges::any_of(
+    const bool has_all_files_wildcard = std::ranges::any_of(
         extension_group, [](const auto& ext) { return ext == "*"; });
+
     if (has_all_files_wildcard) {
       file_type_info.include_all_files = true;
     } else {
+      file_type_info.extension_description_overrides.push_back(
+          base::UTF8ToUTF16(name));
       file_type_info.extensions.emplace_back(extension_group);
     }
   }
 
   return file_type_info;
+}
+
+void LogIfNeededAboutUnsupportedPortalFeature(const DialogSettings& settings) {
+  if (!settings.default_path.empty() && IsPortalAvailable() &&
+      GetPortalVersion() < 4) {
+    LOG(INFO) << "Available portal version " << GetPortalVersion()
+              << " does not support defaultPath option, try the non-portal"
+              << " file chooser dialogs by launching with"
+              << " --xdg-portal-required-version";
+  }
 }
 
 class FileChooserDialog : public ui::SelectFileDialog::Listener {
@@ -67,28 +76,11 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
 
   ~FileChooserDialog() override = default;
 
-  ui::SelectFileDialogLinux::ExtraSettings GetExtraSettings(
-      const DialogSettings& settings) {
-    ui::SelectFileDialogLinux::ExtraSettings extra;
-    extra.button_label = settings.button_label;
-    extra.show_overwrite_confirmation =
-        settings.properties & SAVE_DIALOG_SHOW_OVERWRITE_CONFIRMATION;
-    extra.allow_multiple_selection =
-        settings.properties & OPEN_DIALOG_MULTI_SELECTIONS;
-    if (type_ == DialogType::SAVE) {
-      extra.show_hidden = settings.properties & SAVE_DIALOG_SHOW_HIDDEN_FILES;
-    } else {
-      extra.show_hidden = settings.properties & OPEN_DIALOG_SHOW_HIDDEN_FILES;
-    }
-
-    return extra;
-  }
-
   void RunSaveDialogImpl(const DialogSettings& settings) {
     type_ = DialogType::SAVE;
     ui::SelectFileDialog::FileTypeInfo file_info =
         GetFilterInfo(settings.filters);
-    auto extra_settings = GetExtraSettings(settings);
+    ApplySettings(settings);
     dialog_->SelectFile(
         ui::SelectFileDialog::SELECT_SAVEAS_FILE,
         base::UTF8ToUTF16(settings.title), settings.default_path,
@@ -96,7 +88,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
         base::FilePath::StringType() /* default_extension */,
         settings.parent_window ? settings.parent_window->GetNativeWindow()
                                : nullptr,
-        static_cast<void*>(&extra_settings));
+        nullptr);
   }
 
   void RunSaveDialog(gin_helper::Promise<gin_helper::Dictionary> promise,
@@ -115,14 +107,14 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     type_ = DialogType::OPEN;
     ui::SelectFileDialog::FileTypeInfo file_info =
         GetFilterInfo(settings.filters);
-    auto extra_settings = GetExtraSettings(settings);
+    ApplySettings(settings);
     dialog_->SelectFile(
         GetDialogType(settings.properties), base::UTF8ToUTF16(settings.title),
         settings.default_path, &file_info, 0 /* file_type_index */,
         base::FilePath::StringType() /* default_extension */,
         settings.parent_window ? settings.parent_window->GetNativeWindow()
                                : nullptr,
-        static_cast<void*>(&extra_settings));
+        nullptr);
   }
 
   void RunOpenDialog(gin_helper::Promise<gin_helper::Dictionary> promise,
@@ -138,9 +130,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
   }
 
   // ui::SelectFileDialog::Listener
-  void FileSelected(const ui::SelectedFileInfo& file,
-                    int index,
-                    void* params) override {
+  void FileSelected(const ui::SelectedFileInfo& file, int index) override {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
@@ -160,8 +150,8 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     delete this;
   }
 
-  void MultiFilesSelected(const std::vector<ui::SelectedFileInfo>& files,
-                          void* params) override {
+  void MultiFilesSelected(
+      const std::vector<ui::SelectedFileInfo>& files) override {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
@@ -177,7 +167,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     delete this;
   }
 
-  void FileSelectionCanceled(void* params) override {
+  void FileSelectionCanceled() override {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
@@ -198,6 +188,18 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
   }
 
  private:
+  void ApplySettings(const DialogSettings& settings) {
+    dialog_->SetButtonLabel(settings.button_label);
+    dialog_->SetOverwriteConfirmationShown(
+        settings.properties & SAVE_DIALOG_SHOW_OVERWRITE_CONFIRMATION);
+    dialog_->SetMultipleSelectionsAllowed(settings.properties &
+                                          OPEN_DIALOG_MULTI_SELECTIONS);
+    int hidden_flag = type_ == DialogType::SAVE
+                          ? static_cast<int>(SAVE_DIALOG_SHOW_HIDDEN_FILES)
+                          : static_cast<int>(OPEN_DIALOG_SHOW_HIDDEN_FILES);
+    dialog_->SetHiddenShown(settings.properties & hidden_flag);
+  }
+
   DialogType type_;
   scoped_refptr<ui::SelectFileDialog> dialog_;
   base::OnceCallback<void(gin_helper::Dictionary)> callback_;
@@ -208,6 +210,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
 
 bool ShowOpenDialogSync(const DialogSettings& settings,
                         std::vector<base::FilePath>* paths) {
+  LogIfNeededAboutUnsupportedPortalFeature(settings);
   base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
   auto cb = base::BindOnce(
       [](base::RepeatingClosure cb, std::vector<base::FilePath>* file_paths,
@@ -225,24 +228,30 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
 
 void ShowOpenDialog(const DialogSettings& settings,
                     gin_helper::Promise<gin_helper::Dictionary> promise) {
+  LogIfNeededAboutUnsupportedPortalFeature(settings);
   FileChooserDialog* dialog = new FileChooserDialog();
   dialog->RunOpenDialog(std::move(promise), settings);
 }
 
-bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
-  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-  auto cb = base::BindOnce(
-      [](base::RepeatingClosure cb, base::FilePath* file_path,
-         gin_helper::Dictionary result) {
-        result.Get("filePath", file_path);
-        std::move(cb).Run();
-      },
-      run_loop.QuitClosure(), path);
+std::optional<base::FilePath> ShowSaveDialogSync(
+    const DialogSettings& settings) {
+  std::optional<base::FilePath> path;
 
-  FileChooserDialog* dialog = new FileChooserDialog();
-  dialog->RunSaveDialog(std::move(cb), settings);
+  base::RunLoop run_loop{base::RunLoop::Type::kNestableTasksAllowed};
+  auto on_chooser_dialog_done = base::BindOnce(
+      [](base::RepeatingClosure run_loop_closure,
+         std::optional<base::FilePath>* path, gin_helper::Dictionary result) {
+        if (base::FilePath val; result.Get("filePath", &val))
+          *path = std::move(val);
+        std::move(run_loop_closure).Run();
+      },
+      run_loop.QuitClosure(), &path);
+
+  auto* const dialog = new FileChooserDialog{};
+  dialog->RunSaveDialog(std::move(on_chooser_dialog_done), settings);
   run_loop.Run();
-  return !path->empty();
+
+  return path;
 }
 
 void ShowSaveDialog(const DialogSettings& settings,

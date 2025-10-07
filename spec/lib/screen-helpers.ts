@@ -1,6 +1,8 @@
 import { screen, desktopCapturer, NativeImage } from 'electron';
-import { createArtifactWithRandomId } from './artifacts';
+
 import { AssertionError } from 'chai';
+
+import { createArtifactWithRandomId } from './artifacts';
 
 export enum HexColors {
   GREEN = '#00b140',
@@ -50,7 +52,7 @@ function getPixelColor (
   return `#${formatHexByte(r)}${formatHexByte(g)}${formatHexByte(b)}`;
 }
 
-/** Calculate euclidian distance between colors. */
+/** Calculate euclidean distance between colors. */
 function colorDistance (hexColorA: string, hexColorB: string): number {
   const colorA = hexToRgba(hexColorA);
   const colorB = hexToRgba(hexColorB);
@@ -118,6 +120,14 @@ export class ScreenCapture {
     findPoint: (displaySize: Electron.Size) => Electron.Point
   ) {
     return this._expectImpl(findPoint(this.display.size), hexColor, true);
+  }
+
+  public async takeScreenshot (filePrefix: string) {
+    const frame = await this.captureFrame();
+    return await createArtifactWithRandomId(
+      (id) => `${filePrefix}-${id}.png`,
+      frame.toPNG()
+    );
   }
 
   private async captureFrame (): Promise<NativeImage> {

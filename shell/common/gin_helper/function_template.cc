@@ -4,7 +4,6 @@
 
 #include "shell/common/gin_helper/function_template.h"
 
-#include "base/observer_list.h"
 #include "base/strings/strcat.h"
 
 namespace gin_helper {

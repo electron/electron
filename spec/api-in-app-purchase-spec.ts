@@ -1,5 +1,7 @@
-import { expect } from 'chai';
 import { inAppPurchase } from 'electron/main';
+
+import { expect } from 'chai';
+
 import { ifdescribe } from './lib/spec-helpers';
 
 describe('inAppPurchase module', function () {

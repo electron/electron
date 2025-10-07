@@ -10,6 +10,7 @@
 
 #include "base/memory/raw_ptr.h"
 #include "base/strings/utf_string_conversions.h"
+#include "content/public/browser/web_contents.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
@@ -23,8 +24,6 @@
 
 namespace electron {
 
-namespace {
-
 class DevToolsWindowDelegate : public views::ClientView,
                                public views::WidgetDelegate {
  public:
@@ -35,8 +34,8 @@ class DevToolsWindowDelegate : public views::ClientView,
         shell_(shell),
         view_(view),
         widget_(widget) {
-    SetOwnedByWidget(true);
-    set_owned_by_client();
+    SetOwnedByWidget(OwnedByWidgetPassKey{});
+    set_owned_by_client(OwnedByClientPassKey{});
 
     if (shell->GetDelegate())
       icon_ = shell->GetDelegate()->GetDevToolsWindowIcon();
@@ -72,8 +71,6 @@ class DevToolsWindowDelegate : public views::ClientView,
   ui::ImageModel icon_;
 };
 
-}  // namespace
-
 InspectableWebContentsView::InspectableWebContentsView(
     InspectableWebContents* inspectable_web_contents)
     : inspectable_web_contents_(inspectable_web_contents),
@@ -84,20 +81,28 @@ InspectableWebContentsView::InspectableWebContentsView(
     auto* contents_web_view = new views::WebView(nullptr);
     contents_web_view->SetWebContents(
         inspectable_web_contents_->GetWebContents());
-    contents_view_ = contents_web_view_ = contents_web_view;
+    contents_web_view_ = contents_web_view;
   } else {
-    contents_view_ = new views::Label(u"No content under offscreen mode");
+    no_contents_view_ = new views::Label(u"No content under offscreen mode");
   }
 
   devtools_web_view_->SetVisible(false);
-  AddChildView(devtools_web_view_.get());
-  AddChildView(contents_view_.get());
+  AddChildViewRaw(devtools_web_view_.get());
+  AddChildViewRaw(GetContentsView());
 }
 
 InspectableWebContentsView::~InspectableWebContentsView() {
   if (devtools_window_)
     inspectable_web_contents()->SaveDevToolsBounds(
         devtools_window_->GetWindowBoundsInScreen());
+}
+
+void InspectableWebContentsView::SetCornerRadii(
+    const gfx::RoundedCornersF& corner_radii) {
+  // WebView won't exist for offscreen rendering.
+  if (contents_web_view_) {
+    contents_web_view_->holder()->SetCornerRadii(corner_radii);
+  }
 }
 
 void InspectableWebContentsView::ShowDevTools(bool activate) {
@@ -170,8 +175,9 @@ void InspectableWebContentsView::SetIsDocked(bool docked, bool activate) {
     devtools_window_delegate_ = new DevToolsWindowDelegate(
         this, devtools_window_web_view_, devtools_window_.get());
 
-    views::Widget::InitParams params{
-        views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET};
+    views::Widget::InitParams params(
+        views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET,
+        views::Widget::InitParams::TYPE_WINDOW);
     params.delegate = devtools_window_delegate_;
     params.bounds = inspectable_web_contents()->dev_tools_bounds();
 
@@ -209,17 +215,17 @@ const std::u16string InspectableWebContentsView::GetTitle() {
 
 void InspectableWebContentsView::Layout(PassKey) {
   if (!devtools_web_view_->GetVisible()) {
-    contents_view_->SetBoundsRect(GetContentsBounds());
+    GetContentsView()->SetBoundsRect(GetContentsBounds());
     // Propagate layout call to all children, for example browser views.
     LayoutSuperclass<View>(this);
     return;
   }
 
-  gfx::Size container_size(width(), height());
+  gfx::Rect container_bounds(width(), height());
   gfx::Rect new_devtools_bounds;
   gfx::Rect new_contents_bounds;
   ApplyDevToolsContentsResizingStrategy(
-      strategy_, container_size, &new_devtools_bounds, &new_contents_bounds);
+      strategy_, container_bounds, &new_devtools_bounds, &new_contents_bounds);
 
   // DevTools cares about the specific position, so we have to compensate RTL
   // layout here.
@@ -227,13 +233,19 @@ void InspectableWebContentsView::Layout(PassKey) {
   new_contents_bounds.set_x(GetMirroredXForRect(new_contents_bounds));
 
   devtools_web_view_->SetBoundsRect(new_devtools_bounds);
-  contents_view_->SetBoundsRect(new_contents_bounds);
+  GetContentsView()->SetBoundsRect(new_contents_bounds);
 
   // Propagate layout call to all children, for example browser views.
   LayoutSuperclass<View>(this);
 
   if (GetDelegate())
     GetDelegate()->DevToolsResized();
+}
+
+views::View* InspectableWebContentsView::GetContentsView() const {
+  DCHECK(contents_web_view_ || no_contents_view_);
+
+  return contents_web_view_ ? contents_web_view_ : no_contents_view_;
 }
 
 }  // namespace electron

@@ -1,5 +1,8 @@
-const args = require('minimist')(process.argv.slice(2));
 const { Octokit } = require('@octokit/rest');
+const minimist = require('minimist');
+
+const args = minimist(process.argv.slice(2));
+
 const octokit = new Octokit();
 
 async function checkIfDocOnlyChange () {
@@ -26,6 +29,7 @@ async function checkIfDocOnlyChange () {
       const nonDocChange = filesChanged.length === 0 || filesChanged.find(({ filename }) => {
         const fileDirs = filename.split('/');
         if (fileDirs[0] !== 'docs') return true;
+        return false;
       });
 
       process.exit(nonDocChange ? 1 : 0);

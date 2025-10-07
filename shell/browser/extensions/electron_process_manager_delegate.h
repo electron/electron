@@ -5,9 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_PROCESS_MANAGER_DELEGATE_H_
 #define ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_PROCESS_MANAGER_DELEGATE_H_
 
-#include "base/compiler_specific.h"
-#include "content/public/browser/notification_observer.h"
-#include "content/public/browser/notification_registrar.h"
 #include "extensions/browser/process_manager_delegate.h"
 
 class Browser;

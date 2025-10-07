@@ -5,9 +5,14 @@
 #ifndef ELECTRON_SHELL_BROWSER_NET_ASAR_ASAR_URL_LOADER_FACTORY_H_
 #define ELECTRON_SHELL_BROWSER_NET_ASAR_ASAR_URL_LOADER_FACTORY_H_
 
-#include "mojo/public/cpp/bindings/pending_receiver.h"
-#include "mojo/public/cpp/bindings/pending_remote.h"
 #include "services/network/public/cpp/self_deleting_url_loader_factory.h"
+
+namespace mojo {
+template <typename T>
+class PendingReceiver;
+template <typename T>
+class PendingRemote;
+}  // namespace mojo
 
 namespace electron {
 

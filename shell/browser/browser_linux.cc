@@ -7,9 +7,14 @@
 #include <fcntl.h>
 #include <stdlib.h>
 
+#if BUILDFLAG(IS_LINUX)
+#include <gtk/gtk.h>
+#endif
+
 #include "base/command_line.h"
 #include "base/environment.h"
 #include "base/process/launch.h"
+#include "base/strings/strcat.h"
 #include "electron/electron_version.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
@@ -20,7 +25,6 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "shell/browser/linux/unity_service.h"
-#include "ui/gtk/gtk_util.h"  // nogncheck
 #endif
 
 namespace electron {
@@ -62,9 +66,9 @@ std::optional<std::string> GetXdgAppOutput(
                                                &success_code);
 
   if (!ran_ok || success_code != EXIT_SUCCESS)
-    return std::optional<std::string>();
+    return {};
 
-  return std::make_optional(reply);
+  return reply;
 }
 
 bool SetDefaultWebClient(const std::string& protocol) {
@@ -75,11 +79,12 @@ bool SetDefaultWebClient(const std::string& protocol) {
     argv.emplace_back(kXdgSettingsDefaultSchemeHandler);
     argv.emplace_back(protocol);
   }
-  std::string desktop_name;
-  if (!env->GetVar("CHROME_DESKTOP", &desktop_name)) {
+
+  if (std::optional<std::string> desktop_name = env->GetVar("CHROME_DESKTOP")) {
+    argv.emplace_back(desktop_name.value());
+  } else {
     return false;
   }
-  argv.emplace_back(desktop_name);
 
   int exit_code;
   bool ran_ok = LaunchXdgUtility(argv, &exit_code);
@@ -89,6 +94,10 @@ bool SetDefaultWebClient(const std::string& protocol) {
 }  // namespace
 
 void Browser::AddRecentDocument(const base::FilePath& path) {}
+
+std::vector<std::string> Browser::GetRecentDocuments() {
+  return std::vector<std::string>();
+}
 
 void Browser::ClearRecentDocuments() {}
 
@@ -104,12 +113,13 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   if (protocol.empty())
     return false;
 
-  std::string desktop_name;
-  if (!env->GetVar("CHROME_DESKTOP", &desktop_name))
+  std::vector<std::string> argv = {kXdgSettings, "check",
+                                   kXdgSettingsDefaultSchemeHandler, protocol};
+  if (std::optional<std::string> desktop_name = env->GetVar("CHROME_DESKTOP")) {
+    argv.emplace_back(desktop_name.value());
+  } else {
     return false;
-  const std::vector<std::string> argv = {kXdgSettings, "check",
-                                         kXdgSettingsDefaultSchemeHandler,
-                                         protocol, desktop_name};
+  }
   // Allow any reply that starts with "yes".
   const std::optional<std::string> output = GetXdgAppOutput(argv);
   return output && output->starts_with("yes");
@@ -124,7 +134,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
   const std::vector<std::string> argv = {
       "xdg-mime", "query", "default",
-      std::string("x-scheme-handler/") + url.scheme()};
+      base::StrCat({"x-scheme-handler/", url.scheme_piece()})};
 
   return base::ASCIIToUTF16(GetXdgAppOutput(argv).value_or(std::string()));
 }

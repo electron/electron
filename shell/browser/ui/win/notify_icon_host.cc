@@ -10,7 +10,6 @@
 #include "base/functional/bind.h"
 #include "base/logging.h"
 #include "base/memory/weak_ptr.h"
-#include "base/stl_util.h"
 #include "base/timer/timer.h"
 #include "base/win/win_util.h"
 #include "base/win/windows_types.h"
@@ -121,8 +120,7 @@ class NotifyIconHost::MouseEnteredExitedDetector {
   }
 
   bool IsCursorOverIcon(raw_ptr<NotifyIcon> icon) {
-    gfx::Point cursor_pos =
-        display::Screen::GetScreen()->GetCursorScreenPoint();
+    gfx::Point cursor_pos = display::Screen::Get()->GetCursorScreenPoint();
     return icon->GetBounds().Contains(cursor_pos);
   }
 
@@ -191,29 +189,39 @@ NotifyIconHost::~NotifyIconHost() {
     delete ptr;
 }
 
-NotifyIcon* NotifyIconHost::CreateNotifyIcon(std::optional<UUID> guid) {
-  if (guid.has_value()) {
-    for (NotifyIcons::const_iterator i(notify_icons_.begin());
-         i != notify_icons_.end(); ++i) {
-      auto* current_win_icon = static_cast<NotifyIcon*>(*i);
-      if (current_win_icon->guid() == guid.value()) {
-        LOG(WARNING)
-            << "Guid already in use. Existing tray entry will be replaced.";
+NotifyIcon* NotifyIconHost::CreateNotifyIcon(std::optional<base::Uuid> guid) {
+  std::string guid_str =
+      guid.has_value() ? guid.value().AsLowercaseString() : "";
+  UUID uid = GUID_NULL;
+  if (!guid_str.empty()) {
+    if (guid_str[0] == '{' && guid_str[guid_str.length() - 1] == '}') {
+      guid_str = guid_str.substr(1, guid_str.length() - 2);
+    }
+
+    unsigned char* uid_cstr = (unsigned char*)guid_str.c_str();
+    RPC_STATUS result = UuidFromStringA(uid_cstr, &uid);
+    if (result != RPC_S_INVALID_STRING_UUID) {
+      for (NotifyIcons::const_iterator i(notify_icons_.begin());
+           i != notify_icons_.end(); ++i) {
+        auto* current_win_icon = static_cast<NotifyIcon*>(*i);
+        if (current_win_icon->guid() == uid) {
+          LOG(WARNING)
+              << "Guid already in use. Existing tray entry will be replaced.";
+        }
       }
     }
   }
 
   auto* notify_icon =
       new NotifyIcon(this, NextIconId(), window_, kNotifyIconMessage,
-                     guid.has_value() ? guid.value() : GUID_DEFAULT);
+                     uid == GUID_NULL ? GUID_DEFAULT : uid);
 
   notify_icons_.push_back(notify_icon);
   return notify_icon;
 }
 
 void NotifyIconHost::Remove(NotifyIcon* icon) {
-  NotifyIcons::iterator i(
-      std::find(notify_icons_.begin(), notify_icons_.end(), icon));
+  const auto i = std::ranges::find(notify_icons_, icon);
 
   if (i == notify_icons_.end()) {
     NOTREACHED();
@@ -242,11 +250,7 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
                                          LPARAM lparam) {
   if (message == taskbar_created_message_) {
     // We need to reset all of our icons because the taskbar went away.
-    for (NotifyIcons::const_iterator i(notify_icons_.begin());
-         i != notify_icons_.end(); ++i) {
-      auto* win_icon = static_cast<NotifyIcon*>(*i);
-      win_icon->ResetIcon();
-    }
+    std::ranges::for_each(notify_icons_, [](auto* icon) { icon->ResetIcon(); });
     return TRUE;
   } else if (message == kNotifyIconMessage) {
     NotifyIcon* win_icon = nullptr;

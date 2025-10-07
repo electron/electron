@@ -10,6 +10,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/ui/views/menu_bar.h"
 #include "shell/browser/ui/views/menu_model_adapter.h"
+#include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/views/controls/button/menu_button.h"
 #include "ui/views/controls/menu/menu_item_view.h"
 #include "ui/views/controls/menu/menu_runner.h"
@@ -23,14 +24,14 @@ MenuDelegate::~MenuDelegate() = default;
 
 void MenuDelegate::RunMenu(ElectronMenuModel* model,
                            views::Button* button,
-                           ui::MenuSourceType source_type) {
+                           ui::mojom::MenuSourceType source_type) {
   gfx::Point screen_loc;
   views::View::ConvertPointToScreen(button, &screen_loc);
   // Subtract 1 from the height to make the popup flush with the button border.
   gfx::Rect bounds(screen_loc.x(), screen_loc.y(), button->width(),
                    button->height() - 1);
 
-  if (source_type == ui::MENU_SOURCE_KEYBOARD) {
+  if (source_type == ui::mojom::MenuSourceType::kKeyboard) {
     hold_first_switch_ = true;
   }
 
@@ -50,14 +51,12 @@ void MenuDelegate::RunMenu(ElectronMenuModel* model,
 }
 
 void MenuDelegate::ExecuteCommand(int id) {
-  for (Observer& obs : observers_)
-    obs.OnBeforeExecuteCommand();
+  observers_.Notify(&Observer::OnBeforeExecuteCommand);
   adapter_->ExecuteCommand(id);
 }
 
 void MenuDelegate::ExecuteCommand(int id, int mouse_event_flags) {
-  for (Observer& obs : observers_)
-    obs.OnBeforeExecuteCommand();
+  observers_.Notify(&Observer::OnBeforeExecuteCommand);
   adapter_->ExecuteCommand(id, mouse_event_flags);
 }
 
@@ -103,8 +102,7 @@ void MenuDelegate::WillHideMenu(views::MenuItemView* menu) {
 }
 
 void MenuDelegate::OnMenuClosed(views::MenuItemView* menu) {
-  for (Observer& obs : observers_)
-    obs.OnMenuClosed();
+  observers_.Notify(&Observer::OnMenuClosed);
 
   // Only switch to new menu when current menu is closed.
   if (button_to_open_)

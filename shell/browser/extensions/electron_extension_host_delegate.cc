@@ -8,7 +8,6 @@
 #include <string>
 #include <utility>
 
-#include "base/logging.h"
 #include "extensions/browser/media_capture_util.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
@@ -26,16 +25,6 @@ void ElectronExtensionHostDelegate::OnExtensionHostCreated(
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::HandleScope scope(isolate);
   electron::api::WebContents::FromOrCreate(isolate, web_contents);
-}
-
-void ElectronExtensionHostDelegate::OnMainFrameCreatedForBackgroundPage(
-    ExtensionHost* host) {}
-
-content::JavaScriptDialogManager*
-ElectronExtensionHostDelegate::GetJavaScriptDialogManager() {
-  // TODO(jamescook): Create a JavaScriptDialogManager or reuse the one from
-  // content_shell.
-  NOTREACHED();
 }
 
 void ElectronExtensionHostDelegate::CreateTab(

@@ -1,3 +1,4 @@
-GdkPixbuf* gdk_pixbuf_new(GdkColorspace colorspace, gboolean has_alpha, int bits_per_sample, int width, int height)
+GdkPixbuf* gdk_pixbuf_new_from_bytes(GBytes* data, GdkColorspace colorspace, gboolean has_alpha, int bits_per_sample, int width, int height, int rowstride)
 GdkPixbuf* gdk_pixbuf_scale_simple(const GdkPixbuf* src, int dest_width, int dest_height, GdkInterpType interp_type)
-guchar* gdk_pixbuf_get_pixels(const GdkPixbuf* pixbuf)
+GdkPixbuf* gdk_pixbuf_new_from_file_at_size(const char* filename, int width, int height, GError** error);
+gint gdk_pixbuf_calculate_rowstride(GdkColorspace colorspace, gboolean has_alpha, int bits_per_sample, int width, int height)

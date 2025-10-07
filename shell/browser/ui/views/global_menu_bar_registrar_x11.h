@@ -7,11 +7,9 @@
 
 #include <gio/gio.h>
 
-#include <set>
-
 #include "base/memory/raw_ptr.h"
-#include "base/memory/ref_counted.h"
 #include "base/memory/singleton.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "ui/base/glib/scoped_gsignal.h"
 #include "ui/gfx/x/xproto.h"
 
@@ -53,7 +51,7 @@ class GlobalMenuBarRegistrarX11 {
 
   // x11::Window which want to be registered, but haven't yet been because
   // we're waiting for the proxy to become available.
-  std::set<x11::Window> live_windows_;
+  absl::flat_hash_set<x11::Window> live_windows_;
   ScopedGSignal signal_;
 };
 

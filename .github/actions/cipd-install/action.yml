@@ -1,0 +1,51 @@
+name: 'CIPD install'
+description: 'Installs the specified CIPD package'
+inputs:
+  cipd-root-prefix-path:
+    description: 'Path to prepend to installation directory'
+    default: ''
+  dependency:
+    description: 'Name of dependency to install'
+  deps-file:
+    description: 'Location of DEPS file that defines the dependency'
+  installation-dir:
+    description: 'Location to install dependency'
+  target-platform:
+    description: 'Target platform, should be linux, win, macos'
+  package:
+    description: 'Package to install'
+  dependency-version:
+    description: 'Version of the dependency to install'
+    default: ''
+runs:
+  using: "composite"
+  steps:
+    - name: Delete wrong ${{ inputs.dependency }}
+      shell: bash
+      run : |
+        rm -rf ${{ inputs.cipd-root-prefix-path }}${{ inputs.installation-dir }}
+    - name: Create ensure file for ${{ inputs.dependency }}
+      if: ${{ inputs.dependency-version == '' }}
+      shell: bash
+      run: |
+        echo '${{ inputs.package }}' `e d gclient getdep --deps-file=${{ inputs.deps-file }} -r '${{ inputs.installation-dir }}:${{ inputs.package }}'` > ${{ inputs.dependency }}_ensure_file
+        cat ${{ inputs.dependency }}_ensure_file
+
+    - name: Create ensure file for ${{ inputs.dependency }} from dependency-version
+      if: ${{ inputs.dependency-version != '' }}
+      shell: bash
+      run: |
+        echo '${{ inputs.package }} ${{ inputs.dependency-version }}'  > ${{ inputs.dependency }}_ensure_file
+        cat ${{ inputs.dependency }}_ensure_file
+    - name: CIPD installation of ${{ inputs.dependency }} (macOS)
+      if: ${{ inputs.target-platform != 'win' }}
+      shell: bash
+      run: |
+        echo "ensuring ${{ inputs.dependency }}"
+        e d cipd ensure --root ${{ inputs.cipd-root-prefix-path }}${{ inputs.installation-dir }} -ensure-file ${{ inputs.dependency }}_ensure_file
+    - name: CIPD installation of ${{ inputs.dependency }} (Windows)
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: powershell
+      run: |
+        echo "ensuring ${{ inputs.dependency }} on Windows"
+        e d cipd ensure --root ${{ inputs.cipd-root-prefix-path }}${{ inputs.installation-dir }} -ensure-file ${{ inputs.dependency }}_ensure_file

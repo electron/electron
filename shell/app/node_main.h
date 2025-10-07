@@ -7,7 +7,7 @@
 
 namespace electron {
 
-int NodeMain(int argc, char* argv[]);
+int NodeMain();
 
 }  // namespace electron
 

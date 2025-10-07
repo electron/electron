@@ -3,6 +3,8 @@
 // found in the LICENSE file.
 
 #include "shell/browser/osr/osr_host_display_client.h"
+#include "third_party/skia/include/core/SkBitmap.h"
+#include "third_party/skia/include/core/SkImageInfo.h"
 
 #include <IOSurface/IOSurface.h>
 
@@ -30,7 +32,7 @@ void OffScreenHostDisplayClient::OnDisplayReceivedCALayerParams(
                              kPremul_SkAlphaType),
         pixels, stride);
     bitmap.setImmutable();
-    callback_.Run(ca_layer_params.damage, bitmap);
+    callback_.Run(ca_layer_params.damage, bitmap, {});
   }
 }
 

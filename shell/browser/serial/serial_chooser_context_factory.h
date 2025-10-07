@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_SERIAL_SERIAL_CHOOSER_CONTEXT_FACTORY_H_
 #define ELECTRON_SHELL_BROWSER_SERIAL_SERIAL_CHOOSER_CONTEXT_FACTORY_H_
 
+#include <memory>
+
 #include "components/keyed_service/content/browser_context_keyed_service_factory.h"
 #include "shell/browser/serial/serial_chooser_context.h"
 
@@ -35,7 +37,7 @@ class SerialChooserContextFactory : public BrowserContextKeyedServiceFactory {
       delete;
 
   // BrowserContextKeyedServiceFactory methods:
-  KeyedService* BuildServiceInstanceFor(
+  std::unique_ptr<KeyedService> BuildServiceInstanceForBrowserContext(
       content::BrowserContext* context) const override;
   content::BrowserContext* GetBrowserContextToUse(
       content::BrowserContext* context) const override;

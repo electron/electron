@@ -2,9 +2,9 @@ gclient_gn_args_from = 'src'
 
 vars = {
   'chromium_version':
-    '128.0.6573.0',
+    '142.0.7417.0',
   'node_version':
-    'v20.15.1',
+    'v22.19.0',
   'nan_version':
     'e14bdcd1f72d62bca1d541b66da43130384ec213',
   'squirrel.mac_version':
@@ -31,7 +31,7 @@ vars = {
   'sysroots_json_path': 'electron/script/sysroots.json',
 
   # KEEP IN SYNC WITH utils.js FILE
-  'yarn_version': '1.15.2',
+  'yarn_version': '1.22.22',
 
   # To be able to build clean Chromium from sources.
   'apply_patches': True,
@@ -62,10 +62,6 @@ vars = {
 
   'checkout_nacl':
     False,
-  'checkout_libaom':
-    True,
-  'checkout_oculus_sdk':
-    False,
   'checkout_openxr':
     False,
   'build_with_chromium':
@@ -73,8 +69,6 @@ vars = {
   'checkout_android':
     False,
   'checkout_android_native_support':
-    False,
-  'checkout_google_benchmark':
     False,
   'checkout_clang_tidy':
     True,

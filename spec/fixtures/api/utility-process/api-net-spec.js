@@ -2,14 +2,17 @@
 /* eslint-disable camelcase */
 require('ts-node/register');
 
-const chai_1 = require('chai');
 const main_1 = require('electron/main');
-const http = require('node:http');
-const url = require('node:url');
+
+const chai_1 = require('chai');
+
 const node_events_1 = require('node:events');
+const http = require('node:http');
 const promises_1 = require('node:timers/promises');
-const net_helpers_1 = require('../../../lib/net-helpers');
+const url = require('node:url');
 const v8 = require('node:v8');
+
+const net_helpers_1 = require('../../../lib/net-helpers');
 
 v8.setFlagsFromString('--expose_gc');
 chai_1.use(require('chai-as-promised'));

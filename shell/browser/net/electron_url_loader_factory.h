@@ -11,17 +11,29 @@
 #include <utility>
 #include <vector>
 
-#include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
-#include "mojo/public/cpp/bindings/receiver_set.h"
+#include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "net/url_request/url_request_job_factory.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/self_deleting_url_loader_factory.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
-#include "services/network/public/mojom/url_response_head.mojom.h"
-#include "shell/common/gin_helper/dictionary.h"
+#include "services/network/public/mojom/url_response_head.mojom-forward.h"
+#include "v8/include/v8-array-buffer.h"
+
+namespace gin {
+class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
+class Dictionary;
+}  // namespace gin_helper
+
+namespace mojo {
+template <typename T>
+class PendingReceiver;
+}  // namespace mojo
 
 namespace electron {
 
@@ -41,8 +53,8 @@ using ProtocolHandler =
                                  StartLoadingCallback)>;
 
 // scheme => (type, handler).
-using HandlersMap =
-    std::map<std::string, std::pair<ProtocolType, ProtocolHandler>>;
+using HandlersMap = std::
+    map<std::string, std::pair<ProtocolType, ProtocolHandler>, std::less<>>;
 
 // Implementation of URLLoaderFactory.
 class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
@@ -76,8 +88,6 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
         const std::optional<GURL>& new_url) override;
     void SetPriority(net::RequestPriority priority,
                      int32_t intra_priority_value) override {}
-    void PauseReadingBodyFromNet() override {}
-    void ResumeReadingBodyFromNet() override {}
 
     void OnTargetFactoryError();
     void DeleteThis();

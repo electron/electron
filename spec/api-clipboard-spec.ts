@@ -1,8 +1,11 @@
-import { expect } from 'chai';
-import * as path from 'node:path';
-import { Buffer } from 'node:buffer';
-import { ifdescribe, ifit } from './lib/spec-helpers';
 import { clipboard, nativeImage } from 'electron/common';
+
+import { expect } from 'chai';
+
+import { Buffer } from 'node:buffer';
+import * as path from 'node:path';
+
+import { ifdescribe, ifit } from './lib/spec-helpers';
 
 // FIXME(zcbenz): Clipboard tests are failing on WOA.
 ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard module', () => {

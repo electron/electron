@@ -10,11 +10,15 @@
 
 #include "base/memory/raw_ptr.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
-#include "electron/shell/common/api/api.mojom.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/views/view.h"
 
 class DevToolsContentsResizingStrategy;
+
+namespace gfx {
+class RoundedCornersF;
+}  // namespace gfx
+
 namespace views {
 class WebView;
 class Widget;
@@ -36,13 +40,13 @@ class InspectableWebContentsView : public views::View {
     return inspectable_web_contents_;
   }
 
-  views::WebView* contents_web_view() const { return contents_web_view_; }
-
   // The delegate manages its own life.
   void SetDelegate(InspectableWebContentsViewDelegate* delegate) {
     delegate_ = delegate;
   }
   InspectableWebContentsViewDelegate* GetDelegate() const { return delegate_; }
+
+  void SetCornerRadii(const gfx::RoundedCornersF& corner_radii);
 
   void ShowDevTools(bool activate);
   void CloseDevTools();
@@ -56,11 +60,10 @@ class InspectableWebContentsView : public views::View {
 
   // views::View:
   void Layout(PassKey) override;
-#if BUILDFLAG(IS_MAC)
-  bool OnMousePressed(const ui::MouseEvent& event) override;
-#endif
 
  private:
+  views::View* GetContentsView() const;
+
   // Owns us.
   raw_ptr<InspectableWebContents> inspectable_web_contents_;
 
@@ -69,9 +72,9 @@ class InspectableWebContentsView : public views::View {
 
   std::unique_ptr<views::Widget> devtools_window_;
   raw_ptr<views::WebView> devtools_window_web_view_ = nullptr;
-  raw_ptr<views::WebView> devtools_web_view_ = nullptr;
   raw_ptr<views::WebView> contents_web_view_ = nullptr;
-  raw_ptr<views::View> contents_view_ = nullptr;
+  raw_ptr<views::View> no_contents_view_ = nullptr;
+  raw_ptr<views::WebView> devtools_web_view_ = nullptr;
 
   DevToolsContentsResizingStrategy strategy_;
   bool devtools_visible_ = false;

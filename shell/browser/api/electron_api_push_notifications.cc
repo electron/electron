@@ -6,13 +6,15 @@
 
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/node_includes.h"
 
 namespace electron::api {
 
 PushNotifications* g_push_notifications = nullptr;
 
-gin::WrapperInfo PushNotifications::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo PushNotifications::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 PushNotifications::PushNotifications() = default;
 
@@ -28,8 +30,9 @@ PushNotifications* PushNotifications::Get() {
 }
 
 // static
-gin::Handle<PushNotifications> PushNotifications::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, PushNotifications::Get());
+gin_helper::Handle<PushNotifications> PushNotifications::Create(
+    v8::Isolate* isolate) {
+  return gin_helper::CreateHandle(isolate, PushNotifications::Get());
 }
 
 // static
@@ -59,7 +62,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin::Dictionary dict(isolate, exports);
   dict.Set("pushNotifications",
            electron::api::PushNotifications::Create(isolate));

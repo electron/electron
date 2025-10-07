@@ -5,8 +5,6 @@
 #ifndef ELECTRON_SHELL_RENDERER_EXTENSIONS_ELECTRON_EXTENSIONS_RENDERER_API_PROVIDER_H_
 #define ELECTRON_SHELL_RENDERER_EXTENSIONS_ELECTRON_EXTENSIONS_RENDERER_API_PROVIDER_H_
 
-#include <memory>
-
 #include "extensions/renderer/extensions_renderer_api_provider.h"
 
 namespace electron {

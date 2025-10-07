@@ -10,87 +10,11 @@ Also apply electron/electron@0f67b1866a9f00b852370e721affa4efda623f3a
 and electron/electron@d2368d2d3b3de9eec4cc32b6aaf035cc89921bf1 as
 patches.
 
-diff --git a/chrome/browser/extensions/global_shortcut_listener_ozone.cc b/chrome/browser/extensions/global_shortcut_listener_ozone.cc
-index 2ac08809148beeb6bacccfc5e9f032c3a88eabe7..025082e5fa644f89cec42fd8a2b97d6f764f375f 100644
---- a/chrome/browser/extensions/global_shortcut_listener_ozone.cc
-+++ b/chrome/browser/extensions/global_shortcut_listener_ozone.cc
-@@ -58,7 +58,8 @@ bool GlobalShortcutListenerOzone::RegisterAcceleratorImpl(
-   const bool registered =
-       platform_global_shortcut_listener_->RegisterAccelerator(
-           accelerator.key_code(), accelerator.IsAltDown(),
--          accelerator.IsCtrlDown(), accelerator.IsShiftDown());
-+          accelerator.IsCtrlDown(), accelerator.IsShiftDown(),
-+          accelerator.IsCmdDown());
-   if (registered)
-     registered_hot_keys_.insert(accelerator);
-   return registered;
-@@ -72,14 +73,15 @@ void GlobalShortcutListenerOzone::UnregisterAcceleratorImpl(
- 
-   platform_global_shortcut_listener_->UnregisterAccelerator(
-       accelerator.key_code(), accelerator.IsAltDown(), accelerator.IsCtrlDown(),
--      accelerator.IsShiftDown());
-+      accelerator.IsShiftDown(), accelerator.IsCmdDown());
-   registered_hot_keys_.erase(accelerator);
- }
- 
- void GlobalShortcutListenerOzone::OnKeyPressed(ui::KeyboardCode key_code,
-                                                bool is_alt_down,
-                                                bool is_ctrl_down,
--                                               bool is_shift_down) {
-+                                               bool is_shift_down,
-+                                               bool is_cmd_down) {
-   int modifiers = 0;
-   if (is_alt_down)
-     modifiers |= ui::EF_ALT_DOWN;
-@@ -87,6 +89,8 @@ void GlobalShortcutListenerOzone::OnKeyPressed(ui::KeyboardCode key_code,
-     modifiers |= ui::EF_CONTROL_DOWN;
-   if (is_shift_down)
-     modifiers |= ui::EF_SHIFT_DOWN;
-+  if (is_cmd_down)
-+    modifiers |= ui::EF_COMMAND_DOWN;
- 
-   NotifyKeyPressed(ui::Accelerator(key_code, modifiers));
- }
-diff --git a/chrome/browser/extensions/global_shortcut_listener_ozone.h b/chrome/browser/extensions/global_shortcut_listener_ozone.h
-index 3c2fc1707e38345c114e140104ffc5a93d704918..40dac9fd7beb7a1a589a479a8035391d4a32cbb8 100644
---- a/chrome/browser/extensions/global_shortcut_listener_ozone.h
-+++ b/chrome/browser/extensions/global_shortcut_listener_ozone.h
-@@ -46,7 +46,8 @@ class GlobalShortcutListenerOzone
-   void OnKeyPressed(ui::KeyboardCode key_code,
-                     bool is_alt_down,
-                     bool is_ctrl_down,
--                    bool is_shift_down) override;
-+                    bool is_shift_down,
-+                    bool is_cmd_down) override;
-   void OnPlatformListenerDestroyed() override;
- 
-   bool is_listening_ = false;
-diff --git a/chrome/browser/extensions/global_shortcut_listener_win.cc b/chrome/browser/extensions/global_shortcut_listener_win.cc
-index 88bfc034f4bf8f54452ebea1aae88dc83feb148c..940fd488aad20f688d827186885490009d68690f 100644
---- a/chrome/browser/extensions/global_shortcut_listener_win.cc
-+++ b/chrome/browser/extensions/global_shortcut_listener_win.cc
-@@ -62,6 +62,8 @@ void GlobalShortcutListenerWin::OnWndProc(HWND hwnd,
-   modifiers |= (LOWORD(lparam) & MOD_SHIFT) ? ui::EF_SHIFT_DOWN : 0;
-   modifiers |= (LOWORD(lparam) & MOD_ALT) ? ui::EF_ALT_DOWN : 0;
-   modifiers |= (LOWORD(lparam) & MOD_CONTROL) ? ui::EF_CONTROL_DOWN : 0;
-+  modifiers |= (LOWORD(lparam) & MOD_WIN) ? ui::EF_COMMAND_DOWN : 0;
-+
-   ui::Accelerator accelerator(
-       ui::KeyboardCodeForWindowsKeyCode(key_code), modifiers);
- 
-@@ -92,6 +94,7 @@ bool GlobalShortcutListenerWin::RegisterAcceleratorImpl(
-   modifiers |= accelerator.IsShiftDown() ? MOD_SHIFT : 0;
-   modifiers |= accelerator.IsCtrlDown() ? MOD_CONTROL : 0;
-   modifiers |= accelerator.IsAltDown() ? MOD_ALT : 0;
-+  modifiers |= accelerator.IsCmdDown() ? MOD_WIN : 0;
- 
-   // Create an observer that registers a hot key for |accelerator|.
-   std::unique_ptr<gfx::SingletonHwndHotKeyObserver> observer =
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index 7fd996826e7968268df8184451ead9f5f0bfc23b..6f8d1243fe6b1c6dd83371ad4ff2e2d8ad6c865e 100644
+index e87c180342b967756efeb701c73207fcee8754f1..42e37564e585987d367921568f0f1d2b7507f953 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
-@@ -408,6 +408,11 @@ void MediaKeysListenerManagerImpl::UpdateSystemMediaControlsEnabledControls() {
+@@ -412,6 +412,11 @@ void MediaKeysListenerManagerImpl::UpdateSystemMediaControlsEnabledControls() {
          case ui::VKEY_MEDIA_STOP:
            browser_system_media_controls_->SetIsStopEnabled(should_enable);
            break;
@@ -100,9 +24,9 @@ index 7fd996826e7968268df8184451ead9f5f0bfc23b..6f8d1243fe6b1c6dd83371ad4ff2e2d8
 +          // Do nothing.
 +          break;
          default:
-           NOTREACHED_IN_MIGRATION();
+           NOTREACHED();
        }
-@@ -450,6 +455,11 @@ void MediaKeysListenerManagerImpl::UpdateSystemMediaControlsEnabledControls() {
+@@ -454,6 +459,11 @@ void MediaKeysListenerManagerImpl::UpdateSystemMediaControlsEnabledControls() {
          case ui::VKEY_MEDIA_STOP:
            smc->SetIsStopEnabled(should_enable);
            break;
@@ -112,8 +36,85 @@ index 7fd996826e7968268df8184451ead9f5f0bfc23b..6f8d1243fe6b1c6dd83371ad4ff2e2d8
 +          // Do nothing.
 +          break;
          default:
-           NOTREACHED_IN_MIGRATION();
+           NOTREACHED();
        }
+diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc
+index ac62aeecad617ce559d3248a61f3e19220d2e6bc..9e6b5b1c84ee1289fd3978fc7430f86b03165521 100644
+--- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc
++++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc
+@@ -145,7 +145,8 @@ bool GlobalAcceleratorListenerOzone::StartListeningForAccelerator(
+   const bool registered =
+       platform_global_shortcut_listener_->RegisterAccelerator(
+           accelerator.key_code(), accelerator.IsAltDown(),
+-          accelerator.IsCtrlDown(), accelerator.IsShiftDown());
++          accelerator.IsCtrlDown(), accelerator.IsShiftDown(),
++          accelerator.IsCmdDown());
+   if (registered) {
+     registered_hot_keys_.insert(accelerator);
+   }
+@@ -160,14 +161,15 @@ void GlobalAcceleratorListenerOzone::StopListeningForAccelerator(
+ 
+   platform_global_shortcut_listener_->UnregisterAccelerator(
+       accelerator.key_code(), accelerator.IsAltDown(), accelerator.IsCtrlDown(),
+-      accelerator.IsShiftDown());
++      accelerator.IsShiftDown(), accelerator.IsCmdDown());
+   registered_hot_keys_.erase(accelerator);
+ }
+ 
+ void GlobalAcceleratorListenerOzone::OnKeyPressed(ui::KeyboardCode key_code,
+                                                   bool is_alt_down,
+                                                   bool is_ctrl_down,
+-                                                  bool is_shift_down) {
++                                                  bool is_shift_down,
++                                                  bool is_cmd_down) {
+   int modifiers = 0;
+   if (is_alt_down) {
+     modifiers |= ui::EF_ALT_DOWN;
+@@ -178,6 +180,9 @@ void GlobalAcceleratorListenerOzone::OnKeyPressed(ui::KeyboardCode key_code,
+   if (is_shift_down) {
+     modifiers |= ui::EF_SHIFT_DOWN;
+   }
++  if (is_cmd_down) {
++    modifiers |= ui::EF_COMMAND_DOWN;
++  }
+ 
+   NotifyKeyPressed(ui::Accelerator(key_code, modifiers));
+ }
+diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.h b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.h
+index 9e63dd9d33abc89a7bbef75992925356470ebb26..9071afc9bb01db832164909a202effafff15a1db 100644
+--- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.h
++++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.h
+@@ -54,7 +54,8 @@ class GlobalAcceleratorListenerOzone
+   void OnKeyPressed(ui::KeyboardCode key_code,
+                     bool is_alt_down,
+                     bool is_ctrl_down,
+-                    bool is_shift_down) override;
++                    bool is_shift_down,
++                    bool is_cmd_down) override;
+   void OnPlatformListenerDestroyed() override;
+ 
+   bool is_listening_ = false;
+diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_win.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_win.cc
+index d3838460df1f61dbcee1cc6586632cb218fec97a..4351cfeea03b8adc5da8500db1faf6d8b8811454 100644
+--- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_win.cc
++++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_win.cc
+@@ -66,6 +66,8 @@ void GlobalAcceleratorListenerWin::OnWndProc(HWND hwnd,
+   modifiers |= (LOWORD(lparam) & MOD_SHIFT) ? ui::EF_SHIFT_DOWN : 0;
+   modifiers |= (LOWORD(lparam) & MOD_ALT) ? ui::EF_ALT_DOWN : 0;
+   modifiers |= (LOWORD(lparam) & MOD_CONTROL) ? ui::EF_CONTROL_DOWN : 0;
++  modifiers |= (LOWORD(lparam) & MOD_WIN) ? ui::EF_COMMAND_DOWN : 0;
++
+   ui::Accelerator accelerator(ui::KeyboardCodeForWindowsKeyCode(key_code),
+                               modifiers);
+ 
+@@ -96,6 +98,7 @@ bool GlobalAcceleratorListenerWin::StartListeningForAccelerator(
+   modifiers |= accelerator.IsShiftDown() ? MOD_SHIFT : 0;
+   modifiers |= accelerator.IsCtrlDown() ? MOD_CONTROL : 0;
+   modifiers |= accelerator.IsAltDown() ? MOD_ALT : 0;
++  modifiers |= accelerator.IsCmdDown() ? MOD_WIN : 0;
+ 
+   // Create an observer that registers a hot key for `accelerator`.
+   std::unique_ptr<gfx::SingletonHwndHotKeyObserver> observer =
 diff --git a/ui/base/accelerators/media_keys_listener.cc b/ui/base/accelerators/media_keys_listener.cc
 index db596585cbb44b3710636e3fc013f288966f604f..6d5557ee1a2c35ee15e695e024834184a525e2a7 100644
 --- a/ui/base/accelerators/media_keys_listener.cc
@@ -158,10 +159,10 @@ index a955d19eedfe56ae3a115ce4c77fea016fd66d49..ad2557495a02cae03dd2b87df8659a6f
    }
  
 diff --git a/ui/base/x/x11_global_shortcut_listener.cc b/ui/base/x/x11_global_shortcut_listener.cc
-index 8b0bcbe458f44431385cedb89f988756d89636b6..bc10cf442edf14cd43714707565aae9475cb8112 100644
+index 838b89cd8d2c1884ce253a42325faabe73ee3985..b47019cd02202b8f1ea29d45e6b1741e2a9a953e 100644
 --- a/ui/base/x/x11_global_shortcut_listener.cc
 +++ b/ui/base/x/x11_global_shortcut_listener.cc
-@@ -31,11 +31,13 @@ const x11::ModMask kModifiersMasks[] = {
+@@ -34,11 +34,13 @@ constexpr auto kModifiersMasks = std::to_array<x11::ModMask>({
  
  x11::ModMask GetNativeModifiers(bool is_alt_down,
                                  bool is_ctrl_down,
@@ -177,7 +178,7 @@ index 8b0bcbe458f44431385cedb89f988756d89636b6..bc10cf442edf14cd43714707565aae94
  }
  
  }  // namespace
-@@ -81,8 +83,9 @@ uint32_t XGlobalShortcutListener::DispatchEvent(const PlatformEvent& event) {
+@@ -84,8 +86,9 @@ uint32_t XGlobalShortcutListener::DispatchEvent(const PlatformEvent& event) {
  bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
                                                    bool is_alt_down,
                                                    bool is_ctrl_down,
@@ -189,7 +190,7 @@ index 8b0bcbe458f44431385cedb89f988756d89636b6..bc10cf442edf14cd43714707565aae94
    auto keysym = XKeysymForWindowsKeyCode(key_code, false);
    auto keycode = connection_->KeysymToKeycode(keysym);
  
-@@ -107,7 +110,7 @@ bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
+@@ -110,7 +113,7 @@ bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
    }
  
    registered_combinations_.insert(
@@ -198,7 +199,7 @@ index 8b0bcbe458f44431385cedb89f988756d89636b6..bc10cf442edf14cd43714707565aae94
  
    return true;
  }
-@@ -115,8 +118,9 @@ bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
+@@ -118,8 +121,9 @@ bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
  void XGlobalShortcutListener::UnregisterAccelerator(KeyboardCode key_code,
                                                      bool is_alt_down,
                                                      bool is_ctrl_down,
@@ -210,7 +211,7 @@ index 8b0bcbe458f44431385cedb89f988756d89636b6..bc10cf442edf14cd43714707565aae94
    auto keysym = XKeysymForWindowsKeyCode(key_code, false);
    auto keycode = connection_->KeysymToKeycode(keysym);
  
-@@ -124,7 +128,7 @@ void XGlobalShortcutListener::UnregisterAccelerator(KeyboardCode key_code,
+@@ -127,7 +131,7 @@ void XGlobalShortcutListener::UnregisterAccelerator(KeyboardCode key_code,
      connection_->UngrabKey({keycode, x_root_window_, modifiers | mask});
  
    registered_combinations_.erase(
@@ -219,7 +220,7 @@ index 8b0bcbe458f44431385cedb89f988756d89636b6..bc10cf442edf14cd43714707565aae94
  }
  
  void XGlobalShortcutListener::OnKeyPressEvent(const KeyEvent& event) {
-@@ -134,14 +138,15 @@ void XGlobalShortcutListener::OnKeyPressEvent(const KeyEvent& event) {
+@@ -137,14 +141,15 @@ void XGlobalShortcutListener::OnKeyPressEvent(const KeyEvent& event) {
    const bool is_alt_down = event.flags() & EF_ALT_DOWN;
    const bool is_ctrl_down = event.flags() & EF_CONTROL_DOWN;
    const bool is_shift_down = event.flags() & EF_SHIFT_DOWN;
@@ -238,10 +239,10 @@ index 8b0bcbe458f44431385cedb89f988756d89636b6..bc10cf442edf14cd43714707565aae94
  
  }  // namespace ui
 diff --git a/ui/base/x/x11_global_shortcut_listener.h b/ui/base/x/x11_global_shortcut_listener.h
-index 7165e88ef78e0e1b4683a2ead588dc6529d085b8..a605cd8c1468be78172fed09eb227722b4832227 100644
+index 53b1f0697ad337c4e1cbeaddc5bb893419326fb3..723e32160ad711c99061c265378a6f8a34d51b3b 100644
 --- a/ui/base/x/x11_global_shortcut_listener.h
 +++ b/ui/base/x/x11_global_shortcut_listener.h
-@@ -41,18 +41,21 @@ class COMPONENT_EXPORT(UI_BASE_X) XGlobalShortcutListener
+@@ -42,18 +42,21 @@ class COMPONENT_EXPORT(UI_BASE_X) XGlobalShortcutListener
    virtual void OnKeyPressed(KeyboardCode key_code,
                              bool is_alt_down,
                              bool is_ctrl_down,
@@ -266,7 +267,7 @@ index 7165e88ef78e0e1b4683a2ead588dc6529d085b8..a605cd8c1468be78172fed09eb227722
  
   private:
    // Due to how system key grabbing works on X11, we have to be a bit greedy and
-@@ -61,7 +64,7 @@ class COMPONENT_EXPORT(UI_BASE_X) XGlobalShortcutListener
+@@ -62,7 +65,7 @@ class COMPONENT_EXPORT(UI_BASE_X) XGlobalShortcutListener
    // and filter the incoming events against that registry before notifying the
    // observer.  This tuple describes the meaningful parts of the event; booleans
    // 1, 2, and 3 hold states of Alt, Control, and Shift keys, respectively.

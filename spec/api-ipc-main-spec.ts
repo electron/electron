@@ -1,10 +1,13 @@
-import { expect } from 'chai';
-import * as path from 'node:path';
-import * as cp from 'node:child_process';
-import { closeAllWindows } from './lib/window-helpers';
-import { defer } from './lib/spec-helpers';
 import { ipcMain, BrowserWindow } from 'electron/main';
+
+import { expect } from 'chai';
+
+import * as cp from 'node:child_process';
 import { once } from 'node:events';
+import * as path from 'node:path';
+
+import { defer } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 describe('ipc main module', () => {
   const fixtures = path.join(__dirname, 'fixtures');
@@ -87,6 +90,29 @@ describe('ipc main module', () => {
         })
       })`);
       expect(v).to.equal('hello');
+    });
+  });
+
+  describe('ipcMain.removeAllListeners', () => {
+    beforeEach(() => { ipcMain.removeAllListeners(); });
+    beforeEach(() => { ipcMain.removeAllListeners(); });
+
+    it('removes only the given channel', () => {
+      ipcMain.on('channel1', () => {});
+      ipcMain.on('channel2', () => {});
+
+      ipcMain.removeAllListeners('channel1');
+
+      expect(ipcMain.eventNames()).to.deep.equal(['channel2']);
+    });
+
+    it('removes all channels if no channel is specified', () => {
+      ipcMain.on('channel1', () => {});
+      ipcMain.on('channel2', () => {});
+
+      ipcMain.removeAllListeners();
+
+      expect(ipcMain.eventNames()).to.deep.equal([]);
     });
   });
 });

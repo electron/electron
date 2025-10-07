@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Mon, 15 Sep 2025 15:52:55 -0400
+Subject: Allow electron to depend on components/os_crypt/sync.
+
+This is necessary after
+https://chromium-review.googlesource.com/c/chromium/src/+/6944749
+landed.  That CL notes that "new code should use os_crypt async",
+so we can remove this patch once we migrate our code to use
+os_crypt async.
+
+diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
+index 81fc444043b67858371142075f98ad9aff162fc3..7ab1c6d1422e19afa603d9b3eeeb30044fb9c7b3 100644
+--- a/components/os_crypt/sync/BUILD.gn
++++ b/components/os_crypt/sync/BUILD.gn
+@@ -10,6 +10,7 @@ import("//components/os_crypt/sync/features.gni")
+ component("sync") {
+   # New code should use os_crypt async.
+   visibility = [
++    "//electron:*",
+     "//chrome/browser",
+     "//chrome/browser/prefs:impl",
+     "//chrome/browser/ui",

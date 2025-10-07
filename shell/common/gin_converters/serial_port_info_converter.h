@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_SERIAL_PORT_INFO_CONVERTER_H_
 #define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_SERIAL_PORT_INFO_CONVERTER_H_
 
+#include "base/strings/string_number_conversions.h"
 #include "gin/converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "third_party/blink/public/mojom/serial/serial.mojom.h"
@@ -22,9 +23,9 @@ struct Converter<device::mojom::SerialPortInfoPtr> {
     if (port->display_name && !port->display_name->empty())
       dict.Set("displayName", *port->display_name);
     if (port->has_vendor_id)
-      dict.Set("vendorId", base::StringPrintf("%u", port->vendor_id));
+      dict.Set("vendorId", base::NumberToString(port->vendor_id));
     if (port->has_product_id)
-      dict.Set("productId", base::StringPrintf("%u", port->product_id));
+      dict.Set("productId", base::NumberToString(port->product_id));
     if (port->serial_number && !port->serial_number->empty())
       dict.Set("serialNumber", *port->serial_number);
 #if BUILDFLAG(IS_MAC)

@@ -1,16 +1,19 @@
-import { expect } from 'chai';
-import * as cp from 'node:child_process';
-import * as http from 'node:http';
-import * as express from 'express';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import * as psList from 'ps-list';
-import { AddressInfo } from 'node:net';
-import { ifdescribe, ifit } from './lib/spec-helpers';
-import { copyMacOSFixtureApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn } from './lib/codesign-helpers';
-import * as uuid from 'uuid';
 import { autoUpdater, systemPreferences } from 'electron';
+
+import { expect } from 'chai';
+import * as express from 'express';
+import * as psList from 'ps-list';
+import * as uuid from 'uuid';
+
+import * as cp from 'node:child_process';
+import * as fs from 'node:fs';
+import * as http from 'node:http';
+import { AddressInfo } from 'node:net';
+import * as path from 'node:path';
+
+import { copyMacOSFixtureApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn } from './lib/codesign-helpers';
 import { withTempDirectory } from './lib/fs-helpers';
+import { ifdescribe, ifit } from './lib/spec-helpers';
 
 // We can only test the auto updater on darwin non-component builds
 ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
@@ -37,6 +40,16 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
 
   const spawnAppWithHandle = (appPath: string, args: string[] = []) => {
     return cp.spawn(path.resolve(appPath, 'Contents/MacOS/Electron'), args);
+  };
+
+  const launchAppSandboxed = (appPath: string, profilePath: string, args: string[] = []) => {
+    return spawn('/usr/bin/sandbox-exec', [
+      '-f',
+      profilePath,
+      path.resolve(appPath, 'Contents/MacOS/Electron'),
+      ...args,
+      '--no-sandbox'
+    ]);
   };
 
   const getRunningShipIts = async (appPath: string) => {
@@ -728,6 +741,41 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
           expect(launchResult).to.have.property('code', 1);
           expect(launchResult.out).to.include('Code signature at URL');
           expect(launchResult.out).to.include(' main executable failed strict validation');
+          expect(requests).to.have.lengthOf(2);
+          expect(requests[0]).to.have.property('url', '/update-check');
+          expect(requests[1]).to.have.property('url', '/update-file');
+          expect(requests[0].header('user-agent')).to.include('Electron/');
+          expect(requests[1].header('user-agent')).to.include('Electron/');
+        });
+      });
+    });
+
+    it('should hit the download endpoint when an update is available and fail when the zip extraction process fails to launch', async () => {
+      await withUpdatableApp({
+        nextVersion: '2.0.0',
+        startFixture: 'update',
+        endFixture: 'update'
+      }, async (appPath, updateZipPath) => {
+        server.get('/update-file', (req, res) => {
+          res.download(updateZipPath);
+        });
+        server.get('/update-check', (req, res) => {
+          res.json({
+            url: `http://localhost:${port}/update-file`,
+            name: 'My Release Name',
+            notes: 'Theses are some release notes innit',
+            pub_date: (new Date()).toString()
+          });
+        });
+        const launchResult = await launchAppSandboxed(
+          appPath,
+          path.resolve(__dirname, 'fixtures/auto-update/sandbox/block-ditto.sb'),
+          [`http://localhost:${port}/update-check`]
+        );
+        logOnError(launchResult, () => {
+          expect(launchResult).to.have.property('code', 1);
+          expect(launchResult.out).to.include('Starting ditto task failed with error:');
+          expect(launchResult.out).to.include('SQRLZipArchiverErrorDomain');
           expect(requests).to.have.lengthOf(2);
           expect(requests[0]).to.have.property('url', '/update-check');
           expect(requests[1]).to.have.property('url', '/update-file');

@@ -8,12 +8,11 @@
 #include <glib-object.h>
 
 #include "base/functional/bind.h"
-#include "base/logging.h"
-#include "base/strings/stringprintf.h"
+#include "base/notimplemented.h"
 #include "base/strings/utf_string_conversions.h"
-#include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/views/global_menu_bar_registrar_x11.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "ui/aura/window.h"
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/accelerators/menu_label_accelerator_util_linux.h"
@@ -25,36 +24,35 @@
 #include "ui/gfx/x/xproto.h"
 
 // libdbusmenu-glib types
-typedef struct _DbusmenuMenuitem DbusmenuMenuitem;
-typedef DbusmenuMenuitem* (*dbusmenu_menuitem_new_func)();
-typedef DbusmenuMenuitem* (*dbusmenu_menuitem_new_with_id_func)(int id);
+using DbusmenuMenuitem = struct _DbusmenuMenuitem;
+using dbusmenu_menuitem_new_func = DbusmenuMenuitem* (*)();
+using dbusmenu_menuitem_new_with_id_func = DbusmenuMenuitem* (*)(int id);
 
-typedef int (*dbusmenu_menuitem_get_id_func)(DbusmenuMenuitem* item);
-typedef GList* (*dbusmenu_menuitem_get_children_func)(DbusmenuMenuitem* item);
-typedef DbusmenuMenuitem* (*dbusmenu_menuitem_child_append_func)(
-    DbusmenuMenuitem* parent,
-    DbusmenuMenuitem* child);
-typedef DbusmenuMenuitem* (*dbusmenu_menuitem_property_set_func)(
-    DbusmenuMenuitem* item,
-    const char* property,
-    const char* value);
-typedef DbusmenuMenuitem* (*dbusmenu_menuitem_property_set_variant_func)(
-    DbusmenuMenuitem* item,
-    const char* property,
-    GVariant* value);
-typedef DbusmenuMenuitem* (*dbusmenu_menuitem_property_set_bool_func)(
-    DbusmenuMenuitem* item,
-    const char* property,
-    bool value);
-typedef DbusmenuMenuitem* (*dbusmenu_menuitem_property_set_int_func)(
-    DbusmenuMenuitem* item,
-    const char* property,
-    int value);
+using dbusmenu_menuitem_get_id_func = int (*)(DbusmenuMenuitem* item);
+using dbusmenu_menuitem_get_children_func = GList* (*)(DbusmenuMenuitem * item);
+using dbusmenu_menuitem_child_append_func =
+    DbusmenuMenuitem* (*)(DbusmenuMenuitem * parent, DbusmenuMenuitem* child);
+using dbusmenu_menuitem_property_set_func =
+    DbusmenuMenuitem* (*)(DbusmenuMenuitem * item,
+                          const char* property,
+                          const char* value);
+using dbusmenu_menuitem_property_set_variant_func =
+    DbusmenuMenuitem* (*)(DbusmenuMenuitem * item,
+                          const char* property,
+                          GVariant* value);
+using dbusmenu_menuitem_property_set_bool_func =
+    DbusmenuMenuitem* (*)(DbusmenuMenuitem * item,
+                          const char* property,
+                          bool value);
+using dbusmenu_menuitem_property_set_int_func =
+    DbusmenuMenuitem* (*)(DbusmenuMenuitem * item,
+                          const char* property,
+                          int value);
 
-typedef struct _DbusmenuServer DbusmenuServer;
-typedef DbusmenuServer* (*dbusmenu_server_new_func)(const char* object);
-typedef void (*dbusmenu_server_set_root_func)(DbusmenuServer* self,
-                                              DbusmenuMenuitem* root);
+using DbusmenuServer = struct _DbusmenuServer;
+using dbusmenu_server_new_func = DbusmenuServer* (*)(const char* object);
+using dbusmenu_server_set_root_func = void (*)(DbusmenuServer* self,
+                                               DbusmenuMenuitem* root);
 
 namespace electron {
 
@@ -167,18 +165,16 @@ std::string GetMenuModelStatus(ElectronMenuModel* model) {
     int status = model->GetTypeAt(i) | (model->IsVisibleAt(i) << 3) |
                  (model->IsEnabledAt(i) << 4) |
                  (model->IsItemCheckedAt(i) << 5);
-    ret += base::StringPrintf(
-        "%s-%X\n", base::UTF16ToUTF8(model->GetLabelAt(i)).c_str(), status);
+    ret += absl::StrFormat("%s-%X\n", base::UTF16ToUTF8(model->GetLabelAt(i)),
+                           status);
   }
   return ret;
 }
 
 }  // namespace
 
-GlobalMenuBarX11::GlobalMenuBarX11(NativeWindowViews* window)
-    : window_(window),
-      xwindow_(static_cast<x11::Window>(
-          window_->GetNativeWindow()->GetHost()->GetAcceleratedWidget())) {
+GlobalMenuBarX11::GlobalMenuBarX11(gfx::AcceleratedWidget accelerated_widget)
+    : xwindow_(static_cast<x11::Window>(accelerated_widget)) {
   EnsureMethodsLoaded();
   if (server_new)
     InitServer(xwindow_);
@@ -195,8 +191,7 @@ GlobalMenuBarX11::~GlobalMenuBarX11() {
 
 // static
 std::string GlobalMenuBarX11::GetPathForWindow(x11::Window window) {
-  return base::StringPrintf("/com/canonical/menu/%X",
-                            static_cast<uint>(window));
+  return absl::StrFormat("/com/canonical/menu/%X", static_cast<uint>(window));
 }
 
 void GlobalMenuBarX11::SetMenu(ElectronMenuModel* menu_model) {

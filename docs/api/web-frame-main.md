@@ -66,6 +66,16 @@ These methods can be accessed from the `webFrameMain` module:
 Returns `WebFrameMain | undefined` - A frame with the given process and routing IDs,
 or `undefined` if there is no WebFrameMain associated with the given IDs.
 
+### `webFrameMain.fromFrameToken(processId, frameToken)`
+
+* `processId` Integer - An `Integer` representing the internal ID of the process which owns the frame.
+* `frameToken` string - A `string` token identifying the unique frame. Can also
+  be retrieved in the renderer process via
+  [`webFrame.frameToken`](web-frame.md#webframeframetoken-readonly).
+
+Returns `WebFrameMain | null` - A frame with the given process and frame token,
+or `null` if there is no WebFrameMain associated with the given IDs.
+
 ## Class: WebFrameMain
 
 Process: [Main](../glossary.md#main-process)<br />
@@ -96,6 +106,10 @@ this limitation.
 #### `frame.reload()`
 
 Returns `boolean` - Whether the reload was initiated successfully. Only results in `false` when the frame has no history.
+
+#### `frame.isDestroyed()`
+
+Returns `boolean` - Whether the frame is destroyed.
 
 #### `frame.send(channel, ...args)`
 
@@ -135,6 +149,29 @@ win.webContents.mainFrame.postMessage('port', { message: 'hello' }, [port1])
 ipcRenderer.on('port', (e, msg) => {
   const [port] = e.ports
   // ...
+})
+```
+
+#### `frame.collectJavaScriptCallStack()` _Experimental_
+
+Returns `Promise<string> | Promise<void>` - A promise that resolves with the currently running JavaScript call
+stack. If no JavaScript runs in the frame, the promise will never resolve. In cases where the call stack is
+otherwise unable to be collected, it will return `undefined`.
+
+This can be useful to determine why the frame is unresponsive in cases where there's long-running JavaScript.
+For more information, see the [proposed Crash Reporting API.](https://wicg.github.io/crash-reporting/)
+
+```js
+const { app } = require('electron')
+
+app.commandLine.appendSwitch('enable-features', 'DocumentPolicyIncludeJSCallStacksInCrashReports')
+
+app.on('web-contents-created', (_, webContents) => {
+  webContents.on('unresponsive', async () => {
+    // Interrupt execution and collect call stack from unresponsive renderer
+    const callStack = await webContents.mainFrame.collectJavaScriptCallStack()
+    console.log('Renderer unresponsive\n', callStack)
+  })
 })
 ```
 
@@ -210,6 +247,11 @@ not used again.
 
 A `string` representing the frame name.
 
+#### `frame.frameToken` _Readonly_
+
+A `string` which uniquely identifies the frame within its associated renderer
+process. This is equivalent to [`webFrame.frameToken`](web-frame.md#webframeframetoken-readonly).
+
 #### `frame.osProcessId` _Readonly_
 
 An `Integer` representing the operating system `pid` of the process which owns this frame.
@@ -231,6 +273,13 @@ A `string` representing the [visibility state](https://developer.mozilla.org/en-
 
 See also how the [Page Visibility API](browser-window.md#page-visibility) is affected by other Electron APIs.
 
+#### `frame.detached` _Readonly_
+
+A `Boolean` representing whether the frame is detached from the frame tree. If a frame is accessed
+while the corresponding page is running any [unload][] listeners, it may become detached as the
+newly navigated page replaced it in the frame tree.
+
 [SCA]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
 [`postMessage`]: https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
 [`MessagePortMain`]: message-port-main.md
+[unload]: https://developer.mozilla.org/en-US/docs/Web/API/Window/unload_event

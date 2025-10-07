@@ -14,7 +14,7 @@
 
 #include "base/apple/scoped_cftyperef.h"
 #include "base/containers/flat_map.h"
-#include "base/strings/stringprintf.h"
+#include "base/no_destructor.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
@@ -25,10 +25,10 @@
 #include "shell/common/color_util.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/process_util.h"
 #include "skia/ext/skia_utils_mac.h"
-#include "ui/native_theme/native_theme.h"
 
 namespace gin {
 
@@ -81,7 +81,10 @@ namespace {
 int g_next_id = 0;
 
 // The map to convert |id| to |int|.
-base::flat_map<int, id> g_id_map;
+auto& GetIdMap() {
+  static base::NoDestructor<base::flat_map<int, id>> g_id_map;
+  return *g_id_map;
+}
 
 AVMediaType ParseMediaType(const std::string& media_type) {
   if (media_type == "camera") {
@@ -94,8 +97,8 @@ AVMediaType ParseMediaType(const std::string& media_type) {
 }
 
 std::string ConvertSystemPermission(
-    system_media_permissions::SystemPermission value) {
-  using SystemPermission = system_media_permissions::SystemPermission;
+    system_permission_settings::SystemPermission value) {
+  using SystemPermission = system_permission_settings::SystemPermission;
   switch (value) {
     case SystemPermission::kNotDetermined:
       return "not-determined";
@@ -215,7 +218,7 @@ int SystemPreferences::DoSubscribeNotification(
 
   auto* name = maybe_name->IsNull() ? nil : base::SysUTF8ToNSString(name_str);
 
-  g_id_map[request_id] = [GetNotificationCenter(kind)
+  GetIdMap()[request_id] = [GetNotificationCenter(kind)
       addObserverForName:name
                   object:nil
                    queue:nil
@@ -241,11 +244,11 @@ int SystemPreferences::DoSubscribeNotification(
 
 void SystemPreferences::DoUnsubscribeNotification(int request_id,
                                                   NotificationCenterKind kind) {
-  auto iter = g_id_map.find(request_id);
-  if (iter != g_id_map.end()) {
+  auto iter = GetIdMap().find(request_id);
+  if (iter != GetIdMap().end()) {
     id observer = iter->second;
     [GetNotificationCenter(kind) removeObserver:observer];
-    g_id_map.erase(iter);
+    GetIdMap().erase(iter);
   }
 }
 
@@ -364,13 +367,11 @@ void SystemPreferences::SetUserDefault(const std::string& name,
       }
     }
   } else {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowTypeError("Invalid type: " + type);
+    args->ThrowTypeError("Invalid type: " + type);
     return;
   }
 
-  gin_helper::ErrorThrower(args->isolate())
-      .ThrowTypeError("Unable to convert value to: " + type);
+  args->ThrowTypeError("Unable to convert value to: " + type);
 }
 
 std::string SystemPreferences::GetAccentColor() {
@@ -549,13 +550,13 @@ std::string SystemPreferences::GetMediaAccessStatus(
     const std::string& media_type) {
   if (media_type == "camera") {
     return ConvertSystemPermission(
-        system_media_permissions::CheckSystemVideoCapturePermission());
+        system_permission_settings::CheckSystemVideoCapturePermission());
   } else if (media_type == "microphone") {
     return ConvertSystemPermission(
-        system_media_permissions::CheckSystemAudioCapturePermission());
+        system_permission_settings::CheckSystemAudioCapturePermission());
   } else if (media_type == "screen") {
     return ConvertSystemPermission(
-        system_media_permissions::CheckSystemScreenCapturePermission());
+        system_permission_settings::CheckSystemScreenCapturePermission());
   } else {
     thrower.ThrowError("Invalid media type");
     return std::string();

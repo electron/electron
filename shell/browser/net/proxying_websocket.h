@@ -75,7 +75,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
       network::mojom::WebSocketHandshakeRequestPtr request) override;
   void OnFailure(const std::string& message,
                  int32_t net_error,
-                 int32_t response_code) override;
+                 int32_t response_code) override {}
   void OnConnectionEstablished(
       mojo::PendingRemote<network::mojom::WebSocket> websocket,
       mojo::PendingReceiver<network::mojom::WebSocketClient> client_receiver,
@@ -110,8 +110,6 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
       const url::Origin& origin,
       content::BrowserContext* browser_context,
       uint64_t* request_id_generator);
-
-  WebRequestAPI* web_request_api() { return web_request_api_; }
 
  private:
   void OnBeforeRequestComplete(int error_code);

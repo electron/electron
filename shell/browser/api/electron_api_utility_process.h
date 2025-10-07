@@ -14,46 +14,53 @@
 #include "base/memory/weak_ptr.h"
 #include "base/process/process_handle.h"
 #include "content/public/browser/service_process_host.h"
-#include "gin/wrappable.h"
-#include "mojo/public/cpp/bindings/connector.h"
 #include "mojo/public/cpp/bindings/message.h"
-#include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/browser/net/url_loader_network_observer.h"
 #include "shell/common/gin_helper/pinnable.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "shell/services/node/public/mojom/node_service.mojom.h"
-#include "v8/include/v8.h"
+#include "v8/include/v8-forward.h"
 
 namespace gin {
 class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace base {
 class Process;
 }  // namespace base
 
+namespace mojo {
+class Connector;
+}  // namespace mojo
+
 namespace electron::api {
 
-class UtilityProcessWrapper
-    : public gin::Wrappable<UtilityProcessWrapper>,
+class UtilityProcessWrapper final
+    : public gin_helper::DeprecatedWrappable<UtilityProcessWrapper>,
       public gin_helper::Pinnable<UtilityProcessWrapper>,
       public gin_helper::EventEmitterMixin<UtilityProcessWrapper>,
-      public mojo::MessageReceiver,
+      private mojo::MessageReceiver,
+      public node::mojom::NodeServiceClient,
       public content::ServiceProcessHost::Observer {
  public:
   enum class IOHandle : size_t { STDIN = 0, STDOUT = 1, STDERR = 2 };
   enum class IOType { IO_PIPE, IO_INHERIT, IO_IGNORE };
 
   ~UtilityProcessWrapper() override;
-  static gin::Handle<UtilityProcessWrapper> Create(gin::Arguments* args);
+  static gin_helper::Handle<UtilityProcessWrapper> Create(gin::Arguments* args);
   static raw_ptr<UtilityProcessWrapper> FromProcessId(base::ProcessId pid);
 
   void Shutdown(uint64_t exit_code);
 
-  // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  // gin_helper::Wrappable
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
@@ -64,18 +71,23 @@ class UtilityProcessWrapper
                         std::map<IOHandle, IOType> stdio,
                         base::EnvironmentMap env_map,
                         base::FilePath current_working_directory,
-                        bool use_plugin_helper);
+                        bool use_plugin_helper,
+                        bool create_network_observer);
   void OnServiceProcessLaunch(const base::Process& process);
   void CloseConnectorPort();
 
   void HandleTermination(uint64_t exit_code);
 
   void PostMessage(gin::Arguments* args);
-  bool Kill() const;
+  bool Kill();
   v8::Local<v8::Value> GetOSProcessId(v8::Isolate* isolate) const;
 
   // mojo::MessageReceiver
   bool Accept(mojo::Message* mojo_message) override;
+
+  // node::mojom::NodeServiceClient
+  void OnV8FatalError(const std::string& location,
+                      const std::string& report) override;
 
   // content::ServiceProcessHost::Observer
   void OnServiceProcessTerminatedNormally(
@@ -96,9 +108,14 @@ class UtilityProcessWrapper
   int stdout_read_fd_ = -1;
   int stderr_read_fd_ = -1;
   bool connector_closed_ = false;
+  bool terminated_ = false;
+  bool killed_ = false;
   std::unique_ptr<mojo::Connector> connector_;
   blink::MessagePortDescriptor host_port_;
+  mojo::Receiver<node::mojom::NodeServiceClient> receiver_{this};
   mojo::Remote<node::mojom::NodeService> node_service_remote_;
+  std::optional<electron::URLLoaderNetworkObserver>
+      url_loader_network_observer_;
   base::WeakPtrFactory<UtilityProcessWrapper> weak_factory_{this};
 };
 

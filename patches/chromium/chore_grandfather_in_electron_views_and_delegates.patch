@@ -1,0 +1,91 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Mon, 14 Apr 2025 11:34:25 -0500
+Subject: chore: "grandfather in" Electron Views and Delegates
+
+6441736: Block further usage of WidgetDelegateView. | https://chromium-review.googlesource.com/c/chromium/src/+/6441736
+
+6442265: Add a PassKey for std::make_unique<WidgetDelegateView>(). | https://chromium-review.googlesource.com/c/chromium/src/+/6442265
+
+6448510: Lock further access to View::set_owned_by_client(). | https://chromium-review.googlesource.com/c/chromium/src/+/6448510
+
+diff --git a/ui/views/view.h b/ui/views/view.h
+index 7f70b4f6062e369e2198fc12ff507786283a13c7..22cae8f202357d848bd57aff1ee22abfcc6efed6 100644
+--- a/ui/views/view.h
++++ b/ui/views/view.h
+@@ -81,6 +81,19 @@ class ArcNotificationContentView;
+ class WideFrameView;
+ }  // namespace ash
+ 
++namespace electron {
++class DevToolsWindowDelegate;
++class InspectableWebContentsView;
++class MenuBar;
++class RootView;
++class RootViewMac;
++}
++
++namespace electron::api {
++class ImageView;
++class View;
++}
++
+ namespace exo {
+ class ShellSurfaceBase;
+ }
+@@ -325,6 +338,14 @@ class VIEWS_EXPORT View : public ui::LayerDelegate,
+  public:
+   class OwnedByClientPassKey {
+    private:
++    // TODO(ckerr) can this list be shortened?
++    friend class electron::DevToolsWindowDelegate;
++    friend class electron::InspectableWebContentsView;
++    friend class electron::MenuBar;
++    friend class electron::RootView;
++    friend class electron::RootViewMac;
++    friend class electron::api::ImageView;
++    friend class electron::api::View;
+     // DO NOT ADD TO THIS LIST!
+     // These existing cases are "grandfathered in", but there shouldn't be more.
+     // See comments atop class.
+diff --git a/ui/views/widget/widget_delegate.h b/ui/views/widget/widget_delegate.h
+index ff9c5abfdb02d9798b1491e2bbc296f2c7c74398..47d8a897d58b0d3829734105e81b887684dd009b 100644
+--- a/ui/views/widget/widget_delegate.h
++++ b/ui/views/widget/widget_delegate.h
+@@ -168,6 +168,12 @@ namespace crostini {
+ class AppRestartDialog;
+ }
+ 
++namespace electron {
++class AutofillPopupView;
++class DevToolsWindowDelegate;
++class NativeWindowMac;
++}
++
+ namespace exo {
+ class ShellSurfaceBase;
+ }
+@@ -371,6 +377,7 @@ class VIEWS_EXPORT WidgetDelegate {
+ 
+   class OwnedByWidgetPassKey {
+    private:
++    friend class electron::DevToolsWindowDelegate;
+     // DO NOT ADD TO THIS LIST!
+     // These existing cases are "grandfathered in", but there shouldn't be more.
+     // See comments atop `SetOwnedByWidget()`.
+@@ -464,6 +471,7 @@ class VIEWS_EXPORT WidgetDelegate {
+   };
+   class RegisterDeleteCallbackPassKey {
+    private:
++    friend class electron::NativeWindowMac;
+     // DO NOT ADD TO THIS LIST!
+     // These existing cases are "grandfathered in", but there shouldn't be more.
+     // See comments atop `RegisterDeleteDelegateCallback()`.
+@@ -921,6 +929,7 @@ class VIEWS_EXPORT WidgetDelegateView : public WidgetDelegate, public View {
+   View* GetContentsView() override;
+ 
+  private:
++  friend class electron::AutofillPopupView;
+   // DO NOT ADD TO THIS LIST!
+   // These existing cases are "grandfathered in", but there shouldn't be more.
+   // See comments atop class.

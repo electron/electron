@@ -14,21 +14,28 @@
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/hid_chooser.h"
 #include "content/public/browser/weak_document_ptr.h"
-#include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "services/device/public/mojom/hid.mojom-forward.h"
-#include "shell/browser/api/electron_api_session.h"
-#include "shell/browser/hid/electron_hid_delegate.h"
 #include "shell/browser/hid/hid_chooser_context.h"
 #include "shell/common/gin_converters/frame_converter.h"
-#include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
-#include "third_party/blink/public/mojom/hid/hid.mojom.h"
+#include "third_party/blink/public/mojom/devtools/console_message.mojom-forward.h"
+#include "third_party/blink/public/mojom/hid/hid.mojom-forward.h"
 
 namespace content {
 class RenderFrameHost;
+class WebContents;
 }  // namespace content
 
+namespace gin {
+class Arguments;
+template <typename T>
+class WeakCell;
+}  // namespace gin
+
 namespace electron {
+namespace api {
+class Session;
+}
 
 class ElectronHidDelegate;
 
@@ -73,7 +80,7 @@ class HidChooserController
   void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
 
  private:
-  api::Session* GetSession();
+  gin::WeakCell<api::Session>* GetSession();
   void OnGotDevices(std::vector<device::mojom::HidDeviceInfoPtr> devices);
   bool DisplayDevice(const device::mojom::HidDeviceInfo& device) const;
   bool FilterMatchesAny(const device::mojom::HidDeviceInfo& device) const;

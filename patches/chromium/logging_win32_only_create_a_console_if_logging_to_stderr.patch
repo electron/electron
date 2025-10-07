@@ -9,10 +9,10 @@ be created for each child process, despite logs being redirected to a
 file.
 
 diff --git a/content/app/content_main.cc b/content/app/content_main.cc
-index 1715d079de5e46ff2d26450f78c7df49aabcb5ae..be53ce8e26644432f5fed161ebc1d4dc1fa0b1e9 100644
+index 47ffb24940071be6f3747a85022a2b226ae8b63b..4632bc6e1801da827a7db37484084288fd709268 100644
 --- a/content/app/content_main.cc
 +++ b/content/app/content_main.cc
-@@ -305,16 +305,14 @@ RunContentProcess(ContentMainParams params,
+@@ -324,16 +324,14 @@ NO_STACK_PROTECTOR int RunContentProcess(
  
  #if BUILDFLAG(IS_WIN)
      base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();

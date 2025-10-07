@@ -116,6 +116,7 @@ You should at least follow these steps to improve the security of your applicati
 17. [Validate the `sender` of all IPC messages](#17-validate-the-sender-of-all-ipc-messages)
 18. [Avoid usage of the `file://` protocol and prefer usage of custom protocols](#18-avoid-usage-of-the-file-protocol-and-prefer-usage-of-custom-protocols)
 19. [Check which fuses you can change](#19-check-which-fuses-you-can-change)
+20. [Do not expose Electron APIs to untrusted web content](#20-do-not-expose-electron-apis-to-untrusted-web-content)
 
 To automate the detection of misconfigurations and insecure patterns, it is
 possible to use
@@ -229,7 +230,7 @@ API to remotely loaded content via the [contextBridge API](../api/context-bridge
 ### 3. Enable Context Isolation
 
 :::info
-This recommendation is the default behavior in Electron since 12.0.0.
+Context Isolation is the default behavior in Electron since 12.0.0.
 :::
 
 Context isolation is an Electron feature that allows developers to run code
@@ -280,7 +281,8 @@ security-conscious developers might want to assume the very opposite.
 
 ```js title='main.js (Main Process)'
 const { session } = require('electron')
-const { URL } = require('url')
+
+const { URL } = require('node:url')
 
 session
   .fromPartition('some-partition')
@@ -610,8 +612,9 @@ sometimes be fooled - a `startsWith('https://example.com')` test would let
 `https://example.com.attacker.com` through.
 
 ```js title='main.js (Main Process)'
-const { URL } = require('url')
 const { app } = require('electron')
+
+const { URL } = require('node:url')
 
 app.on('web-contents-created', (event, contents) => {
   contents.on('will-navigate', (event, navigationUrl) => {
@@ -689,12 +692,14 @@ leveraged to execute arbitrary commands.
 ```js title='main.js (Main Process)' @ts-type={USER_CONTROLLED_DATA_HERE:string}
 //  Bad
 const { shell } = require('electron')
+
 shell.openExternal(USER_CONTROLLED_DATA_HERE)
 ```
 
 ```js title='main.js (Main Process)'
 //  Good
 const { shell } = require('electron')
+
 shell.openExternal('https://example.com/index.html')
 ```
 
@@ -803,6 +808,48 @@ We've made a module, [`@electron/fuses`](https://npmjs.com/package/@electron/fus
 flipping these fuses easy. Check out the README of that module for more details on usage and
 potential error cases, and refer to
 [How do I flip the fuses?](./fuses.md#how-do-i-flip-the-fuses) in our documentation.
+
+### 20. Do not expose Electron APIs to untrusted web content
+
+You should not directly expose Electron's APIs, especially IPC, to untrusted web content in your
+preload scripts.
+
+#### Why?
+
+Exposing raw APIs like `ipcRenderer.on` is dangerous because it gives renderer processes direct
+access to the entire IPC event system, allowing them to listen for any IPC events, not just the ones
+intended for them.
+
+To avoid that exposure, we also cannot pass callbacks directly through: The first
+argument to IPC event callbacks is an `IpcRendererEvent` object, which includes properties like `sender`
+that provide access to the underlying `ipcRenderer` instance. Even if you only listen for specific
+events, passing the callback directly means the renderer gets access to this event object.
+
+In short, we want the untrusted web content to only have access to necessary information and APIs.
+
+#### How?
+
+```js title='preload'.js'
+// Bad
+contextBridge.exposeInMainWorld('electronAPI', {
+  on: ipcRenderer.on
+})
+
+// Also bad
+contextBridge.exposeInMainWorld('electronAPI', {
+  onUpdateCounter: (callback) => ipcRenderer.on('update-counter', callback)
+})
+
+// Good
+contextBridge.exposeInMainWorld('electronAPI', {
+  onUpdateCounter: (callback) => ipcRenderer.on('update-counter', (_event, value) => callback(value))
+})
+```
+
+:::info
+For more information on what `contextIsolation` is and how to use it to secure your app,
+please see the [Context Isolation](context-isolation.md) document.
+:::
 
 [breaking-changes]: ../breaking-changes.md
 [browser-window]: ../api/browser-window.md

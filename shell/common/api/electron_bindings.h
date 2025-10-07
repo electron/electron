@@ -8,16 +8,19 @@
 #include <list>
 #include <memory>
 
-#include "base/files/file_path.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/process/process_metrics.h"
-#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_bindings.h"
 #include "uv.h"  // NOLINT(build/include_directory)
 
+namespace base {
+class FilePath;
+}
+
 namespace gin_helper {
-class Arguments;
 class Dictionary;
+template <typename T>
+class Promise;
 }  // namespace gin_helper
 
 namespace memory_instrumentation {
@@ -63,8 +66,7 @@ class ElectronBindings {
   static void Hang();
   static v8::Local<v8::Value> GetHeapStatistics(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetCreationTime(v8::Isolate* isolate);
-  static v8::Local<v8::Value> GetSystemMemoryInfo(v8::Isolate* isolate,
-                                                  gin_helper::Arguments* args);
+  static v8::Local<v8::Value> GetSystemMemoryInfo(v8::Isolate* isolate);
   static v8::Local<v8::Promise> GetProcessMemoryInfo(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetBlinkMemoryInfo(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetCPUUsage(base::ProcessMetrics* metrics,

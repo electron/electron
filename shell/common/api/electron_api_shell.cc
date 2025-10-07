@@ -13,6 +13,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/platform_util.h"
+#include "v8/include/v8-microtask-queue.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "base/win/scoped_com_initializer.h"
@@ -24,7 +25,7 @@ namespace gin {
 template <>
 struct Converter<base::win::ShortcutOperation> {
   static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
+                     v8::Local<v8::Value> val,
                      base::win::ShortcutOperation* out) {
     std::string operation;
     if (!ConvertFromV8(isolate, val, &operation))
@@ -54,7 +55,8 @@ void OnOpenFinished(gin_helper::Promise<void> promise,
     promise.RejectWithErrorMessage(error);
 }
 
-v8::Local<v8::Promise> OpenExternal(const GURL& url, gin::Arguments* args) {
+v8::Local<v8::Promise> OpenExternal(const GURL& url,
+                                    gin::Arguments* const args) {
   gin_helper::Promise<void> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
@@ -107,7 +109,7 @@ v8::Local<v8::Promise> TrashItem(v8::Isolate* isolate,
 #if BUILDFLAG(IS_WIN)
 
 bool WriteShortcutLink(const base::FilePath& shortcut_path,
-                       gin_helper::Arguments* args) {
+                       gin::Arguments* const args) {
   base::win::ShortcutOperation operation =
       base::win::ShortcutOperation::kCreateAlways;
   args->GetNext(&operation);
@@ -162,7 +164,8 @@ v8::Local<v8::Value> ReadShortcutLink(gin_helper::ErrorThrower thrower,
   options.Set("icon", properties.icon);
   options.Set("iconIndex", properties.icon_index);
   options.Set("appUserModelId", properties.app_id);
-  options.Set("toastActivatorClsid", properties.toast_activator_clsid);
+  if (properties.options & ShortcutProperties::PROPERTIES_TOAST_ACTIVATOR_CLSID)
+    options.Set("toastActivatorClsid", properties.toast_activator_clsid);
   return gin::ConvertToV8(thrower.isolate(), options);
 }
 #endif
@@ -171,7 +174,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  gin_helper::Dictionary dict(context->GetIsolate(), exports);
+  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("showItemInFolder", &platform_util::ShowItemInFolder);
   dict.SetMethod("openPath", &OpenPath);
   dict.SetMethod("openExternal", &OpenExternal);

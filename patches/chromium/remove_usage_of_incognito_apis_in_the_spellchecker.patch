@@ -23,22 +23,23 @@ index 30a7e6a641e7b17a47fb5c66fb44d3d5899b9e78..85764a533585df0abe398758e4fd510c
 +#endif
  }
 diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
-index 12b649c4fcc23318b68f3d66076d34f95fd6b07d..6e2d839eb0e7ec1aa260f41904f78b1b2a2cbf73 100644
+index 25b15408665dc95702e7f1382fb8e7c0bb493599..bc0bad82ebcdceadc505e912ff27202b452fefab 100644
 --- a/chrome/browser/profiles/profile_selections.cc
 +++ b/chrome/browser/profiles/profile_selections.cc
-@@ -120,6 +120,7 @@ Profile* ProfileSelections::ApplyProfileSelection(Profile* profile) const {
+@@ -132,6 +132,7 @@ ProfileSelection ProfileSelections::GetProfileSelection(
+   }
+ #endif  // BUILDFLAG(IS_CHROMEOS)
  
- ProfileSelection ProfileSelections::GetProfileSelection(
-     Profile* profile) const {
 +#if 0
- #if BUILDFLAG(IS_CHROMEOS_ASH)
-   // This check has to be performed before the check on
-   // `profile->IsRegularProfile()` because profiles that are internal ASH
-@@ -155,6 +156,7 @@ ProfileSelection ProfileSelections::GetProfileSelection(
+   // Treat other off the record profiles as Incognito (primary otr) Profiles.
+   if (profile->IsRegularProfile() || profile->IsIncognitoProfile() ||
+       profile_metrics::GetBrowserProfileType(profile) ==
+@@ -148,6 +149,8 @@ ProfileSelection ProfileSelections::GetProfileSelection(
    }
  
-   NOTREACHED_IN_MIGRATION();
+   NOTREACHED();
 +#endif
-   return ProfileSelection::kNone;
++  return ProfileSelection::kNone;
  }
  
+ void ProfileSelections::SetProfileSelectionForRegular(

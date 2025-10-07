@@ -1,12 +1,9 @@
 import { Octokit } from '@octokit/rest';
+
 import * as fs from 'node:fs';
 
-const octokit = new Octokit({
-  auth: process.env.ELECTRON_GITHUB_TOKEN,
-  log: console
-});
-
-if (!process.env.CI) require('dotenv-safe').load();
+import { createGitHubTokenStrategy } from '../github-token';
+import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from '../types';
 
 if (process.argv.length < 6) {
   console.log('Usage: upload-to-github filePath fileName releaseId');
@@ -43,13 +40,18 @@ const getHeaders = (filePath: string, fileName: string) => {
   };
 };
 
-function getRepo () {
-  return releaseVersion.indexOf('nightly') > 0 ? 'nightlies' : 'electron';
+function getRepo (): ElectronReleaseRepo {
+  return releaseVersion.indexOf('nightly') > 0 ? NIGHTLY_REPO : ELECTRON_REPO;
 }
 
 const targetRepo = getRepo();
 const uploadUrl = `https://uploads.github.com/repos/electron/${targetRepo}/releases/${releaseId}/assets{?name,label}`;
 let retry = 0;
+
+const octokit = new Octokit({
+  authStrategy: createGitHubTokenStrategy(targetRepo),
+  log: console
+});
 
 function uploadToGitHub () {
   console.log(`in uploadToGitHub for ${filePath}, ${fileName}`);
@@ -60,7 +62,7 @@ function uploadToGitHub () {
     headers: getHeaders(filePath, fileName),
     data: fileData as any,
     name: fileName,
-    owner: 'electron',
+    owner: ELECTRON_ORG,
     repo: targetRepo,
     release_id: releaseId
   }).then(() => {
@@ -72,7 +74,7 @@ function uploadToGitHub () {
       retry++;
 
       octokit.repos.listReleaseAssets({
-        owner: 'electron',
+        owner: ELECTRON_ORG,
         repo: targetRepo,
         release_id: releaseId,
         per_page: 100
@@ -84,7 +86,7 @@ function uploadToGitHub () {
         if (existingAssets.length > 0) {
           console.log(`${fileName} already exists; will delete before retrying upload.`);
           octokit.repos.deleteReleaseAsset({
-            owner: 'electron',
+            owner: ELECTRON_ORG,
             repo: targetRepo,
             asset_id: existingAssets[0].id
           }).catch((deleteErr) => {

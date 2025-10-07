@@ -9,17 +9,17 @@
 #include "base/feature_list.h"
 #include "base/i18n/rtl.h"
 #include "components/autofill/core/common/autofill_features.h"
+#include "content/public/browser/render_frame_host.h"
 #include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
-#include "shell/browser/native_window_views.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_view_proxy.h"
 #include "shell/browser/ui/autofill_popup.h"
+#include "shell/browser/ui/views/autofill_popup_view.h"
 #include "shell/common/api/api.mojom.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "ui/color/color_id.h"
 #include "ui/color/color_provider.h"
-#include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/rect.h"
@@ -161,11 +161,7 @@ gfx::Rect CalculatePopupBounds(const gfx::Size& desired_size,
 
 }  // namespace
 
-AutofillPopup::AutofillPopup() {
-  bold_font_list_ = gfx::FontList().DeriveWithWeight(gfx::Font::Weight::BOLD);
-  smaller_font_list_ =
-      gfx::FontList().DeriveWithSizeDelta(kSmallerFontSizeDelta);
-}
+AutofillPopup::AutofillPopup() = default;
 
 AutofillPopup::~AutofillPopup() {
   Hide();
@@ -192,11 +188,8 @@ void AutofillPopup::CreateView(content::RenderFrameHost* frame_host,
   view_ = new AutofillPopupView(this, parent->GetWidget());
 
   if (offscreen) {
-    auto* rwhv = frame_host->GetView();
-    if (embedder_frame_host != nullptr) {
-      rwhv = embedder_frame_host->GetView();
-    }
-
+    auto* rwhv = embedder_frame_host ? embedder_frame_host->GetView()
+                                     : frame_host->GetView();
     auto* osr_rwhv = static_cast<OffScreenRenderWidgetHostView*>(rwhv);
     view_->view_proxy_ = std::make_unique<OffscreenViewProxy>(view_);
     osr_rwhv->AddViewProxy(view_->view_proxy_.get());
@@ -252,7 +245,7 @@ gfx::Rect AutofillPopup::popup_bounds_in_view() {
   gfx::Point origin(popup_bounds_.origin());
   views::View::ConvertPointFromScreen(parent_, &origin);
 
-  return gfx::Rect(origin, popup_bounds_.size());
+  return {origin, popup_bounds_.size()};
 }
 
 void AutofillPopup::OnViewBoundsChanged(views::View* view) {
@@ -287,9 +280,8 @@ int AutofillPopup::GetDesiredPopupWidth() {
 gfx::Rect AutofillPopup::GetRowBounds(int index) {
   int top = kPopupBorderThickness + index * kRowHeight;
 
-  return gfx::Rect(kPopupBorderThickness, top,
-                   popup_bounds_.width() - 2 * kPopupBorderThickness,
-                   kRowHeight);
+  return {kPopupBorderThickness, top,
+          popup_bounds_.width() - 2 * kPopupBorderThickness, kRowHeight};
 }
 
 const gfx::FontList& AutofillPopup::GetValueFontListForRow(int index) const {

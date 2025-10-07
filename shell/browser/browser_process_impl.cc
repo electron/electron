@@ -10,9 +10,9 @@
 
 #include "base/command_line.h"
 #include "base/files/file_path.h"
+#include "base/notimplemented.h"
 #include "base/path_service.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/os_crypt/async/browser/key_provider.h"
 #include "components/os_crypt/async/browser/os_crypt_async.h"
@@ -22,6 +22,7 @@
 #include "components/prefs/overlay_user_pref_store.h"
 #include "components/prefs/pref_registry.h"
 #include "components/prefs/pref_registry_simple.h"
+#include "components/prefs/pref_service.h"
 #include "components/prefs/pref_service_factory.h"
 #include "components/proxy_config/pref_proxy_config_tracker_impl.h"
 #include "components/proxy_config/proxy_config_dictionary.h"
@@ -30,7 +31,6 @@
 #include "content/public/browser/network_quality_observer_factory.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_switches.h"
-#include "electron/fuses.h"
 #include "extensions/common/constants.h"
 #include "net/proxy_resolution/proxy_config.h"
 #include "net/proxy_resolution/proxy_config_service.h"
@@ -89,6 +89,11 @@ void BrowserProcessImpl::ApplyProxyModeFromCommandLine(
 }
 
 BuildState* BrowserProcessImpl::GetBuildState() {
+  NOTIMPLEMENTED();
+  return nullptr;
+}
+
+GlobalFeatures* BrowserProcessImpl::GetFeatures() {
   NOTIMPLEMENTED();
   return nullptr;
 }
@@ -165,6 +170,11 @@ PrefService* BrowserProcessImpl::local_state() {
   return local_state_.get();
 }
 
+signin::ActivePrimaryAccountsMetricsRecorder*
+BrowserProcessImpl::active_primary_accounts_metrics_recorder() {
+  return nullptr;
+}
+
 scoped_refptr<network::SharedURLLoaderFactory>
 BrowserProcessImpl::shared_url_loader_factory() {
   return system_network_context_manager()->GetSharedURLLoaderFactory();
@@ -175,11 +185,6 @@ variations::VariationsService* BrowserProcessImpl::variations_service() {
 }
 
 BrowserProcessPlatformPart* BrowserProcessImpl::platform_part() {
-  return nullptr;
-}
-
-extensions::EventRouterForwarder*
-BrowserProcessImpl::extension_event_router_forwarder() {
   return nullptr;
 }
 
@@ -408,5 +413,5 @@ void BrowserProcessImpl::CreateOSCryptAsync() {
           std::pair<size_t, std::unique_ptr<os_crypt_async::KeyProvider>>>());
 
   // Trigger async initialization of OSCrypt key providers.
-  std::ignore = os_crypt_async_->GetInstance(base::DoNothing());
+  os_crypt_async_->GetInstance(base::DoNothing());
 }

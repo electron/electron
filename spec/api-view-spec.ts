@@ -1,6 +1,8 @@
-import { expect } from 'chai';
-import { closeWindow } from './lib/window-helpers';
 import { BaseWindow, View } from 'electron/main';
+
+import { expect } from 'chai';
+
+import { closeWindow } from './lib/window-helpers';
 
 describe('View', () => {
   let w: BaseWindow;
@@ -36,6 +38,18 @@ describe('View', () => {
     expect(w.contentView.children).to.have.lengthOf(1);
   });
 
+  it('can be added as a child of another View', async () => {
+    const w = new BaseWindow();
+    const v1 = new View();
+    const v2 = new View();
+
+    v1.addChildView(v2);
+    w.contentView.addChildView(v1);
+
+    expect(w.contentView.children).to.deep.equal([v1]);
+    expect(v1.children).to.deep.equal([v2]);
+  });
+
   it('correctly reorders children', () => {
     w = new BaseWindow({ show: false });
     const cv = new View();
@@ -64,5 +78,18 @@ describe('View', () => {
     v.setBorderRadius(-10);
     v.setBorderRadius(9999999);
     v.setBorderRadius(-9999999);
+  });
+
+  describe('view.getVisible|setVisible', () => {
+    it('is visible by default', () => {
+      const v = new View();
+      expect(v.getVisible()).to.be.true();
+    });
+
+    it('can be set to not visible', () => {
+      const v = new View();
+      v.setVisible(false);
+      expect(v.getVisible()).to.be.false();
+    });
   });
 });

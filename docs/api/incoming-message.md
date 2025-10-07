@@ -31,7 +31,7 @@ Emitted when a request has been canceled during an ongoing HTTP transaction.
 
 Returns:
 
-`error` Error - Typically holds an error string identifying failure root cause.
+* `error` Error - Typically holds an error string identifying failure root cause.
 
 Emitted when an error was encountered while streaming response data events. For
 instance, if the server closes the underlying while the response is still

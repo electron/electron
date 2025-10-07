@@ -18,6 +18,7 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/functional/callback_helpers.h"
+#include "base/notimplemented.h"
 #include "base/path_service.h"
 #include "base/system/sys_info.h"
 #include "base/values.h"
@@ -38,8 +39,8 @@
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/render_frame_host.h"
-#include "content/public/common/content_switches.h"
 #include "crypto/crypto_buildflags.h"
+#include "electron/mas.h"
 #include "media/audio/audio_manager.h"
 #include "net/dns/public/dns_over_https_config.h"
 #include "net/dns/public/dns_over_https_server_config.h"
@@ -51,15 +52,14 @@
 #include "services/network/network_service.h"
 #include "shell/app/command_line_args.h"
 #include "shell/browser/api/electron_api_menu.h"
-#include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/api/gpuinfo_manager.h"
+#include "shell/browser/api/process_metric.h"
 #include "shell/browser/browser_process_impl.h"
-#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/javascript_environment.h"
-#include "shell/browser/login_handler.h"
+#include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/browser/relauncher.h"
 #include "shell/common/application_info.h"
 #include "shell/common/electron_command_line.h"
@@ -70,17 +70,20 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
+#include "shell/common/gin_converters/login_item_settings_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/language_util.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
-#include "shell/common/platform_util.h"
 #include "shell/common/thread_restrictions.h"
-#include "shell/common/v8_value_serializer.h"
+#include "shell/common/v8_util.h"
 #include "ui/gfx/image/image.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-traced-handle.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "base/strings/utf_string_conversions.h"
@@ -89,7 +92,15 @@
 
 #if BUILDFLAG(IS_MAC)
 #include <CoreFoundation/CoreFoundation.h>
+#include "base/no_destructor.h"
+#include "content/browser/mac_helpers.h"
 #include "shell/browser/ui/cocoa/electron_bundle_mover.h"
+#include "shell/common/process_util.h"
+#endif
+
+#if BUILDFLAG(IS_LINUX)
+#include "base/nix/scoped_xdg_activation_token_injector.h"
+#include "base/nix/xdg_util.h"
 #endif
 
 using electron::Browser;
@@ -155,7 +166,7 @@ struct Converter<JumpListItem::Type> {
       if (item_val == val)
         return gin::ConvertToV8(isolate, name);
 
-    return gin::ConvertToV8(isolate, "");
+    return v8::String::Empty(isolate);
   }
 
  private:
@@ -246,7 +257,7 @@ struct Converter<JumpListCategory::Type> {
       if (type_val == val)
         return gin::ConvertToV8(isolate, name);
 
-    return gin::ConvertToV8(isolate, "");
+    return v8::String::Empty(isolate);
   }
 
  private:
@@ -355,7 +366,8 @@ struct Converter<net::SecureDnsMode> {
 
 namespace electron::api {
 
-gin::WrapperInfo App::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo App::kWrapperInfo = {{gin::kEmbedderNativeGin},
+                                      gin::kElectronApp};
 
 namespace {
 
@@ -373,6 +385,9 @@ int GetPathConstant(std::string_view name) {
   // clang-format off
   constexpr auto Lookup = base::MakeFixedFlatMap<std::string_view, int>({
       {"appData", DIR_APP_DATA},
+#if !BUILDFLAG(IS_MAC)
+      {"assets", base::DIR_ASSETS},
+#endif
 #if BUILDFLAG(IS_POSIX)
       {"cache", base::DIR_CACHE},
 #else
@@ -399,7 +414,7 @@ int GetPathConstant(std::string_view name) {
       {"videos", chrome::DIR_USER_VIDEOS},
   });
   // clang-format on
-  const auto* iter = Lookup.find(name);
+  auto iter = Lookup.find(name);
   return iter != Lookup.end() ? iter->second : -1;
 }
 
@@ -411,6 +426,12 @@ bool NotificationCallbackWrapper(
     base::CommandLine cmd,
     const base::FilePath& cwd,
     const std::vector<uint8_t> additional_data) {
+#if BUILDFLAG(IS_LINUX)
+  // Set the global activation token sent as a command line switch by another
+  // electron app instance. This also removes the switch after use to prevent
+  // any side effects of leaving it in the command line after this point.
+  base::nix::ExtractXdgActivationTokenFromCmdLine(cmd);
+#endif
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
     callback.Run(std::move(cmd), cwd, std::move(additional_data));
@@ -434,10 +455,10 @@ void GotPrivateKey(std::shared_ptr<content::ClientCertificateDelegate> delegate,
 }
 
 void OnClientCertificateSelected(
-    v8::Isolate* isolate,
+    v8::Isolate* const isolate,
     std::shared_ptr<content::ClientCertificateDelegate> delegate,
     std::shared_ptr<net::ClientCertIdentityList> identities,
-    gin::Arguments* args) {
+    gin::Arguments* const args) {
   if (args->Length() == 2) {
     delegate->ContinueWithCertificate(nullptr, nullptr);
     return;
@@ -452,8 +473,7 @@ void OnClientCertificateSelected(
 
   gin_helper::Dictionary cert_data;
   if (!gin::ConvertFromV8(isolate, val, &cert_data)) {
-    gin_helper::ErrorThrower(isolate).ThrowError(
-        "Must pass valid certificate object.");
+    args->ThrowTypeError("Must pass valid certificate object.");
     return;
   }
 
@@ -462,7 +482,7 @@ void OnClientCertificateSelected(
     return;
 
   auto certs = net::X509Certificate::CreateCertificateListFromBytes(
-      base::as_bytes(base::make_span(data)), net::X509Certificate::FORMAT_AUTO);
+      base::as_byte_span(data), net::X509Certificate::FORMAT_AUTO);
   if (!certs.empty()) {
     scoped_refptr<net::X509Certificate> cert(certs[0].get());
     for (auto& identity : *identities) {
@@ -531,17 +551,17 @@ App::App() {
       ->set_delegate(this);
   Browser::Get()->AddObserver(this);
 
-  auto pid = content::ChildProcessHost::kInvalidUniqueID;
+  auto unsafe_pid = content::ChildProcessId::FromUnsafeValue(
+      content::ChildProcessHost::kInvalidUniqueID);
   auto process_metric = std::make_unique<electron::ProcessMetric>(
       content::PROCESS_TYPE_BROWSER, base::GetCurrentProcessHandle(),
       base::ProcessMetrics::CreateCurrentProcessMetrics());
-  app_metrics_[pid] = std::move(process_metric);
+  app_metrics_[unsafe_pid] = std::move(process_metric);
 }
 
 App::~App() {
   static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
       ->set_delegate(nullptr);
-  Browser::Get()->RemoveObserver(this);
   content::GpuDataManager::GetInstance()->RemoveObserver(this);
   content::BrowserChildProcessObserver::Remove(this);
 }
@@ -730,6 +750,7 @@ void App::AllowCertificateError(
 
 base::OnceClosure App::SelectClientCertificate(
     content::BrowserContext* browser_context,
+    int process_id,
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
     net::ClientCertIdentityList identities,
@@ -763,7 +784,7 @@ base::OnceClosure App::SelectClientCertificate(
         std::move((*shared_identities)[0]),
         base::BindRepeating(&GotPrivateKey, shared_delegate, std::move(cert)));
   }
-  return base::OnceClosure();
+  return {};
 }
 
 void App::OnGpuInfoUpdate() {
@@ -772,26 +793,28 @@ void App::OnGpuInfoUpdate() {
 
 void App::BrowserChildProcessLaunchedAndConnected(
     const content::ChildProcessData& data) {
-  ChildProcessLaunched(data.process_type, data.id, data.GetProcess().Handle(),
-                       data.metrics_name, base::UTF16ToUTF8(data.name));
+  ChildProcessLaunched(data.process_type,
+                       content::ChildProcessId::FromUnsafeValue(data.id),
+                       data.GetProcess().Handle(), data.metrics_name,
+                       base::UTF16ToUTF8(data.name));
 }
 
 void App::BrowserChildProcessHostDisconnected(
     const content::ChildProcessData& data) {
-  ChildProcessDisconnected(data.id);
+  ChildProcessDisconnected(content::ChildProcessId::FromUnsafeValue(data.id));
 }
 
 void App::BrowserChildProcessCrashed(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  ChildProcessDisconnected(data.id);
+  ChildProcessDisconnected(content::ChildProcessId::FromUnsafeValue(data.id));
   BrowserChildProcessCrashedOrKilled(data, info);
 }
 
 void App::BrowserChildProcessKilled(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  ChildProcessDisconnected(data.id);
+  ChildProcessDisconnected(content::ChildProcessId::FromUnsafeValue(data.id));
   BrowserChildProcessCrashedOrKilled(data, info);
 }
 
@@ -821,7 +844,7 @@ void App::RenderProcessExited(content::RenderProcessHost* host) {
 }
 
 void App::ChildProcessLaunched(int process_type,
-                               int pid,
+                               content::ChildProcessId pid,
                                base::ProcessHandle handle,
                                const std::string& service_name,
                                const std::string& name) {
@@ -835,7 +858,7 @@ void App::ChildProcessLaunched(int process_type,
       process_type, handle, std::move(metrics), service_name, name);
 }
 
-void App::ChildProcessDisconnected(int pid) {
+void App::ChildProcessDisconnected(content::ChildProcessId pid) {
   app_metrics_.erase(pid);
 }
 
@@ -847,28 +870,33 @@ void App::SetAppPath(const base::FilePath& app_path) {
   app_path_ = app_path;
 }
 
-#if !BUILDFLAG(IS_MAC)
-void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
-                         std::optional<base::FilePath> custom_path) {
-  if (custom_path.has_value()) {
-    if (!custom_path->IsAbsolute()) {
-      thrower.ThrowError("Path must be absolute");
-      return;
-    }
-    {
-      ScopedAllowBlockingForElectron allow_blocking;
-      base::PathService::Override(DIR_APP_LOGS, custom_path.value());
-    }
-  } else {
-    base::FilePath path;
-    if (base::PathService::Get(chrome::DIR_USER_DATA, &path)) {
-      path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
-      {
-        ScopedAllowBlockingForElectron allow_blocking;
-        base::PathService::Override(DIR_APP_LOGS, path);
-      }
-    }
+void App::SetAppLogsPath(gin::Arguments* const args) {
+  base::FilePath path;
+
+  // if caller provided a path, it must be absolute
+  if (args->GetNext(&path) && !path.IsAbsolute()) {
+    args->ThrowTypeError("Path must be absolute");
+    return;
   }
+
+  // if caller did not provide a path, then use a default one
+  if (path.empty()) {
+    path = GetDefaultAppLogPath();
+  }
+
+  ScopedAllowBlockingForElectron allow_blocking;
+  base::PathService::Override(DIR_APP_LOGS, path);
+}
+
+#if !BUILDFLAG(IS_MAC)
+// static
+// default to `${DIR_USER_DATA}/logs`
+base::FilePath App::GetDefaultAppLogPath() {
+  base::FilePath path;
+  if (base::PathService::Get(chrome::DIR_USER_DATA, &path)) {
+    path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
+  }
+  return path;
 }
 #endif
 
@@ -885,6 +913,21 @@ bool App::IsPackaged() {
 
 #if BUILDFLAG(IS_WIN)
   return base_name != FILE_PATH_LITERAL("electron.exe");
+#elif BUILDFLAG(IS_MAC)
+  static const base::NoDestructor<std::string> default_helper(
+      "electron helper" +
+      base::ToLowerASCII(content::kMacHelperSuffix_default));
+  static const base::NoDestructor<std::string> renderer_helper(
+      "electron helper" +
+      base::ToLowerASCII(content::kMacHelperSuffix_renderer));
+  static const base::NoDestructor<std::string> plugin_helper(
+      "electron helper" + base::ToLowerASCII(content::kMacHelperSuffix_plugin));
+  if (IsRendererProcess()) {
+    return base_name != *renderer_helper;
+  } else if (IsUtilityProcess()) {
+    return base_name != *default_helper && base_name != *plugin_helper;
+  }
+  return base_name != FILE_PATH_LITERAL("electron");
 #else
   return base_name != FILE_PATH_LITERAL("electron");
 #endif
@@ -931,7 +974,7 @@ std::string App::GetSystemLocale(gin_helper::ErrorThrower thrower) const {
     thrower.ThrowError(
         "app.getSystemLocale() can only be called "
         "after app is ready");
-    return std::string();
+    return {};
   }
   return static_cast<BrowserProcessImpl*>(g_browser_process)->GetSystemLocale();
 }
@@ -998,8 +1041,6 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
   if (HasSingleInstanceLock())
     return true;
 
-  std::string program_name = electron::Browser::Get()->GetName();
-
   base::FilePath user_dir;
   base::PathService::Get(chrome::DIR_USER_DATA, &user_dir);
   // The user_dir may not have been created yet.
@@ -1010,6 +1051,7 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
   blink::CloneableMessage additional_data_message;
   args->GetNext(&additional_data_message);
 #if BUILDFLAG(IS_WIN)
+  const std::string program_name = electron::Browser::Get()->GetName();
   bool app_is_sandboxed =
       IsSandboxEnabled(base::CommandLine::ForCurrentProcess());
   process_singleton_ = std::make_unique<ProcessSingleton>(
@@ -1021,6 +1063,15 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
       base::BindRepeating(NotificationCallbackWrapper, cb));
 #endif
 
+#if BUILDFLAG(IS_LINUX)
+  // Read the xdg-activation token and set it in the command line for the
+  // duration of the notification in order to ensure this is propagated to an
+  // already running electron app instance if it exists.
+  // The activation token received from the launching app is used later when
+  // activating the existing electron app instance window.
+  base::nix::ScopedXdgActivationTokenInjector activation_token_injector(
+      *base::CommandLine::ForCurrentProcess(), *base::Environment::Create());
+#endif
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
     case ProcessSingleton::NotifyResult::PROCESS_NONE:
       if (content::BrowserThread::IsThreadInitialized(
@@ -1113,7 +1164,8 @@ void App::DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower) {
 
 bool App::IsAccessibilitySupportEnabled() {
   auto* ax_state = content::BrowserAccessibilityState::GetInstance();
-  return ax_state->IsAccessibleBrowser();
+  auto mode = ax_state->GetAccessibilityMode();
+  return mode.has_mode(ui::kAXModeComplete.flags());
 }
 
 void App::SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
@@ -1125,11 +1177,12 @@ void App::SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
     return;
   }
 
-  auto* ax_state = content::BrowserAccessibilityState::GetInstance();
-  if (enabled) {
-    ax_state->OnScreenReaderDetected();
-  } else {
-    ax_state->DisableAccessibility();
+  if (!enabled) {
+    scoped_accessibility_mode_.reset();
+  } else if (!scoped_accessibility_mode_) {
+    scoped_accessibility_mode_ =
+        content::BrowserAccessibilityState::GetInstance()
+            ->CreateScopedModeForProcess(ui::kAXModeComplete);
   }
   Browser::Get()->OnAccessibilitySupportChanged();
 }
@@ -1192,14 +1245,13 @@ v8::Local<v8::Value> App::GetJumpListSettings() {
   return dict.GetHandle();
 }
 
-JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
-                                gin::Arguments* args) {
+JumpListResult App::SetJumpList(v8::Isolate* const isolate,
+                                v8::Local<v8::Value> val) {
   std::vector<JumpListCategory> categories;
   bool delete_jump_list = val->IsNull();
-  if (!delete_jump_list &&
-      !gin::ConvertFromV8(args->isolate(), val, &categories)) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowTypeError("Argument must be null or an array of categories");
+  if (!delete_jump_list && !gin::ConvertFromV8(isolate, val, &categories)) {
+    gin_helper::ErrorThrower{isolate}.ThrowTypeError(
+        "Argument must be null or an array of categories");
     return JumpListResult::kArgumentError;
   }
 
@@ -1534,7 +1586,7 @@ void DockSetMenu(electron::api::Menu* menu) {
 }
 
 v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
-  if (dock_.IsEmpty()) {
+  if (dock_.IsEmptyThreadSafe()) {
     // Initialize the Dock API, the methods are bound to "dock" which exists
     // for the lifetime of "app"
     auto browser = base::Unretained(Browser::Get());
@@ -1562,7 +1614,7 @@ v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
 
     dock_.Reset(isolate, dock_obj.GetHandle());
   }
-  return v8::Local<v8::Value>::New(isolate, dock_);
+  return dock_.Get(isolate);
 }
 #endif
 
@@ -1587,11 +1639,19 @@ void ConfigureHostResolver(v8::Isolate* isolate,
 
   bool enable_built_in_resolver =
       base::FeatureList::IsEnabled(net::features::kAsyncDns);
+  bool enable_happy_eyeballs_v3 =
+      base::FeatureList::IsEnabled(net::features::kHappyEyeballsV3);
   bool additional_dns_query_types_enabled = true;
 
   if (opts.Has("enableBuiltInResolver") &&
       !opts.Get("enableBuiltInResolver", &enable_built_in_resolver)) {
     thrower.ThrowTypeError("enableBuiltInResolver must be a boolean");
+    return;
+  }
+
+  if (opts.Has("enableHappyEyeballs") &&
+      !opts.Get("enableHappyEyeballs", &enable_happy_eyeballs_v3)) {
+    thrower.ThrowTypeError("enableHappyEyeballs must be a boolean");
     return;
   }
 
@@ -1635,24 +1695,37 @@ void ConfigureHostResolver(v8::Isolate* isolate,
   // Configure the stub resolver. This must be done after the system
   // NetworkContext is created, but before anything has the chance to use it.
   content::GetNetworkService()->ConfigureStubHostResolver(
-      enable_built_in_resolver, secure_dns_mode, doh_config,
-      additional_dns_query_types_enabled);
+      enable_built_in_resolver, enable_happy_eyeballs_v3, secure_dns_mode,
+      doh_config, additional_dns_query_types_enabled);
 }
 
 // static
 App* App::Get() {
-  static base::NoDestructor<App> app;
-  return app.get();
+  return Create(nullptr);
 }
 
 // static
-gin::Handle<App> App::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, Get());
+App* App::Create(v8::Isolate* isolate) {
+  static base::NoDestructor<cppgc::Persistent<App>> instance(
+      cppgc::MakeGarbageCollected<App>(
+          isolate->GetCppHeap()->GetAllocationHandle()));
+  return instance->Get();
+}
+
+const gin::WrapperInfo* App::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+void App::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<App>::Trace(visitor);
+#if BUILDFLAG(IS_MAC)
+  visitor->Trace(dock_);
+#endif
 }
 
 gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
   auto browser = base::Unretained(Browser::Get());
-  return gin_helper::EventEmitterMixin<App>::GetObjectTemplateBuilder(isolate)
+  return gin::Wrappable<App>::GetObjectTemplateBuilder(isolate)
       .SetMethod("quit", base::BindRepeating(&Browser::Quit, browser))
       .SetMethod("exit", base::BindRepeating(&Browser::Exit, browser))
       .SetMethod("focus", base::BindRepeating(&Browser::Focus, browser))
@@ -1668,6 +1741,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::AddRecentDocument, browser))
       .SetMethod("clearRecentDocuments",
                  base::BindRepeating(&Browser::ClearRecentDocuments, browser))
+      .SetMethod("getRecentDocuments",
+                 base::BindRepeating(&Browser::GetRecentDocuments, browser))
 #if BUILDFLAG(IS_WIN)
       .SetMethod("setAppUserModelId",
                  base::BindRepeating(&Browser::SetAppUserModelID, browser))
@@ -1792,8 +1867,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("resolveProxy", &App::ResolveProxy);
 }
 
-const char* App::GetTypeName() {
-  return "App";
+const char* App::GetHumanReadableName() const {
+  return "Electron / App";
 }
 
 }  // namespace electron::api
@@ -1804,8 +1879,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.Set("app", electron::api::App::Create(isolate));
 }
 

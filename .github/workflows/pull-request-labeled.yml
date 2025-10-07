@@ -13,14 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Slack workflow
-        uses: slackapi/slack-github-action@70cd7be8e40a46e8b0eced40b0de447bdb42f68e # v1.26.0
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
         with:
+          webhook: ${{ secrets.BACKPORT_REQUESTED_SLACK_WEBHOOK_URL }} 
+          webhook-type: webhook-trigger
           payload: |
             {
               "url": "${{ github.event.pull_request.html_url }}"
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.BACKPORT_REQUESTED_SLACK_WEBHOOK_URL }}
   pull-request-labeled-deprecation-review-complete:
     name: deprecation-review/complete label added
     if: github.event.label.name == 'deprecation-review/complete ✅'
@@ -33,7 +33,7 @@ jobs:
           creds: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
           org: electron
       - name: Set status
-        uses: dsanders11/project-actions/edit-item@eb760c48894b5702398529cbb8f6e98378e315d0 # v1.3.0
+        uses: dsanders11/project-actions/edit-item@2134fe7cc71c58b7ae259c82a8e63c6058255678 # v1.7.0
         with:
           token: ${{ steps.generate-token.outputs.token }}
           project-number: 94

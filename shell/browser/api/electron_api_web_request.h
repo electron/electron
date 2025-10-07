@@ -9,40 +9,55 @@
 #include <set>
 
 #include "base/memory/raw_ptr.h"
-#include "base/values.h"
-#include "extensions/common/url_pattern.h"
-#include "gin/arguments.h"
-#include "gin/handle.h"
-#include "gin/wrappable.h"
 #include "shell/browser/net/web_request_api_interface.h"
+#include "shell/common/gin_helper/wrappable.h"
+
+class URLPattern;
 
 namespace content {
 class BrowserContext;
 }
 
+namespace extensions {
+enum class WebRequestResourceType : uint8_t;
+}  // namespace extensions
+
+namespace gin {
+class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
+template <typename T>
+class Handle;
+}  // namespace gin_helper
+
 namespace electron::api {
 
-class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
+class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest>,
+                         public WebRequestAPI {
  public:
   // Return the WebRequest object attached to |browser_context|, create if there
   // is no one.
   // Note that the lifetime of WebRequest object is managed by Session, instead
   // of the caller.
-  static gin::Handle<WebRequest> FromOrCreate(
+  static gin_helper::Handle<WebRequest> FromOrCreate(
       v8::Isolate* isolate,
       content::BrowserContext* browser_context);
 
   // Return a new WebRequest object, this should only be called by Session.
-  static gin::Handle<WebRequest> Create(
+  static gin_helper::Handle<WebRequest> Create(
       v8::Isolate* isolate,
       content::BrowserContext* browser_context);
 
   // Find the WebRequest object attached to |browser_context|.
-  static gin::Handle<WebRequest> From(v8::Isolate* isolate,
-                                      content::BrowserContext* browser_context);
+  static gin_helper::Handle<WebRequest> From(
+      v8::Isolate* isolate,
+      content::BrowserContext* browser_context);
 
-  // gin::Wrappable:
-  static gin::WrapperInfo kWrapperInfo;
+  static const char* GetClassName() { return "WebRequest"; }
+
+  // gin_helper::Wrappable:
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
@@ -146,21 +161,28 @@ class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
   class RequestFilter {
    public:
     RequestFilter(std::set<URLPattern>,
+                  std::set<URLPattern>,
                   std::set<extensions::WebRequestResourceType>);
     RequestFilter(const RequestFilter&);
     RequestFilter();
     ~RequestFilter();
 
-    void AddUrlPattern(URLPattern pattern);
+    void AddUrlPattern(URLPattern pattern, bool is_match_pattern);
+    void AddUrlPatterns(const std::set<std::string>& filter_patterns,
+                        RequestFilter* filter,
+                        gin::Arguments* args,
+                        bool is_match_pattern = true);
     void AddType(extensions::WebRequestResourceType type);
 
     bool MatchesRequest(extensions::WebRequestInfo* info) const;
 
    private:
-    bool MatchesURL(const GURL& url) const;
+    bool MatchesURL(const GURL& url,
+                    const std::set<URLPattern>& patterns) const;
     bool MatchesType(extensions::WebRequestResourceType type) const;
 
-    std::set<URLPattern> url_patterns_;
+    std::set<URLPattern> include_url_patterns_;
+    std::set<URLPattern> exclude_url_patterns_;
     std::set<extensions::WebRequestResourceType> types_;
   };
 

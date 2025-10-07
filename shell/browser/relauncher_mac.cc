@@ -11,10 +11,10 @@
 
 #include "base/apple/osstatus_logging.h"
 #include "base/files/file_util.h"
+#include "base/files/scoped_file.h"
 #include "base/logging.h"
 #include "base/posix/eintr_wrapper.h"
 #include "base/process/launch.h"
-#include "base/strings/sys_string_conversions.h"
 
 namespace relauncher::internal {
 

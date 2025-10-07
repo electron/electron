@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_USB_USB_CHOOSER_CONTEXT_FACTORY_H_
 #define ELECTRON_SHELL_BROWSER_USB_USB_CHOOSER_CONTEXT_FACTORY_H_
 
+#include <memory>
+
 #include "components/keyed_service/content/browser_context_keyed_service_factory.h"
 
 namespace base {
@@ -34,7 +36,7 @@ class UsbChooserContextFactory : public BrowserContextKeyedServiceFactory {
   ~UsbChooserContextFactory() override;
 
   // BrowserContextKeyedServiceFactory methods:
-  KeyedService* BuildServiceInstanceFor(
+  std::unique_ptr<KeyedService> BuildServiceInstanceForBrowserContext(
       content::BrowserContext* profile) const override;
 };
 

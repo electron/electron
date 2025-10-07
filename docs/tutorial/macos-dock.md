@@ -1,78 +1,73 @@
 ---
-title: Dock
-description: Configure your application's Dock presence on macOS.
+title: Dock Menu
+description: Configure your app's Dock presence on macOS.
 slug: macos-dock
 hide_title: true
 ---
 
-# Dock
+# Dock Menu
 
-Electron has APIs to configure the app's icon in the macOS Dock. A macOS-only
-API exists to create a custom dock menu, but Electron also uses the app dock
-icon as the entry point for cross-platform features like
-[recent documents][recent-documents] and [application progress][progress-bar].
+On macOS, the [Dock](https://support.apple.com/en-ca/guide/mac-help/mh35859/mac) is an interface
+element that displays open and frequently-used apps. While opened or pinned, each app has its own
+icon in the Dock.
 
-The custom dock is commonly used to add shortcuts to tasks the user wouldn't
-want to open the whole app window for.
+> [!NOTE]
+> On macOS, the Dock is the entry point for certain cross-platform features like
+> [Recent Documents](./recent-documents.md) and [Application Progress](./progress-bar.md).
+> Read those guides for more details.
 
-**Dock menu of Terminal.app:**
+## Dock API
 
-![Dock Menu][dock-menu-image]
+All functionality for the Dock is exposed via the [Dock](../api/dock.md) class exposed via
+[`app.dock`](../api/app.md#appdock-macos-readonly) property. There is a single `Dock` instance per
+Electron application, and this property only exists on macOS.
 
-To set your custom dock menu, you need to use the
-[`app.dock.setMenu`](../api/dock.md#docksetmenumenu-macos) API,
-which is only available on macOS.
+One of the main uses for your app's Dock icon is to expose additional app menus. The Dock menu is
+triggered by right-clicking or <kbd>Ctrl</kbd>-clicking the app icon. By default, the app's Dock menu
+will come with system-provided window management utilities, including the ability to show all windows,
+hide the app, and switch betweeen different open windows.
 
-```fiddle docs/fiddles/features/macos-dock-menu
+To set an app-defined custom Dock menu, pass any [Menu](../api/menu.md) instance into the
+[`dock.setMenu`](../api/dock.md#docksetmenumenu-macos) API.
+
+> [!TIP]
+> For best practices to make your Dock menu feel more native, see Apple's
+> [Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/dock-menus)
+> page on Dock menus.
+
+## Attaching a context menu
+
+```js title='Setting a Dock menu'
 const { app, BrowserWindow, Menu } = require('electron/main')
 
-function createWindow () {
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600
-  })
-
-  win.loadFile('index.html')
-}
-
-const dockMenu = Menu.buildFromTemplate([
-  {
-    label: 'New Window',
-    click () { console.log('New Window') }
-  }, {
-    label: 'New Window with Settings',
-    submenu: [
-      { label: 'Basic' },
-      { label: 'Pro' }
-    ]
-  },
-  { label: 'New Command...' }
-])
-
+// dock.setMenu only works after the 'ready' event is fired
 app.whenReady().then(() => {
-  if (process.platform === 'darwin') {
-    app.dock.setMenu(dockMenu)
-  }
-}).then(createWindow)
+  const dockMenu = Menu.buildFromTemplate([
+    {
+      label: 'New Window',
+      click: () => { const win = new BrowserWindow() }
+    }
+    // add more menu options to the array
+  ])
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
-
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
-  }
+  // Dock is undefined on platforms outside of macOS
+  // highlight-next-line
+  app.dock?.setMenu(dockMenu)
 })
 ```
 
-After launching the Electron application, right click the application icon.
-You should see the custom menu you just defined:
+> [!NOTE]
+> Unlike with regular [context menus](./context-menu.md), Dock context menus don't need to be
+> manually instrumented using the `menu.popup` API. Instead, the Dock object handles click events
+> for you.
 
-![macOS dock menu](../images/macos-dock-menu.png)
+> [!TIP]
+> To learn more about crafting menus in Electron, see the [Menus](./menus.md#building-menus) guide.
 
-[dock-menu-image]: https://cloud.githubusercontent.com/assets/639601/5069962/6032658a-6e9c-11e4-9953-aa84006bdfff.png
-[recent-documents]: ./recent-documents.md
-[progress-bar]: ./progress-bar.md
+## Runnable Fiddle demo
+
+Below is a runnable example of how you can use the Dock menu to create and close windows in your
+Electron app.
+
+```fiddle docs/fiddles/menus/dock-menu
+```

@@ -1,6 +1,6 @@
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
-import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 const { mainFrame: webFrame } = process._linkedBinding('electron_renderer_web_frame');
 
@@ -23,12 +23,12 @@ export function createGuest (iframe: HTMLIFrameElement, elementInstanceId: numbe
     throw new TypeError('Invalid embedder frame');
   }
 
-  const embedderFrameId = webFrame.getWebFrameId(iframe.contentWindow!);
-  if (embedderFrameId < 0) { // this error should not happen.
+  const embedderFrame = webFrame._findFrameByWindow(iframe.contentWindow!);
+  if (!embedderFrame) { // this error should not happen.
     throw new Error('Invalid embedder frame');
   }
 
-  return ipcRendererInternal.invoke(IPC_MESSAGES.GUEST_VIEW_MANAGER_CREATE_AND_ATTACH_GUEST, embedderFrameId, elementInstanceId, params);
+  return ipcRendererInternal.invoke(IPC_MESSAGES.GUEST_VIEW_MANAGER_CREATE_AND_ATTACH_GUEST, embedderFrame.frameToken, elementInstanceId, params);
 }
 
 export function detachGuest (guestInstanceId: number) {

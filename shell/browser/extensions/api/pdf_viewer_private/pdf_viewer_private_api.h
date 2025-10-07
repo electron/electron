@@ -5,7 +5,9 @@
 #ifndef ELECTRON_SHELL_BROWSER_EXTENSIONS_API_PDF_VIEWER_PRIVATE_PDF_VIEWER_PRIVATE_API_H_
 #define ELECTRON_SHELL_BROWSER_EXTENSIONS_API_PDF_VIEWER_PRIVATE_PDF_VIEWER_PRIVATE_API_H_
 
+#include "chrome/common/extensions/api/pdf_viewer_private.h"
 #include "extensions/browser/extension_function.h"
+#include "pdf/buildflags.h"
 
 namespace extensions {
 
@@ -44,6 +46,32 @@ class PdfViewerPrivateIsAllowedLocalFileAccessFunction
 
   // Override from ExtensionFunction:
   ResponseAction Run() override;
+};
+
+class PdfViewerPrivateSaveToDriveFunction : public ExtensionFunction {
+ public:
+  DECLARE_EXTENSION_FUNCTION("pdfViewerPrivate.saveToDrive",
+                             PDFVIEWERPRIVATE_SAVETODRIVE)
+
+  PdfViewerPrivateSaveToDriveFunction();
+  PdfViewerPrivateSaveToDriveFunction(
+      const PdfViewerPrivateSaveToDriveFunction&) = delete;
+  PdfViewerPrivateSaveToDriveFunction& operator=(
+      const PdfViewerPrivateSaveToDriveFunction&) = delete;
+
+ protected:
+  ~PdfViewerPrivateSaveToDriveFunction() override;
+
+  // Override from ExtensionFunction:
+  ResponseAction Run() override;
+
+#if BUILDFLAG(ENABLE_PDF_SAVE_TO_DRIVE)
+ private:
+  ResponseAction RunSaveToDriveFlow(
+      api::pdf_viewer_private::SaveRequestType request_type);
+
+  ResponseAction StopSaveToDriveFlow();
+#endif  // BUILDFLAG(ENABLE_PDF_SAVE_TO_DRIVE)
 };
 
 class PdfViewerPrivateSetPdfDocumentTitleFunction : public ExtensionFunction {

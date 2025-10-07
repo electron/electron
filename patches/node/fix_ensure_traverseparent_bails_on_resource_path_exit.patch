@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 18 Mar 2025 10:41:27 +0100
+Subject: fix: ensure TraverseParent bails on resource path exit
+
+Electron's security model requires that we do not traverse outside of the
+resource path. This commit ensures that the TraverseParent function
+bails out if the parent path is outside of the resource path.
+
+diff --git a/src/node_modules.cc b/src/node_modules.cc
+index 55d628f0c5e7f330e548878807de26d51ef025b5..c06779dea471b6f6a8dd29d4657162ef0faec043 100644
+--- a/src/node_modules.cc
++++ b/src/node_modules.cc
+@@ -291,8 +291,41 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
+     Realm* realm, const std::filesystem::path& check_path) {
+   std::filesystem::path current_path = check_path;
+   auto env = realm->env();
++  Isolate* isolate = env->isolate();
+   const bool is_permissions_enabled = env->permission()->enabled();
+ 
++  // Get the resources path with trailing slash.
++  std::string resources_path;
++  {
++    HandleScope handle_scope(isolate);
++    Local<Value> resources_path_value;
++    Local<Object> process_object = env->process_object();
++
++    Local<String> resources_path_key =
++        String::NewFromUtf8Literal(isolate, "resourcesPath");
++    if (process_object->Get(env->context(), resources_path_key)
++            .ToLocal(&resources_path_value) &&
++        resources_path_value->IsString()) {
++      resources_path = *String::Utf8Value(isolate, resources_path_value);
++      if (!resources_path.empty() && !resources_path.ends_with(kPathSeparator)) {
++        resources_path += kPathSeparator;
++      }
++    }
++  }
++
++  auto starts_with = [](const std::string& str, const std::string& prefix) -> bool {
++    if (prefix.size() > str.size()) return false;
++    return std::equal(
++        prefix.begin(), prefix.end(), str.begin(),
++        [](char a, char b) {
++          return std::tolower(static_cast<unsigned char>(a)) ==
++                std::tolower(static_cast<unsigned char>(b));
++        });
++  };
++
++  bool did_original_path_start_with_resources_path = starts_with(check_path.
++      generic_string(), resources_path);
++
+   do {
+     current_path = current_path.parent_path();
+ 
+@@ -311,6 +344,12 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
+       return nullptr;
+     }
+ 
++    // If current path is outside the resources path, bail.
++    if (did_original_path_start_with_resources_path &&
++        !starts_with(current_path.generic_string(), resources_path)) {
++      return nullptr;
++    }
++
+     // Check if the path ends with `/node_modules`
+     if (current_path.generic_string().ends_with("/node_modules")) {
+       return nullptr;

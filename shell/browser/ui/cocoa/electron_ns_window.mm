@@ -5,6 +5,8 @@
 #include "shell/browser/ui/cocoa/electron_ns_window.h"
 
 #include "base/strings/sys_string_conversions.h"
+#include "electron/mas.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window_mac.h"
 #include "shell/browser/ui/cocoa/electron_preview_item.h"
 #include "shell/browser/ui/cocoa/electron_touch_bar.h"
@@ -14,6 +16,8 @@
 #import <objc/message.h>
 #import <objc/runtime.h>
 
+using namespace std::string_view_literals;
+
 namespace electron {
 
 int ScopedDisableResize::disable_resize_ = 0;
@@ -21,7 +25,6 @@ int ScopedDisableResize::disable_resize_ = 0;
 }  // namespace electron
 
 @interface NSWindow (PrivateAPI)
-- (NSImage*)_cornerMask;
 - (int64_t)_resizeDirectionForMouseLocation:(CGPoint)location;
 @end
 
@@ -109,6 +112,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
                            method_getImplementation(new_swipe_with_event));
 }
 #endif
+
 }  // namespace
 
 @implementation ElectronNSWindow
@@ -118,7 +122,6 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 @synthesize disableAutoHideCursor;
 @synthesize disableKeyOrMainWindow;
 @synthesize vibrantView;
-@synthesize cornerMask;
 
 - (id)initWithShell:(electron::NativeWindowMac*)shell
           styleMask:(NSUInteger)styleMask {
@@ -137,19 +140,14 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     if (styleMask & NSWindowStyleMaskTitled) {
       if (!g_nsthemeframe_mousedown) {
         NSView* theme_frame = [[self contentView] superview];
-        DCHECK(strcmp(class_getName([theme_frame class]), "NSThemeFrame") == 0)
-            << "Expected NSThemeFrame but was "
-            << class_getName([theme_frame class]);
+        DCHECK_EQ("NSThemeFrame"sv, class_getName([theme_frame class]));
         SwizzleMouseDown(theme_frame, @selector(swiz_nsthemeframe_mouseDown:),
                          &g_nsthemeframe_mousedown);
       }
     } else {
       if (!g_nsnextstepframe_mousedown) {
         NSView* nextstep_frame = [[self contentView] superview];
-        DCHECK(strcmp(class_getName([nextstep_frame class]),
-                      "NSNextStepFrame") == 0)
-            << "Expected NSNextStepFrame but was "
-            << class_getName([nextstep_frame class]);
+        DCHECK_EQ("NSNextStepFrame"sv, class_getName([nextstep_frame class]));
         SwizzleMouseDown(nextstep_frame,
                          @selector(swiz_nsnextstepframe_mouseDown:),
                          &g_nsnextstepframe_mousedown);
@@ -164,15 +162,17 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   return self;
 }
 
+- (void)cleanup {
+  shell_ = nullptr;
+}
+
 - (electron::NativeWindowMac*)shell {
   return shell_;
 }
 
 - (id)accessibilityFocusedUIElement {
-  views::Widget* widget = shell_->widget();
-  id superFocus = [super accessibilityFocusedUIElement];
-  if (!widget || shell_->IsFocused())
-    return superFocus;
+  if (!shell_ || !shell_->widget() || shell_->IsFocused())
+    return [super accessibilityFocusedUIElement];
   return nil;
 }
 - (NSRect)originalContentRectForFrameRect:(NSRect)frameRect {
@@ -180,7 +180,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (NSTouchBar*)makeTouchBar {
-  if (shell_->touch_bar())
+  if (shell_ && shell_->touch_bar())
     return [shell_->touch_bar() makeTouchBar];
   else
     return nil;
@@ -188,23 +188,40 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 
 // NSWindow overrides.
 
+- (void)sendEvent:(NSEvent*)event {
+  // Draggable regions only respond to left-click dragging, but the system will
+  // still suppress right-clicks in a draggable region. Temporarily disabling
+  // draggable regions allows the underlying views to respond to right-click
+  // to potentially bring up a frame context menu.
+  BOOL shouldDisableDraggable =
+      (event.type == NSEventTypeRightMouseDown ||
+       (event.type == NSEventTypeLeftMouseDown &&
+        ([event modifierFlags] & NSEventModifierFlagControl)));
+
+  if (shouldDisableDraggable) {
+    electron::api::WebContents::SetDisableDraggableRegions(true);
+  }
+
+  [super sendEvent:event];
+
+  if (shouldDisableDraggable) {
+    electron::api::WebContents::SetDisableDraggableRegions(false);
+  }
+}
+
 - (void)rotateWithEvent:(NSEvent*)event {
-  shell_->NotifyWindowRotateGesture(event.rotation);
+  if (shell_)
+    shell_->NotifyWindowRotateGesture(event.rotation);
 }
 
 - (NSRect)contentRectForFrameRect:(NSRect)frameRect {
-  if (shell_->has_frame())
+  if (shell_ && shell_->has_frame())
     return [super contentRectForFrameRect:frameRect];
   else
     return frameRect;
 }
 
 - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
-  // We initialize the window in headless mode to allow painting before it is
-  // shown, but we don't want the headless behavior of allowing the window to be
-  // placed unconstrained.
-  self.isHeadless = false;
-
   // Resizing is disabled.
   if (electron::ScopedDisableResize::IsResizeDisabled())
     return [self frame];
@@ -218,7 +235,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     //
     // If there's no frame, put the window wherever the developer
     // wanted it to go
-    if (shell_->has_frame()) {
+    if (shell_ && shell_->has_frame()) {
       result.size = frameRect.size;
     } else {
       result = frameRect;
@@ -233,6 +250,11 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   // the frame directly when resize is disabled
   if (!electron::ScopedDisableResize::IsResizeDisabled())
     [super setFrame:windowFrame display:displayViews];
+}
+
+- (void)orderWindow:(NSWindowOrderingMode)place relativeTo:(NSInteger)otherWin {
+  [self disableHeadlessMode];
+  [super orderWindow:place relativeTo:otherWin];
 }
 
 - (id)accessibilityAttributeValue:(NSString*)attribute {
@@ -260,7 +282,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (NSString*)accessibilityTitle {
-  return base::SysUTF8ToNSString(shell_->GetTitle());
+  return base::SysUTF8ToNSString(shell_ ? shell_->GetTitle() : "");
 }
 
 - (BOOL)canBecomeMainWindow {
@@ -280,17 +302,18 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   // support closing a window without title we need to manually do menu item
   // validation. This code path is used by the "roundedCorners" option.
   if ([item action] == @selector(performClose:))
-    return shell_->IsClosable();
+    return shell_ && shell_->IsClosable();
   return [super validateUserInterfaceItem:item];
 }
 
-// By overriding this built-in method the corners of the vibrant view (if set)
-// will be smooth.
-- (NSImage*)_cornerMask {
-  if (self.vibrantView != nil) {
-    return [self cornerMask];
-  } else {
-    return [super _cornerMask];
+- (void)disableHeadlessMode {
+  if (shell_) {
+    // We initialize the window in headless mode to allow painting before it is
+    // shown, but we don't want the headless behavior of allowing the window to
+    // be placed unconstrained.
+    self.isHeadless = false;
+    if (shell_->widget())
+      shell_->widget()->DisableHeadlessMode();
   }
 }
 
@@ -340,7 +363,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (BOOL)toggleFullScreenMode:(id)sender {
-  if (!shell_->has_frame() && !shell_->HasStyleMask(NSWindowStyleMaskTitled))
+  if (!shell_)
     return NO;
 
   bool is_simple_fs = shell_->IsSimpleFullScreen();
@@ -376,11 +399,13 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (void)performMiniaturize:(id)sender {
-  if (shell_->title_bar_style() ==
-      electron::NativeWindowMac::TitleBarStyle::kCustomButtonsOnHover)
+  if (shell_ &&
+      shell_->title_bar_style() ==
+          electron::NativeWindowMac::TitleBarStyle::kCustomButtonsOnHover) {
     [self miniaturize:self];
-  else
+  } else {
     [super performMiniaturize:sender];
+  }
 }
 
 @end

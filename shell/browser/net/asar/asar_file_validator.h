@@ -5,11 +5,9 @@
 #ifndef ELECTRON_SHELL_BROWSER_NET_ASAR_ASAR_FILE_VALIDATOR_H_
 #define ELECTRON_SHELL_BROWSER_NET_ASAR_ASAR_FILE_VALIDATOR_H_
 
-#include <algorithm>
-#include <memory>
 #include <optional>
 
-#include "crypto/secure_hash.h"
+#include "crypto/hash.h"
 #include "mojo/public/cpp/system/file_data_source.h"
 #include "mojo/public/cpp/system/filtered_data_source.h"
 #include "shell/common/asar/archive.h"
@@ -38,6 +36,8 @@ class AsarFileValidator : public mojo::FilteredDataSource::Filter {
   bool FinishBlock();
 
  private:
+  void EnsureBlockHashExists();
+
   base::File file_;
   IntegrityPayload integrity_;
 
@@ -54,9 +54,9 @@ class AsarFileValidator : public mojo::FilteredDataSource::Filter {
   bool done_reading_ = false;
   int current_block_;
   int max_block_;
-  uint64_t current_hash_byte_count_ = 0;
+  uint64_t current_hash_byte_count_ = 0U;
   uint64_t total_hash_byte_count_ = 0;
-  std::unique_ptr<crypto::SecureHash> current_hash_;
+  std::optional<crypto::hash::Hasher> current_hash_;
 };
 
 }  // namespace asar

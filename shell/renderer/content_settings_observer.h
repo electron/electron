@@ -5,9 +5,11 @@
 #ifndef ELECTRON_SHELL_RENDERER_CONTENT_SETTINGS_OBSERVER_H_
 #define ELECTRON_SHELL_RENDERER_CONTENT_SETTINGS_OBSERVER_H_
 
-#include "base/compiler_specific.h"
 #include "content/public/renderer/render_frame_observer.h"
+#include "mojo/public/cpp/bindings/associated_remote.h"
+#include "shell/common/web_contents_utility.mojom.h"
 #include "third_party/blink/public/platform/web_content_settings_client.h"
+#include "url/origin.h"
 
 namespace electron {
 
@@ -23,10 +25,17 @@ class ContentSettingsObserver : public content::RenderFrameObserver,
 
   // blink::WebContentSettingsClient implementation.
   bool AllowStorageAccessSync(StorageType storage_type) override;
+  bool AllowReadFromClipboardSync() override;
 
  private:
   // content::RenderFrameObserver implementation.
   void OnDestruct() override;
+
+  // A getter for `content_settings_manager_` that ensures it is bound.
+  mojom::ElectronWebContentsUtility& GetWebContentsUtility();
+
+  mojo::AssociatedRemote<mojom::ElectronWebContentsUtility>
+      web_contents_utility_;
 };
 
 }  // namespace electron

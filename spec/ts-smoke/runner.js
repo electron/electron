@@ -1,5 +1,5 @@
-const path = require('node:path');
 const childProcess = require('node:child_process');
+const path = require('node:path');
 
 const typeCheck = () => {
   const tscExec = path.resolve(require.resolve('typescript'), '../../bin/tsc');

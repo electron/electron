@@ -1,10 +1,13 @@
-import { expect } from 'chai';
-import * as cp from 'node:child_process';
 import { BrowserWindow } from 'electron';
+
+import { expect } from 'chai';
+
+import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { stripVTControlCharacters } from 'node:util';
 
 const runFixture = async (appPath: string, args: string[] = []) => {
   const result = cp.spawn(process.execPath, [appPath, ...args], {
@@ -25,8 +28,8 @@ const runFixture = async (appPath: string, args: string[] = []) => {
   return {
     code,
     signal,
-    stdout: Buffer.concat(stdout).toString().trim(),
-    stderr: Buffer.concat(stderr).toString().trim()
+    stdout: stripVTControlCharacters(Buffer.concat(stdout).toString().trim()),
+    stderr: stripVTControlCharacters(Buffer.concat(stderr).toString().trim())
   };
 };
 
@@ -61,6 +64,32 @@ describe('esm', () => {
       const result = await runFixture(path.resolve(fixturePath, 'dynamic.mjs'));
       expect(result.code).to.equal(0);
       expect(result.stdout).to.equal('Exit with app, ready: false');
+    });
+
+    it('import \'electron/lol\' should throw', async () => {
+      const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-lol.mjs'));
+      expect(result.code).to.equal(1);
+      expect(result.stderr).to.match(/Error \[ERR_MODULE_NOT_FOUND\]/);
+    });
+
+    it('import \'electron/main\' should not throw', async () => {
+      const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-main.mjs'));
+      expect(result.code).to.equal(0);
+    });
+
+    it('import \'electron/renderer\' should not throw', async () => {
+      const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-renderer.mjs'));
+      expect(result.code).to.equal(0);
+    });
+
+    it('import \'electron/common\' should not throw', async () => {
+      const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-common.mjs'));
+      expect(result.code).to.equal(0);
+    });
+
+    it('import \'electron/utility\' should not throw', async () => {
+      const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-utility.mjs'));
+      expect(result.code).to.equal(0);
     });
   });
 
@@ -208,6 +237,44 @@ describe('esm', () => {
           // This is a blink specific error message
           expect(error?.message).to.include('Failed to fetch dynamically imported module');
         });
+      });
+    });
+
+    describe('electron modules', () => {
+      it('import \'electron/lol\' should throw', async () => {
+        const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/lol";', {
+          sandbox: false
+        });
+        expect(error).to.not.equal(null);
+        expect(error?.message).to.match(/Cannot find package 'electron'/);
+      });
+
+      it('import \'electron/main\' should not throw', async () => {
+        const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/main";', {
+          sandbox: false
+        });
+        expect(error).to.equal(null);
+      });
+
+      it('import \'electron/renderer\' should not throw', async () => {
+        const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/renderer";', {
+          sandbox: false
+        });
+        expect(error).to.equal(null);
+      });
+
+      it('import \'electron/common\' should not throw', async () => {
+        const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/common";', {
+          sandbox: false
+        });
+        expect(error).to.equal(null);
+      });
+
+      it('import \'electron/utility\' should not throw', async () => {
+        const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/utility";', {
+          sandbox: false
+        });
+        expect(error).to.equal(null);
       });
     });
   });

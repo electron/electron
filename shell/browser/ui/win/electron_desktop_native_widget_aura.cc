@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/win/electron_desktop_window_tree_host_win.h"
 #include "ui/views/corewm/tooltip_controller.h"
 #include "ui/wm/public/tooltip_client.h"
@@ -13,9 +14,12 @@
 namespace electron {
 
 ElectronDesktopNativeWidgetAura::ElectronDesktopNativeWidgetAura(
-    NativeWindowViews* native_window_view)
-    : views::DesktopNativeWidgetAura(native_window_view->widget()),
-      native_window_view_(native_window_view) {
+    NativeWindowViews* native_window_view,
+    views::Widget* widget)
+    : views::DesktopNativeWidgetAura{widget},
+      native_window_view_{native_window_view},
+      desktop_window_tree_host_{new ElectronDesktopWindowTreeHostWin{
+          native_window_view, widget, this}} {
   GetNativeWindow()->SetName("ElectronDesktopNativeWidgetAura");
   // This is to enable the override of OnWindowActivated
   wm::SetActivationChangeObserver(GetNativeWindow(), this);
@@ -23,9 +27,7 @@ ElectronDesktopNativeWidgetAura::ElectronDesktopNativeWidgetAura(
 
 void ElectronDesktopNativeWidgetAura::InitNativeWidget(
     views::Widget::InitParams params) {
-  desktop_window_tree_host_ = new ElectronDesktopWindowTreeHostWin(
-      native_window_view_,
-      static_cast<views::DesktopNativeWidgetAura*>(params.native_widget));
+  CHECK_EQ(params.native_widget, this);
   params.desktop_window_tree_host = desktop_window_tree_host_;
   views::DesktopNativeWidgetAura::InitNativeWidget(std::move(params));
 }

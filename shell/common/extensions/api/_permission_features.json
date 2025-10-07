@@ -1,10 +1,157 @@
+// Copyright 2012 The Chromium Authors
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// This features file defines permissions for extension APIs implemented
+// under src/chrome.
+// See chrome/common/extensions/api/_features.md to understand this file, as
+// well as feature.h, simple_feature.h, and feature_provider.h.
+
+// If you add a new platform_app permission please update the "stubs_app" test:
+// chrome/test/data/extensions/api_test/stubs_app/manifest.json
+
 {
-  "resourcesPrivate": {
+  "accessibilityFeatures.modify": {
+    "channel": "stable",
+    "extension_types": ["extension", "platform_app"]
+  },
+  "accessibilityFeatures.read": {
+    "channel": "stable",
+    "extension_types": ["extension", "platform_app"]
+  },
+  "aiLanguageModelOriginTrial": {
     "channel": "stable",
     "extension_types": [
       "extension"
-    ],
-    "location": "component"
+    ]
+  },
+  "background": {
+    "channel": "stable",
+    "extension_types": [
+      "platform_app", "extension", "legacy_packaged_app", "hosted_app"
+    ]
+  },
+  "bookmarks": {
+    "channel": "stable", 
+    "extension_types": ["extension", "legacy_packaged_app"]
+  },
+  "browsingData": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
+  },
+  "clipboardRead": {
+    "channel": "stable",
+    "extension_types": [
+      "extension", "legacy_packaged_app", "hosted_app", "platform_app"
+    ]
+  },
+  "clipboardWrite": {
+    "channel": "stable",
+    "extension_types": [
+      "extension", "legacy_packaged_app", "hosted_app", "platform_app"
+    ]
+  },
+  "contentSettings": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
+  },
+  "contextMenus": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app", "platform_app"]
+  },
+  "cookies": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
+  },
+  "debugger": [
+    {
+      "channel": "stable",
+      "extension_types": ["extension", "legacy_packaged_app"]
+    },
+    {
+      "channel": "stable",
+      "extension_types": ["platform_app"]
+    }
+  ],
+  "declarativeContent": {
+    "channel": "stable",
+    "extension_types": ["extension"]
+  },
+  "desktopCapture": {
+    "channel": "stable",
+    "extension_types": ["extension", "platform_app"]
+  },
+  "downloads": {
+    "channel": "stable",
+    "extension_types": ["extension"]
+  },
+  "downloads.open": {
+    "channel": "stable",
+    "extension_types": ["extension"]
+  },
+  "downloads.shelf": {
+    "channel": "stable",
+    "extension_types": ["extension"]
+  },
+  "downloads.ui": {
+    "channel": "stable",
+    "extension_types": ["extension"]
+  },
+  "experimental": {
+    "channel": "stable",
+    "command_line_switch": "experimental-extension-apis",
+    "extension_types": [
+      "extension", "legacy_packaged_app", "hosted_app", "platform_app"
+    ]
+  },
+  "experimentalAiData": {
+    "extension_types": ["extension"],
+    "channel": "dev",
+    "command_line_switch": "extension-ai-data-collection"
+  },
+  "favicon": {
+    "channel": "stable",
+    "extension_types": ["extension"]
+  },
+  "fontSettings": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
+  },
+  "gcm": {
+    "channel": "stable",
+    "extension_types": ["extension", "platform_app"]
+  },
+  "geolocation": {
+    "channel": "stable",
+    "extension_types": [
+      "extension", "legacy_packaged_app", "hosted_app", "platform_app"
+    ]
+  },
+  "history": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
+  },
+  "identity": {
+    "channel": "stable",
+    "extension_types": ["extension", "platform_app"]
+  },
+  "identity.email": {
+    "channel": "stable",
+    "extension_types": ["extension", "platform_app"]
+  },
+  "idltest": {
+    "channel": "trunk",
+    "extension_types": ["extension"]
+  },
+  "notifications": {
+    "channel": "stable",
+    "extension_types": [
+      "extension", "legacy_packaged_app", "hosted_app", "platform_app"
+    ]
+  },
+  "pageCapture": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
   },
   "pdfViewerPrivate": {
     "channel": "stable",
@@ -15,23 +162,87 @@
       "CBCC42ABED43A4B58FE3810E62AFFA010EB0349F"
     ]
   },
-  "management": {
+  "plugin": {
     "channel": "stable",
-    "extension_types": [
-      "extension"
-    ]
+    "extension_types": ["extension", "legacy_packaged_app"]
   },
-  "tabs": {
+  "privacy": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
+  },
+  "proxy": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
+  },
+  "readingList": {
+    "channel": "stable",
+    "extension_types": ["extension"],
+    "min_manifest_version": 3
+  },
+  "resourcesPrivate": {
     "channel": "stable",
     "extension_types": [
-      "extension"
-    ]
+      "extension", "legacy_packaged_app", "platform_app"
+    ],
+    "location": "component"
   },
   "scripting": {
     "channel": "stable",
+    "extension_types": ["extension"],
+    "min_manifest_version": 3
+  },
+  "search": {
+    "channel": "stable",
+    "extension_types": ["extension"]
+  },
+  "sessions": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
+  },
+  "sidePanel": {
+    "channel": "stable",
+    "extension_types": ["extension"],
+    "min_manifest_version": 3
+  },
+  "tabGroups": {
+    "channel": "stable",
+    "extension_types": ["extension"],
+    "min_manifest_version": 3
+  },
+  "tabs": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
+  },
+  "tabCapture": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
+  },
+  "topSites": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
+  },
+  "transientBackground": {
+    "channel": "dev",
     "extension_types": [
       "extension"
-    ],
-    "min_manifest_version": 3
+    ]
+  },
+  "tts": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app", "platform_app"]
+  },
+  "ttsEngine": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
+  },
+  "webAuthenticationProxy": {
+    "channel": "stable",
+    "extension_types": ["extension"],
+    "min_manifest_version": 3,
+    "platforms": ["win", "linux", "mac"]
+  },
+  "webNavigation": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
   }
 }

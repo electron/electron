@@ -4,7 +4,6 @@
 
 #include "shell/browser/protocol_registry.h"
 
-#include "content/public/browser/web_contents.h"
 #include "electron/fuses.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
@@ -75,7 +74,7 @@ bool ProtocolRegistry::UnregisterProtocol(const std::string& scheme) {
 }
 
 const HandlersMap::mapped_type* ProtocolRegistry::FindRegistered(
-    const std::string& scheme) const {
+    const std::string_view scheme) const {
   const auto& map = handlers_;
   const auto iter = map.find(scheme);
   return iter != std::end(map) ? &iter->second : nullptr;
@@ -92,7 +91,7 @@ bool ProtocolRegistry::UninterceptProtocol(const std::string& scheme) {
 }
 
 const HandlersMap::mapped_type* ProtocolRegistry::FindIntercepted(
-    const std::string& scheme) const {
+    const std::string_view scheme) const {
   const auto& map = intercept_handlers_;
   const auto iter = map.find(scheme);
   return iter != std::end(map) ? &iter->second : nullptr;

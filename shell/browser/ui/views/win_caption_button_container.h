@@ -42,8 +42,10 @@ class WinCaptionButtonContainer : public views::View,
   // See also ClientView::NonClientHitTest.
   int NonClientHitTest(const gfx::Point& point) const;
 
-  gfx::Size GetButtonSize() const;
   void SetButtonSize(gfx::Size size);
+
+  // Add tooltip text to caption buttons.
+  void UpdateButtonToolTipsForWindowControlsOverlay();
 
   // Sets caption button container background color.
   void UpdateBackground();
@@ -65,11 +67,11 @@ class WinCaptionButtonContainer : public views::View,
   void OnWidgetBoundsChanged(views::Widget* widget,
                              const gfx::Rect& new_bounds) override;
 
-  raw_ptr<WinFrameView> const frame_view_;
-  raw_ptr<WinCaptionButton> const minimize_button_;
-  raw_ptr<WinCaptionButton> const maximize_button_;
-  raw_ptr<WinCaptionButton> const restore_button_;
-  raw_ptr<WinCaptionButton> const close_button_;
+  const raw_ptr<WinFrameView> frame_view_;
+  const raw_ptr<WinCaptionButton> minimize_button_;
+  const raw_ptr<WinCaptionButton> maximize_button_;
+  const raw_ptr<WinCaptionButton> restore_button_;
+  const raw_ptr<WinCaptionButton> close_button_;
 
   base::ScopedObservation<views::Widget, views::WidgetObserver>
       widget_observation_{this};

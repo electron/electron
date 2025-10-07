@@ -16,6 +16,7 @@
 #include "gin/dictionary.h"
 #include "shell/browser/browser.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_helper/error_thrower.h"
 
 namespace gin {
 
@@ -29,7 +30,7 @@ struct Converter<electron::BundlerMoverConflictType> {
       case electron::BundlerMoverConflictType::kExistsAndRunning:
         return gin::StringToV8(isolate, "existsAndRunning");
       default:
-        return gin::StringToV8(isolate, "");
+        return v8::String::Empty(isolate);
     }
   }
 };
@@ -178,7 +179,7 @@ bool AuthorizedInstall(NSString* srcPath, NSString* dstPath, bool* canceled) {
     // longer accessible. If Apple removes the function entirely this will fail
     // gracefully. If they keep the function and throw some sort of exception,
     // this won't fail gracefully, but that's a risk we'll have to take for now.
-    security_AuthorizationExecuteWithPrivileges = (OSStatus(*)(
+    security_AuthorizationExecuteWithPrivileges = (OSStatus (*)(
         AuthorizationRef, const char*, AuthorizationFlags, char* const*,
         FILE**))dlsym(RTLD_DEFAULT, "AuthorizationExecuteWithPrivileges");
   }
@@ -327,9 +328,9 @@ bool IsApplicationAtPathRunning(NSString* bundlePath) {
 
 namespace electron {
 
-bool ElectronBundleMover::ShouldContinueMove(gin_helper::ErrorThrower thrower,
-                                             BundlerMoverConflictType type,
-                                             gin::Arguments* args) {
+bool ElectronBundleMover::ShouldContinueMove(
+    const BundlerMoverConflictType type,
+    gin::Arguments* const args) {
   gin::Dictionary options(args->isolate());
   bool hasOptions = args->GetNext(&options);
   base::OnceCallback<v8::Local<v8::Value>(BundlerMoverConflictType)>
@@ -344,7 +345,7 @@ bool ElectronBundleMover::ShouldContinueMove(gin_helper::ErrorThrower thrower,
       // we only want to throw an error if a user has returned a non-boolean
       // value; this allows for client-side error handling should something in
       // the handler throw
-      thrower.ThrowError("Invalid conflict handler return type.");
+      args->ThrowTypeError("Invalid conflict handler return type.");
     }
   }
   return true;
@@ -405,8 +406,8 @@ bool ElectronBundleMover::Move(gin_helper::ErrorThrower thrower,
       // But first, make sure that it's not running
       if (IsApplicationAtPathRunning(destinationPath)) {
         // Check for callback handler and get user choice for open/quit
-        if (!ShouldContinueMove(
-                thrower, BundlerMoverConflictType::kExistsAndRunning, args))
+        if (!ShouldContinueMove(BundlerMoverConflictType::kExistsAndRunning,
+                                args))
           return false;
 
         // Unless explicitly denied, give running app focus and terminate self
@@ -419,8 +420,7 @@ bool ElectronBundleMover::Move(gin_helper::ErrorThrower thrower,
         return true;
       } else {
         // Check callback handler and get user choice for app trashing
-        if (!ShouldContinueMove(thrower, BundlerMoverConflictType::kExists,
-                                args))
+        if (!ShouldContinueMove(BundlerMoverConflictType::kExists, args))
           return false;
 
         // Unless explicitly denied, attempt to trash old app

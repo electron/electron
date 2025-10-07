@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 
-const { version } = require('./package');
+const { downloadArtifact } = require('@electron/get');
+
+const extract = require('extract-zip');
 
 const childProcess = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const extract = require('extract-zip');
-const { downloadArtifact } = require('@electron/get');
+
+const { version } = require('./package');
 
 if (process.env.ELECTRON_SKIP_BINARY_DOWNLOAD) {
   process.exit(0);
@@ -59,7 +61,7 @@ function isInstalled () {
     if (fs.readFileSync(path.join(__dirname, 'path.txt'), 'utf-8') !== platformPath) {
       return false;
     }
-  } catch (ignored) {
+  } catch {
     return false;
   }
 

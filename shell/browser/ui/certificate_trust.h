@@ -7,14 +7,17 @@
 
 #include <string>
 
-#include "base/memory/ref_counted.h"
 #include "net/cert/x509_certificate.h"
-#include "shell/browser/javascript_environment.h"
-#include "shell/common/gin_helper/promise.h"
 
 namespace electron {
 class NativeWindow;
 }
+
+namespace v8 {
+class Promise;
+template <typename T>
+class Local;
+}  // namespace v8
 
 namespace certificate_trust {
 

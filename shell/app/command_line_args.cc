@@ -4,6 +4,7 @@
 
 #include "shell/app/command_line_args.h"
 
+#include <algorithm>
 #include <locale>
 
 #include "sandbox/policy/switches.h"
@@ -11,46 +12,44 @@
 
 namespace {
 
-bool IsUrlArg(const base::CommandLine::CharType* arg) {
-  // the first character must be a letter for this to be a URL
-  auto c = *arg;
-  if (std::isalpha(c, std::locale::classic())) {
-    for (auto* p = arg + 1; *p; ++p) {
-      c = *p;
+#if BUILDFLAG(IS_WIN)
+constexpr auto DashDash = base::CommandLine::StringViewType{L"--"};
+#else
+constexpr auto DashDash = base::CommandLine::StringViewType{"--"};
+#endif
 
-      // colon indicates that the argument starts with a URI scheme
-      if (c == ':') {
-        // it could also be a Windows filesystem path
-        if (p == arg + 1)
-          break;
+// we say it's a URL arg if it starts with a URI scheme that:
+// 1. starts with an alpha, and
+// 2. contains no spaces, and
+// 3. is longer than one char (to ensure it's not a Windows drive path)
+bool IsUrlArg(const base::CommandLine::StringViewType arg) {
+  const auto scheme_end = arg.find(':');
+  if (scheme_end == base::CommandLine::StringViewType::npos)
+    return false;
 
-        return true;
-      }
-
-      // white-space before a colon means it's not a URL
-      if (std::isspace(c, std::locale::classic()))
-        break;
-    }
-  }
-
-  return false;
+  const auto& c_locale = std::locale::classic();
+  const auto isspace = [&](auto ch) { return std::isspace(ch, c_locale); };
+  const auto scheme = arg.substr(0U, scheme_end);
+  return std::size(scheme) > 1U && std::isalpha(scheme.front(), c_locale) &&
+         std::ranges::none_of(scheme, isspace);
 }
-
 }  // namespace
 
 namespace electron {
 
-bool CheckCommandLineArguments(int argc, base::CommandLine::CharType** argv) {
-  const base::CommandLine::StringType dashdash(2, '-');
+// Check for CVE-2018-1000006 issues. Return true iff argv looks safe.
+// Sample exploit: 'exodus://aaaaaaaaa" --gpu-launcher="cmd" --aaaaa='
+// Prevent it by returning false if any arg except '--' follows a URL arg.
+// More info at https://www.electronjs.org/blog/protocol-handler-fix
+bool CheckCommandLineArguments(const base::CommandLine::StringVector& argv) {
   bool block_args = false;
-  for (int i = 0; i < argc; ++i) {
-    if (argv[i] == dashdash)
+  for (const auto& arg : argv) {
+    if (arg == DashDash)
       break;
-    if (block_args) {
+    if (block_args)
       return false;
-    } else if (IsUrlArg(argv[i])) {
+    if (IsUrlArg(arg))
       block_args = true;
-    }
   }
   return true;
 }

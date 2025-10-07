@@ -1,23 +1,38 @@
+import { BaseWindow, BrowserWindow, BrowserWindowConstructorOptions, webContents, WebContents, WebContentsView } from 'electron/main';
+
 import { expect } from 'chai';
+
 import * as cp from 'node:child_process';
-import { BaseWindow, BrowserWindow, BrowserWindowConstructorOptions, ipcMain, WebContents, WebContentsView } from 'electron/main';
+import { once } from 'node:events';
 import * as path from 'node:path';
 
-import { closeWindow } from './lib/window-helpers';
-import { ifdescribe } from './lib/spec-helpers';
-import { once } from 'node:events';
-import { setTimeout } from 'node:timers/promises';
+import { ifdescribe, waitUntil } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 // visibilityState specs pass on linux with a real window manager but on CI
 // the environment does not let these specs pass
 ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
   let w: BaseWindow & {webContents: WebContents};
 
-  afterEach(() => {
-    return closeWindow(w);
+  before(() => {
+    for (const checkWin of BaseWindow.getAllWindows()) {
+      console.log('WINDOW EXISTS BEFORE TEST STARTED:', checkWin.title, checkWin.id);
+    }
+  });
+
+  afterEach(async () => {
+    await closeAllWindows();
+    w = null as unknown as BrowserWindow;
+    const existingWCS = webContents.getAllWebContents();
+    existingWCS.forEach((contents) => contents.close());
   });
 
   const load = () => w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'chromium', 'visibilitystate.html'));
+
+  async function haveVisibilityState (state: string) {
+    const docVisState = await w.webContents.executeJavaScript('document.visibilityState');
+    return docVisState === state;
+  }
 
   const itWithOptions = (name: string, options: BrowserWindowConstructorOptions, fn: Mocha.Func) => {
     it(name, async function (...args) {
@@ -30,6 +45,9 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
           contextIsolation: false
         }
       });
+      if (options.show && process.platform === 'darwin') {
+        await once(w, 'show');
+      }
       await Promise.resolve(fn.apply(this, args));
     });
 
@@ -40,30 +58,30 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
       const wcv = new WebContentsView({ webPreferences: { ...(options.webPreferences ?? {}), nodeIntegration: true, contextIsolation: false } });
       baseWindow.contentView = wcv;
       w = Object.assign(baseWindow, { webContents: wcv.webContents });
+      if (options.show && process.platform === 'darwin') {
+        await once(w, 'show');
+      }
       await Promise.resolve(fn.apply(this, args));
     });
   };
 
   itWithOptions('should be visible when the window is initially shown by default', {}, async () => {
     load();
-    const [, state] = await once(ipcMain, 'initial-visibility-state');
-    expect(state).to.equal('visible');
+    await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
   });
 
   itWithOptions('should be visible when the window is initially shown', {
     show: true
   }, async () => {
     load();
-    const [, state] = await once(ipcMain, 'initial-visibility-state');
-    expect(state).to.equal('visible');
+    await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
   });
 
   itWithOptions('should be hidden when the window is initially hidden', {
     show: false
   }, async () => {
     load();
-    const [, state] = await once(ipcMain, 'initial-visibility-state');
-    expect(state).to.equal('hidden');
+    await expect(waitUntil(async () => await haveVisibilityState('hidden'))).to.eventually.be.fulfilled();
   });
 
   itWithOptions('should be visible when the window is initially hidden but shown before the page is loaded', {
@@ -71,52 +89,40 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
   }, async () => {
     w.show();
     load();
-    const [, state] = await once(ipcMain, 'initial-visibility-state');
-    expect(state).to.equal('visible');
+    await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
   });
 
   itWithOptions('should be hidden when the window is initially shown but hidden before the page is loaded', {
     show: true
   }, async () => {
-    // TODO(MarshallOfSound): Figure out if we can work around this 1 tick issue for users
-    if (process.platform === 'darwin') {
-      // Wait for a tick, the window being "shown" takes 1 tick on macOS
-      await setTimeout(10000);
-    }
     w.hide();
     load();
-    const [, state] = await once(ipcMain, 'initial-visibility-state');
-    expect(state).to.equal('hidden');
+    await expect(waitUntil(async () => await haveVisibilityState('hidden'))).to.eventually.be.fulfilled();
   });
 
   itWithOptions('should be toggle between visible and hidden as the window is hidden and shown', {}, async () => {
     load();
-    const [, initialState] = await once(ipcMain, 'initial-visibility-state');
-    expect(initialState).to.equal('visible');
+    await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
     w.hide();
-    await once(ipcMain, 'visibility-change-hidden');
+    await expect(waitUntil(async () => await haveVisibilityState('hidden'))).to.eventually.be.fulfilled();
     w.show();
-    await once(ipcMain, 'visibility-change-visible');
+    await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
   });
 
   itWithOptions('should become hidden when a window is minimized', {}, async () => {
     load();
-    const [, initialState] = await once(ipcMain, 'initial-visibility-state');
-    expect(initialState).to.equal('visible');
+    await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
     w.minimize();
-    const p = once(ipcMain, 'visibility-change-hidden');
-    w.minimize();
-    await p;
+    await expect(waitUntil(async () => await haveVisibilityState('hidden'))).to.eventually.be.fulfilled();
   });
 
   itWithOptions('should become visible when a window is restored', {}, async () => {
     load();
-    const [, initialState] = await once(ipcMain, 'initial-visibility-state');
-    expect(initialState).to.equal('visible');
+    await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
     w.minimize();
-    await once(ipcMain, 'visibility-change-hidden');
+    await expect(waitUntil(async () => await haveVisibilityState('hidden'))).to.eventually.be.fulfilled();
     w.restore();
-    await once(ipcMain, 'visibility-change-visible');
+    await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
   });
 
   ifdescribe(process.platform === 'darwin')('on platforms that support occlusion detection', () => {
@@ -150,8 +156,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
         height: 200
       });
       load();
-      const [, state] = await once(ipcMain, 'initial-visibility-state');
-      expect(state).to.equal('visible');
+      await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
     });
 
     itWithOptions('should be visible when two windows are on screen that overlap partially', {
@@ -167,8 +172,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
         height: 200
       });
       load();
-      const [, state] = await once(ipcMain, 'initial-visibility-state');
-      expect(state).to.equal('visible');
+      await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
     });
 
     itWithOptions('should be hidden when a second window completely occludes the current window', {
@@ -179,15 +183,14 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     }, async function () {
       this.timeout(240000);
       load();
-      const [, state] = await once(ipcMain, 'initial-visibility-state');
-      expect(state).to.equal('visible');
+      await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
       makeOtherWindow({
         x: 0,
         y: 0,
         width: 300,
         height: 300
       });
-      await once(ipcMain, 'visibility-change-hidden');
+      await expect(waitUntil(async () => await haveVisibilityState('hidden'))).to.eventually.be.fulfilled();
     });
   });
 });

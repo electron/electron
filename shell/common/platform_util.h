@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_PLATFORM_UTIL_H_
 #define ELECTRON_SHELL_COMMON_PLATFORM_UTIL_H_
 
+#include <optional>
 #include <string>
 
 #include "base/files/file_path.h"
@@ -57,9 +58,9 @@ bool SetLoginItemEnabled(const std::string& type,
 #endif
 
 #if BUILDFLAG(IS_LINUX)
-// Returns a success flag.
+// Returns a desktop name if available.
 // Unlike libgtkui, does *not* use "chromium-browser.desktop" as a fallback.
-bool GetDesktopName(std::string* setme);
+std::optional<std::string> GetDesktopName();
 
 // The XDG application ID must match the name of the desktop entry file without
 // the .desktop extension.

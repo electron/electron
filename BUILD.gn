@@ -4,12 +4,12 @@ import("//build/config/win/manifest.gni")
 import("//components/os_crypt/sync/features.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
 import("//content/public/app/mac_helpers.gni")
+import("//content/public/common/features.gni")
 import("//extensions/buildflags/buildflags.gni")
 import("//pdf/features.gni")
-import("//ppapi/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//testing/test.gni")
-import("//third_party/electron_node/electron_node.gni")
+import("//third_party/electron_node/node.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//tools/generate_library_loader/generate_library_loader.gni")
 import("//tools/grit/grit_rule.gni")
@@ -17,19 +17,19 @@ import("//tools/grit/repack.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/gni/snapshot_toolchain.gni")
 import("build/asar.gni")
+import("build/electron_paks.gni")
 import("build/extract_symbols.gni")
+import("build/js2c_toolchain.gni")
 import("build/npm.gni")
 import("build/templated_file.gni")
 import("build/tsc.gni")
 import("build/webpack/webpack.gni")
 import("buildflags/buildflags.gni")
-import("electron_paks.gni")
 import("filenames.auto.gni")
 import("filenames.gni")
 import("filenames.hunspell.gni")
 import("filenames.libcxx.gni")
 import("filenames.libcxxabi.gni")
-import("js2c_toolchain.gni")
 
 if (is_mac) {
   import("//build/config/mac/rules.gni")
@@ -38,12 +38,13 @@ if (is_mac) {
   import("build/rules.gni")
 
   assert(
-      mac_deployment_target == "10.15",
-      "Chromium has updated the mac_deployment_target, please update this assert, update the supported versions documentation (docs/tutorial/support.md) and flag this as a breaking change")
+      mac_deployment_target == "12.0",
+      "Chromium has updated the mac_deployment_target, please update this assert and flag this as a breaking change (docs/breaking-changes.md)")
 }
 
 if (is_linux) {
   import("//build/config/linux/pkg_config.gni")
+  import("//electron/build/linux/strip_binary.gni")
   import("//tools/generate_stubs/rules.gni")
 
   pkg_config("gio_unix") {
@@ -74,7 +75,7 @@ if (is_linux) {
       "notify_notification_set_image_from_pixbuf",
       "notify_notification_set_timeout",
       "notify_notification_set_urgency",
-      "notify_notification_set_hint_string",
+      "notify_notification_set_hint",
       "notify_notification_show",
       "notify_notification_close",
     ]
@@ -84,7 +85,10 @@ if (is_linux) {
   # from the gtk library. Function signatures for which stubs are
   # required should be declared in the sig files.
   generate_stubs("electron_gtk_stubs") {
-    sigs = [ "shell/browser/ui/electron_gdk_pixbuf.sigs" ]
+    sigs = [
+      "shell/browser/ui/electron_gdk.sigs",
+      "shell/browser/ui/electron_gdk_pixbuf.sigs",
+    ]
     extra_header = "shell/browser/ui/electron_gtk.fragment"
     output_name = "electron_gtk_stubs"
     public_deps = [ "//ui/gtk:gtk_config" ]
@@ -221,11 +225,21 @@ webpack_build("electron_utility_bundle") {
   out_file = "$target_gen_dir/js2c/utility_init.js"
 }
 
+webpack_build("electron_preload_realm_bundle") {
+  deps = [ ":build_electron_definitions" ]
+
+  inputs = auto_filenames.preload_realm_bundle_deps
+
+  config_file = "//electron/build/webpack/webpack.config.preload_realm.js"
+  out_file = "$target_gen_dir/js2c/preload_realm_bundle.js"
+}
+
 action("electron_js2c") {
   deps = [
     ":electron_browser_bundle",
     ":electron_isolated_renderer_bundle",
     ":electron_node_bundle",
+    ":electron_preload_realm_bundle",
     ":electron_renderer_bundle",
     ":electron_sandboxed_renderer_bundle",
     ":electron_utility_bundle",
@@ -237,6 +251,7 @@ action("electron_js2c") {
     "$target_gen_dir/js2c/browser_init.js",
     "$target_gen_dir/js2c/isolated_bundle.js",
     "$target_gen_dir/js2c/node_init.js",
+    "$target_gen_dir/js2c/preload_realm_bundle.js",
     "$target_gen_dir/js2c/renderer_init.js",
     "$target_gen_dir/js2c/sandbox_bundle.js",
     "$target_gen_dir/js2c/utility_init.js",
@@ -300,7 +315,7 @@ asar("default_app_asar") {
 }
 
 grit("resources") {
-  source = "electron_resources.grd"
+  source = "build/electron_resources.grd"
 
   outputs = [
     "grit/electron_resources.h",
@@ -408,7 +423,7 @@ action("electron_generate_node_defines") {
 source_set("electron_lib") {
   configs += [
     "//v8:external_startup_data",
-    "//third_party/electron_node:node_internals",
+    "//third_party/electron_node:node_external_config",
   ]
 
   public_configs = [
@@ -425,7 +440,9 @@ source_set("electron_lib") {
     "buildflags",
     "chromium_src:chrome",
     "chromium_src:chrome_spellchecker",
-    "shell/common/api:mojo",
+    "shell/common:mojo",
+    "shell/common:plugin",
+    "shell/common:web_contents_utility",
     "shell/services/node/public/mojom",
     "//base:base_static",
     "//base/allocator:buildflags",
@@ -435,8 +452,8 @@ source_set("electron_lib") {
     "//components/autofill/core/common:features",
     "//components/certificate_transparency",
     "//components/compose:buildflags",
-    "//components/embedder_support:browser_util",
-    "//components/input:input",
+    "//components/embedder_support:user_agent",
+    "//components/input",
     "//components/language/core/browser",
     "//components/net_log",
     "//components/network_hints/browser",
@@ -469,7 +486,7 @@ source_set("electron_lib") {
     "//net:extras",
     "//net:net_resources",
     "//printing/buildflags",
-    "//services/device/public/cpp/bluetooth:bluetooth",
+    "//services/device/public/cpp/bluetooth",
     "//services/device/public/cpp/geolocation",
     "//services/device/public/cpp/hid",
     "//services/device/public/mojom",
@@ -482,7 +499,7 @@ source_set("electron_lib") {
     "//third_party/blink/public:blink_devtools_inspector_resources",
     "//third_party/blink/public/platform/media",
     "//third_party/boringssl",
-    "//third_party/electron_node:node_lib",
+    "//third_party/electron_node:libnode",
     "//third_party/inspector_protocol:crdtp",
     "//third_party/leveldatabase",
     "//third_party/libyuv",
@@ -502,6 +519,10 @@ source_set("electron_lib") {
     "//v8:v8_libplatform",
   ]
 
+  if (v8_use_external_startup_data && use_v8_context_snapshot) {
+    deps += [ ":mksnapshot_checksum_gen" ]
+  }
+
   public_deps = [
     "//base",
     "//base:i18n",
@@ -517,7 +538,10 @@ source_set("electron_lib") {
     "//third_party/blink/renderer",
   ]
 
-  defines = [ "V8_DEPRECATION_WARNINGS" ]
+  defines = [
+    "BLINK_MOJO_IMPL=1",
+    "V8_DEPRECATION_WARNINGS",
+  ]
   libs = []
 
   if (is_linux) {
@@ -531,7 +555,7 @@ source_set("electron_lib") {
     ]
   }
 
-  configs += [ "//electron/build/config:mas_build" ]
+  deps += [ "//electron/build/config:generate_mas_config" ]
 
   sources = filenames.lib_sources
   if (is_win) {
@@ -631,6 +655,7 @@ source_set("electron_lib") {
       "//ui/events/devices/x11",
       "//ui/events/platform/x11",
       "//ui/gtk:gtk_config",
+      "//ui/linux:display_server_utils",
       "//ui/linux:linux_ui",
       "//ui/linux:linux_ui_factory",
       "//ui/wm",
@@ -651,6 +676,8 @@ source_set("electron_lib") {
     sources += [
       "shell/browser/certificate_manager_model.cc",
       "shell/browser/certificate_manager_model.h",
+      "shell/browser/linux/x11_util.cc",
+      "shell/browser/linux/x11_util.h",
       "shell/browser/ui/gtk_util.cc",
       "shell/browser/ui/gtk_util.h",
     ]
@@ -661,7 +688,7 @@ source_set("electron_lib") {
     deps += [
       "//components/app_launch_prefetch",
       "//components/crash/core/app:crash_export_thunks",
-      "//ui/native_theme:native_theme_browser",
+      "//third_party/libxml:xml_writer",
       "//ui/wm",
       "//ui/wm/public",
     ]
@@ -672,22 +699,11 @@ source_set("electron_lib") {
   }
 
   if (enable_plugins) {
-    deps += [ "chromium_src:plugins" ]
     sources += [
+      "shell/browser/electron_plugin_info_host_impl.cc",
+      "shell/browser/electron_plugin_info_host_impl.h",
       "shell/common/plugin_info.cc",
       "shell/common/plugin_info.h",
-      "shell/renderer/electron_renderer_pepper_host_factory.cc",
-      "shell/renderer/electron_renderer_pepper_host_factory.h",
-      "shell/renderer/pepper_helper.cc",
-      "shell/renderer/pepper_helper.h",
-    ]
-  }
-
-  if (enable_ppapi) {
-    deps += [
-      "//ppapi/host",
-      "//ppapi/proxy",
-      "//ppapi/shared_impl",
     ]
   }
 
@@ -717,7 +733,7 @@ source_set("electron_lib") {
       "shell/common/extensions/api:extensions_features",
       "//chrome/browser/resources:component_extension_resources",
       "//components/guest_view/common:mojom",
-      "//components/update_client:update_client",
+      "//components/update_client",
       "//components/zoom",
       "//extensions/browser",
       "//extensions/browser/api:api_provider",
@@ -745,6 +761,7 @@ source_set("electron_lib") {
       "//components/pdf/common:util",
       "//components/pdf/renderer",
       "//pdf",
+      "//pdf:content_restriction",
     ]
     sources += [
       "shell/browser/electron_pdf_document_helper_client.cc",
@@ -759,6 +776,18 @@ source_set("electron_lib") {
   if (allow_runtime_configurable_key_storage) {
     defines += [ "ALLOW_RUNTIME_CONFIGURABLE_KEY_STORAGE" ]
   }
+}
+
+action("mksnapshot_checksum_gen") {
+  script = "build/checksum_header.py"
+
+  outputs = [ "$target_gen_dir/snapshot_checksum.h" ]
+  inputs = [ "$root_out_dir/$v8_context_snapshot_filename" ]
+  args = rebase_path(inputs)
+
+  args += rebase_path(outputs)
+
+  deps = [ "//tools/v8_context_snapshot" ]
 }
 
 electron_paks("packed_resources") {
@@ -804,7 +833,7 @@ if (is_mac) {
       sources = []
       public_deps = []
       sources += [ "$root_out_dir/libffmpeg.dylib" ]
-      public_deps += [ "//third_party/ffmpeg:ffmpeg" ]
+      public_deps += [ "//third_party/ffmpeg" ]
       outputs = [ "{{bundle_contents_dir}}/Libraries/{{source_file_part}}" ]
     }
   } else {
@@ -874,6 +903,7 @@ if (is_mac) {
       ":electron_framework_resources",
       ":electron_swiftshader_library",
       ":electron_xibs",
+      "//third_party/electron_node:libnode",
     ]
     if (!is_mas_build) {
       deps += [ ":electron_crashpad_helper" ]
@@ -917,17 +947,18 @@ if (is_mac) {
       assert(defined(invoker.helper_name_suffix))
 
       output_name = electron_helper_name + invoker.helper_name_suffix
-      deps = [ ":electron_framework+link" ]
+      deps = [
+        ":electron_framework+link",
+        "//electron/build/config:generate_mas_config",
+      ]
       if (!is_mas_build) {
         deps += [ "//sandbox/mac:seatbelt" ]
       }
       defines = [ "HELPER_EXECUTABLE" ]
-      configs += [ "//electron/build/config:mas_build" ]
       sources = [
         "shell/app/electron_main_mac.cc",
         "shell/app/uv_stdio_fix.cc",
         "shell/app/uv_stdio_fix.h",
-        "shell/common/electron_constants.cc",
       ]
       include_dirs = [ "." ]
       info_plist = "shell/renderer/resources/mac/Info.plist"
@@ -1078,6 +1109,7 @@ if (is_mac) {
       ":electron_app_plist",
       ":electron_app_resources",
       ":electron_fuses",
+      "//electron/build/config:generate_mas_config",
       "//electron/buildflags",
     ]
     if (is_mas_build) {
@@ -1092,7 +1124,6 @@ if (is_mac) {
       "-rpath",
       "@executable_path/../Frameworks",
     ]
-    configs += [ "//electron/build/config:mas_build" ]
   }
 
   if (enable_dsyms) {
@@ -1196,6 +1227,7 @@ if (is_mac) {
       "//components/crash/core/app",
       "//content:sandbox_helper_win",
       "//electron/buildflags",
+      "//third_party/electron_node:libnode",
       "//ui/strings",
     ]
 
@@ -1216,7 +1248,7 @@ if (is_mac) {
     }
 
     if (use_v8_context_snapshot) {
-      public_deps = [ "//tools/v8_context_snapshot:v8_context_snapshot" ]
+      public_deps = [ "//tools/v8_context_snapshot" ]
     }
 
     if (is_linux) {
@@ -1234,7 +1266,7 @@ if (is_mac) {
         "//components/crash/core/app:run_as_crashpad_handler",
       ]
 
-      ldflags = []
+      ldflags = [ "/DELAYLOAD:ffmpeg.dll" ]
 
       libs = [
         "comctl32.lib",
@@ -1395,6 +1427,18 @@ dist_zip("electron_dist_zip") {
     ":licenses",
   ]
   if (is_linux) {
+    if (is_official_build) {
+      data_deps += [
+        ":strip_chrome_crashpad_handler",
+        ":strip_chrome_sandbox",
+        ":strip_electron_binary",
+        ":strip_libEGL_shlib",
+        ":strip_libGLESv2_shlib",
+        ":strip_libffmpeg_shlib",
+        ":strip_libvk_swiftshader_shlib",
+      ]
+    }
+
     data_deps += [ "//sandbox/linux:chrome_sandbox" ]
   }
   deps = data_deps
@@ -1440,6 +1484,16 @@ group("electron_mksnapshot") {
 
 dist_zip("electron_mksnapshot_zip") {
   data_deps = mksnapshot_deps
+  if (is_linux && is_official_build) {
+    data_deps += [
+      ":strip_libEGL_shlib",
+      ":strip_libGLESv2_shlib",
+      ":strip_libffmpeg_shlib",
+      ":strip_libvk_swiftshader_shlib",
+      ":strip_mksnapshot_binary",
+      ":strip_v8_context_snapshot_generator_binary",
+    ]
+  }
   deps = data_deps
   outputs = [ "$root_build_dir/mksnapshot.zip" ]
 }
@@ -1507,20 +1561,7 @@ group("electron") {
 ##### node_headers
 
 node_dir = "../third_party/electron_node"
-node_files = read_file("$node_dir/filenames.json", "json")
 node_headers_dir = "$root_gen_dir/node_headers"
-
-header_group_index = 0
-header_groups = []
-foreach(header_group, node_files.headers) {
-  copy("node_headers_${header_group_index}") {
-    sources = rebase_path(header_group.files, ".", node_dir)
-    outputs =
-        [ "$node_headers_dir/${header_group.dest_dir}/{{source_file_part}}" ]
-  }
-  header_groups += [ ":node_headers_${header_group_index}" ]
-  header_group_index += 1
-}
 
 copy("zlib_headers") {
   sources = [
@@ -1542,11 +1583,17 @@ copy("node_gypi_headers") {
 action("node_version_header") {
   inputs = [ "$node_dir/src/node_version.h" ]
   outputs = [ "$node_headers_dir/include/node/node_version.h" ]
-  script = "script/generate_node_version_header.py"
+  script = "script/node/generate_node_version_header.py"
   args = rebase_path(inputs) + rebase_path(outputs)
   if (node_module_version != "") {
     args += [ "$node_module_version" ]
   }
+}
+
+action("generate_node_headers") {
+  deps = [ ":generate_config_gypi" ]
+  script = "script/node/generate_node_headers.py"
+  outputs = [ "$root_gen_dir/node_headers.json" ]
 }
 
 action("tar_node_headers") {
@@ -1560,13 +1607,89 @@ action("tar_node_headers") {
 }
 
 group("copy_node_headers") {
-  public_deps = header_groups + [
-                  ":node_gypi_headers",
-                  ":node_version_header",
-                  ":zlib_headers",
-                ]
+  public_deps = [
+    ":generate_node_headers",
+    ":node_gypi_headers",
+    ":node_version_header",
+    ":zlib_headers",
+  ]
 }
 
 group("node_headers") {
   public_deps = [ ":tar_node_headers" ]
+}
+
+if (is_linux && is_official_build) {
+  strip_binary("strip_electron_binary") {
+    binary_input = "$root_out_dir/$electron_project_name"
+    symbol_output = "$root_out_dir/debug/$electron_project_name.debug"
+    compress_debug_sections = true
+    deps = [ ":electron_app" ]
+  }
+
+  strip_binary("strip_chrome_crashpad_handler") {
+    binary_input = "$root_out_dir/chrome_crashpad_handler"
+    symbol_output = "$root_out_dir/debug/chrome_crashpad_handler.debug"
+    compress_debug_sections = true
+    deps = [ "//components/crash/core/app:chrome_crashpad_handler" ]
+  }
+
+  strip_binary("strip_chrome_sandbox") {
+    binary_input = "$root_out_dir/chrome_sandbox"
+    symbol_output = "$root_out_dir/debug/chrome-sandbox.debug"
+    compress_debug_sections = true
+    deps = [ "//sandbox/linux:chrome_sandbox" ]
+  }
+
+  strip_binary("strip_libEGL_shlib") {
+    binary_input = "$root_out_dir/libEGL.so"
+    symbol_output = "$root_out_dir/debug/libEGL.so.debug"
+    compress_debug_sections = true
+    deps = [ "//third_party/angle:libEGL" ]
+  }
+
+  strip_binary("strip_libGLESv2_shlib") {
+    binary_input = "$root_out_dir/libGLESv2.so"
+    symbol_output = "$root_out_dir/debug/libGLESv2.so.debug"
+    compress_debug_sections = true
+    deps = [ "//third_party/angle:libGLESv2" ]
+  }
+
+  strip_binary("strip_libffmpeg_shlib") {
+    binary_input = "$root_out_dir/libffmpeg.so"
+    symbol_output = "$root_out_dir/debug/libffmpeg.so.debug"
+    compress_debug_sections = true
+    deps = [ "//third_party/ffmpeg" ]
+  }
+
+  strip_binary("strip_libvk_swiftshader_shlib") {
+    binary_input = "$root_out_dir/libvk_swiftshader.so"
+    symbol_output = "$root_out_dir/debug/libvk_swiftshader.so.debug"
+    compress_debug_sections = true
+    deps = [ "//third_party/swiftshader/src/Vulkan:swiftshader_libvulkan" ]
+  }
+
+  strip_binary("strip_mksnapshot_binary") {
+    _binary_path = rebase_path(
+            get_label_info(
+                    ":v8_context_snapshot_generator($v8_snapshot_toolchain)",
+                    "root_out_dir") + "/mksnapshot",
+            root_build_dir)
+    binary_input = "$root_out_dir/$_binary_path"
+    symbol_output = "$root_out_dir/debug/${_binary_path}.debug"
+    compress_debug_sections = true
+    deps = mksnapshot_deps
+  }
+
+  strip_binary("strip_v8_context_snapshot_generator_binary") {
+    _binary_path = rebase_path(
+            get_label_info(
+                    ":v8_context_snapshot_generator($v8_snapshot_toolchain)",
+                    "root_out_dir") + "/v8_context_snapshot_generator",
+            root_build_dir)
+    binary_input = "$root_out_dir/$_binary_path"
+    symbol_output = "$root_out_dir/debug/${_binary_path}.debug"
+    compress_debug_sections = true
+    deps = mksnapshot_deps
+  }
 }

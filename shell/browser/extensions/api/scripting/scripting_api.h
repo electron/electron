@@ -7,8 +7,8 @@
 
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "chrome/common/extensions/api/scripting.h"
@@ -19,17 +19,6 @@
 #include "extensions/common/user_script.h"
 
 namespace extensions {
-
-// A simple helper struct to represent a read file (either CSS or JS) to be
-// injected.
-struct InjectedFileSource {
-  InjectedFileSource(std::string file_name, std::unique_ptr<std::string> data);
-  InjectedFileSource(InjectedFileSource&&);
-  ~InjectedFileSource();
-
-  std::string file_name;
-  std::unique_ptr<std::string> data;
-};
 
 class ScriptingExecuteScriptFunction : public ExtensionFunction {
  public:
@@ -48,7 +37,7 @@ class ScriptingExecuteScriptFunction : public ExtensionFunction {
   ~ScriptingExecuteScriptFunction() override;
 
   // Called when the resource files to be injected has been loaded.
-  void DidLoadResources(std::vector<InjectedFileSource> file_sources,
+  void DidLoadResources(std::vector<scripting::InjectedFileSource> file_sources,
                         std::optional<std::string> load_error);
 
   // Triggers the execution of `sources` in the appropriate context.
@@ -77,7 +66,7 @@ class ScriptingInsertCSSFunction : public ExtensionFunction {
   ~ScriptingInsertCSSFunction() override;
 
   // Called when the resource files to be injected has been loaded.
-  void DidLoadResources(std::vector<InjectedFileSource> file_sources,
+  void DidLoadResources(std::vector<scripting::InjectedFileSource> file_sources,
                         std::optional<std::string> load_error);
 
   // Triggers the execution of `sources` in the appropriate context.
@@ -190,6 +179,15 @@ class ScriptingUpdateContentScriptsFunction : public ExtensionFunction {
 
  private:
   ~ScriptingUpdateContentScriptsFunction() override;
+
+  // Returns a UserScript object by updating the `original_script` with the
+  // `new_script` given delta. If the updated script cannot be parsed, populates
+  // `parse_error` and returns nullptr.
+  std::unique_ptr<UserScript> ApplyUpdate(
+      std::set<std::string>* script_ids_to_persist,
+      api::scripting::RegisteredContentScript& new_script,
+      api::scripting::RegisteredContentScript& original_script,
+      std::u16string* parse_error);
 
   // Called when script files have been checked.
   void OnContentScriptFilesValidated(

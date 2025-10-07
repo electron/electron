@@ -4,14 +4,14 @@
 
 #include "shell/browser/api/electron_api_notification.h"
 
-#include "base/strings/utf_string_conversions.h"
 #include "base/uuid.h"
-#include "gin/handle.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "url/gurl.h"
@@ -47,7 +47,8 @@ struct Converter<electron::NotificationAction> {
 
 namespace electron::api {
 
-gin::WrapperInfo Notification::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo Notification::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 Notification::Notification(gin::Arguments* args) {
   presenter_ = static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
@@ -58,10 +59,7 @@ Notification::Notification(gin::Arguments* args) {
     opts.Get("title", &title_);
     opts.Get("subtitle", &subtitle_);
     opts.Get("body", &body_);
-    has_icon_ = opts.Get("icon", &icon_);
-    if (has_icon_) {
-      opts.Get("icon", &icon_path_);
-    }
+    opts.Get("icon", &icon_);
     opts.Get("silent", &silent_);
     opts.Get("replyPlaceholder", &reply_placeholder_);
     opts.Get("urgency", &urgency_);
@@ -80,13 +78,14 @@ Notification::~Notification() {
 }
 
 // static
-gin::Handle<Notification> Notification::New(gin_helper::ErrorThrower thrower,
-                                            gin::Arguments* args) {
+gin_helper::Handle<Notification> Notification::New(
+    gin_helper::ErrorThrower thrower,
+    gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create Notification before app is ready");
-    return gin::Handle<Notification>();
+    return {};
   }
-  return gin::CreateHandle(thrower.isolate(), new Notification(args));
+  return gin_helper::CreateHandle(thrower.isolate(), new Notification(args));
 }
 
 // Setters
@@ -239,6 +238,10 @@ const char* Notification::GetTypeName() {
   return GetClassName();
 }
 
+void Notification::WillBeDestroyed() {
+  ClearWeak();
+}
+
 }  // namespace electron::api
 
 namespace {
@@ -249,9 +252,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("Notification", Notification::GetConstructor(context));
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
+  dict.Set("Notification", Notification::GetConstructor(isolate, context));
   dict.SetMethod("isSupported", &Notification::IsSupported);
 }
 

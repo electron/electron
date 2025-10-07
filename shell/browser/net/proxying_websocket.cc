@@ -8,12 +8,11 @@
 
 #include "base/functional/bind.h"
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
 #include "content/public/browser/browser_thread.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "net/base/ip_endpoint.h"
-#include "net/http/http_util.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 
 namespace electron {
 
@@ -115,10 +114,6 @@ void ProxyingWebSocket::ContinueToHeadersReceived() {
   OnHeadersReceivedComplete(net::OK);
 }
 
-void ProxyingWebSocket::OnFailure(const std::string& message,
-                                  int32_t net_error,
-                                  int32_t response_code) {}
-
 void ProxyingWebSocket::OnConnectionEstablished(
     mojo::PendingRemote<network::mojom::WebSocket> websocket,
     mojo::PendingReceiver<network::mojom::WebSocketClient> client_receiver,
@@ -144,11 +139,10 @@ void ProxyingWebSocket::OnConnectionEstablished(
   }
 
   response_->headers =
-      base::MakeRefCounted<net::HttpResponseHeaders>(base::StringPrintf(
+      base::MakeRefCounted<net::HttpResponseHeaders>(absl::StrFormat(
           "HTTP/%d.%d %d %s", handshake_response_->http_version.major_value(),
           handshake_response_->http_version.minor_value(),
-          handshake_response_->status_code,
-          handshake_response_->status_text.c_str()));
+          handshake_response_->status_code, handshake_response_->status_text));
   for (const auto& header : handshake_response_->headers)
     response_->headers->AddHeader(header->name, header->value);
 

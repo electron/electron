@@ -1,9 +1,12 @@
-import { expect } from 'chai';
-import { Menu, Tray } from 'electron/main';
 import { nativeImage } from 'electron/common';
-import { ifdescribe, ifit } from './lib/spec-helpers';
+import { Menu, Tray } from 'electron/main';
+
+import { expect } from 'chai';
+
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
+
+import { ifdescribe, ifit } from './lib/spec-helpers';
 
 describe('tray module', () => {
   let tray: Tray;
@@ -27,13 +30,13 @@ describe('tray module', () => {
       }).to.throw(/Failed to load image from path (.+)/);
     });
 
-    ifit(process.platform === 'win32')('throws a descriptive error if an invalid guid is given', () => {
+    ifit(process.platform !== 'linux')('throws a descriptive error if an invalid guid is given', () => {
       expect(() => {
         tray = new Tray(nativeImage.createEmpty(), 'I am not a guid');
       }).to.throw('Invalid GUID format');
     });
 
-    ifit(process.platform === 'win32')('accepts a valid guid', () => {
+    ifit(process.platform !== 'linux')('accepts a valid guid', () => {
       expect(() => {
         tray = new Tray(nativeImage.createEmpty(), '0019A433-3526-48BA-A66C-676742C0FEFB');
       }).to.not.throw();

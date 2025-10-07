@@ -1,12 +1,16 @@
-import * as cp from 'node:child_process';
-import * as path from 'node:path';
-import { assert, expect } from 'chai';
 import { BrowserWindow, Menu, MenuItem } from 'electron/main';
-import { sortMenuItems } from '../lib/browser/api/menu-utils';
+
+import { assert, expect } from 'chai';
+
+import * as cp from 'node:child_process';
+import { once } from 'node:events';
+import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
+
+import { singleModifierCombinations } from './lib/accelerator-helpers';
 import { ifit } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
-import { once } from 'node:events';
-import { setTimeout } from 'node:timers/promises';
+import { sortMenuItems } from '../lib/browser/api/menu-utils';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -923,6 +927,23 @@ describe('Menu module', function () {
       });
       w.show();
     });
+
+    const chunkSize = 10;
+    let chunkCount = 0;
+    const totalChunks = Math.ceil(singleModifierCombinations.length / chunkSize);
+    for (let i = 0; i < singleModifierCombinations.length; i += chunkSize) {
+      const chunk = singleModifierCombinations.slice(i, i + chunkSize);
+      it(`does not crash when rendering menu item with single accelerator combinations ${++chunkCount}/${totalChunks}`, async () => {
+        const menu = Menu.buildFromTemplate([
+          ...chunk.map(combination => ({
+            label: `Test ${combination}`,
+            accelerator: combination
+          }))
+        ]);
+        menu.popup({ window: w });
+        menu.closePopup();
+      });
+    }
   });
 
   describe('Menu.setApplicationMenu', () => {

@@ -8,12 +8,21 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
-#include "content/public/browser/render_frame_host.h"
-#include "shell/browser/ui/views/autofill_popup_view.h"
-#include "ui/color/color_id.h"
 #include "ui/gfx/font_list.h"
-#include "ui/views/view.h"
-#include "ui/views/widget/widget.h"
+#include "ui/gfx/geometry/rect.h"
+#include "ui/views/view_observer.h"
+
+namespace content {
+class RenderFrameHost;
+}  // namespace content
+
+namespace gfx {
+class RectF;
+}  // namespace gfx
+
+namespace ui {
+using ColorId = int;
+}  // namespace ui
 
 namespace electron {
 
@@ -62,6 +71,10 @@ class AutofillPopup : private views::ViewObserver {
   const std::u16string& label_at(int i) const { return labels_.at(i); }
   int LineFromY(int y) const;
 
+  static constexpr int kNamePadding = 15;
+  static constexpr int kRowHeight = 24;
+  static constexpr int kSmallerFontSizeDelta = -1;
+
   int selected_index_;
 
   // Popup location
@@ -75,8 +88,10 @@ class AutofillPopup : private views::ViewObserver {
   std::vector<std::u16string> labels_;
 
   // Font lists for the suggestions
-  gfx::FontList smaller_font_list_;
-  gfx::FontList bold_font_list_;
+  const gfx::FontList smaller_font_list_ =
+      gfx::FontList{}.DeriveWithSizeDelta(kSmallerFontSizeDelta);
+  const gfx::FontList bold_font_list_ =
+      gfx::FontList{}.DeriveWithWeight(gfx::Font::Weight::BOLD);
 
   // For sending the accepted suggestion to the render frame that
   // asked to open the popup

@@ -1,13 +1,19 @@
-import { expect } from 'chai';
 import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen } from 'electron/main';
+
+import { expect } from 'chai';
+
 import { once } from 'node:events';
 
-import { closeAllWindows } from './lib/window-helpers';
-import { defer, ifdescribe } from './lib/spec-helpers';
 import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers';
+import { defer, ifdescribe, waitUntil } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 describe('WebContentsView', () => {
-  afterEach(closeAllWindows);
+  afterEach(async () => {
+    await closeAllWindows();
+    const existingWCS = webContents.getAllWebContents();
+    existingWCS.forEach((contents) => contents.close());
+  });
 
   it('can be instantiated with no arguments', () => {
     // eslint-disable-next-line no-new
@@ -47,6 +53,20 @@ describe('WebContentsView', () => {
     expect(() => new WebContentsView({
       webContents: webContentsView.webContents
     })).to.throw('options.webContents is already attached to a window');
+  });
+
+  it('should throw an error when adding a destroyed child view to the parent view', async () => {
+    const browserWindow = new BrowserWindow();
+
+    const webContentsView = new WebContentsView();
+    webContentsView.webContents.loadURL('about:blank');
+    webContentsView.webContents.destroy();
+
+    const destroyed = once(webContentsView.webContents, 'destroyed');
+    await destroyed;
+    expect(() => browserWindow.contentView.addChildView(webContentsView)).to.throw(
+      'Can\'t add a destroyed child view to a parent view'
+    );
   });
 
   it('should throw error when created with already attached webContents to other WebContentsView', () => {
@@ -99,6 +119,30 @@ describe('WebContentsView', () => {
     expect(w.contentView.children).to.deep.equal([wcv3, wcv1, wcv2]);
   });
 
+  it('handle removal and re-addition of children', () => {
+    const w = new BaseWindow({ show: false });
+    const cv = new View();
+    w.setContentView(cv);
+
+    const wcv1 = new WebContentsView();
+    const wcv2 = new WebContentsView();
+
+    expect(w.contentView.children).to.deep.equal([]);
+
+    w.contentView.addChildView(wcv1);
+    w.contentView.addChildView(wcv2);
+
+    expect(w.contentView.children).to.deep.equal([wcv1, wcv2]);
+
+    w.contentView.removeChildView(wcv1);
+
+    expect(w.contentView.children).to.deep.equal([wcv2]);
+
+    w.contentView.addChildView(wcv1);
+
+    expect(w.contentView.children).to.deep.equal([wcv2, wcv1]);
+  });
+
   function triggerGCByAllocation () {
     const arr = [];
     for (let i = 0; i < 1000000; i++) {
@@ -123,6 +167,26 @@ describe('WebContentsView', () => {
     });
   });
 
+  it('does not crash when closed via window.close()', async () => {
+    const bw = new BrowserWindow();
+    const wcv = new WebContentsView();
+
+    await bw.loadURL('data:text/html,<h1>Main Window</h1>');
+    bw.contentView.addChildView(wcv);
+
+    const dto = new Promise<boolean>((resolve) => {
+      wcv.webContents.on('blur', () => {
+        const devToolsOpen = wcv.webContents.isDevToolsOpened();
+        resolve(devToolsOpen);
+      });
+    });
+
+    wcv.webContents.loadURL('data:text/html,<script>window.close()</script>');
+
+    const open = await dto;
+    expect(open).to.be.false();
+  });
+
   it('can be fullscreened', async () => {
     const w = new BaseWindow();
     const v = new WebContentsView();
@@ -135,7 +199,26 @@ describe('WebContentsView', () => {
     expect(w.isFullScreen()).to.be.true('isFullScreen');
   });
 
+  it('can be added as a child of another View', async () => {
+    const w = new BaseWindow();
+    const v = new View();
+    const wcv = new WebContentsView();
+
+    await wcv.webContents.loadURL('data:text/html,<div id="div">This is a simple div.</div>');
+
+    v.addChildView(wcv);
+    w.contentView.addChildView(v);
+
+    expect(w.contentView.children).to.deep.equal([v]);
+    expect(v.children).to.deep.equal([wcv]);
+  });
+
   describe('visibilityState', () => {
+    async function haveVisibilityState (view: WebContentsView, state: string) {
+      const docVisState = await view.webContents.executeJavaScript('document.visibilityState');
+      return docVisState === state;
+    }
+
     it('is initially hidden', async () => {
       const v = new WebContentsView();
       await v.webContents.loadURL('data:text/html,<script>initialVisibility = document.visibilityState</script>');
@@ -172,7 +255,7 @@ describe('WebContentsView', () => {
       const v = new WebContentsView();
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
-      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
+      await expect(waitUntil(async () => await haveVisibilityState(v, 'visible'))).to.eventually.be.fulfilled();
       const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", resolve))');
       // We have to wait until the listener above is fully registered before hiding the window.
       // On Windows, the executeJavaScript and the visibilitychange can happen out of order
@@ -204,7 +287,7 @@ describe('WebContentsView', () => {
       const v = new WebContentsView();
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
-      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
+      await expect(waitUntil(async () => await haveVisibilityState(v, 'visible'))).to.eventually.be.fulfilled();
 
       const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", () => resolve(document.visibilityState)))');
       // Ensure the listener has been registered.
@@ -254,9 +337,12 @@ describe('WebContentsView', () => {
         v.webContents.loadURL(backgroundUrl);
 
         const inset = 10;
+        // Adjust for macOS menu bar height which seems to be about 24px
+        // based on the results from accessibility inspector.
+        const platformInset = process.platform === 'darwin' ? 15 : 0;
         corners = [
-          { x: display.workArea.x + inset, y: display.workArea.y + inset }, // top-left
-          { x: display.workArea.x + display.workArea.width - inset, y: display.workArea.y + inset }, // top-right
+          { x: display.workArea.x + inset, y: display.workArea.y + inset + platformInset }, // top-left
+          { x: display.workArea.x + display.workArea.width - inset, y: display.workArea.y + inset + platformInset }, // top-right
           { x: display.workArea.x + display.workArea.width - inset, y: display.workArea.y + display.workArea.height - inset }, // bottom-right
           { x: display.workArea.x + inset, y: display.workArea.y + display.workArea.height - inset } // bottom-left
         ];

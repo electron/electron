@@ -6,7 +6,6 @@ import("//build/config/ozone.gni")
 import("//build/config/ui.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
 import("//electron/buildflags/buildflags.gni")
-import("//ppapi/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//third_party/widevine/cdm/widevine.gni")
 
@@ -24,6 +23,8 @@ static_library("chrome") {
     "//chrome/browser/browser_process.h",
     "//chrome/browser/devtools/devtools_contents_resizing_strategy.cc",
     "//chrome/browser/devtools/devtools_contents_resizing_strategy.h",
+    "//chrome/browser/devtools/devtools_dispatch_http_request_params.cc",
+    "//chrome/browser/devtools/devtools_dispatch_http_request_params.h",
     "//chrome/browser/devtools/devtools_embedder_message_dispatcher.cc",
     "//chrome/browser/devtools/devtools_embedder_message_dispatcher.h",
     "//chrome/browser/devtools/devtools_eye_dropper.cc",
@@ -31,16 +32,18 @@ static_library("chrome") {
     "//chrome/browser/devtools/devtools_file_system_indexer.cc",
     "//chrome/browser/devtools/devtools_file_system_indexer.h",
     "//chrome/browser/devtools/devtools_settings.h",
+    "//chrome/browser/devtools/features.cc",
+    "//chrome/browser/devtools/features.h",
     "//chrome/browser/devtools/visual_logging.cc",
     "//chrome/browser/devtools/visual_logging.h",
-    "//chrome/browser/extensions/global_shortcut_listener.cc",
-    "//chrome/browser/extensions/global_shortcut_listener.h",
     "//chrome/browser/file_system_access/file_system_access_features.cc",
     "//chrome/browser/file_system_access/file_system_access_features.h",
     "//chrome/browser/icon_loader.cc",
     "//chrome/browser/icon_loader.h",
     "//chrome/browser/icon_manager.cc",
     "//chrome/browser/icon_manager.h",
+    "//chrome/browser/media/webrtc/delegated_source_list_capturer.cc",
+    "//chrome/browser/media/webrtc/delegated_source_list_capturer.h",
     "//chrome/browser/media/webrtc/desktop_capturer_wrapper.cc",
     "//chrome/browser/media/webrtc/desktop_capturer_wrapper.h",
     "//chrome/browser/media/webrtc/desktop_media_list.cc",
@@ -65,23 +68,23 @@ static_library("chrome") {
     "//chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker.h",
     "//chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker_observer.cc",
     "//chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker_observer.h",
+    "//chrome/browser/picture_in_picture/picture_in_picture_widget_fade_animator.cc",
+    "//chrome/browser/picture_in_picture/picture_in_picture_widget_fade_animator.h",
     "//chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc",
     "//chrome/browser/picture_in_picture/picture_in_picture_window_manager.h",
+    "//chrome/browser/picture_in_picture/picture_in_picture_window_manager_uma_helper.cc",
+    "//chrome/browser/picture_in_picture/picture_in_picture_window_manager_uma_helper.h",
     "//chrome/browser/picture_in_picture/scoped_picture_in_picture_occlusion_observation.cc",
     "//chrome/browser/picture_in_picture/scoped_picture_in_picture_occlusion_observation.h",
     "//chrome/browser/platform_util.cc",
     "//chrome/browser/platform_util.h",
-    "//chrome/browser/predictors/preconnect_manager.cc",
-    "//chrome/browser/predictors/preconnect_manager.h",
     "//chrome/browser/predictors/predictors_features.cc",
     "//chrome/browser/predictors/predictors_features.h",
-    "//chrome/browser/predictors/proxy_lookup_client_impl.cc",
-    "//chrome/browser/predictors/proxy_lookup_client_impl.h",
-    "//chrome/browser/predictors/resolve_host_client_impl.cc",
-    "//chrome/browser/predictors/resolve_host_client_impl.h",
     "//chrome/browser/process_singleton.h",
     "//chrome/browser/process_singleton_internal.cc",
     "//chrome/browser/process_singleton_internal.h",
+    "//chrome/browser/serial/serial_blocklist.cc",
+    "//chrome/browser/serial/serial_blocklist.h",
     "//chrome/browser/themes/browser_theme_pack.cc",
     "//chrome/browser/themes/browser_theme_pack.h",
     "//chrome/browser/themes/custom_theme_supplier.cc",
@@ -113,6 +116,8 @@ static_library("chrome") {
     "//chrome/browser/ui/view_ids.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.cc",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.h",
+    "//chrome/browser/ui/views/overlay/back_to_tab_button.cc",
+    "//chrome/browser/ui/views/overlay/back_to_tab_button.h",
     "//chrome/browser/ui/views/overlay/back_to_tab_label_button.cc",
     "//chrome/browser/ui/views/overlay/close_image_button.cc",
     "//chrome/browser/ui/views/overlay/close_image_button.h",
@@ -121,8 +126,12 @@ static_library("chrome") {
     "//chrome/browser/ui/views/overlay/hang_up_button.h",
     "//chrome/browser/ui/views/overlay/minimize_button.cc",
     "//chrome/browser/ui/views/overlay/minimize_button.h",
+    "//chrome/browser/ui/views/overlay/overlay_controls_fade_animation.cc",
+    "//chrome/browser/ui/views/overlay/overlay_controls_fade_animation.h",
     "//chrome/browser/ui/views/overlay/overlay_window_image_button.cc",
     "//chrome/browser/ui/views/overlay/overlay_window_image_button.h",
+    "//chrome/browser/ui/views/overlay/overlay_window_live_caption_button.cc",
+    "//chrome/browser/ui/views/overlay/overlay_window_live_caption_button.h",
     "//chrome/browser/ui/views/overlay/playback_image_button.cc",
     "//chrome/browser/ui/views/overlay/playback_image_button.h",
     "//chrome/browser/ui/views/overlay/resize_handle_button.cc",
@@ -137,10 +146,18 @@ static_library("chrome") {
     "//chrome/browser/ui/views/overlay/toggle_microphone_button.h",
     "//chrome/browser/ui/views/overlay/video_overlay_window_views.cc",
     "//chrome/browser/ui/views/overlay/video_overlay_window_views.h",
+    "//chrome/browser/ui/views/picture_in_picture/picture_in_picture_bounds_change_animation.cc",
+    "//chrome/browser/ui/views/picture_in_picture/picture_in_picture_bounds_change_animation.h",
+    "//chrome/browser/ui/views/picture_in_picture/picture_in_picture_tucker.cc",
+    "//chrome/browser/ui/views/picture_in_picture/picture_in_picture_tucker.h",
     "//chrome/browser/ui/webui/accessibility/accessibility_ui.cc",
     "//chrome/browser/ui/webui/accessibility/accessibility_ui.h",
+    "//chrome/browser/usb/usb_blocklist.cc",
+    "//chrome/browser/usb/usb_blocklist.h",
     "//extensions/browser/app_window/size_constraints.cc",
     "//extensions/browser/app_window/size_constraints.h",
+    "//ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.cc",
+    "//ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h",
     "//ui/views/native_window_tracker.h",
   ]
 
@@ -150,18 +167,14 @@ static_library("chrome") {
 
   if (is_win) {
     sources += [
-      "//chrome/browser/extensions/global_shortcut_listener_win.cc",
-      "//chrome/browser/extensions/global_shortcut_listener_win.h",
       "//chrome/browser/icon_loader_win.cc",
       "//chrome/browser/media/webrtc/window_icon_util_win.cc",
       "//chrome/browser/process_singleton_win.cc",
-      "//chrome/browser/ui/frame/window_frame_util.h",
       "//chrome/browser/win/chrome_process_finder.cc",
       "//chrome/browser/win/chrome_process_finder.h",
       "//chrome/browser/win/chrome_select_file_dialog_factory.cc",
       "//chrome/browser/win/chrome_select_file_dialog_factory.h",
       "//chrome/browser/win/titlebar_config.cc",
-      "//chrome/browser/win/titlebar_config.h",
       "//chrome/browser/win/titlebar_config.h",
       "//chrome/browser/win/util_win_service.cc",
       "//chrome/browser/win/util_win_service.h",
@@ -175,15 +188,15 @@ static_library("chrome") {
   }
 
   public_deps = [
-    "//chrome/browser:dev_ui_browser_resources",
     "//chrome/browser/resources/accessibility:resources",
+    "//chrome/browser/ui/color:color_headers",
     "//chrome/browser/ui/color:mixers",
     "//chrome/common",
     "//chrome/common:version_header",
+    "//components/global_media_controls",
     "//components/keyed_service/content",
     "//components/paint_preview/buildflags",
     "//components/proxy_config",
-    "//components/services/language_detection/public/mojom",
     "//content/public/browser",
     "//services/strings",
   ]
@@ -192,11 +205,16 @@ static_library("chrome") {
     "//chrome/app/vector_icons",
     "//chrome/browser:resource_prefetch_predictor_proto",
     "//chrome/browser/resource_coordinator:mojo_bindings",
+    "//chrome/browser/task_manager/common:impl",
+    "//chrome/browser/ui/webui/tab_search:mojo_bindings",
     "//chrome/browser/web_applications/mojom:mojom_web_apps_enum",
     "//components/enterprise/buildflags",
+    "//components/enterprise/common/proto:browser_events_proto",
     "//components/enterprise/common/proto:connectors_proto",
+    "//components/enterprise/obfuscation/core:enterprise_obfuscation",
     "//components/safe_browsing/core/browser/db:safebrowsing_proto",
-    "//components/vector_icons:vector_icons",
+    "//components/vector_icons",
+    "//ui/base/accelerators/global_accelerator_listener",
     "//ui/snapshot",
     "//ui/views/controls/webview",
   ]
@@ -205,21 +223,18 @@ static_library("chrome") {
     sources += [
       "//chrome/browser/platform_util_aura.cc",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_aura.cc",
-      "//ui/views/native_window_tracker_aura.cc",
-      "//ui/views/native_window_tracker_aura.h",
+      "//ui/native_window_tracker/native_window_tracker_aura.cc",
+      "//ui/native_window_tracker/native_window_tracker_aura.h",
     ]
     deps += [ "//components/eye_dropper" ]
   }
 
   if (is_linux) {
-    sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]
-    if (use_ozone) {
-      deps += [ "//ui/ozone" ]
-      sources += [
-        "//chrome/browser/extensions/global_shortcut_listener_ozone.cc",
-        "//chrome/browser/extensions/global_shortcut_listener_ozone.h",
-      ]
-    }
+    sources += [
+      "//chrome/browser/icon_loader_auralinux.cc",
+      "//ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc",
+      "//ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.h",
+    ]
     sources += [
       "//chrome/browser/ui/views/status_icons/concat_menu_model.cc",
       "//chrome/browser/ui/views/status_icons/concat_menu_model.h",
@@ -230,10 +245,7 @@ static_library("chrome") {
       "//chrome/browser/ui/views/dark_mode_manager_linux.cc",
       "//chrome/browser/ui/views/dark_mode_manager_linux.h",
     ]
-    public_deps += [
-      "//components/dbus/menu",
-      "//components/dbus/thread_linux",
-    ]
+    public_deps += [ "//components/dbus" ]
   }
 
   if (is_win) {
@@ -255,8 +267,6 @@ static_library("chrome") {
 
   if (is_mac) {
     sources += [
-      "//chrome/browser/extensions/global_shortcut_listener_mac.h",
-      "//chrome/browser/extensions/global_shortcut_listener_mac.mm",
       "//chrome/browser/icon_loader_mac.mm",
       "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.h",
       "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm",
@@ -265,11 +275,15 @@ static_library("chrome") {
       "//chrome/browser/media/webrtc/thumbnail_capturer_mac.h",
       "//chrome/browser/media/webrtc/thumbnail_capturer_mac.mm",
       "//chrome/browser/media/webrtc/window_icon_util_mac.mm",
+      "//chrome/browser/permissions/system/media_authorization_wrapper_mac.h",
       "//chrome/browser/platform_util_mac.mm",
       "//chrome/browser/process_singleton_mac.mm",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.h",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.mm",
+      "//chrome/browser/ui/views/overlay/video_overlay_window_native_widget_mac.h",
+      "//chrome/browser/ui/views/overlay/video_overlay_window_native_widget_mac.mm",
     ]
+    deps += [ ":system_media_capture_permissions_mac_conflict" ]
   }
 
   if (enable_widevine) {
@@ -421,46 +435,6 @@ static_library("chrome") {
   }
 }
 
-source_set("plugins") {
-  sources = []
-  deps = []
-  frameworks = []
-
-  # browser side
-  sources += [
-    "//chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.cc",
-    "//chrome/browser/renderer_host/pepper/chrome_browser_pepper_host_factory.h",
-    "//chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc",
-    "//chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h",
-  ]
-
-  # renderer side
-  sources += [
-    "//chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc",
-    "//chrome/renderer/pepper/chrome_renderer_pepper_host_factory.h",
-    "//chrome/renderer/pepper/pepper_shared_memory_message_filter.cc",
-    "//chrome/renderer/pepper/pepper_shared_memory_message_filter.h",
-  ]
-
-  deps += [
-    "//components/strings",
-    "//media:media_buildflags",
-    "//services/device/public/mojom",
-    "//skia",
-    "//storage/browser",
-  ]
-
-  if (enable_ppapi) {
-    deps += [
-      "//ppapi/buildflags",
-      "//ppapi/host",
-      "//ppapi/proxy",
-      "//ppapi/proxy:ipc",
-      "//ppapi/shared_impl",
-    ]
-  }
-}
-
 # This source set is just so we don't have to depend on all of //chrome/browser
 # You may have to add new files here during the upgrade if //chrome/browser/spellchecker
 # gets more files
@@ -528,4 +502,19 @@ source_set("chrome_spellchecker") {
     "//components/spellcheck/common",
     "//components/spellcheck/renderer",
   ]
+}
+
+if (is_mac) {
+  # These sources create an object file conflict with one in |:chrome|, so they
+  # must live in a separate target.
+  # Conflicting sources:
+  #   //chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.mm
+  #   //chrome/browser/permissions/system/system_media_capture_permissions_mac.mm
+  source_set("system_media_capture_permissions_mac_conflict") {
+    sources = [
+      "//chrome/browser/permissions/system/system_media_capture_permissions_mac.h",
+      "//chrome/browser/permissions/system/system_media_capture_permissions_mac.mm",
+    ]
+    deps = [ "//chrome/common" ]
+  }
 }

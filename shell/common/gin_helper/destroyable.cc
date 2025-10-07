@@ -7,6 +7,7 @@
 #include "base/no_destructor.h"
 #include "gin/converter.h"
 #include "shell/common/gin_helper/wrappable_base.h"
+#include "v8/include/v8-function.h"
 
 namespace gin_helper {
 

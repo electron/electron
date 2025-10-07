@@ -7,46 +7,57 @@
 
 #include <map>
 
-#include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/devtools_agent_host_client.h"
 #include "content/public/browser/web_contents_observer.h"
-#include "gin/arguments.h"
-#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
-#include "shell/common/gin_helper/promise.h"
 
 namespace content {
 class DevToolsAgentHost;
 class WebContents;
 }  // namespace content
 
+namespace gin {
+class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
+template <typename T>
+class Handle;
+template <typename T>
+class Promise;
+}  // namespace gin_helper
+
 namespace electron::api {
 
-class Debugger : public gin::Wrappable<Debugger>,
-                 public gin_helper::EventEmitterMixin<Debugger>,
-                 public content::DevToolsAgentHostClient,
-                 private content::WebContentsObserver {
+class Debugger final : public gin::Wrappable<Debugger>,
+                       public gin_helper::EventEmitterMixin<Debugger>,
+                       public content::DevToolsAgentHostClient,
+                       private content::WebContentsObserver {
  public:
-  static gin::Handle<Debugger> Create(v8::Isolate* isolate,
-                                      content::WebContents* web_contents);
+  static Debugger* Create(v8::Isolate* isolate,
+                          content::WebContents* web_contents);
 
-  // gin::Wrappable
+  // Make public for cppgc::MakeGarbageCollected.
+  explicit Debugger(content::WebContents* web_contents);
+  ~Debugger() override;
+
+  // gin_helper::Wrappable
   static gin::WrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
+
+  const char* GetClassName() const { return "Debugger"; }
 
   // disable copy
   Debugger(const Debugger&) = delete;
   Debugger& operator=(const Debugger&) = delete;
 
  protected:
-  Debugger(v8::Isolate* isolate, content::WebContents* web_contents);
-  ~Debugger() override;
-
   // content::DevToolsAgentHostClient:
   void AgentHostClosed(content::DevToolsAgentHost* agent_host) override;
   void DispatchProtocolMessage(content::DevToolsAgentHost* agent_host,

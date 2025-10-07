@@ -7,16 +7,12 @@
 #include <map>
 #include <string>
 
-#include "base/command_line.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
-#include "base/logging.h"
 #include "base/path_service.h"
-#include "base/strings/string_split.h"
 #include "base/strings/utf_string_conversions.h"
 #include "build/build_config.h"
-#include "chrome/common/chrome_paths.h"
 #include "components/crash/core/common/crash_keys.h"
 #include "components/upload_list/crash_upload_list.h"
 #include "content/public/common/content_switches.h"
@@ -52,11 +48,11 @@ void ElectronCrashReporterClient::Create() {
   // By setting the BREAKPAD_DUMP_LOCATION environment variable, an alternate
   // location to write crash dumps can be set.
   auto env = base::Environment::Create();
-  std::string alternate_crash_dump_location;
   base::FilePath crash_dumps_dir_path;
-  if (env->GetVar("BREAKPAD_DUMP_LOCATION", &alternate_crash_dump_location)) {
+  if (std::optional<std::string> alternate_crash_dump_location =
+          env->GetVar("BREAKPAD_DUMP_LOCATION")) {
     crash_dumps_dir_path =
-        base::FilePath::FromUTF8Unsafe(alternate_crash_dump_location);
+        base::FilePath::FromUTF8Unsafe(alternate_crash_dump_location.value());
   }
   if (!crash_dumps_dir_path.empty()) {
     electron::ScopedAllowBlockingForElectron allow_blocking;
@@ -99,26 +95,6 @@ ElectronCrashReporterClient::~ElectronCrashReporterClient() = default;
 void ElectronCrashReporterClient::SetCrashReporterClientIdFromGUID(
     const std::string& client_guid) {
   crash_keys::SetMetricsClientIdFromGUID(client_guid);
-}
-void ElectronCrashReporterClient::GetProductNameAndVersion(
-    const char** product_name,
-    const char** version) {
-  DCHECK(product_name);
-  DCHECK(version);
-  *product_name = ELECTRON_PRODUCT_NAME;
-  *version = ELECTRON_VERSION_STRING;
-}
-
-void ElectronCrashReporterClient::GetProductNameAndVersion(
-    std::string* product_name,
-    std::string* version,
-    std::string* channel) {
-  const char* c_product_name;
-  const char* c_version;
-  GetProductNameAndVersion(&c_product_name, &c_version);
-  *product_name = c_product_name;
-  *version = c_version;
-  *channel = "";
 }
 
 base::FilePath ElectronCrashReporterClient::GetReporterLogFilename() {
@@ -206,10 +182,14 @@ std::string ElectronCrashReporterClient::GetUploadUrl() {
   return upload_url_;
 }
 
+void ElectronCrashReporterClient::GetProductInfo(ProductInfo* product_info) {
+  product_info->product_name = ELECTRON_PRODUCT_NAME;
+  product_info->version = ELECTRON_VERSION_STRING;
+}
+
 bool ElectronCrashReporterClient::EnableBreakpadForProcess(
     const std::string& process_type) {
   return process_type == switches::kRendererProcess ||
-         process_type == switches::kPpapiPluginProcess ||
          process_type == switches::kZygoteProcess ||
          process_type == switches::kGpuProcess ||
          process_type == switches::kUtilityProcess || process_type == "node";

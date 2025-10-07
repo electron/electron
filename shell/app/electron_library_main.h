@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_APP_ELECTRON_LIBRARY_MAIN_H_
 
 #include "build/build_config.h"
-#include "electron/buildflags/buildflags.h"
 
 #if BUILDFLAG(IS_MAC)
 extern "C" {

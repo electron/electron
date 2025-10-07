@@ -40,6 +40,7 @@ the window after this event will have no visual flash:
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({ show: false })
 win.once('ready-to-show', () => {
   win.show()
@@ -150,6 +151,10 @@ Process: [Main](../glossary.md#main-process)
 
 It creates a new `BrowserWindow` with native properties as set by the `options`.
 
+> [!WARNING]
+> Electron's built-in classes cannot be subclassed in user code.
+> For more information, see [the FAQ](../faq.md#class-inheritance-does-not-work-with-electron-built-in-modules).
+
 ### `new BrowserWindow([options])`
 
 * `options` [BrowserWindowConstructorOptions](structures/browser-window-options.md?inline) (optional)
@@ -158,7 +163,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
 
 Objects created with `new BrowserWindow` emit the following events:
 
-**Note:** Some events are only available on specific operating systems and are
+> [!NOTE]
+> Some events are only available on specific operating systems and are
 labeled as such.
 
 #### Event: 'page-title-updated'
@@ -200,17 +206,35 @@ window.onbeforeunload = (e) => {
 }
 ```
 
-_**Note**: There is a subtle difference between the behaviors of `window.onbeforeunload = handler` and `window.addEventListener('beforeunload', handler)`. It is recommended to always set the `event.returnValue` explicitly, instead of only returning a value, as the former works more consistently within Electron._
+> [!NOTE]
+> There is a subtle difference between the behaviors of `window.onbeforeunload = handler` and
+> `window.addEventListener('beforeunload', handler)`. It is recommended to always set the
+> `event.returnValue` explicitly, instead of only returning a value, as the former works more
+> consistently within Electron.
 
 #### Event: 'closed'
 
 Emitted when the window is closed. After you have received this event you should
 remove the reference to the window and avoid using it any more.
 
+#### Event: 'query-session-end' _Windows_
+
+Returns:
+
+* `event` [WindowSessionEndEvent][window-session-end-event]
+
+Emitted when a session is about to end due to a shutdown, machine restart, or user log-off.
+Calling `event.preventDefault()` can delay the system shutdown, though it’s generally best
+to respect the user’s choice to end the session. However, you may choose to use it if
+ending the session puts the user at risk of losing data.
+
 #### Event: 'session-end' _Windows_
 
-Emitted when window session is going to end due to force shutdown or machine restart
-or session log off.
+Returns:
+
+* `event` [WindowSessionEndEvent][window-session-end-event]
+
+Emitted when a session is about to end due to a shutdown, machine restart, or user log-off. Once this event fires, there is no way to prevent the session from ending.
 
 #### Event: 'unresponsive'
 
@@ -309,7 +333,8 @@ Emitted when the window is being moved to a new position.
 
 Emitted once when the window is moved to a new position.
 
-**Note**: On macOS this event is an alias of `move`.
+> [!NOTE]
+> On macOS, this event is an alias of `move`.
 
 #### Event: 'enter-full-screen'
 
@@ -353,6 +378,7 @@ e.g. `APPCOMMAND_BROWSER_BACKWARD` is emitted as `browser-backward`.
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 win.on('app-command', (e, cmd) => {
   // Navigate the window back when the user hits their mouse back button
@@ -407,12 +433,12 @@ Emitted when the window has closed a sheet.
 
 Emitted when the native new tab button is clicked.
 
-#### Event: 'system-context-menu' _Windows_
+#### Event: 'system-context-menu' _Windows_ _Linux_
 
 Returns:
 
 * `event` Event
-* `point` [Point](structures/point.md) - The screen coordinates the context menu was triggered at
+* `point` [Point](structures/point.md) - The screen coordinates where the context menu was triggered.
 
 Emitted when the system context menu is triggered on the window, this is
 normally only triggered when the user right clicks on the non-client area
@@ -420,6 +446,8 @@ of your window.  This is the window titlebar or any area you have declared
 as `-webkit-app-region: drag` in a frameless window.
 
 Calling `event.preventDefault()` will prevent the menu from being displayed.
+
+To convert `point` to DIP, use [`screen.screenToDipPoint(point)`](./screen.md#screenscreentodippointpoint-windows-linux).
 
 ### Static Methods
 
@@ -444,7 +472,7 @@ or `null` if the contents are not owned by a window.
 
 * `browserView` [BrowserView](browser-view.md)
 
-> **Note**
+> [!NOTE]
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
@@ -483,7 +511,7 @@ A `Integer` property representing the unique ID of the window. Each ID is unique
 
 A `string` (optional) property that is equal to the `tabbingIdentifier` passed to the `BrowserWindow` constructor or `undefined` if none was set.
 
-#### `win.autoHideMenuBar`
+#### `win.autoHideMenuBar` _Linux_ _Windows_
 
 A `boolean` property that determines whether the window menu bar should hide itself automatically. Once set, the menu bar will only show when users press the single `Alt` key.
 
@@ -506,7 +534,8 @@ A `boolean` property that determines whether the window is focusable.
 
 A `boolean` property that determines whether the window is visible on all workspaces.
 
-**Note:** Always returns false on Windows.
+> [!NOTE]
+> Always returns false on Windows.
 
 #### `win.shadow`
 
@@ -516,7 +545,8 @@ A `boolean` property that determines whether the window has a shadow.
 
 A `boolean` property that determines whether the menu bar should be visible.
 
-**Note:** If the menu bar is auto-hide, users can still bring up the menu bar by pressing the single `Alt` key.
+> [!NOTE]
+> If the menu bar is auto-hide, users can still bring up the menu bar by pressing the single `Alt` key.
 
 #### `win.kiosk`
 
@@ -537,7 +567,8 @@ and the icon of the file will show in window's title bar.
 
 A `string` property that determines the title of the native window.
 
-**Note:** The title of the web page can be different from the title of the native window.
+> [!NOTE]
+> The title of the web page can be different from the title of the native window.
 
 #### `win.minimizable` _macOS_ _Windows_
 
@@ -597,12 +628,17 @@ A `string` property that defines an alternative title provided only to
 accessibility tools such as screen readers. This string is not directly
 visible to users.
 
+#### `win.snapped` _Windows_ _Readonly_
+
+A `boolean` property that indicates whether the window is arranged via [Snap.](https://support.microsoft.com/en-us/windows/snap-your-windows-885a9b1e-a983-a3b1-16cd-c531795e6241)
+
 ### Instance Methods
 
 Objects created with `new BrowserWindow` have the following instance methods:
 
-**Note:** Some methods are only available on specific operating systems and are
-labeled as such.
+> [!NOTE]
+> Some methods are only available on specific operating systems and are
+> labeled as such.
 
 #### `win.destroy()`
 
@@ -684,11 +720,15 @@ Returns `boolean` - Whether the window is minimized.
 
 Sets whether the window should be in fullscreen mode.
 
-**Note:** On macOS, fullscreen transitions take place asynchronously. If further actions depend on the fullscreen state, use the ['enter-full-screen'](browser-window.md#event-enter-full-screen) or ['leave-full-screen'](browser-window.md#event-leave-full-screen) events.
+> [!NOTE]
+> On macOS, fullscreen transitions take place asynchronously. If further actions depend on the fullscreen state, use the ['enter-full-screen'](browser-window.md#event-enter-full-screen) or ['leave-full-screen'](browser-window.md#event-leave-full-screen) events.
 
 #### `win.isFullScreen()`
 
 Returns `boolean` - Whether the window is in fullscreen mode.
+
+> [!NOTE]
+> On macOS, fullscreen transitions take place asynchronously. When querying for a BrowserWindow's fullscreen status, you should ensure that either the ['enter-full-screen'](browser-window.md#event-enter-full-screen) or ['leave-full-screen'](browser-window.md#event-leave-full-screen) events have been emitted.
 
 #### `win.setSimpleFullScreen(flag)` _macOS_
 
@@ -786,6 +826,7 @@ Resizes and moves the window to the supplied bounds. Any properties that are not
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 
 // set all bounds properties
@@ -798,13 +839,15 @@ win.setBounds({ width: 100 })
 console.log(win.getBounds())
 ```
 
-**Note:** On macOS, the y-coordinate value cannot be smaller than the [Tray](tray.md) height. The tray height has changed over time and depends on the operating system, but is between 20-40px. Passing a value lower than the tray height will result in a window that is flush to the tray.
+> [!NOTE]
+> On macOS, the y-coordinate value cannot be smaller than the [Tray](tray.md) height. The tray height has changed over time and depends on the operating system, but is between 20-40px. Passing a value lower than the tray height will result in a window that is flush to the tray.
 
 #### `win.getBounds()`
 
 Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window as `Object`.
 
-**Note:** On macOS, the y-coordinate value returned will be at minimum the [Tray](tray.md) height. For example, calling `win.setBounds({ x: 25, y: 20, width: 800, height: 600 })` with a tray height of 38 means that `win.getBounds()` will return `{ x: 25, y: 38, width: 800, height: 600 }`.
+> [!NOTE]
+> On macOS, the y-coordinate value returned will be at minimum the [Tray](tray.md) height. For example, calling `win.setBounds({ x: 25, y: 20, width: 800, height: 600 })` with a tray height of 38 means that `win.getBounds()` will return `{ x: 25, y: 38, width: 800, height: 600 }`.
 
 #### `win.getBackgroundColor()`
 
@@ -812,7 +855,8 @@ Returns `string` - Gets the background color of the window in Hex (`#RRGGBB`) fo
 
 See [Setting `backgroundColor`](#setting-the-backgroundcolor-property).
 
-**Note:** The alpha value is _not_ returned alongside the red, green, and blue values.
+> [!NOTE]
+> The alpha value is _not_ returned alongside the red, green, and blue values.
 
 #### `win.setContentBounds(bounds[, animate])`
 
@@ -830,7 +874,8 @@ Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window's cl
 
 Returns [`Rectangle`](structures/rectangle.md) - Contains the window bounds of the normal state
 
-**Note:** whatever the current state of the window : maximized, minimized or in fullscreen, this function always returns the position and size of the window in normal state. In normal state, getBounds and getNormalBounds returns the same [`Rectangle`](structures/rectangle.md).
+> [!NOTE]
+> Whatever the current state of the window (maximized, minimized or in fullscreen), this function always returns the position and size of the window in normal state. In normal state, `getBounds` and `getNormalBounds` return the same [`Rectangle`](structures/rectangle.md).
 
 #### `win.setEnabled(enable)`
 
@@ -1027,8 +1072,9 @@ Changes the title of native window to `title`.
 
 Returns `string` - The title of the native window.
 
-**Note:** The title of the web page can be different from the title of the native
-window.
+> [!NOTE]
+> The title of the web page can be different from the title of the native
+> window.
 
 #### `win.setSheetOffset(offsetY[, offsetX])` _macOS_
 
@@ -1041,6 +1087,7 @@ a HTML-rendered toolbar. For example:
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 
 const toolbarRect = document.getElementById('toolbar').getBoundingClientRect()
@@ -1048,6 +1095,15 @@ win.setSheetOffset(toolbarRect.height)
 ```
 
 #### `win.flashFrame(flag)`
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/41391
+    description: "`window.flashFrame(bool)` will flash dock icon continuously on macOS"
+    breaking-changes-header: behavior-changed-windowflashframebool-will-flash-dock-icon-continuously-on-macos
+```
+-->
 
 * `flag` boolean
 
@@ -1184,9 +1240,10 @@ method:
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 
-const url = require('url').format({
+const url = require('node:url').format({
   protocol: 'file',
   slashes: true,
   pathname: require('node:path').join(__dirname, 'index.html')
@@ -1200,6 +1257,7 @@ the following:
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 
 win.loadURL('http://localhost:8000/post', {
@@ -1378,8 +1436,46 @@ in the taskbar.
 
 Sets the properties for the window's taskbar button.
 
-**Note:** `relaunchCommand` and `relaunchDisplayName` must always be set
-together. If one of those properties is not set, then neither will be used.
+> [!NOTE]
+> `relaunchCommand` and `relaunchDisplayName` must always be set
+> together. If one of those properties is not set, then neither will be used.
+
+#### `win.setAccentColor(accentColor)` _Windows_
+
+* `accentColor` boolean | string - The accent color for the window. By default, follows user preference in System Settings.
+
+Sets the system accent color and highlighting of active window border.
+
+The `accentColor` parameter accepts the following values:
+
+* **Color string** - Sets a custom accent color using standard CSS color formats (Hex, RGB, RGBA, HSL, HSLA, or named colors). Alpha values in RGBA/HSLA formats are ignored and the color is treated as fully opaque.
+* **`true`** - Uses the system's default accent color from user preferences in System Settings.
+* **`false`** - Explicitly disables accent color highlighting for the window.
+
+Examples:
+
+```js
+const win = new BrowserWindow({ frame: false })
+
+// Set red accent color.
+win.setAccentColor('#ff0000')
+
+// RGB format (alpha ignored if present).
+win.setAccentColor('rgba(255,0,0,0.5)')
+
+// Use system accent color.
+win.setAccentColor(true)
+
+// Disable accent color.
+win.setAccentColor(false)
+```
+
+#### `win.getAccentColor()` _Windows_
+
+Returns `string | boolean` - the system accent color and highlighting of active window border in Hex RGB format.
+
+If a color has been set for the window that differs from the system accent color, the window accent color will
+be returned. Otherwise, a boolean will be returned, with `true` indicating that the window uses the global system accent color, and `false` indicating that accent color highlighting is disabled for this window.
 
 #### `win.showDefinitionForSelection()` _macOS_
 
@@ -1420,6 +1516,13 @@ Sets whether the menu bar should be visible. If the menu bar is auto-hide, users
 
 Returns `boolean` - Whether the menu bar is visible.
 
+#### `win.isSnapped()` _Windows_
+
+Returns `boolean` - whether the window is arranged via [Snap.](https://support.microsoft.com/en-us/windows/snap-your-windows-885a9b1e-a983-a3b1-16cd-c531795e6241)
+
+The window is snapped via buttons shown when the mouse is hovered over window
+maximize button, or by dragging it to the edges of the screen.
+
 #### `win.setVisibleOnAllWorkspaces(visible[, options])` _macOS_ _Linux_
 
 * `visible` boolean
@@ -1436,13 +1539,15 @@ Returns `boolean` - Whether the menu bar is visible.
 
 Sets whether the window should be visible on all workspaces.
 
-**Note:** This API does nothing on Windows.
+> [!NOTE]
+> This API does nothing on Windows.
 
 #### `win.isVisibleOnAllWorkspaces()` _macOS_ _Linux_
 
 Returns `boolean` - Whether the window is visible on all workspaces.
 
-**Note:** This API always returns false on Windows.
+> [!NOTE]
+> This API always returns false on Windows.
 
 #### `win.setIgnoreMouseEvents(ignore[, options])`
 
@@ -1465,10 +1570,21 @@ events.
 
 Prevents the window contents from being captured by other apps.
 
-On macOS it sets the NSWindow's sharingType to NSWindowSharingNone.
-On Windows it calls SetWindowDisplayAffinity with `WDA_EXCLUDEFROMCAPTURE`.
+On Windows, it calls [`SetWindowDisplayAffinity`](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity) with `WDA_EXCLUDEFROMCAPTURE`.
 For Windows 10 version 2004 and up the window will be removed from capture entirely,
 older Windows versions behave as if `WDA_MONITOR` is applied capturing a black window.
+
+On macOS, it sets the `NSWindow`'s
+[`sharingType`](https://developer.apple.com/documentation/appkit/nswindow/sharingtype-swift.property?language=objc)
+to
+[`NSWindowSharingNone`](https://developer.apple.com/documentation/appkit/nswindow/sharingtype-swift.enum/none?language=objc).
+Unfortunately, due to an intentional change in macOS, newer Mac applications that use
+`ScreenCaptureKit` will capture your window despite `win.setContentProtection(true)`.
+See [here](https://github.com/electron/electron/issues/48258#issuecomment-3269893618).
+
+#### `win.isContentProtected()` _macOS_ _Windows_
+
+Returns `boolean` - whether or not content protection is currently enabled.
 
 #### `win.setFocusable(focusable)` _macOS_ _Windows_
 
@@ -1538,13 +1654,17 @@ there is only one tab in the current window.
 
 Adds a window as a tab on this window, after the tab for the window instance.
 
-#### `win.setVibrancy(type)` _macOS_
+#### `win.setVibrancy(type[, options])` _macOS_
 
 * `type` string | null - Can be `titlebar`, `selection`, `menu`, `popover`, `sidebar`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`. See
   the [macOS documentation][vibrancy-docs] for more details.
+* `options` Object (optional)
+  * `animationDuration` number (optional) - if greater than zero, the change to vibrancy will be animated over the given duration (in milliseconds).
 
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
-will remove the vibrancy effect on the window.
+will remove the vibrancy effect on the window. The `animationDuration` parameter only
+ animates fading in or fading out the vibrancy effect. Animating between
+ different types of vibrancy is not supported.
 
 #### `win.setBackgroundMaterial(material)` _Windows_
 
@@ -1559,7 +1679,8 @@ This method sets the browser window's system-drawn background material, includin
 
 See the [Windows documentation](https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwm_systembackdrop_type) for more details.
 
-**Note:** This method is only supported on Windows 11 22H2 and up.
+> [!NOTE]
+> This method is only supported on Windows 11 22H2 and up.
 
 #### `win.setWindowButtonPosition(position)` _macOS_
 
@@ -1581,8 +1702,9 @@ Sets the touchBar layout for the current window. Specifying `null` or
 `undefined` clears the touch bar. This method only has an effect if the
 machine has a touch bar.
 
-**Note:** The TouchBar API is currently experimental and may change or be
-removed in future Electron releases.
+> [!NOTE]
+> The TouchBar API is currently experimental and may change or be
+> removed in future Electron releases.
 
 #### `win.setBrowserView(browserView)` _Experimental_ _Deprecated_
 
@@ -1590,7 +1712,7 @@ removed in future Electron releases.
 If there are other `BrowserView`s attached, they will be removed from
 this window.
 
-> **Note**
+> [!WARNING]
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
@@ -1599,7 +1721,7 @@ this window.
 Returns `BrowserView | null` - The `BrowserView` attached to `win`. Returns `null`
 if one is not attached. Throws an error if multiple `BrowserView`s are attached.
 
-> **Note**
+> [!WARNING]
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
@@ -1609,7 +1731,7 @@ if one is not attached. Throws an error if multiple `BrowserView`s are attached.
 
 Replacement API for setBrowserView supporting work with multi browser views.
 
-> **Note**
+> [!WARNING]
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
@@ -1617,7 +1739,7 @@ Replacement API for setBrowserView supporting work with multi browser views.
 
 * `browserView` [BrowserView](browser-view.md)
 
-> **Note**
+> [!WARNING]
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
@@ -1628,7 +1750,7 @@ Replacement API for setBrowserView supporting work with multi browser views.
 Raises `browserView` above other `BrowserView`s attached to `win`.
 Throws an error if `browserView` is not attached to `win`.
 
-> **Note**
+> [!WARNING]
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
@@ -1637,7 +1759,7 @@ Throws an error if `browserView` is not attached to `win`.
 Returns `BrowserView[]` - a sorted by z-index array of all BrowserViews that have been attached
 with `addBrowserView` or `setBrowserView`. The top-most BrowserView is the last element of the array.
 
-> **Note**
+> [!WARNING]
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
@@ -1657,3 +1779,4 @@ On Linux, the `symbolColor` is automatically calculated to have minimum accessib
 [vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc
 [window-levels]: https://developer.apple.com/documentation/appkit/nswindow/level
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
+[window-session-end-event]:../api/structures/window-session-end-event.md

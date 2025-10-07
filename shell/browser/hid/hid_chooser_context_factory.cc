@@ -37,19 +37,16 @@ HidChooserContextFactory::HidChooserContextFactory()
 
 HidChooserContextFactory::~HidChooserContextFactory() = default;
 
-KeyedService* HidChooserContextFactory::BuildServiceInstanceFor(
+std::unique_ptr<KeyedService>
+HidChooserContextFactory::BuildServiceInstanceForBrowserContext(
     content::BrowserContext* context) const {
-  auto* browser_context =
-      static_cast<electron::ElectronBrowserContext*>(context);
-  return new HidChooserContext(browser_context);
+  return std::make_unique<HidChooserContext>(
+      static_cast<electron::ElectronBrowserContext*>(context));
 }
 
 content::BrowserContext* HidChooserContextFactory::GetBrowserContextToUse(
     content::BrowserContext* context) const {
   return context;
 }
-
-void HidChooserContextFactory::BrowserContextShutdown(
-    content::BrowserContext* context) {}
 
 }  // namespace electron

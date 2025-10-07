@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_PROTOCOL_REGISTRY_H_
 
 #include <string>
+#include <string_view>
 
 #include "content/public/browser/content_browser_client.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
@@ -40,7 +41,7 @@ class ProtocolRegistry {
   bool UnregisterProtocol(const std::string& scheme);
 
   [[nodiscard]] const HandlersMap::mapped_type* FindRegistered(
-      const std::string& scheme) const;
+      std::string_view scheme) const;
 
   bool InterceptProtocol(ProtocolType type,
                          const std::string& scheme,
@@ -48,7 +49,7 @@ class ProtocolRegistry {
   bool UninterceptProtocol(const std::string& scheme);
 
   [[nodiscard]] const HandlersMap::mapped_type* FindIntercepted(
-      const std::string& scheme) const;
+      std::string_view scheme) const;
 
  private:
   friend class ElectronBrowserContext;

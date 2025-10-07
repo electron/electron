@@ -6,7 +6,7 @@ on:
       build-image-sha:
         type: string
         description: 'SHA for electron/build image'
-        default: 'cf814a4d2501e8e843caea071a6b70a48e78b855'
+        default: '933c7d6ff6802706875270bec2e3c891cf8add3f'
       upload-to-storage:
         description: 'Uploads to Azure storage'
         required: false
@@ -19,7 +19,7 @@ on:
 
 jobs:
   checkout-linux:
-    runs-on: electron-arc-linux-amd64-32core
+    runs-on: electron-arc-centralus-linux-amd64-32core
     container:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
       options: --user root
@@ -27,10 +27,11 @@ jobs:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
         - /var/run/sas:/var/run/sas
     env:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
         path: src/electron
         fetch-depth: 0
@@ -42,14 +43,13 @@ jobs:
     needs: checkout-linux
     with:
       environment: production-release
-      build-runs-on: electron-arc-linux-amd64-32core
+      build-runs-on: electron-arc-centralus-linux-amd64-32core
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: x64
       is-release: true
       gn-build-type: release
       generate-symbols: true
-      strip-binaries: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
     secrets: inherit
 
@@ -58,14 +58,13 @@ jobs:
     needs: checkout-linux
     with:
       environment: production-release
-      build-runs-on: electron-arc-linux-amd64-32core
+      build-runs-on: electron-arc-centralus-linux-amd64-32core
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: arm
       is-release: true
       gn-build-type: release
       generate-symbols: true
-      strip-binaries: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
     secrets: inherit
 
@@ -74,13 +73,12 @@ jobs:
     needs: checkout-linux
     with:
       environment: production-release
-      build-runs-on: electron-arc-linux-amd64-32core
+      build-runs-on: electron-arc-centralus-linux-amd64-32core
       build-container: '{"image":"ghcr.io/electron/build:${{ inputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: arm64
       is-release: true
       gn-build-type: release
       generate-symbols: true
-      strip-binaries: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
     secrets: inherit

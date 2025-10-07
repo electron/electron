@@ -1,7 +1,7 @@
-import("all.gn")
+import("//electron/build/args/all.gn")
 is_component_build = false
 is_component_ffmpeg = true
 is_official_build = true
-proprietary_codecs = false
 ffmpeg_branding = "Chromium"
 enable_dsyms = false
+proprietary_codecs = false

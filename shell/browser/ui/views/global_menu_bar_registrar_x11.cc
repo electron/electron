@@ -8,7 +8,7 @@
 
 #include "base/debug/leak_annotations.h"
 #include "base/functional/bind.h"
-#include "base/logging.h"
+#include "base/memory/singleton.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/ui/views/global_menu_bar_x11.h"
 
@@ -80,7 +80,6 @@ void GlobalMenuBarRegistrarX11::RegisterXWindow(x11::Window window) {
 
 void GlobalMenuBarRegistrarX11::UnregisterXWindow(x11::Window window) {
   DCHECK(registrar_proxy_);
-  std::string path = electron::GlobalMenuBarX11::GetPathForWindow(window);
 
   ANNOTATE_SCOPED_MEMORY_LEAK;  // http://crbug.com/314087
   // TODO(erg): The mozilla implementation goes to a lot of callback trouble

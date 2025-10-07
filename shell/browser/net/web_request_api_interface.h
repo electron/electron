@@ -8,16 +8,19 @@
 #include <set>
 #include <string>
 
-#include "extensions/browser/api/web_request/web_request_info.h"
 #include "net/base/completion_once_callback.h"
 #include "services/network/public/cpp/resource_request.h"
+
+namespace extensions {
+struct WebRequestInfo;
+}  // namespace extensions
 
 namespace electron {
 
 // Defines the interface for WebRequest API, implemented by api::WebRequestNS.
 class WebRequestAPI {
  public:
-  virtual ~WebRequestAPI() {}
+  virtual ~WebRequestAPI() = default;
 
   using BeforeSendHeadersCallback =
       base::OnceCallback<void(const std::set<std::string>& removed_headers,

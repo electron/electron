@@ -1,6 +1,10 @@
+const { app, protocol } = require('electron');
+
 const fs = require('node:fs');
 const path = require('node:path');
 const v8 = require('node:v8');
+
+const FAILURE_STATUS_KEY = 'Electron_Spec_Runner_Failures';
 
 // We want to terminate on errors, not throw up a dialog
 process.on('uncaughtException', (err) => {
@@ -11,8 +15,6 @@ process.on('uncaughtException', (err) => {
 // Tell ts-node which tsconfig to use
 process.env.TS_NODE_PROJECT = path.resolve(__dirname, '../tsconfig.spec.json');
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
-
-const { app, protocol } = require('electron');
 
 // Some Linux machines have broken hardware acceleration support.
 if (process.env.ELECTRON_TEST_DISABLE_HARDWARE_ACCELERATION) {
@@ -26,12 +28,18 @@ app.on('window-all-closed', () => null);
 
 // Use fake device for Media Stream to replace actual camera and microphone.
 app.commandLine.appendSwitch('use-fake-device-for-media-stream');
-app.commandLine.appendSwitch('host-rules', 'MAP localhost2 127.0.0.1');
 app.commandLine.appendSwitch('host-resolver-rules', [
+  'MAP localhost2 127.0.0.1',
   'MAP ipv4.localhost2 10.0.0.1',
   'MAP ipv6.localhost2 [::1]',
   'MAP notfound.localhost2 ~NOTFOUND'
 ].join(', '));
+
+// Enable features required by tests.
+app.commandLine.appendSwitch('enable-features', [
+  // spec/api-web-frame-main-spec.ts
+  'DocumentPolicyIncludeJSCallStacksInCrashReports'
+].join(','));
 
 global.standardScheme = 'app';
 global.zoomScheme = 'zoom';
@@ -125,7 +133,7 @@ app.whenReady().then(async () => {
   const validTestPaths = argv.files && argv.files.map(file =>
     path.isAbsolute(file)
       ? path.relative(baseElectronDir, file)
-      : file);
+      : path.normalize(file));
   const filter = (file) => {
     if (!/-spec\.[tj]s$/.test(file)) {
       return false;
@@ -162,7 +170,12 @@ app.whenReady().then(async () => {
   const cb = () => {
     // Ensure the callback is called after runner is defined
     process.nextTick(() => {
-      process.exit(runner.failures);
+      if (process.env.ELECTRON_FORCE_TEST_SUITE_EXIT === 'true') {
+        console.log(`${FAILURE_STATUS_KEY}: ${runner.failures}`);
+        process.kill(process.pid);
+      } else {
+        process.exit(runner.failures);
+      }
     });
   };
 

@@ -13,9 +13,7 @@
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/memory/ptr_util.h"
-#include "base/strings/utf_string_conversions.h"
 #include "cc/base/switches.h"
-#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "content/public/common/content_switches.h"
@@ -150,6 +148,7 @@ void WebContentsPreferences::Clear() {
       blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyAllowed;
   preload_path_ = std::nullopt;
   v8_cache_options_ = blink::mojom::V8CacheOptions::kDefault;
+  deprecated_paste_enabled_ = false;
 
 #if BUILDFLAG(IS_MAC)
   scroll_bounce_ = false;
@@ -216,7 +215,7 @@ void WebContentsPreferences::SetFromDictionary(
   }
   std::string background_color;
   if (web_preferences.GetHidden(options::kBackgroundColor, &background_color))
-    background_color_ = ParseCSSColor(background_color);
+    background_color_ = ParseCSSColor(background_color).value_or(SK_ColorWHITE);
   std::string safe_dialogs_message;
   if (web_preferences.Get("safeDialogsMessage", &safe_dialogs_message))
     safe_dialogs_message_ = safe_dialogs_message;
@@ -247,6 +246,9 @@ void WebContentsPreferences::SetFromDictionary(
 
   web_preferences.Get("v8CacheOptions", &v8_cache_options_);
 
+  web_preferences.Get(options::kEnableDeprecatedPaste,
+                      &deprecated_paste_enabled_);
+
 #if BUILDFLAG(IS_MAC)
   web_preferences.Get(options::kScrollBounce, &scroll_bounce_);
 #endif
@@ -256,14 +258,6 @@ void WebContentsPreferences::SetFromDictionary(
 #endif
 
   SaveLastPreferences();
-}
-
-bool WebContentsPreferences::GetSafeDialogsMessage(std::string* message) const {
-  if (safe_dialogs_message_) {
-    *message = *safe_dialogs_message_;
-    return true;
-  }
-  return false;
 }
 
 bool WebContentsPreferences::SetImageAnimationPolicy(std::string policy) {
@@ -283,15 +277,6 @@ bool WebContentsPreferences::SetImageAnimationPolicy(std::string policy) {
   return false;
 }
 
-bool WebContentsPreferences::GetPreloadPath(base::FilePath* path) const {
-  DCHECK(path);
-  if (preload_path_) {
-    *path = *preload_path_;
-    return true;
-  }
-  return false;
-}
-
 bool WebContentsPreferences::IsSandboxed() const {
   if (sandbox_)
     return *sandbox_;
@@ -302,7 +287,7 @@ bool WebContentsPreferences::IsSandboxed() const {
 
 // static
 content::WebContents* WebContentsPreferences::GetWebContentsFromProcessID(
-    int process_id) {
+    content::ChildProcessId process_id) {
   for (WebContentsPreferences* preferences : Instances()) {
     content::WebContents* web_contents = preferences->web_contents_;
     if (web_contents->GetPrimaryMainFrame()->GetProcess()->GetID() ==
@@ -491,6 +476,8 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   prefs->webview_tag = webview_tag_;
 
   prefs->v8_cache_options = v8_cache_options_;
+
+  prefs->dom_paste_enabled = deprecated_paste_enabled_;
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPreferences);

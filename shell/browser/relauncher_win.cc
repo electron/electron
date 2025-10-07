@@ -11,17 +11,13 @@
 #include "base/process/process_handle.h"
 #include "base/strings/strcat_win.h"
 #include "base/strings/string_number_conversions_win.h"
-#include "base/strings/utf_string_conversions.h"
 #include "base/win/scoped_handle.h"
 #include "sandbox/win/src/nt_internals.h"
 #include "sandbox/win/src/win_utils.h"
-#include "ui/base/win/shell.h"
 
 namespace relauncher::internal {
 
 namespace {
-
-const CharType* kWaitEventName = L"ElectronRelauncherWaitEvent";
 
 struct PROCESS_BASIC_INFORMATION {
   union {
@@ -100,8 +96,8 @@ StringType AddQuoteForArg(const StringType& arg) {
 }  // namespace
 
 StringType GetWaitEventName(base::ProcessId pid) {
-  return base::StrCat(
-      {kWaitEventName, L"-", base::NumberToWString(static_cast<int>(pid))});
+  return base::StrCat({L"ElectronRelauncherWaitEvent-",
+                       base::NumberToWString(static_cast<int>(pid))});
 }
 
 StringType ArgvToCommandLineString(const StringVector& argv) {
