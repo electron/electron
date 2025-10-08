@@ -62,10 +62,9 @@ runs:
 
         sudo rm -rf /Applications/Safari.app
         sudo rm -rf /Applications/Xcode_16.1.app
-        sudo rm -rf /Applications/Xcode_16.3.app
         sudo rm -rf /Applications/Xcode_16.2.app
+        sudo rm -rf /Applications/Xcode_16.3.app
         sudo rm -rf /Applications/Google Chrome.app
-        sudo rm -rf /Applications/Xcode_16.4.app
         sudo rm -rf /Applications/Google Chrome for Testing.app
         sudo rm -rf	/Applications/Firefox.app
         sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
