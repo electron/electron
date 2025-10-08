@@ -305,7 +305,7 @@ const extensions::Extension* GetEnabledExtensionFromEffectiveURL(
   if (!registry)
     return nullptr;
 
-  return registry->enabled_extensions().GetByID(effective_url.host());
+  return registry->enabled_extensions().GetByID(effective_url.GetHost());
 }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
@@ -1667,7 +1667,7 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
       render_frame_host->GetProcess()->GetBrowserContext();
   auto* extension = extensions::ExtensionRegistry::Get(browser_context)
                         ->enabled_extensions()
-                        .GetByID(site.host());
+                        .GetByID(site.GetHost());
   if (!extension)
     return;
   extensions::ExtensionsBrowserClient::Get()
