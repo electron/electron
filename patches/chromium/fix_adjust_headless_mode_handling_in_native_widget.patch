@@ -18,8 +18,46 @@ Additionally, this patch reverts
 https://chromium-review.googlesource.com/c/chromium/src/+/6936895
 as we depend on the removed functionality in this patch.
 
+diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
+index f651286bc85f3640ec072b05eb2f0d118e02417a..94ee607bc9de2bf388a736c438613b51de1a5ac2 100644
+--- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
++++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
+@@ -522,7 +522,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+   is_translucent_window_ = params->is_translucent;
+   pending_restoration_data_ = params->state_restoration_data;
+ 
+-  if (display::Screen::Get()->IsHeadless()) {
++  if (params->is_headless_mode_window) {
+     headless_mode_window_ = std::make_optional<HeadlessModeWindow>();
+   }
+ 
+diff --git a/components/remote_cocoa/common/native_widget_ns_window.mojom b/components/remote_cocoa/common/native_widget_ns_window.mojom
+index 11954a3adfb6d517b6dc8e780a4a9aba8a0bf98a..1ddc1f34055c8b42177703ccc2f0d006294430da 100644
+--- a/components/remote_cocoa/common/native_widget_ns_window.mojom
++++ b/components/remote_cocoa/common/native_widget_ns_window.mojom
+@@ -81,6 +81,8 @@ struct NativeWidgetNSWindowInitParams {
+   // NSWindowCollectionBehaviorParticipatesInCycle (this is not the
+   // default for NSWindows with NSWindowStyleMaskBorderless).
+   bool force_into_collection_cycle;
++  // If true, the window was created in headless mode.
++  bool is_headless_mode_window;
+   // An opaque blob of AppKit data which includes, among other things, a
+   // window's workspace and fullscreen state, and can be retrieved from or
+   // applied to a window.
+diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
+index e523151fb670af28cf2c54548c5009825fdbed92..66d5724f848b328a19362a3c0f6346704ddb50ac 100644
+--- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
++++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
+@@ -554,6 +554,7 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+   bool is_miniaturized_ = false;
+   bool is_window_key_ = false;
+   bool is_mouse_capture_active_ = false;
++  bool is_headless_mode_window_ = false;
+   bool is_zoomed_ = false;
+   gfx::Rect window_bounds_before_fullscreen_;
+ 
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 7459d4c241e914248261c62b63652fd7139dd54e..3da9f9f8005cd74c8b7945706222a3716319585b 100644
+index 7459d4c241e914248261c62b63652fd7139dd54e..97b1f34a655c87bf888ea16e7ab6897132afdaae 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -465,6 +465,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
@@ -30,7 +68,15 @@ index 7459d4c241e914248261c62b63652fd7139dd54e..3da9f9f8005cd74c8b7945706222a371
  
    if (params.workspace.length()) {
      std::string restoration_data;
-@@ -663,9 +664,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -482,6 +483,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+     window_params->modal_type = widget->widget_delegate()->GetModalType();
+     window_params->is_translucent =
+         params.opacity == Widget::InitParams::WindowOpacity::kTranslucent;
++    window_params->is_headless_mode_window = is_headless_mode_window_;
+     window_params->is_tooltip = is_tooltip;
+ 
+     // macOS likes to put shadows on most things. However, frameless windows
+@@ -663,9 +665,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // case it will never become visible but we want its compositor to produce
    // frames for screenshooting and screencasting.
    UpdateCompositorProperties();
