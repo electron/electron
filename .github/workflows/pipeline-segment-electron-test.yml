@@ -177,22 +177,18 @@ jobs:
         path: ./src_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
     - name: Restore Generated Artifacts
       run: ./src/electron/script/actions/restore-artifacts.sh
-    - name: Unzip Dist, Mksnapshot & Chromedriver (win)
+    - name: Unzip Dist (win)
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
       run: |
         Set-ExecutionPolicy Bypass -Scope Process -Force
         cd src/out/Default
         Expand-Archive -Force dist.zip -DestinationPath ./
-        Expand-Archive -Force chromedriver.zip -DestinationPath ./
-        Expand-Archive -Force mksnapshot.zip -DestinationPath ./
-    - name: Unzip Dist, Mksnapshot & Chromedriver (unix)
+    - name: Unzip Dist (unix)
       if: ${{ inputs.target-platform != 'win' }}
       run: |
         cd src/out/Default
         unzip -:o dist.zip
-        unzip -:o chromedriver.zip
-        unzip -:o mksnapshot.zip
     #- name: Import & Trust Self-Signed Codesigning Cert on MacOS
     #  if: ${{ inputs.target-platform == 'macos' && inputs.target-arch == 'x64' }}
     #  run: |

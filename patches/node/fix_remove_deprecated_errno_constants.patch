@@ -45,7 +45,7 @@ index ac00778cfc59fb55e361b24fc81a965a5e8f97e7..f0c4d6dfc9f03bee59e656b2da9ac325
  # define UV__EUNATCH UV__ERR(EUNATCH)
  #else
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index 8c44e32381a44675792ca0922e47df1adda48e41..d193725ea9a3270ed9affea12d11467fb14efdf8 100644
+index 0ca643aa74d13f278685d2330b791182b55c15b4..cbcecfba33070b820aca0e2814982160a97a6378 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
 @@ -241,10 +241,6 @@ void DefineErrnoConstants(Local<Object> target) {
