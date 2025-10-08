@@ -130,6 +130,17 @@ describe('esm', () => {
     }
 
     describe('nodeIntegration', () => {
+      let badFilePath = '';
+
+      beforeEach(async () => {
+        badFilePath = path.resolve(path.resolve(os.tmpdir(), 'bad-file.badjs'));
+        await fs.promises.writeFile(badFilePath, 'const foo = "bar";');
+      });
+
+      afterEach(async () => {
+        await fs.promises.unlink(badFilePath);
+      });
+
       it('should support an esm entrypoint', async () => {
         const [webContents] = await loadWindowWithPreload('import { resolve } from "path"; window.resolvePath = resolve;', {
           nodeIntegration: true,
@@ -189,6 +200,18 @@ describe('esm', () => {
           expect(error?.message).to.include('Failed to fetch dynamically imported module');
         });
 
+        it('should use Node.js ESM dynamic loader in the preload', async () => {
+          const [, preloadError] = await loadWindowWithPreload(`await import(${JSON.stringify((pathToFileURL(badFilePath)))})`, {
+            nodeIntegration: true,
+            sandbox: false,
+            contextIsolation: false
+          });
+
+          expect(preloadError).to.not.equal(null);
+          // This is a node.js specific error message
+          expect(preloadError!.toString()).to.include('Unknown file extension');
+        });
+
         it('should use import.meta callback handling from Node.js for Node.js modules', async () => {
           const result = await runFixture(path.resolve(fixturePath, 'import-meta'));
           expect(result.code).to.equal(0);
@@ -196,17 +219,6 @@ describe('esm', () => {
       });
 
       describe('with context isolation', () => {
-        let badFilePath = '';
-
-        beforeEach(async () => {
-          badFilePath = path.resolve(path.resolve(os.tmpdir(), 'bad-file.badjs'));
-          await fs.promises.writeFile(badFilePath, 'const foo = "bar";');
-        });
-
-        afterEach(async () => {
-          await fs.promises.unlink(badFilePath);
-        });
-
         it('should use Node.js ESM dynamic loader in the isolated context', async () => {
           const [, preloadError] = await loadWindowWithPreload(`await import(${JSON.stringify((pathToFileURL(badFilePath)))})`, {
             nodeIntegration: true,
