@@ -26,12 +26,12 @@ any dependencies in your app will not be installed.
 
 ## Customization
 
-If you want to change the architecture that is downloaded (e.g., `ia32` on an
-`x64` machine), you can use the `--arch` flag with npm install or set the
+If you want to change the architecture that is downloaded (e.g., `x64` on an
+`arm64` machine), you can use the `--arch` flag with npm install or set the
 `npm_config_arch` environment variable:
 
 ```shell
-npm install --arch=ia32 electron
+npm install --arch=x64 electron
 ```
 
 In addition to changing the architecture, you can also specify the platform
@@ -60,7 +60,7 @@ where `$VERSION` is the exact version of Electron).
 If you are unable to access GitHub or you need to provide a custom build, you
 can do so by either providing a mirror or an existing cache directory.
 
-#### Mirror
+### Mirror
 
 You can use environment variables to override the base URL, the path at which to
 look for Electron binaries, and the binary filename. The URL used by `@electron/get`
@@ -95,7 +95,7 @@ Electron release you may have to set `electron_use_remote_checksums=1` directly,
 or configure it in a `.npmrc` file, to force Electron to use the remote `SHASUMS256.txt`
 file to verify the checksum instead of the embedded checksums.
 
-#### Cache
+### Cache
 
 Alternatively, you can override the local cache. `@electron/get` will cache
 downloaded binaries in a local directory to not stress your network. You can use
@@ -120,7 +120,7 @@ The cache contains the version's official zip file as well as a checksum, and is
 │   └── electron-v15.3.1-darwin-x64.zip
 ```
 
-## Skip binary download
+## Postinstall script
 
 Under the hood, Electron's JavaScript API binds to a binary that contains its
 implementations. Because this binary is crucial to the function of any Electron app,
