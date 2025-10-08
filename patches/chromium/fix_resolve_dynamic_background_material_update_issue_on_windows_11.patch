@@ -36,7 +36,7 @@ index 0cd07fd5fb55dcc0d972de4c027fcb895d156592..0f4d335e1d54b5e92fc217080d86513d
    // Overridden from DesktopWindowTreeHost:
    void Init(const Widget::InitParams& params) override;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 677b5b91efcf178b676591097bd83d3768b03e61..1972f1bc819f5baa8945fe191a9b07bc4c8da5d3 100644
+index 6b508b31a713f0d1f113eb4520403acf7ff6d401..712e17e5a88a4f5f30c488ef50eb215fc620dc53 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -994,13 +994,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
@@ -89,7 +89,7 @@ index 677b5b91efcf178b676591097bd83d3768b03e61..1972f1bc819f5baa8945fe191a9b07bc
      return;
    }
  
-@@ -2414,17 +2426,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
+@@ -2416,17 +2428,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
      delegate_->SchedulePaint();
    }
  

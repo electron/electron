@@ -11,25 +11,10 @@ enlarge window above dimensions set during creation of the
 BrowserWindow.
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 41b5219bdba3eba8bde935992fe60fc14898f68d..9b06a37197f04e65740aa79efde75d9248ca97b2 100644
+index 41b5219bdba3eba8bde935992fe60fc14898f68d..c1af22cfae597e13e7c0889a8ceaed7003cd83ac 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -2061,12 +2061,10 @@ void HWNDMessageHandler::OnGetMinMaxInfo(MINMAXINFO* minmax_info) {
-     min_window_size.Enlarge(window_rect.right - window_rect.left,
-                             window_rect.bottom - window_rect.top);
-     // Either axis may be zero, so enlarge them independently.
--    if (max_window_size.width()) {
-+    if (max_window_size.width())
-       max_window_size.Enlarge(window_rect.right - window_rect.left, 0);
--    }
--    if (max_window_size.height()) {
-+    if (max_window_size.height())
-       max_window_size.Enlarge(0, window_rect.bottom - window_rect.top);
--    }
-   }
-   minmax_info->ptMinTrackSize.x = min_window_size.width();
-   minmax_info->ptMinTrackSize.y = min_window_size.height();
-@@ -3844,17 +3842,31 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
+@@ -3844,17 +3844,32 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
    delegate_->GetMinMaxSize(&min_window_size, &max_window_size);
    min_window_size = delegate_->DIPToScreenSize(min_window_size);
    max_window_size = delegate_->DIPToScreenSize(max_window_size);
@@ -40,7 +25,8 @@ index 41b5219bdba3eba8bde935992fe60fc14898f68d..9b06a37197f04e65740aa79efde75d92
 +    GetClientRect(hwnd(), &client_rect);
 +    GetWindowRect(hwnd(), &rect);
 +    CR_DEFLATE_RECT(&rect, &client_rect);
-+    min_window_size.Enlarge(rect.right - rect.left, rect.bottom - rect.top);
++    min_window_size.Enlarge(rect.right - rect.left,
++                            rect.bottom - rect.top);
 +    // Either axis may be zero, so enlarge them independently.
 +    if (max_window_size.width()) {
 +      max_window_size.Enlarge(rect.right - rect.left, 0);
