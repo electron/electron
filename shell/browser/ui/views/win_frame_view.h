@@ -31,7 +31,7 @@ class WinFrameView : public FramelessView {
 
   SkColor GetReadableFeatureColor(SkColor background_color);
 
-  // views::NonClientFrameView:
+  // views::FrameView:
   gfx::Rect GetWindowBoundsForClientBounds(
       const gfx::Rect& client_bounds) const override;
   int NonClientHitTest(const gfx::Point& point) override;
