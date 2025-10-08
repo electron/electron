@@ -60,8 +60,8 @@ gfx::ImageSkia* ViewsDelegate::GetDefaultWindowIcon() const {
 }
 #endif
 
-std::unique_ptr<views::NonClientFrameView>
-ViewsDelegate::CreateDefaultNonClientFrameView(views::Widget* widget) {
+std::unique_ptr<views::FrameView> ViewsDelegate::CreateDefaultFrameView(
+    views::Widget* widget) {
   return nullptr;
 }
 

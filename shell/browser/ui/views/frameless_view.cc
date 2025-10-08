@@ -96,7 +96,7 @@ views::View* FramelessView::TargetForRect(views::View* root,
   if (NonClientHitTest(rect.origin()) != HTCLIENT)
     return this;
 
-  return NonClientFrameView::TargetForRect(root, rect);
+  return FrameView::TargetForRect(root, rect);
 }
 
 gfx::Size FramelessView::CalculatePreferredSize(
