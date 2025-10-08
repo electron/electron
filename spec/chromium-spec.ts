@@ -901,13 +901,15 @@ describe('chromium features', () => {
   });
 
   describe('File System API,', () => {
-    afterEach(closeAllWindows);
+    let w: BrowserWindow | null = null;
+
     afterEach(() => {
       session.defaultSession.setPermissionRequestHandler(null);
+      closeAllWindows();
     });
 
     it('allows access by default to reading an OPFS file', async () => {
-      const w = new BrowserWindow({
+      w = new BrowserWindow({
         show: false,
         webPreferences: {
           nodeIntegration: true,
@@ -929,7 +931,7 @@ describe('chromium features', () => {
     });
 
     it('fileHandle.queryPermission by default has permission to read and write to OPFS files', async () => {
-      const w = new BrowserWindow({
+      w = new BrowserWindow({
         show: false,
         webPreferences: {
           nodeIntegration: true,
@@ -951,7 +953,8 @@ describe('chromium features', () => {
     });
 
     it('fileHandle.requestPermission automatically grants permission to read and write to OPFS files', async () => {
-      const w = new BrowserWindow({
+      w = new BrowserWindow({
+        show: false,
         webPreferences: {
           nodeIntegration: true,
           partition: 'file-system-spec',
@@ -971,8 +974,8 @@ describe('chromium features', () => {
       expect(status).to.equal('granted');
     });
 
-    it('requests permission when trying to create a writable file handle', (done) => {
-      const writablePath = path.join(fixturesPath, 'file-system', 'test-writable.html');
+    it('allows permission when trying to create a writable file handle', (done) => {
+      const writablePath = path.join(fixturesPath, 'file-system', 'test-perms.html');
       const testFile = path.join(fixturesPath, 'file-system', 'test.txt');
 
       const w = new BrowserWindow({
@@ -1000,9 +1003,9 @@ describe('chromium features', () => {
 
       ipcMain.once('did-create-file-handle', async () => {
         const result = await w.webContents.executeJavaScript(`
-          new Promise((resolve, reject) => {
+          new Promise(async (resolve, reject) => {
             try {
-              const writable = fileHandle.createWritable();
+              const writable = await handle.createWritable();
               resolve(true);
             } catch {
               resolve(false);
@@ -1016,6 +1019,258 @@ describe('chromium features', () => {
       w.loadFile(writablePath);
 
       w.webContents.once('did-finish-load', () => {
+        // @ts-expect-error Undocumented testing method.
+        clipboard._writeFilesForTesting([testFile]);
+        w.webContents.paste();
+      });
+    });
+
+    it('denies permission when trying to create a writable file handle', (done) => {
+      const writablePath = path.join(fixturesPath, 'file-system', 'test-perms.html');
+      const testFile = path.join(fixturesPath, 'file-system', 'test.txt');
+
+      const w = new BrowserWindow({
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false,
+          sandbox: false
+        }
+      });
+
+      w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
+        expect(permission).to.equal('fileSystem');
+
+        const { href } = url.pathToFileURL(writablePath);
+        expect(details).to.deep.equal({
+          fileAccessType: 'writable',
+          isDirectory: false,
+          isMainFrame: true,
+          filePath: testFile,
+          requestingUrl: href
+        });
+
+        callback(false);
+      });
+
+      ipcMain.once('did-create-file-handle', async () => {
+        const result = await w.webContents.executeJavaScript(`
+          new Promise(async (resolve, reject) => {
+            try {
+              const writable = await handle.createWritable();
+              resolve(true);
+            } catch {
+              resolve(false);
+            }
+          })
+        `, true);
+        expect(result).to.be.false();
+        done();
+      });
+
+      w.loadFile(writablePath);
+
+      w.webContents.once('did-finish-load', () => {
+        // @ts-expect-error Undocumented testing method.
+        clipboard._writeFilesForTesting([testFile]);
+        w.webContents.paste();
+      });
+    });
+
+    it('calls twice when trying to query a read/write file handle permissions', (done) => {
+      const writablePath = path.join(fixturesPath, 'file-system', 'test-perms.html');
+      const testFile = path.join(fixturesPath, 'file-system', 'test.txt');
+
+      const w = new BrowserWindow({
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false,
+          sandbox: false
+        }
+      });
+
+      let calls = 0;
+      w.webContents.session.setPermissionCheckHandler((wc, permission, origin, details) => {
+        if (permission === 'fileSystem') {
+          const { fileAccessType, isDirectory, filePath } = details;
+          expect(['writable', 'readable']).to.contain(fileAccessType);
+          expect(isDirectory).to.be.false();
+          expect(filePath).to.equal(testFile);
+          calls++;
+          return true;
+        }
+
+        return false;
+      });
+
+      ipcMain.once('did-create-file-handle', async () => {
+        const permission = await w.webContents.executeJavaScript(`
+          new Promise(async (resolve, reject) => {
+            try {
+              const permission = await handle.queryPermission({ mode: 'readwrite' });
+              resolve(permission);
+            } catch {
+              resolve('denied');
+            }
+          })
+        `, true);
+        expect(permission).to.equal('granted');
+        expect(calls).to.equal(2);
+        done();
+      });
+
+      w.loadFile(writablePath);
+
+      w.webContents.once('did-finish-load', () => {
+        // @ts-expect-error Undocumented testing method.
+        clipboard._writeFilesForTesting([testFile]);
+        w.webContents.paste();
+      });
+    });
+
+    it('correctly denies permissions after creating a readable directory handle', (done) => {
+      const permPath = path.join(fixturesPath, 'file-system', 'test-perms.html');
+      const testDir = path.join(fixturesPath, 'file-system');
+
+      const w = new BrowserWindow({
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false,
+          sandbox: false
+        }
+      });
+
+      w.webContents.session.setPermissionCheckHandler((wc, permission, origin, details) => {
+        expect(permission).to.equal('fileSystem');
+
+        const { fileAccessType, isDirectory, filePath } = details;
+        expect(fileAccessType).to.equal('readable');
+        expect(isDirectory).to.be.true();
+        expect(filePath).to.equal(testDir);
+        return false;
+      });
+
+      ipcMain.once('did-create-directory-handle', async () => {
+        const permission = await w.webContents.executeJavaScript(`
+          new Promise(async (resolve, reject) => {
+            try {
+              const permission = await handle.queryPermission({ mode: 'read' });
+              resolve(permission);
+            } catch {
+              resolve('denied');
+            }
+          })
+        `, true);
+        expect(permission).to.equal('denied');
+        done();
+      });
+
+      w.loadFile(permPath);
+
+      w.webContents.once('did-finish-load', () => {
+        // @ts-expect-error Undocumented testing method.
+        clipboard._writeFilesForTesting([testDir]);
+        w.webContents.paste();
+      });
+    });
+
+    it('correctly allows permissions after creating a readable directory handle', (done) => {
+      const permPath = path.join(fixturesPath, 'file-system', 'test-perms.html');
+      const testDir = path.join(fixturesPath, 'file-system');
+
+      const w = new BrowserWindow({
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false,
+          sandbox: false
+        }
+      });
+
+      w.webContents.session.setPermissionCheckHandler((wc, permission, origin, details) => {
+        if (permission === 'fileSystem') {
+          const { fileAccessType, isDirectory, filePath } = details;
+          expect(fileAccessType).to.equal('readable');
+          expect(isDirectory).to.be.true();
+          expect(filePath).to.equal(testDir);
+          return true;
+        }
+        return false;
+      });
+
+      ipcMain.once('did-create-directory-handle', async () => {
+        const permission = await w.webContents.executeJavaScript(`
+          new Promise(async (resolve, reject) => {
+            try {
+              const permission = await handle.queryPermission({ mode: 'read' });
+              resolve(permission);
+            } catch {
+              resolve('denied');
+            }
+          })
+        `, true);
+        expect(permission).to.equal('granted');
+        done();
+      });
+
+      w.loadFile(permPath);
+
+      w.webContents.once('did-finish-load', () => {
+        // @ts-expect-error Undocumented testing method.
+        clipboard._writeFilesForTesting([testDir]);
+        w.webContents.paste();
+      });
+    });
+
+    it('allows in-session persistence of granted file permissions', (done) => {
+      const writablePath = path.join(fixturesPath, 'file-system', 'test-perms.html');
+      const testFile = path.join(fixturesPath, 'file-system', 'persist.txt');
+
+      const w = new BrowserWindow({
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false,
+          sandbox: false
+        }
+      });
+
+      w.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => {
+        callback(true);
+      });
+
+      w.webContents.session.setPermissionCheckHandler((_wc, permission, _origin, details) => {
+        if (permission === 'fileSystem') {
+          const { fileAccessType, isDirectory, filePath } = details;
+          expect(fileAccessType).to.deep.equal('readable');
+          expect(isDirectory).to.be.false();
+          expect(filePath).to.equal(testFile);
+          return true;
+        }
+        return false;
+      });
+
+      let reload = true;
+      ipcMain.on('did-create-file-handle', async () => {
+        if (reload) {
+          w.webContents.reload();
+          reload = false;
+        } else {
+          const permission = await w.webContents.executeJavaScript(`
+            new Promise(async (resolve, reject) => {
+              try {
+                const permission = await handle.queryPermission({ mode: 'read' });
+                resolve(permission);
+              } catch {
+                resolve('denied');
+              }
+            })
+          `, true);
+          expect(permission).to.equal('granted');
+          done();
+        }
+      });
+
+      w.loadFile(writablePath);
+
+      w.webContents.on('did-finish-load', () => {
         // @ts-expect-error Undocumented testing method.
         clipboard._writeFilesForTesting([testFile]);
         w.webContents.paste();
