@@ -586,6 +586,11 @@ source_set("electron_lib") {
   }
 
   if (is_mac) {
+    # Disable C++ modules to resolve linking error when including MacOS SDK
+    # headers from third_party/electron_node/deps/uv/include/uv/darwin.h
+    # TODO(samuelmaddock): consider revisiting this in the future
+    use_libcxx_modules = false
+
     deps += [
       "//components/remote_cocoa/app_shim",
       "//components/remote_cocoa/browser",
