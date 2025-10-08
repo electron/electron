@@ -50,10 +50,6 @@ namespace electron {
 class ElectronMenuModel;
 class BackgroundThrottlingSource;
 
-namespace api {
-class BrowserView;
-}
-
 #if BUILDFLAG(IS_MAC)
 using NativeWindowHandle = gfx::NativeView;
 #else
@@ -434,8 +430,6 @@ class NativeWindow : public base::SupportsUserData,
   void UpdateBackgroundThrottlingState();
 
  protected:
-  friend class api::BrowserView;
-
   NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
 
   void set_titlebar_overlay_height(int height) {
