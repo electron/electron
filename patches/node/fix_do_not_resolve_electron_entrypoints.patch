@@ -6,19 +6,20 @@ Subject: fix: do not resolve electron entrypoints
 This wastes fs cycles and can result in strange behavior if this path actually exists on disk
 
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 8e099e0961b624c6143f5a60f050855b3366f177..dfed827fd3fc794f52bad39ccf7b5c14b1caebc3 100644
+index 2c33fd44b9a251682de78a8bcdad9ee5a0d3e5e8..ae3ef0e853ae19fca649704854d4bda84a5bd287 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -293,6 +293,9 @@ function cjsPreparseModuleExports(filename, source, isMain, format) {
-   if (module && module[kModuleExportNames] !== undefined) {
+@@ -355,6 +355,10 @@ function cjsPreparseModuleExports(filename, source, format) {
      return { module, exportNames: module[kModuleExportNames] };
    }
+ 
 +  if (filename === 'electron') {
 +    return { module, exportNames: new SafeSet(['default', ...Object.keys(module.exports)]) };
 +  }
-   const loaded = Boolean(module);
-   if (!loaded) {
-     module = new CJSModule(filename);
++
+   if (source === undefined) {
+     ({ source } = loadSourceForCJSWithHooks(module, filename, format));
+   }
 diff --git a/lib/internal/modules/run_main.js b/lib/internal/modules/run_main.js
 index 02ba43adc2c8e92a78942bbb04023a16f5870ee9..bbf1ab69b884a9325bebdd07b2c4fd354eee946b 100644
 --- a/lib/internal/modules/run_main.js
