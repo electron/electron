@@ -55,13 +55,15 @@ There are a few rules to follow for the purposes of this tutorial:
 - _author_, _license_, and _description_ can be any value, but will be necessary for
   [packaging][packaging] later on.
 
-:::caution When using Yarn, use `node_modules` instead of PnP
+:::caution Install dependencies with a regular `node_modules` folder
 
-Modern versions of Yarn uses [Plug'n'Play (PnP)](https://yarnpkg.com/features/pnp) to manage project dependencies, whereas older versions of Yarn used a `node_modules` directory for the same task. Electron is not compatible with the modern PnP. Therefore one must configure modern Yarn to use a `node_modules` directory by creating a `.yarnrc.yml` configuration file at the root of the project directory and set the attribute `nodeLinker` to `node-modules`. Read more in [Yarn's reference](https://yarnpkg.com/configuration/yarnrc#nodeLinker).
+Electron's packaging toolchain requires the `node_modules` folder to be physically on disk in the
+way that npm installs Node dependencies. By default, [Yarn Berry](https://yarnpkg.com/) and
+[pnpm](http://pnpm.io/) both use alternative installation strategies.
 
-```yml
-nodeLinker: node-modules
-```
+Therefore, you must set [`nodeLinker: node-modules`](https://yarnpkg.com/configuration/yarnrc#nodeLinker)
+in Yarn or [`nodeLinker: hoisted`](https://pnpm.io/settings#nodelinker) in pnpm if you are using
+those package managers.
 
 :::
 
