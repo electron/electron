@@ -51,7 +51,7 @@ index de3d1f2f1832740b24480267f8c573794179859c..6e1680a74e21240ab99be86dcf23e60a
    return GET_RETURN_STATUS(env);
  }
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index c94b14741c827a81d69a6f036426a344e563ad72..c88a101b435418a69d0593e5c6a6de2441eb8d8e 100644
+index c94b14741c827a81d69a6f036426a344e563ad72..15129e4455fdc8792f21511a04d534ba3a4ebb5f 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -284,8 +284,9 @@ MaybeLocal<Uint8Array> New(Environment* env,
@@ -62,7 +62,7 @@ index c94b14741c827a81d69a6f036426a344e563ad72..c88a101b435418a69d0593e5c6a6de24
 -          .IsNothing()) {
 +  Maybe<bool> mb =
 +      ui->SetPrototypeV2(env->context(), env->buffer_prototype_object());
-+  if (mb.IsNothing())
++  if (mb.IsNothing()) {
      return MaybeLocal<Uint8Array>();
    }
    return ui;
