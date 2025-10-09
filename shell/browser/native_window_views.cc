@@ -272,6 +272,11 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   } else if (IsTranslucent()) {
     // To avoid breaking the basic window styles, we will later set the
     // background material.
+    // If the background material sets the opacity, the base window styles won’t
+    // be added during initialization, which causes
+    // HWNDMessageHandler::SizeConstraintsChanged() to see had_caption_on_init
+    // as false, resulting in the window styles being removed when can_resize ==
+    // false
     const std::string& bg_material = background_material();
     if (bg_material.empty() || bg_material == "none") {
       params.opacity = InitParams::WindowOpacity::kTranslucent;
