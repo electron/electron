@@ -10,10 +10,10 @@ Reviewed-By: Moshe Atlow <moshe@atlow.co.il>
 Reviewed-By: James M Snell <jasnell@gmail.com>
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 796be2ce65af31af20994cad63a9ec4843caf89a..d3f02f4b56f035e7fa2a596a029795cd84b71c28 100644
+index 82f53bba29613de212f64be440ca20d7c630fddf..0a358735c331767e8eb563a80e9aaccfb544c27b 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -852,7 +852,7 @@ Maybe<void> InitializePrimordials(Local<Context> context,
+@@ -886,7 +886,7 @@ Maybe<void> InitializePrimordials(Local<Context> context,
    CHECK(!exports->Has(context, primordials_string).FromJust());
  
    Local<Object> primordials = Object::New(isolate);
@@ -67,10 +67,10 @@ index c94b14741c827a81d69a6f036426a344e563ad72..15129e4455fdc8792f21511a04d534ba
    }
    return ui;
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index 24364b7458c822ff84ac9123843aea1f01d84bc0..428700c91457cd087d6b9fc6fd3db420e103dd92 100644
+index b1ee513fc0873a51b4885f612dbf7b950b5cf2ca..2f23cc63f148a792f1302e1d2d88822730abaa33 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
-@@ -1271,43 +1271,44 @@ void CreatePerContextProperties(Local<Object> target,
+@@ -1267,43 +1267,44 @@ void CreatePerContextProperties(Local<Object> target,
    Isolate* isolate = Isolate::GetCurrent();
    Environment* env = Environment::GetCurrent(context);
  
@@ -135,7 +135,7 @@ index 24364b7458c822ff84ac9123843aea1f01d84bc0..428700c91457cd087d6b9fc6fd3db420
    Local<Object> internal_constants = Object::New(isolate);
    CHECK(internal_constants->SetPrototype(env->context(),
 diff --git a/src/node_options.cc b/src/node_options.cc
-index cb0ecd81b33abd7743e66e225a6cb96b4094f935..870f974179f660fac3ded4111cc039e421632929 100644
+index 556776b79282d953fdc371d1901f21ca301bec1a..b33193c4d017b35aec5e73c1ead04cfb3ba50d55 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -1493,7 +1493,8 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
