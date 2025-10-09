@@ -267,8 +267,16 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   params.remove_standard_frame = !has_frame() || has_client_frame();
 
   // If a client frame, we need to draw our own shadows.
-  if (IsTranslucent() || has_client_frame())
+  if (has_client_frame()) {
     params.opacity = InitParams::WindowOpacity::kTranslucent;
+  } else if (IsTranslucent()) {
+    // To avoid breaking the basic window styles, we will later set the
+    // background material.
+    const std::string& bg_material = background_material();
+    if (bg_material.empty() || bg_material == "none") {
+      params.opacity = InitParams::WindowOpacity::kTranslucent;
+    }
+  }
 
   // The given window is most likely not rectangular since it is translucent and
   // has no standard frame, don't show a shadow for it.
@@ -355,11 +363,11 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     // frameless.
 
     DWORD frame_style = WS_CAPTION | WS_OVERLAPPED;
-    if (resizable_)
+    if (CanResize())
       frame_style |= WS_THICKFRAME;
     if (minimizable_)
       frame_style |= WS_MINIMIZEBOX;
-    if (maximizable_ && resizable_)
+    if (maximizable_ && CanResize())
       frame_style |= WS_MAXIMIZEBOX;
 
     // We should not show a frame for transparent window.
@@ -867,7 +875,7 @@ void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
   // On Linux and Windows the minimum and maximum size should be updated with
   // window size when window is not resizable.
-  if (!resizable_) {
+  if (!CanResize()) {
     SetMaximumSize(bounds.size());
     SetMinimumSize(bounds.size());
   }
@@ -1821,7 +1829,7 @@ views::View* NativeWindowViews::GetInitiallyFocusedView() {
 }
 
 bool NativeWindowViews::CanMaximize() const {
-  return resizable_ && maximizable_;
+  return CanResize() && maximizable_;
 }
 
 bool NativeWindowViews::CanMinimize() const {
