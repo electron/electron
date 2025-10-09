@@ -83,6 +83,11 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
   void OnSendHeaders(extensions::WebRequestInfo* info,
                      const network::ResourceRequest& request,
                      const net::HttpRequestHeaders& headers);
+  AuthRequiredResponse OnAuthRequired(
+      const extensions::WebRequestInfo* info,
+      const net::AuthChallengeInfo& auth_info,
+      AuthCallback callback,
+      net::AuthCredentials* credentials) override;
   void OnBeforeRedirect(extensions::WebRequestInfo* info,
                         const network::ResourceRequest& request,
                         const GURL& new_location);
@@ -116,6 +121,7 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
     kOnBeforeRequest,
     kOnBeforeSendHeaders,
     kOnHeadersReceived,
+    kOnAuthRequired
   };
 
   using SimpleListener = base::RepeatingCallback<void(v8::Local<v8::Value>)>;
@@ -152,6 +158,9 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
       const net::HttpResponseHeaders* original_response_headers,
       scoped_refptr<net::HttpResponseHeaders>* override_response_headers);
 
+  void OnAuthRequiredListenerResult(uint64_t id,
+                                    net::AuthCredentials* credentials,
+                                    v8::Local<v8::Value> response);
   void OnBeforeRequestListenerResult(uint64_t id,
                                      v8::Local<v8::Value> response);
   void OnBeforeSendHeadersListenerResult(uint64_t id,
@@ -175,7 +184,7 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
                         bool is_match_pattern = true);
     void AddType(extensions::WebRequestResourceType type);
 
-    bool MatchesRequest(extensions::WebRequestInfo* info) const;
+    bool MatchesRequest(const extensions::WebRequestInfo* info) const;
 
    private:
     bool MatchesURL(const GURL& url,
