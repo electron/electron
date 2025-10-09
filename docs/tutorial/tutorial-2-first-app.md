@@ -55,6 +55,18 @@ There are a few rules to follow for the purposes of this tutorial:
 - _author_, _license_, and _description_ can be any value, but will be necessary for
   [packaging][packaging] later on.
 
+:::caution Install dependencies with a regular `node_modules` folder
+
+Electron's packaging toolchain requires the `node_modules` folder to be physically on disk in the
+way that npm installs Node dependencies. By default, [Yarn Berry](https://yarnpkg.com/) and
+[pnpm](http://pnpm.io/) both use alternative installation strategies.
+
+Therefore, you must set [`nodeLinker: node-modules`](https://yarnpkg.com/configuration/yarnrc#nodeLinker)
+in Yarn or [`nodeLinker: hoisted`](https://pnpm.io/settings#nodelinker) in pnpm if you are using
+those package managers.
+
+:::
+
 Then, install Electron into your app's **devDependencies**, which is the list of external
 development-only package dependencies not required in production.
 
