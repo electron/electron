@@ -304,7 +304,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   widget()->Init(std::move(params));
   widget()->SetNativeWindowProperty(kNativeWindowKey.c_str(), this);
-  SetResizable(resizable_);
+  widget()->OnSizeConstraintsChanged();
 
   const bool fullscreen = options.ValueOrDefault(options::kFullscreen, false);
 
@@ -362,7 +362,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
       frame_style |= WS_THICKFRAME;
     if (minimizable_)
       frame_style |= WS_MINIMIZEBOX;
-    if (maximizable_)
+    if (maximizable_ && resizable_)
       frame_style |= WS_MAXIMIZEBOX;
 
     // We should not show a frame for transparent window.
@@ -898,25 +898,21 @@ extensions::SizeConstraints NativeWindowViews::GetContentSizeConstraints()
 
 void NativeWindowViews::SetResizable(bool resizable) {
   if (resizable != resizable_) {
+    resizable_ = resizable;
     // On Linux there is no "resizable" property of a window, we have to set
     // both the minimum and maximum size to the window size to achieve it.
     if (resizable) {
       SetContentSizeConstraints(old_size_constraints_);
-      SetMaximizable(maximizable_);
     } else {
       old_size_constraints_ = GetContentSizeConstraints();
-      resizable_ = false;
       gfx::Size content_size = GetContentSize();
       SetContentSizeConstraints(
           extensions::SizeConstraints(content_size, content_size));
     }
-  }
-
-  resizable_ = resizable;
-
 #if BUILDFLAG(IS_WIN)
   UpdateThickFrame();
 #endif
+  }
 }
 
 bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
@@ -961,12 +957,20 @@ void NativeWindowViews::MoveTop() {
 #endif
 }
 
+bool NativeWindowViews::CanResize() const {
+#if BUILDFLAG(IS_WIN)
+  return resizable_ && thick_frame_;
+#else
+  return resizable_;
+#endif
+}
+
 bool NativeWindowViews::IsResizable() const {
 #if BUILDFLAG(IS_WIN)
   if (has_frame())
     return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME;
 #endif
-  return resizable_;
+  return CanResize();
 }
 
 void NativeWindowViews::SetAspectRatio(double aspect_ratio,
