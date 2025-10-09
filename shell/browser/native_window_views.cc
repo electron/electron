@@ -268,25 +268,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   params.remove_standard_frame = !has_frame() || has_client_frame();
 
   // If a client frame, we need to draw our own shadows.
-  if (has_client_frame()) {
+  if (transparent() || has_client_frame())
     params.opacity = InitParams::WindowOpacity::kTranslucent;
-  } else if (IsTranslucent()) {
-#if BUILDFLAG(IS_WIN)
-    // To avoid breaking the basic window styles, we will later set the
-    // background material.
-    // If the background material sets the opacity, the base window styles won’t
-    // be added during initialization, which causes
-    // HWNDMessageHandler::SizeConstraintsChanged() to see had_caption_on_init
-    // as false, resulting in the window styles being removed when can_resize ==
-    // false
-    const std::string& bg_material = background_material();
-    if (bg_material.empty() || bg_material == "none") {
-      params.opacity = InitParams::WindowOpacity::kTranslucent;
-    }
-#else
-    params.opacity = InitParams::WindowOpacity::kTranslucent;
-#endif
-  }
 
   // The given window is most likely not rectangular since it is translucent and
   // has no standard frame, don't show a shadow for it.
