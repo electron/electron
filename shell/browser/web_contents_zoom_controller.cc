@@ -346,7 +346,7 @@ void WebContentsZoomController::SetZoomFactorOnNavigationIfNeeded(
   // then it takes precedence.
   // pref store < kZoomFactor < setZoomLevel
   std::string host = net::GetHostOrSpecFromURL(url);
-  std::string scheme = url.scheme();
+  std::string scheme = url.GetScheme();
   double zoom_factor = default_zoom_factor();
   double zoom_level = blink::ZoomFactorToZoomLevel(zoom_factor);
   if (host_zoom_map_->HasZoomLevel(scheme, host)) {
