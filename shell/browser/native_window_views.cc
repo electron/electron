@@ -304,7 +304,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   widget()->Init(std::move(params));
   widget()->SetNativeWindowProperty(kNativeWindowKey.c_str(), this);
-  SetCanResize(resizable_);
+  SetResizable(resizable_);
 
   const bool fullscreen = options.ValueOrDefault(options::kFullscreen, false);
 
@@ -913,7 +913,6 @@ void NativeWindowViews::SetResizable(bool resizable) {
   }
 
   resizable_ = resizable;
-  SetCanResize(resizable_);
 
 #if BUILDFLAG(IS_WIN)
   UpdateThickFrame();
