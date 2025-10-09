@@ -271,6 +271,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (has_client_frame()) {
     params.opacity = InitParams::WindowOpacity::kTranslucent;
   } else if (IsTranslucent()) {
+#if BUILDFLAG(IS_WIN)
     // To avoid breaking the basic window styles, we will later set the
     // background material.
     // If the background material sets the opacity, the base window styles won’t
@@ -282,6 +283,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     if (bg_material.empty() || bg_material == "none") {
       params.opacity = InitParams::WindowOpacity::kTranslucent;
     }
+#else
+    params.opacity = InitParams::WindowOpacity::kTranslucent;
+#endif
   }
 
   // The given window is most likely not rectangular since it is translucent and
