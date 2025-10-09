@@ -452,7 +452,7 @@ index 433f12928857e288b6b0d4f4dd3d1f29da08cf6c..bb95aabec2e0d5c7b3a5d315c9a3f8cb
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 6b95aa465d27c191d23d795758e0c65a5c86483a..7c0f5f236c391be67d3342bad908d6245e17a723 100644
+index f9f453e713b1beff8fda2fcd2a21907640c19817..f651286bc85f3640ec072b05eb2f0d118e02417a 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -477,10 +477,10 @@ index 6b95aa465d27c191d23d795758e0c65a5c86483a..7c0f5f236c391be67d3342bad908d624
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 9271b252a1a00d654b89d1212eea6d871eec1a5c..b5a31afc29023382619482dffe000412f1c6acc1 100644
+index 40718df4d3d7092309ea7027ae6c59a7963fd03c..89f08e2693d9101e89dd007df80881ff726195ad 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -386,6 +386,7 @@ viz_component("service") {
+@@ -387,6 +387,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -488,7 +488,7 @@ index 9271b252a1a00d654b89d1212eea6d871eec1a5c..b5a31afc29023382619482dffe000412
    }
  
    if (is_ios) {
-@@ -709,6 +710,7 @@ viz_source_set("unit_tests") {
+@@ -710,6 +711,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -1883,7 +1883,7 @@ index 95a2d5d04ac69b48f59fa4c8c940b1075436bca7..1af7790524bd0c25f6384f7fb55f3df0
      sources += [
        "test/desktop_window_tree_host_win_test_api.cc",
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index cb569a52ff573cecae33108a4c7858dd51e646da..fce6c1d18dd911969e7e05ac508901b25e564f28 100644
+index e855d05f466059f20a31022a1a2810eeadeb4fff..e523151fb670af28cf2c54548c5009825fdbed92 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -19,6 +19,7 @@
@@ -1918,7 +1918,7 @@ index cb569a52ff573cecae33108a4c7858dd51e646da..fce6c1d18dd911969e7e05ac508901b2
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 380c302798de02d742ef809605fe3be0c0e6dc63..f5226c5f4451d70c6959c2ff8a6bfce732ed0d79 100644
+index ac4257215c61f3cb388e14f4439e23ac29f1307d..e1a1cdb2ec192d2ee5a555ecccf041f757336f79 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -21,6 +21,7 @@

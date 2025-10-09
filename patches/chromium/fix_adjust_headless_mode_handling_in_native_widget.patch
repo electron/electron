@@ -19,7 +19,7 @@ https://chromium-review.googlesource.com/c/chromium/src/+/6936895
 as we depend on the removed functionality in this patch.
 
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index fce6c1d18dd911969e7e05ac508901b25e564f28..92e0f131a7624904d923c3327c940ace2798ab17 100644
+index e523151fb670af28cf2c54548c5009825fdbed92..66d5724f848b328a19362a3c0f6346704ddb50ac 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -554,6 +554,7 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
@@ -31,7 +31,7 @@ index fce6c1d18dd911969e7e05ac508901b25e564f28..92e0f131a7624904d923c3327c940ace
    gfx::Rect window_bounds_before_fullscreen_;
  
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index f5226c5f4451d70c6959c2ff8a6bfce732ed0d79..d027c5537e9b1634714cd5b1979af674c63fe091 100644
+index e1a1cdb2ec192d2ee5a555ecccf041f757336f79..80d0ea7649722a7ab5a9242fa8c4b0bdfbe574e4 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -465,6 +465,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
