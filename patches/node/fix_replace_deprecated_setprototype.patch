@@ -9,10 +9,10 @@ This is already applied in newer versions of Node so we can drop
 this patch once we upgrade to v23.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index d3f02f4b56f035e7fa2a596a029795cd84b71c28..43838863294e954f10bb01f9b2de1b0e9f5ed7af 100644
+index 0a358735c331767e8eb563a80e9aaccfb544c27b..d7d18d5fcbf008ac131db189a141315af4f6410b 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -801,7 +801,7 @@ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
+@@ -835,7 +835,7 @@ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
  
    Local<Object> private_symbols_object;
    if (!private_symbols->NewInstance(context).ToLocal(&private_symbols_object) ||
@@ -21,7 +21,7 @@ index d3f02f4b56f035e7fa2a596a029795cd84b71c28..43838863294e954f10bb01f9b2de1b0e
            .IsNothing()) {
      return MaybeLocal<Object>();
    }
-@@ -827,7 +827,7 @@ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
+@@ -861,7 +861,7 @@ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
    Local<Object> per_isolate_symbols_object;
    if (!per_isolate_symbols->NewInstance(context).ToLocal(
            &per_isolate_symbols_object) ||
@@ -31,10 +31,10 @@ index d3f02f4b56f035e7fa2a596a029795cd84b71c28..43838863294e954f10bb01f9b2de1b0e
      return MaybeLocal<Object>();
    }
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index 428700c91457cd087d6b9fc6fd3db420e103dd92..2029b7835bcf506900ea28fa137316af6c97e655 100644
+index 2f23cc63f148a792f1302e1d2d88822730abaa33..42678e5d11e5ff9543bf12ec02fee7d3263d7629 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
-@@ -1311,7 +1311,7 @@ void CreatePerContextProperties(Local<Object> target,
+@@ -1307,7 +1307,7 @@ void CreatePerContextProperties(Local<Object> target,
              .FromJust());
  
    Local<Object> internal_constants = Object::New(isolate);
@@ -44,10 +44,10 @@ index 428700c91457cd087d6b9fc6fd3db420e103dd92..2029b7835bcf506900ea28fa137316af
  
    DefineErrnoConstants(err_constants);
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index 62f280c1e0e860ae3a3c8b48eda31a3cc8f0c216..7b3a15f4be4b4cc0b817d60ba8675e553989ec61 100644
+index 96101167016573e80fff520256ebb78c71d83302..cdc50b7e9abc2b5944ffd9c5ea1882f4fb9e1421 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
-@@ -2103,7 +2103,7 @@ void StatementSync::Iterate(const FunctionCallbackInfo<Value>& args) {
+@@ -2108,7 +2108,7 @@ void StatementSync::Iterate(const FunctionCallbackInfo<Value>& args) {
    if (iter->object()
            ->GetPrototype()
            .As<Object>()

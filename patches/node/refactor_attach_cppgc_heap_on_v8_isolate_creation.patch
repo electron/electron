@@ -102,7 +102,7 @@ index 2d5fa8dbd75851bca30453548f6cbe0159509f26..c346e3a9c827993036438685d758a734
    worker::Worker* worker_context_ = nullptr;
    PerIsolateWrapperData* wrapper_data_;
 diff --git a/src/node.cc b/src/node.cc
-index 627337efae49319e2a77b4686176ce92a8493024..f0c0b6229048a2e9bc05684fab44ab09bc34e1f6 100644
+index ed8e0d1aec60bf22c13c73628f145312caf5d841..2dfdaec589e9b88af73ba388ea3c059ef27d243b 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -1295,6 +1295,14 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
