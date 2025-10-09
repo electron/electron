@@ -233,10 +233,10 @@ can find [its documentation here](https://www.electron.build/code-signing).
 [Azure Trusted Signing][] is Microsoft's modern cloud-based alternative to EV certificates.
 It is the cheapest option for code signing on Windows, and it gets rid of SmartScreen warnings.
 
-As of May 2025, Azure Trusted Signing is [available][trusted-signing-availability] to US and
-Canada-based organizations with 3+ years of verifiable business history. Microsoft is looking
-to make the program more widely available. If you're reading this at a later point, it could
-make sense to check if the eligibility criteria have changed.
+As of October 2025, Azure Trusted Signing is available to US and Canada-based organizations
+with 3+ years of verifiable business history and to individual developers in the US and Canada.
+Microsoft is looking to make the program more widely available. If you're reading this at a
+later point, it could make sense to check if the eligibility criteria have changed.
 
 #### Using Electron Forge
 
