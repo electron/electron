@@ -974,7 +974,7 @@ void NativeWindowViews::SetResizable(bool resizable) {
           extensions::SizeConstraints(content_size, content_size));
     }
 #if BUILDFLAG(IS_WIN)
-  UpdateThickFrame();
+    UpdateThickFrame();
 #endif
   }
 }
