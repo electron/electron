@@ -4,14 +4,15 @@ on:
   issues:
     types: [unlabeled]
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   issue-unlabeled-blocked:
     name: All blocked/* labels removed
     if: startsWith(github.event.label.name, 'blocked/') && github.event.issue.state == 'open'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Check for any blocked labels
         id: check-for-blocked-labels
