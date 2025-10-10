@@ -268,7 +268,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   params.remove_standard_frame = !has_frame() || has_client_frame();
 
   // If a client frame, we need to draw our own shadows.
-  if (IsTranslucent() || has_client_frame())
+  if (transparent() || has_client_frame())
     params.opacity = InitParams::WindowOpacity::kTranslucent;
 
   // The given window is most likely not rectangular since it is translucent and
@@ -302,7 +302,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   widget()->Init(std::move(params));
   widget()->SetNativeWindowProperty(kNativeWindowKey.c_str(), this);
-  SetCanResize(resizable_);
+  widget()->OnSizeConstraintsChanged();
 
   const bool fullscreen = options.ValueOrDefault(options::kFullscreen, false);
 
@@ -356,11 +356,11 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     // frameless.
 
     DWORD frame_style = WS_CAPTION | WS_OVERLAPPED;
-    if (resizable_)
+    if (CanResize())
       frame_style |= WS_THICKFRAME;
     if (minimizable_)
       frame_style |= WS_MINIMIZEBOX;
-    if (maximizable_)
+    if (maximizable_ && CanResize())
       frame_style |= WS_MAXIMIZEBOX;
 
     // We should not show a frame for transparent window.
@@ -868,7 +868,7 @@ void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
   // On Linux and Windows the minimum and maximum size should be updated with
   // window size when window is not resizable.
-  if (!resizable_) {
+  if (!CanResize()) {
     SetMaximumSize(bounds.size());
     SetMinimumSize(bounds.size());
   }
@@ -949,26 +949,21 @@ extensions::SizeConstraints NativeWindowViews::GetContentSizeConstraints()
 
 void NativeWindowViews::SetResizable(bool resizable) {
   if (resizable != resizable_) {
+    resizable_ = resizable;
     // On Linux there is no "resizable" property of a window, we have to set
     // both the minimum and maximum size to the window size to achieve it.
     if (resizable) {
       SetContentSizeConstraints(old_size_constraints_);
-      SetMaximizable(maximizable_);
     } else {
       old_size_constraints_ = GetContentSizeConstraints();
-      resizable_ = false;
       gfx::Size content_size = GetContentSize();
       SetContentSizeConstraints(
           extensions::SizeConstraints(content_size, content_size));
     }
-  }
-
-  resizable_ = resizable;
-  SetCanResize(resizable_);
-
 #if BUILDFLAG(IS_WIN)
-  UpdateThickFrame();
+    UpdateThickFrame();
 #endif
+  }
 }
 
 bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
@@ -1013,12 +1008,20 @@ void NativeWindowViews::MoveTop() {
 #endif
 }
 
+bool NativeWindowViews::CanResize() const {
+#if BUILDFLAG(IS_WIN)
+  return resizable_ && thick_frame_;
+#else
+  return resizable_;
+#endif
+}
+
 bool NativeWindowViews::IsResizable() const {
 #if BUILDFLAG(IS_WIN)
   if (has_frame())
     return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME;
 #endif
-  return resizable_;
+  return CanResize();
 }
 
 void NativeWindowViews::SetAspectRatio(double aspect_ratio,
@@ -1819,7 +1822,7 @@ views::View* NativeWindowViews::GetInitiallyFocusedView() {
 }
 
 bool NativeWindowViews::CanMaximize() const {
-  return resizable_ && maximizable_;
+  return CanResize() && maximizable_;
 }
 
 bool NativeWindowViews::CanMinimize() const {
