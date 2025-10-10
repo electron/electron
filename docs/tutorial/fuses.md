@@ -89,7 +89,7 @@ For more information on how to use ASAR integrity validation, please read the [A
 
 **@electron/fuses:** `FuseV1Options.OnlyLoadAppFromAsar`
 
-The onlyLoadAppFromAsar fuse changes the search system that Electron uses to locate your app code.
+The `onlyLoadAppFromAsar` fuse changes the search system that Electron uses to locate your app code.
 By default, Electron will search for this code in the following order:
 
 1. `app.asar`
