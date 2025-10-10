@@ -1,0 +1,116 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joey Arhar <jarhar@chromium.org>
+Date: Wed, 1 Oct 2025 02:03:37 -0700
+Subject: InspectorPageAgent provisional frame speculative fix
+
+According to crash reports, addScriptToEvaluateOnNewDocument is running
+on provisional frames.
+
+Fixed: 390710982
+Change-Id: I5cecf63c9517d0b28fff40361c607b0aa54e68cf
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6216479
+Reviewed-by: Alex Rudenko <alexrudenko@chromium.org>
+Commit-Queue: Alex Rudenko <alexrudenko@chromium.org>
+Auto-Submit: Joey Arhar <jarhar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1523418}
+
+diff --git a/third_party/blink/renderer/core/inspector/inspector_page_agent.cc b/third_party/blink/renderer/core/inspector/inspector_page_agent.cc
+index 386df6dc728e5a1b1aac9865c1687db03f48d9ee..77bcd0f9f8155d1c9ddc167f594791abf48fcfb9 100644
+--- a/third_party/blink/renderer/core/inspector/inspector_page_agent.cc
++++ b/third_party/blink/renderer/core/inspector/inspector_page_agent.cc
+@@ -603,7 +603,11 @@ protocol::Response InspectorPageAgent::addScriptToEvaluateOnNewDocument(
+     // Runtime.enable that forces main context creation. In this case, we would
+     // not normally evaluate the script, but we should.
+     for (LocalFrame* frame : *inspected_frames_) {
+-      EvaluateScriptOnNewDocument(*frame, *identifier);
++      // Don't evaluate scripts on provisional frames:
++      // https://crbug.com/390710982
++      if (!frame->IsProvisional()) {
++        EvaluateScriptOnNewDocument(*frame, *identifier);
++      }
+     }
+   }
+ 
+diff --git a/third_party/blink/web_tests/FlagExpectations/disable-site-isolation-trials b/third_party/blink/web_tests/FlagExpectations/disable-site-isolation-trials
+index 8df5aa4252464bd4bf06d04b1b4f100453954082..a58b683bd7f2bea8b059f096b48e61d9cd9302d7 100644
+--- a/third_party/blink/web_tests/FlagExpectations/disable-site-isolation-trials
++++ b/third_party/blink/web_tests/FlagExpectations/disable-site-isolation-trials
+@@ -63,6 +63,7 @@ http/tests/inspector-protocol/target/target-filter.js [ Skip ]
+ virtual/fenced-frame-mparch/http/tests/inspector-protocol/fenced-frame/fenced-frame-in-oopif-auto-attach.js [ Skip ]
+ http/tests/inspector-protocol/target/target-info-changed-auto-attach.js [ Skip ]
+ http/tests/inspector-protocol/page/frame-detached-oopif.js [ Skip ]
++http/tests/inspector-protocol/page/addScriptToEvaluateOnNewDocument-reload.js [ Skip ]
+ 
+ # Rely on OOPIF for an iframe to be a separate devtools target
+ http/tests/inspector-protocol/timeline/auction-worklet-frame.js [ Skip ]
+diff --git a/third_party/blink/web_tests/http/tests/inspector-protocol/page/addScriptToEvaluateOnNewDocument-reload-expected.txt b/third_party/blink/web_tests/http/tests/inspector-protocol/page/addScriptToEvaluateOnNewDocument-reload-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..0131df6c227e1803741e654d42b15f589275061a
+--- /dev/null
++++ b/third_party/blink/web_tests/http/tests/inspector-protocol/page/addScriptToEvaluateOnNewDocument-reload-expected.txt
+@@ -0,0 +1,28 @@
++Tests that Page.addScriptToEvaluateOnNewDocument on auto-attach with runImmediately=true.
++Regression test for crbug.com/390710982.
++console called: {
++    method : Runtime.consoleAPICalled
++    params : {
++        args : [
++            [0] : {
++                type : string
++                value : evaluated
++            }
++        ]
++        executionContextId : <number>
++        stackTrace : {
++            callFrames : [
++                [0] : {
++                    columnNumber : 8
++                    functionName :
++                    lineNumber : 0
++                    scriptId : <string>
++                    url :
++                }
++            ]
++        }
++        timestamp : <number>
++        type : log
++    }
++    sessionId : <string>
++}
+diff --git a/third_party/blink/web_tests/http/tests/inspector-protocol/page/addScriptToEvaluateOnNewDocument-reload.js b/third_party/blink/web_tests/http/tests/inspector-protocol/page/addScriptToEvaluateOnNewDocument-reload.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..52ebe845c323c6d692147052f3458777dcd7f966
+--- /dev/null
++++ b/third_party/blink/web_tests/http/tests/inspector-protocol/page/addScriptToEvaluateOnNewDocument-reload.js
+@@ -0,0 +1,31 @@
++(async function(/** @type {import('test_runner').TestRunner} */ testRunner) {
++  const { session, dp } = await testRunner.startBlank(
++    `Tests that Page.addScriptToEvaluateOnNewDocument on auto-attach with runImmediately=true.
++Regression test for crbug.com/390710982.`);
++
++  await dp.Page.enable();
++  await dp.Target.enable();
++  await dp.Target.setAutoAttach({ flatten: true, autoAttach: true, waitForDebuggerOnStart: true });
++
++  dp.Target.onAttachedToTarget(async event => {
++    const dp2 = session.createChild(event.params.sessionId).protocol;
++    dp2.Page.enable();
++    dp2.Runtime.enable();
++    dp2.Runtime.onConsoleAPICalled(event => {
++      testRunner.log(event, 'console called: ');
++    });
++    dp2.Page.addScriptToEvaluateOnNewDocument({
++      source: 'console.log("evaluated")',
++      runImmediately: true,
++    });
++    await dp2.Runtime.runIfWaitingForDebugger();
++  });
++
++  const loaded = dp.Page.onceLoadEventFired();
++  await dp.Page.navigate({
++    url: testRunner.url('resources/iframe-src.html')
++  });
++  await loaded;
++
++  testRunner.completeTest();
++});

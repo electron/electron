@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: 22.17.x
       - run: npm install @actions/cache@4.0.3 @electron/fiddle-core@2.0.1
-      - uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         id: audit-errors
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -73,6 +73,7 @@ jobs:
                       annotation_level === "failure" &&
                       !message.startsWith("Process completed with exit code") &&
                       !message.startsWith("Response status code does not indicate success") &&
+                      !message.startsWith("The hosted runner lost communication with the server") &&
                       !/Unable to make request/.test(message) &&
                       !/The requested URL returned error/.test(message),
                   )
