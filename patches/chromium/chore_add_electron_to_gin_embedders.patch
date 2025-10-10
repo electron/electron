@@ -6,7 +6,7 @@ Subject: chore: add electron to gin embedders
 Adds kEmbedderElectron to GinEmbedder for Electron's use.
 
 diff --git a/gin/public/gin_embedders.h b/gin/public/gin_embedders.h
-index 6d11f4401d50476802e514392615d287fa54522e..bdd3426b5fa9e94a0eeeb8d81259dc02f46e9bcc 100644
+index cecf528475cb832ed1876381878eade582bc83d6..2a741def996812148f9007ac9a21336fad1bbd2b 100644
 --- a/gin/public/gin_embedders.h
 +++ b/gin/public/gin_embedders.h
 @@ -20,6 +20,7 @@ enum GinEmbedder : uint16_t {
