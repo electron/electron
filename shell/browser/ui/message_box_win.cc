@@ -163,7 +163,8 @@ DialogResult ShowTaskDialogWstr(gfx::AcceleratedWidget parent,
     config.dwFlags |= TDF_POSITION_RELATIVE_TO_WINDOW;
   }
 
-  if (default_id >= 0 && static_cast<size_t>(default_id) < buttons.size()) {
+  if (default_id >= 0 &&
+      base::checked_cast<size_t>(default_id) < buttons.size()) {
     if (!no_link) {
       auto common = GetCommonID(buttons[default_id]);
       if (common.button != -1) {
