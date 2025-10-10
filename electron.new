@@ -1,0 +1,7 @@
+| Feature          | Description                                   | Status      | Assigned To | Priority |
+| ---------------- | --------------------------------------------- | ----------- | ----------- | -------- |
+| Auto Update      | Adds auto-update support via Electron Updater | In Progress | Dev-01      | High     |
+| Dark Mode Toggle | Adds dynamic theme switching                  | Completed   | Dev-02      | Medium   |
+| Crash Reporter   | Integrates crash analytics (Sentry)           | Pending     | Dev-03      | High     |
+| File Sync        | Enables background sync between devices       | In Review   | Dev-01      | High     |
+| Custom Tray Menu | Adds quick actions to system tray             | Completed   | Dev-04      | Low      |
