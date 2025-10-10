@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Maddock <smaddock@slack-corp.com>
+Date: Thu, 9 Oct 2025 22:07:38 -0400
+Subject: chore: disable protocol handler dcheck
+
+https://chromium-review.googlesource.com/c/chromium/src/+/6727594
+
+The above CL introduces a new extensions API to register custom protocol
+handlers. A DCHECK causes Electron to crash until we provide our own
+registry. This patch disables the check until we support this.
+
+diff --git a/extensions/browser/api/protocol_handlers/protocol_handlers_manager.cc b/extensions/browser/api/protocol_handlers/protocol_handlers_manager.cc
+index 902cf488c7d84923365c4197a70b06e61e3af038..dce80684853f89a68a2d21997102f48feb3df8f8 100644
+--- a/extensions/browser/api/protocol_handlers/protocol_handlers_manager.cc
++++ b/extensions/browser/api/protocol_handlers/protocol_handlers_manager.cc
+@@ -129,7 +129,12 @@ void ProtocolHandlersManager::ProtocolHandlersSanityCheck() {
+   auto* ph_registry =
+       ExtensionsBrowserClient::Get()->GetProtocolHandlerRegistry(
+           browser_context_);
+-  DCHECK(ph_registry);
++
++  // TODO(samuelmaddock): Add support for extensions protocol handler. For now,
++  // let's ignore this.
++  if (!ph_registry)
++    return;
++
+   for (const auto& handler : ph_registry->GetExtensionProtocolHandlers()) {
+     DCHECK(handler.extension_id());
+     if (!enabled_ids.contains(*handler.extension_id())) {
