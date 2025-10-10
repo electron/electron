@@ -27,12 +27,12 @@
 
 namespace electron {
 namespace {
-std::string_view PathWithoutParams(const std::string& path) {
+std::string PathWithoutParams(const std::string& path) {
   return GURL(base::StrCat({content::kChromeDevToolsScheme,
                             url::kStandardSchemeSeparator,
                             chrome::kChromeUIDevToolsHost}))
       .Resolve(path)
-      .path()
+      .GetPath()
       .substr(1);
 }
 
@@ -121,7 +121,7 @@ bool BundledDataSource::ShouldServeMimeTypeAsContentTypeHeader() {
 
 void BundledDataSource::StartBundledDataRequest(const std::string& path,
                                                 GotDataCallback callback) {
-  std::string filename{PathWithoutParams(path)};
+  std::string filename = PathWithoutParams(path);
   scoped_refptr<base::RefCountedMemory> bytes =
       content::DevToolsFrontendHost::GetFrontendResourceBytes(filename);
 
