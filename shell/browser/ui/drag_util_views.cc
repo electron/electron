@@ -12,6 +12,7 @@
 #include "ui/base/dragdrop/os_exchange_data.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/point.h"
+#include "ui/gfx/image/image_skia.h"
 #include "ui/views/button_drag_utils.h"
 #include "ui/views/widget/widget.h"
 #include "url/gurl.h"
