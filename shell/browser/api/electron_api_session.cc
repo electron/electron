@@ -818,6 +818,7 @@ void Session::EnableNetworkEmulation(const gin_helper::Dictionary& options) {
   std::vector<network::mojom::MatchedNetworkConditionsPtr> matched_conditions;
   network::mojom::MatchedNetworkConditionsPtr network_conditions =
       network::mojom::MatchedNetworkConditions::New();
+  network_conditions->conditions = network::mojom::NetworkConditions::New();
   options.Get("offline", &network_conditions->conditions->offline);
   options.Get("downloadThroughput",
               &network_conditions->conditions->download_throughput);
