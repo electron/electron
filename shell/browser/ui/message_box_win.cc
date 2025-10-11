@@ -163,8 +163,19 @@ DialogResult ShowTaskDialogWstr(gfx::AcceleratedWidget parent,
     config.dwFlags |= TDF_POSITION_RELATIVE_TO_WINDOW;
   }
 
-  if (default_id > 0)
-    config.nDefaultButton = kIDStart + default_id;
+  if (default_id >= 0 &&
+      base::checked_cast<size_t>(default_id) < buttons.size()) {
+    if (!no_link) {
+      auto common = GetCommonID(buttons[default_id]);
+      if (common.button != -1) {
+        config.nDefaultButton = common.id;
+      } else {
+        config.nDefaultButton = kIDStart + default_id;
+      }
+    } else {
+      config.nDefaultButton = kIDStart + default_id;
+    }
+  }
 
   // TaskDialogIndirect doesn't allow empty name, if we set empty title it
   // will show "electron.exe" in title.
