@@ -11,10 +11,10 @@ really in 20/21. We have to wait until 22 is released to be able to
 build with upstream GN files.
 
 diff --git a/configure.py b/configure.py
-index 2415940835036226799a7ea14c6687cc0d56c523..0feb07afbccad97a92cee00954443407eb20ac67 100755
+index 91283ca577f580dbf1e0c4e2dbf851a9ceaa38ed..e8eaff30ec947677db2d45425f9180759d0c55de 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1722,7 +1722,7 @@ def configure_v8(o, configs):
+@@ -1728,7 +1728,7 @@ def configure_v8(o, configs):
    # Until we manage to get rid of all those, v8_enable_sandbox cannot be used.
    # Note that enabling pointer compression without enabling sandbox is unsupported by V8,
    # so this can be broken at any time.
@@ -68,7 +68,7 @@ index d4438f7fd61598afac2c1e3184721a759d22b10c..e2407027ab05e59b2f0f1c213b98ea46
  
  assert(!node_enable_inspector || node_use_openssl,
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index b4acc40618e372b09d0cb5e3755034f08711a282..efeaaef7e4dc64a0adb5e6bdbbe18945890de62c 100644
+index b83aa87c969fb4e71cb202816713af869bb76283..c54df6fee333ddfe59b9df7e0ddd2935b4dcb33f 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
 @@ -789,6 +789,7 @@ void BuiltinLoader::RegisterExternalReferences(

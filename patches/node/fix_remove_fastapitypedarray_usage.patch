@@ -194,10 +194,10 @@ index e39852c8e0392e0a9ae5d4ea58be115416e19233..c94b14741c827a81d69a6f036426a344
  
  static const v8::CFunction fast_write_string_ascii(
 diff --git a/src/util.h b/src/util.h
-index dbec66247852df91c57c2a4e9664d2fea7d3dcef..efeb12d837db7b88093e4a6a2e20df562180ca1e 100644
+index dcd6548d41be786c42ce8328d89e532a8e9d43a2..7c98de621ca4d53cbaaa5bd4488aab20c7b033a7 100644
 --- a/src/util.h
 +++ b/src/util.h
-@@ -60,6 +60,7 @@
+@@ -62,6 +62,7 @@
  namespace node {
  
  constexpr char kPathSeparator = std::filesystem::path::preferred_separator;
@@ -205,7 +205,7 @@ index dbec66247852df91c57c2a4e9664d2fea7d3dcef..efeb12d837db7b88093e4a6a2e20df56
  
  #ifdef _WIN32
  /* MAX_PATH is in characters, not bytes. Make sure we have enough headroom. */
-@@ -585,6 +586,16 @@ class BufferValue : public MaybeStackBuffer<char> {
+@@ -589,6 +590,16 @@ class BufferValue : public MaybeStackBuffer<char> {
        static_cast<char*>(name->Buffer()->Data()) + name##_offset;              \
    if (name##_length > 0) CHECK_NE(name##_data, nullptr);
  

@@ -228,7 +228,7 @@ index d94f6e1c82c4a62547b3b395f375c86ce4deb5de..b81b9005365272217c77e2b9289bd9f8
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 5e368e3fd93b560c629aef720acd576f118cb1d6..ea5179ad5155cb599891d7421cd61df719ac4cae 100644
+index c08dab17fa229d1d67d3ad5174c97192989b2bd0..a3d309d832c73ddc79564b9644d825bec7459e7f 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -141,7 +141,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
@@ -240,7 +240,7 @@ index 5e368e3fd93b560c629aef720acd576f118cb1d6..ea5179ad5155cb599891d7421cd61df7
        X509* ca = sk_X509_value(extra_certs, i);
  
        // NOTE: Increments reference count on `ca`
-@@ -1752,11 +1752,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
+@@ -1773,11 +1773,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
    // If the user specified "auto" for dhparams, the JavaScript layer will pass
    // true to this function instead of the original string. Any other string
    // value will be interpreted as custom DH parameters below.
@@ -254,7 +254,7 @@ index 5e368e3fd93b560c629aef720acd576f118cb1d6..ea5179ad5155cb599891d7421cd61df7
    DHPointer dh;
    {
      BIOPointer bio(LoadBIO(env, args[0]));
-@@ -1982,7 +1983,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
+@@ -2003,7 +2004,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
    }
  
    // Add CA certs too
@@ -372,7 +372,7 @@ index c26a88b395abfc645da56231635b36fb23c8fa09..f23cedf4f2449d8edc9a8de1b70332e7
      UNREACHABLE();
    }
 diff --git a/src/crypto/crypto_dsa.cc b/src/crypto/crypto_dsa.cc
-index 471fee77531139ce988292470dff443fdfb05b07..931f7c2ae3d7e12afce471545d610d22f63412d7 100644
+index ca5edc8ebdf2550bb62b7969a5650733a2647f4f..198e18b58f31e361a9d2865cbe81e067e5f0b543 100644
 --- a/src/crypto/crypto_dsa.cc
 +++ b/src/crypto/crypto_dsa.cc
 @@ -43,7 +43,7 @@ namespace crypto {
@@ -520,11 +520,11 @@ index 7c548d32b40365343f0e208c3aa856a1c847f4c3..6346f8f7199cf7b7d3736c59571606ff
  }  // namespace
  
 diff --git a/src/env.h b/src/env.h
-index c42493ad958508f650917bf5ca92088714a5056c..07accfbcca491966c6c8ad9c20e146dbd22347f0 100644
+index 874e5f4d15a75307e45cf70c06fc104fed843a6a..35e16159a94bb97f19d17767e3ad4bb798660f44 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -50,7 +50,7 @@
- #include "uv.h"
+@@ -51,7 +51,7 @@
+ #include "v8-profiler.h"
  #include "v8.h"
  
 -#if HAVE_OPENSSL
@@ -532,7 +532,7 @@ index c42493ad958508f650917bf5ca92088714a5056c..07accfbcca491966c6c8ad9c20e146db
  #include <openssl/evp.h>
  #endif
  
-@@ -1076,7 +1076,7 @@ class Environment final : public MemoryRetainer {
+@@ -1077,7 +1077,7 @@ class Environment final : public MemoryRetainer {
      kExitInfoFieldCount
    };
  
@@ -542,11 +542,11 @@ index c42493ad958508f650917bf5ca92088714a5056c..07accfbcca491966c6c8ad9c20e146db
    // We declare another alias here to avoid having to include crypto_util.h
    using EVPMDPointer = DeleteFnPtr<EVP_MD, EVP_MD_free>;
 diff --git a/src/node_metadata.h b/src/node_metadata.h
-index 7b2072ad39c3f1a7c73101b25b69beb781141e26..d23536d88d21255d348175425a59e2424332cd19 100644
+index d9c533f100d25aeab1fe8589932a8ddead431258..2acab8786a8a752b17961445edeb872c2b08fdeb 100644
 --- a/src/node_metadata.h
 +++ b/src/node_metadata.h
-@@ -6,7 +6,7 @@
- #include <string>
+@@ -8,7 +8,7 @@
+ #include <utility>
  #include "node_version.h"
  
 -#if HAVE_OPENSSL
@@ -555,7 +555,7 @@ index 7b2072ad39c3f1a7c73101b25b69beb781141e26..d23536d88d21255d348175425a59e242
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 249361e351946c16452124029c60fca52782adf9..653112fbaea59fe8b446236085dcae8be671c6e5 100644
+index ed85bf11f6f325823b59b3b0275908f9210c1b24..e3509abbc3bf84ac0edcd495eb3dde6219dbfc2d 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -7,7 +7,7 @@
@@ -568,7 +568,7 @@ index 249361e351946c16452124029c60fca52782adf9..653112fbaea59fe8b446236085dcae8b
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index 2a1a6aaf9f2d358ffffb0a8171df470686b9450e..3ff1f4b4baa64b8ee2a4587e150ea14cb2fdfdf4 100644
+index cdbd9ca39e907ab22515293eac2c5512223f4ca2..418dee360f867c363f1576012b32213a51c4fdd0 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@
