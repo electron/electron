@@ -66,6 +66,7 @@ concurrency:
 env:
   CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
   CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+  DD_API_KEY: ${{ secrets.DD_API_KEY }}
   ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
@@ -84,6 +85,7 @@ jobs:
     environment: ${{ inputs.environment }}
     env:
       TARGET_ARCH: ${{ inputs.target-arch }}
+      TARGET_PLATFORM: ${{ inputs.target-platform }}
     steps:
     - name: Create src dir
       run: |
