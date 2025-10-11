@@ -83,6 +83,7 @@ class NativeWindowViews : public NativeWindow,
   bool IsResizable() const override;
   void SetAspectRatio(double aspect_ratio,
                       const gfx::Size& extra_size) override;
+  bool CanResize() const override;
   void SetMovable(bool movable) override;
   bool IsMovable() const override;
   void SetMinimizable(bool minimizable) override;
