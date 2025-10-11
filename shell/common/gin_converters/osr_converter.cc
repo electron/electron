@@ -29,6 +29,8 @@ std::string OsrVideoPixelFormatToString(media::VideoPixelFormat format) {
       return "bgra";
     case media::PIXEL_FORMAT_ABGR:
       return "rgba";
+    case media::PIXEL_FORMAT_RGBAF16:
+      return "rgbaf16";
     default:
       NOTREACHED();
   }
