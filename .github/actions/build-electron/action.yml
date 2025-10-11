@@ -63,6 +63,13 @@ runs:
         NINJA_SUMMARIZE_BUILD=1 e build
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
+
+        # Upload build stats to Datadog
+        if ! [ -z $DD_API_KEY ]; then
+          npx node electron/script/build-stats.mjs out/Default/siso.INFO --upload-stats || true
+        else
+          echo "Skipping build-stats.mjs upload because DD_API_KEY is not set"
+        fi
     - name: Build Electron dist.zip ${{ inputs.step-suffix }}
       shell: bash
       run: |
