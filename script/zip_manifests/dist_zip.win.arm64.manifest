@@ -8,6 +8,8 @@ ffmpeg.dll
 icudtl.dat
 libEGL.dll
 libGLESv2.dll
+dxil.dll
+dxcompiler.dll
 locales/af.pak
 locales/am.pak
 locales/ar.pak
