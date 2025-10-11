@@ -45,7 +45,13 @@ async function main () {
 
     if (process.env.TARGET_ARCH) tags.push(`target-arch:${process.env.TARGET_ARCH}`);
     if (process.env.TARGET_PLATFORM) tags.push(`target-platform:${process.env.TARGET_PLATFORM}`);
-    if (process.env.GITHUB_HEAD_REF) tags.push(`branch:${process.env.GITHUB_HEAD_REF}`);
+    if (process.env.GITHUB_HEAD_REF) {
+      // Will be set in pull requests
+      tags.push(`branch:${process.env.GITHUB_HEAD_REF}`);
+    } else if (process.env.GITHUB_REF_NAME) {
+      // Will be set for release branches
+      tags.push(`branch:${process.env.GITHUB_REF_NAME}`);
+    }
 
     const series = [
       {
