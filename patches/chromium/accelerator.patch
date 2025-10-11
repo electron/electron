@@ -53,19 +53,19 @@ index 5ad9332dd27ceda7d67cd3f571b12218a4415a40..ffe083836c39fb60b4bff1f9fbdd6ceb
    }
  
 diff --git a/ui/base/accelerators/accelerator.h b/ui/base/accelerators/accelerator.h
-index e7d5adfac920c97df8bab9bf4ed69a835ee314a9..9aeea7cb4c48d1ccc27304fa99238151b2811c87 100644
+index 666ecbc118bec6d51465644ae4e573846c33610b..5f578ea153477379bac69e48fbd4f41a9a24885e 100644
 --- a/ui/base/accelerators/accelerator.h
 +++ b/ui/base/accelerators/accelerator.h
-@@ -18,6 +18,7 @@
- #include <vector>
- 
- #include "base/component_export.h"
-+#include "third_party/abseil-cpp/absl/types/optional.h"
+@@ -21,6 +21,7 @@
  #include "base/time/time.h"
  #include "build/blink_buildflags.h"
  #include "build/build_config.h"
-@@ -189,6 +190,8 @@ class COMPONENT_EXPORT(UI_BASE) Accelerator {
-     return interrupted_by_mouse_event_;
++#include "third_party/abseil-cpp/absl/types/optional.h"
+ #include "ui/events/event_constants.h"
+ #include "ui/events/keycodes/keyboard_codes.h"
+ 
+@@ -199,6 +200,8 @@ class COMPONENT_EXPORT(UI_BASE) Accelerator {
+               << 18);  // masked to 6 bits
    }
  
 +  absl::optional<char16_t> shifted_char;

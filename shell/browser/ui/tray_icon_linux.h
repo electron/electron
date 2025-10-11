@@ -9,6 +9,7 @@
 #include <string>
 
 #include "shell/browser/ui/tray_icon.h"
+#include "ui/gfx/image/image_skia.h"
 #include "ui/linux/status_icon_linux.h"
 
 class StatusIconLinuxDbus;
