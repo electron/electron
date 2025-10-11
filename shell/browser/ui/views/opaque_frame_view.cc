@@ -160,7 +160,7 @@ int OpaqueFrameView::NonClientHitTest(const gfx::Point& point) {
 }
 
 void OpaqueFrameView::ResetWindowControls() {
-  NonClientFrameView::ResetWindowControls();
+  FrameView::ResetWindowControls();
 
   if (restore_button_)
     restore_button_->SetState(views::Button::STATE_NORMAL);
@@ -173,7 +173,7 @@ void OpaqueFrameView::ResetWindowControls() {
 
 views::View* OpaqueFrameView::TargetForRect(views::View* root,
                                             const gfx::Rect& rect) {
-  return views::NonClientFrameView::TargetForRect(root, rect);
+  return views::FrameView::TargetForRect(root, rect);
 }
 
 void OpaqueFrameView::Layout(PassKey) {

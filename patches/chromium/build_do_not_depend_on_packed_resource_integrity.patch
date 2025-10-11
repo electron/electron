@@ -11,10 +11,10 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index e648bb4ed2ff72441faa8773e449e0b6174f5af5..fd2c1d3ac575d10de7d5c09e4418d17217a43b77 100644
+index 9bffa9c8272a81059eb05fa79107bb326029402c..d286e9ab4edf86570418d4b3699c8f2d720597e5 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -195,11 +195,16 @@ if (!is_android && !is_mac) {
+@@ -197,11 +197,16 @@ if (!is_android && !is_mac) {
          "common/crash_keys.h",
        ]
  
@@ -33,10 +33,10 @@ index e648bb4ed2ff72441faa8773e449e0b6174f5af5..fd2c1d3ac575d10de7d5c09e4418d172
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 790764062094479f25b33a0dfa3e143472e0a077..a9997872138b2d58d279103e4cac3c92f2091f0a 100644
+index 90c8ec37ad4c4640ef93ed1df513f059e846aa3e..a97aaa45f6715c9a6fc1dc4d68db95b920527ef4 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4807,7 +4807,7 @@ static_library("browser") {
+@@ -4820,7 +4820,7 @@ static_library("browser") {
        ]
      }
  
@@ -46,10 +46,10 @@ index 790764062094479f25b33a0dfa3e143472e0a077..a9997872138b2d58d279103e4cac3c92
        # than here in :chrome_dll.
        deps += [ "//chrome:packed_resources_integrity_header" ]
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 8bcc85cfd507f23c9651ea0a006fd6464ecd134f..92e88e0c8f764a779d7c899b423b589a0302b4bd 100644
+index f057d3c3a49191df147469145edf323ba41f2e27..8619391bf1b25a8f93cfc339019b228720b4c106 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -7516,9 +7516,12 @@ test("unit_tests") {
+@@ -7571,9 +7571,12 @@ test("unit_tests") {
        "//chrome/notification_helper",
      ]
  
@@ -63,7 +63,7 @@ index 8bcc85cfd507f23c9651ea0a006fd6464ecd134f..92e88e0c8f764a779d7c899b423b589a
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:win_unit_tests",
-@@ -8430,6 +8433,10 @@ test("unit_tests") {
+@@ -8497,6 +8500,10 @@ test("unit_tests") {
        "../browser/performance_manager/policies/background_tab_loading_policy_unittest.cc",
      ]
  
@@ -74,7 +74,7 @@ index 8bcc85cfd507f23c9651ea0a006fd6464ecd134f..92e88e0c8f764a779d7c899b423b589a
      sources += [
        # The importer code is not used on Android.
        "../common/importer/firefox_importer_utils_unittest.cc",
-@@ -8486,7 +8493,6 @@ test("unit_tests") {
+@@ -8553,7 +8560,6 @@ test("unit_tests") {
      # TODO(crbug.com/417513088): Maybe merge with the non-android `deps` declaration above?
      deps += [
        "../browser/screen_ai:screen_ai_install_state",
