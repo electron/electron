@@ -59,8 +59,6 @@ const char kFreedesktopPortalName[] = "org.freedesktop.portal.Desktop";
 const char kFreedesktopPortalPath[] = "/org/freedesktop/portal/desktop";
 const char kFreedesktopPortalOpenURI[] = "org.freedesktop.portal.OpenURI";
 
-const char kOriginalXdgCurrentDesktopEnvVar[] = "ORIGINAL_XDG_CURRENT_DESKTOP";
-
 const char kMethodOpenDirectory[] = "OpenDirectory";
 
 class ShowItemHelper {
@@ -279,12 +277,6 @@ bool XDGUtil(const std::vector<std::string>& argv,
     base::nix::CreateLaunchOptionsWithXdgActivation(base::BindOnce(
         [](base::RepeatingClosure quit_loop, base::LaunchOptions* options_out,
            base::LaunchOptions options) {
-          // Correct the XDG_CURRENT_DESKTOP environment variable before calling
-          // XDG, in case it was changed for compatibility.
-          if (const auto* orig = base::FindOrNull(
-                  options.environment, kOriginalXdgCurrentDesktopEnvVar))
-            options.environment.emplace(base::nix::kXdgCurrentDesktopEnvVar,
-                                        *orig);
           *options_out = std::move(options);
           std::move(quit_loop).Run();
         },
