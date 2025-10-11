@@ -1,4 +1,4 @@
-import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain } from 'electron/main';
+import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, systemPreferences, WebContents, WebFrameMain } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -2588,6 +2588,14 @@ describe('BrowserWindow module', () => {
       const accentColor = w.getAccentColor();
       expect(accentColor).to.be.a('string');
       expect(accentColor).to.match(/^#[0-9A-F]{6}$/i);
+    });
+
+    it('matches the systemPreferences system color when true', () => {
+      const w = new BrowserWindow({ show: false });
+      w.setAccentColor(true);
+      const accentColor = w.getAccentColor() as string;
+      const systemColor = systemPreferences.getAccentColor().slice(0, 6);
+      expect(accentColor).to.equal(`#${systemColor}`);
     });
 
     it('returns the correct accent color after multiple changes', () => {
