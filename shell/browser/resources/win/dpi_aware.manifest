@@ -1,9 +1,18 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
   <asmv3:application xmlns:asmv3="urn:schemas-microsoft-com:asm.v3">
+    <!-- Back-compat for older Windows versions (Vista/7/8/8.1): Per-Monitor v1 awareness -->
     <asmv3:windowsSettings xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">
-      <!-- See: https://docs.microsoft.com/en-us/windows/desktop/sbscs/application-manifests#dpiAware -->
+      <!-- See: https://learn.microsoft.com/windows/win32/sbscs/application-manifests#dpiaware -->
       <dpiAware>true/pm</dpiAware>
+    </asmv3:windowsSettings>
+
+    <!-- Modern DPI awareness for Windows 10 (Anniversary Update) and newer: Per-Monitor V2 -->
+    <asmv3:windowsSettings xmlns="http://schemas.microsoft.com/SMI/2016/WindowsSettings">
+      <!-- See: https://learn.microsoft.com/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows -->
+      <dpiAwareness>PerMonitorV2</dpiAwareness>
+      <!-- Enable GDI scaling for better text rendering in legacy controls, ignored where unsupported -->
+      <gdiScaling>true</gdiScaling>
     </asmv3:windowsSettings>
   </asmv3:application>
 </assembly>
