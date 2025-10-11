@@ -7,10 +7,10 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 50accbf4052da11d47a5200997f1098ed9d85354..9e1b8d147a99fda962d75c343d0687ffea3c9c69 100644
+index fd71ceac65ccef1d2832b45b0b5612877cee22c1..cb37fa080fc8e8d524cfa2758c4a8c2c5652324d 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -103,6 +103,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
+@@ -106,6 +106,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
    return result;
  }
  
@@ -143,10 +143,10 @@ index 6346f8f7199cf7b7d3736c59571606fff102fbb6..7eea2eaefcad5780663a6b87985925ae
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
  #ifndef OPENSSL_IS_BORINGSSL
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index 1592134716da2de40de4ba028ee937b765423e37..8f3ba65f1fef2c066d6df6087a08ba71100d1090 100644
+index ebc7fddeccf04a92c610849b626b33f900d63493..ed7d202d1b041f8a6cd43ae767d696fb29ab9cd9 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
-@@ -242,7 +242,7 @@ class ByteSource {
+@@ -243,7 +243,7 @@ class ByteSource {
    // Creates a v8::BackingStore that takes over responsibility for
    // any allocated data. The ByteSource will be reset with size = 0
    // after being called.
@@ -229,10 +229,10 @@ index 61b6ecd240c9500f21f683065a2f920af3afb502..ad2b1c76325cb5c8f18a618c5a85ae87
  
  constexpr const char* EncodingName(const enum encoding encoding) {
 diff --git a/src/node_internals.h b/src/node_internals.h
-index 275534285ec28f02b46639142ab4195b24267476..5f9d123f9d4b9feb7bc0b627b1e6309fdbd6e30d 100644
+index 12ea72b61b0a5e194207bb369dfed4b8667107cb..64442215714a98f648971e517ddd9c77e38fe3f2 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
-@@ -120,7 +120,9 @@ v8::MaybeLocal<v8::Object> InitializePrivateSymbols(
+@@ -121,7 +121,9 @@ v8::MaybeLocal<v8::Object> InitializePrivateSymbols(
  
  class NodeArrayBufferAllocator : public ArrayBufferAllocator {
   public:
@@ -243,7 +243,7 @@ index 275534285ec28f02b46639142ab4195b24267476..5f9d123f9d4b9feb7bc0b627b1e6309f
  
    void* Allocate(size_t size) override;  // Defined in src/node.cc
    void* AllocateUninitialized(size_t size) override;
-@@ -138,7 +140,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
+@@ -139,7 +141,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
    }
  
   private:

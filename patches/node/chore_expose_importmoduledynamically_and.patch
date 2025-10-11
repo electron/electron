@@ -40,10 +40,10 @@ index 9b41db8b0714b7408f79cbd5b4c460d9bc08f239..35ecfb9bbaf2c8e7351e1c69da84c82a
  
  /**
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index e317a84e55714af0a93719336d02ac26410ad724..e3880111172363feafb53b51deb08c93596cd4f4 100644
+index c52e20d742942667f43ea3e151fc6702260b176b..cbb3e7f4df72f83cb8a1afc25a7429218792e964 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
-@@ -895,7 +895,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
+@@ -901,7 +901,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
    return module->module_.Get(isolate);
  }
  
@@ -52,7 +52,7 @@ index e317a84e55714af0a93719336d02ac26410ad724..e3880111172363feafb53b51deb08c93
      Local<Context> context,
      Local<Data> host_defined_options,
      Local<Value> resource_name,
-@@ -967,12 +967,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
+@@ -973,12 +973,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
    Realm* realm = Realm::GetCurrent(args);
    HandleScope handle_scope(isolate);
  
@@ -68,7 +68,7 @@ index e317a84e55714af0a93719336d02ac26410ad724..e3880111172363feafb53b51deb08c93
  }
  
  void ModuleWrap::HostInitializeImportMetaObjectCallback(
-@@ -1014,13 +1015,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
+@@ -1020,13 +1021,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
    Realm* realm = Realm::GetCurrent(args);
    Isolate* isolate = realm->isolate();
  

@@ -44,7 +44,7 @@ index 13e41d67c635c27bd5e69eb4960eace34beaef0d..9a99c9ca93907630f9f3ba7ba24577a1
    let filename = call.getFileName();
    const line = call.getLineNumber() - 1;
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 653112fbaea59fe8b446236085dcae8be671c6e5..415d4e34f29bc303674dccbfdc231b251401961b 100644
+index e3509abbc3bf84ac0edcd495eb3dde6219dbfc2d..8afded658c3f569de7b329ea9dddc11010748cf9 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -1566,14 +1566,16 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
