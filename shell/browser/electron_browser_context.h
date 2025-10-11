@@ -90,6 +90,8 @@ class ElectronBrowserContext : public content::BrowserContext {
   ResolveProxyHelper* GetResolveProxyHelper();
   content::PreconnectManager* GetPreconnectManager();
   scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory();
+  scoped_refptr<network::SharedURLLoaderFactory> InterceptURLLoaderFactory(
+      scoped_refptr<network::SharedURLLoaderFactory> terminal);
 
   std::string GetMediaDeviceIDSalt();
 
