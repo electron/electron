@@ -93,7 +93,8 @@ bool NativeTheme::ShouldUseDarkColorsForSystemIntegratedUI() {
 }
 
 bool NativeTheme::InForcedColorsMode() {
-  return ui_theme_->forced_colors();
+  return ui_theme_->forced_colors() !=
+         ui::ColorProviderKey::ForcedColors::kNone;
 }
 
 bool NativeTheme::GetPrefersReducedTransparency() {
@@ -116,7 +117,8 @@ bool NativeTheme::ShouldUseInvertedColorScheme() {
     return false;
   return is_inverted;
 #else
-  return ui_theme_->forced_colors() &&
+  return ui_theme_->forced_colors() !=
+             ui::ColorProviderKey::ForcedColors::kNone &&
          ui_theme_->preferred_color_scheme() ==
              ui::NativeTheme::PreferredColorScheme::kDark;
 #endif

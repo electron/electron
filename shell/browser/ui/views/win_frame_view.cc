@@ -89,7 +89,7 @@ views::View* WinFrameView::TargetForRect(views::View* root,
       return this;
   }
 
-  return NonClientFrameView::TargetForRect(root, rect);
+  return FrameView::TargetForRect(root, rect);
 }
 
 int WinFrameView::NonClientHitTest(const gfx::Point& point) {
@@ -170,7 +170,7 @@ void WinFrameView::Layout(PassKey) {
   if (window()->IsWindowControlsOverlayEnabled()) {
     LayoutWindowControlsOverlay();
   }
-  LayoutSuperclass<NonClientFrameView>(this);
+  LayoutSuperclass<FrameView>(this);
 }
 
 int WinFrameView::FrameTopBorderThickness(bool restored) const {
