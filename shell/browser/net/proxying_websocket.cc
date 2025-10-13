@@ -401,7 +401,7 @@ void ProxyingWebSocket::OnHeadersReceivedCompleteForAuth(
 
   auto continuation = base::BindRepeating(
       &ProxyingWebSocket::OnAuthRequiredComplete, weak_factory_.GetWeakPtr());
-  auto auth_rv = AuthRequiredResponse::kIoPending;
+  auto auth_rv = AuthRequiredResponse::kCancelAuth;
   PauseIncomingMethodCallProcessing();
 
   OnAuthRequiredComplete(auth_rv);
