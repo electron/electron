@@ -7,7 +7,7 @@ This patch comes after Chromium removed the ScopedAllowIO API in favor
 of explicitly adding ScopedAllowBlocking calls as friends.
 
 diff --git a/base/threading/thread_restrictions.h b/base/threading/thread_restrictions.h
-index 71850795591e1a479620f1348c6adc705db9e839..8821ee4429727630e6600d7f85f0999d3f4b2270 100644
+index f10a4040b9460baf1b962f53b3dd54d01f49cdc7..ab2858e7a0fd7fcbc0c03b1a8c086ec4ce90c515 100644
 --- a/base/threading/thread_restrictions.h
 +++ b/base/threading/thread_restrictions.h
 @@ -133,6 +133,7 @@ class KeyStorageLinux;
@@ -36,7 +36,7 @@ index 71850795591e1a479620f1348c6adc705db9e839..8821ee4429727630e6600d7f85f0999d
    friend class ::ProfileImpl;
    friend class ::ScopedAllowBlockingForProfile;
    friend class ::StartupTabProviderImpl;
-@@ -615,6 +620,7 @@ class BASE_EXPORT ScopedAllowBlocking {
+@@ -616,6 +621,7 @@ class BASE_EXPORT ScopedAllowBlocking {
    friend class cronet::CronetPrefsManager;
    friend class crypto::ScopedAllowBlockingForNSS;  // http://crbug.com/59847
    friend class drive::FakeDriveService;

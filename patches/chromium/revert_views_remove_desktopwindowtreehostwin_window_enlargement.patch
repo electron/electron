@@ -10,10 +10,10 @@ on Windows.  We should refactor our code so that this patch isn't
 necessary.
 
 diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
-index bce1e6ff07587e7f75d1925291872fe21ba5404c..c6e851033ca7da1ad3d9b108491ce5b38cfc71a4 100644
+index ae2e7540435daef0779f6d442c743f15fc9ae88a..d6a4fbe710b46c62bb6343d91bfaa702a21d78b3 100644
 --- a/testing/variations/fieldtrial_testing_config.json
 +++ b/testing/variations/fieldtrial_testing_config.json
-@@ -25163,6 +25163,21 @@
+@@ -25338,6 +25338,21 @@
              ]
          }
      ],
@@ -36,10 +36,10 @@ index bce1e6ff07587e7f75d1925291872fe21ba5404c..c6e851033ca7da1ad3d9b108491ce5b3
          {
              "platforms": [
 diff --git a/ui/views/views_features.cc b/ui/views/views_features.cc
-index 88ca7f0b1fc025ee41653004dc10ed48cbd59d32..b8ec7177ced38773b96f7d44277bba383d0ff8ca 100644
+index eddb6b33f0df6f494ae9dfa63851c924e2d2350c..d74308e69e794637410597c7dd9a06b2d5fff425 100644
 --- a/ui/views/views_features.cc
 +++ b/ui/views/views_features.cc
-@@ -27,6 +27,14 @@ BASE_FEATURE(kEnablePlatformHighContrastInkDrop,
+@@ -22,6 +22,14 @@ BASE_FEATURE(kAnnounceTextAdditionalAttributes,
  // crbug.com/370856871.
  BASE_FEATURE(kEnableTouchDragCursorSync, base::FEATURE_ENABLED_BY_DEFAULT);
  
@@ -55,12 +55,12 @@ index 88ca7f0b1fc025ee41653004dc10ed48cbd59d32..b8ec7177ced38773b96f7d44277bba38
  // to kKeyboardAccessibleTooltip in //ui/base/ui_base_features.cc.
  BASE_FEATURE(kKeyboardAccessibleTooltipInViews,
 diff --git a/ui/views/views_features.h b/ui/views/views_features.h
-index 58063f2452dc484a97c79b382067d9b34875e344..d586436498263c595a17454f54644d2deb05f308 100644
+index c1d8107ec3e32d31811572aa1d7a7c7a242da7d9..463abf871c7e169dc1ca9f523d74fc14d58541cc 100644
 --- a/ui/views/views_features.h
 +++ b/ui/views/views_features.h
-@@ -15,6 +15,7 @@ namespace views::features {
+@@ -14,6 +14,7 @@ namespace views::features {
+ // Please keep alphabetized.
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kAnnounceTextAdditionalAttributes);
- VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnablePlatformHighContrastInkDrop);
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableTouchDragCursorSync);
 +VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableTransparentHwndEnlargement);
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kKeyboardAccessibleTooltipInViews);

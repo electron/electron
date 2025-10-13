@@ -57,7 +57,7 @@ index e523151fb670af28cf2c54548c5009825fdbed92..66d5724f848b328a19362a3c0f634670
    gfx::Rect window_bounds_before_fullscreen_;
  
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 7459d4c241e914248261c62b63652fd7139dd54e..97b1f34a655c87bf888ea16e7ab6897132afdaae 100644
+index e1a1cdb2ec192d2ee5a555ecccf041f757336f79..68a210eaf34d6d410a14478ad5bf0c78faa30388 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -465,6 +465,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
@@ -90,7 +90,7 @@ index 7459d4c241e914248261c62b63652fd7139dd54e..97b1f34a655c87bf888ea16e7ab68971
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index 7e1bfe1f3754562a77615ab7ba83c23f719050b7..8a84abb915d3d0123f996eb027b357c953233a9c 100644
+index 55a5d241058f192091e34164880c0888504b30bd..c047e938a39fa2466fc95312ba7bc581a68b48e2 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
 @@ -222,6 +222,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {

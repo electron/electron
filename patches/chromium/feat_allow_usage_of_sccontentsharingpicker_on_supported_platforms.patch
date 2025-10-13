@@ -311,10 +311,10 @@ index c2d8bbafa39c05f25641f2fd3491ef7f84f4f6a1..5506583824e10d664f32c71d63fda1aa
  
  // Although ScreenCaptureKit is available in 12.3 there were some bugs that
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index c07b61c6736798b3b8efd79a27fb6546dde24cc2..889c0876394bc973f86cc6f5f2d3ce3902103b41 100644
+index 2b58244d3d8ca03d900a8c4450ded607861b45f6..1c5b2650c7a1193fd9af74b3826e363a43b676ad 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-@@ -310,8 +310,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -316,8 +316,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
          break;
        }
  
@@ -332,7 +332,7 @@ index c07b61c6736798b3b8efd79a27fb6546dde24cc2..889c0876394bc973f86cc6f5f2d3ce39
          // For the other capturers, when a bug reports the type of capture it's
          // easy enough to determine which capturer was used, but it's a little
          // fuzzier with window capture.
-@@ -327,13 +335,15 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -333,13 +341,15 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
        }
  #endif  // defined(USE_AURA) || BUILDFLAG(IS_MAC)
  
@@ -350,10 +350,10 @@ index c07b61c6736798b3b8efd79a27fb6546dde24cc2..889c0876394bc973f86cc6f5f2d3ce39
                               kMaxNumberOfBuffers, std::move(receiver),
                               std::move(receiver_on_io_thread)),
 diff --git a/content/public/browser/desktop_media_id.h b/content/public/browser/desktop_media_id.h
-index b90a88a115247bd0c62abb18771220e37a441d2f..f908a95727633e903bd56d2bc8608bba167de4e7 100644
+index b10c5376caa9a832826868c72dbc44ee54705283..e9b27b53d9b34fbb0a3410eb2fcc15306497cdf4 100644
 --- a/content/public/browser/desktop_media_id.h
 +++ b/content/public/browser/desktop_media_id.h
-@@ -27,6 +27,8 @@ struct CONTENT_EXPORT DesktopMediaID {
+@@ -28,6 +28,8 @@ struct CONTENT_EXPORT DesktopMediaID {
    static constexpr Id kNullId = 0;
    // Represents a fake id to create a dummy capturer for autotests.
    static constexpr Id kFakeId = -3;

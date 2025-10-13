@@ -76,7 +76,7 @@ index 3a028b9a2ff0cac114bca857f3a87c4ed331e0a1..e53ed3ceef61961bce7b9ce45098f83c
        network::ResourceRequest::TrustedParams::EnabledClientHints>&
    enabled_client_hints(
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index 950d6e0fa3e5304b2d28db0e284f9697d0c9f45c..048900b092875f3dd01b8a3cd813f5a44d1355e1 100644
+index df9bd2130004821582903699aac1b38403c785a6..8b10c16a10119f2628300b3c52cca0fe5a6bd6e4 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
 @@ -111,6 +111,9 @@ struct TrustedUrlRequestParams {
@@ -112,7 +112,7 @@ index 96fe8a372fa6a166db928c61b2c983b86a74b1a3..2a10810d50d083ab0a7340757d544a40
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 7834c23474416f7af4db75d24fc613c3913eee77..3d32e5d540deea75a453f603a2902c44a1b82287 100644
+index 622190e414ef1b4f3910ab09c99e7e27e15e5693..57f1532901e4ba4d1e71c38e232a693b3af9da44 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -406,6 +406,9 @@ URLLoader::URLLoader(
@@ -155,7 +155,7 @@ index 7834c23474416f7af4db75d24fc613c3913eee77..3d32e5d540deea75a453f603a2902c44
  
    ad_auction_event_record_request_helper_.HandleResponse(
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 21dc5e84807eb89a4e331e5cca5b38f08c41f72d..9f55ff05f239df939833d98d45d455e864f4f2c3 100644
+index 09c035a73fea5a328193c67a7906d3e8b455d619..1c1e59764fa6a701f61765060428f811029b3d6e 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -622,6 +622,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
