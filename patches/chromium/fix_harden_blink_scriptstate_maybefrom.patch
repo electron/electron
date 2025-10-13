@@ -40,7 +40,7 @@ accessing uninitialized lower indexes can return garbage values that cannot be n
 Refer to v8::EmbedderDataSlot::store_aligned_pointer for context.
 
 diff --git a/gin/public/gin_embedders.h b/gin/public/gin_embedders.h
-index 8d7c5631fd8f1499c67384286f0e3c4037673b32..2b7bdfbac06a42e6bc51eb65e023c3673e6eb885 100644
+index cecf528475cb832ed1876381878eade582bc83d6..71308b2d963c2d083328aad6be356dc547ba5629 100644
 --- a/gin/public/gin_embedders.h
 +++ b/gin/public/gin_embedders.h
 @@ -20,6 +20,8 @@ enum GinEmbedder : uint16_t {
@@ -51,12 +51,12 @@ index 8d7c5631fd8f1499c67384286f0e3c4037673b32..2b7bdfbac06a42e6bc51eb65e023c367
 +  kEmbedderBlinkTag,
  };
  
- }  // namespace gin
+ enum EmbedderDataTag : uint16_t {
 diff --git a/third_party/blink/renderer/platform/bindings/script_state.cc b/third_party/blink/renderer/platform/bindings/script_state.cc
-index 2d5df763b6ebb2333ae4aef909865213fb9ad4df..2370f00a3f5ee70604c93a0999ea5cee3c9898f9 100644
+index 7c602990a3f9a3083308d282fe79bf858b642cdf..29222ecc17bf2e621c44f4b0f15a638326f3be38 100644
 --- a/third_party/blink/renderer/platform/bindings/script_state.cc
 +++ b/third_party/blink/renderer/platform/bindings/script_state.cc
-@@ -13,6 +13,10 @@ namespace blink {
+@@ -14,6 +14,10 @@ namespace blink {
  
  ScriptState::CreateCallback ScriptState::s_create_callback_ = nullptr;
  
@@ -67,26 +67,26 @@ index 2d5df763b6ebb2333ae4aef909865213fb9ad4df..2370f00a3f5ee70604c93a0999ea5cee
  // static
  void ScriptState::SetCreateCallback(CreateCallback create_callback) {
    DCHECK(create_callback);
-@@ -37,6 +41,8 @@ ScriptState::ScriptState(v8::Local<v8::Context> context,
-   DCHECK(world_);
+@@ -39,6 +43,8 @@ ScriptState::ScriptState(v8::Local<v8::Context> context,
    context_.SetWeak(this, &OnV8ContextCollectedCallback);
-   context->SetAlignedPointerInEmbedderData(kV8ContextPerContextDataIndex, this);
+   context->SetAlignedPointerInEmbedderData(kV8ContextPerContextDataIndex, this,
+                                            gin::kBlinkScriptState);
 +  context->SetAlignedPointerInEmbedderData(
 +      kV8ContextPerContextDataTagIndex, ScriptState::kScriptStateTagPtr);
    RendererResourceCoordinator::Get()->OnScriptStateCreated(this,
                                                             execution_context);
  }
-@@ -80,6 +86,8 @@ void ScriptState::DissociateContext() {
+@@ -82,6 +88,8 @@ void ScriptState::DissociateContext() {
    // Cut the reference from V8 context to ScriptState.
-   GetContext()->SetAlignedPointerInEmbedderData(kV8ContextPerContextDataIndex,
-                                                 nullptr);
+   GetContext()->SetAlignedPointerInEmbedderData(
+       kV8ContextPerContextDataIndex, nullptr, gin::kBlinkScriptState);
 +  GetContext()->SetAlignedPointerInEmbedderData(
 +      kV8ContextPerContextDataTagIndex, nullptr);
    reference_from_v8_context_.Clear();
  
    // Cut the reference from ScriptState to V8 context.
 diff --git a/third_party/blink/renderer/platform/bindings/script_state.h b/third_party/blink/renderer/platform/bindings/script_state.h
-index b3cc8d819b06108386aed9465cab4f27a28b675f..9c8818f10de59fdd2a3fd44d9cd23d40a93b53a7 100644
+index f06885f429a395b5c2eb55c89803837b550d765c..3340e4ec8d1ea20ea8310f288428b5869e85392a 100644
 --- a/third_party/blink/renderer/platform/bindings/script_state.h
 +++ b/third_party/blink/renderer/platform/bindings/script_state.h
 @@ -185,7 +185,12 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
