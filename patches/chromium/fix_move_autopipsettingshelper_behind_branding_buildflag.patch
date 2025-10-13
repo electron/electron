@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 28b9c9789b4f477c1007e2c55efa90d01f8c21a7..57506f2fa6d31abdc4c50abd0dbf1749c2b4087e 100644
+index de8cfaabed0e4ed3db9b55729f7ea22014f63dd2..45df203c236ed0f36f079ad0dcbe98e9fc177b08 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -18,9 +18,9 @@ index 28b9c9789b4f477c1007e2c55efa90d01f8c21a7..57506f2fa6d31abdc4c50abd0dbf1749
  #include "base/numerics/safe_conversions.h"
 +#include "build/branding_buildflags.h"
  #include "chrome/browser/picture_in_picture/picture_in_picture_bounds_cache.h"
- #include "chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker.h"
  #include "chrome/browser/ui/browser_navigator_params.h"
-@@ -32,8 +33,10 @@
+ #include "content/public/browser/document_picture_in_picture_window_controller.h"
+@@ -31,8 +32,10 @@
  #include "base/task/sequenced_task_runner.h"
  // TODO(crbug.com/421608904): include auto_picture_in_picture_tab_helper for
  // Android when supporting document PiP.
@@ -28,9 +28,9 @@ index 28b9c9789b4f477c1007e2c55efa90d01f8c21a7..57506f2fa6d31abdc4c50abd0dbf1749
  #include "chrome/browser/picture_in_picture/auto_picture_in_picture_tab_helper.h"
  #include "chrome/browser/picture_in_picture/auto_pip_setting_overlay_view.h"
 +#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker.h"
  #include "chrome/browser/picture_in_picture/picture_in_picture_window.h"
  #include "media/base/media_switches.h"
- #include "net/base/url_util.h"
 @@ -68,6 +71,7 @@ constexpr double kMaxWindowSizeRatio = 0.8;
  // `kMaxWindowSizeRatio`.
  constexpr double kMaxSiteRequestedWindowSizeRatio = 0.25;
