@@ -18,12 +18,12 @@ This partially (leaves the removal of the feature flag) reverts
 ef865130abd5539e7bce12308659b19980368f12.
 
 diff --git a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.h b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.h
-index 428902f90950b2e9434c8a624a313268ebb80cd4..afcc3bc481be6a16119f7e2af647276cb0dafa1e 100644
+index 13e928e3790735fdad68fbca0a8a8e9d0836fdee..2719f8853e840d6f890d01220345644db163fd07 100644
 --- a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.h
 +++ b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.h
-@@ -12,6 +12,8 @@
+@@ -11,6 +11,8 @@
+ #include "base/metrics/field_trial_params.h"
  #import "content/app_shim_remote_cocoa/web_contents_view_cocoa.h"
- #include "content/common/web_contents_ns_view_bridge.mojom.h"
  
 +extern CONTENT_EXPORT const base::FeatureParam<bool>
 +    kEnhancedWindowOcclusionDetection;
@@ -233,10 +233,10 @@ index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7ce
  }
  
 diff --git a/content/common/features.cc b/content/common/features.cc
-index 788a0da0f67b5580192b9bf374839cade061aae4..2a14433d9d53d98c3cd51a4f7106fb8534efce51 100644
+index 079f57e17386914cb571d6d77e66bb71a453adca..ed328eafcf60390495296d7a2f4cef17de5fd225 100644
 --- a/content/common/features.cc
 +++ b/content/common/features.cc
-@@ -292,6 +292,14 @@ BASE_FEATURE(kInterestGroupUpdateIfOlderThan, base::FEATURE_ENABLED_BY_DEFAULT);
+@@ -298,6 +298,14 @@ BASE_FEATURE(kInterestGroupUpdateIfOlderThan, base::FEATURE_ENABLED_BY_DEFAULT);
  BASE_FEATURE(kIOSurfaceCapturer, base::FEATURE_ENABLED_BY_DEFAULT);
  #endif
  
@@ -252,10 +252,10 @@ index 788a0da0f67b5580192b9bf374839cade061aae4..2a14433d9d53d98c3cd51a4f7106fb85
  BASE_FEATURE(kKeepChildProcessAfterIPCReset, base::FEATURE_DISABLED_BY_DEFAULT);
  
 diff --git a/content/common/features.h b/content/common/features.h
-index f6b18e1c45945126b530187342d2d00c68812338..38649d29fe945c11907e9ead88cd9ec2ca0b1f5a 100644
+index 24b248f94510619b5a570498578f33910245dcf9..8baefcc9ff7d80cb5ba1e3a7174cb3dac9e2b16f 100644
 --- a/content/common/features.h
 +++ b/content/common/features.h
-@@ -106,6 +106,9 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(kInterestGroupUpdateIfOlderThan);
+@@ -107,6 +107,9 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(kInterestGroupUpdateIfOlderThan);
  #if BUILDFLAG(IS_MAC)
  CONTENT_EXPORT BASE_DECLARE_FEATURE(kIOSurfaceCapturer);
  #endif
