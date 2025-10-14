@@ -66,7 +66,11 @@ runs:
 
         # Upload build stats to Datadog
         if ! [ -z $DD_API_KEY ]; then
-          npx node electron/script/build-stats.mjs out/Default/siso.INFO --upload-stats || true
+          if [ "$TARGET_PLATFORM" = "win" ]; then
+            npx node electron/script/build-stats.mjs out/Default/siso.exe.INFO --upload-stats || true
+          else
+            npx node electron/script/build-stats.mjs out/Default/siso.INFO --upload-stats || true
+          fi
         else
           echo "Skipping build-stats.mjs upload because DD_API_KEY is not set"
         fi
