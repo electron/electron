@@ -1,0 +1,114 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chengzhong Wu <cwu631@bloomberg.net>
+Date: Wed, 18 Jun 2025 11:30:09 +0100
+Subject: allow host defined serializer of JSError
+
+Allow host defined serializer and deserializer of JSError in
+ValueSerializer API. This allows hosts that implement DOMException
+in JS to support `Error.isError` proposal and `structuredClone`.
+
+Refs: https://github.com/nodejs/node/pull/58691
+Change-Id: I022821c9abd659970c4d449b3c69c5fb54d0618a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/6637876
+Reviewed-by: Camillo Bruni <cbruni@chromium.org>
+Commit-Queue: Chengzhong Wu <cwu631@bloomberg.net>
+Cr-Commit-Position: refs/heads/main@{#100894}
+
+diff --git a/src/objects/value-serializer.cc b/src/objects/value-serializer.cc
+index cbe488faacf6f830b17d44a584bc6abbfd16f688..10c1099691ae24f1e5b4b1f71f3c60bf25638a95 100644
+--- a/src/objects/value-serializer.cc
++++ b/src/objects/value-serializer.cc
+@@ -654,8 +654,17 @@ Maybe<bool> ValueSerializer::WriteJSReceiver(
+     case JS_DATA_VIEW_TYPE:
+     case JS_RAB_GSAB_DATA_VIEW_TYPE:
+       return WriteJSArrayBufferView(Cast<JSArrayBufferView>(*receiver));
+-    case JS_ERROR_TYPE:
+-      return WriteJSError(Cast<JSObject>(receiver));
++    case JS_ERROR_TYPE: {
++      DirectHandle<JSObject> js_error = Cast<JSObject>(receiver);
++      Maybe<bool> is_host_object = IsHostObject(js_error);
++      if (is_host_object.IsNothing()) {
++        return is_host_object;
++      }
++      if (is_host_object.FromJust()) {
++        return WriteHostObject(js_error);
++      }
++      return WriteJSError(js_error);
++    }
+     case JS_SHARED_ARRAY_TYPE:
+       return WriteJSSharedArray(Cast<JSSharedArray>(receiver));
+     case JS_SHARED_STRUCT_TYPE:
+diff --git a/test/unittests/objects/value-serializer-unittest.cc b/test/unittests/objects/value-serializer-unittest.cc
+index 408f3831671c21a53da7f925892ebb318e3c540e..a97e3341cee9f366f3107ad8d73f37fce4f5b6de 100644
+--- a/test/unittests/objects/value-serializer-unittest.cc
++++ b/test/unittests/objects/value-serializer-unittest.cc
+@@ -3141,6 +3141,69 @@ TEST_F(ValueSerializerTestWithHostObject, RoundTripHostJSObject) {
+   ExpectScriptTrue("result.a === result.b");
+ }
+ 
++TEST_F(ValueSerializerTestWithHostObject, RoundTripJSErrorObject) {
++  i::DisableHandleChecksForMockingScope mocking_scope;
++
++  EXPECT_CALL(serializer_delegate_, HasCustomHostObject(isolate()))
++      .WillOnce(Invoke([](Isolate* isolate) { return true; }));
++  EXPECT_CALL(serializer_delegate_, IsHostObject(isolate(), _))
++      .WillRepeatedly(Invoke([this](Isolate* isolate, Local<Object> object) {
++        EXPECT_TRUE(object->IsObject());
++        Local<Context> context = isolate->GetCurrentContext();
++        return object->Has(context, StringFromUtf8("my_host_object"));
++      }));
++  // Read/Write HostObject methods are not invoked for non-host JSErrors.
++  EXPECT_CALL(serializer_delegate_, WriteHostObject(isolate(), _)).Times(0);
++  EXPECT_CALL(deserializer_delegate_, ReadHostObject(isolate())).Times(0);
++
++  RoundTripTest(
++      "var e = new Error('before serialize');"
++      "({ a: e, get b() { return this.a; } })");
++  ExpectScriptTrue("!('my_host_object' in result)");
++  ExpectScriptTrue("!('my_host_object' in result.a)");
++  ExpectScriptTrue("result.a.message === 'before serialize'");
++  ExpectScriptTrue("result.a instanceof Error");
++  ExpectScriptTrue("result.a === result.b");
++}
++
++TEST_F(ValueSerializerTestWithHostObject, RoundTripHostJSErrorObject) {
++  i::DisableHandleChecksForMockingScope mocking_scope;
++
++  EXPECT_CALL(serializer_delegate_, HasCustomHostObject(isolate()))
++      .WillOnce(Invoke([](Isolate* isolate) { return true; }));
++  EXPECT_CALL(serializer_delegate_, IsHostObject(isolate(), _))
++      .WillRepeatedly(Invoke([this](Isolate* isolate, Local<Object> object) {
++        EXPECT_TRUE(object->IsObject());
++        Local<Context> context = isolate->GetCurrentContext();
++        return object->Has(context, StringFromUtf8("my_host_object"));
++      }));
++  EXPECT_CALL(serializer_delegate_, WriteHostObject(isolate(), _))
++      .WillOnce(Invoke([this](Isolate*, Local<Object> object) {
++        EXPECT_TRUE(object->IsObject());
++        WriteExampleHostObjectTag();
++        return Just(true);
++      }));
++  EXPECT_CALL(deserializer_delegate_, ReadHostObject(isolate()))
++      .WillOnce(Invoke([this](Isolate* isolate) {
++        EXPECT_TRUE(ReadExampleHostObjectTag());
++        Local<Context> context = isolate->GetCurrentContext();
++        Local<Object> obj =
++            v8::Exception::Error(StringFromUtf8("deserialized")).As<Object>();
++        obj->Set(context, StringFromUtf8("my_host_object"), v8::True(isolate))
++            .Check();
++        return obj;
++      }));
++  RoundTripTest(
++      "var e = new Error('before serialize');"
++      "e.my_host_object = true;"
++      "({ a: e, get b() { return this.a; } })");
++  ExpectScriptTrue("!('my_host_object' in result)");
++  ExpectScriptTrue("result.a.my_host_object");
++  ExpectScriptTrue("result.a.message === 'deserialized'");
++  ExpectScriptTrue("result.a instanceof Error");
++  ExpectScriptTrue("result.a === result.b");
++}
++
+ class ValueSerializerTestWithHostArrayBufferView
+     : public ValueSerializerTestWithHostObject {
+  protected:
