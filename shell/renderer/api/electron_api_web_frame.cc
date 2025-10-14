@@ -811,7 +811,7 @@ class WebFrameRenderer final
   void ClearCache(v8::Isolate* isolate) {
     blink::WebCache::Clear();
     base::MemoryPressureListener::NotifyMemoryPressure(
-        base::MemoryPressureListener::MEMORY_PRESSURE_LEVEL_CRITICAL);
+        base::MEMORY_PRESSURE_LEVEL_CRITICAL);
   }
 
   v8::Local<v8::Value> FindFrameByToken(v8::Isolate* isolate,
