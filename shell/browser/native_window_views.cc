@@ -43,7 +43,7 @@
 #include "ui/compositor/compositor.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/image/image.h"
-#include "ui/gfx/native_widget_types.h"
+#include "ui/gfx/native_ui_types.h"
 #include "ui/ozone/public/ozone_platform.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/webview/webview.h"
@@ -1846,8 +1846,8 @@ views::ClientView* NativeWindowViews::CreateClientView(views::Widget* widget) {
   return new NativeWindowClientView{widget, &root_view_, this};
 }
 
-std::unique_ptr<views::NonClientFrameView>
-NativeWindowViews::CreateNonClientFrameView(views::Widget* widget) {
+std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
+    views::Widget* widget) {
 #if BUILDFLAG(IS_WIN)
   auto frame_view = std::make_unique<WinFrameView>();
   frame_view->Init(this, widget);
@@ -1874,7 +1874,7 @@ electron::ClientFrameViewLinux* NativeWindowViews::GetClientFrameViewLinux() {
   // Check to make sure this window's non-client frame view is a
   // ClientFrameViewLinux.  If either has_frame() or has_client_frame()
   // are false, it will be an OpaqueFrameView or NativeFrameView instead.
-  // See NativeWindowViews::CreateNonClientFrameView.
+  // See NativeWindowViews::CreateFrameView.
   if (!has_frame() || !has_client_frame())
     return {};
   return static_cast<ClientFrameViewLinux*>(

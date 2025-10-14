@@ -28,10 +28,10 @@ index 668012a5e422059f52815fadf3c7d1d99af55032..753e519eb3ca094205b3e280b381960d
        break;
    }
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index dda07e1d45bf49b1fc3970a34a17bf65abc79e60..0e75eff7a65fc4eb921d41d0c4689b0157308ff6 100644
+index 0a72093709ae8f56cc7b8d1649efe23050423054..0d7ad32add07e4c8f61d8df08de9e1c176bba6d6 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
-@@ -89,7 +89,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+@@ -94,7 +94,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
      case PermissionType::AUTOMATIC_FULLSCREEN:
      case PermissionType::WEB_APP_INSTALLATION:
      case PermissionType::LOCAL_NETWORK_ACCESS:
@@ -164,7 +164,7 @@ index c286d87043ec4cb2e51ec9d82d08e4c84f5a270c..164a2a446947dae687922363d324a6d3
    // Always keep this at the end.
    NUM,
 diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
-index 6fc349a2f4633d1338fbfcf8d0d0fb6fa3180b0d..ebb5d84848cee735990f06f6add2b38ebd8734ef 100644
+index 549f9079c004ce8427ab2be0dba2e5b24471a8c9..e7276b12b22035730fda18103dad604e87fff4a9 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
 @@ -44,7 +44,15 @@ enum PermissionName {
