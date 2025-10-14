@@ -106,8 +106,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   virtual void Focus();
   virtual void Blur();
   bool IsFocused() const;
-  void Show();
-  void ShowInactive();
+  virtual void Show();
+  virtual void ShowInactive();
   void Hide();
   bool IsVisible() const;
   bool IsEnabled() const;
