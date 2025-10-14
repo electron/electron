@@ -11,6 +11,7 @@ jobs:
   check-stable-prep-items:
     name: Check Stable Prep Items
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
       - name: Generate GitHub App token
         uses: electron/github-app-auth-action@384fd19694fe7b6dcc9a684746c6976ad78228ae # v1.1.1

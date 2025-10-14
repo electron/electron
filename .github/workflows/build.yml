@@ -43,10 +43,13 @@ defaults:
   run:
     shell: bash
 
+permissions: {}
+
 jobs:
   setup:
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pull-requests: read
     outputs:
         docs: ${{ steps.filter.outputs.docs }}
@@ -80,6 +83,8 @@ jobs:
     needs: setup
     if: ${{ !inputs.skip-lint }}
     uses: ./.github/workflows/pipeline-electron-lint.yml
+    permissions:
+      contents: read
     with:
       container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root"}'
     secrets: inherit
@@ -89,6 +94,8 @@ jobs:
     needs: [setup, checkout-linux]
     if: ${{ needs.setup.outputs.docs-only == 'true' }}
     uses: ./.github/workflows/pipeline-electron-docs-only.yml
+    permissions:
+      contents: read
     with:
       container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
     secrets: inherit
@@ -98,6 +105,8 @@ jobs:
     needs: setup
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-macos}}
     runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
     container:
       image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
       options: --user root
@@ -126,6 +135,8 @@ jobs:
     needs: setup
     if: ${{ !inputs.skip-linux}}
     runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
     container:
       image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
       options: --user root
@@ -155,6 +166,8 @@ jobs:
     needs: setup
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
     container:
       image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
       options: --user root --device /dev/fuse --cap-add SYS_ADMIN
@@ -185,6 +198,8 @@ jobs:
   # GN Check Jobs
   macos-gn-check:
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
+    permissions:
+      contents: read
     needs: checkout-macos
     with:
       target-platform: macos
@@ -195,6 +210,8 @@ jobs:
 
   linux-gn-check:
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
+    permissions:
+      contents: read
     needs: checkout-linux
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
@@ -207,6 +224,8 @@ jobs:
 
   windows-gn-check:
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
+    permissions:
+      contents: read
     needs: checkout-windows
     with:
       target-platform: win
@@ -400,6 +419,8 @@ jobs:
   gha-done:
     name: GitHub Actions Completed
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: [docs-only, macos-x64, macos-arm64, linux-x64, linux-x64-asan, linux-arm, linux-arm64, windows-x64, windows-x86, windows-arm64]
     if: always() && !contains(needs.*.result, 'failure')
     steps: 

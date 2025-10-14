@@ -26,6 +26,8 @@ on:
         type: string
         default: testing
 
+permissions: {}
+
 concurrency:
   group: electron-gn-check-${{ inputs.target-platform }}-${{ github.ref }}
   cancel-in-progress: true
@@ -41,6 +43,8 @@ jobs:
       run:
         shell: bash
     runs-on: ${{ inputs.check-runs-on }}
+    permissions:
+      contents: read
     container: ${{ fromJSON(inputs.check-container) }}
     steps:
     - name: Checkout Electron
