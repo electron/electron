@@ -10,7 +10,7 @@ DidCreateScriptContext is called, not all JS APIs are available in the
 context, which can cause some preload scripts to trip.
 
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index 9728f3c38c27f93188d1aa9026552a5cebbdcb60..0cba9fb59a62f00fb726850ba9901c2887cc8431 100644
+index 5196f155cdc641b66c4faa77d8b00097145a1290..bbfac47a74f989482343c222b78f187b70297e4e 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
 @@ -141,6 +141,8 @@ class CONTENT_EXPORT RenderFrameObserver {
@@ -23,10 +23,10 @@ index 9728f3c38c27f93188d1aa9026552a5cebbdcb60..0cba9fb59a62f00fb726850ba9901c28
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index dcfe69d2c719db9e9b1f612275ea2e95f5e632b0..230697a116c26b137c05e234824aded3ae5295af 100644
+index 2fca6bc42e218050ba325e07f771a3b7e2c6f322..ba670e2841e29f4fc0fd7732bcc89532e45ecb1c 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4701,6 +4701,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4732,6 +4732,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -40,7 +40,7 @@ index dcfe69d2c719db9e9b1f612275ea2e95f5e632b0..230697a116c26b137c05e234824aded3
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index a87e628da2e1f906352ad1559a26830ed361ecb8..611283f006f96af3c40cbf947505b02ad8ee3438 100644
+index 1b91ce91b859144680e23b2d3f9bdf514b8bb628..fd13b40fd61067a4b0374a12121a96294ea3cb7f 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
 @@ -603,6 +603,8 @@ class CONTENT_EXPORT RenderFrameImpl

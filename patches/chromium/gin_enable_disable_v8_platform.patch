@@ -7,7 +7,7 @@ We don't use gin to create the V8 platform, because we need to inject Node
 things.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 8a9be905bcbe9ccc8afaae2795605f87b81465d9..ab574fd81bc08e109123f07f095d26e19504baa0 100644
+index 456409c9e84c7a061d474470c8e42c5ddb5eb799..87187d05175a9da4fd7af03ba8a139a2d9554551 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
 @@ -162,11 +162,13 @@ void IsolateHolder::Initialize(ScriptMode mode,
