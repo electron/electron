@@ -8,11 +8,11 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 37aa6f6b51c8f83c6b3165ac230a691cecbfd303..f07dee4023f026eb57288f5e71bfa6014b558c00 100644
+index ef6e8792bf1ff3299a16e36f508108abd791c0f1..a69088723f763738598c4efbefe96668ee05e0ad 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -84,11 +84,13 @@
- #include "chrome/browser/ui/browser_window.h"
+ #include "chrome/browser/ui/browser_window/public/browser_window_interface_iterator.h"
  #include "chrome/browser/ui/tabs/public/tab_features.h"
  #include "chrome/browser/ui/views/file_system_access/file_system_access_page_action_controller.h"
 +#if 0
@@ -255,7 +255,7 @@ index 37aa6f6b51c8f83c6b3165ac230a691cecbfd303..f07dee4023f026eb57288f5e71bfa601
  void ChromeFileSystemAccessPermissionContext::OnWebAppInstalled(
      const webapps::AppId& app_id) {
    if (!base::FeatureList::IsEnabled(
-@@ -3152,11 +2964,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3175,11 +2987,7 @@ bool ChromeFileSystemAccessPermissionContext::
          HandleType handle_type,
          UserAction user_action,
          GrantType grant_type) {
@@ -268,7 +268,7 @@ index 37aa6f6b51c8f83c6b3165ac230a691cecbfd303..f07dee4023f026eb57288f5e71bfa601
    if (!base::FeatureList::IsEnabled(
            features::kFileSystemAccessPersistentPermissions)) {
      return false;
-@@ -3207,6 +3015,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3230,6 +3038,7 @@ bool ChromeFileSystemAccessPermissionContext::
  
    return false;
  #endif  // BUILDFLAG(IS_ANDROID)

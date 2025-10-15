@@ -34,10 +34,10 @@ index bbfac47a74f989482343c222b78f187b70297e4e..3677ca3345fbc775d139684a12fe3624
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index ba670e2841e29f4fc0fd7732bcc89532e45ecb1c..128ffa612eda421f9d8c49c9324b3b52b782ba2c 100644
+index 0dfbc387901dfb7937ff57ce98d85291b527ebc7..a03e501a6c21d20fb571f0b1272c4425cd243681 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4738,10 +4738,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4739,10 +4739,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
      observer.DidInstallConditionalFeatures(context, world_id);
  }
  
@@ -52,7 +52,7 @@ index ba670e2841e29f4fc0fd7732bcc89532e45ecb1c..128ffa612eda421f9d8c49c9324b3b52
  
  void RenderFrameImpl::DidChangeScrollOffset() {
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index fd13b40fd61067a4b0374a12121a96294ea3cb7f..e79c07abf2744c5461ce682a406954a2a23f03d0 100644
+index cf54df57c72cfaf97d7d3ff1afe134c6f39860f1..54f83b86322dcf9ad544a4ba71fb83e77e8e572c 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
 @@ -605,7 +605,8 @@ class CONTENT_EXPORT RenderFrameImpl
@@ -167,7 +167,7 @@ index f96781a047056876b030581b539be0507acc3a1c..cd9be80be2500a001b1895c81ee597dd
    // Called when initial script evaluation finished for the main script.
    // |success| is true if the evaluation completed with no uncaught exception.
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index d5a86fa3b41c9f4bf294cfdf7e210da05f7ae2e9..faeacf7fc8aac20b950acebd3ff8d29c17f7b4b9 100644
+index 4520c9edccf63bdb9e35bf3a99a8ddb39170da24..dd2c5bd50075c345262b05952ecf3f2aa300b6ff 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
 @@ -671,7 +671,8 @@ class BLINK_EXPORT WebLocalFrameClient {

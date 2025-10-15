@@ -6,7 +6,7 @@ Subject: refactor: patch electron PermissionTypes into blink
 6387077: [PermissionOptions] Generalize PermissionRequestDescription | https://chromium-review.googlesource.com/c/chromium/src/+/6387077
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 7078014e6db7c43d66b1448b2b36500f206ec4a0..9decf37eaf32eb837141bc9ee96b688188dcc078 100644
+index 86b8df2b23dc975a6db87f04005cb105054305b0..770fd74ac5a21fe6daf68efe68efcf5a69483d84 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
 @@ -536,7 +536,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
@@ -185,10 +185,10 @@ index 549f9079c004ce8427ab2be0dba2e5b24471a8c9..e7276b12b22035730fda18103dad604e
  
  struct MidiPermissionDescriptor {
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index 63df740efad1e407f0990d2ba48a9cbcb8bdb6f8..3973be677468b36124b88293c46cab615a4a63c5 100644
+index a980ed6afb84eceef9c9b594b325e8e3783821ec..ff2898ca035ae5f2bc218615a87ec148e3764385 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-@@ -146,8 +146,22 @@ String PermissionNameToString(PermissionName name) {
+@@ -145,8 +145,22 @@ String PermissionNameToString(PermissionName name) {
        return "web-printing";
      case PermissionName::SMART_CARD:
        return "smart-card";

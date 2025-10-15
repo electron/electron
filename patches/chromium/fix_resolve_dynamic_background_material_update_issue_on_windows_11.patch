@@ -36,7 +36,7 @@ index 0cd07fd5fb55dcc0d972de4c027fcb895d156592..0f4d335e1d54b5e92fc217080d86513d
    // Overridden from DesktopWindowTreeHost:
    void Init(const Widget::InitParams& params) override;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 74ae0fa48721fbf19631294d92ae9326ad902c99..1a26051de18f336db1ef7b1a4a60db9052e97b5e 100644
+index 2a47325ff020977a8c574b1edceb722c15513624..edecbfca5b2c0b6c4dfc6d9049a2e4556559b9f1 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -994,13 +994,13 @@ void HWNDMessageHandler::FrameTypeChanged() {

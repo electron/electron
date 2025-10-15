@@ -59,10 +59,10 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..a54f1b3351efd2d8f324436f7f35cd43
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index ac4623d35dc9d0765fef5aedfc635df14f95ced3..2db446cddef9dc0505e9c9a7a75cba5d43018959 100644
+index e7f9b2ebfd5a04290b8d2d8a75141534e35bc4c6..d4b4eee7a179904913ac1003781600ceaf5033ba 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -3185,6 +3185,7 @@ void LocalFrame::RequestExecuteScript(
+@@ -3186,6 +3186,7 @@ void LocalFrame::RequestExecuteScript(
      mojom::blink::EvaluationTiming evaluation_timing,
      mojom::blink::LoadEventBlockingOption blocking_option,
      WebScriptExecutionCallback callback,
@@ -70,7 +70,7 @@ index ac4623d35dc9d0765fef5aedfc635df14f95ced3..2db446cddef9dc0505e9c9a7a75cba5d
      BackForwardCacheAware back_forward_cache_aware,
      mojom::blink::WantResultOption want_result_option,
      mojom::blink::PromiseResultOption promise_behavior) {
-@@ -3242,7 +3243,7 @@ void LocalFrame::RequestExecuteScript(
+@@ -3243,7 +3244,7 @@ void LocalFrame::RequestExecuteScript(
    PausableScriptExecutor::CreateAndRun(
        script_state, std::move(script_sources), execute_script_policy,
        user_gesture, evaluation_timing, blocking_option, want_result_option,
@@ -80,10 +80,10 @@ index ac4623d35dc9d0765fef5aedfc635df14f95ced3..2db446cddef9dc0505e9c9a7a75cba5d
  
  void LocalFrame::SetEvictCachedSessionStorageOnFreezeOrUnload() {
 diff --git a/third_party/blink/renderer/core/frame/local_frame.h b/third_party/blink/renderer/core/frame/local_frame.h
-index 6ea33fee79cf65d4badcd28c088d23ad985cdaec..b0784aea80b095d371e7477139ec79ae89b41ec3 100644
+index 1f0313622e2f1672a9d5464c2b9250cd17654dfb..43eb1f9294a00b4f4f836c9f60f0712edb8d3da2 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.h
 +++ b/third_party/blink/renderer/core/frame/local_frame.h
-@@ -828,6 +828,7 @@ class CORE_EXPORT LocalFrame final
+@@ -826,6 +826,7 @@ class CORE_EXPORT LocalFrame final
                              mojom::blink::EvaluationTiming,
                              mojom::blink::LoadEventBlockingOption,
                              WebScriptExecutionCallback,
@@ -92,10 +92,10 @@ index 6ea33fee79cf65d4badcd28c088d23ad985cdaec..b0784aea80b095d371e7477139ec79ae
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption);
 diff --git a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-index 3a1da2ef67d9b551cb162ba7eee62383107f651a..71a45aa41b6fe475f9e265857b990fdaa875b72a 100644
+index 1a96ae610e8469a311730915c35dab9943aa9d77..6d6893015058de20fc8cda69c09b6438f27ae3d6 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-@@ -998,6 +998,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
+@@ -981,6 +981,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
              std::move(callback).Run(value ? std::move(*value) : base::Value());
            },
            std::move(callback)),
@@ -203,7 +203,7 @@ index fa65331f40b90d812b71a489fd560e9359152d2b..390714d631dc88ef92d59ef9618a5706
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
 diff --git a/third_party/blink/renderer/core/frame/web_frame_test.cc b/third_party/blink/renderer/core/frame/web_frame_test.cc
-index 389ba18d5c709156f0c8da2e578825ba59ce6190..1dcfee3a5f43a4be6a57511b194aa68518c1b090 100644
+index b78f7ac17be5915a57e217bbaa981fb04d60dd40..996eb063b8b7e48ce1744de7a6fcb78fa594cf74 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_test.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_test.cc
 @@ -295,6 +295,7 @@ void ExecuteScriptsInMainWorld(
