@@ -551,17 +551,17 @@ base::IDMap<WebContents*>& GetAllWebContents() {
 
 void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
                        base::ScopedClosureRunner capture_handle,
-                       const SkBitmap& bitmap) {
+                       const viz::CopyOutputBitmapWithMetadata& result) {
   auto ui_task_runner = content::GetUIThreadTaskRunner({});
   if (!ui_task_runner->RunsTasksInCurrentSequence()) {
     ui_task_runner->PostTask(
         FROM_HERE, base::BindOnce(&OnCapturePageDone, std::move(promise),
-                                  std::move(capture_handle), bitmap));
+                                  std::move(capture_handle), result));
     return;
   }
 
   // Hack to enable transparency in captured image
-  promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
+  promise.Resolve(gfx::Image::CreateFrom1xBitmap(result.bitmap));
   capture_handle.RunAndReset();
 }
 

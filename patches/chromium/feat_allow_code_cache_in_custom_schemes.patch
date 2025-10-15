@@ -253,7 +253,7 @@ index fb3fdfca483ff5041ee98095af3f6ac2640adbaf..ada19d78ec1337b0c49a1597c877886f
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index 5becc15b30b7e2c3fab289db50ad9774cb5fb17e..7de9e745f249137ecc3224b3b1f6ee70d90b96b6 100644
+index 4a28c9618120b0b85b01687b3a231539fe1d9c34..91123e98ecb9aadf91d355947da8aa4dba7150fa 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
 @@ -8,6 +8,7 @@
@@ -363,7 +363,7 @@ index 5becc15b30b7e2c3fab289db50ad9774cb5fb17e..7de9e745f249137ecc3224b3b1f6ee70
    }
  
    if (operation == CodeCacheHostImpl::Operation::kWrite) {
-@@ -590,6 +613,7 @@ std::optional<GURL> CodeCacheHostImpl::GetSecondaryKeyForCodeCache(
+@@ -612,6 +635,7 @@ std::optional<GURL> CodeCacheHostImpl::GetSecondaryKeyForCodeCache(
        process_lock.MatchesScheme(url::kHttpsScheme) ||
        process_lock.MatchesScheme(content::kChromeUIScheme) ||
        process_lock.MatchesScheme(content::kChromeUIUntrustedScheme) ||
@@ -405,7 +405,7 @@ index 52f16979b05b692ef72762d0cbc16bcb361b047e..b658ebeb9c572158b27d94af56331be8
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index ad9d781f55cc20a2c80a743daaa1563e828cd7e1..bbb6674efdf39d43248620d6e66876d1750d7abe 100644
+index e47605cd20719aef6f076419bbbc7a656e6dc590..0bf502c6ad8564ed66bb014e260a93230e62d992 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
 @@ -136,6 +136,9 @@ struct SchemeRegistry {
@@ -418,7 +418,7 @@ index ad9d781f55cc20a2c80a743daaa1563e828cd7e1..bbb6674efdf39d43248620d6e66876d1
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -706,6 +709,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+@@ -688,6 +691,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
    return GetSchemeRegistry().empty_document_schemes;
  }
  
@@ -435,7 +435,7 @@ index ad9d781f55cc20a2c80a743daaa1563e828cd7e1..bbb6674efdf39d43248620d6e66876d1
    DoAddSchemeWithHandler(
        new_scheme, handler,
 diff --git a/url/url_util.h b/url/url_util.h
-index 8ca0eec8cd9b2e9501daa511acee4fc64d8898af..f888d25801ded67fa600ab2fd268029b26186f35 100644
+index 035d8390c345c3d9b77fb8d2a30a98934c3a40e7..9681ed030bd53b435d27ae3c330abca2207040a7 100644
 --- a/url/url_util.h
 +++ b/url/url_util.h
 @@ -115,6 +115,15 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCSPBypassingSchemes();
