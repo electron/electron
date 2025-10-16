@@ -15,7 +15,7 @@ Auto-Submit: Joey Arhar <jarhar@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1523418}
 
 diff --git a/third_party/blink/renderer/core/inspector/inspector_page_agent.cc b/third_party/blink/renderer/core/inspector/inspector_page_agent.cc
-index 386df6dc728e5a1b1aac9865c1687db03f48d9ee..77bcd0f9f8155d1c9ddc167f594791abf48fcfb9 100644
+index 00d4f83a3c822d4d0e406044418f8a511268d1a3..e017e03aa50ce9e6fce8feba916a8d5ca35d1681 100644
 --- a/third_party/blink/renderer/core/inspector/inspector_page_agent.cc
 +++ b/third_party/blink/renderer/core/inspector/inspector_page_agent.cc
 @@ -603,7 +603,11 @@ protocol::Response InspectorPageAgent::addScriptToEvaluateOnNewDocument(
@@ -32,7 +32,7 @@ index 386df6dc728e5a1b1aac9865c1687db03f48d9ee..77bcd0f9f8155d1c9ddc167f594791ab
    }
  
 diff --git a/third_party/blink/web_tests/FlagExpectations/disable-site-isolation-trials b/third_party/blink/web_tests/FlagExpectations/disable-site-isolation-trials
-index 8df5aa4252464bd4bf06d04b1b4f100453954082..a58b683bd7f2bea8b059f096b48e61d9cd9302d7 100644
+index b1c9ea024a1616d2e3ce76732200d380ce47cc98..b63433bd587b7dd7af102a2d177ce4f8d62e4dbd 100644
 --- a/third_party/blink/web_tests/FlagExpectations/disable-site-isolation-trials
 +++ b/third_party/blink/web_tests/FlagExpectations/disable-site-isolation-trials
 @@ -63,6 +63,7 @@ http/tests/inspector-protocol/target/target-filter.js [ Skip ]
