@@ -814,6 +814,8 @@ WebContents::WebContents(v8::Isolate* isolate,
       options.Get(options::kOffscreen, &use_offscreen_dict);
       use_offscreen_dict.Get(options::kUseSharedTexture,
                              &offscreen_use_shared_texture_);
+      use_offscreen_dict.Get(options::kSharedTexturePixelFormat,
+                             &offscreen_shared_texture_pixel_format_);
     }
   }
 
@@ -851,6 +853,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     if (embedder_ && embedder_->IsOffScreen()) {
       auto* view = new OffScreenWebContentsView(
           false, offscreen_use_shared_texture_,
+          offscreen_shared_texture_pixel_format_,
           base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
       params.view = view;
       params.delegate_view = view;
@@ -872,6 +875,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     content::WebContents::CreateParams params(session->browser_context());
     auto* view = new OffScreenWebContentsView(
         transparent, offscreen_use_shared_texture_,
+        offscreen_shared_texture_pixel_format_,
         base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
     params.view = view;
     params.delegate_view = view;
@@ -1229,6 +1233,7 @@ void WebContents::MaybeOverrideCreateParamsForNewWindow(
     if (is_offscreen) {
       auto* view = new OffScreenWebContentsView(
           false, offscreen_use_shared_texture_,
+          offscreen_shared_texture_pixel_format_,
           base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
       create_params->view = view;
       create_params->delegate_view = view;
@@ -2835,7 +2840,8 @@ void WebContents::EnableDeviceEmulation(
         frame_host->GetView()->GetRenderWidgetHost());
     if (widget_host_impl) {
       auto& frame_widget = widget_host_impl->GetAssociatedFrameWidget();
-      frame_widget->EnableDeviceEmulation(params);
+      frame_widget->EnableDeviceEmulation(
+          params, blink::mojom::DeviceEmulationCacheBehavior::kClearCache);
     }
   }
 }

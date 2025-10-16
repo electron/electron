@@ -6,7 +6,7 @@ Subject: fix: lazyload fs in esm loaders to apply asar patches
 Changes { foo } from fs to just "fs.foo" so that our patching of fs is applied to esm loaders
 
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 3334818153068468967baa5adc1ed2382592ec76..ab4c8a4d00f1813e72f1ea8349850b40f55a393e 100644
+index 3676a9852bcd42de0a3a380de117de58035f757b..eaecfcfd8b922908957c3fefea65fb9deb445249 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
 @@ -10,7 +10,7 @@ const {
@@ -50,10 +50,10 @@ index 5aa946f66c71beff0b7a43c30638ab28a1a5dfc0..e3afd30ba1f591d0298793bc42fd7166
      });
      const { search, hash } = resolved;
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 7ea645b92a015b04cc121ff62aa1fc64b2961241..8e099e0961b624c6143f5a60f050855b3366f177 100644
+index c8cea2117080930105b33e4e50586a2c88ef7352..2c33fd44b9a251682de78a8bcdad9ee5a0d3e5e8 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -25,7 +25,7 @@ const {
+@@ -24,7 +24,7 @@ const {
  
  const { BuiltinModule } = require('internal/bootstrap/realm');
  const assert = require('internal/assert');
@@ -62,7 +62,7 @@ index 7ea645b92a015b04cc121ff62aa1fc64b2961241..8e099e0961b624c6143f5a60f050855b
  const { dirname, extname } = require('path');
  const {
    assertBufferSource,
-@@ -274,7 +274,7 @@ translators.set('commonjs', function commonjsStrategy(url, source, isMain) {
+@@ -315,7 +315,7 @@ translators.set('commonjs', function commonjsStrategy(url, source, isMain) {
  
    try {
      // We still need to read the FS to detect the exports.

@@ -815,27 +815,33 @@ void Session::SetDownloadPath(const base::FilePath& path) {
 }
 
 void Session::EnableNetworkEmulation(const gin_helper::Dictionary& options) {
-  auto conditions = network::mojom::NetworkConditions::New();
-
-  options.Get("offline", &conditions->offline);
-  options.Get("downloadThroughput", &conditions->download_throughput);
-  options.Get("uploadThroughput", &conditions->upload_throughput);
+  std::vector<network::mojom::MatchedNetworkConditionsPtr> matched_conditions;
+  network::mojom::MatchedNetworkConditionsPtr network_conditions =
+      network::mojom::MatchedNetworkConditions::New();
+  network_conditions->conditions = network::mojom::NetworkConditions::New();
+  options.Get("offline", &network_conditions->conditions->offline);
+  options.Get("downloadThroughput",
+              &network_conditions->conditions->download_throughput);
+  options.Get("uploadThroughput",
+              &network_conditions->conditions->upload_throughput);
   double latency = 0.0;
   if (options.Get("latency", &latency) && latency) {
-    conditions->latency = base::Milliseconds(latency);
+    network_conditions->conditions->latency = base::Milliseconds(latency);
   }
+  matched_conditions.emplace_back(std::move(network_conditions));
 
   auto* network_context =
       browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
   network_context->SetNetworkConditions(network_emulation_token_,
-                                        std::move(conditions));
+                                        std::move(matched_conditions));
 }
 
 void Session::DisableNetworkEmulation() {
   auto* network_context =
       browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
-  network_context->SetNetworkConditions(
-      network_emulation_token_, network::mojom::NetworkConditions::New());
+  std::vector<network::mojom::MatchedNetworkConditionsPtr> network_conditions;
+  network_context->SetNetworkConditions(network_emulation_token_,
+                                        std::move(network_conditions));
 }
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
