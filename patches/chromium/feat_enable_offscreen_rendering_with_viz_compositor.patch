@@ -238,7 +238,7 @@ index 67d5ff67d74c107a867b39b306c6528425b87e05..5fd12a25c9e319e8e675955926271c9d
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..02872ac8658a58ea7a508a7063ee1e7e5d69ab0a
+index 0000000000000000000000000000000000000000..601e646c293ac18e692663642f540577168924d6
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
 @@ -0,0 +1,161 @@
@@ -262,7 +262,7 @@ index 0000000000000000000000000000000000000000..02872ac8658a58ea7a508a7063ee1e7e
 +#if BUILDFLAG(IS_WIN)
 +#include "components/viz/service/display_embedder/output_device_backing.h"
 +#include "skia/ext/skia_utils_win.h"
-+#include "ui/gfx/gdi_util.h"
++#include "ui/gfx/win/gdi_util.h"
 +#include "ui/gfx/win/hwnd_util.h"
 +#else
 +#include "mojo/public/cpp/base/shared_memory_utils.h"
