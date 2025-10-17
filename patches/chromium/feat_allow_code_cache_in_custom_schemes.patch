@@ -9,7 +9,7 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index b798ae06446d68fe74e7fef3ade515e9c77f1f73..0b0ecebef9e34986a95e4d9f3b52fcce19f2d686 100644
+index 445661be8089c8d52ade8c24603024afde27cedd..22c95824b703d6248475071c6bb3de91550eb0fa 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
 @@ -8,6 +8,7 @@
@@ -28,7 +28,7 @@ index b798ae06446d68fe74e7fef3ade515e9c77f1f73..0b0ecebef9e34986a95e4d9f3b52fcce
  
  using storage::BigIOBuffer;
  
-@@ -53,39 +55,55 @@ void CheckValidResource(const GURL& resource_url,
+@@ -53,40 +55,55 @@ void CheckValidResource(const GURL& resource_url,
                          GeneratedCodeCache::CodeCacheType cache_type) {
    // If the resource url is invalid don't cache the code.
    DCHECK(resource_url.is_valid());
@@ -41,16 +41,17 @@ index b798ae06446d68fe74e7fef3ade515e9c77f1f73..0b0ecebef9e34986a95e4d9f3b52fcce
 +  const bool resource_url_webui =
        resource_url.SchemeIs(content::kChromeUIScheme) ||
        resource_url.SchemeIs(content::kChromeUIUntrustedScheme);
--  DCHECK(resource_url.SchemeIsHTTPOrHTTPS() ||
--         resource_url_is_chrome_or_chrome_untrusted ||
--         blink::CommonSchemeRegistry::IsExtensionScheme(resource_url.scheme()));
+-  DCHECK(
+-      resource_url.SchemeIsHTTPOrHTTPS() ||
+-      resource_url_is_chrome_or_chrome_untrusted ||
+-      blink::CommonSchemeRegistry::IsExtensionScheme(resource_url.GetScheme()));
 -
 -  // The chrome and chrome-untrusted schemes are only used with the WebUI
 -  // code cache type.
 -  DCHECK_EQ(resource_url_is_chrome_or_chrome_untrusted,
 -            cache_type == GeneratedCodeCache::kWebUIJavaScript);
 +  const bool resource_url_embedder =
-+      base::Contains(url::GetCodeCacheSchemes(), resource_url.scheme());
++      base::Contains(url::GetCodeCacheSchemes(), resource_url.GetScheme());
 +  DCHECK(resource_url_http || resource_url_webui || resource_url_embedder);
  }
  
@@ -71,12 +72,12 @@ index b798ae06446d68fe74e7fef3ade515e9c77f1f73..0b0ecebef9e34986a95e4d9f3b52fcce
 +  const bool origin_lock_for_webui =
        origin_lock.SchemeIs(content::kChromeUIScheme) ||
        origin_lock.SchemeIs(content::kChromeUIUntrustedScheme);
--  DCHECK(
--      origin_lock.is_empty() ||
--      ((origin_lock.SchemeIsHTTPOrHTTPS() ||
--        origin_lock_is_chrome_or_chrome_untrusted ||
--        blink::CommonSchemeRegistry::IsExtensionScheme(origin_lock.scheme())) &&
--       !url::Origin::Create(origin_lock).opaque()));
+-  DCHECK(origin_lock.is_empty() ||
+-         ((origin_lock.SchemeIsHTTPOrHTTPS() ||
+-           origin_lock_is_chrome_or_chrome_untrusted ||
+-           blink::CommonSchemeRegistry::IsExtensionScheme(
+-               origin_lock.GetScheme())) &&
+-          !url::Origin::Create(origin_lock).opaque()));
 -
 -  // The chrome and chrome-untrusted schemes are only used with the WebUI
 -  // code cache type.
@@ -84,7 +85,7 @@ index b798ae06446d68fe74e7fef3ade515e9c77f1f73..0b0ecebef9e34986a95e4d9f3b52fcce
 -            cache_type == GeneratedCodeCache::kWebUIJavaScript);
 +
 +  const bool origin_lock_for_embedder =
-+      base::Contains(url::GetCodeCacheSchemes(), origin_lock.scheme());
++      base::Contains(url::GetCodeCacheSchemes(), origin_lock.GetScheme());
 +
 +  DCHECK(origin_lock_empty || ((origin_lock_for_http || origin_lock_for_webui ||
 +                                origin_lock_for_embedder) &&
@@ -133,7 +134,7 @@ index a01f0d96ef33ce9460a851b072b7ceed5227dee3..f7e39b28cc0ba2251123925c01083a79
  
      // JavaScript from chrome and chrome-untrusted pages. The resource URLs are
 diff --git a/content/browser/code_cache/generated_code_cache_browsertest.cc b/content/browser/code_cache/generated_code_cache_browsertest.cc
-index 28556e56f2fd591c46ce6f48d39eb907876a499d..f5737ba60fb9e182459066ffa62c7c589f379954 100644
+index fb3fdfca483ff5041ee98095af3f6ac2640adbaf..ada19d78ec1337b0c49a1597c877886f69f84f13 100644
 --- a/content/browser/code_cache/generated_code_cache_browsertest.cc
 +++ b/content/browser/code_cache/generated_code_cache_browsertest.cc
 @@ -16,17 +16,22 @@
@@ -159,7 +160,7 @@ index 28556e56f2fd591c46ce6f48d39eb907876a499d..f5737ba60fb9e182459066ffa62c7c58
  #include "net/base/features.h"
  #include "net/dns/mock_host_resolver.h"
  #include "third_party/blink/public/common/features.h"
-@@ -37,6 +42,8 @@ namespace content {
+@@ -38,6 +43,8 @@ namespace content {
  
  namespace {
  
@@ -168,7 +169,7 @@ index 28556e56f2fd591c46ce6f48d39eb907876a499d..f5737ba60fb9e182459066ffa62c7c58
  bool SupportsSharedWorker() {
    return base::FeatureList::IsEnabled(blink::features::kSharedWorker);
  }
-@@ -1044,4 +1051,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
+@@ -1063,4 +1070,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
    }
  }
  
@@ -252,10 +253,10 @@ index 28556e56f2fd591c46ce6f48d39eb907876a499d..f5737ba60fb9e182459066ffa62c7c58
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index 7b4408f3480bd062ab9221f524633c177a212790..8d283d84b0817a937845b221bb13c6ed12bfade6 100644
+index 4a28c9618120b0b85b01687b3a231539fe1d9c34..91123e98ecb9aadf91d355947da8aa4dba7150fa 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
-@@ -7,6 +7,7 @@
+@@ -8,6 +8,7 @@
  #include <string_view>
  #include <utility>
  
@@ -263,7 +264,7 @@ index 7b4408f3480bd062ab9221f524633c177a212790..8d283d84b0817a937845b221bb13c6ed
  #include "base/feature_list.h"
  #include "base/functional/bind.h"
  #include "base/functional/callback_helpers.h"
-@@ -36,6 +37,7 @@
+@@ -38,6 +39,7 @@
  #include "third_party/blink/public/mojom/loader/code_cache.mojom-data-view.h"
  #include "url/gurl.h"
  #include "url/origin.h"
@@ -271,8 +272,8 @@ index 7b4408f3480bd062ab9221f524633c177a212790..8d283d84b0817a937845b221bb13c6ed
  
  using blink::mojom::CacheStorageError;
  
-@@ -55,6 +57,11 @@ GeneratedCodeCache::CodeCacheType MojoCacheTypeToCodeCacheType(
-   }
+@@ -112,6 +114,11 @@ std::optional<std::string> GetContextKeyForPersistentCacheCollection(
+   return context_key;
  }
  
 +bool ProcessLockURLIsCodeCacheScheme(const ProcessLock& process_lock) {
@@ -283,7 +284,7 @@ index 7b4408f3480bd062ab9221f524633c177a212790..8d283d84b0817a937845b221bb13c6ed
  bool CheckSecurityForAccessingCodeCacheData(
      const GURL& resource_url,
      int render_process_id,
-@@ -65,39 +72,56 @@ bool CheckSecurityForAccessingCodeCacheData(
+@@ -122,40 +129,56 @@ bool CheckSecurityForAccessingCodeCacheData(
  
    // Code caching is only allowed for http(s) and chrome/chrome-untrusted
    // scripts. Furthermore, there is no way for http(s) pages to load chrome or
@@ -347,7 +348,8 @@ index 7b4408f3480bd062ab9221f524633c177a212790..8d283d84b0817a937845b221bb13c6ed
 +    return false;
    }
 -  if (resource_url.SchemeIsHTTPOrHTTPS() ||
--      blink::CommonSchemeRegistry::IsExtensionScheme(resource_url.scheme())) {
+-      blink::CommonSchemeRegistry::IsExtensionScheme(
+-          resource_url.GetScheme())) {
 -    if (process_lock.MatchesScheme(content::kChromeUIScheme) ||
 -        process_lock.MatchesScheme(content::kChromeUIUntrustedScheme)) {
 -      // It is possible for WebUI pages to include open-web content, but such
@@ -356,18 +358,18 @@ index 7b4408f3480bd062ab9221f524633c177a212790..8d283d84b0817a937845b221bb13c6ed
 -      return false;
 -    }
 -    return true;
-+  if (base::Contains(url::GetCodeCacheSchemes(), resource_url.scheme())) {
++  if (base::Contains(url::GetCodeCacheSchemes(), resource_url.GetScheme())) {
 +    return ProcessLockURLIsCodeCacheScheme(process_lock);
    }
  
    if (operation == CodeCacheHostImpl::Operation::kWrite) {
-@@ -530,6 +554,7 @@ std::optional<GURL> CodeCacheHostImpl::GetSecondaryKeyForCodeCache(
+@@ -612,6 +635,7 @@ std::optional<GURL> CodeCacheHostImpl::GetSecondaryKeyForCodeCache(
        process_lock.MatchesScheme(url::kHttpsScheme) ||
        process_lock.MatchesScheme(content::kChromeUIScheme) ||
        process_lock.MatchesScheme(content::kChromeUIUntrustedScheme) ||
 +      ProcessLockURLIsCodeCacheScheme(process_lock) ||
        blink::CommonSchemeRegistry::IsExtensionScheme(
-           process_lock.GetProcessLockURL().scheme())) {
+           process_lock.GetProcessLockURL().GetScheme())) {
      return process_lock.GetProcessLockURL();
 diff --git a/content/common/url_schemes.cc b/content/common/url_schemes.cc
 index 225e017909b8869231b870eaaf161a0b5e93e2a0..846a5251429630b8528a84a3d67ed56cb28df5a1 100644
@@ -403,7 +405,7 @@ index 52f16979b05b692ef72762d0cbc16bcb361b047e..b658ebeb9c572158b27d94af56331be8
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index f77ce7f6de0a183debfdf272aa17c35c8307c480..54cbc57dc5217447cdf2895d6918e27001a39b7e 100644
+index e47605cd20719aef6f076419bbbc7a656e6dc590..0bf502c6ad8564ed66bb014e260a93230e62d992 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
 @@ -136,6 +136,9 @@ struct SchemeRegistry {
@@ -416,7 +418,7 @@ index f77ce7f6de0a183debfdf272aa17c35c8307c480..54cbc57dc5217447cdf2895d6918e270
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -694,6 +697,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+@@ -688,6 +691,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
    return GetSchemeRegistry().empty_document_schemes;
  }
  
@@ -433,7 +435,7 @@ index f77ce7f6de0a183debfdf272aa17c35c8307c480..54cbc57dc5217447cdf2895d6918e270
    DoAddSchemeWithHandler(
        new_scheme, handler,
 diff --git a/url/url_util.h b/url/url_util.h
-index 50c273fe9c2007ec5ac6675726ce0ae9811af9e2..5f7352ff5eba9c548aaaea63f75e9551c81ce305 100644
+index 035d8390c345c3d9b77fb8d2a30a98934c3a40e7..9681ed030bd53b435d27ae3c330abca2207040a7 100644
 --- a/url/url_util.h
 +++ b/url/url_util.h
 @@ -115,6 +115,15 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCSPBypassingSchemes();

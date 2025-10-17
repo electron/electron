@@ -6,7 +6,7 @@
 
 #include <utility>
 
-#include "components/viz/common/resources/resource_sizes.h"
+#include "components/viz/common/resources/shared_image_format_utils.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "skia/ext/platform_canvas.h"
 #include "third_party/skia/include/core/SkColor.h"
@@ -39,11 +39,10 @@ void LayeredWindowUpdater::OnAllocatedSharedMemory(
     return;
 
   // Make sure |pixel_size| is sane.
-  size_t expected_bytes;
-  bool size_result = viz::ResourceSizes::MaybeSizeInBytes(
-      pixel_size, viz::SinglePlaneFormat::kRGBA_8888, &expected_bytes);
-  if (!size_result)
+  if (!SharedMemorySizeForSharedImageFormat(viz::SinglePlaneFormat::kRGBA_8888,
+                                            pixel_size)) {
     return;
+  }
 
 #if defined(WIN32)
   canvas_ = skia::CreatePlatformCanvasWithSharedSection(

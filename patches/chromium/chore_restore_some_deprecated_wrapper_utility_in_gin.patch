@@ -9,10 +9,10 @@ Patch can be removed once cppgc migration is complete
 https://github.com/electron/electron/issues/47922
 
 diff --git a/gin/function_template.h b/gin/function_template.h
-index 84ab9585240a49048774811718f7ebd6f988e485..f062163cdd81def12fae7e507d18a9133dd0804d 100644
+index c80020b2bda2af39b38295dad3c6208cb8294b88..873015289db9709c00c32080e5387d9cdfea1f69 100644
 --- a/gin/function_template.h
 +++ b/gin/function_template.h
-@@ -77,6 +77,7 @@ class GIN_EXPORT CallbackHolderBase {
+@@ -79,6 +79,7 @@ class GIN_EXPORT CallbackHolderBase {
                      CallbackHolderBase* holder);
      ~DisposeObserver() override;
      void OnBeforeDispose(v8::Isolate* isolate) override;
@@ -21,7 +21,7 @@ index 84ab9585240a49048774811718f7ebd6f988e485..f062163cdd81def12fae7e507d18a913
  
     private:
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 083d59f78c542f4900e1b210a0935276516b894b..e32658e386853e2142c325a60ec385635256b758 100644
+index 1943413560f23c212d98fa1b368204c6e062bab2..bf0053833c782c9bc0187bb093a7ffd81ca9d754 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
 @@ -225,6 +225,7 @@ void IsolateHolder::WillCreateMicrotasksRunner() {

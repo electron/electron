@@ -7,10 +7,10 @@ Ensure that licenses for the dependencies introduced by Electron
 are included in `LICENSES.chromium.html`
 
 diff --git a/tools/licenses/licenses.py b/tools/licenses/licenses.py
-index b0807ee3d8ebcf34f0d740362aa46c8631562d38..118d200b74953c0068ad59300ccc0e3041d77a10 100755
+index f5bfe41e67b5f9a34db16377528e7fae58f642ab..58d0af6a561a9d309a5a49894786ea382149c034 100755
 --- a/tools/licenses/licenses.py
 +++ b/tools/licenses/licenses.py
-@@ -337,6 +337,31 @@ SPECIAL_CASES = {
+@@ -342,6 +342,31 @@ SPECIAL_CASES = {
          "License": "Apache 2.0",
          "License File": ["//third_party/dawn/third_party/khronos/LICENSE"],
      },

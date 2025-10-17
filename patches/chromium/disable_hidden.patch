@@ -6,10 +6,10 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index b70623b56267fb7df71519a2c19a04a658f766e2..0bae000a3491e03196bbba033621d389c6150225 100644
+index 39121bd94e74440954d337fa8cb4ce3d6e14756b..755fa9cf571873072d67d97226e7d847c618afcf 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -840,6 +840,10 @@ void RenderWidgetHostImpl::WasHidden() {
+@@ -841,6 +841,10 @@ void RenderWidgetHostImpl::WasHidden() {
      return;
    }
  
@@ -21,10 +21,10 @@ index b70623b56267fb7df71519a2c19a04a658f766e2..0bae000a3491e03196bbba033621d389
    // Prompts should remain open and functional across tab switches.
    if (!delegate_ || !delegate_->IsWaitingForPointerLockPrompt(this)) {
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 636f09a8ac86e7c3f7b8dcdc285792f18f5c5989..276852573eade86f1bc9690e3c78a6279e9ff5af 100644
+index d1c15f323f2c36dc12dbb8ac2a8f19c0f3365429..507231f8134f7b1bba031baafe6db584f9a47d5d 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -1031,6 +1031,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+@@ -1035,6 +1035,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
      return synthetic_gesture_controller_.get();
    }
  
@@ -34,7 +34,7 @@ index 636f09a8ac86e7c3f7b8dcdc285792f18f5c5989..276852573eade86f1bc9690e3c78a627
    // |routing_id| must not be IPC::mojom::kRoutingIdNone.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 7b6b19812f5f1989e39d9c33b387159380beb544..e95a313945397c6eff5514932ce15c5d4b6a8e1f 100644
+index 5ff22d23ed92f208f12f1edc864ce8348e220c12..d1d64d93753179f28b4c4ac9653ac1cfc00afd84 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -642,7 +642,7 @@ void RenderWidgetHostViewAura::HideImpl() {
