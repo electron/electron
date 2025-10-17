@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index eb710b05758b8a5db171e84ecb7a2c072076940a..b74719e075c550146cf6879a33c0e08a0177aeae 100644
+index db75ce4ffaf20ac8c20b8ae1bbfca0564c3401cf..2a5b942f32c1a9ce9406b4f5bfc22560274da017 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1064,6 +1064,7 @@ component("base") {
@@ -582,7 +582,7 @@ index e51fd827f7afc01a5189737f86a2414627a6546e..bb50f03ba5622c2bfb96bc75d145f471
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 9e8831ceb624e757e5174d0c7a6e2659c132245c..b468ad7f19389157c73e2f7305e57160db8f96fa 100644
+index ede10f778a87d33711e363991dc46c68a36cf2ca..5edd90b7ec1d108fc63c16ee0cf2d16fda83da30 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -346,6 +346,7 @@ source_set("browser") {
@@ -1806,7 +1806,7 @@ index 7f08f6e5870b021e578fe29f42fd6476ab53a8df..88e884c1510ad617b86678ed31a7bbaa
    // Query the display's refresh rate.
    double refresh_rate = 1.0 / screen.minimumRefreshInterval;
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 0bcdadec85f2a12a226b1bcac3db387e1593757c..ea89c8c2ee61f55d5a5db4ec0ad360d180bde024 100644
+index 61d686b36b09744d0c54cf07e6f01c5edccf91b3..803f28548670dc66e371be462677a3a9880b55e6 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -335,6 +335,12 @@ component("gfx") {
