@@ -44,6 +44,7 @@
 #include "ui/base/win/shell.h"
 #elif BUILDFLAG(IS_LINUX)
 #include "shell/browser/ui/views/opaque_frame_view.h"
+#include "ui/gfx/image/image_skia.h"
 #endif
 
 #if BUILDFLAG(IS_WIN)
