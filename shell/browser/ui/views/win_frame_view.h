@@ -46,6 +46,9 @@ class WinFrameView : public FramelessView {
   // the area above the top of the screen).
   int TitlebarMaximizedVisualHeight() const;
 
+  // Returns true if the frame should be painted as active.
+  bool GetShouldPaintAsActive();
+
  protected:
   // views::View:
   void Layout(PassKey) override;
