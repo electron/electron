@@ -27,6 +27,10 @@
 #include <io.h>
 #endif
 
+#if BUILDFLAG(IS_MAC)
+#include "shell/common/mac/codesign_util.h"
+#endif
+
 namespace asar {
 
 namespace {
@@ -245,6 +249,11 @@ bool Archive::Init() {
     // more below ensure we read them in preference order from most secure to
     // least
     if (integrity->algorithm != HashAlgorithm::kNone) {
+#if BUILDFLAG(IS_MAC)
+      // Gatekeeper may sometimes cache validity results, so we need to do
+      // our own validation to ensure our bundle wasn't tampered with
+      ValidateOwnBundleOrDie();
+#endif
       ValidateIntegrityOrDie(base::as_byte_span(header), *integrity);
     } else {
       LOG(FATAL) << "No eligible hash for validatable asar archive: "
