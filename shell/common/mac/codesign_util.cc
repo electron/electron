@@ -112,23 +112,4 @@ bool ProcessSignatureIsSameWithCurrentApp(pid_t pid) {
   return status == errSecSuccess;
 }
 
-void ValidateOwnBundleOrDie() {
-  CFBundleRef bundle = CFBundleGetMainBundle();
-  CFURLRef url = CFBundleCopyBundleURL(bundle);
-  SecStaticCodeRef code = NULL;
-  OSStatus result = SecStaticCodeCreateWithPath(url, kSecCSDefaultFlags, &code);
-  if (result != errSecSuccess) {
-    OSSTATUS_LOG(FATAL, result) << "SecStaticCodeCreateWithPath";
-  }
-  OSStatus validity = SecStaticCodeCheckValidity(
-      code, kSecCSBasicValidateOnly | kSecCSNoNetworkAccess, NULL);
-  if (validity != errSecSuccess) {
-    OSSTATUS_LOG(FATAL, validity) << "SecStaticCodeCheckValidity";
-  }
-  if (url)
-    CFRelease(url);
-  if (code)
-    CFRelease(code);
-}
-
 }  // namespace electron
