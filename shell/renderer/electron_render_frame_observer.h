@@ -8,7 +8,7 @@
 #include <string>
 
 #include "content/public/renderer/render_frame_observer.h"
-#include "ipc/ipc_platform_file.h"
+#include "ipc/platform_file_for_transit.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 namespace electron {

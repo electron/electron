@@ -254,7 +254,7 @@ index 17d6d7d935f93afefa9123f56ef9c138c3070f93..8dfa7501a6a2998e107bf9b51f5e5c3d
  }
  
 diff --git a/content/common/features.cc b/content/common/features.cc
-index 079f57e17386914cb571d6d77e66bb71a453adca..ed328eafcf60390495296d7a2f4cef17de5fd225 100644
+index eeea9763d5c6b99b665906a7dafb054e2a21c297..8c6145d64f3255ac7d8584ebab0830bc849b9e8d 100644
 --- a/content/common/features.cc
 +++ b/content/common/features.cc
 @@ -298,6 +298,14 @@ BASE_FEATURE(kInterestGroupUpdateIfOlderThan, base::FEATURE_ENABLED_BY_DEFAULT);
@@ -273,7 +273,7 @@ index 079f57e17386914cb571d6d77e66bb71a453adca..ed328eafcf60390495296d7a2f4cef17
  BASE_FEATURE(kKeepChildProcessAfterIPCReset, base::FEATURE_DISABLED_BY_DEFAULT);
  
 diff --git a/content/common/features.h b/content/common/features.h
-index 24b248f94510619b5a570498578f33910245dcf9..8baefcc9ff7d80cb5ba1e3a7174cb3dac9e2b16f 100644
+index 243c4b57083c58c889e9e9d8034dc109420e2fc2..13b7a0c529e7214369c4affebe8fb95e2ddc256e 100644
 --- a/content/common/features.h
 +++ b/content/common/features.h
 @@ -107,6 +107,9 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(kInterestGroupUpdateIfOlderThan);

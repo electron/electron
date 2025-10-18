@@ -8,7 +8,7 @@ WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index c0362530043cdaffc008d0c90d55cb9522db1557..3eb37d797feccdbb2a9d4b4f26e222b6f837b802 100644
+index dd803e6537c9c7eb1d6e5b36c4268ce2c2314622..c84364663dbb0bcbc51048f1d41bfb6f962dfea4 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 @@ -148,6 +148,19 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
@@ -32,7 +32,7 @@ index c0362530043cdaffc008d0c90d55cb9522db1557..3eb37d797feccdbb2a9d4b4f26e222b6
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 30572628d5d221e58159391f6bfd8e01525291bd..6020cce84810b9515298b65880091ebb97559688 100644
+index 2a2ccea94b2a1af9ed54b884e1c0cdf67c4a6c32..24c3c81c5170291974cef00f201d69a9ce93ef0f 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -9,6 +9,7 @@
@@ -43,7 +43,7 @@ index 30572628d5d221e58159391f6bfd8e01525291bd..6020cce84810b9515298b65880091ebb
  #include "build/build_config.h"
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
-@@ -464,6 +465,19 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+@@ -463,6 +464,19 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    bool increment_local_surface_id_for_mainframe_same_doc_navigation = true;
  #endif  // BUILDFLAG(IS_ANDROID)
  
@@ -129,7 +129,7 @@ index ccba9b7353c87d2e2bced7770920c976865c0d65..4d93ef8c1976cf533c32bc9c17dbf6b8
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index 9827715ad3cd306a0ec18fb6b2936ecf8677af21..66cbaf3a5b19a38295cad04d0e978de417984370 100644
+index a8bae4875ba2a8dd3d2574f55d6c229fc8025aa0..b5162c90cc3036ce97ceae590ef905033e10b399 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 @@ -8,9 +8,11 @@ import "third_party/blink/public/mojom/css/preferred_color_scheme.mojom";

@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index db75ce4ffaf20ac8c20b8ae1bbfca0564c3401cf..2a5b942f32c1a9ce9406b4f5bfc22560274da017 100644
+index ceee35240ccce11f01557582f5f89494c43b190a..09ef47870e18621013cc6f9154dfc247df9ef304 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1064,6 +1064,7 @@ component("base") {
+@@ -1066,6 +1066,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -582,10 +582,10 @@ index e51fd827f7afc01a5189737f86a2414627a6546e..bb50f03ba5622c2bfb96bc75d145f471
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index ede10f778a87d33711e363991dc46c68a36cf2ca..5edd90b7ec1d108fc63c16ee0cf2d16fda83da30 100644
+index 7a62de74fd44d46ad08a2e16d2d0349237b9c6f8..255ced54478f633a76fcbe3012c6b03f280bc8e5 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -346,6 +346,7 @@ source_set("browser") {
+@@ -344,6 +344,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -703,10 +703,10 @@ index 1c091d1bfaea0fe00e99584d153a1b36bf574b9e..9524be857c44a6523cf101d3cd24e69b
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 8c293f5bb0e859f438a7ab50b70b4d5449dc1358..d58c73427935127fdec173224bcb970964a9f14d 100644
+index 19c948e949386a1678767cbc606304e65400c507..9394e841d84593ea846b785cffe2ab06efffd7d1 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -275,6 +275,7 @@ source_set("common") {
+@@ -274,6 +274,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -715,10 +715,10 @@ index 8c293f5bb0e859f438a7ab50b70b4d5449dc1358..d58c73427935127fdec173224bcb9709
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index b6a99875ce151b5a517e2c850ba50d8ba9749e0f..b88b411d7d5430200c88203e727c49ab90233140 100644
+index 8404e4d6b8b2fc2d5f1597d5cbfcbcea2e692091..678121670b4977853e6fa1515f37d1ad21a3bd33 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -323,6 +323,7 @@ target(link_target_type, "renderer") {
+@@ -322,6 +322,7 @@ target(link_target_type, "renderer") {
      "//ui/surface",
      "//url",
      "//v8",
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 5f1636775e238ef9e1722d6f54d358d0f7f21cbe..8ebf47f05e7395a8db8325e74f17bc89bef2f019 100644
+index 9f546ba120be2ca3074ec6fc482c5f841fcb95a5..87991225d7cc5cac1af6b75bb9f5d101c53b9796 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -703,6 +703,7 @@ static_library("test_support") {
@@ -808,7 +808,7 @@ index 5f1636775e238ef9e1722d6f54d358d0f7f21cbe..8ebf47f05e7395a8db8325e74f17bc89
    ]
  
    data_deps = [
-@@ -1175,6 +1176,8 @@ static_library("browsertest_support") {
+@@ -1178,6 +1179,8 @@ static_library("browsertest_support") {
    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
    # enable the diagnostic by removing this line.
    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -817,7 +817,7 @@ index 5f1636775e238ef9e1722d6f54d358d0f7f21cbe..8ebf47f05e7395a8db8325e74f17bc89
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2065,6 +2068,7 @@ test("content_browsertests") {
+@@ -2068,6 +2071,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -825,7 +825,7 @@ index 5f1636775e238ef9e1722d6f54d358d0f7f21cbe..8ebf47f05e7395a8db8325e74f17bc89
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3395,6 +3399,7 @@ test("content_unittests") {
+@@ -3397,6 +3401,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1806,7 +1806,7 @@ index 7f08f6e5870b021e578fe29f42fd6476ab53a8df..88e884c1510ad617b86678ed31a7bbaa
    // Query the display's refresh rate.
    double refresh_rate = 1.0 / screen.minimumRefreshInterval;
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 61d686b36b09744d0c54cf07e6f01c5edccf91b3..803f28548670dc66e371be462677a3a9880b55e6 100644
+index 7bfbb8f3b19bd459d9e7e4926cf5ef2f352e3d15..0a7c5f16abb26c1be7ccba8e6be206d7b7871ef7 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -335,6 +335,12 @@ component("gfx") {
@@ -1861,10 +1861,10 @@ index bbe355cf69f160866188216cc274d75bd35603db..06ee100d7ea2e892dbf3c0b1adc96c50
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 95a2d5d04ac69b48f59fa4c8c940b1075436bca7..1af7790524bd0c25f6384f7fb55f3df0fe03cfc1 100644
+index dd2fcedc84417c324021e4aba4e78a84ff098803..ed3b4b5b8e9d931e7b7f9b5d91f93f5fcda4ef2c 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -722,6 +722,8 @@ component("views") {
+@@ -721,6 +721,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -1873,7 +1873,7 @@ index 95a2d5d04ac69b48f59fa4c8c940b1075436bca7..1af7790524bd0c25f6384f7fb55f3df0
    }
  
    if (is_win) {
-@@ -1152,6 +1154,8 @@ source_set("test_support") {
+@@ -1151,6 +1153,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
