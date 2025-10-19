@@ -65,6 +65,12 @@ async function main () {
     platformFlags.push(`-isysroot ${path.resolve(sdkPath, sdkToUse)}`);
   }
 
+  const cflags = [
+    '-Wno-trigraphs',
+    '-fPIC',
+    ...platformFlags
+  ].join(' ');
+
   const cxxflags = [
     '-std=c++20',
     '-Wno-trigraphs',
@@ -92,10 +98,10 @@ async function main () {
 
   if (process.platform !== 'win32') {
     env.CC = cc;
-    env.CFLAGS = cxxflags;
+    env.CFLAGS = cflags;
     env.CXX = cxx;
-    env.LD = ld;
     env.CXXFLAGS = cxxflags;
+    env.LD = ld;
     env.LDFLAGS = ldflags;
   }
 
