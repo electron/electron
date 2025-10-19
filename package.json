@@ -138,7 +138,7 @@
     "dbus-native/xml2js": "0.5.0",
     "abstract-socket": "github:deepak1556/node-abstractsocket#928cc591decd12aff7dad96449da8afc29832c19"
   },
-  "packageManager": "yarn@4.9.4+sha512.7b1cb0b62abba6a537b3a2ce00811a843bea02bcf53138581a6ae5b1bf563f734872bd47de49ce32a9ca9dcaff995aa789577ffb16811da7c603dcf69e73750b",
+  "packageManager": "yarn@4.10.3+sha512.c38cafb5c7bb273f3926d04e55e1d8c9dfa7d9c3ea1f36a4868fa028b9e5f72298f0b7f401ad5eb921749eb012eb1c3bb74bf7503df3ee43fd600d14a018266f",
   "workspaces": [
     "spec",
     "spec/fixtures/native-addon/*"
