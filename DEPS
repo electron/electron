@@ -30,9 +30,6 @@ vars = {
   # The path of the sysroots.json file.
   'sysroots_json_path': 'electron/script/sysroots.json',
 
-  # KEEP IN SYNC WITH utils.js FILE
-  'yarn_version': '1.22.22',
-
   # To be able to build clean Chromium from sources.
   'apply_patches': True,
 
@@ -155,7 +152,7 @@ hooks = [
     'action': [
       'python3',
       '-c',
-      'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["python3", "script/lib/npx.py", "yarn@' + (Var("yarn_version")) + '", "install", "--immutable"]);',
+      'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["node", ".yarn/releases/yarn-4.10.3.cjs", "install", "--immutable"]);',
     ],
   },
   {
