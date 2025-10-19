@@ -253,7 +253,7 @@ index fb3fdfca483ff5041ee98095af3f6ac2640adbaf..ada19d78ec1337b0c49a1597c877886f
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index 4a28c9618120b0b85b01687b3a231539fe1d9c34..91123e98ecb9aadf91d355947da8aa4dba7150fa 100644
+index 95134893c5eb6fa22b8e535a3495b2d4b3325447..71003cc065b579992dab4a781b696685cf506cce 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
 @@ -8,6 +8,7 @@
@@ -261,10 +261,10 @@ index 4a28c9618120b0b85b01687b3a231539fe1d9c34..91123e98ecb9aadf91d355947da8aa4d
  #include <utility>
  
 +#include "base/containers/contains.h"
- #include "base/feature_list.h"
  #include "base/functional/bind.h"
  #include "base/functional/callback_helpers.h"
-@@ -38,6 +39,7 @@
+ #include "base/metrics/histogram_functions.h"
+@@ -36,6 +37,7 @@
  #include "third_party/blink/public/mojom/loader/code_cache.mojom-data-view.h"
  #include "url/gurl.h"
  #include "url/origin.h"
@@ -272,7 +272,7 @@ index 4a28c9618120b0b85b01687b3a231539fe1d9c34..91123e98ecb9aadf91d355947da8aa4d
  
  using blink::mojom::CacheStorageError;
  
-@@ -112,6 +114,11 @@ std::optional<std::string> GetContextKeyForPersistentCacheCollection(
+@@ -110,6 +112,11 @@ std::optional<std::string> GetContextKeyForPersistentCacheCollection(
    return context_key;
  }
  
@@ -284,7 +284,7 @@ index 4a28c9618120b0b85b01687b3a231539fe1d9c34..91123e98ecb9aadf91d355947da8aa4d
  bool CheckSecurityForAccessingCodeCacheData(
      const GURL& resource_url,
      int render_process_id,
-@@ -122,40 +129,56 @@ bool CheckSecurityForAccessingCodeCacheData(
+@@ -120,40 +127,56 @@ bool CheckSecurityForAccessingCodeCacheData(
  
    // Code caching is only allowed for http(s) and chrome/chrome-untrusted
    // scripts. Furthermore, there is no way for http(s) pages to load chrome or
@@ -363,7 +363,7 @@ index 4a28c9618120b0b85b01687b3a231539fe1d9c34..91123e98ecb9aadf91d355947da8aa4d
    }
  
    if (operation == CodeCacheHostImpl::Operation::kWrite) {
-@@ -612,6 +635,7 @@ std::optional<GURL> CodeCacheHostImpl::GetSecondaryKeyForCodeCache(
+@@ -607,6 +630,7 @@ std::optional<GURL> CodeCacheHostImpl::GetSecondaryKeyForCodeCache(
        process_lock.MatchesScheme(url::kHttpsScheme) ||
        process_lock.MatchesScheme(content::kChromeUIScheme) ||
        process_lock.MatchesScheme(content::kChromeUIUntrustedScheme) ||
@@ -405,7 +405,7 @@ index 52f16979b05b692ef72762d0cbc16bcb361b047e..b658ebeb9c572158b27d94af56331be8
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index e47605cd20719aef6f076419bbbc7a656e6dc590..0bf502c6ad8564ed66bb014e260a93230e62d992 100644
+index d50a7842442e60e8d43bfb5f1226501a065ddf83..8cb0380cfb69e3abac3018b5bab10a73e2019215 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
 @@ -136,6 +136,9 @@ struct SchemeRegistry {
