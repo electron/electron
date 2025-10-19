@@ -15,7 +15,7 @@ runs:
     run: |
       git checkout $(cat ${{ inputs.sha-file }})
       rm -rf node_modules
-      yarn install --immutable --ignore-scripts
+      yarn install --immutable
       echo "#!/usr/bin/env node\nglobal.x=1" > node_modules/typescript/bin/tsc
       node node_modules/.bin/electron-docs-parser --dir=./ --outDir=./ --moduleVersion=0.0.0-development
       node node_modules/.bin/electron-typescript-definitions --api=electron-api.json --outDir=artifacts
