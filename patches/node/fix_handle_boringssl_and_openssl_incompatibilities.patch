@@ -17,86 +17,31 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index 6f9406eecacb7411a2e84a7b51e60b726d1961f3..a0cfb0bc3776dc3682cdb332ed418286d3243bd1 100644
+index e1c2da6969a..367195f7b27 100644
 --- a/deps/ncrypto/ncrypto.cc
 +++ b/deps/ncrypto/ncrypto.cc
-@@ -786,7 +786,7 @@ bool SafeX509SubjectAltNamePrint(const BIOPointer& out, X509_EXTENSION* ext) {
- 
-   bool ok = true;
- 
--  for (int i = 0; i < sk_GENERAL_NAME_num(names); i++) {
-+  for (size_t i = 0; i < sk_GENERAL_NAME_num(names); i++) {
-     GENERAL_NAME* gen = sk_GENERAL_NAME_value(names, i);
- 
-     if (i != 0) BIO_write(out.get(), ", ", 2);
-@@ -810,7 +810,7 @@ bool SafeX509InfoAccessPrint(const BIOPointer& out, X509_EXTENSION* ext) {
- 
-   bool ok = true;
- 
--  for (int i = 0; i < sk_ACCESS_DESCRIPTION_num(descs); i++) {
-+  for (size_t i = 0; i < sk_ACCESS_DESCRIPTION_num(descs); i++) {
-     ACCESS_DESCRIPTION* desc = sk_ACCESS_DESCRIPTION_value(descs, i);
- 
-     if (i != 0) BIO_write(out.get(), "\n", 1);
-@@ -952,13 +952,17 @@ BIOPointer X509View::getValidTo() const {
- 
- int64_t X509View::getValidToTime() const {
+@@ -1130,7 +1130,9 @@ int64_t X509View::getValidToTime() const {
+   return tp;
+ #else
    struct tm tp;
 -  ASN1_TIME_to_tm(X509_get0_notAfter(cert_), &tp);
 +#ifndef OPENSSL_IS_BORINGSSL
 +   ASN1_TIME_to_tm(X509_get0_notAfter(cert_), &tp);
 +#endif
    return PortableTimeGM(&tp);
+ #endif
  }
- 
- int64_t X509View::getValidFromTime() const {
+@@ -1142,7 +1144,9 @@ int64_t X509View::getValidFromTime() const {
+   return tp;
+ #else
    struct tm tp;
 +#ifndef OPENSSL_IS_BORINGSSL
    ASN1_TIME_to_tm(X509_get0_notBefore(cert_), &tp);
 +#endif
    return PortableTimeGM(&tp);
+ #endif
  }
- 
-@@ -1233,7 +1237,11 @@ BIOPointer BIOPointer::NewMem() {
- }
- 
- BIOPointer BIOPointer::NewSecMem() {
--  return BIOPointer(BIO_new(BIO_s_secmem()));
-+#ifdef OPENSSL_IS_BORINGSSL
-+  return BIOPointer(BIO_new(BIO_s_mem()));
-+#else
-+   return BIOPointer(BIO_new(BIO_s_secmem()));
-+#endif
- }
- 
- BIOPointer BIOPointer::New(const BIO_METHOD* method) {
-@@ -1303,8 +1311,10 @@ BignumPointer DHPointer::FindGroup(const std::string_view name,
- #define V(n, p)                                                                \
-   if (EqualNoCase(name, n)) return BignumPointer(p(nullptr));
-   if (option != FindGroupOption::NO_SMALL_PRIMES) {
-+#ifndef OPENSSL_IS_BORINGSSL
-     V("modp1", BN_get_rfc2409_prime_768);
-     V("modp2", BN_get_rfc2409_prime_1024);
-+#endif
-     V("modp5", BN_get_rfc3526_prime_1536);
-   }
-   V("modp14", BN_get_rfc3526_prime_2048);
-@@ -1380,11 +1390,13 @@ DHPointer::CheckPublicKeyResult DHPointer::checkPublicKey(
-   int codes = 0;
-   if (DH_check_pub_key(dh_.get(), pub_key.get(), &codes) != 1)
-     return DHPointer::CheckPublicKeyResult::CHECK_FAILED;
-+#ifndef OPENSSL_IS_BORINGSSL
-   if (codes & DH_CHECK_PUBKEY_TOO_SMALL) {
-     return DHPointer::CheckPublicKeyResult::TOO_SMALL;
-   } else if (codes & DH_CHECK_PUBKEY_TOO_SMALL) {
-     return DHPointer::CheckPublicKeyResult::TOO_LARGE;
--  } else if (codes != 0) {
-+#endif
-+  if (codes != 0) {
-     return DHPointer::CheckPublicKeyResult::INVALID;
-   }
-   return CheckPublicKeyResult::NONE;
-@@ -2327,7 +2339,7 @@ const std::string_view SSLPointer::getClientHelloAlpn() const {
+@@ -2889,7 +2893,7 @@ const char* SSLPointer::getClientHelloAlpn() const {
    const unsigned char* buf;
    size_t len;
    size_t rem;
@@ -105,16 +50,24 @@ index 6f9406eecacb7411a2e84a7b51e60b726d1961f3..a0cfb0bc3776dc3682cdb332ed418286
    if (!SSL_client_hello_get0_ext(
            get(),
            TLSEXT_TYPE_application_layer_protocol_negotiation,
-@@ -2340,6 +2352,8 @@ const std::string_view SSLPointer::getClientHelloAlpn() const {
+@@ -2902,10 +2906,16 @@ const char* SSLPointer::getClientHelloAlpn() const {
    len = (buf[0] << 8) | buf[1];
    if (len + 2 != rem) return {};
    return reinterpret_cast<const char*>(buf + 3);
++<<<<<<< HEAD
+ #else
+   // Boringssl doesn't have a public API for this.
+   return {};
+ #endif
++||||||| constructed fake ancestor
++=======
 +#endif
 +  return {};
++>>>>>>> fix: handle BoringSSL and OpenSSL incompatibilities
  }
  
- const std::string_view SSLPointer::getClientHelloServerName() const {
-@@ -2347,7 +2361,7 @@ const std::string_view SSLPointer::getClientHelloServerName() const {
+ const char* SSLPointer::getClientHelloServerName() const {
+@@ -2914,7 +2924,7 @@ const char* SSLPointer::getClientHelloServerName() const {
    const unsigned char* buf;
    size_t len;
    size_t rem;
@@ -123,56 +76,17 @@ index 6f9406eecacb7411a2e84a7b51e60b726d1961f3..a0cfb0bc3776dc3682cdb332ed418286
    if (!SSL_client_hello_get0_ext(get(), TLSEXT_TYPE_server_name, &buf, &rem) ||
        rem <= 2) {
      return {};
-@@ -2363,6 +2377,8 @@ const std::string_view SSLPointer::getClientHelloServerName() const {
-   len = (*(buf + 3) << 8) | *(buf + 4);
-   if (len + 2 > rem) return {};
-   return reinterpret_cast<const char*>(buf + 5);
-+#endif
-+  return {};
- }
- 
- std::optional<const std::string_view> SSLPointer::GetServerName(
-@@ -2396,8 +2412,11 @@ bool SSLPointer::isServer() const {
- EVPKeyPointer SSLPointer::getPeerTempKey() const {
-   if (!ssl_) return {};
-   EVP_PKEY* raw_key = nullptr;
-+#ifndef OPENSSL_IS_BORINGSSL
-   if (!SSL_get_peer_tmp_key(get(), &raw_key)) return {};
+@@ -2973,6 +2983,8 @@ EVPKeyPointer SSLPointer::getPeerTempKey() const {
+   if (!SSL_get_server_tmp_key(get(), &raw_key)) return {};
+ #endif
    return EVPKeyPointer(raw_key);
 +#endif
 +  return {};
  }
  
- SSLCtxPointer::SSLCtxPointer(SSL_CTX* ctx) : ctx_(ctx) {}
-diff --git a/deps/ncrypto/ncrypto.h b/deps/ncrypto/ncrypto.h
-index e5bf2b529bf23914677e25d7468aad58a4684557..9a3c6029ff3319cce58c79782a7bd5d1fcd467f9 100644
---- a/deps/ncrypto/ncrypto.h
-+++ b/deps/ncrypto/ncrypto.h
-@@ -623,17 +623,21 @@ class DHPointer final {
-     UNABLE_TO_CHECK_GENERATOR = DH_UNABLE_TO_CHECK_GENERATOR,
-     NOT_SUITABLE_GENERATOR = DH_NOT_SUITABLE_GENERATOR,
-     Q_NOT_PRIME = DH_CHECK_Q_NOT_PRIME,
-+#ifndef OPENSSL_IS_BORINGSSL
-     INVALID_Q = DH_CHECK_INVALID_Q_VALUE,
-     INVALID_J = DH_CHECK_INVALID_J_VALUE,
-+#endif
-     CHECK_FAILED = 512,
-   };
-   CheckResult check();
- 
-   enum class CheckPublicKeyResult {
-     NONE,
-+#ifndef OPENSSL_IS_BORINGSSL
-     TOO_SMALL = DH_R_CHECK_PUBKEY_TOO_SMALL,
-     TOO_LARGE = DH_R_CHECK_PUBKEY_TOO_LARGE,
--    INVALID = DH_R_CHECK_PUBKEY_INVALID,
-+#endif
-+    INVALID = DH_R_INVALID_PUBKEY,
-     CHECK_FAILED = 512,
-   };
-   // Check to see if the given public key is suitable for this DH instance.
+ std::optional<std::string_view> SSLPointer::getCipherName() const {
 diff --git a/node.gni b/node.gni
-index e2407027ab05e59b2f0f1c213b98ea469db7a91b..c64761b730e61edcdc0e46a48699f2fd5bb1c0a6 100644
+index e2407027ab0..c64761b730e 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -11,7 +11,7 @@ declare_args() {
@@ -185,31 +99,22 @@ index e2407027ab05e59b2f0f1c213b98ea469db7a91b..c64761b730e61edcdc0e46a48699f2fd
    # The location of simdutf - use the one from node's deps by default.
    node_simdutf_path = "//third_party/simdutf"
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index 2176fb6982484e2c42538478eeb4dd81c9d50ee1..c00d3616e08b00b1e0a3a29b2dbb5278e1e14fcc 100644
+index 5ed2f8b35a1..26dab5e64d7 100644
 --- a/src/crypto/crypto_cipher.cc
 +++ b/src/crypto/crypto_cipher.cc
-@@ -1027,7 +1027,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
-     if (EVP_PKEY_decrypt_init(ctx.get()) <= 0) {
-       return ThrowCryptoError(env, ERR_get_error());
-     }
--
-+#ifndef OPENSSL_IS_BORINGSSL
-     int rsa_pkcs1_implicit_rejection =
-         EVP_PKEY_CTX_ctrl_str(ctx.get(), "rsa_pkcs1_implicit_rejection", "1");
-     // From the doc -2 means that the option is not supported.
-@@ -1042,6 +1042,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
+@@ -905,6 +905,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
            env,
            "RSA_PKCS1_PADDING is no longer supported for private decryption");
      }
 +#endif
    }
  
-   const EVP_MD* digest = nullptr;
+   Digest digest;
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index d94f6e1c82c4a62547b3b395f375c86ce4deb5de..b81b9005365272217c77e2b9289bd9f877c0e77c 100644
+index d005bf0ffb9..01770687bd1 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
-@@ -124,7 +124,7 @@ StackOfX509 CloneSSLCerts(X509Pointer&& cert,
+@@ -90,7 +90,7 @@ StackOfX509 CloneSSLCerts(X509Pointer&& cert,
    if (!peer_certs) return StackOfX509();
    if (cert && !sk_X509_push(peer_certs.get(), cert.release()))
      return StackOfX509();
@@ -218,7 +123,7 @@ index d94f6e1c82c4a62547b3b395f375c86ce4deb5de..b81b9005365272217c77e2b9289bd9f8
      X509Pointer cert(X509_dup(sk_X509_value(ssl_certs, i)));
      if (!cert || !sk_X509_push(peer_certs.get(), cert.get()))
        return StackOfX509();
-@@ -140,7 +140,7 @@ MaybeLocal<Object> AddIssuerChainToObject(X509Pointer* cert,
+@@ -106,7 +106,7 @@ MaybeLocal<Object> AddIssuerChainToObject(X509Pointer* cert,
                                            Environment* const env) {
    cert->reset(sk_X509_delete(peer_certs.get(), 0));
    for (;;) {
@@ -228,10 +133,10 @@ index d94f6e1c82c4a62547b3b395f375c86ce4deb5de..b81b9005365272217c77e2b9289bd9f8
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index c08dab17fa229d1d67d3ad5174c97192989b2bd0..a3d309d832c73ddc79564b9644d825bec7459e7f 100644
+index 6482bd58bb6..20d3c1d9d17 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -141,7 +141,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
+@@ -143,7 +143,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
      // the CA certificates.
      SSL_CTX_clear_extra_chain_certs(ctx);
  
@@ -240,7 +145,7 @@ index c08dab17fa229d1d67d3ad5174c97192989b2bd0..a3d309d832c73ddc79564b9644d825be
        X509* ca = sk_X509_value(extra_certs, i);
  
        // NOTE: Increments reference count on `ca`
-@@ -1773,11 +1773,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
+@@ -1831,11 +1831,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
    // If the user specified "auto" for dhparams, the JavaScript layer will pass
    // true to this function instead of the original string. Any other string
    // value will be interpreted as custom DH parameters below.
@@ -254,7 +159,7 @@ index c08dab17fa229d1d67d3ad5174c97192989b2bd0..a3d309d832c73ddc79564b9644d825be
    DHPointer dh;
    {
      BIOPointer bio(LoadBIO(env, args[0]));
-@@ -2003,7 +2004,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
+@@ -2061,7 +2062,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
    }
  
    // Add CA certs too
@@ -264,71 +169,10 @@ index c08dab17fa229d1d67d3ad5174c97192989b2bd0..a3d309d832c73ddc79564b9644d825be
  
      X509_STORE_add_cert(sc->GetCertStoreOwnedByThisSecureContext(), ca);
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index c26a88b395abfc645da56231635b36fb23c8fa09..f23cedf4f2449d8edc9a8de1b70332e75d693cdd 100644
+index e35fda9ad2e..46a7d1396dc 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
-@@ -7,7 +7,9 @@
- #include "memory_tracker-inl.h"
- #include "ncrypto.h"
- #include "node_errors.h"
-+#ifndef OPENSSL_IS_BORINGSSL
- #include "openssl/bnerr.h"
-+#endif
- #include "openssl/dh.h"
- #include "threadpoolwork-inl.h"
- #include "v8.h"
-@@ -88,11 +90,7 @@ void New(const FunctionCallbackInfo<Value>& args) {
-   if (args[0]->IsInt32()) {
-     int32_t bits = args[0].As<Int32>()->Value();
-     if (bits < 2) {
--#if OPENSSL_VERSION_MAJOR >= 3
--      ERR_put_error(ERR_LIB_DH, 0, DH_R_MODULUS_TOO_SMALL, __FILE__, __LINE__);
--#else
--      ERR_put_error(ERR_LIB_BN, 0, BN_R_BITS_TOO_SMALL, __FILE__, __LINE__);
--#endif
-+      OPENSSL_PUT_ERROR(BN, BN_R_BITS_TOO_SMALL);
-       return ThrowCryptoError(env, ERR_get_error(), "Invalid prime length");
-     }
- 
-@@ -105,7 +103,7 @@ void New(const FunctionCallbackInfo<Value>& args) {
-     }
-     int32_t generator = args[1].As<Int32>()->Value();
-     if (generator < 2) {
--      ERR_put_error(ERR_LIB_DH, 0, DH_R_BAD_GENERATOR, __FILE__, __LINE__);
-+      OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
-       return ThrowCryptoError(env, ERR_get_error(), "Invalid generator");
-     }
- 
-@@ -134,12 +132,12 @@ void New(const FunctionCallbackInfo<Value>& args) {
-   if (args[1]->IsInt32()) {
-     int32_t generator = args[1].As<Int32>()->Value();
-     if (generator < 2) {
--      ERR_put_error(ERR_LIB_DH, 0, DH_R_BAD_GENERATOR, __FILE__, __LINE__);
-+      OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
-       return ThrowCryptoError(env, ERR_get_error(), "Invalid generator");
-     }
-     bn_g = BignumPointer::New();
-     if (!bn_g.setWord(generator)) {
--      ERR_put_error(ERR_LIB_DH, 0, DH_R_BAD_GENERATOR, __FILE__, __LINE__);
-+      OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
-       return ThrowCryptoError(env, ERR_get_error(), "Invalid generator");
-     }
-   } else {
-@@ -148,11 +146,11 @@ void New(const FunctionCallbackInfo<Value>& args) {
-       return THROW_ERR_OUT_OF_RANGE(env, "generator is too big");
-     bn_g = BignumPointer(reinterpret_cast<uint8_t*>(arg1.data()), arg1.size());
-     if (!bn_g) {
--      ERR_put_error(ERR_LIB_DH, 0, DH_R_BAD_GENERATOR, __FILE__, __LINE__);
-+      OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
-       return ThrowCryptoError(env, ERR_get_error(), "Invalid generator");
-     }
-     if (bn_g.getWord() < 2) {
--      ERR_put_error(ERR_LIB_DH, 0, DH_R_BAD_GENERATOR, __FILE__, __LINE__);
-+      OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
-       return ThrowCryptoError(env, ERR_get_error(), "Invalid generator");
-     }
-   }
-@@ -260,15 +258,17 @@ void ComputeSecret(const FunctionCallbackInfo<Value>& args) {
+@@ -309,15 +309,17 @@ void ComputeSecret(const FunctionCallbackInfo<Value>& args) {
    BignumPointer key(key_buf.data(), key_buf.size());
  
    switch (dh.checkPublicKey(key)) {
@@ -348,58 +192,11 @@ index c26a88b395abfc645da56231635b36fb23c8fa09..f23cedf4f2449d8edc9a8de1b70332e7
      case DHPointer::CheckPublicKeyResult::NONE:
        break;
    }
-@@ -400,9 +400,11 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
-     key_params = EVPKeyPointer::New();
-     CHECK(key_params);
-     CHECK_EQ(EVP_PKEY_assign_DH(key_params.get(), dh.release()), 1);
--  } else if (int* prime_size = std::get_if<int>(&params->params.prime)) {
-+  } else if (std::get_if<int>(&params->params.prime)) {
-     EVPKeyCtxPointer param_ctx(EVP_PKEY_CTX_new_id(EVP_PKEY_DH, nullptr));
-     EVP_PKEY* raw_params = nullptr;
-+#ifndef OPENSSL_IS_BORINGSSL
-+    int* prime_size = std::get_if<int>(&params->params.prime);
-     if (!param_ctx ||
-         EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
-         EVP_PKEY_CTX_set_dh_paramgen_prime_len(
-@@ -416,6 +418,9 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
-     }
- 
-     key_params = EVPKeyPointer(raw_params);
-+#else
-+    return EVPKeyCtxPointer();
-+#endif
-   } else {
-     UNREACHABLE();
-   }
-diff --git a/src/crypto/crypto_dsa.cc b/src/crypto/crypto_dsa.cc
-index ca5edc8ebdf2550bb62b7969a5650733a2647f4f..198e18b58f31e361a9d2865cbe81e067e5f0b543 100644
---- a/src/crypto/crypto_dsa.cc
-+++ b/src/crypto/crypto_dsa.cc
-@@ -43,7 +43,7 @@ namespace crypto {
- EVPKeyCtxPointer DsaKeyGenTraits::Setup(DsaKeyPairGenConfig* params) {
-   EVPKeyCtxPointer param_ctx(EVP_PKEY_CTX_new_id(EVP_PKEY_DSA, nullptr));
-   EVP_PKEY* raw_params = nullptr;
--
-+#ifndef OPENSSL_IS_BORINGSSL
-   if (!param_ctx ||
-       EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
-       EVP_PKEY_CTX_set_dsa_paramgen_bits(
-@@ -58,7 +58,9 @@ EVPKeyCtxPointer DsaKeyGenTraits::Setup(DsaKeyPairGenConfig* params) {
-       return EVPKeyCtxPointer();
-     }
-   }
--
-+#else
-+  return EVPKeyCtxPointer();
-+#endif
-   if (EVP_PKEY_paramgen(param_ctx.get(), &raw_params) <= 0)
-     return EVPKeyCtxPointer();
- 
 diff --git a/src/crypto/crypto_keys.cc b/src/crypto/crypto_keys.cc
-index 7238cda445fd663e6b45fa134f31d017bb267dfc..522655555cdb2ab2083797f736bf167d1f42c15e 100644
+index e805a984322..f3c48f89b9b 100644
 --- a/src/crypto/crypto_keys.cc
 +++ b/src/crypto/crypto_keys.cc
-@@ -949,6 +949,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
+@@ -1034,6 +1034,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
  }
  
  bool KeyObjectHandle::CheckEcKeyData() const {
@@ -407,62 +204,47 @@ index 7238cda445fd663e6b45fa134f31d017bb267dfc..522655555cdb2ab2083797f736bf167d
    MarkPopErrorOnReturn mark_pop_error_on_return;
  
    const auto& key = data_.GetAsymmetricKey();
-@@ -965,6 +966,9 @@ bool KeyObjectHandle::CheckEcKeyData() const {
- #else
-   return EVP_PKEY_public_check(ctx.get()) == 1;
- #endif
-+#else
-+  return true;
-+#endif
- }
- 
- void KeyObjectHandle::CheckEcKeyData(const FunctionCallbackInfo<Value>& args) {
-diff --git a/src/crypto/crypto_random.cc b/src/crypto/crypto_random.cc
-index 78f2093d1d010be6f9c492662f4f582657ff6a13..b6aef7fd27cd974697bcee05955bfd9ccf4d5837 100644
---- a/src/crypto/crypto_random.cc
-+++ b/src/crypto/crypto_random.cc
-@@ -143,7 +143,7 @@ Maybe<void> RandomPrimeTraits::AdditionalConfig(
- 
-   params->bits = bits;
-   params->safe = safe;
--  params->prime = BignumPointer::NewSecure();
-+  params->prime = BignumPointer::New();
-   if (!params->prime) {
-     THROW_ERR_CRYPTO_OPERATION_FAILED(env, "could not generate prime");
-     return Nothing<void>();
 diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
-index 05a3882c7e17d78e27aabb29891aa250789a47c0..1f2fccce6ed8f14525557644e0bdd130eedf3337 100644
+index e7546cec4c1..99a08cd545f 100644
 --- a/src/crypto/crypto_rsa.cc
 +++ b/src/crypto/crypto_rsa.cc
-@@ -612,10 +612,13 @@ Maybe<void> GetRsaKeyDetail(Environment* env,
-       }
- 
-       if (params->saltLength != nullptr) {
+@@ -511,8 +511,31 @@ bool GetRsaKeyDetail(Environment* env,
+                       env->mgf1_hash_algorithm_string(),
+                       OneByteString(env->isolate(), digest))
+                 .IsNothing()) {
++<<<<<<< HEAD
+           return false;
++||||||| constructed fake ancestor
++          return Nothing<void>();
++        }
++      }
++
++      if (params->saltLength != nullptr) {
++        if (ASN1_INTEGER_get_int64(&salt_length, params->saltLength) != 1) {
++          ThrowCryptoError(env, ERR_get_error(), "ASN1_INTEGER_get_in64 error");
++          return Nothing<void>();
++=======
++          return Nothing<void>();
++        }
++      }
++
++      if (params->saltLength != nullptr) {
 +#ifndef OPENSSL_IS_BORINGSSL
 +        // TODO(codebytere): Upstream a shim to BoringSSL?
-         if (ASN1_INTEGER_get_int64(&salt_length, params->saltLength) != 1) {
-           ThrowCryptoError(env, ERR_get_error(), "ASN1_INTEGER_get_in64 error");
-           return Nothing<void>();
++        if (ASN1_INTEGER_get_int64(&salt_length, params->saltLength) != 1) {
++          ThrowCryptoError(env, ERR_get_error(), "ASN1_INTEGER_get_in64 error");
++          return Nothing<void>();
++>>>>>>> fix: handle BoringSSL and OpenSSL incompatibilities
          }
 +#endif
        }
  
        if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 7c548d32b40365343f0e208c3aa856a1c847f4c3..6346f8f7199cf7b7d3736c59571606fff102fbb6 100644
+index 205e248e0f2..12b0d804c6f 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -207,7 +207,8 @@ void TestFipsCrypto(const v8::FunctionCallbackInfo<v8::Value>& args) {
- 
- void GetOpenSSLSecLevelCrypto(const FunctionCallbackInfo<Value>& args) {
-   // for BoringSSL assume the same as the default
--  int sec_level = OPENSSL_TLS_SECURITY_LEVEL;
-+  // value of OPENSSL_TLS_SECURITY_LEVEL.
-+  int sec_level = 1;
- #ifndef OPENSSL_IS_BORINGSSL
-   Environment* env = Environment::GetCurrent(args);
- 
-@@ -527,24 +528,15 @@ Maybe<void> Decorate(Environment* env,
+@@ -533,24 +533,15 @@ Maybe<void> Decorate(Environment* env,
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
      V(X509V3)                                                                 \
@@ -488,42 +270,11 @@ index 7c548d32b40365343f0e208c3aa856a1c847f4c3..6346f8f7199cf7b7d3736c59571606ff
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -686,7 +678,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
-   CHECK(args[0]->IsUint32());
-   Environment* env = Environment::GetCurrent(args);
-   uint32_t len = args[0].As<Uint32>()->Value();
--  void* data = OPENSSL_secure_zalloc(len);
-+  void* data = OPENSSL_malloc(len);
-   if (data == nullptr) {
-     // There's no memory available for the allocation.
-     // Return nothing.
-@@ -697,7 +689,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
-           data,
-           len,
-           [](void* data, size_t len, void* deleter_data) {
--            OPENSSL_secure_clear_free(data, len);
-+            OPENSSL_clear_free(data, len);
-           },
-           data);
-   Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -705,10 +697,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
- }
- 
- void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
-+#ifndef OPENSSL_IS_BORINGSSL
-   Environment* env = Environment::GetCurrent(args);
-   if (CRYPTO_secure_malloc_initialized())
-     args.GetReturnValue().Set(
-         BigInt::New(env->isolate(), CRYPTO_secure_used()));
-+#endif
- }
- }  // namespace
- 
 diff --git a/src/env.h b/src/env.h
-index 874e5f4d15a75307e45cf70c06fc104fed843a6a..35e16159a94bb97f19d17767e3ad4bb798660f44 100644
+index f3a2d221f4b..d34aec43630 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -51,7 +51,7 @@
+@@ -52,7 +52,7 @@
  #include "v8-profiler.h"
  #include "v8.h"
  
@@ -532,7 +283,7 @@ index 874e5f4d15a75307e45cf70c06fc104fed843a6a..35e16159a94bb97f19d17767e3ad4bb7
  #include <openssl/evp.h>
  #endif
  
-@@ -1077,7 +1077,7 @@ class Environment final : public MemoryRetainer {
+@@ -1058,7 +1058,7 @@ class Environment final : public MemoryRetainer {
      kExitInfoFieldCount
    };
  
@@ -542,7 +293,7 @@ index 874e5f4d15a75307e45cf70c06fc104fed843a6a..35e16159a94bb97f19d17767e3ad4bb7
    // We declare another alias here to avoid having to include crypto_util.h
    using EVPMDPointer = DeleteFnPtr<EVP_MD, EVP_MD_free>;
 diff --git a/src/node_metadata.h b/src/node_metadata.h
-index d9c533f100d25aeab1fe8589932a8ddead431258..2acab8786a8a752b17961445edeb872c2b08fdeb 100644
+index d9c533f100d..2acab8786a8 100644
 --- a/src/node_metadata.h
 +++ b/src/node_metadata.h
 @@ -8,7 +8,7 @@
@@ -554,21 +305,8 @@ index d9c533f100d25aeab1fe8589932a8ddead431258..2acab8786a8a752b17961445edeb872c
  #include <openssl/crypto.h>
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
-diff --git a/src/node_options.cc b/src/node_options.cc
-index ed85bf11f6f325823b59b3b0275908f9210c1b24..e3509abbc3bf84ac0edcd495eb3dde6219dbfc2d 100644
---- a/src/node_options.cc
-+++ b/src/node_options.cc
-@@ -7,7 +7,7 @@
- #include "node_external_reference.h"
- #include "node_internals.h"
- #include "node_sea.h"
--#if HAVE_OPENSSL
-+#if HAVE_OPENSSL && !defined(OPENSSL_IS_BORINGSSL)
- #include "openssl/opensslv.h"
- #endif
- 
 diff --git a/src/node_options.h b/src/node_options.h
-index cdbd9ca39e907ab22515293eac2c5512223f4ca2..418dee360f867c363f1576012b32213a51c4fdd0 100644
+index 3a1503a035e..941ae4f15c4 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@
