@@ -1654,6 +1654,34 @@ describe('BrowserWindow module', () => {
 
           await expect(once(w, 'resized')).to.eventually.be.fulfilled();
         });
+
+        it('handles edge case of negative and zero dimensions gracefully', () => {
+          const originalSize = w.getSize();
+
+          // Test with negative values - should not crash
+          expect(() => {
+            w.setSize(-100, -100);
+          }).to.not.throw();
+
+          // Test with zero values - should not crash
+          expect(() => {
+            w.setSize(0, 0);
+          }).to.not.throw();
+
+          // Test with mixed negative and positive values - should not crash
+          expect(() => {
+            w.setSize(-50, 100);
+          }).to.not.throw();
+
+          expect(() => {
+            w.setSize(100, -50);
+          }).to.not.throw();
+
+          // Window should still be functional after edge case handling
+          w.setSize(300, 400);
+          const newSize = w.getSize();
+          expect(newSize[0]).to.be.greaterThan(0);
+          expect(newSize[1]).to.be.greaterThan(0);
       });
     });
 
