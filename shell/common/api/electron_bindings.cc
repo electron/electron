@@ -17,6 +17,8 @@
 #include "electron/mas.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/global_memory_dump.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
+// #include
+// "services/resource_coordinator/public/mojom/memory_instrumentation/memory_instrumentation.mojom.h"
 #include "shell/browser/browser.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -212,7 +214,7 @@ v8::Local<v8::Promise> ElectronBindings::GetProcessMemoryInfo(
   v8::Global<v8::Context> context(isolate, isolate->GetCurrentContext());
   memory_instrumentation::MemoryInstrumentation::GetInstance()
       ->RequestGlobalDumpForPid(
-          base::GetCurrentProcId(), std::vector<std::string>(),
+          base::GetCurrentProcId(), {} /* allocator_dump_names */,
           base::BindOnce(&ElectronBindings::DidReceiveMemoryDump,
                          std::move(context), std::move(promise),
                          base::GetCurrentProcId()));
@@ -236,7 +238,7 @@ void ElectronBindings::DidReceiveMemoryDump(
     v8::Global<v8::Context> context,
     gin_helper::Promise<gin_helper::Dictionary> promise,
     base::ProcessId target_pid,
-    bool success,
+    const memory_instrumentation::mojom::RequestOutcome outcome,
     std::unique_ptr<memory_instrumentation::GlobalMemoryDump> global_dump) {
   DCHECK(electron::IsBrowserProcess());
   v8::Isolate* isolate = promise.isolate();
@@ -245,7 +247,7 @@ void ElectronBindings::DidReceiveMemoryDump(
       v8::Local<v8::Context>::New(isolate, context);
   v8::Context::Scope context_scope(local_context);
 
-  if (!success) {
+  if (outcome != memory_instrumentation::mojom::RequestOutcome::kSuccess) {
     promise.RejectWithErrorMessage("Failed to create memory dump");
     return;
   }
