@@ -36,7 +36,6 @@ cli_move_--trace-atomics-wait_to_eol.patch
 fix_cppgc_initializing_twice.patch
 fix_expose_readfilesync_override_for_modules.patch
 fix_array_out-of-bounds_read_in_boyer-moore_search.patch
-chore_add_missing_include_of_iterator.patch
 test_accomodate_v8_thenable_stack_trace_change_in_snapshot.patch
 chore_exclude_electron_node_folder_from_exit-time-destructors.patch
 api_remove_deprecated_getisolate.patch
