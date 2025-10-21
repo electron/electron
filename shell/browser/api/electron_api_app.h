@@ -214,6 +214,10 @@ class App final : public gin::Wrappable<App>,
   void DisableHardwareAcceleration(gin_helper::ErrorThrower thrower);
   void DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower);
   bool IsAccessibilitySupportEnabled();
+  v8::Local<v8::Value> GetAccessibilitySupportFeatures();
+  void SetAccessibilitySupportFeatures(
+      gin_helper::ErrorThrower thrower,
+      const std::vector<std::string>& features);
   void SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
                                       bool enabled);
   v8::Local<v8::Value> GetLoginItemSettings(gin::Arguments* args);
