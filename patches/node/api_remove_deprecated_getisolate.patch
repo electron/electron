@@ -295,9 +295,18 @@ index 27aeac589b19cd681923fb848ce5f36c66fc05e2..5f2900869763f40cac54e3cb3fe2e24e
          module_api_version(module_api_version) {
      napi_clear_last_error(this);
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 9c75d351f51e0794ff66345eaf4e1ecd43b1851a..4d26a2a8de474877394e39a81e8cbb1b0ae50cd5 100644
+index 9c75d351f51e0794ff66345eaf4e1ecd43b1851a..97644680737be2e639115fd7b0d4dd6f53a0b09a 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
+@@ -99,7 +99,7 @@ ModuleCacheKey ModuleCacheKey::From(Local<Context> context,
+                                     Local<String> specifier,
+                                     Local<FixedArray> import_attributes) {
+   CHECK_EQ(import_attributes->Length() % elements_per_attribute, 0);
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   std::size_t h1 = specifier->GetIdentityHash();
+   size_t num_attributes = import_attributes->Length() / elements_per_attribute;
+   ImportAttributeVector attributes;
 @@ -1022,7 +1022,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
      return {};
    }
@@ -316,6 +325,15 @@ index 9c75d351f51e0794ff66345eaf4e1ecd43b1851a..4d26a2a8de474877394e39a81e8cbb1b
      return {};
    }
    CHECK(module_source_object->IsObject());
+@@ -1059,7 +1059,7 @@ Maybe<ModuleWrap*> ModuleWrap::ResolveModule(
+     Local<String> specifier,
+     Local<FixedArray> import_attributes,
+     Local<Module> referrer) {
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   Environment* env = Environment::GetCurrent(context);
+   if (env == nullptr) {
+     THROW_ERR_EXECUTION_ENVIRONMENT_NOT_AVAILABLE(isolate);
 @@ -1104,7 +1104,7 @@ static MaybeLocal<Promise> ImportModuleDynamicallyWithPhase(
      Local<String> specifier,
      ModuleImportPhase phase,
