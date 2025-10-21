@@ -6,10 +6,10 @@ Subject: fix: do not resolve electron entrypoints
 This wastes fs cycles and can result in strange behavior if this path actually exists on disk
 
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 2c33fd44b9a251682de78a8bcdad9ee5a0d3e5e8..ae3ef0e853ae19fca649704854d4bda84a5bd287 100644
+index 8ccdc0ba6ff..faf4b84d1fa 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -355,6 +355,10 @@ function cjsPreparseModuleExports(filename, source, format) {
+@@ -406,6 +406,10 @@ function cjsPreparseModuleExports(filename, source, format) {
      return { module, exportNames: module[kModuleExportNames] };
    }
  
@@ -21,7 +21,7 @@ index 2c33fd44b9a251682de78a8bcdad9ee5a0d3e5e8..ae3ef0e853ae19fca649704854d4bda8
      ({ source } = loadSourceForCJSWithHooks(module, filename, format));
    }
 diff --git a/lib/internal/modules/run_main.js b/lib/internal/modules/run_main.js
-index 02ba43adc2c8e92a78942bbb04023a16f5870ee9..bbf1ab69b884a9325bebdd07b2c4fd354eee946b 100644
+index 2a9ef56d156..fb45f3dc66a 100644
 --- a/lib/internal/modules/run_main.js
 +++ b/lib/internal/modules/run_main.js
 @@ -2,6 +2,7 @@
@@ -32,8 +32,8 @@ index 02ba43adc2c8e92a78942bbb04023a16f5870ee9..bbf1ab69b884a9325bebdd07b2c4fd35
    globalThis,
  } = primordials;
  
-@@ -26,6 +27,13 @@ const {
-  * @param {string} main - Entry point path
+@@ -27,6 +28,13 @@ const {
+  * @returns {string|undefined}
   */
  function resolveMainPath(main) {
 +  // For built-in modules used as the main entry point we _never_
@@ -43,11 +43,11 @@ index 02ba43adc2c8e92a78942bbb04023a16f5870ee9..bbf1ab69b884a9325bebdd07b2c4fd35
 +    return main;
 +  }
 +
-   const defaultType = getOptionValue('--experimental-default-type');
    /** @type {string} */
    let mainPath;
-@@ -62,6 +70,13 @@ function resolveMainPath(main) {
-  * @param {string} mainPath - Absolute path to the main entry point
+   // Extension searching for the main entry point is supported for backward compatibility.
+@@ -50,6 +58,13 @@ function resolveMainPath(main) {
+  * @returns {boolean}
   */
  function shouldUseESMLoader(mainPath) {
 +  // For built-in modules used as the main entry point we _never_
@@ -57,6 +57,6 @@ index 02ba43adc2c8e92a78942bbb04023a16f5870ee9..bbf1ab69b884a9325bebdd07b2c4fd35
 +    return false;
 +  }
 +
-   if (getOptionValue('--experimental-default-type') === 'module') { return true; }
- 
    /**
+    * @type {string[]} userLoaders A list of custom loaders registered by the user
+    * (or an empty list when none have been registered).
