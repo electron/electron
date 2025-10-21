@@ -159,7 +159,7 @@ index 53f0bf7fc1e5c85fa9a5a323e998f04310f4f75e..eacf588ab4f55d6f0587cf1700b569c3
    } else {
      info.js_execution_async_resources = 0;
 diff --git a/src/inspector/network_agent.cc b/src/inspector/network_agent.cc
-index d136b72e598d07f3c2fcc9c2c8ba84f5ff1aaad7..a7c2bcf4cfe54a23ef955a6672f59dfc7e3efb02 100644
+index d136b72e598d07f3c2fcc9c2c8ba84f5ff1aaad7..649008aafc8d68cfecb02c28ad1e26a9b749f7bd 100644
 --- a/src/inspector/network_agent.cc
 +++ b/src/inspector/network_agent.cc
 @@ -29,31 +29,31 @@ using v8::Value;
@@ -271,6 +271,15 @@ index d136b72e598d07f3c2fcc9c2c8ba84f5ff1aaad7..a7c2bcf4cfe54a23ef955a6672f59dfc
 +  HandleScope handle_scope(v8::Isolate::GetCurrent());
    protocol::String url;
    if (!ObjectGetProtocolString(context, response, "url").To(&url)) {
+     return {};
+@@ -210,7 +210,7 @@ std::unique_ptr<protocol::Network::Response> createResponseFromObject(
+ 
+ std::unique_ptr<protocol::Network::WebSocketResponse> createWebSocketResponse(
+     v8::Local<v8::Context> context, Local<Object> response) {
+-  HandleScope handle_scope(context->GetIsolate());
++  HandleScope handle_scope(v8::Isolate::GetCurrent());
+   int status;
+   if (!ObjectGetInt(context, response, "status").To(&status)) {
      return {};
 diff --git a/src/js_native_api_v8.h b/src/js_native_api_v8.h
 index 27aeac589b19cd681923fb848ce5f36c66fc05e2..5f2900869763f40cac54e3cb3fe2e24eda615410 100644
