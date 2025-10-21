@@ -33,10 +33,10 @@ index e7ee2d88b136be97e0668874a309085554041a5a..1ed28fa85bf906bea9628da146627067
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 5e2fef20796c5060a3d31eed46f92f5e0c3eb105..ca9eb62e3991b5af4c4604ebfd0f8feedb25cae0 100644
+index 7ad4a62c8bfb97d36fbd86a08d5deccdc77da129..0e281fc366c4ee35efdec3625425f2fc8ced135a 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4814,7 +4814,7 @@ static_library("browser") {
+@@ -4813,7 +4813,7 @@ static_library("browser") {
        ]
      }
  
@@ -46,7 +46,7 @@ index 5e2fef20796c5060a3d31eed46f92f5e0c3eb105..ca9eb62e3991b5af4c4604ebfd0f8fee
        # than here in :chrome_dll.
        deps += [ "//chrome:packed_resources_integrity_header" ]
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 65f7fb312a896cce006780d8ba5a1d72a812bc1b..94455256a730c724daf9af5b139ef35d224aab7d 100644
+index 5befc9056f87e389a296ebf2bbbc6faad96d0b67..76f632121c7a6f3582cdcbbb076df979be749cb8 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -7557,9 +7557,12 @@ test("unit_tests") {

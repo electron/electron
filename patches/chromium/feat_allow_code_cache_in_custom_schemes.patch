@@ -405,7 +405,7 @@ index 52f16979b05b692ef72762d0cbc16bcb361b047e..b658ebeb9c572158b27d94af56331be8
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index d50a7842442e60e8d43bfb5f1226501a065ddf83..8cb0380cfb69e3abac3018b5bab10a73e2019215 100644
+index c374142a54d7c6bf4902c94267991ec09fb26f87..07de14ed198d85d7811323d04a69f13022f0e709 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
 @@ -136,6 +136,9 @@ struct SchemeRegistry {
@@ -418,11 +418,11 @@ index d50a7842442e60e8d43bfb5f1226501a065ddf83..8cb0380cfb69e3abac3018b5bab10a73
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -688,6 +691,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+@@ -689,6 +692,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
    return GetSchemeRegistry().empty_document_schemes;
  }
  
-+void AddCodeCacheScheme(const char* new_scheme) {
++void AddCodeCacheScheme(const std::string_view new_scheme) {
 +  DoAddScheme(new_scheme,
 +              &GetSchemeRegistryWithoutLocking()->code_cache_schemes);
 +}
@@ -431,15 +431,15 @@ index d50a7842442e60e8d43bfb5f1226501a065ddf83..8cb0380cfb69e3abac3018b5bab10a73
 +  return GetSchemeRegistry().code_cache_schemes;
 +}
 +
- void AddPredefinedHandlerScheme(const char* new_scheme, const char* handler) {
+ void AddPredefinedHandlerScheme(std::string_view new_scheme,
+                                 std::string_view handler) {
    DoAddSchemeWithHandler(
-       new_scheme, handler,
 diff --git a/url/url_util.h b/url/url_util.h
-index 035d8390c345c3d9b77fb8d2a30a98934c3a40e7..9681ed030bd53b435d27ae3c330abca2207040a7 100644
+index 501baa71f6ec135827b505c2eca78c7e9ac0b8d3..10bf2c6e27dca530906ef7acb7ac43fa5c731d22 100644
 --- a/url/url_util.h
 +++ b/url/url_util.h
 @@ -115,6 +115,15 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCSPBypassingSchemes();
- COMPONENT_EXPORT(URL) void AddEmptyDocumentScheme(const char* new_scheme);
+ COMPONENT_EXPORT(URL) void AddEmptyDocumentScheme(std::string_view new_scheme);
  COMPONENT_EXPORT(URL) const std::vector<std::string>& GetEmptyDocumentSchemes();
  
 +// Adds an application-defined scheme to the list of schemes that have V8 code
@@ -448,7 +448,7 @@ index 035d8390c345c3d9b77fb8d2a30a98934c3a40e7..9681ed030bd53b435d27ae3c330abca2
 +// they are treated as a separate cache type for security purpose.
 +// The http(s) schemes do not belong to this list neither, they always have V8
 +// code cache enabled.
-+COMPONENT_EXPORT(URL) void AddCodeCacheScheme(const char* new_scheme);
++COMPONENT_EXPORT(URL) void AddCodeCacheScheme(std::string_view new_scheme);
 +COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCodeCacheSchemes();
 +
  // Adds a scheme with a predefined default handler.
