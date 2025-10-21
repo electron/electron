@@ -1614,6 +1614,29 @@ group("node_headers") {
   public_deps = [ ":tar_node_headers" ]
 }
 
+group("testing_build") {
+  public_deps = [
+    ":electron_dist_zip",
+    ":electron_mksnapshot_zip",
+    ":node_headers",
+  ]
+}
+
+group("release_build") {
+  public_deps = [ ":testing_build" ]
+  if (is_official_build) {
+    public_deps += [ ":electron_symbols" ]
+  }
+  if (is_linux) {
+    public_deps += [
+      ":hunspell_dictionaries_zip",
+      ":libcxx_headers_zip",
+      ":libcxx_objects_zip",
+      ":libcxxabi_headers_zip",
+    ]
+  }
+}
+
 if (is_linux && is_official_build) {
   strip_binary("strip_electron_binary") {
     binary_input = "$root_out_dir/$electron_project_name"
