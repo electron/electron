@@ -26,6 +26,7 @@
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_view.h"
+#include "third_party/blink/renderer/core/exported/web_view_impl.h"  // nogncheck
 #include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"  // nogncheck
 #include "ui/base/resource/resource_bundle.h"
 
@@ -63,7 +64,8 @@ ElectronRenderFrameObserver::ElectronRenderFrameObserver(
   // In Chrome, app regions are only supported in the main frame.
   // However, we need to support draggable regions on other
   // local frames/windows, so extend support beyond the main frame.
-  render_frame_->GetWebView()->SetSupportsDraggableRegions(true);
+  static_cast<blink::WebViewImpl*>(render_frame_->GetWebView())
+      ->SetSupportsDraggableRegions(true);
 }
 
 void ElectronRenderFrameObserver::DidClearWindowObject() {
