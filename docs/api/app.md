@@ -1396,7 +1396,7 @@ This API must be called after the `ready` event is emitted.
 
 ### `app.getAccessibilitySupportFeatures()` _macOS_ _Windows_
 
-Returns `string[]` - Array of strings naming currently enabled accessibility support components.Possible values:
+Returns `string[]` - Array of strings naming currently enabled accessibility support components. Possible values:
 
 * `nativeAPIs` - Native OS accessibility APIs integration enabled.
 * `webContents` - Web contents accessibility tree exposure enabled.
@@ -1440,15 +1440,25 @@ Possible values are:
 * `labelImages` - Accessibility support for automatic image annotations.
 * `pdfPrinting` - Accessibility support for PDF printing enabled.
 
+To disable all supported features, pass an empty array `[]`.
+
+Example:
+
 ```js
 const { app } = require('electron')
 
 app.whenReady().then(() => {
+  // Enable a subset of features:
   app.setAccessibilitySupportFeatures([
     'screenReader',
     'pdfPrinting',
     'webContents'
   ])
+
+  // Other logic
+
+  // Some time later, disable all features:
+  app.setAccessibilitySupportFeatures([])
 })
 ```
 
