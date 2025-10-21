@@ -6,7 +6,7 @@ Subject: Remove deprecated `GetIsolate`
 https://chromium-review.googlesource.com/c/v8/v8/+/6905244
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index b4ca77a1c3f..39e14b76c21 100644
+index b4ca77a1c3f518b6beaa076cf65767b3c40af995..39e14b76c21fe6a481aa442be823081ae4f1791b 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -663,7 +663,7 @@ std::unique_ptr<MultiIsolatePlatform> MultiIsolatePlatform::Create(
@@ -73,7 +73,7 @@ index b4ca77a1c3f..39e14b76c21 100644
    Local<Object> exports;
  
 diff --git a/src/base_object-inl.h b/src/base_object-inl.h
-index cc60ddddb03..37d83e41b61 100644
+index cc60ddddb037e0279615bbe24821eb20fd8da677..37d83e41b618a07aca98118260abe9618f11256d 100644
 --- a/src/base_object-inl.h
 +++ b/src/base_object-inl.h
 @@ -55,7 +55,6 @@ v8::Local<v8::Object> BaseObject::object() const {
@@ -85,7 +85,7 @@ index cc60ddddb03..37d83e41b61 100644
  
    return handle;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 20d3c1d9d17..8fbf4f25a91 100644
+index 20d3c1d9d17fde18fc09b6ee219137831eb08a45..8fbf4f25a91b953f3d2868889c7ee06932ee3c5f 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -1022,7 +1022,7 @@ bool ArrayOfStringsToX509s(Local<Context> context,
@@ -98,7 +98,7 @@ index 20d3c1d9d17..8fbf4f25a91 100644
    uint32_t array_length = cert_array->Length();
  
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
-index b30297eac08..11622d823bb 100644
+index b30297eac08ad9587642b723f91d7e3b954294d4..11622d823bbc0ac8f8c7ffaa6e6740fc1c95a2c6 100644
 --- a/src/crypto/crypto_x509.cc
 +++ b/src/crypto/crypto_x509.cc
 @@ -107,7 +107,7 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, BIOPointer&& bio) {
@@ -120,7 +120,7 @@ index b30297eac08..11622d823bb 100644
                             NewStringType::kNormal,
                             mem->length)
 diff --git a/src/encoding_binding.cc b/src/encoding_binding.cc
-index 266f640fb1c..877ae8a18f6 100644
+index 266f640fb1c6503a424e77cc41fc15bc658bb6a5..877ae8a18f6b8f2c7e3474dfba060d99db88e6b9 100644
 --- a/src/encoding_binding.cc
 +++ b/src/encoding_binding.cc
 @@ -76,7 +76,7 @@ void BindingData::Deserialize(Local<Context> context,
@@ -133,7 +133,7 @@ index 266f640fb1c..877ae8a18f6 100644
    // Recreate the buffer in the constructor.
    InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
 diff --git a/src/env.cc b/src/env.cc
-index 53f0bf7fc1e..eacf588ab4f 100644
+index 53f0bf7fc1e5c85fa9a5a323e998f04310f4f75e..eacf588ab4f55d6f0587cf1700b569c3ac6e28d6 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -1753,10 +1753,10 @@ void AsyncHooks::Deserialize(Local<Context> context) {
@@ -159,7 +159,7 @@ index 53f0bf7fc1e..eacf588ab4f 100644
    } else {
      info.js_execution_async_resources = 0;
 diff --git a/src/inspector/network_agent.cc b/src/inspector/network_agent.cc
-index d136b72e598..a7c2bcf4cfe 100644
+index d136b72e598d07f3c2fcc9c2c8ba84f5ff1aaad7..a7c2bcf4cfe54a23ef955a6672f59dfc7e3efb02 100644
 --- a/src/inspector/network_agent.cc
 +++ b/src/inspector/network_agent.cc
 @@ -29,31 +29,31 @@ using v8::Value;
@@ -273,7 +273,7 @@ index d136b72e598..a7c2bcf4cfe 100644
    if (!ObjectGetProtocolString(context, response, "url").To(&url)) {
      return {};
 diff --git a/src/js_native_api_v8.h b/src/js_native_api_v8.h
-index 27aeac589b1..5f290086976 100644
+index 27aeac589b19cd681923fb848ce5f36c66fc05e2..5f2900869763f40cac54e3cb3fe2e24eda615410 100644
 --- a/src/js_native_api_v8.h
 +++ b/src/js_native_api_v8.h
 @@ -53,7 +53,7 @@ class RefTracker {
@@ -286,7 +286,7 @@ index 27aeac589b1..5f290086976 100644
          module_api_version(module_api_version) {
      napi_clear_last_error(this);
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 9c75d351f51..4d26a2a8de4 100644
+index 9c75d351f51e0794ff66345eaf4e1ecd43b1851a..4d26a2a8de474877394e39a81e8cbb1b0ae50cd5 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
 @@ -1022,7 +1022,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
@@ -326,7 +326,7 @@ index 9c75d351f51..4d26a2a8de4 100644
    CHECK(!env->temporary_required_module_facade_original.IsEmpty());
    return env->temporary_required_module_facade_original.Get(isolate);
 diff --git a/src/node.h b/src/node.h
-index 5b6fa2c3405..75524512a6b 100644
+index 5b6fa2c3405363f665783f7f38b5b6e2ee0c0073..75524512a6b5a8efbe02a2899eb65c680a642b90 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -1064,7 +1064,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
@@ -348,7 +348,7 @@ index 5b6fa2c3405..75524512a6b 100644
      v8::Local<v8::String> constant_name = v8::String::NewFromUtf8Literal(      \
          isolate, #constant, v8::NewStringType::kInternalized);                 \
 diff --git a/src/node_blob.cc b/src/node_blob.cc
-index d278a32c993..ab862bf93a4 100644
+index d278a32c9934c15bc721da164efccca7bc7e7111..ab862bf93a411e6ae6da7c9f9706cee279a0ad70 100644
 --- a/src/node_blob.cc
 +++ b/src/node_blob.cc
 @@ -554,7 +554,7 @@ void BlobBindingData::Deserialize(Local<Context> context,
@@ -361,7 +361,7 @@ index d278a32c993..ab862bf93a4 100644
    BlobBindingData* binding = realm->AddBindingData<BlobBindingData>(holder);
    CHECK_NOT_NULL(binding);
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index e69eb280050..9bb4576fcf4 100644
+index e69eb280050cae0c0f394b2f956eef947e628904..9bb4576fcf4f07550e7d6f4ff2310cedc8093c5f 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
 @@ -274,7 +274,7 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileInternal(
@@ -418,7 +418,7 @@ index e69eb280050..9bb4576fcf4 100644
        // This is used by the snapshot builder, so save the code cache
        // unconditionally.
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index fea04264969..c9588880d05 100644
+index fea0426496978c0003fe1481afcf93fc9c23edca..c9588880d05435ab9f4e23fcff74c93309664270 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
 @@ -1265,7 +1265,7 @@ void CreatePerContextProperties(Local<Object> target,
@@ -431,7 +431,7 @@ index fea04264969..c9588880d05 100644
  
    CHECK(
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 3c234205e89..e66d4fcb0c0 100644
+index 3c234205e89be7e976dae5c3fcc73ca67953e034..e66d4fcb0c064f96cdb819c783027d864fe88d12 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
 @@ -113,7 +113,7 @@ namespace {
@@ -462,7 +462,7 @@ index 3c234205e89..e66d4fcb0c0 100644
  
    Local<Symbol> symbol = env->vm_dynamic_import_default_internal();
 diff --git a/src/node_env_var.cc b/src/node_env_var.cc
-index 6aad252eb56..5f7ef8cc58f 100644
+index 6aad252eb5681bb9ab9890812602b43c418e7a7f..5f7ef8cc58f589ba30a44abaaaaaf1514458c3f0 100644
 --- a/src/node_env_var.cc
 +++ b/src/node_env_var.cc
 @@ -311,7 +311,7 @@ std::shared_ptr<KVStore> KVStore::CreateMapKVStore() {
@@ -475,7 +475,7 @@ index 6aad252eb56..5f7ef8cc58f 100644
    Local<Array> keys;
    if (!entries->GetOwnPropertyNames(context).ToLocal(&keys))
 diff --git a/src/node_errors.cc b/src/node_errors.cc
-index 4386a1bc567..8d51201ad24 100644
+index 4386a1bc5678e351ce084cd2c47202561619b164..8d51201ad24999ed8f54e16c7878432d41841cf2 100644
 --- a/src/node_errors.cc
 +++ b/src/node_errors.cc
 @@ -633,7 +633,7 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
@@ -506,7 +506,7 @@ index 4386a1bc567..8d51201ad24 100644
    READONLY_PROPERTY(target, "exitCodes", exit_codes);
  
 diff --git a/src/node_file.cc b/src/node_file.cc
-index d73dac2ee3f..969e7d08086 100644
+index d73dac2ee3f1cf1cac6845fae0f702c9fba8fcef..969e7d08086f8442bed476feaf15599b8c79db7c 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
 @@ -3874,7 +3874,7 @@ void BindingData::Deserialize(Local<Context> context,
@@ -519,7 +519,7 @@ index d73dac2ee3f..969e7d08086 100644
    InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
    BindingData* binding =
 diff --git a/src/node_messaging.cc b/src/node_messaging.cc
-index 57e068ae249..8c51ae4e0a4 100644
+index 57e068ae249d618c2658638f9f3b03e1fedb6524..8c51ae4e0a435971c6d0288af87810877dd31a49 100644
 --- a/src/node_messaging.cc
 +++ b/src/node_messaging.cc
 @@ -254,7 +254,7 @@ namespace {
@@ -559,7 +559,7 @@ index 57e068ae249..8c51ae4e0a4 100644
    data_.Reset();
    return ret;
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index bdbc511ef3f..d8477191efa 100644
+index bdbc511ef3f680bbac6770b89f47acaee95d56a2..d8477191efafba3c41c06d765f4b03bd00b8573c 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -69,7 +69,7 @@ void BindingData::Deserialize(v8::Local<v8::Context> context,
@@ -581,7 +581,7 @@ index bdbc511ef3f..d8477191efa 100644
  
  #define V(status)                                                              \
 diff --git a/src/node_process_methods.cc b/src/node_process_methods.cc
-index e453bacc3e5..fe4aad63bc8 100644
+index e453bacc3e5247493a3582c24174bfe6e590825d..fe4aad63bc877be105830a80aa6be10ce3f8fda4 100644
 --- a/src/node_process_methods.cc
 +++ b/src/node_process_methods.cc
 @@ -737,7 +737,7 @@ void BindingData::Deserialize(Local<Context> context,
@@ -594,7 +594,7 @@ index e453bacc3e5..fe4aad63bc8 100644
    // Recreate the buffer in the constructor.
    InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
 diff --git a/src/node_realm.cc b/src/node_realm.cc
-index 2a5fe9fe501..39f6f142044 100644
+index 2a5fe9fe501d1fd9356eeb7d044a872fa5a55f38..39f6f142044c42904d234da20a266315346c135a 100644
 --- a/src/node_realm.cc
 +++ b/src/node_realm.cc
 @@ -22,7 +22,7 @@ using v8::String;
@@ -607,7 +607,7 @@ index 2a5fe9fe501..39f6f142044 100644
    env->AssignToContext(context, this, ContextInfo(""));
    // The environment can also purge empty wrappers in the check callback,
 diff --git a/src/node_report.cc b/src/node_report.cc
-index c82c6bcc083..0d06f61d7fb 100644
+index c82c6bcc083ba60137e83b3c291130636db3162f..0d06f61d7fb2472a3d7a66854040dc493406b79e 100644
 --- a/src/node_report.cc
 +++ b/src/node_report.cc
 @@ -400,7 +400,7 @@ static void PrintJavaScriptErrorProperties(JSONWriter* writer,
@@ -620,7 +620,7 @@ index c82c6bcc083..0d06f61d7fb 100644
      if (!error_obj->GetOwnPropertyNames(context).ToLocal(&keys)) {
        return writer->json_objectend();  // the end of 'errorProperties'
 diff --git a/src/node_snapshotable.cc b/src/node_snapshotable.cc
-index c2e24b4645e..e34d24d51d5 100644
+index c2e24b4645e7903e08c80aead1c18c7bcff1bd89..e34d24d51d5c090b560d06f727043f20924e6f46 100644
 --- a/src/node_snapshotable.cc
 +++ b/src/node_snapshotable.cc
 @@ -1614,7 +1614,7 @@ void BindingData::Deserialize(Local<Context> context,
@@ -633,7 +633,7 @@ index c2e24b4645e..e34d24d51d5 100644
    // Recreate the buffer in the constructor.
    InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index 7bb4d4108c8..cf9ce6686cf 100644
+index 7bb4d4108c8326d69da5236c7ea7f00ddb68cea9..cf9ce6686cffca7e700a0e20cb9f776a5f0f7c4a 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
 @@ -2020,7 +2020,7 @@ bool StatementSync::BindParams(const FunctionCallbackInfo<Value>& args) {
@@ -646,7 +646,7 @@ index 7bb4d4108c8..cf9ce6686cf 100644
      if (!obj->GetOwnPropertyNames(context).ToLocal(&keys)) {
        return false;
 diff --git a/src/node_task_queue.cc b/src/node_task_queue.cc
-index d33ee3c26c1..f1c53c44f20 100644
+index d33ee3c26c111e53edf27e6368ca8f64ff30a349..f1c53c44f201b295888e7932c5e3e2b19cb9c319 100644
 --- a/src/node_task_queue.cc
 +++ b/src/node_task_queue.cc
 @@ -48,7 +48,7 @@ void PromiseRejectCallback(PromiseRejectMessage message) {
@@ -659,7 +659,7 @@ index d33ee3c26c1..f1c53c44f20 100644
  
    Environment* env = Environment::GetCurrent(isolate);
 diff --git a/src/node_url.cc b/src/node_url.cc
-index 9d1e8ec0516..9b91f83d879 100644
+index 9d1e8ec05161570db11f7b662395509774668d78..9b91f83d879ea02fd3d61913c8dfd35b3bf1ac31 100644
 --- a/src/node_url.cc
 +++ b/src/node_url.cc
 @@ -70,7 +70,7 @@ void BindingData::Deserialize(Local<Context> context,
@@ -672,7 +672,7 @@ index 9d1e8ec0516..9b91f83d879 100644
    BindingData* binding = realm->AddBindingData<BindingData>(holder);
    CHECK_NOT_NULL(binding);
 diff --git a/src/node_v8.cc b/src/node_v8.cc
-index 98e392f6d71..152b030198c 100644
+index 98e392f6d7118bee8a3d0bce4de1ded76a293001..152b030198c6b36efd2be6c06f5c6e8bbc7cfadb 100644
 --- a/src/node_v8.cc
 +++ b/src/node_v8.cc
 @@ -158,7 +158,7 @@ void BindingData::Deserialize(Local<Context> context,
@@ -685,7 +685,7 @@ index 98e392f6d71..152b030198c 100644
    // Recreate the buffer in the constructor.
    InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
 diff --git a/src/node_wasi.cc b/src/node_wasi.cc
-index 370221d3cdd..f5aff2f65fe 100644
+index 370221d3cddc201180260ecb3a222bc831c91093..f5aff2f65fe6b9f48cf970ab3e7c57cfe4885f85 100644
 --- a/src/node_wasi.cc
 +++ b/src/node_wasi.cc
 @@ -50,7 +50,7 @@ using v8::WasmMemoryObject;
@@ -709,7 +709,7 @@ index 370221d3cdd..f5aff2f65fe 100644
      THROW_ERR_WASI_NOT_STARTED(isolate);
      return EinvalError<R>();
 diff --git a/src/node_webstorage.cc b/src/node_webstorage.cc
-index cc90af827a3..5819d9bca84 100644
+index cc90af827a3fbd14fb4cbfbfd39cc661f22cf6e1..5819d9bca845e0eed6d4d93564469d8f3c36200b 100644
 --- a/src/node_webstorage.cc
 +++ b/src/node_webstorage.cc
 @@ -57,7 +57,7 @@ using v8::Value;
@@ -731,7 +731,7 @@ index cc90af827a3..5819d9bca84 100644
  
  static void Clear(const FunctionCallbackInfo<Value>& info) {
 diff --git a/src/node_worker.cc b/src/node_worker.cc
-index 62c53368d11..7d08d8af7f6 100644
+index 62c53368d1173edb7eb42e3337049c46fd7cdda9..7d08d8af7f6d99f7bd41cb7eb91063c630b3f87b 100644
 --- a/src/node_worker.cc
 +++ b/src/node_worker.cc
 @@ -1466,8 +1466,6 @@ void GetEnvMessagePort(const FunctionCallbackInfo<Value>& args) {
@@ -744,7 +744,7 @@ index 62c53368d11..7d08d8af7f6 100644
    }
  }
 diff --git a/src/timers.cc b/src/timers.cc
-index da4206187f7..03f0910926f 100644
+index da4206187f7c7d2becb8a101c1ff5346a10e13f4..03f0910926f3d403121e227cee32a546b2394e04 100644
 --- a/src/timers.cc
 +++ b/src/timers.cc
 @@ -114,7 +114,7 @@ void BindingData::Deserialize(Local<Context> context,
@@ -757,7 +757,7 @@ index da4206187f7..03f0910926f 100644
    // Recreate the buffer in the constructor.
    BindingData* binding = realm->AddBindingData<BindingData>(holder);
 diff --git a/src/util-inl.h b/src/util-inl.h
-index 9d4db311024..a03e2e8b050 100644
+index 9d4db311024c5f526fc3c00764fff686af044026..da9268dcf2ff432ddeec7c0f61a147b73f3130e2 100644
 --- a/src/util-inl.h
 +++ b/src/util-inl.h
 @@ -336,14 +336,14 @@ v8::Maybe<void> FromV8Array(v8::Local<v8::Context> context,
@@ -804,6 +804,15 @@ index 9d4db311024..a03e2e8b050 100644
    v8::Local<v8::Set> set_js = v8::Set::New(isolate);
    v8::HandleScope handle_scope(isolate);
  
+@@ -422,7 +422,7 @@ template <typename T, std::size_t U>
+ v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
+                                     const std::ranges::elements_view<T, U>& vec,
+                                     v8::Isolate* isolate) {
+-  if (isolate == nullptr) isolate = context->GetIsolate();
++  if (isolate == nullptr) isolate = v8::Isolate::GetCurrent();
+   v8::EscapableHandleScope handle_scope(isolate);
+ 
+   MaybeStackBuffer<v8::Local<v8::Value>, 128> arr(vec.size());
 @@ -441,7 +441,7 @@ template <typename T, typename U>
  v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
                                      const std::unordered_map<T, U>& map,
@@ -831,8 +840,17 @@ index 9d4db311024..a03e2e8b050 100644
    v8::EscapableHandleScope handle_scope(isolate);
  
    v8::LocalVector<v8::Value> elements(isolate);
+@@ -731,7 +731,7 @@ inline v8::MaybeLocal<v8::Object> NewDictionaryInstanceNullProto(
+     if (value.IsEmpty()) return v8::MaybeLocal<v8::Object>();
+   }
+   v8::Local<v8::Object> obj = tmpl->NewInstance(context, property_values);
+-  if (obj->SetPrototypeV2(context, v8::Null(context->GetIsolate()))
++  if (obj->SetPrototypeV2(context, v8::Null(v8::Isolate::GetCurrent()))
+           .IsNothing()) {
+     return v8::MaybeLocal<v8::Object>();
+   }
 diff --git a/src/util.cc b/src/util.cc
-index 660cfff6b8a..c4b39450c5b 100644
+index 660cfff6b8a0c583be843e555e7a06cd09e0d279..c4b39450c5b7f91c46f7027db367c30db34927bb 100644
 --- a/src/util.cc
 +++ b/src/util.cc
 @@ -391,7 +391,7 @@ void SetMethod(Local<v8::Context> context,
@@ -881,7 +899,7 @@ index 660cfff6b8a..c4b39450c5b 100644
        context, that, OneByteString(isolate, name), tmpl, flag);
  }
 diff --git a/src/util.h b/src/util.h
-index 2b351235cf7..6da57f95165 100644
+index 2b351235cf7f32c9fad25367cc912d187466f1e0..6da57f95165bbdedb65dab6eaae8c39b815ee4e5 100644
 --- a/src/util.h
 +++ b/src/util.h
 @@ -739,7 +739,7 @@ inline v8::MaybeLocal<v8::Value> ToV8Value(
