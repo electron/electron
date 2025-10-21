@@ -80,10 +80,10 @@ index 39fa45f0a0f9076bd7ac0be6f455dd540a276512..3d0381d463eed73470b28085830f2a23
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index a66f503e1ffcf5c7435d3bfa5b8af6eda707f125..9af4329932a838c05a3ef7aa5f5da884a501c342 100644
+index 78a55026a56c5c2846c7cf13a6080456f8022ddc..f507a45212491b46954e1e30f8fc8c525aff0b25 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2373,7 +2373,8 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2378,7 +2378,8 @@ bool Browser::IsWebContentsCreationOverridden(
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
      const std::string& frame_name,
@@ -93,7 +93,7 @@ index a66f503e1ffcf5c7435d3bfa5b8af6eda707f125..9af4329932a838c05a3ef7aa5f5da884
    if (HasActorTask(profile(), opener)) {
      // If an ExecutionEngine is acting on the opener, prevent it from creating a
      // new WebContents. We'll instead force the navigation to happen in the same
-@@ -2386,7 +2387,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2391,7 +2392,7 @@ bool Browser::IsWebContentsCreationOverridden(
    return (window_container_type ==
                content::mojom::WindowContainerType::BACKGROUND &&
            ShouldCreateBackgroundContents(source_site_instance, opener_url,
@@ -103,7 +103,7 @@ index a66f503e1ffcf5c7435d3bfa5b8af6eda707f125..9af4329932a838c05a3ef7aa5f5da884
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 370f70ca0cce817fa396b284f95cda3e814eeed0..bcc9b602d361df1307a7d4a67315900a167a716d 100644
+index 12b5a5ca3603b815182621f81827635667528ca0..0bfd322dd59de0247a7e8bd09b462b943e206f3c 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -943,8 +943,7 @@ class Browser : public TabStripModelObserver,
@@ -222,10 +222,10 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 3897ca794fd23f337b73c7305b37da7a97f9c550..2451f06b6b6dc96da44494da1db5e1f47654dad4 100644
+index 6efc40408fb64d4e4c4e6671b606912edc013a41..35fe43c6ac99666d070036f7d862529ad364a359 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5272,8 +5272,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5284,8 +5284,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    if (delegate_ &&
        delegate_->IsWebContentsCreationOverridden(
            opener, source_site_instance, params.window_container_type,

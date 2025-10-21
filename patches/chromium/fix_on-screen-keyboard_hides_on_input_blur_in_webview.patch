@@ -9,10 +9,10 @@ focus node change via TextInputManager.
 chromium-bug: https://crbug.com/1369605
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 8ad61a86598ac2249496e44113f31ebb21dc616b..36eb119c30531faffb85c4456572f22a9735316d 100644
+index 1041d25d5ef78abdcf7b85fe8457ec2a20e2a759..f91f346c93749ff77844143b53d27d14735a6a06 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -3248,6 +3248,12 @@ void RenderWidgetHostViewAura::OnTextSelectionChanged(
+@@ -3332,6 +3332,12 @@ void RenderWidgetHostViewAura::OnTextSelectionChanged(
    }
  }
  
@@ -26,10 +26,10 @@ index 8ad61a86598ac2249496e44113f31ebb21dc616b..36eb119c30531faffb85c4456572f22a
      RenderWidgetHostViewAura* popup_child_host_view) {
    popup_child_host_view_ = popup_child_host_view;
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.h b/content/browser/renderer_host/render_widget_host_view_aura.h
-index 943006033c5f9c6d5cfdbc50ede2723fa8494834..49eb7cb18d1fa114d78048a6e41b8883afdcf674 100644
+index da64a2093e5ab60b320a1ea2b12a920956ef9605..9f1e856d0947c3ce1f21e001c5278f61cbda05d3 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.h
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.h
-@@ -657,6 +657,8 @@ class CONTENT_EXPORT RenderWidgetHostViewAura
+@@ -664,6 +664,8 @@ class CONTENT_EXPORT RenderWidgetHostViewAura
        RenderWidgetHostViewBase* updated_view) override;
    void OnTextSelectionChanged(TextInputManager* text_input_mangager,
                                RenderWidgetHostViewBase* updated_view) override;
@@ -87,10 +87,10 @@ index 75df43e3cd2721a92c90c18154d53d5c203e2465..ce42c75c8face36d21f53f44c0201ac4
    // The view with active text input state, i.e., a focused <input> element.
    // It will be nullptr if no such view exists. Note that the active view
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 208fe58f95557ee103555858c2cda39e732ca991..0d2e6fb394799980c61c0855d4cb4c1933719a6e 100644
+index cbfa2ec56627994541548a49a4afe33b6e42c2d7..2636b49a902570bf3b92675db7792893fcc949f9 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -10143,7 +10143,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
+@@ -10142,7 +10142,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
                          "WebContentsImpl::OnFocusedElementChangedInFrame",
                          "render_frame_host", frame);
    RenderWidgetHostViewBase* root_view =

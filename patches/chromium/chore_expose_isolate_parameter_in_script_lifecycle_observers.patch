@@ -52,10 +52,10 @@ index 99d368046177dd92c8b36743f461d348bbf19a2e..b0a1859d22063cf6d5a73b5ccd5ea6fb
  
  void RenderFrameImpl::DidChangeScrollOffset() {
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 542eddb03c98eac5c03c9bc208af2c863d552b2d..e91c0f20d4e401a43936a9de9b6a6b6c1199612c 100644
+index 61d4ef338cc4c0e99c144d6d95bbe0adba9d3556..ce7ba31d2a2ebab213be4b123f6af93c99b74149 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -606,7 +606,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -605,7 +605,8 @@ class CONTENT_EXPORT RenderFrameImpl
                                int world_id) override;
    void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
                                       int world_id) override;
