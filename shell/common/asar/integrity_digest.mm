@@ -29,11 +29,11 @@ struct IntegrityDictionaryDigestSlot {
   uint8_t digest[kIntegrityDictionaryDigestSize];
 };
 
-template <size_t N>
 constexpr IntegrityDictionaryDigestSlot MakeDigestSlot(
-    const char (&sentinel)[N]) {
-  static_assert(N - 1 == 32, "sentinel must be exactly 32 chars");
+    const char (&sentinel)[33]) {
   IntegrityDictionaryDigestSlot slot{};
+  static_assert(sizeof(sentinel) == sizeof(slot.sentinel) + 1,
+                "sentinel must be exactly 32 characters (null-terminated)");
   for (size_t i = 0; i < sizeof(slot.sentinel); ++i)
     slot.sentinel[i] = static_cast<uint8_t>(sentinel[i]);
   slot.used = false;  // to be set at package-time
