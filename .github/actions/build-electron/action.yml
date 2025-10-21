@@ -60,7 +60,11 @@ runs:
           sudo launchctl limit maxfiles 65536 200000
         fi
 
-        NINJA_SUMMARIZE_BUILD=1 e build
+        if [ "${{ inputs.is-release }}" = "true" ]; then
+          NINJA_SUMMARIZE_BUILD=1 e build --target electron:release_build
+        else
+          NINJA_SUMMARIZE_BUILD=1 e build --target electron:testing_build
+        fi
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
 
@@ -70,11 +74,10 @@ runs:
         else
           echo "Skipping build-stats.mjs upload because DD_API_KEY is not set"
         fi
-    - name: Build Electron dist.zip ${{ inputs.step-suffix }}
+    - name: Verify dist.zip ${{ inputs.step-suffix }}
       shell: bash
       run: |
-        cd src
-        e build --target electron:electron_dist_zip
+        cd src        
         if [ "${{ inputs.is-asan }}" != "true" ]; then
           target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
@@ -82,11 +85,10 @@ runs:
           fi
           electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ inputs.target-arch }}.manifest
         fi
-    - name: Build Mksnapshot ${{ inputs.step-suffix }}
+    - name: Fixup Mksnapshot ${{ inputs.step-suffix }}
       shell: bash
       run: |
         cd src
-        e build --target electron:electron_mksnapshot_zip
         ELECTRON_DEPOT_TOOLS_DISABLE_LOG=1 e d gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
         # Remove unused args from mksnapshot_args
         SEDOPTION="-i"
@@ -130,11 +132,6 @@ runs:
       run: |
         cd src
         e build --target electron:electron_chromedriver_zip
-    - name: Build Node.js headers ${{ inputs.step-suffix }}
-      shell: bash
-      run: |
-        cd src
-        e build --target electron:node_headers
     - name: Create installed_software.json ${{ inputs.step-suffix }}
       shell: powershell
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'win' }}
@@ -154,17 +151,11 @@ runs:
         # Needed for msdia140.dll on 64-bit windows
         cd src
         export PATH="$PATH:$(pwd)/third_party/llvm-build/Release+Asserts/bin"
-    - name: Generate & Zip Symbols ${{ inputs.step-suffix }}
+    - name: Zip Symbols ${{ inputs.step-suffix }}
       shell: bash
       run: |
-        # Generate breakpad symbols on release builds
-        if [ "${{ inputs.generate-symbols }}" = "true" ]; then
-          e build --target electron:electron_symbols
-        fi
         cd src
         export BUILD_PATH="$(pwd)/out/Default"
-        e build --target electron:licenses
-        e build --target electron:electron_version_file
         if [ "${{ inputs.is-release }}" = "true" ]; then
           DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
         else
@@ -177,18 +168,6 @@ runs:
         cd src
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true use_siso=true $GN_EXTRA_ARGS"
         e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg
-    - name: Generate Hunspell Dictionaries ${{ inputs.step-suffix }}
-      shell: bash
-      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
-      run: |
-        e build --target electron:hunspell_dictionaries_zip
-    - name: Generate Libcxx ${{ inputs.step-suffix }}
-      shell: bash
-      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
-      run: |
-        e build --target electron:libcxx_headers_zip
-        e build --target electron:libcxxabi_headers_zip
-        e build --target electron:libcxx_objects_zip
     - name: Remove Clang problem matcher
       shell: bash
       run: echo "::remove-matcher owner=clang::"
