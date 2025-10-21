@@ -11,7 +11,7 @@ its own blended handler between Node and Blink.
 Not upstreamable.
 
 diff --git a/lib/internal/modules/esm/utils.js b/lib/internal/modules/esm/utils.js
-index 4a427945934..88d84786e72 100644
+index 4a4279459341e87784ee8efa832dc74371c4a708..88d84786e72cf8712e0b9bda16c418d4087fe549 100644
 --- a/lib/internal/modules/esm/utils.js
 +++ b/lib/internal/modules/esm/utils.js
 @@ -34,7 +34,7 @@ const {
@@ -40,7 +40,7 @@ index 4a427945934..88d84786e72 100644
  
  /**
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 5783728da28..9c75d351f51 100644
+index 5783728da2894270f902f47b210008df0e911bde..9c75d351f51e0794ff66345eaf4e1ecd43b1851a 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
 @@ -1165,7 +1165,7 @@ static MaybeLocal<Promise> ImportModuleDynamicallyWithPhase(
@@ -91,7 +91,7 @@ index 5783728da28..9c75d351f51 100644
  
  MaybeLocal<Value> ModuleWrap::SyntheticModuleEvaluationStepsCallback(
 diff --git a/src/module_wrap.h b/src/module_wrap.h
-index 03cf8d0e91d..9947191fca6 100644
+index 03cf8d0e91d795aad6db9b11956d296ff4999f7e..9947191fca670329e8bee38f63d463ea4be99765 100644
 --- a/src/module_wrap.h
 +++ b/src/module_wrap.h
 @@ -8,6 +8,7 @@

@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index e1c2da6969a..367195f7b27 100644
+index e1c2da6969a1ce937d397735e844930f3234bba7..367195f7b27e8eba075994009ba343dc8576abf7 100644
 --- a/deps/ncrypto/ncrypto.cc
 +++ b/deps/ncrypto/ncrypto.cc
 @@ -1130,7 +1130,9 @@ int64_t X509View::getValidToTime() const {
@@ -86,7 +86,7 @@ index e1c2da6969a..367195f7b27 100644
  
  std::optional<std::string_view> SSLPointer::getCipherName() const {
 diff --git a/node.gni b/node.gni
-index e2407027ab0..c64761b730e 100644
+index e2407027ab05e59b2f0f1c213b98ea469db7a91b..c64761b730e61edcdc0e46a48699f2fd5bb1c0a6 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -11,7 +11,7 @@ declare_args() {
@@ -99,7 +99,7 @@ index e2407027ab0..c64761b730e 100644
    # The location of simdutf - use the one from node's deps by default.
    node_simdutf_path = "//third_party/simdutf"
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index 5ed2f8b35a1..26dab5e64d7 100644
+index 5ed2f8b35a1e2f8348a0f3891f37944f49371256..26dab5e64d793fad8585cb5cfb316669ad378805 100644
 --- a/src/crypto/crypto_cipher.cc
 +++ b/src/crypto/crypto_cipher.cc
 @@ -905,6 +905,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
@@ -111,7 +111,7 @@ index 5ed2f8b35a1..26dab5e64d7 100644
  
    Digest digest;
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index d005bf0ffb9..01770687bd1 100644
+index d005bf0ffb93445fa6611a1beb1b465764271ede..01770687bd191c61af02e76d7de24bbac5c47b8f 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
 @@ -90,7 +90,7 @@ StackOfX509 CloneSSLCerts(X509Pointer&& cert,
@@ -133,7 +133,7 @@ index d005bf0ffb9..01770687bd1 100644
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 6482bd58bb6..20d3c1d9d17 100644
+index 6482bd58bb6a95cfa4074ea9535e1443aea66bb5..20d3c1d9d17fde18fc09b6ee219137831eb08a45 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -143,7 +143,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
@@ -169,7 +169,7 @@ index 6482bd58bb6..20d3c1d9d17 100644
  
      X509_STORE_add_cert(sc->GetCertStoreOwnedByThisSecureContext(), ca);
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index e35fda9ad2e..46a7d1396dc 100644
+index e35fda9ad2e8c52c75492d66566dc6e6c57dd2ae..46a7d1396dc1a175ae99f4e403721f1730fdd320 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
 @@ -309,15 +309,17 @@ void ComputeSecret(const FunctionCallbackInfo<Value>& args) {
@@ -193,7 +193,7 @@ index e35fda9ad2e..46a7d1396dc 100644
        break;
    }
 diff --git a/src/crypto/crypto_keys.cc b/src/crypto/crypto_keys.cc
-index e805a984322..f3c48f89b9b 100644
+index e805a984322c8348ceba950fe6f45e002ade10b3..f3c48f89b9b7ca99a8c1b1d04a1a3b2487d3fd16 100644
 --- a/src/crypto/crypto_keys.cc
 +++ b/src/crypto/crypto_keys.cc
 @@ -1034,6 +1034,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
@@ -205,7 +205,7 @@ index e805a984322..f3c48f89b9b 100644
  
    const auto& key = data_.GetAsymmetricKey();
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 205e248e0f2..12b0d804c6f 100644
+index 205e248e0f20f019e189a6c69d3c011a616b3939..12b0d804c6f1d4998b85160b0aac8eb7a3b5576b 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -533,24 +533,15 @@ Maybe<void> Decorate(Environment* env,
@@ -235,7 +235,7 @@ index 205e248e0f2..12b0d804c6f 100644
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
 diff --git a/src/env.h b/src/env.h
-index f3a2d221f4b..d34aec43630 100644
+index f3a2d221f4bb52987e1bdacdadf19aacfcf65ec3..d34aec43630b3cf53004d8180446d7136b59ceac 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -52,7 +52,7 @@
@@ -257,7 +257,7 @@ index f3a2d221f4b..d34aec43630 100644
    // We declare another alias here to avoid having to include crypto_util.h
    using EVPMDPointer = DeleteFnPtr<EVP_MD, EVP_MD_free>;
 diff --git a/src/node_metadata.h b/src/node_metadata.h
-index d9c533f100d..2acab8786a8 100644
+index d9c533f100d25aeab1fe8589932a8ddead431258..2acab8786a8a752b17961445edeb872c2b08fdeb 100644
 --- a/src/node_metadata.h
 +++ b/src/node_metadata.h
 @@ -8,7 +8,7 @@
@@ -270,7 +270,7 @@ index d9c533f100d..2acab8786a8 100644
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.h b/src/node_options.h
-index 3a1503a035e..941ae4f15c4 100644
+index 3a1503a035e12b5dce75c77c327607c857a8a367..941ae4f15c42fb8016d03c786973fd4709ac1a0d 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@

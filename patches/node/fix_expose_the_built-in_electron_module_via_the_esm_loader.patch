@@ -6,7 +6,7 @@ Subject: fix: expose the built-in electron module via the ESM loader
 This allows usage of `import { app } from 'electron'` and `import('electron')` natively in the browser + non-sandboxed renderer
 
 diff --git a/lib/internal/modules/esm/get_format.js b/lib/internal/modules/esm/get_format.js
-index 01584983c16..6afbbca6c95 100644
+index 01584983c16a2ab6eec2fbb01208504f2771148b..6afbbca6c95103f3ecad29485581c94735bac0d3 100644
 --- a/lib/internal/modules/esm/get_format.js
 +++ b/lib/internal/modules/esm/get_format.js
 @@ -26,6 +26,7 @@ const protocolHandlers = {
@@ -18,7 +18,7 @@ index 01584983c16..6afbbca6c95 100644
  
  /**
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 8414d303c07..e8a2326e158 100644
+index 8414d303c078d51a93c9127a1fd8d6f24961b104..e8a2326e158550786620439fa4039c2b449624cc 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
 @@ -77,7 +77,7 @@ function defaultLoad(url, context = kEmptyObject) {
@@ -64,7 +64,7 @@ index 8414d303c07..e8a2326e158 100644
    }
  }
 diff --git a/lib/internal/modules/esm/loader.js b/lib/internal/modules/esm/loader.js
-index 300da51afe6..4c7e2dc8c00 100644
+index 300da51afe6185f5f9799a88fc75ba3b8f0cf5fb..4c7e2dc8c00c7a38a27169d1cc08e27f89e74fbb 100644
 --- a/lib/internal/modules/esm/loader.js
 +++ b/lib/internal/modules/esm/loader.js
 @@ -522,7 +522,7 @@ class ModuleLoader {
@@ -77,7 +77,7 @@ index 300da51afe6..4c7e2dc8c00 100644
        // Check if the ESM initiating import CJS is being required by the same CJS module.
        if (cjsModule?.[kIsExecuting]) {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index c27ee4c6612..5f03cf14e94 100644
+index c27ee4c6612c6a7ea0b6355f03563e8724fd0e40..5f03cf14e948d449d303b22ab6710b5508fb83b2 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -751,6 +751,9 @@ function packageImportsResolve(name, base, conditions) {
@@ -103,7 +103,7 @@ index c27ee4c6612..5f03cf14e94 100644
  
    const packageConfig = packageJsonReader.read(packageJSONPath, { __proto__: null, specifier, base, isESM: true });
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 147d96bda80..e50e91a7710 100644
+index 147d96bda8098fe16e5d0053e36eab05fb489c22..e50e91a7710fa396691aa0f28ef4849bd76017dc 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -215,7 +215,7 @@ function createCJSModuleWrap(url, source, isMain, format, loadCJS = loadCJSModul
@@ -127,7 +127,7 @@ index 147d96bda80..e50e91a7710 100644
  // This translator function must be sync, as `require` is sync.
  translators.set('require-commonjs-typescript', (url, source, isMain) => {
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index a1473fdac8a..0a87d997856 100644
+index a1473fdac8aba3be541df3b6688a05c0dfbe403f..0a87d997856ea227f8f21393909ffc4634043f24 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
 @@ -1609,6 +1609,8 @@ function fileURLToPath(path, options = kEmptyObject) {

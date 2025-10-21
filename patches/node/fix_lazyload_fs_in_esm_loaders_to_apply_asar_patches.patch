@@ -6,7 +6,7 @@ Subject: fix: lazyload fs in esm loaders to apply asar patches
 Changes { foo } from fs to just "fs.foo" so that our patching of fs is applied to esm loaders
 
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index e8a2326e158..0b6b2c8f3ce 100644
+index e8a2326e158550786620439fa4039c2b449624cc..0b6b2c8f3ce6befd4b77289f2f4540bd5401642a 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
 @@ -9,7 +9,8 @@ const {
@@ -29,7 +29,7 @@ index e8a2326e158..0b6b2c8f3ce 100644
      const result = dataURLProcessor(url);
      if (result === 'failure') {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 5f03cf14e94..72cc9444ca9 100644
+index 5f03cf14e948d449d303b22ab6710b5508fb83b2..72cc9444ca93ef7a1526e23314693aeaf5f173b0 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -25,7 +25,7 @@ const {
@@ -51,7 +51,7 @@ index 5f03cf14e94..72cc9444ca9 100644
      });
      const { search, hash } = resolved;
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index e50e91a7710..8ccdc0ba6ff 100644
+index e50e91a7710fa396691aa0f28ef4849bd76017dc..8ccdc0ba6ffd8f51c7c17eec44fc36e2e4356fa6 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -24,7 +24,7 @@ const {
