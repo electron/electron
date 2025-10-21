@@ -26,18 +26,10 @@ index d10f861c96931d06fb50dcdb66f2e79b0dee55a7..4fad275c865398834805a1c39813aa44
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 12b0d804c6f1d4998b85160b0aac8eb7a3b5576b..768208f2802d743f757b38a16294993c2158b6bf 100644
+index 12b0d804c6f1d4998b85160b0aac8eb7a3b5576b..55c85e804b5e9755892e8eb02386b441f74c0606 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -377,6 +377,7 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(
-   data_ = nullptr;
-   size_ = 0;
-   return ptr;
-+#endif  // defined(V8_ENABLE_SANDBOX)
- }
- 
- Local<ArrayBuffer> ByteSource::ToArrayBuffer(Environment* env) {
-@@ -661,6 +662,16 @@ namespace {
+@@ -661,6 +661,16 @@ namespace {
  // in which case this has the same semantics as
  // using OPENSSL_malloc. However, if the secure heap is
  // initialized, SecureBuffer will automatically use it.
@@ -54,7 +46,7 @@ index 12b0d804c6f1d4998b85160b0aac8eb7a3b5576b..768208f2802d743f757b38a16294993c
  void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    Environment* env = Environment::GetCurrent(args);
  #ifdef V8_ENABLE_SANDBOX
-@@ -703,6 +714,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -703,6 +713,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
  #endif  // V8_ENABLE_SANDBOX
  }
