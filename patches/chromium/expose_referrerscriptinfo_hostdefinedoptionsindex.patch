@@ -12,7 +12,7 @@ which enables us to support dynamic imports in non-context-isolated
 preload scripts.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/referrer_script_info.cc b/third_party/blink/renderer/bindings/core/v8/referrer_script_info.cc
-index 1b797783987255622735047bd78ca0e8bb635d5e..b209c736bb80c186ed51999af1dac0a1d50fc232 100644
+index 7eed34ecff15925f178d1123466456f326f92e44..d75803b5ee84fadb744e300baacd0abf9d9a591b 100644
 --- a/third_party/blink/renderer/bindings/core/v8/referrer_script_info.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/referrer_script_info.cc
 @@ -12,15 +12,6 @@ namespace blink {
