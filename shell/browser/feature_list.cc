@@ -10,7 +10,6 @@
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/metrics/field_trial.h"
-#include "components/spellcheck/common/spellcheck_features.h"
 #include "content/common/features.h"
 #include "content/public/common/content_features.h"
 #include "electron/buildflags/buildflags.h"
@@ -64,10 +63,6 @@ void InitializeFeatureList() {
       std::string(",") + network::features::kLocalNetworkAccessChecks.name;
 
 #if BUILDFLAG(IS_WIN)
-  disable_features +=
-      // Delayed spellcheck initialization is causing the
-      // 'custom dictionary word list API' spec to crash.
-      std::string(",") + spellcheck::kWinDelaySpellcheckServiceInit.name;
   // Refs https://issues.chromium.org/issues/401996981
   // TODO(deepak1556): Remove this once test added in
   // https://github.com/electron/electron/pull/12904
