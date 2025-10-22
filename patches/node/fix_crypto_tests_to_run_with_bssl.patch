@@ -11,7 +11,7 @@ before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
 diff --git a/test/parallel/test-crypto-async-sign-verify.js b/test/parallel/test-crypto-async-sign-verify.js
-index d385926e9943052bbe1793d4b1e39846e1a69562..2eeffbf17d443db2e17b3bbc46d2f487de3e6e73 100644
+index d385926e9943052bbe1793d4b1e39846e1a69562..dbf7b04afa77f132aaa466c9ee02c5ffad0296bc 100644
 --- a/test/parallel/test-crypto-async-sign-verify.js
 +++ b/test/parallel/test-crypto-async-sign-verify.js
 @@ -89,6 +89,7 @@ test('rsa_public.pem', 'rsa_private.pem', 'sha256', false,
@@ -30,10 +30,12 @@ index d385926e9943052bbe1793d4b1e39846e1a69562..2eeffbf17d443db2e17b3bbc46d2f487
  
  // Test Parallel Execution w/ KeyObject is threadsafe in openssl3
  {
-@@ -151,6 +153,9 @@ MCowBQYDK2VuAyEA6pwGRbadNQAI/tYN8+/p/0/hbsdHfOEGr1ADiLVk/Gc=
+@@ -150,7 +152,10 @@ MCowBQYDK2VuAyEA6pwGRbadNQAI/tYN8+/p/0/hbsdHfOEGr1ADiLVk/Gc=
+   const data = crypto.randomBytes(32);
    const signature = crypto.randomBytes(16);
  
-   const expected = hasOpenSSL3 ? /operation not supported for this keytype/ : /no default digest/;
+-  const expected = hasOpenSSL3 ? /operation not supported for this keytype/ : /no default digest/;
++  let expected = hasOpenSSL3 ? /operation not supported for this keytype/ : /no default digest/;
 +  if (hasOpenSSL3 || process.features.openssl_is_boringssl) {
 +    expected = /operation[\s_]not[\s_]supported[\s_]for[\s_]this[\s_]keytype/i;
 +  }
