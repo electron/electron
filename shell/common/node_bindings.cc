@@ -658,6 +658,9 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
   // already been called.
   node::per_process::cli_options->disable_wasm_trap_handler = true;
 
+  // Disable experimental source phase imports or the process will hard crash.
+  node::per_process::cli_options->disable_js_source_phase_imports = true;
+
   uint64_t process_flags =
       node::ProcessInitializationFlags::kNoInitializeCppgc |
       node::ProcessInitializationFlags::kNoInitializeV8 |

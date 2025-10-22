@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 22 Oct 2025 11:03:57 +0200
+Subject: feat: allow disabling js source phase imports
+
+Refs:
+- https://chromium-review.googlesource.com/c/v8/v8/+/7003082
+- https://chromium-review.googlesource.com/c/chromium/src/+/6336964
+- https://github.com/nodejs/node/pull/56919
+
+We need to disable source phase imports in renderer and worker processes - Chromium
+disables them in content/renderer/render_process_impl.cc via and the process will
+hard crash otherwise.
+
+This should be upstreamed to Node.js if possible.
+
+diff --git a/src/node.cc b/src/node.cc
+index 5713d49d859e1161e1d6703c0b6f3d717a5a9a34..5f149ea56575ce0c35f5d095633d50be320bd3bd 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -780,7 +780,9 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
+     env_opts->abort_on_uncaught_exception = true;
+   }
+ 
+-  v8_args.emplace_back("--js-source-phase-imports");
++  if (!per_process::cli_options->disable_js_source_phase_imports) {
++    v8_args.emplace_back("--js-source-phase-imports");
++  }
+ 
+ #ifdef __POSIX__
+   // Block SIGPROF signals when sleeping in epoll_wait/kevent/etc.  Avoids the
+diff --git a/src/node_options.cc b/src/node_options.cc
+index 9317191d22f51fd75157e849eb67678d1ee6a2a1..1be113e1d936a12a936b64b2dfda6fb9731cd8a4 100644
+--- a/src/node_options.cc
++++ b/src/node_options.cc
+@@ -1400,6 +1400,10 @@ PerProcessOptionsParser::PerProcessOptionsParser(
+       "performance.",
+       &PerProcessOptions::disable_wasm_trap_handler,
+       kAllowedInEnvvar);
++  AddOption("--disable_js_source_phase_imports",
++            "Disable JavaScript source phase imports.",
++            &PerProcessOptions::disable_js_source_phase_imports,
++            kAllowedInEnvvar);
+ }
+ 
+ inline std::string RemoveBrackets(const std::string& host) {
+diff --git a/src/node_options.h b/src/node_options.h
+index 941ae4f15c42fb8016d03c786973fd4709ac1a0d..f4e0d574123b76c2e93235b9e6a2e18f3ae201e9 100644
+--- a/src/node_options.h
++++ b/src/node_options.h
+@@ -365,6 +365,7 @@ class PerProcessOptions : public Options {
+ #endif
+ 
+   bool disable_wasm_trap_handler = false;
++  bool disable_js_source_phase_imports = false;
+ 
+   // Per-process because reports can be triggered outside a known V8 context.
+   bool report_on_fatalerror = false;
