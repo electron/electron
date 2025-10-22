@@ -3,23 +3,25 @@ From: Charles Kerr <charles@charleskerr.com>
 Date: Tue, 21 Oct 2025 18:44:52 -0500
 Subject: fix: check for file existence before setting mtime
 
-Ensure the file exists before setting its mtime.
+Check for broken links by confirming the file exists before setting its utime.
 
-This condition is probably Electron-specific, so upstreaming this patch
-might not make sense.
+This patch should be upstreamed & removed.
 
 diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
-index bcf4c9b192234aa1d470662e4036ac7a23ce2262..db26161dfc27e173313bfe007586654381fabedd 100755
+index bcf4c9b192234aa1d470662e4036ac7a23ce2262..e70297f5b561c5f2049a42947d7d81b7193e7cca 100755
 --- a/tools/clang/scripts/update.py
 +++ b/tools/clang/scripts/update.py
-@@ -201,6 +201,10 @@ def DownloadAndUnpack(url, output_dir, path_prefixes=None, is_known_zip=False):
+@@ -201,10 +201,9 @@ def DownloadAndUnpack(url, output_dir, path_prefixes=None, is_known_zip=False):
        # The nicest way to do this would be by passing a filter to extractall,
        # but that functionality is not available in macOS system Python (3.9.6).
        for m in members:
-+        # Due to how Electron does source caching,
-+        # these files don't always exist
-+        if not os.path.exists(os.path.join(output_dir, m.name)):
-+          continue
-         # Confusingly, this checks if you're allowed to _not_ follow symlinks.
-         if os.utime in os.supports_follow_symlinks:
-           os.utime(os.path.join(output_dir, m.name), follow_symlinks=False)
+-        # Confusingly, this checks if you're allowed to _not_ follow symlinks.
+-        if os.utime in os.supports_follow_symlinks:
+-          os.utime(os.path.join(output_dir, m.name), follow_symlinks=False)
+-        else:
++        # check for broken links before setting the file's utime
++        member_path = os.path.join(output_dir, m.name)
++        if os.path.exists(member_path)
+           os.utime(os.path.join(output_dir, m.name))
+ 
+ 
