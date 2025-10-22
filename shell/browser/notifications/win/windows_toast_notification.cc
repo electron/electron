@@ -302,6 +302,7 @@ std::u16string WindowsToastNotification::GetToastXml(
   // Optional icon as app logo override (small icon).
   if (!icon_path.empty()) {
     xml_writer.StartElement(kImage);
+    xml_writer.AddAttribute(kID, "1");
     xml_writer.AddAttribute(kPlacement, kAppLogoOverride);
     xml_writer.AddAttribute(kHintCrop, kHintCropNone);
     xml_writer.AddAttribute(kSrc, base::WideToUTF8(icon_path));
