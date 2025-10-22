@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/supports_user_data.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "ipc/platform_file_for_transit.h"
 #include "third_party/blink/public/web/web_local_frame.h"
@@ -16,7 +17,8 @@ namespace electron {
 class RendererClientBase;
 
 // Helper class to forward the messages to the client.
-class ElectronRenderFrameObserver : private content::RenderFrameObserver {
+class ElectronRenderFrameObserver : public base::SupportsUserData::Data,
+                                    private content::RenderFrameObserver {
  public:
   ElectronRenderFrameObserver(content::RenderFrame* frame,
                               RendererClientBase* renderer_client);
@@ -34,7 +36,7 @@ class ElectronRenderFrameObserver : private content::RenderFrameObserver {
   void WillReleaseScriptContext(v8::Isolate* const isolate,
                                 v8::Local<v8::Context> context,
                                 int world_id) override;
-  void OnDestruct() override;
+  void OnDestruct() override {}
   void DidMeaningfulLayout(blink::WebMeaningfulLayout layout_type) override;
 
   [[nodiscard]] bool ShouldNotifyClient(int world_id) const;

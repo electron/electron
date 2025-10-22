@@ -31,6 +31,9 @@ namespace electron {
 
 namespace {
 
+const char kElectronRenderFrameObserverKey[] =
+    "kElectronRenderFrameObserverKey";
+
 // Data which only lives on the service worker's thread
 constinit thread_local ServiceWorkerData* service_worker_data = nullptr;
 
@@ -91,7 +94,10 @@ void ElectronSandboxedRendererClient::InitializeBindings(
 
 void ElectronSandboxedRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
-  new ElectronRenderFrameObserver(render_frame, this);
+  render_frame->SetUserData(
+      kElectronRenderFrameObserverKey,
+      std::make_unique<ElectronRenderFrameObserver>(render_frame, this));
+
   RendererClientBase::RenderFrameCreated(render_frame);
 }
 

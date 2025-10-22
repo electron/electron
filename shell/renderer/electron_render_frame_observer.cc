@@ -154,10 +154,6 @@ void ElectronRenderFrameObserver::WillReleaseScriptContext(
     renderer_client_->WillReleaseScriptContext(isolate, context, render_frame_);
 }
 
-void ElectronRenderFrameObserver::OnDestruct() {
-  delete this;
-}
-
 void ElectronRenderFrameObserver::DidMeaningfulLayout(
     blink::WebMeaningfulLayout layout_type) {
   if (layout_type == blink::WebMeaningfulLayout::kVisuallyNonEmpty) {
