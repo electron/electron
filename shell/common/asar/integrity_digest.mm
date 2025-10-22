@@ -8,6 +8,7 @@
 
 #include <array>
 #include <cstdint>
+#include <span>
 
 #include "base/strings/sys_string_conversions.h"
 #include "crypto/hash.h"
@@ -32,10 +33,8 @@ struct IntegrityDictionaryDigestSlot {
 constexpr IntegrityDictionaryDigestSlot MakeDigestSlot(
     const char (&sentinel)[33]) {
   IntegrityDictionaryDigestSlot slot{};
-  static_assert(sizeof(sentinel) == sizeof(slot.sentinel) + 1,
-                "sentinel must be exactly 32 characters (null-terminated)");
-  for (size_t i = 0; i < sizeof(slot.sentinel); ++i)
-    slot.sentinel[i] = static_cast<uint8_t>(sentinel[i]);
+  std::span<uint8_t, 32> slot_sentinel_span(slot.sentinel);
+  std::copy_n(sentinel, slot_sentinel_span.size(), slot_sentinel_span.begin());
   slot.used = false;  // to be set at package-time
   slot.version = 0;   // to be set at package-time
   return slot;
