@@ -51,8 +51,11 @@ bool IsIntegrityDictionaryValid(NSDictionary* integrity) {
   if (kIntegrityDictionaryDigest.version != 1)
     return false;  // Unknown version, fail closed
   crypto::hash::Hasher integrity_hasher(kIntegrityDictionaryHashKind);
-  for (NSString* relative_path_key in
-       [[integrity allKeys] sortedArrayUsingSelector:@selector(compare:)]) {
+  for (NSString *relative_path_key in
+       [[integrity allKeys] sortedArrayUsingComparator:^NSComparisonResult(
+                                NSString* s1, NSString* s2) {
+         return [s1 compare:s2 options:NSLiteralSearch];
+       }]) {
     NSDictionary* file_integrity = [integrity objectForKey:relative_path_key];
     NSString* algorithm = [file_integrity objectForKey:@"algorithm"];
     NSString* hash = [file_integrity objectForKey:@"hash"];
