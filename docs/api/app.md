@@ -421,6 +421,7 @@ Returns:
     * `oom` - Process ran out of memory
     * `launch-failed` - Process never successfully launched
     * `integrity-failure` - Windows code integrity checks failed
+    * `memory-eviction` - Process proactively terminated to prevent a future out-of-memory (OOM) situation
   * `exitCode` number - The exit code for the process
       (e.g. status from waitpid if on POSIX, from GetExitCodeProcess on Windows).
   * `serviceName` string (optional) - The non-localized name of the process.
@@ -1397,7 +1398,75 @@ details. Disabled by default.
 This API must be called after the `ready` event is emitted.
 
 > [!NOTE]
-> Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default.
+> Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default. Calling this method will enable the following accessibility support features: `nativeAPIs`, `webContents`, `inlineTextBoxes`, and `extendedProperties`.
+
+### `app.getAccessibilitySupportFeatures()` _macOS_ _Windows_
+
+Returns `string[]` - Array of strings naming currently enabled accessibility support components. Possible values:
+
+* `nativeAPIs` - Native OS accessibility APIs integration enabled.
+* `webContents` - Web contents accessibility tree exposure enabled.
+* `inlineTextBoxes` - Inline text boxes (character bounding boxes) enabled.
+* `extendedProperties` - Extended accessibility properties enabled.
+* `screenReader` - Screen reader specific mode enabled.
+* `html` - HTML accessibility tree construction enabled.
+* `labelImages` - Accessibility support for automatic image annotations.
+* `pdfPrinting` - Accessibility support for PDF printing enabled.
+
+Notes:
+
+* The array may be empty if no accessibility modes are active.
+* Use `app.isAccessibilitySupportEnabled()` for the legacy boolean check;
+  prefer this method for granular diagnostics or telemetry.
+
+Example:
+
+```js
+const { app } = require('electron')
+
+app.whenReady().then(() => {
+  if (app.getAccessibilitySupportFeatures().includes('screenReader')) {
+    // Change some app UI to better work with Screen Readers.
+  }
+})
+```
+
+### `app.setAccessibilitySupportFeatures(features)` _macOS_ _Windows_
+
+* `features` string[] - An array of the accessibility features to enable.
+
+Possible values are:
+
+* `nativeAPIs` - Native OS accessibility APIs integration enabled.
+* `webContents` - Web contents accessibility tree exposure enabled.
+* `inlineTextBoxes` - Inline text boxes (character bounding boxes) enabled.
+* `extendedProperties` - Extended accessibility properties enabled.
+* `screenReader` - Screen reader specific mode enabled.
+* `html` - HTML accessibility tree construction enabled.
+* `labelImages` - Accessibility support for automatic image annotations.
+* `pdfPrinting` - Accessibility support for PDF printing enabled.
+
+To disable all supported features, pass an empty array `[]`.
+
+Example:
+
+```js
+const { app } = require('electron')
+
+app.whenReady().then(() => {
+  // Enable a subset of features:
+  app.setAccessibilitySupportFeatures([
+    'screenReader',
+    'pdfPrinting',
+    'webContents'
+  ])
+
+  // Other logic
+
+  // Some time later, disable all features:
+  app.setAccessibilitySupportFeatures([])
+})
+```
 
 ### `app.showAboutPanel()`
 

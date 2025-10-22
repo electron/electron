@@ -55,20 +55,44 @@ There are a few rules to follow for the purposes of this tutorial:
 - _author_, _license_, and _description_ can be any value, but will be necessary for
   [packaging][packaging] later on.
 
+:::caution Install dependencies with a regular `node_modules` folder
+
+Electron's packaging toolchain requires the `node_modules` folder to be physically on disk in the
+way that npm installs Node dependencies. By default, [Yarn Berry](https://yarnpkg.com/) and
+[pnpm](http://pnpm.io/) both use alternative installation strategies.
+
+Therefore, you must set [`nodeLinker: node-modules`](https://yarnpkg.com/configuration/yarnrc#nodeLinker)
+in Yarn or [`nodeLinker: hoisted`](https://pnpm.io/settings#nodelinker) in pnpm if you are using
+those package managers.
+
+:::
+
 Then, install Electron into your app's **devDependencies**, which is the list of external
 development-only package dependencies not required in production.
 
-:::info Why is Electron a devDependency?
+:::info Why is Electron a dev dependency?
 
-This may seem counter-intuitive since your production code is running Electron APIs.
-However, packaged apps will come bundled with the Electron binary, eliminating the need to specify
-it as a production dependency.
+This may seem counter-intuitive since your production code is running Electron APIs. Under the hood,
+Electron's JavaScript API binds to a binary that contains its implementations. The packaging step for
+Electron handles the bundling of this binary, eliminating the need to specify it as a production
+dependency.
 
 :::
 
 ```sh npm2yarn
 npm install electron --save-dev
 ```
+
+:::warning
+
+In order to correctly install Electron, you need to ensure that its `postinstall` lifecycle
+script is able to run. This means avoiding the `--ignore-scripts` flag on npm and allowlisting
+`electron` to run build scripts on other package managers.
+
+This is likely to change in a future version of Electron. See
+[electron/rfcs#22](https://github.com/electron/rfcs/pull/22) for more details.
+
+:::
 
 Your package.json file should look something like this after initializing your package
 and installing Electron. You should also now have a `node_modules` folder containing

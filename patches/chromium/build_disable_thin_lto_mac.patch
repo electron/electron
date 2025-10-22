@@ -11,7 +11,7 @@ This patch can (and should) be removed when we can prevent those symbols
 from being stripped in the release build.
 
 diff --git a/build/config/compiler/compiler.gni b/build/config/compiler/compiler.gni
-index 21bd22896d7bca4d4a133677286f7f8ad1b224f2..53654e4467fa4ae57ce42bd971b1be3a11654aaf 100644
+index 2cf6def300d9d92d476ca4ca792347a49bafc26a..8e54f1d3e50a2c56b0cf35a8e56f97f6622401d5 100644
 --- a/build/config/compiler/compiler.gni
 +++ b/build/config/compiler/compiler.gni
 @@ -85,7 +85,7 @@ declare_args() {

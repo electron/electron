@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index 6f35d5ab358627ff8b1cbf09f5643f0f484e027a..5e736b846880a7d4a1e1611a0f70feca102bfbbc 100644
+index f91857eb0b6ad385721b8224100de26dfdd7dd8d..45e8766fcb8d46d8edc3bf8d21d3f826a8ae24be 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
 @@ -97,6 +97,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
@@ -30,7 +30,7 @@ index 6f35d5ab358627ff8b1cbf09f5643f0f484e027a..5e736b846880a7d4a1e1611a0f70feca
  
  #endif  // BUILDFLAG(IS_WIN)
  
-@@ -151,10 +153,8 @@ void PrintJob::Initialize(std::unique_ptr<PrinterQuery> query,
+@@ -204,10 +206,8 @@ void PrintJob::Initialize(std::unique_ptr<PrinterQuery> query,
  
  #if BUILDFLAG(IS_WIN)
    pdf_page_mapping_ = PageNumber::GetPages(settings->ranges(), page_count);
@@ -43,7 +43,7 @@ index 6f35d5ab358627ff8b1cbf09f5643f0f484e027a..5e736b846880a7d4a1e1611a0f70feca
  #endif
  
    auto new_doc = base::MakeRefCounted<PrintedDocument>(std::move(settings),
-@@ -404,8 +404,10 @@ void PrintJob::StartPdfToEmfConversion(
+@@ -407,8 +407,10 @@ void PrintJob::StartPdfToEmfConversion(
  
    const PrintSettings& settings = document()->settings();
  
@@ -55,7 +55,7 @@ index 6f35d5ab358627ff8b1cbf09f5643f0f484e027a..5e736b846880a7d4a1e1611a0f70feca
  
    using RenderMode = PdfRenderSettings::Mode;
    RenderMode mode = print_with_reduced_rasterization
-@@ -497,8 +499,10 @@ void PrintJob::StartPdfToPostScriptConversion(
+@@ -500,8 +502,10 @@ void PrintJob::StartPdfToPostScriptConversion(
    if (ps_level2) {
      mode = PdfRenderSettings::Mode::POSTSCRIPT_LEVEL2;
    } else {
@@ -577,7 +577,7 @@ index 824d6d8a9242302c2ab0c0c517d0cc329e607100..d3b25c90c90fe860990789aa96c872b4
    // Indication that the job is getting canceled.
    bool canceling_job_ = false;
 diff --git a/chrome/browser/printing/printer_query.cc b/chrome/browser/printing/printer_query.cc
-index 4b1775f4a882fbabfe65df7784baebe6d8bee788..5a3e71dc3894fa96ac7a6b93b3552a90f36fe7a2 100644
+index 20bbbeddd18ef26b68defcdbd4a7c62706c43d0b..7b0071c169556a080ecbf5e8a6a3b878675f6bf7 100644
 --- a/chrome/browser/printing/printer_query.cc
 +++ b/chrome/browser/printing/printer_query.cc
 @@ -356,17 +356,19 @@ void PrinterQuery::UpdatePrintSettings(base::Value::Dict new_settings,
@@ -899,7 +899,7 @@ index 746a056e1c7980803323739c51cedb930c62de25..34a9e45a3407612d6960a7cad798cf30
      std::unique_ptr<PrintSettings> settings =
          PrintSettingsFromJobSettings(job_settings);
 diff --git a/printing/printing_context.h b/printing/printing_context.h
-index 3a98838e27621e34ab050a0f5dce7110f0d88641..3cce0abe2a2893f1ad5ee747008b66c74e2c2434 100644
+index 2f34f45aaf89e6f4600be1d2b8444c636b0cc83f..5bfd45c5efbf300a36e016af80e18fb9ad376d41 100644
 --- a/printing/printing_context.h
 +++ b/printing/printing_context.h
 @@ -208,6 +208,9 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {

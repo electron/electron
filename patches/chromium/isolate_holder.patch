@@ -15,7 +15,7 @@ for us to register the isolate in between Isolate::Allocate and
 Isolate::Initialize.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index ab574fd81bc08e109123f07f095d26e19504baa0..656267caef2d515f8c3f77535b308108a0b30be1 100644
+index 87187d05175a9da4fd7af03ba8a139a2d9554551..05c899258143a958471f361b87324f7500d594c9 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
 @@ -81,7 +81,8 @@ IsolateHolder::IsolateHolder(
@@ -58,10 +58,10 @@ index ab574fd81bc08e109123f07f095d26e19504baa0..656267caef2d515f8c3f77535b308108
        isolate_, allocator, access_mode_, task_runner,
        std::move(user_visible_task_runner), std::move(best_effort_task_runner));
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index e27f177ce27e177abf6cee84cd466e7a8a829ee7..dc3a5b0678b9c686e241b492e2c3b5ac833611a3 100644
+index 45edc6c8930aede7a89cb1a3afbb9406f3c9158e..a4c766565bfcc47d1ef66570afa166b9c0c16312 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -88,7 +88,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -89,7 +89,8 @@ class GIN_EXPORT IsolateHolder {
            nullptr,
        scoped_refptr<base::SingleThreadTaskRunner> best_effort_task_runner =
            nullptr,
@@ -71,7 +71,7 @@ index e27f177ce27e177abf6cee84cd466e7a8a829ee7..dc3a5b0678b9c686e241b492e2c3b5ac
    IsolateHolder(
        scoped_refptr<base::SingleThreadTaskRunner> task_runner,
        AccessMode access_mode,
-@@ -98,7 +99,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -99,7 +100,8 @@ class GIN_EXPORT IsolateHolder {
        scoped_refptr<base::SingleThreadTaskRunner> user_visible_task_runner =
            nullptr,
        scoped_refptr<base::SingleThreadTaskRunner> best_effort_task_runner =

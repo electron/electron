@@ -16,7 +16,7 @@ remove this patch once gin::Wrappable can be managed by V8 Oilpan
 via https://github.com/electron/electron/issues/47922
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 656267caef2d515f8c3f77535b308108a0b30be1..083d59f78c542f4900e1b210a0935276516b894b 100644
+index 05c899258143a958471f361b87324f7500d594c9..1943413560f23c212d98fa1b368204c6e062bab2 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
 @@ -35,6 +35,8 @@ v8::ArrayBuffer::Allocator* g_array_buffer_allocator = nullptr;
@@ -56,10 +56,10 @@ index 656267caef2d515f8c3f77535b308108a0b30be1..083d59f78c542f4900e1b210a0935276
 +
  }  // namespace gin
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index dc3a5b0678b9c686e241b492e2c3b5ac833611a3..32a7ba4f557e65d9525d2ca07e8597e7bd070b12 100644
+index a4c766565bfcc47d1ef66570afa166b9c0c16312..02275338c070d4f48ac10d51e3a6d42368f52c9e 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -132,6 +132,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -133,6 +133,8 @@ class GIN_EXPORT IsolateHolder {
    // Should only be called after v8::IsolateHolder::Initialize() is invoked.
    static std::unique_ptr<v8::Isolate::CreateParams> getDefaultIsolateParams();
  
@@ -68,7 +68,7 @@ index dc3a5b0678b9c686e241b492e2c3b5ac833611a3..32a7ba4f557e65d9525d2ca07e8597e7
    v8::Isolate* isolate() { return isolate_; }
  
    // This method returns if v8::Locker is needed to access isolate.
-@@ -145,6 +147,9 @@ class GIN_EXPORT IsolateHolder {
+@@ -146,6 +148,9 @@ class GIN_EXPORT IsolateHolder {
  
    void EnableIdleTasks(std::unique_ptr<V8IdleTaskRunner> idle_task_runner);
  

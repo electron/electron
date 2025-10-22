@@ -8,10 +8,10 @@ naturally upstream, and we will be able to remove this patch in a future
 Node.js upgrade.
 
 diff --git a/src/node_platform.cc b/src/node_platform.cc
-index b438b3774d0aa7680fdbc6c6bf39a87893d221b2..ec355061825fb861c17fa2e6cc967b4c7b8d4586 100644
+index b24e170cb247261d4a16d77ad40df4dfd33709d9..5e31f984b5655ae2d1d7559b1bd550ba6dc90fb4 100644
 --- a/src/node_platform.cc
 +++ b/src/node_platform.cc
-@@ -687,8 +687,8 @@ bool NodePlatform::IdleTasksEnabled(Isolate* isolate) {
+@@ -688,8 +688,8 @@ bool NodePlatform::IdleTasksEnabled(Isolate* isolate) {
    return ForIsolate(isolate)->IdleTasksEnabled();
  }
  

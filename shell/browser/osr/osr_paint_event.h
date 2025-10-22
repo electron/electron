@@ -13,7 +13,7 @@
 #include "services/viz/privileged/mojom/compositing/frame_sink_video_capture.mojom.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "ui/gfx/canvas.h"
-#include "ui/gfx/native_widget_types.h"
+#include "ui/gfx/native_ui_types.h"
 
 #include <cstdint>
 
