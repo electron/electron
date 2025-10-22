@@ -14,7 +14,7 @@
     "@octokit/rest": "^20.1.2",
     "@primer/octicons": "^10.0.0",
     "@types/minimist": "^1.2.5",
-    "@types/node": "^22.7.7",
+    "@types/node": "^24.9.0",
     "@types/semver": "^7.5.8",
     "@types/stream-json": "^1.7.8",
     "@types/temp": "^0.9.4",
