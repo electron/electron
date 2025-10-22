@@ -25,35 +25,175 @@ index d10f861c96931d06fb50dcdb66f2e79b0dee55a7..4fad275c865398834805a1c39813aa44
  void* NodeArrayBufferAllocator::Allocate(size_t size) {
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
+diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
+index 46a7d1396dc1a175ae99f4e403721f1730fdd320..f229c2156539fce07f81706099cb80c7709994de 100644
+--- a/src/crypto/crypto_dh.cc
++++ b/src/crypto/crypto_dh.cc
+@@ -60,18 +60,23 @@ MaybeLocal<Value> DataPointerToBuffer(Environment* env, DataPointer&& data) {
+   struct Flag {
+     bool secure;
+   };
+-#ifdef V8_ENABLE_SANDBOX
+-  auto backing = ArrayBuffer::NewBackingStore(
+-      env->isolate(),
+-      data.size(),
+-      BackingStoreInitializationMode::kUninitialized,
+-      BackingStoreOnFailureMode::kReturnNull);
+-  if (!backing) {
+-    THROW_ERR_MEMORY_ALLOCATION_FAILED(env);
+-    return MaybeLocal<Value>();
+-  }
++#if defined(V8_ENABLE_SANDBOX)
++  std::unique_ptr<v8::BackingStore> backing;
+   if (data.size() > 0) {
+-    memcpy(backing->Data(), data.get(), data.size());
++    std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++    void* v8_data = allocator->Allocate(data.size());
++    CHECK(v8_data);
++    memcpy(v8_data, data.get(), data.size());
++    backing = ArrayBuffer::NewBackingStore(
++        v8_data,
++        data.size(),
++        [](void* data, size_t length, void*) {
++          std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++          allocator->Free(data, length);
++        }, nullptr);
++  } else {
++    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
++    backing = v8::ArrayBuffer::NewBackingStore(env->isolate(), data.size());
+   }
+ #else
+   auto backing = ArrayBuffer::NewBackingStore(
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 12b0d804c6f1d4998b85160b0aac8eb7a3b5576b..55c85e804b5e9755892e8eb02386b441f74c0606 100644
+index 12b0d804c6f1d4998b85160b0aac8eb7a3b5576b..21302eb22a43520ede395a7eb03e7c96210b65c7 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -661,6 +661,16 @@ namespace {
- // in which case this has the same semantics as
- // using OPENSSL_malloc. However, if the secure heap is
- // initialized, SecureBuffer will automatically use it.
+@@ -346,24 +346,30 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(
+   // It's ok for allocated_data_ to be nullptr but
+   // only if size_ is zero.
+   CHECK_IMPLIES(size_ > 0, allocated_data_ != nullptr);
+-#ifdef V8_ENABLE_SANDBOX
+-  // If the v8 sandbox is enabled, then all array buffers must be allocated
+-  // via the isolate. External buffers are not allowed. So, instead of wrapping
+-  // the allocated data we'll copy it instead.
+-
+-  // TODO(@jasnell): It would be nice to use an abstracted utility to do this
+-  // branch instead of duplicating the V8_ENABLE_SANDBOX check each time.
 +#if defined(V8_ENABLE_SANDBOX)
-+// When V8 sandboxed pointers are enabled, the secure heap cannot be used as
-+// all ArrayBuffers must be allocated inside the V8 memory cage.
-+void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
-+  CHECK(args[0]->IsUint32());
-+  uint32_t len = args[0].As<Uint32>()->Value();
-+  Local<ArrayBuffer> buffer = ArrayBuffer::New(args.GetIsolate(), len);
-+  args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
-+}
-+#else
- void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
-   Environment* env = Environment::GetCurrent(args);
++  // When V8 sandboxed pointers are enabled, we have to copy into the memory
++  // cage. We still want to ensure we erase the data on free though, so
++  // provide a custom deleter that calls OPENSSL_cleanse.
++  if (!size())
++    return ArrayBuffer::NewBackingStore(env->isolate(), 0);
++  std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++  void* v8_data = allocator->Allocate(size());
++  CHECK(v8_data);
++  memcpy(v8_data, allocated_data_, size());
++  OPENSSL_clear_free(allocated_data_, size());
+   std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
+-      env->isolate(),
++      v8_data,
+       size(),
+-      BackingStoreInitializationMode::kUninitialized,
+-      BackingStoreOnFailureMode::kReturnNull);
+-  if (!ptr) {
+-    THROW_ERR_MEMORY_ALLOCATION_FAILED(env);
+-    return nullptr;
+-  }
+-  memcpy(ptr->Data(), allocated_data_, size());
+-  OPENSSL_clear_free(allocated_data_, size_);
++      [](void* data, size_t length, void*) {
++        OPENSSL_cleanse(data, length);
++        std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++        allocator->Free(data, length);
++      }, nullptr);
++  CHECK(ptr);
++  allocated_data_ = nullptr;
++  data_ = nullptr;
++  size_ = 0;
++  return ptr;
+ #else
+   std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
+       allocated_data_,
+diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
+index b30297eac08ad9587642b723f91d7e3b954294d4..4c5427596d1c90d3a413cdd9ff4f1151e657073d 100644
+--- a/src/crypto/crypto_x509.cc
++++ b/src/crypto/crypto_x509.cc
+@@ -135,19 +135,17 @@ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
+     return {};
+   BUF_MEM* mem = *bio;
  #ifdef V8_ENABLE_SANDBOX
-@@ -703,6 +713,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
-   args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
- #endif  // V8_ENABLE_SANDBOX
- }
-+#endif  // defined(V8_ENABLE_SANDBOX)
+-  // If the v8 sandbox is enabled, then all array buffers must be allocated
+-  // via the isolate. External buffers are not allowed. So, instead of wrapping
+-  // the BIOPointer we'll copy it instead.
+-  auto backing = ArrayBuffer::NewBackingStore(
+-      env->isolate(),
++  std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++  void* v8_data = allocator->Allocate(mem->length);
++  CHECK(v8_data);
++  memcpy(v8_data, mem->data, mem->length);
++  std::unique_ptr<v8::BackingStore> backing = ArrayBuffer::NewBackingStore(
++      v8_data,
+       mem->length,
+-      BackingStoreInitializationMode::kUninitialized,
+-      BackingStoreOnFailureMode::kReturnNull);
+-  if (!backing) {
+-    THROW_ERR_MEMORY_ALLOCATION_FAILED(env);
+-    return MaybeLocal<Value>();
+-  }
+-  memcpy(backing->Data(), mem->data, mem->length);
++      [](void* data, size_t length, void*) {
++        std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
++        allocator->Free(data, length);
++      }, nullptr);
+ #else
+   auto backing = ArrayBuffer::NewBackingStore(
+       mem->data,
+diff --git a/src/env-inl.h b/src/env-inl.h
+index 97c43afb487b58c0c77bd59b4a6b6d7a13690053..5dfbd564d5bbd22ebf3b529a07b73e85cbe51986 100644
+--- a/src/env-inl.h
++++ b/src/env-inl.h
+@@ -44,6 +44,16 @@
  
- void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
-   args.GetReturnValue().Set(
+ namespace node {
+ 
++NoArrayBufferZeroFillScope::NoArrayBufferZeroFillScope(
++    IsolateData* isolate_data)
++    : node_allocator_(isolate_data->node_allocator()) {
++  if (node_allocator_ != nullptr) node_allocator_->zero_fill_field()[0] = 0;
++}
++
++NoArrayBufferZeroFillScope::~NoArrayBufferZeroFillScope() {
++  if (node_allocator_ != nullptr) node_allocator_->zero_fill_field()[0] = 1;
++}
++
+ inline v8::Isolate* IsolateData::isolate() const {
+   return isolate_;
+ }
+diff --git a/src/env.h b/src/env.h
+index d34aec43630b3cf53004d8180446d7136b59ceac..b30314d7773742e2332ff47f84bc326151563690 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -111,6 +111,19 @@ class ModuleWrap;
+ class Environment;
+ class Realm;
+ 
++// Disables zero-filling for ArrayBuffer allocations in this scope. This is
++// similar to how we implement Buffer.allocUnsafe() in JS land.
++class NoArrayBufferZeroFillScope {
++ public:
++  inline explicit NoArrayBufferZeroFillScope(IsolateData* isolate_data);
++  inline ~NoArrayBufferZeroFillScope();
++
++ private:
++  NodeArrayBufferAllocator* node_allocator_;
++
++  friend class Environment;
++};
++
+ struct IsolateDataSerializeInfo {
+   std::vector<SnapshotIndex> primitive_values;
+   std::vector<PropInfo> template_values;
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
 index 3c4f419aa29470b3280174b58680b9421b0340b5..584d0f6274387a09ba86550aa3a3b8130b1f4654 100644
 --- a/src/node_i18n.cc
