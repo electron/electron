@@ -96,10 +96,10 @@ index 2a3ab5e73cdb98bde9df1465d5fb5e40ad7799f7..9317191d22f51fd75157e849eb67678d
              "experimental WebSocket API",
              &EnvironmentOptions::experimental_websocket,
 diff --git a/test/parallel/test-process-env-allowed-flags-are-documented.js b/test/parallel/test-process-env-allowed-flags-are-documented.js
-index 07e38748b07ddd32a6e3caa3c34183387e1cae18..cca84690d14a9cd872a6fd1f847203b335ab3099 100644
+index f09bf0940dad2068f0aa5dce783dd422773d4bbb..ccf4ffcacf9bd9965978738656b8fe091fee4d6a 100644
 --- a/test/parallel/test-process-env-allowed-flags-are-documented.js
 +++ b/test/parallel/test-process-env-allowed-flags-are-documented.js
-@@ -117,7 +117,6 @@ const undocumented = difference(process.allowedNodeEnvironmentFlags,
+@@ -122,7 +122,6 @@ const undocumented = difference(process.allowedNodeEnvironmentFlags,
  assert(undocumented.delete('--debug-arraybuffer-allocations'));
  assert(undocumented.delete('--no-debug-arraybuffer-allocations'));
  assert(undocumented.delete('--es-module-specifier-resolution'));

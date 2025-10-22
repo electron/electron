@@ -7,7 +7,7 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index d10f861c96931d06fb50dcdb66f2e79b0dee55a7..4fad275c865398834805a1c39813aa44b698db39 100644
+index d10f861c96931d06fb50dcdb66f2e79b0dee55a7..a869bc0a145009b57db3f37208e405d9356cc20f 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -109,6 +109,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
@@ -25,15 +25,27 @@ index d10f861c96931d06fb50dcdb66f2e79b0dee55a7..4fad275c865398834805a1c39813aa44
  void* NodeArrayBufferAllocator::Allocate(size_t size) {
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
+@@ -324,6 +332,12 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
+     // but also otherwise just doesn't work, and the only real alternative
+     // is disabling shared-readonly-heap mode altogether.
+     static Isolate::CreateParams first_params = *params;
++    // Clear allocator pointers to prevent use-after-free during static
++    // destruction. The static first_params can outlive V8's internal
++    // allocator systems, causing crashes when its destructor tries to
++    // free resources after V8 has shut down.
++    first_params.array_buffer_allocator = nullptr;
++    first_params.array_buffer_allocator_shared.reset();
+     params->snapshot_blob = first_params.snapshot_blob;
+     params->external_references = first_params.external_references;
+   }
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index 46a7d1396dc1a175ae99f4e403721f1730fdd320..f229c2156539fce07f81706099cb80c7709994de 100644
+index 46a7d1396dc1a175ae99f4e403721f1730fdd320..bbb0abb3b9563074d350578e0f5a8fa211046b17 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
-@@ -60,18 +60,23 @@ MaybeLocal<Value> DataPointerToBuffer(Environment* env, DataPointer&& data) {
-   struct Flag {
+@@ -61,17 +61,22 @@ MaybeLocal<Value> DataPointerToBuffer(Environment* env, DataPointer&& data) {
      bool secure;
    };
--#ifdef V8_ENABLE_SANDBOX
+ #ifdef V8_ENABLE_SANDBOX
 -  auto backing = ArrayBuffer::NewBackingStore(
 -      env->isolate(),
 -      data.size(),
@@ -43,7 +55,6 @@ index 46a7d1396dc1a175ae99f4e403721f1730fdd320..f229c2156539fce07f81706099cb80c7
 -    THROW_ERR_MEMORY_ALLOCATION_FAILED(env);
 -    return MaybeLocal<Value>();
 -  }
-+#if defined(V8_ENABLE_SANDBOX)
 +  std::unique_ptr<v8::BackingStore> backing;
    if (data.size() > 0) {
 -    memcpy(backing->Data(), data.get(), data.size());
@@ -65,7 +76,7 @@ index 46a7d1396dc1a175ae99f4e403721f1730fdd320..f229c2156539fce07f81706099cb80c7
  #else
    auto backing = ArrayBuffer::NewBackingStore(
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 12b0d804c6f1d4998b85160b0aac8eb7a3b5576b..21302eb22a43520ede395a7eb03e7c96210b65c7 100644
+index 12b0d804c6f1d4998b85160b0aac8eb7a3b5576b..33782f783ea50a6036b4b4bb4b3325303b1e68c0 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -346,24 +346,30 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(
@@ -115,6 +126,26 @@ index 12b0d804c6f1d4998b85160b0aac8eb7a3b5576b..21302eb22a43520ede395a7eb03e7c96
  #else
    std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
        allocated_data_,
+@@ -664,15 +670,10 @@ namespace {
+ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+   Environment* env = Environment::GetCurrent(args);
+ #ifdef V8_ENABLE_SANDBOX
+-  // The v8 sandbox is enabled, so we cannot use the secure heap because
+-  // the sandbox requires that all array buffers be allocated via the isolate.
+-  // That is fundamentally incompatible with the secure heap which allocates
+-  // in openssl's secure heap area. Instead we'll just throw an error here.
+-  //
+-  // That said, we really shouldn't get here in the first place since the
+-  // option to enable the secure heap is only available when the sandbox
+-  // is disabled.
+-  UNREACHABLE();
++   CHECK(args[0]->IsUint32());
++   uint32_t len = args[0].As<Uint32>()->Value();
++   Local<ArrayBuffer> buffer = ArrayBuffer::New(args.GetIsolate(), len);
++   args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
+ #else
+   CHECK(args[0]->IsUint32());
+   uint32_t len = args[0].As<Uint32>()->Value();
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
 index b30297eac08ad9587642b723f91d7e3b954294d4..4c5427596d1c90d3a413cdd9ff4f1151e657073d 100644
 --- a/src/crypto/crypto_x509.cc
@@ -195,9 +226,18 @@ index d34aec43630b3cf53004d8180446d7136b59ceac..b30314d7773742e2332ff47f84bc3261
    std::vector<SnapshotIndex> primitive_values;
    std::vector<PropInfo> template_values;
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
-index 3c4f419aa29470b3280174b58680b9421b0340b5..584d0f6274387a09ba86550aa3a3b8130b1f4654 100644
+index 3c4f419aa29470b3280174b58680b9421b0340b5..3b24ad2a2316f89d98b067e2c13988f87a9a00d2 100644
 --- a/src/node_i18n.cc
 +++ b/src/node_i18n.cc
+@@ -105,7 +105,7 @@ namespace {
+ template <typename T>
+ MaybeLocal<Object> ToBufferEndian(Environment* env, MaybeStackBuffer<T>* buf) {
+   Local<Object> ret;
+-  if (!Buffer::New(env, buf).ToLocal(&ret)) {
++  if (!Buffer::Copy(env, reinterpret_cast<char*>(buf->out()), buf->length() * sizeof(T)).ToLocal(&ret)) {
+     return {};
+   }
+ 
 @@ -182,7 +182,7 @@ MaybeLocal<Object> TranscodeLatin1ToUcs2(Environment* env,
      return {};
    }
@@ -385,3 +425,26 @@ index ef659f1c39f7ee958879bf395377bc99911fc346..225b1465b7c97d972a38968faf6d6850
    auto ab = ArrayBuffer::New(isolate, std::move(bs));
    v8::Local<Uint8Array> u8 = v8::Uint8Array::New(ab, 0, 1);
  
+diff --git a/test/parallel/test-process-env-allowed-flags-are-documented.js b/test/parallel/test-process-env-allowed-flags-are-documented.js
+index 07e38748b07ddd32a6e3caa3c34183387e1cae18..f09bf0940dad2068f0aa5dce783dd422773d4bbb 100644
+--- a/test/parallel/test-process-env-allowed-flags-are-documented.js
++++ b/test/parallel/test-process-env-allowed-flags-are-documented.js
+@@ -49,6 +49,8 @@ if (!hasOpenSSL3) {
+   documented.delete('--openssl-shared-config');
+ }
+ 
++const isV8Sandboxed = process.config.variables.v8_enable_sandbox;
++
+ // Filter out options that are conditionally present.
+ const conditionalOpts = [
+   {
+@@ -74,6 +76,9 @@ const conditionalOpts = [
+   }, {
+     include: process.features.inspector,
+     filter: (opt) => opt.startsWith('--inspect') || opt === '--debug-port'
++  }, {
++    include: !isV8Sandboxed,
++    filter: (opt) => ['--secure-heap', '--secure-heap-min'].includes(opt)
+   },
+ ];
+ documented.forEach((opt) => {
