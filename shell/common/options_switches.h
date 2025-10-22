@@ -183,6 +183,9 @@ inline constexpr std::string_view kOffscreen = "offscreen";
 
 inline constexpr std::string_view kUseSharedTexture = "useSharedTexture";
 
+inline constexpr std::string_view kSharedTexturePixelFormat =
+    "sharedTexturePixelFormat";
+
 inline constexpr std::string_view kNodeIntegrationInSubFrames =
     "nodeIntegrationInSubFrames";
 
@@ -305,6 +308,10 @@ inline constexpr base::cstring_view kDisableNTLMv2 = "disable-ntlm-v2";
 // Indicates that preloads for service workers are registered.
 inline constexpr base::cstring_view kServiceWorkerPreload =
     "service-worker-preload";
+
+// If set, flag node::ProcessInitializationFlags::kNoStdioInitialization would
+// be set for node initialization.
+inline constexpr base::cstring_view kNoStdioInit = "no-stdio-init";
 
 }  // namespace switches
 

@@ -5,15 +5,18 @@ Subject: fix: remove outdated V8 flags from node.cc
 
 Refs https://chromium-review.googlesource.com/c/v8/v8/+/5507047
 Refs https://chromium-review.googlesource.com/c/v8/v8/+/6249026
+Refs https://chromium-review.googlesource.com/c/v8/v8/+/6948286
 
-The above CL removes the `--harmony-import-assertions` and
---experimental-wasm-memory64 flags from V8.
+The above CLs remove the following flags from V8:
+* --harmony-import-assertions
+* --experimental-wasm-memory64
+* --experimental-wasm-imported-strings
 
 This patch can be removed when we upgrade to a V8 version that
 contains the above CLs.
 
 diff --git a/src/node.cc b/src/node.cc
-index 1b5e989e5456a9bf77475e06250702029568c08d..61d65094aebd7f3016d51a8e7c9c761fc69cecba 100644
+index 07684482f855363e26c3d7299a585a8a5654015e..5a7378890dc310bb3779974c79f387e7cdda15b0 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -816,7 +816,7 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
@@ -25,11 +28,13 @@ index 1b5e989e5456a9bf77475e06250702029568c08d..61d65094aebd7f3016d51a8e7c9c761f
  
    auto env_opts = per_process::cli_options->per_isolate->per_env;
    if (std::find(v8_args.begin(), v8_args.end(),
-@@ -828,7 +828,7 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
+@@ -827,8 +827,8 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
+   }
  
    // Support stable Phase 5 WebAssembly proposals
-   v8_args.emplace_back("--experimental-wasm-imported-strings");
+-  v8_args.emplace_back("--experimental-wasm-imported-strings");
 -  v8_args.emplace_back("--experimental-wasm-memory64");
++  // v8_args.emplace_back("--experimental-wasm-imported-strings");
 +  // v8_args.emplace_back("--experimental-wasm-memory64");
    v8_args.emplace_back("--experimental-wasm-exnref");
  

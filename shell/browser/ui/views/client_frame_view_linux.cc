@@ -495,7 +495,7 @@ gfx::Size ClientFrameViewLinux::SizeWithDecorations(gfx::Size size) const {
 
 views::View* ClientFrameViewLinux::TargetForRect(views::View* root,
                                                  const gfx::Rect& rect) {
-  return views::NonClientFrameView::TargetForRect(root, rect);
+  return views::FrameView::TargetForRect(root, rect);
 }
 
 int ClientFrameViewLinux::GetTranslucentTopAreaHeight() const {

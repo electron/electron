@@ -1,0 +1,87 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yagiz Nizipli <yagiz@nizipli.com>
+Date: Thu, 17 Apr 2025 10:57:40 -0400
+Subject: src: use non-deprecated Utf8LengthV2() method
+
+PR-URL: https://github.com/nodejs/node/pull/58070
+Reviewed-By: Antoine du Hamel <duhamelantoine1995@gmail.com>
+Reviewed-By: Darshan Sen <raisinten@gmail.com>
+Reviewed-By: Joyee Cheung <joyeec9h3@gmail.com>
+Reviewed-By: Rafael Gonzaga <rafael.nunu@hotmail.com>
+
+diff --git a/benchmark/napi/function_args/binding.cc b/benchmark/napi/function_args/binding.cc
+index 078fe0ee3ea767616e7b938fe4a2fb8d6a2b8d6e..e7c3cb40586ce9f99a57f3d26944e03738bdbabd 100644
+--- a/benchmark/napi/function_args/binding.cc
++++ b/benchmark/napi/function_args/binding.cc
+@@ -21,7 +21,7 @@ void CallWithString(const FunctionCallbackInfo<Value>& args) {
+   assert(args.Length() == 1 && args[0]->IsString());
+   if (args.Length() == 1 && args[0]->IsString()) {
+     Local<String> str = args[0].As<String>();
+-    const int32_t length = str->Utf8Length(args.GetIsolate()) + 1;
++    const size_t length = str->Utf8LengthV2(args.GetIsolate()) + 1;
+     char* buf = new char[length];
+     str->WriteUtf8(args.GetIsolate(), buf, length);
+     delete[] buf;
+diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
+index 7eea2eaefcad5780663a6b87985925ae5d70a5f9..b9a7710ef3cc516ff89aee0da0a8f142507605e3 100644
+--- a/src/crypto/crypto_util.cc
++++ b/src/crypto/crypto_util.cc
+@@ -445,7 +445,7 @@ ByteSource ByteSource::FromStringOrBuffer(Environment* env,
+ ByteSource ByteSource::FromString(Environment* env, Local<String> str,
+                                   bool ntc) {
+   CHECK(str->IsString());
+-  size_t size = str->Utf8Length(env->isolate());
++  size_t size = str->Utf8LengthV2(env->isolate());
+   size_t alloc_size = ntc ? size + 1 : size;
+   ByteSource::Builder out(alloc_size);
+   int opts = String::NO_OPTIONS;
+diff --git a/src/encoding_binding.cc b/src/encoding_binding.cc
+index 5ace688bb7ffc86eedf5aff11ab0ab487ad9440e..2d45bbe60f413121b3fd0f01802aeb4368f0c301 100644
+--- a/src/encoding_binding.cc
++++ b/src/encoding_binding.cc
+@@ -119,7 +119,7 @@ void BindingData::EncodeUtf8String(const FunctionCallbackInfo<Value>& args) {
+   CHECK(args[0]->IsString());
+ 
+   Local<String> str = args[0].As<String>();
+-  size_t length = str->Utf8Length(isolate);
++  size_t length = str->Utf8LengthV2(isolate);
+ 
+   Local<ArrayBuffer> ab;
+   {
+diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
+index 6e1680a74e21240ab99be86dcf23e60a05174888..a84fdae795dc1cb367a2e446264575c550ce07ee 100644
+--- a/src/js_native_api_v8.cc
++++ b/src/js_native_api_v8.cc
+@@ -2482,7 +2482,7 @@ napi_status NAPI_CDECL napi_get_value_string_utf8(
+ 
+   if (!buf) {
+     CHECK_ARG(env, result);
+-    *result = val.As<v8::String>()->Utf8Length(env->isolate);
++    *result = val.As<v8::String>()->Utf8LengthV2(env->isolate);
+   } else if (bufsize != 0) {
+     int copied = val.As<v8::String>()->WriteUtf8(
+         env->isolate,
+diff --git a/src/node_buffer.cc b/src/node_buffer.cc
+index 15129e4455fdc8792f21511a04d534ba3a4ebb5f..ae73e6743879f32f08b4f6f8c546c587de71d2f3 100644
+--- a/src/node_buffer.cc
++++ b/src/node_buffer.cc
+@@ -662,7 +662,7 @@ void Fill(const FunctionCallbackInfo<Value>& args) {
+   // Can't use StringBytes::Write() in all cases. For example if attempting
+   // to write a two byte character into a one byte Buffer.
+   if (enc == UTF8) {
+-    str_length = str_obj->Utf8Length(env->isolate());
++    str_length = str_obj->Utf8LengthV2(env->isolate());
+     node::Utf8Value str(env->isolate(), args[1]);
+     memcpy(ts_obj_data + start, *str, std::min(str_length, fill_length));
+ 
+@@ -750,8 +750,8 @@ void SlowByteLengthUtf8(const FunctionCallbackInfo<Value>& args) {
+   CHECK(args[0]->IsString());
+ 
+   // Fast case: avoid StringBytes on UTF8 string. Jump to v8.
+-  args.GetReturnValue().Set(
+-      args[0].As<String>()->Utf8Length(args.GetIsolate()));
++  size_t result = args[0].As<String>()->Utf8LengthV2(args.GetIsolate());
++  args.GetReturnValue().Set(static_cast<uint64_t>(result));
+ }
+ 
+ uint32_t FastByteLengthUtf8(Local<Value> receiver,

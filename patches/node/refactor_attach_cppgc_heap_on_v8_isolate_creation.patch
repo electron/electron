@@ -18,10 +18,10 @@ This can be removed when Node.js upgrades to a version of V8 containing CLs
 from the above issue.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 9e1b8d147a99fda962d75c343d0687ffea3c9c69..244d747f010c51366e44dec705ae304423038a85 100644
+index cb37fa080fc8e8d524cfa2758c4a8c2c5652324d..8e227ddd1be50c046a8cf2895a31d607eb7d31de 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -313,6 +313,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
+@@ -316,6 +316,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
                      MultiIsolatePlatform* platform,
                      const SnapshotData* snapshot_data,
                      const IsolateSettings& settings) {
@@ -32,7 +32,7 @@ index 9e1b8d147a99fda962d75c343d0687ffea3c9c69..244d747f010c51366e44dec705ae3044
    Isolate* isolate = Isolate::Allocate();
    if (isolate == nullptr) return nullptr;
  
-@@ -356,9 +360,12 @@ Isolate* NewIsolate(ArrayBufferAllocator* allocator,
+@@ -359,9 +363,12 @@ Isolate* NewIsolate(ArrayBufferAllocator* allocator,
                      uv_loop_t* event_loop,
                      MultiIsolatePlatform* platform,
                      const EmbedderSnapshotData* snapshot_data,
@@ -47,10 +47,10 @@ index 9e1b8d147a99fda962d75c343d0687ffea3c9c69..244d747f010c51366e44dec705ae3044
                      event_loop,
                      platform,
 diff --git a/src/env.cc b/src/env.cc
-index 56eb42643f26f3ebb447cb625d5422dcfa872189..8cdfbac602796cabbd8a2f673385b93bea9bd7cc 100644
+index 85641b68b1e6f6dd4149f33ba13f76bccc8bf47d..c6209cc7cf317de1bb9217e39dd760e5a83303e2 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -577,14 +577,6 @@ IsolateData::IsolateData(Isolate* isolate,
+@@ -578,14 +578,6 @@ IsolateData::IsolateData(Isolate* isolate,
    // We do not care about overflow since we just want this to be different
    // from the cppgc id.
    uint16_t non_cppgc_id = cppgc_id + 1;
@@ -65,7 +65,7 @@ index 56eb42643f26f3ebb447cb625d5422dcfa872189..8cdfbac602796cabbd8a2f673385b93b
    {
      // GC could still be run after the IsolateData is destroyed, so we store
      // the ids in a static map to ensure pointers to them are still valid
-@@ -607,15 +599,6 @@ IsolateData::IsolateData(Isolate* isolate,
+@@ -608,15 +600,6 @@ IsolateData::IsolateData(Isolate* isolate,
    }
  }
  
@@ -82,10 +82,10 @@ index 56eb42643f26f3ebb447cb625d5422dcfa872189..8cdfbac602796cabbd8a2f673385b93b
  void SetCppgcReference(Isolate* isolate,
                         Local<Object> object,
 diff --git a/src/env.h b/src/env.h
-index 1079e3beb02e5f5d71a15fd2db65cb93ebd175d6..a7be609c3ab9093cec5145367b95ae6859936a24 100644
+index 2d5fa8dbd75851bca30453548f6cbe0159509f26..c346e3a9c827993036438685d758a734f9ce8c05 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -155,7 +155,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
+@@ -157,7 +157,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
        ArrayBufferAllocator* node_allocator = nullptr,
        const EmbedderSnapshotData* embedder_snapshot_data = nullptr,
        std::shared_ptr<PerIsolateOptions> options = nullptr);
@@ -93,7 +93,7 @@ index 1079e3beb02e5f5d71a15fd2db65cb93ebd175d6..a7be609c3ab9093cec5145367b95ae68
  
    SET_MEMORY_INFO_NAME(IsolateData)
    SET_SELF_SIZE(IsolateData)
-@@ -258,7 +257,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
+@@ -260,7 +259,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
    const SnapshotData* snapshot_data_;
    std::optional<SnapshotConfig> snapshot_config_;
  
@@ -102,10 +102,10 @@ index 1079e3beb02e5f5d71a15fd2db65cb93ebd175d6..a7be609c3ab9093cec5145367b95ae68
    worker::Worker* worker_context_ = nullptr;
    PerIsolateWrapperData* wrapper_data_;
 diff --git a/src/node.cc b/src/node.cc
-index 61d65094aebd7f3016d51a8e7c9c761fc69cecba..0d383dcdb80fe30e3c2d6880b44f626f065bb1f3 100644
+index 5a7378890dc310bb3779974c79f387e7cdda15b0..0725cc97510375bc616534ddf3de4b231bae6bf5 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -1271,6 +1271,14 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+@@ -1295,6 +1295,14 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
      result->platform_ = per_process::v8_platform.Platform();
    }
  
@@ -120,7 +120,7 @@ index 61d65094aebd7f3016d51a8e7c9c761fc69cecba..0d383dcdb80fe30e3c2d6880b44f626f
    if (!(flags & ProcessInitializationFlags::kNoInitializeV8)) {
      V8::Initialize();
  
-@@ -1280,14 +1288,6 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+@@ -1304,14 +1312,6 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
      absl::SetMutexDeadlockDetectionMode(absl::OnDeadlockCycle::kIgnore);
    }
  
@@ -136,7 +136,7 @@ index 61d65094aebd7f3016d51a8e7c9c761fc69cecba..0d383dcdb80fe30e3c2d6880b44f626f
    bool use_wasm_trap_handler =
        !per_process::cli_options->disable_wasm_trap_handler;
 diff --git a/src/node.h b/src/node.h
-index 42d55d24bd0770795ae0c0e19241d25a6350ae08..4335c7cf53b7e08c95dcee3461384ac12c8ebe41 100644
+index d3a965661d068db359bb1bb4b14e59c28bb615f9..16a0c71aef949b0ddd27def9dc843298f9a6b75f 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -590,7 +590,8 @@ NODE_EXTERN v8::Isolate* NewIsolate(
@@ -174,10 +174,10 @@ index 4119ac1b002681d39711eac810ca2fcc2702ffc7..790347056cde949ffe6cf8498a7eca0c
  
  ExitCode NodeMainInstance::Run() {
 diff --git a/src/node_worker.cc b/src/node_worker.cc
-index e2dbdd39b06c4f2f85eba46cbf1383af144456c6..6c43928ba5a9752c78544d1c77198278eb11ccd7 100644
+index 29c4b1de42b3127a98871d200c80197bf974b31f..8555ab556b5b74a1cf9cf30747f1f417bfe4e4d9 100644
 --- a/src/node_worker.cc
 +++ b/src/node_worker.cc
-@@ -163,6 +163,9 @@ class WorkerThreadData {
+@@ -177,6 +177,9 @@ class WorkerThreadData {
      SetIsolateCreateParamsForNode(&params);
      w->UpdateResourceConstraints(&params.constraints);
      params.array_buffer_allocator_shared = allocator;
@@ -187,7 +187,7 @@ index e2dbdd39b06c4f2f85eba46cbf1383af144456c6..6c43928ba5a9752c78544d1c77198278
      Isolate* isolate =
          NewIsolate(&params, &loop_, w->platform_, w->snapshot_data());
      if (isolate == nullptr) {
-@@ -231,13 +234,8 @@ class WorkerThreadData {
+@@ -245,13 +248,8 @@ class WorkerThreadData {
          *static_cast<bool*>(data) = true;
        }, &platform_finished);
  

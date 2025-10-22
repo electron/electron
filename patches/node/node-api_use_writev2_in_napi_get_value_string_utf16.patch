@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tobias=20Nie=C3=9Fen?= <tniessen@tnie.de>
+Date: Fri, 16 May 2025 17:10:45 +0100
+Subject: node-api: use WriteV2 in napi_get_value_string_utf16
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Since `String::Write()` is deprecated, use `String::Write2()` instead.
+That requires us to compute the correct number of characters ahead of
+time but removes the need for dealing with the return value.
+
+PR-URL: https://github.com/nodejs/node/pull/58165
+Reviewed-By: Juan José Arboleda <soyjuanarbol@gmail.com>
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Vladimir Morozov <vmorozov@microsoft.com>
+Reviewed-By: Chengzhong Wu <legendecas@gmail.com>
+Reviewed-By: Michael Dawson <midawson@redhat.com>
+
+diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
+index 8f97ca4d9cbb840efd36c77fed12d746a2793670..cc2312bd2fd1ed194f927bbf33951ca0548d1a31 100644
+--- a/src/js_native_api_v8.cc
++++ b/src/js_native_api_v8.cc
+@@ -2520,21 +2520,23 @@ napi_status NAPI_CDECL napi_get_value_string_utf16(napi_env env,
+ 
+   v8::Local<v8::Value> val = v8impl::V8LocalValueFromJsValue(value);
+   RETURN_STATUS_IF_FALSE(env, val->IsString(), napi_string_expected);
++  v8::Local<v8::String> str = val.As<v8::String>();
+ 
+   if (!buf) {
+     CHECK_ARG(env, result);
+     // V8 assumes UTF-16 length is the same as the number of characters.
+-    *result = val.As<v8::String>()->Length();
++    *result = str->Length();
+   } else if (bufsize != 0) {
+-    int copied = val.As<v8::String>()->Write(env->isolate,
+-                                             reinterpret_cast<uint16_t*>(buf),
+-                                             0,
+-                                             bufsize - 1,
+-                                             v8::String::NO_NULL_TERMINATION);
++    uint32_t length = static_cast<uint32_t>(
++        std::min(bufsize - 1, static_cast<size_t>(str->Length())));
++    str->WriteV2(env->isolate,
++                 0,
++                 length,
++                 reinterpret_cast<uint16_t*>(buf),
++                 v8::String::WriteFlags::kNullTerminate);
+ 
+-    buf[copied] = '\0';
+     if (result != nullptr) {
+-      *result = copied;
++      *result = length;
+     }
+   } else if (result != nullptr) {
+     *result = 0;

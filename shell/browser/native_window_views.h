@@ -89,6 +89,7 @@ class NativeWindowViews : public NativeWindow,
   bool IsResizable() const override;
   void SetAspectRatio(double aspect_ratio,
                       const gfx::Size& extra_size) override;
+  bool CanResize() const override;
   void SetMovable(bool movable) override;
   bool IsMovable() const override;
   void SetMinimizable(bool minimizable) override;
@@ -190,7 +191,7 @@ class NativeWindowViews : public NativeWindow,
   SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
 
 #if BUILDFLAG(IS_LINUX)
-  // returns the ClientFrameViewLinux iff that is our NonClientFrameView type,
+  // returns the ClientFrameViewLinux iff that is our FrameView type,
   // nullptr otherwise.
   ClientFrameViewLinux* GetClientFrameViewLinux();
 #endif
@@ -219,7 +220,7 @@ class NativeWindowViews : public NativeWindow,
       gfx::NativeView child,
       const gfx::Point& location) override;
   views::ClientView* CreateClientView(views::Widget* widget) override;
-  std::unique_ptr<views::NonClientFrameView> CreateNonClientFrameView(
+  std::unique_ptr<views::FrameView> CreateFrameView(
       views::Widget* widget) override;
   void OnWidgetMove() override;
 #if BUILDFLAG(IS_WIN)

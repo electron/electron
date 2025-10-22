@@ -45,7 +45,7 @@
 #include "ui/gfx/geometry/dip_util.h"
 #include "ui/gfx/geometry/size_conversions.h"
 #include "ui/gfx/image/image_skia.h"
-#include "ui/gfx/native_widget_types.h"
+#include "ui/gfx/native_ui_types.h"
 #include "ui/gfx/skbitmap_operations.h"
 #include "ui/latency/latency_info.h"
 
@@ -154,6 +154,7 @@ class ElectronDelegatedFrameHostClient
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     bool transparent,
     bool offscreen_use_shared_texture,
+    const std::string& offscreen_shared_texture_pixel_format,
     bool painting,
     int frame_rate,
     const OnPaintCallback& callback,
@@ -165,6 +166,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       parent_host_view_(parent_host_view),
       transparent_(transparent),
       offscreen_use_shared_texture_(offscreen_use_shared_texture),
+      offscreen_shared_texture_pixel_format_(
+          offscreen_shared_texture_pixel_format),
       callback_(callback),
       frame_rate_(frame_rate),
       size_(initial_size),
@@ -486,7 +489,8 @@ uint32_t OffScreenRenderWidgetHostView::GetCaptureSequenceNumber() const {
 void OffScreenRenderWidgetHostView::CopyFromSurface(
     const gfx::Rect& src_rect,
     const gfx::Size& output_size,
-    base::OnceCallback<void(const SkBitmap&)> callback) {
+    base::OnceCallback<void(const viz::CopyOutputBitmapWithMetadata&)>
+        callback) {
   delegated_frame_host()->CopyFromCompositingSurface(src_rect, output_size,
                                                      std::move(callback));
 }
@@ -548,7 +552,8 @@ OffScreenRenderWidgetHostView::CreateViewForWidget(
   }
 
   return new OffScreenRenderWidgetHostView(
-      transparent_, offscreen_use_shared_texture_, true,
+      transparent_, offscreen_use_shared_texture_,
+      offscreen_shared_texture_pixel_format_, true,
       embedder_host_view->frame_rate(), callback_, render_widget_host,
       embedder_host_view, size());
 }

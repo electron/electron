@@ -36,10 +36,10 @@ for desktop capturer. This change re-enables that fallback, which was
 previously default behavior.
 
 diff --git a/modules/desktop_capture/desktop_capturer.cc b/modules/desktop_capture/desktop_capturer.cc
-index ae9aba26ee56e8a0d48f81994f964b278c9019d3..758f1b44e01adb6807bc7c5f673d06fffbac5865 100644
+index bf63f73178688e49286bb6686d5a42ce040c663e..f5f62a2b7865d8415ec08242312df006bcb2edf5 100644
 --- a/modules/desktop_capture/desktop_capturer.cc
 +++ b/modules/desktop_capture/desktop_capturer.cc
-@@ -123,7 +123,7 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateGenericCapturer(
+@@ -138,7 +138,7 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateGenericCapturer(
    std::unique_ptr<DesktopCapturer> capturer;
  
  #if defined(WEBRTC_USE_PIPEWIRE)
@@ -61,10 +61,10 @@ index 361b465dad2a53f4dac774fa2d6d6d9e3fc5fc31..ef05a35bc4f2c2352b12c0af0b09193b
    capturer_failed_ = true;
  }
 diff --git a/modules/desktop_capture/screen_capturer_linux.cc b/modules/desktop_capture/screen_capturer_linux.cc
-index 94726750c5762e22b517445b23254513eb207aae..85946a6c7eef56a66c0ee2ec06bdc5f2ba49c53c 100644
+index f25e08fb594c563b1f8ca0fd1c4383ed39df5149..8ce6a9d82d808c1618b857ac83af85ac38a43a2a 100644
 --- a/modules/desktop_capture/screen_capturer_linux.cc
 +++ b/modules/desktop_capture/screen_capturer_linux.cc
-@@ -35,11 +35,10 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateRawScreenCapturer(
+@@ -39,11 +39,10 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateRawScreenCapturer(
  #endif  // defined(WEBRTC_USE_PIPEWIRE)
  
  #if defined(WEBRTC_USE_X11)
@@ -80,10 +80,10 @@ index 94726750c5762e22b517445b23254513eb207aae..85946a6c7eef56a66c0ee2ec06bdc5f2
  
  }  // namespace webrtc
 diff --git a/modules/desktop_capture/window_capturer_linux.cc b/modules/desktop_capture/window_capturer_linux.cc
-index f621a63e72131fd8426361a078a55d1e07c0e436..91394503da5e7f6d090e2eaede02316cf51ad7b2 100644
+index 87ea3d57212c5f62194f206787756b7f3fb63e90..3f565ab13a033dc29d55f819da7de464b6e19885 100644
 --- a/modules/desktop_capture/window_capturer_linux.cc
 +++ b/modules/desktop_capture/window_capturer_linux.cc
-@@ -35,11 +35,10 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateRawWindowCapturer(
+@@ -39,11 +39,10 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateRawWindowCapturer(
  #endif  // defined(WEBRTC_USE_PIPEWIRE)
  
  #if defined(WEBRTC_USE_X11)
