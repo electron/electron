@@ -33,7 +33,7 @@ index 0ab8187b0db8ae6db46d81738f653a2bc4c566f6..de3d55e85c22317f7f9375eb94d0d5d4
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 3dab10eb45b641b8a720e73cb8578fe9508f723c..4f9f7ac2c89bad694621fd3b1bbe5460a09c054e 100644
+index cf1cee2251d8ba88535acc1e41cf82986b62f259..27c1a38d0f1b06cbc0722f2067fe39a4f86f0903 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -1910,6 +1910,13 @@ void NetworkContext::EnableDurableMessageCollector(
@@ -51,7 +51,7 @@ index 3dab10eb45b641b8a720e73cb8578fe9508f723c..4f9f7ac2c89bad694621fd3b1bbe5460
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index d73d6500b354805fa7436705801fa740dd01e8ea..5426624e27a58292ef760d07898c145f396cb343 100644
+index 90cf1a70c068771ac98b2d5a283cba5e54c05ff4..0dc8de8d4e37e48cb28d8112c0233ac80cfb9ba5 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -336,6 +336,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
@@ -63,10 +63,10 @@ index d73d6500b354805fa7436705801fa740dd01e8ea..5426624e27a58292ef760d07898c145f
    void SetEnableReferrers(bool enable_referrers) override;
  #if BUILDFLAG(IS_CT_SUPPORTED)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index e6bf2df4c3de555c4be3bb7ec7b90b87d3c2c240..9455b44b740af80a799aa5a01b67ed68d3b7a6ac 100644
+index 00374e2ad12939733983fc6ea4643ff72134942a..ed149b049cb837adb17dfbd302f3ccc597c85fba 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -1352,6 +1352,9 @@ interface NetworkContext {
+@@ -1353,6 +1353,9 @@ interface NetworkContext {
        mojo_base.mojom.UnguessableToken throttling_profile_id,
        pending_receiver<DurableMessageCollector> receiver);
  
@@ -77,7 +77,7 @@ index e6bf2df4c3de555c4be3bb7ec7b90b87d3c2c240..9455b44b740af80a799aa5a01b67ed68
    SetAcceptLanguage(string new_accept_language);
  
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index 8648cafcc01af1d8835f782f1303df2b5a84a674..4e7472dbda6da1b7ed85026a9fd84e9fc4c521a8 100644
+index ebcacbcb16057912693a6674e6b9ef5eeb671f91..1f3f18979b76be720a7c202f2a45fcc593c8fc01 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
 @@ -162,6 +162,7 @@ class TestNetworkContext : public mojom::NetworkContext {

@@ -90,7 +90,7 @@ index ae113be147f5bfe9d6218a20495897600cc5299d..cb67460205f4db04a3256151d49a2713
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index 45c684170a028198ec12b75dfe8f51c1271d55f6..f52d5bdfbdd108b55d7e9b2882eb8d5039ef279c 100644
+index c44058711170316552ea05f97b8b8af694da8ca3..2895f8d17e7d045a3fae3f83e4dc117d48b7b29f 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
 @@ -222,6 +222,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
@@ -121,7 +121,7 @@ index 45c684170a028198ec12b75dfe8f51c1271d55f6..f52d5bdfbdd108b55d7e9b2882eb8d50
  
    if (params.opacity == views::Widget::InitParams::WindowOpacity::kInferred &&
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index e2ea4ca2fb5f10045466d2ece7e9148c01b84f29..7cd620467634d267d1c1b0806cea338edfe5837d 100644
+index 40bba1d16a37f0b3c563faef86402641418dd994..bad7f48f50d5cd1c716963f660f63c7ec0d6449a 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
 @@ -324,6 +324,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
@@ -158,7 +158,7 @@ index e2ea4ca2fb5f10045466d2ece7e9148c01b84f29..7cd620467634d267d1c1b0806cea338e
    // True if the window size will follow the content preferred size.
    bool is_autosized() const { return is_autosized_; }
  
-@@ -1716,6 +1729,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1718,6 +1731,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // If true, the mouse is currently down.
    bool is_mouse_button_pressed_ = false;
  
