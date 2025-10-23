@@ -224,7 +224,7 @@ index 33cde71b105c7cf22b559583d2e46bfb50016f6d..659910992dff7c05bb7e367e1cba1425
    // This is to cause hash() to fail when an incorrect
    // outputLength option was passed for a non-XOF hash function.
 diff --git a/src/crypto/crypto_keys.cc b/src/crypto/crypto_keys.cc
-index e805a984322c8348ceba950fe6f45e002ade10b3..cac769084b2fc39713b1a2a5ca80012b74d25a9b 100644
+index e805a984322c8348ceba950fe6f45e002ade10b3..bb9b1f8e1b3c6dd8479ee463e303088e3240d6be 100644
 --- a/src/crypto/crypto_keys.cc
 +++ b/src/crypto/crypto_keys.cc
 @@ -1034,6 +1034,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
@@ -240,7 +240,7 @@ index e805a984322c8348ceba950fe6f45e002ade10b3..cac769084b2fc39713b1a2a5ca80012b
    return data_.GetKeyType() == kKeyTypePrivate ? ctx.privateCheck()
                                                 : ctx.publicCheck();
 +#else
-+  return false;
++  return true;
 +#endif
  }
  
