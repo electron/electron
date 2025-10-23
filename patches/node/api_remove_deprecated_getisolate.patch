@@ -295,7 +295,7 @@ index 27aeac589b19cd681923fb848ce5f36c66fc05e2..5f2900869763f40cac54e3cb3fe2e24e
          module_api_version(module_api_version) {
      napi_clear_last_error(this);
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 9c75d351f51e0794ff66345eaf4e1ecd43b1851a..97644680737be2e639115fd7b0d4dd6f53a0b09a 100644
+index 8fed194cbae9ce75bd0805b4df30b4de64fbbefa..a584e3a80adb69d2028dc79450349823ab973a58 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
 @@ -99,7 +99,7 @@ ModuleCacheKey ModuleCacheKey::From(Local<Context> context,
@@ -334,7 +334,7 @@ index 9c75d351f51e0794ff66345eaf4e1ecd43b1851a..97644680737be2e639115fd7b0d4dd6f
    Environment* env = Environment::GetCurrent(context);
    if (env == nullptr) {
      THROW_ERR_EXECUTION_ENVIRONMENT_NOT_AVAILABLE(isolate);
-@@ -1104,7 +1104,7 @@ static MaybeLocal<Promise> ImportModuleDynamicallyWithPhase(
+@@ -1104,7 +1104,7 @@ MaybeLocal<Promise> ImportModuleDynamicallyWithPhase(
      Local<String> specifier,
      ModuleImportPhase phase,
      Local<FixedArray> import_attributes) {

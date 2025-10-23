@@ -40,15 +40,15 @@ index 4a4279459341e87784ee8efa832dc74371c4a708..88d84786e72cf8712e0b9bda16c418d4
  
  /**
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 5783728da2894270f902f47b210008df0e911bde..9c75d351f51e0794ff66345eaf4e1ecd43b1851a 100644
+index 5783728da2894270f902f47b210008df0e911bde..8fed194cbae9ce75bd0805b4df30b4de64fbbefa 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
-@@ -1165,7 +1165,7 @@ static MaybeLocal<Promise> ImportModuleDynamicallyWithPhase(
-   return handle_scope.Escape(resolver->GetPromise());
+@@ -1097,7 +1097,7 @@ Maybe<ModuleWrap*> ModuleWrap::ResolveModule(
+   return Just(module_wrap);
  }
  
--static MaybeLocal<Promise> ImportModuleDynamically(
-+MaybeLocal<Promise> ImportModuleDynamically(
+-static MaybeLocal<Promise> ImportModuleDynamicallyWithPhase(
++MaybeLocal<Promise> ImportModuleDynamicallyWithPhase(
      Local<Context> context,
      Local<Data> host_defined_options,
      Local<Value> resource_name,
@@ -91,7 +91,7 @@ index 5783728da2894270f902f47b210008df0e911bde..9c75d351f51e0794ff66345eaf4e1ecd
  
  MaybeLocal<Value> ModuleWrap::SyntheticModuleEvaluationStepsCallback(
 diff --git a/src/module_wrap.h b/src/module_wrap.h
-index 03cf8d0e91d795aad6db9b11956d296ff4999f7e..9947191fca670329e8bee38f63d463ea4be99765 100644
+index 03cf8d0e91d795aad6db9b11956d296ff4999f7e..45264c2ad58e37a73fd62addac7fb671eed6d502 100644
 --- a/src/module_wrap.h
 +++ b/src/module_wrap.h
 @@ -8,6 +8,7 @@
@@ -102,23 +102,24 @@ index 03cf8d0e91d795aad6db9b11956d296ff4999f7e..9947191fca670329e8bee38f63d463ea
  #include "v8-script.h"
  
  namespace node {
-@@ -92,7 +93,14 @@ struct ModuleCacheKey : public MemoryRetainer {
+@@ -92,7 +93,15 @@ struct ModuleCacheKey : public MemoryRetainer {
          hash(hash) {}
  };
  
 -class ModuleWrap : public BaseObject {
-+NODE_EXTERN v8::MaybeLocal<v8::Promise> ImportModuleDynamically(
++NODE_EXTERN v8::MaybeLocal<v8::Promise> ImportModuleDynamicallyWithPhase(
 +    v8::Local<v8::Context> context,
 +    v8::Local<v8::Data> host_defined_options,
 +    v8::Local<v8::Value> resource_name,
 +    v8::Local<v8::String> specifier,
-+    v8::Local<v8::FixedArray> import_assertions);
++    v8::ModuleImportPhase phase,
++    v8::Local<v8::FixedArray> import_attributes);
 +
 +class NODE_EXTERN ModuleWrap : public BaseObject {
    using ResolveCache =
        std::unordered_map<ModuleCacheKey, uint32_t, ModuleCacheKey::Hash>;
  
-@@ -157,6 +165,8 @@ class ModuleWrap : public BaseObject {
+@@ -157,6 +166,8 @@ class ModuleWrap : public BaseObject {
    static void CreateRequiredModuleFacade(
        const v8::FunctionCallbackInfo<v8::Value>& args);
  
@@ -127,7 +128,7 @@ index 03cf8d0e91d795aad6db9b11956d296ff4999f7e..9947191fca670329e8bee38f63d463ea
   private:
    ModuleWrap(Realm* realm,
               v8::Local<v8::Object> object,
-@@ -205,7 +215,6 @@ class ModuleWrap : public BaseObject {
+@@ -205,7 +216,6 @@ class ModuleWrap : public BaseObject {
        v8::Local<v8::String> specifier,
        v8::Local<v8::FixedArray> import_attributes,
        v8::Local<v8::Module> referrer);
