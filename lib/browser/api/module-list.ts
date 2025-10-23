@@ -29,6 +29,7 @@ export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'protocol', loader: () => require('./protocol') },
   { name: 'safeStorage', loader: () => require('./safe-storage') },
   { name: 'screen', loader: () => require('./screen') },
+  { name: 'ServiceWorkerMain', loader: () => require('./service-worker-main') },
   { name: 'session', loader: () => require('./session') },
   { name: 'ShareMenu', loader: () => require('./share-menu') },
   { name: 'systemPreferences', loader: () => require('./system-preferences') },

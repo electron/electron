@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_browser_window.h"
 
+#include "base/containers/fixed_flat_set.h"
 #include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/render_process_host.h"
@@ -36,7 +37,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   std::string color;
   if (options.Get(options::kBackgroundColor, &color)) {
     web_preferences.SetHidden(options::kBackgroundColor, color);
-  } else if (window_->IsTranslucent()) {
+  } else if (window()->IsTranslucent()) {
     // If the BrowserWindow is transparent or a vibrancy type has been set,
     // also propagate transparency to the WebContents unless a separate
     // backgroundColor has been set.
@@ -47,7 +48,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   // Copy the show setting to webContents, but only if we don't want to paint
   // when initially hidden
   bool paint_when_initially_hidden = true;
-  options.Get("paintWhenInitiallyHidden", &paint_when_initially_hidden);
+  options.Get(options::kPaintWhenInitiallyHidden, &paint_when_initially_hidden);
   if (!paint_when_initially_hidden) {
     bool show = true;
     options.Get(options::kShow, &show);
@@ -64,14 +65,14 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     web_preferences.Set(options::kShow, true);
 
   // Creates the WebContentsView.
-  gin::Handle<WebContentsView> web_contents_view =
+  gin_helper::Handle<WebContentsView> web_contents_view =
       WebContentsView::Create(isolate, web_preferences);
   DCHECK(web_contents_view.get());
-  window_->AddDraggableRegionProvider(web_contents_view.get());
+  window()->AddDraggableRegionProvider(web_contents_view.get());
   web_contents_view_.Reset(isolate, web_contents_view.ToV8());
 
   // Save a reference of the WebContents.
-  gin::Handle<WebContents> web_contents =
+  gin_helper::Handle<WebContents> web_contents =
       web_contents_view->GetWebContents(isolate);
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents->GetWeakPtr();
@@ -132,7 +133,7 @@ void BrowserWindow::OnActivateContents() {
 void BrowserWindow::OnPageTitleUpdated(const std::u16string& title,
                                        bool explicit_set) {
   // Change window title to page title.
-  auto self = GetWeakPtr();
+  auto self = weak_factory_.GetWeakPtr();
   if (!Emit("page-title-updated", title, explicit_set)) {
     // |this| might be deleted, or marked as destroyed by close().
     if (self && !IsDestroyed())
@@ -209,8 +210,8 @@ void BrowserWindow::UpdateWindowControlsOverlay(
 void BrowserWindow::CloseImmediately() {
   // Close all child windows before closing current window.
   v8::HandleScope handle_scope(isolate());
-  for (v8::Local<v8::Value> value : child_windows_.Values(isolate())) {
-    gin::Handle<BrowserWindow> child;
+  for (v8::Local<v8::Value> value : GetChildWindows()) {
+    gin_helper::Handle<BrowserWindow> child;
     if (gin::ConvertFromV8(isolate(), value, &child) && !child.IsEmpty())
       child->window()->CloseImmediately();
   }
@@ -219,14 +220,14 @@ void BrowserWindow::CloseImmediately() {
 }
 
 void BrowserWindow::Focus() {
-  if (api_web_contents_->IsOffScreen())
+  if (api_web_contents_ && api_web_contents_->IsOffScreen())
     FocusOnWebView();
   else
     BaseWindow::Focus();
 }
 
 void BrowserWindow::Blur() {
-  if (api_web_contents_->IsOffScreen())
+  if (api_web_contents_ && api_web_contents_->IsOffScreen())
     BlurWebView();
   else
     BaseWindow::Blur();
@@ -234,7 +235,7 @@ void BrowserWindow::Blur() {
 
 void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
   BaseWindow::SetBackgroundColor(color_name);
-  SkColor color = ParseCSSColor(color_name);
+  SkColor color = ParseCSSColor(color_name).value_or(SK_ColorWHITE);
   if (api_web_contents_) {
     api_web_contents_->SetBackgroundColor(color);
     // Also update the web preferences object otherwise the view will be reset
@@ -242,8 +243,20 @@ void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
     auto* web_preferences =
         WebContentsPreferences::From(api_web_contents_->web_contents());
     if (web_preferences) {
-      web_preferences->SetBackgroundColor(ParseCSSColor(color_name));
+      web_preferences->SetBackgroundColor(color);
     }
+  }
+}
+
+void BrowserWindow::SetBackgroundMaterial(const std::string& material) {
+  BaseWindow::SetBackgroundMaterial(material);
+  static constexpr auto materialTypes =
+      base::MakeFixedFlatSet<std::string_view>({"tabbed", "mica", "acrylic"});
+
+  if (materialTypes.contains(material)) {
+    SetBackgroundColor(ToRGBAHex(SK_ColorTRANSPARENT));
+  } else if (material == "none") {
+    SetBackgroundColor(ToRGBAHex(SK_ColorWHITE));
   }
 }
 
@@ -267,13 +280,25 @@ v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
 }
 
 void BrowserWindow::OnWindowShow() {
-  web_contents()->WasShown();
   BaseWindow::OnWindowShow();
 }
 
 void BrowserWindow::OnWindowHide() {
   web_contents()->WasOccluded();
   BaseWindow::OnWindowHide();
+}
+
+void BrowserWindow::Show() {
+  web_contents()->WasShown();
+  BaseWindow::Show();
+}
+
+void BrowserWindow::ShowInactive() {
+  // This method doesn't make sense for modal window.
+  if (IsModal())
+    return;
+  web_contents()->WasShown();
+  BaseWindow::ShowInactive();
 }
 
 // static
@@ -328,8 +353,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.Set("BrowserWindow",
            gin_helper::CreateConstructor<BrowserWindow>(
                isolate, base::BindRepeating(&BrowserWindow::New)));

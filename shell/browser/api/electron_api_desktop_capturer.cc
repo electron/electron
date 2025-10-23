@@ -15,14 +15,15 @@
 #include "chrome/browser/media/webrtc/desktop_media_list.h"
 #include "chrome/browser/media/webrtc/thumbnail_capturer_mac.h"
 #include "chrome/browser/media/webrtc/window_icon_util.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_capture.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/node_includes.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capturer.h"
@@ -151,7 +152,8 @@ std::unique_ptr<ThumbnailCapturer> MakeWindowCapturer() {
 #endif  // BUILDFLAG(IS_MAC)
 
   std::unique_ptr<webrtc::DesktopCapturer> window_capturer =
-      content::desktop_capture::CreateWindowCapturer();
+      content::desktop_capture::CreateWindowCapturer(
+          content::desktop_capture::CreateDesktopCaptureOptions());
   return window_capturer ? std::make_unique<DesktopCapturerWrapper>(
                                std::move(window_capturer))
                          : nullptr;
@@ -165,7 +167,9 @@ std::unique_ptr<ThumbnailCapturer> MakeScreenCapturer() {
 #endif  // BUILDFLAG(IS_MAC)
 
   std::unique_ptr<webrtc::DesktopCapturer> screen_capturer =
-      content::desktop_capture::CreateScreenCapturer();
+      content::desktop_capture::CreateScreenCapturer(
+          content::desktop_capture::CreateDesktopCaptureOptions(),
+          /*for_snapshot=*/false);
   return screen_capturer ? std::make_unique<DesktopCapturerWrapper>(
                                std::move(screen_capturer))
                          : nullptr;
@@ -214,7 +218,8 @@ struct Converter<electron::api::DesktopCapturer::Source> {
 
 namespace electron::api {
 
-gin::WrapperInfo DesktopCapturer::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo DesktopCapturer::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 DesktopCapturer::DesktopCapturer(v8::Isolate* isolate) {}
 
@@ -232,7 +237,8 @@ DesktopCapturer::DesktopListListener::~DesktopListListener() = default;
 
 void DesktopCapturer::DesktopListListener::OnDelegatedSourceListSelection() {
   if (have_thumbnail_) {
-    std::move(update_callback_).Run();
+    content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
+                                                 std::move(update_callback_));
   } else {
     have_selection_ = true;
   }
@@ -245,14 +251,16 @@ void DesktopCapturer::DesktopListListener::OnSourceThumbnailChanged(int index) {
     have_selection_ = false;
 
     // PipeWire returns a single source, so index is not relevant.
-    std::move(update_callback_).Run();
+    content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
+                                                 std::move(update_callback_));
   } else {
     have_thumbnail_ = true;
   }
 }
 
 void DesktopCapturer::DesktopListListener::OnDelegatedSourceListDismissed() {
-  std::move(failure_callback_).Run();
+  content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
+                                               std::move(failure_callback_));
 }
 
 void DesktopCapturer::StartHandling(bool capture_window,
@@ -286,7 +294,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
       capture_screen_ = false;
       capture_window_ = capture_window;
       window_capturer_ = std::make_unique<NativeDesktopMediaList>(
-          DesktopMediaList::Type::kWindow, std::move(capturer));
+          DesktopMediaList::Type::kWindow, std::move(capturer), true, true);
       window_capturer_->SetThumbnailSize(thumbnail_size);
 
       OnceCallback update_callback = base::BindOnce(
@@ -322,12 +330,13 @@ void DesktopCapturer::StartHandling(bool capture_window,
       auto capturer = MakeWindowCapturer();
       if (capturer) {
         window_capturer_ = std::make_unique<NativeDesktopMediaList>(
-            DesktopMediaList::Type::kWindow, std::move(capturer));
+            DesktopMediaList::Type::kWindow, std::move(capturer), true, true);
         window_capturer_->SetThumbnailSize(thumbnail_size);
 #if BUILDFLAG(IS_MAC)
         window_capturer_->skip_next_refresh_ =
-            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kWindow) ? 2
-                                                                           : 0;
+            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kWindow)
+                ? thumbnail_size.IsEmpty() ? 1 : 2
+                : 0;
 #endif
 
         OnceCallback update_callback = base::BindOnce(
@@ -356,8 +365,9 @@ void DesktopCapturer::StartHandling(bool capture_window,
         screen_capturer_->SetThumbnailSize(thumbnail_size);
 #if BUILDFLAG(IS_MAC)
         screen_capturer_->skip_next_refresh_ =
-            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kScreen) ? 2
-                                                                           : 0;
+            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kScreen)
+                ? thumbnail_size.IsEmpty() ? 1 : 2
+                : 0;
 #endif
 
         OnceCallback update_callback = base::BindOnce(
@@ -494,8 +504,9 @@ void DesktopCapturer::HandleFailure() {
 }
 
 // static
-gin::Handle<DesktopCapturer> DesktopCapturer::Create(v8::Isolate* isolate) {
-  auto handle = gin::CreateHandle(isolate, new DesktopCapturer(isolate));
+gin_helper::Handle<DesktopCapturer> DesktopCapturer::Create(
+    v8::Isolate* isolate) {
+  auto handle = gin_helper::CreateHandle(isolate, new DesktopCapturer(isolate));
 
   // Keep reference alive until capturing has finished.
   handle->Pin(isolate);
@@ -512,7 +523,8 @@ bool DesktopCapturer::IsDisplayMediaSystemPickerAvailable() {
 
 gin::ObjectTemplateBuilder DesktopCapturer::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::Wrappable<DesktopCapturer>::GetObjectTemplateBuilder(isolate)
+  return gin_helper::DeprecatedWrappable<
+             DesktopCapturer>::GetObjectTemplateBuilder(isolate)
       .SetMethod("startHandling", &DesktopCapturer::StartHandling);
 }
 
@@ -528,7 +540,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  gin_helper::Dictionary dict(context->GetIsolate(), exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("createDesktopCapturer",
                  &electron::api::DesktopCapturer::Create);
   dict.SetMethod(

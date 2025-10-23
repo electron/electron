@@ -33,7 +33,9 @@ const gnCheckDirs = [
   '//electron:electron_lib',
   '//electron:electron_app',
   '//electron/shell/common:mojo',
-  '//electron/shell/common:plugin'
+  '//electron/shell/common:plugin',
+  '//electron:testing_build',
+  '//electron:release_build'
 ];
 
 for (const dir of gnCheckDirs) {

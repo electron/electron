@@ -9,18 +9,19 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/process/process.h"
+#include "base/values.h"
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/global_routing_id.h"
-#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
+#include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "third_party/blink/public/mojom/page/page_visibility_state.mojom-forward.h"
 
 class GURL;
@@ -31,10 +32,12 @@ class RenderFrameHost;
 
 namespace gin {
 class Arguments;
+}  // namespace gin
 
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace gin_helper {
 template <typename T>
@@ -46,15 +49,15 @@ namespace electron::api {
 class WebContents;
 
 // Bindings for accessing frames from the main process.
-class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
+class WebFrameMain final : public gin_helper::DeprecatedWrappable<WebFrameMain>,
                            public gin_helper::EventEmitterMixin<WebFrameMain>,
                            public gin_helper::Pinnable<WebFrameMain>,
                            public gin_helper::Constructible<WebFrameMain> {
  public:
   // Create a new WebFrameMain and return the V8 wrapper of it.
-  static gin::Handle<WebFrameMain> New(v8::Isolate* isolate);
+  static gin_helper::Handle<WebFrameMain> New(v8::Isolate* isolate);
 
-  static gin::Handle<WebFrameMain> From(
+  static gin_helper::Handle<WebFrameMain> From(
       v8::Isolate* isolate,
       content::RenderFrameHost* render_frame_host);
   static WebFrameMain* FromFrameTreeNodeId(
@@ -68,11 +71,15 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "WebFrameMain"; }
 
-  // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  // gin_helper::Wrappable
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
-  content::RenderFrameHost* render_frame_host() const { return render_frame_; }
+  content::RenderFrameHost* render_frame_host() const;
+
+  base::WeakPtr<WebFrameMain> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
 
   // disable copy
   WebFrameMain(const WebFrameMain&) = delete;
@@ -101,8 +108,12 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   void TeardownMojoConnection();
   void OnRendererConnectionError();
 
-  // WebFrameMain can outlive its RenderFrameHost pointer so we need to check
-  // whether its been disposed of prior to accessing it.
+  [[nodiscard]] bool HasRenderFrame() const;
+
+  // Throws a JS error if HasRenderFrame() is false.
+  // WebFrameMain can outlive its RenderFrameHost pointer,
+  // so we need to check whether its been disposed of
+  // prior to accessing it.
   bool CheckRenderFrame() const;
 
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* args,
@@ -121,8 +132,9 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   bool Detached() const;
   content::FrameTreeNodeId FrameTreeNodeID() const;
   std::string Name() const;
+  std::string FrameToken() const;
   base::ProcessId OSProcessID() const;
-  int ProcessID() const;
+  int32_t ProcessID() const;
   int RoutingID() const;
   GURL URL() const;
   std::string Origin() const;
@@ -132,6 +144,8 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   content::RenderFrameHost* Parent() const;
   std::vector<content::RenderFrameHost*> Frames() const;
   std::vector<content::RenderFrameHost*> FramesInSubtree() const;
+
+  std::string_view LifecycleStateForTesting() const;
 
   v8::Local<v8::Promise> CollectDocumentJSCallStack(gin::Arguments* args);
   void CollectedJavaScriptCallStack(
@@ -146,8 +160,6 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
 
   content::FrameTreeNodeId frame_tree_node_id_;
   content::GlobalRenderFrameHostToken frame_token_;
-
-  raw_ptr<content::RenderFrameHost> render_frame_ = nullptr;
 
   // Whether the RenderFrameHost has been removed and that it should no longer
   // be accessed.

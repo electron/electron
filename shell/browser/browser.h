@@ -23,6 +23,7 @@
 #endif
 
 #if BUILDFLAG(IS_MAC)
+#include "base/time/time.h"
 #include "ui/base/cocoa/secure_password_input.h"
 #endif
 
@@ -125,6 +126,9 @@ class Browser : private WindowListObserver {
   // Clear the recent documents list.
   void ClearRecentDocuments();
 
+  // Return the recent documents list.
+  std::vector<std::string> GetRecentDocuments();
+
 #if BUILDFLAG(IS_WIN)
   // Set the application user model ID.
   void SetAppUserModelID(const std::wstring& name);
@@ -210,9 +214,9 @@ class Browser : private WindowListObserver {
   void ApplyForcedRTL();
 
   // Bounce the dock icon.
-  enum class BounceType{
-      kCritical = 0,        // NSCriticalRequest
-      kInformational = 10,  // NSInformationalRequest
+  enum class BounceType {
+    kCritical = 0,        // NSCriticalRequest
+    kInformational = 10,  // NSInformationalRequest
   };
   int DockBounce(BounceType type);
   void DockCancelBounce(int request_id);

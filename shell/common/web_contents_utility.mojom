@@ -1,0 +1,22 @@
+module electron.mojom;
+
+import "third_party/blink/public/mojom/permissions/permission_status.mojom";
+import "third_party/blink/public/mojom/tokens/tokens.mojom";
+import "url/mojom/origin.mojom";
+
+enum PermissionName {
+  DEPRECATED_SYNC_CLIPBOARD_READ,
+};
+
+interface ElectronWebContentsUtility {
+  // Informs underlying WebContents that first non-empty layout was performed
+  // by compositor.
+  OnFirstNonEmptyLayout();
+
+  SetTemporaryZoomLevel(double zoom_level);
+
+  [Sync]
+  CanAccessClipboardDeprecated(
+      PermissionName name,
+      blink.mojom.LocalFrameToken frame_token) => (blink.mojom.PermissionStatus status);
+};

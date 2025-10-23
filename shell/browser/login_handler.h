@@ -22,15 +22,16 @@ namespace electron {
 // Handles HTTP basic auth.
 class LoginHandler : public content::LoginDelegate {
  public:
-  LoginHandler(const net::AuthChallengeInfo& auth_info,
-               content::WebContents* web_contents,
-               bool is_request_for_primary_main_frame,
-               bool is_request_for_navigation,
-               base::ProcessId process_id,
-               const GURL& url,
-               scoped_refptr<net::HttpResponseHeaders> response_headers,
-               bool first_auth_attempt,
-               LoginAuthRequiredCallback auth_required_callback);
+  LoginHandler(
+      const net::AuthChallengeInfo& auth_info,
+      content::WebContents* web_contents,
+      bool is_request_for_primary_main_frame,
+      bool is_request_for_navigation,
+      base::ProcessId process_id,
+      const GURL& url,
+      scoped_refptr<net::HttpResponseHeaders> response_headers,
+      bool first_auth_attempt,
+      content::LoginDelegate::LoginAuthRequiredCallback auth_required_callback);
   ~LoginHandler() override;
 
   // disable copy
@@ -48,7 +49,7 @@ class LoginHandler : public content::LoginDelegate {
                  bool first_auth_attempt);
   void CallbackFromJS(gin::Arguments* args);
 
-  LoginAuthRequiredCallback auth_required_callback_;
+  content::LoginDelegate::LoginAuthRequiredCallback auth_required_callback_;
 
   base::WeakPtrFactory<LoginHandler> weak_factory_{this};
 };

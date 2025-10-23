@@ -25,10 +25,10 @@ std::vector<std::string> GetPreferredLanguages() {
   // SAFETY: |g_get_language_names()| returns a glib-owned array
   // of const C strings, terminated by an empty string.
   // This loop is the correct way to walk through its return values.
+  static constexpr std::string_view CLangName = "C";
   for (; *languages; UNSAFE_BUFFERS(++languages)) {
-    if (strcmp(*languages, "C") != 0) {
+    if (CLangName != *languages)
       preferredLanguages.push_back(base::i18n::GetCanonicalLocale(*languages));
-    }
   }
 
   return preferredLanguages;

@@ -6,7 +6,7 @@ on:
       build-image-sha:
         type: string
         description: 'SHA for electron/build image'
-        default: 'bc2f48b2415a670de18d13605b1cf0eb5fdbaae1'
+        default: '933c7d6ff6802706875270bec2e3c891cf8add3f'
         required: true
       upload-to-storage:
         description: 'Uploads to Azure storage'
@@ -20,7 +20,7 @@ on:
 
 jobs:
   checkout-macos:
-    runs-on: electron-arc-linux-amd64-32core
+    runs-on: electron-arc-centralus-linux-amd64-32core
     container:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
       options: --user root
@@ -28,10 +28,11 @@ jobs:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
         - /var/run/sas:/var/run/sas
     env:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         path: src/electron
         fetch-depth: 0
@@ -39,13 +40,14 @@ jobs:
       uses: ./src/electron/.github/actions/checkout
       with:
         generate-sas-token: 'true'
+        target-platform: macos
 
   publish-x64-darwin:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
     needs: checkout-macos
     with:
       environment: production-release
-      build-runs-on: macos-14-xlarge
+      build-runs-on: macos-15-xlarge
       target-platform: macos
       target-arch: x64
       target-variant: darwin
@@ -60,7 +62,7 @@ jobs:
     needs: checkout-macos
     with:
       environment: production-release
-      build-runs-on: macos-14-xlarge
+      build-runs-on: macos-15-xlarge
       target-platform: macos
       target-arch: x64
       target-variant: mas
@@ -75,7 +77,7 @@ jobs:
     needs: checkout-macos
     with:
       environment: production-release
-      build-runs-on: macos-14-xlarge
+      build-runs-on: macos-15-xlarge
       target-platform: macos
       target-arch: arm64
       target-variant: darwin
@@ -90,7 +92,7 @@ jobs:
     needs: checkout-macos
     with:
       environment: production-release
-      build-runs-on: macos-14-xlarge
+      build-runs-on: macos-15-xlarge
       target-platform: macos
       target-arch: arm64
       target-variant: mas

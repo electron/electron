@@ -6,10 +6,10 @@ Subject: Revert "Remove the AllowAggressiveThrottlingWithWebSocket feature."
 This reverts commit 615c1810a187840ffeb04096087efff86edb37de.
 
 diff --git a/third_party/blink/renderer/modules/websockets/websocket_channel_impl.cc b/third_party/blink/renderer/modules/websockets/websocket_channel_impl.cc
-index 7a885de263f1c84fc676c62caa6c787983e47994..854d57812e99bb4668aa3bbf3f63bdb0219e658d 100644
+index 485ae01ebe560b118624706c8ca415e43e1b7d8f..71c95266bd982168c7b1929f0455335574d54169 100644
 --- a/third_party/blink/renderer/modules/websockets/websocket_channel_impl.cc
 +++ b/third_party/blink/renderer/modules/websockets/websocket_channel_impl.cc
-@@ -104,6 +104,17 @@ enum WebSocketOpCode {
+@@ -102,6 +102,17 @@ enum WebSocketOpCode {
    kOpCodeBinary = 0x2,
  };
  

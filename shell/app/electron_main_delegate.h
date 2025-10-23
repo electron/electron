@@ -52,7 +52,7 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
   content::ContentGpuClient* CreateContentGpuClient() override;
   content::ContentRendererClient* CreateContentRendererClient() override;
   content::ContentUtilityClient* CreateContentUtilityClient() override;
-  absl::variant<int, content::MainFunctionParams> RunProcess(
+  std::variant<int, content::MainFunctionParams> RunProcess(
       const std::string& process_type,
       content::MainFunctionParams main_function_params) override;
   bool ShouldCreateFeatureList(InvokedIn invoked_in) override;

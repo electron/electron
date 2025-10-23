@@ -8,7 +8,7 @@
 #include <string>
 
 #include "content/public/renderer/render_frame_observer.h"
-#include "ipc/ipc_platform_file.h"
+#include "ipc/platform_file_for_transit.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 namespace electron {
@@ -31,7 +31,8 @@ class ElectronRenderFrameObserver : private content::RenderFrameObserver {
   void DidClearWindowObject() override;
   void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
                                      int world_id) override;
-  void WillReleaseScriptContext(v8::Local<v8::Context> context,
+  void WillReleaseScriptContext(v8::Isolate* const isolate,
+                                v8::Local<v8::Context> context,
                                 int world_id) override;
   void OnDestruct() override;
   void DidMeaningfulLayout(blink::WebMeaningfulLayout layout_type) override;

@@ -73,6 +73,7 @@ The `callback` has to be called with an `response` object.
 Some examples of valid `urls`:
 
 ```js
+'<all_urls>'
 'http://foo:1234/'
 'http://foo.com/'
 'http://foo:1234/bar'

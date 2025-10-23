@@ -6,10 +6,10 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index b1493e3a01b821fa4b9d803b24678728855df559..3191fc7cf201b59abfcf87cd796752423f9a3c00 100644
+index 029e77eb851f46d8997890a9acc742aa371537ef..3a820b1b9c9aab336c724ef8c0d823eddb330e1e 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -789,6 +789,10 @@ void RenderWidgetHostImpl::WasHidden() {
+@@ -841,6 +841,10 @@ void RenderWidgetHostImpl::WasHidden() {
      return;
    }
  
@@ -19,31 +19,30 @@ index b1493e3a01b821fa4b9d803b24678728855df559..3191fc7cf201b59abfcf87cd79675242
 +
    // Cancel pending pointer lock requests, unless there's an open user prompt.
    // Prompts should remain open and functional across tab switches.
-   if (!delegate_->IsWaitingForPointerLockPrompt(this)) {
+   if (!delegate_ || !delegate_->IsWaitingForPointerLockPrompt(this)) {
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 882f245e04a3a45aaff54eac149eded07a892500..9388eb5a06b72cbd77f28c4212cbaf3c0e017e1f 100644
+index 2d32d91eb98fe749ae262ba06a1a399813aa7bab..8ebf542046ffba6823804b797e373c80bab12873 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -1023,6 +1023,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
-   // Requests a commit and forced redraw in the renderer compositor.
-   void ForceRedrawForTesting();
+@@ -1031,6 +1031,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+     return synthetic_gesture_controller_.get();
+   }
  
 +  // Electron: Prevents the widget from getting hidden.
 +  bool disable_hidden_ = false;
-+
   protected:
-   // |routing_id| must not be MSG_ROUTING_NONE.
+   // |routing_id| must not be IPC::mojom::kRoutingIdNone.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 9b258cb5dcbd07828722700f0c1cd9cbe0679056..0686fa205c43b70e6125502f8a9e76492ddafb5e 100644
+index 816bb7c6f1c00c121f66e67d20d709008c33f02f..d97cbb4fd8e12bcbff19bf8cc8378997110c60c0 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -650,7 +650,7 @@ void RenderWidgetHostViewAura::HideImpl() {
+@@ -696,7 +696,7 @@ void RenderWidgetHostViewAura::HideImpl() {
    CHECK(visibility_ == Visibility::HIDDEN ||
          visibility_ == Visibility::OCCLUDED);
  
--  if (!host()->is_hidden()) {
-+  if (!host()->is_hidden() && !host()->disable_hidden_) {
+-  if (!host()->IsHidden()) {
++  if (!host()->IsHidden() && !host()->disable_hidden_) {
      host()->WasHidden();
      aura::WindowTreeHost* host = window_->GetHost();
        aura::Window* parent = window_->parent();

@@ -9,6 +9,7 @@ module is emitted.
 
 ```js
 const { BaseWindow, View } = require('electron')
+
 const win = new BaseWindow()
 const view = new View()
 
@@ -24,6 +25,10 @@ win.contentView.addChildView(view)
 Process: [Main](../glossary.md#main-process)
 
 `View` is an [EventEmitter][event-emitter].
+
+> [!WARNING]
+> Electron's built-in classes cannot be subclassed in user code.
+> For more information, see [the FAQ](../faq.md#class-inheritance-does-not-work-with-electron-built-in-modules).
 
 ### `new View()`
 
@@ -94,17 +99,25 @@ Examples of valid `color` values:
   * Similar to CSS Color Module Level 3 keywords, but case-sensitive.
     * e.g. `blueviolet` or `red`
 
-**Note:** Hex format with alpha takes `AARRGGBB` or `ARGB`, _not_ `RRGGBBAA` or `RGB`.
+> [!NOTE]
+> Hex format with alpha takes `AARRGGBB` or `ARGB`, _not_ `RRGGBBAA` or `RGB`.
 
 #### `view.setBorderRadius(radius)`
 
 * `radius` Integer - Border radius size in pixels.
 
-**Note:** The area cutout of the view's border still captures clicks.
+> [!NOTE]
+> The area cutout of the view's border still captures clicks.
 
 #### `view.setVisible(visible)`
 
 * `visible` boolean - If false, the view will be hidden from display.
+
+#### `view.getVisible()`
+
+Returns `boolean` - Whether the view should be drawn. Note that this is
+different from whether the view is visible on screen—it may still be obscured
+or out of view.
 
 ### Instance Properties
 

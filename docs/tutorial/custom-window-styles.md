@@ -19,7 +19,7 @@ To create a frameless window, set the [`BaseWindowContructorOptions`][] `frame`
 
 To create a fully transparent window, set the [`BaseWindowContructorOptions`][] `transparent` param in the `BrowserWindow` constructor to `true`.
 
-The following fiddle takes advantage of a tranparent window and CSS styling to create
+The following fiddle takes advantage of a transparent window and CSS styling to create
 the illusion of a circular window.
 
 ```fiddle docs/fiddles/features/window-customization/custom-window-styles/transparent-windows
@@ -37,7 +37,6 @@ the illusion of a circular window.
   open on the user's system).
 * The window will not be transparent when DevTools is opened.
 * On _Windows_:
-  * Transparent windows will not work when DWM is disabled.
   * Transparent windows can not be maximized using the Windows system menu or by double
   clicking the title bar. The reasoning behind this can be seen on
   PR [#28207](https://github.com/electron/electron/pull/28207).

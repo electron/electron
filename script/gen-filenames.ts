@@ -44,6 +44,10 @@ const main = async () => {
     {
       name: 'utility_bundle_deps',
       config: 'webpack.config.utility.js'
+    },
+    {
+      name: 'preload_realm_bundle_deps',
+      config: 'webpack.config.preload_realm.js'
     }
   ];
 

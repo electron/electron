@@ -93,7 +93,7 @@ Menu.prototype.popup = function (options = {}) {
     }
   }
 
-  this.popupAt(window as unknown as BaseWindow, x, y, positioningItem, sourceType, callback);
+  this.popupAt(window as unknown as BaseWindow, options.frame, x, y, positioningItem, sourceType, callback);
   return { browserWindow: window, x, y, position: positioningItem };
 };
 
@@ -143,6 +143,9 @@ Menu.prototype.insert = function (pos, item) {
   if (item.toolTip) this.setToolTip(pos, item.toolTip);
   if (item.icon) this.setIcon(pos, item.icon);
   if (item.role) this.setRole(pos, item.role);
+  if (item.type === 'palette' || item.type === 'header') {
+    this.setCustomType(pos, item.type);
+  }
 
   // Make menu accessible to items.
   item.overrideReadOnlyProperty('menu', this);
@@ -264,9 +267,11 @@ function removeExtraSeparators (items: (MenuItemConstructorOptions | MenuItem)[]
 function insertItemByType (this: MenuType, item: MenuItem, pos: number) {
   const types = {
     normal: () => this.insertItem(pos, item.commandId, item.label),
+    header: () => this.insertItem(pos, item.commandId, item.label),
     checkbox: () => this.insertCheckItem(pos, item.commandId, item.label),
     separator: () => this.insertSeparator(pos),
     submenu: () => this.insertSubMenu(pos, item.commandId, item.label, item.submenu),
+    palette: () => this.insertSubMenu(pos, item.commandId, item.label, item.submenu),
     radio: () => {
       // Grouping radio menu items
       item.overrideReadOnlyProperty('groupId', generateGroupId(this.items, pos));

@@ -27,8 +27,8 @@ PrintRenderFrameHelperDelegate::~PrintRenderFrameHelperDelegate() = default;
 blink::WebElement PrintRenderFrameHelperDelegate::GetPdfElement(
     blink::WebLocalFrame* frame) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  if (frame->Parent() &&
-      IsPdfInternalPluginAllowedOrigin(frame->Parent()->GetSecurityOrigin())) {
+  if (frame->Parent() && IsPdfInternalPluginAllowedOrigin(
+                             frame->Parent()->GetSecurityOrigin(), {})) {
     auto plugin_element = frame->GetDocument().QuerySelector("embed");
     DCHECK(!plugin_element.IsNull());
     return plugin_element;

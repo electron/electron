@@ -28,6 +28,7 @@ Example usage:
 
 ```js
 const { app } = require('electron')
+
 app.whenReady().then(() => {
   const { net } = require('electron')
   const request = net.request('https://github.com')
@@ -117,8 +118,9 @@ protocol.handle('https', (req) => {
 })
 ```
 
-Note: in the [utility process](../glossary.md#utility-process) custom protocols
-are not supported.
+> [!NOTE]
+> In the [utility process](../glossary.md#utility-process), custom protocols
+> are not supported.
 
 ### `net.isOnline()`
 

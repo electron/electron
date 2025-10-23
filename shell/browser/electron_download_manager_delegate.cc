@@ -6,7 +6,6 @@
 
 #include <string>
 #include <string_view>
-#include <tuple>
 #include <utility>
 
 #include "base/files/file_util.h"
@@ -218,13 +217,13 @@ void ElectronDownloadManagerDelegate::GetItemSaveDialogOptions(
 }
 
 void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
-    uint32_t download_id,
+    const std::string& download_guid,
     download::DownloadTargetCallback callback,
     const base::FilePath& default_path) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   ScopedAllowBlockingForElectron allow_blocking;
 
-  auto* item = download_manager_->GetDownload(download_id);
+  auto* item = download_manager_->GetDownloadByGuid(download_guid);
   if (!item)
     return;
 
@@ -269,7 +268,7 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
     gin_helper::Promise<gin_helper::Dictionary> dialog_promise(isolate);
     auto dialog_callback = base::BindOnce(
         &ElectronDownloadManagerDelegate::OnDownloadSaveDialogDone,
-        base::Unretained(this), download_id, std::move(callback));
+        base::Unretained(this), download_guid, std::move(callback));
 
     std::ignore = dialog_promise.Then(std::move(dialog_callback));
     file_dialog::ShowSaveDialog(settings, std::move(dialog_promise));
@@ -286,17 +285,16 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
 }
 
 void ElectronDownloadManagerDelegate::OnDownloadSaveDialogDone(
-    uint32_t download_id,
+    const std::string& download_guid,
     download::DownloadTargetCallback download_callback,
     gin_helper::Dictionary result) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  auto* item = download_manager_->GetDownload(download_id);
+  auto* item = download_manager_->GetDownloadByGuid(download_guid);
   if (!item)
     return;
 
-  bool canceled = true;
-  result.Get("canceled", &canceled);
+  const bool canceled = result.ValueOrDefault("canceled", true);
 
   base::FilePath path;
 
@@ -370,7 +368,7 @@ bool ElectronDownloadManagerDelegate::DetermineDownloadTarget(
                      download->GetSuggestedFilename(), download->GetMimeType(),
                      last_saved_directory_, default_download_path),
       base::BindOnce(&ElectronDownloadManagerDelegate::OnDownloadPathGenerated,
-                     weak_ptr_factory_.GetWeakPtr(), download->GetId(),
+                     weak_ptr_factory_.GetWeakPtr(), download->GetGuid(),
                      std::move(*callback)));
   return true;
 }

@@ -7,6 +7,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h"
 #include "shell/browser/ui/status_icon_gtk.h"
+#include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/image/image_skia_rep.h"
 
 namespace electron {
@@ -41,7 +42,7 @@ TrayIconLinux::~TrayIconLinux() = default;
 void TrayIconLinux::SetImage(const gfx::Image& image) {
   image_ = GetBestImageRep(image.AsImageSkia());
   if (auto* status_icon = GetStatusIcon())
-    status_icon->SetIcon(image_);
+    status_icon->SetImage(image_);
 }
 
 void TrayIconLinux::SetToolTip(const std::string& tool_tip) {
@@ -58,6 +59,10 @@ void TrayIconLinux::SetContextMenu(raw_ptr<ElectronMenuModel> menu_model) {
 
 const gfx::ImageSkia& TrayIconLinux::GetImage() const {
   return image_;
+}
+
+const gfx::VectorIcon* TrayIconLinux::GetIcon() const {
+  return nullptr;
 }
 
 const std::u16string& TrayIconLinux::GetToolTip() const {
@@ -108,7 +113,7 @@ ui::StatusIconLinux* TrayIconLinux::GetStatusIcon() {
 }
 
 // static
-TrayIcon* TrayIcon::Create(std::optional<UUID> guid) {
+TrayIcon* TrayIcon::Create(std::optional<base::Uuid> guid) {
   return new TrayIconLinux;
 }
 

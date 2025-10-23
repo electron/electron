@@ -6,14 +6,16 @@ Subject: fix: select the first menu item when opened via keyboard
 This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 3a406a6489f4254ba364f165c5a636dbb4f1dad6..4180518615b0dfa49ce0998c1ea52e81ec451ede 100644
+index cfc9d7bac42a8d6b8fd81d9b0d8f98d55fdc43f4..1091903f786f5455ed6831796afcc2a5dfae36bd 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -648,6 +648,14 @@ void MenuController::Run(Widget* parent,
-   // Set the selection, which opens the initial menu.
-   SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
+@@ -740,6 +740,16 @@ void MenuController::Run(Widget* parent,
+     SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
+   }
  
-+  if (source_type == ui::mojom::MenuSourceType::kKeyboard && context_menu && root->HasSubmenu()) {
++  if (source_type == ui::mojom::MenuSourceType::kKeyboard &&
++      (menu_type == MenuType::kContextMenu || menu_type == MenuType::kMenuItemContextMenu) &&
++      root->HasSubmenu()) {
 +    // For context menus opened via the keyboard we select the first item by default
 +    // to match accessibility expectations
 +    MenuItemView* first_item = FindInitialSelectableMenuItem(root, INCREMENT_SELECTION_DOWN);
@@ -24,7 +26,7 @@ index 3a406a6489f4254ba364f165c5a636dbb4f1dad6..4180518615b0dfa49ce0998c1ea52e81
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -2299,19 +2307,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+@@ -2502,18 +2512,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
      }
      item->GetSubmenu()->ShowAt(params);
  
@@ -37,13 +39,14 @@ index 3a406a6489f4254ba364f165c5a636dbb4f1dad6..4180518615b0dfa49ce0998c1ea52e81
 +    // `ConvertFromScreen` doesn't work correctly if the widget isn't shown.
      if (item->GetSubmenu()->GetWidget()) {
        const gfx::Point mouse_pos = ConvertFromScreen(
-           *item->submenu_,
-           display::Screen::GetScreen()->GetCursorScreenPoint());
+-          *item->submenu_, display::Screen::Get()->GetCursorScreenPoint());
 -      MenuPart part_under_mouse = GetMenuPart(item->submenu_.get(), mouse_pos);
 -      if (part_under_mouse.type != MenuPartType::kNone) {
 -        menu_open_mouse_loc_ =
 -            GetLocationInRootMenu(*item->submenu_, mouse_pos);
 -      }
++          *item->submenu_,
++          display::Screen::Get()->GetCursorScreenPoint());
 +      menu_open_mouse_loc_ =
 +          GetLocationInRootMenu(*item->submenu_, mouse_pos);
      }

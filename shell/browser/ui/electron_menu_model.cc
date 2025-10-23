@@ -37,6 +37,18 @@ std::u16string ElectronMenuModel::GetToolTipAt(size_t index) {
   return iter == std::end(toolTips_) ? std::u16string() : iter->second;
 }
 
+void ElectronMenuModel::SetCustomType(size_t index,
+                                      const std::u16string& customType) {
+  int command_id = GetCommandIdAt(index);
+  customTypes_[command_id] = customType;
+}
+
+std::u16string ElectronMenuModel::GetCustomTypeAt(size_t index) {
+  const int command_id = GetCommandIdAt(index);
+  const auto iter = customTypes_.find(command_id);
+  return iter == std::end(customTypes_) ? std::u16string() : iter->second;
+}
+
 void ElectronMenuModel::SetRole(size_t index, const std::u16string& role) {
   int command_id = GetCommandIdAt(index);
   roles_[command_id] = role;
@@ -101,16 +113,12 @@ void ElectronMenuModel::SetSharingItem(SharingItem item) {
 
 void ElectronMenuModel::MenuWillClose() {
   ui::SimpleMenuModel::MenuWillClose();
-  for (Observer& observer : observers_) {
-    observer.OnMenuWillClose();
-  }
+  observers_.Notify(&Observer::OnMenuWillClose);
 }
 
 void ElectronMenuModel::MenuWillShow() {
   ui::SimpleMenuModel::MenuWillShow();
-  for (Observer& observer : observers_) {
-    observer.OnMenuWillShow();
-  }
+  observers_.Notify(&Observer::OnMenuWillShow);
 }
 
 ElectronMenuModel* ElectronMenuModel::GetSubmenuModelAt(size_t index) {

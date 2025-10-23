@@ -51,14 +51,12 @@ void MenuDelegate::RunMenu(ElectronMenuModel* model,
 }
 
 void MenuDelegate::ExecuteCommand(int id) {
-  for (Observer& obs : observers_)
-    obs.OnBeforeExecuteCommand();
+  observers_.Notify(&Observer::OnBeforeExecuteCommand);
   adapter_->ExecuteCommand(id);
 }
 
 void MenuDelegate::ExecuteCommand(int id, int mouse_event_flags) {
-  for (Observer& obs : observers_)
-    obs.OnBeforeExecuteCommand();
+  observers_.Notify(&Observer::OnBeforeExecuteCommand);
   adapter_->ExecuteCommand(id, mouse_event_flags);
 }
 
@@ -104,8 +102,7 @@ void MenuDelegate::WillHideMenu(views::MenuItemView* menu) {
 }
 
 void MenuDelegate::OnMenuClosed(views::MenuItemView* menu) {
-  for (Observer& obs : observers_)
-    obs.OnMenuClosed();
+  observers_.Notify(&Observer::OnMenuClosed);
 
   // Only switch to new menu when current menu is closed.
   if (button_to_open_)

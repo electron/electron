@@ -8,10 +8,11 @@
 #include <utility>
 #include <vector>
 
-#include "base/containers/contains.h"
+#include "base/command_line.h"
 #include "base/functional/bind.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
+#include "chrome/browser/usb/usb_blocklist.h"
 #include "components/content_settings/core/common/content_settings.h"
 #include "content/public/browser/device_service.h"
 #include "services/device/public/cpp/usb/usb_ids.h"
@@ -97,6 +98,98 @@ base::Value UsbChooserContext::DeviceInfoToValue(
   device_value.Set("deviceVersionMinor", device_info.device_version_minor);
   device_value.Set("deviceVersionSubminor",
                    device_info.device_version_subminor);
+
+  bool has_active_configuration = false;
+  base::Value::List configuration_list;
+  for (const auto& configuration : device_info.configurations) {
+    base::Value::Dict configuration_value;
+    configuration_value.Set("configurationValue",
+                            configuration->configuration_value);
+    configuration_value.Set("configurationName",
+                            configuration->configuration_name
+                                ? *configuration->configuration_name
+                                : std::u16string_view());
+
+    for (const auto& interface : configuration->interfaces) {
+      base::Value::Dict interface_value;
+      interface_value.Set("interfaceNumber", interface->interface_number);
+
+      base::Value::List alternate_list;
+      for (const auto& alternate : interface->alternates) {
+        base::Value::Dict alternate_value;
+        alternate_value.Set("alternateSetting", alternate->alternate_setting);
+        alternate_value.Set("interfaceClass", alternate->class_code);
+        alternate_value.Set("interfaceSubclass", alternate->subclass_code);
+        alternate_value.Set("interfaceProtocol", alternate->protocol_code);
+        alternate_value.Set("interfaceName", alternate->interface_name
+                                                 ? *alternate->interface_name
+                                                 : std::u16string_view());
+
+        base::Value::List endpoint_list;
+        for (const auto& endpoint : alternate->endpoints) {
+          base::Value::Dict endpoint_value;
+          endpoint_value.Set("endpointNumber", endpoint->endpoint_number);
+
+          bool inbound = endpoint->direction ==
+                         device::mojom::UsbTransferDirection::INBOUND;
+          endpoint_value.Set("direction", inbound ? "in" : "out");
+
+          std::string type;
+          switch (endpoint->type) {
+            case device::mojom::UsbTransferType::ISOCHRONOUS:
+              type = "isochronous";
+              break;
+            case device::mojom::UsbTransferType::BULK:
+              type = "bulk";
+              break;
+            case device::mojom::UsbTransferType::INTERRUPT:
+              type = "interrupt";
+              break;
+            default:
+              NOTREACHED() << "Unknown USB transfer type: "
+                           << static_cast<int>(endpoint->type);
+          }
+          endpoint_value.Set("type", type);
+          endpoint_value.Set("packetSize",
+                             static_cast<int>(endpoint->packet_size));
+          endpoint_list.Append(std::move(endpoint_value));
+        }
+
+        alternate_value.Set("endpoints", base::Value(std::move(endpoint_list)));
+
+        if (alternate->alternate_setting == 0) {
+          auto active_alternate_value = alternate_value.Clone();
+          interface_value.Set("alternate", std::move(active_alternate_value));
+        }
+
+        alternate_list.Append(std::move(alternate_value));
+      }
+
+      interface_value.Set("alternates", std::move(alternate_list));
+
+      configuration_value.Set("interfaces",
+                              base::Value(std::move(interface_value)));
+    }
+
+    if (device_info.active_configuration &&
+        device_info.active_configuration ==
+            configuration->configuration_value) {
+      auto active_configuration_value = configuration_value.Clone();
+      has_active_configuration = true;
+      configuration_value.Set("configuration",
+                              std::move(active_configuration_value));
+    }
+
+    configuration_list.Append(std::move(configuration_value));
+  }
+
+  device_value.Set("configurations", std::move(configuration_list));
+
+  // Set value for "configuration" to null if no active configuration.
+  if (!has_active_configuration) {
+    device_value.Set("configuration", base::Value());
+  }
+
   return base::Value(std::move(device_value));
 }
 
@@ -104,10 +197,8 @@ void UsbChooserContext::InitDeviceList(
     std::vector<device::mojom::UsbDeviceInfoPtr> devices) {
   for (auto& device_info : devices) {
     DCHECK(device_info);
-    if (ShouldExposeDevice(*device_info)) {
-      devices_.insert(
-          std::make_pair(device_info->guid, std::move(device_info)));
-    }
+    if (ShouldExposeDevice(*device_info))
+      devices_.try_emplace(device_info->guid, std::move(device_info));
   }
   is_initialized_ = true;
 
@@ -158,7 +249,7 @@ UsbChooserContext::~UsbChooserContext() {
 void UsbChooserContext::RevokeDevicePermissionWebInitiated(
     const url::Origin& origin,
     const device::mojom::UsbDeviceInfo& device) {
-  DCHECK(base::Contains(devices_, device.guid));
+  DCHECK(devices_.contains(device.guid));
   RevokeObjectPermissionInternal(origin, DeviceInfoToValue(device),
                                  /*revoked_by_website=*/true);
 }
@@ -174,9 +265,7 @@ void UsbChooserContext::RevokeObjectPermissionInternal(
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
         browser_context_->GetPermissionControllerDelegate());
     permission_manager->RevokeDevicePermission(
-        static_cast<blink::PermissionType>(
-            WebContentsPermissionHelper::PermissionType::USB),
-        origin, object, browser_context_);
+        blink::PermissionType::USB, origin, object, browser_context_);
   } else {
     const std::string* guid = object_dict->FindString(kDeviceIdKey);
     auto it = ephemeral_devices_.find(origin);
@@ -187,14 +276,15 @@ void UsbChooserContext::RevokeObjectPermissionInternal(
     }
   }
 
-  api::Session* session = api::Session::FromBrowserContext(browser_context_);
-  if (session) {
+  gin::WeakCell<api::Session>* session =
+      api::Session::FromBrowserContext(browser_context_);
+  if (session && session->Get()) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     auto details = gin_helper::Dictionary::CreateEmpty(isolate);
     details.Set("device", object);
     details.Set("origin", origin.Serialize());
-    session->Emit("usb-device-revoked", details);
+    session->Get()->Emit("usb-device-revoked", details);
   }
 }
 
@@ -205,9 +295,8 @@ void UsbChooserContext::GrantDevicePermission(
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
         browser_context_->GetPermissionControllerDelegate());
     permission_manager->GrantDevicePermission(
-        static_cast<blink::PermissionType>(
-            WebContentsPermissionHelper::PermissionType::USB),
-        origin, DeviceInfoToValue(device_info), browser_context_);
+        blink::PermissionType::USB, origin, DeviceInfoToValue(device_info),
+        browser_context_);
   } else {
     ephemeral_devices_[origin].insert(device_info.guid);
   }
@@ -216,9 +305,14 @@ void UsbChooserContext::GrantDevicePermission(
 bool UsbChooserContext::HasDevicePermission(
     const url::Origin& origin,
     const device::mojom::UsbDeviceInfo& device_info) {
+  bool blocklist_disabled =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(kDisableUSBBlocklist);
+  if (!blocklist_disabled && UsbBlocklist::Get().IsExcluded(device_info)) {
+    return false;
+  }
+
   auto it = ephemeral_devices_.find(origin);
-  if (it != ephemeral_devices_.end() &&
-      base::Contains(it->second, device_info.guid)) {
+  if (it != ephemeral_devices_.end() && it->second.contains(device_info.guid)) {
     return true;
   }
 
@@ -226,9 +320,8 @@ bool UsbChooserContext::HasDevicePermission(
       browser_context_->GetPermissionControllerDelegate());
 
   return permission_manager->CheckDevicePermission(
-      static_cast<blink::PermissionType>(
-          WebContentsPermissionHelper::PermissionType::USB),
-      origin, DeviceInfoToValue(device_info), browser_context_);
+      blink::PermissionType::USB, origin, DeviceInfoToValue(device_info),
+      browser_context_);
 }
 
 void UsbChooserContext::GetDevices(
@@ -284,14 +377,13 @@ void UsbChooserContext::OnDeviceAdded(
     device::mojom::UsbDeviceInfoPtr device_info) {
   DCHECK(device_info);
   // Update the device list.
-  DCHECK(!base::Contains(devices_, device_info->guid));
+  DCHECK(!devices_.contains(device_info->guid));
   if (!ShouldExposeDevice(*device_info))
     return;
-  devices_.insert(std::make_pair(device_info->guid, device_info->Clone()));
+  devices_.try_emplace(device_info->guid, device_info->Clone());
 
   // Notify all observers.
-  for (auto& observer : device_observer_list_)
-    observer.OnDeviceAdded(*device_info);
+  device_observer_list_.Notify(&DeviceObserver::OnDeviceAdded, *device_info);
 }
 
 void UsbChooserContext::OnDeviceRemoved(
@@ -299,17 +391,16 @@ void UsbChooserContext::OnDeviceRemoved(
   DCHECK(device_info);
 
   if (!ShouldExposeDevice(*device_info)) {
-    DCHECK(!base::Contains(devices_, device_info->guid));
+    DCHECK(!devices_.contains(device_info->guid));
     return;
   }
 
   // Update the device list.
-  DCHECK(base::Contains(devices_, device_info->guid));
-  devices_.erase(device_info->guid);
+  const size_t n_erased = devices_.erase(device_info->guid);
+  DCHECK_EQ(n_erased, 1U);
 
   // Notify all device observers.
-  for (auto& observer : device_observer_list_)
-    observer.OnDeviceRemoved(*device_info);
+  device_observer_list_.Notify(&DeviceObserver::OnDeviceRemoved, *device_info);
 
   // If the device was persistent, return. Otherwise, notify all permission
   // observers that its permissions were revoked.
@@ -331,8 +422,7 @@ void UsbChooserContext::OnDeviceManagerConnectionError() {
   ephemeral_devices_.clear();
 
   // Notify all device observers.
-  for (auto& observer : device_observer_list_)
-    observer.OnDeviceManagerConnectionError();
+  device_observer_list_.Notify(&DeviceObserver::OnDeviceManagerConnectionError);
 }
 
 }  // namespace electron

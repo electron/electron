@@ -10,13 +10,18 @@
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/web_contents_observer.h"
-#include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/common/api/api.mojom.h"
 
 namespace content {
 class RenderFrameHost;
 }
+
+namespace gin {
+template <typename T>
+class WeakCell;
+}  // namespace gin
 
 namespace electron {
 class ElectronApiIPCHandlerImpl : public mojom::ElectronApiIPC,
@@ -65,6 +70,14 @@ class ElectronApiIPCHandlerImpl : public mojom::ElectronApiIPC,
   void OnConnectionError();
 
   content::RenderFrameHost* GetRenderFrameHost();
+  gin::WeakCell<api::Session>* GetSession();
+
+  gin_helper::internal::Event* MakeIPCEvent(
+      v8::Isolate* isolate,
+      api::Session* session,
+      bool internal,
+      electron::mojom::ElectronApiIPC::InvokeCallback callback =
+          electron::mojom::ElectronApiIPC::InvokeCallback());
 
   content::GlobalRenderFrameHostId render_frame_host_id_;
 

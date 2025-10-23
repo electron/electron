@@ -17,7 +17,9 @@
 namespace electron {
 
 GPUInfoManager* GPUInfoManager::GetInstance() {
-  return base::Singleton<GPUInfoManager>::get();
+  // will be deleted by CleanedUpAtExit::DoCleanup
+  static GPUInfoManager* instance = new GPUInfoManager();
+  return instance;
 }
 
 GPUInfoManager::GPUInfoManager()

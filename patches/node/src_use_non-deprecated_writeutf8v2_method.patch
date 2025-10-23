@@ -1,0 +1,138 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yagiz Nizipli <yagiz@nizipli.com>
+Date: Thu, 17 Apr 2025 11:36:25 -0400
+Subject: src: use non-deprecated WriteUtf8V2() method
+
+PR-URL: https://github.com/nodejs/node/pull/58070
+Reviewed-By: Antoine du Hamel <duhamelantoine1995@gmail.com>
+Reviewed-By: Darshan Sen <raisinten@gmail.com>
+Reviewed-By: Joyee Cheung <joyeec9h3@gmail.com>
+Reviewed-By: Rafael Gonzaga <rafael.nunu@hotmail.com>
+
+diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
+index b9a7710ef3cc516ff89aee0da0a8f142507605e3..73bfa6ac5e6e2b837b1bbc4a6d5f337fc0b79913 100644
+--- a/src/crypto/crypto_util.cc
++++ b/src/crypto/crypto_util.cc
+@@ -29,6 +29,7 @@ namespace node {
+ using ncrypto::BignumPointer;
+ using ncrypto::BIOPointer;
+ using ncrypto::CryptoErrorList;
++using ncrypto::DataPointer;
+ #ifndef OPENSSL_NO_ENGINE
+ using ncrypto::EnginePointer;
+ #endif  // !OPENSSL_NO_ENGINE
+@@ -447,11 +448,12 @@ ByteSource ByteSource::FromString(Environment* env, Local<String> str,
+   CHECK(str->IsString());
+   size_t size = str->Utf8LengthV2(env->isolate());
+   size_t alloc_size = ntc ? size + 1 : size;
+-  ByteSource::Builder out(alloc_size);
+-  int opts = String::NO_OPTIONS;
+-  if (!ntc) opts |= String::NO_NULL_TERMINATION;
+-  str->WriteUtf8(env->isolate(), out.data<char>(), alloc_size, nullptr, opts);
+-  return std::move(out).release();
++  auto out = DataPointer::Alloc(alloc_size);
++  int flags = String::WriteFlags::kNone;
++  if (ntc) flags |= String::WriteFlags::kNullTerminate;
++  str->WriteUtf8V2(
++      env->isolate(), static_cast<char*>(out.get()), alloc_size, flags);
++  return ByteSource::Allocated(out.release());
+ }
+ 
+ ByteSource ByteSource::FromBuffer(Local<Value> buffer, bool ntc) {
+diff --git a/src/encoding_binding.cc b/src/encoding_binding.cc
+index 2d45bbe60f413121b3fd0f01802aeb4368f0c301..2af83e27f77f9afe2f725338b04061efbf0960a1 100644
+--- a/src/encoding_binding.cc
++++ b/src/encoding_binding.cc
+@@ -98,13 +98,12 @@ void BindingData::EncodeInto(const FunctionCallbackInfo<Value>& args) {
+   char* write_result = static_cast<char*>(buf->Data()) + dest->ByteOffset();
+   size_t dest_length = dest->ByteLength();
+ 
+-  int nchars;
+-  int written = source->WriteUtf8(
+-      isolate,
+-      write_result,
+-      dest_length,
+-      &nchars,
+-      String::NO_NULL_TERMINATION | String::REPLACE_INVALID_UTF8);
++  size_t nchars;
++  size_t written = source->WriteUtf8V2(isolate,
++                                       write_result,
++                                       dest_length,
++                                       String::WriteFlags::kReplaceInvalidUtf8,
++                                       &nchars);
+ 
+   binding_data->encode_into_results_buffer_[0] = nchars;
+   binding_data->encode_into_results_buffer_[1] = written;
+@@ -129,11 +128,11 @@ void BindingData::EncodeUtf8String(const FunctionCallbackInfo<Value>& args) {
+ 
+     CHECK(bs);
+ 
+-    str->WriteUtf8(isolate,
+-                   static_cast<char*>(bs->Data()),
+-                   -1,  // We are certain that `data` is sufficiently large
+-                   nullptr,
+-                   String::NO_NULL_TERMINATION | String::REPLACE_INVALID_UTF8);
++    // We are certain that `data` is sufficiently large
++    str->WriteUtf8V2(isolate,
++                     static_cast<char*>(bs->Data()),
++                     bs->MaxByteLength(),
++                     String::WriteFlags::kReplaceInvalidUtf8);
+ 
+     ab = ArrayBuffer::New(isolate, std::move(bs));
+   }
+diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
+index a84fdae795dc1cb367a2e446264575c550ce07ee..8f97ca4d9cbb840efd36c77fed12d746a2793670 100644
+--- a/src/js_native_api_v8.cc
++++ b/src/js_native_api_v8.cc
+@@ -2484,12 +2484,12 @@ napi_status NAPI_CDECL napi_get_value_string_utf8(
+     CHECK_ARG(env, result);
+     *result = val.As<v8::String>()->Utf8LengthV2(env->isolate);
+   } else if (bufsize != 0) {
+-    int copied = val.As<v8::String>()->WriteUtf8(
+-        env->isolate,
+-        buf,
+-        bufsize - 1,
+-        nullptr,
+-        v8::String::REPLACE_INVALID_UTF8 | v8::String::NO_NULL_TERMINATION);
++    auto str = val.As<v8::String>();
++    size_t copied =
++        str->WriteUtf8V2(env->isolate,
++                         buf,
++                         bufsize - 1,
++                         v8::String::WriteFlags::kReplaceInvalidUtf8);
+ 
+     buf[copied] = '\0';
+     if (result != nullptr) {
+diff --git a/src/string_bytes.cc b/src/string_bytes.cc
+index 4324ed52d7cd6af5202512858a62346c3ab6c302..0eb9b1967f1f185a140239924809468394297d58 100644
+--- a/src/string_bytes.cc
++++ b/src/string_bytes.cc
+@@ -266,7 +266,8 @@ size_t StringBytes::Write(Isolate* isolate,
+ 
+     case BUFFER:
+     case UTF8:
+-      nbytes = str->WriteUtf8(isolate, buf, buflen, nullptr, flags);
++      nbytes = str->WriteUtf8V2(
++          isolate, buf, buflen, String::WriteFlags::kReplaceInvalidUtf8);
+       break;
+ 
+     case UCS2: {
+diff --git a/src/util.cc b/src/util.cc
+index 03c4794314c1c228f95536d2d20a440061cf3a80..e616e11107555f0613cb631e3b4320fc281441fa 100644
+--- a/src/util.cc
++++ b/src/util.cc
+@@ -125,12 +125,8 @@ static void MakeUtf8String(Isolate* isolate,
+   size_t storage = (3 * value_length) + 1;
+   target->AllocateSufficientStorage(storage);
+ 
+-  // TODO(@anonrig): Use simdutf to speed up non-one-byte strings once it's
+-  // implemented
+-  const int flags =
+-      String::NO_NULL_TERMINATION | String::REPLACE_INVALID_UTF8;
+-  const int length =
+-      string->WriteUtf8(isolate, target->out(), storage, nullptr, flags);
++  size_t length = string->WriteUtf8V2(
++      isolate, target->out(), storage, String::WriteFlags::kReplaceInvalidUtf8);
+   target->SetLengthAndZeroTerminate(length);
+ }
+ 

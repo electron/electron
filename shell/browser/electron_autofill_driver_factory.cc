@@ -83,7 +83,7 @@ AutofillDriver* AutofillDriverFactory::DriverForFrame(
                 driver.get());
     } else {
       driver_map_.erase(insertion_result.first);
-      DCHECK_EQ(driver_map_.count(render_frame_host), 0u);
+      DCHECK(!driver_map_.contains(render_frame_host));
       return nullptr;
     }
   }
@@ -94,8 +94,7 @@ AutofillDriver* AutofillDriverFactory::DriverForFrame(
 void AutofillDriverFactory::AddDriverForFrame(
     content::RenderFrameHost* render_frame_host,
     CreationCallback factory_method) {
-  auto insertion_result =
-      driver_map_.insert(std::make_pair(render_frame_host, nullptr));
+  auto insertion_result = driver_map_.try_emplace(render_frame_host, nullptr);
   // This can be called twice for the key representing the main frame.
   if (insertion_result.second) {
     insertion_result.first->second = std::move(factory_method).Run();

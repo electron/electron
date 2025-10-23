@@ -10,7 +10,6 @@
 #include "shell/browser/ui/views/submenu_button.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/color/color_provider.h"
-#include "ui/native_theme/common_theme.h"
 #include "ui/views/background.h"
 #include "ui/views/layout/box_layout.h"
 
@@ -19,7 +18,7 @@
 #endif
 
 #if BUILDFLAG(IS_WIN)
-#include "ui/gfx/color_utils.h"
+#include "shell/common/color_util.h"
 #endif
 
 namespace electron {
@@ -35,7 +34,7 @@ MenuBar::MenuBar(NativeWindow* window, RootView* root_view)
     : background_color_(kDefaultColor), window_(window), root_view_(root_view) {
   const ui::NativeTheme* theme = root_view_->GetNativeTheme();
 #if BUILDFLAG(IS_WIN)
-  SetBackground(views::CreateThemedSolidBackground(ui::kColorMenuBackground));
+  SetBackground(views::CreateSolidBackground(ui::kColorMenuBackground));
 #endif
   RefreshColorCache(theme);
   UpdateViewColors();
@@ -43,6 +42,9 @@ MenuBar::MenuBar(NativeWindow* window, RootView* root_view)
   SetLayoutManager(std::make_unique<views::BoxLayout>(
       views::BoxLayout::Orientation::kHorizontal));
   window_->AddObserver(this);
+  SetAccessibleName(std::u16string(),
+                    ax::mojom::NameFrom::kAttributeExplicitlyEmpty);
+  SetAccessibleRole(ax::mojom::Role::kMenuBar);
 }
 
 MenuBar::~MenuBar() {
@@ -121,11 +123,6 @@ void MenuBar::OnWindowBlur() {
 void MenuBar::OnWindowFocus() {
   UpdateViewColors();
   SetAcceleratorVisibility(pane_has_focus());
-}
-
-void MenuBar::GetAccessibleNodeData(ui::AXNodeData* node_data) {
-  node_data->SetNameExplicitlyEmpty();
-  node_data->role = ax::mojom::Role::kMenuBar;
 }
 
 bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {
@@ -208,7 +205,8 @@ void MenuBar::ViewHierarchyChanged(
     const views::ViewHierarchyChangedDetails& details) {
   views::AccessiblePaneView::ViewHierarchyChanged(details);
 #if BUILDFLAG(IS_WIN)
-  background_color_ = GetBackground()->get_color();
+  background_color_ =
+      GetBackground()->color().ResolveToSkColor(root_view_->GetColorProvider());
 #endif
 }
 
@@ -221,7 +219,8 @@ void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
     disabled_color_ = gtk::GetFgColor(
         "GtkMenuBar#menubar GtkMenuItem#menuitem:disabled GtkLabel");
 #elif BUILDFLAG(IS_WIN)
-    background_color_ = GetBackground()->get_color();
+    background_color_ = GetBackground()->color().ResolveToSkColor(
+        root_view_->GetColorProvider());
 #endif
   }
 }
@@ -229,11 +228,11 @@ void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
 void MenuBar::RebuildChildren() {
   RemoveAllChildViews();
   for (size_t i = 0, n = GetItemCount(); i < n; ++i) {
-    auto* button = new SubmenuButton(
+    auto button = std::make_unique<SubmenuButton>(
         base::BindRepeating(&MenuBar::ButtonPressed, base::Unretained(this), i),
         menu_model_->GetLabelAt(i), background_color_);
     button->SetID(i);
-    AddChildView(button);
+    AddChildView(std::move(button));
   }
   UpdateViewColors();
 }
@@ -261,7 +260,7 @@ void MenuBar::UpdateViewColors() {
 #elif BUILDFLAG(IS_WIN)
   for (views::View* child : GetChildrenInZOrder()) {
     auto* button = static_cast<SubmenuButton*>(child);
-    button->SetUnderlineColor(color_utils::GetSysSkColor(COLOR_MENUTEXT));
+    button->SetUnderlineColor(GetSysSkColor(COLOR_MENUTEXT));
   }
 #endif
 }

@@ -65,26 +65,15 @@ void ConvertFilters(const Filters& filters,
   }
 }
 
-static HRESULT GetFileNameFromShellItem(IShellItem* pShellItem,
-                                        SIGDN type,
-                                        LPWSTR lpstr,
-                                        size_t cchLength) {
-  assert(pShellItem != nullptr);
+auto GetFileNameFromShellItem(IShellItem* pShellItem, SIGDN type) {
+  std::optional<base::FilePath> path;
 
-  LPWSTR lpstrName = nullptr;
-  HRESULT hRet = pShellItem->GetDisplayName(type, &lpstrName);
-
-  if (SUCCEEDED(hRet)) {
-    if (wcslen(lpstrName) < cchLength) {
-      wcscpy_s(lpstr, cchLength, lpstrName);
-    } else {
-      NOTREACHED();
-    }
-
-    ::CoTaskMemFree(lpstrName);
+  if (wchar_t* name = {}; SUCCEEDED(pShellItem->GetDisplayName(type, &name))) {
+    path.emplace(name);
+    ::CoTaskMemFree(name);
   }
 
-  return hRet;
+  return path;
 }
 
 static void SetDefaultFolder(IFileDialog* dialog,
@@ -206,14 +195,11 @@ bool ShowOpenDialogSync(const DialogSettings& settings,
     if (FAILED(hr))
       return false;
 
-    wchar_t file_name[MAX_PATH];
-    hr = GetFileNameFromShellItem(item, SIGDN_FILESYSPATH, file_name,
-                                  std::size(file_name));
-
-    if (FAILED(hr))
+    auto path = GetFileNameFromShellItem(item, SIGDN_FILESYSPATH);
+    if (!path)
       return false;
 
-    paths->push_back(base::FilePath(file_name));
+    paths->emplace_back(std::move(*path));
   }
 
   return true;
@@ -233,11 +219,12 @@ void ShowOpenDialog(const DialogSettings& settings,
                      base::BindOnce(done, std::move(promise)));
 }
 
-bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
+std::optional<base::FilePath> ShowSaveDialogSync(
+    const DialogSettings& settings) {
   ATL::CComPtr<IFileSaveDialog> file_save_dialog;
   HRESULT hr = file_save_dialog.CoCreateInstance(CLSID_FileSaveDialog);
   if (FAILED(hr))
-    return false;
+    return {};
 
   DWORD options = FOS_FORCEFILESYSTEM | FOS_PATHMUSTEXIST | FOS_OVERWRITEPROMPT;
   if (settings.properties & SAVE_DIALOG_SHOW_HIDDEN_FILES)
@@ -250,32 +237,31 @@ bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
   hr = ShowFileDialog(file_save_dialog, settings);
 
   if (FAILED(hr))
-    return false;
+    return {};
 
   CComPtr<IShellItem> pItem;
   hr = file_save_dialog->GetResult(&pItem);
   if (FAILED(hr))
-    return false;
+    return {};
 
   PWSTR result_path = nullptr;
   hr = pItem->GetDisplayName(SIGDN_FILESYSPATH, &result_path);
   if (!SUCCEEDED(hr))
-    return false;
+    return {};
 
-  *path = base::FilePath(result_path);
+  auto path = base::FilePath{result_path};
   CoTaskMemFree(result_path);
-
-  return true;
+  return path;
 }
 
 void ShowSaveDialog(const DialogSettings& settings,
                     gin_helper::Promise<gin_helper::Dictionary> promise) {
   auto done = [](gin_helper::Promise<gin_helper::Dictionary> promise,
-                 bool success, base::FilePath result) {
+                 std::optional<base::FilePath> result) {
     v8::HandleScope handle_scope(promise.isolate());
     auto dict = gin::Dictionary::CreateEmpty(promise.isolate());
-    dict.Set("canceled", !success);
-    dict.Set("filePath", result);
+    dict.Set("canceled", !result.has_value());
+    dict.Set("filePath", result.value_or(base::FilePath{}));
     promise.Resolve(dict);
   };
   dialog_thread::Run(base::BindOnce(ShowSaveDialogSync, settings),

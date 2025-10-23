@@ -10,10 +10,10 @@
 #include <string>
 #include <vector>
 
-#include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/hash/md5.h"
 #include "base/logging.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/time/time.h"
 #include "shell/browser/notifications/win/windows_toast_notification.h"
@@ -27,16 +27,11 @@ namespace electron {
 
 namespace {
 
-bool IsDebuggingNotifications() {
-  return base::Environment::Create()->HasVar("ELECTRON_DEBUG_NOTIFICATIONS");
-}
-
 bool SaveIconToPath(const SkBitmap& bitmap, const base::FilePath& path) {
   std::optional<std::vector<uint8_t>> png_data =
       gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, false);
-  if (!png_data.has_value())
+  if (!png_data.has_value() || !png_data.value().size())
     return false;
-
   return base::WriteFile(path, png_data.value());
 }
 
@@ -50,7 +45,7 @@ std::unique_ptr<NotificationPresenter> NotificationPresenter::Create() {
   if (!presenter->Init())
     return {};
 
-  if (IsDebuggingNotifications())
+  if (electron::debug_notifications)
     LOG(INFO) << "Successfully created Windows notifications presenter";
 
   return presenter;
@@ -68,8 +63,10 @@ bool NotificationPresenterWin::Init() {
 std::wstring NotificationPresenterWin::SaveIconToFilesystem(
     const SkBitmap& icon,
     const GURL& origin) {
-  std::string filename;
+  if (icon.drawsNothing())
+    return L"";
 
+  std::string filename;
   if (origin.is_valid()) {
     filename = base::MD5String(origin.spec()) + ".png";
   } else {
@@ -79,11 +76,11 @@ std::wstring NotificationPresenterWin::SaveIconToFilesystem(
 
   ScopedAllowBlockingForElectron allow_blocking;
   base::FilePath path = temp_dir_.GetPath().Append(base::UTF8ToWide(filename));
-  if (base::PathExists(path))
-    return path.value();
-  if (SaveIconToPath(icon, path))
-    return path.value();
-  return base::UTF8ToWide(origin.spec());
+
+  if (!SaveIconToPath(icon, path))
+    return L"";
+
+  return path.value();
 }
 
 Notification* NotificationPresenterWin::CreateNotificationObject(

@@ -13,7 +13,7 @@ on:
         required: true
       target-arch:
         type: string
-        description: 'Arch to build for, can be x64, arm64 or arm'
+        description: 'Arch to build for, can be x64, arm64, ia32 or arm'
         required: true
       target-variant:
         type: string
@@ -48,29 +48,32 @@ on:
         required: true
         type: string
         default: '0'
-      strip-binaries: 
-        description: 'Strip the binaries before release (Linux only)'
-        required: false
-        type: boolean
-        default: false
       is-asan: 
         description: 'Building the Address Sanitizer (ASan) Linux build'
         required: false
         type: boolean
         default: false
-
+      enable-ssh:
+        description: 'Enable SSH debugging'
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
-  group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.target-variant }}-${{ inputs.is-asan }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
+  group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.target-variant }}-${{ inputs.is-asan }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref_protected != true }}
 
 env:
+  CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+  CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+  DD_API_KEY: ${{ secrets.DD_API_KEY }}
   ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
   SUDOWOODO_EXCHANGE_TOKEN: ${{ secrets.SUDOWOODO_EXCHANGE_TOKEN }}
   GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || inputs.target-platform == 'win' && '--custom-var=checkout_win=True' || '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True' }}
   ELECTRON_OUT_DIR: Default
+  ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
 
 jobs:
   build:
@@ -82,16 +85,28 @@ jobs:
     environment: ${{ inputs.environment }}
     env:
       TARGET_ARCH: ${{ inputs.target-arch }}
+      TARGET_PLATFORM: ${{ inputs.target-platform }}
     steps:
     - name: Create src dir
       run: |
         mkdir src
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+    - name: Setup SSH Debugging
+      if: ${{ inputs.target-platform == 'macos' && (inputs.enable-ssh || env.ACTIONS_STEP_DEBUG == 'true') }}
+      uses: ./src/electron/.github/actions/ssh-debug
+      with:
+        tunnel: 'true'
+      env:
+        CLOUDFLARE_TUNNEL_CERT: ${{ secrets.CLOUDFLARE_TUNNEL_CERT }}
+        CLOUDFLARE_TUNNEL_HOSTNAME: ${{ vars.CLOUDFLARE_TUNNEL_HOSTNAME }}
+        CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
+        AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
@@ -100,9 +115,9 @@ jobs:
       run: df -h
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'macos' }}
-      uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af
+      uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
       with:
-        node-version: 20.11.x
+        node-version: 20.19.x
         cache: yarn
         cache-dependency-path: src/electron/yarn.lock
     - name: Install Dependencies
@@ -125,24 +140,10 @@ jobs:
           GN_EXTRA_ARGS='is_asan=true'
         fi
         echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
-    - name: Get Depot Tools
-      timeout-minutes: 5
-      run: |
-        git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-
-        SEDOPTION="-i"
-        if [ "`uname`" = "Darwin" ]; then
-          SEDOPTION="-i ''"
-        fi
-
-        # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
-        sed $SEDOPTION '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-
-        # Ensure depot_tools does not update.
-        test -d depot_tools && cd depot_tools
-        touch .disable_auto_update
-    - name: Add Depot Tools to PATH
-      run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
+    - name: Install Build Tools
+      uses: ./src/electron/.github/actions/install-build-tools      
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js
@@ -150,27 +151,29 @@ jobs:
         echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
         echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
     - name: Restore src cache via AZCopy
-      if: ${{ inputs.target-platform == 'macos' }}
+      if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/restore-cache-azcopy
+      with:
+        target-platform: ${{ inputs.target-platform }}
     - name: Restore src cache via AKS
       if: ${{ inputs.target-platform == 'linux' }}
       uses: ./src/electron/.github/actions/restore-cache-aks
-    - name: Checkout src via gclient sync
-      if: ${{ inputs.target-platform == 'win' }}
-      uses: ./src/electron/.github/actions/checkout
-      with:
-        use-cache: 'false'
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
-    - name: Install Build Tools
-      uses: ./src/electron/.github/actions/install-build-tools
+    - name: Fix Sync
+      if: ${{ inputs.target-platform != 'linux' }}
+      uses: ./src/electron/.github/actions/fix-sync
+      with:
+        target-platform: ${{ inputs.target-platform }}
+      env:
+        ELECTRON_DEPOT_TOOLS_DISABLE_LOG: true
     - name: Init Build Tools
       run: |
-        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
+        e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }} --remote-build siso
     - name: Run Electron Only Hooks
       run: |
         e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
@@ -180,12 +183,6 @@ jobs:
         echo "DEPSHASH=$(cat src/electron/.depshash)" >> $GITHUB_ENV
     - name: Add CHROMIUM_BUILDTOOLS_PATH to env
       run: echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
-    - name: Fix Sync (macOS)
-      if: ${{ inputs.target-platform == 'macos' }}
-      uses: ./src/electron/.github/actions/fix-sync-macos
-    - name: Setup Number of Ninja Processes
-      run: |
-        echo "NUMBER_OF_NINJA_PROCESSES=${{ inputs.target-platform != 'macos' && '300' || '200' }}" >> $GITHUB_ENV
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
@@ -198,7 +195,6 @@ jobs:
         artifact-platform: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
         is-release: '${{ inputs.is-release }}'
         generate-symbols: '${{ inputs.generate-symbols }}'
-        strip-binaries: '${{ inputs.strip-binaries }}'
         upload-to-storage: '${{ inputs.upload-to-storage }}'
         is-asan: '${{ inputs.is-asan }}'
     - name: Set GN_EXTRA_ARGS for MAS Build

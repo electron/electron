@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "base/base64.h"
+#include "base/containers/span.h"
 #include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram.h"
 #include "base/strings/pattern.h"
@@ -21,6 +22,7 @@
 #include "base/uuid.h"
 #include "base/values.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
+#include "components/embedder_support/user_agent_utils.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -34,7 +36,6 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
-#include "content/public/common/user_agent.h"
 #include "ipc/ipc_channel.h"
 #include "net/http/http_response_headers.h"
 #include "net/http/http_status_code.h"
@@ -59,10 +60,11 @@
 #include "v8/include/v8.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "chrome/common/extensions/chrome_manifest_url_handlers.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
 #include "extensions/browser/extension_registry.h"
+#include "extensions/common/manifest_handlers/chrome_url_overrides_handler.h"
+#include "extensions/common/manifest_handlers/devtools_page_handler.h"
 #include "extensions/common/permissions/permissions_data.h"
 #endif
 
@@ -108,7 +110,7 @@ gfx::Rect DictionaryToRect(const base::Value::Dict& dict) {
 }
 
 bool IsPointInScreen(const gfx::Point& point) {
-  return std::ranges::any_of(display::Screen::GetScreen()->GetAllDisplays(),
+  return std::ranges::any_of(display::Screen::Get()->GetAllDisplays(),
                              [&point](auto const& display) {
                                return display.bounds().Contains(point);
                              });
@@ -140,13 +142,12 @@ double GetNextZoomLevel(double level, bool out) {
 GURL GetRemoteBaseURL() {
   return GURL(absl::StrFormat("%s%s/%s/", kChromeUIDevToolsRemoteFrontendBase,
                               kChromeUIDevToolsRemoteFrontendPath,
-                              content::GetChromiumGitRevision().c_str()));
+                              embedder_support::GetChromiumGitRevision()));
 }
 
 GURL GetDevToolsURL(bool can_dock) {
-  auto url_string =
-      absl::StrFormat(kChromeUIDevToolsURL, GetRemoteBaseURL().spec().c_str(),
-                      can_dock ? "true" : "");
+  auto url_string = absl::StrFormat(
+      kChromeUIDevToolsURL, GetRemoteBaseURL().spec(), can_dock ? "true" : "");
   return GURL(url_string);
 }
 
@@ -297,11 +298,6 @@ class InspectableWebContents::NetworkResourceLoader
   base::TimeDelta retry_delay_;
 };
 
-// Implemented separately on each platform.
-InspectableWebContentsView* CreateInspectableContentsView(
-    InspectableWebContents* inspectable_web_contents);
-
-// static
 // static
 void InspectableWebContents::RegisterPrefs(PrefRegistrySimple* registry) {
   registry->RegisterDictionaryPref(kDevToolsBoundsPref,
@@ -317,7 +313,7 @@ InspectableWebContents::InspectableWebContents(
     : pref_service_(pref_service),
       web_contents_(std::move(web_contents)),
       is_guest_(is_guest),
-      view_(CreateInspectableContentsView(this)) {
+      view_(new InspectableWebContentsView(this)) {
   const base::Value* bounds_dict =
       &pref_service_->GetValue(kDevToolsBoundsPref);
   if (bounds_dict->is_dict()) {
@@ -330,11 +326,11 @@ InspectableWebContents::InspectableWebContents(
     if (!IsPointInScreen(devtools_bounds_.origin())) {
       gfx::Rect display;
       if (!is_guest && web_contents_->GetNativeView()) {
-        display = display::Screen::GetScreen()
+        display = display::Screen::Get()
                       ->GetDisplayNearestView(web_contents_->GetNativeView())
                       .bounds();
       } else {
-        display = display::Screen::GetScreen()->GetPrimaryDisplay().bounds();
+        display = display::Screen::Get()->GetPrimaryDisplay().bounds();
       }
 
       devtools_bounds_.set_x(display.x() +
@@ -533,6 +529,8 @@ void InspectableWebContents::CloseWindow() {
 }
 
 void InspectableWebContents::LoadCompleted() {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+
   frontend_loaded_ = true;
   if (managed_devtools_web_contents_)
     view_->ShowDevTools(activate_);
@@ -603,7 +601,7 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
     // process. Grant the devtools process the ability to request URLs from the
     // extension.
     content::ChildProcessSecurityPolicy::GetInstance()->GrantRequestOrigin(
-        web_contents_->GetPrimaryMainFrame()->GetProcess()->GetID(),
+        web_contents_->GetPrimaryMainFrame()->GetProcess()->GetDeprecatedID(),
         url::Origin::Create(extension->url()));
 
     base::Value::Dict extension_info;
@@ -631,8 +629,7 @@ void InspectableWebContents::SetInspectedPageBounds(const gfx::Rect& rect) {
 void InspectableWebContents::InspectedURLChanged(const std::string& url) {
   if (managed_devtools_web_contents_) {
     if (devtools_title_.empty()) {
-      view_->SetTitle(
-          base::UTF8ToUTF16(absl::StrFormat(kTitleFormat, url.c_str())));
+      view_->SetTitle(base::UTF8ToUTF16(absl::StrFormat(kTitleFormat, url)));
     }
   }
 }
@@ -684,7 +681,7 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             std::move(pending_remote)));
   } else if (const auto* const protocol_handler =
-                 protocol_registry->FindRegistered(gurl.scheme_piece())) {
+                 protocol_registry->FindRegistered(gurl.scheme())) {
     url_loader_factory = network::SharedURLLoaderFactory::Create(
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             ElectronURLLoaderFactory::Create(protocol_handler->first,
@@ -820,12 +817,6 @@ void InspectableWebContents::DispatchProtocolMessageFromDevToolsFrontend(
     agent_host_->DispatchProtocolMessage(this, base::as_byte_span(message));
 }
 
-void InspectableWebContents::SendJsonRequest(DispatchCallback callback,
-                                             const std::string& browser_id,
-                                             const std::string& url) {
-  std::move(callback).Run(nullptr);
-}
-
 void InspectableWebContents::GetPreferences(DispatchCallback callback) {
   const base::Value& prefs = pref_service_->GetValue(kDevToolsPreferences);
   std::move(callback).Run(&prefs);
@@ -908,8 +899,7 @@ void InspectableWebContents::DispatchProtocolMessage(
   if (!frontend_loaded_)
     return;
 
-  const std::string_view str_message{
-      reinterpret_cast<const char*>(message.data()), message.size()};
+  const std::string_view str_message = base::as_string_view(message);
   if (str_message.length() < kMaxMessageChunkSize) {
     CallClientFunction("DevToolsAPI", "dispatchMessage",
                        base::Value(std::string(str_message)));
@@ -1031,9 +1021,9 @@ void InspectableWebContents::DidFinishNavigation(
   // most likely bug in chromium.
   base::ReplaceFirstSubstringAfterOffset(&it->second, 0, "var chrome",
                                          "var chrome = window.chrome ");
-  auto script = absl::StrFormat(
-      "%s(\"%s\")", it->second.c_str(),
-      base::Uuid::GenerateRandomV4().AsLowercaseString().c_str());
+  auto script =
+      absl::StrFormat("%s(\"%s\")", it->second,
+                      base::Uuid::GenerateRandomV4().AsLowercaseString());
   // Invoking content::DevToolsFrontendHost::SetupExtensionsAPI(frame, script);
   // should be enough, but it seems to be a noop currently.
   frame->ExecuteJavaScriptForTests(base::UTF8ToUTF16(script),

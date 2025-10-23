@@ -6,27 +6,24 @@
 
 #include <string>
 #include <string_view>
-#include <utility>
 #include <vector>
 
 #include "base/command_line.h"
 #include "base/containers/extend.h"
 #include "base/files/file_util.h"
 #include "base/strings/string_split.h"
+#include "content/public/common/buildflags.h"
 #include "content/public/common/content_constants.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
 #include "extensions/common/constants.h"
 #include "pdf/buildflags.h"
-#include "ppapi/buildflags/buildflags.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
 #include "third_party/widevine/cdm/buildflags.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "url/url_constants.h"
-// In SHARED_INTERMEDIATE_DIR.
-#include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
 
 #if BUILDFLAG(ENABLE_WIDEVINE)
 #include "base/native_library.h"
@@ -172,7 +169,6 @@ void ElectronContentClient::AddPlugins(
 
   content::ContentPluginInfo pdf_info;
   pdf_info.is_internal = true;
-  pdf_info.is_out_of_process = true;
   pdf_info.name = kPDFInternalPluginName;
   pdf_info.description = kPDFPluginDescription;
   // This isn't a real file path; it's just used as a unique identifier.

@@ -69,6 +69,7 @@ const assertChromeDevTools = function (contents: Electron.WebContents, api: stri
 
 ipcMainInternal.handle(IPC_MESSAGES.INSPECTOR_CONTEXT_MENU, function (event, items: ContextMenuItem[], isEditMenu: boolean) {
   return new Promise<number | void>(resolve => {
+    if (event.type !== 'frame') return;
     assertChromeDevTools(event.sender, 'window.InspectorFrontendHost.showContextMenuAtPoint()');
 
     const template = isEditMenu ? getEditMenuItems() : convertToMenuTemplate(items, resolve);
@@ -80,6 +81,7 @@ ipcMainInternal.handle(IPC_MESSAGES.INSPECTOR_CONTEXT_MENU, function (event, ite
 });
 
 ipcMainInternal.handle(IPC_MESSAGES.INSPECTOR_SELECT_FILE, async function (event) {
+  if (event.type !== 'frame') return [];
   assertChromeDevTools(event.sender, 'window.UI.createFileSelectorElement()');
 
   const result = await dialog.showOpenDialog({});
@@ -92,6 +94,7 @@ ipcMainInternal.handle(IPC_MESSAGES.INSPECTOR_SELECT_FILE, async function (event
 });
 
 ipcMainUtils.handleSync(IPC_MESSAGES.INSPECTOR_CONFIRM, async function (event, message: string = '', title: string = '') {
+  if (event.type !== 'frame') return;
   assertChromeDevTools(event.sender, 'window.confirm()');
 
   const options = {

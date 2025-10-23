@@ -4,8 +4,6 @@
 
 #include "shell/browser/relauncher.h"
 
-#include <utility>
-
 #if BUILDFLAG(IS_WIN)
 #include <windows.h>
 #endif

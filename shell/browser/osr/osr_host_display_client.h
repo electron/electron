@@ -14,7 +14,7 @@
 #include "shell/browser/osr/osr_paint_event.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkCanvas.h"
-#include "ui/gfx/native_widget_types.h"
+#include "ui/gfx/native_ui_types.h"
 
 class SkBitmap;
 class SkCanvas;

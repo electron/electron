@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "base/command_line.h"
+#include "base/containers/fixed_flat_set.h"
 #include "base/strings/pattern.h"
 #include "base/types/expected_macros.h"
 #include "chrome/common/url_constants.h"
@@ -320,6 +321,8 @@ ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
     tab.active = contents->IsFocused();
     tab.audible = contents->IsCurrentlyAudible();
     tab.muted_info = CreateMutedInfo(wc);
+    // TODO: Add proper support for split views
+    tab.split_view_id = -1;
 
     result.Append(tab.ToValue());
   }
@@ -352,6 +355,8 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
 
   tab.active = contents->IsFocused();
   tab.last_accessed = wc->GetLastActiveTime().InMillisecondsFSinceUnixEpoch();
+  // TODO: Add proper support for split views
+  tab.split_view_id = -1;
 
   return RespondNow(ArgumentList(tabs::Get::Results::Create(std::move(tab))));
 }
@@ -496,20 +501,23 @@ bool IsKillURL(const GURL& url) {
   }
 
   // Also disallow a few more hosts which are not covered by the check above.
-  static const char* const kKillHosts[] = {
-      chrome::kChromeUIDelayedHangUIHost, chrome::kChromeUIHangUIHost,
-      chrome::kChromeUIQuitHost,          chrome::kChromeUIRestartHost,
-      content::kChromeUIBrowserCrashHost, content::kChromeUIMemoryExhaustHost,
-  };
+  constexpr auto kKillHosts = base::MakeFixedFlatSet<std::string_view>({
+      chrome::kChromeUIDelayedHangUIHost,
+      chrome::kChromeUIHangUIHost,
+      chrome::kChromeUIQuitHost,
+      chrome::kChromeUIRestartHost,
+      content::kChromeUIBrowserCrashHost,
+      content::kChromeUIMemoryExhaustHost,
+  });
 
-  return base::Contains(kKillHosts, url.host_piece());
+  return kKillHosts.contains(url.host());
 }
 
 GURL ResolvePossiblyRelativeURL(const std::string& url_string,
                                 const Extension* extension) {
   GURL url = GURL(url_string);
   if (!url.is_valid() && extension)
-    url = extension->GetResourceURL(url_string);
+    url = extension->ResolveExtensionURL(url_string);
 
   return url;
 }
@@ -651,7 +659,16 @@ bool TabsUpdateFunction::UpdateURL(const std::string& url_string,
   // will stay in the omnibox - see https://crbug.com/1085779.
   load_params.transition_type = ui::PAGE_TRANSITION_FROM_API;
 
-  web_contents_->GetController().LoadURLWithParams(load_params);
+  base::WeakPtr<content::NavigationHandle> navigation_handle =
+      web_contents_->GetController().LoadURLWithParams(load_params);
+  // Navigation can fail for any number of reasons at the content layer.
+  // Unfortunately, we can't provide a detailed error message here, because
+  // there are too many possible triggers. At least notify the extension that
+  // the update failed.
+  if (!navigation_handle) {
+    *error = "Navigation rejected.";
+    return false;
+  }
 
   DCHECK_EQ(url,
             web_contents_->GetController().GetPendingEntry()->GetVirtualURL());
@@ -683,6 +700,8 @@ ExtensionFunction::ResponseValue TabsUpdateFunction::GetResult() {
     tab.active = api_web_contents->IsFocused();
   tab.muted_info = CreateMutedInfo(web_contents_);
   tab.audible = web_contents_->IsCurrentlyAudible();
+  // TODO: Add proper support for split views
+  tab.split_view_id = -1;
 
   return ArgumentList(tabs::Get::Results::Create(std::move(tab)));
 }

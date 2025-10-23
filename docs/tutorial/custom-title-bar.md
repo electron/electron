@@ -5,7 +5,7 @@
 Application windows have a default [chrome][] applied by the OS. Not to be confused
 with the Google Chrome browser, window _chrome_ refers to the parts of the window (e.g.
 title bar, toolbars, controls) that are not a part of the main web content. While the
-default title bar provided by the OS chrome is sufficent for simple use cases, many
+default title bar provided by the OS chrome is sufficient for simple use cases, many
 applications opt to remove it. Implementing a custom title bar can help your application
 feel more modern and consistent across platforms.
 
@@ -76,6 +76,7 @@ use the native UI to control the window.
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({ titleBarStyle: 'customButtonsOnHover' })
 ```
 
@@ -89,6 +90,7 @@ by a fixed amount.
 
 ```js title='main.js'
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({ titleBarStyle: 'hiddenInset' })
 ```
 
@@ -98,6 +100,7 @@ constructor.
 
 ```js title='main.js'
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({
   titleBarStyle: 'hidden',
   trafficLightPosition: { x: 10, y: 10 }
@@ -112,6 +115,7 @@ on the value of its boolean parameter.
 
 ```js title='main.js'
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 // hides the traffic lights
 win.setWindowButtonVisibility(false)
@@ -149,6 +153,7 @@ default to the standard system height:
 
 ```js title='main.js'
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({
   titleBarStyle: 'hidden',
   titleBarOverlay: {

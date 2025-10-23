@@ -10,8 +10,6 @@
 
 #include "content/public/renderer/content_renderer_client.h"
 #include "electron/buildflags/buildflags.h"
-// In SHARED_INTERMEDIATE_DIR.
-#include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "services/service_manager/public/cpp/binder_registry.h"
@@ -58,12 +56,15 @@ class RendererClientBase : public content::ContentRendererClient
                     mojo::ScopedMessagePipeHandle interface_pipe) override;
 #endif
 
-  virtual void DidCreateScriptContext(v8::Local<v8::Context> context,
+  virtual void DidCreateScriptContext(v8::Isolate* isolate,
+                                      v8::Local<v8::Context> context,
                                       content::RenderFrame* render_frame) = 0;
-  virtual void WillReleaseScriptContext(v8::Local<v8::Context> context,
+  virtual void WillReleaseScriptContext(v8::Isolate* isolate,
+                                        v8::Local<v8::Context> context,
                                         content::RenderFrame* render_frame) = 0;
   virtual void DidClearWindowObject(content::RenderFrame* render_frame);
-  virtual void SetupMainWorldOverrides(v8::Local<v8::Context> context,
+  virtual void SetupMainWorldOverrides(v8::Isolate* isolate,
+                                       v8::Local<v8::Context> context,
                                        content::RenderFrame* render_frame);
 
   std::unique_ptr<blink::WebPrescientNetworking> CreatePrescientNetworking(
@@ -78,7 +79,8 @@ class RendererClientBase : public content::ContentRendererClient
       v8::Local<v8::Object> context,
       v8::Local<v8::Function> register_cb);
 
-  bool IsWebViewFrame(v8::Local<v8::Context> context,
+  bool IsWebViewFrame(v8::Isolate* isolate,
+                      v8::Local<v8::Context> context,
                       content::RenderFrame* render_frame) const;
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -90,7 +92,8 @@ class RendererClientBase : public content::ContentRendererClient
                    gin_helper::Dictionary* process,
                    content::RenderFrame* render_frame);
 
-  bool ShouldLoadPreload(v8::Local<v8::Context> context,
+  bool ShouldLoadPreload(v8::Isolate* isolate,
+                         v8::Local<v8::Context> context,
                          content::RenderFrame* render_frame) const;
 
   // content::ContentRendererClient:
@@ -121,6 +124,7 @@ class RendererClientBase : public content::ContentRendererClient
       const GURL& script_url) override;
   void WillEvaluateServiceWorkerOnWorkerThread(
       blink::WebServiceWorkerContextProxy* context_proxy,
+      v8::Isolate* const isolate,
       v8::Local<v8::Context> v8_context,
       int64_t service_worker_version_id,
       const GURL& service_worker_scope,
@@ -138,13 +142,6 @@ class RendererClientBase : public content::ContentRendererClient
   void WebViewCreated(blink::WebView* web_view,
                       bool was_created_by_renderer,
                       const url::Origin* outermost_origin) override;
-
- protected:
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  // app_shell embedders may need custom extensions client interfaces.
-  // This class takes ownership of the returned object.
-  virtual extensions::ExtensionsClient* CreateExtensionsClient();
-#endif
 
  private:
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

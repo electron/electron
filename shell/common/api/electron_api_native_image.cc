@@ -16,7 +16,6 @@
 #include "base/strings/pattern.h"
 #include "base/strings/utf_string_conversions.h"
 #include "gin/arguments.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "gin/per_isolate_data.h"
 #include "net/base/data_url.h"
@@ -29,6 +28,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -51,7 +51,7 @@
 #if BUILDFLAG(IS_WIN)
 #include "base/win/scoped_gdi_object.h"
 #include "shell/common/asar/archive.h"
-#include "ui/gfx/icon_util.h"
+#include "ui/gfx/win/icon_util.h"
 #endif
 
 namespace electron::api {
@@ -102,7 +102,8 @@ bool IsTemplateFilename(const base::FilePath& path) {
 #endif
 
 #if BUILDFLAG(IS_WIN)
-base::win::ScopedHICON ReadICOFromPath(int size, const base::FilePath& path) {
+base::win::ScopedGDIObject<HICON> ReadICOFromPath(int size,
+                                                  const base::FilePath& path) {
   // If file is in asar archive, we extract it to a temp file so LoadImage can
   // load it.
   base::FilePath asar_path, relative_path;
@@ -115,11 +116,15 @@ base::win::ScopedHICON ReadICOFromPath(int size, const base::FilePath& path) {
   }
 
   // Load the icon from file.
-  return base::win::ScopedHICON(
+  return base::win::ScopedGDIObject<HICON>(
       static_cast<HICON>(LoadImage(nullptr, image_path.value().c_str(),
                                    IMAGE_ICON, size, size, LR_LOADFROMFILE)));
 }
 #endif
+
+[[nodiscard]] v8::Local<v8::Value> NewEmptyBuffer(v8::Isolate* isolate) {
+  return node::Buffer::New(isolate, 0).ToLocalChecked();
+}
 
 }  // namespace
 
@@ -225,57 +230,48 @@ HICON NativeImage::GetHICON(int size) {
 #endif
 
 v8::Local<v8::Value> NativeImage::ToPNG(gin::Arguments* args) {
+  v8::Isolate* const isolate = args->isolate();
   float scale_factor = GetScaleFactorFromOptions(args);
 
   if (scale_factor == 1.0f) {
     // Use raw 1x PNG bytes when available
-    scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
-    if (png->size() > 0) {
-      const char* data = reinterpret_cast<const char*>(png->front());
-      size_t size = png->size();
-      return node::Buffer::Copy(args->isolate(), data, size).ToLocalChecked();
-    }
+    const scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
+    const base::span<const uint8_t> png_span = *png;
+    if (!png_span.empty())
+      return electron::Buffer::Copy(isolate, png_span).ToLocalChecked();
   }
 
   const SkBitmap bitmap =
       image_.AsImageSkia().GetRepresentation(scale_factor).GetBitmap();
-  std::optional<std::vector<uint8_t>> encoded =
+  const std::optional<std::vector<uint8_t>> encoded =
       gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, false);
   if (!encoded.has_value())
-    return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
-  const char* data = reinterpret_cast<char*>(encoded->data());
-  size_t size = encoded->size();
-  return node::Buffer::Copy(args->isolate(), data, size).ToLocalChecked();
+    return NewEmptyBuffer(isolate);
+
+  return electron::Buffer::Copy(isolate, *encoded).ToLocalChecked();
 }
 
 v8::Local<v8::Value> NativeImage::ToBitmap(gin::Arguments* args) {
-  float scale_factor = GetScaleFactorFromOptions(args);
+  v8::Isolate* const isolate = args->isolate();
 
-  const SkBitmap bitmap =
-      image_.AsImageSkia().GetRepresentation(scale_factor).GetBitmap();
+  const float scale = GetScaleFactorFromOptions(args);
+  const auto src = image_.AsImageSkia().GetRepresentation(scale).GetBitmap();
 
-  SkImageInfo info =
-      SkImageInfo::MakeN32Premul(bitmap.width(), bitmap.height());
+  const auto dst_info = SkImageInfo::MakeN32Premul(src.dimensions());
+  const size_t dst_n_bytes = dst_info.computeMinByteSize();
+  auto dst_buf = v8::ArrayBuffer::New(isolate, dst_n_bytes);
 
-  auto array_buffer =
-      v8::ArrayBuffer::New(args->isolate(), info.computeMinByteSize());
-  if (bitmap.readPixels(info, array_buffer->Data(), info.minRowBytes(), 0, 0)) {
-    return node::Buffer::New(args->isolate(), array_buffer, 0,
-                             info.computeMinByteSize())
-        .ToLocalChecked();
-  }
-  return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
+  if (!src.readPixels(dst_info, dst_buf->Data(), dst_info.minRowBytes(), 0, 0))
+    return NewEmptyBuffer(isolate);
+  return node::Buffer::New(isolate, dst_buf, 0, dst_n_bytes).ToLocalChecked();
 }
 
 v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
-  std::optional<std::vector<uint8_t>> encoded_image =
+  const std::optional<std::vector<uint8_t>> encoded_image =
       gfx::JPEG1xEncodedDataFromImage(image_, quality);
-  if (!encoded_image.has_value())
-    return node::Buffer::New(isolate, 0).ToLocalChecked();
-  return node::Buffer::Copy(
-             isolate, reinterpret_cast<const char*>(&encoded_image->front()),
-             encoded_image->size())
-      .ToLocalChecked();
+  if (!encoded_image)
+    return NewEmptyBuffer(isolate);
+  return electron::Buffer::Copy(isolate, *encoded_image).ToLocalChecked();
 }
 
 std::string NativeImage::ToDataURL(gin::Arguments* args) {
@@ -286,32 +282,30 @@ std::string NativeImage::ToDataURL(gin::Arguments* args) {
 }
 
 v8::Local<v8::Value> NativeImage::GetBitmap(gin::Arguments* args) {
-  float scale_factor = GetScaleFactorFromOptions(args);
+  static bool deprecated_warning_issued = false;
 
-  const SkBitmap bitmap =
-      image_.AsImageSkia().GetRepresentation(scale_factor).GetBitmap();
-  SkPixelRef* ref = bitmap.pixelRef();
-  if (!ref)
-    return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
-  return node::Buffer::Copy(args->isolate(),
-                            reinterpret_cast<char*>(ref->pixels()),
-                            bitmap.computeByteSize())
-      .ToLocalChecked();
+  if (!deprecated_warning_issued) {
+    deprecated_warning_issued = true;
+    util::EmitDeprecationWarning(
+        isolate_, "getBitmap() is deprecated, use toBitmap() instead.");
+  }
+
+  return ToBitmap(args);
 }
 
 v8::Local<v8::Value> NativeImage::GetNativeHandle(
     gin_helper::ErrorThrower thrower) {
+  v8::Isolate* const isolate = thrower.isolate();
 #if BUILDFLAG(IS_MAC)
   if (IsEmpty())
-    return node::Buffer::New(thrower.isolate(), 0).ToLocalChecked();
+    return NewEmptyBuffer(isolate);
 
   NSImage* ptr = image_.AsNSImage();
-  return node::Buffer::Copy(thrower.isolate(), reinterpret_cast<char*>(ptr),
-                            sizeof(void*))
+  return electron::Buffer::Copy(isolate, base::byte_span_from_ref(ptr))
       .ToLocalChecked();
 #else
   thrower.ThrowError("Not implemented");
-  return v8::Undefined(thrower.isolate());
+  return v8::Undefined(isolate);
 #endif
 }
 
@@ -344,8 +338,8 @@ float NativeImage::GetAspectRatio(const std::optional<float> scale_factor) {
     return static_cast<float>(size.width()) / static_cast<float>(size.height());
 }
 
-gin::Handle<NativeImage> NativeImage::Resize(gin::Arguments* args,
-                                             base::Value::Dict options) {
+gin_helper::Handle<NativeImage> NativeImage::Resize(gin::Arguments* args,
+                                                    base::Value::Dict options) {
   float scale_factor = GetScaleFactorFromOptions(args);
 
   gfx::Size size = GetSize(scale_factor);
@@ -381,19 +375,16 @@ gin::Handle<NativeImage> NativeImage::Resize(gin::Arguments* args,
                     image_.AsImageSkia(), method, size)});
 }
 
-gin::Handle<NativeImage> NativeImage::Crop(v8::Isolate* isolate,
-                                           const gfx::Rect& rect) {
+gin_helper::Handle<NativeImage> NativeImage::Crop(v8::Isolate* isolate,
+                                                  const gfx::Rect& rect) {
   return Create(isolate, gfx::Image{gfx::ImageSkiaOperations::ExtractSubset(
                              image_.AsImageSkia(), rect)});
 }
 
 void NativeImage::AddRepresentation(const gin_helper::Dictionary& options) {
-  int width = 0;
-  int height = 0;
-  float scale_factor = 1.0f;
-  options.Get("width", &width);
-  options.Get("height", &height);
-  options.Get("scaleFactor", &scale_factor);
+  const int width = options.ValueOrDefault("width", 0);
+  const int height = options.ValueOrDefault("height", 0);
+  const float scale_factor = options.ValueOrDefault("scaleFactor", 1.0F);
 
   bool skia_rep_added = false;
   gfx::ImageSkia image_skia = image_.AsImageSkia();
@@ -402,7 +393,7 @@ void NativeImage::AddRepresentation(const gin_helper::Dictionary& options) {
   GURL url;
   if (options.Get("buffer", &buffer) && node::Buffer::HasInstance(buffer)) {
     skia_rep_added = electron::util::AddImageSkiaRepFromBuffer(
-        &image_skia, electron::util::as_byte_span(buffer), width, height,
+        &image_skia, electron::Buffer::as_byte_span(buffer), width, height,
         scale_factor);
   } else if (options.Get("dataURL", &url)) {
     std::string mime_type, charset, data;
@@ -433,18 +424,18 @@ bool NativeImage::IsTemplateImage() {
 #endif
 
 // static
-gin::Handle<NativeImage> NativeImage::CreateEmpty(v8::Isolate* isolate) {
+gin_helper::Handle<NativeImage> NativeImage::CreateEmpty(v8::Isolate* isolate) {
   return Create(isolate, gfx::Image{});
 }
 
 // static
-gin::Handle<NativeImage> NativeImage::Create(v8::Isolate* isolate,
-                                             const gfx::Image& image) {
-  return gin::CreateHandle(isolate, new NativeImage(isolate, image));
+gin_helper::Handle<NativeImage> NativeImage::Create(v8::Isolate* isolate,
+                                                    const gfx::Image& image) {
+  return gin_helper::CreateHandle(isolate, new NativeImage(isolate, image));
 }
 
 // static
-gin::Handle<NativeImage> NativeImage::CreateFromPNG(
+gin_helper::Handle<NativeImage> NativeImage::CreateFromPNG(
     v8::Isolate* isolate,
     const base::span<const uint8_t> data) {
   gfx::ImageSkia image_skia;
@@ -453,7 +444,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromPNG(
 }
 
 // static
-gin::Handle<NativeImage> NativeImage::CreateFromJPEG(
+gin_helper::Handle<NativeImage> NativeImage::CreateFromJPEG(
     v8::Isolate* isolate,
     const base::span<const uint8_t> buffer) {
   gfx::ImageSkia image_skia;
@@ -462,19 +453,20 @@ gin::Handle<NativeImage> NativeImage::CreateFromJPEG(
 }
 
 // static
-gin::Handle<NativeImage> NativeImage::CreateFromPath(
+gin_helper::Handle<NativeImage> NativeImage::CreateFromPath(
     v8::Isolate* isolate,
     const base::FilePath& path) {
   base::FilePath image_path = NormalizePath(path);
 #if BUILDFLAG(IS_WIN)
   if (image_path.MatchesExtension(FILE_PATH_LITERAL(".ico"))) {
-    return gin::CreateHandle(isolate, new NativeImage(isolate, image_path));
+    return gin_helper::CreateHandle(isolate,
+                                    new NativeImage(isolate, image_path));
   }
 #endif
   gfx::ImageSkia image_skia;
   electron::util::PopulateImageSkiaRepsFromPath(&image_skia, image_path);
   gfx::Image image(image_skia);
-  gin::Handle<NativeImage> handle = Create(isolate, image);
+  gin_helper::Handle<NativeImage> handle = Create(isolate, image);
 #if BUILDFLAG(IS_MAC)
   if (IsTemplateFilename(image_path))
     handle->SetTemplateImage(true);
@@ -483,7 +475,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromPath(
 }
 
 // static
-gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
+gin_helper::Handle<NativeImage> NativeImage::CreateFromBitmap(
     gin_helper::ErrorThrower thrower,
     v8::Local<v8::Value> buffer,
     const gin_helper::Dictionary& options) {
@@ -511,7 +503,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
   auto info = SkImageInfo::MakeN32(width, height, kPremul_SkAlphaType);
   auto size_bytes = info.computeMinByteSize();
 
-  const auto buffer_data = electron::util::as_byte_span(buffer);
+  const auto buffer_data = electron::Buffer::as_byte_span(buffer);
   if (size_bytes != buffer_data.size()) {
     thrower.ThrowError("invalid buffer size");
     return {};
@@ -521,8 +513,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
   bitmap.allocN32Pixels(width, height, false);
   bitmap.writePixels({info, buffer_data.data(), bitmap.rowBytes()});
 
-  float scale_factor = 1.0F;
-  options.Get("scaleFactor", &scale_factor);
+  const float scale_factor = options.ValueOrDefault("scaleFactor", 1.0F);
   gfx::ImageSkia image_skia =
       gfx::ImageSkia::CreateFromBitmap(bitmap, scale_factor);
 
@@ -530,7 +521,7 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
 }
 
 // static
-gin::Handle<NativeImage> NativeImage::CreateFromBuffer(
+gin_helper::Handle<NativeImage> NativeImage::CreateFromBuffer(
     gin_helper::ErrorThrower thrower,
     v8::Local<v8::Value> buffer,
     gin::Arguments* args) {
@@ -552,14 +543,15 @@ gin::Handle<NativeImage> NativeImage::CreateFromBuffer(
 
   gfx::ImageSkia image_skia;
   electron::util::AddImageSkiaRepFromBuffer(
-      &image_skia, electron::util::as_byte_span(buffer), width, height,
+      &image_skia, electron::Buffer::as_byte_span(buffer), width, height,
       scale_factor);
   return Create(args->isolate(), gfx::Image(image_skia));
 }
 
 // static
-gin::Handle<NativeImage> NativeImage::CreateFromDataURL(v8::Isolate* isolate,
-                                                        const GURL& url) {
+gin_helper::Handle<NativeImage> NativeImage::CreateFromDataURL(
+    v8::Isolate* isolate,
+    const GURL& url) {
   std::string mime_type, charset, data;
   if (net::DataURL::Parse(url, &mime_type, &charset, &data)) {
     if (mime_type == "image/png")
@@ -572,8 +564,9 @@ gin::Handle<NativeImage> NativeImage::CreateFromDataURL(v8::Isolate* isolate,
 }
 
 #if !BUILDFLAG(IS_MAC)
-gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
-                                                           std::string name) {
+gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
+    gin::Arguments* args,
+    std::string name) {
   return CreateEmpty(args->isolate());
 }
 #endif
@@ -584,11 +577,11 @@ gin::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
   gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
   auto* wrapper_info = &kWrapperInfo;
   v8::Local<v8::FunctionTemplate> constructor =
-      data->GetFunctionTemplate(wrapper_info);
+      data->DeprecatedGetFunctionTemplate(wrapper_info);
   if (constructor.IsEmpty()) {
     constructor = v8::FunctionTemplate::New(isolate);
     constructor->SetClassName(gin::StringToV8(isolate, GetTypeName()));
-    data->SetFunctionTemplate(wrapper_info, constructor);
+    data->DeprecatedSetFunctionTemplate(wrapper_info, constructor);
   }
   return gin::ObjectTemplateBuilder(isolate, GetTypeName(),
                                     constructor->InstanceTemplate())
@@ -616,7 +609,8 @@ const char* NativeImage::GetTypeName() {
 }
 
 // static
-gin::WrapperInfo NativeImage::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo NativeImage::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 }  // namespace electron::api
 
@@ -628,8 +622,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
+  gin_helper::Dictionary dict{isolate, exports};
   auto native_image = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("nativeImage", native_image);
 

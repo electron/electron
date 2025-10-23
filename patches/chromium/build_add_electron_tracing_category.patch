@@ -8,14 +8,14 @@ categories in use are known / declared.  This patch is required for us
 to introduce a new Electron category for Electron-specific tracing.
 
 diff --git a/base/trace_event/builtin_categories.h b/base/trace_event/builtin_categories.h
-index 59e484bd1e2e39827a74ec4607b7325a57823e00..8a5ba55507f3d6e5997c2c3fac74ca2844dd9593 100644
+index 0781468366f8684b0e245bd6df85c1f48b5a915a..5d4ea347e2cba761870462ff1e623792416dbf4c 100644
 --- a/base/trace_event/builtin_categories.h
 +++ b/base/trace_event/builtin_categories.h
-@@ -93,6 +93,7 @@
-   X("drm")                                                               \
-   X("drmcursor")                                                         \
-   X("dwrite")                                                            \
-+  X("electron")                                                          \
-   X("evdev")                                                             \
-   X("event")                                                             \
-   X("exo")                                                               \
+@@ -128,6 +128,7 @@ PERFETTO_DEFINE_CATEGORIES_IN_NAMESPACE_WITH_ATTRS(
+     perfetto::Category("drm"),
+     perfetto::Category("drmcursor"),
+     perfetto::Category("dwrite"),
++    perfetto::Category("electron"),
+     perfetto::Category("evdev").SetTags("input"),
+     perfetto::Category("event"),
+     perfetto::Category("exo"),

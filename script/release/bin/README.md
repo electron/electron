@@ -30,14 +30,11 @@ This script just outputs the theoretical "next" version that a release would use
 This script creates all the requisite tags and CI builds that will populate required release assets.
 
 * Creates the git tag
-* Kicks off all release builds on AppVeyor and GitHub Actions
+* Kicks off all release builds on GitHub Actions
 
 ### `run-release-build`
 
-This script is used to re-kick specific release builds after they fail. Sudowoodo is responsible for prompting the release team as to whether or not to run this script. It's currently only used for AppVeyor builds.
-
-> [!IMPORTANT]
-> This script should be removed and the "rerun" logic for AppVeyor be implemented in Sudowoodo specifically in the same way that GitHub Actions' rerun logic is.
+This script is used to re-kick specific release builds after they fail. Sudowoodo is responsible for prompting the release team as to whether or not to run this script.
 
 ### `validate-before-publish`
 

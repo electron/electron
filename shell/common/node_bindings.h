@@ -125,22 +125,26 @@ class NodeBindings {
   virtual ~NodeBindings();
 
   // Setup V8, libuv.
-  void Initialize(v8::Local<v8::Context> context);
+  void Initialize(v8::Isolate* isolate, v8::Local<v8::Context> context);
 
   std::vector<std::string> ParseNodeCliFlags();
 
   // Create the environment and load node.js.
   std::shared_ptr<node::Environment> CreateEnvironment(
+      v8::Isolate* isolate,
       v8::Local<v8::Context> context,
       node::MultiIsolatePlatform* platform,
+      size_t max_young_generation_size,
       std::vector<std::string> args,
       std::vector<std::string> exec_args,
       std::optional<base::RepeatingCallback<void()>> on_app_code_ready =
           std::nullopt);
 
   std::shared_ptr<node::Environment> CreateEnvironment(
+      v8::Isolate* isolate,
       v8::Local<v8::Context> context,
       node::MultiIsolatePlatform* platform,
+      size_t max_young_generation_size = 0,
       std::optional<base::RepeatingCallback<void()>> on_app_code_ready =
           std::nullopt);
 

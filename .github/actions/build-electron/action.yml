@@ -17,9 +17,6 @@ inputs:
   is-release:
     description: 'Is release build'
     required: true
-  strip-binaries:
-    description: 'Strip binaries (Linux only)'
-    required: false
   generate-symbols:
     description: 'Generate symbols'
     required: true
@@ -38,6 +35,15 @@ runs:
       run: |
         GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"x64\" v8_snapshot_toolchain=\"//build/toolchain/mac:clang_x64\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
+    - name: Set GN_EXTRA_ARGS for Windows
+      shell: bash
+      if: ${{inputs.target-arch != 'x64' && inputs.target-platform == 'win' }}
+      run: |
+        GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"${{ inputs.target-arch }}\""
+        echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
+    - name: Add Clang problem matcher
+      shell: bash
+      run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Build Electron ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -54,22 +60,28 @@ runs:
           sudo launchctl limit maxfiles 65536 200000
         fi
 
-        NINJA_SUMMARIZE_BUILD=1 e build -j $NUMBER_OF_NINJA_PROCESSES
+        if [ "${{ inputs.is-release }}" = "true" ]; then
+          NINJA_SUMMARIZE_BUILD=1 e build --target electron:release_build
+        else
+          NINJA_SUMMARIZE_BUILD=1 e build --target electron:testing_build
+        fi
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
-    - name: Strip Electron Binaries ${{ inputs.step-suffix }}
+
+        # Upload build stats to Datadog
+        if ! [ -z $DD_API_KEY ]; then
+          if [ "$TARGET_PLATFORM" = "win" ]; then
+            npx node electron/script/build-stats.mjs out/Default/siso.exe.INFO --upload-stats || true
+          else
+            npx node electron/script/build-stats.mjs out/Default/siso.INFO --upload-stats || true
+          fi
+        else
+          echo "Skipping build-stats.mjs upload because DD_API_KEY is not set"
+        fi
+    - name: Verify dist.zip ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ inputs.strip-binaries == 'true' }}
       run: |
-        cd src
-        electron/script/copy-debug-symbols.py --target-cpu="${{ inputs.target-arch }}" --out-dir=out/Default/debug --compress
-        electron/script/strip-binaries.py --target-cpu="${{ inputs.target-arch }}" --verbose
-        electron/script/add-debug-link.py --target-cpu="${{ inputs.target-arch }}" --debug-dir=out/Default/debug
-    - name: Build Electron dist.zip ${{ inputs.step-suffix }}
-      shell: bash
-      run: |
-        cd src
-        e build --target electron:electron_dist_zip -j $NUMBER_OF_NINJA_PROCESSES
+        cd src        
         if [ "${{ inputs.is-asan }}" != "true" ]; then
           target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
@@ -77,11 +89,10 @@ runs:
           fi
           electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ inputs.target-arch }}.manifest
         fi
-    - name: Build Mksnapshot ${{ inputs.step-suffix }}
+    - name: Fixup Mksnapshot ${{ inputs.step-suffix }}
       shell: bash
       run: |
         cd src
-        e build --target electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
         ELECTRON_DEPOT_TOOLS_DISABLE_LOG=1 e d gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
         # Remove unused args from mksnapshot_args
         SEDOPTION="-i"
@@ -91,24 +102,12 @@ runs:
         sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
 
-        if [ "${{ inputs.target-platform }}" = "linux" ]; then
-          if [ "${{ inputs.target-arch }}" = "arm" ]; then
-            electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
-            electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/v8_context_snapshot_generator
-          elif [ "${{ inputs.target-arch }}" = "arm64" ]; then
-            electron/script/strip-binaries.py --file $PWD/out/Default/clang_x64_v8_arm64/mksnapshot
-            electron/script/strip-binaries.py --file $PWD/out/Default/clang_x64_v8_arm64/v8_context_snapshot_generator
-          else
-            electron/script/strip-binaries.py --file $PWD/out/Default/mksnapshot
-            electron/script/strip-binaries.py --file $PWD/out/Default/v8_context_snapshot_generator
-          fi
-        fi
-
-        e build --target electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
         if [ "${{ inputs.target-platform }}" = "win" ]; then
           cd out/Default
           powershell Compress-Archive -update mksnapshot_args mksnapshot.zip
-          powershell Compress-Archive -update gen/v8/embedded.S mksnapshot.zip
+          powershell mkdir mktmp\\gen\\v8
+          powershell Copy-Item gen\\v8\\embedded.S mktmp\\gen\\v8
+          powershell Compress-Archive -update -Path mktmp\\gen mksnapshot.zip
         else
           (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
         fi
@@ -136,24 +135,39 @@ runs:
       shell: bash
       run: |
         cd src
-        e build --target electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
         e build --target electron:electron_chromedriver_zip
-    - name: Build Node.js headers ${{ inputs.step-suffix }}
-      shell: bash
+
+        if [ "${{ inputs.is-asan }}" != "true" ]; then
+          target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
+          if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
+            target_os="${target_os}_mas"
+          fi
+          electron/script/zip_manifests/check-zip-manifest.py out/Default/chromedriver.zip electron/script/zip_manifests/chromedriver_zip.$target_os.${{ inputs.target-arch }}.manifest
+        fi
+    - name: Create installed_software.json ${{ inputs.step-suffix }}
+      shell: powershell
+      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'win' }}
       run: |
         cd src
-        e build --target electron:node_headers
-    - name: Generate & Zip Symbols ${{ inputs.step-suffix }}
+        Get-CimInstance -Namespace root\cimv2 -Class Win32_product | Select vendor, description, @{l='install_location';e='InstallLocation'}, @{l='install_date';e='InstallDate'}, @{l='install_date_2';e='InstallDate2'}, caption, version, name, @{l='sku_number';e='SKUNumber'} | ConvertTo-Json | Out-File -Encoding utf8 -FilePath .\installed_software.json
+    - name: Profile Windows Toolchain ${{ inputs.step-suffix }}
+      shell: bash
+      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'win' }}
+      run: |
+        cd src
+        python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
+    - name: Add msdia140.dll to Path ${{ inputs.step-suffix }}
+      shell: bash
+      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'win' }}
+      run: |
+        # Needed for msdia140.dll on 64-bit windows
+        cd src
+        export PATH="$PATH:$(pwd)/third_party/llvm-build/Release+Asserts/bin"
+    - name: Zip Symbols ${{ inputs.step-suffix }}
       shell: bash
       run: |
-        # Generate breakpad symbols on release builds
-        if [ "${{ inputs.generate-symbols }}" = "true" ]; then
-          e build --target electron:electron_symbols
-        fi
         cd src
         export BUILD_PATH="$(pwd)/out/Default"
-        e build --target electron:licenses
-        e build --target electron:electron_version_file
         if [ "${{ inputs.is-release }}" = "true" ]; then
           DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
         else
@@ -164,20 +178,11 @@ runs:
       if: ${{ inputs.is-release == 'true' }}
       run: |
         cd src
-        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true $GN_EXTRA_ARGS"
-        e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg -j $NUMBER_OF_NINJA_PROCESSES
-    - name: Generate Hunspell Dictionaries ${{ inputs.step-suffix }}
+        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true use_siso=true $GN_EXTRA_ARGS"
+        e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg
+    - name: Remove Clang problem matcher
       shell: bash
-      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
-      run: |
-        e build --target electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
-    - name: Generate Libcxx ${{ inputs.step-suffix }}
-      shell: bash
-      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'linux' }}
-      run: |
-        e build --target electron:libcxx_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
-        e build --target electron:libcxxabi_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
-        e build --target electron:libcxx_objects_zip -j $NUMBER_OF_NINJA_PROCESSES
+      run: echo "::remove-matcher owner=clang::"
     - name: Generate TypeScript Definitions ${{ inputs.step-suffix }}
       if: ${{ inputs.is-release == 'true' }}
       shell: bash
@@ -197,7 +202,29 @@ runs:
           echo 'Uploading Electron release distribution to GitHub releases'
           script/release/uploaders/upload.py --verbose
         fi
+    - name: Generate siso report
+      if: ${{ inputs.target-platform != 'win' && !cancelled() }}
+      shell: bash
+      run: |
+        cd src
+        e d siso report -C out/Default > siso_report.txt
+        SISO_REPORT_PATH=$(grep -o '/.*siso-report-[^ ]*' siso_report.txt)
+        echo "SISO_REPORT_PATH=$SISO_REPORT_PATH" >> $GITHUB_ENV
+        cat siso_report.txt
+        echo "SISO REPORT AT $SISO_REPORT_PATH"
+    - name: Generate siso report (Windows)
+      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
+      shell: powershell
+      run: |
+        cd src
+        e d siso report -C out\Default > siso_report.txt
+        $SISO_REPORT_PATH = Get-Content "siso_report.txt" | Select-String "report file:\s*(.+)" | ForEach-Object { 
+          $_.Matches.Groups[1].Value.Trim() 
+        }
+        echo "SISO_REPORT_PATH=$SISO_REPORT_PATH"
+        echo "SISO_REPORT_PATH=$SISO_REPORT_PATH" >> $env:GITHUB_ENV
     - name: Generate Artifact Key
+      if: always() && !cancelled()
       shell: bash
       run: |
         if [ "${{ inputs.is-asan }}" = "true" ]; then 
@@ -209,9 +236,11 @@ runs:
     # The current generated_artifacts_<< artifact.key >> name was taken from CircleCI
     # to ensure we don't break anything, but we may be able to improve that.
     - name: Move all Generated Artifacts to Upload Folder ${{ inputs.step-suffix }}
+      if: always() && !cancelled()
       shell: bash
       run: ./src/electron/script/actions/move-artifacts.sh
     - name: Upload Generated Artifacts ${{ inputs.step-suffix }}
+      if: always() && !cancelled()
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
       with:
         name: generated_artifacts_${{ env.ARTIFACT_KEY }}

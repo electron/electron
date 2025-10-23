@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Niklas Wenzel <dev@nikwen.de>
+Date: Tue, 27 May 2025 02:03:54 +0200
+Subject: fix: crash when process to extract zip cannot be launched
+
+Fixes https://github.com/electron/electron/issues/47270
+
+diff --git a/Squirrel/SQRLZipArchiver.m b/Squirrel/SQRLZipArchiver.m
+index 68f5dac8e553638f41306956df9d38eeda18f8f2..a9cd676df63e19edf9e20473d27b85591c7cb49e 100644
+--- a/Squirrel/SQRLZipArchiver.m
++++ b/Squirrel/SQRLZipArchiver.m
+@@ -153,7 +153,17 @@ - (RACSignal *)launchWithArguments:(NSArray *)arguments {
+ 		setNameWithFormat:@"-launchWithArguments: %@", arguments];
+ 
+ 	self.dittoTask.arguments = arguments;
+-	[self.dittoTask launch];
++
++	NSError *launchError = nil;
++
++	if (![self.dittoTask launchAndReturnError:&launchError]) {
++		NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
++		userInfo[NSLocalizedDescriptionKey] = launchError.localizedDescription;
++
++		NSLog(@"Starting ditto task failed with error: %@", launchError.localizedDescription);
++
++		return [RACSignal error:[NSError errorWithDomain:SQRLZipArchiverErrorDomain code:SQRLZipArchiverShellTaskFailed userInfo:userInfo]];
++	}
+ 
+ 	return signal;
+ }

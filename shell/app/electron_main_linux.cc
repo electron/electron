@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include <cstdlib>
-#include <utility>
 
 #include "base/at_exit.h"
 #include "base/command_line.h"

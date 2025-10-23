@@ -17,20 +17,22 @@
 #include "content/public/browser/child_process_host.h"
 #include "content/public/browser/service_process_host.h"
 #include "content/public/common/result_codes.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "shell/browser/api/message_port.h"
+#include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
 #include "third_party/blink/public/common/messaging/message_port_descriptor.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
+#include "third_party/blink/public/mojom/blob/blob.mojom.h"
 
 #if BUILDFLAG(IS_POSIX)
 #include "base/posix/eintr_wrapper.h"
@@ -58,7 +60,7 @@ GetAllUtilityProcessWrappers() {
 
 namespace api {
 
-gin::WrapperInfo UtilityProcessWrapper::kWrapperInfo = {
+gin::DeprecatedWrapperInfo UtilityProcessWrapper::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
 UtilityProcessWrapper::UtilityProcessWrapper(
@@ -76,6 +78,9 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   base::FileHandleMappingVector fds_to_remap;
 #endif
   for (const auto& [io_handle, io_type] : stdio) {
+    if (io_handle == IOHandle::STDIN)
+      continue;
+
     if (io_type == IOType::IO_PIPE) {
 #if BUILDFLAG(IS_WIN)
       HANDLE read = nullptr;
@@ -127,6 +132,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
                       OPEN_EXISTING, 0, nullptr);
       if (handle == INVALID_HANDLE_VALUE) {
         PLOG(ERROR) << "Failed to create null handle";
+        Emit("error", "Failed to create null handle for ignoring stdio");
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
@@ -323,14 +329,17 @@ void UtilityProcessWrapper::Shutdown(uint64_t exit_code) {
   HandleTermination(exit_code);
 }
 
-void UtilityProcessWrapper::PostMessage(gin::Arguments* args) {
+void UtilityProcessWrapper::PostMessage(gin::Arguments* const args) {
   if (!node_service_remote_.is_connected())
     return;
 
   blink::TransferableMessage transferable_message;
+  v8::Isolate* const isolate = args->isolate();
+
+  // |message| is any value that can be serialized to StructuredClone.
   v8::Local<v8::Value> message_value;
   if (args->GetNext(&message_value)) {
-    if (!electron::SerializeV8Value(args->isolate(), message_value,
+    if (!electron::SerializeV8Value(isolate, message_value,
                                     &transferable_message)) {
       // SerializeV8Value sets an exception.
       return;
@@ -338,18 +347,33 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* args) {
   }
 
   v8::Local<v8::Value> transferables;
-  std::vector<gin::Handle<MessagePort>> wrapped_ports;
+  std::vector<gin_helper::Handle<MessagePort>> wrapped_ports;
   if (args->GetNext(&transferables)) {
-    if (!gin::ConvertFromV8(args->isolate(), transferables, &wrapped_ports)) {
-      gin_helper::ErrorThrower(args->isolate())
-          .ThrowTypeError("Invalid value for transfer");
+    std::vector<v8::Local<v8::Value>> wrapped_port_values;
+    if (!gin::ConvertFromV8(isolate, transferables, &wrapped_port_values)) {
+      args->ThrowTypeError("transferables must be an array of MessagePorts");
+      return;
+    }
+
+    for (size_t i = 0; i < wrapped_port_values.size(); ++i) {
+      if (!gin_helper::IsValidWrappable(wrapped_port_values[i],
+                                        &MessagePort::kWrapperInfo)) {
+        args->ThrowTypeError(
+            base::StrCat({"Port at index ", base::NumberToString(i),
+                          " is not a valid port"}));
+        return;
+      }
+    }
+
+    if (!gin::ConvertFromV8(isolate, transferables, &wrapped_ports)) {
+      args->ThrowTypeError("Passed an invalid MessagePort");
       return;
     }
   }
 
   bool threw_exception = false;
-  transferable_message.ports = MessagePort::DisentanglePorts(
-      args->isolate(), wrapped_ports, &threw_exception);
+  transferable_message.ports =
+      MessagePort::DisentanglePorts(isolate, wrapped_ports, &threw_exception);
   if (threw_exception)
     return;
 
@@ -410,8 +434,14 @@ raw_ptr<UtilityProcessWrapper> UtilityProcessWrapper::FromProcessId(
 }
 
 // static
-gin::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
-    gin::Arguments* args) {
+gin_helper::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
+    gin::Arguments* const args) {
+  if (!Browser::Get()->is_ready()) {
+    args->ThrowTypeError(
+        "utilityProcess cannot be created before app is ready.");
+    return {};
+  }
+
   gin_helper::Dictionary dict;
   if (!args->GetNext(&dict)) {
     args->ThrowTypeError("Options must be an object.");
@@ -466,7 +496,7 @@ gin::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
     opts.Get("allowLoadingUnsignedLibraries", &use_plugin_helper);
 #endif
   }
-  auto handle = gin::CreateHandle(
+  auto handle = gin_helper::CreateHandle(
       args->isolate(), new UtilityProcessWrapper(
                            std::move(params), display_name, std::move(stdio),
                            env_map, current_working_directory,
@@ -499,8 +529,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("_fork", &electron::api::UtilityProcessWrapper::Create);
 }
 

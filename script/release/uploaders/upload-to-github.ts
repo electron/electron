@@ -48,7 +48,7 @@ const targetRepo = getRepo();
 const uploadUrl = `https://uploads.github.com/repos/electron/${targetRepo}/releases/${releaseId}/assets{?name,label}`;
 let retry = 0;
 
-const octokit = new Octokit({
+let octokit = new Octokit({
   authStrategy: createGitHubTokenStrategy(targetRepo),
   log: console
 });
@@ -72,6 +72,12 @@ function uploadToGitHub () {
     if (retry < 4) {
       console.log(`Error uploading ${fileName} to GitHub, will retry.  Error was:`, err);
       retry++;
+
+      // Reset octokit in case it cached an auth error somehow
+      octokit = new Octokit({
+        authStrategy: createGitHubTokenStrategy(targetRepo),
+        log: console
+      });
 
       octokit.repos.listReleaseAssets({
         owner: ELECTRON_ORG,
@@ -98,6 +104,7 @@ function uploadToGitHub () {
         }
       }).catch((getReleaseErr) => {
         console.log('Fatal: Unable to get current release assets via getRelease!  Error was:', getReleaseErr);
+        process.exitCode = 1;
       });
     } else {
       console.log(`Error retrying uploading ${fileName} to GitHub:`, err);

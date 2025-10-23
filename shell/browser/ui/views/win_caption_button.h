@@ -49,6 +49,10 @@ class WinCaptionButton : public views::Button {
 
  private:
   std::unique_ptr<WinIconPainter> CreateIconPainter();
+
+  // The base color to use for the button symbols and background blending. Uses
+  // the more readable of black and white.
+  SkColor GetBaseForegroundColor() const;
   // Returns the amount we should visually reserve on the left (right in RTL)
   // for spacing between buttons. We do this instead of repositioning the
   // buttons to avoid the sliver of deadspace that would result.
@@ -58,10 +62,6 @@ class WinCaptionButton : public views::Button {
   // drawn farthest to the left, and larger indices being drawn to the right of
   // smaller indices).
   int GetButtonDisplayOrderIndex() const;
-
-  // The base color to use for the button symbols and background blending. Uses
-  // the more readable of black and white.
-  SkColor GetBaseColor() const;
 
   // Paints the minimize/maximize/restore/close icon for the button.
   void PaintSymbol(gfx::Canvas* canvas);

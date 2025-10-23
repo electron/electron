@@ -44,7 +44,7 @@ jobs:
     container: ${{ fromJSON(inputs.check-container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         path: src/electron
         fetch-depth: 0
@@ -65,7 +65,9 @@ jobs:
         sudo rm -rf $TMPDIR/del-target
     - name: Check disk space after freeing up space
       if: ${{ inputs.target-platform == 'macos' }}
-      run: df -h        
+      run: df -h
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Enable windows toolchain
@@ -81,9 +83,13 @@ jobs:
     - name: Restore src cache via AZCopy
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/restore-cache-azcopy
+      with:
+        target-platform: ${{ inputs.target-platform }}      
     - name: Restore src cache via AKS
       if: ${{ inputs.target-platform == 'linux' || inputs.target-platform == 'win' }}
       uses: ./src/electron/.github/actions/restore-cache-aks
+      with:
+        target-platform: ${{ inputs.target-platform }}
     - name: Run Electron Only Hooks
       run: |
         echo "solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]" > tmpgclient
@@ -105,7 +111,7 @@ jobs:
     - name: Add CHROMIUM_BUILDTOOLS_PATH to env
       run: echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         path: src/electron
         fetch-depth: 0

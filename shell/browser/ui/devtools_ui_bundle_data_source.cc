@@ -4,7 +4,6 @@
 
 #include "shell/browser/ui/devtools_ui_bundle_data_source.h"
 
-#include <memory>
 #include <string>
 #include <utility>
 
@@ -33,7 +32,7 @@ std::string PathWithoutParams(const std::string& path) {
                             url::kStandardSchemeSeparator,
                             chrome::kChromeUIDevToolsHost}))
       .Resolve(path)
-      .path()
+      .GetPath()
       .substr(1);
 }
 

@@ -1,4 +1,5 @@
 {
+	"name": "Electron Core Development Environment",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "buildtools",
 	"onCreateCommand": ".devcontainer/on-create-command.sh",
@@ -33,27 +34,15 @@
 				"surajbarkale.ninja",
 				"ms-vscode.cpptools",
 				"mutantdino.resourcemonitor",
+				"dsanders11.vscode-electron-build-tools",
 				"dbaeumer.vscode-eslint",
 				"shakram02.bash-beautify",
-				"marshallofsound.gnls-electron",
+				"marshallofsound.gnls-electron"
 			],
 			"settings": {
 				"editor.tabSize": 2,
 				"bashBeautify.tabSize": 2,
 				"typescript.tsdk": "node_modules/typescript/lib",
-				"[gn]": {
-					"editor.formatOnSave": true
-				},
-				"[javascript]": {
-					"editor.codeActionsOnSave": {
-						"source.fixAll.eslint": true
-					}
-				},
-				"[typescript]": {
-					"editor.codeActionsOnSave": {
-						"source.fixAll.eslint": true
-					}
-				},
 				"javascript.preferences.quoteStyle": "single",
 				"typescript.preferences.quoteStyle": "single"
 			}

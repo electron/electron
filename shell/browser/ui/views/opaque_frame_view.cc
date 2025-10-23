@@ -6,6 +6,7 @@
 
 #include "base/containers/adapters.h"
 #include "base/i18n/rtl.h"
+#include "chrome/browser/ui/views/frame/opaque_browser_frame_view_layout.h"  // nogncheck
 #include "chrome/grit/generated_resources.h"
 #include "components/strings/grit/components_strings.h"
 #include "shell/browser/native_window_views.h"
@@ -159,7 +160,7 @@ int OpaqueFrameView::NonClientHitTest(const gfx::Point& point) {
 }
 
 void OpaqueFrameView::ResetWindowControls() {
-  NonClientFrameView::ResetWindowControls();
+  FrameView::ResetWindowControls();
 
   if (restore_button_)
     restore_button_->SetState(views::Button::STATE_NORMAL);
@@ -172,7 +173,7 @@ void OpaqueFrameView::ResetWindowControls() {
 
 views::View* OpaqueFrameView::TargetForRect(views::View* root,
                                             const gfx::Rect& rect) {
-  return views::NonClientFrameView::TargetForRect(root, rect);
+  return views::FrameView::TargetForRect(root, rect);
 }
 
 void OpaqueFrameView::Layout(PassKey) {
@@ -297,7 +298,7 @@ views::Button* OpaqueFrameView::CreateButton(
     int ht_component,
     const gfx::VectorIcon& icon_image,
     views::Button::PressedCallback callback) {
-  views::FrameCaptionButton* button = new views::FrameCaptionButton(
+  auto button = std::make_unique<views::FrameCaptionButton>(
       views::Button::PressedCallback(), icon_type, ht_component);
   button->SetImage(button->GetIcon(), views::FrameCaptionButton::Animate::kNo,
                    icon_image);
@@ -306,12 +307,11 @@ views::Button* OpaqueFrameView::CreateButton(
   button->SetCallback(std::move(callback));
   button->SetAccessibleName(l10n_util::GetStringUTF16(accessibility_string_id));
   button->SetID(view_id);
-  AddChildView(button);
 
   button->SetPaintToLayer();
   button->layer()->SetFillsBoundsOpaquely(false);
 
-  return button;
+  return AddChildView(std::move(button));
 }
 
 gfx::Insets OpaqueFrameView::FrameBorderInsets(bool restored) const {
@@ -377,7 +377,7 @@ int OpaqueFrameView::DefaultCaptionButtonY(bool restored) const {
   const bool start_at_top_of_frame = !restored && IsFrameCondensed();
   return start_at_top_of_frame
              ? FrameBorderInsets(false).top()
-             : views::NonClientFrameView::kFrameShadowThickness;
+             : OpaqueBrowserFrameViewLayout::kFrameShadowThickness;
 }
 
 gfx::Insets OpaqueFrameView::FrameEdgeInsets(bool restored) const {

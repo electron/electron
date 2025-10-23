@@ -64,7 +64,8 @@ const contents = win.webContents
 console.log(contents)
 ```
 
-> Note: A renderer process is also created for [web embeds][web-embed] such as the
+> [!NOTE]
+> A renderer process is also created for [web embeds][web-embed] such as the
 > `BrowserView` module. The `webContents` object is also accessible for embedded
 > web content.
 
@@ -86,7 +87,7 @@ The main process also controls your application's lifecycle through Electron's
 that you can use to add custom application behavior (for instance, programmatically
 quitting your application, modifying the application dock, or showing an About panel).
 
-As a practical example, the app shown in the [quick start guide][quick-start-lifecycle]
+As a practical example, the app shown in the [tutorial starter code][tutorial-lifecycle]
 uses `app` APIs to create a more native application window experience.
 
 ```js title='main.js'
@@ -97,7 +98,7 @@ app.on('window-all-closed', () => {
 ```
 
 [app]: ../api/app.md
-[quick-start-lifecycle]: ../tutorial/quick-start.md#manage-your-windows-lifecycle
+[tutorial-lifecycle]: ../tutorial/tutorial-2-first-app.md#quit-the-app-when-all-windows-are-closed-windows--linux
 
 ### Native APIs
 
@@ -241,8 +242,8 @@ These aliases have no impact on runtime, but can be used for typechecking
 and autocomplete.
 
 ```js title="Usage example"
-const { app } = require('electron/main')
 const { shell } = require('electron/common')
+const { app } = require('electron/main')
 ```
 
 [window-mdn]: https://developer.mozilla.org/en-US/docs/Web/API/Window

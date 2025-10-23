@@ -111,6 +111,7 @@ void URLLoaderNetworkObserver::OnSharedStorageHeaderReceived(
     const url::Origin& request_origin,
     std::vector<network::mojom::SharedStorageModifierMethodWithOptionsPtr>
         methods,
+    const std::optional<std::string>& with_lock,
     OnSharedStorageHeaderReceivedCallback callback) {
   std::move(callback).Run();
 }

@@ -25,17 +25,6 @@ interface ElectronAutofillDriver {
   HideAutofillPopup();
 };
 
-interface ElectronWebContentsUtility {
-  // Informs underlying WebContents that first non-empty layout was performed
-  // by compositor.
-  OnFirstNonEmptyLayout();
-
-  SetTemporaryZoomLevel(double zoom_level);
-
-  [Sync]
-  DoGetZoomLevel() => (double result);
-};
-
 interface ElectronApiIPC {
   // Emits an event on |channel| from the ipcMain JavaScript object in the main
   // process.

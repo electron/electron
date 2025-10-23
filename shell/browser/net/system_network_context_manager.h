@@ -7,6 +7,7 @@
 
 #include "chrome/browser/net/proxy_config_monitor.h"
 #include "mojo/public/cpp/bindings/remote.h"
+#include "net/base/features.h"
 #include "sandbox/policy/features.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/mojom/network_context.mojom.h"

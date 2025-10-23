@@ -79,11 +79,12 @@ bool SetDefaultWebClient(const std::string& protocol) {
     argv.emplace_back(kXdgSettingsDefaultSchemeHandler);
     argv.emplace_back(protocol);
   }
-  std::string desktop_name;
-  if (!env->GetVar("CHROME_DESKTOP", &desktop_name)) {
+
+  if (std::optional<std::string> desktop_name = env->GetVar("CHROME_DESKTOP")) {
+    argv.emplace_back(desktop_name.value());
+  } else {
     return false;
   }
-  argv.emplace_back(desktop_name);
 
   int exit_code;
   bool ran_ok = LaunchXdgUtility(argv, &exit_code);
@@ -93,6 +94,10 @@ bool SetDefaultWebClient(const std::string& protocol) {
 }  // namespace
 
 void Browser::AddRecentDocument(const base::FilePath& path) {}
+
+std::vector<std::string> Browser::GetRecentDocuments() {
+  return std::vector<std::string>();
+}
 
 void Browser::ClearRecentDocuments() {}
 
@@ -108,12 +113,13 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   if (protocol.empty())
     return false;
 
-  std::string desktop_name;
-  if (!env->GetVar("CHROME_DESKTOP", &desktop_name))
+  std::vector<std::string> argv = {kXdgSettings, "check",
+                                   kXdgSettingsDefaultSchemeHandler, protocol};
+  if (std::optional<std::string> desktop_name = env->GetVar("CHROME_DESKTOP")) {
+    argv.emplace_back(desktop_name.value());
+  } else {
     return false;
-  const std::vector<std::string> argv = {kXdgSettings, "check",
-                                         kXdgSettingsDefaultSchemeHandler,
-                                         protocol, desktop_name};
+  }
   // Allow any reply that starts with "yes".
   const std::optional<std::string> output = GetXdgAppOutput(argv);
   return output && output->starts_with("yes");
@@ -128,7 +134,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
   const std::vector<std::string> argv = {
       "xdg-mime", "query", "default",
-      base::StrCat({"x-scheme-handler/", url.scheme_piece()})};
+      base::StrCat({"x-scheme-handler/", url.scheme()})};
 
   return base::ASCIIToUTF16(GetXdgAppOutput(argv).value_or(std::string()));
 }

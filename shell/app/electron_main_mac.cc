@@ -3,7 +3,9 @@
 // found in the LICENSE file.
 
 #include <cstdlib>
+#include <iostream>
 #include <memory>
+#include <string>
 
 #include "base/strings/cstring_view.h"
 #include "electron/fuses.h"
@@ -35,15 +37,11 @@ namespace {
 }
 
 #if defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD()
-[[noreturn]] void FatalError(const char* format, ...) {
-  va_list valist;
-  va_start(valist, format);
-  char message[4096];
-  if (vsnprintf(message, sizeof(message), format, valist) >= 0) {
-    fputs(message, stderr);
-    abort_report_np("%s", message);
+[[noreturn]] void FatalError(const std::string errmsg) {
+  if (!errmsg.empty()) {
+    std::cerr << errmsg;
+    abort_report_np("%s", errmsg.c_str());
   }
-  va_end(valist);
   abort();
 }
 #endif

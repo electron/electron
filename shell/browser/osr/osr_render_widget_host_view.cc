@@ -8,12 +8,12 @@
 #include <memory>
 #include <optional>
 #include <utility>
-#include <vector>
 
 #include "base/functional/callback_helpers.h"
 #include "base/location.h"
 #include "base/memory/ptr_util.h"
 #include "base/memory/raw_ptr.h"
+#include "base/notimplemented.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/time/time.h"
@@ -45,7 +45,7 @@
 #include "ui/gfx/geometry/dip_util.h"
 #include "ui/gfx/geometry/size_conversions.h"
 #include "ui/gfx/image/image_skia.h"
-#include "ui/gfx/native_widget_types.h"
+#include "ui/gfx/native_ui_types.h"
 #include "ui/gfx/skbitmap_operations.h"
 #include "ui/latency/latency_info.h"
 
@@ -154,6 +154,7 @@ class ElectronDelegatedFrameHostClient
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     bool transparent,
     bool offscreen_use_shared_texture,
+    const std::string& offscreen_shared_texture_pixel_format,
     bool painting,
     int frame_rate,
     const OnPaintCallback& callback,
@@ -165,6 +166,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       parent_host_view_(parent_host_view),
       transparent_(transparent),
       offscreen_use_shared_texture_(offscreen_use_shared_texture),
+      offscreen_shared_texture_pixel_format_(
+          offscreen_shared_texture_pixel_format),
       callback_(callback),
       frame_rate_(frame_rate),
       size_(initial_size),
@@ -195,8 +198,6 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
 
   root_layer_ = std::make_unique<ui::Layer>(ui::LAYER_SOLID_COLOR);
 
-  bool opaque = SkColorGetA(background_color_) == SK_AlphaOPAQUE;
-  root_layer()->SetFillsBoundsOpaquely(opaque);
   root_layer()->SetColor(background_color_);
 
   ui::ContextFactory* context_factory = content::GetContextFactory();
@@ -210,8 +211,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   compositor_->SetRootLayer(root_layer_.get());
 
   ResizeRootLayer(false);
+
   render_widget_host_->SetView(this);
-  render_widget_host_->render_frame_metadata_provider()->AddObserver(this);
 
   if (content::GpuDataManager::GetInstance()->HardwareAccelerationEnabled()) {
     video_consumer_ = std::make_unique<OffScreenVideoConsumer>(
@@ -235,17 +236,32 @@ void OffScreenRenderWidgetHostView::OnLocalSurfaceIdChanged(
 }
 
 OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
-  render_widget_host_->render_frame_metadata_provider()->RemoveObserver(this);
+  ReleaseCompositor();
+  root_layer_.reset();
+
+  DCHECK(!parent_host_view_);
+  DCHECK(!popup_host_view_);
+  DCHECK(!child_host_view_);
+  DCHECK(guest_host_views_.empty());
+}
+
+void OffScreenRenderWidgetHostView::ReleaseCompositor() {
+  if (!compositor_) {
+    return;  // already released
+  }
 
   // Marking the DelegatedFrameHost as removed from the window hierarchy is
   // necessary to remove all connections to its old ui::Compositor.
-  if (is_showing_)
-    delegated_frame_host_->WasHidden(
+  if (is_showing_) {
+    delegated_frame_host()->WasHidden(
         content::DelegatedFrameHost::HiddenCause::kOther);
-  delegated_frame_host_->DetachFromCompositor();
+  }
 
+  delegated_frame_host()->DetachFromCompositor();
+  delegated_frame_host_.reset();
+
+  host_display_client_ = nullptr;
   compositor_.reset();
-  root_layer_.reset();
 }
 
 void OffScreenRenderWidgetHostView::InitAsChild(gfx::NativeView) {
@@ -303,21 +319,34 @@ void OffScreenRenderWidgetHostView::ShowWithVisibility(
   delegated_frame_host_->WasShown(GetLocalSurfaceId(),
                                   root_layer()->bounds().size(), {});
 
-  if (render_widget_host_)
-    render_widget_host_->WasShown({});
+  if (render_widget_host_) {
+    render_widget_host_->WasShown(
+        /*record_tab_switch_time_request=*/{});
+
+    // Call OnRenderFrameMetadataChangedAfterActivation for every frame.
+    auto* provider = content::RenderWidgetHostImpl::From(render_widget_host_)
+                         ->render_frame_metadata_provider();
+    provider->AddObserver(this);
+  }
 }
 
 void OffScreenRenderWidgetHostView::Hide() {
   if (!is_showing_)
     return;
 
-  if (render_widget_host_)
+  if (render_widget_host_) {
     render_widget_host_->WasHidden();
 
-  // TODO(deermichel): correct or kOther?
-  delegated_frame_host()->WasHidden(
-      content::DelegatedFrameHost::HiddenCause::kOccluded);
-  delegated_frame_host()->DetachFromCompositor();
+    auto* provider = content::RenderWidgetHostImpl::From(render_widget_host_)
+                         ->render_frame_metadata_provider();
+    provider->RemoveObserver(this);
+  }
+
+  if (delegated_frame_host()) {
+    delegated_frame_host()->WasHidden(
+        content::DelegatedFrameHost::HiddenCause::kOther);
+    delegated_frame_host()->DetachFromCompositor();
+  }
 
   is_showing_ = false;
 }
@@ -460,7 +489,8 @@ uint32_t OffScreenRenderWidgetHostView::GetCaptureSequenceNumber() const {
 void OffScreenRenderWidgetHostView::CopyFromSurface(
     const gfx::Rect& src_rect,
     const gfx::Size& output_size,
-    base::OnceCallback<void(const SkBitmap&)> callback) {
+    base::OnceCallback<void(const viz::CopyOutputBitmapWithMetadata&)>
+        callback) {
   delegated_frame_host()->CopyFromCompositingSurface(src_rect, output_size,
                                                      std::move(callback));
 }
@@ -522,7 +552,8 @@ OffScreenRenderWidgetHostView::CreateViewForWidget(
   }
 
   return new OffScreenRenderWidgetHostView(
-      transparent_, offscreen_use_shared_texture_, true,
+      transparent_, offscreen_use_shared_texture_,
+      offscreen_shared_texture_pixel_format_, true,
       embedder_host_view->frame_rate(), callback_, render_widget_host,
       embedder_host_view, size());
 }
@@ -533,8 +564,8 @@ const viz::FrameSinkId& OffScreenRenderWidgetHostView::GetFrameSinkId() const {
 
 void OffScreenRenderWidgetHostView::DidNavigate() {
   ResizeRootLayer(true);
-  if (delegated_frame_host_)
-    delegated_frame_host_->DidNavigate();
+  if (delegated_frame_host())
+    delegated_frame_host()->DidNavigate();
 }
 
 bool OffScreenRenderWidgetHostView::TransformPointToCoordSpaceForView(
@@ -807,7 +838,7 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
   mouse_wheel_phase_handler_.SendWheelEndForTouchpadScrollingIfNeeded(
       should_route_event);
   mouse_wheel_phase_handler_.AddPhaseIfNeededAndScheduleEndEvent(
-      mouse_wheel_event, false);
+      mouse_wheel_event, false, true);
 
   if (!IsPopupWidget()) {
     if (popup_host_view_) {
@@ -890,7 +921,7 @@ void OffScreenRenderWidgetHostView::SetFrameRate(int frame_rate) {
   } else {
     if (frame_rate <= 0)
       frame_rate = 1;
-    if (frame_rate > 240)
+    if (!offscreen_use_shared_texture_ && frame_rate > 240)
       frame_rate = 240;
 
     frame_rate_ = frame_rate;
@@ -935,7 +966,7 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   SetupFrameRate(false);
 
   display::Display display =
-      display::Screen::GetScreen()->GetDisplayNearestView(GetNativeView());
+      display::Screen::Get()->GetDisplayNearestView(GetNativeView());
   const float scaleFactor = display.device_scale_factor();
   float sf = GetDeviceScaleFactor();
   const bool sf_did_change = scaleFactor != sf;
@@ -980,7 +1011,8 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
 
 viz::FrameSinkId OffScreenRenderWidgetHostView::AllocateFrameSinkId() {
   return viz::FrameSinkId(
-      base::checked_cast<uint32_t>(render_widget_host_->GetProcess()->GetID()),
+      base::checked_cast<uint32_t>(
+          render_widget_host_->GetProcess()->GetDeprecatedID()),
       base::checked_cast<uint32_t>(render_widget_host_->GetRoutingID()));
 }
 
@@ -990,8 +1022,6 @@ void OffScreenRenderWidgetHostView::UpdateBackgroundColorFromRenderer(
     return;
   background_color_ = color;
 
-  bool opaque = SkColorGetA(color) == SK_AlphaOPAQUE;
-  root_layer()->SetFillsBoundsOpaquely(opaque);
   root_layer()->SetColor(color);
 }
 

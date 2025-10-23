@@ -1895,6 +1895,28 @@ describe('<webview> tag', function () {
 
         expect(channel).to.equal('onbeforeunload');
       });
+
+      it('does not crash when renderer process crashes', async function () {
+        // It takes more time to wait for the rendering process to crash
+        this.timeout(120000);
+        await loadWebView(w, {
+          nodeintegration: 'on',
+          webpreferences: 'contextIsolation=no',
+          src: blankPageUrl
+        });
+        // Create a crash in the rendering process of a webview
+        await w.executeJavaScript(`new Promise((resolve, reject) => {
+          webview.addEventListener('render-process-gone', (e) => resolve({...e}), {once: true})
+          webview.executeJavaScript('process.crash()', true)
+        })`);
+        // Reload the webview and the main process will not crash.
+        await w.executeJavaScript(`new Promise((resolve, reject) => {
+          webview.reload()
+          webview.addEventListener('did-finish-load', () => {
+            resolve()
+          })
+        })`);
+      });
     });
 
     describe('<webview>.goForward()', () => {

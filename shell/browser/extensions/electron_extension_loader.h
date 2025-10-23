@@ -36,6 +36,13 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   ElectronExtensionLoader(const ElectronExtensionLoader&) = delete;
   ElectronExtensionLoader& operator=(const ElectronExtensionLoader&) = delete;
 
+  void OnAddNewOrUpdatedExtension(const Extension* extension) override {}
+  void UpdateExternalExtensionAlert() override {}
+  void OnExtensionInstalled(const Extension* extension,
+                            const syncer::StringOrdinal& page_ordinal,
+                            int install_flags,
+                            base::Value::Dict ruleset_install_prefs) override {}
+
   // Loads an unpacked extension from a directory synchronously. Returns the
   // extension on success, or nullptr otherwise.
   void LoadExtension(const base::FilePath& extension_dir,
@@ -53,7 +60,7 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   void UnloadExtension(const ExtensionId& extension_id,
                        extensions::UnloadedExtensionReason reason);
 
-  ExtensionRegistrar* registrar() { return &extension_registrar_; }
+  raw_ptr<ExtensionRegistrar> registrar() { return extension_registrar_; }
 
  private:
   // If the extension loaded successfully, enables it. If it's an app, launches
@@ -65,6 +72,8 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   void FinishExtensionLoad(
       base::OnceCallback<void(const Extension*, const std::string&)> cb,
       std::pair<scoped_refptr<const Extension>, std::string> result);
+  void DoLoadExtensionForReload(const ExtensionId& extension_id,
+                                const base::FilePath& path);
 
   // ExtensionRegistrar::Delegate:
   void PreAddExtension(const Extension* extension,
@@ -72,18 +81,24 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   void PostActivateExtension(scoped_refptr<const Extension> extension) override;
   void PostDeactivateExtension(
       scoped_refptr<const Extension> extension) override;
-  void LoadExtensionForReload(
+  void PreUninstallExtension(scoped_refptr<const Extension> extension) override;
+  void PostUninstallExtension(scoped_refptr<const Extension> extension,
+                              base::OnceClosure done_callback) override;
+  void LoadExtensionForReload(const ExtensionId& extension_id,
+                              const base::FilePath& path) override;
+  void LoadExtensionForReloadWithQuietFailure(
       const ExtensionId& extension_id,
-      const base::FilePath& path,
-      ExtensionRegistrar::LoadErrorBehavior load_error_behavior) override;
+      const base::FilePath& path) override;
+  void ShowExtensionDisabledError(const Extension* extension,
+                                  bool is_remote_install) override;
   bool CanEnableExtension(const Extension* extension) override;
   bool CanDisableExtension(const Extension* extension) override;
-  bool ShouldBlockExtension(const Extension* extension) override;
+  void GrantActivePermissions(const Extension* extension) override;
 
   raw_ptr<content::BrowserContext> browser_context_;  // Not owned.
 
   // Registers and unregisters extensions.
-  ExtensionRegistrar extension_registrar_;
+  raw_ptr<ExtensionRegistrar> extension_registrar_;
 
   // Holds keep-alives for relaunching apps.
   //   ShellKeepAliveRequester keep_alive_requester_;

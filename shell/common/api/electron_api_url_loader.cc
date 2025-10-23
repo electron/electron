@@ -13,12 +13,11 @@
 
 #include "base/check_op.h"
 #include "base/containers/fixed_flat_map.h"
+#include "base/containers/span.h"
 #include "base/memory/raw_ptr.h"
 #include "base/notreached.h"
 #include "base/sequence_checker.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
-#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "net/base/auth.h"
@@ -43,6 +42,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
@@ -151,51 +151,44 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
  private:
   // mojo::DataPipeProducer::DataSource:
   [[nodiscard]] uint64_t GetLength() const override { return buffer_.size(); }
-  ReadResult Read(uint64_t offset, base::span<char> buffer) override {
-    ReadResult result;
-    if (offset <= buffer_.size()) {
-      size_t readable_size = buffer_.size() - offset;
-      size_t writable_size = buffer.size();
-      size_t copyable_size = std::min(readable_size, writable_size);
-      if (copyable_size > 0) {
-        memcpy(buffer.data(), &buffer_[offset], copyable_size);
-      }
-      result.bytes_read = copyable_size;
-    } else {
-      NOTREACHED();
-    }
-    return result;
+  ReadResult Read(uint64_t offset, base::span<char> tgt) override {
+    CHECK_LE(offset, buffer_.size());
+    const auto src =
+        base::span<const char>{buffer_}.subspan(static_cast<size_t>(offset));
+    const auto n_copied = std::min(src.size(), tgt.size());
+    tgt.first(n_copied).copy_from(src.first(n_copied));
+    return ReadResult{.bytes_read = n_copied};
   }
 
   std::vector<char> buffer_;
 };
 
 class JSChunkedDataPipeGetter final
-    : public gin::Wrappable<JSChunkedDataPipeGetter>,
+    : public gin_helper::DeprecatedWrappable<JSChunkedDataPipeGetter>,
       public network::mojom::ChunkedDataPipeGetter {
  public:
-  static gin::Handle<JSChunkedDataPipeGetter> Create(
+  static gin_helper::Handle<JSChunkedDataPipeGetter> Create(
       v8::Isolate* isolate,
       v8::Local<v8::Function> body_func,
       mojo::PendingReceiver<network::mojom::ChunkedDataPipeGetter>
           chunked_data_pipe_getter) {
-    return gin::CreateHandle(
+    return gin_helper::CreateHandle(
         isolate, new JSChunkedDataPipeGetter(
                      isolate, body_func, std::move(chunked_data_pipe_getter)));
   }
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override {
-    return gin::Wrappable<JSChunkedDataPipeGetter>::GetObjectTemplateBuilder(
-               isolate)
+    return gin_helper::DeprecatedWrappable<
+               JSChunkedDataPipeGetter>::GetObjectTemplateBuilder(isolate)
         .SetMethod("write", &JSChunkedDataPipeGetter::WriteChunk)
         .SetMethod("done", &JSChunkedDataPipeGetter::Done);
   }
 
   const char* GetTypeName() override { return "JSChunkedDataPipeGetter"; }
 
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   ~JSChunkedDataPipeGetter() override = default;
 
  private:
@@ -304,7 +297,7 @@ class JSChunkedDataPipeGetter final
   v8::Global<v8::Function> body_func_;
 };
 
-gin::WrapperInfo JSChunkedDataPipeGetter::kWrapperInfo = {
+gin::DeprecatedWrapperInfo JSChunkedDataPipeGetter::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
 const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
@@ -326,7 +319,7 @@ const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
 
 }  // namespace
 
-gin::WrapperInfo SimpleURLLoaderWrapper::kWrapperInfo = {
+gin::DeprecatedWrapperInfo SimpleURLLoaderWrapper::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
 SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
@@ -397,7 +390,8 @@ void SimpleURLLoaderWrapper::Start() {
 
 void SimpleURLLoaderWrapper::Pin() {
   // Prevent ourselves from being GC'd until the request is complete.  Must be
-  // called after gin::CreateHandle, otherwise the wrapper isn't initialized.
+  // called after gin_helper::CreateHandle, otherwise the wrapper isn't
+  // initialized.
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   pinned_wrapper_.Reset(isolate, GetWrapper(isolate).ToLocalChecked());
 }
@@ -438,7 +432,7 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
             net::AuthCredentials(username_str, password_str));
       },
       std::move(auth_responder));
-  Emit("login", auth_info, base::AdaptCallbackForRepeating(std::move(cb)));
+  Emit("login", auth_info, std::move(cb));
 }
 
 void SimpleURLLoaderWrapper::OnSSLCertificateError(
@@ -469,6 +463,7 @@ void SimpleURLLoaderWrapper::OnSharedStorageHeaderReceived(
     const url::Origin& request_origin,
     std::vector<network::mojom::SharedStorageModifierMethodWithOptionsPtr>
         methods,
+    const std::optional<std::string>& with_lock,
     OnSharedStorageHeaderReceivedCallback callback) {
   std::move(callback).Run();
 }
@@ -497,7 +492,7 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
   // correctly intercept file:// scheme URLs.
   if (const bool bypass = request_options_ & kBypassCustomProtocolHandlers;
       !bypass) {
-    const std::string_view scheme = url.scheme_piece();
+    const std::string_view scheme = url.scheme();
     const auto* const protocol_registry =
         ProtocolRegistry::FromBrowserContext(browser_context_);
 
@@ -528,7 +523,7 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
 }
 
 // static
-gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
+gin_helper::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     gin::Arguments* args) {
   gin_helper::Dictionary opts;
   if (!args->GetNext(&opts)) {
@@ -567,7 +562,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
             {"no-cors", Val::kNoCors},
             {"same-origin", Val::kSameOrigin},
         });
-    if (auto* iter = Lookup.find(mode); iter != Lookup.end())
+    if (auto iter = Lookup.find(mode); iter != Lookup.end())
       request->mode = iter->second;
   }
 
@@ -596,7 +591,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
             {"worker", Val::kWorker},
             {"xslt", Val::kXslt},
         });
-    if (auto* iter = Lookup.find(destination); iter != Lookup.end())
+    if (auto iter = Lookup.find(destination); iter != Lookup.end())
       request->destination = iter->second;
   }
 
@@ -614,9 +609,8 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     }
   }
 
-  blink::mojom::FetchCacheMode cache_mode =
-      blink::mojom::FetchCacheMode::kDefault;
-  opts.Get("cache", &cache_mode);
+  const auto cache_mode =
+      opts.ValueOrDefault("cache", blink::mojom::FetchCacheMode::kDefault);
   switch (cache_mode) {
     case blink::mojom::FetchCacheMode::kNoStore:
       request->load_flags |= net::LOAD_DISABLE_CACHE;
@@ -644,8 +638,26 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
       break;
   }
 
-  bool use_session_cookies = false;
-  opts.Get("useSessionCookies", &use_session_cookies);
+  if (std::string priority; opts.Get("priority", &priority)) {
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMap<std::string_view, net::RequestPriority>({
+            {"throttled", net::THROTTLED},
+            {"idle", net::IDLE},
+            {"lowest", net::LOWEST},
+            {"low", net::LOW},
+            {"medium", net::MEDIUM},
+            {"highest", net::HIGHEST},
+        });
+    if (auto iter = Lookup.find(priority); iter != Lookup.end())
+      request->priority = iter->second;
+  }
+  if (bool priorityIncremental = request->priority_incremental;
+      opts.Get("priorityIncremental", &priorityIncremental)) {
+    request->priority_incremental = priorityIncremental;
+  }
+
+  const bool use_session_cookies =
+      opts.ValueOrDefault("useSessionCookies", false);
   int options = network::mojom::kURLLoadOptionSniffMimeType;
   if (!credentials_specified && !use_session_cookies) {
     // This is the default case, as well as the case when credentials is not
@@ -655,9 +667,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     options |= network::mojom::kURLLoadOptionBlockAllCookies;
   }
 
-  bool bypass_custom_protocol_handlers = false;
-  opts.Get("bypassCustomProtocolHandlers", &bypass_custom_protocol_handlers);
-  if (bypass_custom_protocol_handlers)
+  if (opts.ValueOrDefault("bypassCustomProtocolHandlers", false))
     options |= kBypassCustomProtocolHandlers;
 
   v8::Local<v8::Value> body;
@@ -688,17 +698,18 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   ElectronBrowserContext* browser_context = nullptr;
   if (electron::IsBrowserProcess()) {
     std::string partition;
-    gin::Handle<Session> session;
+    Session* session = nullptr;
     if (!opts.Get("session", &session)) {
       if (opts.Get("partition", &partition))
         session = Session::FromPartition(args->isolate(), partition);
       else  // default session
         session = Session::FromPartition(args->isolate(), "");
     }
-    browser_context = session->browser_context();
+    if (session)
+      browser_context = session->browser_context();
   }
 
-  auto ret = gin::CreateHandle(
+  auto ret = gin_helper::CreateHandle(
       args->isolate(),
       new SimpleURLLoaderWrapper(browser_context, std::move(request), options));
   ret->Pin();
@@ -714,9 +725,10 @@ void SimpleURLLoaderWrapper::OnDataReceived(std::string_view string_view,
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   auto array_buffer = v8::ArrayBuffer::New(isolate, string_view.size());
-  memcpy(array_buffer->Data(), string_view.data(), string_view.size());
-  Emit("data", array_buffer,
-       base::AdaptCallbackForRepeating(std::move(resume)));
+  // TODO SAFETY: migrate this to shell/common/v8_util.h
+  UNSAFE_BUFFERS(
+      std::ranges::copy(string_view, static_cast<char*>(array_buffer->Data())));
+  Emit("data", array_buffer, std::move(resume));
 }
 
 void SimpleURLLoaderWrapper::OnComplete(bool success) {
@@ -816,6 +828,10 @@ gin::ObjectTemplateBuilder SimpleURLLoaderWrapper::GetObjectTemplateBuilder(
 
 const char* SimpleURLLoaderWrapper::GetTypeName() {
   return "SimpleURLLoaderWrapper";
+}
+
+void SimpleURLLoaderWrapper::WillBeDestroyed() {
+  ClearWeak();
 }
 
 }  // namespace electron::api

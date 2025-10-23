@@ -46,26 +46,31 @@ async function main () {
   const platformFlags = [];
   if (process.platform === 'darwin') {
     const sdkPath = path.resolve(BASE, 'out', outDir, 'sdk', 'xcode_links');
-    const sdks = (await fs.promises.readdir(sdkPath)).filter(fileName => fileName.endsWith('.sdk'));
-    const sdkToUse = sdks[0];
-    if (!sdkToUse) {
+    const sdks = (await fs.promises.readdir(sdkPath)).filter(f => f.endsWith('.sdk'));
+
+    if (!sdks.length) {
       console.error('Could not find an SDK to use for the NAN tests');
       process.exit(1);
     }
 
-    if (sdks.length) {
-      console.warn(`Multiple SDKs found in the xcode_links directory - using ${sdkToUse}`);
+    const sdkToUse = sdks.sort((a, b) => {
+      const getVer = s => s.match(/(\d+)\.?(\d*)/)?.[0] || '0';
+      return getVer(b).localeCompare(getVer(a), undefined, { numeric: true });
+    })[0];
+
+    if (sdks.length > 1) {
+      console.warn(`Multiple SDKs found - using ${sdkToUse}`);
     }
 
-    platformFlags.push(
-      `-isysroot ${path.resolve(sdkPath, sdkToUse)}`
-    );
+    platformFlags.push(`-isysroot ${path.resolve(sdkPath, sdkToUse)}`);
   }
 
-  // TODO(ckerr) this is cribbed from read obj/electron/electron_app.ninja.
-  // Maybe it would be better to have this script literally open up that
-  // file and pull cflags_cc from it instead of using bespoke code here?
-  // I think it's unlikely to work; but if it does, it would be more futureproof
+  const cflags = [
+    '-Wno-trigraphs',
+    '-fPIC',
+    ...platformFlags
+  ].join(' ');
+
   const cxxflags = [
     '-std=c++20',
     '-Wno-trigraphs',
@@ -93,10 +98,10 @@ async function main () {
 
   if (process.platform !== 'win32') {
     env.CC = cc;
-    env.CFLAGS = cxxflags;
+    env.CFLAGS = cflags;
     env.CXX = cxx;
-    env.LD = ld;
     env.CXXFLAGS = cxxflags;
+    env.LD = ld;
     env.LDFLAGS = ldflags;
   }
 
@@ -125,13 +130,16 @@ async function main () {
     return process.exit(installStatus !== 0 ? installStatus : signal);
   }
 
-  const onlyTests = args.only && args.only.split(',');
+  const onlyTests = args.only?.split(',');
 
   const DISABLED_TESTS = new Set([
     'nannew-test.js',
     'buffer-test.js',
-    // we can't patch this test because it uses CRLF line endings
-    'methodswithdata-test.js'
+    // These two are incompatible with crrev.com/c/4733273
+    // They are disabled upstream starting in "Node.js 24" (note: the incompatible change above
+    // landed in V8 v13.7), so we can remove them from this list once we upgrade Node.js to 24.
+    'weak-test.js',
+    'weak2-test.js'
   ]);
   const testsToRun = fs.readdirSync(path.resolve(NAN_DIR, 'test', 'js'))
     .filter(test => !DISABLED_TESTS.has(test))

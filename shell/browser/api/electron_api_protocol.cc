@@ -8,16 +8,18 @@
 #include <vector>
 
 #include "base/command_line.h"
+#include "base/containers/contains.h"
+#include "base/no_destructor.h"
 #include "content/common/url_schemes.h"
 #include "content/public/browser/child_process_security_policy.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/browser.h"
-#include "shell/browser/electron_browser_context.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
@@ -26,15 +28,6 @@
 #include "url/url_util.h"
 
 namespace {
-
-// List of registered custom standard schemes.
-std::vector<std::string> g_standard_schemes;
-
-// List of registered custom streaming schemes.
-std::vector<std::string> g_streaming_schemes;
-
-// Schemes that support V8 code cache.
-std::vector<std::string> g_code_cache_schemes;
 
 struct SchemeOptions {
   bool standard = false;
@@ -86,14 +79,21 @@ struct Converter<CustomScheme> {
 
 namespace electron::api {
 
-gin::WrapperInfo Protocol::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo Protocol::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-const std::vector<std::string>& GetStandardSchemes() {
-  return g_standard_schemes;
+std::vector<std::string>& GetStandardSchemes() {
+  static base::NoDestructor<std::vector<std::string>> g_standard_schemes;
+  return *g_standard_schemes;
 }
 
-const std::vector<std::string>& GetCodeCacheSchemes() {
-  return g_code_cache_schemes;
+std::vector<std::string>& GetCodeCacheSchemes() {
+  static base::NoDestructor<std::vector<std::string>> g_code_cache_schemes;
+  return *g_code_cache_schemes;
+}
+
+std::vector<std::string>& GetStreamingSchemes() {
+  static base::NoDestructor<std::vector<std::string>> g_streaming_schemes;
+  return *g_streaming_schemes;
 }
 
 void AddServiceWorkerScheme(const std::string& scheme) {
@@ -131,7 +131,7 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
       auto* policy = content::ChildProcessSecurityPolicy::GetInstance();
       url::AddStandardScheme(custom_scheme.scheme.c_str(),
                              url::SCHEME_WITH_HOST);
-      g_standard_schemes.push_back(custom_scheme.scheme);
+      GetStandardSchemes().push_back(custom_scheme.scheme);
       policy->RegisterWebSafeScheme(custom_scheme.scheme);
     }
     if (custom_scheme.options.secure) {
@@ -154,10 +154,10 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
       AddServiceWorkerScheme(custom_scheme.scheme);
     }
     if (custom_scheme.options.stream) {
-      g_streaming_schemes.push_back(custom_scheme.scheme);
+      GetStreamingSchemes().push_back(custom_scheme.scheme);
     }
     if (custom_scheme.options.codeCache) {
-      g_code_cache_schemes.push_back(custom_scheme.scheme);
+      GetCodeCacheSchemes().push_back(custom_scheme.scheme);
       url::AddCodeCacheScheme(custom_scheme.scheme.c_str());
     }
   }
@@ -180,11 +180,11 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
   AppendSchemesToCmdLine(electron::switches::kServiceWorkerSchemes,
                          service_worker_schemes);
   AppendSchemesToCmdLine(electron::switches::kStandardSchemes,
-                         g_standard_schemes);
+                         GetStandardSchemes());
   AppendSchemesToCmdLine(electron::switches::kStreamingSchemes,
-                         g_streaming_schemes);
+                         GetStreamingSchemes());
   AppendSchemesToCmdLine(electron::switches::kCodeCacheSchemes,
-                         g_code_cache_schemes);
+                         GetCodeCacheSchemes());
 }
 
 namespace {
@@ -193,41 +193,41 @@ const char* const kBuiltinSchemes[] = {
     "about", "file", "http", "https", "data", "filesystem",
 };
 
+}  // namespace
+
+Protocol::Protocol(ProtocolRegistry* protocol_registry)
+    : protocol_registry_{protocol_registry} {}
+
+Protocol::~Protocol() = default;
+
 // Convert error code to string.
-constexpr std::string_view ErrorCodeToString(ProtocolError error) {
+// static
+std::string_view Protocol::ErrorCodeToString(Error error) {
   switch (error) {
-    case ProtocolError::kRegistered:
+    case Error::kRegistered:
       return "The scheme has been registered";
-    case ProtocolError::kNotRegistered:
+    case Error::kNotRegistered:
       return "The scheme has not been registered";
-    case ProtocolError::kIntercepted:
+    case Error::kIntercepted:
       return "The scheme has been intercepted";
-    case ProtocolError::kNotIntercepted:
+    case Error::kNotIntercepted:
       return "The scheme has not been intercepted";
     default:
       return "Unexpected error";
   }
 }
 
-}  // namespace
-
-Protocol::Protocol(v8::Isolate* isolate, ProtocolRegistry* protocol_registry)
-    : protocol_registry_(protocol_registry) {}
-
-Protocol::~Protocol() = default;
-
-ProtocolError Protocol::RegisterProtocol(ProtocolType type,
-                                         const std::string& scheme,
-                                         const ProtocolHandler& handler) {
+Protocol::Error Protocol::RegisterProtocol(ProtocolType type,
+                                           const std::string& scheme,
+                                           const ProtocolHandler& handler) {
   bool added = protocol_registry_->RegisterProtocol(type, scheme, handler);
-  return added ? ProtocolError::kOK : ProtocolError::kRegistered;
+  return added ? Error::kOK : Error::kRegistered;
 }
 
 bool Protocol::UnregisterProtocol(const std::string& scheme,
                                   gin::Arguments* args) {
   bool removed = protocol_registry_->UnregisterProtocol(scheme);
-  HandleOptionalCallback(
-      args, removed ? ProtocolError::kOK : ProtocolError::kNotRegistered);
+  HandleOptionalCallback(args, removed ? Error::kOK : Error::kNotRegistered);
   return removed;
 }
 
@@ -235,18 +235,17 @@ bool Protocol::IsProtocolRegistered(const std::string& scheme) {
   return protocol_registry_->FindRegistered(scheme) != nullptr;
 }
 
-ProtocolError Protocol::InterceptProtocol(ProtocolType type,
-                                          const std::string& scheme,
-                                          const ProtocolHandler& handler) {
+Protocol::Error Protocol::InterceptProtocol(ProtocolType type,
+                                            const std::string& scheme,
+                                            const ProtocolHandler& handler) {
   bool added = protocol_registry_->InterceptProtocol(type, scheme, handler);
-  return added ? ProtocolError::kOK : ProtocolError::kIntercepted;
+  return added ? Error::kOK : Error::kIntercepted;
 }
 
 bool Protocol::UninterceptProtocol(const std::string& scheme,
                                    gin::Arguments* args) {
   bool removed = protocol_registry_->UninterceptProtocol(scheme);
-  HandleOptionalCallback(
-      args, removed ? ProtocolError::kOK : ProtocolError::kNotIntercepted);
+  HandleOptionalCallback(args, removed ? Error::kOK : Error::kNotIntercepted);
   return removed;
 }
 
@@ -254,35 +253,33 @@ bool Protocol::IsProtocolIntercepted(const std::string& scheme) {
   return protocol_registry_->FindIntercepted(scheme) != nullptr;
 }
 
-v8::Local<v8::Promise> Protocol::IsProtocolHandled(const std::string& scheme,
-                                                   gin::Arguments* args) {
-  util::EmitWarning(args->isolate(),
+v8::Local<v8::Promise> Protocol::IsProtocolHandled(v8::Isolate* const isolate,
+                                                   const std::string& scheme) {
+  util::EmitWarning(isolate,
                     "The protocol.isProtocolHandled API is deprecated, "
                     "use protocol.isProtocolRegistered "
                     "or protocol.isProtocolIntercepted instead.",
                     "ProtocolDeprecateIsProtocolHandled");
   return gin_helper::Promise<bool>::ResolvedPromise(
-      args->isolate(),
-      IsProtocolRegistered(scheme) || IsProtocolIntercepted(scheme) ||
-          // The |isProtocolHandled| should return true for builtin
-          // schemes, however with NetworkService it is impossible to
-          // know which schemes are registered until a real network
-          // request is sent.
-          // So we have to test against a hard-coded builtin schemes
-          // list make it work with old code. We should deprecate
-          // this API with the new |isProtocolRegistered| API.
-          base::Contains(kBuiltinSchemes, scheme));
+      isolate, IsProtocolRegistered(scheme) || IsProtocolIntercepted(scheme) ||
+                   // The |isProtocolHandled| should return true for builtin
+                   // schemes, however with NetworkService it is impossible to
+                   // know which schemes are registered until a real network
+                   // request is sent.
+                   // So we have to test against a hard-coded builtin schemes
+                   // list make it work with old code. We should deprecate
+                   // this API with the new |isProtocolRegistered| API.
+                   base::Contains(kBuiltinSchemes, scheme));
 }
 
-void Protocol::HandleOptionalCallback(gin::Arguments* args,
-                                      ProtocolError error) {
+void Protocol::HandleOptionalCallback(gin::Arguments* args, Error error) {
   base::RepeatingCallback<void(v8::Local<v8::Value>)> callback;
   if (args->GetNext(&callback)) {
     util::EmitWarning(
         args->isolate(),
         "The callback argument of protocol module APIs is no longer needed.",
         "ProtocolDeprecateCallback");
-    if (error == ProtocolError::kOK)
+    if (error == Error::kOK)
       callback.Run(v8::Null(args->isolate()));
     else
       callback.Run(v8::Exception::Error(
@@ -291,15 +288,14 @@ void Protocol::HandleOptionalCallback(gin::Arguments* args,
 }
 
 // static
-gin::Handle<Protocol> Protocol::Create(
+gin_helper::Handle<Protocol> Protocol::Create(
     v8::Isolate* isolate,
-    ElectronBrowserContext* browser_context) {
-  return gin::CreateHandle(
-      isolate, new Protocol(isolate, browser_context->protocol_registry()));
+    ProtocolRegistry* protocol_registry) {
+  return gin_helper::CreateHandle(isolate, new Protocol{protocol_registry});
 }
 
 // static
-gin::Handle<Protocol> Protocol::New(gin_helper::ErrorThrower thrower) {
+gin_helper::Handle<Protocol> Protocol::New(gin_helper::ErrorThrower thrower) {
   thrower.ThrowError("Protocol cannot be created from JS");
   return {};
 }
@@ -365,9 +361,10 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("Protocol", electron::api::Protocol::GetConstructor(context));
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
+  dict.Set("Protocol",
+           electron::api::Protocol::GetConstructor(isolate, context));
   dict.SetMethod("registerSchemesAsPrivileged", &RegisterSchemesAsPrivileged);
   dict.SetMethod("getStandardSchemes", &electron::api::GetStandardSchemes);
 }

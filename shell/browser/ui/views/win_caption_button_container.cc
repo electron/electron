@@ -39,7 +39,8 @@ std::unique_ptr<WinCaptionButton> CreateCaptionButton(
 }
 
 bool HitTestCaptionButton(WinCaptionButton* button, const gfx::Point& point) {
-  return button && button->GetVisible() && button->bounds().Contains(point);
+  return button && button->GetVisible() &&
+         button->GetMirroredBounds().Contains(point);
 }
 
 }  // anonymous namespace
@@ -47,27 +48,26 @@ bool HitTestCaptionButton(WinCaptionButton* button, const gfx::Point& point) {
 WinCaptionButtonContainer::WinCaptionButtonContainer(WinFrameView* frame_view)
     : frame_view_(frame_view),
       minimize_button_(AddChildView(CreateCaptionButton(
-          base::BindRepeating(&views::Widget::Minimize,
-                              base::Unretained(frame_view_->frame())),
+          base::BindRepeating(&NativeWindow::Minimize,
+                              base::Unretained(frame_view_->window())),
           frame_view_,
           VIEW_ID_MINIMIZE_BUTTON,
           IDS_APP_ACCNAME_MINIMIZE))),
       maximize_button_(AddChildView(CreateCaptionButton(
-          base::BindRepeating(&views::Widget::Maximize,
-                              base::Unretained(frame_view_->frame())),
+          base::BindRepeating(&NativeWindow::Maximize,
+                              base::Unretained(frame_view_->window())),
           frame_view_,
           VIEW_ID_MAXIMIZE_BUTTON,
           IDS_APP_ACCNAME_MAXIMIZE))),
       restore_button_(AddChildView(CreateCaptionButton(
-          base::BindRepeating(&views::Widget::Restore,
-                              base::Unretained(frame_view_->frame())),
+          base::BindRepeating(&NativeWindow::Restore,
+                              base::Unretained(frame_view_->window())),
           frame_view_,
           VIEW_ID_RESTORE_BUTTON,
           IDS_APP_ACCNAME_RESTORE))),
       close_button_(AddChildView(CreateCaptionButton(
-          base::BindRepeating(&views::Widget::CloseWithReason,
-                              base::Unretained(frame_view_->frame()),
-                              views::Widget::ClosedReason::kCloseButtonClicked),
+          base::BindRepeating(&NativeWindow::Close,
+                              base::Unretained(frame_view_->window())),
           frame_view_,
           VIEW_ID_CLOSE_BUTTON,
           IDS_APP_ACCNAME_CLOSE))) {
@@ -151,7 +151,7 @@ void WinCaptionButtonContainer::UpdateButtons() {
   minimize_button_->SetEnabled(minimizable);
   minimize_button_->SetVisible(minimizable);
 
-  const bool is_maximized = frame_view_->frame()->IsMaximized();
+  const bool is_maximized = frame_view_->window()->IsMaximized();
   const bool maximizable = frame_view_->window()->IsMaximizable();
   restore_button_->SetVisible(is_maximized && maximizable);
   maximize_button_->SetVisible(!is_maximized && maximizable);

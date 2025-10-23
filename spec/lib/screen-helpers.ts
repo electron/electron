@@ -122,6 +122,14 @@ export class ScreenCapture {
     return this._expectImpl(findPoint(this.display.size), hexColor, true);
   }
 
+  public async takeScreenshot (filePrefix: string) {
+    const frame = await this.captureFrame();
+    return await createArtifactWithRandomId(
+      (id) => `${filePrefix}-${id}.png`,
+      frame.toPNG()
+    );
+  }
+
   private async captureFrame (): Promise<NativeImage> {
     const sources = await desktopCapturer.getSources({
       types: ['screen'],

@@ -4,12 +4,12 @@
 
 #include "shell/browser/zoom_level_delegate.h"
 
-#include <functional>
 #include <utility>
 #include <vector>
 
 #include "base/files/file_path.h"
 #include "base/functional/bind.h"
+#include "base/strings/string_number_conversions.h"
 #include "components/prefs/json_pref_store.h"
 #include "components/prefs/pref_filter.h"
 #include "components/prefs/pref_registry_simple.h"

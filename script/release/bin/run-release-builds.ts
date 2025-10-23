@@ -2,7 +2,7 @@ import { parseArgs } from 'node:util';
 
 import { runReleaseCIJobs } from '../run-release-ci-jobs';
 
-const { values: { ghRelease, job, arch, ci, commit, newVersion }, positionals } = parseArgs({
+const { values: { ghRelease, job, arch, ci, newVersion }, positionals } = parseArgs({
   options: {
     ghRelease: {
       type: 'boolean'
@@ -16,9 +16,6 @@ const { values: { ghRelease, job, arch, ci, commit, newVersion }, positionals } 
     ci: {
       type: 'string'
     },
-    commit: {
-      type: 'string'
-    },
     newVersion: {
       type: 'string'
     }
@@ -30,7 +27,7 @@ const targetBranch = positionals[0];
 
 if (positionals.length < 1) {
   console.log(`Trigger CI to build release builds of electron.
-  Usage: ci-release-build.js [--job=CI_JOB_NAME] [--arch=INDIVIDUAL_ARCH] [--ci=AppVeyor|GitHubActions]
+  Usage: ci-release-build.js [--job=CI_JOB_NAME] [--arch=INDIVIDUAL_ARCH] [--ci=GitHubActions]
   [--ghRelease] [--commit=sha] [--newVersion=version_tag] TARGET_BRANCH
   `);
   process.exit(0);
@@ -44,10 +41,9 @@ if (ci === 'GitHubActions' || !ci) {
 }
 
 runReleaseCIJobs(targetBranch, {
-  ci: ci as 'GitHubActions' | 'AppVeyor',
+  ci: ci as 'GitHubActions',
   ghRelease,
   job: job as any,
   arch,
-  newVersion: newVersion!,
-  commit
+  newVersion: newVersion!
 });

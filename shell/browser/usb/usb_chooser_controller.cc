@@ -8,7 +8,9 @@
 #include <cstddef>
 #include <utility>
 
+#include "base/command_line.h"
 #include "base/functional/bind.h"
+#include "chrome/browser/usb/usb_blocklist.h"
 #include "components/strings/grit/components_strings.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
@@ -56,7 +58,7 @@ UsbChooserController::~UsbChooserController() {
   RunCallback(/*device_info=*/nullptr);
 }
 
-api::Session* UsbChooserController::GetSession() {
+gin::WeakCell<api::Session>* UsbChooserController::GetSession() {
   if (!web_contents()) {
     return nullptr;
   }
@@ -66,18 +68,20 @@ api::Session* UsbChooserController::GetSession() {
 void UsbChooserController::OnDeviceAdded(
     const device::mojom::UsbDeviceInfo& device_info) {
   if (DisplayDevice(device_info)) {
-    api::Session* session = GetSession();
-    if (session) {
-      session->Emit("usb-device-added", device_info.Clone(), web_contents());
+    gin::WeakCell<api::Session>* session = GetSession();
+    if (session && session->Get()) {
+      session->Get()->Emit("usb-device-added", device_info.Clone(),
+                           web_contents());
     }
   }
 }
 
 void UsbChooserController::OnDeviceRemoved(
     const device::mojom::UsbDeviceInfo& device_info) {
-  api::Session* session = GetSession();
-  if (session) {
-    session->Emit("usb-device-removed", device_info.Clone(), web_contents());
+  gin::WeakCell<api::Session>* session = GetSession();
+  if (session && session->Get()) {
+    session->Get()->Emit("usb-device-removed", device_info.Clone(),
+                         web_contents());
   }
 }
 
@@ -112,8 +116,8 @@ void UsbChooserController::GotUsbDeviceList(
     observation_.Observe(chooser_context_.get());
 
   bool prevent_default = false;
-  api::Session* session = GetSession();
-  if (session) {
+  gin::WeakCell<api::Session>* session = GetSession();
+  if (session && session->Get()) {
     auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope{isolate};
@@ -128,10 +132,10 @@ void UsbChooserController::GotUsbDeviceList(
                                         .Set("frame", rfh)
                                         .Build();
 
-    prevent_default =
-        session->Emit("select-usb-device", details,
-                      base::BindRepeating(&UsbChooserController::OnDeviceChosen,
-                                          weak_factory_.GetWeakPtr()));
+    prevent_default = session->Get()->Emit(
+        "select-usb-device", details,
+        base::BindRepeating(&UsbChooserController::OnDeviceChosen,
+                            weak_factory_.GetWeakPtr()));
   }
   if (!prevent_default) {
     RunCallback(/*device_info=*/nullptr);
@@ -140,6 +144,8 @@ void UsbChooserController::GotUsbDeviceList(
 
 bool UsbChooserController::DisplayDevice(
     const device::mojom::UsbDeviceInfo& device_info) const {
+  bool blocklist_disabled =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(kDisableUSBBlocklist);
   if (!device::UsbDeviceFilterMatchesAny(options_->filters, device_info)) {
     return false;
   }
@@ -148,6 +154,10 @@ bool UsbChooserController::DisplayDevice(
           options_->exclusion_filters, [&device_info](const auto& filter) {
             return device::UsbDeviceFilterMatches(*filter, device_info);
           })) {
+    return false;
+  }
+
+  if (!blocklist_disabled && UsbBlocklist::Get().IsExcluded(device_info)) {
     return false;
   }
 

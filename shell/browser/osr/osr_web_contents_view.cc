@@ -16,9 +16,12 @@ namespace electron {
 OffScreenWebContentsView::OffScreenWebContentsView(
     bool transparent,
     bool offscreen_use_shared_texture,
+    const std::string& offscreen_shared_texture_pixel_format,
     const OnPaintCallback& callback)
     : transparent_(transparent),
       offscreen_use_shared_texture_(offscreen_use_shared_texture),
+      offscreen_shared_texture_pixel_format_(
+          offscreen_shared_texture_pixel_format),
       callback_(callback) {
 #if BUILDFLAG(IS_MAC)
   PlatformCreate();
@@ -112,7 +115,8 @@ OffScreenWebContentsView::CreateViewForWidget(
     return static_cast<content::RenderWidgetHostViewBase*>(rwhv);
 
   return new OffScreenRenderWidgetHostView(
-      transparent_, offscreen_use_shared_texture_, painting_, GetFrameRate(),
+      transparent_, offscreen_use_shared_texture_,
+      offscreen_shared_texture_pixel_format_, painting_, GetFrameRate(),
       callback_, render_widget_host, nullptr, GetSize());
 }
 
@@ -122,14 +126,20 @@ OffScreenWebContentsView::CreateViewForChildWidget(
   auto* web_contents_impl =
       static_cast<content::WebContentsImpl*>(web_contents_);
 
-  auto* view = static_cast<OffScreenRenderWidgetHostView*>(
-      web_contents_impl->GetOuterWebContents()
-          ? web_contents_impl->GetOuterWebContents()->GetRenderWidgetHostView()
-          : web_contents_impl->GetRenderWidgetHostView());
+  OffScreenRenderWidgetHostView* embedder_host_view = nullptr;
+  if (web_contents_impl->GetOuterWebContents()) {
+    embedder_host_view = static_cast<OffScreenRenderWidgetHostView*>(
+        web_contents_impl->GetOuterWebContents()->GetRenderWidgetHostView());
+  } else {
+    embedder_host_view = static_cast<OffScreenRenderWidgetHostView*>(
+        web_contents_impl->GetRenderWidgetHostView());
+  }
 
   return new OffScreenRenderWidgetHostView(
-      transparent_, offscreen_use_shared_texture_, painting_,
-      view->frame_rate(), callback_, render_widget_host, view, GetSize());
+      transparent_, offscreen_use_shared_texture_,
+      offscreen_shared_texture_pixel_format_, painting_,
+      embedder_host_view->frame_rate(), callback_, render_widget_host,
+      embedder_host_view, GetSize());
 }
 
 void OffScreenWebContentsView::RenderViewReady() {

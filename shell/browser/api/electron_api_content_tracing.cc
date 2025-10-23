@@ -5,6 +5,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <string_view>
 #include <utility>
 
 #include "base/files/file_util.h"
@@ -12,6 +13,7 @@
 #include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_config.h"
 #include "content/public/browser/tracing_controller.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
@@ -20,6 +22,7 @@
 #include "shell/common/node_includes.h"
 
 using content::TracingController;
+using namespace std::literals;
 
 namespace gin {
 
@@ -69,9 +72,9 @@ void StopTracing(gin_helper::Promise<base::FilePath> promise,
                  std::optional<base::FilePath> file_path) {
   auto resolve_or_reject = base::BindOnce(
       [](gin_helper::Promise<base::FilePath> promise,
-         const base::FilePath& path, std::optional<std::string> error) {
-        if (error) {
-          promise.RejectWithErrorMessage(error.value());
+         const base::FilePath& path, const std::string_view error) {
+        if (!std::empty(error)) {
+          promise.RejectWithErrorMessage(error);
         } else {
           promise.Resolve(path);
         }
@@ -81,26 +84,22 @@ void StopTracing(gin_helper::Promise<base::FilePath> promise,
   auto* instance = TracingController::GetInstance();
   if (!instance->IsTracing()) {
     std::move(resolve_or_reject)
-        .Run(std::make_optional(
-            "Failed to stop tracing - no trace in progress"));
+        .Run("Failed to stop tracing - no trace in progress"sv);
   } else if (file_path) {
     auto split_callback = base::SplitOnceCallback(std::move(resolve_or_reject));
     auto endpoint = TracingController::CreateFileEndpoint(
-        *file_path,
-        base::BindOnce(std::move(split_callback.first), std::nullopt));
+        *file_path, base::BindOnce(std::move(split_callback.first), ""sv));
     if (!instance->StopTracing(endpoint)) {
-      std::move(split_callback.second)
-          .Run(std::make_optional("Failed to stop tracing"));
+      std::move(split_callback.second).Run("Failed to stop tracing"sv);
     }
   } else {
     std::move(resolve_or_reject)
-        .Run(std::make_optional(
-            "Failed to create temporary file for trace data"));
+        .Run("Failed to create temporary file for trace data"sv);
   }
 }
 
-v8::Local<v8::Promise> StopRecording(gin_helper::Arguments* args) {
-  gin_helper::Promise<base::FilePath> promise(args->isolate());
+v8::Local<v8::Promise> StopRecording(gin::Arguments* const args) {
+  gin_helper::Promise<base::FilePath> promise{args->isolate()};
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   base::FilePath path;
@@ -173,7 +172,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  gin_helper::Dictionary dict(context->GetIsolate(), exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("getCategories", &GetCategories);
   dict.SetMethod("startRecording", &StartTracing);
   dict.SetMethod("stopRecording", &StopRecording);
