@@ -135,9 +135,9 @@ async function main () {
   const DISABLED_TESTS = new Set([
     'nannew-test.js',
     'buffer-test.js',
-    // we can't patch this test because it uses CRLF line endings
-    'methodswithdata-test.js',
-    // these two are incompatible with crrev.com/c/4733273
+    // These two are incompatible with crrev.com/c/4733273
+    // They are disabled upstream starting in "Node.js 24" (note: the incompatible change above
+    // landed in V8 v13.7), so we can remove them from this list once we upgrade Node.js to 24.
     'weak-test.js',
     'weak2-test.js'
   ]);
