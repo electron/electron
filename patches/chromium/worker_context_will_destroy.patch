@@ -10,10 +10,10 @@ An attempt to upstream this was made, but rejected:
 https://chromium-review.googlesource.com/c/chromium/src/+/1954347
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 6d5859d9e3938c8c92550b02478674d733d97eed..d07ef9333059319869506f8c9eb347f546b5084d 100644
+index d794a461eedde1003c72f47af0517249ab20806d..6d2033d2023a7c4c936933a050d2372cf490eb44 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -407,6 +407,11 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -428,6 +428,11 @@ class CONTENT_EXPORT ContentRendererClient {
    virtual void DidInitializeWorkerContextOnWorkerThread(
        v8::Local<v8::Context> context) {}
  
@@ -26,10 +26,10 @@ index 6d5859d9e3938c8c92550b02478674d733d97eed..d07ef9333059319869506f8c9eb347f5
    // An empty URL is returned if the URL is not overriden.
    virtual GURL OverrideFlashEmbedWithHTML(const GURL& url);
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index e54e804b10fa03bf787ca182c42020a778cddc40..d3ca239403d73cc4150e44f0f447f0058495f105 100644
+index 93bb9ba86074d5105cca072d08588ff6e58caa6f..c3c795042c611b3ceb99d25dc255fbbe46ee9fcc 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -903,6 +903,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
+@@ -902,6 +902,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
    WorkerThreadRegistry::Instance()->WillStopCurrentWorkerThread();
  }
  
@@ -43,10 +43,10 @@ index e54e804b10fa03bf787ca182c42020a778cddc40..d3ca239403d73cc4150e44f0f447f005
      const v8::Local<v8::Context>& worker) {
    GetContentClient()->renderer()->DidInitializeWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index b4fc08dc16842e4f37775739653732a812a33751..11fa54d4a00c1659e55b61d68cbd1684337e0409 100644
+index 451dd8f53764d02906cdfdd42d4a09f676857280..82d9b2f234101aeddc9c20ffae0d8793a5902ced 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
-@@ -197,6 +197,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
+@@ -206,6 +206,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
    void DidStartWorkerThread() override;
    void WillStopWorkerThread() override;
    void WorkerContextCreated(const v8::Local<v8::Context>& worker) override;
@@ -55,10 +55,10 @@ index b4fc08dc16842e4f37775739653732a812a33751..11fa54d4a00c1659e55b61d68cbd1684
        const blink::WebSecurityOrigin& script_origin) override;
    blink::ProtocolHandlerSecurityLevel GetProtocolHandlerSecurityLevel(
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index eee2a8d0176f335139c2ac587f783b22d4157abd..63c51ba32eaaa7bfdb0a5c2045297893ace6b4cf 100644
+index ee07da0b3073fa15f66058bdd06cd8bce6f46c6e..dc188f2ac6cdd718eb058af834ca8fdf5ae3c753 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -672,6 +672,7 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -673,6 +673,7 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}
@@ -67,10 +67,10 @@ index eee2a8d0176f335139c2ac587f783b22d4157abd..63c51ba32eaaa7bfdb0a5c2045297893
        const WebSecurityOrigin& script_origin) {
      return false;
 diff --git a/third_party/blink/renderer/core/workers/worker_thread.cc b/third_party/blink/renderer/core/workers/worker_thread.cc
-index f78547d6087ed46faa200a9942dcf94a70138704..1a2d78f86b1495fbbae8e28fc95b0e761682e503 100644
+index 0660054931e295abafb420ce567f6b45d9af39d6..bea00fa0a9faaa0c0e7fa5b444c1e485d1e883d1 100644
 --- a/third_party/blink/renderer/core/workers/worker_thread.cc
 +++ b/third_party/blink/renderer/core/workers/worker_thread.cc
-@@ -822,6 +822,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
+@@ -824,6 +824,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
    }
    pause_handle_.reset();
  

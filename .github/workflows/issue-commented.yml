@@ -10,15 +10,24 @@ permissions: {}
 jobs:
   issue-commented:
     name: Remove blocked/{need-info,need-repro} on comment
-    if: ${{ (contains(github.event.issue.labels.*.name, 'blocked/need-repro') || contains(github.event.issue.labels.*.name, 'blocked/need-info ❌')) && !contains(fromJSON('["MEMBER", "OWNER", "COLLABORATOR"]'), github.event.comment.author_association) && github.event.comment.user.type != 'Bot' }}
+    if: ${{ (contains(github.event.issue.labels.*.name, 'blocked/need-repro') || contains(github.event.issue.labels.*.name, 'blocked/need-info ❌')) && github.event.comment.user.type != 'Bot' }}
     runs-on: ubuntu-latest
     steps:
+      - name: Get author association
+        id: get-author-association
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          AUTHOR_ASSOCIATION=$(gh api /repos/electron/electron/issues/comments/${{ github.event.comment.id }} --jq '.author_association')
+          echo "author_association=$AUTHOR_ASSOCIATION" >> "$GITHUB_OUTPUT"
       - name: Generate GitHub App token
         uses: electron/github-app-auth-action@384fd19694fe7b6dcc9a684746c6976ad78228ae # v1.1.1
+        if: ${{ !contains(fromJSON('["MEMBER", "OWNER", "COLLABORATOR"]'), steps.get-author-association.outputs.author_association) }}
         id: generate-token
         with:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
       - name: Remove label
+        if: ${{ !contains(fromJSON('["MEMBER", "OWNER", "COLLABORATOR"]'), steps.get-author-association.outputs.author_association) }}
         env:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
           ISSUE_URL: ${{ github.event.issue.html_url }}

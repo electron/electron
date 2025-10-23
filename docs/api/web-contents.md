@@ -486,16 +486,6 @@ Emitted when the web page becomes unresponsive.
 
 Emitted when the unresponsive web page becomes responsive again.
 
-#### Event: 'plugin-crashed'
-
-Returns:
-
-* `event` Event
-* `name` string
-* `version` string
-
-Emitted when a plugin process has crashed.
-
 #### Event: 'destroyed'
 
 Emitted when `webContents` is destroyed.

@@ -41,7 +41,6 @@
 #include "content/public/browser/render_frame_host.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/mas.h"
-#include "gin/handle.h"
 #include "media/audio/audio_manager.h"
 #include "net/dns/public/dns_over_https_config.h"
 #include "net/dns/public/dns_over_https_server_config.h"
@@ -83,6 +82,8 @@
 #include "shell/common/thread_restrictions.h"
 #include "shell/common/v8_util.h"
 #include "ui/gfx/image/image.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-traced-handle.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "base/strings/utf_string_conversions.h"
@@ -365,7 +366,8 @@ struct Converter<net::SecureDnsMode> {
 
 namespace electron::api {
 
-gin::WrapperInfo App::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo App::kWrapperInfo = {{gin::kEmbedderNativeGin},
+                                      gin::kElectronApp};
 
 namespace {
 
@@ -383,6 +385,9 @@ int GetPathConstant(std::string_view name) {
   // clang-format off
   constexpr auto Lookup = base::MakeFixedFlatMap<std::string_view, int>({
       {"appData", DIR_APP_DATA},
+#if !BUILDFLAG(IS_MAC)
+      {"assets", base::DIR_ASSETS},
+#endif
 #if BUILDFLAG(IS_POSIX)
       {"cache", base::DIR_CACHE},
 #else
@@ -450,10 +455,10 @@ void GotPrivateKey(std::shared_ptr<content::ClientCertificateDelegate> delegate,
 }
 
 void OnClientCertificateSelected(
-    v8::Isolate* isolate,
+    v8::Isolate* const isolate,
     std::shared_ptr<content::ClientCertificateDelegate> delegate,
     std::shared_ptr<net::ClientCertIdentityList> identities,
-    gin::Arguments* args) {
+    gin::Arguments* const args) {
   if (args->Length() == 2) {
     delegate->ContinueWithCertificate(nullptr, nullptr);
     return;
@@ -468,8 +473,7 @@ void OnClientCertificateSelected(
 
   gin_helper::Dictionary cert_data;
   if (!gin::ConvertFromV8(isolate, val, &cert_data)) {
-    gin_helper::ErrorThrower(isolate).ThrowError(
-        "Must pass valid certificate object.");
+    args->ThrowTypeError("Must pass valid certificate object.");
     return;
   }
 
@@ -558,7 +562,6 @@ App::App() {
 App::~App() {
   static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
       ->set_delegate(nullptr);
-  Browser::Get()->RemoveObserver(this);
   content::GpuDataManager::GetInstance()->RemoveObserver(this);
   content::BrowserChildProcessObserver::Remove(this);
 }
@@ -867,28 +870,33 @@ void App::SetAppPath(const base::FilePath& app_path) {
   app_path_ = app_path;
 }
 
-#if !BUILDFLAG(IS_MAC)
-void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
-                         std::optional<base::FilePath> custom_path) {
-  if (custom_path.has_value()) {
-    if (!custom_path->IsAbsolute()) {
-      thrower.ThrowError("Path must be absolute");
-      return;
-    }
-    {
-      ScopedAllowBlockingForElectron allow_blocking;
-      base::PathService::Override(DIR_APP_LOGS, custom_path.value());
-    }
-  } else {
-    base::FilePath path;
-    if (base::PathService::Get(chrome::DIR_USER_DATA, &path)) {
-      path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
-      {
-        ScopedAllowBlockingForElectron allow_blocking;
-        base::PathService::Override(DIR_APP_LOGS, path);
-      }
-    }
+void App::SetAppLogsPath(gin::Arguments* const args) {
+  base::FilePath path;
+
+  // if caller provided a path, it must be absolute
+  if (args->GetNext(&path) && !path.IsAbsolute()) {
+    args->ThrowTypeError("Path must be absolute");
+    return;
   }
+
+  // if caller did not provide a path, then use a default one
+  if (path.empty()) {
+    path = GetDefaultAppLogPath();
+  }
+
+  ScopedAllowBlockingForElectron allow_blocking;
+  base::PathService::Override(DIR_APP_LOGS, path);
+}
+
+#if !BUILDFLAG(IS_MAC)
+// static
+// default to `${DIR_USER_DATA}/logs`
+base::FilePath App::GetDefaultAppLogPath() {
+  base::FilePath path;
+  if (base::PathService::Get(chrome::DIR_USER_DATA, &path)) {
+    path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
+  }
+  return path;
 }
 #endif
 
@@ -1156,7 +1164,88 @@ void App::DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower) {
 
 bool App::IsAccessibilitySupportEnabled() {
   auto* ax_state = content::BrowserAccessibilityState::GetInstance();
-  return ax_state->GetAccessibilityMode() == ui::kAXModeComplete;
+  auto mode = ax_state->GetAccessibilityMode();
+  return mode.has_mode(ui::kAXModeComplete.flags());
+}
+
+v8::Local<v8::Value> App::GetAccessibilitySupportFeatures() {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::EscapableHandleScope handle_scope(isolate);
+  auto* ax_state = content::BrowserAccessibilityState::GetInstance();
+  ui::AXMode mode = ax_state->GetAccessibilityMode();
+
+  std::vector<v8::Local<v8::Value>> features;
+  auto push = [&](const char* name) {
+    features.push_back(v8::String::NewFromUtf8(isolate, name).ToLocalChecked());
+  };
+
+  if (mode.has_mode(ui::AXMode::kNativeAPIs))
+    push("nativeAPIs");
+  if (mode.has_mode(ui::AXMode::kWebContents))
+    push("webContents");
+  if (mode.has_mode(ui::AXMode::kInlineTextBoxes))
+    push("inlineTextBoxes");
+  if (mode.has_mode(ui::AXMode::kExtendedProperties))
+    push("extendedProperties");
+  if (mode.has_mode(ui::AXMode::kHTML))
+    push("html");
+  if (mode.has_mode(ui::AXMode::kLabelImages))
+    push("labelImages");
+  if (mode.has_mode(ui::AXMode::kPDFPrinting))
+    push("pdfPrinting");
+  if (mode.has_mode(ui::AXMode::kScreenReader))
+    push("screenReader");
+
+  v8::Local<v8::Array> arr = v8::Array::New(isolate, features.size());
+  for (uint32_t i = 0; i < features.size(); ++i) {
+    arr->Set(isolate->GetCurrentContext(), i, features[i]).Check();
+  }
+  return handle_scope.Escape(arr);
+}
+
+void App::SetAccessibilitySupportFeatures(
+    gin_helper::ErrorThrower thrower,
+    const std::vector<std::string>& features) {
+  if (!Browser::Get()->is_ready()) {
+    thrower.ThrowError(
+        "app.setAccessibilitySupportFeatures() can only be called after app "
+        "is ready");
+    return;
+  }
+
+  ui::AXMode mode;
+  for (const auto& f : features) {
+    if (f == "nativeAPIs") {
+      mode.set_mode(ui::AXMode::kNativeAPIs, true);
+    } else if (f == "webContents") {
+      mode.set_mode(ui::AXMode::kWebContents, true);
+    } else if (f == "inlineTextBoxes") {
+      mode.set_mode(ui::AXMode::kInlineTextBoxes, true);
+    } else if (f == "extendedProperties") {
+      mode.set_mode(ui::AXMode::kExtendedProperties, true);
+    } else if (f == "screenReader") {
+      mode.set_mode(ui::AXMode::kScreenReader, true);
+    } else if (f == "html") {
+      mode.set_mode(ui::AXMode::kHTML, true);
+    } else if (f == "labelImages") {
+      mode.set_mode(ui::AXMode::kLabelImages, true);
+    } else if (f == "pdfPrinting") {
+      mode.set_mode(ui::AXMode::kPDFPrinting, true);
+    } else {
+      thrower.ThrowError("Unknown accessibility feature: " + f);
+      return;
+    }
+  }
+
+  if (mode.is_mode_off()) {
+    scoped_accessibility_mode_.reset();
+  } else {
+    scoped_accessibility_mode_ =
+        content::BrowserAccessibilityState::GetInstance()
+            ->CreateScopedModeForProcess(mode);
+  }
+
+  Browser::Get()->OnAccessibilitySupportChanged();
 }
 
 void App::SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
@@ -1236,14 +1325,13 @@ v8::Local<v8::Value> App::GetJumpListSettings() {
   return dict.GetHandle();
 }
 
-JumpListResult App::SetJumpList(v8::Local<v8::Value> val,
-                                gin::Arguments* args) {
+JumpListResult App::SetJumpList(v8::Isolate* const isolate,
+                                v8::Local<v8::Value> val) {
   std::vector<JumpListCategory> categories;
   bool delete_jump_list = val->IsNull();
-  if (!delete_jump_list &&
-      !gin::ConvertFromV8(args->isolate(), val, &categories)) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowTypeError("Argument must be null or an array of categories");
+  if (!delete_jump_list && !gin::ConvertFromV8(isolate, val, &categories)) {
+    gin_helper::ErrorThrower{isolate}.ThrowTypeError(
+        "Argument must be null or an array of categories");
     return JumpListResult::kArgumentError;
   }
 
@@ -1578,7 +1666,7 @@ void DockSetMenu(electron::api::Menu* menu) {
 }
 
 v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
-  if (dock_.IsEmpty()) {
+  if (dock_.IsEmptyThreadSafe()) {
     // Initialize the Dock API, the methods are bound to "dock" which exists
     // for the lifetime of "app"
     auto browser = base::Unretained(Browser::Get());
@@ -1606,7 +1694,7 @@ v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
 
     dock_.Reset(isolate, dock_obj.GetHandle());
   }
-  return v8::Local<v8::Value>::New(isolate, dock_);
+  return dock_.Get(isolate);
 }
 #endif
 
@@ -1693,18 +1781,31 @@ void ConfigureHostResolver(v8::Isolate* isolate,
 
 // static
 App* App::Get() {
-  static base::NoDestructor<App> app;
-  return app.get();
+  return Create(nullptr);
 }
 
 // static
-gin::Handle<App> App::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, Get());
+App* App::Create(v8::Isolate* isolate) {
+  static base::NoDestructor<cppgc::Persistent<App>> instance(
+      cppgc::MakeGarbageCollected<App>(
+          isolate->GetCppHeap()->GetAllocationHandle()));
+  return instance->Get();
+}
+
+const gin::WrapperInfo* App::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+void App::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<App>::Trace(visitor);
+#if BUILDFLAG(IS_MAC)
+  visitor->Trace(dock_);
+#endif
 }
 
 gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
   auto browser = base::Unretained(Browser::Get());
-  return gin_helper::EventEmitterMixin<App>::GetObjectTemplateBuilder(isolate)
+  return gin::Wrappable<App>::GetObjectTemplateBuilder(isolate)
       .SetMethod("quit", base::BindRepeating(&Browser::Quit, browser))
       .SetMethod("exit", base::BindRepeating(&Browser::Exit, browser))
       .SetMethod("focus", base::BindRepeating(&Browser::Focus, browser))
@@ -1720,6 +1821,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::AddRecentDocument, browser))
       .SetMethod("clearRecentDocuments",
                  base::BindRepeating(&Browser::ClearRecentDocuments, browser))
+      .SetMethod("getRecentDocuments",
+                 base::BindRepeating(&Browser::GetRecentDocuments, browser))
 #if BUILDFLAG(IS_WIN)
       .SetMethod("setAppUserModelId",
                  base::BindRepeating(&Browser::SetAppUserModelID, browser))
@@ -1815,6 +1918,10 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("relaunch", &App::Relaunch)
       .SetMethod("isAccessibilitySupportEnabled",
                  &App::IsAccessibilitySupportEnabled)
+      .SetMethod("getAccessibilitySupportFeatures",
+                 &App::GetAccessibilitySupportFeatures)
+      .SetMethod("setAccessibilitySupportFeatures",
+                 &App::SetAccessibilitySupportFeatures)
       .SetMethod("setAccessibilitySupportEnabled",
                  &App::SetAccessibilitySupportEnabled)
       .SetMethod("disableHardwareAcceleration",
@@ -1844,8 +1951,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("resolveProxy", &App::ResolveProxy);
 }
 
-const char* App::GetTypeName() {
-  return "App";
+const char* App::GetHumanReadableName() const {
+  return "Electron / App";
 }
 
 }  // namespace electron::api
@@ -1856,8 +1963,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.Set("app", electron::api::App::Create(isolate));
 }
 

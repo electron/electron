@@ -31,9 +31,10 @@ void NetworkHintsHandlerImpl::Preconnect(const url::SchemeHostPort& url,
   if (!browser_context_) {
     return;
   }
-  auto* session = electron::api::Session::FromBrowserContext(browser_context_);
-  if (session) {
-    session->Emit("preconnect", url.GetURL(), allow_credentials);
+  gin::WeakCell<electron::api::Session>* session =
+      electron::api::Session::FromBrowserContext(browser_context_);
+  if (session && session->Get()) {
+    session->Get()->Emit("preconnect", url.GetURL(), allow_credentials);
   }
 }
 

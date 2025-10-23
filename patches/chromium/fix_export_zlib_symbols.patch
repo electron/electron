@@ -6,7 +6,7 @@ Subject: fix: export zlib symbols
 This patch sets ZLIB_DLL so that we properly export zlib symbols.
 
 diff --git a/third_party/zlib/BUILD.gn b/third_party/zlib/BUILD.gn
-index 9f3938021f7a4437d0982b4953284d48eeca443c..863ad726d0d98eb82be2c1a8c81ba2308281c672 100644
+index 3d0735452a66d4213d1c4cf7c36cd36b3bf1c6f8..3dc1b24fe5f25b0a8b00d1a7918f518f0bad091d 100644
 --- a/third_party/zlib/BUILD.gn
 +++ b/third_party/zlib/BUILD.gn
 @@ -333,6 +333,10 @@ component("zlib") {

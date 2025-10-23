@@ -10,15 +10,18 @@
 
 #include "base/memory/raw_ptr.h"
 #include "content/public/browser/content_browser_client.h"
-#include "gin/wrappable.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
 #include "shell/common/gin_helper/constructible.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 namespace gin {
 class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace electron {
 
@@ -26,8 +29,8 @@ class ProtocolRegistry;
 
 namespace api {
 
-const std::vector<std::string>& GetStandardSchemes();
-const std::vector<std::string>& GetCodeCacheSchemes();
+std::vector<std::string>& GetStandardSchemes();
+std::vector<std::string>& GetCodeCacheSchemes();
 
 void AddServiceWorkerScheme(const std::string& scheme);
 
@@ -35,21 +38,22 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
                                  v8::Local<v8::Value> val);
 
 // Protocol implementation based on network services.
-class Protocol final : public gin::Wrappable<Protocol>,
+class Protocol final : public gin_helper::DeprecatedWrappable<Protocol>,
                        public gin_helper::Constructible<Protocol> {
  public:
-  static gin::Handle<Protocol> Create(v8::Isolate* isolate,
-                                      ProtocolRegistry* protocol_registry);
+  static gin_helper::Handle<Protocol> Create(
+      v8::Isolate* isolate,
+      ProtocolRegistry* protocol_registry);
 
   // gin_helper::Constructible
-  static gin::Handle<Protocol> New(gin_helper::ErrorThrower thrower);
+  static gin_helper::Handle<Protocol> New(gin_helper::ErrorThrower thrower);
   static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
       v8::Isolate* isolate,
       v8::Local<v8::ObjectTemplate> tmpl);
   static const char* GetClassName() { return "Protocol"; }
 
-  // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  // gin_helper::Wrappable
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
  private:
@@ -67,7 +71,7 @@ class Protocol final : public gin::Wrappable<Protocol>,
       base::RepeatingCallback<void(v8::Local<v8::Value>)>;
 
   explicit Protocol(ProtocolRegistry* protocol_registry);
-  ~Protocol() override = default;
+  ~Protocol() override;
 
   [[nodiscard]] static std::string_view ErrorCodeToString(Error error);
 
@@ -85,8 +89,8 @@ class Protocol final : public gin::Wrappable<Protocol>,
   bool IsProtocolIntercepted(const std::string& scheme);
 
   // Old async version of IsProtocolRegistered.
-  v8::Local<v8::Promise> IsProtocolHandled(const std::string& scheme,
-                                           gin::Arguments* args);
+  v8::Local<v8::Promise> IsProtocolHandled(v8::Isolate* isolate,
+                                           const std::string& scheme);
 
   // Helper for converting old registration APIs to new RegisterProtocol API.
   template <ProtocolType type>

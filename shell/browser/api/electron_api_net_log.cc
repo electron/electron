@@ -15,13 +15,15 @@
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/storage_partition.h"
 #include "electron/electron_version.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "net/log/net_log_capture_mode.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace gin {
 
@@ -79,9 +81,10 @@ void ResolvePromiseWithNetError(gin_helper::Promise<void> promise,
 
 namespace api {
 
-gin::WrapperInfo NetLog::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo NetLog::kWrapperInfo = {{gin::kEmbedderNativeGin},
+                                         gin::kElectronNetLog};
 
-NetLog::NetLog(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
+NetLog::NetLog(ElectronBrowserContext* const browser_context)
     : browser_context_(browser_context) {
   file_task_runner_ = CreateFileTaskRunner();
 }
@@ -194,8 +197,8 @@ bool NetLog::IsCurrentlyLogging() const {
   return !!net_log_exporter_;
 }
 
-v8::Local<v8::Promise> NetLog::StopLogging(gin::Arguments* args) {
-  gin_helper::Promise<void> promise(args->isolate());
+v8::Local<v8::Promise> NetLog::StopLogging(v8::Isolate* const isolate) {
+  gin_helper::Promise<void> promise{isolate};
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (net_log_exporter_) {
@@ -225,14 +228,19 @@ gin::ObjectTemplateBuilder NetLog::GetObjectTemplateBuilder(
       .SetMethod("stopLogging", &NetLog::StopLogging);
 }
 
-const char* NetLog::GetTypeName() {
-  return "NetLog";
+const gin::WrapperInfo* NetLog::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* NetLog::GetHumanReadableName() const {
+  return "Electron / NetLog";
 }
 
 // static
-gin::Handle<NetLog> NetLog::Create(v8::Isolate* isolate,
-                                   ElectronBrowserContext* browser_context) {
-  return gin::CreateHandle(isolate, new NetLog(isolate, browser_context));
+NetLog* NetLog::Create(v8::Isolate* isolate,
+                       ElectronBrowserContext* browser_context) {
+  return cppgc::MakeGarbageCollected<NetLog>(
+      isolate->GetCppHeap()->GetAllocationHandle(), browser_context);
 }
 
 }  // namespace api

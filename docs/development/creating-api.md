@@ -60,12 +60,12 @@ namespace electron {
 
 namespace api {
 
-class ApiName : public gin::Wrappable<ApiName>  {
+class ApiName : public gin::DeprecatedWrappable<ApiName>  {
  public:
   static gin::Handle<ApiName> Create(v8::Isolate* isolate);
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
@@ -90,7 +90,7 @@ namespace electron {
 
 namespace api {
 
-gin::WrapperInfo ApiName::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo ApiName::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 gin::ObjectTemplateBuilder ApiName::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
@@ -117,7 +117,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
+  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("apiName", electron::api::ApiName::Create(isolate));
 }

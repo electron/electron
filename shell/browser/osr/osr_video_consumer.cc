@@ -16,6 +16,22 @@
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/gfx/skbitmap_operations.h"
 
+namespace {
+
+media::VideoPixelFormat GetTargetPixelFormatFromOption(
+    const std::string& pixel_format_option) {
+  if (pixel_format_option == "argb") {
+    return media::PIXEL_FORMAT_ARGB;
+  } else if (pixel_format_option == "rgbaf16") {
+    return media::PIXEL_FORMAT_RGBAF16;
+  }
+
+  // Use ARGB as default.
+  return media::PIXEL_FORMAT_ARGB;
+}
+
+}  // namespace
+
 namespace electron {
 
 OffScreenVideoConsumer::OffScreenVideoConsumer(
@@ -26,7 +42,10 @@ OffScreenVideoConsumer::OffScreenVideoConsumer(
       video_capturer_(view->CreateVideoCapturer()) {
   video_capturer_->SetAutoThrottlingEnabled(false);
   video_capturer_->SetMinSizeChangePeriod(base::TimeDelta());
-  video_capturer_->SetFormat(media::PIXEL_FORMAT_ARGB);
+
+  auto format = GetTargetPixelFormatFromOption(
+      view->offscreen_shared_texture_pixel_format());
+  video_capturer_->SetFormat(format);
 
   // https://crrev.org/c/6438681
   // Disable capturer's animation lock-in feature for offscreen capture to
@@ -95,6 +114,7 @@ void OffScreenVideoConsumer::OnFrameCaptured(
     texture.coded_size = info->coded_size;
     texture.visible_rect = info->visible_rect;
     texture.content_rect = content_rect;
+    texture.color_space = info->color_space;
     texture.timestamp = info->timestamp.InMicroseconds();
     texture.frame_count = info->metadata.capture_counter.value_or(0);
     texture.capture_update_rect = info->metadata.capture_update_rect;
@@ -107,10 +127,12 @@ void OffScreenVideoConsumer::OnFrameCaptured(
         reinterpret_cast<uintptr_t>(gmb_handle.dxgi_handle().buffer_handle());
 #elif BUILDFLAG(IS_APPLE)
     texture.shared_texture_handle =
-        reinterpret_cast<uintptr_t>(gmb_handle.io_surface.get());
+        reinterpret_cast<uintptr_t>(gmb_handle.io_surface().get());
 #elif BUILDFLAG(IS_LINUX)
     const auto& native_pixmap = gmb_handle.native_pixmap_handle();
     texture.modifier = native_pixmap.modifier;
+    texture.supports_zero_copy_webgpu_import =
+        native_pixmap.supports_zero_copy_webgpu_import;
     for (const auto& plane : native_pixmap.planes) {
       texture.planes.emplace_back(plane.stride, plane.offset, plane.size,
                                   plane.fd.get());

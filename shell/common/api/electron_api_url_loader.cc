@@ -17,9 +17,7 @@
 #include "base/memory/raw_ptr.h"
 #include "base/notreached.h"
 #include "base/sequence_checker.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
-#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "net/base/auth.h"
@@ -44,6 +42,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
@@ -165,31 +164,31 @@ class BufferDataSource : public mojo::DataPipeProducer::DataSource {
 };
 
 class JSChunkedDataPipeGetter final
-    : public gin::Wrappable<JSChunkedDataPipeGetter>,
+    : public gin_helper::DeprecatedWrappable<JSChunkedDataPipeGetter>,
       public network::mojom::ChunkedDataPipeGetter {
  public:
-  static gin::Handle<JSChunkedDataPipeGetter> Create(
+  static gin_helper::Handle<JSChunkedDataPipeGetter> Create(
       v8::Isolate* isolate,
       v8::Local<v8::Function> body_func,
       mojo::PendingReceiver<network::mojom::ChunkedDataPipeGetter>
           chunked_data_pipe_getter) {
-    return gin::CreateHandle(
+    return gin_helper::CreateHandle(
         isolate, new JSChunkedDataPipeGetter(
                      isolate, body_func, std::move(chunked_data_pipe_getter)));
   }
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override {
-    return gin::Wrappable<JSChunkedDataPipeGetter>::GetObjectTemplateBuilder(
-               isolate)
+    return gin_helper::DeprecatedWrappable<
+               JSChunkedDataPipeGetter>::GetObjectTemplateBuilder(isolate)
         .SetMethod("write", &JSChunkedDataPipeGetter::WriteChunk)
         .SetMethod("done", &JSChunkedDataPipeGetter::Done);
   }
 
   const char* GetTypeName() override { return "JSChunkedDataPipeGetter"; }
 
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   ~JSChunkedDataPipeGetter() override = default;
 
  private:
@@ -298,7 +297,7 @@ class JSChunkedDataPipeGetter final
   v8::Global<v8::Function> body_func_;
 };
 
-gin::WrapperInfo JSChunkedDataPipeGetter::kWrapperInfo = {
+gin::DeprecatedWrapperInfo JSChunkedDataPipeGetter::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
 const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
@@ -320,7 +319,7 @@ const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
 
 }  // namespace
 
-gin::WrapperInfo SimpleURLLoaderWrapper::kWrapperInfo = {
+gin::DeprecatedWrapperInfo SimpleURLLoaderWrapper::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
 SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
@@ -391,7 +390,8 @@ void SimpleURLLoaderWrapper::Start() {
 
 void SimpleURLLoaderWrapper::Pin() {
   // Prevent ourselves from being GC'd until the request is complete.  Must be
-  // called after gin::CreateHandle, otherwise the wrapper isn't initialized.
+  // called after gin_helper::CreateHandle, otherwise the wrapper isn't
+  // initialized.
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   pinned_wrapper_.Reset(isolate, GetWrapper(isolate).ToLocalChecked());
 }
@@ -492,7 +492,7 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
   // correctly intercept file:// scheme URLs.
   if (const bool bypass = request_options_ & kBypassCustomProtocolHandlers;
       !bypass) {
-    const std::string_view scheme = url.scheme_piece();
+    const std::string_view scheme = url.scheme();
     const auto* const protocol_registry =
         ProtocolRegistry::FromBrowserContext(browser_context_);
 
@@ -523,7 +523,7 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
 }
 
 // static
-gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
+gin_helper::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     gin::Arguments* args) {
   gin_helper::Dictionary opts;
   if (!args->GetNext(&opts)) {
@@ -698,17 +698,18 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   ElectronBrowserContext* browser_context = nullptr;
   if (electron::IsBrowserProcess()) {
     std::string partition;
-    gin::Handle<Session> session;
+    Session* session = nullptr;
     if (!opts.Get("session", &session)) {
       if (opts.Get("partition", &partition))
         session = Session::FromPartition(args->isolate(), partition);
       else  // default session
         session = Session::FromPartition(args->isolate(), "");
     }
-    browser_context = session->browser_context();
+    if (session)
+      browser_context = session->browser_context();
   }
 
-  auto ret = gin::CreateHandle(
+  auto ret = gin_helper::CreateHandle(
       args->isolate(),
       new SimpleURLLoaderWrapper(browser_context, std::move(request), options));
   ret->Pin();

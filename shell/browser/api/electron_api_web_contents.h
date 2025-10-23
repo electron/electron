@@ -28,10 +28,11 @@
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "content/public/common/stop_find_action.h"
 #include "electron/buildflags/buildflags.h"
-#include "gin/handle.h"
-#include "gin/wrappable.h"
 #include "printing/buildflags/buildflags.h"
+#include "shell/browser/api/electron_api_debugger.h"
+#include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
@@ -43,9 +44,12 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/pinnable.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "shell/common/web_contents_utility.mojom.h"
 #include "ui/base/models/image_model.h"
+#include "v8/include/cppgc/persistent.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/common/mojom/view_type.mojom-forward.h"
@@ -109,7 +113,7 @@ class FrameSubscriber;
 
 // Wrapper around the content::WebContents.
 class WebContents final : public ExclusiveAccessContext,
-                          public gin::Wrappable<WebContents>,
+                          public gin_helper::DeprecatedWrappable<WebContents>,
                           public gin_helper::EventEmitterMixin<WebContents>,
                           public gin_helper::Constructible<WebContents>,
                           public gin_helper::Pinnable<WebContents>,
@@ -134,13 +138,14 @@ class WebContents final : public ExclusiveAccessContext,
   };
 
   // Create a new WebContents and return the V8 wrapper of it.
-  static gin::Handle<WebContents> New(v8::Isolate* isolate,
-                                      const gin_helper::Dictionary& options);
+  static gin_helper::Handle<WebContents> New(
+      v8::Isolate* isolate,
+      const gin_helper::Dictionary& options);
 
   // Create a new V8 wrapper for an existing |web_content|.
   //
   // The lifetime of |web_contents| will be managed by this class.
-  static gin::Handle<WebContents> CreateAndTake(
+  static gin_helper::Handle<WebContents> CreateAndTake(
       v8::Isolate* isolate,
       std::unique_ptr<content::WebContents> web_contents,
       Type type);
@@ -159,11 +164,11 @@ class WebContents final : public ExclusiveAccessContext,
   //
   // The lifetime of |web_contents| is NOT managed by this class, and the type
   // of this wrapper is always REMOTE.
-  static gin::Handle<WebContents> FromOrCreate(
+  static gin_helper::Handle<WebContents> FromOrCreate(
       v8::Isolate* isolate,
       content::WebContents* web_contents);
 
-  static gin::Handle<WebContents> CreateFromWebPreferences(
+  static gin_helper::Handle<WebContents> CreateFromWebPreferences(
       v8::Isolate* isolate,
       const gin_helper::Dictionary& web_preferences);
 
@@ -171,8 +176,8 @@ class WebContents final : public ExclusiveAccessContext,
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "WebContents"; }
 
-  // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  // gin_helper::Wrappable
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
 
   // gin_helper::CleanedUpAtExit
@@ -262,8 +267,8 @@ class WebContents final : public ExclusiveAccessContext,
   void SetNextChildWebPreferences(const gin_helper::Dictionary);
 
   // DevTools workspace api.
-  void AddWorkSpace(gin::Arguments* args, const base::FilePath& path);
-  void RemoveWorkSpace(gin::Arguments* args, const base::FilePath& path);
+  void AddWorkSpace(v8::Isolate* isolate, const base::FilePath& path);
+  void RemoveWorkSpace(v8::Isolate* isolate, const base::FilePath& path);
 
   // Editing commands.
   void Undo();
@@ -298,7 +303,7 @@ class WebContents final : public ExclusiveAccessContext,
   void EndFrameSubscription();
 
   // Dragging native items.
-  void StartDrag(const gin_helper::Dictionary& item, gin::Arguments* args);
+  void StartDrag(v8::Isolate* isolate, const gin_helper::Dictionary& item);
 
   // Captures the page with |rect|, |callback| would be called when capturing is
   // done.
@@ -307,7 +312,7 @@ class WebContents final : public ExclusiveAccessContext,
   // Methods for creating <webview>.
   [[nodiscard]] bool is_guest() const { return type_ == Type::kWebView; }
   void AttachToIframe(content::WebContents* embedder_web_contents,
-                      int embedder_frame_id);
+                      std::string embedder_frame_token);
   void DetachFromOuterFrame();
 
   // Methods for offscreen rendering
@@ -477,7 +482,7 @@ class WebContents final : public ExclusiveAccessContext,
   void InitWithSessionAndOptions(
       v8::Isolate* isolate,
       std::unique_ptr<content::WebContents> web_contents,
-      gin::Handle<class Session> session,
+      ElectronBrowserContext* browser_context,
       const gin_helper::Dictionary& options);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -508,6 +513,8 @@ class WebContents final : public ExclusiveAccessContext,
       int opener_render_frame_id,
       const content::mojom::CreateNewWindowParams& params,
       content::WebContents* new_contents) override;
+  void MaybeOverrideCreateParamsForNewWindow(
+      content::WebContents::CreateParams* create_params) override;
   content::WebContents* AddNewContents(
       content::WebContents* source,
       std::unique_ptr<content::WebContents> new_contents,
@@ -629,8 +636,6 @@ class WebContents final : public ExclusiveAccessContext,
   void DidUpdateFaviconURL(
       content::RenderFrameHost* render_frame_host,
       const std::vector<blink::mojom::FaviconURLPtr>& urls) override;
-  void PluginCrashed(const base::FilePath& plugin_path,
-                     base::ProcessId plugin_pid) override;
   void MediaStartedPlaying(const MediaPlayerInfo& video_type,
                            const content::MediaPlayerId& id) override;
   void MediaStoppedPlaying(
@@ -693,7 +698,7 @@ class WebContents final : public ExclusiveAccessContext,
   bool IsFullscreen() const override;
   void EnterFullscreen(const url::Origin& origin,
                        ExclusiveAccessBubbleType bubble_type,
-                       const int64_t display_id) override;
+                       FullscreenTabParams fullscreen_tab_params) override;
   void ExitFullscreen() override {}
   void UpdateExclusiveAccessBubble(
       const ExclusiveAccessBubbleParams& params,
@@ -766,9 +771,9 @@ class WebContents final : public ExclusiveAccessContext,
   // Update the html fullscreen flag in both browser and renderer.
   void UpdateHtmlApiFullscreen(bool fullscreen);
 
-  v8::Global<v8::Value> session_;
+  cppgc::Persistent<api::Session> session_;
   v8::Global<v8::Value> devtools_web_contents_;
-  v8::Global<v8::Value> debugger_;
+  cppgc::Persistent<api::Debugger> debugger_;
 
   std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
   std::unique_ptr<FrameSubscriber> frame_subscriber_;
@@ -812,6 +817,7 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Whether offscreen rendering use gpu shared texture
   bool offscreen_use_shared_texture_ = false;
+  std::string offscreen_shared_texture_pixel_format_ = "argb";
 
   // Whether window is fullscreened by HTML5 api.
   bool html_fullscreen_ = false;
@@ -855,6 +861,9 @@ class WebContents final : public ExclusiveAccessContext,
 #if BUILDFLAG(ENABLE_PRINTING)
   const scoped_refptr<base::TaskRunner> print_task_runner_;
 #endif
+
+  // Track navigation state in order to avoid potential re-entrancy crashes.
+  bool is_safe_to_delete_ = true;
 
   // Stores the frame that's currently in fullscreen, nullptr if there is none.
   raw_ptr<content::RenderFrameHost> fullscreen_frame_ = nullptr;

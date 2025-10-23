@@ -21,7 +21,9 @@
         "ul",
         "unknown",
         "Tabs",
-        "TabItem"
+        "TabItem",
+        "DocCardList",
+        "kbd"
       ]
     },
     "no-newline-in-links": true

@@ -58,18 +58,13 @@ class URLLoaderNetworkObserver
                        int64_t recv_bytes,
                        int64_t sent_bytes) override {}
   void OnWebSocketConnectedToPrivateNetwork(
+      const GURL& request_url,
       network::mojom::IPAddressSpace ip_address_space) override {}
   void OnCertificateRequested(
       const std::optional<base::UnguessableToken>& window_id,
       const scoped_refptr<net::SSLCertRequestInfo>& cert_info,
       mojo::PendingRemote<network::mojom::ClientCertificateResponder>
           client_cert_responder) override {}
-  void OnPrivateNetworkAccessPermissionRequired(
-      const GURL& url,
-      const net::IPAddress& ip_address,
-      const std::optional<std::string>& private_network_device_id,
-      const std::optional<std::string>& private_network_device_name,
-      OnPrivateNetworkAccessPermissionRequiredCallback callback) override {}
   void OnLocalNetworkAccessPermissionRequired(
       OnLocalNetworkAccessPermissionRequiredCallback callback) override {}
   void OnUrlLoaderConnectedToPrivateNetwork(

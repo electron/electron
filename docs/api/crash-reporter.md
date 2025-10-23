@@ -4,6 +4,12 @@
 
 Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)
 
+> [!IMPORTANT]
+> If you want to call this API from a renderer process with context isolation enabled,
+> place the API call in your preload script and
+> [expose](../tutorial/context-isolation.md#after-context-isolation-enabled) it using the
+> [`contextBridge`](context-bridge.md) API.
+
 The following is an example of setting up Electron to automatically submit
 crash reports to a remote server:
 
@@ -63,7 +69,7 @@ The `crashReporter` module has the following methods:
   * `extra` Record\<string, string\> (optional) - Extra string key/value
     annotations that will be sent along with crash reports that are generated
     in the main process. Only string values are supported. Crashes generated in
-    child processes will not contain these extra
+    child processes will not include these extra parameters. To add extra
     parameters to crash reports generated from child processes, call
     [`addExtraParameter`](#crashreporteraddextraparameterkey-value) from the
     child process.

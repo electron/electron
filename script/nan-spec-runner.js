@@ -65,10 +65,6 @@ async function main () {
     platformFlags.push(`-isysroot ${path.resolve(sdkPath, sdkToUse)}`);
   }
 
-  // TODO(ckerr) this is cribbed from read obj/electron/electron_app.ninja.
-  // Maybe it would be better to have this script literally open up that
-  // file and pull cflags_cc from it instead of using bespoke code here?
-  // I think it's unlikely to work; but if it does, it would be more futureproof
   const cxxflags = [
     '-std=c++20',
     '-Wno-trigraphs',
@@ -128,7 +124,7 @@ async function main () {
     return process.exit(installStatus !== 0 ? installStatus : signal);
   }
 
-  const onlyTests = args.only && args.only.split(',');
+  const onlyTests = args.only?.split(',');
 
   const DISABLED_TESTS = new Set([
     'nannew-test.js',

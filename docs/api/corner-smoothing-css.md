@@ -51,18 +51,16 @@ Use the `system-ui` keyword to match the smoothness to the OS design language.
 
 ### Controlling availibility
 
-This CSS rule can be disabled by setting [the `cornerSmoothingCSS` web preference](./structures/web-preferences.md) to `false`.
+This CSS rule can be disabled using the Blink feature flag `ElectronCSSCornerSmoothing`.
 
 ```js
 const myWindow = new BrowserWindow({
   // [...]
   webPreferences: {
-    enableCornerSmoothingCSS: false // Disables the `-electron-corner-smoothing` CSS rule
+    disableBlinkFeatures: 'ElectronCSSCornerSmoothing' // Disables the `-electron-corner-smoothing` CSS rule
   }
 })
 ```
-
-The CSS rule will still parse, but will have no visual effect.
 
 ### Formal reference
 

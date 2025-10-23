@@ -14,7 +14,6 @@
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/i18n/rtl.h"
-#include "base/metrics/field_trial.h"
 #include "base/nix/xdg_util.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
@@ -68,6 +67,7 @@
 #include "ui/base/ui_base_switches.h"
 #include "ui/color/color_provider_manager.h"
 #include "ui/display/screen.h"
+#include "ui/linux/display_server_utils.h"
 #include "ui/views/layout/layout_provider.h"
 #include "url/url_util.h"
 
@@ -205,14 +205,17 @@ int ElectronBrowserMainParts::GetExitCode() const {
 }
 
 int ElectronBrowserMainParts::PreEarlyInitialization() {
-  field_trial_list_ = std::make_unique<base::FieldTrialList>();
 #if BUILDFLAG(IS_POSIX)
   HandleSIGCHLD();
 #endif
+#if BUILDFLAG(IS_OZONE)
+  // Initialize Ozone platform and add required feature flags as per platform's
+  // properties.
 #if BUILDFLAG(IS_LINUX)
-  DetectOzonePlatform();
-  ui::OzonePlatform::PreEarlyInitialization();
+  ui::SetOzonePlatformForLinuxIfNeeded(*base::CommandLine::ForCurrentProcess());
 #endif
+  ui::OzonePlatform::PreEarlyInitialization();
+#endif  // BUILDFLAG(IS_OZONE)
 #if BUILDFLAG(IS_MAC)
   screen_ = std::make_unique<display::ScopedNativeScreen>();
 #endif
@@ -232,12 +235,13 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   // avoid conflicts we only initialize our V8 environment after that.
   js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
 
-  v8::HandleScope scope(js_env_->isolate());
+  v8::Isolate* const isolate = js_env_->isolate();
+  v8::HandleScope scope(isolate);
 
-  node_bindings_->Initialize(js_env_->isolate()->GetCurrentContext());
+  node_bindings_->Initialize(isolate, isolate->GetCurrentContext());
   // Create the global environment.
   node_env_ = node_bindings_->CreateEnvironment(
-      js_env_->isolate()->GetCurrentContext(), js_env_->platform(),
+      isolate, isolate->GetCurrentContext(), js_env_->platform(),
       js_env_->max_young_generation_size_in_bytes());
 
   node_env_->set_trace_sync_io(node_env_->options()->trace_sync_io);
@@ -246,7 +250,7 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   node_env_->options()->unhandled_rejections = "warn-with-error-code";
 
   // Add Electron extended APIs.
-  electron_bindings_->BindTo(js_env_->isolate(), node_env_->process_object());
+  electron_bindings_->BindTo(isolate, node_env_->process_object());
 
   // Create explicit microtasks runner.
   js_env_->CreateMicrotasksRunner();
@@ -319,7 +323,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 #if defined(USE_AURA)
   // NB: must be called _after_ locale resource bundle is loaded,
   // because ui lib makes use of it in X11
-  if (!display::Screen::GetScreen()) {
+  if (!display::Screen::Get()) {
     screen_ = views::CreateDesktopScreen();
   }
 #endif

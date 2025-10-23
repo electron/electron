@@ -421,6 +421,7 @@ Returns:
     * `oom` - Process ran out of memory
     * `launch-failed` - Process never successfully launched
     * `integrity-failure` - Windows code integrity checks failed
+    * `memory-eviction` - Process proactively terminated to prevent a future out-of-memory (OOM) situation
   * `exitCode` number - The exit code for the process
       (e.g. status from waitpid if on POSIX, from GetExitCodeProcess on Windows).
   * `serviceName` string (optional) - The non-localized name of the process.
@@ -602,6 +603,7 @@ Returns `string` - The current application directory.
     * `%APPDATA%` on Windows
     * `$XDG_CONFIG_HOME` or `~/.config` on Linux
     * `~/Library/Application Support` on macOS
+  * `assets` The directory where app assets such as `resources.pak` are stored. By default this is the same as the folder containing the `exe` path. Available on Windows and Linux only.
   * `userData` The directory for storing your app's configuration files, which
     by default is the `appData` directory appended with your app's name. By
     convention files storing user data should be written to this directory, and
@@ -616,7 +618,7 @@ Returns `string` - The current application directory.
     directory.
   * `temp` Temporary directory.
   * `exe` The current executable file.
-  * `module` The `libchromiumcontent` library.
+  * `module` The location of the Chromium module. By default this is synonymous with `exe`.
   * `desktop` The current user's Desktop directory.
   * `documents` Directory for a user's "My Documents".
   * `downloads` Directory for a user's downloads.
@@ -775,6 +777,22 @@ bar, and on macOS, you can visit it from dock menu.
 ### `app.clearRecentDocuments()` _macOS_ _Windows_
 
 Clears the recent documents list.
+
+### `app.getRecentDocuments()` _macOS_ _Windows_
+
+Returns `string[]` - An array containing documents in the most recent documents list.
+
+```js
+const { app } = require('electron')
+
+const path = require('node:path')
+
+const file = path.join(app.getPath('desktop'), 'foo.txt')
+app.addRecentDocument(file)
+
+const recents = app.getRecentDocuments()
+console.log(recents) // ['/path/to/desktop/foo.txt'}
+```
 
 ### `app.setAsDefaultProtocolClient(protocol[, path, args])`
 
@@ -1380,7 +1398,75 @@ details. Disabled by default.
 This API must be called after the `ready` event is emitted.
 
 > [!NOTE]
-> Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default.
+> Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default. Calling this method will enable the following accessibility support features: `nativeAPIs`, `webContents`, `inlineTextBoxes`, and `extendedProperties`.
+
+### `app.getAccessibilitySupportFeatures()` _macOS_ _Windows_
+
+Returns `string[]` - Array of strings naming currently enabled accessibility support components. Possible values:
+
+* `nativeAPIs` - Native OS accessibility APIs integration enabled.
+* `webContents` - Web contents accessibility tree exposure enabled.
+* `inlineTextBoxes` - Inline text boxes (character bounding boxes) enabled.
+* `extendedProperties` - Extended accessibility properties enabled.
+* `screenReader` - Screen reader specific mode enabled.
+* `html` - HTML accessibility tree construction enabled.
+* `labelImages` - Accessibility support for automatic image annotations.
+* `pdfPrinting` - Accessibility support for PDF printing enabled.
+
+Notes:
+
+* The array may be empty if no accessibility modes are active.
+* Use `app.isAccessibilitySupportEnabled()` for the legacy boolean check;
+  prefer this method for granular diagnostics or telemetry.
+
+Example:
+
+```js
+const { app } = require('electron')
+
+app.whenReady().then(() => {
+  if (app.getAccessibilitySupportFeatures().includes('screenReader')) {
+    // Change some app UI to better work with Screen Readers.
+  }
+})
+```
+
+### `app.setAccessibilitySupportFeatures(features)` _macOS_ _Windows_
+
+* `features` string[] - An array of the accessibility features to enable.
+
+Possible values are:
+
+* `nativeAPIs` - Native OS accessibility APIs integration enabled.
+* `webContents` - Web contents accessibility tree exposure enabled.
+* `inlineTextBoxes` - Inline text boxes (character bounding boxes) enabled.
+* `extendedProperties` - Extended accessibility properties enabled.
+* `screenReader` - Screen reader specific mode enabled.
+* `html` - HTML accessibility tree construction enabled.
+* `labelImages` - Accessibility support for automatic image annotations.
+* `pdfPrinting` - Accessibility support for PDF printing enabled.
+
+To disable all supported features, pass an empty array `[]`.
+
+Example:
+
+```js
+const { app } = require('electron')
+
+app.whenReady().then(() => {
+  // Enable a subset of features:
+  app.setAccessibilitySupportFeatures([
+    'screenReader',
+    'pdfPrinting',
+    'webContents'
+  ])
+
+  // Other logic
+
+  // Some time later, disable all features:
+  app.setAccessibilitySupportFeatures([])
+})
+```
 
 ### `app.showAboutPanel()`
 

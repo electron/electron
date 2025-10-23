@@ -13,7 +13,6 @@
 #include "content/public/common/color_parser.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/dictionary.h"
-#include "gin/handle.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_view.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -28,6 +27,7 @@
 #include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/persistent_dictionary.h"
 #include "shell/common/node_includes.h"
@@ -39,11 +39,13 @@
 #endif
 
 #if BUILDFLAG(IS_WIN)
+#include <variant>
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/taskbar_host.h"
 #include "ui/base/win/shell.h"
 #elif BUILDFLAG(IS_LINUX)
 #include "shell/browser/ui/views/opaque_frame_view.h"
+#include "ui/gfx/image/image_skia.h"
 #endif
 
 #if BUILDFLAG(IS_WIN)
@@ -96,7 +98,7 @@ v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate,
 BaseWindow::BaseWindow(v8::Isolate* isolate,
                        const gin_helper::Dictionary& options) {
   // The parent window.
-  gin::Handle<BaseWindow> parent;
+  gin_helper::Handle<BaseWindow> parent;
   if (options.Get("parent", &parent) && !parent.IsEmpty())
     parent_window_.Reset(isolate, parent.ToV8());
 
@@ -123,7 +125,7 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
 #endif
 }
 
-BaseWindow::BaseWindow(gin_helper::Arguments* args,
+BaseWindow::BaseWindow(gin::Arguments* args,
                        const gin_helper::Dictionary& options)
     : BaseWindow(args->isolate(), options) {
   InitWithArgs(args);
@@ -150,7 +152,7 @@ void BaseWindow::InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) {
   // We can only append this window to parent window's child windows after this
   // window's JS wrapper gets initialized.
   if (!parent_window_.IsEmpty()) {
-    gin::Handle<BaseWindow> parent;
+    gin_helper::Handle<BaseWindow> parent;
     gin::ConvertFromV8(isolate, GetParentWindow(), &parent);
     DCHECK(!parent.IsEmpty());
     parent->child_windows_.Set(isolate, weak_map_id(), wrapper);
@@ -194,14 +196,15 @@ void BaseWindow::OnWindowQueryEndSession(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
 
   gin::Dictionary dict(isolate, event_object);
   dict.Set("reasons", reasons);
 
-  EmitWithoutEvent("query-session-end", event);
+  EmitWithoutEvent("query-session-end", event_object);
   if (event->GetDefaultPrevented()) {
     *prevent_default = true;
   }
@@ -211,14 +214,15 @@ void BaseWindow::OnWindowEndSession(const std::vector<std::string>& reasons) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
 
   gin::Dictionary dict(isolate, event_object);
   dict.Set("reasons", reasons);
 
-  EmitWithoutEvent("session-end", event);
+  EmitWithoutEvent("session-end", event_object);
 }
 
 void BaseWindow::OnWindowBlur() {
@@ -356,7 +360,7 @@ void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
 }
 #endif
 
-void BaseWindow::SetContentView(gin::Handle<View> view) {
+void BaseWindow::SetContentView(gin_helper::Handle<View> view) {
   content_view_.Reset(JavascriptEnvironment::GetIsolate(), view.ToV8());
   window_->SetContentView(view->view());
 }
@@ -442,7 +446,7 @@ bool BaseWindow::IsFullscreen() const {
 }
 
 void BaseWindow::SetBounds(const gfx::Rect& bounds,
-                           gin_helper::Arguments* args) {
+                           gin::Arguments* const args) {
   bool animate = false;
   args->GetNext(&animate);
   window_->SetBounds(bounds, animate);
@@ -461,7 +465,7 @@ gfx::Rect BaseWindow::GetNormalBounds() const {
 }
 
 void BaseWindow::SetContentBounds(const gfx::Rect& bounds,
-                                  gin_helper::Arguments* args) {
+                                  gin::Arguments* const args) {
   bool animate = false;
   args->GetNext(&animate);
   window_->SetContentBounds(bounds, animate);
@@ -471,7 +475,7 @@ gfx::Rect BaseWindow::GetContentBounds() const {
   return window_->GetContentBounds();
 }
 
-void BaseWindow::SetSize(int width, int height, gin_helper::Arguments* args) {
+void BaseWindow::SetSize(int width, int height, gin::Arguments* args) {
   bool animate = false;
   gfx::Size size = window_->GetMinimumSize();
   size.SetToMax(gfx::Size(width, height));
@@ -483,12 +487,12 @@ std::array<int, 2U> BaseWindow::GetSize() const {
   return ToArray(window_->GetSize());
 }
 
-void BaseWindow::SetContentSize(int width,
-                                int height,
-                                gin_helper::Arguments* args) {
+void BaseWindow::SetContentSize(const int width,
+                                const int height,
+                                gin::Arguments* const args) {
   bool animate = false;
   args->GetNext(&animate);
-  window_->SetContentSize(gfx::Size(width, height), animate);
+  window_->SetContentSize(gfx::Size{width, height}, animate);
 }
 
 std::array<int, 2U> BaseWindow::GetContentSize() const {
@@ -511,7 +515,8 @@ std::array<int, 2U> BaseWindow::GetMaximumSize() const {
   return ToArray(window_->GetMaximumSize());
 }
 
-void BaseWindow::SetSheetOffset(double offsetY, gin_helper::Arguments* args) {
+void BaseWindow::SetSheetOffset(const double offsetY,
+                                gin::Arguments* const args) {
   double offsetX = 0.0;
   args->GetNext(&offsetX);
   window_->SetSheetOffset(offsetX, offsetY);
@@ -565,7 +570,7 @@ bool BaseWindow::IsClosable() const {
   return window_->IsClosable();
 }
 
-void BaseWindow::SetAlwaysOnTop(bool top, gin_helper::Arguments* args) {
+void BaseWindow::SetAlwaysOnTop(bool top, gin::Arguments* args) {
   std::string level = "floating";
   int relative_level = 0;
   args->GetNext(&level);
@@ -584,19 +589,21 @@ void BaseWindow::Center() {
   window_->Center();
 }
 
-void BaseWindow::SetPosition(int x, int y, gin_helper::Arguments* args) {
+void BaseWindow::SetPosition(const int x,
+                             const int y,
+                             gin::Arguments* const args) {
   bool animate = false;
   args->GetNext(&animate);
-  window_->SetPosition(gfx::Point(x, y), animate);
+  window_->SetPosition(gfx::Point{x, y}, animate);
 }
 
 std::array<int, 2U> BaseWindow::GetPosition() const {
   return ToArray(window_->GetPosition());
 }
 void BaseWindow::MoveAbove(const std::string& sourceId,
-                           gin_helper::Arguments* args) {
+                           gin::Arguments* const args) {
   if (!window_->MoveAbove(sourceId))
-    args->ThrowError("Invalid media source id");
+    args->ThrowTypeError("Invalid media source id");
 }
 
 void BaseWindow::MoveTop() {
@@ -656,7 +663,7 @@ bool BaseWindow::IsTabletMode() const {
 }
 
 void BaseWindow::SetBackgroundColor(const std::string& color_name) {
-  SkColor color = ParseCSSColor(color_name);
+  SkColor color = ParseCSSColor(color_name).value_or(SK_ColorWHITE);
   window_->SetBackgroundColor(color);
 }
 
@@ -704,8 +711,7 @@ bool BaseWindow::IsDocumentEdited() const {
   return window_->IsDocumentEdited();
 }
 
-void BaseWindow::SetIgnoreMouseEvents(bool ignore,
-                                      gin_helper::Arguments* args) {
+void BaseWindow::SetIgnoreMouseEvents(bool ignore, gin::Arguments* const args) {
   gin_helper::Dictionary options;
   bool forward = false;
   args->GetNext(&options) && options.Get("forward", &forward);
@@ -730,7 +736,7 @@ bool BaseWindow::IsFocusable() const {
 
 void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   auto context = isolate->GetCurrentContext();
-  gin::Handle<Menu> menu;
+  gin_helper::Handle<Menu> menu;
   v8::Local<v8::Object> object;
   if (value->IsObject() && value->ToObject(context).ToLocal(&object) &&
       gin::ConvertFromV8(isolate, value, &menu) && !menu.IsEmpty()) {
@@ -757,13 +763,13 @@ void BaseWindow::RemoveMenu() {
 }
 
 void BaseWindow::SetParentWindow(v8::Local<v8::Value> value,
-                                 gin_helper::Arguments* args) {
+                                 gin::Arguments* const args) {
   if (IsModal()) {
-    args->ThrowError("Can not be called for modal window");
+    args->ThrowTypeError("Can not be called for modal window");
     return;
   }
 
-  gin::Handle<BaseWindow> parent;
+  gin_helper::Handle<BaseWindow> parent;
   if (value->IsNull() || value->IsUndefined()) {
     RemoveFromParentChildWindows();
     parent_window_.Reset();
@@ -774,7 +780,7 @@ void BaseWindow::SetParentWindow(v8::Local<v8::Value> value,
     window_->SetParentWindow(parent->window_.get());
     parent->child_windows_.Set(isolate(), weak_map_id(), GetWrapper());
   } else {
-    args->ThrowError("Must pass BaseWindow instance or null");
+    args->ThrowTypeError("Must pass BaseWindow instance or null");
   }
 }
 
@@ -792,7 +798,7 @@ v8::Local<v8::Value> BaseWindow::GetNativeWindowHandle() {
 }
 #endif
 
-void BaseWindow::SetProgressBar(double progress, gin_helper::Arguments* args) {
+void BaseWindow::SetProgressBar(double progress, gin::Arguments* args) {
   gin_helper::Dictionary options;
   std::string mode;
   args->GetNext(&options) && options.Get("mode", &mode);
@@ -816,7 +822,7 @@ void BaseWindow::SetOverlayIcon(const gfx::Image& overlay,
 }
 
 void BaseWindow::SetVisibleOnAllWorkspaces(bool visible,
-                                           gin_helper::Arguments* args) {
+                                           gin::Arguments* const args) {
   gin_helper::Dictionary options;
   bool visibleOnFullScreen = false;
   bool skipTransformProcessType = false;
@@ -836,9 +842,9 @@ void BaseWindow::SetAutoHideCursor(bool auto_hide) {
   window_->SetAutoHideCursor(auto_hide);
 }
 
-void BaseWindow::SetVibrancy(v8::Isolate* isolate,
+void BaseWindow::SetVibrancy(v8::Isolate* const isolate,
                              v8::Local<v8::Value> value,
-                             gin_helper::Arguments* args) {
+                             gin::Arguments* const args) {
   std::string type = gin::V8ToString(isolate, value);
   gin_helper::Dictionary options;
   int animation_duration_ms = 0;
@@ -850,8 +856,8 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate,
   window_->SetVibrancy(type, animation_duration_ms);
 }
 
-void BaseWindow::SetBackgroundMaterial(const std::string& material_type) {
-  window_->SetBackgroundMaterial(material_type);
+void BaseWindow::SetBackgroundMaterial(const std::string& material) {
+  window_->SetBackgroundMaterial(material);
 }
 
 #if BUILDFLAG(IS_MAC)
@@ -923,10 +929,11 @@ void BaseWindow::ToggleTabBar() {
   window_->ToggleTabBar();
 }
 
-void BaseWindow::AddTabbedWindow(NativeWindow* window,
-                                 gin_helper::Arguments* args) {
+void BaseWindow::AddTabbedWindow(NativeWindow* const window,
+                                 gin::Arguments* const args) {
   if (!window_->AddTabbedWindow(window))
-    args->ThrowError("AddTabbedWindow cannot be called by a window on itself.");
+    args->ThrowTypeError(
+        "AddTabbedWindow cannot be called by a window on itself.");
 }
 
 v8::Local<v8::Value> BaseWindow::GetTabbingIdentifier() {
@@ -953,15 +960,15 @@ bool BaseWindow::IsMenuBarVisible() const {
   return window_->IsMenuBarVisible();
 }
 
-void BaseWindow::SetAspectRatio(double aspect_ratio,
-                                gin_helper::Arguments* args) {
+void BaseWindow::SetAspectRatio(const double aspect_ratio,
+                                gin::Arguments* const args) {
   gfx::Size extra_size;
   args->GetNext(&extra_size);
   window_->SetAspectRatio(aspect_ratio, extra_size);
 }
 
 void BaseWindow::PreviewFile(const std::string& path,
-                             gin_helper::Arguments* args) {
+                             gin::Arguments* const args) {
   std::string display_name;
   if (!args->GetNext(&display_name))
     display_name = path;
@@ -998,7 +1005,7 @@ bool BaseWindow::IsModal() const {
   return window_->is_modal();
 }
 
-bool BaseWindow::SetThumbarButtons(gin_helper::Arguments* args) {
+bool BaseWindow::SetThumbarButtons(gin::Arguments* args) {
 #if BUILDFLAG(IS_WIN)
   std::vector<TaskbarHost::ThumbarButton> buttons;
   if (!args->GetNext(&buttons)) {
@@ -1089,11 +1096,51 @@ void BaseWindow::SetAppDetails(const gin_helper::Dictionary& options) {
 bool BaseWindow::IsSnapped() const {
   return window_->IsSnapped();
 }
+
+void BaseWindow::SetAccentColor(gin::Arguments* const args) {
+  v8::Local<v8::Value> ac_val;
+  args->GetNext(&ac_val);
+
+  if (!ac_val.IsEmpty() && ac_val->IsNull()) {
+    window_->SetAccentColor(std::monostate{});
+    window_->UpdateWindowAccentColor(window_->IsActive());
+    return;
+  }
+
+  if (!ac_val.IsEmpty() && ac_val->IsBoolean()) {
+    const bool ac_flag = ac_val->BooleanValue(args->isolate());
+    window_->SetAccentColor(ac_flag);
+    window_->UpdateWindowAccentColor(window_->IsActive());
+    return;
+  }
+
+  if (!ac_val.IsEmpty() && ac_val->IsString()) {
+    std::string ac_str;
+    gin::ConvertFromV8(args->isolate(), ac_val, &ac_str);
+    if (const std::optional<SkColor> ac_color = ParseCSSColor(ac_str)) {
+      window_->SetAccentColor(*ac_color);
+      window_->UpdateWindowAccentColor(window_->IsActive());
+    }
+    return;
+  }
+
+  args->ThrowTypeError(
+      "Invalid accent color value - must be null, hex string, or boolean");
+}
+
+v8::Local<v8::Value> BaseWindow::GetAccentColor() const {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  auto accent_color = window_->GetAccentColor();
+
+  if (std::holds_alternative<bool>(accent_color))
+    return v8::Boolean::New(isolate, std::get<bool>(accent_color));
+  return gin::StringToV8(isolate, std::get<std::string>(accent_color));
+}
 #endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
 void BaseWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
-                                    gin_helper::Arguments* args) {
+                                    gin::Arguments* args) {
   static_cast<NativeWindowViews*>(window_.get())
       ->SetTitleBarOverlay(options, args);
 }
@@ -1105,7 +1152,7 @@ void BaseWindow::RemoveFromParentChildWindows() {
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  gin::Handle<BaseWindow> parent;
+  gin_helper::Handle<BaseWindow> parent;
   if (!gin::ConvertFromV8(isolate, GetParentWindow(), &parent) ||
       parent.IsEmpty()) {
     return;
@@ -1115,7 +1162,7 @@ void BaseWindow::RemoveFromParentChildWindows() {
 }
 
 // static
-gin_helper::WrappableBase* BaseWindow::New(gin_helper::Arguments* args) {
+gin_helper::WrappableBase* BaseWindow::New(gin::Arguments* const args) {
   auto options = gin_helper::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
@@ -1277,6 +1324,8 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
 #if BUILDFLAG(IS_WIN)
       .SetMethod("isSnapped", &BaseWindow::IsSnapped)
       .SetProperty("snapped", &BaseWindow::IsSnapped)
+      .SetMethod("setAccentColor", &BaseWindow::SetAccentColor)
+      .SetMethod("getAccentColor", &BaseWindow::GetAccentColor)
       .SetMethod("hookWindowMessage", &BaseWindow::HookWindowMessage)
       .SetMethod("isWindowMessageHooked", &BaseWindow::IsWindowMessageHooked)
       .SetMethod("unhookWindowMessage", &BaseWindow::UnhookWindowMessage)
@@ -1302,7 +1351,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   BaseWindow::SetConstructor(isolate, base::BindRepeating(&BaseWindow::New));
 
   gin_helper::Dictionary constructor(isolate,

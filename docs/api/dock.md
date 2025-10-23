@@ -5,13 +5,8 @@
 Process: [Main](../glossary.md#main-process)<br />
 _This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
-The following example shows how to bounce your icon on the dock.
-
-```js
-const { app } = require('electron')
-
-app.dock?.bounce()
-```
+> [!TIP]
+> See also: [A detailed guide about how to implement Dock menus](../tutorial/macos-dock.md).
 
 ### Instance Methods
 
@@ -49,6 +44,9 @@ Bounces the Downloads stack if the filePath is inside the Downloads folder.
 * `text` string
 
 Sets the string to be displayed in the dock’s badging area.
+
+> [!IMPORTANT]
+> You need to ensure that your application has the permission to display notifications for this method to work.
 
 #### `dock.getBadge()` _macOS_
 

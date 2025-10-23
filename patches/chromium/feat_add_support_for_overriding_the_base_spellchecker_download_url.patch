@@ -9,28 +9,20 @@ production use cases.  This is unlikely to be upstreamed as the change
 is entirely in //chrome.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
-index d4cdf3ce5cf2c069f44ab644c2310e1c053e4d4e..fcf4589c70f13546a232bd855b69d747e29f8f1d 100644
+index 9b081d7aa87d1c092b0a29039bdeb0023517333b..c061af1d0ff5d55043a8188d51a34984587da977 100644
 --- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
 +++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
-@@ -14,6 +14,7 @@
- #include "base/functional/bind.h"
- #include "base/lazy_instance.h"
- #include "base/location.h"
-+#include "base/no_destructor.h"
- #include "base/notreached.h"
- #include "base/observer_list.h"
- #include "base/path_service.h"
-@@ -51,6 +52,8 @@ namespace {
- base::LazyInstance<GURL>::Leaky g_download_url_for_testing =
-     LAZY_INSTANCE_INITIALIZER;
+@@ -53,6 +53,8 @@ GURL& GetDownloadUrlForTesting() {
+   return *download_url_for_testing;
+ }
  
 +base::NoDestructor<GURL> g_base_download_url_override;
 +
  // Close the file.
  void CloseDictionary(base::File file) {
    base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
-@@ -266,6 +269,10 @@ void SpellcheckHunspellDictionary::SetDownloadURLForTesting(const GURL url) {
-   g_download_url_for_testing.Get() = url;
+@@ -268,6 +270,10 @@ void SpellcheckHunspellDictionary::SetDownloadURLForTesting(const GURL url) {
+   GetDownloadUrlForTesting() = url;
  }
  
 +void SpellcheckHunspellDictionary::SetBaseDownloadURL(const GURL url) {
@@ -38,9 +30,9 @@ index d4cdf3ce5cf2c069f44ab644c2310e1c053e4d4e..fcf4589c70f13546a232bd855b69d747
 +}
 +
  GURL SpellcheckHunspellDictionary::GetDictionaryURL() {
-   if (g_download_url_for_testing.Get() != GURL())
-     return g_download_url_for_testing.Get();
-@@ -273,6 +280,9 @@ GURL SpellcheckHunspellDictionary::GetDictionaryURL() {
+   if (GetDownloadUrlForTesting() != GURL()) {
+     return GetDownloadUrlForTesting();
+@@ -276,6 +282,9 @@ GURL SpellcheckHunspellDictionary::GetDictionaryURL() {
    std::string bdict_file = dictionary_file_.path.BaseName().MaybeAsASCII();
    DCHECK(!bdict_file.empty());
  

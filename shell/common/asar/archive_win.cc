@@ -26,13 +26,13 @@ const wchar_t kIntegrityCheckResourceType[] = L"Integrity";
 const wchar_t kIntegrityCheckResourceItem[] = L"ElectronAsar";
 
 std::optional<base::FilePath> Archive::RelativePath() const {
-  base::FilePath exe_path;
-  if (!base::PathService::Get(base::FILE_EXE, &exe_path)) {
-    LOG(FATAL) << "Couldn't get exe file path";
+  base::FilePath assets_dir;
+  if (!base::PathService::Get(base::DIR_ASSETS, &assets_dir)) {
+    LOG(FATAL) << "Couldn't get assets directory path";
   }
 
   base::FilePath relative_path;
-  if (!exe_path.DirName().AppendRelativePath(path_, &relative_path)) {
+  if (!assets_dir.AppendRelativePath(path_, &relative_path)) {
     return std::nullopt;
   }
 
@@ -71,7 +71,8 @@ auto LoadIntegrityConfig() {
 
   // Parse integrity config payload
   std::optional<base::Value> root =
-      base::JSONReader::Read(std::string_view{res_data, res_size});
+      base::JSONReader::Read(std::string_view{res_data, res_size},
+                             base::JSON_PARSE_CHROMIUM_EXTENSIONS);
 
   if (!root.has_value()) {
     LOG(FATAL) << "Invalid integrity config: NOT a valid JSON.";

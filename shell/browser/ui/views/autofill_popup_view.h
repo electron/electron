@@ -16,7 +16,7 @@
 #include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/drag_controller.h"
-#include "ui/views/focus/widget_focus_manager.h"
+#include "ui/views/focus/native_view_focus_manager.h"
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/views/widget/widget_observer.h"
 
@@ -60,7 +60,7 @@ class AutofillPopupChildView : public views::View {
 };
 
 class AutofillPopupView : public views::WidgetDelegateView,
-                          private views::WidgetFocusChangeListener,
+                          private views::NativeViewFocusChangeListener,
                           private views::WidgetObserver,
                           public views::DragController {
  public:

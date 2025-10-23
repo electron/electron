@@ -10,7 +10,7 @@ on:
 
 jobs:
   clean-src-cache:
-    runs-on: electron-arc-linux-amd64-32core
+    runs-on: electron-arc-centralus-linux-amd64-32core
     container:
       image: ghcr.io/electron/build:bc2f48b2415a670de18d13605b1cf0eb5fdbaae1
       options: --user root

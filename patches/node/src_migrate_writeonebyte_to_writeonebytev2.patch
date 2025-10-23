@@ -1,0 +1,276 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chengzhong Wu <cwu631@bloomberg.net>
+Date: Fri, 29 Aug 2025 23:41:00 +0100
+Subject: src: migrate WriteOneByte to WriteOneByteV2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+PR-URL: https://github.com/nodejs/node/pull/59634
+Fixes: https://github.com/nodejs/node/issues/59555
+Reviewed-By: Rafael Gonzaga <rafael.nunu@hotmail.com>
+Reviewed-By: Gerhard Stöbich <deb2001-github@yahoo.de>
+Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
+Reviewed-By: Darshan Sen <raisinten@gmail.com>
+Reviewed-By: Matteo Collina <matteo.collina@gmail.com>
+
+diff --git a/src/node_buffer.cc b/src/node_buffer.cc
+index ae73e6743879f32f08b4f6f8c546c587de71d2f3..be93e60f851c6c144fdd19f810e0a44cf3845bce 100644
+--- a/src/node_buffer.cc
++++ b/src/node_buffer.cc
+@@ -1033,8 +1033,11 @@ void IndexOfString(const FunctionCallbackInfo<Value>& args) {
+     if (needle_data == nullptr) {
+       return args.GetReturnValue().Set(-1);
+     }
+-    needle->WriteOneByte(
+-        isolate, needle_data, 0, needle_length, String::NO_NULL_TERMINATION);
++    StringBytes::Write(isolate,
++                       reinterpret_cast<char*>(needle_data),
++                       needle_length,
++                       needle,
++                       enc);
+ 
+     result = nbytes::SearchString(reinterpret_cast<const uint8_t*>(haystack),
+                                   haystack_length,
+@@ -1288,11 +1291,7 @@ static void Btoa(const FunctionCallbackInfo<Value>& args) {
+         simdutf::binary_to_base64(ext->data(), ext->length(), buffer.out());
+   } else if (input->IsOneByte()) {
+     MaybeStackBuffer<uint8_t> stack_buf(input->Length());
+-    input->WriteOneByte(env->isolate(),
+-                        stack_buf.out(),
+-                        0,
+-                        input->Length(),
+-                        String::NO_NULL_TERMINATION);
++    input->WriteOneByteV2(env->isolate(), 0, input->Length(), stack_buf.out());
+ 
+     size_t expected_length =
+         simdutf::base64_length_from_binary(input->Length());
+@@ -1348,11 +1347,8 @@ static void Atob(const FunctionCallbackInfo<Value>& args) {
+         ext->data(), ext->length(), buffer.out(), simdutf::base64_default);
+   } else if (input->IsOneByte()) {
+     MaybeStackBuffer<uint8_t> stack_buf(input->Length());
+-    input->WriteOneByte(args.GetIsolate(),
+-                        stack_buf.out(),
+-                        0,
+-                        input->Length(),
+-                        String::NO_NULL_TERMINATION);
++    input->WriteOneByteV2(
++        args.GetIsolate(), 0, input->Length(), stack_buf.out());
+     const char* data = reinterpret_cast<const char*>(*stack_buf);
+     size_t expected_length =
+         simdutf::maximal_binary_length_from_base64(data, input->Length());
+diff --git a/src/node_http2.cc b/src/node_http2.cc
+index 8237c9b7d325dd925ae8798d7795fcd94eeb13d0..27a0db87e1f7f75336ecaa044e7cd66a9a5e87a4 100644
+--- a/src/node_http2.cc
++++ b/src/node_http2.cc
+@@ -485,13 +485,10 @@ Origins::Origins(
+ 
+   CHECK_LE(origin_contents + origin_string_len,
+            static_cast<char*>(bs_->Data()) + bs_->ByteLength());
+-  CHECK_EQ(origin_string->WriteOneByte(
+-               env->isolate(),
+-               reinterpret_cast<uint8_t*>(origin_contents),
+-               0,
+-               origin_string_len,
+-               String::NO_NULL_TERMINATION),
+-           origin_string_len);
++  origin_string->WriteOneByteV2(env->isolate(),
++                                0,
++                                origin_string_len,
++                                reinterpret_cast<uint8_t*>(origin_contents));
+ 
+   size_t n = 0;
+   char* p;
+@@ -3183,8 +3180,8 @@ void Http2Session::AltSvc(const FunctionCallbackInfo<Value>& args) {
+   if (origin_str.IsEmpty() || value_str.IsEmpty())
+     return;
+ 
+-  size_t origin_len = origin_str->Length();
+-  size_t value_len = value_str->Length();
++  int origin_len = origin_str->Length();
++  int value_len = value_str->Length();
+ 
+   CHECK_LE(origin_len + value_len, 16382);  // Max permitted for ALTSVC
+   // Verify that origin len != 0 if stream id == 0, or
+@@ -3193,8 +3190,13 @@ void Http2Session::AltSvc(const FunctionCallbackInfo<Value>& args) {
+ 
+   MaybeStackBuffer<uint8_t> origin(origin_len);
+   MaybeStackBuffer<uint8_t> value(value_len);
+-  origin_str->WriteOneByte(env->isolate(), *origin);
+-  value_str->WriteOneByte(env->isolate(), *value);
++  origin_str->WriteOneByteV2(env->isolate(),
++                             0,
++                             origin_len,
++                             *origin,
++                             String::WriteFlags::kNullTerminate);
++  value_str->WriteOneByteV2(
++      env->isolate(), 0, value_len, *value, String::WriteFlags::kNullTerminate);
+ 
+   session->AltSvc(id, *origin, origin_len, *value, value_len);
+ }
+diff --git a/src/node_http_common-inl.h b/src/node_http_common-inl.h
+index dba1a5e051b3e03c435ba3885b3fe2d04ea8ca9e..46984dba907fffb836d62b9c6e6b325a0ba504dd 100644
+--- a/src/node_http_common-inl.h
++++ b/src/node_http_common-inl.h
+@@ -2,9 +2,11 @@
+ #define SRC_NODE_HTTP_COMMON_INL_H_
+ 
+ #include "node_http_common.h"
++
++#include "env-inl.h"
+ #include "node.h"
+ #include "node_mem-inl.h"
+-#include "env-inl.h"
++#include "string_bytes.h"
+ #include "v8.h"
+ 
+ #include <algorithm>
+@@ -37,13 +39,12 @@ NgHeaders<T>::NgHeaders(Environment* env, v8::Local<v8::Array> headers) {
+   nv_t* const nva = reinterpret_cast<nv_t*>(start);
+ 
+   CHECK_LE(header_contents + header_string_len, *buf_ + buf_.length());
+-  CHECK_EQ(header_string.As<v8::String>()->WriteOneByte(
+-               env->isolate(),
+-               reinterpret_cast<uint8_t*>(header_contents),
+-               0,
+-               header_string_len,
+-               v8::String::NO_NULL_TERMINATION),
+-           header_string_len);
++  CHECK_EQ(StringBytes::Write(env->isolate(),
++                              header_contents,
++                              header_string_len,
++                              header_string.As<v8::String>(),
++                              LATIN1),
++           static_cast<size_t>(header_string_len));
+ 
+   size_t n = 0;
+   char* p;
+diff --git a/src/string_bytes.cc b/src/string_bytes.cc
+index b02e9c5d14c2438d30b16f977c4e8a76bb23479d..71381f8fdc341cf2bac34028eb10df30fd9306b9 100644
+--- a/src/string_bytes.cc
++++ b/src/string_bytes.cc
+@@ -249,11 +249,13 @@ size_t StringBytes::Write(Isolate* isolate,
+         nbytes = std::min(buflen, static_cast<size_t>(input_view.length()));
+         memcpy(buf, input_view.data8(), nbytes);
+       } else {
+-        uint8_t* const dst = reinterpret_cast<uint8_t*>(buf);
+-        const int flags = String::HINT_MANY_WRITES_EXPECTED |
+-                          String::NO_NULL_TERMINATION |
+-                          String::REPLACE_INVALID_UTF8;
+-        nbytes = str->WriteOneByte(isolate, dst, 0, buflen, flags);
++        nbytes = std::min(buflen, static_cast<size_t>(input_view.length()));
++        // Do not use v8::String::WriteOneByteV2 as it asserts the string to be
++        // a one byte string. For compatibility, convert the uint16_t to uint8_t
++        // even though this may loose accuracy.
++        for (size_t i = 0; i < nbytes; i++) {
++          buf[i] = static_cast<uint8_t>(input_view.data16()[i]);
++        }
+       }
+       break;
+ 
+diff --git a/test/cctest/test_string_bytes.cc b/test/cctest/test_string_bytes.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..bc308918680bb153dbbda8b18dcb24d129f14833
+--- /dev/null
++++ b/test/cctest/test_string_bytes.cc
+@@ -0,0 +1,100 @@
++#include "gtest/gtest.h"
++#include "node.h"
++#include "node_test_fixture.h"
++#include "string_bytes.h"
++#include "util-inl.h"
++
++using node::MaybeStackBuffer;
++using node::StringBytes;
++using v8::HandleScope;
++using v8::Local;
++using v8::Maybe;
++using v8::String;
++
++class StringBytesTest : public EnvironmentTestFixture {};
++
++// Data "Hello, ÆÊÎÖÿ"
++static const char latin1_data[] = "Hello, \xC6\xCA\xCE\xD6\xFF";
++static const char utf8_data[] = "Hello, ÆÊÎÖÿ";
++
++TEST_F(StringBytesTest, WriteLatin1WithOneByteString) {
++  const HandleScope handle_scope(isolate_);
++  const Argv argv;
++  Env env_{handle_scope, argv};
++
++  Local<String> one_byte_str =
++      String::NewFromOneByte(isolate_,
++                             reinterpret_cast<const uint8_t*>(latin1_data))
++          .ToLocalChecked();
++
++  Maybe<size_t> size_maybe =
++      StringBytes::StorageSize(isolate_, one_byte_str, node::LATIN1);
++
++  ASSERT_TRUE(size_maybe.IsJust());
++  size_t size = size_maybe.FromJust();
++  ASSERT_EQ(size, 12u);
++
++  MaybeStackBuffer<char> buf;
++  size_t written = StringBytes::Write(
++      isolate_, buf.out(), buf.capacity(), one_byte_str, node::LATIN1);
++  ASSERT_EQ(written, 12u);
++
++  // Null-terminate the buffer and compare the contents.
++  buf.SetLength(13);
++  buf[12] = '\0';
++  ASSERT_STREQ(latin1_data, buf.out());
++}
++
++TEST_F(StringBytesTest, WriteLatin1WithUtf8String) {
++  const HandleScope handle_scope(isolate_);
++  const Argv argv;
++  Env env_{handle_scope, argv};
++
++  Local<String> utf8_str =
++      String::NewFromUtf8(isolate_, utf8_data).ToLocalChecked();
++
++  Maybe<size_t> size_maybe =
++      StringBytes::StorageSize(isolate_, utf8_str, node::LATIN1);
++
++  ASSERT_TRUE(size_maybe.IsJust());
++  size_t size = size_maybe.FromJust();
++  ASSERT_EQ(size, 12u);
++
++  MaybeStackBuffer<char> buf;
++  size_t written = StringBytes::Write(
++      isolate_, buf.out(), buf.capacity(), utf8_str, node::LATIN1);
++  ASSERT_EQ(written, 12u);
++
++  // Null-terminate the buffer and compare the contents.
++  buf.SetLength(13);
++  buf[12] = '\0';
++  ASSERT_STREQ(latin1_data, buf.out());
++}
++
++// Verify that StringBytes::Write converts two-byte characters to one-byte
++// characters, even if there is no valid one-byte representation.
++TEST_F(StringBytesTest, WriteLatin1WithInvalidChar) {
++  const HandleScope handle_scope(isolate_);
++  const Argv argv;
++  Env env_{handle_scope, argv};
++
++  Local<String> utf8_str =
++      String::NewFromUtf8(isolate_, "Hello, 世界").ToLocalChecked();
++
++  Maybe<size_t> size_maybe =
++      StringBytes::StorageSize(isolate_, utf8_str, node::LATIN1);
++
++  ASSERT_TRUE(size_maybe.IsJust());
++  size_t size = size_maybe.FromJust();
++  ASSERT_EQ(size, 9u);
++
++  MaybeStackBuffer<char> buf;
++  size_t written = StringBytes::Write(
++      isolate_, buf.out(), buf.capacity(), utf8_str, node::LATIN1);
++  ASSERT_EQ(written, 9u);
++
++  // Null-terminate the buffer and compare the contents.
++  buf.SetLength(10);
++  buf[9] = '\0';
++  ASSERT_STREQ("Hello, \x16\x4C", buf.out());
++}

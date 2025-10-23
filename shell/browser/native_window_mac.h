@@ -175,6 +175,8 @@ class NativeWindowMac : public NativeWindow,
   // cleanup in destructor.
   void Cleanup();
 
+  void SetBorderless(bool borderless);
+
   void UpdateVibrancyRadii(bool fullscreen);
 
   void UpdateWindowOriginalFrame();
@@ -223,7 +225,7 @@ class NativeWindowMac : public NativeWindow,
   // views::WidgetDelegate:
   views::View* GetContentsView() override;
   bool CanMaximize() const override;
-  std::unique_ptr<views::NonClientFrameView> CreateNonClientFrameView(
+  std::unique_ptr<views::FrameView> CreateFrameView(
       views::Widget* widget) override;
   void OnWidgetInitialized() override;
 

@@ -11,10 +11,10 @@ enlarge window above dimensions set during creation of the
 BrowserWindow.
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 3c2c19584b04fabb64bc42f425e0d580be722130..839c2d2e5e52a6080c27b3301ac3e7cbdf5389f6 100644
+index 9c048b941eed92f599dc0b1d1273b215816376dd..10480326f56bcfebd6f9851d5cef401ee56f010c 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -3770,15 +3770,30 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
+@@ -3828,17 +3828,30 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
    delegate_->GetMinMaxSize(&min_window_size, &max_window_size);
    min_window_size = delegate_->DIPToScreenSize(min_window_size);
    max_window_size = delegate_->DIPToScreenSize(max_window_size);
@@ -39,10 +39,12 @@ index 3c2c19584b04fabb64bc42f425e0d580be722130..839c2d2e5e52a6080c27b3301ac3e7cb
      max_size_param = max_window_size;
    }
  
+-  gfx::Size excluded_margin = delegate_->DIPToScreenSize(excluded_margin_dip_);
+-
 -  gfx::SizeRectToAspectRatioWithExcludedMargin(
 +  gfx::SizeRectToAspectRatio(
        GetWindowResizeEdge(param), aspect_ratio_.value(), min_window_size,
--      max_size_param, excluded_margin_, *window_rect);
+-      max_size_param, excluded_margin, *window_rect);
 +      max_size_param, window_rect);
  }
  

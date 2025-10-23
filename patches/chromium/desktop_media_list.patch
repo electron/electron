@@ -22,10 +22,10 @@ index 6fb778093f57942faebbc6a68a92967826476674..57cad85973c5cfe3a19f80fd318ec46f
    virtual int GetSourceCount() const = 0;
    virtual const Source& GetSource(int index) const = 0;
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index a82e0b1a7e999817c8ee420ceddeb7ca9ee78caf..e07f4ded61a7a64983da1b6d07315aee9684a148 100644
+index 1f25e8321301b0a5cd8703b8a4e9ec840fc0331b..f95b2230135dbcd6b19a31215d4f10be3481148c 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-@@ -74,12 +74,12 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
+@@ -70,12 +70,12 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
    Refresh(true);
  }
  
@@ -82,7 +82,7 @@ index 786c526588d81b8b5b1b5dd3760719a53e005995..f66b7d0b4dfcbb8ed3dde5a9ff463ae2
    const Source& GetSource(int index) const override;
    DesktopMediaList::Type GetMediaListType() const override;
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 024d7d74547e248ca685dc2fa8d0cdeb66b42c55..fc90627d0f733d49903325bb2f70b9980dd37184 100644
+index 3be638f1032815d39634b5725031d7f3124e1ad2..fce3e30bc736ac72a42d24956d4abf9f49c8fc41 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -216,9 +216,13 @@ content::DesktopMediaID::Id GetUpdatedWindowId(
@@ -121,7 +121,7 @@ index 024d7d74547e248ca685dc2fa8d0cdeb66b42c55..fc90627d0f733d49903325bb2f70b998
  }
  
  void NativeDesktopMediaList::Worker::OnCaptureResult(
-@@ -1010,6 +1020,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
+@@ -1009,6 +1019,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
          FROM_HERE, base::BindOnce(&Worker::RefreshThumbnails,
                                    base::Unretained(worker_.get()),
                                    std::move(native_ids), thumbnail_size_));

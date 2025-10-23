@@ -6,10 +6,10 @@ Subject: test: use static method names in call stacks
 Refs: https://chromium-review.googlesource.com/c/v8/v8/+/5907815
 
 diff --git a/test/message/assert_throws_stack.out b/test/message/assert_throws_stack.out
-index b1f3ea2108ba9c1a4f98928062b44b927eea31f2..897ddf36a04eb03edd01dd6b9a6fb4394cbdf114 100644
+index 1ecda64889e07fe64d03404d478311f9f8267a4e..2b5587292a2c7a8797589804f14bfd0c3e9725f8 100644
 --- a/test/message/assert_throws_stack.out
 +++ b/test/message/assert_throws_stack.out
-@@ -23,7 +23,7 @@ AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+@@ -24,7 +24,7 @@ AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
    actual: Error: foo
        at assert.throws.bar (*assert_throws_stack.js:*)
        at getActual (node:assert:*)

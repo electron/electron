@@ -7,7 +7,6 @@
 #include "base/memory/ref_counted_memory.h"
 #include "base/trace_event/trace_event.h"
 #include "content/public/renderer/render_frame.h"
-#include "ipc/ipc_message_macros.h"
 #include "net/base/net_module.h"
 #include "net/grit/net_resources.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
@@ -60,11 +59,6 @@ ElectronRenderFrameObserver::ElectronRenderFrameObserver(
       renderer_client_(renderer_client) {
   // Initialise resource for directory listing.
   net::NetModule::SetResourceProvider(NetResourceProvider);
-
-  // In Chrome, app regions are only supported in the main frame.
-  // However, we need to support draggable regions on other
-  // local frames/windows, so extend support beyond the main frame.
-  render_frame_->GetWebView()->SetSupportsDraggableRegions(true);
 }
 
 void ElectronRenderFrameObserver::DidClearWindowObject() {
@@ -122,8 +116,9 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
   v8::MicrotasksScope microtasks_scope(
       context, v8::MicrotasksScope::kDoNotRunMicrotasks);
 
+  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   if (ShouldNotifyClient(world_id))
-    renderer_client_->DidCreateScriptContext(context, render_frame_);
+    renderer_client_->DidCreateScriptContext(isolate, context, render_frame_);
 
   auto prefs = render_frame_->GetBlinkPreferences();
   bool use_context_isolation = prefs.context_isolation;
@@ -140,16 +135,18 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
 
   if (should_create_isolated_context) {
     CreateIsolatedWorldContext();
-    if (!renderer_client_->IsWebViewFrame(context, render_frame_))
-      renderer_client_->SetupMainWorldOverrides(context, render_frame_);
+    if (!renderer_client_->IsWebViewFrame(isolate, context, render_frame_))
+      renderer_client_->SetupMainWorldOverrides(isolate, context,
+                                                render_frame_);
   }
 }
 
 void ElectronRenderFrameObserver::WillReleaseScriptContext(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     int world_id) {
   if (ShouldNotifyClient(world_id))
-    renderer_client_->WillReleaseScriptContext(context, render_frame_);
+    renderer_client_->WillReleaseScriptContext(isolate, context, render_frame_);
 }
 
 void ElectronRenderFrameObserver::OnDestruct() {

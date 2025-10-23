@@ -85,7 +85,7 @@ async function pageCaptureTestRecipe (
     height: 600,
     useContentSize: true,
     webPreferences: {
-      enableCornerSmoothingCSS: cornerSmoothingAvailable
+      disableBlinkFeatures: cornerSmoothingAvailable ? undefined : 'ElectronCSSCornerSmoothing'
     }
   });
   await w.loadFile(pagePath);

@@ -21,7 +21,7 @@
 #include "base/strings/string_util.h"
 #include "base/uuid.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/predictors/preconnect_manager.h"
+#include "chrome/browser/predictors/predictors_traffic_annotations.h"  // nogncheck
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
 #include "components/download/public/common/download_danger_type.h"
@@ -39,10 +39,11 @@
 #include "content/public/browser/download_item_utils.h"
 #include "content/public/browser/download_manager_delegate.h"
 #include "content/public/browser/network_service_instance.h"
+#include "content/public/browser/preconnect_manager.h"
+#include "content/public/browser/preconnect_request.h"
 #include "content/public/browser/storage_partition.h"
 #include "gin/arguments.h"
 #include "gin/converter.h"
-#include "gin/handle.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "net/base/completion_repeating_callback.h"
@@ -87,6 +88,7 @@
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
@@ -97,6 +99,7 @@
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/origin.h"
+#include "v8/include/v8-traced-handle.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "shell/browser/api/electron_api_extensions.h"
@@ -542,23 +545,27 @@ class DictionaryObserver final : public SpellcheckCustomDictionary::Observer {
 #endif  // BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 
 struct UserDataLink : base::SupportsUserData::Data {
-  explicit UserDataLink(base::WeakPtr<Session> session_in)
-      : session{std::move(session_in)} {}
+  explicit UserDataLink(
+      cppgc::WeakPersistent<gin::WeakCell<Session>> session_in)
+      : session{session_in} {}
 
-  base::WeakPtr<Session> session;
+  cppgc::WeakPersistent<gin::WeakCell<Session>> session;
 };
 
 const void* kElectronApiSessionKey = &kElectronApiSessionKey;
 
 }  // namespace
 
-gin::WrapperInfo Session::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo Session::kWrapperInfo = {{gin::kEmbedderNativeGin},
+                                          gin::kElectronSession};
 
 Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
     : isolate_(isolate),
       network_emulation_token_(base::UnguessableToken::Create()),
       browser_context_{
           raw_ref<ElectronBrowserContext>::from_ptr(browser_context)} {
+  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
+  data->AddDisposeObserver(this);
   // Observe DownloadManager to get download notifications.
   browser_context->GetDownloadManager()->AddObserver(this);
 
@@ -570,7 +577,10 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
 
   browser_context->SetUserData(
       kElectronApiSessionKey,
-      std::make_unique<UserDataLink>(weak_factory_.GetWeakPtr()));
+      std::make_unique<UserDataLink>(
+          cppgc::WeakPersistent<gin::WeakCell<Session>>(
+              weak_factory_.GetWeakCell(
+                  isolate->GetCppHeap()->GetAllocationHandle()))));
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   if (auto* service =
@@ -581,14 +591,20 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
 }
 
 Session::~Session() {
-  browser_context()->GetDownloadManager()->RemoveObserver(this);
+  Dispose();
+}
+
+void Session::Dispose() {
+  if (keep_alive_) {
+    browser_context()->GetDownloadManager()->RemoveObserver(this);
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  if (auto* service =
-          SpellcheckServiceFactory::GetForContext(browser_context())) {
-    service->SetHunspellObserver(nullptr);
-  }
+    if (auto* service =
+            SpellcheckServiceFactory::GetForContext(browser_context())) {
+      service->SetHunspellObserver(nullptr);
+    }
 #endif
+  }
 }
 
 void Session::OnDownloadCreated(content::DownloadManager* manager,
@@ -799,27 +815,33 @@ void Session::SetDownloadPath(const base::FilePath& path) {
 }
 
 void Session::EnableNetworkEmulation(const gin_helper::Dictionary& options) {
-  auto conditions = network::mojom::NetworkConditions::New();
-
-  options.Get("offline", &conditions->offline);
-  options.Get("downloadThroughput", &conditions->download_throughput);
-  options.Get("uploadThroughput", &conditions->upload_throughput);
+  std::vector<network::mojom::MatchedNetworkConditionsPtr> matched_conditions;
+  network::mojom::MatchedNetworkConditionsPtr network_conditions =
+      network::mojom::MatchedNetworkConditions::New();
+  network_conditions->conditions = network::mojom::NetworkConditions::New();
+  options.Get("offline", &network_conditions->conditions->offline);
+  options.Get("downloadThroughput",
+              &network_conditions->conditions->download_throughput);
+  options.Get("uploadThroughput",
+              &network_conditions->conditions->upload_throughput);
   double latency = 0.0;
   if (options.Get("latency", &latency) && latency) {
-    conditions->latency = base::Milliseconds(latency);
+    network_conditions->conditions->latency = base::Milliseconds(latency);
   }
+  matched_conditions.emplace_back(std::move(network_conditions));
 
   auto* network_context =
       browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
   network_context->SetNetworkConditions(network_emulation_token_,
-                                        std::move(conditions));
+                                        std::move(matched_conditions));
 }
 
 void Session::DisableNetworkEmulation() {
   auto* network_context =
       browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
-  network_context->SetNetworkConditions(
-      network_emulation_token_, network::mojom::NetworkConditions::New());
+  std::vector<network::mojom::MatchedNetworkConditionsPtr> network_conditions;
+  network_context->SetNetworkConditions(network_emulation_token_,
+                                        std::move(network_conditions));
 }
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
@@ -1002,7 +1024,8 @@ bool Session::IsPersistent() {
 
 v8::Local<v8::Promise> Session::GetBlobData(v8::Isolate* isolate,
                                             const std::string& uuid) {
-  gin::Handle<DataPipeHolder> holder = DataPipeHolder::From(isolate, uuid);
+  gin_helper::Handle<DataPipeHolder> holder =
+      DataPipeHolder::From(isolate, uuid);
   if (holder.IsEmpty()) {
     gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
     promise.RejectWithErrorMessage("Could not get blob data handle");
@@ -1304,7 +1327,7 @@ v8::Local<v8::Promise> Session::GetSharedDictionaryUsageInfo() {
 }
 
 v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
-  if (cookies_.IsEmpty()) {
+  if (cookies_.IsEmptyThreadSafe()) {
     auto handle = Cookies::Create(isolate, browser_context());
     cookies_.Reset(isolate, handle.ToV8());
   }
@@ -1313,7 +1336,7 @@ v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> Session::Extensions(v8::Isolate* isolate) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  if (extensions_.IsEmpty()) {
+  if (extensions_.IsEmptyThreadSafe()) {
     v8::Local<v8::Value> handle;
     handle = Extensions::Create(isolate, browser_context()).ToV8();
     extensions_.Reset(isolate, handle);
@@ -1327,7 +1350,7 @@ v8::Local<v8::Value> Session::Protocol(v8::Isolate* isolate) {
 }
 
 v8::Local<v8::Value> Session::ServiceWorkerContext(v8::Isolate* isolate) {
-  if (service_worker_context_.IsEmpty()) {
+  if (service_worker_context_.IsEmptyThreadSafe()) {
     v8::Local<v8::Value> handle;
     handle = ServiceWorkerContext::Create(isolate, browser_context()).ToV8();
     service_worker_context_.Reset(isolate, handle);
@@ -1336,7 +1359,7 @@ v8::Local<v8::Value> Session::ServiceWorkerContext(v8::Isolate* isolate) {
 }
 
 v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
-  if (web_request_.IsEmpty()) {
+  if (web_request_.IsEmptyThreadSafe()) {
     auto handle = WebRequest::Create(isolate, browser_context());
     web_request_.Reset(isolate, handle.ToV8());
   }
@@ -1344,22 +1367,26 @@ v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
 }
 
 v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
-  if (net_log_.IsEmpty()) {
-    auto handle = NetLog::Create(isolate, browser_context());
-    net_log_.Reset(isolate, handle.ToV8());
+  if (!net_log_) {
+    net_log_ = NetLog::Create(isolate, browser_context());
   }
-  return net_log_.Get(isolate);
+
+  v8::Local<v8::Object> wrapper;
+  return net_log_->GetWrapper(isolate).ToLocal(&wrapper)
+             ? wrapper.As<v8::Value>()
+             : v8::Null(isolate);
 }
 
 static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
                                 const GURL& url,
                                 int num_sockets_to_preconnect) {
   url::Origin origin = url::Origin::Create(url);
-  std::vector<predictors::PreconnectRequest> requests = {
+  std::vector<content::PreconnectRequest> requests = {
       {url::Origin::Create(url), num_sockets_to_preconnect,
        net::NetworkAnonymizationKey::CreateSameSite(
            net::SchemefulSite(origin))}};
-  browser_context->GetPreconnectManager()->Start(url, requests);
+  browser_context->GetPreconnectManager()->Start(
+      url, requests, predictors::kLoadingPredictorPreconnectTrafficAnnotation);
 }
 
 void Session::Preconnect(const gin_helper::Dictionary& options,
@@ -1448,9 +1475,8 @@ v8::Local<v8::Promise> Session::ClearCodeCaches(
   return handle;
 }
 
-v8::Local<v8::Value> Session::ClearData(gin_helper::ErrorThrower thrower,
-                                        gin::Arguments* args) {
-  auto* isolate = JavascriptEnvironment::GetIsolate();
+v8::Local<v8::Value> Session::ClearData(gin::Arguments* const args) {
+  v8::Isolate* const isolate = JavascriptEnvironment::GetIsolate();
 
   BrowsingDataRemover::DataType data_type_mask = kClearDataTypeAll;
   std::vector<url::Origin> origins;
@@ -1480,7 +1506,7 @@ v8::Local<v8::Value> Session::ClearData(gin_helper::ErrorThrower thrower,
           options.Get("excludeOrigins", &exclude_origin_urls);
 
       if (has_origins_key && has_exclude_origins_key) {
-        thrower.ThrowError(
+        args->ThrowTypeError(
             "Cannot provide both 'origins' and 'excludeOrigins'");
         return v8::Undefined(isolate);
       }
@@ -1499,7 +1525,7 @@ v8::Local<v8::Value> Session::ClearData(gin_helper::ErrorThrower thrower,
 
         // Opaque origins cannot be used with this API
         if (origin.opaque()) {
-          thrower.ThrowError(absl::StrFormat(
+          args->ThrowTypeError(absl::StrFormat(
               "Invalid origin: '%s'", origin_url.possibly_invalid_spec()));
           return v8::Undefined(isolate);
         }
@@ -1652,42 +1678,46 @@ bool Session::IsSpellCheckerEnabled() const {
 #endif  // BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 
 // static
-Session* Session::FromBrowserContext(content::BrowserContext* context) {
+gin::WeakCell<Session>* Session::FromBrowserContext(
+    content::BrowserContext* context) {
   auto* data =
       static_cast<UserDataLink*>(context->GetUserData(kElectronApiSessionKey));
-  return data ? data->session.get() : nullptr;
+  if (data && data->session)
+    return data->session.Get();
+  return nullptr;
 }
 
 // static
-gin::Handle<Session> Session::CreateFrom(
-    v8::Isolate* isolate,
-    ElectronBrowserContext* browser_context) {
-  Session* existing = FromBrowserContext(browser_context);
-  if (existing)
-    return gin::CreateHandle(isolate, existing);
-
-  auto handle =
-      gin::CreateHandle(isolate, new Session(isolate, browser_context));
-
-  // The Sessions should never be garbage collected, since the common pattern is
-  // to use partition strings, instead of using the Session object directly.
-  handle->Pin(isolate);
-
-  v8::TryCatch try_catch(isolate);
-  gin_helper::CallMethod(isolate, handle.get(), "_init");
-  if (try_catch.HasCaught()) {
-    node::errors::TriggerUncaughtException(isolate, try_catch);
+Session* Session::CreateFrom(v8::Isolate* isolate,
+                             ElectronBrowserContext* browser_context) {
+  gin::WeakCell<Session>* existing = FromBrowserContext(browser_context);
+  if (existing && existing->Get()) {
+    return existing->Get();
   }
 
-  App::Get()->EmitWithoutEvent("session-created", handle);
+  auto* session = cppgc::MakeGarbageCollected<Session>(
+      isolate->GetCppHeap()->GetAllocationHandle(), isolate, browser_context);
 
-  return handle;
+  v8::TryCatch try_catch(isolate);
+  gin_helper::CallMethod(isolate, session, "_init");
+  if (try_catch.HasCaught()) {
+    node::errors::TriggerUncaughtException(isolate, try_catch);
+    return nullptr;
+  }
+
+  v8::Local<v8::Object> wrapper;
+  if (!session->GetWrapper(isolate).ToLocal(&wrapper)) {
+    return nullptr;
+  }
+  App::Get()->EmitWithoutEvent("session-created", wrapper);
+
+  return session;
 }
 
 // static
-gin::Handle<Session> Session::FromPartition(v8::Isolate* isolate,
-                                            const std::string& partition,
-                                            base::Value::Dict options) {
+Session* Session::FromPartition(v8::Isolate* isolate,
+                                const std::string& partition,
+                                base::Value::Dict options) {
   ElectronBrowserContext* browser_context;
   if (partition.empty()) {
     browser_context =
@@ -1704,34 +1734,30 @@ gin::Handle<Session> Session::FromPartition(v8::Isolate* isolate,
 }
 
 // static
-std::optional<gin::Handle<Session>> Session::FromPath(
-    v8::Isolate* isolate,
-    const base::FilePath& path,
-    base::Value::Dict options) {
+Session* Session::FromPath(gin::Arguments* args,
+                           const base::FilePath& path,
+                           base::Value::Dict options) {
   ElectronBrowserContext* browser_context;
 
   if (path.empty()) {
-    gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
-    promise.RejectWithErrorMessage("An empty path was specified");
-    return std::nullopt;
+    args->ThrowTypeError("An empty path was specified");
+    return nullptr;
   }
   if (!path.IsAbsolute()) {
-    gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
-    promise.RejectWithErrorMessage("An absolute path was not provided");
-    return std::nullopt;
+    args->ThrowTypeError("An absolute path was not provided");
+    return nullptr;
   }
 
   browser_context =
       ElectronBrowserContext::FromPath(std::move(path), std::move(options));
 
-  return CreateFrom(isolate, browser_context);
+  return CreateFrom(args->isolate(), browser_context);
 }
 
 // static
-gin::Handle<Session> Session::New() {
+void Session::New() {
   gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
       .ThrowError("Session objects cannot be created with 'new'");
-  return {};
 }
 
 void Session::FillObjectTemplate(v8::Isolate* isolate,
@@ -1817,12 +1843,31 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
       .Build();
 }
 
-const char* Session::GetTypeName() {
-  return GetClassName();
+void Session::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<Session>::Trace(visitor);
+  visitor->Trace(cookies_);
+  visitor->Trace(extensions_);
+  visitor->Trace(protocol_);
+  visitor->Trace(net_log_);
+  visitor->Trace(service_worker_context_);
+  visitor->Trace(web_request_);
+  visitor->Trace(weak_factory_);
 }
 
-void Session::WillBeDestroyed() {
-  ClearWeak();
+const gin::WrapperInfo* Session::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* Session::GetHumanReadableName() const {
+  return "Electron / Session";
+}
+
+void Session::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
+  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
+  data->RemoveDisposeObserver(this);
+  Dispose();
+  weak_factory_.Invalidate();
+  keep_alive_.Clear();
 }
 
 }  // namespace electron::api
@@ -1839,8 +1884,18 @@ v8::Local<v8::Value> FromPartition(const std::string& partition,
   }
   base::Value::Dict options;
   args->GetNext(&options);
-  return Session::FromPartition(args->isolate(), partition, std::move(options))
-      .ToV8();
+  Session* session =
+      Session::FromPartition(args->isolate(), partition, std::move(options));
+
+  if (session) {
+    v8::Local<v8::Object> wrapper;
+    if (!session->GetWrapper(args->isolate()).ToLocal(&wrapper)) {
+      return v8::Null(args->isolate());
+    }
+    return wrapper;
+  } else {
+    return v8::Null(args->isolate());
+  }
 }
 
 v8::Local<v8::Value> FromPath(const base::FilePath& path,
@@ -1851,22 +1906,27 @@ v8::Local<v8::Value> FromPath(const base::FilePath& path,
   }
   base::Value::Dict options;
   args->GetNext(&options);
-  std::optional<gin::Handle<Session>> session_handle =
-      Session::FromPath(args->isolate(), path, std::move(options));
+  Session* session = Session::FromPath(args, path, std::move(options));
 
-  if (session_handle)
-    return session_handle.value().ToV8();
-  else
+  if (session) {
+    v8::Local<v8::Object> wrapper;
+    if (!session->GetWrapper(args->isolate()).ToLocal(&wrapper)) {
+      return v8::Null(args->isolate());
+    }
+    return wrapper;
+  } else {
     return v8::Null(args->isolate());
+  }
 }
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("Session", Session::GetConstructor(context));
+  dict.Set("Session",
+           Session::GetConstructor(isolate, context, &Session::kWrapperInfo));
   dict.SetMethod("fromPartition", &FromPartition);
   dict.SetMethod("fromPath", &FromPath);
 }

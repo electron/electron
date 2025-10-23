@@ -9,10 +9,11 @@
 #include <string>
 
 #include "base/memory/raw_ptr.h"
+#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/common/gin_helper/constructible.h"
-#include "shell/common/gin_helper/pinnable.h"
+#include "shell/common/gin_helper/self_keep_alive.h"
 #include "ui/base/mojom/menu_source_type.mojom-forward.h"
 
 namespace gin {
@@ -27,18 +28,27 @@ class WebFrameMain;
 class Menu : public gin::Wrappable<Menu>,
              public gin_helper::EventEmitterMixin<Menu>,
              public gin_helper::Constructible<Menu>,
-             public gin_helper::Pinnable<Menu>,
              public ElectronMenuModel::Delegate,
              private ElectronMenuModel::Observer {
  public:
-  // gin_helper::Constructible
-  static gin::Handle<Menu> New(gin::Arguments* args);
-  static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
-  static const char* GetClassName() { return "Menu"; }
+  static Menu* New(gin::Arguments* args);
+
+  // Make public for cppgc::MakeGarbageCollected.
+  explicit Menu(gin::Arguments* args);
+  ~Menu() override;
+
+  // disable copy
+  Menu(const Menu&) = delete;
+  Menu& operator=(const Menu&) = delete;
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
-  const char* GetTypeName() override;
+  static const gin::WrapperInfo kWrapperInfo;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
+
+  // gin_helper::Constructible
+  static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
+  static const char* GetClassName() { return "Menu"; }
 
 #if BUILDFLAG(IS_MAC)
   // Set the global menubar.
@@ -50,14 +60,7 @@ class Menu : public gin::Wrappable<Menu>,
 
   ElectronMenuModel* model() const { return model_.get(); }
 
-  // disable copy
-  Menu(const Menu&) = delete;
-  Menu& operator=(const Menu&) = delete;
-
  protected:
-  explicit Menu(gin::Arguments* args);
-  ~Menu() override;
-
   // Returns a new callback which keeps references of the JS wrapper until the
   // passed |callback| is called.
   base::OnceClosure BindSelfToClosure(base::OnceClosure callback);
@@ -128,6 +131,8 @@ class Menu : public gin::Wrappable<Menu>,
   bool IsEnabledAt(int index) const;
   bool IsVisibleAt(int index) const;
   bool WorksWhenHiddenAt(int index) const;
+
+  gin_helper::SelfKeepAlive<Menu> keep_alive_{this};
 };
 
 }  // namespace electron::api

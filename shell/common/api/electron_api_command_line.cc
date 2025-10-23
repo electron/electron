@@ -29,7 +29,7 @@ base::CommandLine::StringType GetSwitchValue(gin_helper::ErrorThrower thrower,
 }
 
 void AppendSwitch(const std::string& switch_string,
-                  gin_helper::Arguments* args) {
+                  gin::Arguments* const args) {
   auto switch_str = base::ToLowerASCII(switch_string);
   auto* command_line = base::CommandLine::ForCurrentProcess();
   if (base::EndsWith(switch_string, "-path",
@@ -64,7 +64,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  gin_helper::Dictionary dict(context->GetIsolate(), exports);
+  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("hasSwitch", &HasSwitch);
   dict.SetMethod("getSwitchValue", &GetSwitchValue);
   dict.SetMethod("appendSwitch", &AppendSwitch);

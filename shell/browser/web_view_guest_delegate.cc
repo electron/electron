@@ -29,14 +29,15 @@ WebViewGuestDelegate::~WebViewGuestDelegate() {
 
 void WebViewGuestDelegate::AttachToIframe(
     content::WebContents* embedder_web_contents,
-    int embedder_frame_id) {
+    blink::LocalFrameToken& embedder_frame_token) {
   embedder_web_contents_ = embedder_web_contents;
 
   int embedder_process_id = embedder_web_contents_->GetPrimaryMainFrame()
                                 ->GetProcess()
                                 ->GetDeprecatedID();
-  auto* embedder_frame =
-      content::RenderFrameHost::FromID(embedder_process_id, embedder_frame_id);
+  auto* embedder_frame = content::RenderFrameHost::FromFrameToken(
+      content::GlobalRenderFrameHostToken(embedder_process_id,
+                                          embedder_frame_token));
   DCHECK_EQ(embedder_web_contents_,
             content::WebContents::FromRenderFrameHost(embedder_frame));
 

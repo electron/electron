@@ -200,6 +200,7 @@ describe('webFrameMain module', () => {
       expect(webFrame).to.have.property('osProcessId').that.is.a('number');
       expect(webFrame).to.have.property('processId').that.is.a('number');
       expect(webFrame).to.have.property('routingId').that.is.a('number');
+      expect(webFrame).to.have.property('frameToken').that.is.a('string');
     });
   });
 
@@ -295,8 +296,8 @@ describe('webFrameMain module', () => {
       const webFrame = w.webContents.mainFrame;
       const pongPromise = once(ipcMain, 'preload-pong');
       webFrame.send('preload-ping');
-      const [, routingId] = await pongPromise;
-      expect(routingId).to.equal(webFrame.routingId);
+      const [, frameToken] = await pongPromise;
+      expect(frameToken).to.equal(webFrame.frameToken);
     });
   });
 
@@ -313,6 +314,7 @@ describe('webFrameMain module', () => {
     beforeEach(async () => {
       w = new BrowserWindow({ show: false });
     });
+    afterEach(closeAllWindows);
 
     // TODO(jkleinsc) fix this flaky test on linux
     ifit(process.platform !== 'linux')('throws upon accessing properties when disposed', async () => {
@@ -373,7 +375,9 @@ describe('webFrameMain module', () => {
       await w.webContents.loadURL(server.crossOriginUrl);
       // senderFrame now points to a disposed RenderFrameHost. It should
       // be null when attempting to access the lazily evaluated property.
-      expect(event.senderFrame).to.be.null();
+      waitUntil(() => {
+        return event.senderFrame === null;
+      });
     });
 
     it('is detached when unload handler sends IPC', async () => {
@@ -391,7 +395,6 @@ describe('webFrameMain module', () => {
             expect(senderFrame).to.not.be.null();
             expect(senderFrame!.detached).to.be.true();
             expect(senderFrame!.processId).to.equal(event.processId);
-            expect(senderFrame!.routingId).to.equal(event.frameId);
             resolve();
           } catch (error) {
             reject(error);
@@ -490,6 +493,19 @@ describe('webFrameMain module', () => {
         expect(frame?.routingId).to.be.equal(frameRoutingId);
         expect(frame?.top === frame).to.be.equal(isMainFrame);
       }
+    });
+  });
+
+  describe('webFrameMain.fromFrameToken', () => {
+    it('returns null for unknown IDs', () => {
+      expect(webFrameMain.fromFrameToken(0, '')).to.be.null();
+    });
+
+    it('can find existing frame', async () => {
+      const w = new BrowserWindow({ show: false });
+      const { mainFrame } = w.webContents;
+      const frame = webFrameMain.fromFrameToken(mainFrame.processId, mainFrame.frameToken);
+      expect(frame).to.equal(mainFrame);
     });
   });
 

@@ -939,14 +939,18 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
     * `top-level-storage-access` -  Allow top-level sites to request third-party cookie access on behalf of embedded content originating from another site in the same related website set using the [Storage Access API](https://developer.mozilla.org/en-US/docs/Web/API/Storage_Access_API).
     * `usb` - Expose non-standard Universal Serial Bus (USB) compatible devices services to the web with the [WebUSB API](https://developer.mozilla.org/en-US/docs/Web/API/WebUSB_API).
     * `deprecated-sync-clipboard-read` _Deprecated_ - Request access to run `document.execCommand("paste")`
+    * `fileSystem` - Access to read, write, and file management capabilities using the [File System API](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API).
   * `requestingOrigin` string - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
     * `embeddingOrigin` string (optional) - The origin of the frame embedding the frame that made the permission check.  Only set for cross-origin sub frames making permission checks.
     * `securityOrigin` string (optional) - The security origin of the `media` check.
     * `mediaType` string (optional) - The type of media access being requested, can be `video`,
-      `audio` or `unknown`
+      `audio` or `unknown`.
     * `requestingUrl` string (optional) - The last URL the requesting frame loaded.  This is not provided for cross-origin sub frames making permission checks.
-    * `isMainFrame` boolean - Whether the frame making the request is the main frame
+    * `isMainFrame` boolean - Whether the frame making the request is the main frame.
+    * `filePath` string (optional) - The path of a `fileSystem` request.
+    * `isDirectory` boolean (optional) - Whether a `fileSystem` request is a directory.
+    * `fileAccessType` string (optional) - The access type of a `fileSystem` request. Can be `writable` or `readable`.
 
 Sets the handler which can be used to respond to permission checks for the `session`.
 Returning `true` will allow the permission and `false` will reject it.  Please note that
@@ -967,6 +971,9 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
   return false // denied
 })
 ```
+
+> [!NOTE]
+> `isMainFrame` will always be `false` for a `fileSystem` request as a result of Chromium limitations.
 
 #### `ses.setDisplayMediaRequestHandler(handler[, opts])`
 

@@ -16,8 +16,8 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/bind_post_task.h"
 #include "gin/arguments.h"
-#include "gin/handle.h"
 #include "shell/common/gin_converters/image_converter.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/mac_util.h"
 #include "ui/gfx/color_utils.h"
@@ -103,8 +103,9 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   return handle;
 }
 
-gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
-                                                           std::string name) {
+gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
+    gin::Arguments* args,
+    std::string name) {
   @autoreleasepool {
     std::vector<double> hsl_shift;
 

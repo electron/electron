@@ -183,6 +183,9 @@ inline constexpr std::string_view kOffscreen = "offscreen";
 
 inline constexpr std::string_view kUseSharedTexture = "useSharedTexture";
 
+inline constexpr std::string_view kSharedTexturePixelFormat =
+    "sharedTexturePixelFormat";
+
 inline constexpr std::string_view kNodeIntegrationInSubFrames =
     "nodeIntegrationInSubFrames";
 
@@ -219,9 +222,6 @@ inline constexpr std::string_view kSpellcheck = "spellcheck";
 inline constexpr std::string_view kEnableDeprecatedPaste =
     "enableDeprecatedPaste";
 
-// Whether the -electron-corner-smoothing CSS rule is enabled.
-inline constexpr std::string_view kEnableCornerSmoothingCSS =
-    "enableCornerSmoothingCSS";
 }  // namespace options
 
 // Following are actually command line switches, should be moved to other files.
@@ -308,6 +308,10 @@ inline constexpr base::cstring_view kDisableNTLMv2 = "disable-ntlm-v2";
 // Indicates that preloads for service workers are registered.
 inline constexpr base::cstring_view kServiceWorkerPreload =
     "service-worker-preload";
+
+// If set, flag node::ProcessInitializationFlags::kNoStdioInitialization would
+// be set for node initialization.
+inline constexpr base::cstring_view kNoStdioInit = "no-stdio-init";
 
 }  // namespace switches
 

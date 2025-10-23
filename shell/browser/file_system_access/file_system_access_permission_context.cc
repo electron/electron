@@ -257,6 +257,28 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
   // FileSystemAccessPermissionGrant:
   PermissionStatus GetStatus() override {
     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+
+    auto* permission_manager =
+        static_cast<electron::ElectronPermissionManager*>(
+            context_->browser_context()->GetPermissionControllerDelegate());
+    if (permission_manager && permission_manager->HasPermissionCheckHandler()) {
+      base::Value::Dict details;
+      details.Set("filePath", base::FilePathToValue(path_info_.path));
+      details.Set("isDirectory", handle_type_ == HandleType::kDirectory);
+      details.Set("fileAccessType",
+                  type_ == GrantType::kWrite ? "writable" : "readable");
+
+      bool granted = permission_manager->CheckPermissionWithDetails(
+          blink::PermissionType::FILE_SYSTEM, nullptr, origin_.GetURL(),
+          std::move(details));
+      return granted ? PermissionStatus::GRANTED : PermissionStatus::DENIED;
+    }
+
+    return status_;
+  }
+
+  PermissionStatus GetActivePermissionStatus() {
+    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
     return status_;
   }
 
@@ -279,8 +301,8 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
     // Check if a permission request has already been processed previously. This
     // check is done first because we don't want to reset the status of a
     // permission if it has already been granted.
-    if (GetStatus() != PermissionStatus::ASK || !context_) {
-      if (GetStatus() == PermissionStatus::GRANTED) {
+    if (GetActivePermissionStatus() != PermissionStatus::ASK || !context_) {
+      if (GetActivePermissionStatus() == PermissionStatus::GRANTED) {
         SetStatus(PermissionStatus::GRANTED);
       }
       std::move(callback).Run(PermissionRequestOutcome::kRequestAborted);
@@ -294,7 +316,7 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
       return;
     }
 
-    // Don't request permission  for an inactive RenderFrameHost as the
+    // Don't request permission for an inactive RenderFrameHost as the
     // page might not distinguish properly between user denying the permission
     // and automatic rejection.
     if (rfh->IsInactiveAndDisallowActivation(
@@ -347,7 +369,7 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
     permission_manager->RequestPermissionWithDetails(
         content::PermissionDescriptorUtil::
             CreatePermissionDescriptorForPermissionType(type),
-        rfh, origin, false, std::move(details),
+        rfh, origin, rfh->HasTransientUserActivation(), std::move(details),
         base::BindOnce(&PermissionGrantImpl::OnPermissionRequestResult, this,
                        std::move(callback)));
   }
@@ -394,7 +416,8 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
       return;
     }
 
-    DCHECK_EQ(entry_it->second->GetStatus(), PermissionStatus::GRANTED);
+    DCHECK_EQ(entry_it->second->GetActivePermissionStatus(),
+              PermissionStatus::GRANTED);
 
     auto* const grant_impl = entry_it->second;
     grant_impl->SetPath(new_path);
@@ -415,10 +438,10 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
  private:
   void OnPermissionRequestResult(
       base::OnceCallback<void(PermissionRequestOutcome)> callback,
-      blink::mojom::PermissionStatus status) {
+      content::PermissionResult result) {
     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
-    if (status == blink::mojom::PermissionStatus::GRANTED) {
+    if (result.status == blink::mojom::PermissionStatus::GRANTED) {
       SetStatus(PermissionStatus::GRANTED);
       std::move(callback).Run(PermissionRequestOutcome::kUserGranted);
     } else {
@@ -732,21 +755,23 @@ void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
   }
 
   if (should_block) {
-    auto* session =
+    gin::WeakCell<api::Session>* session =
         electron::api::Session::FromBrowserContext(browser_context());
-    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    v8::HandleScope scope(isolate);
-    v8::Local<v8::Object> details =
-        gin::DataObjectBuilder(isolate)
-            .Set("origin", origin.GetURL().spec())
-            .Set("isDirectory", handle_type == HandleType::kDirectory)
-            .Set("path", path_info.path)
-            .Build();
-    session->Emit(
-        "file-system-access-restricted", details,
-        base::BindRepeating(
-            &FileSystemAccessPermissionContext::OnRestrictedPathResult,
-            weak_factory_.GetWeakPtr(), path_info.path));
+    if (session && session->Get()) {
+      v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+      v8::HandleScope scope(isolate);
+      v8::Local<v8::Object> details =
+          gin::DataObjectBuilder(isolate)
+              .Set("origin", origin.GetURL().spec())
+              .Set("isDirectory", handle_type == HandleType::kDirectory)
+              .Set("path", path_info.path)
+              .Build();
+      session->Get()->Emit(
+          "file-system-access-restricted", details,
+          base::BindRepeating(
+              &FileSystemAccessPermissionContext::OnRestrictedPathResult,
+              weak_factory_.GetWeakPtr(), path_info.path));
+    }
     return;
   }
 
@@ -884,7 +909,8 @@ std::u16string FileSystemAccessPermissionContext::GetPickerTitle(
         kDirectoryPickerOptions:
       title = l10n_util::GetStringUTF16(
           options->type_specific_options->get_directory_picker_options()
-                  ->request_writable
+                      ->permission_mode ==
+                  blink::mojom::FileSystemAccessPermissionMode::kReadWrite
               ? IDS_FILE_SYSTEM_ACCESS_CHOOSER_OPEN_WRITABLE_DIRECTORY_TITLE
               : IDS_FILE_SYSTEM_ACCESS_CHOOSER_OPEN_READABLE_DIRECTORY_TITLE);
       break;
@@ -912,6 +938,14 @@ void FileSystemAccessPermissionContext::NotifyEntryMoved(
                                          new_path);
   }
 }
+
+void FileSystemAccessPermissionContext::NotifyEntryModified(
+    const url::Origin& origin,
+    const content::PathInfo& path) {}
+
+void FileSystemAccessPermissionContext::NotifyEntryRemoved(
+    const url::Origin& origin,
+    const content::PathInfo& path) {}
 
 void FileSystemAccessPermissionContext::OnFileCreatedFromShowSaveFilePicker(
     const GURL& file_picker_binding_context,
@@ -962,7 +996,8 @@ bool FileSystemAccessPermissionContext::OriginHasReadAccess(
   auto it = active_permissions_map_.find(origin);
   if (it != active_permissions_map_.end()) {
     return std::ranges::any_of(it->second.read_grants, [&](const auto& grant) {
-      return grant.second->GetStatus() == PermissionStatus::GRANTED;
+      return grant.second->GetActivePermissionStatus() ==
+             PermissionStatus::GRANTED;
     });
   }
 
@@ -976,7 +1011,8 @@ bool FileSystemAccessPermissionContext::OriginHasWriteAccess(
   auto it = active_permissions_map_.find(origin);
   if (it != active_permissions_map_.end()) {
     return std::ranges::any_of(it->second.write_grants, [&](const auto& grant) {
-      return grant.second->GetStatus() == PermissionStatus::GRANTED;
+      return grant.second->GetActivePermissionStatus() ==
+             PermissionStatus::GRANTED;
     });
   }
 
@@ -1030,7 +1066,7 @@ bool FileSystemAccessPermissionContext::AncestorHasActivePermission(
        parent = parent.DirName()) {
     auto i = relevant_grants.find(parent);
     if (i != relevant_grants.end() && i->second &&
-        i->second->GetStatus() == PermissionStatus::GRANTED) {
+        i->second->GetActivePermissionStatus() == PermissionStatus::GRANTED) {
       return true;
     }
   }
@@ -1053,7 +1089,7 @@ void FileSystemAccessPermissionContext::PermissionGrantDestroyed(
   // be granted but won't be visible in any UI because the permission context
   // isn't tracking them anymore.
   if (grant_it == grants.end()) {
-    DCHECK_EQ(PermissionStatus::DENIED, grant->GetStatus());
+    DCHECK_EQ(PermissionStatus::DENIED, grant->GetActivePermissionStatus());
     return;
   }
 

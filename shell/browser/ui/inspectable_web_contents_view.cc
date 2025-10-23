@@ -10,6 +10,7 @@
 
 #include "base/memory/raw_ptr.h"
 #include "base/strings/utf_string_conversions.h"
+#include "content/public/browser/web_contents.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
@@ -220,11 +221,11 @@ void InspectableWebContentsView::Layout(PassKey) {
     return;
   }
 
-  gfx::Size container_size(width(), height());
+  gfx::Rect container_bounds(width(), height());
   gfx::Rect new_devtools_bounds;
   gfx::Rect new_contents_bounds;
   ApplyDevToolsContentsResizingStrategy(
-      strategy_, container_size, &new_devtools_bounds, &new_contents_bounds);
+      strategy_, container_bounds, &new_devtools_bounds, &new_contents_bounds);
 
   // DevTools cares about the specific position, so we have to compensate RTL
   // layout here.

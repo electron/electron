@@ -6,10 +6,10 @@ Subject: refactor: patch electron PermissionTypes into blink
 6387077: [PermissionOptions] Generalize PermissionRequestDescription | https://chromium-review.googlesource.com/c/chromium/src/+/6387077
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index fee80a0e6036b3b73110ec495ac5546beca0585a..3a079619f770c628e882c7e5b587171e043cfd72 100644
+index 86b8df2b23dc975a6db87f04005cb105054305b0..770fd74ac5a21fe6daf68efe68efcf5a69483d84 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -519,7 +519,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -536,7 +536,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::WEB_APP_INSTALLATION;
      case PermissionType::LOCAL_NETWORK_ACCESS:
        return ContentSettingsType::LOCAL_NETWORK_ACCESS;
@@ -28,10 +28,10 @@ index fee80a0e6036b3b73110ec495ac5546beca0585a..3a079619f770c628e882c7e5b587171e
        break;
    }
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index b9590ecbb95da6858eac104fbf69df056ccbf449..61cdfa6549c539ec73437d221ffdd82fbef39e23 100644
+index 87dc1b64e3cedf6d59d8ab2dc811bf8300193bdc..9041414efe3e20edeb170117b1ad396e32508aae 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
-@@ -87,7 +87,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+@@ -94,7 +94,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
      case PermissionType::AUTOMATIC_FULLSCREEN:
      case PermissionType::WEB_APP_INSTALLATION:
      case PermissionType::LOCAL_NETWORK_ACCESS:
@@ -164,7 +164,7 @@ index c286d87043ec4cb2e51ec9d82d08e4c84f5a270c..164a2a446947dae687922363d324a6d3
    // Always keep this at the end.
    NUM,
 diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
-index 47c73522cbd7c1d12dabfecf6f55a74690ebc189..6b8ed935e8c440cbf655d122a398d33e3e4ad89b 100644
+index 549f9079c004ce8427ab2be0dba2e5b24471a8c9..e7276b12b22035730fda18103dad604e87fff4a9 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
 @@ -44,7 +44,15 @@ enum PermissionName {

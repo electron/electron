@@ -1260,6 +1260,47 @@ Sets the properties for the window's taskbar button.
 > `relaunchCommand` and `relaunchDisplayName` must always be set
 > together. If one of those properties is not set, then neither will be used.
 
+#### `win.setAccentColor(accentColor)` _Windows_
+
+* `accentColor` boolean | string | null - The accent color for the window. By default, follows user preference in System Settings. To reset to system default, pass `null`.
+
+Sets the system accent color and highlighting of active window border.
+
+The `accentColor` parameter accepts the following values:
+
+* **Color string** - Like `true`, but sets a custom accent color using standard CSS color formats (Hex, RGB, RGBA, HSL, HSLA, or named colors). Alpha values in RGBA/HSLA formats are ignored and the color is treated as fully opaque.
+* **`true`** - Enable accent color highlighting for the window with the system accent color regardless of whether accent colors are enabled for windows in System `Settings.`
+* **`false`** - Disable accent color highlighting for the window regardless of whether accent colors are currently enabled for windows in System Settings.
+* **`null`** - Reset window accent color behavior to follow behavior set in System Settings.
+
+Examples:
+
+```js
+const win = new BrowserWindow({ frame: false })
+
+// Set red accent color.
+win.setAccentColor('#ff0000')
+
+// RGB format (alpha ignored if present).
+win.setAccentColor('rgba(255,0,0,0.5)')
+
+// Enable accent color, using the color specified in System Settings.
+win.setAccentColor(true)
+
+// Disable accent color.
+win.setAccentColor(false)
+
+// Reset window accent color behavior to follow behavior set in System Settings.
+win.setAccentColor(null)
+```
+
+#### `win.getAccentColor()` _Windows_
+
+Returns `string | boolean` - the system accent color and highlighting of active window border in Hex RGB format.
+
+If a color has been set for the window that differs from the system accent color, the window accent color will
+be returned. Otherwise, a boolean will be returned, with `true` indicating that the window uses the global system accent color, and `false` indicating that accent color highlighting is disabled for this window.
+
 #### `win.setIcon(icon)` _Windows_ _Linux_
 
 * `icon` [NativeImage](native-image.md) | string

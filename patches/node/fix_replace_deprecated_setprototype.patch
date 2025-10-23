@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Maddock <smaddock@slack-corp.com>
+Date: Mon, 6 Oct 2025 16:34:43 -0400
+Subject: fix: replace deprecated Get/SetPrototype
+
+https://chromium-review.googlesource.com/c/v8/v8/+/6983465
+
+This is already applied in newer versions of Node so we can drop
+this patch once we upgrade to v23.
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index 0a358735c331767e8eb563a80e9aaccfb544c27b..d7d18d5fcbf008ac131db189a141315af4f6410b 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -835,7 +835,7 @@ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
+ 
+   Local<Object> private_symbols_object;
+   if (!private_symbols->NewInstance(context).ToLocal(&private_symbols_object) ||
+-      private_symbols_object->SetPrototype(context, Null(isolate))
++      private_symbols_object->SetPrototypeV2(context, Null(isolate))
+           .IsNothing()) {
+     return MaybeLocal<Object>();
+   }
+@@ -861,7 +861,7 @@ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
+   Local<Object> per_isolate_symbols_object;
+   if (!per_isolate_symbols->NewInstance(context).ToLocal(
+           &per_isolate_symbols_object) ||
+-      per_isolate_symbols_object->SetPrototype(context, Null(isolate))
++      per_isolate_symbols_object->SetPrototypeV2(context, Null(isolate))
+           .IsNothing()) {
+     return MaybeLocal<Object>();
+   }
+diff --git a/src/node_constants.cc b/src/node_constants.cc
+index 2f23cc63f148a792f1302e1d2d88822730abaa33..42678e5d11e5ff9543bf12ec02fee7d3263d7629 100644
+--- a/src/node_constants.cc
++++ b/src/node_constants.cc
+@@ -1307,7 +1307,7 @@ void CreatePerContextProperties(Local<Object> target,
+             .FromJust());
+ 
+   Local<Object> internal_constants = Object::New(isolate);
+-  CHECK(internal_constants->SetPrototype(env->context(),
++  CHECK(internal_constants->SetPrototypeV2(env->context(),
+                                          Null(env->isolate())).FromJust());
+ 
+   DefineErrnoConstants(err_constants);
+diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
+index 96101167016573e80fff520256ebb78c71d83302..a76a68e50d81bddd80c02fa8263b788c098c887d 100644
+--- a/src/node_sqlite.cc
++++ b/src/node_sqlite.cc
+@@ -2106,9 +2106,9 @@ void StatementSync::Iterate(const FunctionCallbackInfo<Value>& args) {
+       StatementSyncIterator::Create(env, BaseObjectPtr<StatementSync>(stmt));
+ 
+   if (iter->object()
+-          ->GetPrototype()
++          ->GetPrototypeV2()
+           .As<Object>()
+-          ->SetPrototype(context, js_iterator_prototype)
++          ->SetPrototypeV2(context, js_iterator_prototype)
+           .IsNothing()) {
+     return;
+   }

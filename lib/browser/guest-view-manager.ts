@@ -80,7 +80,7 @@ function makeLoadURLOptions (params: Record<string, any>) {
 }
 
 // Create a new guest instance.
-const createGuest = function (embedder: Electron.WebContents, embedderFrameId: number, elementInstanceId: number, params: Record<string, any>) {
+const createGuest = function (embedder: Electron.WebContents, embedderFrameToken: string, elementInstanceId: number, params: Record<string, any>) {
   const webPreferences = makeWebPreferences(embedder, params);
   const event = {
     sender: embedder,
@@ -198,7 +198,7 @@ const createGuest = function (embedder: Electron.WebContents, embedderFrameId: n
   watchEmbedder(embedder);
 
   webViewManager.addGuest(guestInstanceId, embedder, guest, webPreferences);
-  guest.attachToIframe(embedder, embedderFrameId);
+  guest.attachToIframe(embedder, embedderFrameToken);
 
   return guestInstanceId;
 };
@@ -286,8 +286,8 @@ const handleMessageSync = function (channel: string, handler: (event: { sender: 
   ipcMainUtils.handleSync(channel, makeSafeHandler(channel, handler));
 };
 
-handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_CREATE_AND_ATTACH_GUEST, function (event, embedderFrameId: number, elementInstanceId: number, params) {
-  return createGuest(event.sender, embedderFrameId, elementInstanceId, params);
+handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_CREATE_AND_ATTACH_GUEST, function (event, embedderFrameToken: string, elementInstanceId: number, params) {
+  return createGuest(event.sender, embedderFrameToken, elementInstanceId, params);
 });
 
 handleMessageSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_DETACH_GUEST, function (event, guestInstanceId: number) {

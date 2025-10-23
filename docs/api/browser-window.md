@@ -1440,6 +1440,47 @@ Sets the properties for the window's taskbar button.
 > `relaunchCommand` and `relaunchDisplayName` must always be set
 > together. If one of those properties is not set, then neither will be used.
 
+#### `win.setAccentColor(accentColor)` _Windows_
+
+* `accentColor` boolean | string | null - The accent color for the window. By default, follows user preference in System Settings. To reset to system default, pass `null`.
+
+Sets the system accent color and highlighting of active window border.
+
+The `accentColor` parameter accepts the following values:
+
+* **Color string** - Like `true`, but sets a custom accent color using standard CSS color formats (Hex, RGB, RGBA, HSL, HSLA, or named colors). Alpha values in RGBA/HSLA formats are ignored and the color is treated as fully opaque.
+* **`true`** - Enable accent color highlighting for the window with the system accent color regardless of whether accent colors are enabled for windows in System `Settings.`
+* **`false`** - Disable accent color highlighting for the window regardless of whether accent colors are currently enabled for windows in System Settings.
+* **`null`** - Reset window accent color behavior to follow behavior set in System Settings.
+
+Examples:
+
+```js
+const win = new BrowserWindow({ frame: false })
+
+// Set red accent color.
+win.setAccentColor('#ff0000')
+
+// RGB format (alpha ignored if present).
+win.setAccentColor('rgba(255,0,0,0.5)')
+
+// Enable accent color, using the color specified in System Settings.
+win.setAccentColor(true)
+
+// Disable accent color.
+win.setAccentColor(false)
+
+// Reset window accent color behavior to follow behavior set in System Settings.
+win.setAccentColor(null)
+```
+
+#### `win.getAccentColor()` _Windows_
+
+Returns `string | boolean` - the system accent color and highlighting of active window border in Hex RGB format.
+
+If a color has been set for the window that differs from the system accent color, the window accent color will
+be returned. Otherwise, a boolean will be returned, with `true` indicating that the window uses the global system accent color, and `false` indicating that accent color highlighting is disabled for this window.
+
 #### `win.showDefinitionForSelection()` _macOS_
 
 Same as `webContents.showDefinitionForSelection()`.
@@ -1533,10 +1574,17 @@ events.
 
 Prevents the window contents from being captured by other apps.
 
-On macOS it sets the NSWindow's sharingType to NSWindowSharingNone.
-On Windows it calls SetWindowDisplayAffinity with `WDA_EXCLUDEFROMCAPTURE`.
+On Windows, it calls [`SetWindowDisplayAffinity`](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity) with `WDA_EXCLUDEFROMCAPTURE`.
 For Windows 10 version 2004 and up the window will be removed from capture entirely,
 older Windows versions behave as if `WDA_MONITOR` is applied capturing a black window.
+
+On macOS, it sets the `NSWindow`'s
+[`sharingType`](https://developer.apple.com/documentation/appkit/nswindow/sharingtype-swift.property?language=objc)
+to
+[`NSWindowSharingNone`](https://developer.apple.com/documentation/appkit/nswindow/sharingtype-swift.enum/none?language=objc).
+Unfortunately, due to an intentional change in macOS, newer Mac applications that use
+`ScreenCaptureKit` will capture your window despite `win.setContentProtection(true)`.
+See [here](https://github.com/electron/electron/issues/48258#issuecomment-3269893618).
 
 #### `win.isContentProtected()` _macOS_ _Windows_
 

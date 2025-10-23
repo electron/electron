@@ -121,7 +121,7 @@ declare namespace Electron {
     canGoToIndex(index: number): boolean;
     destroy(): void;
     // <webview>
-    attachToIframe(embedderWebContents: Electron.WebContents, embedderFrameId: number): void;
+    attachToIframe(embedderWebContents: Electron.WebContents, embedderFrameToken: string): void;
     detachFromOuterFrame(): void;
     setEmbedder(embedder: Electron.WebContents): void;
     viewInstanceId: number;

@@ -7,6 +7,7 @@
 #include "components/os_crypt/sync/os_crypt.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_process_impl.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/base_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -131,7 +132,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.SetMethod("decryptString", &DecryptString);
   dict.SetMethod("encryptString", &EncryptString);
