@@ -1369,7 +1369,6 @@ libcxx_headers = [
   "//third_party/libc++/src/include/__tuple/sfinae_helpers.h",
   "//third_party/libc++/src/include/__tuple/tuple_element.h",
   "//third_party/libc++/src/include/__tuple/tuple_like.h",
-  "//third_party/libc++/src/include/__tuple/tuple_like_ext.h",
   "//third_party/libc++/src/include/__tuple/tuple_like_no_subrange.h",
   "//third_party/libc++/src/include/__tuple/tuple_size.h",
   "//third_party/libc++/src/include/__tuple/tuple_types.h",
