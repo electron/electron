@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Muthukumar <mk@verveflux.com>
+Date: Thu, 23 Oct 2025 17:19:08 +0530
+Subject: feat: add automatic sandbox permissions for iframe preload scripts
+
+This patch automatically adds 'allow-scripts' and 'allow-same-origin' to
+sandboxed iframes to enable Electron's preload script functionality.
+
+Electron allows developers to inject preload scripts into iframes for
+secure context bridging. However, sandboxed iframes by default block
+script execution. This patch ensures that when an iframe has a sandbox
+attribute, it automatically includes the necessary permissions for
+preload scripts to execute while maintaining other sandbox restrictions.
+
+This is Electron-specific functionality that cannot be upstreamed to
+Chromium as it modifies core security behavior for a use case specific
+to Electron's architecture. The patch should remain until Electron's
+preload architecture is redesigned to work without modifying sandbox
+attributes, or until an alternative approach is implemented.
+
+diff --git a/third_party/blink/renderer/core/html/html_iframe_element.cc b/third_party/blink/renderer/core/html/html_iframe_element.cc
+index b89071d26a9eef14cb8652cd587de112a2df052f..4fc6eb21ac948aa0630e7e9543efef2eed18c1ed 100644
+--- a/third_party/blink/renderer/core/html/html_iframe_element.cc
++++ b/third_party/blink/renderer/core/html/html_iframe_element.cc
+@@ -205,6 +205,31 @@ void HTMLIFrameElement::ParseAttribute(
+       }
+     }
+   } else if (name == html_names::kSandboxAttr) {
++    // First, modify the attribute value to include allow-scripts and allow-same-origin
++    if (!value.IsNull()) {
++      String modified_value = value.GetString();
++      bool needs_modification = false;
++
++      if (!modified_value.Contains("allow-scripts")) {
++        if (modified_value.empty()) {
++          modified_value = "allow-scripts";
++        } else {
++          modified_value = modified_value + " allow-scripts";
++        }
++        needs_modification = true;
++      }
++      if (!modified_value.Contains("allow-same-origin")) {
++        modified_value = modified_value + " allow-same-origin";
++        needs_modification = true;
++      }
++
++      // Update the attribute value if we modified it
++      if (needs_modification) {
++        setAttribute(html_names::kSandboxAttr, AtomicString(modified_value));
++        return; // setAttribute will trigger ParseAttribute again with the new value
++      }
++    }
++
+     sandbox_->DidUpdateAttributeValue(params.old_value, value);
+ 
+     network::mojom::blink::WebSandboxFlags current_flags =
+@@ -221,6 +246,9 @@ void HTMLIFrameElement::ParseAttribute(
+             StrCat({"Error while parsing the 'sandbox' attribute: ",
+                     String::FromUTF8(parsed.error_message)})));
+       }
++      // The flags should already include allow-scripts and allow-same-origin from our modification above
++      // But as a safety net, we still remove these flags from restrictions
++      current_flags &= ~(WebSandboxFlags::kScripts | WebSandboxFlags::kAutomaticFeatures | WebSandboxFlags::kOrigin);
+     }
+     SetSandboxFlags(current_flags);
+     UseCounter::Count(GetDocument(), WebFeature::kSandboxViaIFrame);
