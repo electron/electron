@@ -51,7 +51,7 @@ index c19313c0b58baf0597a99d52ed7fcdb7faacc934..2748dd196fe1f56357348a204e24f0b8
    base::win::MessageWindow window_;  // The message-only window.
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index e0cfeb40e887545830a3294d865c2df466dda8fe..08cbe32a258bf478f1da0a07064d3e9ef14c44a5 100644
+index 9d7be37f1d1fbde55773b4005878d8ff03cac22a..08cbe32a258bf478f1da0a07064d3e9ef14c44a5 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -59,6 +59,7 @@
@@ -133,7 +133,7 @@ index e0cfeb40e887545830a3294d865c2df466dda8fe..08cbe32a258bf478f1da0a07064d3e9e
    // Create the socket file somewhere in /tmp which is usually mounted as a
    // normal filesystem. Some network filesystems (notably AFS) are screwy and
    // do not support Unix domain sockets.
--  if (!socket_dir_.CreateUniqueTempDir()) {
+-  if (!socket_dir_.CreateUniqueTempDir(/*prefix=*/FILE_PATH_LITERAL(""))) {
 -    LOG(ERROR) << "Failed to create socket directory.";
 +  base::FilePath tmp_dir;
 +  if (!base::GetTempDir(&tmp_dir)) {
