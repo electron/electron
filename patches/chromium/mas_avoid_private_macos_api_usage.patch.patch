@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index e6625d8ecf9274c00fe450cc2c7c479914eb0dd6..853cbd806f2fb16ad724767b15b6c6a7f5c4a286 100644
+index c03043d632b1a622d1a15bdd68f09b51132f04a4..fbf07b9b0dda620c5a30c4193eb3342f3e9f11b6 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1069,6 +1069,7 @@ component("base") {
@@ -582,10 +582,10 @@ index e51fd827f7afc01a5189737f86a2414627a6546e..bb50f03ba5622c2bfb96bc75d145f471
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6fcfee8ce0bc2685f7a06d2ee47022cd00025d56..00db1039db13a2fa11be738f80d806a6aa0883ec 100644
+index 9b0fea4c6ff8f43c695c437b5c295fcd41326d40..adf889c805e177d8d09700aa9d7f5ff2306b6826 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -343,6 +343,7 @@ source_set("browser") {
+@@ -344,6 +344,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -797,7 +797,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 9143e3b761afec9420aa39d9f6760297dfb1acad..ab90bd4aff1f8842013708b92982f285ef1ce7a6 100644
+index 90eebe0904107f2fc3463df61b0d7eba7fca7b3a..a6a1614483673b5196986f22da7d9bf3e52536f5 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -703,6 +703,7 @@ static_library("test_support") {
@@ -808,7 +808,7 @@ index 9143e3b761afec9420aa39d9f6760297dfb1acad..ab90bd4aff1f8842013708b92982f285
    ]
  
    data_deps = [
-@@ -1175,6 +1176,8 @@ static_library("browsertest_support") {
+@@ -1178,6 +1179,8 @@ static_library("browsertest_support") {
    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
    # enable the diagnostic by removing this line.
    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -817,7 +817,7 @@ index 9143e3b761afec9420aa39d9f6760297dfb1acad..ab90bd4aff1f8842013708b92982f285
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2065,6 +2068,7 @@ test("content_browsertests") {
+@@ -2067,6 +2070,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -825,7 +825,7 @@ index 9143e3b761afec9420aa39d9f6760297dfb1acad..ab90bd4aff1f8842013708b92982f285
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3402,6 +3406,7 @@ test("content_unittests") {
+@@ -3404,6 +3408,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -950,7 +950,7 @@ index 9388ffac4f70746b04e533b51faf4f2d55ab3358..98f45dc973159b5823d8a0433dfd4bc6
  
    if (is_ios) {
 diff --git a/media/audio/apple/audio_low_latency_input.cc b/media/audio/apple/audio_low_latency_input.cc
-index 6cde211f88439af0925296b0c8c9500aecadc034..08e7053117478ea898264040eea119dcc21ae8e2 100644
+index 50bd341c97daf4cfe585b5e7eb5d26cb747cd8e0..683c53da81e6a1820ccff04d571a43e17b6f0820 100644
 --- a/media/audio/apple/audio_low_latency_input.cc
 +++ b/media/audio/apple/audio_low_latency_input.cc
 @@ -29,6 +29,7 @@
@@ -961,7 +961,7 @@ index 6cde211f88439af0925296b0c8c9500aecadc034..08e7053117478ea898264040eea119dc
  #include "media/audio/apple/audio_manager_apple.h"
  #include "media/audio/apple/scoped_audio_unit.h"
  #include "media/base/audio_bus.h"
-@@ -41,19 +42,23 @@
+@@ -42,19 +43,23 @@
  
  namespace {
  extern "C" {
@@ -1775,10 +1775,10 @@ index 41572ec01d71f56eb8815cf9845e2c4ccefb9964..90c72f19b557d985581c7250187616ee
      deps += [ "//build:ios_buildflags" ]
    }
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index 7f08f6e5870b021e578fe29f42fd6476ab53a8df..88e884c1510ad617b86678ed31a7bbaa71518742 100644
+index 890d86acb0e92760590b4d0860dd41eaa70486c7..2e9e16cb47606f627b1473a479a6e8ae514cb88e 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
-@@ -34,6 +34,7 @@
+@@ -29,6 +29,7 @@
  #include "build/build_config.h"
  #include "components/device_event_log/device_event_log.h"
  #include "components/viz/common/resources/shared_image_format.h"
@@ -1786,7 +1786,7 @@ index 7f08f6e5870b021e578fe29f42fd6476ab53a8df..88e884c1510ad617b86678ed31a7bbaa
  #include "ui/display/display.h"
  #include "ui/display/display_change_notifier.h"
  #include "ui/display/mac/screen_mac_headless.h"
-@@ -184,7 +185,17 @@ DisplayMac BuildDisplayForScreen(NSScreen* screen) {
+@@ -179,7 +180,17 @@ DisplayMac BuildDisplayForScreen(NSScreen* screen) {
      display.set_color_depth(Display::kDefaultBitsPerPixel);
      display.set_depth_per_component(Display::kDefaultBitsPerComponent);
    }
@@ -1805,7 +1805,7 @@ index 7f08f6e5870b021e578fe29f42fd6476ab53a8df..88e884c1510ad617b86678ed31a7bbaa
    // Query the display's refresh rate.
    double refresh_rate = 1.0 / screen.minimumRefreshInterval;
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index a48fbe958c15817eabb031afa6cff55404c75353..3967406db04ebedb077430479e5cb5c8cb9d2344 100644
+index f29089286f4848400a67c3b7eaf21a1ba291cc1e..fa92acfa219f82cf53207e3a7479e44b223e9050 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -333,6 +333,12 @@ component("gfx") {

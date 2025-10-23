@@ -91,7 +91,7 @@ index 5c82a641538802bc459782ea422a1186045b054a..c286d87043ec4cb2e51ec9d82d08e4c8
    // Always keep this at the end.
    NUM,
 diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
-index 411412e3e9c08afad09321d8105dd4d628fe508a..549f9079c004ce8427ab2be0dba2e5b24471a8c9 100644
+index da2bcae965ddc183b5794bc8c44aec4f1754f1d2..2b24e692042a352e931278ead6a06e057f73eda6 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
 @@ -43,7 +43,8 @@ enum PermissionName {
