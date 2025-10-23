@@ -13,12 +13,6 @@ class NativeWindow;
 
 class WindowListObserver : public base::CheckedObserver {
  public:
-  // Called immediately after a window is added to the list.
-  virtual void OnWindowAdded(NativeWindow* window) {}
-
-  // Called immediately after a window is removed from the list.
-  virtual void OnWindowRemoved(NativeWindow* window) {}
-
   // Called when a window close is cancelled by beforeunload handler.
   virtual void OnWindowCloseCancelled(NativeWindow* window) {}
 
@@ -26,7 +20,7 @@ class WindowListObserver : public base::CheckedObserver {
   virtual void OnWindowAllClosed() {}
 
  protected:
-  ~WindowListObserver() override {}
+  ~WindowListObserver() override = default;
 };
 
 }  // namespace electron

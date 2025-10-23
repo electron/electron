@@ -12,19 +12,28 @@ network problems. The best resolution is to try switching networks, or
 wait a bit and try installing again.
 
 You can also attempt to download Electron directly from
-[electron/electron/releases](https://github.com/electron/electron/releases)
+[GitHub Releases](https://github.com/electron/electron/releases)
 if installing via `npm` is failing.
 
-## When will Electron upgrade to latest Chrome?
+If you need to install Electron through a custom mirror or proxy, see
+the [Advanced Installation](./tutorial/installation.md) documentation for more details.
 
-The Chrome version of Electron is usually bumped within one or two weeks after
-a new stable Chrome version gets released. This estimate is not guaranteed and
-depends on the amount of work involved with upgrading.
+## How are Electron binaries downloaded?
 
-Only the stable channel of Chrome is used. If an important fix is in beta or dev
-channel, we will back-port it.
+When you run `npm install electron`, the Electron binary for the corresponding version is downloaded
+into your project's `node_modules` folder via npm's `postinstall` lifecycle script.
 
-For more information, please see the [security introduction](tutorial/security.md).
+This logic is handled by the [`@electron/get`](https://github.com/electron/get) utility package
+under the hood.
+
+## When will Electron upgrade to latest Chromium?
+
+Every new major version of Electron releases with a Chromium major version upgrade. By releasing every
+8 weeks, Electron is able to pull in every other major Chromium release on the very same day that it
+releases upstream. Security fixes will be backported to stable release channels ahead of time.
+
+See the [Electron Releases](./tutorial/electron-timelines.md) documentation for more details or
+[releases.electronjs.org](https://releases.electronjs.org) to see our Release Status dashboard.
 
 ## When will Electron upgrade to latest Node.js?
 
@@ -67,6 +76,7 @@ code from this:
 
 ```js
 const { app, Tray } = require('electron')
+
 app.whenReady().then(() => {
   const tray = new Tray('/path/to/icon.png')
   tray.setTitle('hello world')
@@ -77,6 +87,7 @@ to this:
 
 ```js
 const { app, Tray } = require('electron')
+
 let tray = null
 app.whenReady().then(() => {
   tray = new Tray('/path/to/icon.png')
@@ -95,6 +106,7 @@ To solve this, you can turn off node integration in Electron:
 ```js
 // In the main process.
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({
   webPreferences: {
     nodeIntegration: false
@@ -143,6 +155,7 @@ To achieve this goal, set the background in the constructor for [BrowserWindow][
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow({
   backgroundColor: '#fff'
 })
@@ -151,6 +164,14 @@ const win = new BrowserWindow({
 The effect is visible only on (some?) LCD screens. Even if you don't see a difference, some of your users may. It is best to always set the background this way, unless you have reasons not to do so.
 
 Notice that just setting the background in the CSS does not have the desired effect.
+
+## Class inheritance does not work with Electron built-in modules
+
+Electron classes cannot be subclassed with the [`extends`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes/extends)
+keyword (also known as class inheritance). This feature was never implemented in Electron due
+to the added complexity it would add to C++/JavaScript interop in Electron's internals.
+
+For more information, see [electron/electron#23](https://github.com/electron/electron/issues/23).
 
 [memory-management]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Memory_Management
 [closures]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Closures

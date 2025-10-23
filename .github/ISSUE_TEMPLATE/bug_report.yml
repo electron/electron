@@ -1,6 +1,6 @@
 name: Bug Report
-description: Report an Electron bug
-title: "[Bug]: "
+description: Report a bug in Electron
+type: 'bug'
 labels: "bug :beetle:"
 body:
 - type: checkboxes
@@ -20,13 +20,14 @@ body:
     description: |
       What version of Electron are you using?
 
-      Note: Please only report issues for [currently supported versions of Electron](https://www.electronjs.org/docs/latest/tutorial/support#currently-supported-versions).
-    placeholder: 17.0.0
+      Note: Please only report issues for [currently supported versions of Electron](https://www.electronjs.org/docs/latest/tutorial/electron-timelines#timeline).
+    placeholder: 32.0.0
   validations:
     required: true
 - type: dropdown
   attributes:
-    label: What operating system are you using?
+    label: What operating system(s) are you using?
+    multiple: true
     options:
       - Windows
       - macOS
@@ -57,6 +58,16 @@ body:
     label: Last Known Working Electron version
     description: What is the last version of Electron this worked in, if applicable?
     placeholder: 16.0.0
+- type: dropdown
+  attributes:
+    label: Does the issue also appear in Chromium / Google Chrome?
+    description: If it does, please report the issue in the [Chromium issue tracker](https://issues.chromium.org/issues), not against Electron. Electron will inherit the fix once Chromium resolves the issue.
+    options:
+      - I don't know how to test
+      - "Yes"
+      - "No"
+  validations:
+    required: true
 - type: textarea
   attributes:
     label: Expected Behavior
@@ -72,7 +83,7 @@ body:
 - type: input
   attributes:
     label: Testcase Gist URL
-    description: If you can reproduce the issue in a standalone test case, please use [Electron Fiddle](https://github.com/electron/fiddle) to create one and to publish it as a [GitHub gist](https://gist.github.com) and put the gist URL here. This is **the best way** to ensure this issue is triaged quickly.
+    description: Electron maintainers need a standalone test case to reproduce and fix your issue. Please use [Electron Fiddle](https://github.com/electron/fiddle) to create one and to publish it as a [GitHub gist](https://gist.github.com). Then put the gist URL here. Issues without testcase gists receive less attention and might be closed without a maintainer taking a closer look. To maximize how much attention your issue receives, please include a testcase gist right from the start.
     placeholder: https://gist.github.com/...
 - type: textarea
   attributes:

@@ -7,13 +7,12 @@
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
-#include "base/strings/stringprintf.h"
 #include "base/task/thread_pool.h"
 #include "content/public/browser/file_url_loader.h"
-#include "electron/fuses.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
@@ -81,8 +80,6 @@ class AsarURLLoader : public network::mojom::URLLoader {
       const std::optional<GURL>& new_url) override {}
   void SetPriority(net::RequestPriority priority,
                    int32_t intra_priority_value) override {}
-  void PauseReadingBodyFromNet() override {}
-  void ResumeReadingBodyFromNet() override {}
 
   // disable copy
   AsarURLLoader(const AsarURLLoader&) = delete;
@@ -181,14 +178,14 @@ class AsarURLLoader : public network::mojom::URLLoader {
       return;
     }
 
-    std::string range_header;
+    auto range_header =
+        request.headers.GetHeader(net::HttpRequestHeaders::kRange);
     net::HttpByteRange byte_range;
-    if (request.headers.GetHeader(net::HttpRequestHeaders::kRange,
-                                  &range_header)) {
+    if (range_header) {
       // Handle a simple Range header for a single range.
       std::vector<net::HttpByteRange> ranges;
       bool fail = false;
-      if (net::HttpUtil::ParseRangeHeader(range_header, &ranges) &&
+      if (net::HttpUtil::ParseRangeHeader(range_header.value(), &ranges) &&
           ranges.size() == 1) {
         byte_range = ranges[0];
         if (!byte_range.ComputeBounds(info.size))
@@ -203,7 +200,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
       }
     }
 
-    uint64_t first_byte_to_send = 0;
+    uint64_t first_byte_to_send = 0U;
     uint64_t total_bytes_dropped_from_head = initial_read_buffer.size();
     uint64_t total_bytes_to_send = info.size;
 
@@ -221,13 +218,15 @@ class AsarURLLoader : public network::mojom::URLLoader {
       // Write any data we read for MIME sniffing, constraining by range where
       // applicable. This will always fit in the pipe (see assertion near
       // |kDefaultFileUrlPipeSize| definition).
-      size_t write_size = std::min(
+      const size_t write_size = std::min(
           (read_result.bytes_read - first_byte_to_send), total_bytes_to_send);
-      const size_t expected_write_size = write_size;
-      MojoResult result =
-          producer_handle->WriteData(&initial_read_buffer[first_byte_to_send],
-                                     &write_size, MOJO_WRITE_DATA_FLAG_NONE);
-      if (result != MOJO_RESULT_OK || write_size != expected_write_size) {
+      base::span<const uint8_t> bytes =
+          base::as_byte_span(initial_read_buffer)
+              .subspan(static_cast<size_t>(first_byte_to_send), write_size);
+      size_t bytes_written = 0;
+      MojoResult result = producer_handle->WriteData(
+          bytes, MOJO_WRITE_DATA_FLAG_NONE, bytes_written);
+      if (result != MOJO_RESULT_OK || write_size != bytes_written) {
         OnFileWritten(result);
         return;
       }
@@ -258,7 +257,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
     if (!net::GetMimeTypeFromFile(path, &head->mime_type)) {
       std::string new_type;
       net::SniffMimeType(
-          base::StringPiece(initial_read_buffer.data(), read_result.bytes_read),
+          std::string_view(initial_read_buffer.data(), read_result.bytes_read),
           request.url, head->mime_type,
           net::ForceSniffFileUrlsForHtml::kDisabled, &new_type);
       head->mime_type.assign(new_type);

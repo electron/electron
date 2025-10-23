@@ -7,13 +7,10 @@
 
 #include <string_view>
 #include <utility>
-#include <vector>
 
-#include "content/public/browser/browser_thread.h"
-#include "electron/shell/common/api/api.mojom.h"
-#include "gin/handle.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/wrappable.h"
 
 namespace content {
@@ -26,27 +23,33 @@ namespace gin_helper {
 template <typename T>
 class EventEmitter : public gin_helper::Wrappable<T> {
  public:
-  using Base = gin_helper::Wrappable<T>;
-  using ValueArray = std::vector<v8::Local<v8::Value>>;
-
-  // Make the convenient methods visible:
-  // https://isocpp.org/wiki/faq/templates#nondependent-name-lookup-members
-  v8::Isolate* isolate() const { return Base::isolate(); }
-  v8::Local<v8::Object> GetWrapper() const { return Base::GetWrapper(); }
-  v8::MaybeLocal<v8::Object> GetWrapper(v8::Isolate* isolate) const {
-    return Base::GetWrapper(isolate);
-  }
-
   // this.emit(name, new Event(), args...);
   template <typename... Args>
   bool Emit(const std::string_view name, Args&&... args) {
-    v8::HandleScope handle_scope(isolate());
-    v8::Local<v8::Object> wrapper = GetWrapper();
+    v8::Isolate* const isolate = this->isolate();
+    v8::HandleScope handle_scope{isolate};
+    v8::Local<v8::Object> wrapper = this->GetWrapper();
     if (wrapper.IsEmpty())
       return false;
-    gin::Handle<gin_helper::internal::Event> event =
-        internal::Event::New(isolate());
-    return EmitWithEvent(name, event, std::forward<Args>(args)...);
+    internal::Event* event = internal::Event::New(isolate);
+    v8::Local<v8::Object> event_object =
+        event->GetWrapper(isolate).ToLocalChecked();
+    // It's possible that |this| will be deleted by EmitEvent, so save anything
+    // we need from |this| before calling EmitEvent.
+    EmitEvent(isolate, wrapper, name, event_object,
+              std::forward<Args>(args)...);
+    return event->GetDefaultPrevented();
+  }
+
+  // this.emit(name, args...);
+  template <typename... Args>
+  void EmitWithoutEvent(const std::string_view name, Args&&... args) {
+    v8::Isolate* const isolate = this->isolate();
+    v8::HandleScope handle_scope{isolate};
+    v8::Local<v8::Object> wrapper = this->GetWrapper();
+    if (wrapper.IsEmpty())
+      return;
+    EmitEvent(isolate, wrapper, name, std::forward<Args>(args)...);
   }
 
   // disable copy
@@ -54,21 +57,7 @@ class EventEmitter : public gin_helper::Wrappable<T> {
   EventEmitter& operator=(const EventEmitter&) = delete;
 
  protected:
-  EventEmitter() {}
-
- private:
-  // this.emit(name, event, args...);
-  template <typename... Args>
-  bool EmitWithEvent(const std::string_view name,
-                     gin::Handle<gin_helper::internal::Event> event,
-                     Args&&... args) {
-    // It's possible that |this| will be deleted by EmitEvent, so save anything
-    // we need from |this| before calling EmitEvent.
-    auto* isolate = this->isolate();
-    gin_helper::EmitEvent(isolate, GetWrapper(), name, event,
-                          std::forward<Args>(args)...);
-    return event->GetDefaultPrevented();
-  }
+  EventEmitter() = default;
 };
 
 }  // namespace gin_helper

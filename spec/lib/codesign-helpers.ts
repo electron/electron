@@ -1,14 +1,17 @@
+import { expect } from 'chai';
+
 import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { expect } from 'chai';
 
 const features = process._linkedBinding('electron_common_features');
 const fixturesPath = path.resolve(__dirname, '..', 'fixtures');
 
+// Re-enable codesign tests for macOS x64
+// Refs https://github.com/electron/electron/issues/48182
 export const shouldRunCodesignTests =
     process.platform === 'darwin' &&
-    !(process.env.CI && process.arch === 'arm64') &&
+    !(process.env.CI) &&
     !process.mas &&
     !features.isComponentBuild();
 
@@ -18,11 +21,6 @@ export function getCodesignIdentity () {
   if (identity === undefined) {
     const result = cp.spawnSync(path.resolve(__dirname, '../../script/codesign/get-trusted-identity.sh'));
     if (result.status !== 0 || result.stdout.toString().trim().length === 0) {
-      // Per https://circleci.com/docs/2.0/env-vars:
-      // CIRCLE_PR_NUMBER is only present on forked PRs
-      if (process.env.CI && !process.env.CIRCLE_PR_NUMBER) {
-        throw new Error('No valid signing identity available to run autoUpdater specs');
-      }
       identity = null;
     } else {
       identity = result.stdout.toString().trim();

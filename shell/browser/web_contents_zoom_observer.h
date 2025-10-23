@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_WEB_CONTENTS_ZOOM_OBSERVER_H_
 #define ELECTRON_SHELL_BROWSER_WEB_CONTENTS_ZOOM_OBSERVER_H_
 
+#include "base/observer_list_types.h"
 #include "shell/browser/web_contents_zoom_controller.h"
 
 namespace electron {

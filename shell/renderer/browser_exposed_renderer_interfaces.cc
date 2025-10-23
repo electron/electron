@@ -8,7 +8,6 @@
 
 #include "base/functional/bind.h"
 #include "base/task/sequenced_task_runner.h"
-#include "build/build_config.h"
 #include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
 #include "shell/renderer/renderer_client_base.h"

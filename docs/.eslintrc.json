@@ -1,0 +1,35 @@
+{
+  "extends": "standard",
+  "plugins": [
+    "import",
+    "markdown"
+  ],
+  "overrides": [
+    {
+      "files": ["*.md", "**/*.md"],
+      "processor": "markdown/markdown"
+    }
+  ],
+  "rules": {
+    "@typescript-eslint/no-unused-vars": "off",
+    "import/order": ["error", {
+      "alphabetize": {
+        "order": "asc"
+      },
+      "newlines-between": "always",
+      "pathGroups": [
+        {
+          "pattern": "{electron,electron/**}",
+          "group": "builtin",
+          "position": "before"
+        }
+      ],
+      "pathGroupsExcludedImportTypes": []
+    }],
+    "n/no-callback-literal": "off",
+    "no-undef": "off",
+    "no-unused-expressions": "off",
+    "no-unused-vars": "off",
+    "import/enforce-node-protocol-usage": ["error", "always"]
+  }
+}

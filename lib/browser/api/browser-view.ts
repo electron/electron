@@ -4,6 +4,9 @@ const v8Util = process._linkedBinding('electron_common_v8_util');
 
 export default class BrowserView {
   #webContentsView: WebContentsView;
+  #ownerWindow: BrowserWindow | null = null;
+
+  #destroyListener: ((e: any) => void) | null = null;
 
   // AutoResize state
   #resizeListener: ((...args: any[]) => void) | null = null;
@@ -17,6 +20,9 @@ export default class BrowserView {
     }
     webPreferences.type = 'browserView';
     this.#webContentsView = new WebContentsView({ webPreferences });
+
+    this.#destroyListener = this.#onDestroy.bind(this);
+    this.#webContentsView.webContents.once('destroyed', this.#destroyListener);
   }
 
   get webContents () {
@@ -55,20 +61,41 @@ export default class BrowserView {
 
   // Internal methods
   get ownerWindow (): BrowserWindow | null {
-    return !this.webContents.isDestroyed() ? this.webContents.getOwnerBrowserWindow() : null;
+    return this.#ownerWindow;
   }
 
+  // We can't rely solely on the webContents' owner window because
+  // a webContents can be closed by the user while the BrowserView
+  // remains alive and attached to a BrowserWindow.
   set ownerWindow (w: BrowserWindow | null) {
-    if (this.webContents.isDestroyed()) return;
-    const oldWindow = this.webContents.getOwnerBrowserWindow();
-    if (oldWindow && this.#resizeListener) {
-      oldWindow.off('resize', this.#resizeListener);
-      this.#resizeListener = null;
+    this.#removeResizeListener();
+
+    if (this.webContents && !this.webContents.isDestroyed()) {
+      this.webContents._setOwnerWindow(w);
     }
-    this.webContents._setOwnerWindow(w);
+
+    this.#ownerWindow = w;
     if (w) {
       this.#lastWindowSize = w.getBounds();
       w.on('resize', this.#resizeListener = this.#autoResize.bind(this));
+      w.on('closed', () => {
+        this.#removeResizeListener();
+        this.#ownerWindow = null;
+        this.#destroyListener = null;
+      });
+    }
+  }
+
+  #onDestroy () {
+    // Ensure that if #webContentsView's webContents is destroyed,
+    // the WebContentsView is removed from the view hierarchy.
+    this.#ownerWindow?.contentView.removeChildView(this.webContentsView);
+  }
+
+  #removeResizeListener () {
+    if (this.#ownerWindow && this.#resizeListener) {
+      this.#ownerWindow.off('resize', this.#resizeListener);
+      this.#resizeListener = null;
     }
   }
 
@@ -123,6 +150,12 @@ export default class BrowserView {
     if (this.#autoHorizontalProportion || this.#autoVerticalProportion) {
       this.#webContentsView.setBounds(newViewBounds);
     }
+
+    // Update #lastWindowSize value after browser windows resize
+    this.#lastWindowSize = {
+      width: newBounds.width,
+      height: newBounds.height
+    };
   }
 
   get webContentsView () {

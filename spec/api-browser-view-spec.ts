@@ -1,31 +1,39 @@
+import { BrowserView, BrowserWindow, screen, session, webContents } from 'electron/main';
+
 import { expect } from 'chai';
-import * as path from 'node:path';
-import { BrowserView, BrowserWindow, screen, webContents } from 'electron/main';
-import { closeWindow } from './lib/window-helpers';
-import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers';
-import { ScreenCapture } from './lib/screen-helpers';
+
 import { once } from 'node:events';
+import * as path from 'node:path';
+
+import { ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
+import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers';
+import { closeWindow } from './lib/window-helpers';
 
 describe('BrowserView module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
+  const ses = session.fromPartition(crypto.randomUUID());
 
   let w: BrowserWindow;
   let view: BrowserView;
 
+  const getSessionWebContents = () =>
+    webContents.getAllWebContents().filter(wc => wc.session === ses);
+
   beforeEach(() => {
-    expect(webContents.getAllWebContents().length).to.equal(0, 'expected no webContents to exist');
+    expect(getSessionWebContents().length).to.equal(0, 'expected no webContents to exist');
     w = new BrowserWindow({
       show: false,
       width: 400,
       height: 400,
       webPreferences: {
-        backgroundThrottling: false
+        backgroundThrottling: false,
+        session: ses
       }
     });
   });
 
   afterEach(async () => {
-    if (!w.isDestroyed()) {
+    if (w && !w.isDestroyed()) {
       const p = once(w.webContents, 'destroyed');
       await closeWindow(w);
       w = null as any;
@@ -39,7 +47,7 @@ describe('BrowserView module', () => {
       await p;
     }
 
-    expect(webContents.getAllWebContents().length).to.equal(0, 'expected no webContents to exist');
+    expect(getSessionWebContents().length).to.equal(0, 'expected no webContents to exist');
   });
 
   it('sets the correct class name on the prototype', () => {
@@ -47,7 +55,7 @@ describe('BrowserView module', () => {
   });
 
   it('can be created with an existing webContents', async () => {
-    const wc = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
+    const wc = (webContents as typeof ElectronInternal.WebContents).create({ session: ses, sandbox: true });
     await wc.loadURL('about:blank');
 
     view = new BrowserView({ webContents: wc } as any);
@@ -75,8 +83,7 @@ describe('BrowserView module', () => {
       }).not.to.throw();
     });
 
-    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
-    ifit(process.platform === 'darwin' && process.arch === 'x64')('sets the background color to transparent if none is set', async () => {
+    ifit(hasCapturableScreen())('sets the background color to transparent if none is set', async () => {
       const display = screen.getPrimaryDisplay();
       const WINDOW_BACKGROUND_COLOR = '#55ccbb';
 
@@ -90,12 +97,11 @@ describe('BrowserView module', () => {
       w.setBrowserView(view);
       await view.webContents.loadURL('data:text/html,hello there');
 
-      const screenCapture = await ScreenCapture.createForDisplay(display);
+      const screenCapture = new ScreenCapture(display);
       await screenCapture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
     });
 
-    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
-    ifit(process.platform === 'darwin' && process.arch === 'x64')('successfully applies the background color', async () => {
+    ifit(hasCapturableScreen())('successfully applies the background color', async () => {
       const WINDOW_BACKGROUND_COLOR = '#55ccbb';
       const VIEW_BACKGROUND_COLOR = '#ff00ff';
       const display = screen.getPrimaryDisplay();
@@ -111,7 +117,7 @@ describe('BrowserView module', () => {
       w.setBackgroundColor(VIEW_BACKGROUND_COLOR);
       await view.webContents.loadURL('data:text/html,hello there');
 
-      const screenCapture = await ScreenCapture.createForDisplay(display);
+      const screenCapture = new ScreenCapture(display);
       await screenCapture.expectColorAtCenterMatches(VIEW_BACKGROUND_COLOR);
     });
   });
@@ -370,6 +376,19 @@ describe('BrowserView module', () => {
       const view = w.getBrowserView();
       expect(view).to.be.null('view');
     });
+
+    it('throws if multiple BrowserViews are attached', () => {
+      view = new BrowserView();
+      w.setBrowserView(view);
+      const view2 = new BrowserView();
+      defer(() => view2.webContents.destroy());
+      w.addBrowserView(view2);
+      defer(() => w.removeBrowserView(view2));
+
+      expect(() => {
+        w.getBrowserView();
+      }).to.throw(/has multiple BrowserViews/);
+    });
   });
 
   describe('BrowserWindow.addBrowserView()', () => {
@@ -391,14 +410,6 @@ describe('BrowserView module', () => {
       w.addBrowserView(view);
     });
 
-    it('does not crash if the BrowserView webContents are destroyed prior to window addition', () => {
-      expect(() => {
-        const view1 = new BrowserView();
-        view1.webContents.destroy();
-        w.addBrowserView(view1);
-      }).to.not.throw();
-    });
-
     it('does not crash if the webContents is destroyed after a URL is loaded', () => {
       view = new BrowserView();
       expect(async () => {
@@ -411,12 +422,18 @@ describe('BrowserView module', () => {
     it('can handle BrowserView reparenting', async () => {
       view = new BrowserView();
 
+      expect(view.ownerWindow).to.be.null('ownerWindow');
+
       w.addBrowserView(view);
       view.webContents.loadURL('about:blank');
       await once(view.webContents, 'did-finish-load');
 
+      expect(view.ownerWindow).to.equal(w);
+
       const w2 = new BrowserWindow({ show: false });
       w2.addBrowserView(view);
+
+      expect(view.ownerWindow).to.equal(w2);
 
       w.close();
 
@@ -429,14 +446,63 @@ describe('BrowserView module', () => {
       w2.destroy();
     });
 
-    it('does not cause a crash when used for view with destroyed web contents', async () => {
+    it('allows attaching a BrowserView with a previously-closed webContents', async () => {
       const w2 = new BrowserWindow({ show: false });
       const view = new BrowserView();
+
+      expect(view.ownerWindow).to.be.null('ownerWindow');
       view.webContents.close();
       w2.addBrowserView(view);
+      expect(view.ownerWindow).to.equal(w2);
+
       w2.webContents.loadURL('about:blank');
       await once(w2.webContents, 'did-finish-load');
       w2.close();
+    });
+
+    it('allows attaching a BrowserView with a previously-destroyed webContents', async () => {
+      const view = new BrowserView();
+
+      expect(view.ownerWindow).to.be.null('ownerWindow');
+      view.webContents.destroy();
+      w.addBrowserView(view);
+      expect(view.ownerWindow).to.equal(w);
+
+      w.webContents.loadURL('about:blank');
+      await once(w.webContents, 'did-finish-load');
+    });
+
+    it('document visibilitychange does not change when adding the same BrowserView multiple times', async () => {
+      w.show();
+      expect(w.isVisible()).to.be.true('w is visible');
+
+      const view = new BrowserView();
+      const [width, height] = w.getSize();
+      view.setBounds({ x: 0, y: 0, width, height });
+      w.addBrowserView(view);
+      expect(view.ownerWindow).to.equal(w);
+
+      await view.webContents.loadURL(`data:text/html,
+        <html>
+          <body>
+            <h1>HELLO BROWSERVIEW</h1>
+            <script>
+              document.visibilityChangeCount = 0;
+              document.addEventListener('visibilitychange', () => {
+                document.visibilityChangeCount++;
+              })
+            </script>
+          </body>
+        </html>
+      `);
+      const query = 'document.visibilityChangeCount';
+      const countBefore = await view.webContents.executeJavaScript(query);
+      expect(countBefore).to.equal(0);
+
+      w.addBrowserView(view);
+      w.addBrowserView(view);
+      const countAfter = await view.webContents.executeJavaScript(query);
+      expect(countAfter).to.equal(countBefore);
     });
   });
 
@@ -520,18 +586,62 @@ describe('BrowserView module', () => {
       win2.close();
       win2.destroy();
     });
+
+    it('should reorder the BrowserView to the top if it is already in the window', () => {
+      view = new BrowserView();
+      const view2 = new BrowserView();
+      defer(() => view2.webContents.destroy());
+      w.addBrowserView(view);
+      w.addBrowserView(view2);
+      defer(() => w.removeBrowserView(view2));
+
+      w.setTopBrowserView(view);
+      const views = w.getBrowserViews();
+      expect(views.indexOf(view)).to.equal(views.length - 1);
+    });
   });
 
-  describe('BrowserView.webContents.getOwnerBrowserWindow()', () => {
+  describe('BrowserView owning window', () => {
     it('points to owning window', () => {
       view = new BrowserView();
       expect(view.webContents.getOwnerBrowserWindow()).to.be.null('owner browser window');
+      expect(view.ownerWindow).to.be.null('ownerWindow');
 
       w.setBrowserView(view);
       expect(view.webContents.getOwnerBrowserWindow()).to.equal(w);
+      expect(view.ownerWindow).to.equal(w);
 
       w.setBrowserView(null);
       expect(view.webContents.getOwnerBrowserWindow()).to.be.null('owner browser window');
+      expect(view.ownerWindow).to.be.null('ownerWindow');
+    });
+
+    it('works correctly when the webContents is destroyed', async () => {
+      view = new BrowserView();
+      w.setBrowserView(view);
+
+      expect(view.webContents.getOwnerBrowserWindow()).to.equal(w);
+      expect(view.ownerWindow).to.equal(w);
+
+      const destroyed = once(view.webContents, 'destroyed');
+      view.webContents.close();
+      await destroyed;
+
+      expect(view.ownerWindow).to.equal(w);
+    });
+
+    it('works correctly when owner window is closed', async () => {
+      view = new BrowserView();
+      w.setBrowserView(view);
+
+      expect(view.webContents.getOwnerBrowserWindow()).to.equal(w);
+      expect(view.ownerWindow).to.equal(w);
+
+      const destroyed = once(w, 'closed');
+      w.close();
+      await destroyed;
+
+      expect(view.ownerWindow).to.equal(null);
     });
   });
 

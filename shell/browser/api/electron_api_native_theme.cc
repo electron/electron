@@ -8,23 +8,29 @@
 
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
-#include "gin/handle.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
-#include "ui/gfx/color_utils.h"
 #include "ui/native_theme/native_theme.h"
 
 namespace electron::api {
 
-gin::WrapperInfo NativeTheme::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo NativeTheme::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 NativeTheme::NativeTheme(v8::Isolate* isolate,
                          ui::NativeTheme* ui_theme,
                          ui::NativeTheme* web_theme)
     : ui_theme_(ui_theme), web_theme_(web_theme) {
   ui_theme_->AddObserver(this);
+#if BUILDFLAG(IS_WIN)
+  std::ignore = hkcu_themes_regkey_.Open(HKEY_CURRENT_USER,
+                                         L"Software\\Microsoft\\Windows\\"
+                                         L"CurrentVersion\\Themes\\Personalize",
+                                         KEY_READ);
+#endif
 }
 
 NativeTheme::~NativeTheme() {
@@ -32,6 +38,16 @@ NativeTheme::~NativeTheme() {
 }
 
 void NativeTheme::OnNativeThemeUpdatedOnUI() {
+#if BUILDFLAG(IS_WIN)
+  if (hkcu_themes_regkey_.Valid()) {
+    DWORD system_uses_light_theme = 1;
+    hkcu_themes_regkey_.ReadValueDW(L"SystemUsesLightTheme",
+                                    &system_uses_light_theme);
+    bool system_dark_mode_enabled = (system_uses_light_theme == 0);
+    should_use_dark_colors_for_system_integrated_ui_ =
+        std::make_optional<bool>(system_dark_mode_enabled);
+  }
+#endif
   Emit("updated");
 }
 
@@ -57,15 +73,32 @@ ui::NativeTheme::ThemeSource NativeTheme::GetThemeSource() const {
 }
 
 bool NativeTheme::ShouldUseDarkColors() {
-  return ui_theme_->ShouldUseDarkColors();
+  auto theme_source = GetThemeSource();
+  if (theme_source == ui::NativeTheme::ThemeSource::kForcedLight)
+    return false;
+  if (theme_source == ui::NativeTheme::ThemeSource::kForcedDark)
+    return true;
+  return ui_theme_->preferred_color_scheme() ==
+         ui::NativeTheme::PreferredColorScheme::kDark;
 }
 
 bool NativeTheme::ShouldUseHighContrastColors() {
-  return ui_theme_->UserHasContrastPreference();
+  return ui_theme_->preferred_contrast() ==
+         ui::NativeTheme::PreferredContrast::kMore;
+}
+
+bool NativeTheme::ShouldUseDarkColorsForSystemIntegratedUI() {
+  return should_use_dark_colors_for_system_integrated_ui_.value_or(
+      ShouldUseDarkColors());
 }
 
 bool NativeTheme::InForcedColorsMode() {
-  return ui_theme_->InForcedColorsMode();
+  return ui_theme_->forced_colors() !=
+         ui::ColorProviderKey::ForcedColors::kNone;
+}
+
+bool NativeTheme::GetPrefersReducedTransparency() {
+  return ui_theme_->prefers_reduced_transparency();
 }
 
 #if BUILDFLAG(IS_MAC)
@@ -84,17 +117,19 @@ bool NativeTheme::ShouldUseInvertedColorScheme() {
     return false;
   return is_inverted;
 #else
-  return ui_theme_->GetPlatformHighContrastColorScheme() ==
-         ui::NativeTheme::PlatformHighContrastColorScheme::kDark;
+  return ui_theme_->forced_colors() !=
+             ui::ColorProviderKey::ForcedColors::kNone &&
+         ui_theme_->preferred_color_scheme() ==
+             ui::NativeTheme::PreferredColorScheme::kDark;
 #endif
 }
 
 // static
-gin::Handle<NativeTheme> NativeTheme::Create(v8::Isolate* isolate) {
+gin_helper::Handle<NativeTheme> NativeTheme::Create(v8::Isolate* isolate) {
   ui::NativeTheme* ui_theme = ui::NativeTheme::GetInstanceForNativeUi();
   ui::NativeTheme* web_theme = ui::NativeTheme::GetInstanceForWeb();
-  return gin::CreateHandle(isolate,
-                           new NativeTheme(isolate, ui_theme, web_theme));
+  return gin_helper::CreateHandle(
+      isolate, new NativeTheme(isolate, ui_theme, web_theme));
 }
 
 gin::ObjectTemplateBuilder NativeTheme::GetObjectTemplateBuilder(
@@ -106,9 +141,13 @@ gin::ObjectTemplateBuilder NativeTheme::GetObjectTemplateBuilder(
                    &NativeTheme::SetThemeSource)
       .SetProperty("shouldUseHighContrastColors",
                    &NativeTheme::ShouldUseHighContrastColors)
+      .SetProperty("shouldUseDarkColorsForSystemIntegratedUI",
+                   &NativeTheme::ShouldUseDarkColorsForSystemIntegratedUI)
       .SetProperty("shouldUseInvertedColorScheme",
                    &NativeTheme::ShouldUseInvertedColorScheme)
-      .SetProperty("inForcedColorsMode", &NativeTheme::InForcedColorsMode);
+      .SetProperty("inForcedColorsMode", &NativeTheme::InForcedColorsMode)
+      .SetProperty("prefersReducedTransparency",
+                   &NativeTheme::GetPrefersReducedTransparency);
 }
 
 const char* NativeTheme::GetTypeName() {
@@ -125,8 +164,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin::Dictionary dict{isolate, exports};
   dict.Set("nativeTheme", NativeTheme::Create(isolate));
 }
 

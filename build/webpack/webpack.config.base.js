@@ -1,8 +1,9 @@
+const TerserPlugin = require('terser-webpack-plugin');
+const webpack = require('webpack');
+const WrapperPlugin = require('wrapper-webpack-plugin');
+
 const fs = require('node:fs');
 const path = require('node:path');
-const webpack = require('webpack');
-const TerserPlugin = require('terser-webpack-plugin');
-const WrapperPlugin = require('wrapper-webpack-plugin');
 
 const electronRoot = path.resolve(__dirname, '../..');
 
@@ -120,6 +121,7 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
           'electron/main$': electronAPIFile,
           'electron/renderer$': electronAPIFile,
           'electron/common$': electronAPIFile,
+          'electron/utility$': electronAPIFile,
           // Force timers to resolve to our dependency that doesn't use window.postMessage
           timers: path.resolve(electronRoot, 'node_modules', 'timers-browserify', 'main.js')
         },
@@ -142,7 +144,9 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
             transpileOnly: onlyPrintingGraph,
             ignoreDiagnostics: [
               // File '{0}' is not under 'rootDir' '{1}'.
-              6059
+              6059,
+              // Private field '{0}' must be declared in an enclosing class.
+              1111
             ]
           }
         }]

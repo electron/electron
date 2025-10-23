@@ -1,7 +1,7 @@
+import { ParentPort } from '@electron/internal/utility/parent-port';
+
 import { EventEmitter } from 'events';
 import { pathToFileURL } from 'url';
-
-import { ParentPort } from '@electron/internal/utility/parent-port';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
@@ -36,7 +36,7 @@ parentPort.on('removeListener', (name: string) => {
 });
 
 // Finally load entry script.
-const { runEntryPointWithESMLoader } = __non_webpack_require__('internal/modules/run_main');
+const { runEntryPointWithESMLoader } = __non_webpack_require__('internal/modules/run_main') as typeof import('@node/lib/internal/modules/run_main');
 const mainEntry = pathToFileURL(entryScript);
 
 runEntryPointWithESMLoader(async (cascadedLoader: any) => {

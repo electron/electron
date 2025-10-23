@@ -7,9 +7,10 @@
 #include <memory>
 #include <utility>
 
+#include "base/notimplemented.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "build/build_config.h"
+#include "content/public/browser/browser_context.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "device/bluetooth/bluetooth_device.h"
@@ -113,6 +114,10 @@ void ElectronBluetoothDelegate::RevokeDevicePermissionWebInitiated(
     RenderFrameHost* frame,
     const WebBluetoothDeviceId& device_id) {
   NOTIMPLEMENTED();
+}
+
+bool ElectronBluetoothDelegate::MayUseBluetooth(RenderFrameHost* frame) {
+  return true;
 }
 
 bool ElectronBluetoothDelegate::IsAllowedToAccessService(

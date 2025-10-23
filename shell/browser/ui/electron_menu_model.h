@@ -15,7 +15,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
-#include "ui/base/models/simple_menu_model.h"
+#include "ui/menus/simple_menu_model.h"
 #include "url/gurl.h"
 
 namespace electron {
@@ -37,7 +37,7 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
 
   class Delegate : public ui::SimpleMenuModel::Delegate {
    public:
-    ~Delegate() override {}
+    ~Delegate() override = default;
 
     virtual bool GetAcceleratorForCommandIdWithParams(
         int command_id,
@@ -63,7 +63,7 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
 
   class Observer : public base::CheckedObserver {
    public:
-    ~Observer() override {}
+    ~Observer() override = default;
 
     // Notifies the menu will open.
     virtual void OnMenuWillShow() {}
@@ -84,6 +84,8 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
 
   void SetToolTip(size_t index, const std::u16string& toolTip);
   std::u16string GetToolTipAt(size_t index);
+  void SetCustomType(size_t index, const std::u16string& customType);
+  std::u16string GetCustomTypeAt(size_t index);
   void SetRole(size_t index, const std::u16string& role);
   std::u16string GetRoleAt(size_t index);
   void SetSecondaryLabel(size_t index, const std::u16string& sublabel);
@@ -125,6 +127,8 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   base::flat_map<int, std::u16string> toolTips_;   // command id -> tooltip
   base::flat_map<int, std::u16string> roles_;      // command id -> role
   base::flat_map<int, std::u16string> sublabels_;  // command id -> sublabel
+  base::flat_map<int, std::u16string>
+      customTypes_;  // command id -> custom type
   base::ObserverList<Observer> observers_;
 
   base::WeakPtrFactory<ElectronMenuModel> weak_factory_{this};

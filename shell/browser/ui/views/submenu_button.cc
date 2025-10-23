@@ -5,12 +5,12 @@
 #include "shell/browser/ui/views/submenu_button.h"
 
 #include "base/strings/string_util.h"
-#include "base/strings/utf_string_conversions.h"
 #include "ui/accessibility/ax_enums.mojom.h"
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/text_utils.h"
 #include "ui/views/animation/flood_fill_ink_drop_ripple.h"
+#include "ui/views/animation/ink_drop_highlight.h"
 #include "ui/views/animation/ink_drop_host.h"
 #include "ui/views/animation/ink_drop_impl.h"
 #include "ui/views/controls/button/label_button_border.h"
@@ -23,10 +23,10 @@ SubmenuButton::SubmenuButton(PressedCallback callback,
     : views::MenuButton(std::move(callback), gfx::RemoveAccelerator(title)),
       background_color_(background_color) {
 #if BUILDFLAG(IS_LINUX)
-  // Dont' use native style border.
+  // Don't use native style border.
   SetBorder(CreateDefaultBorder());
 #endif
-
+  SetAccessibleRole(ax::mojom::Role::kPopUpButton);
   if (GetUnderlinePosition(title, &accelerator_, &underline_start_,
                            &underline_end_))
     gfx::Canvas::SizeStringInt(GetText(), gfx::FontList(), &text_width_,
@@ -51,11 +51,6 @@ void SubmenuButton::SetAcceleratorVisibility(bool visible) {
 
 void SubmenuButton::SetUnderlineColor(SkColor color) {
   underline_color_ = color;
-}
-
-void SubmenuButton::GetAccessibleNodeData(ui::AXNodeData* node_data) {
-  node_data->role = ax::mojom::Role::kPopUpButton;
-  node_data->SetName(GetAccessibleName());
 }
 
 void SubmenuButton::PaintButtonContents(gfx::Canvas* canvas) {

@@ -1,0 +1,166 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yagiz Nizipli <yagiz@nizipli.com>
+Date: Mon, 16 Sep 2024 20:19:46 -0400
+Subject: src: improve utf8 string generation performance
+
+PR-URL: https://github.com/nodejs/node/pull/54873
+Reviewed-By: Daniel Lemire <daniel@lemire.me>
+Reviewed-By: Matteo Collina <matteo.collina@gmail.com>
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Stephen Belanger <admin@stephenbelanger.com>
+
+diff --git a/src/string_bytes.cc b/src/string_bytes.cc
+index f0fbf496dcfdec2c522508c61ae24fb20b1eb081..4324ed52d7cd6af5202512858a62346c3ab6c302 100644
+--- a/src/string_bytes.cc
++++ b/src/string_bytes.cc
+@@ -386,21 +386,21 @@ Maybe<size_t> StringBytes::StorageSize(Isolate* isolate,
+                                        Local<Value> val,
+                                        enum encoding encoding) {
+   HandleScope scope(isolate);
+-  size_t data_size = 0;
+-  bool is_buffer = Buffer::HasInstance(val);
+ 
+-  if (is_buffer && (encoding == BUFFER || encoding == LATIN1)) {
++  if (Buffer::HasInstance(val) && (encoding == BUFFER || encoding == LATIN1)) {
+     return Just(Buffer::Length(val));
+   }
+ 
+   Local<String> str;
+   if (!val->ToString(isolate->GetCurrentContext()).ToLocal(&str))
+     return Nothing<size_t>();
++  String::ValueView view(isolate, str);
++  size_t data_size = 0;
+ 
+   switch (encoding) {
+     case ASCII:
+     case LATIN1:
+-      data_size = str->Length();
++      data_size = view.length();
+       break;
+ 
+     case BUFFER:
+@@ -408,25 +408,25 @@ Maybe<size_t> StringBytes::StorageSize(Isolate* isolate,
+       // A single UCS2 codepoint never takes up more than 3 utf8 bytes.
+       // It is an exercise for the caller to decide when a string is
+       // long enough to justify calling Size() instead of StorageSize()
+-      data_size = 3 * str->Length();
++      data_size = 3 * view.length();
+       break;
+ 
+     case UCS2:
+-      data_size = str->Length() * sizeof(uint16_t);
++      data_size = view.length() * sizeof(uint16_t);
+       break;
+ 
+     case BASE64URL:
+-      data_size = simdutf::base64_length_from_binary(str->Length(),
++      data_size = simdutf::base64_length_from_binary(view.length(),
+                                                      simdutf::base64_url);
+       break;
+ 
+     case BASE64:
+-      data_size = simdutf::base64_length_from_binary(str->Length());
++      data_size = simdutf::base64_length_from_binary(view.length());
+       break;
+ 
+     case HEX:
+-      CHECK(str->Length() % 2 == 0 && "invalid hex string length");
+-      data_size = str->Length() / 2;
++      CHECK(view.length() % 2 == 0 && "invalid hex string length");
++      data_size = view.length() / 2;
+       break;
+ 
+     default:
+@@ -447,32 +447,36 @@ Maybe<size_t> StringBytes::Size(Isolate* isolate,
+   Local<String> str;
+   if (!val->ToString(isolate->GetCurrentContext()).ToLocal(&str))
+     return Nothing<size_t>();
++  String::ValueView view(isolate, str);
+ 
+   switch (encoding) {
+     case ASCII:
+     case LATIN1:
+-      return Just<size_t>(str->Length());
++      return Just<size_t>(view.length());
+ 
+     case BUFFER:
+     case UTF8:
+-      return Just<size_t>(str->Utf8Length(isolate));
++      if (view.is_one_byte()) {
++        return Just<size_t>(simdutf::utf8_length_from_latin1(
++            reinterpret_cast<const char*>(view.data8()), view.length()));
++      }
++      return Just<size_t>(simdutf::utf8_length_from_utf16(
++          reinterpret_cast<const char16_t*>(view.data16()), view.length()));
+ 
+     case UCS2:
+-      return Just(str->Length() * sizeof(uint16_t));
++      return Just(view.length() * sizeof(uint16_t));
+ 
+     case BASE64URL: {
+-      String::Value value(isolate, str);
+-      return Just(simdutf::base64_length_from_binary(value.length(),
++      return Just(simdutf::base64_length_from_binary(view.length(),
+                                                      simdutf::base64_url));
+     }
+ 
+     case BASE64: {
+-      String::Value value(isolate, str);
+-      return Just(simdutf::base64_length_from_binary(value.length()));
++      return Just(simdutf::base64_length_from_binary(view.length()));
+     }
+ 
+     case HEX:
+-      return Just<size_t>(str->Length() / 2);
++      return Just<size_t>(view.length() / 2);
+   }
+ 
+   UNREACHABLE();
+diff --git a/src/util.cc b/src/util.cc
+index 1b38f22b930b77d80aa53f9b12299d3cc469a46d..03c4794314c1c228f95536d2d20a440061cf3a80 100644
+--- a/src/util.cc
++++ b/src/util.cc
+@@ -48,6 +48,8 @@
+ #include <sys/types.h>
+ #endif
+ 
++#include <simdutf.h>
++
+ #include <atomic>
+ #include <cstdio>
+ #include <cstring>
+@@ -100,11 +102,31 @@ static void MakeUtf8String(Isolate* isolate,
+                            MaybeStackBuffer<T>* target) {
+   Local<String> string;
+   if (!value->ToString(isolate->GetCurrentContext()).ToLocal(&string)) return;
++  String::ValueView value_view(isolate, string);
++
++  auto value_length = value_view.length();
++
++  if (value_view.is_one_byte()) {
++    auto const_char = reinterpret_cast<const char*>(value_view.data8());
++    auto expected_length =
++        target->capacity() < (static_cast<size_t>(value_length) * 2 + 1)
++            ? simdutf::utf8_length_from_latin1(const_char, value_length)
++            : value_length * 2;
++
++    // Add +1 for null termination.
++    target->AllocateSufficientStorage(expected_length + 1);
++    const auto actual_length = simdutf::convert_latin1_to_utf8(
++        const_char, value_length, target->out());
++    target->SetLengthAndZeroTerminate(actual_length);
++    return;
++  }
+ 
+-  size_t storage;
+-  if (!StringBytes::StorageSize(isolate, string, UTF8).To(&storage)) return;
+-  storage += 1;
++  // Add +1 for null termination.
++  size_t storage = (3 * value_length) + 1;
+   target->AllocateSufficientStorage(storage);
++
++  // TODO(@anonrig): Use simdutf to speed up non-one-byte strings once it's
++  // implemented
+   const int flags =
+       String::NO_NULL_TERMINATION | String::REPLACE_INVALID_UTF8;
+   const int length =

@@ -10,28 +10,27 @@
 #include <string>
 #include <vector>
 
-#include "base/compiler_specific.h"
+#include "base/files/file_path.h"
 #include "base/observer_list.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "base/values.h"
-#include "gin/dictionary.h"
-#include "shell/browser/browser_observer.h"
 #include "shell/browser/window_list_observer.h"
-#include "shell/common/gin_converters/login_item_settings_converter.h"
 #include "shell/common/gin_helper/promise.h"
 
 #if BUILDFLAG(IS_WIN)
 #include <windows.h>
-#include "base/files/file_path.h"
 #include "shell/browser/ui/win/taskbar_host.h"
 #endif
 
 #if BUILDFLAG(IS_MAC)
+#include "base/time/time.h"
 #include "ui/base/cocoa/secure_password_input.h"
 #endif
 
-namespace base {
-class FilePath;
+class GURL;
+
+namespace gin {
+class Arguments;
 }
 
 namespace gin_helper {
@@ -40,6 +39,7 @@ class Arguments;
 
 namespace electron {
 
+class BrowserObserver;
 class ElectronMenuModel;
 
 #if BUILDFLAG(IS_WIN)
@@ -126,6 +126,9 @@ class Browser : private WindowListObserver {
   // Clear the recent documents list.
   void ClearRecentDocuments();
 
+  // Return the recent documents list.
+  std::vector<std::string> GetRecentDocuments();
+
 #if BUILDFLAG(IS_WIN)
   // Set the application user model ID.
   void SetAppUserModelID(const std::wstring& name);
@@ -211,9 +214,9 @@ class Browser : private WindowListObserver {
   void ApplyForcedRTL();
 
   // Bounce the dock icon.
-  enum class BounceType{
-      kCritical = 0,        // NSCriticalRequest
-      kInformational = 10,  // NSInformationalRequest
+  enum class BounceType {
+    kCritical = 0,        // NSCriticalRequest
+    kInformational = 10,  // NSInformationalRequest
   };
   int DockBounce(BounceType type);
   void DockCancelBounce(int request_id);
@@ -314,9 +317,8 @@ class Browser : private WindowListObserver {
   // instance is destroyed.
   void SetMainMessageLoopQuitClosure(base::OnceClosure quit_closure);
 
-  void AddObserver(BrowserObserver* obs) { observers_.AddObserver(obs); }
-
-  void RemoveObserver(BrowserObserver* obs) { observers_.RemoveObserver(obs); }
+  void AddObserver(BrowserObserver* obs);
+  void RemoveObserver(BrowserObserver* obs);
 
 #if BUILDFLAG(IS_MAC)
   // Returns whether secure input is enabled

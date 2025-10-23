@@ -1,5 +1,8 @@
-const args = require('minimist')(process.argv.slice(2));
 const { Octokit } = require('@octokit/rest');
+const minimist = require('minimist');
+
+const args = minimist(process.argv.slice(2));
+
 const octokit = new Octokit();
 
 async function checkIfDocOnlyChange () {
@@ -7,8 +10,7 @@ async function checkIfDocOnlyChange () {
 
   if (prNumber || prURL) {
     try {
-      // CircleCI doesn't provide the PR number except on forked PRs,
-      // so to cover all cases we just extract it from the PR URL.
+      // extract the PR number from the PR URL.
       if (!prNumber || isNaN(prNumber)) {
         if (args.prURL) {
           prNumber = prURL.split('/').pop();
@@ -27,6 +29,7 @@ async function checkIfDocOnlyChange () {
       const nonDocChange = filesChanged.length === 0 || filesChanged.find(({ filename }) => {
         const fileDirs = filename.split('/');
         if (fileDirs[0] !== 'docs') return true;
+        return false;
       });
 
       process.exit(nonDocChange ? 1 : 0);

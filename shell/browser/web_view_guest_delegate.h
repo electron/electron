@@ -11,6 +11,7 @@
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "shell/browser/web_contents_zoom_controller.h"
 #include "shell/browser/web_contents_zoom_observer.h"
+#include "third_party/blink/public/common/tokens/tokens.h"
 
 namespace electron {
 
@@ -31,7 +32,7 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
 
   // Attach to the iframe.
   void AttachToIframe(content::WebContents* embedder_web_contents,
-                      int embedder_frame_id);
+                      blink::LocalFrameToken& embedder_frame_token);
   void WillDestroy();
 
  protected:

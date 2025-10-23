@@ -10,12 +10,11 @@
 
 namespace gin_helper {
 
-ErrorThrower::ErrorThrower(v8::Isolate* isolate) : isolate_(isolate) {}
-
-// This constructor should be rarely if ever used, since
-// v8::Isolate::GetCurrent() uses atomic loads and is thus a bit
-// costly to invoke
-ErrorThrower::ErrorThrower() : isolate_(v8::Isolate::GetCurrent()) {}
+v8::Isolate* ErrorThrower::isolate() const {
+  // Callers should prefer to specify the isolate in the constructor,
+  // since GetCurrent() uses atomic loads and is thus a bit costly to invoke
+  return isolate_ ? isolate_.get() : v8::Isolate::GetCurrent();
+}
 
 void ErrorThrower::ThrowError(const std::string_view err_msg) const {
   Throw(v8::Exception::Error, err_msg);
@@ -39,9 +38,10 @@ void ErrorThrower::ThrowSyntaxError(const std::string_view err_msg) const {
 
 void ErrorThrower::Throw(ErrorGenerator gen,
                          const std::string_view err_msg) const {
-  v8::Local<v8::Value> exception = gen(gin::StringToV8(isolate_, err_msg), {});
-  if (!isolate_->IsExecutionTerminating())
-    isolate_->ThrowException(exception);
+  v8::Isolate* isolate = this->isolate();
+
+  if (!isolate->IsExecutionTerminating())
+    isolate->ThrowException(gen(gin::StringToV8(isolate, err_msg), {}));
 }
 
 }  // namespace gin_helper

@@ -1,11 +1,14 @@
-import { expect } from 'chai';
-import * as path from 'node:path';
-import * as http from 'node:http';
-import { emittedNTimes } from './lib/events-helpers';
-import { closeWindow } from './lib/window-helpers';
 import { app, BrowserWindow, ipcMain } from 'electron/main';
-import { ifdescribe, listen } from './lib/spec-helpers';
+
+import { expect } from 'chai';
+
 import { once } from 'node:events';
+import * as http from 'node:http';
+import * as path from 'node:path';
+
+import { emittedNTimes } from './lib/events-helpers';
+import { ifdescribe, listen } from './lib/spec-helpers';
+import { closeWindow } from './lib/window-helpers';
 
 describe('renderer nodeIntegrationInSubFrames', () => {
   const generateTests = (description: string, webPreferences: any) => {
@@ -32,26 +35,21 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2);
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`));
         const [event1, event2] = await detailsPromise;
-        expect(event1[0].frameId).to.not.equal(event2[0].frameId);
-        expect(event1[0].frameId).to.equal(event1[2]);
-        expect(event2[0].frameId).to.equal(event2[2]);
-        expect(event1[0].senderFrame.routingId).to.equal(event1[2]);
-        expect(event2[0].senderFrame.routingId).to.equal(event2[2]);
+        expect(event1[0].senderFrame.frameToken).to.not.equal(event2[0].senderFrame.frameToken);
+        expect(event1[0].senderFrame.frameToken).to.equal(event1[2]);
+        expect(event2[0].senderFrame.frameToken).to.equal(event2[2]);
       });
 
       it('should load preload scripts in nested iframes', async () => {
         const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 3);
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-with-frame-container${fixtureSuffix}.html`));
         const [event1, event2, event3] = await detailsPromise;
-        expect(event1[0].frameId).to.not.equal(event2[0].frameId);
-        expect(event1[0].frameId).to.not.equal(event3[0].frameId);
-        expect(event2[0].frameId).to.not.equal(event3[0].frameId);
-        expect(event1[0].frameId).to.equal(event1[2]);
-        expect(event2[0].frameId).to.equal(event2[2]);
-        expect(event3[0].frameId).to.equal(event3[2]);
-        expect(event1[0].senderFrame.routingId).to.equal(event1[2]);
-        expect(event2[0].senderFrame.routingId).to.equal(event2[2]);
-        expect(event3[0].senderFrame.routingId).to.equal(event3[2]);
+        expect(event1[0].senderFrame.frameToken).to.not.equal(event2[0].senderFrame.frameToken);
+        expect(event1[0].senderFrame.frameToken).to.not.equal(event3[0].senderFrame.frameToken);
+        expect(event2[0].senderFrame.frameToken).to.not.equal(event3[0].senderFrame.frameToken);
+        expect(event1[0].senderFrame.frameToken).to.equal(event1[2]);
+        expect(event2[0].senderFrame.frameToken).to.equal(event2[2]);
+        expect(event3[0].senderFrame.frameToken).to.equal(event3[2]);
       });
 
       it('should correctly reply to the main frame with using event.reply', async () => {
@@ -60,8 +58,8 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const [event1] = await detailsPromise;
         const pongPromise = once(ipcMain, 'preload-pong');
         event1[0].reply('preload-ping');
-        const [, frameId] = await pongPromise;
-        expect(frameId).to.equal(event1[0].frameId);
+        const [, frameToken] = await pongPromise;
+        expect(frameToken).to.equal(event1[0].senderFrame.frameToken);
       });
 
       it('should correctly reply to the main frame with using event.senderFrame.send', async () => {
@@ -70,8 +68,8 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const [event1] = await detailsPromise;
         const pongPromise = once(ipcMain, 'preload-pong');
         event1[0].senderFrame.send('preload-ping');
-        const [, frameId] = await pongPromise;
-        expect(frameId).to.equal(event1[0].frameId);
+        const [, frameToken] = await pongPromise;
+        expect(frameToken).to.equal(event1[0].senderFrame.frameToken);
       });
 
       it('should correctly reply to the sub-frames with using event.reply', async () => {
@@ -80,8 +78,8 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const [, event2] = await detailsPromise;
         const pongPromise = once(ipcMain, 'preload-pong');
         event2[0].reply('preload-ping');
-        const [, frameId] = await pongPromise;
-        expect(frameId).to.equal(event2[0].frameId);
+        const [, frameToken] = await pongPromise;
+        expect(frameToken).to.equal(event2[0].senderFrame.frameToken);
       });
 
       it('should correctly reply to the sub-frames with using event.senderFrame.send', async () => {
@@ -90,8 +88,8 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const [, event2] = await detailsPromise;
         const pongPromise = once(ipcMain, 'preload-pong');
         event2[0].senderFrame.send('preload-ping');
-        const [, frameId] = await pongPromise;
-        expect(frameId).to.equal(event2[0].frameId);
+        const [, frameToken] = await pongPromise;
+        expect(frameToken).to.equal(event2[0].senderFrame.frameToken);
       });
 
       it('should correctly reply to the nested sub-frames with using event.reply', async () => {
@@ -100,8 +98,8 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const [, , event3] = await detailsPromise;
         const pongPromise = once(ipcMain, 'preload-pong');
         event3[0].reply('preload-ping');
-        const [, frameId] = await pongPromise;
-        expect(frameId).to.equal(event3[0].frameId);
+        const [, frameToken] = await pongPromise;
+        expect(frameToken).to.equal(event3[0].senderFrame.frameToken);
       });
 
       it('should correctly reply to the nested sub-frames with using event.senderFrame.send', async () => {
@@ -110,8 +108,8 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const [, , event3] = await detailsPromise;
         const pongPromise = once(ipcMain, 'preload-pong');
         event3[0].senderFrame.send('preload-ping');
-        const [, frameId] = await pongPromise;
-        expect(frameId).to.equal(event3[0].frameId);
+        const [, frameToken] = await pongPromise;
+        expect(frameToken).to.equal(event3[0].senderFrame.frameToken);
       });
 
       it('should not expose globals in main world', async () => {
@@ -211,6 +209,40 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       await w.loadURL('about:blank');
       return Promise.race([promisePass, promiseFail]);
     });
+  });
+});
+
+describe('subframe with non-standard schemes', () => {
+  it('should not crash when changing subframe src to about:blank and back', async () => {
+    const w = new BrowserWindow({ show: false, width: 400, height: 400 });
+
+    const fwfPath = path.resolve(__dirname, 'fixtures/sub-frames/frame-with-frame.html');
+    await w.loadFile(fwfPath);
+
+    const originalSrc = await w.webContents.executeJavaScript(`
+      const iframe = document.querySelector('iframe');
+      iframe.src;
+    `);
+
+    const updatedSrc = await w.webContents.executeJavaScript(`
+      new Promise((resolve, reject) => {
+        const iframe = document.querySelector('iframe');
+        iframe.src = 'about:blank';
+        resolve(iframe.src);
+      })
+    `);
+
+    expect(updatedSrc).to.equal('about:blank');
+
+    const restoredSrc = await w.webContents.executeJavaScript(`
+      new Promise((resolve, reject) => {
+        const iframe = document.querySelector('iframe');
+        iframe.src = '${originalSrc}';
+        resolve(iframe.src);
+      })
+    `);
+
+    expect(restoredSrc).to.equal(originalSrc);
   });
 });
 

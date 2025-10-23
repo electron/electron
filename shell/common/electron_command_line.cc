@@ -5,31 +5,44 @@
 #include "shell/common/electron_command_line.h"
 
 #include "base/command_line.h"
-#include "uv.h"  // NOLINT(build/include_directory)
+#include "base/containers/to_vector.h"
+#include "base/no_destructor.h"
+#include "base/strings/utf_string_conversions.h"
 
 namespace electron {
 
 // static
-base::CommandLine::StringVector ElectronCommandLine::argv_;
+base::CommandLine::StringVector& ElectronCommandLine::argv() {
+  static base::NoDestructor<base::CommandLine::StringVector> g_argv;
+  return *g_argv;
+}
 
 // static
-void ElectronCommandLine::Init(int argc, base::CommandLine::CharType** argv) {
-  DCHECK(argv_.empty());
+void ElectronCommandLine::Init(int argc,
+                               base::CommandLine::CharType const* const* argv) {
+  DCHECK(ElectronCommandLine::argv().empty());
 
-  // NOTE: uv_setup_args does nothing on Windows, so we don't need to call it.
-  // Otherwise we'd have to convert the arguments from UTF16.
-#if !BUILDFLAG(IS_WIN)
-  // Hack around with the argv pointer. Used for process.title = "blah"
-  argv = uv_setup_args(argc, argv);
+  // Safety: as is normal in command lines, argc and argv must correspond
+  // to one another. Otherwise there will be out-of-bounds accesses.
+  ElectronCommandLine::argv().assign(argv, UNSAFE_BUFFERS(argv + argc));
+}
+
+// static
+std::vector<std::string> ElectronCommandLine::AsUtf8() {
+  DCHECK(!argv().empty());
+
+#if BUILDFLAG(IS_WIN)
+  return base::ToVector(
+      argv(), [](const auto& wstr) { return base::WideToUTF8(wstr); });
+#else
+  return argv();
 #endif
-
-  argv_.assign(argv, argv + argc);
 }
 
 #if BUILDFLAG(IS_LINUX)
 // static
 void ElectronCommandLine::InitializeFromCommandLine() {
-  argv_ = base::CommandLine::ForCurrentProcess()->argv();
+  argv() = base::CommandLine::ForCurrentProcess()->argv();
 }
 #endif
 

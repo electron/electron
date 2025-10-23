@@ -29,6 +29,8 @@ class ScopedDisableResize {
 
 }  // namespace electron
 
+class ElectronNativeWindowObserver;
+
 @interface ElectronNSWindow : NativeWidgetMacNSWindow {
  @private
   raw_ptr<electron::NativeWindowMac> shell_;
@@ -38,14 +40,14 @@ class ScopedDisableResize {
 @property BOOL disableAutoHideCursor;
 @property BOOL disableKeyOrMainWindow;
 @property(nonatomic, retain) NSVisualEffectView* vibrantView;
-@property(nonatomic, retain) NSImage* cornerMask;
 - (id)initWithShell:(electron::NativeWindowMac*)shell
           styleMask:(NSUInteger)styleMask;
+- (void)cleanup;
 - (electron::NativeWindowMac*)shell;
 - (id)accessibilityFocusedUIElement;
 - (NSRect)originalContentRectForFrameRect:(NSRect)frameRect;
 - (BOOL)toggleFullScreenMode:(id)sender;
-- (NSImage*)_cornerMask;
+- (void)disableHeadlessMode;
 @end
 
 #endif  // ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_NS_WINDOW_H_

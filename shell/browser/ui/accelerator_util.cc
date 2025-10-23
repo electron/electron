@@ -7,17 +7,17 @@
 #include <stdio.h>
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "base/logging.h"
-#include "base/stl_util.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
 #include "shell/common/keyboard_util.h"
 
 namespace accelerator_util {
 
-bool StringToAccelerator(const std::string& shortcut,
+bool StringToAccelerator(const std::string_view shortcut,
                          ui::Accelerator* accelerator) {
   if (!base::IsStringASCII(shortcut)) {
     LOG(ERROR) << "The accelerator string can only contain ASCII characters, "
@@ -27,14 +27,14 @@ bool StringToAccelerator(const std::string& shortcut,
     return false;
   }
 
-  std::vector<std::string> tokens = base::SplitString(
+  const std::vector<std::string_view> tokens = base::SplitStringPiece(
       shortcut, "+", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 
   // Now, parse it into an accelerator.
   int modifiers = ui::EF_NONE;
   ui::KeyboardCode key = ui::VKEY_UNKNOWN;
   std::optional<char16_t> shifted_char;
-  for (const auto& token : tokens) {
+  for (const std::string_view token : tokens) {
     ui::KeyboardCode code = electron::KeyboardCodeFromStr(token, &shifted_char);
     if (shifted_char)
       modifiers |= ui::EF_SHIFT_DOWN;

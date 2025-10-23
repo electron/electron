@@ -8,10 +8,10 @@ This reverts commit ebd8b8965c74ab06bb91f7a00b23822e1f1f26ca.
 It is causing significant TLS failures in Node.js.
 
 diff --git a/ssl/ssl_buffer.cc b/ssl/ssl_buffer.cc
-index 2ca14efae5ea478f43794a81883b00dfdb1a37b0..d73055fbf39334925ef4b4804bbaca57c4a4d5d3 100644
+index 2cdcbc346175eeee69402ecee7f169e61c655199..f7226fe711e4214b216ea2c5173a02124b80f9ef 100644
 --- a/ssl/ssl_buffer.cc
 +++ b/ssl/ssl_buffer.cc
-@@ -232,7 +232,6 @@ int ssl_handle_open_record(SSL *ssl, bool *out_retry, ssl_open_record_t ret,
+@@ -230,7 +230,6 @@ int ssl_handle_open_record(SSL *ssl, bool *out_retry, ssl_open_record_t ret,
        return 1;
  
      case ssl_open_record_close_notify:
@@ -20,10 +20,10 @@ index 2ca14efae5ea478f43794a81883b00dfdb1a37b0..d73055fbf39334925ef4b4804bbaca57
  
      case ssl_open_record_error:
 diff --git a/ssl/ssl_lib.cc b/ssl/ssl_lib.cc
-index ec0ee893e58d49890f5545d02b533d07e362309c..b1c1a77c340e7d2c9e2ef21fcf0cc01ed6e15cc0 100644
+index bbe428f20af5e67cf1335c7f1e42516638234af2..507f85f983bdc4a8c654dd10caf38a42634f5026 100644
 --- a/ssl/ssl_lib.cc
 +++ b/ssl/ssl_lib.cc
-@@ -1340,7 +1340,7 @@ int SSL_get_error(const SSL *ssl, int ret_code) {
+@@ -1211,7 +1211,7 @@ int SSL_get_error(const SSL *ssl, int ret_code) {
    }
  
    if (ret_code == 0) {
@@ -32,7 +32,7 @@ index ec0ee893e58d49890f5545d02b533d07e362309c..b1c1a77c340e7d2c9e2ef21fcf0cc01e
        return SSL_ERROR_ZERO_RETURN;
      }
      // An EOF was observed which violates the protocol, and the underlying
-@@ -2707,13 +2707,7 @@ void *SSL_CTX_get_ex_data(const SSL_CTX *ctx, int idx) {
+@@ -2672,13 +2672,7 @@ void *SSL_CTX_get_ex_data(const SSL_CTX *ctx, int idx) {
    return CRYPTO_get_ex_data(&ctx->ex_data, idx);
  }
  

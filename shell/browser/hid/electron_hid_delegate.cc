@@ -7,19 +7,19 @@
 #include <string>
 #include <utility>
 
-#include "base/command_line.h"
-#include "base/containers/contains.h"
 #include "base/scoped_observation.h"
 #include "chrome/common/chrome_features.h"
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
 #include "services/device/public/cpp/hid/hid_switches.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/hid/hid_chooser_context.h"
 #include "shell/browser/hid/hid_chooser_context_factory.h"
 #include "shell/browser/hid/hid_chooser_controller.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
+#include "third_party/blink/public/mojom/hid/hid.mojom.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/common/constants.h"
@@ -56,25 +56,25 @@ class ElectronHidDelegate::ContextObservation
 
   // HidChooserContext::DeviceObserver:
   void OnDeviceAdded(const device::mojom::HidDeviceInfo& device_info) override {
-    for (auto& observer : observer_list_)
-      observer.OnDeviceAdded(device_info);
+    observer_list_.Notify(&content::HidDelegate::Observer::OnDeviceAdded,
+                          device_info);
   }
 
   void OnDeviceRemoved(
       const device::mojom::HidDeviceInfo& device_info) override {
-    for (auto& observer : observer_list_)
-      observer.OnDeviceRemoved(device_info);
+    observer_list_.Notify(&content::HidDelegate::Observer::OnDeviceRemoved,
+                          device_info);
   }
 
   void OnDeviceChanged(
       const device::mojom::HidDeviceInfo& device_info) override {
-    for (auto& observer : observer_list_)
-      observer.OnDeviceChanged(device_info);
+    observer_list_.Notify(&content::HidDelegate::Observer::OnDeviceChanged,
+                          device_info);
   }
 
   void OnHidManagerConnectionError() override {
-    for (auto& observer : observer_list_)
-      observer.OnHidManagerConnectionError();
+    observer_list_.Notify(
+        &content::HidDelegate::Observer::OnHidManagerConnectionError);
   }
 
   void OnHidChooserContextShutdown() override {
@@ -117,7 +117,7 @@ std::unique_ptr<content::HidChooser> ElectronHidDelegate::RunChooser(
 
   // Start observing HidChooserContext for permission and device events.
   GetContextObserver(browser_context);
-  DCHECK(base::Contains(observations_, browser_context));
+  DCHECK(observations_.contains(browser_context));
 
   HidChooserController* controller = ControllerForFrame(render_frame_host);
   if (controller) {
@@ -144,9 +144,7 @@ bool ElectronHidDelegate::CanRequestDevicePermission(
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context->GetPermissionControllerDelegate());
   return permission_manager->CheckPermissionWithDetails(
-      static_cast<blink::PermissionType>(
-          WebContentsPermissionHelper::PermissionType::HID),
-      nullptr, origin.GetURL(), std::move(details));
+      blink::PermissionType::HID, nullptr, origin.GetURL(), std::move(details));
 }
 
 bool ElectronHidDelegate::HasDevicePermission(
@@ -187,7 +185,7 @@ void ElectronHidDelegate::RemoveObserver(
     content::HidDelegate::Observer* observer) {
   if (!browser_context)
     return;
-  DCHECK(base::Contains(observations_, browser_context));
+  DCHECK(observations_.contains(browser_context));
   GetContextObserver(browser_context)->RemoveObserver(observer);
 }
 
@@ -212,9 +210,7 @@ bool ElectronHidDelegate::IsServiceWorkerAllowedForOrigin(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // WebHID is only available on extension service workers with feature flag
   // enabled for now.
-  if (base::FeatureList::IsEnabled(
-          features::kEnableWebHidOnExtensionServiceWorker) &&
-      origin.scheme() == extensions::kExtensionScheme)
+  if (origin.scheme() == extensions::kExtensionScheme)
     return true;
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   return false;
@@ -223,11 +219,10 @@ bool ElectronHidDelegate::IsServiceWorkerAllowedForOrigin(
 ElectronHidDelegate::ContextObservation*
 ElectronHidDelegate::GetContextObserver(
     content::BrowserContext* browser_context) {
-  if (!base::Contains(observations_, browser_context)) {
-    observations_.emplace(browser_context, std::make_unique<ContextObservation>(
-                                               this, browser_context));
-  }
-  return observations_[browser_context].get();
+  auto& observation = observations_[browser_context];
+  if (!observation)
+    observation = std::make_unique<ContextObservation>(this, browser_context);
+  return observation.get();
 }
 
 HidChooserController* ElectronHidDelegate::ControllerForFrame(
@@ -246,8 +241,7 @@ HidChooserController* ElectronHidDelegate::AddControllerForFrame(
   auto controller = std::make_unique<HidChooserController>(
       render_frame_host, std::move(filters), std::move(exclusion_filters),
       std::move(callback), web_contents, weak_factory_.GetWeakPtr());
-  controller_map_.insert(
-      std::make_pair(render_frame_host, std::move(controller)));
+  controller_map_.try_emplace(render_frame_host, std::move(controller));
   return ControllerForFrame(render_frame_host);
 }
 

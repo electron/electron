@@ -17,8 +17,8 @@ namespace electron {
 
 class NativeWindowViews;
 
-class FramelessView : public views::NonClientFrameView {
-  METADATA_HEADER(FramelessView, views::NonClientFrameView)
+class FramelessView : public views::FrameView {
+  METADATA_HEADER(FramelessView, views::FrameView)
 
  public:
   FramelessView();
@@ -33,22 +33,29 @@ class FramelessView : public views::NonClientFrameView {
   // Returns whether the |point| is on frameless window's resizing border.
   virtual int ResizingBorderHitTest(const gfx::Point& point);
 
+  // Tells the NonClientView to invalidate caption buttons
+  // and forces a re-layout and re-paint.
+  virtual void InvalidateCaptionButtons() {}
+
+  NativeWindowViews* window() const { return window_; }
+  views::Widget* frame() const { return frame_; }
+
  protected:
   // Helper function for subclasses to implement ResizingBorderHitTest with a
   // custom resize inset.
   int ResizingBorderHitTestImpl(const gfx::Point& point,
                                 const gfx::Insets& resize_border);
 
-  // views::NonClientFrameView:
+  // views::FrameView:
   gfx::Rect GetBoundsForClientView() const override;
   gfx::Rect GetWindowBoundsForClientBounds(
       const gfx::Rect& client_bounds) const override;
   int NonClientHitTest(const gfx::Point& point) override;
-  void GetWindowMask(const gfx::Size& size, SkPath* window_mask) override;
-  void ResetWindowControls() override;
-  void UpdateWindowIcon() override;
-  void UpdateWindowTitle() override;
-  void SizeConstraintsChanged() override;
+  void GetWindowMask(const gfx::Size& size, SkPath* window_mask) override {}
+  void ResetWindowControls() override {}
+  void UpdateWindowIcon() override {}
+  void UpdateWindowTitle() override {}
+  void SizeConstraintsChanged() override {}
 
   // views::ViewTargeterDelegate:
   views::View* TargetForRect(views::View* root, const gfx::Rect& rect) override;

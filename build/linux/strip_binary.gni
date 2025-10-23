@@ -1,0 +1,70 @@
+# Copyright 2021 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This has been adapted from https://source.chromium.org/chromium/chromium/src/+/main:build/linux/strip_binary.gni;drc=c220a41e0422d45f1657c28146d32e99cc53640b
+# The notable difference is it has an option to compress the debug sections
+
+import("//build/config/clang/clang.gni")
+import("//build/toolchain/toolchain.gni")
+
+# Extracts symbols from a binary into a symbol file.
+#
+# Args:
+#   binary_input: Path to the binary containing symbols to extract, e.g.:
+#       "$root_out_dir/chrome"
+#   symbol_output: Desired output file for symbols, e.g.:
+#       "$root_out_dir/chrome.debug"
+#   stripped_binary_output: Desired output file for stripped file, e.g.:
+#       "$root_out_dir/chrome.stripped"
+#   compress_debug_sections: If true, compress the extracted debug sections
+template("strip_binary") {
+  forward_variables_from(invoker,
+                         [
+                           "deps",
+                           "testonly",
+                         ])
+  action("${target_name}") {
+    llvm_strip_binary = "${clang_base_path}/bin/llvm-strip"
+    llvm_objcopy_binary = "${clang_base_path}/bin/llvm-objcopy"
+    script = "//electron/build/linux/strip_binary.py"
+
+    if (defined(invoker.stripped_binary_output)) {
+      stripped_binary_output = invoker.stripped_binary_output
+    } else {
+      stripped_binary_output = invoker.binary_input + ".stripped"
+    }
+    if (defined(invoker.symbol_output)) {
+      symbol_output = invoker.symbol_output
+    } else {
+      symbol_output = invoker.binary_input + ".debug"
+    }
+
+    inputs = [
+      invoker.binary_input,
+      llvm_strip_binary,
+      llvm_objcopy_binary,
+    ]
+    outputs = [
+      symbol_output,
+      stripped_binary_output,
+    ]
+    args = [
+      "--llvm-strip-binary-path",
+      rebase_path(llvm_strip_binary, root_build_dir),
+      "--llvm-objcopy-binary-path",
+      rebase_path(llvm_objcopy_binary, root_build_dir),
+      "--symbol-output",
+      rebase_path(symbol_output, root_build_dir),
+      "--stripped-binary-output",
+      rebase_path(stripped_binary_output, root_build_dir),
+      "--binary-input",
+      rebase_path(invoker.binary_input, root_build_dir),
+    ]
+
+    if (defined(invoker.compress_debug_sections) &&
+        invoker.compress_debug_sections) {
+      args += [ "--compress-debug-sections" ]
+    }
+  }
+}

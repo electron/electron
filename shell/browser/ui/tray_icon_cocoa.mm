@@ -11,13 +11,13 @@
 #include "base/message_loop/message_pump_apple.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/current_thread.h"
+#include "base/uuid.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/ui/cocoa/NSString+ANSI.h"
 #include "shell/browser/ui/cocoa/electron_menu_controller.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/mac/coordinate_conversion.h"
-#include "ui/native_theme/native_theme.h"
 
 @interface StatusItemView : NSView {
   raw_ptr<electron::TrayIconCocoa> trayIcon_;  // weak
@@ -67,6 +67,10 @@
 
 - (void)updateDimensions {
   [self setFrame:[statusItem_ button].frame];
+}
+
+- (void)setAutosaveName:(NSString*)name {
+  statusItem_.autosaveName = name;
 }
 
 - (void)updateTrackingAreas {
@@ -421,8 +425,12 @@ gfx::Rect TrayIconCocoa::GetBounds() {
   return gfx::ScreenRectFromNSRect([status_item_view_ window].frame);
 }
 
+void TrayIconCocoa::SetAutoSaveName(const std::string& name) {
+  [status_item_view_ setAutosaveName:base::SysUTF8ToNSString(name)];
+}
+
 // static
-TrayIcon* TrayIcon::Create(std::optional<UUID> guid) {
+TrayIcon* TrayIcon::Create(std::optional<base::Uuid> guid) {
   return new TrayIconCocoa;
 }
 

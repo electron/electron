@@ -27,7 +27,7 @@ class NotifyIconHost {
   NotifyIconHost(const NotifyIconHost&) = delete;
   NotifyIconHost& operator=(const NotifyIconHost&) = delete;
 
-  NotifyIcon* CreateNotifyIcon(std::optional<UUID> guid);
+  NotifyIcon* CreateNotifyIcon(std::optional<base::Uuid> guid);
   void Remove(NotifyIcon* notify_icon);
 
  private:

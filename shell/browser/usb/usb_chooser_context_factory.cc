@@ -18,11 +18,11 @@ UsbChooserContextFactory::UsbChooserContextFactory()
 
 UsbChooserContextFactory::~UsbChooserContextFactory() = default;
 
-KeyedService* UsbChooserContextFactory::BuildServiceInstanceFor(
+std::unique_ptr<KeyedService>
+UsbChooserContextFactory::BuildServiceInstanceForBrowserContext(
     content::BrowserContext* context) const {
-  auto* browser_context =
-      static_cast<electron::ElectronBrowserContext*>(context);
-  return new UsbChooserContext(browser_context);
+  return std::make_unique<UsbChooserContext>(
+      static_cast<electron::ElectronBrowserContext*>(context));
 }
 
 // static

@@ -1,5 +1,8 @@
-import { EventEmitter } from 'events';
+import { TouchBar } from 'electron/main';
 import type { BaseWindow as TLWT } from 'electron/main';
+
+import { EventEmitter } from 'events';
+
 const { BaseWindow } = process._linkedBinding('electron_browser_base_window') as { BaseWindow: typeof TLWT };
 
 Object.setPrototypeOf(BaseWindow.prototype, EventEmitter.prototype);
@@ -13,6 +16,10 @@ BaseWindow.prototype._init = function (this: TLWT) {
     const menu = app.applicationMenu;
     if (menu) this.setMenu(menu);
   }
+};
+
+BaseWindow.prototype.setTouchBar = function (touchBar) {
+  (TouchBar as any)._setOnWindow(touchBar, this);
 };
 
 // Properties

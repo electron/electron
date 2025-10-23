@@ -1,10 +1,18 @@
-import { expect } from 'chai';
 import { systemPreferences } from 'electron/main';
-import { ifdescribe } from './lib/spec-helpers';
+
+import { expect } from 'chai';
+
+import { ifdescribe, ifit } from './lib/spec-helpers';
 
 describe('systemPreferences module', () => {
-  ifdescribe(process.platform === 'win32')('systemPreferences.getAccentColor', () => {
-    it('should return a non-empty string', () => {
+  ifdescribe(['win32', 'linux'].includes(process.platform))('systemPreferences.getAccentColor', () => {
+    ifit(process.platform === 'linux')('should return a string', () => {
+      // Testing this properly (i.e. non-empty string) requires
+      // some tricky D-Bus mock setup.
+      const accentColor = systemPreferences.getAccentColor();
+      expect(accentColor).to.be.a('string');
+    });
+    ifit(process.platform === 'win32')('should return a non-empty string', () => {
       const accentColor = systemPreferences.getAccentColor();
       expect(accentColor).to.be.a('string').that.is.not.empty('accent color');
     });

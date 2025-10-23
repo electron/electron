@@ -12,7 +12,7 @@ propose changes to this document in a pull request.
 
 ## [Issues](https://electronjs.org/docs/development/issues)
 
-Issues are created [here](https://github.com/electron/electron/issues/new).
+Issues are created [here](https://github.com/electron/electron/issues/new/choose).
 
 * [How to Contribute in Issues](https://electronjs.org/docs/development/issues#how-to-contribute-in-issues)
 * [Asking for General Help](https://electronjs.org/docs/development/issues#asking-for-general-help)
@@ -71,4 +71,4 @@ See [Coding Style](https://electronjs.org/docs/development/coding-style) for inf
 ## Further Reading
 
 For more in-depth guides on developing Electron, see
-[/docs/development](/docs/development/README.md)
+[/docs/development](/docs/development/README.md).

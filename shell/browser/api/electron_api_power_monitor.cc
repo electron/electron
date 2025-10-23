@@ -8,11 +8,11 @@
 #include "base/power_monitor/power_monitor_device_source.h"
 #include "base/power_monitor/power_observer.h"
 #include "gin/data_object_builder.h"
-#include "gin/handle.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
@@ -60,7 +60,8 @@ struct Converter<base::PowerThermalObserver::DeviceThermalState> {
 
 namespace electron::api {
 
-gin::WrapperInfo PowerMonitor::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo PowerMonitor::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
 #if BUILDFLAG(IS_MAC)
@@ -68,9 +69,10 @@ PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
       &PowerMonitor::ShouldShutdown, base::Unretained(this)));
 #endif
 
-  base::PowerMonitor::AddPowerStateObserver(this);
-  base::PowerMonitor::AddPowerSuspendObserver(this);
-  base::PowerMonitor::AddPowerThermalObserver(this);
+  auto* power_monitor = base::PowerMonitor::GetInstance();
+  power_monitor->AddPowerStateObserver(this);
+  power_monitor->AddPowerSuspendObserver(this);
+  power_monitor->AddPowerThermalObserver(this);
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   InitPlatformSpecificMonitors();
@@ -78,20 +80,29 @@ PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
 }
 
 PowerMonitor::~PowerMonitor() {
-  base::PowerMonitor::RemovePowerStateObserver(this);
-  base::PowerMonitor::RemovePowerSuspendObserver(this);
-  base::PowerMonitor::RemovePowerThermalObserver(this);
+  auto* power_monitor = base::PowerMonitor::GetInstance();
+  power_monitor->RemovePowerStateObserver(this);
+  power_monitor->RemovePowerSuspendObserver(this);
+  power_monitor->RemovePowerThermalObserver(this);
 }
 
 bool PowerMonitor::ShouldShutdown() {
   return !Emit("shutdown");
 }
 
-void PowerMonitor::OnPowerStateChange(bool on_battery_power) {
-  if (on_battery_power)
-    Emit("on-battery");
-  else
-    Emit("on-ac");
+void PowerMonitor::OnBatteryPowerStatusChange(
+    BatteryPowerStatus battery_power_status) {
+  switch (battery_power_status) {
+    case BatteryPowerStatus::kBatteryPower:
+      Emit("on-battery");
+      break;
+    case BatteryPowerStatus::kExternalPower:
+      Emit("on-ac");
+      break;
+    case BatteryPowerStatus::kUnknown:
+      // Ignored
+      break;
+  }
 }
 
 void PowerMonitor::OnSuspend() {
@@ -133,7 +144,7 @@ void PowerMonitor::SetListeningForShutdown(bool is_listening) {
 // static
 v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
   auto* pm = new PowerMonitor(isolate);
-  auto handle = gin::CreateHandle(isolate, pm).ToV8();
+  auto handle = gin_helper::CreateHandle(isolate, pm).ToV8();
   pm->Pin(isolate);
   return handle;
 }
@@ -175,19 +186,19 @@ int GetSystemIdleTime() {
 }
 
 bool IsOnBatteryPower() {
-  return base::PowerMonitor::IsOnBatteryPower();
+  return base::PowerMonitor::GetInstance()->IsOnBatteryPower();
 }
 
 base::PowerThermalObserver::DeviceThermalState GetCurrentThermalState() {
-  return base::PowerMonitor::GetCurrentThermalState();
+  return base::PowerMonitor::GetInstance()->GetCurrentThermalState();
 }
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("createPowerMonitor",
                  base::BindRepeating(&PowerMonitor::Create));
   dict.SetMethod("getSystemIdleState",

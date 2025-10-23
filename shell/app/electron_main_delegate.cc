@@ -13,21 +13,28 @@
 #include "base/apple/bundle_locations.h"
 #include "base/base_switches.h"
 #include "base/command_line.h"
+#include "base/debug/leak_annotations.h"
 #include "base/debug/stack_trace.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
+#include "base/metrics/field_trial.h"
 #include "base/path_service.h"
-#include "base/strings/string_split.h"
+#include "base/strings/cstring_view.h"
+#include "base/strings/string_number_conversions.cc"
+#include "base/strings/string_util_internal.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/content_settings/core/common/content_settings_pattern.h"
 #include "content/public/app/initialize_mojo_core.h"
 #include "content/public/common/content_switches.h"
+#include "crypto/hash.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
+#include "electron/mas.h"
+#include "electron/snapshot_checksum.h"
 #include "extensions/common/constants.h"
-#include "ipc/ipc_buildflags.h"
+#include "gin/v8_initializer.h"
 #include "sandbox/policy/switches.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/command_line_args.h"
@@ -49,6 +56,7 @@
 #include "third_party/abseil-cpp/absl/types/variant.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/ui_base_switches.h"
+#include "v8/include/v8-snapshot.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "shell/app/electron_main_delegate_mac.h"
@@ -79,10 +87,11 @@ namespace electron {
 
 namespace {
 
-const char kRelauncherProcess[] = "relauncher";
+constexpr std::string_view kRelauncherProcess = "relauncher";
 
-constexpr std::string_view kElectronDisableSandbox{"ELECTRON_DISABLE_SANDBOX"};
-constexpr std::string_view kElectronEnableStackDumping{
+constexpr base::cstring_view kElectronDisableSandbox{
+    "ELECTRON_DISABLE_SANDBOX"};
+constexpr base::cstring_view kElectronEnableStackDumping{
     "ELECTRON_ENABLE_STACK_DUMPING"};
 
 // Returns true if this subprocess type needs the ResourceBundle initialized
@@ -98,7 +107,6 @@ bool SubprocessNeedsResourceBundle(const std::string& process_type) {
       // profiles.
       process_type == ::switches::kGpuProcess ||
 #endif
-      process_type == ::switches::kPpapiPluginProcess ||
       process_type == ::switches::kRendererProcess ||
       process_type == ::switches::kUtilityProcess;
 }
@@ -207,6 +215,20 @@ void RegisterPathProvider() {
                                       PATH_END);
 }
 
+void ValidateV8Snapshot(v8::StartupData* data) {
+  if (data->data &&
+      electron::fuses::IsEmbeddedAsarIntegrityValidationEnabled()) {
+    CHECK_GT(data->raw_size, 0);
+    UNSAFE_BUFFERS({
+      base::span<const char> span_data(
+          data->data, static_cast<unsigned long>(data->raw_size));
+      CHECK(base::ToLowerASCII(base::HexEncode(
+                crypto::hash::Sha256(base::as_bytes(span_data)))) ==
+            electron::snapshot_checksum::kChecksum);
+    })
+  }
+}
+
 }  // namespace
 
 std::string LoadResourceBundle(const std::string& locale) {
@@ -219,7 +241,7 @@ std::string LoadResourceBundle(const std::string& locale) {
   pak_dir =
       base::apple::FrameworkBundlePath().Append(FILE_PATH_LITERAL("Resources"));
 #else
-  base::PathService::Get(base::DIR_MODULE, &pak_dir);
+  base::PathService::Get(base::DIR_ASSETS, &pak_dir);
 #endif
 
   std::string loaded_locale = ui::ResourceBundle::InitSharedInstanceWithLocale(
@@ -230,7 +252,9 @@ std::string LoadResourceBundle(const std::string& locale) {
   return loaded_locale;
 }
 
-ElectronMainDelegate::ElectronMainDelegate() = default;
+ElectronMainDelegate::ElectronMainDelegate() {
+  gin::SetV8SnapshotValidator(base::BindRepeating(&ValidateV8Snapshot));
+}
 
 ElectronMainDelegate::~ElectronMainDelegate() = default;
 
@@ -270,12 +294,6 @@ std::optional<int> ElectronMainDelegate::BasicStartupComplete() {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   ContentSettingsPattern::SetNonWildcardDomainNonPortSchemes(
       kNonWildcardDomainNonPortSchemes, kNonWildcardDomainNonPortSchemesSize);
-#endif
-
-#if BUILDFLAG(IS_MAC)
-  OverrideChildProcessPath();
-  OverrideFrameworkBundlePath();
-  SetUpBundleOverrides();
 #endif
 
 #if BUILDFLAG(IS_WIN)
@@ -403,16 +421,26 @@ std::optional<int> ElectronMainDelegate::PreBrowserMain() {
   // This is initialized early because the service manager reads some feature
   // flags and we need to make sure the feature list is initialized before the
   // service manager reads the features.
+  if (!base::FieldTrialList::GetInstance()) {
+    base::FieldTrialList* leaked_field_trial_list = new base::FieldTrialList();
+    ANNOTATE_LEAKING_OBJECT_PTR(leaked_field_trial_list);
+    std::ignore = leaked_field_trial_list;
+  }
   InitializeFeatureList();
   // Initialize mojo core as soon as we have a valid feature list
   content::InitializeMojoCore();
 #if BUILDFLAG(IS_MAC)
   RegisterAtomCrApp();
 #endif
+#if BUILDFLAG(IS_LINUX)
+  // Set the global activation token sent as an environment variable.
+  auto env = base::Environment::Create();
+  base::nix::ExtractXdgActivationTokenFromEnv(*env);
+#endif
   return std::nullopt;
 }
 
-base::StringPiece ElectronMainDelegate::GetBrowserV8SnapshotFilename() {
+std::string_view ElectronMainDelegate::GetBrowserV8SnapshotFilename() {
   bool load_browser_process_specific_v8_snapshot =
       IsBrowserProcess() &&
       electron::fuses::IsLoadBrowserProcessSpecificV8SnapshotEnabled();
@@ -457,8 +485,7 @@ ElectronMainDelegate::CreateContentUtilityClient() {
   return utility_client_.get();
 }
 
-absl::variant<int, content::MainFunctionParams>
-ElectronMainDelegate::RunProcess(
+std::variant<int, content::MainFunctionParams> ElectronMainDelegate::RunProcess(
     const std::string& process_type,
     content::MainFunctionParams main_function_params) {
   if (process_type == kRelauncherProcess)
@@ -468,7 +495,7 @@ ElectronMainDelegate::RunProcess(
 }
 
 bool ElectronMainDelegate::ShouldCreateFeatureList(InvokedIn invoked_in) {
-  return absl::holds_alternative<InvokedInChildProcess>(invoked_in);
+  return std::holds_alternative<InvokedInChildProcess>(invoked_in);
 }
 
 bool ElectronMainDelegate::ShouldInitializeMojo(InvokedIn invoked_in) {

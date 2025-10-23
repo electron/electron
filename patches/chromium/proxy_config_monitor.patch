@@ -6,7 +6,7 @@ Subject: proxy_config_monitor.patch
 Allow monitoring proxy config changes for a pref service.
 
 diff --git a/chrome/browser/net/proxy_config_monitor.cc b/chrome/browser/net/proxy_config_monitor.cc
-index c2adfa2bd0f79038cb50c69607827aef8fecca59..3db9b93e7c98544de7488ab97ad4a5addefdd2cd 100644
+index 50e7a07af841ff55cd24c0a79eef5dcc68807933..ed40ecdb91ddd7139f8f463809594ddfca793fcc 100644
 --- a/chrome/browser/net/proxy_config_monitor.cc
 +++ b/chrome/browser/net/proxy_config_monitor.cc
 @@ -11,7 +11,9 @@
@@ -21,12 +21,12 @@ index c2adfa2bd0f79038cb50c69607827aef8fecca59..3db9b93e7c98544de7488ab97ad4a5ad
  #include "mojo/public/cpp/bindings/pending_remote.h"
 @@ -21,12 +23,13 @@
  #include "chrome/browser/ash/profiles/profile_helper.h"
- #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
+ #endif  // BUILDFLAG(IS_CHROMEOS)
  
--#if BUILDFLAG(ENABLE_EXTENSIONS)
+-#if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
 +#if 0
  #include "chrome/browser/extensions/api/proxy/proxy_api.h"
- #endif
+ #endif // BUILDFLAG(ENABLE_EXTENSIONS_CORE)
  
  using content::BrowserThread;
  
@@ -42,32 +42,29 @@ index c2adfa2bd0f79038cb50c69607827aef8fecca59..3db9b93e7c98544de7488ab97ad4a5ad
  
  ProxyConfigMonitor::ProxyConfigMonitor(PrefService* local_state) {
    DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI) ||
-@@ -136,9 +140,11 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
+@@ -135,8 +139,10 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
  void ProxyConfigMonitor::OnPACScriptError(int32_t line_number,
                                            const std::string& details) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 +#if 0
    extensions::ProxyEventRouter::GetInstance()->OnPACScriptError(
-       g_browser_process->extension_event_router_forwarder(), profile_,
-       line_number, base::UTF8ToUTF16(details));
+       profile_, line_number, base::UTF8ToUTF16(details));
 +#endif
  }
  
  void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
-@@ -152,9 +158,10 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
-     // controlled.
+@@ -151,7 +157,9 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
      return;
    }
--
+ 
 +#if 0
-   extensions::ProxyEventRouter::GetInstance()->OnProxyError(
-       g_browser_process->extension_event_router_forwarder(), profile_,
-       net_error);
+   extensions::ProxyEventRouter::GetInstance()->OnProxyError(profile_,
+                                                             net_error);
 +#endif
  }
- #endif
+ #endif  // BUILDFLAG(ENABLE_EXTENSIONS_CORE)
 diff --git a/chrome/browser/net/proxy_config_monitor.h b/chrome/browser/net/proxy_config_monitor.h
-index c808604a9b586eb5524a10b7561987e5b29747ea..68980ce4bf50d6bde5329f6d45209be86d878769 100644
+index 6c060b52d25799c6a7c4e4ee86ed7490060560d6..c81481a4451ff50b6ace5372a68b8615819affb3 100644
 --- a/chrome/browser/net/proxy_config_monitor.h
 +++ b/chrome/browser/net/proxy_config_monitor.h
 @@ -40,11 +40,12 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
@@ -86,10 +83,10 @@ index c808604a9b586eb5524a10b7561987e5b29747ea..68980ce4bf50d6bde5329f6d45209be8
    // associated with a profile. Must be destroyed before |local_state|.
 @@ -94,7 +95,7 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
  
- #if BUILDFLAG(ENABLE_EXTENSIONS)
+ #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
    mojo::ReceiverSet<network::mojom::ProxyErrorClient> error_receiver_set_;
 -  raw_ptr<Profile> profile_ = nullptr;
 +  // raw_ptr<Profile> profile_ = nullptr;
- #endif
+ #endif  // BUILDFLAG(ENABLE_EXTENSIONS_CORE)
  };
  

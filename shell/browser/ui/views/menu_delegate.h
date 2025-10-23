@@ -12,6 +12,10 @@
 #include "shell/browser/ui/electron_menu_model.h"
 #include "ui/views/controls/menu/menu_delegate.h"
 
+namespace gfx {
+class FontList;
+}  // namespace gfx
+
 namespace views {
 class MenuRunner;
 class Button;
@@ -32,7 +36,7 @@ class MenuDelegate : public views::MenuDelegate {
 
   void RunMenu(ElectronMenuModel* model,
                views::Button* button,
-               ui::MenuSourceType source_type);
+               ui::mojom::MenuSourceType source_type);
 
   class Observer {
    public:

@@ -6,6 +6,7 @@
 
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_helper/handle.h"
 #include "ui/gfx/image/image_skia.h"
 
 namespace gin {

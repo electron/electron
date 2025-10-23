@@ -12,30 +12,32 @@ namespace gin_helper {
 
 namespace {
 
-struct TranslaterHolder {
-  explicit TranslaterHolder(v8::Isolate* isolate)
+struct TranslatorHolder {
+  explicit TranslatorHolder(v8::Isolate* isolate)
       : handle(isolate, v8::External::New(isolate, this)) {
     handle.SetWeak(this, &GC, v8::WeakCallbackType::kParameter);
   }
-  ~TranslaterHolder() {
+  ~TranslatorHolder() {
     if (!handle.IsEmpty()) {
       handle.ClearWeak();
       handle.Reset();
     }
   }
 
-  static void GC(const v8::WeakCallbackInfo<TranslaterHolder>& data) {
+  static void GC(const v8::WeakCallbackInfo<TranslatorHolder>& data) {
     delete data.GetParameter();
   }
 
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
+
   v8::Global<v8::External> handle;
-  Translater translater;
+  Translator translator;
 };
 
-// Cached JavaScript version of |CallTranslater|.
-v8::Persistent<v8::FunctionTemplate> g_call_translater;
+gin::DeprecatedWrapperInfo TranslatorHolder::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
-void CallTranslater(v8::Local<v8::External> external,
+void CallTranslator(v8::Local<v8::External> external,
                     v8::Local<v8::Object> state,
                     gin::Arguments* args) {
   // Whether the callback should only be called once.
@@ -51,13 +53,12 @@ void CallTranslater(v8::Local<v8::External> external,
       args->ThrowTypeError("One-time callback was called more than once");
       return;
     } else {
-      state->Set(context, called_symbol, v8::Boolean::New(isolate, true))
-          .ToChecked();
+      state->Set(context, called_symbol, v8::True(isolate)).ToChecked();
     }
   }
 
-  auto* holder = static_cast<TranslaterHolder*>(external->Value());
-  holder->translater.Run(args);
+  auto* holder = static_cast<TranslatorHolder*>(external->Value());
+  holder->translator.Run(args);
 
   // Free immediately for one-time callback.
   if (one_time)
@@ -72,8 +73,7 @@ struct DeleteOnUIThread {
   static void Destruct(const T* x) {
     if (electron::IsBrowserProcess() &&
         !content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
-      content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
-                                         x);
+      content::GetUIThreadTaskRunner({})->DeleteSoon(FROM_HERE, x);
     } else {
       delete x;
     }
@@ -88,7 +88,7 @@ class RefCountedGlobal
   RefCountedGlobal(v8::Isolate* isolate, v8::Local<v8::Value> value)
       : handle_(isolate, value.As<T>()) {}
 
-  bool IsAlive() const { return !handle_.IsEmpty(); }
+  [[nodiscard]] bool IsAlive() const { return !handle_.IsEmpty(); }
 
   v8::Local<T> NewHandle(v8::Isolate* isolate) const {
     return v8::Local<T>::New(isolate, handle_);
@@ -113,25 +113,28 @@ v8::Local<v8::Function> SafeV8Function::NewHandle(v8::Isolate* isolate) const {
   return v8_function_->NewHandle(isolate);
 }
 
-v8::Local<v8::Value> CreateFunctionFromTranslater(v8::Isolate* isolate,
-                                                  const Translater& translater,
+v8::Local<v8::Value> CreateFunctionFromTranslator(v8::Isolate* isolate,
+                                                  const Translator& translator,
                                                   bool one_time) {
+  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
+  auto* wrapper_info = &TranslatorHolder::kWrapperInfo;
+  v8::Local<v8::FunctionTemplate> constructor =
+      data->DeprecatedGetFunctionTemplate(wrapper_info);
   // The FunctionTemplate is cached.
-  if (g_call_translater.IsEmpty())
-    g_call_translater.Reset(
-        isolate,
-        CreateFunctionTemplate(isolate, base::BindRepeating(&CallTranslater)));
+  if (constructor.IsEmpty()) {
+    constructor =
+        CreateFunctionTemplate(isolate, base::BindRepeating(&CallTranslator));
+    data->DeprecatedSetFunctionTemplate(wrapper_info, constructor);
+  }
 
-  v8::Local<v8::FunctionTemplate> call_translater =
-      v8::Local<v8::FunctionTemplate>::New(isolate, g_call_translater);
-  auto* holder = new TranslaterHolder(isolate);
-  holder->translater = translater;
+  auto* holder = new TranslatorHolder(isolate);
+  holder->translator = translator;
   auto state = gin::Dictionary::CreateEmpty(isolate);
   if (one_time)
     state.Set("oneTime", true);
   auto context = isolate->GetCurrentContext();
   return BindFunctionWith(
-      isolate, context, call_translater->GetFunction(context).ToLocalChecked(),
+      isolate, context, constructor->GetFunction(context).ToLocalChecked(),
       holder->handle.Get(isolate), gin::ConvertToV8(isolate, state));
 }
 

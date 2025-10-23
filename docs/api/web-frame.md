@@ -4,6 +4,12 @@
 
 Process: [Renderer](../glossary.md#renderer-process)
 
+> [!IMPORTANT]
+> If you want to call this API from a renderer process with context isolation enabled,
+> place the API call in your preload script and
+> [expose](../tutorial/context-isolation.md#after-context-isolation-enabled) it using the
+> [`contextBridge`](context-bridge.md) API.
+
 `webFrame` export of the Electron module is an instance of the `WebFrame`
 class representing the current frame. Sub-frames can be retrieved by
 certain properties and methods (e.g. `webFrame.firstChild`).
@@ -41,7 +47,8 @@ Changes the zoom level to the specified level. The original size is 0 and each
 increment above or below represents zooming 20% larger or smaller to default
 limits of 300% and 50% of original size, respectively.
 
-> **NOTE**: The zoom policy at the Chromium level is same-origin, meaning that the
+> [!NOTE]
+> The zoom policy at the Chromium level is same-origin, meaning that the
 > zoom level for a specific domain propagates across all instances of windows with
 > the same domain. Differentiating the window URLs will make zoom work per-window.
 
@@ -56,15 +63,17 @@ Returns `number` - The current zoom level.
 
 Sets the maximum and minimum pinch-to-zoom level.
 
-> **NOTE**: Visual zoom is disabled by default in Electron. To re-enable it, call:
+> [!NOTE]
+> Visual zoom is disabled by default in Electron. To re-enable it, call:
 >
 > ```js
 > webFrame.setVisualZoomLevelLimits(1, 3)
 > ```
 
-> **NOTE**: Visual zoom only applies to pinch-to-zoom behavior. Cmd+/-/0 zoom shortcuts are
+> [!NOTE]
+> Visual zoom only applies to pinch-to-zoom behavior. Cmd+/-/0 zoom shortcuts are
 > controlled by the 'zoomIn', 'zoomOut', and 'resetZoom' MenuItem roles in the application
-> Menu. To disable shortcuts, manually [define the Menu](./menu.md#examples) and omit zoom roles
+> Menu. To disable shortcuts, manually [define the Menu](../tutorial/menus.md) and omit zoom roles
 > from the definition.
 
 ### `webFrame.setSpellCheckProvider(language, provider)`
@@ -96,9 +105,11 @@ with an array of misspelt words when complete.
 
 An example of using [node-spellchecker][spellchecker] as provider:
 
-```js @ts-expect-error=[2,6]
+```js @ts-expect-error=[3,8]
 const { webFrame } = require('electron')
+
 const spellChecker = require('spellchecker')
+
 webFrame.setSpellCheckProvider('en-US', {
   spellCheck (words, callback) {
     setTimeout(() => {
@@ -134,7 +145,7 @@ by its key, which is returned from `webFrame.insertCSS(css)`.
 
 Inserts `text` to the focused element.
 
-### `webFrame.executeJavaScript(code[, userGesture, callback])`
+### `webFrame.executeJavaScript(code[, userGesture][, callback])`
 
 * `code` string
 * `userGesture` boolean (optional) - Default is `false`.
@@ -155,7 +166,7 @@ In the browser window some HTML APIs like `requestFullScreen` can only be
 invoked by a gesture from the user. Setting `userGesture` to `true` will remove
 this limitation.
 
-### `webFrame.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture, callback])`
+### `webFrame.executeJavaScriptInIsolatedWorld(worldId, scripts[, userGesture][, callback])`
 
 * `worldId` Integer - The ID of the world to run the javascript
             in, `0` is the default main world (where content runs), `999` is the
@@ -182,14 +193,16 @@ dispatch errors of isolated worlds to foreign worlds.
 
 ### `webFrame.setIsolatedWorldInfo(worldId, info)`
 
-* `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature. Chrome extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can provide any integer here.
+* `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electron's `contextIsolation` feature. Chrome extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can provide any integer here.
 * `info` Object
   * `securityOrigin` string (optional) - Security origin for the isolated world.
   * `csp` string (optional) - Content Security Policy for the isolated world.
   * `name` string (optional) - Name for isolated world. Useful in devtools.
 
 Set the security origin, content security policy and name of the isolated world.
-Note: If the `csp` is specified, then the `securityOrigin` also has to be specified.
+
+> [!NOTE]
+> If the `csp` is specified, then the `securityOrigin` also has to be specified.
 
 ### `webFrame.getResourceUsage()`
 
@@ -207,10 +220,13 @@ caches.
 
 ```js
 const { webFrame } = require('electron')
+
 console.log(webFrame.getResourceUsage())
 ```
 
 This will generate:
+
+<!-- eslint-skip -->
 
 ```js
 {
@@ -243,7 +259,7 @@ and intend to stay there).
 
 * `selector` string - CSS selector for a frame element.
 
-Returns `WebFrame` - The frame element in `webFrame's` document selected by
+Returns `WebFrame | null` - The frame element in `webFrame's` document selected by
 `selector`, `null` would be returned if `selector` does not select a frame or
 if the frame is not in the current renderer process.
 
@@ -251,18 +267,29 @@ if the frame is not in the current renderer process.
 
 * `name` string
 
-Returns `WebFrame` - A child of `webFrame` with the supplied `name`, `null`
+Returns `WebFrame | null` - A child of `webFrame` with the supplied `name`, `null`
 would be returned if there's no such frame or if the frame is not in the current
 renderer process.
 
-### `webFrame.findFrameByRoutingId(routingId)`
+### `webFrame.findFrameByRoutingId(routingId)` _Deprecated_
 
 * `routingId` Integer - An `Integer` representing the unique frame id in the
    current renderer process. Routing IDs can be retrieved from `WebFrame`
    instances (`webFrame.routingId`) and are also passed by frame
    specific `WebContents` navigation events (e.g. `did-frame-navigate`)
 
-Returns `WebFrame` - that has the supplied `routingId`, `null` if not found.
+Returns `WebFrame | null` - that has the supplied `routingId`, `null` if not found.
+
+**Deprecated:** Use the new `webFrame.findFrameByToken` API.
+
+### `webFrame.findFrameByToken(frameToken)`
+
+* `frameToken` string - A `string` representing the unique frame id in the
+   current renderer process. Frame tokens can be retrieved from `WebFrame`
+   instances (`webFrame.frameToken`) and can also be retrieved from
+   `WebFrameMain` instances using `webFrameMain.frameToken`.
+
+Returns `WebFrame | null` - that has the supplied `frameToken`, `null` if not found.
 
 ### `webFrame.isWordMisspelled(word)`
 
@@ -308,8 +335,16 @@ A `WebFrame | null` representing next sibling frame, the property would be `null
 `webFrame` is the last frame in its parent or if the next sibling is not in the
 current renderer process.
 
-### `webFrame.routingId` _Readonly_
+### `webFrame.routingId` _Readonly_ _Deprecated_
 
 An `Integer` representing the unique frame id in the current renderer process.
 Distinct WebFrame instances that refer to the same underlying frame will have
 the same `routingId`.
+
+**Deprecated:** Use the new `webFrame.frameToken` API.
+
+### `webFrame.frameToken` _Readonly_
+
+A `string` representing the unique frame token in the current renderer process.
+Distinct WebFrame instances that refer to the same underlying frame will have
+the same `frameToken`.

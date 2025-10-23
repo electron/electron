@@ -41,6 +41,8 @@ PATHS_TO_SKIP = [
   'resources/inspector',
   'gen/third_party/devtools-frontend/src',
   'gen/ui/webui',
+  # Skip because these get zipped separately in script/zip-symbols.py
+  'debug',
 ]
 
 def skip_path(dep, dist_zip, target_cpu):
@@ -59,7 +61,7 @@ def skip_path(dep, dist_zip, target_cpu):
       and dep == "snapshot_blob.bin"
     )
   )
-  if should_skip:
+  if should_skip and os.environ.get('ELECTRON_DEBUG_ZIP_SKIP') == '1':
     print("Skipping {}".format(dep))
   return should_skip
 
@@ -80,6 +82,11 @@ def main(argv):
       dep = dep.strip()
       if not skip_path(dep, dist_zip, target_cpu):
         dist_files.add(dep)
+  # On Linux, filter out any files which have a .stripped companion
+  if sys.platform == 'linux':
+    dist_files = {
+      dep for dep in dist_files if f"{dep.removeprefix('./')}.stripped" not in dist_files
+    }
   if sys.platform == 'darwin' and not should_flatten:
     execute(['zip', '-r', '-y', dist_zip] + list(dist_files))
   else:
@@ -96,10 +103,13 @@ def main(argv):
           dirname = os.path.dirname(dep)
           arcname = (
             os.path.join(dirname, 'chrome-sandbox')
-            if basename == 'chrome_sandbox'
+            if basename.removesuffix('.stripped') == 'chrome_sandbox'
             else dep
           )
           name_to_write = arcname
+          # On Linux, strip the .stripped suffix from the name before zipping
+          if sys.platform == 'linux':
+            name_to_write = name_to_write.removesuffix('.stripped')
           if should_flatten:
             if flatten_relative_to:
               if name_to_write.startswith(flatten_relative_to):

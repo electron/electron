@@ -4,8 +4,10 @@
 
 #include "shell/common/heap_snapshot.h"
 
+#include "base/containers/span.h"
 #include "base/files/file.h"
 #include "base/memory/raw_ptr.h"
+#include "base/numerics/safe_conversions.h"
 #include "v8/include/v8-profiler.h"
 #include "v8/include/v8.h"
 
@@ -17,15 +19,19 @@ class HeapSnapshotOutputStream : public v8::OutputStream {
     DCHECK(file_);
   }
 
-  bool IsComplete() const { return is_complete_; }
+  [[nodiscard]] bool IsComplete() const { return is_complete_; }
 
   // v8::OutputStream
   int GetChunkSize() override { return 65536; }
   void EndOfStream() override { is_complete_ = true; }
 
   v8::OutputStream::WriteResult WriteAsciiChunk(char* data, int size) override {
-    auto bytes_written = file_->WriteAtCurrentPos(data, size);
-    return bytes_written == size ? kContinue : kAbort;
+    // SAFETY: since WriteAsciiChunk() only gives us data + size, our
+    // UNSAFE_BUFFERS macro call is unavoidable here. It can be removed
+    // if/when v8 changes WriteAsciiChunk() to pass a v8::MemorySpan.
+    const auto data_span = base::as_bytes(
+        UNSAFE_BUFFERS(base::span{data, base::saturated_cast<size_t>(size)}));
+    return file_->WriteAtCurrentPosAndCheck(data_span) ? kContinue : kAbort;
   }
 
  private:

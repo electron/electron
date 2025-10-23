@@ -9,36 +9,38 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
-#include "base/strings/utf_string_conversions.h"
-#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/notifications/notification.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
-#include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "ui/gfx/image/image.h"
 
 namespace gin {
 class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
+class ErrorThrower;
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace electron::api {
 
-class Notification : public gin::Wrappable<Notification>,
-                     public gin_helper::EventEmitterMixin<Notification>,
-                     public gin_helper::Constructible<Notification>,
-                     public gin_helper::CleanedUpAtExit,
-                     public NotificationDelegate {
+class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
+                           public gin_helper::EventEmitterMixin<Notification>,
+                           public gin_helper::Constructible<Notification>,
+                           public gin_helper::CleanedUpAtExit,
+                           public NotificationDelegate {
  public:
   static bool IsSupported();
 
   // gin_helper::Constructible
-  static gin::Handle<Notification> New(gin_helper::ErrorThrower thrower,
-                                       gin::Arguments* args);
+  static gin_helper::Handle<Notification> New(gin_helper::ErrorThrower thrower,
+                                              gin::Arguments* args);
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "Notification"; }
 
@@ -51,9 +53,12 @@ class Notification : public gin::Wrappable<Notification>,
   void NotificationClosed() override;
   void NotificationFailed(const std::string& error) override;
 
-  // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  // gin_helper::Wrappable
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   const char* GetTypeName() override;
+
+  // gin_helper::CleanedUpAtExit
+  void WillBeDestroyed() override;
 
   // disable copy
   Notification(const Notification&) = delete;
@@ -101,8 +106,6 @@ class Notification : public gin::Wrappable<Notification>,
   std::u16string subtitle_;
   std::u16string body_;
   gfx::Image icon_;
-  std::u16string icon_path_;
-  bool has_icon_ = false;
   bool silent_ = false;
   bool has_reply_ = false;
   std::u16string timeout_type_;

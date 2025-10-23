@@ -1,11 +1,13 @@
 import { app } from 'electron';
-import { expect } from 'chai';
-import { startRemoteControlApp, ifdescribe } from './lib/spec-helpers';
 
+import { expect } from 'chai';
+import * as uuid from 'uuid';
+
+import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import * as uuid from 'uuid';
-import { once } from 'node:events';
+
+import { startRemoteControlApp, ifdescribe, ifit } from './lib/spec-helpers';
 
 function isTestingBindingAvailable () {
   try {
@@ -19,7 +21,7 @@ function isTestingBindingAvailable () {
 // This test depends on functions that are only available when DCHECK_IS_ON.
 ifdescribe(isTestingBindingAvailable())('logging', () => {
   it('does not log by default', async () => {
-    // ELECTRON_ENABLE_LOGGING is turned on in the appveyor config.
+    // ELECTRON_ENABLE_LOGGING might be set in the environment, so remove it
     const { ELECTRON_ENABLE_LOGGING: _, ...envWithoutEnableLogging } = process.env;
     const rc = await startRemoteControlApp([], { env: envWithoutEnableLogging });
     const stderrComplete = new Promise<string>(resolve => {
@@ -123,6 +125,34 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
     expect(stat.isFile()).to.be.true();
     const contents = await fs.readFile(logFilePath, 'utf8');
     expect(contents).to.match(/TEST_LOG/);
+  });
+
+  ifit(process.platform === 'win32')('child process logs to the given file when --log-file is passed', async () => {
+    const logFilePath = path.join(app.getPath('temp'), 'test-log-file-' + uuid.v4());
+    const preloadPath = path.resolve(__dirname, 'fixtures', 'log-test.js');
+    const rc = await startRemoteControlApp(['--enable-logging', `--log-file=${logFilePath}`, `--boot-eval=preloadPath=${JSON.stringify(preloadPath)}`]);
+    rc.remotely(() => {
+      process._linkedBinding('electron_common_testing').log(0, 'MAIN_PROCESS_TEST_LOG');
+      const { app, BrowserWindow } = require('electron');
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: preloadPath,
+          additionalArguments: ['--unsafely-expose-electron-internals-for-testing']
+        }
+      });
+      w.loadURL('about:blank');
+      w.webContents.once('did-finish-load', () => {
+        setTimeout(() => { app.quit(); });
+      });
+    });
+    await once(rc.process, 'exit');
+    const stat = await fs.stat(logFilePath);
+    expect(stat.isFile()).to.be.true();
+    const contents = await fs.readFile(logFilePath, 'utf8');
+    expect(contents).to.match(/MAIN_PROCESS_TEST_LOG/);
+    expect(contents).to.match(/CHILD_PROCESS_TEST_LOG/);
+    expect(contents).to.match(/CHILD_PROCESS_DESTINATION_handle/);
   });
 
   it('logs to the given file when ELECTRON_LOG_FILE is set', async () => {

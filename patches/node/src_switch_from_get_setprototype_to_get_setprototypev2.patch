@@ -1,0 +1,173 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Aviv Keller <redyetidev@gmail.com>
+Date: Tue, 22 Oct 2024 01:05:19 -0400
+Subject: src: switch from `Get/SetPrototype` to `Get/SetPrototypeV2`
+
+PR-URL: https://github.com/nodejs/node/pull/55453
+Reviewed-By: Vladimir Morozov <vmorozov@microsoft.com>
+Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
+Reviewed-By: Moshe Atlow <moshe@atlow.co.il>
+Reviewed-By: James M Snell <jasnell@gmail.com>
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index 82f53bba29613de212f64be440ca20d7c630fddf..0a358735c331767e8eb563a80e9aaccfb544c27b 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -886,7 +886,7 @@ Maybe<void> InitializePrimordials(Local<Context> context,
+   CHECK(!exports->Has(context, primordials_string).FromJust());
+ 
+   Local<Object> primordials = Object::New(isolate);
+-  if (primordials->SetPrototype(context, Null(isolate)).IsNothing() ||
++  if (primordials->SetPrototypeV2(context, Null(isolate)).IsNothing() ||
+       exports->Set(context, primordials_string, primordials).IsNothing()) {
+     return Nothing<void>();
+   }
+diff --git a/src/internal_only_v8.cc b/src/internal_only_v8.cc
+index 487b8b7adfd35646d20fdb15be5fd6f2bee9315b..6a3c4e6952a8f3250bf1b57652a1622e9f63ec52 100644
+--- a/src/internal_only_v8.cc
++++ b/src/internal_only_v8.cc
+@@ -33,8 +33,8 @@ class PrototypeChainHas : public v8::QueryObjectPredicate {
+     if (creation_context != context_) {
+       return false;
+     }
+-    for (Local<Value> proto = object->GetPrototype(); proto->IsObject();
+-         proto = proto.As<Object>()->GetPrototype()) {
++    for (Local<Value> proto = object->GetPrototypeV2(); proto->IsObject();
++         proto = proto.As<Object>()->GetPrototypeV2()) {
+       if (search_ == proto) return true;
+     }
+     return false;
+diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
+index de3d1f2f1832740b24480267f8c573794179859c..6e1680a74e21240ab99be86dcf23e60a05174888 100644
+--- a/src/js_native_api_v8.cc
++++ b/src/js_native_api_v8.cc
+@@ -1577,7 +1577,7 @@ napi_status NAPI_CDECL napi_get_prototype(napi_env env,
+   CHECK_TO_OBJECT(env, context, obj, object);
+ 
+   // This doesn't invokes Proxy's [[GetPrototypeOf]] handler.
+-  v8::Local<v8::Value> val = obj->GetPrototype();
++  v8::Local<v8::Value> val = obj->GetPrototypeV2();
+   *result = v8impl::JsValueFromV8LocalValue(val);
+   return GET_RETURN_STATUS(env);
+ }
+diff --git a/src/node_buffer.cc b/src/node_buffer.cc
+index c94b14741c827a81d69a6f036426a344e563ad72..15129e4455fdc8792f21511a04d534ba3a4ebb5f 100644
+--- a/src/node_buffer.cc
++++ b/src/node_buffer.cc
+@@ -284,8 +284,9 @@ MaybeLocal<Uint8Array> New(Environment* env,
+                            size_t length) {
+   CHECK(!env->buffer_prototype_object().IsEmpty());
+   Local<Uint8Array> ui = Uint8Array::New(ab, byte_offset, length);
+-  if (ui->SetPrototype(env->context(), env->buffer_prototype_object())
+-          .IsNothing()) {
++  Maybe<bool> mb =
++      ui->SetPrototypeV2(env->context(), env->buffer_prototype_object());
++  if (mb.IsNothing()) {
+     return MaybeLocal<Uint8Array>();
+   }
+   return ui;
+diff --git a/src/node_constants.cc b/src/node_constants.cc
+index b1ee513fc0873a51b4885f612dbf7b950b5cf2ca..2f23cc63f148a792f1302e1d2d88822730abaa33 100644
+--- a/src/node_constants.cc
++++ b/src/node_constants.cc
+@@ -1267,43 +1267,44 @@ void CreatePerContextProperties(Local<Object> target,
+   Isolate* isolate = Isolate::GetCurrent();
+   Environment* env = Environment::GetCurrent(context);
+ 
+-  CHECK(target->SetPrototype(env->context(), Null(env->isolate())).FromJust());
++  CHECK(
++      target->SetPrototypeV2(env->context(), Null(env->isolate())).FromJust());
+ 
+   Local<Object> os_constants = Object::New(isolate);
+-  CHECK(os_constants->SetPrototype(env->context(),
+-                                   Null(env->isolate())).FromJust());
++  CHECK(os_constants->SetPrototypeV2(env->context(), Null(env->isolate()))
++            .FromJust());
+ 
+   Local<Object> err_constants = Object::New(isolate);
+-  CHECK(err_constants->SetPrototype(env->context(),
+-                                    Null(env->isolate())).FromJust());
++  CHECK(err_constants->SetPrototypeV2(env->context(), Null(env->isolate()))
++            .FromJust());
+ 
+   Local<Object> sig_constants = Object::New(isolate);
+-  CHECK(sig_constants->SetPrototype(env->context(),
+-                                    Null(env->isolate())).FromJust());
++  CHECK(sig_constants->SetPrototypeV2(env->context(), Null(env->isolate()))
++            .FromJust());
+ 
+   Local<Object> priority_constants = Object::New(isolate);
+-  CHECK(priority_constants->SetPrototype(env->context(),
+-                                         Null(env->isolate())).FromJust());
++  CHECK(priority_constants->SetPrototypeV2(env->context(), Null(env->isolate()))
++            .FromJust());
+ 
+   Local<Object> fs_constants = Object::New(isolate);
+-  CHECK(fs_constants->SetPrototype(env->context(),
+-                                   Null(env->isolate())).FromJust());
++  CHECK(fs_constants->SetPrototypeV2(env->context(), Null(env->isolate()))
++            .FromJust());
+ 
+   Local<Object> crypto_constants = Object::New(isolate);
+-  CHECK(crypto_constants->SetPrototype(env->context(),
+-                                       Null(env->isolate())).FromJust());
++  CHECK(crypto_constants->SetPrototypeV2(env->context(), Null(env->isolate()))
++            .FromJust());
+ 
+   Local<Object> zlib_constants = Object::New(isolate);
+-  CHECK(zlib_constants->SetPrototype(env->context(),
+-                                     Null(env->isolate())).FromJust());
++  CHECK(zlib_constants->SetPrototypeV2(env->context(), Null(env->isolate()))
++            .FromJust());
+ 
+   Local<Object> dlopen_constants = Object::New(isolate);
+-  CHECK(dlopen_constants->SetPrototype(env->context(),
+-                                       Null(env->isolate())).FromJust());
++  CHECK(dlopen_constants->SetPrototypeV2(env->context(), Null(env->isolate()))
++            .FromJust());
+ 
+   Local<Object> trace_constants = Object::New(isolate);
+-  CHECK(trace_constants->SetPrototype(env->context(),
+-                                      Null(env->isolate())).FromJust());
++  CHECK(trace_constants->SetPrototypeV2(env->context(), Null(env->isolate()))
++            .FromJust());
+ 
+   Local<Object> internal_constants = Object::New(isolate);
+   CHECK(internal_constants->SetPrototype(env->context(),
+diff --git a/src/node_options.cc b/src/node_options.cc
+index 556776b79282d953fdc371d1901f21ca301bec1a..b33193c4d017b35aec5e73c1ead04cfb3ba50d55 100644
+--- a/src/node_options.cc
++++ b/src/node_options.cc
+@@ -1493,7 +1493,8 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
+ 
+   Local<Map> options = Map::New(isolate);
+   if (options
+-          ->SetPrototype(context, env->primordials_safe_map_prototype_object())
++          ->SetPrototypeV2(context,
++                           env->primordials_safe_map_prototype_object())
+           .IsNothing()) {
+     return;
+   }
+@@ -1533,7 +1534,8 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
+   if (!ToV8Value(context, _ppop_instance.aliases_).ToLocal(&aliases)) return;
+ 
+   if (aliases.As<Object>()
+-          ->SetPrototype(context, env->primordials_safe_map_prototype_object())
++          ->SetPrototypeV2(context,
++                           env->primordials_safe_map_prototype_object())
+           .IsNothing()) {
+     return;
+   }
+diff --git a/src/node_webstorage.cc b/src/node_webstorage.cc
+index 1705e430099c5a363e02010f83d729b0aa54f8e5..0577777723747327dc57830ace316aebc0cfd891 100644
+--- a/src/node_webstorage.cc
++++ b/src/node_webstorage.cc
+@@ -532,7 +532,7 @@ template <typename T>
+ static bool ShouldIntercept(Local<Name> property,
+                             const PropertyCallbackInfo<T>& info) {
+   Environment* env = Environment::GetCurrent(info);
+-  Local<Value> proto = info.This()->GetPrototype();
++  Local<Value> proto = info.This()->GetPrototypeV2();
+ 
+   if (proto->IsObject()) {
+     bool has_prop;

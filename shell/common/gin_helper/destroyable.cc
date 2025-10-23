@@ -7,6 +7,7 @@
 #include "base/no_destructor.h"
 #include "gin/converter.h"
 #include "shell/common/gin_helper/wrappable_base.h"
+#include "v8/include/v8-function.h"
 
 namespace gin_helper {
 
@@ -23,7 +24,7 @@ v8::Global<v8::FunctionTemplate>* GetIsDestroyedFunc() {
 }
 
 void DestroyFunc(const v8::FunctionCallbackInfo<v8::Value>& info) {
-  v8::Local<v8::Object> holder = info.Holder();
+  v8::Local<v8::Object> holder = info.This();
   if (Destroyable::IsDestroyed(holder))
     return;
 
@@ -35,7 +36,7 @@ void DestroyFunc(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
 void IsDestroyedFunc(const v8::FunctionCallbackInfo<v8::Value>& info) {
   info.GetReturnValue().Set(gin::ConvertToV8(
-      info.GetIsolate(), Destroyable::IsDestroyed(info.Holder())));
+      info.GetIsolate(), Destroyable::IsDestroyed(info.This())));
 }
 
 }  // namespace

@@ -29,7 +29,7 @@ template("compile_ib_files") {
 
     _output_extension = invoker.output_extension
 
-    script = "//build/config/ios/compile_ib_files.py"
+    script = "//build/config/apple/compile_ib_files.py"
     sources = invoker.sources
     outputs = [
       "$target_gen_dir/$target_name/{{source_name_part}}.$_output_extension",
@@ -67,10 +67,6 @@ template("mac_xib_bundle_data") {
     ibtool_flags = [
       "--minimum-deployment-target",
       mac_deployment_target,
-
-      # TODO(rsesek): Enable this once all the bots are on Xcode 7+.
-      # "--target-device",
-      # "mac",
     ]
   }
 

@@ -10,13 +10,14 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_
 
-#include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/frameless_view.h"
 #include "shell/browser/ui/views/win_caption_button.h"
 #include "shell/browser/ui/views/win_caption_button_container.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 
 namespace electron {
+
+class NativeWindowViews;
 
 class WinFrameView : public FramelessView {
   METADATA_HEADER(WinFrameView, FramelessView)
@@ -26,34 +27,27 @@ class WinFrameView : public FramelessView {
   ~WinFrameView() override;
 
   void Init(NativeWindowViews* window, views::Widget* frame) override;
-
-  // Alpha to use for features in the titlebar (the window title and caption
-  // buttons) when the window is inactive. They are opaque when active.
-  static constexpr SkAlpha kInactiveTitlebarFeatureAlpha = 0x66;
+  void InvalidateCaptionButtons() override;
 
   SkColor GetReadableFeatureColor(SkColor background_color);
 
-  // Tells the NonClientView to invalidate the WinFrameView's caption buttons.
-  void InvalidateCaptionButtons();
-
-  // views::NonClientFrameView:
+  // views::FrameView:
   gfx::Rect GetWindowBoundsForClientBounds(
       const gfx::Rect& client_bounds) const override;
   int NonClientHitTest(const gfx::Point& point) override;
 
-  NativeWindowViews* window() const { return window_; }
-  views::Widget* frame() const { return frame_; }
   WinCaptionButtonContainer* caption_button_container() {
     return caption_button_container_;
   }
 
   bool IsMaximized() const;
 
-  bool ShouldCustomDrawSystemTitlebar() const;
-
   // Visual height of the titlebar when the window is maximized (i.e. excluding
   // the area above the top of the screen).
   int TitlebarMaximizedVisualHeight() const;
+
+  // Returns true if the frame should be painted as active.
+  bool GetShouldPaintAsActive();
 
  protected:
   // views::View:
@@ -89,7 +83,7 @@ class WinFrameView : public FramelessView {
   // The container holding the caption buttons (minimize, maximize, close, etc.)
   // May be null if the caption button container is destroyed before the frame
   // view. Always check for validity before using!
-  raw_ptr<WinCaptionButtonContainer> caption_button_container_;
+  raw_ptr<WinCaptionButtonContainer> caption_button_container_ = nullptr;
 };
 
 }  // namespace electron

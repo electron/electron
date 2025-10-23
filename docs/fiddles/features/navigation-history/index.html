@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Enhanced Browser with Navigation History</title>
+    <link href="styles.css" rel="stylesheet" />
+</head>
+
+<body>
+
+    <div id="controls">
+        <button id="backBtn" title="Go back">Back</button>
+        <button id="forwardBtn" title="Go forward">Forward</button>
+        <button id="backHistoryBtn" title="Show back history">Back History</button>
+        <button id="forwardHistoryBtn" title="Show forward history">Forward History</button>
+        <input id="urlInput" type="text" placeholder="Enter URL">
+        <button id="goBtn" title="Navigate to URL">Go</button>
+    </div>
+
+    <div id="historyPanel" class="history-panel"></div>
+
+    <div id="description">
+        <h2>Navigation History Demo</h2>
+        <p>This demo showcases Electron's NavigationHistory API functionality.</p>
+        <p><strong>Back/Forward:</strong> Navigate through your browsing history.</p>
+        <p><strong>Back History/Forward History:</strong> View and select from your browsing history.</p>
+        <p><strong>URL Bar:</strong> Enter a URL and click 'Go' or press Enter to navigate.</p>
+    </div>
+    <script src="renderer.js"></script>
+</body>
+
+</html>

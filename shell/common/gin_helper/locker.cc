@@ -5,6 +5,7 @@
 #include "shell/common/gin_helper/locker.h"
 
 #include "shell/common/process_util.h"
+#include "v8/include/v8-locker.h"
 
 namespace gin_helper {
 

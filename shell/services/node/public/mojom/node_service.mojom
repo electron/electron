@@ -17,9 +17,15 @@ struct NodeServiceParams {
   blink.mojom.MessagePortDescriptor port;
   pending_remote<network.mojom.URLLoaderFactory> url_loader_factory;
   pending_remote<network.mojom.HostResolver> host_resolver;
+  bool use_network_observer_from_url_loader_factory = false;
+};
+
+interface NodeServiceClient {
+  OnV8FatalError(string location, string report);
 };
 
 [ServiceSandbox=sandbox.mojom.Sandbox.kNoSandbox]
 interface NodeService {
-  Initialize(NodeServiceParams params);
+  Initialize(NodeServiceParams params,
+             pending_remote<NodeServiceClient> client_remote);
 };

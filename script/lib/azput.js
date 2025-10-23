@@ -1,5 +1,8 @@
 /* eslint-disable camelcase */
+
 const { BlobServiceClient } = require('@azure/storage-blob');
+const minimist = require('minimist');
+
 const path = require('node:path');
 
 const { ELECTRON_ARTIFACTS_BLOB_STORAGE } = process.env;
@@ -10,7 +13,7 @@ if (!ELECTRON_ARTIFACTS_BLOB_STORAGE) {
 
 const blobServiceClient = BlobServiceClient.fromConnectionString(ELECTRON_ARTIFACTS_BLOB_STORAGE);
 
-const args = require('minimist')(process.argv.slice(2));
+const args = minimist(process.argv.slice(2));
 
 let { prefix = '/', key_prefix = '', _: files } = args;
 if (prefix && !prefix.endsWith(path.sep)) prefix = path.resolve(prefix) + path.sep;

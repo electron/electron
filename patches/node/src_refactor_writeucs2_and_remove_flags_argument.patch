@@ -1,0 +1,140 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tobias=20Nie=C3=9Fen?= <tniessen@tnie.de>
+Date: Thu, 8 May 2025 13:55:26 +0100
+Subject: src: refactor WriteUCS2 and remove flags argument
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This change refactors `StringBytes::WriteUCS2()` in multiple ways.
+
+The `flags` argument being passed to `WriteUCS2()` is not useful: the
+only really relevant flag is `NO_NULL_TERMINATION` since V8 ignores
+`REPLACE_INVALID_UTF8`, `HINT_MANY_WRITES_EXPECTED`, and
+`PRESERVE_ONE_BYTE_NULL` for UTF-16 strings. However, `WriteUCS2()`
+might not null-terminate the result correctly regardless of whether
+`NO_NULL_TERMINATION` is set because it makes multiple calls to
+`String::Write()` internally. For these reasons, this patch removes the
+`flags` argument entirely and always assumes `NO_NULL_TERMINATION`.
+
+Next, this patch replaces the calls to the deprecated function
+`String::Write()` with calls to the new function `String::WriteV2()`,
+which always succeeds and always writes a predictable number of
+characters, removing the need to deal with a return value here.
+
+Lastly, this patch simplifies the implementation of `WriteUCS2()` and
+computes the exact number of characters `nchars` from the beginning,
+removing the need to later check again if the number of characters is
+zero.
+
+PR-URL: https://github.com/nodejs/node/pull/58163
+Reviewed-By: Gerhard Stöbich <deb2001-github@yahoo.de>
+Reviewed-By: James M Snell <jasnell@gmail.com>
+
+diff --git a/src/string_bytes.cc b/src/string_bytes.cc
+index 0eb9b1967f1f185a140239924809468394297d58..b02e9c5d14c2438d30b16f977c4e8a76bb23479d 100644
+--- a/src/string_bytes.cc
++++ b/src/string_bytes.cc
+@@ -198,40 +198,34 @@ MaybeLocal<Value> ExternTwoByteString::NewSimpleFromCopy(Isolate* isolate,
+ 
+ }  // anonymous namespace
+ 
+-size_t StringBytes::WriteUCS2(
+-    Isolate* isolate, char* buf, size_t buflen, Local<String> str, int flags) {
++size_t StringBytes::WriteUCS2(Isolate* isolate,
++                              char* buf,
++                              size_t buflen,
++                              Local<String> str) {
+   uint16_t* const dst = reinterpret_cast<uint16_t*>(buf);
+ 
+-  size_t max_chars = buflen / sizeof(*dst);
+-  if (max_chars == 0) {
++  const size_t max_chars = buflen / sizeof(*dst);
++  const size_t nchars = std::min(max_chars, static_cast<size_t>(str->Length()));
++  if (nchars == 0) {
+     return 0;
+   }
+ 
+   uint16_t* const aligned_dst = nbytes::AlignUp(dst, sizeof(*dst));
+-  size_t nchars;
++  CHECK_EQ(reinterpret_cast<uintptr_t>(aligned_dst) % sizeof(*dst), 0);
+   if (aligned_dst == dst) {
+-    nchars = str->Write(isolate, dst, 0, max_chars, flags);
+-    return nchars * sizeof(*dst);
+-  }
++    str->WriteV2(isolate, 0, nchars, dst);
++  } else {
++    // Write all but the last char.
++    str->WriteV2(isolate, 0, nchars - 1, aligned_dst);
+ 
+-  CHECK_EQ(reinterpret_cast<uintptr_t>(aligned_dst) % sizeof(*dst), 0);
++    // Shift everything to unaligned-left.
++    memmove(dst, aligned_dst, (nchars - 1) * sizeof(*dst));
+ 
+-  // Write all but the last char
+-  max_chars = std::min(max_chars, static_cast<size_t>(str->Length()));
+-  if (max_chars == 0) {
+-    return 0;
++    // One more char to be written.
++    uint16_t last;
++    str->WriteV2(isolate, nchars - 1, 1, &last);
++    memcpy(dst + nchars - 1, &last, sizeof(last));
+   }
+-  nchars = str->Write(isolate, aligned_dst, 0, max_chars - 1, flags);
+-  CHECK_EQ(nchars, max_chars - 1);
+-
+-  // Shift everything to unaligned-left
+-  memmove(dst, aligned_dst, nchars * sizeof(*dst));
+-
+-  // One more char to be written
+-  uint16_t last;
+-  CHECK_EQ(str->Write(isolate, &last, nchars, 1, flags), 1);
+-  memcpy(buf + nchars * sizeof(*dst), &last, sizeof(last));
+-  nchars++;
+ 
+   return nchars * sizeof(*dst);
+ }
+@@ -248,10 +242,6 @@ size_t StringBytes::Write(Isolate* isolate,
+   Local<String> str = val.As<String>();
+   String::ValueView input_view(isolate, str);
+ 
+-  int flags = String::HINT_MANY_WRITES_EXPECTED |
+-              String::NO_NULL_TERMINATION |
+-              String::REPLACE_INVALID_UTF8;
+-
+   switch (encoding) {
+     case ASCII:
+     case LATIN1:
+@@ -260,6 +250,9 @@ size_t StringBytes::Write(Isolate* isolate,
+         memcpy(buf, input_view.data8(), nbytes);
+       } else {
+         uint8_t* const dst = reinterpret_cast<uint8_t*>(buf);
++        const int flags = String::HINT_MANY_WRITES_EXPECTED |
++                          String::NO_NULL_TERMINATION |
++                          String::REPLACE_INVALID_UTF8;
+         nbytes = str->WriteOneByte(isolate, dst, 0, buflen, flags);
+       }
+       break;
+@@ -271,7 +264,7 @@ size_t StringBytes::Write(Isolate* isolate,
+       break;
+ 
+     case UCS2: {
+-      nbytes = WriteUCS2(isolate, buf, buflen, str, flags);
++      nbytes = WriteUCS2(isolate, buf, buflen, str);
+ 
+       // Node's "ucs2" encoding wants LE character data stored in
+       // the Buffer, so we need to reorder on BE platforms.  See
+diff --git a/src/string_bytes.h b/src/string_bytes.h
+index 53bc003fbda43663d6b8619672b23803fc88deb6..2a916b1c6a03b53c15e96e050dfa5711caaa07e2 100644
+--- a/src/string_bytes.h
++++ b/src/string_bytes.h
+@@ -102,8 +102,7 @@ class StringBytes {
+   static size_t WriteUCS2(v8::Isolate* isolate,
+                           char* buf,
+                           size_t buflen,
+-                          v8::Local<v8::String> str,
+-                          int flags);
++                          v8::Local<v8::String> str);
+ };
+ 
+ }  // namespace node

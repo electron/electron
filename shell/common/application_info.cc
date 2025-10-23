@@ -6,12 +6,12 @@
 
 #include "base/i18n/rtl.h"
 #include "base/no_destructor.h"
-#include "base/strings/stringprintf.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_version.h"
-#include "content/public/common/user_agent.h"
+#include "components/embedder_support/user_agent_utils.h"
 #include "electron/electron_version.h"
 #include "shell/browser/browser.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 
 namespace electron {
 
@@ -42,11 +42,11 @@ std::string GetApplicationUserAgent() {
     user_agent = "Chrome/" CHROME_VERSION_STRING " " ELECTRON_PRODUCT_NAME
                  "/" ELECTRON_VERSION_STRING;
   } else {
-    user_agent = base::StringPrintf(
+    user_agent = absl::StrFormat(
         "%s/%s Chrome/%s " ELECTRON_PRODUCT_NAME "/" ELECTRON_VERSION_STRING,
-        name.c_str(), browser->GetVersion().c_str(), CHROME_VERSION_STRING);
+        name, browser->GetVersion(), CHROME_VERSION_STRING);
   }
-  return content::BuildUserAgentFromProduct(user_agent);
+  return embedder_support::BuildUserAgentFromProduct(user_agent);
 }
 
 bool IsAppRTL() {

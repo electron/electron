@@ -8,19 +8,16 @@
 
 #include "base/logging.h"
 #include "base/process/launch.h"
+#include "base/process/process_handle.h"
 #include "base/strings/strcat_win.h"
 #include "base/strings/string_number_conversions_win.h"
-#include "base/strings/utf_string_conversions.h"
 #include "base/win/scoped_handle.h"
 #include "sandbox/win/src/nt_internals.h"
 #include "sandbox/win/src/win_utils.h"
-#include "ui/base/win/shell.h"
 
 namespace relauncher::internal {
 
 namespace {
-
-const CharType* kWaitEventName = L"ElectronRelauncherWaitEvent";
 
 struct PROCESS_BASIC_INFORMATION {
   union {
@@ -44,24 +41,13 @@ struct PROCESS_BASIC_INFORMATION {
 };
 
 HANDLE GetParentProcessHandle(base::ProcessHandle handle) {
-  NtQueryInformationProcessFunction NtQueryInformationProcess = nullptr;
-  ResolveNTFunctionPtr("NtQueryInformationProcess", &NtQueryInformationProcess);
-  if (!NtQueryInformationProcess) {
-    LOG(ERROR) << "Unable to get NtQueryInformationProcess";
+  base::ProcessId ppid = base::GetParentProcessId(handle);
+  if (ppid == 0u) {
+    LOG(ERROR) << "Could not get parent process handle";
     return nullptr;
   }
 
-  PROCESS_BASIC_INFORMATION pbi;
-  LONG status =
-      NtQueryInformationProcess(handle, ProcessBasicInformation, &pbi,
-                                sizeof(PROCESS_BASIC_INFORMATION), nullptr);
-  if (!NT_SUCCESS(status)) {
-    LOG(ERROR) << "NtQueryInformationProcess failed";
-    return nullptr;
-  }
-
-  return ::OpenProcess(PROCESS_ALL_ACCESS, TRUE,
-                       pbi.InheritedFromUniqueProcessId);
+  return ::OpenProcess(PROCESS_ALL_ACCESS, TRUE, ppid);
 }
 
 StringType AddQuoteForArg(const StringType& arg) {
@@ -110,8 +96,8 @@ StringType AddQuoteForArg(const StringType& arg) {
 }  // namespace
 
 StringType GetWaitEventName(base::ProcessId pid) {
-  return base::StrCat(
-      {kWaitEventName, L"-", base::NumberToWString(static_cast<int>(pid))});
+  return base::StrCat({L"ElectronRelauncherWaitEvent-",
+                       base::NumberToWString(static_cast<int>(pid))});
 }
 
 StringType ArgvToCommandLineString(const StringVector& argv) {

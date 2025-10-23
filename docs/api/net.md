@@ -28,6 +28,7 @@ Example usage:
 
 ```js
 const { app } = require('electron')
+
 app.whenReady().then(() => {
   const { net } = require('electron')
   const request = net.request('https://github.com')
@@ -117,8 +118,9 @@ protocol.handle('https', (req) => {
 })
 ```
 
-Note: in the [utility process](../glossary.md#utility-process) custom protocols
-are not supported.
+> [!NOTE]
+> In the [utility process](../glossary.md#utility-process), custom protocols
+> are not supported.
 
 ### `net.isOnline()`
 
@@ -130,7 +132,7 @@ won't be able to connect to remote sites. However, a return value of
 whether a particular connection attempt to a particular remote site
 will be successful.
 
-#### `net.resolveHost(host, [options])`
+### `net.resolveHost(host, [options])`
 
 * `host` string - Hostname to resolve.
 * `options` Object (optional)

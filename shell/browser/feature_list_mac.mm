@@ -22,11 +22,20 @@ std::string EnablePlatformSpecificFeatures() {
     // kThumbnailCapturerMac,
     // chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
 #if DCHECK_IS_ON()
-    return "";
+    return "ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma";
 #else
     return "ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma,"
            "ThumbnailCapturerMac:capture_mode/sc_screenshot_manager";
 #endif
+  }
+  return "";
+}
+
+std::string DisablePlatformSpecificFeatures() {
+  if (@available(macOS 14.4, *)) {
+    // Required to stop timing out getDisplayMedia while waiting for
+    // the user to select a window with the picker
+    return "TimeoutHangingVideoCaptureStarts";
   }
   return "";
 }

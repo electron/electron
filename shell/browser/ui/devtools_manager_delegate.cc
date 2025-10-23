@@ -12,9 +12,7 @@
 #include "base/functional/bind.h"
 #include "base/path_service.h"
 #include "base/strings/string_number_conversions.h"
-#include "base/strings/stringprintf.h"
-#include "base/strings/utf_string_conversions.h"
-#include "chrome/common/chrome_paths.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/devtools_socket_factory.h"
@@ -22,7 +20,6 @@
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/url_constants.h"
-#include "content/public/common/user_agent.h"
 #include "electron/grit/electron_resources.h"
 #include "net/base/net_errors.h"
 #include "net/socket/stream_socket.h"
@@ -52,13 +49,13 @@ class TCPServerSocketFactory : public content::DevToolsSocketFactory {
     auto socket =
         std::make_unique<net::TCPServerSocket>(nullptr, net::NetLogSource());
     if (socket->ListenWithAddressAndPort(address_, port_, 10) != net::OK)
-      return std::unique_ptr<net::ServerSocket>();
+      return {};
 
     return socket;
   }
   std::unique_ptr<net::ServerSocket> CreateForTethering(
       std::string* name) override {
-    return std::unique_ptr<net::ServerSocket>();
+    return {};
   }
 
   std::string address_;
@@ -127,7 +124,8 @@ void DevToolsManagerDelegate::HandleCommand(
 
 scoped_refptr<content::DevToolsAgentHost>
 DevToolsManagerDelegate::CreateNewTarget(const GURL& url,
-                                         TargetType target_type) {
+                                         TargetType target_type,
+                                         bool new_window) {
   return nullptr;
 }
 
@@ -141,7 +139,7 @@ bool DevToolsManagerDelegate::HasBundledFrontendResources() {
 }
 
 content::BrowserContext* DevToolsManagerDelegate::GetDefaultBrowserContext() {
-  return ElectronBrowserContext::From("", false);
+  return ElectronBrowserContext::GetDefaultBrowserContext();
 }
 
 }  // namespace electron

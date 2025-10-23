@@ -1,127 +1,170 @@
+---
+title: "Keyboard Shortcuts"
+description: "Define accelerator strings for local and global keyboard shortcuts"
+slug: keyboard-shortcuts
+hide_title: false
+---
+
 # Keyboard Shortcuts
 
-## Overview
+## Accelerators
 
-This feature allows you to configure local and global keyboard shortcuts
-for your Electron application.
+Accelerators are strings that can be used to represent keyboard shortcuts throughout your Electron.
+These strings can contain multiple modifiers keys and a single key code joined by the `+` character.
 
-## Example
+> [!NOTE]
+> Accelerators are **case-insensitive**.
 
-### Local Shortcuts
+### Available modifiers
 
-Local keyboard shortcuts are triggered only when the application is focused.
-To configure a local keyboard shortcut, you need to specify an [`accelerator`][]
-property when creating a [MenuItem][] within the [Menu][] module.
+* `Command` (or `Cmd` for short)
+* `Control` (or `Ctrl` for short)
+* `CommandOrControl` (or `CmdOrCtrl` for short)
+* `Alt`
+* `Option`
+* `AltGr`
+* `Shift`
+* `Super` (or `Meta` as alias)
 
-Starting with a working application from the
-[Quick Start Guide](quick-start.md), update the `main.js` to be:
+### Available key codes
 
-```fiddle docs/fiddles/features/keyboard-shortcuts/local
-const { app, BrowserWindow, Menu, MenuItem } = require('electron/main')
+* `0` to `9`
+* `A` to `Z`
+* `F1` to `F24`
+* Various Punctuation: `)`, `!`, `@`, `#`, `$`, `%`, `^`, `&`, `*`, `(`, `:`, `;`, `:`, `+`, `=`, `<`, `,`, `_`, `-`, `>`, `.`, `?`, `/`, `~`, `` ` ``, `{`, `]`, `[`, `|`, `\`, `}`, `"`
+* `Plus`
+* `Space`
+* `Tab`
+* `Capslock`
+* `Numlock`
+* `Scrolllock`
+* `Backspace`
+* `Delete`
+* `Insert`
+* `Return` (or `Enter` as alias)
+* `Up`, `Down`, `Left` and `Right`
+* `Home` and `End`
+* `PageUp` and `PageDown`
+* `Escape` (or `Esc` for short)
+* `VolumeUp`, `VolumeDown` and `VolumeMute`
+* `MediaNextTrack`, `MediaPreviousTrack`, `MediaStop` and `MediaPlayPause`
+* `PrintScreen`
+* NumPad Keys
+  * `num0` - `num9`
+  * `numdec` - decimal key
+  * `numadd` - numpad `+` key
+  * `numsub` - numpad `-` key
+  * `nummult` - numpad `*` key
+  * `numdiv` - numpad `÷` key
 
-function createWindow () {
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600
-  })
+### Cross-platform modifiers
 
-  win.loadFile('index.html')
-}
+Many modifier accelerators map to different keys between operating systems.
+
+| Modifier         | macOS       | Windows and Linux    |
+|------------------|-------------|----------------------|
+|`CommandOrControl`| Command (⌘) | Control              |
+|`Command`         | Command (⌘) | N/A                  |
+|`Control`         | Control (^) | Control              |
+|`Alt`             | Option (⌥)  | Alt                  |
+|`Option`          | Option (⌥)  | N/A                  |
+|`Super` (`Meta`)  | Command (⌘) | Windows (⊞)          |
+
+> [!IMPORTANT]
+>
+> * On Linux and Windows, the `Command` modifier does not have any effect. In general, you should use
+> the `CommandOrControl` modifier instead, which represents <kbd>⌘ Cmd</kbd> on macOS and <kbd>Ctrl</kbd>
+> on Linux and Windows.
+> * Use `Alt` instead of `Option`. The <kbd>⌥ Opt</kbd> key only exists on macOS, whereas the `Alt` will
+> map to the appropriate modifier on all platforms.
+
+#### Examples
+
+Here are some examples of cross-platform Electron accelerators for common editing operations:
+
+* Copy: `CommandOrControl+C`
+* Paste: `CommandOrControl+V`
+* Undo: `CommandOrControl+Z`
+* Redo: `CommandOrControl+Shift+Z`
+
+## Local shortcuts
+
+**Local** keyboard shortcuts are triggered only when the application is focused. These shortcuts
+map to specific menu items within the app's main [application menu](./application-menu.md).
+
+To define a local keyboard shortcut, you need to configure the `accelerator` property when creating
+a [MenuItem](../api/menu-item.md). Then, the `click` event associated to that menu item will trigger
+upon using that accelerator.
+
+```js title='Opening a dialog via accelerator (local)'
+const { dialog, Menu, MenuItem } = require('electron/main')
 
 const menu = new Menu()
-menu.append(new MenuItem({
-  label: 'Electron',
-  submenu: [{
-    role: 'help',
-    accelerator: process.platform === 'darwin' ? 'Alt+Cmd+I' : 'Alt+Shift+I',
-    click: () => { console.log('Electron rocks!') }
-  }]
-}))
 
-Menu.setApplicationMenu(menu)
-
-app.whenReady().then(createWindow)
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
-
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
-  }
-})
-```
-
-> NOTE: In the code above, you can see that the accelerator differs based on the
-user's operating system. For MacOS, it is `Alt+Cmd+I`, whereas for Linux and
-Windows, it is `Alt+Shift+I`.
-
-After launching the Electron application, you should see the application menu
-along with the local shortcut you just defined:
-
-![Menu with a local shortcut](../images/local-shortcut.png)
-
-If you click `Help` or press the defined accelerator and then open the terminal
-that you ran your Electron application from, you will see the message that was
-generated after triggering the `click` event: "Electron rocks!".
-
-### Global Shortcuts
-
-To configure a global keyboard shortcut, you need to use the [globalShortcut][]
-module to detect keyboard events even when the application does not have
-keyboard focus.
-
-Starting with a working application from the
-[Quick Start Guide](quick-start.md), update the `main.js` to be:
-
-```fiddle docs/fiddles/features/keyboard-shortcuts/global
-const { app, BrowserWindow, globalShortcut } = require('electron/main')
-
-function createWindow () {
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600
-  })
-
-  win.loadFile('index.html')
+// The first submenu needs to be the app menu on macOS
+if (process.platform === 'darwin') {
+  const appMenu = new MenuItem({ role: 'appMenu' })
+  menu.append(appMenu)
 }
 
-app.whenReady().then(() => {
-  globalShortcut.register('Alt+CommandOrControl+I', () => {
-    console.log('Electron loves global shortcuts!')
-  })
-}).then(createWindow)
+// highlight-start
+const submenu = Menu.buildFromTemplate([{
+  label: 'Open a Dialog',
+  click: () => dialog.showMessageBox({ message: 'Hello World!' }),
+  accelerator: 'CommandOrControl+Alt+R'
+}])
+menu.append(new MenuItem({ label: 'Custom Menu', submenu }))
+// highlight-end
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
+Menu.setApplicationMenu(menu)
+```
 
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
-  }
+In the above example, a native "Hello World" dialog will open when pressing <kbd>⌘ Cmd</kbd>+<kbd>⌥ Opt</kbd>+<kbd>R</kbd>
+on macOS or <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>R</kbd> on other platforms.
+
+> [!TIP]
+> Accelerators can work even when menu items are hidden. On macOS, this feature can be disabled by
+> setting `acceleratorWorksWhenHidden: false` when building a `MenuItem`.
+
+> [!TIP]
+> On Windows and Linux, the `registerAccelerator` property of the `MenuItem` can be set to `false`
+> so that the accelerator is visible in the system menu but not enabled.
+
+## Global shortcuts
+
+**Global** keyboard shortcuts work even when your app is out of focus. To configure a global keyboard
+shortcut, you can use the [`globalShortcut.register`](../api/global-shortcut.md#globalshortcutregisteraccelerator-callback)
+function to specify shortcuts.
+
+```js title='Opening a dialog via accelerator (global)'
+const { dialog, globalShortcut } = require('electron/main')
+
+globalShortcut.register('CommandOrControl+Alt+R', () => {
+  dialog.showMessageBox({ message: 'Hello World!' })
 })
 ```
 
-> NOTE: In the code above, the `CommandOrControl` combination uses `Command`
-on macOS and `Control` on Windows/Linux.
+To later unregister a shortcut, you can use the [`globalShortcut.unregisterAccelerator`](../api/global-shortcut.md#globalshortcutunregisteraccelerator)
+function.
 
-After launching the Electron application, if you press the defined key
-combination then open the terminal that you ran your Electron application from,
-you will see that Electron loves global shortcuts!
+```js title='Opening a dialog via accelerator (global)'
+const { globalShortcut } = require('electron/main')
 
-### Shortcuts within a BrowserWindow
+globalShortcut.unregister('CommandOrControl+Alt+R')
+```
 
-#### Using web APIs
+> [!WARNING]
+> On macOS, there's a long-standing bug with `globalShortcut` that prevents it from working with
+> keyboard layouts other than QWERTY ([electron/electron#19747](https://github.com/electron/electron/issues/19747)).
 
-If you want to handle keyboard shortcuts within a [BrowserWindow][], you can
-listen for the `keyup` and `keydown` [DOM events][dom-events] inside the
-renderer process using the [addEventListener() API][addEventListener-api].
+## Shortcuts within a window
+
+### In the renderer process
+
+If you want to handle keyboard shortcuts within a [BaseWindow](../api/base-window.md), you can
+listen for the [`keyup`](https://developer.mozilla.org/en-US/docs/Web/API/Element/keyup_event) and
+[`keydown`](https://developer.mozilla.org/en-US/docs/Web/API/Element/keydown_event) DOM Events inside
+the renderer process using the [addEventListener](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener) API.
 
 ```fiddle docs/fiddles/features/keyboard-shortcuts/web-apis|focus=renderer.js
 function handleKeyPress (event) {
@@ -133,25 +176,22 @@ function handleKeyPress (event) {
 window.addEventListener('keyup', handleKeyPress, true)
 ```
 
-> Note:  the third parameter `true` indicates that the listener will always receive
-key presses before other listeners so they can't have `stopPropagation()`
-called on them.
+> [!NOTE]
+> The third parameter `true` indicates that the listener will always receive
+> key presses before other listeners so they can't have `stopPropagation()`
+> called on them.
 
 #### Intercepting events in the main process
 
 The [`before-input-event`](../api/web-contents.md#event-before-input-event) event
-is emitted before dispatching `keydown` and `keyup` events in the page. It can
+is emitted before dispatching `keydown` and `keyup` events in the renderer process. It can
 be used to catch and handle custom shortcuts that are not visible in the menu.
 
-Starting with a working application from the
-[Quick Start Guide](quick-start.md), update the `main.js` file with the
-following lines:
-
-```fiddle docs/fiddles/features/keyboard-shortcuts/interception-from-main
+```js title='Intercepting the Ctrl+I event from the main process'
 const { app, BrowserWindow } = require('electron/main')
 
 app.whenReady().then(() => {
-  const win = new BrowserWindow({ width: 800, height: 600 })
+  const win = new BrowserWindow()
 
   win.loadFile('index.html')
   win.webContents.on('before-input-event', (event, input) => {
@@ -162,48 +202,3 @@ app.whenReady().then(() => {
   })
 })
 ```
-
-After launching the Electron application, if you open the terminal that you ran
-your Electron application from and press `Ctrl+I` key combination, you will
-see that this key combination was successfully intercepted.
-
-#### Using third-party libraries
-
-If you don't want to do manual shortcut parsing, there are libraries that do
-advanced key detection, such as [mousetrap][]. Below are examples of usage of the
-`mousetrap` running in the Renderer process:
-
-```js @ts-nocheck
-Mousetrap.bind('4', () => { console.log('4') })
-Mousetrap.bind('?', () => { console.log('show shortcuts!') })
-Mousetrap.bind('esc', () => { console.log('escape') }, 'keyup')
-
-// combinations
-Mousetrap.bind('command+shift+k', () => { console.log('command shift k') })
-
-// map multiple combinations to the same callback
-Mousetrap.bind(['command+k', 'ctrl+k'], () => {
-  console.log('command k or control k')
-
-  // return false to prevent default behavior and stop event from bubbling
-  return false
-})
-
-// gmail style sequences
-Mousetrap.bind('g i', () => { console.log('go to inbox') })
-Mousetrap.bind('* a', () => { console.log('select all') })
-
-// konami code!
-Mousetrap.bind('up up down down left right left right b a enter', () => {
-  console.log('konami code')
-})
-```
-
-[Menu]: ../api/menu.md
-[MenuItem]: ../api/menu-item.md
-[globalShortcut]: ../api/global-shortcut.md
-[`accelerator`]: ../api/accelerator.md
-[BrowserWindow]: ../api/browser-window.md
-[mousetrap]: https://github.com/ccampbell/mousetrap
-[dom-events]: https://developer.mozilla.org/en-US/docs/Web/Events
-[addEventListener-api]: https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener

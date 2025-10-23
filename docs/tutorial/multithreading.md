@@ -20,7 +20,8 @@ const win = new BrowserWindow({
 The `nodeIntegrationInWorker` can be used independent of `nodeIntegration`, but
 `sandbox` must not be set to `true`.
 
-**Note:** This option is not available in [`SharedWorker`s](https://developer.mozilla.org/en-US/docs/Web/API/SharedWorker) or [`Service Worker`s](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorker) owing to incompatibilities in sandboxing policies.
+> [!NOTE]
+> This option is not available in [`SharedWorker`s](https://developer.mozilla.org/en-US/docs/Web/API/SharedWorker) or [`Service Worker`s](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorker) owing to incompatibilities in sandboxing policies.
 
 ## Available APIs
 
@@ -42,7 +43,7 @@ safe.
 The only way to load a native module safely for now, is to make sure the app
 loads no native modules after the Web Workers get started.
 
-```js @ts-expect-error=[1]
+```js
 process.dlopen = () => {
   throw new Error('Load native module is not safe')
 }

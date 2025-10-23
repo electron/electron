@@ -1,6 +1,14 @@
 # BrowserView
 
-> **Note**
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/35658
+    breaking-changes-header: deprecated-browserview
+```
+-->
+
+> [!NOTE]
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
@@ -11,9 +19,17 @@ relative to its owning window. It is meant to be an alternative to the
 
 ## Class: BrowserView
 
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/35658
+    breaking-changes-header: deprecated-browserview
+```
+-->
+
 > Create and control views.
 
-> **Note**
+> [!NOTE]
 > The `BrowserView` class is deprecated, and replaced by the new
 > [`WebContentsView`](web-contents-view.md) class.
 
@@ -21,6 +37,10 @@ Process: [Main](../glossary.md#main-process)
 
 This module cannot be used until the `ready` event of the `app`
 module is emitted.
+
+> [!WARNING]
+> Electron's built-in classes cannot be subclassed in user code.
+> For more information, see [the FAQ](../faq.md#class-inheritance-does-not-work-with-electron-built-in-modules).
 
 ### Example
 
@@ -40,6 +60,14 @@ app.whenReady().then(() => {
 
 ### `new BrowserView([options])` _Experimental_ _Deprecated_
 
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/35658
+    breaking-changes-header: deprecated-browserview
+```
+-->
+
 * `options` Object (optional)
   * `webPreferences` [WebPreferences](structures/web-preferences.md?inline) (optional) - Settings of web page's features.
 
@@ -49,6 +77,14 @@ Objects created with `new BrowserView` have the following properties:
 
 #### `view.webContents` _Experimental_ _Deprecated_
 
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/35658
+    breaking-changes-header: deprecated-browserview
+```
+-->
+
 A [`WebContents`](web-contents.md) object owned by this view.
 
 ### Instance Methods
@@ -56,6 +92,18 @@ A [`WebContents`](web-contents.md) object owned by this view.
 Objects created with `new BrowserView` have the following instance methods:
 
 #### `view.setAutoResize(options)` _Experimental_ _Deprecated_
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/35658
+    description: "Standardized auto-resizing behavior across all platforms"
+    breaking-changes-header: behavior-changed-browserviewsetautoresize-behavior-on-macos
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/35658
+    breaking-changes-header: deprecated-browserview
+```
+-->
 
 * `options` Object
   * `width` boolean (optional) - If `true`, the view's width will grow and shrink together
@@ -69,17 +117,41 @@ Objects created with `new BrowserView` have the following instance methods:
 
 #### `view.setBounds(bounds)` _Experimental_ _Deprecated_
 
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/35658
+    breaking-changes-header: deprecated-browserview
+```
+-->
+
 * `bounds` [Rectangle](structures/rectangle.md)
 
 Resizes and moves the view to the supplied bounds relative to the window.
 
 #### `view.getBounds()` _Experimental_ _Deprecated_
 
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/35658
+    breaking-changes-header: deprecated-browserview
+```
+-->
+
 Returns [`Rectangle`](structures/rectangle.md)
 
 The `bounds` of this BrowserView instance as `Object`.
 
 #### `view.setBackgroundColor(color)` _Experimental_ _Deprecated_
+
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/35658
+    breaking-changes-header: deprecated-browserview
+```
+-->
 
 * `color` string - Color in Hex, RGB, ARGB, HSL, HSLA or named CSS color format. The alpha channel is
   optional for the hex type.
@@ -108,4 +180,5 @@ Examples of valid `color` values:
   * Similar to CSS Color Module Level 3 keywords, but case-sensitive.
     * e.g. `blueviolet` or `red`
 
-**Note:** Hex format with alpha takes `AARRGGBB` or `ARGB`, _not_ `RRGGBBAA` or `RGB`.
+> [!NOTE]
+> Hex format with alpha takes `AARRGGBB` or `ARGB`, _not_ `RRGGBBAA` or `RGB`.

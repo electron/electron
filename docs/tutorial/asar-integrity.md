@@ -5,7 +5,7 @@ slug: asar-integrity
 hide_title: false
 ---
 
-ASAR integrity is an experimental feature that validates the contents of your app's
+ASAR integrity is a security feature that validates the contents of your app's
 [ASAR archives](./asar-archives.md) at runtime.
 
 ## Version support
@@ -64,13 +64,10 @@ flipFuses(
 )
 ```
 
-:::tip Fuses in Electron Forge
-
-With Electron Forge, you can configure your app's fuses with
-[@electron-forge/plugin-fuses](https://www.electronforge.io/config/plugins/fuses)
-in your Forge configuration file.
-
-:::
+> [!TIP]
+> With Electron Forge, you can configure your app's fuses with
+> [@electron-forge/plugin-fuses](https://www.electronforge.io/config/plugins/fuses)
+> in your Forge configuration file.
 
 ## Providing the header hash
 
@@ -80,7 +77,7 @@ on package time. The process of providing this packaged hash is different for ma
 ### Using Electron tooling
 
 Electron Forge and Electron Packager do this setup automatically for you with no additional
-configuration. The minimum required versions for ASAR integrity are:
+configuration whenever `asar` is enabled. The minimum required versions for ASAR integrity are:
 
 * `@electron/packager@18.3.1`
 * `@electron/forge@7.4.0`
@@ -109,7 +106,7 @@ Valid `algorithm` values are currently `SHA256` only. The `hash` is a hash of th
 The `@electron/asar` package exposes a `getRawHeader` method whose result can then be hashed to generate this value
 (e.g. using the [`node:crypto`](https://nodejs.org/api/crypto.html) module).
 
-### Windows
+#### Windows
 
 When packaging for Windows, you must populate a valid [resource](https://learn.microsoft.com/en-us/windows/win32/menurc/resources)
 entry of type `Integrity` and name `ElectronAsar`. The value of this resource should be a JSON encoded dictionary
@@ -125,9 +122,6 @@ in the form included below:
 ]
 ```
 
-:::info
-
-For an implementation example, see [`src/resedit.ts`](https://github.com/electron/packager/blob/main/src/resedit.ts)
-in the Electron Packager code.
-
-:::
+> [!NOTE]
+> For an implementation example, see [`src/resedit.ts`](https://github.com/electron/packager/blob/main/src/resedit.ts)
+> in the Electron Packager code.

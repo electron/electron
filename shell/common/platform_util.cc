@@ -9,10 +9,11 @@
 #include "base/functional/bind.h"
 #include "base/task/thread_pool.h"
 #include "content/public/browser/browser_task_traits.h"
-#include "content/public/browser/browser_thread.h"
 #include "shell/common/platform_util_internal.h"
 
 namespace platform_util {
+
+namespace {
 
 struct TrashItemResult {
   bool success;
@@ -24,6 +25,8 @@ TrashItemResult TrashItemOnBlockingThread(const base::FilePath& full_path) {
   bool success = internal::PlatformTrashItem(full_path, &error);
   return {success, error};
 }
+
+}  // namespace
 
 void TrashItem(const base::FilePath& full_path,
                base::OnceCallback<void(bool, const std::string&)> callback) {

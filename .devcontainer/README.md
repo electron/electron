@@ -25,9 +25,19 @@ Codespaces doesn't lean very well into gclient based checkouts, the directory st
 /workspaces/electron
 ```
 
-## Goma
+## Reclient
 
-If you are a maintainer [with Goma access](../docs/development/goma.md) it should be automatically configured and authenticated when you spin up a new codespaces instance.  You can validate this by checking `e d goma_auth info` or by checking that your build-tools configuration has a goma mode of `cluster`.
+If you are a maintainer [with Reclient access](../docs/development/reclient.md) you'll need to ensure you're authenticated when you spin up a new codespaces instance.  You can validate this by checking `e d rbe info` - your build-tools configuration should have `Access` type `Cache & Execute`:
+
+```console
+Authentication Status: Authenticated
+Since:     2024-05-28 10:29:33 +0200 CEST
+Expires:   2024-08-26 10:29:33 +0200 CEST
+...
+Access:    Cache & Execute
+```
+
+To authenticate if you're not logged in, run `e d rbe login` and follow the link to authenticate.
 
 ## Running Electron
 

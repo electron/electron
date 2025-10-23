@@ -11,15 +11,16 @@
 
 #include "base/memory/raw_ptr.h"
 #include "base/scoped_observation.h"
-#include "shell/browser/native_window_views.h"
-#include "shell/browser/ui/views/client_frame_view_linux.h"
-#include "third_party/skia/include/core/SkRRect.h"
 #include "ui/linux/device_scale_factor_observer.h"
+#include "ui/linux/linux_ui.h"
 #include "ui/native_theme/native_theme_observer.h"
 #include "ui/platform_window/platform_window.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
 
 namespace electron {
+
+class ClientFrameViewLinux;
+class NativeWindowViews;
 
 class ElectronDesktopWindowTreeHostLinux
     : public views::DesktopWindowTreeHostLinux,
@@ -28,6 +29,7 @@ class ElectronDesktopWindowTreeHostLinux
  public:
   ElectronDesktopWindowTreeHostLinux(
       NativeWindowViews* native_window_view,
+      views::Widget* widget,
       views::DesktopNativeWidgetAura* desktop_native_widget_aura);
   ~ElectronDesktopWindowTreeHostLinux() override;
 
@@ -59,10 +61,15 @@ class ElectronDesktopWindowTreeHostLinux
 
   // views::DesktopWindowTreeHostLinux:
   void UpdateFrameHints() override;
+  void DispatchEvent(ui::Event* event) override;
+  void AddAdditionalInitProperties(
+      const views::Widget::InitParams& params,
+      ui::PlatformWindowInitProperties* properties) override;
 
  private:
-  void UpdateClientDecorationHints(ClientFrameViewLinux* view);
   void UpdateWindowState(ui::PlatformWindowState new_state);
+
+  bool IsShowingFrame() const;
 
   raw_ptr<NativeWindowViews> native_window_view_;  // weak ref
 

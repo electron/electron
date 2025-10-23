@@ -1,5 +1,14 @@
 # contextBridge
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/40330
+    description: "`ipcRenderer` can no longer be sent over the `contextBridge`"
+    breaking-changes-header: behavior-changed-ipcrenderer-can-no-longer-be-sent-over-the-contextbridge
+```
+-->
+
 > Create a safe, bi-directional, synchronous bridge across isolated contexts
 
 Process: [Renderer](../glossary.md#renderer-process)
@@ -51,6 +60,20 @@ The `contextBridge` module has the following methods:
 * `worldId` Integer - The ID of the world to inject the API into. `0` is the default world, `999` is the world used by Electron's `contextIsolation` feature. Using 999 would expose the object for preload context. We recommend using 1000+ while creating isolated world.
 * `apiKey` string - The key to inject the API onto `window` with.  The API will be accessible on `window[apiKey]`.
 * `api` any - Your API, more information on what this API can be and how it works is available below.
+
+### `contextBridge.executeInMainWorld(executionScript)` _Experimental_
+
+<!-- TODO(samuelmaddock): add generics to map the `args` types to the `func` params  -->
+
+* `executionScript` Object
+  * `func` (...args: any[]) => any - A JavaScript function to execute. This function will be serialized which means
+      that any bound parameters and execution context will be lost.
+  * `args` any[] (optional) - An array of arguments to pass to the provided function. These
+      arguments will be copied between worlds in accordance with
+      [the table of supported types.](#parameter--error--return-type-support)
+
+Returns `any` - A copy of the resulting value from executing the function in the main world.
+[Refer to the table](#parameter--error--return-type-support) on how values are copied between worlds.
 
 ## Usage
 
@@ -134,9 +157,29 @@ has been included below for completeness:
 | [Cloneable Types](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm) | Simple | ✅ | ✅ | See the linked document on cloneable types |
 | `Element` | Complex | ✅ | ✅ | Prototype modifications are dropped.  Sending custom elements will not work. |
 | `Blob` | Complex | ✅ | ✅ | N/A |
+| `VideoFrame` | Complex | ✅ | ✅ | N/A |
 | `Symbol` | N/A | ❌ | ❌ | Symbols cannot be copied across contexts so they are dropped |
 
 If the type you care about is not in the above table, it is probably not supported.
+
+### Exposing ipcRenderer
+
+Attempting to send the entire `ipcRenderer` module as an object over the `contextBridge` will result in
+an empty object on the receiving side of the bridge. Sending over `ipcRenderer` in full can let any
+code send any message, which is a security footgun. To interact through `ipcRenderer`, provide a safe wrapper
+like below:
+
+```js
+// Preload (Isolated World)
+contextBridge.exposeInMainWorld('electron', {
+  onMyEventName: (callback) => ipcRenderer.on('MyEventName', (e, ...args) => callback(args))
+})
+```
+
+```js @ts-nocheck
+// Renderer (Main World)
+window.electron.onMyEventName(data => { /* ... */ })
+```
 
 ### Exposing Node Global Symbols
 
@@ -147,7 +190,9 @@ Be very cautious about which globals and APIs you expose to untrusted remote con
 
 ```js
 const { contextBridge } = require('electron')
+
 const crypto = require('node:crypto')
+
 contextBridge.exposeInMainWorld('nodeCrypto', {
   sha256sum (data) {
     const hash = crypto.createHash('sha256')

@@ -1,4 +1,6 @@
+const chalk = require('chalk');
 const { GitProcess } = require('dugite');
+
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -6,10 +8,9 @@ const path = require('node:path');
 const ELECTRON_DIR = path.resolve(__dirname, '..', '..');
 const SRC_DIR = path.resolve(ELECTRON_DIR, '..');
 
-require('colors');
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const pass = '✓'.green;
-const fail = '✗'.red;
+const pass = chalk.green('✓');
+const fail = chalk.red('✗');
 
 function getElectronExec () {
   const OUT_DIR = getOutDir();

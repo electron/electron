@@ -8,7 +8,6 @@
 #include <memory>
 #include <string>
 
-#include "base/task/cancelable_task_tracker.h"
 #include "extensions/browser/api/management/management_api_delegate.h"
 #include "extensions/common/extension_id.h"
 
@@ -73,6 +72,11 @@ class ElectronManagementAPIDelegate : public extensions::ManagementAPIDelegate {
                   bool grayscale) const override;
   GURL GetEffectiveUpdateURL(const extensions::Extension& extension,
                              content::BrowserContext* context) const override;
+  void ShowMv2DeprecationReEnableDialog(
+      content::BrowserContext* context,
+      content::WebContents* web_contents,
+      const extensions::Extension& extension,
+      base::OnceCallback<void(bool)> done_callback) const override;
 };
 
 #endif  // ELECTRON_SHELL_BROWSER_EXTENSIONS_API_MANAGEMENT_ELECTRON_MANAGEMENT_API_DELEGATE_H_

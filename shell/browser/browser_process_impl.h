@@ -13,10 +13,8 @@
 #include <memory>
 #include <string>
 
-#include "base/command_line.h"
 #include "chrome/browser/browser_process.h"
 #include "components/embedder_support/origin_trials/origin_trials_settings_storage.h"
-#include "components/prefs/pref_service.h"
 #include "components/prefs/value_map_pref_store.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/network_quality_tracker.h"
@@ -26,6 +24,8 @@
 #if BUILDFLAG(IS_LINUX)
 #include "components/os_crypt/sync/key_storage_util_linux.h"
 #endif
+
+class PrefService;
 
 namespace printing {
 class PrintJobManager;
@@ -69,6 +69,8 @@ class BrowserProcessImpl : public BrowserProcess {
 
   // BrowserProcess
   BuildState* GetBuildState() override;
+  GlobalFeatures* GetFeatures() override;
+  void CreateGlobalFeaturesForTesting() override {}
   void EndSession() override {}
   void FlushLocalStateAndReply(base::OnceClosure reply) override {}
   bool IsShuttingDown() override;
@@ -78,11 +80,12 @@ class BrowserProcessImpl : public BrowserProcess {
   metrics::MetricsService* metrics_service() override;
   ProfileManager* profile_manager() override;
   PrefService* local_state() override;
+  signin::ActivePrimaryAccountsMetricsRecorder*
+  active_primary_accounts_metrics_recorder() override;
   scoped_refptr<network::SharedURLLoaderFactory> shared_url_loader_factory()
       override;
   variations::VariationsService* variations_service() override;
   BrowserProcessPlatformPart* platform_part() override;
-  extensions::EventRouterForwarder* extension_event_router_forwarder() override;
   NotificationUIManager* notification_ui_manager() override;
   NotificationPlatformBridge* notification_platform_bridge() override;
   SystemNetworkContextManager* system_network_context_manager() override;

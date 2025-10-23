@@ -1,14 +1,17 @@
+import { webContents } from 'electron/main';
+
 import { expect } from 'chai';
+
 import * as childProcess from 'node:child_process';
+import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import * as util from 'node:util';
-import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
-import { copyMacOSFixtureApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn } from './lib/codesign-helpers';
-import { webContents } from 'electron/main';
 import { EventEmitter } from 'node:stream';
-import { once } from 'node:events';
+import * as util from 'node:util';
+
+import { copyMacOSFixtureApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn } from './lib/codesign-helpers';
 import { withTempDirectory } from './lib/fs-helpers';
+import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
 
 const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -156,6 +159,15 @@ describe('node feature', () => {
         const stdout = await w.webContents.executeJavaScript('require(\'child_process\').execSync(\'sudo --help\')');
         expect(stdout).to.not.be.empty();
       });
+    });
+  });
+
+  describe('EventSource', () => {
+    itremote('works correctly when nodeIntegration is enabled in the renderer', () => {
+      const es = new EventSource('https://example.com');
+      expect(es).to.have.property('url').that.is.a('string');
+      expect(es).to.have.property('readyState').that.is.a('number');
+      expect(es).to.have.property('withCredentials').that.is.a('boolean');
     });
   });
 
@@ -685,6 +697,27 @@ describe('node feature', () => {
       expect(code).to.equal(1);
     });
 
+    it('does allow --require in utility process of non-packaged apps', async () => {
+      const appPath = path.join(fixtures, 'apps', 'node-options-utility-process');
+      // App should exit with code 1.
+      const child = childProcess.spawn(process.execPath, [appPath]);
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(1);
+    });
+
+    it('does not allow --require in utility process of packaged apps', async () => {
+      const appPath = path.join(fixtures, 'apps', 'node-options-utility-process');
+      // App should exit with code 1.
+      const child = childProcess.spawn(process.execPath, [appPath], {
+        env: {
+          ...process.env,
+          ELECTRON_FORCE_IS_PACKAGED: 'true'
+        }
+      });
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
+    });
+
     it('does not allow --require in packaged apps', async () => {
       const appPath = path.join(fixtures, 'module', 'noop.js');
       const env = {
@@ -948,6 +981,17 @@ describe('node feature', () => {
       expect(debuggerEnabled).to.be.true();
       expect(success).to.be.true();
     });
+  });
+
+  itremote('handles assert module assertions as expected', () => {
+    const assert = require('node:assert');
+    try {
+      assert.ok(false);
+      expect.fail('assert.ok(false) should throw');
+    } catch (err) {
+      console.log(err);
+      expect(err).to.be.instanceOf(assert.AssertionError);
+    }
   });
 
   it('Can find a module using a package.json main field', () => {

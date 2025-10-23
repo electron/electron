@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_DEVTOOLS_UI_H_
 #define ELECTRON_SHELL_BROWSER_UI_DEVTOOLS_UI_H_
 
-#include "base/compiler_specific.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/web_ui_controller.h"
 
@@ -15,6 +14,7 @@ class DevToolsUI : public content::WebUIController {
  public:
   explicit DevToolsUI(content::BrowserContext* browser_context,
                       content::WebUI* web_ui);
+  ~DevToolsUI() override = default;
 
   // disable copy
   DevToolsUI(const DevToolsUI&) = delete;

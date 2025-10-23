@@ -5,18 +5,19 @@
 #ifndef ELECTRON_SHELL_BROWSER_NET_RESOLVE_PROXY_HELPER_H_
 #define ELECTRON_SHELL_BROWSER_NET_RESOLVE_PROXY_HELPER_H_
 
-#include <deque>
 #include <optional>
 #include <string>
 
+#include "base/containers/circular_deque.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"
 #include "mojo/public/cpp/bindings/receiver.h"
-#include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/proxy_lookup_client.mojom.h"
 #include "url/gurl.h"
 
 namespace electron {
+
+class ElectronBrowserContext;
 
 class ResolveProxyHelper
     : public base::RefCountedThreadSafe<ResolveProxyHelper>,
@@ -24,7 +25,7 @@ class ResolveProxyHelper
  public:
   using ResolveProxyCallback = base::OnceCallback<void(std::string)>;
 
-  explicit ResolveProxyHelper(network::mojom::NetworkContext* network_context);
+  explicit ResolveProxyHelper(ElectronBrowserContext* browser_context);
 
   void ResolveProxy(const GURL& url, ResolveProxyCallback callback);
 
@@ -65,12 +66,12 @@ class ResolveProxyHelper
   // Self-reference. Owned as long as there's an outstanding proxy lookup.
   scoped_refptr<ResolveProxyHelper> owned_self_;
 
-  std::deque<PendingRequest> pending_requests_;
+  base::circular_deque<PendingRequest> pending_requests_;
   // Receiver for the currently in-progress request, if any.
   mojo::Receiver<network::mojom::ProxyLookupClient> receiver_{this};
 
   // Weak Ref
-  raw_ptr<network::mojom::NetworkContext> network_context_ = nullptr;
+  raw_ptr<ElectronBrowserContext> browser_context_;
 };
 
 }  // namespace electron

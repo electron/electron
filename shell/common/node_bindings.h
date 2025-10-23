@@ -11,20 +11,25 @@
 #include <type_traits>
 #include <vector>
 
-#include "base/files/file_path.h"
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
 #include "base/memory/weak_ptr.h"
+#include "base/types/to_address.h"
 #include "gin/public/context_holder.h"
 #include "gin/public/gin_embedders.h"
-#include "shell/common/node_includes.h"
 #include "uv.h"  // NOLINT(build/include_directory)
-#include "v8/include/v8.h"
+#include "v8/include/v8-forward.h"
 
 namespace base {
 class SingleThreadTaskRunner;
 }
+
+namespace node {
+class Environment;
+class IsolateData;
+class MultiIsolatePlatform;
+}  // namespace node
 
 namespace electron {
 
@@ -54,10 +59,33 @@ template <typename T,
               std::is_same<T, uv_udp_t>::value>::type* = nullptr>
 class UvHandle {
  public:
-  UvHandle() : t_(new T) {}
+  UvHandle() : t_{new T} {}
   ~UvHandle() { reset(); }
+
+  explicit UvHandle(UvHandle&& that) {
+    t_ = that.t_;
+    that.t_ = nullptr;
+  }
+
+  UvHandle& operator=(UvHandle&& that) {
+    reset();
+    t_ = that.t_;
+    that.t_ = nullptr;
+    return *this;
+  }
+
+  UvHandle(const UvHandle&) = delete;
+  UvHandle& operator=(const UvHandle&) = delete;
+
   T* get() { return t_; }
+  T* operator->() { return t_; }
+  const T* get() const { return t_; }
+  const T* operator->() const { return t_; }
+
   uv_handle_t* handle() { return reinterpret_cast<uv_handle_t*>(t_); }
+
+  // compare by handle pointer address
+  auto operator<=>(const UvHandle& that) const = default;
 
   void reset() {
     auto* h = handle();
@@ -76,33 +104,47 @@ class UvHandle {
   RAW_PTR_EXCLUSION T* t_ = {};
 };
 
+// Helper for comparing UvHandles and raw uv pointers, e.g. as map keys
+struct UvHandleCompare {
+  using is_transparent = void;
+
+  template <typename U, typename V>
+  bool operator()(U const& u, V const& v) const {
+    return base::to_address(u) < base::to_address(v);
+  }
+};
+
 class NodeBindings {
  public:
   enum class BrowserEnvironment { kBrowser, kRenderer, kUtility, kWorker };
 
-  static NodeBindings* Create(BrowserEnvironment browser_env);
+  static std::unique_ptr<NodeBindings> Create(BrowserEnvironment browser_env);
   static void RegisterBuiltinBindings();
   static bool IsInitialized();
 
   virtual ~NodeBindings();
 
   // Setup V8, libuv.
-  void Initialize(v8::Local<v8::Context> context);
+  void Initialize(v8::Isolate* isolate, v8::Local<v8::Context> context);
 
   std::vector<std::string> ParseNodeCliFlags();
 
   // Create the environment and load node.js.
   std::shared_ptr<node::Environment> CreateEnvironment(
-      v8::Handle<v8::Context> context,
+      v8::Isolate* isolate,
+      v8::Local<v8::Context> context,
       node::MultiIsolatePlatform* platform,
+      size_t max_young_generation_size,
       std::vector<std::string> args,
       std::vector<std::string> exec_args,
       std::optional<base::RepeatingCallback<void()>> on_app_code_ready =
           std::nullopt);
 
   std::shared_ptr<node::Environment> CreateEnvironment(
-      v8::Handle<v8::Context> context,
+      v8::Isolate* isolate,
+      v8::Local<v8::Context> context,
       node::MultiIsolatePlatform* platform,
+      size_t max_young_generation_size = 0,
       std::optional<base::RepeatingCallback<void()>> on_app_code_ready =
           std::nullopt);
 
@@ -115,18 +157,7 @@ class NodeBindings {
   // Notify embed thread to start polling after environment is loaded.
   void StartPolling();
 
-  node::IsolateData* isolate_data(v8::Local<v8::Context> context) const {
-    if (context->GetNumberOfEmbedderDataFields() <=
-        kElectronContextEmbedderDataIndex) {
-      return nullptr;
-    }
-    auto* isolate_data = static_cast<node::IsolateData*>(
-        context->GetAlignedPointerFromEmbedderData(
-            kElectronContextEmbedderDataIndex));
-    CHECK(isolate_data);
-    CHECK(isolate_data->event_loop());
-    return isolate_data;
-  }
+  node::IsolateData* isolate_data(v8::Local<v8::Context> context) const;
 
   // Gets/sets the environment to wrap uv loop.
   void set_uv_env(node::Environment* env) { uv_env_ = env; }

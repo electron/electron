@@ -53,13 +53,17 @@ following properties:
     [`request.followRedirect`](#requestfollowredirect) is invoked synchronously
     during the [`redirect`](#event-redirect) event.  Defaults to `follow`.
   * `origin` string (optional) - The origin URL of the request.
-  * `referrerPolicy` string (optional) - can be `""`, `no-referrer`,
+  * `referrerPolicy` string (optional) - can be "", `no-referrer`,
     `no-referrer-when-downgrade`, `origin`, `origin-when-cross-origin`,
     `unsafe-url`, `same-origin`, `strict-origin`, or
     `strict-origin-when-cross-origin`. Defaults to
     `strict-origin-when-cross-origin`.
   * `cache` string (optional) - can be `default`, `no-store`, `reload`,
     `no-cache`, `force-cache` or `only-if-cached`.
+  * `priority` string (optional) - can be `throttled`, `idle`, `lowest`,
+    `low`, `medium`, or `highest`. Defaults to `idle`.
+  * `priorityIncremental` boolean (optional) - the incremental loading flag as part
+    of HTTP extensible priorities (RFC 9218). Default is `true`.
 
 `options` properties such as `protocol`, `host`, `hostname`, `port` and `path`
 strictly follow the Node.js model as described in the

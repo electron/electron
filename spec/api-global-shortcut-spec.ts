@@ -1,5 +1,8 @@
-import { expect } from 'chai';
 import { globalShortcut } from 'electron/main';
+
+import { expect } from 'chai';
+
+import { singleModifierCombinations, doubleModifierCombinations } from './lib/accelerator-helpers';
 import { ifdescribe } from './lib/spec-helpers';
 
 ifdescribe(process.platform !== 'win32')('globalShortcut module', () => {
@@ -8,18 +11,23 @@ ifdescribe(process.platform !== 'win32')('globalShortcut module', () => {
   });
 
   it('can register and unregister single accelerators', () => {
-    const accelerator = 'CmdOrCtrl+A+B+C';
+    const combinations = [...singleModifierCombinations, ...doubleModifierCombinations];
 
-    expect(globalShortcut.isRegistered(accelerator)).to.be.false('initially registered');
-    globalShortcut.register(accelerator, () => {});
-    expect(globalShortcut.isRegistered(accelerator)).to.be.true('registration worked');
-    globalShortcut.unregister(accelerator);
-    expect(globalShortcut.isRegistered(accelerator)).to.be.false('unregistration worked');
+    combinations.forEach((accelerator) => {
+      expect(globalShortcut.isRegistered(accelerator)).to.be.false(`Initially registered for ${accelerator}`);
 
-    globalShortcut.register(accelerator, () => {});
-    expect(globalShortcut.isRegistered(accelerator)).to.be.true('reregistration worked');
-    globalShortcut.unregisterAll();
-    expect(globalShortcut.isRegistered(accelerator)).to.be.false('re-unregistration worked');
+      globalShortcut.register(accelerator, () => { });
+      expect(globalShortcut.isRegistered(accelerator)).to.be.true(`Registration failed for ${accelerator}`);
+
+      globalShortcut.unregister(accelerator);
+      expect(globalShortcut.isRegistered(accelerator)).to.be.false(`Unregistration failed for ${accelerator}`);
+
+      globalShortcut.register(accelerator, () => { });
+      expect(globalShortcut.isRegistered(accelerator)).to.be.true(`Re-registration failed for ${accelerator}`);
+
+      globalShortcut.unregisterAll();
+      expect(globalShortcut.isRegistered(accelerator)).to.be.false(`Re-unregistration failed for ${accelerator}`);
+    });
   });
 
   it('can register and unregister multiple accelerators', () => {

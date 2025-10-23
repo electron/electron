@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Calvin Watford <clavin@electronjs.org>
+Date: Sat, 9 Aug 2025 17:00:20 -0600
+Subject: test: accomodate V8 thenable stack trace change in snapshot
+
+V8 enhanced the stack trace of "thenable" async tasks. A couple of tests needed to have their snapshots updates to accomodate the extra stack trace frames in the output.
+
+This patch should be upstreamed to Node.js.
+
+See:
+6826001: fix thenable async stack trace
+https://chromium-review.googlesource.com/c/v8/v8/+/6826001
+
+diff --git a/test/fixtures/test-runner/output/describe_it.snapshot b/test/fixtures/test-runner/output/describe_it.snapshot
+index 347f3789693ddae7e7f9bd4125d8b19a31c1e764..35913d7f487dbd56eb8015e20f14a447de1db9bc 100644
+--- a/test/fixtures/test-runner/output/describe_it.snapshot
++++ b/test/fixtures/test-runner/output/describe_it.snapshot
+@@ -690,6 +690,8 @@ not ok 54 - timeouts
+       code: 'ERR_TEST_FAILURE'
+       stack: |-
+         *
++        *
++        *
+       ...
+     1..2
+ not ok 55 - successful thenable
+@@ -712,6 +714,7 @@ not ok 56 - rejected thenable
+   code: 'ERR_TEST_FAILURE'
+   stack: |-
+     *
++    *
+   ...
+ # Subtest: async describe function
+     # Subtest: it inside describe 1

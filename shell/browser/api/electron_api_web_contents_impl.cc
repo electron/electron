@@ -18,10 +18,10 @@ namespace electron::api {
 
 void WebContents::DetachFromOuterFrame() {
   // See detach_webview_frame.patch on how to detach.
-  int frame_tree_node_id =
+  content::FrameTreeNodeId frame_tree_node_id =
       static_cast<content::WebContentsImpl*>(web_contents())
           ->GetOuterDelegateFrameTreeNodeId();
-  if (frame_tree_node_id != content::FrameTreeNode::kFrameTreeNodeInvalidId) {
+  if (!frame_tree_node_id) {
     auto* node = content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
     DCHECK(node->parent());
     node->frame_tree().RemoveFrame(node);

@@ -6,8 +6,6 @@
 
 #include <vector>
 
-#include "base/containers/contains.h"
-#include "base/values.h"
 #include "content/public/common/webplugininfo.h"
 #include "electron/buildflags/buildflags.h"
 #include "url/gurl.h"
@@ -29,7 +27,7 @@ std::string PluginUtils::GetExtensionIdForMimeType(
   auto it = map.find(mime_type);
   if (it != map.end())
     return it->second;
-  return std::string();
+  return {};
 }
 
 base::flat_map<std::string, std::string>
@@ -37,29 +35,30 @@ PluginUtils::GetMimeTypeToExtensionIdMap(
     content::BrowserContext* browser_context) {
   base::flat_map<std::string, std::string> mime_type_to_extension_id_map;
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  std::vector<std::string> allowed_extension_ids =
-      MimeTypesHandler::GetMIMETypeAllowlist();
+  const auto& allowed_extension_ids = MimeTypesHandler::GetMIMETypeAllowlist();
+  if (allowed_extension_ids.empty())
+    return {};
+
+  const extensions::ExtensionSet& enabled_extensions =
+      extensions::ExtensionRegistry::Get(browser_context)->enabled_extensions();
+
   // Go through the white-listed extensions and try to use them to intercept
   // the URL request.
-  for (const std::string& extension_id : allowed_extension_ids) {
-    const extensions::Extension* extension =
-        extensions::ExtensionRegistry::Get(browser_context)
-            ->enabled_extensions()
-            .GetByID(extension_id);
-    // The white-listed extension may not be installed, so we have to nullptr
-    // check |extension|.
-    if (!extension) {
+  for (const std::string& id : allowed_extension_ids) {
+    const extensions::Extension* extension = enabled_extensions.GetByID(id);
+    if (!extension)  // extension might not be installed, so check for nullptr
       continue;
-    }
 
-    if (MimeTypesHandler* handler = MimeTypesHandler::GetHandler(extension)) {
-      for (const auto& supported_mime_type : handler->mime_type_set()) {
-        DCHECK(!base::Contains(mime_type_to_extension_id_map,
-                               supported_mime_type));
-        mime_type_to_extension_id_map[supported_mime_type] = extension_id;
+    if (const MimeTypesHandler* handler =
+            MimeTypesHandler::GetHandler(extension)) {
+      for (const std::string& mime_type : handler->mime_type_set()) {
+        const auto [_, inserted] =
+            mime_type_to_extension_id_map.insert_or_assign(mime_type, id);
+        DCHECK(inserted);
       }
     }
   }
 #endif
+
   return mime_type_to_extension_id_map;
 }

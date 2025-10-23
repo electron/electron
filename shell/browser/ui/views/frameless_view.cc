@@ -89,16 +89,6 @@ int FramelessView::NonClientHitTest(const gfx::Point& point) {
   return HTCLIENT;
 }
 
-void FramelessView::GetWindowMask(const gfx::Size& size, SkPath* window_mask) {}
-
-void FramelessView::ResetWindowControls() {}
-
-void FramelessView::UpdateWindowIcon() {}
-
-void FramelessView::UpdateWindowTitle() {}
-
-void FramelessView::SizeConstraintsChanged() {}
-
 views::View* FramelessView::TargetForRect(views::View* root,
                                           const gfx::Rect& rect) {
   CHECK_EQ(root, this);
@@ -106,7 +96,7 @@ views::View* FramelessView::TargetForRect(views::View* root,
   if (NonClientHitTest(rect.origin()) != HTCLIENT)
     return this;
 
-  return NonClientFrameView::TargetForRect(root, rect);
+  return FrameView::TargetForRect(root, rect);
 }
 
 gfx::Size FramelessView::CalculatePreferredSize(

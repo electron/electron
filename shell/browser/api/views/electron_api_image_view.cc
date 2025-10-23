@@ -4,26 +4,28 @@
 
 #include "shell/browser/api/views/electron_api_image_view.h"
 
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "ui/gfx/image/image.h"
 
 namespace electron::api {
 
 ImageView::ImageView() : View(new views::ImageView()) {
-  view()->set_owned_by_client();
+  view()->set_owned_by_client(views::View::OwnedByClientPassKey{});
 }
 
 ImageView::~ImageView() = default;
 
 void ImageView::SetImage(const gfx::Image& image) {
-  image_view()->SetImage(image.AsImageSkia());
+  image_view()->SetImage(ui::ImageModel::FromImage(image));
 }
 
 // static
-gin_helper::WrappableBase* ImageView::New(gin_helper::Arguments* args) {
+gin_helper::WrappableBase* ImageView::New(gin::Arguments* const args) {
   // Constructor call.
   auto* view = new ImageView();
   view->InitWithArgs(args);
@@ -48,8 +50,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.Set("ImageView", gin_helper::CreateConstructor<ImageView>(
                             isolate, base::BindRepeating(&ImageView::New)));
 }

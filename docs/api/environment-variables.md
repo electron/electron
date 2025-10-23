@@ -104,7 +104,7 @@ you would when running the normal Node.js executable, with the exception of the 
 These flags are disabled owing to the fact that Electron uses BoringSSL instead of OpenSSL when building Node.js'
 `crypto` module, and so will not work as designed.
 
-If the [`runAsNode` fuse](../tutorial/fuses.md#L13) is disabled, `ELECTRON_RUN_AS_NODE` will be ignored.
+If the [`runAsNode` fuse](../tutorial/fuses.md#runasnode) is disabled, `ELECTRON_RUN_AS_NODE` will be ignored.
 
 ### `ELECTRON_NO_ATTACH_CONSOLE` _Windows_
 
@@ -124,16 +124,6 @@ Options:
 * `trash-cli`
 * `kioclient5`
 * `kioclient`
-
-### `ELECTRON_OZONE_PLATFORM_HINT` _Linux_
-
-Selects the preferred platform backend used on Linux. The default one is `x11`. `auto` selects Wayland if possible, X11 otherwise.
-
-Options:
-
-* `auto`
-* `wayland`
-* `x11`
 
 ## Development Variables
 
@@ -196,14 +186,3 @@ the one downloaded by `npm install`. Usage:
 ```sh
 export ELECTRON_OVERRIDE_DIST_PATH=/Users/username/projects/electron/out/Testing
 ```
-
-## Set By Electron
-
-Electron sets some variables in your environment at runtime.
-
-### `ORIGINAL_XDG_CURRENT_DESKTOP`
-
-This variable is set to the value of `XDG_CURRENT_DESKTOP` that your application
-originally launched with.  Electron sometimes modifies the value of `XDG_CURRENT_DESKTOP`
-to affect other logic within Chromium so if you want access to the _original_ value
-you should look up this environment variable instead.

@@ -4,15 +4,11 @@
 
 #include "shell/browser/ui/message_box.h"
 
-#include <string>
 #include <utility>
-#include <vector>
 
 #import <Cocoa/Cocoa.h>
 
-#include "base/containers/contains.h"
 #include "base/containers/flat_map.h"
-#include "base/functional/callback.h"
 #include "base/mac/mac_util.h"
 #include "base/no_destructor.h"
 #include "base/strings/sys_string_conversions.h"
@@ -66,7 +62,7 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
     [button setTag:i];
   }
 
-  NSArray* ns_buttons = [alert buttons];
+  NSArray<NSButton*>* ns_buttons = [alert buttons];
   int button_count = static_cast<int>([ns_buttons count]);
 
   if (settings.default_id >= 0 && settings.default_id < button_count) {
@@ -84,7 +80,7 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
 
     // TODO(@codebytere): This behavior violates HIG & should be deprecated.
     if (settings.cancel_id == settings.default_id) {
-      [[ns_buttons objectAtIndex:settings.default_id] highlight:YES];
+      [(NSButton*)[ns_buttons objectAtIndex:settings.default_id] highlight:YES];
     }
   }
 
@@ -149,7 +145,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
         ret, alert.suppressionButton.state == NSControlStateValueOn);
   } else {
     if (settings.id) {
-      if (base::Contains(GetDialogsMap(), *settings.id))
+      if (GetDialogsMap().contains(*settings.id))
         CloseMessageBox(*settings.id);
       GetDialogsMap()[*settings.id] = alert;
     }

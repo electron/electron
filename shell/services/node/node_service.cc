@@ -4,11 +4,15 @@
 
 #include "shell/services/node/node_service.h"
 
+#include <sstream>
 #include <utility>
 
 #include "base/command_line.h"
 #include "base/no_destructor.h"
+#include "base/process/process.h"
 #include "base/strings/utf_string_conversions.h"
+#include "electron/mas.h"
+#include "net/base/network_change_notifier.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/host_resolver.mojom.h"
 #include "services/network/public/mojom/network_context.mojom.h"
@@ -20,7 +24,35 @@
 #include "shell/common/node_includes.h"
 #include "shell/services/node/parent_port.h"
 
+#if !IS_MAS_BUILD()
+#include "shell/common/crash_keys.h"
+#endif
+
 namespace electron {
+
+mojo::Remote<node::mojom::NodeServiceClient>& GetRemote() {
+  static base::NoDestructor<mojo::Remote<node::mojom::NodeServiceClient>>
+      instance;
+  return *instance;
+}
+
+void V8FatalErrorCallback(const char* location, const char* message) {
+  if (GetRemote().is_bound() && GetRemote().is_connected()) {
+    auto* isolate = v8::Isolate::TryGetCurrent();
+    std::ostringstream outstream;
+    node::GetNodeReport(isolate, message, location,
+                        v8::Local<v8::Object>() /* error */, outstream);
+    GetRemote()->OnV8FatalError(location, outstream.str());
+  }
+
+#if !IS_MAS_BUILD()
+  electron::crash_keys::SetCrashKey("electron.v8-fatal.message", message);
+  electron::crash_keys::SetCrashKey("electron.v8-fatal.location", location);
+#endif
+
+  volatile int* zero = nullptr;
+  *zero = 0;
+}
 
 URLLoaderBundle::URLLoaderBundle() = default;
 
@@ -33,11 +65,14 @@ URLLoaderBundle* URLLoaderBundle::GetInstance() {
 
 void URLLoaderBundle::SetURLLoaderFactory(
     mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_factory,
-    mojo::Remote<network::mojom::HostResolver> host_resolver) {
+    mojo::Remote<network::mojom::HostResolver> host_resolver,
+    bool use_network_observer_from_url_loader_factory) {
   factory_ = network::SharedURLLoaderFactory::Create(
       std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
           std::move(pending_factory)));
   host_resolver_ = std::move(host_resolver);
+  should_use_network_observer_from_url_loader_factory_ =
+      use_network_observer_from_url_loader_factory;
 }
 
 scoped_refptr<network::SharedURLLoaderFactory>
@@ -48,6 +83,10 @@ URLLoaderBundle::GetSharedURLLoaderFactory() {
 network::mojom::HostResolver* URLLoaderBundle::GetHostResolver() {
   DCHECK(host_resolver_);
   return host_resolver_.get();
+}
+
+bool URLLoaderBundle::ShouldUseNetworkObserverfromURLLoaderFactory() const {
+  return should_use_network_observer_from_url_loader_factory_;
 }
 
 NodeService::NodeService(
@@ -63,26 +102,39 @@ NodeService::NodeService(
 NodeService::~NodeService() {
   if (!node_env_stopped_) {
     node_env_->set_trace_sync_io(false);
+    ParentPort::GetInstance()->Close();
     js_env_->DestroyMicrotasksRunner();
     node::Stop(node_env_.get(), node::StopFlags::kDoNotTerminateIsolate);
+    GetRemote().reset();
   }
 }
 
-void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
+void NodeService::Initialize(
+    node::mojom::NodeServiceParamsPtr params,
+    mojo::PendingRemote<node::mojom::NodeServiceClient> client_pending_remote) {
   if (NodeBindings::IsInitialized())
     return;
+
+  GetRemote().Bind(std::move(client_pending_remote));
+  GetRemote().reset_on_disconnect();
 
   ParentPort::GetInstance()->Initialize(std::move(params->port));
 
   URLLoaderBundle::GetInstance()->SetURLLoaderFactory(
       std::move(params->url_loader_factory),
-      mojo::Remote(std::move(params->host_resolver)));
+      mojo::Remote(std::move(params->host_resolver)),
+      params->use_network_observer_from_url_loader_factory);
 
   js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
 
-  v8::HandleScope scope(js_env_->isolate());
+  v8::Isolate* const isolate = js_env_->isolate();
+  v8::HandleScope scope{isolate};
 
-  node_bindings_->Initialize(js_env_->isolate()->GetCurrentContext());
+  node_bindings_->Initialize(isolate, isolate->GetCurrentContext());
+
+  network_change_notifier_ = net::NetworkChangeNotifier::CreateIfNeeded(
+      net::NetworkChangeNotifier::CONNECTION_UNKNOWN,
+      net::NetworkChangeNotifier::ConnectionSubtype::SUBTYPE_UNKNOWN);
 
   // Append program path for process.argv0
   auto program = base::CommandLine::ForCurrentProcess()->GetProgram();
@@ -94,20 +146,28 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
 
   // Create the global environment.
   node_env_ = node_bindings_->CreateEnvironment(
-      js_env_->isolate()->GetCurrentContext(), js_env_->platform(),
-      params->args, params->exec_args);
+      isolate, isolate->GetCurrentContext(), js_env_->platform(),
+      js_env_->max_young_generation_size_in_bytes(), params->args,
+      params->exec_args);
+
+  // Override the default handler set by NodeBindings.
+  node_env_->isolate()->SetFatalErrorHandler(V8FatalErrorCallback);
 
   node::SetProcessExitHandler(
       node_env_.get(), [this](node::Environment* env, int exit_code) {
         // Destroy node platform.
-        env->set_trace_sync_io(false);
-        js_env_->DestroyMicrotasksRunner();
-        node::Stop(env, node::StopFlags::kDoNotTerminateIsolate);
         node_env_stopped_ = true;
+        ParentPort::GetInstance()->Close();
+        js_env_->DestroyMicrotasksRunner();
+        GetRemote().reset();
         receiver_.ResetWithReason(exit_code, "process_exit_termination");
+        node::DefaultProcessExitHandler(env, exit_code);
       });
 
   node_env_->set_trace_sync_io(node_env_->options()->trace_sync_io);
+
+  // We do not want to crash the utility process on unhandled rejections.
+  node_env_->options()->unhandled_rejections = "warn-with-error-code";
 
   // Add Electron extended APIs.
   electron_bindings_->BindTo(node_env_->isolate(), node_env_->process_object());

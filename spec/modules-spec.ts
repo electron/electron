@@ -1,11 +1,14 @@
+import { BrowserWindow, utilityProcess } from 'electron/main';
+
 import { expect } from 'chai';
-import * as path from 'node:path';
-import * as fs from 'node:fs';
-import { BrowserWindow } from 'electron/main';
-import { ifdescribe, ifit } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
+import { ifdescribe, ifit } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 const Module = require('node:module') as NodeJS.ModuleInternal;
 
@@ -68,7 +71,7 @@ describe('modules support', () => {
 
     describe('q', () => {
       describe('Q.when', () => {
-        it('emits the fullfil callback', (done) => {
+        it('emits the fulfil callback', (done) => {
           const Q = require('q');
           Q(true).then((val: boolean) => {
             expect(val).to.be.true();
@@ -79,6 +82,8 @@ describe('modules support', () => {
     });
 
     describe('require(\'electron/...\')', () => {
+      const utilityProcessFixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process', 'electron-modules');
+
       it('require(\'electron/lol\') should throw in the main process', () => {
         expect(() => {
           require('electron/lol');
@@ -89,6 +94,17 @@ describe('modules support', () => {
         const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
         w.loadURL('about:blank');
         await expect(w.webContents.executeJavaScript('{ require(\'electron/lol\'); null }')).to.eventually.be.rejected();
+      });
+
+      it('require(\'electron/lol\') should throw in the utility process', async () => {
+        const child = utilityProcess.fork(path.join(utilityProcessFixturesPath, 'require-lol.js'), [], {
+          stdio: ['ignore', 'ignore', 'pipe']
+        });
+        let stderr = '';
+        child.stderr!.on('data', (data) => { stderr += data.toString('utf8'); });
+        const [code] = await once(child, 'exit');
+        expect(code).to.equal(1);
+        expect(stderr).to.match(/Cannot find module 'electron\/lol'/);
       });
 
       it('require(\'electron\') should not throw in the main process', () => {
@@ -115,6 +131,12 @@ describe('modules support', () => {
         await expect(w.webContents.executeJavaScript('{ require(\'electron/main\'); null }')).to.be.fulfilled();
       });
 
+      it('require(\'electron/main\') should not throw in the utility process', async () => {
+        const child = utilityProcess.fork(path.join(utilityProcessFixturesPath, 'require-main.js'));
+        const [code] = await once(child, 'exit');
+        expect(code).to.equal(0);
+      });
+
       it('require(\'electron/renderer\') should not throw in the main process', () => {
         expect(() => {
           require('electron/renderer');
@@ -127,6 +149,12 @@ describe('modules support', () => {
         await expect(w.webContents.executeJavaScript('{ require(\'electron/renderer\'); null }')).to.be.fulfilled();
       });
 
+      it('require(\'electron/renderer\') should not throw in the utility process', async () => {
+        const child = utilityProcess.fork(path.join(utilityProcessFixturesPath, 'require-renderer.js'));
+        const [code] = await once(child, 'exit');
+        expect(code).to.equal(0);
+      });
+
       it('require(\'electron/common\') should not throw in the main process', () => {
         expect(() => {
           require('electron/common');
@@ -137,6 +165,30 @@ describe('modules support', () => {
         const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
         w.loadURL('about:blank');
         await expect(w.webContents.executeJavaScript('{ require(\'electron/common\'); null }')).to.be.fulfilled();
+      });
+
+      it('require(\'electron/common\') should not throw in the utility process', async () => {
+        const child = utilityProcess.fork(path.join(utilityProcessFixturesPath, 'require-common.js'));
+        const [code] = await once(child, 'exit');
+        expect(code).to.equal(0);
+      });
+
+      it('require(\'electron/utility\') should not throw in the main process', () => {
+        expect(() => {
+          require('electron/utility');
+        }).to.not.throw();
+      });
+
+      it('require(\'electron/utility\') should not throw in the renderer process', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+        w.loadURL('about:blank');
+        await expect(w.webContents.executeJavaScript('{ require(\'electron/utility\'); null }')).to.be.fulfilled();
+      });
+
+      it('require(\'electron/utility\') should not throw in the utility process', async () => {
+        const child = utilityProcess.fork(path.join(utilityProcessFixturesPath, 'require-utility.js'));
+        const [code] = await once(child, 'exit');
+        expect(code).to.equal(0);
       });
     });
 

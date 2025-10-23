@@ -1,11 +1,14 @@
 import { BrowserWindow, screen } from 'electron';
+
 import { expect, assert } from 'chai';
-import { HexColors, ScreenCapture } from './lib/screen-helpers';
+
+import { once } from 'node:events';
+import * as http from 'node:http';
+import * as nodePath from 'node:path';
+
+import { HexColors, ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
 import { ifit, listen } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
-import { once } from 'node:events';
-import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
-import * as http from 'node:http';
 
 describe('webContents.setWindowOpenHandler', () => {
   describe('native window', () => {
@@ -201,8 +204,67 @@ describe('webContents.setWindowOpenHandler', () => {
       expect(await browserWindow.webContents.executeJavaScript('42')).to.equal(42);
     });
 
-    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
-    ifit(process.platform === 'darwin' && process.arch === 'x64')('should not make child window background transparent', async () => {
+    it('can open an offscreen child window from an onscreen parent', async () => {
+      browserWindow.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          webPreferences: {
+            offscreen: true
+          }
+        }
+      }));
+
+      const didCreateWindow = once(browserWindow.webContents, 'did-create-window');
+      const url = `file://${nodePath.join('fixtures', 'pages', 'content.html')}`;
+      browserWindow.webContents.executeJavaScript(`window.open('${JSON.stringify(url)}') && true`);
+      const [childWindow] = await didCreateWindow;
+      expect(childWindow.webContents.isOffscreen()).to.be.true('Child window should be offscreen');
+    });
+
+    it('can open an onscreen child window from an offscreen parent', async () => {
+      const obw = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          offscreen: true
+        }
+      });
+
+      await obw.loadURL('about:blank');
+      obw.webContents.setWindowOpenHandler(() => ({ action: 'allow' }));
+
+      const didCreateWindow = once(obw.webContents, 'did-create-window');
+      const url = `file://${nodePath.join('fixtures', 'pages', 'content.html')}`;
+      obw.webContents.executeJavaScript(`window.open('${JSON.stringify(url)}') && true`);
+      const [childWindow] = await didCreateWindow;
+      expect(childWindow.webContents.isOffscreen()).to.be.false('Child window should not be offscreen');
+    });
+
+    it('can open an offscreen child window from an offscreen parent', async () => {
+      const obw = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          offscreen: true
+        }
+      });
+
+      await obw.loadURL('about:blank');
+      obw.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          webPreferences: {
+            offscreen: true
+          }
+        }
+      }));
+
+      const didCreateWindow = once(obw.webContents, 'did-create-window');
+      const url = `file://${nodePath.join('fixtures', 'pages', 'content.html')}`;
+      obw.webContents.executeJavaScript(`window.open('${JSON.stringify(url)}') && true`);
+      const [childWindow] = await didCreateWindow;
+      expect(childWindow.webContents.isOffscreen()).to.be.true('Child window should be offscreen');
+    });
+
+    ifit(hasCapturableScreen())('should not make child window background transparent', async () => {
       browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow' }));
       const didCreateWindow = once(browserWindow.webContents, 'did-create-window');
       browserWindow.webContents.executeJavaScript("window.open('about:blank') && true");
@@ -210,8 +272,7 @@ describe('webContents.setWindowOpenHandler', () => {
       const display = screen.getPrimaryDisplay();
       childWindow.setBounds(display.bounds);
       await childWindow.webContents.executeJavaScript("const meta = document.createElement('meta'); meta.name = 'color-scheme'; meta.content = 'dark'; document.head.appendChild(meta); true;");
-      await setTimeoutAsync(1000);
-      const screenCapture = await ScreenCapture.createForDisplay(display);
+      const screenCapture = new ScreenCapture(display);
       // color-scheme is set to dark so background should not be white
       await screenCapture.expectColorAtCenterDoesNotMatch(HexColors.WHITE);
     });
@@ -233,6 +294,10 @@ describe('webContents.setWindowOpenHandler', () => {
           case '/child':
             response.statusCode = 200;
             response.end('<title>Child page</title>');
+            break;
+          case '/test':
+            response.statusCode = 200;
+            response.end('<title>Test page</title>');
             break;
           default:
             throw new Error(`Unsupported endpoint: ${request.url}`);
@@ -306,7 +371,33 @@ describe('webContents.setWindowOpenHandler', () => {
       expect(childWindow.title).to.equal(browserWindowTitle);
     });
 
-    it('spawns browser window with overriden options', async () => {
+    it('should be able to access the child window document when createWindow is provided', async () => {
+      browserWindow.webContents.setWindowOpenHandler(() => {
+        return {
+          action: 'allow',
+          createWindow: (options) => {
+            const child = new BrowserWindow(options);
+            return child.webContents;
+          }
+        };
+      });
+
+      const aboutBlankTitle = await browserWindow.webContents.executeJavaScript(`
+        const win1 = window.open('about:blank', '', 'show=no');
+        win1.document.title = 'about-blank-title';
+        win1.document.title;
+      `);
+      expect(aboutBlankTitle).to.equal('about-blank-title');
+
+      const serverPageTitle = await browserWindow.webContents.executeJavaScript(`
+        const win2 = window.open('${url}/child', '', 'show=no');
+        win2.document.title = 'server-page-title';
+        win2.document.title;
+      `);
+      expect(serverPageTitle).to.equal('server-page-title');
+    });
+
+    it('spawns browser window with overridden options', async () => {
       const childWindow = await new Promise<Electron.BrowserWindow>(resolve => {
         browserWindow.webContents.setWindowOpenHandler(() => {
           return {

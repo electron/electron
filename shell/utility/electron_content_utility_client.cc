@@ -7,9 +7,10 @@
 #include <utility>
 
 #include "base/command_line.h"
-#include "base/no_destructor.h"
 #include "content/public/utility/utility_thread.h"
+#include "mojo/public/cpp/bindings/binder_map.h"
 #include "mojo/public/cpp/bindings/service_factory.h"
+#include "printing/buildflags/buildflags.h"
 #include "sandbox/policy/mojom/sandbox.mojom.h"
 #include "sandbox/policy/sandbox_type.h"
 #include "services/proxy_resolver/proxy_resolver_factory_impl.h"
@@ -20,13 +21,20 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "chrome/services/util_win/public/mojom/util_read_icon.mojom.h"
+#include "chrome/services/util_win/public/mojom/util_win.mojom.h"
 #include "chrome/services/util_win/util_read_icon.h"
+#include "chrome/services/util_win/util_win_impl.h"
 #endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "components/services/print_compositor/print_compositor_impl.h"
 #include "components/services/print_compositor/public/mojom/print_compositor.mojom.h"  // nogncheck
 #endif  // BUILDFLAG(ENABLE_PRINTING)
+
+#if BUILDFLAG(ENABLE_OOP_PRINTING)
+#include "chrome/services/printing/print_backend_service_impl.h"
+#include "chrome/services/printing/public/mojom/print_backend_service.mojom.h"
+#endif  // BUILDFLAG(ENABLE_OOP_PRINTING)
 
 #if BUILDFLAG(ENABLE_PRINTING) && BUILDFLAG(IS_WIN)
 #include "chrome/services/printing/pdf_to_emf_converter_factory.h"
@@ -55,6 +63,9 @@ auto RunWindowsIconReader(
     mojo::PendingReceiver<chrome::mojom::UtilReadIcon> receiver) {
   return std::make_unique<UtilReadIcon>(std::move(receiver));
 }
+auto RunWindowsUtility(mojo::PendingReceiver<chrome::mojom::UtilWin> receiver) {
+  return std::make_unique<UtilWinImpl>(std::move(receiver));
+}
 #endif
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -65,6 +76,21 @@ auto RunPrintCompositor(
       content::UtilityThread::Get()->GetIOTaskRunner());
 }
 #endif
+
+#if BUILDFLAG(ENABLE_OOP_PRINTING)
+auto RunPrintingSandboxedPrintBackendHost(
+    mojo::PendingReceiver<printing::mojom::SandboxedPrintBackendHost>
+        receiver) {
+  return std::make_unique<printing::SandboxedPrintBackendHostImpl>(
+      std::move(receiver));
+}
+auto RunPrintingUnsandboxedPrintBackendHost(
+    mojo::PendingReceiver<printing::mojom::UnsandboxedPrintBackendHost>
+        receiver) {
+  return std::make_unique<printing::UnsandboxedPrintBackendHostImpl>(
+      std::move(receiver));
+}
+#endif  // BUILDFLAG(ENABLE_OOP_PRINTING)
 
 auto RunProxyResolver(
     mojo::PendingReceiver<proxy_resolver::mojom::ProxyResolverFactory>
@@ -88,7 +114,7 @@ ElectronContentUtilityClient::~ElectronContentUtilityClient() = default;
 void ElectronContentUtilityClient::ExposeInterfacesToBrowser(
     mojo::BinderMap* binders) {
 #if BUILDFLAG(IS_WIN)
-  auto& cmd_line = *base::CommandLine::ForCurrentProcess();
+  const auto& cmd_line = *base::CommandLine::ForCurrentProcess();
   auto sandbox_type = sandbox::policy::SandboxTypeFromCommandLine(cmd_line);
   utility_process_running_elevated_ =
       sandbox_type == sandbox::mojom::Sandbox::kNoSandboxAndElevatedPrivileges;
@@ -109,10 +135,16 @@ void ElectronContentUtilityClient::RegisterMainThreadServices(
     mojo::ServiceFactory& services) {
 #if BUILDFLAG(IS_WIN)
   services.Add(RunWindowsIconReader);
+  services.Add(RunWindowsUtility);
 #endif
 
 #if BUILDFLAG(ENABLE_PRINTING)
   services.Add(RunPrintCompositor);
+#endif
+
+#if BUILDFLAG(ENABLE_OOP_PRINTING)
+  services.Add(RunPrintingSandboxedPrintBackendHost);
+  services.Add(RunPrintingUnsandboxedPrintBackendHost);
 #endif
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW) || \

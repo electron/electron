@@ -39,8 +39,8 @@ consider using `webContents.setWindowOpenHandler` to customize the
 BrowserWindow creation.
 
 A subset of [`WebPreferences`](structures/web-preferences.md) can be set directly,
-unnested, from the features string: `zoomFactor`, `nodeIntegration`, `preload`,
-`javascript`, `contextIsolation`, and `webviewTag`.
+unnested, from the features string: `zoomFactor`, `nodeIntegration`, `javascript`,
+`contextIsolation`, and `webviewTag`.
 
 For example:
 

@@ -1,8 +1,9 @@
+import type * as defaultMenuModule from '@electron/internal/browser/default-menu';
+
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import type * as defaultMenuModule from '@electron/internal/browser/default-menu';
 import type * as url from 'url';
 import type * as v8 from 'v8';
 
@@ -145,6 +146,9 @@ require('@electron/internal/browser/devtools');
 // Load protocol module to ensure it is populated on app ready
 require('@electron/internal/browser/api/protocol');
 
+// Load service-worker-main module to ensure it is populated on app ready
+require('@electron/internal/browser/api/service-worker-main');
+
 // Load web-contents module to ensure it is populated on app ready
 require('@electron/internal/browser/api/web-contents');
 
@@ -157,27 +161,6 @@ require('@electron/internal/browser/api/web-contents-view');
 
 // Set main startup script of the app.
 const mainStartupScript = packageJson.main || 'index.js';
-
-const KNOWN_XDG_DESKTOP_VALUES = new Set(['Pantheon', 'Unity:Unity7', 'pop:GNOME']);
-
-function currentPlatformSupportsAppIndicator () {
-  if (process.platform !== 'linux') return false;
-  const currentDesktop = process.env.XDG_CURRENT_DESKTOP;
-
-  if (!currentDesktop) return false;
-  if (KNOWN_XDG_DESKTOP_VALUES.has(currentDesktop)) return true;
-  // ubuntu based or derived session (default ubuntu one, communitheme…) supports
-  // indicator too.
-  if (/ubuntu/ig.test(currentDesktop)) return true;
-
-  return false;
-}
-
-// Workaround for electron/electron#5050 and electron/electron#9046
-process.env.ORIGINAL_XDG_CURRENT_DESKTOP = process.env.XDG_CURRENT_DESKTOP;
-if (currentPlatformSupportsAppIndicator()) {
-  process.env.XDG_CURRENT_DESKTOP = 'Unity';
-}
 
 // Quit when all windows are closed and no other one is listening to this.
 app.on('window-all-closed', () => {
@@ -200,7 +183,7 @@ delete process.appCodeLoaded;
 if (packagePath) {
   // Finally load app's main.js and transfer control to C++.
   if ((packageJson.type === 'module' && !mainStartupScript.endsWith('.cjs')) || mainStartupScript.endsWith('.mjs')) {
-    const { runEntryPointWithESMLoader } = __non_webpack_require__('internal/modules/run_main');
+    const { runEntryPointWithESMLoader } = __non_webpack_require__('internal/modules/run_main') as typeof import('@node/lib/internal/modules/run_main');
     const main = (require('url') as typeof url).pathToFileURL(path.join(packagePath, mainStartupScript));
     runEntryPointWithESMLoader(async (cascadedLoader: any) => {
       try {
@@ -212,9 +195,8 @@ if (packagePath) {
       }
     });
   } else {
-    // Call appCodeLoaded before just for safety, it doesn't matter here as _load is syncronous
+    // Call appCodeLoaded before just for safety, it doesn't matter here as _load is synchronous
     appCodeLoaded!();
-    process._firstFileName = Module._resolveFilename(path.join(packagePath, mainStartupScript), null, false);
     Module._load(path.join(packagePath, mainStartupScript), Module, true);
   }
 } else {

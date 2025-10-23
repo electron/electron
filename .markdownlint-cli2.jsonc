@@ -1,9 +1,13 @@
 {
   "config": {
     "extends": "@electron/lint-roller/configs/markdownlint.json",
+    "descriptive-link-text": false,
     "link-image-style": {
       "autolink": false,
       "shortcut": false
+    },
+    "MD049": {
+      "style": "underscore"
     },
     "no-angle-brackets": true,
     "no-curly-braces": true,
@@ -17,12 +21,14 @@
         "ul",
         "unknown",
         "Tabs",
-        "TabItem"
+        "TabItem",
+        "DocCardList",
+        "kbd"
       ]
     },
     "no-newline-in-links": true
   },
   "customRules": [
-    "@electron/lint-roller/markdownlint-rules/"
+    "./node_modules/@electron/lint-roller/markdownlint-rules/index.mjs"
   ]
 }

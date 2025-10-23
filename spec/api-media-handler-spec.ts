@@ -1,8 +1,11 @@
-import { expect } from 'chai';
 import { BrowserWindow, session, desktopCapturer } from 'electron/main';
-import { closeAllWindows } from './lib/window-helpers';
+
+import { expect } from 'chai';
+
 import * as http from 'node:http';
+
 import { ifit, listen } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 describe('setDisplayMediaRequestHandler', () => {
   afterEach(closeAllWindows);
@@ -21,10 +24,6 @@ describe('setDisplayMediaRequestHandler', () => {
     server.close();
   });
 
-  // FIXME(nornagon): this test fails on our macOS CircleCI runners with the
-  // error message:
-  // [ERROR:video_capture_device_client.cc(659)] error@ OnStart@content/browser/media/capture/desktop_capture_device_mac.cc:98, CGDisplayStreamCreate failed, OS message: Value too large to be stored in data type (84)
-  // This is possibly related to the OS/VM setup that CircleCI uses for macOS.
   ifit(process.platform !== 'darwin')('works when calling getDisplayMedia', async function () {
     if ((await desktopCapturer.getSources({ types: ['screen'] })).length === 0) {
       return this.skip();
@@ -233,16 +232,15 @@ describe('setDisplayMediaRequestHandler', () => {
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
-    const { ok } = await w.webContents.executeJavaScript(`
+    const { ok, message } = await w.webContents.executeJavaScript(`
       navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
     `, true);
     expect(requestHandlerCalled).to.be.true();
-    // This is a little surprising... apparently chrome will generate a stream
-    // for this non-existent web contents?
-    expect(ok).to.be.true();
+    expect(ok).to.be.false();
+    expect(message).to.equal('Could not start video source');
   });
 
   it('is not called when calling getUserMedia', async () => {
@@ -400,6 +398,23 @@ describe('setDisplayMediaRequestHandler', () => {
       }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
     `);
     expect(ok).to.be.true(message);
+  });
+
+  it('throws an error when calling legacy getUserMedia with invalid chromeMediaSourceId', async () => {
+    const w = new BrowserWindow({ show: false });
+    await w.loadURL(serverUrl);
+    const { ok, message } = await w.webContents.executeJavaScript(`
+      new Promise((resolve, reject) => navigator.getUserMedia({
+         video: {
+          mandatory: {
+            chromeMediaSource: 'desktop',
+            chromeMediaSourceId: undefined,
+          },
+        },
+      }, x => resolve({ok: x instanceof MediaStream}), e => resolve({ ok: false, message: e.message })))
+    `);
+    expect(ok).to.be.false();
+    expect(message).to.equal('Invalid state');
   });
 
   it('can remove a displayMediaRequestHandler', async () => {

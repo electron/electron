@@ -6,11 +6,12 @@
 #define ELECTRON_SHELL_BROWSER_EXTENDED_WEB_CONTENTS_OBSERVER_H_
 
 #include <string>
-#include <vector>
 
-#include "base/observer_list.h"
-#include "electron/shell/common/api/api.mojom.h"
-#include "ui/gfx/geometry/rect.h"
+#include "base/observer_list_types.h"
+
+namespace gfx {
+class Rect;
+}
 
 namespace electron {
 
@@ -25,7 +26,7 @@ class ExtendedWebContentsObserver : public base::CheckedObserver {
   virtual void OnDevToolsResized() {}
 
  protected:
-  ~ExtendedWebContentsObserver() override {}
+  ~ExtendedWebContentsObserver() override = default;
 };
 
 }  // namespace electron

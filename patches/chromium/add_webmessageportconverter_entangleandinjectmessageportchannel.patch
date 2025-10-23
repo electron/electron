@@ -8,7 +8,7 @@ accessing Blink internals. Its inverse, which already exists, is used in
 Android WebView.
 
 diff --git a/third_party/blink/public/web/web_message_port_converter.h b/third_party/blink/public/web/web_message_port_converter.h
-index e7c4464f1b5aa19cbe441d94d88c949798ccb1e3..bd804d509ad5f3581154c6ede8653e7521cb71b8 100644
+index e7c4464f1b5aa19cbe441d94d88c949798ccb1e3..cdf9bca3df292531831b6df0077ba211a29548aa 100644
 --- a/third_party/blink/public/web/web_message_port_converter.h
 +++ b/third_party/blink/public/web/web_message_port_converter.h
 @@ -13,6 +13,7 @@
@@ -19,18 +19,20 @@ index e7c4464f1b5aa19cbe441d94d88c949798ccb1e3..bd804d509ad5f3581154c6ede8653e75
  }  // namespace v8
  
  namespace blink {
-@@ -25,6 +26,9 @@ class BLINK_EXPORT WebMessagePortConverter {
+@@ -25,6 +26,11 @@ class BLINK_EXPORT WebMessagePortConverter {
    // neutered, it will return nullopt.
    static std::optional<MessagePortChannel>
    DisentangleAndExtractMessagePortChannel(v8::Isolate*, v8::Local<v8::Value>);
 +
 +  BLINK_EXPORT static v8::Local<v8::Value>
-+  EntangleAndInjectMessagePortChannel(v8::Local<v8::Context>, MessagePortChannel);
++  EntangleAndInjectMessagePortChannel(v8::Isolate*,
++                                      v8::Local<v8::Context>,
++                                      MessagePortChannel);
  };
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/exported/web_message_port_converter.cc b/third_party/blink/renderer/core/exported/web_message_port_converter.cc
-index 3270da19f73077b1fab7522144b9f3d52d9f6a5a..e6c5764c54a18b31223ac8c5b8f2d6ef732225d6 100644
+index 3270da19f73077b1fab7522144b9f3d52d9f6a5a..bbd3c968027549b89087d9a4394f575d84213eba 100644
 --- a/third_party/blink/renderer/core/exported/web_message_port_converter.cc
 +++ b/third_party/blink/renderer/core/exported/web_message_port_converter.cc
 @@ -6,6 +6,7 @@
@@ -41,19 +43,20 @@ index 3270da19f73077b1fab7522144b9f3d52d9f6a5a..e6c5764c54a18b31223ac8c5b8f2d6ef
  #include "third_party/blink/renderer/bindings/core/v8/v8_message_port.h"
  #include "third_party/blink/renderer/core/messaging/message_port.h"
  
-@@ -21,4 +22,15 @@ WebMessagePortConverter::DisentangleAndExtractMessagePortChannel(
+@@ -21,4 +22,16 @@ WebMessagePortConverter::DisentangleAndExtractMessagePortChannel(
    return port->Disentangle();
  }
  
 +v8::Local<v8::Value>
 +WebMessagePortConverter::EntangleAndInjectMessagePortChannel(
++    v8::Isolate* isolate,
 +    v8::Local<v8::Context> context,
 +    MessagePortChannel port_channel) {
 +  auto* execution_context = ToExecutionContext(context);
 +  CHECK(execution_context);
 +  auto* port = MakeGarbageCollected<MessagePort>(*execution_context);
 +  port->Entangle(std::move(port_channel));
-+  return port->ToV8(context->GetIsolate(), context->Global());
++  return port->ToV8(isolate, context->Global());
 +}
 +
  }  // namespace blink

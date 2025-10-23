@@ -81,6 +81,11 @@ $ git commit
 
 Note that multiple commits get squashed when they are landed.
 
+#### Commit signing
+
+The `electron/electron` repo enforces [commit signatures](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) for all incoming PRs.
+To sign your commits, see GitHub's documentation on [Telling Git about your signing key](https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key).
+
 #### Commit message guidelines
 
 A good commit message should describe what changed and why. The Electron project

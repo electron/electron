@@ -8,7 +8,6 @@
 #include <map>
 #include <string>
 
-#include "base/compiler_specific.h"
 #include "base/no_destructor.h"
 #include "build/build_config.h"
 #include "components/crash/core/app/crash_reporter_client.h"
@@ -34,11 +33,6 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
 #if BUILDFLAG(IS_LINUX)
   void SetCrashReporterClientIdFromGUID(
       const std::string& client_guid) override;
-  void GetProductNameAndVersion(const char** product_name,
-                                const char** version) override;
-  void GetProductNameAndVersion(std::string* product_name,
-                                std::string* version,
-                                std::string* channel) override;
   base::FilePath GetReporterLogFilename() override;
 #endif
 
@@ -74,6 +68,7 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
   bool ShouldMonitorCrashHandlerExpensively() override;
 #endif
 
+  void GetProductInfo(ProductInfo* product_info) override;
   bool EnableBreakpadForProcess(const std::string& process_type) override;
 
   std::string GetUploadUrl() override;

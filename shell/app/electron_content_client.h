@@ -5,9 +5,9 @@
 #ifndef ELECTRON_SHELL_APP_ELECTRON_CONTENT_CLIENT_H_
 #define ELECTRON_SHELL_APP_ELECTRON_CONTENT_CLIENT_H_
 
+#include <string_view>
 #include <vector>
 
-#include "base/files/file_path.h"
 #include "content/public/common/content_client.h"
 
 namespace electron {
@@ -24,8 +24,8 @@ class ElectronContentClient : public content::ContentClient {
  protected:
   // content::ContentClient:
   std::u16string GetLocalizedString(int message_id) override;
-  base::StringPiece GetDataResource(int resource_id,
-                                    ui::ResourceScaleFactor) override;
+  std::string_view GetDataResource(int resource_id,
+                                   ui::ResourceScaleFactor) override;
   gfx::Image& GetNativeImageNamed(int resource_id) override;
   base::RefCountedMemory* GetDataResourceBytes(int resource_id) override;
   void AddAdditionalSchemes(Schemes* schemes) override;

@@ -12,29 +12,86 @@
     "extension_types": ["extension"],
     "min_manifest_version": 3
   },
-  "author": {
+  "browser_action": {
     "channel": "stable",
-    "extension_types": "all"
+    "extension_types": ["extension"],
+    "max_manifest_version": 2
+  },
+  "chrome_settings_overrides": {
+    "channel": "stable",
+    "extension_types": ["extension"],
+    "platforms": ["win", "mac"]
   },
   "content_scripts": {
     "channel": "stable",
-    "extension_types": ["extension"]
+    "extension_types": ["extension", "legacy_packaged_app"]
   },
-  "devtools_page": {
+  "converted_from_user_script": {
     "channel": "stable",
+    "extension_types": [
+      "extension", "legacy_packaged_app", "hosted_app"
+    ]
+  },
+  "file_browser_handlers": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
+  },
+  "file_system_provider_capabilities": {
+    "channel": "stable",
+    "extension_types": ["extension", "platform_app"]
+  },
+  "minimum_chrome_version": {
+    "channel": "stable",
+    "extension_types": [
+      "extension", "legacy_packaged_app", "hosted_app", "platform_app", "theme"
+    ]
+  },
+  "natively_connectable": {
+    "channel": "dev",
     "extension_types": ["extension"]
   },
-  "host_permissions": {
+  "omnibox": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
+  },
+  "optional_permissions": {
+    "channel": "stable",
+    "extension_types": [
+      "extension",
+      "legacy_packaged_app",
+      "hosted_app",
+      "platform_app",
+      "chromeos_system_extension"
+    ]
+  },
+  "platforms": {
+    "channel": "stable",
+    "extension_types": "all"
+  },
+  "side_panel": {
     "channel": "stable",
     "extension_types": ["extension"],
     "min_manifest_version": 3
   },
-  "minimum_chrome_version": {
+  "storage": {
     "channel": "stable",
-    "extension_types": ["extension"]
+    "extension_types": [
+      "extension",
+      "legacy_packaged_app",
+      "platform_app",
+      "login_screen_extension"
+    ]
   },
-  "short_name": {
+  "theme": {
     "channel": "stable",
-    "extension_types": "all"
+    "extension_types": ["theme"]
+  },
+  "tts_engine": {
+    "channel": "stable",
+    "extension_types": ["extension", "legacy_packaged_app"]
+  },
+  "url_handlers": {
+    "channel": "stable",
+    "extension_types": ["platform_app"]
   }
 }

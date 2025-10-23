@@ -7,10 +7,11 @@
 #include <windows.h>
 #include <wtsapi32.h>
 
+#include "base/logging.h"
 #include "base/win/windows_types.h"
 #include "base/win/wrapped_window_proc.h"
 #include "content/public/browser/browser_task_traits.h"
-#include "ui/base/win/shell.h"
+#include "content/public/browser/browser_thread.h"
 #include "ui/gfx/win/hwnd_util.h"
 
 namespace electron {
@@ -86,18 +87,6 @@ LRESULT CALLBACK PowerMonitor::WndProc(HWND hwnd,
             base::BindOnce([](PowerMonitor* pm) { pm->Emit("unlock-screen"); },
                            base::Unretained(this)));
       }
-    }
-  } else if (message == WM_POWERBROADCAST) {
-    if (wparam == PBT_APMRESUMEAUTOMATIC) {
-      content::GetUIThreadTaskRunner({})->PostTask(
-          FROM_HERE,
-          base::BindOnce([](PowerMonitor* pm) { pm->Emit("resume"); },
-                         base::Unretained(this)));
-    } else if (wparam == PBT_APMSUSPEND) {
-      content::GetUIThreadTaskRunner({})->PostTask(
-          FROM_HERE,
-          base::BindOnce([](PowerMonitor* pm) { pm->Emit("suspend"); },
-                         base::Unretained(this)));
     }
   }
   return ::DefWindowProc(hwnd, message, wparam, lparam);

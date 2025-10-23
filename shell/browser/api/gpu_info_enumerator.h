@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_GPU_INFO_ENUMERATOR_H_
 #define ELECTRON_SHELL_BROWSER_API_GPU_INFO_ENUMERATOR_H_
 
-#include <memory>
 #include <stack>
 #include <string>
 

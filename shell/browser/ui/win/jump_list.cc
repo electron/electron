@@ -2,6 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+// FIXME(samuelmaddock): refactor this class to use modern
+// Microsoft::WRL::ComPtr must come before other includes. fixes bad #defines
+// from <shlwapi.h>.
+#include "base/win/shlwapi.h"  // NOLINT(build/include_order)
+
 #include "shell/browser/ui/win/jump_list.h"
 
 #include <propkey.h>  // for PKEY_* constants

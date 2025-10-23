@@ -4,9 +4,12 @@ Usage:
 $ node ./script/gn-check.js [--outDir=dirName]
 */
 
+const minimist = require('minimist');
+
 const cp = require('node:child_process');
 const path = require('node:path');
-const args = require('minimist')(process.argv.slice(2), { string: ['outDir'] });
+
+const args = minimist(process.argv.slice(2), { string: ['outDir'] });
 
 const { getOutDir } = require('./lib/utils');
 
@@ -29,7 +32,10 @@ env.PATH = `${env.PATH}${path.delimiter}${DEPOT_TOOLS}`;
 const gnCheckDirs = [
   '//electron:electron_lib',
   '//electron:electron_app',
-  '//electron/shell/common/api:mojo'
+  '//electron/shell/common:mojo',
+  '//electron/shell/common:plugin',
+  '//electron:testing_build',
+  '//electron:release_build'
 ];
 
 for (const dir of gnCheckDirs) {

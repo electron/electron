@@ -6,14 +6,15 @@
 #define ELECTRON_SHELL_BROWSER_SERIAL_ELECTRON_SERIAL_DELEGATE_H_
 
 #include <memory>
-#include <unordered_map>
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
+#include "base/observer_list.h"
 #include "base/scoped_observation.h"
 #include "content/public/browser/serial_delegate.h"
 #include "shell/browser/serial/serial_chooser_context.h"
 #include "shell/browser/serial/serial_chooser_controller.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 
 namespace electron {
 
@@ -76,8 +77,8 @@ class ElectronSerialDelegate : public content::SerialDelegate,
       port_observation_{this};
   base::ObserverList<content::SerialDelegate::Observer> observer_list_;
 
-  std::unordered_map<content::RenderFrameHost*,
-                     std::unique_ptr<SerialChooserController>>
+  absl::flat_hash_map<content::RenderFrameHost*,
+                      std::unique_ptr<SerialChooserController>>
       controller_map_;
 
   base::WeakPtrFactory<ElectronSerialDelegate> weak_factory_{this};

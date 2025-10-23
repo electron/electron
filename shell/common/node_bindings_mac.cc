@@ -2,6 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#ifdef UNSAFE_BUFFERS_BUILD
+// TODO(crbug.com/351564777): Remove FD_ZERO and convert code to safer
+// constructs.
+#pragma allow_unsafe_buffers
+#endif
+
 #include "shell/common/node_bindings_mac.h"
 
 #include <errno.h>
@@ -9,8 +15,6 @@
 #include <sys/sysctl.h>
 #include <sys/time.h>
 #include <sys/types.h>
-
-#include "shell/common/node_includes.h"
 
 namespace electron {
 
@@ -41,8 +45,8 @@ void NodeBindingsMac::PollEvents() {
 }
 
 // static
-NodeBindings* NodeBindings::Create(BrowserEnvironment browser_env) {
-  return new NodeBindingsMac(browser_env);
+std::unique_ptr<NodeBindings> NodeBindings::Create(BrowserEnvironment env) {
+  return std::make_unique<NodeBindingsMac>(env);
 }
 
 }  // namespace electron

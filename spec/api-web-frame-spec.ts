@@ -1,8 +1,11 @@
-import { expect } from 'chai';
-import * as path from 'node:path';
 import { BrowserWindow, ipcMain, WebContents } from 'electron/main';
-import { defer } from './lib/spec-helpers';
+
+import { expect } from 'chai';
+
 import { once } from 'node:events';
+import * as path from 'node:path';
+
+import { defer } from './lib/spec-helpers';
 
 describe('webFrame module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -74,8 +77,9 @@ describe('webFrame module', () => {
 
   describe('api', () => {
     let w: WebContents;
+    let win: BrowserWindow;
     before(async () => {
-      const win = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false, nodeIntegration: true } });
+      win = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false, nodeIntegration: true } });
       await win.loadURL('data:text/html,<iframe name="test"></iframe>');
       w = win.webContents;
       await w.executeJavaScript(`
@@ -84,6 +88,11 @@ describe('webFrame module', () => {
         childFrame = webFrame.firstChild;
         null
       `);
+    });
+
+    after(() => {
+      win.close();
+      win = null as unknown as BrowserWindow;
     });
 
     describe('top', () => {
@@ -153,29 +162,29 @@ describe('webFrame module', () => {
       });
     });
 
-    describe('findFrameByRoutingId()', () => {
+    describe('findFrameByToken()', () => {
       it('does not crash when not found', async () => {
-        const equal = await w.executeJavaScript('webFrame.findFrameByRoutingId(-1) === null');
+        const equal = await w.executeJavaScript('webFrame.findFrameByToken("unknown") === null');
         expect(equal).to.be.true();
       });
 
       it('returns the webFrame when found', async () => {
-        const equal = await w.executeJavaScript('isSameWebFrame(webFrame.findFrameByRoutingId(childFrame.routingId), childFrame)');
+        const equal = await w.executeJavaScript('isSameWebFrame(webFrame.findFrameByToken(childFrame.frameToken), childFrame)');
         expect(equal).to.be.true();
       });
     });
 
     describe('setZoomFactor()', () => {
       it('works', async () => {
-        const equal = await w.executeJavaScript('childFrame.setZoomFactor(2.0); childFrame.getZoomFactor() === 2.0');
-        expect(equal).to.be.true();
+        const zoom = await w.executeJavaScript('childFrame.setZoomFactor(2.0); childFrame.getZoomFactor()');
+        expect(zoom).to.equal(2.0);
       });
     });
 
     describe('setZoomLevel()', () => {
       it('works', async () => {
-        const equal = await w.executeJavaScript('childFrame.setZoomLevel(5); childFrame.getZoomLevel() === 5');
-        expect(equal).to.be.true();
+        const zoom = await w.executeJavaScript('childFrame.setZoomLevel(5); childFrame.getZoomLevel()');
+        expect(zoom).to.equal(5);
       });
     });
 

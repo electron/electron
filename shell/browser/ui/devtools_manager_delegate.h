@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "base/compiler_specific.h"
 #include "content/public/browser/devtools_manager_delegate.h"
 
 namespace content {
@@ -34,7 +33,8 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
                      NotHandledCallback callback) override;
   scoped_refptr<content::DevToolsAgentHost> CreateNewTarget(
       const GURL& url,
-      TargetType target_type) override;
+      TargetType target_type,
+      bool new_window) override;
   std::string GetDiscoveryPageHTML() override;
   bool HasBundledFrontendResources() override;
   content::BrowserContext* GetDefaultBrowserContext() override;

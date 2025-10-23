@@ -7,7 +7,10 @@
 
 #include <memory>
 
-#include "v8/include/v8.h"
+namespace v8 {
+class Isolate;
+class Locker;
+}  // namespace v8
 
 namespace gin_helper {
 

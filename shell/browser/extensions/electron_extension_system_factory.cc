@@ -35,9 +35,10 @@ ElectronExtensionSystemFactory::ElectronExtensionSystemFactory()
 
 ElectronExtensionSystemFactory::~ElectronExtensionSystemFactory() = default;
 
-KeyedService* ElectronExtensionSystemFactory::BuildServiceInstanceFor(
+std::unique_ptr<KeyedService>
+ElectronExtensionSystemFactory::BuildServiceInstanceForBrowserContext(
     BrowserContext* context) const {
-  return new ElectronExtensionSystem(context);
+  return std::make_unique<ElectronExtensionSystem>(context);
 }
 
 BrowserContext* ElectronExtensionSystemFactory::GetBrowserContextToUse(

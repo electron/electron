@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/ui/certificate_trust.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/ui/message_box.h"
@@ -17,6 +18,9 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "v8/include/v8-isolate.h"
+#include "v8/include/v8-local-handle.h"
+#include "v8/include/v8-promise.h"
 
 namespace {
 
@@ -38,9 +42,8 @@ void ResolvePromiseObject(gin_helper::Promise<gin_helper::Dictionary> promise,
 }
 
 v8::Local<v8::Promise> ShowMessageBox(
-    const electron::MessageBoxSettings& settings,
-    gin::Arguments* args) {
-  v8::Isolate* isolate = args->isolate();
+    v8::Isolate* const isolate,
+    const electron::MessageBoxSettings& settings) {
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
@@ -58,9 +61,9 @@ void ShowOpenDialogSync(const file_dialog::DialogSettings& settings,
 }
 
 v8::Local<v8::Promise> ShowOpenDialog(
-    const file_dialog::DialogSettings& settings,
-    gin::Arguments* args) {
-  gin_helper::Promise<gin_helper::Dictionary> promise(args->isolate());
+    v8::Isolate* const isolate,
+    const file_dialog::DialogSettings& settings) {
+  gin_helper::Promise<gin_helper::Dictionary> promise{isolate};
   v8::Local<v8::Promise> handle = promise.GetHandle();
   file_dialog::ShowOpenDialog(settings, std::move(promise));
   return handle;
@@ -68,9 +71,8 @@ v8::Local<v8::Promise> ShowOpenDialog(
 
 void ShowSaveDialogSync(const file_dialog::DialogSettings& settings,
                         gin::Arguments* args) {
-  base::FilePath path;
-  if (file_dialog::ShowSaveDialogSync(settings, &path))
-    args->Return(path);
+  if (const auto path = file_dialog::ShowSaveDialogSync(settings))
+    args->Return(*path);
 }
 
 v8::Local<v8::Promise> ShowSaveDialog(
@@ -87,8 +89,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("showMessageBoxSync", &ShowMessageBoxSync);
   dict.SetMethod("showMessageBox", &ShowMessageBox);
   dict.SetMethod("_closeMessageBox", &electron::CloseMessageBox);

@@ -7,9 +7,13 @@
 
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include "content/public/app/content_main_delegate.h"
-#include "content/public/common/content_client.h"
+
+namespace content {
+class Client;
+}
 
 namespace tracing {
 class TracingSamplerProfiler;
@@ -30,9 +34,15 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
   ElectronMainDelegate(const ElectronMainDelegate&) = delete;
   ElectronMainDelegate& operator=(const ElectronMainDelegate&) = delete;
 
+#if BUILDFLAG(IS_MAC)
+  void OverrideChildProcessPath();
+  void OverrideFrameworkBundlePath();
+  void SetUpBundleOverrides();
+#endif
+
  protected:
   // content::ContentMainDelegate:
-  base::StringPiece GetBrowserV8SnapshotFilename() override;
+  std::string_view GetBrowserV8SnapshotFilename() override;
   std::optional<int> BasicStartupComplete() override;
   void PreSandboxStartup() override;
   void SandboxInitialized(const std::string& process_type) override;
@@ -42,7 +52,7 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
   content::ContentGpuClient* CreateContentGpuClient() override;
   content::ContentRendererClient* CreateContentRendererClient() override;
   content::ContentUtilityClient* CreateContentUtilityClient() override;
-  absl::variant<int, content::MainFunctionParams> RunProcess(
+  std::variant<int, content::MainFunctionParams> RunProcess(
       const std::string& process_type,
       content::MainFunctionParams main_function_params) override;
   bool ShouldCreateFeatureList(InvokedIn invoked_in) override;
@@ -53,12 +63,6 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
 #endif
 
  private:
-#if BUILDFLAG(IS_MAC)
-  void OverrideChildProcessPath();
-  void OverrideFrameworkBundlePath();
-  void SetUpBundleOverrides();
-#endif
-
   std::unique_ptr<content::ContentBrowserClient> browser_client_;
   std::unique_ptr<content::ContentClient> content_client_;
   std::unique_ptr<content::ContentGpuClient> gpu_client_;

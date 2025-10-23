@@ -5,22 +5,21 @@
 #include "shell/common/crash_keys.h"
 
 #include <cstdint>
-#include <deque>
 #include <map>
 #include <string>
 
 #include "base/command_line.h"
+#include "base/containers/circular_deque.h"
 #include "base/environment.h"
 #include "base/no_destructor.h"
-#include "base/strings/string_split.h"
-#include "base/strings/stringprintf.h"
+#include "base/strings/strcat.h"
+#include "base/strings/string_number_conversions.h"
 #include "components/crash/core/common/crash_key.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
-#include "shell/browser/javascript_environment.h"
 #include "shell/common/electron_constants.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
 #include "third_party/crashpad/crashpad/client/annotation.h"
@@ -29,19 +28,17 @@ namespace electron::crash_keys {
 
 namespace {
 
-constexpr size_t kMaxCrashKeyValueSize = 20320;
-static_assert(kMaxCrashKeyValueSize < crashpad::Annotation::kValueMaxSize,
-              "max crash key value length above what crashpad supports");
-
-using ExtraCrashKeys =
-    std::deque<crash_reporter::CrashKeyString<kMaxCrashKeyValueSize>>;
-ExtraCrashKeys& GetExtraCrashKeys() {
-  static base::NoDestructor<ExtraCrashKeys> extra_keys;
+auto& GetExtraCrashKeys() {
+  constexpr size_t kMaxCrashKeyValueSize = 20320;
+  static_assert(kMaxCrashKeyValueSize < crashpad::Annotation::kValueMaxSize,
+                "max crash key value length above what crashpad supports");
+  using CrashKeyString = crash_reporter::CrashKeyString<kMaxCrashKeyValueSize>;
+  static base::NoDestructor<base::circular_deque<CrashKeyString>> extra_keys;
   return *extra_keys;
 }
 
-std::deque<std::string>& GetExtraCrashKeyNames() {
-  static base::NoDestructor<std::deque<std::string>> crash_key_names;
+auto& GetExtraCrashKeyNames() {
+  static base::NoDestructor<base::circular_deque<std::string>> crash_key_names;
   return *crash_key_names;
 }
 
@@ -55,20 +52,17 @@ void SetCrashKey(const std::string& key, const std::string& value) {
   // Chrome DCHECK()s if we try to set an annotation with a name longer than
   // the max.
   if (key.size() >= kMaxCrashKeyNameLength) {
-    node::Environment* env =
-        node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate());
-    EmitWarning(
-        env,
-        base::StringPrintf("The crash key name, \"%s\", is longer than %" PRIu32
-                           " bytes, ignoring it.",
-                           key.c_str(), kMaxCrashKeyNameLength),
+    util::EmitWarning(
+        base::StrCat({"The crash key name, '", key, "', is longer than ",
+                      base::NumberToString(kMaxCrashKeyNameLength),
+                      " bytes, ignoring it."}),
         "electron");
     return;
   }
 
   auto& crash_key_names = GetExtraCrashKeyNames();
 
-  auto iter = std::find(crash_key_names.begin(), crash_key_names.end(), key);
+  auto iter = std::ranges::find(crash_key_names, key);
   if (iter == crash_key_names.end()) {
     crash_key_names.emplace_back(key);
     GetExtraCrashKeys().emplace_back(crash_key_names.back().c_str());
@@ -80,7 +74,7 @@ void SetCrashKey(const std::string& key, const std::string& value) {
 void ClearCrashKey(const std::string& key) {
   const auto& crash_key_names = GetExtraCrashKeyNames();
 
-  auto iter = std::find(crash_key_names.begin(), crash_key_names.end(), key);
+  auto iter = std::ranges::find(crash_key_names, key);
   if (iter != crash_key_names.end()) {
     GetExtraCrashKeys()[iter - crash_key_names.begin()].Clear();
   }

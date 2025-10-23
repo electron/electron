@@ -12,113 +12,84 @@ TrayIcon::TrayIcon() = default;
 
 TrayIcon::~TrayIcon() = default;
 
-void TrayIcon::SetPressedImage(ImageType image) {}
-
-void TrayIcon::DisplayBalloon(const BalloonOptions& options) {}
-
-void TrayIcon::RemoveBalloon() {}
-
-void TrayIcon::Focus() {}
-
-void TrayIcon::PopUpContextMenu(const gfx::Point& pos,
-                                base::WeakPtr<ElectronMenuModel> menu_model) {}
-
-void TrayIcon::CloseContextMenu() {}
-
 gfx::Rect TrayIcon::GetBounds() {
-  return gfx::Rect();
+  return {};
 }
+
+void TrayIcon::SetAutoSaveName(const std::string& name) {}
 
 void TrayIcon::NotifyClicked(const gfx::Rect& bounds,
                              const gfx::Point& location,
                              int modifiers) {
-  for (TrayIconObserver& observer : observers_)
-    observer.OnClicked(bounds, location, modifiers);
+  observers_.Notify(&TrayIconObserver::OnClicked, bounds, location, modifiers);
 }
 
 void TrayIcon::NotifyDoubleClicked(const gfx::Rect& bounds, int modifiers) {
-  for (TrayIconObserver& observer : observers_)
-    observer.OnDoubleClicked(bounds, modifiers);
+  observers_.Notify(&TrayIconObserver::OnDoubleClicked, bounds, modifiers);
 }
 
 void TrayIcon::NotifyMiddleClicked(const gfx::Rect& bounds, int modifiers) {
-  for (TrayIconObserver& observer : observers_)
-    observer.OnMiddleClicked(bounds, modifiers);
+  observers_.Notify(&TrayIconObserver::OnMiddleClicked, bounds, modifiers);
 }
 
 void TrayIcon::NotifyBalloonShow() {
-  for (TrayIconObserver& observer : observers_)
-    observer.OnBalloonShow();
+  observers_.Notify(&TrayIconObserver::OnBalloonShow);
 }
 
 void TrayIcon::NotifyBalloonClicked() {
-  for (TrayIconObserver& observer : observers_)
-    observer.OnBalloonClicked();
+  observers_.Notify(&TrayIconObserver::OnBalloonClicked);
 }
 
 void TrayIcon::NotifyBalloonClosed() {
-  for (TrayIconObserver& observer : observers_)
-    observer.OnBalloonClosed();
+  observers_.Notify(&TrayIconObserver::OnBalloonClosed);
 }
 
 void TrayIcon::NotifyRightClicked(const gfx::Rect& bounds, int modifiers) {
-  for (TrayIconObserver& observer : observers_)
-    observer.OnRightClicked(bounds, modifiers);
+  observers_.Notify(&TrayIconObserver::OnRightClicked, bounds, modifiers);
 }
 
 void TrayIcon::NotifyDrop() {
-  for (TrayIconObserver& observer : observers_)
-    observer.OnDrop();
+  observers_.Notify(&TrayIconObserver::OnDrop);
 }
 
 void TrayIcon::NotifyDropFiles(const std::vector<std::string>& files) {
-  for (TrayIconObserver& observer : observers_)
-    observer.OnDropFiles(files);
+  observers_.Notify(&TrayIconObserver::OnDropFiles, files);
 }
 
 void TrayIcon::NotifyDropText(const std::string& text) {
-  for (TrayIconObserver& observer : observers_)
-    observer.OnDropText(text);
+  observers_.Notify(&TrayIconObserver::OnDropText, text);
 }
 
 void TrayIcon::NotifyMouseUp(const gfx::Point& location, int modifiers) {
-  for (TrayIconObserver& observer : observers_)
-    observer.OnMouseUp(location, modifiers);
+  observers_.Notify(&TrayIconObserver::OnMouseUp, location, modifiers);
 }
 
 void TrayIcon::NotifyMouseDown(const gfx::Point& location, int modifiers) {
-  for (TrayIconObserver& observer : observers_)
-    observer.OnMouseDown(location, modifiers);
+  observers_.Notify(&TrayIconObserver::OnMouseDown, location, modifiers);
 }
 
 void TrayIcon::NotifyMouseEntered(const gfx::Point& location, int modifiers) {
-  for (TrayIconObserver& observer : observers_)
-    observer.OnMouseEntered(location, modifiers);
+  observers_.Notify(&TrayIconObserver::OnMouseEntered, location, modifiers);
 }
 
 void TrayIcon::NotifyMouseExited(const gfx::Point& location, int modifiers) {
-  for (TrayIconObserver& observer : observers_)
-    observer.OnMouseExited(location, modifiers);
+  observers_.Notify(&TrayIconObserver::OnMouseExited, location, modifiers);
 }
 
 void TrayIcon::NotifyMouseMoved(const gfx::Point& location, int modifiers) {
-  for (TrayIconObserver& observer : observers_)
-    observer.OnMouseMoved(location, modifiers);
+  observers_.Notify(&TrayIconObserver::OnMouseMoved, location, modifiers);
 }
 
 void TrayIcon::NotifyDragEntered() {
-  for (TrayIconObserver& observer : observers_)
-    observer.OnDragEntered();
+  observers_.Notify(&TrayIconObserver::OnDragEntered);
 }
 
 void TrayIcon::NotifyDragExited() {
-  for (TrayIconObserver& observer : observers_)
-    observer.OnDragExited();
+  observers_.Notify(&TrayIconObserver::OnDragExited);
 }
 
 void TrayIcon::NotifyDragEnded() {
-  for (TrayIconObserver& observer : observers_)
-    observer.OnDragEnded();
+  observers_.Notify(&TrayIconObserver::OnDragEnded);
 }
 
 }  // namespace electron

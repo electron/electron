@@ -9,40 +9,55 @@
 #include <set>
 
 #include "base/memory/raw_ptr.h"
-#include "base/values.h"
-#include "extensions/common/url_pattern.h"
-#include "gin/arguments.h"
-#include "gin/handle.h"
-#include "gin/wrappable.h"
 #include "shell/browser/net/web_request_api_interface.h"
+#include "shell/common/gin_helper/wrappable.h"
+
+class URLPattern;
 
 namespace content {
 class BrowserContext;
 }
 
+namespace extensions {
+enum class WebRequestResourceType : uint8_t;
+}  // namespace extensions
+
+namespace gin {
+class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
+template <typename T>
+class Handle;
+}  // namespace gin_helper
+
 namespace electron::api {
 
-class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
+class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest>,
+                         public WebRequestAPI {
  public:
   // Return the WebRequest object attached to |browser_context|, create if there
   // is no one.
   // Note that the lifetime of WebRequest object is managed by Session, instead
   // of the caller.
-  static gin::Handle<WebRequest> FromOrCreate(
+  static gin_helper::Handle<WebRequest> FromOrCreate(
       v8::Isolate* isolate,
       content::BrowserContext* browser_context);
 
   // Return a new WebRequest object, this should only be called by Session.
-  static gin::Handle<WebRequest> Create(
+  static gin_helper::Handle<WebRequest> Create(
       v8::Isolate* isolate,
       content::BrowserContext* browser_context);
 
   // Find the WebRequest object attached to |browser_context|.
-  static gin::Handle<WebRequest> From(v8::Isolate* isolate,
-                                      content::BrowserContext* browser_context);
+  static gin_helper::Handle<WebRequest> From(
+      v8::Isolate* isolate,
+      content::BrowserContext* browser_context);
 
-  // gin::Wrappable:
-  static gin::WrapperInfo kWrapperInfo;
+  static const char* GetClassName() { return "WebRequest"; }
+
+  // gin_helper::Wrappable:
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
@@ -84,6 +99,10 @@ class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
   WebRequest(v8::Isolate* isolate, content::BrowserContext* browser_context);
   ~WebRequest() override;
 
+  // Contains info about requests that are blocked waiting for a response from
+  // the user.
+  struct BlockedRequest;
+
   enum class SimpleEvent {
     kOnSendHeaders,
     kOnBeforeRedirect,
@@ -91,6 +110,7 @@ class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
     kOnCompleted,
     kOnErrorOccurred,
   };
+
   enum class ResponseEvent {
     kOnBeforeRequest,
     kOnBeforeSendHeaders,
@@ -113,34 +133,56 @@ class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
   void HandleSimpleEvent(SimpleEvent event,
                          extensions::WebRequestInfo* info,
                          Args... args);
-  template <typename Out, typename... Args>
-  int HandleResponseEvent(ResponseEvent event,
-                          extensions::WebRequestInfo* info,
-                          net::CompletionOnceCallback callback,
-                          Out out,
-                          Args... args);
 
-  template <typename T>
-  void OnListenerResult(uint64_t id, T out, v8::Local<v8::Value> response);
+  int HandleOnBeforeRequestResponseEvent(
+      extensions::WebRequestInfo* info,
+      const network::ResourceRequest& request,
+      net::CompletionOnceCallback callback,
+      GURL* redirect_url);
+  int HandleOnBeforeSendHeadersResponseEvent(
+      extensions::WebRequestInfo* info,
+      const network::ResourceRequest& request,
+      BeforeSendHeadersCallback callback,
+      net::HttpRequestHeaders* headers);
+  int HandleOnHeadersReceivedResponseEvent(
+      extensions::WebRequestInfo* info,
+      const network::ResourceRequest& request,
+      net::CompletionOnceCallback callback,
+      const net::HttpResponseHeaders* original_response_headers,
+      scoped_refptr<net::HttpResponseHeaders>* override_response_headers);
+
+  void OnBeforeRequestListenerResult(uint64_t id,
+                                     v8::Local<v8::Value> response);
+  void OnBeforeSendHeadersListenerResult(uint64_t id,
+                                         v8::Local<v8::Value> response);
+  void OnHeadersReceivedListenerResult(uint64_t id,
+                                       v8::Local<v8::Value> response);
 
   class RequestFilter {
    public:
     RequestFilter(std::set<URLPattern>,
+                  std::set<URLPattern>,
                   std::set<extensions::WebRequestResourceType>);
     RequestFilter(const RequestFilter&);
     RequestFilter();
     ~RequestFilter();
 
-    void AddUrlPattern(URLPattern pattern);
+    void AddUrlPattern(URLPattern pattern, bool is_match_pattern);
+    void AddUrlPatterns(const std::set<std::string>& filter_patterns,
+                        RequestFilter* filter,
+                        gin::Arguments* args,
+                        bool is_match_pattern = true);
     void AddType(extensions::WebRequestResourceType type);
 
     bool MatchesRequest(extensions::WebRequestInfo* info) const;
 
    private:
-    bool MatchesURL(const GURL& url) const;
+    bool MatchesURL(const GURL& url,
+                    const std::set<URLPattern>& patterns) const;
     bool MatchesType(extensions::WebRequestResourceType type) const;
 
-    std::set<URLPattern> url_patterns_;
+    std::set<URLPattern> include_url_patterns_;
+    std::set<URLPattern> exclude_url_patterns_;
     std::set<extensions::WebRequestResourceType> types_;
   };
 
@@ -164,7 +206,7 @@ class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
 
   std::map<SimpleEvent, SimpleListenerInfo> simple_listeners_;
   std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;
-  std::map<uint64_t, net::CompletionOnceCallback> callbacks_;
+  std::map<uint64_t, BlockedRequest> blocked_requests_;
 
   // Weak-ref, it manages us.
   raw_ptr<content::BrowserContext> browser_context_;

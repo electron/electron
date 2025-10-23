@@ -12,13 +12,11 @@
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
-#include "base/stl_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/synchronization/lock.h"
 #include "base/threading/thread_local.h"
-#include "crypto/secure_hash.h"
-#include "crypto/sha2.h"
+#include "crypto/hash.h"
 #include "shell/common/asar/archive.h"
 #include "shell/common/thread_restrictions.h"
 
@@ -26,7 +24,7 @@ namespace asar {
 
 namespace {
 
-typedef std::map<base::FilePath, std::shared_ptr<Archive>> ArchiveMap;
+using ArchiveMap = std::map<base::FilePath, std::shared_ptr<Archive>>;
 
 const base::FilePath::CharType kAsarExtension[] = FILE_PATH_LITERAL(".asar");
 
@@ -46,8 +44,6 @@ bool IsDirectoryCached(const base::FilePath& path) {
   return is_directory_cache[path] = base::DirectoryExists(path);
 }
 
-}  // namespace
-
 ArchiveMap& GetArchiveCache() {
   static base::NoDestructor<ArchiveMap> s_archive_map;
   return *s_archive_map;
@@ -57,6 +53,8 @@ base::Lock& GetArchiveCacheLock() {
   static base::NoDestructor<base::Lock> lock;
   return *lock;
 }
+
+}  // namespace
 
 std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path) {
   base::AutoLock auto_lock(GetArchiveCacheLock());
@@ -76,13 +74,6 @@ std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path) {
 
   // didn't have it, couldn't create it
   return nullptr;
-}
-
-void ClearArchives() {
-  base::AutoLock auto_lock(GetArchiveCacheLock());
-  ArchiveMap& map = GetArchiveCache();
-
-  map.clear();
 }
 
 bool GetAsarArchivePath(const base::FilePath& full_path,
@@ -134,31 +125,20 @@ bool ReadFileToString(const base::FilePath& path, std::string* contents) {
     return false;
 
   contents->resize(info.size);
-  if (static_cast<int>(info.size) !=
-      src.Read(info.offset, const_cast<char*>(contents->data()),
-               contents->size())) {
+  if (!src.ReadAndCheck(info.offset, base::as_writable_byte_span(*contents)))
     return false;
-  }
 
-  if (info.integrity.has_value()) {
-    ValidateIntegrityOrDie(contents->data(), contents->size(),
-                           info.integrity.value());
-  }
+  if (info.integrity)
+    ValidateIntegrityOrDie(base::as_byte_span(*contents), *info.integrity);
 
   return true;
 }
 
-void ValidateIntegrityOrDie(const char* data,
-                            size_t size,
+void ValidateIntegrityOrDie(base::span<const uint8_t> input,
                             const IntegrityPayload& integrity) {
   if (integrity.algorithm == HashAlgorithm::kSHA256) {
-    uint8_t hash[crypto::kSHA256Length];
-    auto hasher = crypto::SecureHash::Create(crypto::SecureHash::SHA256);
-    hasher->Update(data, size);
-    hasher->Finish(hash, sizeof(hash));
     const std::string hex_hash =
-        base::ToLowerASCII(base::HexEncode(hash, sizeof(hash)));
-
+        base::ToLowerASCII(base::HexEncode(crypto::hash::Sha256(input)));
     if (integrity.hash != hex_hash) {
       LOG(FATAL) << "Integrity check failed for asar archive ("
                  << integrity.hash << " vs " << hex_hash << ")";

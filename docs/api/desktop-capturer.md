@@ -9,79 +9,70 @@ The following example shows how to capture video from a desktop window whose
 title is `Electron`:
 
 ```js
-// In the main process.
-const { BrowserWindow, desktopCapturer } = require('electron')
+// main.js
+const { app, BrowserWindow, desktopCapturer, session } = require('electron')
 
-const mainWindow = new BrowserWindow()
+app.whenReady().then(() => {
+  const mainWindow = new BrowserWindow()
 
-desktopCapturer.getSources({ types: ['window', 'screen'] }).then(async sources => {
-  for (const source of sources) {
-    if (source.name === 'Electron') {
-      mainWindow.webContents.send('SET_SOURCE', source.id)
-      return
-    }
-  }
-})
-```
-
-```js @ts-nocheck
-// In the preload script.
-const { ipcRenderer } = require('electron')
-
-ipcRenderer.on('SET_SOURCE', async (event, sourceId) => {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: false,
-      video: {
-        mandatory: {
-          chromeMediaSource: 'desktop',
-          chromeMediaSourceId: sourceId,
-          minWidth: 1280,
-          maxWidth: 1280,
-          minHeight: 720,
-          maxHeight: 720
-        }
-      }
+  session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
+    desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
+      // Grant access to the first screen found.
+      callback({ video: sources[0], audio: 'loopback' })
     })
-    handleStream(stream)
-  } catch (e) {
-    handleError(e)
-  }
+    // If true, use the system picker if available.
+    // Note: this is currently experimental. If the system picker
+    // is available, it will be used and the media request handler
+    // will not be invoked.
+  }, { useSystemPicker: true })
+
+  mainWindow.loadFile('index.html')
 })
-
-function handleStream (stream) {
-  const video = document.querySelector('video')
-  video.srcObject = stream
-  video.onloadedmetadata = (e) => video.play()
-}
-
-function handleError (e) {
-  console.log(e)
-}
 ```
-
-To capture video from a source provided by `desktopCapturer` the constraints
-passed to [`navigator.mediaDevices.getUserMedia`][] must include
-`chromeMediaSource: 'desktop'`, and `audio: false`.
-
-To capture both audio and video from the entire desktop the constraints passed
-to [`navigator.mediaDevices.getUserMedia`][] must include `chromeMediaSource: 'desktop'`,
-for both `audio` and `video`, but should not include a `chromeMediaSourceId` constraint.
 
 ```js
-const constraints = {
-  audio: {
-    mandatory: {
-      chromeMediaSource: 'desktop'
+// renderer.js
+const startButton = document.getElementById('startButton')
+const stopButton = document.getElementById('stopButton')
+const video = document.querySelector('video')
+
+startButton.addEventListener('click', () => {
+  navigator.mediaDevices.getDisplayMedia({
+    audio: true,
+    video: {
+      width: 320,
+      height: 240,
+      frameRate: 30
     }
-  },
-  video: {
-    mandatory: {
-      chromeMediaSource: 'desktop'
-    }
-  }
-}
+  }).then(stream => {
+    video.srcObject = stream
+    video.onloadedmetadata = (e) => video.play()
+  }).catch(e => console.log(e))
+})
+
+stopButton.addEventListener('click', () => {
+  video.pause()
+})
 ```
+
+```html
+<!-- index.html -->
+<html>
+<meta http-equiv="content-security-policy" content="script-src 'self' 'unsafe-inline'" />
+  <body>
+    <button id="startButton" class="button">Start</button>
+    <button id="stopButton" class="button">Stop</button>
+    <video width="320" height="240" autoplay></video>
+    <script src="renderer.js"></script>
+  </body>
+</html>
+```
+
+See [`navigator.mediaDevices.getDisplayMedia`](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia) for more information.
+
+> [!NOTE]
+> `navigator.mediaDevices.getDisplayMedia` does not permit the use of `deviceId` for
+> selection of a source - see [specification](https://w3c.github.io/mediacapture-screen-share/#constraints).
 
 ## Methods
 
@@ -102,8 +93,9 @@ The `desktopCapturer` module has the following methods:
 
 Returns `Promise<DesktopCapturerSource[]>` - Resolves with an array of [`DesktopCapturerSource`](structures/desktop-capturer-source.md) objects, each `DesktopCapturerSource` represents a screen or an individual window that can be captured.
 
-**Note** Capturing the screen contents requires user consent on macOS 10.15 Catalina or higher,
-which can detected by [`systemPreferences.getMediaAccessStatus`][].
+> [!NOTE]
+> Capturing the screen contents requires user consent on macOS 10.15 Catalina or higher,
+> which can detected by [`systemPreferences.getMediaAccessStatus`][].
 
 [`navigator.mediaDevices.getUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/MediaDevices/getUserMedia
 [`systemPreferences.getMediaAccessStatus`]: system-preferences.md#systempreferencesgetmediaaccessstatusmediatype-windows-macos

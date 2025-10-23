@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tobias=20Nie=C3=9Fen?= <tniessen@tnie.de>
+Date: Fri, 9 May 2025 04:15:47 +0100
+Subject: src: use String::WriteV2() in TwoByteValue
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Since `String::Write()` is deprecated, use `String::WriteV2()` instead.
+
+PR-URL: https://github.com/nodejs/node/pull/58164
+Reviewed-By: Juan José Arboleda <soyjuanarbol@gmail.com>
+Reviewed-By: Joyee Cheung <joyeec9h3@gmail.com>
+Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
+Reviewed-By: Daeyeon Jeong <daeyeon.dev@gmail.com>
+Reviewed-By: Gerhard Stöbich <deb2001-github@yahoo.de>
+Reviewed-By: James M Snell <jasnell@gmail.com>
+
+diff --git a/src/util.cc b/src/util.cc
+index e616e11107555f0613cb631e3b4320fc281441fa..c5c2b89dc3fc008114b2492d1e16928428f097b4 100644
+--- a/src/util.cc
++++ b/src/util.cc
+@@ -146,12 +146,10 @@ TwoByteValue::TwoByteValue(Isolate* isolate, Local<Value> value) {
+   Local<String> string;
+   if (!value->ToString(isolate->GetCurrentContext()).ToLocal(&string)) return;
+ 
+-  // Allocate enough space to include the null terminator
+-  const size_t storage = string->Length() + 1;
+-  AllocateSufficientStorage(storage);
+-
+-  const int flags = String::NO_NULL_TERMINATION;
+-  const int length = string->Write(isolate, out(), 0, storage, flags);
++  // Allocate enough space to include the null terminator.
++  const size_t length = string->Length();
++  AllocateSufficientStorage(length + 1);
++  string->WriteV2(isolate, 0, length, out());
+   SetLengthAndZeroTerminate(length);
+ }
+ 

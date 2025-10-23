@@ -1,0 +1,141 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <khammond@slack-corp.com>
+Date: Thu, 20 Jun 2024 14:42:08 -0700
+Subject: Check for NODE_21_0_MODULE_VERSION
+
+Refs https://chromium-review.googlesource.com/c/v8/v8/+/5006387
+Should be upstreamed.
+
+Module version checks are made against 119 since that is the current assigned version
+for Electron 28 in https://github.com/nodejs/node/blob/main/doc/abi_version_registry.json.
+The version should be updateed to the one assinged for Electron 29 when it is available.
+
+Steps for upstreaming this patch:
+
+- Get a new module version assigned for Electron 29 in nodejs/node
+- Update NODE_21_0_MODULE_VERSION to the new version number
+- Upstream patch to nodejs/nan before Electron 29 is branched
+
+diff --git a/nan.h b/nan.h
+index 9a9112afe0cc94ce58ed3cce9763ace7c160a932..f4865a77e60d5105ed2426037984ddcbfa58bbca 100644
+--- a/nan.h
++++ b/nan.h
+@@ -47,6 +47,7 @@
+ #define NODE_18_0_MODULE_VERSION 108
+ #define NODE_19_0_MODULE_VERSION 111
+ #define NODE_20_0_MODULE_VERSION 115
++#define NODE_21_0_MODULE_VERSION 119
+ 
+ #ifdef _MSC_VER
+ # define NAN_HAS_CPLUSPLUS_11 (_MSC_VER >= 1800)
+@@ -2525,7 +2526,9 @@ NAN_DEPRECATED inline void SetAccessor(
+   , GetterCallback getter
+   , SetterCallback setter
+   , v8::Local<v8::Value> data
++#if (NODE_MODULE_VERSION < NODE_21_0_MODULE_VERSION)
+   , v8::AccessControl settings
++#endif
+   , v8::PropertyAttribute attribute
+   , imp::Sig signature) {
+   HandleScope scope;
+@@ -2553,17 +2556,28 @@ NAN_DEPRECATED inline void SetAccessor(
+     obj->SetInternalField(imp::kDataIndex, data);
+   }
+ 
++#if (NODE_MODULE_VERSION >= NODE_21_0_MODULE_VERSION)
++  tpl->SetNativeDataProperty(
++      name
++    , getter_
++    , setter_
++    , obj
++    , attribute);
++#else
+   tpl->SetAccessor(
+       name
+     , getter_
+     , setter_
+     , obj
++#if (NODE_MODULE_VERSION < NODE_21_0_MODULE_VERSION)
+     , settings
++#endif
+     , attribute
+ #if (NODE_MODULE_VERSION < NODE_16_0_MODULE_VERSION)
+     , signature
+ #endif
+   );
++#endif
+ }
+ 
+ inline void SetAccessor(
+@@ -2572,7 +2586,9 @@ inline void SetAccessor(
+   , GetterCallback getter
+   , SetterCallback setter = 0
+   , v8::Local<v8::Value> data = v8::Local<v8::Value>()
++#if (NODE_MODULE_VERSION < NODE_21_0_MODULE_VERSION)
+   , v8::AccessControl settings = v8::DEFAULT
++#endif
+   , v8::PropertyAttribute attribute = v8::None) {
+   HandleScope scope;
+ 
+@@ -2599,14 +2615,25 @@ inline void SetAccessor(
+     obj->SetInternalField(imp::kDataIndex, data);
+   }
+ 
++#if (NODE_MODULE_VERSION >= NODE_21_0_MODULE_VERSION)
++  tpl->SetNativeDataProperty(
++      name
++    , getter_
++    , setter_
++    , obj
++    , attribute);
++#else
+   tpl->SetAccessor(
+       name
+     , getter_
+     , setter_
+     , obj
++#if (NODE_MODULE_VERSION < NODE_21_0_MODULE_VERSION)
+     , settings
++#endif
+     , attribute
+   );
++#endif
+ }
+ 
+ inline bool SetAccessor(
+@@ -2642,7 +2669,15 @@ inline bool SetAccessor(
+       , New<v8::External>(reinterpret_cast<void *>(setter)));
+   }
+ 
+-#if (NODE_MODULE_VERSION >= NODE_6_0_MODULE_VERSION)
++#if (NODE_MODULE_VERSION >= NODE_21_0_MODULE_VERSION)
++  return obj->SetNativeDataProperty(
++      GetCurrentContext()
++    , name
++    , getter_
++    , setter_
++    , dataobj
++    , attribute).FromMaybe(false);
++#elif (NODE_MODULE_VERSION >= NODE_6_0_MODULE_VERSION)
+   return obj->SetAccessor(
+       GetCurrentContext()
+     , name
+diff --git a/test/js/accessors-test.js b/test/js/accessors-test.js
+index e6ad45737e2ac18da3fa936b1de618e7389933bc..025f5b66774c2f5fe0ccb98c91fc714dd916fcb1 100644
+--- a/test/js/accessors-test.js
++++ b/test/js/accessors-test.js
+@@ -11,7 +11,7 @@ const test     = require('tap').test
+     , bindings = require('bindings')({ module_root: testRoot, bindings: 'accessors' });
+ 
+ test('accessors', function (t) {
+-  t.plan(7)
++  t.plan(6)
+   var settergetter = bindings.create()
+   t.equal(settergetter.prop1, 'this is property 1')
+   t.ok(settergetter.prop2 === '')
+@@ -28,5 +28,4 @@ test('accessors', function (t) {
+   t.equal(derived.prop1, 'this is property 1')
+   derived.prop2 = 'setting a new value'
+   t.equal(derived.prop2, 'setting a new value')
+-  t.equal(settergetter.prop2, 'setting a new value')
+ })

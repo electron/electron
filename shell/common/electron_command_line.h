@@ -18,18 +18,17 @@ class ElectronCommandLine {
   ElectronCommandLine(const ElectronCommandLine&) = delete;
   ElectronCommandLine& operator=(const ElectronCommandLine&) = delete;
 
-  static const base::CommandLine::StringVector& argv() { return argv_; }
+  static base::CommandLine::StringVector& argv();
 
-  static void Init(int argc, base::CommandLine::CharType** argv);
+  static std::vector<std::string> AsUtf8();
+
+  static void Init(int argc, base::CommandLine::CharType const* const* argv);
 
 #if BUILDFLAG(IS_LINUX)
   // On Linux the command line has to be read from base::CommandLine since
   // it is using zygote.
   static void InitializeFromCommandLine();
 #endif
-
- private:
-  static base::CommandLine::StringVector argv_;
 };
 
 }  // namespace electron

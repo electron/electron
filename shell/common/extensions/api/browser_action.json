@@ -344,7 +344,7 @@
               "name": "popupView",
               "type": "object",
               "optional": true,
-              "description": "JavaScript 'window' object for the popup window if it was succesfully opened.",
+              "description": "JavaScript 'window' object for the popup window if it was successfully opened.",
               "additionalProperties": {
                 "type": "any"
               }

@@ -6,43 +6,44 @@ Subject: chore: add electron deps to gitignores
 Makes things like "git status" quicker when developing electron locally
 
 diff --git a/.gitignore b/.gitignore
-index 50992a3f4502d46a1bc2713c25bec6095c541ffa..121a09d7fa00162fe64ce901cae96d8f1c9d885e 100644
+index 22985d0edf211adc576c14ddb0fb21192a636d99..210132f7864c04ac7ffab70875b1c8905bd00e62 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -213,6 +213,7 @@ vs-chromium-project.txt
+@@ -228,6 +228,7 @@ vs-chromium-project.txt
  /data
  /delegate_execute
  /device/serial/device_serial_mojo.xml
 +/electron
+ /GEMINI.md
  /google_apis/gcm/gcm.xml
  /googleurl
- /gpu/gles2_conform_test
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index 4f4e8f03bb876e5745ea6bcf07c2f8ba8b12bffb..de05f778dfc2ee1dabb70242b9a6201b7eea90e3 100644
+index 6be9e9e6feeedd0d1f566758e8da75870bc1d9c7..a0bacf9e5c4809d76093c449065d7f4f5bb47b02 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
-@@ -51,7 +51,9 @@
- /cygwin
- /devserver
+@@ -45,7 +45,9 @@
  /directxsdk
+ /dragonbox/src
+ /edk2
 +/electron_node
  /elfutils/src
 +/engflow-reclient-configs/
  /espresso/lib/
  /eyesfree/src
- /fuchsia-sdk/images
-@@ -106,6 +108,7 @@
+ /fast_float/src
+@@ -94,6 +96,7 @@
  /mocha
  /mockito/src
  /nacl_sdk_binaries/
 +/nan
- /ninja/ninja*
+ /ninja
  /node/*.tar.gz
  /node/linux/
-@@ -155,6 +158,7 @@
+@@ -139,7 +142,7 @@
+ /spirv-cross/src
  /spirv-headers/src
  /spirv-tools/src
- /sqlite4java/lib/
+-/src
 +/squirrel.mac
  /subresource-filter-ruleset/data/*
  /swift-format
