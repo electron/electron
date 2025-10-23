@@ -391,7 +391,7 @@ index 225e017909b8869231b870eaaf161a0b5e93e2a0..846a5251429630b8528a84a3d67ed56c
    if (schemes.allow_non_standard_schemes_in_origins)
      url::EnableNonStandardSchemesForAndroidWebView();
 diff --git a/content/public/common/content_client.h b/content/public/common/content_client.h
-index 52f16979b05b692ef72762d0cbc16bcb361b047e..b658ebeb9c572158b27d94af56331be8cbb519e6 100644
+index 70a23343d5815db0722e2977d966219b824a83b1..85ac45c1868832c47460108f93d86a51118daa53 100644
 --- a/content/public/common/content_client.h
 +++ b/content/public/common/content_client.h
 @@ -139,6 +139,9 @@ class CONTENT_EXPORT ContentClient {
@@ -405,7 +405,7 @@ index 52f16979b05b692ef72762d0cbc16bcb361b047e..b658ebeb9c572158b27d94af56331be8
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index c374142a54d7c6bf4902c94267991ec09fb26f87..07de14ed198d85d7811323d04a69f13022f0e709 100644
+index 3006be26ce9e137a55d0d74386d976d7d2b249fc..3a3c8c61dbbcfcfd60374a2e9ab4abf9ef1b2d7c 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
 @@ -136,6 +136,9 @@ struct SchemeRegistry {
@@ -418,7 +418,7 @@ index c374142a54d7c6bf4902c94267991ec09fb26f87..07de14ed198d85d7811323d04a69f130
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -689,6 +692,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+@@ -683,6 +686,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
    return GetSchemeRegistry().empty_document_schemes;
  }
  
