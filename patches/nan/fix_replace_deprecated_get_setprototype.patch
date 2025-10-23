@@ -8,7 +8,7 @@ https://chromium-review.googlesource.com/c/v8/v8/+/6983465
 Replaces the deprecated usage of SetPrototype.
 
 diff --git a/nan_maybe_43_inl.h b/nan_maybe_43_inl.h
-index c04ce30d2fa3bfb555c96754d93de64e8a83e36b..aa06dbad2f0b3d564917dbcd29ac608ad468327b 100644
+index f37ce9732d556b58e4b755e1688cfb481ee40b61..8c3362e5d9dfeac385089100bf6414f628a98f33 100644
 --- a/nan_maybe_43_inl.h
 +++ b/nan_maybe_43_inl.h
 @@ -207,7 +207,7 @@ inline Maybe<bool> SetPrototype(
@@ -21,7 +21,7 @@ index c04ce30d2fa3bfb555c96754d93de64e8a83e36b..aa06dbad2f0b3d564917dbcd29ac608a
  
  inline MaybeLocal<v8::String> ObjectProtoToString(
 diff --git a/nan_maybe_pre_43_inl.h b/nan_maybe_pre_43_inl.h
-index 83325ae0897f95f2fe5354e9ab720796a7cefd7c..c309ace8c69feb6d01f136d4c0a33443886c467a 100644
+index 84e2c11c26d5706bf345d347bc405b90bd14607c..4e0cfa183405142aa3013080d0f938dd2d731168 100644
 --- a/nan_maybe_pre_43_inl.h
 +++ b/nan_maybe_pre_43_inl.h
 @@ -174,7 +174,7 @@ MaybeLocal<v8::Array> GetOwnPropertyNames(v8::Handle<v8::Object> obj) {
