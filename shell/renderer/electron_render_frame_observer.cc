@@ -59,11 +59,6 @@ ElectronRenderFrameObserver::ElectronRenderFrameObserver(
       renderer_client_(renderer_client) {
   // Initialise resource for directory listing.
   net::NetModule::SetResourceProvider(NetResourceProvider);
-
-  // In Chrome, app regions are only supported in the main frame.
-  // However, we need to support draggable regions on other
-  // local frames/windows, so extend support beyond the main frame.
-  render_frame_->GetWebView()->SetSupportsDraggableRegions(true);
 }
 
 void ElectronRenderFrameObserver::DidClearWindowObject() {

@@ -40,10 +40,10 @@ index 792ecdf43c810d19641251d3f5eeddccc4c621e9..99d368046177dd92c8b36743f461d348
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index b0528c4f02bdbf54dc490f9163fbf4f24e3471db..542eddb03c98eac5c03c9bc208af2c863d552b2d 100644
+index ce1d8807d624b35fa63ef83e3a95c7cba8f1f22f..61d4ef338cc4c0e99c144d6d95bbe0adba9d3556 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -604,6 +604,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -603,6 +603,8 @@ class CONTENT_EXPORT RenderFrameImpl
    void DidObserveLayoutShift(double score, bool after_input_or_scroll) override;
    void DidCreateScriptContext(v8::Local<v8::Context> context,
                                int world_id) override;
