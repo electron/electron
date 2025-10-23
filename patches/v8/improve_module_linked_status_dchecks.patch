@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chengzhong Wu <cwu631@bloomberg.net>
+Date: Mon, 20 Oct 2025 10:22:14 +0100
+Subject: improve module linked status DCHECKs
+
+Improve DCHECKs that requires a module to be linked. This includes
+kLinked, kEvaluated, kEvaluatingAsync, kErrored and the missing
+kEvaluating. kEvaluating can be found when a cyclic module is been
+evaluated synchronously.
+
+Refs: https://github.com/nodejs/node/pull/60111#issuecomment-3375399863
+Change-Id: Ie0b9be22f2d3b8208571d8b419da3505b9f57b65
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7031498
+Reviewed-by: Camillo Bruni <cbruni@chromium.org>
+Commit-Queue: Chengzhong Wu <cwu631@bloomberg.net>
+Cr-Commit-Position: refs/heads/main@{#103203}
+
+diff --git a/src/objects/module.cc b/src/objects/module.cc
+index 41f073755a47380b968bc965329dc4c0c2936b67..ae4fa42aca2bbbdc5ef1c118ca4b96fba72b42cf 100644
+--- a/src/objects/module.cc
++++ b/src/objects/module.cc
+@@ -223,8 +223,7 @@ bool Module::Instantiate(Isolate* isolate, Handle<Module> module,
+     DCHECK_EQ(module->status(), kUnlinked);
+     return false;
+   }
+-  DCHECK(module->status() == kLinked || module->status() == kEvaluated ||
+-         module->status() == kEvaluatingAsync || module->status() == kErrored);
++  DCHECK_GE(module->status(), kLinked);
+   DCHECK(stack.empty());
+   return true;
+ }
+@@ -488,8 +487,7 @@ bool Module::IsGraphAsync(Isolate* isolate) const {
+   // Only SourceTextModules may be async.
+   if (!IsSourceTextModule(*this)) return false;
+   Tagged<SourceTextModule> root = Cast<SourceTextModule>(*this);
+-  DCHECK(root->status() == kLinked || root->status() == kEvaluated ||
+-         root->status() == kEvaluatingAsync || root->status() == kErrored);
++  DCHECK_GE(root->status(), kLinked);
+ 
+   Zone zone(isolate->allocator(), ZONE_NAME);
+   const size_t bucket_count = 2;
