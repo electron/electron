@@ -133,10 +133,10 @@ index 266f640fb1c6503a424e77cc41fc15bc658bb6a5..877ae8a18f6b8f2c7e3474dfba060d99
    // Recreate the buffer in the constructor.
    InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
 diff --git a/src/env.cc b/src/env.cc
-index fc567fa1303bdb506a436c4ac9506a6a6586d49b..6895b1cd726431da2bf56381bb6b63721e08ab9f 100644
+index a78817467518245c4a190e870e0eb30658eafcdb..13dcf0e9c2c86486d1e43763033f43ac4e6b6feb 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -1757,10 +1757,10 @@ void AsyncHooks::Deserialize(Local<Context> context) {
+@@ -1753,10 +1753,10 @@ void AsyncHooks::Deserialize(Local<Context> context) {
          context->GetDataFromSnapshotOnce<Array>(
              info_->js_execution_async_resources).ToLocalChecked();
    } else {
@@ -149,7 +149,7 @@ index fc567fa1303bdb506a436c4ac9506a6a6586d49b..6895b1cd726431da2bf56381bb6b6372
  
    // The native_execution_async_resources_ field requires v8::Local<> instances
    // for async calls whose resources were on the stack as JS objects when they
-@@ -1800,7 +1800,7 @@ AsyncHooks::SerializeInfo AsyncHooks::Serialize(Local<Context> context,
+@@ -1796,7 +1796,7 @@ AsyncHooks::SerializeInfo AsyncHooks::Serialize(Local<Context> context,
    info.async_id_fields = async_id_fields_.Serialize(context, creator);
    if (!js_execution_async_resources_.IsEmpty()) {
      info.js_execution_async_resources = creator->AddData(
@@ -353,7 +353,7 @@ index 8fed194cbae9ce75bd0805b4df30b4de64fbbefa..a584e3a80adb69d2028dc79450349823
    CHECK(!env->temporary_required_module_facade_original.IsEmpty());
    return env->temporary_required_module_facade_original.Get(isolate);
 diff --git a/src/node.h b/src/node.h
-index 5b6fa2c3405363f665783f7f38b5b6e2ee0c0073..75524512a6b5a8efbe02a2899eb65c680a642b90 100644
+index 7fae281a6e0f3c1a9f0eb97536883bb26c16d94d..fb37310f44c8d06d1ab2697ed64a0b539776a411 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -1064,7 +1064,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
