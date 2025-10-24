@@ -1162,6 +1162,86 @@ bool App::IsAccessibilitySupportEnabled() {
   return mode.has_mode(ui::kAXModeComplete.flags());
 }
 
+v8::Local<v8::Value> App::GetAccessibilitySupportFeatures() {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::EscapableHandleScope handle_scope(isolate);
+  auto* ax_state = content::BrowserAccessibilityState::GetInstance();
+  ui::AXMode mode = ax_state->GetAccessibilityMode();
+
+  std::vector<v8::Local<v8::Value>> features;
+  auto push = [&](const char* name) {
+    features.push_back(v8::String::NewFromUtf8(isolate, name).ToLocalChecked());
+  };
+
+  if (mode.has_mode(ui::AXMode::kNativeAPIs))
+    push("nativeAPIs");
+  if (mode.has_mode(ui::AXMode::kWebContents))
+    push("webContents");
+  if (mode.has_mode(ui::AXMode::kInlineTextBoxes))
+    push("inlineTextBoxes");
+  if (mode.has_mode(ui::AXMode::kExtendedProperties))
+    push("extendedProperties");
+  if (mode.has_mode(ui::AXMode::kHTML))
+    push("html");
+  if (mode.has_mode(ui::AXMode::kLabelImages))
+    push("labelImages");
+  if (mode.has_mode(ui::AXMode::kPDFPrinting))
+    push("pdfPrinting");
+  if (mode.has_mode(ui::AXMode::kScreenReader))
+    push("screenReader");
+
+  v8::Local<v8::Array> arr = v8::Array::New(isolate, features.size());
+  for (uint32_t i = 0; i < features.size(); ++i) {
+    arr->Set(isolate->GetCurrentContext(), i, features[i]).Check();
+  }
+  return handle_scope.Escape(arr);
+}
+
+void App::SetAccessibilitySupportFeatures(
+    gin_helper::ErrorThrower thrower,
+    const std::vector<std::string>& features) {
+  if (!Browser::Get()->is_ready()) {
+    thrower.ThrowError(
+        "app.setAccessibilitySupportFeatures() can only be called after app "
+        "is ready");
+    return;
+  }
+
+  ui::AXMode mode;
+  for (const auto& f : features) {
+    if (f == "nativeAPIs") {
+      mode.set_mode(ui::AXMode::kNativeAPIs, true);
+    } else if (f == "webContents") {
+      mode.set_mode(ui::AXMode::kWebContents, true);
+    } else if (f == "inlineTextBoxes") {
+      mode.set_mode(ui::AXMode::kInlineTextBoxes, true);
+    } else if (f == "extendedProperties") {
+      mode.set_mode(ui::AXMode::kExtendedProperties, true);
+    } else if (f == "screenReader") {
+      mode.set_mode(ui::AXMode::kScreenReader, true);
+    } else if (f == "html") {
+      mode.set_mode(ui::AXMode::kHTML, true);
+    } else if (f == "labelImages") {
+      mode.set_mode(ui::AXMode::kLabelImages, true);
+    } else if (f == "pdfPrinting") {
+      mode.set_mode(ui::AXMode::kPDFPrinting, true);
+    } else {
+      thrower.ThrowError("Unknown accessibility feature: " + f);
+      return;
+    }
+  }
+
+  if (mode.is_mode_off()) {
+    scoped_accessibility_mode_.reset();
+  } else {
+    scoped_accessibility_mode_ =
+        content::BrowserAccessibilityState::GetInstance()
+            ->CreateScopedModeForProcess(mode);
+  }
+
+  Browser::Get()->OnAccessibilitySupportChanged();
+}
+
 void App::SetAccessibilitySupportEnabled(gin_helper::ErrorThrower thrower,
                                          bool enabled) {
   if (!Browser::Get()->is_ready()) {
@@ -1820,6 +1900,10 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("relaunch", &App::Relaunch)
       .SetMethod("isAccessibilitySupportEnabled",
                  &App::IsAccessibilitySupportEnabled)
+      .SetMethod("getAccessibilitySupportFeatures",
+                 &App::GetAccessibilitySupportFeatures)
+      .SetMethod("setAccessibilitySupportFeatures",
+                 &App::SetAccessibilitySupportFeatures)
       .SetMethod("setAccessibilitySupportEnabled",
                  &App::SetAccessibilitySupportEnabled)
       .SetMethod("disableHardwareAcceleration",
