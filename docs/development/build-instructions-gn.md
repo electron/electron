@@ -328,3 +328,20 @@ We recommend installing Node through [nvm](https://github.com/nvm-sh/nvm). This 
 ### RBE authentication randomly fails with "Token not valid"
 
 This could be caused by the local clock time on the machine being off by a small amount. Use [time.is](https://time.is/) to check.
+
+
+### Memory Integrity (MTE) on macOS arm64
+
+Electron enables Clang's hardware memory tagging on Apple Silicon by default.
+
+- Enabled when: is_mac && current_cpu == "arm64" and your toolchain supports it.
+- Compiler/linker flags used: -fsanitize=memtag
+- Compatibility: Requires a recent Apple Clang and macOS SDK (for example, Xcode 15+/macOS 14+). On unsupported toolchains, you can disable it.
+
+To disable MTE for compatibility, set this GN arg when generating your build:
+
+```sh
+$ gn gen out/Testing --args='enable_memtag_on_mac_arm64=false'
+```
+
+This setting does not affect non-macOS or Intel mac builds.

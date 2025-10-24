@@ -149,6 +149,20 @@ config("electron_lib_config") {
   include_dirs = [ "." ]
 }
 
+# Memory Tagging (MTE) for macOS arm64
+# Adds -fsanitize=memtag when building with Apple Clang on Apple Silicon.
+# Controlled by the GN arg: enable_memtag_on_mac_arm64 (see buildflags/buildflags.gni).
+config("mac_arm64_memtag") {
+  # Avoid combining with ASan to prevent sanitizer conflicts.
+  if (is_clang && is_mac && current_cpu == "arm64" && enable_memtag_on_mac_arm64 && !is_asan) {
+    cflags = [ "-fsanitize=memtag" ]
+    cflags_cc = [ "-fsanitize=memtag" ]
+    cflags_objc = [ "-fsanitize=memtag" ]
+    cflags_objcc = [ "-fsanitize=memtag" ]
+    ldflags = [ "-fsanitize=memtag" ]
+  }
+}
+
 # We generate the definitions twice here, once in //electron/electron.d.ts
 # and once in $target_gen_dir
 # The one in $target_gen_dir is used for the actual TSC build later one
@@ -424,6 +438,7 @@ source_set("electron_lib") {
   configs += [
     "//v8:external_startup_data",
     "//third_party/electron_node:node_external_config",
+    ":mac_arm64_memtag",
   ]
 
   public_configs = [
@@ -924,6 +939,8 @@ if (is_mac) {
     sources = filenames.framework_sources
     frameworks = [ "IOSurface.framework" ]
 
+        configs += [ ":mac_arm64_memtag" ]
+
     ldflags = [
       "-Wl,-install_name,@rpath/$output_name.framework/$output_name",
       "-rpath",
@@ -966,6 +983,7 @@ if (is_mac) {
         "shell/app/uv_stdio_fix.h",
       ]
       include_dirs = [ "." ]
+      configs += [ ":mac_arm64_memtag" ]
       info_plist = "shell/renderer/resources/mac/Info.plist"
       extra_substitutions =
           [ "ELECTRON_BUNDLE_ID=$electron_mac_bundle_id.helper" ]
@@ -1046,6 +1064,7 @@ if (is_mac) {
     output_name = electron_login_helper_name
     sources = filenames.login_helper_sources
     include_dirs = [ "." ]
+    configs += [ ":mac_arm64_memtag" ]
     frameworks = [ "AppKit.framework" ]
     info_plist = "shell/app/resources/mac/loginhelper-Info.plist"
     extra_substitutions =
@@ -1109,6 +1128,7 @@ if (is_mac) {
       "shell/app/uv_stdio_fix.h",
     ]
     include_dirs = [ "." ]
+    configs += [ ":mac_arm64_memtag" ]
     deps = [
       ":electron_app_framework_bundle_data",
       ":electron_app_plist",

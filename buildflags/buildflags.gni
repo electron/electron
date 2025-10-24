@@ -27,4 +27,9 @@ declare_args() {
   # Packagers and vendor builders can set this in gn args to attach extra info
   # about the build in the binary.
   electron_vendor_version = ""
+
+  # Enable Memory Tagging (MTE) via -fsanitize=memtag on macOS arm64 builds.
+  # This requires a recent Apple Clang and SDK. If your toolchain does not
+  # support this flag, set this to false in your GN args to disable it.
+  enable_memtag_on_mac_arm64 = true
 }
