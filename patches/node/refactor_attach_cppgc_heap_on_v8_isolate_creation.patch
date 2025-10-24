@@ -47,41 +47,62 @@ index a869bc0a145009b57db3f37208e405d9356cc20f..072deb1fa70313e33397f6ff994e3f35
                      event_loop,
                      platform,
 diff --git a/src/cppgc_helpers-inl.h b/src/cppgc_helpers-inl.h
-index 745ecab746f7c7540733d31a94f52809dcddd5be..d07e0a4761de9c7d3218f34788a7b784149df40c 100644
+index 745ecab746f7c7540733d31a94f52809dcddd5be..0e52bf5a6f4837d0f4bfed83987c6903796fda55 100644
 --- a/src/cppgc_helpers-inl.h
 +++ b/src/cppgc_helpers-inl.h
-@@ -15,7 +15,9 @@ void CppgcMixin::Wrap(T* ptr, Realm* realm, v8::Local<v8::Object> obj) {
+@@ -15,11 +15,12 @@ void CppgcMixin::Wrap(T* ptr, Realm* realm, v8::Local<v8::Object> obj) {
    v8::Isolate* isolate = realm->isolate();
    ptr->traced_reference_ = v8::TracedReference<v8::Object>(isolate, obj);
    // Note that ptr must be of concrete type T in Wrap.
 -  v8::Object::Wrap<v8::CppHeapPointerTag::kDefaultTag>(isolate, obj, ptr);
-+  // v8::Object::Wrap<v8::CppHeapPointerTag::kDefaultTag>(isolate, obj, ptr);
-+  // We intentionally skip v8::Object::Wrap because T does not derive from
-+  // v8::Object::Wrappable. We rely on internal fields + TracedReference instead.
++  auto* wrappable = static_cast<v8::Object::Wrappable*>(ptr);
++  v8::Object::Wrap<v8::CppHeapPointerTag::kDefaultTag>(isolate, obj, wrappable);
    // Keep the layout consistent with BaseObjects.
    obj->SetAlignedPointerInInternalField(
-       kEmbedderType, realm->isolate_data()->embedder_id_for_cppgc());
-diff --git a/src/env.cc b/src/env.cc
-index 53f0bf7fc1e5c85fa9a5a323e998f04310f4f75e..fc567fa1303bdb506a436c4ac9506a6a6586d49b 100644
---- a/src/env.cc
-+++ b/src/env.cc
-@@ -612,8 +612,12 @@ IsolateData::~IsolateData() {}
- void SetCppgcReference(Isolate* isolate,
-                        Local<Object> object,
-                        void* wrappable) {
--  v8::Object::Wrap<v8::CppHeapPointerTag::kDefaultTag>(
--      isolate, object, wrappable);
-+  // Deprecated shim: previously attempted to call v8::Object::Wrap, but
-+  // the passed pointer is not a v8::Object::Wrappable. Intentionally left
-+  // as a no-op to preserve ABI while modern embedders migrate to calling
-+  // v8::Object::Wrap directly with a proper Wrappable subclass.
-+  // If retention is needed, update the embedder to supply a Wrappable or
-+  // store the pointer in an internal field here.
+-      kEmbedderType, realm->isolate_data()->embedder_id_for_cppgc());
+-  obj->SetAlignedPointerInInternalField(kSlot, ptr);
++      kEmbedderType, realm->isolate_data()->embedder_id_for_cppgc(), 0);
++  obj->SetAlignedPointerInInternalField(kSlot, ptr, 0);
+   realm->TrackCppgcWrapper(ptr);
  }
  
- void IsolateData::MemoryInfo(MemoryTracker* tracker) const {
+@@ -40,7 +41,7 @@ T* CppgcMixin::Unwrap(v8::Local<v8::Object> obj) {
+   if (obj->InternalFieldCount() != T::kInternalFieldCount) {
+     return nullptr;
+   }
+-  T* ptr = static_cast<T*>(obj->GetAlignedPointerFromInternalField(T::kSlot));
++  T* ptr = static_cast<T*>(obj->GetAlignedPointerFromInternalField(T::kSlot, 0));
+   return ptr;
+ }
+ 
+diff --git a/src/cppgc_helpers.h b/src/cppgc_helpers.h
+index fb2af584a4ae777022c9ef8c20ada1edcbbbefdc..fe6300a5d5d2d6602a84cbd33736c2133041d1b0 100644
+--- a/src/cppgc_helpers.h
++++ b/src/cppgc_helpers.h
+@@ -155,7 +155,7 @@ class CppgcMixin : public cppgc::GarbageCollectedMixin, public MemoryRetainer {
+  */
+ #define CPPGC_MIXIN(Klass)                                                     \
+   public /* NOLINT(whitespace/indent) */                                       \
+-  cppgc::GarbageCollected<Klass>, public cppgc::NameProvider, public CppgcMixin
++  v8::Object::Wrappable, public CppgcMixin
+ 
+ #endif  // defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
+ 
+diff --git a/src/env.cc b/src/env.cc
+index 53f0bf7fc1e5c85fa9a5a323e998f04310f4f75e..a78817467518245c4a190e870e0eb30658eafcdb 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -611,7 +611,7 @@ IsolateData::~IsolateData() {}
+ // Deprecated API, embedders should use v8::Object::Wrap() directly instead.
+ void SetCppgcReference(Isolate* isolate,
+                        Local<Object> object,
+-                       void* wrappable) {
++                       v8::Object::Wrappable* wrappable) {
+   v8::Object::Wrap<v8::CppHeapPointerTag::kDefaultTag>(
+       isolate, object, wrappable);
+ }
 diff --git a/src/node.h b/src/node.h
-index f7b3f90b0c2cfbeacc5bc50112dd711df8d3c364..5b6fa2c3405363f665783f7f38b5b6e2ee0c0073 100644
+index f7b3f90b0c2cfbeacc5bc50112dd711df8d3c364..7fae281a6e0f3c1a9f0eb97536883bb26c16d94d 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -604,7 +604,8 @@ NODE_EXTERN v8::Isolate* NewIsolate(
@@ -94,6 +115,20 @@ index f7b3f90b0c2cfbeacc5bc50112dd711df8d3c364..5b6fa2c3405363f665783f7f38b5b6e2
  NODE_EXTERN v8::Isolate* NewIsolate(
      std::shared_ptr<ArrayBufferAllocator> allocator,
      struct uv_loop_s* event_loop,
+@@ -1617,9 +1618,10 @@ void RegisterSignalHandler(int signal,
+ // work with only Node.js versions with v8::Object::Wrap() should use that
+ // instead.
+ NODE_DEPRECATED("Use v8::Object::Wrap()",
+-                NODE_EXTERN void SetCppgcReference(v8::Isolate* isolate,
+-                                                   v8::Local<v8::Object> object,
+-                                                   void* wrappable));
++                NODE_EXTERN void SetCppgcReference(
++                  v8::Isolate* isolate,
++                  v8::Local<v8::Object> object,
++                  v8::Object::Wrappable* wrappable));
+ 
+ }  // namespace node
+ 
 diff --git a/src/node_main_instance.cc b/src/node_main_instance.cc
 index dd6ecd1f9d82f6661b2480c0195e33515633429f..334d5cb7df7a763e0929468392dad83421cad606 100644
 --- a/src/node_main_instance.cc
