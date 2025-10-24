@@ -34,7 +34,7 @@ index bbfac47a74f989482343c222b78f187b70297e4e..3677ca3345fbc775d139684a12fe3624
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index b17bdec409a6a0023e3aae3899d828ff007cf7c1..232af22141b37f2b381347df77b86fbd8e4d00c3 100644
+index 7e64e34a2ebd9738d33bfc9cc7fd827b8757037d..6c89f28ff89e9a5019834751acf34e73bcdb4dcb 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -4665,10 +4665,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
@@ -214,10 +214,10 @@ index 8d73ddb12013ce195026b9f63050cf33f0bfb0fd..078f0e67e8de6a05178e8e2410f61784
    virtual bool AllowScriptExtensions() = 0;
  
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-index 11475d1a22054a884f2f1e7e5c933e9ae8d3379f..8d260dead59d366148983a1739b5252fa59b862a 100644
+index 1aacf6f66b543a4ede6ab5d885143dd4a0821e8a..c695d942e295d9137a284e5536a10d49a055bbf4 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-@@ -308,10 +308,11 @@ void LocalFrameClientImpl::DidInstallConditionalFeatures(
+@@ -303,10 +303,11 @@ void LocalFrameClientImpl::DidInstallConditionalFeatures(
  }
  
  void LocalFrameClientImpl::WillReleaseScriptContext(
