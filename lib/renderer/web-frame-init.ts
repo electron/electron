@@ -12,11 +12,11 @@ type WebFrameMethod = {
 export const webFrameInit = () => {
   // Call webFrame method
   ipcRendererUtils.handle(IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, (
-    event, method: keyof WebFrameMethod, ...args: any[]
+    event, method: keyof WebFrameMethod, ...args: unknown[]
   ) => {
     // The TypeScript compiler cannot handle the sheer number of
     // call signatures here and simply gives up. Incorrect invocations
     // will be caught by "keyof WebFrameMethod" though.
-    return (webFrame[method] as any)(...args);
+    return (webFrame[method] as (...args: unknown[]) => unknown)(...args);
   });
 };

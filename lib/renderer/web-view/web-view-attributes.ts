@@ -6,18 +6,18 @@ const resolveURL = function (url?: string | null) {
 };
 
 interface MutationHandler {
-  handleMutation (_oldValue: any, _newValue: any): any;
+  handleMutation (_oldValue: unknown, _newValue: unknown): unknown;
 }
 
 // Attribute objects.
 // Default implementation of a WebView attribute.
 export class WebViewAttribute implements MutationHandler {
-  public value: any;
+  public value: unknown;
   public ignoreMutation = false;
 
   constructor (public name: string, public webViewImpl: WebViewImpl) {
     this.name = name;
-    this.value = (webViewImpl.webviewNode as Record<string, any>)[name] || '';
+    this.value = (webViewImpl.webviewNode as Record<string, unknown>)[name] || '';
     this.webViewImpl = webViewImpl;
     this.defineProperty();
   }
@@ -28,12 +28,12 @@ export class WebViewAttribute implements MutationHandler {
   }
 
   // Sets the attribute's value.
-  public setValue (value: any) {
+  public setValue (value: unknown) {
     this.webViewImpl.webviewNode.setAttribute(this.name, value || '');
   }
 
   // Changes the attribute's value without triggering its mutation handler.
-  public setValueIgnoreMutation (value: any) {
+  public setValueIgnoreMutation (value: unknown) {
     this.ignoreMutation = true;
     this.setValue(value);
     this.ignoreMutation = false;
@@ -79,7 +79,7 @@ export class PartitionAttribute extends WebViewAttribute {
     super(WEB_VIEW_ATTRIBUTES.PARTITION, webViewImpl);
   }
 
-  public handleMutation = (oldValue: any, newValue: any) => {
+  public handleMutation = (oldValue: unknown, newValue: unknown) => {
     newValue = newValue || '';
 
     // The partition cannot change if the webview has already navigated.
@@ -112,7 +112,7 @@ export class SrcAttribute extends WebViewAttribute {
     }
   }
 
-  public setValueIgnoreMutation (value: any) {
+  public setValueIgnoreMutation (value: unknown) {
     super.setValueIgnoreMutation(value);
 
     // takeRecords() is needed to clear queued up src mutations. Without it, it
@@ -122,7 +122,7 @@ export class SrcAttribute extends WebViewAttribute {
     this.observer.takeRecords();
   }
 
-  public handleMutation = (oldValue: any, newValue: any) => {
+  public handleMutation = (oldValue: unknown, newValue: unknown) => {
     // Once we have navigated, we don't allow clearing the src attribute.
     // Once <webview> enters a navigated state, it cannot return to a
     // placeholder state.

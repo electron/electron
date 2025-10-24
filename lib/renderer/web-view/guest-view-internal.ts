@@ -35,11 +35,11 @@ export function detachGuest (guestInstanceId: number) {
   return ipcRendererUtils.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_DETACH_GUEST, guestInstanceId);
 }
 
-export function invoke (guestInstanceId: number, method: string, args: any[]) {
+export function invoke (guestInstanceId: number, method: string, args: unknown[]) {
   return ipcRendererInternal.invoke(IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL, guestInstanceId, method, args);
 }
 
-export function invokeSync (guestInstanceId: number, method: string, args: any[]) {
+export function invokeSync (guestInstanceId: number, method: string, args: unknown[]) {
   return ipcRendererUtils.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL, guestInstanceId, method, args);
 }
 
@@ -47,6 +47,6 @@ export function propertyGet (guestInstanceId: number, name: string) {
   return ipcRendererUtils.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_PROPERTY_GET, guestInstanceId, name);
 }
 
-export function propertySet (guestInstanceId: number, name: string, value: any) {
+export function propertySet (guestInstanceId: number, name: string, value: unknown) {
   return ipcRendererUtils.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_PROPERTY_SET, guestInstanceId, name, value);
 }

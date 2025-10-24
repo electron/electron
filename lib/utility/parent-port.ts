@@ -9,7 +9,7 @@ export class ParentPort extends EventEmitter implements Electron.ParentPort {
   constructor () {
     super();
     this.#port = createParentPort();
-    this.#port.emit = (channel: string | symbol, event: { ports: any[] }) => {
+    this.#port.emit = (channel: string | symbol, event: { ports: MessagePort[] }) => {
       if (channel === 'message') {
         event = { ...event, ports: event.ports.map(p => new MessagePortMain(p)) };
       }
@@ -26,7 +26,7 @@ export class ParentPort extends EventEmitter implements Electron.ParentPort {
     this.#port.pause();
   }
 
-  postMessage (message: any) : void {
+  postMessage (message: unknown) : void {
     this.#port.postMessage(message);
   }
 }

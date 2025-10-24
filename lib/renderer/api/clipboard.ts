@@ -3,8 +3,8 @@ import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-inte
 
 const clipboard = process._linkedBinding('electron_common_clipboard');
 
-const makeRemoteMethod = function (method: keyof Electron.Clipboard): any {
-  return (...args: any[]) => ipcRendererUtils.invokeSync(IPC_MESSAGES.BROWSER_CLIPBOARD_SYNC, method, ...args);
+const makeRemoteMethod = function (method: keyof Electron.Clipboard): (...args: unknown[]) => unknown {
+  return (...args: unknown[]) => ipcRendererUtils.invokeSync(IPC_MESSAGES.BROWSER_CLIPBOARD_SYNC, method, ...args);
 };
 
 if (process.platform === 'linux') {

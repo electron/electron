@@ -152,7 +152,7 @@ if (cjsPreloads.length) {
 if (esmPreloads.length) {
   const { runEntryPointWithESMLoader } = __non_webpack_require__('internal/modules/run_main') as typeof import('@node/lib/internal/modules/run_main');
 
-  runEntryPointWithESMLoader(async (cascadedLoader: any) => {
+  runEntryPointWithESMLoader(async (cascadedLoader: unknown) => {
     // Load the preload scripts.
     for (const preloadScript of esmPreloads) {
       await cascadedLoader.import(pathToFileURL(preloadScript).toString(), undefined, Object.create(null)).catch((err: Error) => {

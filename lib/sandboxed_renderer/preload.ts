@@ -13,11 +13,11 @@ interface PreloadContext {
   createPreloadScript: (src: string) => Function
 
   /** Globals to be exposed to preload context. */
-  exposeGlobals: any;
+  exposeGlobals: Record<string, unknown>;
 }
 
 export function createPreloadProcessObject (): NodeJS.Process {
-  const preloadProcess: NodeJS.Process = new EventEmitter() as any;
+  const preloadProcess: NodeJS.Process = new EventEmitter() as NodeJS.Process;
 
   preloadProcess.getProcessMemoryInfo = () => {
     return ipcRendererInternal.invoke<Electron.ProcessMemoryInfo>(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO);

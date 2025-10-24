@@ -93,7 +93,7 @@ export class WebViewImpl {
   // a BrowserPlugin property will update the corresponding BrowserPlugin
   // attribute, if necessary. See BrowserPlugin::UpdateDOMAttribute for more
   // details.
-  handleWebviewAttributeMutation (attributeName: string, oldValue: any, newValue: any) {
+  handleWebviewAttributeMutation (attributeName: string, oldValue: unknown, newValue: unknown) {
     if (!this.attributes.has(attributeName) || this.attributes.get(attributeName)!.ignoreMutation) {
       return;
     }
@@ -223,7 +223,7 @@ export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElem
   };
 
   const createPropertySetter = function (property: string) {
-    return function (this: ElectronInternal.WebViewElement, arg: any) {
+    return function (this: ElectronInternal.WebViewElement, arg: unknown) {
       return hooks.guestViewInternal.propertySet(this.getWebContentsId(), property, arg);
     };
   };

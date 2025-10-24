@@ -33,8 +33,8 @@ declare namespace Electron {
     _setTouchBarItems: (items: TouchBarItemType[]) => void;
     _setEscapeTouchBarItem: (item: TouchBarItemType | {}) => void;
     _refreshTouchBarItem: (itemID: string) => void;
-    on(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
-    removeListener(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
+    on(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: { button?: string; key?: string; modifiers?: string[]; timestamp?: number }) => void): this;
+    removeListener(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: { button?: string; key?: string; modifiers?: string[]; timestamp?: number }) => void): this;
   }
 
   interface BrowserWindow extends BaseWindow {
@@ -44,8 +44,8 @@ declare namespace Electron {
     devToolsWebContents: WebContents;
     frameName: string;
     _browserViews: BrowserView[];
-    on(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
-    removeListener(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
+    on(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: { button?: string; key?: string; modifiers?: string[]; timestamp?: number }) => void): this;
+    removeListener(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: { button?: string; key?: string; modifiers?: string[]; timestamp?: number }) => void): this;
   }
 
   interface BrowserView {
@@ -60,8 +60,8 @@ declare namespace Electron {
   interface ContextBridge {
     internalContextBridge?: {
       contextIsolationEnabled: boolean;
-      overrideGlobalValueFromIsolatedWorld(keys: string[], value: any): void;
-      overrideGlobalValueWithDynamicPropsFromIsolatedWorld(keys: string[], value: any): void;
+      overrideGlobalValueFromIsolatedWorld(keys: string[], value: unknown): void;
+      overrideGlobalValueWithDynamicPropsFromIsolatedWorld(keys: string[], value: unknown): void;
       overrideGlobalPropertyFromIsolatedWorld(keys: string[], getter: Function, setter?: Function): void;
     }
   }
@@ -72,7 +72,7 @@ declare namespace Electron {
   }
 
   interface ServiceWorkerMain {
-    _send(internal: boolean, channel: string, args: any): void;
+    _send(internal: boolean, channel: string, args: unknown[]): void;
     _startExternalRequest(hasTimeout: boolean): { id: string, ok: boolean };
     _finishExternalRequest(uuid: string): void;
     _countExternalRequests(): number;
@@ -95,13 +95,13 @@ declare namespace Electron {
     _getPreloadScript(): Electron.PreloadScript | null;
     equal(other: WebContents): boolean;
     browserWindowOptions: BrowserWindowConstructorOptions;
-    _windowOpenHandler: ((details: Electron.HandlerDetails) => any) | null;
-    _callWindowOpenHandler(event: any, details: Electron.HandlerDetails): {browserWindowConstructorOptions: Electron.BrowserWindowConstructorOptions | null, outlivesOpener: boolean, createWindow?: Electron.CreateWindowFunction};
+    _windowOpenHandler: ((details: Electron.HandlerDetails) => { browserWindowConstructorOptions: unknown; outlivesOpener: boolean; createWindow?: unknown }) | null;
+    _callWindowOpenHandler(event: { preventDefault(): void; defaultPrevented: boolean; url: string; frameName: string; disposition: string; features: string; referrer: object; postBody?: unknown }, details: Electron.HandlerDetails): { browserWindowConstructorOptions: unknown; outlivesOpener: boolean; createWindow?: unknown };
     _setNextChildWebPreferences(prefs: Partial<Electron.BrowserWindowConstructorOptions['webPreferences']> & Pick<Electron.BrowserWindowConstructorOptions, 'backgroundColor'>): void;
-    _send(internal: boolean, channel: string, args: any): boolean;
-    _sendInternal(channel: string, ...args: any[]): void;
-    _printToPDF(options: any): Promise<Buffer>;
-    _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
+    _send(internal: boolean, channel: string, args: unknown[]): boolean;
+    _sendInternal(channel: string, ...args: unknown[]): void;
+    _printToPDF(options: { silent?: boolean; printBackground?: boolean; color?: boolean; margin?: object; landscape?: boolean; scaleFactor?: number; pagesPerSheet?: number; collate?: boolean; copies?: number; header?: string; footer?: string; pageSize?: string | object }): Promise<Buffer>;
+    _print(options: { silent?: boolean; printBackground?: boolean; color?: boolean; margin?: object; landscape?: boolean; scaleFactor?: number; pagesPerSheet?: number; collate?: boolean; copies?: number; header?: string; footer?: string; pageSize?: string | object }, callback?: (success: boolean, failureReason: string) => void): void;
     _getPrintersAsync(): Promise<Electron.PrinterInfo[]>;
     _init(): void;
     _getNavigationEntryAtIndex(index: number): Electron.NavigationEntry | null;
@@ -129,9 +129,9 @@ declare namespace Electron {
   }
 
   interface WebFrameMain {
-    _send(internal: boolean, channel: string, args: any): void;
-    _sendInternal(channel: string, ...args: any[]): void;
-    _postMessage(channel: string, message: any, transfer?: any[]): void;
+    _send(internal: boolean, channel: string, args: unknown[]): void;
+    _sendInternal(channel: string, ...args: unknown[]): void;
+    _postMessage(channel: string, message: unknown, transfer?: ArrayBuffer[]): void;
     _lifecycleStateForTesting: string;
   }
 
@@ -178,12 +178,12 @@ declare namespace Electron {
     insertRadioItem(index: number, commandId: number, label: string, groupId: number): void;
     insertSeparator(index: number): void;
     insertSubMenu(index: number, commandId: number, label: string, submenu?: Menu): void;
-    delegate?: any;
+    delegate?: { getAcceleratorForCommandId?: (commandId: string) => string; isCommandIdChecked?: (commandId: string) => boolean; isCommandIdEnabled?: (commandId: string) => boolean; isCommandIdVisible?: (commandId: string) => boolean; shouldCommandIdWorkWhenHidden?: (commandId: string) => boolean; executeCommand?: (commandId: string, event?: KeyboardEvent) => void };
     _getAcceleratorTextAt(index: number): string;
   }
 
   interface MenuItem {
-    overrideReadOnlyProperty(property: string, value: any): void;
+    overrideReadOnlyProperty(property: string, value: unknown): void;
     groupId: number;
     getDefaultRoleAccelerator(): Accelerator | undefined;
     getCheckStatus(): boolean;
@@ -191,7 +191,7 @@ declare namespace Electron {
   }
 
   interface ReplyChannel {
-    sendReply(value: any): void;
+    sendReply(value: unknown): void;
   }
 
   interface IpcMainEvent {
@@ -215,7 +215,7 @@ declare namespace Electron {
   // Deprecated / undocumented BrowserWindow methods
   interface BrowserWindow {
     getURL(): string;
-    send(channel: string, ...args: any[]): void;
+    send(channel: string, ...args: unknown[]): void;
     openDevTools(options?: Electron.OpenDevToolsOptions): void;
     closeDevTools(): void;
     isDevToolsOpened(): void;
@@ -229,8 +229,8 @@ declare namespace Electron {
   }
 
   interface Protocol {
-    registerProtocol(scheme: string, handler: any): boolean;
-    interceptProtocol(scheme: string, handler: any): boolean;
+    registerProtocol(scheme: string, handler: (request: unknown, callback: (response: unknown) => void) => void): boolean;
+    interceptProtocol(scheme: string, handler: (request: unknown, callback: (response: unknown) => void) => void): boolean;
   }
 
   interface WebContents {
@@ -240,10 +240,10 @@ declare namespace Electron {
       _userGesture: boolean, _left: number, _top: number, _width: number, _height: number, url: string, frameName: string,
       referrer: Electron.Referrer, rawFeatures: string, postData: LoadURLOptions['postData']) => void): this;
     on(event: '-will-add-new-contents', listener: (event: Electron.Event, url: string, frameName: string, rawFeatures: string, disposition: Electron.HandlerDetails['disposition'], referrer: Electron.Referrer, postData: LoadURLOptions['postData']) => void): this;
-    on(event: '-ipc-message', listener: (event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) => void): this;
-    on(event: '-ipc-message-sync', listener: (event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) => void): this;
-    on(event: '-ipc-invoke', listener: (event: Electron.IpcMainInvokeEvent, internal: boolean, channel: string, args: any[]) => void): this;
-    on(event: '-ipc-ports', listener: (event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) => void): this;
+    on(event: '-ipc-message', listener: (event: Electron.IpcMainEvent, internal: boolean, channel: string, args: unknown[]) => void): this;
+    on(event: '-ipc-message-sync', listener: (event: Electron.IpcMainEvent, internal: boolean, channel: string, args: unknown[]) => void): this;
+    on(event: '-ipc-invoke', listener: (event: Electron.IpcMainInvokeEvent, internal: boolean, channel: string, args: unknown[]) => void): this;
+    on(event: '-ipc-ports', listener: (event: Electron.IpcMainEvent, internal: boolean, channel: string, message: unknown, ports: ArrayBuffer[]) => void): this;
     on(event: '-run-dialog', listener: (info: {frame: WebFrameMain, dialogType: 'prompt' | 'confirm' | 'alert', messageText: string, defaultPromptText: string}, callback: (success: boolean, user_input: string) => void) => void): this;
     on(event: '-cancel-dialogs', listener: () => void): this;
     on(event: 'ready-to-show', listener: () => void): this;
@@ -284,16 +284,16 @@ declare namespace ElectronInternal {
   }
 
   interface IpcRendererInternal extends NodeJS.EventEmitter, Pick<Electron.IpcRenderer, 'send' | 'sendSync' | 'invoke'> {
-    invoke<T>(channel: string, ...args: any[]): Promise<T>;
+    invoke<T>(channel: string, ...args: unknown[]): Promise<T>;
   }
 
   type IpcMainInternalEvent = Omit<Electron.IpcMainEvent, 'reply'> | Omit<Electron.IpcMainServiceWorkerEvent, 'reply'>;
   type IpcMainInternalInvokeEvent = Electron.IpcMainInvokeEvent | Electron.IpcMainServiceWorkerInvokeEvent;
 
   interface IpcMainInternal extends NodeJS.EventEmitter {
-    handle(channel: string, listener: (event: IpcMainInternalInvokeEvent, ...args: any[]) => Promise<any> | any): void;
-    on(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
-    once(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
+    handle(channel: string, listener: (event: IpcMainInternalInvokeEvent, ...args: unknown[]) => Promise<unknown> | unknown): void;
+    on(channel: string, listener: (event: IpcMainInternalEvent, ...args: unknown[]) => void): this;
+    once(channel: string, listener: (event: IpcMainInternalEvent, ...args: unknown[]) => void): this;
   }
 
   interface LoadURLOptions extends Electron.LoadURLOptions {
@@ -321,7 +321,7 @@ declare namespace ElectronInternal {
     height: number,
   }
 
-  type ModuleLoader = () => any;
+  type ModuleLoader = () => unknown;
 
   interface ModuleEntry {
     name: string;
@@ -331,13 +331,13 @@ declare namespace ElectronInternal {
   interface UtilityProcessWrapper extends NodeJS.EventEmitter {
     readonly pid: (number) | (undefined);
     kill(): boolean;
-    postMessage(message: any, transfer?: any[]): void;
+    postMessage(message: { type: string; data?: unknown; error?: string }, transfer?: ArrayBuffer[]): void;
   }
 
   interface ParentPort extends NodeJS.EventEmitter {
     start(): void;
     pause(): void;
-    postMessage(message: any): void;
+    postMessage(message: { type: string; data?: unknown; error?: string }): void;
   }
 
   class WebViewElement extends HTMLElement {
@@ -377,14 +377,14 @@ declare namespace Chrome {
       cssOrigin: 'author' | 'user';
     }
 
-    type ExecuteScriptCallback = (result: Array<any>) => void;
+    type ExecuteScriptCallback = (result: Array<unknown>) => void;
 
     // https://developer.chrome.com/docs/extensions/tabs#method-sendMessage
     interface SendMessageDetails {
       frameId?: number;
     }
 
-    type SendMessageCallback = (result: any) => void;
+    type SendMessageCallback = (result: unknown) => void;
   }
 }
 

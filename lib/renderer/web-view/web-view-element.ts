@@ -62,7 +62,7 @@ const defineWebViewElement = (hooks: WebViewImplHooks) => {
       }
     }
 
-    attributeChangedCallback (name: string, oldValue: any, newValue: any) {
+    attributeChangedCallback (name: string, oldValue: unknown, newValue: unknown) {
       const internal = internals.get(this);
       if (internal) {
         internal.handleWebviewAttributeMutation(name, oldValue, newValue);
