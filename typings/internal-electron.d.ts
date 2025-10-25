@@ -331,13 +331,13 @@ declare namespace ElectronInternal {
   interface UtilityProcessWrapper extends NodeJS.EventEmitter {
     readonly pid: (number) | (undefined);
     kill(): boolean;
-    postMessage(message: { type: string; data?: unknown; error?: string }, transfer?: ArrayBuffer[]): void;
+    postMessage(message: unknown, transfer?: ArrayBuffer[]): void;
   }
 
   interface ParentPort extends NodeJS.EventEmitter {
     start(): void;
     pause(): void;
-    postMessage(message: { type: string; data?: unknown; error?: string }): void;
+    postMessage(message: unknown): void;
   }
 
   class WebViewElement extends HTMLElement {
