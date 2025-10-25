@@ -299,7 +299,7 @@ const { session } = require('electron')
 const { URL } = require('node:url')
 
 session
-  .fromPartition('some-partition')
+  .defaultSession
   .setPermissionRequestHandler((webContents, permission, callback) => {
     const parsedUrl = new URL(webContents.getURL())
 
@@ -315,6 +315,8 @@ session
     }
   })
 ```
+
+Note: `session.defaultSession` is only available after `app.whenReady` is called.
 
 ### 6. Do not disable `webSecurity`
 
@@ -405,6 +407,8 @@ session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
   })
 })
 ```
+
+Note: `session.defaultSession` is only available after `app.whenReady` is called.
 
 #### CSP meta tag
 
