@@ -115,6 +115,57 @@ TCP connection is made to the server, but before any http data is sent.
 
 The `callback` has to be called with a `response` object.
 
+#### `webRequest.onAuthRequired([filter, ]listener)`
+
+* `filter` [WebRequestFilter](structures/web-request-filter.md) (optional)
+* `listener` Function | null
+  * `details` Object
+    * `id` Integer
+    * `url` string
+    * `method` string
+    * `webContentsId` Integer (optional)
+    * `webContents` WebContents (optional)
+    * `frame` WebFrameMain | null (optional) - Requesting frame.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
+    * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
+    * `referrer` string
+    * `timestamp` Double
+    * `requestHeaders` Record\<string, string\>
+    * `isProxy` boolean
+    * `scheme` string
+    * `host` string
+    * `port` Integer
+    * `realm` string
+  * `callback` Function
+    * `authRequiredResponse` Object
+      * `cancel` boolean (optional)
+      * `authCredentials` Object
+        * `username` string
+        * `password` string
+
+The `listener` will be called with `listener(details, callback)` when authentication is required.
+
+The `callback` has to be called with an `authRequiredResponse` object.
+
+```js
+const { app, session } = require('electron')
+
+const path = require('node:path')
+
+app.whenReady().then(() => {
+  session.defaultSession.webRequest.onAuthRequired({ urls: ['ws://*/*'] }, (details, callback) => {
+    console.log('Auth required for:', details.url)
+    callback({
+      cancel: false,
+      authCredentials: {
+        username: 'user',
+        password: 'pass'
+      }
+    })
+  })
+})
+```
+
 #### `webRequest.onSendHeaders([filter, ]listener)`
 
 * `filter` [WebRequestFilter](structures/web-request-filter.md) (optional)

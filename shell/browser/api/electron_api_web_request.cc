@@ -11,6 +11,7 @@
 
 #include "base/containers/fixed_flat_map.h"
 #include "base/memory/raw_ptr.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
 #include "content/public/browser/web_contents.h"
@@ -108,7 +109,7 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
 
 // Overloaded by multiple types to fill the |details| object.
 void ToDictionary(gin_helper::Dictionary* details,
-                  extensions::WebRequestInfo* info) {
+                  const extensions::WebRequestInfo* info) {
   details->Set("id", info->id);
   details->Set("url", info->url);
   details->Set("method", info->method);
@@ -255,7 +256,7 @@ bool WebRequest::RequestFilter::MatchesType(
 }
 
 bool WebRequest::RequestFilter::MatchesRequest(
-    extensions::WebRequestInfo* info) const {
+    const extensions::WebRequestInfo* info) const {
   // Matches URL and type, and does not match exclude URL.
   return MatchesURL(info->url, include_url_patterns_) &&
          !MatchesURL(info->url, exclude_url_patterns_) &&
@@ -287,6 +288,13 @@ struct WebRequest::BlockedRequest {
   net::CompletionOnceCallback callback;
   // Only used for onBeforeSendHeaders.
   BeforeSendHeadersCallback before_send_headers_callback;
+  // The callback to invoke for auth. If |auth_callback.is_null()| is false,
+  // |callback| must be NULL.
+  // Only valid for OnAuthRequired.
+  AuthCallback auth_callback;
+  // If non-empty, this contains the auth credentials that may be filled in.
+  // Only valid for OnAuthRequired.
+  raw_ptr<net::AuthCredentials> auth_credentials = nullptr;
   // Only used for onBeforeSendHeaders.
   raw_ptr<net::HttpRequestHeaders> request_headers = nullptr;
   // Only used for onHeadersReceived.
@@ -332,6 +340,9 @@ gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
       .SetMethod(
           "onBeforeSendHeaders",
           &WebRequest::SetResponseListener<ResponseEvent::kOnBeforeSendHeaders>)
+      .SetMethod(
+          "onAuthRequired",
+          &WebRequest::SetResponseListener<ResponseEvent::kOnAuthRequired>)
       .SetMethod(
           "onHeadersReceived",
           &WebRequest::SetResponseListener<ResponseEvent::kOnHeadersReceived>)
@@ -603,6 +614,41 @@ void WebRequest::OnSendHeaders(extensions::WebRequestInfo* info,
   HandleSimpleEvent(SimpleEvent::kOnSendHeaders, info, request, headers);
 }
 
+WebRequest::AuthRequiredResponse WebRequest::OnAuthRequired(
+    const extensions::WebRequestInfo* request_info,
+    const net::AuthChallengeInfo& auth_info,
+    WebRequest::AuthCallback callback,
+    net::AuthCredentials* credentials) {
+  const auto iter = response_listeners_.find(ResponseEvent::kOnAuthRequired);
+  if (iter == std::end(response_listeners_))
+    return AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_NO_ACTION;
+
+  const auto& info = iter->second;
+  if (!info.filter.MatchesRequest(request_info))
+    return AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_NO_ACTION;
+
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  gin_helper::Dictionary details(isolate, v8::Object::New(isolate));
+  FillDetails(&details, request_info);
+  details.Set("isProxy", auth_info.is_proxy);
+  details.Set("scheme", auth_info.scheme);
+  details.Set("host", auth_info.challenger.host());
+  details.Set("port", static_cast<int>(auth_info.challenger.port()));
+  details.Set("realm", auth_info.realm);
+
+  BlockedRequest blocked_request;
+  blocked_request.auth_callback = std::move(callback);
+  blocked_request.auth_credentials = credentials;
+  blocked_requests_[request_info->id] = std::move(blocked_request);
+
+  ResponseCallback response =
+      base::BindOnce(&WebRequest::OnAuthRequiredListenerResult,
+                     base::Unretained(this), request_info->id, credentials);
+  info.listener.Run(gin::ConvertToV8(isolate, details), std::move(response));
+  return AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_IO_PENDING;
+}
+
 void WebRequest::OnBeforeRedirect(extensions::WebRequestInfo* info,
                                   const network::ResourceRequest& request,
                                   const GURL& new_location) {
@@ -730,6 +776,47 @@ void WebRequest::HandleSimpleEvent(SimpleEvent event,
   gin_helper::Dictionary details(isolate, v8::Object::New(isolate));
   FillDetails(&details, request_info, args...);
   info.listener.Run(gin::ConvertToV8(isolate, details));
+}
+
+void WebRequest::OnAuthRequiredListenerResult(uint64_t id,
+                                              net::AuthCredentials* credentials,
+                                              v8::Local<v8::Value> response) {
+  const auto iter = blocked_requests_.find(id);
+  if (iter == std::end(blocked_requests_))
+    return;
+
+  auto& request = iter->second;
+  DCHECK(!request.auth_callback.is_null());
+
+  AuthRequiredResponse action =
+      AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_NO_ACTION;
+  if (response->IsObject()) {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    gin::Dictionary dict(isolate, response.As<v8::Object>());
+    bool cancel = false;
+    dict.Get("cancel", &cancel);
+    if (cancel) {
+      action = AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_CANCEL_AUTH;
+    } else {
+      v8::Local<v8::Value> creds_value;
+      if (dict.Get("authCredentials", &creds_value) &&
+          creds_value->IsObject()) {
+        gin::Dictionary creds_dict(isolate, creds_value.As<v8::Object>());
+        std::string username;
+        std::string password;
+        creds_dict.Get("username", &username);
+        creds_dict.Get("password", &password);
+        if (!username.empty() || !password.empty()) {
+          *credentials = net::AuthCredentials(base::ASCIIToUTF16(username),
+                                              base::ASCIIToUTF16(password));
+          action = AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_SET_AUTH;
+        }
+      }
+    }
+  }
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, base::BindOnce(std::move(request.auth_callback), action));
+  blocked_requests_.erase(iter);
 }
 
 // static
