@@ -180,10 +180,10 @@ index bd0d77323277ee422ec4f75cee9f7d4e9bf198b3..d0ed451fe104b9671d6002ca72e8ca3a
  
  }  // namespace
 diff --git a/chrome/browser/site_isolation/spellcheck_per_process_browsertest.cc b/chrome/browser/site_isolation/spellcheck_per_process_browsertest.cc
-index 8aef94fbd6788d1216648d873cdea3136d8e51c0..1a18086f01c21b34e1ce5ecf750591456a8f3d32 100644
+index 081e422f9a29fc36eea19ed730b430ba5ceb2861..7817bc7a6f9f2c7fdeb08c9b185d2dd3c8cc61f7 100644
 --- a/chrome/browser/site_isolation/spellcheck_per_process_browsertest.cc
 +++ b/chrome/browser/site_isolation/spellcheck_per_process_browsertest.cc
-@@ -133,21 +133,26 @@ class MockSpellCheckHost : spellcheck::mojom::SpellCheckHost {
+@@ -134,21 +134,26 @@ class MockSpellCheckHost : spellcheck::mojom::SpellCheckHost {
  #if BUILDFLAG(IS_WIN)
    void InitializeDictionaries(
        InitializeDictionariesCallback callback) override {
@@ -222,9 +222,9 @@ index 8aef94fbd6788d1216648d873cdea3136d8e51c0..1a18086f01c21b34e1ce5ecf75059145
    }
  
    void OnDictionariesInitialized() {
-@@ -259,7 +264,17 @@ class ChromeSitePerProcessSpellCheckTest : public ChromeSitePerProcessTest {
-  public:
-   ChromeSitePerProcessSpellCheckTest() = default;
+@@ -263,7 +268,17 @@ class ChromeSitePerProcessSpellCheckTest : public ChromeSitePerProcessTest {
+         blink::features::kRestrictSpellingAndGrammarHighlights);
+   }
  
 -  void SetUp() override { ChromeSitePerProcessTest::SetUp(); }
 +  void SetUp() override {
@@ -241,7 +241,7 @@ index 8aef94fbd6788d1216648d873cdea3136d8e51c0..1a18086f01c21b34e1ce5ecf75059145
  
   protected:
    // Tests that spelling in out-of-process subframes is checked.
-@@ -366,3 +381,29 @@ IN_PROC_BROWSER_TEST_F(ChromeSitePerProcessSpellCheckTest,
+@@ -370,3 +385,29 @@ IN_PROC_BROWSER_TEST_F(ChromeSitePerProcessSpellCheckTest,
    EXPECT_TRUE(host->SpellingPanelVisible());
  }
  #endif  // BUILDFLAG(HAS_SPELLCHECK_PANEL)
