@@ -159,10 +159,10 @@ index 3bbd4e568ba99245622a96f0801d2b6cd203025f..1e0b7d16b33daed980961dd49c667a3b
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index 279f7501a197380dd63c8fe7827854b16d46e5f7..2b80f1970a067e91794a81fcc19e5be64b6b2944 100644
+index c7eaf8d34ea50ba356ed1997f2fe6477aee9bcb1..acb8b12f0b2796ef836069ce54539e1ac6b66dc5 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-@@ -205,14 +205,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
+@@ -210,15 +210,14 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -171,8 +171,9 @@ index 279f7501a197380dd63c8fe7827854b16d46e5f7..2b80f1970a067e91794a81fcc19e5be6
 +    const content::mojom::CreateNewWindowParams& params) {
    JNIEnv* env = AttachCurrentThread();
    ScopedJavaLocalRef<jobject> obj = GetJavaDelegate(env);
-   if (obj.is_null())
+   if (obj.is_null()) {
      return false;
+   }
    ScopedJavaLocalRef<jobject> java_gurl =
 -      url::GURLAndroid::FromNativeGURL(env, target_url);
 +      url::GURLAndroid::FromNativeGURL(env, params.target_url.spec());
@@ -250,10 +251,10 @@ index df972f1ce594f2d4651202b650ff2d41fe19ecd0..a92305042eef86fbabeae6fe02b48668
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 38b61d04446736bcc44a412f633c01ed9aca5399..3c982afb1af048618506a36ca3532b15720d8869 100644
+index 98492cff13c97388d001fc33cc948261990edef1..88b4810d3b91df0dd6b932412edd4ff249bedde0 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
-@@ -368,8 +368,7 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -365,8 +365,7 @@ class CONTENT_EXPORT WebContentsDelegate {
        SiteInstance* source_site_instance,
        mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -384,7 +385,7 @@ index 756d4192271d6a65cfe8e1511737c565b543cb1f..5688f6f745056565c3c01947f741c4d1
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index 617d6cbd13ad3ce5eb9626bb54162e4afdfd24bd..85281656a467262076c081eb974e35590c573dab 100644
+index d02d9468560eb451753fd56aa46bc4f191535e95..6e5c10f94a16039dc90cb2bdf90c4c854afc8a53 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
 @@ -208,8 +208,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {

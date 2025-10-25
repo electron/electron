@@ -56,7 +56,7 @@ index 05c899258143a958471f361b87324f7500d594c9..1943413560f23c212d98fa1b368204c6
 +
  }  // namespace gin
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index a4c766565bfcc47d1ef66570afa166b9c0c16312..02275338c070d4f48ac10d51e3a6d42368f52c9e 100644
+index 902ad13dad8df57325f6c74ee3da9ec3148751cb..d0de06b55937d36848664c3817d098182c67f570 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
 @@ -133,6 +133,8 @@ class GIN_EXPORT IsolateHolder {

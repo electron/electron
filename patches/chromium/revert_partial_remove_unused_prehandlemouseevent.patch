@@ -39,7 +39,7 @@ index bc1bfa1ac381ec94121a264d9dcbae9e02ab5a81..c6fc03ae158b3ce87fd684d765a3f1b0
    // event before sending it to the renderer. See enum for details on return
    // value.
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 5b0f0b28c3f36315d5bb12ad7e35f21c91a1e8b6..08ca1a3fc2add9cf93b078b9136d9aa6d667b9f0 100644
+index 4708741ea709c9dbdb1f88503562f0a4891b3465..eb2f21c4ed5cdb570cca72afb884495c29d8d80c 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -1589,6 +1589,10 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(
@@ -100,10 +100,10 @@ index a92305042eef86fbabeae6fe02b48668a349be99..5a50203f2df5724fe7bae5dc9ea211fd
      WebContents* source,
      const input::NativeWebKeyboardEvent& event) {
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 3c982afb1af048618506a36ca3532b15720d8869..5966331e9fa7413ce8d8321a04f829e75361ec59 100644
+index 88b4810d3b91df0dd6b932412edd4ff249bedde0..492efdb688af5af6691f3ef50de48103de29b138 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
-@@ -313,6 +313,13 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -311,6 +311,13 @@ class CONTENT_EXPORT WebContentsDelegate {
    virtual bool HandleContextMenu(RenderFrameHost& render_frame_host,
                                   const ContextMenuParams& params);
  

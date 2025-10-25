@@ -91,7 +91,7 @@ index 9670f9f904c6c864e82409617ac4c7698c6fc3ef..d1014af4b63da244820ff865a8e824dd
    for (auto& observer : dispose_observers_) {
      observer.OnDisposed();
 diff --git a/gin/per_isolate_data.h b/gin/per_isolate_data.h
-index 82048c08a14d05e1f9bd6ad6cc16d16f0905f879..e38b0ca134e71a968805a547c1eccbc0cd6f6dda 100644
+index 9146df7ec5e65401771f452ed44c63369be1d31f..5ae71c795cc98a885090553177f57deccb8bc546 100644
 --- a/gin/per_isolate_data.h
 +++ b/gin/per_isolate_data.h
 @@ -34,6 +34,10 @@ class GIN_EXPORT PerIsolateData {

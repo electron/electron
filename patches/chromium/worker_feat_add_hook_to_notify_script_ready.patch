@@ -19,7 +19,7 @@ that clearly establishes the worker script is ready for evaluation with the scop
 initialized.
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 6d2033d2023a7c4c936933a050d2372cf490eb44..79d59c3f4d3d2d5ff39bd65ded489183247656a8 100644
+index e27271000fdcb9f155467923db74b5da4df3e989..1c5a9e693fd3b09213118fb32e4509e1d4a59364 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
 @@ -428,6 +428,11 @@ class CONTENT_EXPORT ContentRendererClient {
