@@ -40,7 +40,7 @@ process.on('uncaughtException', function (error) {
 // Emit 'exit' event on quit.
 const { app } = require('electron');
 
-app.on('quit', (_event, exitCode) => {
+app.on('quit', (_event: any, exitCode: number) => {
   process.emit('exit', exitCode);
 });
 

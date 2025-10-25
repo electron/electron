@@ -1,7 +1,6 @@
 [
   "abort/test-abort-backtrace",
   "es-module/test-vm-compile-function-lineoffset",
-  "parallel/test-async-context-frame",
   "parallel/test-bootstrap-modules",
   "parallel/test-child-process-fork-exec-path",
   "parallel/test-code-cache",
@@ -45,7 +44,6 @@
   "parallel/test-process-get-builtin",
   "parallel/test-repl",
   "parallel/test-repl-underscore",
-  "parallel/test-tls-securepair-leak",
   "parallel/test-single-executable-blob-config",
   "parallel/test-single-executable-blob-config-errors",
   "parallel/test-shadow-realm-custom-loaders",
@@ -76,6 +74,7 @@
   "parallel/test-snapshot-worker",
   "parallel/test-strace-openat-openssl",
   "parallel/test-sqlite-backup",
+  "parallel/test-max-old-space-size-percentage",
   "parallel/test-tls-alpn-server-client",
   "parallel/test-tls-cli-min-version-1.0",
   "parallel/test-tls-cli-max-version-1.2",

@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 21 Oct 2025 20:00:06 +0200
+Subject: fix: allow disabling fetch in renderer and worker processes
+
+We need to disable Node.js' fetch implementation to prevent
+conflict with Blink's in renderer and worker processes.
+
+We should try to upstream some version of this.
+
+diff --git a/doc/api/cli.md b/doc/api/cli.md
+index cc990c01704484cbaa314320b3b3b72acffb6940..6b985c9fce6ec607df0e04f93b3cd5b84233d0b9 100644
+--- a/doc/api/cli.md
++++ b/doc/api/cli.md
+@@ -1767,6 +1767,14 @@ changes:
+ 
+ Disable using [syntax detection][] to determine module type.
+ 
++### `--no-experimental-fetch`
++
++<!-- YAML
++added: v18.0.0
++-->
++
++Disable exposition of Fetch API on the global scope.
++
+ ### `--no-experimental-global-navigator`
+ 
+ <!-- YAML
+@@ -3436,6 +3444,7 @@ one is included in the list below.
+ * `--no-addons`
+ * `--no-async-context-frame`
+ * `--no-deprecation`
++* `--no-experimental-fetch`
+ * `--no-experimental-global-navigator`
+ * `--no-experimental-repl-await`
+ * `--no-experimental-sqlite`
+diff --git a/doc/node.1 b/doc/node.1
+index 6210cbf42b26d4673f67aac43874ea28c8955fd5..565068cc3aca0eb03642e1160b814b48cb0c3c45 100644
+--- a/doc/node.1
++++ b/doc/node.1
+@@ -198,6 +198,9 @@ Enable transformation of TypeScript-only syntax into JavaScript code.
+ .It Fl -experimental-eventsource
+ Enable experimental support for the EventSource Web API.
+ .
++.It Fl -no-experimental-fetch
++Disable experimental support for the Fetch API.
++.
+ .It Fl -no-experimental-websocket
+ Disable experimental support for the WebSocket API.
+ .
+diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
+index 35b43990c8f24f0888f89173f5662050a11b26ed..2c0d12c0fa9c85ac7ffb41dabda83760ed1ae3ee 100644
+--- a/lib/internal/process/pre_execution.js
++++ b/lib/internal/process/pre_execution.js
+@@ -110,6 +110,7 @@ function prepareExecution(options) {
+   setupSQLite();
+   setupQuic();
+   setupWebStorage();
++  setupFetch();
+   setupWebsocket();
+   setupEventsource();
+   setupCodeCoverage();
+@@ -312,6 +313,16 @@ function setupWarningHandler() {
+   }
+ }
+ 
++function setupFetch() {
++  if (getOptionValue('--no-experimental-fetch')) {
++    delete globalThis.fetch;
++    delete globalThis.FormData;
++    delete globalThis.Headers;
++    delete globalThis.Request;
++    delete globalThis.Response;
++  }
++}
++
+ // https://websockets.spec.whatwg.org/
+ function setupWebsocket() {
+   if (getOptionValue('--no-experimental-websocket')) {
+diff --git a/src/node_options.cc b/src/node_options.cc
+index 2a3ab5e73cdb98bde9df1465d5fb5e40ad7799f7..9317191d22f51fd75157e849eb67678d1ee6a2a1 100644
+--- a/src/node_options.cc
++++ b/src/node_options.cc
+@@ -537,7 +537,11 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
+             &EnvironmentOptions::experimental_eventsource,
+             kAllowedInEnvvar,
+             false);
+-  AddOption("--experimental-fetch", "", NoOp{}, kAllowedInEnvvar);
++  AddOption("--experimental-fetch",
++            "experimental Fetch API",
++            &EnvironmentOptions::experimental_fetch,
++            kAllowedInEnvvar,
++            true);
+   AddOption("--experimental-websocket",
+             "experimental WebSocket API",
+             &EnvironmentOptions::experimental_websocket,
+diff --git a/test/parallel/test-process-env-allowed-flags-are-documented.js b/test/parallel/test-process-env-allowed-flags-are-documented.js
+index f09bf0940dad2068f0aa5dce783dd422773d4bbb..ccf4ffcacf9bd9965978738656b8fe091fee4d6a 100644
+--- a/test/parallel/test-process-env-allowed-flags-are-documented.js
++++ b/test/parallel/test-process-env-allowed-flags-are-documented.js
+@@ -122,7 +122,6 @@ const undocumented = difference(process.allowedNodeEnvironmentFlags,
+ assert(undocumented.delete('--debug-arraybuffer-allocations'));
+ assert(undocumented.delete('--no-debug-arraybuffer-allocations'));
+ assert(undocumented.delete('--es-module-specifier-resolution'));
+-assert(undocumented.delete('--experimental-fetch'));
+ assert(undocumented.delete('--experimental-wasm-modules'));
+ assert(undocumented.delete('--experimental-global-customevent'));
+ assert(undocumented.delete('--experimental-global-webcrypto'));

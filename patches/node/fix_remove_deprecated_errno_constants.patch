@@ -45,10 +45,10 @@ index ac00778cfc59fb55e361b24fc81a965a5e8f97e7..f0c4d6dfc9f03bee59e656b2da9ac325
  # define UV__EUNATCH UV__ERR(EUNATCH)
  #else
 diff --git a/src/node_constants.cc b/src/node_constants.cc
-index 0ca643aa74d13f278685d2330b791182b55c15b4..cbcecfba33070b820aca0e2814982160a97a6378 100644
+index fd28e0904d05e24e8eeb74fa36abd9727699a649..fea0426496978c0003fe1481afcf93fc9c23edca 100644
 --- a/src/node_constants.cc
 +++ b/src/node_constants.cc
-@@ -241,10 +241,6 @@ void DefineErrnoConstants(Local<Object> target) {
+@@ -242,10 +242,6 @@ void DefineErrnoConstants(Local<Object> target) {
    NODE_DEFINE_CONSTANT(target, ENOBUFS);
  #endif
  
@@ -59,7 +59,7 @@ index 0ca643aa74d13f278685d2330b791182b55c15b4..cbcecfba33070b820aca0e2814982160
  #ifdef ENODEV
    NODE_DEFINE_CONSTANT(target, ENODEV);
  #endif
-@@ -281,14 +277,6 @@ void DefineErrnoConstants(Local<Object> target) {
+@@ -282,14 +278,6 @@ void DefineErrnoConstants(Local<Object> target) {
    NODE_DEFINE_CONSTANT(target, ENOSPC);
  #endif
  
@@ -74,7 +74,7 @@ index 0ca643aa74d13f278685d2330b791182b55c15b4..cbcecfba33070b820aca0e2814982160
  #ifdef ENOSYS
    NODE_DEFINE_CONSTANT(target, ENOSYS);
  #endif
-@@ -369,10 +357,6 @@ void DefineErrnoConstants(Local<Object> target) {
+@@ -370,10 +358,6 @@ void DefineErrnoConstants(Local<Object> target) {
    NODE_DEFINE_CONSTANT(target, ESTALE);
  #endif
  
@@ -86,7 +86,7 @@ index 0ca643aa74d13f278685d2330b791182b55c15b4..cbcecfba33070b820aca0e2814982160
    NODE_DEFINE_CONSTANT(target, ETIMEDOUT);
  #endif
 diff --git a/src/node_errors.cc b/src/node_errors.cc
-index 5f51add4cdf68a9487edfc9382f586cc94539571..befb642f1effa3c4139e4cd99ff64d9c5175fd72 100644
+index ae8553ee2022d60fea4572976b14ba9cd253aa45..4386a1bc5678e351ce084cd2c47202561619b164 100644
 --- a/src/node_errors.cc
 +++ b/src/node_errors.cc
 @@ -862,10 +862,6 @@ const char* errno_string(int errorno) {
