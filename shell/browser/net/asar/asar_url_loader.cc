@@ -171,8 +171,8 @@ class AsarURLLoader : public network::mojom::URLLoader {
 
     std::vector<char> initial_read_buffer(
         std::min(static_cast<uint32_t>(net::kMaxBytesToSniff), info.size));
-    auto read_result = readable_data_source.get()->Read(
-        info.offset, base::span<char>(initial_read_buffer));
+    auto read_result =
+        readable_data_source.get()->Read(info.offset, initial_read_buffer);
     if (read_result.result != MOJO_RESULT_OK) {
       OnClientComplete(ConvertMojoResultToNetError(read_result.result));
       return;
@@ -244,9 +244,8 @@ class AsarURLLoader : public network::mojom::URLLoader {
       uint64_t bytes_to_drop = block_size - net::kMaxBytesToSniff;
       total_bytes_dropped_from_head += bytes_to_drop;
       std::vector<char> abandoned_buffer(bytes_to_drop);
-      auto abandon_read_result =
-          readable_data_source.get()->Read(info.offset + net::kMaxBytesToSniff,
-                                           base::span<char>(abandoned_buffer));
+      auto abandon_read_result = readable_data_source.get()->Read(
+          info.offset + net::kMaxBytesToSniff, abandoned_buffer);
       if (abandon_read_result.result != MOJO_RESULT_OK) {
         OnClientComplete(
             ConvertMojoResultToNetError(abandon_read_result.result));
@@ -307,7 +306,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
         total_bytes_dropped_from_head += bytes_to_drop;
         std::vector<char> abandoned_buffer(bytes_to_drop);
         auto abandon_read_result = readable_data_source.get()->Read(
-            dropped_bytes_offset, base::span<char>(abandoned_buffer));
+            dropped_bytes_offset, abandoned_buffer);
         if (abandon_read_result.result != MOJO_RESULT_OK) {
           OnClientComplete(
               ConvertMojoResultToNetError(abandon_read_result.result));
