@@ -74,7 +74,7 @@ jobs:
         # but then we would lint its contents (at least gn format), and it doesn't pass it.
 
         cd src/electron
-        node script/yarn install --frozen-lockfile
+        node script/yarn install --immutable
         node script/yarn lint
     - name: Run Script Typechecker
       shell: bash
