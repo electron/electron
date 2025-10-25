@@ -278,7 +278,6 @@ v8::MaybeLocal<v8::Promise> HostImportModuleWithPhaseDynamically(
     v8::Local<v8::String> v8_specifier,
     v8::ModuleImportPhase import_phase,
     v8::Local<v8::FixedArray> v8_import_attributes) {
-  LOG(INFO) << "HostImportModuleWithPhaseDynamically called";
   switch (SelectESMHandlerPlatform(context, v8_host_defined_options)) {
     case ESMHandlerPlatform::kBlink:
       return blink::V8Initializer::HostImportModuleWithPhaseDynamically(

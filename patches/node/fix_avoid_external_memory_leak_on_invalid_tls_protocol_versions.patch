@@ -4,7 +4,7 @@ Date: Fri, 24 Oct 2025 15:32:50 +0200
 Subject: fix: avoid external memory leak on invalid TLS protocol versions
 
 Fixes a crash caused by unbalanced external memory accounting when
-tls.createSecureContext() is called with invalid minVersion/maxVersion values.
+tls.createSecureContext() is called with invalid minVersion/maxVersion values:
 
 Prior to this change, _tls_common.js instantiated a native SecureContext
 which incremented V8 external memory via
@@ -20,18 +20,10 @@ only allocate the native SecureContext on success.
 This should be upstreamed to Node.js.
 
 diff --git a/lib/_tls_common.js b/lib/_tls_common.js
-index 66331d2d9999e93e59cbce9e153affb942b79946..5ed67392cedb704d8ad2494a094dfae3a10bd160 100644
+index 66331d2d9999e93e59cbce9e153affb942b79946..0f7fd0747ea779f76a9e64ed37d195bd735ea2a8 100644
 --- a/lib/_tls_common.js
 +++ b/lib/_tls_common.js
-@@ -57,6 +57,7 @@ const {
- } = require('internal/tls/secure-context');
- 
- function toV(which, v, def) {
-+  console.log(`toV called with which=${which}, v=${v}, def=${def}`);
-   v ??= def;
-   if (v === 'TLSv1') return TLS1_VERSION;
-   if (v === 'TLSv1.1') return TLS1_1_VERSION;
-@@ -82,10 +83,11 @@ function SecureContext(secureProtocol, secureOptions, minVersion, maxVersion) {
+@@ -82,10 +82,11 @@ function SecureContext(secureProtocol, secureOptions, minVersion, maxVersion) {
        throw new ERR_TLS_PROTOCOL_VERSION_CONFLICT(maxVersion, secureProtocol);
    }
  
