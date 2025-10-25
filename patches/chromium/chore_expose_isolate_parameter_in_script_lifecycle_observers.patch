@@ -8,7 +8,7 @@ where callsites that deal with multiple contexts need to distinguish
 the current isolate.
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 79d59c3f4d3d2d5ff39bd65ded489183247656a8..20b49742578ccf363738ee032228f30a4cd676ea 100644
+index 1c5a9e693fd3b09213118fb32e4509e1d4a59364..921b7bb4b817ed753e08c2c058a23a2ccdaef40e 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
 @@ -398,6 +398,7 @@ class CONTENT_EXPORT ContentRendererClient {
@@ -52,7 +52,7 @@ index 7e64e34a2ebd9738d33bfc9cc7fd827b8757037d..6c89f28ff89e9a5019834751acf34e73
  
  void RenderFrameImpl::DidChangeScrollOffset() {
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 0677883a806d342734dc970f7c3c665cc9663dd0..64806e8a6ce5bbd3795bd8b8b519697a6b5b8c67 100644
+index 32dfed04e2fd7cd2e60c7cf145d182f4163feb68..c44c488ef90f4ceaada28666f80a5919fcc0c992 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
 @@ -605,7 +605,8 @@ class CONTENT_EXPORT RenderFrameImpl
@@ -214,10 +214,10 @@ index 8d73ddb12013ce195026b9f63050cf33f0bfb0fd..078f0e67e8de6a05178e8e2410f61784
    virtual bool AllowScriptExtensions() = 0;
  
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-index 1aacf6f66b543a4ede6ab5d885143dd4a0821e8a..c695d942e295d9137a284e5536a10d49a055bbf4 100644
+index 11475d1a22054a884f2f1e7e5c933e9ae8d3379f..8d260dead59d366148983a1739b5252fa59b862a 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-@@ -303,10 +303,11 @@ void LocalFrameClientImpl::DidInstallConditionalFeatures(
+@@ -308,10 +308,11 @@ void LocalFrameClientImpl::DidInstallConditionalFeatures(
  }
  
  void LocalFrameClientImpl::WillReleaseScriptContext(
