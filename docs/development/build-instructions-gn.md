@@ -334,9 +334,10 @@ This could be caused by the local clock time on the machine being off by a small
 
 Electron enables Clang's hardware memory tagging on Apple Silicon by default.
 
-- Enabled when: is_mac && current_cpu == "arm64" and your toolchain supports it.
-- Compiler/linker flags used: -fsanitize=memtag
-- Compatibility: Requires a recent Apple Clang and macOS SDK (for example, Xcode 15+/macOS 14+). On unsupported toolchains, you can disable it.
+- Enabled when: `is_mac && current_cpu == "arm64"` and your toolchain supports it.
+- Compiler/linker flags used: `-fsanitize=memtag`
+- Compatibility: Requires a recent Apple Clang and macOS SDK (for example, Xcode 15+/macOS 14+).
+  On unsupported toolchains, you can disable it.
 
 To disable MTE for compatibility, set this GN arg when generating your build:
 
@@ -344,4 +345,4 @@ To disable MTE for compatibility, set this GN arg when generating your build:
 $ gn gen out/Testing --args='enable_memtag_on_mac_arm64=false'
 ```
 
-This setting does not affect non-macOS or Intel mac builds.
+This setting does not affect non-macOS or Intel Mac builds.
