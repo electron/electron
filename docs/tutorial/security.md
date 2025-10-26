@@ -75,6 +75,13 @@ an attacker somehow manages to change said content (either by attacking the
 source directly, or by sitting between your app and the actual destination), they
 will be able to execute native code on the user's machine.
 
+### Local Network Access Permissions
+
+With Chrome 142, a new local network access permissions check is being introduced. Electron developers should be aware of how this may affect applications that communicate with localhost or private networks.  
+- Electron currently allows localhost communication without prompting for permission.
+- Developers should follow future updates to ensure compliance with Chromium’s default local network access behavior.
+For more information, see [Chrome Local Network Access](https://developer.chrome.com/blog/local-network-access).
+
 :::warning
 Under no circumstances should you load and execute remote code with
 Node.js integration enabled. Instead, use only local files (packaged together
