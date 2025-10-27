@@ -18,7 +18,7 @@ index e268573d360b1..0efa21037e12d 100644
 -std::string PropertyIdFromId(int service_id) {
 -  return "chrome_status_icon_" + base::NumberToString(service_id);
 +std::string PropertyIdFromId(int service_id, const std::string_view app_name) {
-+  return app_name + "_status_icon_" + base::NumberToString(service_id);
++  return base::StrCat({ app_name, "_status_icon_", base::NumberToString(service_id) });
  }
  
  using DbusImage = std::tuple</*width=*/int32_t,
