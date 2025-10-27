@@ -82,6 +82,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   // content::ContentBrowserClient:
   std::string GetApplicationLocale() override;
   bool ShouldEnableStrictSiteIsolation() override;
+  bool ShouldEnableCanvasNoise(content::BrowserContext* browser_context,
+                               const GURL& url) override;
   void BindHostReceiverForRenderer(
       content::RenderProcessHost* render_process_host,
       mojo::GenericPendingReceiver receiver) override;

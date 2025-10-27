@@ -1575,6 +1575,13 @@ bool ElectronBrowserClient::ShouldEnableStrictSiteIsolation() {
   return true;
 }
 
+bool ElectronBrowserClient::ShouldEnableCanvasNoise(
+    content::BrowserContext* browser_context,
+    const GURL& url) {
+  // Always enable canvas noise for fingerprinting protection in Electron
+  return true;
+}
+
 void ElectronBrowserClient::BindHostReceiverForRenderer(
     content::RenderProcessHost* render_process_host,
     mojo::GenericPendingReceiver receiver) {
