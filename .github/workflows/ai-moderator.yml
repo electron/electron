@@ -1,0 +1,31 @@
+name: AI Moderator
+
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+permissions: {}
+
+jobs:
+  spam-detection:
+    name: Spam detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub App token
+        uses: electron/github-app-auth-action@384fd19694fe7b6dcc9a684746c6976ad78228ae # v1.1.1
+        id: generate-token
+        with:
+          creds: ${{ secrets.AI_MODERATOR_GH_APP_CREDS }}
+          org: electron-archive
+      - uses: github/ai-moderator@81159c370785e295c97461ade67d7c33576e9319 # v1.1.4
+        with:
+          # TODO(dsanders11): We actually want to use a separate tokens for inference and GitHub work
+          token: ${{ steps.generate-token.outputs.token }}
+          endpoint: https://models.github.ai/orgs/electron-archive/inference
+          spam-label: 'spam'
+          ai-label: 'ai-generated'
+          dry-run: true
