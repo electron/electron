@@ -76,7 +76,7 @@ index 46a7d1396dc1a175ae99f4e403721f1730fdd320..bbb0abb3b9563074d350578e0f5a8fa2
  #else
    auto backing = ArrayBuffer::NewBackingStore(
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 12b0d804c6f1d4998b85160b0aac8eb7a3b5576b..743c7227093d9a97e4c00ea5229db3f75b438dcb 100644
+index 12b0d804c6f1d4998b85160b0aac8eb7a3b5576b..27bd93769233dc65a064710db4095d9cdc3a8b1a 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -346,24 +346,30 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(
@@ -126,7 +126,7 @@ index 12b0d804c6f1d4998b85160b0aac8eb7a3b5576b..743c7227093d9a97e4c00ea5229db3f7
  #else
    std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
        allocated_data_,
-@@ -662,19 +668,13 @@ namespace {
+@@ -662,23 +668,16 @@ namespace {
  // using OPENSSL_malloc. However, if the secure heap is
  // initialized, SecureBuffer will automatically use it.
  void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
@@ -151,6 +151,10 @@ index 12b0d804c6f1d4998b85160b0aac8eb7a3b5576b..743c7227093d9a97e4c00ea5229db3f7
    uint32_t len = args[0].As<Uint32>()->Value();
  
    auto data = DataPointer::SecureAlloc(len);
+-  CHECK(data.isSecure());
+   if (!data) {
+     return THROW_ERR_OPERATION_FAILED(env, "Allocation failed");
+   }
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
 index b30297eac08ad9587642b723f91d7e3b954294d4..4c5427596d1c90d3a413cdd9ff4f1151e657073d 100644
 --- a/src/crypto/crypto_x509.cc
