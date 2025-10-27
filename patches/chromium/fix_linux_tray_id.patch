@@ -1,9 +1,9 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Damglador <vse.stopchanskyi@gmail.com@gmail.com>
-Date: Mon Oct 27 14:20:00 2025 +0100
+From: Damglador <vse.stopchanskyi@gmail.com>
+Date: Mon, 27 Oct 2025 23:35:43 +0100
 Subject: fix: allow setting tray id
 
-This is needed to allow setting custom tray id when initializing a tray icon. 
+This is needed to allow setting custom tray id when initializing a tray icon.
 With current behaviour all programs get chrome_status_icon_1 as their id in tray.
 So tray can't tell apart Electron apps,
 which introduces issues like https://bugs.kde.org/show_bug.cgi?id=470840.
@@ -13,7 +13,7 @@ https://github.com/electron/electron/pull/48675#issuecomment-3452781711
 for more info.
 
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-index e268573d360b1..0efa21037e12d 100644
+index e268573d360b1..3034ad52ab2f9 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 @@ -131,8 +131,8 @@ int NextServiceId() {
@@ -49,7 +49,7 @@ index e268573d360b1..0efa21037e12d 100644
                                  kPropertyOverlayIconName, "", false);
    properties_->SetProperty<"s">(kInterfaceStatusNotifierItem, kPropertyStatus,
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
-index 78c0ddf50ae6c..f8a118b6d2a49 100644
+index 78c0ddf50ae6c..984673954bb7f 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
 @@ -35,7 +35,7 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
@@ -69,4 +69,4 @@ index 78c0ddf50ae6c..f8a118b6d2a49 100644
 +
    base::WeakPtrFactory<StatusIconLinuxDbus> weak_factory_{this};
  };
-
+ 
