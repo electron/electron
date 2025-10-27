@@ -33,8 +33,7 @@ gfx::ImageSkia GetBestImageRep(const gfx::ImageSkia& image) {
 }  // namespace
 
 TrayIconLinux::TrayIconLinux()
-    : status_icon_dbus_(
-          new StatusIconLinuxDbus(Browser::Get()->GetName().c_str())),
+    : status_icon_dbus_(new StatusIconLinuxDbus(Browser::Get()->GetName())),
       status_icon_type_(StatusIconType::kDbus) {
   status_icon_dbus_->SetDelegate(this);
 }
