@@ -9,8 +9,8 @@ Online and offline event detection can be implemented in both the main and rende
 
 The `navigator.onLine` attribute returns:
 
-* `false` if all network requests are guaranteed to fail (e.g. when disconnected from the network).
-* `true` in all other cases.
+- `false` if all network requests are guaranteed to fail (e.g. when disconnected from the network).
+- `true` in all other cases.
 
 Since many cases return `true`, you should treat with care situations of
 getting false positives, as we cannot always assume that `true` value means
