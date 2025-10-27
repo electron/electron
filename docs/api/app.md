@@ -1212,6 +1212,10 @@ Disables hardware acceleration for current app.
 
 This method can only be called before app is ready.
 
+### `app.isHardwareAccelerationEnabled()`
+
+Returns `boolean` - whether hardware acceleration is currently disabled.
+
 ### `app.disableDomainBlockingFor3DAPIs()`
 
 By default, Chromium disables 3D APIs (e.g. WebGL) until restart on a per
