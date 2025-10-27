@@ -894,8 +894,9 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
                    blink::mojom::PermissionStatus /*ignored_status*/) {
                   // Always deny regardless of what
                   // blink::mojom::PermissionStatus is passed here
-                  std::move(callback).Run(
-                      blink::mojom::PermissionStatus::DENIED);
+                  std::move(callback).Run(content::PermissionResult(
+                      blink::mojom::PermissionStatus::DENIED,
+                      content::PermissionStatusSource::UNSPECIFIED));
                 },
                 std::move(original_callback));
           }

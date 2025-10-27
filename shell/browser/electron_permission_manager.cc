@@ -156,6 +156,7 @@ bool ElectronPermissionManager::IsGeolocationDisabledViaCommandLine() {
 #else
   return false;
 #endif
+}
 
 bool ElectronPermissionManager::HasPermissionRequestHandler() const {
   return !request_handler_.is_null();
