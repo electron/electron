@@ -1216,6 +1216,9 @@ This method can only be called before app is ready.
 
 Returns `boolean` - whether hardware acceleration is currently disabled.
 
+ > [!NOTE]
+ > This information is only usable after the `gpu-info-update` event is emitted.
+
 ### `app.disableDomainBlockingFor3DAPIs()`
 
 By default, Chromium disables 3D APIs (e.g. WebGL) until restart on a per
