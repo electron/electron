@@ -56,11 +56,12 @@ index 78c0ddf50ae6c..f8a118b6d2a49 100644
  
    StatusIconLinuxDbus(const StatusIconLinuxDbus&) = delete;
    StatusIconLinuxDbus& operator=(const StatusIconLinuxDbus&) = delete;
-@@ -51,6 +51,7 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
-   void ExecuteCommand(int command_id, int event_flags) override;
+@@ -136,6 +136,8 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
+   size_t icon_file_id_ = 0;
+   base::FilePath icon_file_;
  
-  private:
 +  std::string app_name_;
-   friend class base::RefCounted<StatusIconLinuxDbus>;
- 
-   ~StatusIconLinuxDbus() override;
++
+   base::WeakPtrFactory<StatusIconLinuxDbus> weak_factory_{this};
+ };
+
