@@ -1136,11 +1136,17 @@ void App::DisableHardwareAcceleration(gin_helper::ErrorThrower thrower) {
         "before app is ready");
     return;
   }
-  if (content::GpuDataManager::Initialized()) {
+
+  if (content::GpuDataManager::Initialized())
     content::GpuDataManager::GetInstance()->DisableHardwareAcceleration();
-  } else {
-    disable_hw_acceleration_ = true;
-  }
+  disable_hw_acceleration_ = true;
+}
+
+bool App::IsHardwareAccelerationEnabled() {
+  if (content::GpuDataManager::Initialized())
+    return content::GpuDataManager::GetInstance()
+        ->HardwareAccelerationEnabled();
+  return !disable_hw_acceleration_;
 }
 
 void App::DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower) {
@@ -1923,6 +1929,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  &App::SetAccessibilitySupportEnabled)
       .SetMethod("disableHardwareAcceleration",
                  &App::DisableHardwareAcceleration)
+      .SetMethod("isHardwareAccelerationEnabled",
+                 &App::IsHardwareAccelerationEnabled)
       .SetMethod("disableDomainBlockingFor3DAPIs",
                  &App::DisableDomainBlockingFor3DAPIs)
       .SetMethod("getFileIcon", &App::GetFileIcon)
