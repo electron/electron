@@ -1132,9 +1132,14 @@ void App::DisableHardwareAcceleration(gin_helper::ErrorThrower thrower) {
     return;
   }
 
-  if (content::GpuDataManager::Initialized())
+  // If the GpuDataManager is already initialized, disable hardware
+  // acceleration immediately. Otherwise, set a flag to disable it in
+  // OnPreCreateThreads().
+  if (content::GpuDataManager::Initialized()) {
     content::GpuDataManager::GetInstance()->DisableHardwareAcceleration();
-  disable_hw_acceleration_ = true;
+  } else {
+    disable_hw_acceleration_ = true;
+  }
 }
 
 bool App::IsHardwareAccelerationEnabled() {
