@@ -34,10 +34,10 @@ index bbfac47a74f989482343c222b78f187b70297e4e..3677ca3345fbc775d139684a12fe3624
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 99d368046177dd92c8b36743f461d348bbf19a2e..b0a1859d22063cf6d5a73b5ccd5ea6fb86f9a6b9 100644
+index 7e64e34a2ebd9738d33bfc9cc7fd827b8757037d..6c89f28ff89e9a5019834751acf34e73bcdb4dcb 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4729,10 +4729,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4665,10 +4665,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
      observer.DidInstallConditionalFeatures(context, world_id);
  }
  
@@ -52,7 +52,7 @@ index 99d368046177dd92c8b36743f461d348bbf19a2e..b0a1859d22063cf6d5a73b5ccd5ea6fb
  
  void RenderFrameImpl::DidChangeScrollOffset() {
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 61d4ef338cc4c0e99c144d6d95bbe0adba9d3556..ce7ba31d2a2ebab213be4b123f6af93c99b74149 100644
+index 0677883a806d342734dc970f7c3c665cc9663dd0..64806e8a6ce5bbd3795bd8b8b519697a6b5b8c67 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
 @@ -605,7 +605,8 @@ class CONTENT_EXPORT RenderFrameImpl
@@ -181,10 +181,10 @@ index 4520c9edccf63bdb9e35bf3a99a8ddb39170da24..dd2c5bd50075c345262b05952ecf3f2a
  
    // Geometry notifications ----------------------------------------------
 diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-index 2e8653654686f4fc775288f059ff27daa38e02d5..b0e061525f442952e5f8a90fed7002830dbb4bc3 100644
+index 898d7caac98727210ac5780b576526a71ec5a5aa..3fdd5b3c41fd8d5dc920bed710dc10741e7e7423 100644
 --- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-@@ -108,11 +108,12 @@ void LocalWindowProxy::DisposeContext(Lifecycle next_status,
+@@ -109,11 +109,12 @@ void LocalWindowProxy::DisposeContext(Lifecycle next_status,
  
    ScriptState::Scope scope(script_state_);
    v8::Local<v8::Context> context = script_state_->GetContext();

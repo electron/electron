@@ -10,7 +10,7 @@ this patch is required to provide ripemd160 support in the nodejs crypto
 module.
 
 diff --git a/crypto/digest/digest_extra.cc b/crypto/digest/digest_extra.cc
-index 345c94f6e26e88aac77b9feb92bd8d6665234981..8ef2ab8987da63f321d1dbb79f2eded8b8209bfc 100644
+index ea1709ae6b50faedc786c0eaeb5f9002fd0db7d8..5b0ed4dc6aaf3fafad034e9ecc62cd47b9e3034f 100644
 --- a/crypto/digest/digest_extra.cc
 +++ b/crypto/digest/digest_extra.cc
 @@ -47,6 +47,7 @@ static const struct nid_to_digest nid_to_digest_mapping[] = {
@@ -62,22 +62,22 @@ index 3a3bfd3f0560fcd7b5fdbdf4cc29a56e0346b90a..a7335ca03b5b3b918c4321d890b45649
 +
  #undef CHECK
 diff --git a/decrepit/evp/evp_do_all.cc b/decrepit/evp/evp_do_all.cc
-index e04b80cd6a1a215fc87f8fd8d750c3d258c3974f..8fdf1c624794f568bfc77b7b6b0c510b23905a4d 100644
+index feaf17c72cecb8099bc11ac10747fbad719ddca9..891a73f229e3f0838cb2fa99b8fb24fdeac1962b 100644
 --- a/decrepit/evp/evp_do_all.cc
 +++ b/decrepit/evp/evp_do_all.cc
 @@ -79,6 +79,7 @@ void EVP_MD_do_all_sorted(void (*callback)(const EVP_MD *cipher,
-   callback(EVP_sha384(), "SHA384", NULL, arg);
-   callback(EVP_sha512(), "SHA512", NULL, arg);
-   callback(EVP_sha512_256(), "SHA512-256", NULL, arg);
-+  callback(EVP_ripemd160(), "ripemd160", NULL, arg);
+   callback(EVP_sha384(), "SHA384", nullptr, arg);
+   callback(EVP_sha512(), "SHA512", nullptr, arg);
+   callback(EVP_sha512_256(), "SHA512-256", nullptr, arg);
++  callback(EVP_ripemd160(), "ripemd160", nullptr, arg);
  
-   callback(EVP_md4(), "md4", NULL, arg);
-   callback(EVP_md5(), "md5", NULL, arg);
+   callback(EVP_md4(), "md4", nullptr, arg);
+   callback(EVP_md5(), "md5", nullptr, arg);
 @@ -88,6 +89,7 @@ void EVP_MD_do_all_sorted(void (*callback)(const EVP_MD *cipher,
-   callback(EVP_sha384(), "sha384", NULL, arg);
-   callback(EVP_sha512(), "sha512", NULL, arg);
-   callback(EVP_sha512_256(), "sha512-256", NULL, arg);
-+  callback(EVP_ripemd160(), "ripemd160", NULL, arg);
+   callback(EVP_sha384(), "sha384", nullptr, arg);
+   callback(EVP_sha512(), "sha512", nullptr, arg);
+   callback(EVP_sha512_256(), "sha512-256", nullptr, arg);
++  callback(EVP_ripemd160(), "ripemd160", nullptr, arg);
  }
  
  void EVP_MD_do_all(void (*callback)(const EVP_MD *cipher, const char *name,
