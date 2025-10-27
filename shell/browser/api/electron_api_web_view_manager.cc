@@ -2,7 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "base/callback_list.h"
 #include "content/public/browser/browser_context.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/web_contents_zoom_controller.h"
 #include "shell/browser/web_view_manager.h"
@@ -40,7 +42,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  gin_helper::Dictionary dict(context->GetIsolate(), exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("addGuest", &AddGuest);
   dict.SetMethod("removeGuest", &RemoveGuest);
 }

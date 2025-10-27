@@ -8,8 +8,8 @@
 #include <utility>
 #include <vector>
 
-#include "gin/handle.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
@@ -130,12 +130,13 @@ struct Converter<in_app_purchase::Product> {
 
 namespace electron::api {
 
-gin::WrapperInfo InAppPurchase::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo InAppPurchase::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 #if BUILDFLAG(IS_MAC)
 // static
-gin::Handle<InAppPurchase> InAppPurchase::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new InAppPurchase());
+gin_helper::Handle<InAppPurchase> InAppPurchase::Create(v8::Isolate* isolate) {
+  return gin_helper::CreateHandle(isolate, new InAppPurchase());
 }
 
 gin::ObjectTemplateBuilder InAppPurchase::GetObjectTemplateBuilder(
@@ -215,8 +216,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
 #if BUILDFLAG(IS_MAC)
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.Set("inAppPurchase", InAppPurchase::Create(isolate));
 #endif
 }

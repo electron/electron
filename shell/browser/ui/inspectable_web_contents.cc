@@ -60,10 +60,11 @@
 #include "v8/include/v8.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "chrome/common/extensions/chrome_manifest_url_handlers.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
 #include "extensions/browser/extension_registry.h"
+#include "extensions/common/manifest_handlers/chrome_url_overrides_handler.h"
+#include "extensions/common/manifest_handlers/devtools_page_handler.h"
 #include "extensions/common/permissions/permissions_data.h"
 #endif
 
@@ -109,7 +110,7 @@ gfx::Rect DictionaryToRect(const base::Value::Dict& dict) {
 }
 
 bool IsPointInScreen(const gfx::Point& point) {
-  return std::ranges::any_of(display::Screen::GetScreen()->GetAllDisplays(),
+  return std::ranges::any_of(display::Screen::Get()->GetAllDisplays(),
                              [&point](auto const& display) {
                                return display.bounds().Contains(point);
                              });
@@ -139,16 +140,14 @@ double GetNextZoomLevel(double level, bool out) {
 }
 
 GURL GetRemoteBaseURL() {
-  return GURL(
-      absl::StrFormat("%s%s/%s/", kChromeUIDevToolsRemoteFrontendBase,
-                      kChromeUIDevToolsRemoteFrontendPath,
-                      embedder_support::GetChromiumGitRevision().c_str()));
+  return GURL(absl::StrFormat("%s%s/%s/", kChromeUIDevToolsRemoteFrontendBase,
+                              kChromeUIDevToolsRemoteFrontendPath,
+                              embedder_support::GetChromiumGitRevision()));
 }
 
 GURL GetDevToolsURL(bool can_dock) {
-  auto url_string =
-      absl::StrFormat(kChromeUIDevToolsURL, GetRemoteBaseURL().spec().c_str(),
-                      can_dock ? "true" : "");
+  auto url_string = absl::StrFormat(
+      kChromeUIDevToolsURL, GetRemoteBaseURL().spec(), can_dock ? "true" : "");
   return GURL(url_string);
 }
 
@@ -327,11 +326,11 @@ InspectableWebContents::InspectableWebContents(
     if (!IsPointInScreen(devtools_bounds_.origin())) {
       gfx::Rect display;
       if (!is_guest && web_contents_->GetNativeView()) {
-        display = display::Screen::GetScreen()
+        display = display::Screen::Get()
                       ->GetDisplayNearestView(web_contents_->GetNativeView())
                       .bounds();
       } else {
-        display = display::Screen::GetScreen()->GetPrimaryDisplay().bounds();
+        display = display::Screen::Get()->GetPrimaryDisplay().bounds();
       }
 
       devtools_bounds_.set_x(display.x() +
@@ -530,6 +529,8 @@ void InspectableWebContents::CloseWindow() {
 }
 
 void InspectableWebContents::LoadCompleted() {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+
   frontend_loaded_ = true;
   if (managed_devtools_web_contents_)
     view_->ShowDevTools(activate_);
@@ -628,8 +629,7 @@ void InspectableWebContents::SetInspectedPageBounds(const gfx::Rect& rect) {
 void InspectableWebContents::InspectedURLChanged(const std::string& url) {
   if (managed_devtools_web_contents_) {
     if (devtools_title_.empty()) {
-      view_->SetTitle(
-          base::UTF8ToUTF16(absl::StrFormat(kTitleFormat, url.c_str())));
+      view_->SetTitle(base::UTF8ToUTF16(absl::StrFormat(kTitleFormat, url)));
     }
   }
 }
@@ -681,7 +681,7 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             std::move(pending_remote)));
   } else if (const auto* const protocol_handler =
-                 protocol_registry->FindRegistered(gurl.scheme_piece())) {
+                 protocol_registry->FindRegistered(gurl.scheme())) {
     url_loader_factory = network::SharedURLLoaderFactory::Create(
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             ElectronURLLoaderFactory::Create(protocol_handler->first,
@@ -1021,9 +1021,9 @@ void InspectableWebContents::DidFinishNavigation(
   // most likely bug in chromium.
   base::ReplaceFirstSubstringAfterOffset(&it->second, 0, "var chrome",
                                          "var chrome = window.chrome ");
-  auto script = absl::StrFormat(
-      "%s(\"%s\")", it->second.c_str(),
-      base::Uuid::GenerateRandomV4().AsLowercaseString().c_str());
+  auto script =
+      absl::StrFormat("%s(\"%s\")", it->second,
+                      base::Uuid::GenerateRandomV4().AsLowercaseString());
   // Invoking content::DevToolsFrontendHost::SetupExtensionsAPI(frame, script);
   // should be enough, but it seems to be a noop currently.
   frame->ExecuteJavaScriptForTests(base::UTF8ToUTF16(script),

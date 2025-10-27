@@ -49,10 +49,10 @@ index 42e37564e585987d367921568f0f1d2b7507f953..9baf89efbade01e8b60c579255f10799
  }
  
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.cc
-index cdf35a5bcec7b30f1b75e77cc29a9b7bb591cfd6..b6dfeee587faa742beb4f1d871db4c4f76bf46ab 100644
+index 16b11c6115cc5504dbd15d58c4b9786633e90e96..7c0a2308d437a2d9cec433c6ab0fd6a9d0c08845 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.cc
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.cc
-@@ -65,6 +65,22 @@ void GlobalAcceleratorListener::UnregisterAccelerator(
+@@ -64,6 +64,22 @@ void GlobalAcceleratorListener::UnregisterAccelerator(
    }
  }
  

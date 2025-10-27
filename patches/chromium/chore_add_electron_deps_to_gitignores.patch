@@ -6,22 +6,22 @@ Subject: chore: add electron deps to gitignores
 Makes things like "git status" quicker when developing electron locally
 
 diff --git a/.gitignore b/.gitignore
-index 0a0f0118d5c1a5a2f3ad28b068bebb849eba7246..5ca6d03b709ef119ccd6482b2f305f8a3aeb7438 100644
+index 22985d0edf211adc576c14ddb0fb21192a636d99..210132f7864c04ac7ffab70875b1c8905bd00e62 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -217,6 +217,7 @@ vs-chromium-project.txt
+@@ -228,6 +228,7 @@ vs-chromium-project.txt
  /data
  /delegate_execute
  /device/serial/device_serial_mojo.xml
 +/electron
+ /GEMINI.md
  /google_apis/gcm/gcm.xml
  /googleurl
- /gpu/gles2_conform_test
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index ad591b3a0f2afe24d53dac76655f81790c1baa50..080d19d34659290e70f599e3d91da286013be76f 100644
+index 6be9e9e6feeedd0d1f566758e8da75870bc1d9c7..a0bacf9e5c4809d76093c449065d7f4f5bb47b02 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
-@@ -46,7 +46,9 @@
+@@ -45,7 +45,9 @@
  /directxsdk
  /dragonbox/src
  /edk2
@@ -39,7 +39,7 @@ index ad591b3a0f2afe24d53dac76655f81790c1baa50..080d19d34659290e70f599e3d91da286
  /ninja
  /node/*.tar.gz
  /node/linux/
-@@ -138,7 +141,7 @@
+@@ -139,7 +142,7 @@
  /spirv-cross/src
  /spirv-headers/src
  /spirv-tools/src

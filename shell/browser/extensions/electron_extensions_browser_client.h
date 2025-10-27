@@ -12,6 +12,7 @@
 #include "content/public/browser/frame_tree_node_id.h"
 #include "extensions/browser/extensions_browser_client.h"
 #include "extensions/browser/kiosk/kiosk_delegate.h"
+#include "extensions/browser/safe_browsing_delegate.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/mojom/fetch_api.mojom.h"
 #include "url/origin.h"
@@ -24,6 +25,7 @@ class KioskDelegate;
 class ProcessManagerDelegate;
 class ElectronProcessManagerDelegate;
 class ProcessMap;
+class SafeBrowsingDelegate;
 class ElectronComponentExtensionResourceManager;
 }  // namespace extensions
 
@@ -51,6 +53,7 @@ class ElectronExtensionsBrowserClient
       const ElectronExtensionsBrowserClient&) = delete;
 
   // ExtensionsBrowserClient overrides:
+  void Init() override;
   bool IsShuttingDown() override;
   bool AreExtensionsDisabled(const base::CommandLine& command_line,
                              content::BrowserContext* context) override;
@@ -144,6 +147,7 @@ class ElectronExtensionsBrowserClient
       mojo::BinderMapWithContext<content::RenderFrameHost*>* map,
       content::RenderFrameHost* render_frame_host,
       const extensions::Extension* extension) const override;
+  extensions::SafeBrowsingDelegate* GetSafeBrowsingDelegate() override;
 
   // Sets the API client.
   void SetAPIClientForTest(extensions::ExtensionsAPIClient* api_client);
@@ -160,6 +164,8 @@ class ElectronExtensionsBrowserClient
   std::unique_ptr<extensions::ExtensionCache> extension_cache_;
 
   std::unique_ptr<extensions::KioskDelegate> kiosk_delegate_;
+
+  std::unique_ptr<extensions::SafeBrowsingDelegate> safe_browsing_delegate_;
 
   std::unique_ptr<extensions::ElectronComponentExtensionResourceManager>
       resource_manager_;

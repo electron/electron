@@ -142,8 +142,7 @@ void ProxyingWebSocket::OnConnectionEstablished(
       base::MakeRefCounted<net::HttpResponseHeaders>(absl::StrFormat(
           "HTTP/%d.%d %d %s", handshake_response_->http_version.major_value(),
           handshake_response_->http_version.minor_value(),
-          handshake_response_->status_code,
-          handshake_response_->status_text.c_str()));
+          handshake_response_->status_code, handshake_response_->status_text));
   for (const auto& header : handshake_response_->headers)
     response_->headers->AddHeader(header->name, header->value);
 
@@ -402,7 +401,7 @@ void ProxyingWebSocket::OnHeadersReceivedCompleteForAuth(
 
   auto continuation = base::BindRepeating(
       &ProxyingWebSocket::OnAuthRequiredComplete, weak_factory_.GetWeakPtr());
-  auto auth_rv = AuthRequiredResponse::kIoPending;
+  auto auth_rv = AuthRequiredResponse::kCancelAuth;
   PauseIncomingMethodCallProcessing();
 
   OnAuthRequiredComplete(auth_rv);

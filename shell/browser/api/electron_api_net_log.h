@@ -23,10 +23,12 @@ class TaskRunner;
 
 namespace gin {
 class Arguments;
+}  // namespace gin
 
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace electron {
 
@@ -37,29 +39,30 @@ namespace api {
 // The code is referenced from the net_log::NetExportFileWriter class.
 class NetLog final : public gin::Wrappable<NetLog> {
  public:
-  static gin::Handle<NetLog> Create(v8::Isolate* isolate,
-                                    ElectronBrowserContext* browser_context);
+  static NetLog* Create(v8::Isolate* isolate,
+                        ElectronBrowserContext* browser_context);
 
-  v8::Local<v8::Promise> StartLogging(base::FilePath log_path,
-                                      gin::Arguments* args);
-  v8::Local<v8::Promise> StopLogging(gin::Arguments* args);
-  bool IsCurrentlyLogging() const;
-
-  // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
-  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
+  // Make public for cppgc::MakeGarbageCollected.
+  explicit NetLog(ElectronBrowserContext* browser_context);
+  ~NetLog() override;
 
   // disable copy
   NetLog(const NetLog&) = delete;
   NetLog& operator=(const NetLog&) = delete;
 
- protected:
-  explicit NetLog(v8::Isolate* isolate,
-                  ElectronBrowserContext* browser_context);
-  ~NetLog() override;
+  // gin_helper::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
 
+  v8::Local<v8::Promise> StartLogging(base::FilePath log_path,
+                                      gin::Arguments* args);
+  v8::Local<v8::Promise> StopLogging(v8::Isolate* isolate);
+  bool IsCurrentlyLogging() const;
+
+ protected:
   void OnConnectionError();
 
   void StartNetLogAfterCreateFile(net::NetLogCaptureMode capture_mode,

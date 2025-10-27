@@ -8,7 +8,6 @@
 #include <string>
 
 #include "base/containers/span.h"
-#include "chrome/common/extensions/chrome_manifest_url_handlers.h"
 #include "chrome/common/extensions/manifest_handlers/minimum_chrome_version_checker.h"  // nogncheck
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/extensions/api/generated_schemas.h"
@@ -19,6 +18,7 @@
 #include "extensions/common/manifest_constants.h"
 #include "extensions/common/manifest_handler.h"
 #include "extensions/common/manifest_handler_registry.h"
+#include "extensions/common/manifest_handlers/chrome_url_overrides_handler.h"
 #include "extensions/common/manifest_handlers/permissions_parser.h"
 #include "extensions/common/manifest_url_handlers.h"
 #include "extensions/common/permissions/permissions_info.h"
@@ -30,10 +30,6 @@ namespace extensions {
 namespace {
 
 constexpr APIPermissionInfo::InitInfo permissions_to_register[] = {
-    {mojom::APIPermissionID::kDevtools, "devtools",
-     APIPermissionInfo::kFlagImpliesFullURLAccess |
-         APIPermissionInfo::kFlagCannotBeOptional |
-         APIPermissionInfo::kFlagInternal},
     {mojom::APIPermissionID::kResourcesPrivate, "resourcesPrivate",
      APIPermissionInfo::kFlagCannotBeOptional},
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -104,8 +100,6 @@ void ElectronExtensionsAPIProvider::RegisterPermissions(
 void ElectronExtensionsAPIProvider::RegisterManifestHandlers() {
   extensions::ManifestHandlerRegistry* registry =
       extensions::ManifestHandlerRegistry::Get();
-  registry->RegisterHandler(
-      std::make_unique<extensions::DevToolsPageHandler>());
   registry->RegisterHandler(
       std::make_unique<extensions::MinimumChromeVersionChecker>());
 }

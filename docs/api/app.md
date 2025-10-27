@@ -9,6 +9,7 @@ closed:
 
 ```js
 const { app } = require('electron')
+
 app.on('window-all-closed', () => {
   app.quit()
 })
@@ -41,9 +42,10 @@ that was used to open the application, if it was launched from Notification Cent
 You can also call `app.isReady()` to check if this event has already fired and `app.whenReady()`
 to get a Promise that is fulfilled when Electron is initialized.
 
-**Note**: The `ready` event is only fired after the main process has finished running the first
-tick of the event loop. If an Electron API needs to be called before the `ready` event, ensure
-that it is called synchronously in the top-level context of the main process.
+> [!NOTE]
+> The `ready` event is only fired after the main process has finished running the first
+> tick of the event loop. If an Electron API needs to be called before the `ready` event, ensure
+> that it is called synchronously in the top-level context of the main process.
 
 ### Event: 'window-all-closed'
 
@@ -66,12 +68,14 @@ Emitted before the application starts closing its windows.
 Calling `event.preventDefault()` will prevent the default behavior, which is
 terminating the application.
 
-**Note:** If application quit was initiated by `autoUpdater.quitAndInstall()`,
-then `before-quit` is emitted _after_ emitting `close` event on all windows and
-closing them.
+> [!NOTE]
+> If application quit was initiated by `autoUpdater.quitAndInstall()`,
+> then `before-quit` is emitted _after_ emitting `close` event on all windows and
+> closing them.
 
-**Note:** On Windows, this event will not be emitted if the app is closed due
-to a shutdown/restart of the system or a user logout.
+> [!NOTE]
+> On Windows, this event will not be emitted if the app is closed due
+> to a shutdown/restart of the system or a user logout.
 
 ### Event: 'will-quit'
 
@@ -86,8 +90,9 @@ terminating the application.
 See the description of the `window-all-closed` event for the differences between
 the `will-quit` and `window-all-closed` events.
 
-**Note:** On Windows, this event will not be emitted if the app is closed due
-to a shutdown/restart of the system or a user logout.
+> [!NOTE]
+> On Windows, this event will not be emitted if the app is closed due
+> to a shutdown/restart of the system or a user logout.
 
 ### Event: 'quit'
 
@@ -98,8 +103,9 @@ Returns:
 
 Emitted when the application is quitting.
 
-**Note:** On Windows, this event will not be emitted if the app is closed due
-to a shutdown/restart of the system or a user logout.
+> [!NOTE]
+> On Windows, this event will not be emitted if the app is closed due
+> to a shutdown/restart of the system or a user logout.
 
 ### Event: 'open-file' _macOS_
 
@@ -415,6 +421,7 @@ Returns:
     * `oom` - Process ran out of memory
     * `launch-failed` - Process never successfully launched
     * `integrity-failure` - Windows code integrity checks failed
+    * `memory-eviction` - Process proactively terminated to prevent a future out-of-memory (OOM) situation
   * `exitCode` number - The exit code for the process
       (e.g. status from waitpid if on POSIX, from GetExitCodeProcess on Windows).
   * `serviceName` string (optional) - The non-localized name of the process.
@@ -470,24 +477,28 @@ and `workingDirectory` is its current working directory. Usually
 applications respond to this by making their primary window focused and
 non-minimized.
 
-**Note:** `argv` will not be exactly the same list of arguments as those passed
-to the second instance. The order might change and additional arguments might be appended.
-If you need to maintain the exact same arguments, it's advised to use `additionalData` instead.
+> [!NOTE]
+> `argv` will not be exactly the same list of arguments as those passed
+> to the second instance. The order might change and additional arguments might be appended.
+> If you need to maintain the exact same arguments, it's advised to use `additionalData` instead.
 
-**Note:** If the second instance is started by a different user than the first, the `argv` array will not include the arguments.
+> [!NOTE]
+> If the second instance is started by a different user than the first, the `argv` array will not include the arguments.
 
 This event is guaranteed to be emitted after the `ready` event of `app`
 gets emitted.
 
-**Note:** Extra command line arguments might be added by Chromium,
-such as `--original-process-start-time`.
+> [!NOTE]
+> Extra command line arguments might be added by Chromium,
+> such as `--original-process-start-time`.
 
 ## Methods
 
 The `app` object has the following methods:
 
-**Note:** Some methods are only available on specific operating systems and are
-labeled as such.
+> [!NOTE]
+> Some methods are only available on specific operating systems and are
+> labeled as such.
 
 ### `app.quit()`
 
@@ -592,6 +603,7 @@ Returns `string` - The current application directory.
     * `%APPDATA%` on Windows
     * `$XDG_CONFIG_HOME` or `~/.config` on Linux
     * `~/Library/Application Support` on macOS
+  * `assets` The directory where app assets such as `resources.pak` are stored. By default this is the same as the folder containing the `exe` path. Available on Windows and Linux only.
   * `userData` The directory for storing your app's configuration files, which
     by default is the `appData` directory appended with your app's name. By
     convention files storing user data should be written to this directory, and
@@ -606,7 +618,7 @@ Returns `string` - The current application directory.
     directory.
   * `temp` Temporary directory.
   * `exe` The current executable file.
-  * `module` The `libchromiumcontent` library.
+  * `module` The location of the Chromium module. By default this is synonymous with `exe`.
   * `desktop` The current user's Desktop directory.
   * `documents` Directory for a user's "My Documents".
   * `downloads` Directory for a user's downloads.
@@ -679,7 +691,8 @@ preferred over `name` by Electron.
 
 Overrides the current application's name.
 
-**Note:** This function overrides the name used internally by Electron; it does not affect the name that the OS uses.
+> [!NOTE]
+> This function overrides the name used internally by Electron; it does not affect the name that the OS uses.
 
 ### `app.getLocale()`
 
@@ -688,18 +701,22 @@ Possible return values are documented [here](https://source.chromium.org/chromiu
 
 To set the locale, you'll want to use a command line switch at app startup, which may be found [here](command-line-switches.md).
 
-**Note:** When distributing your packaged app, you have to also ship the
-`locales` folder.
+> [!NOTE]
+> When distributing your packaged app, you have to also ship the
+> `locales` folder.
 
-**Note:** This API must be called after the `ready` event is emitted.
+> [!NOTE]
+> This API must be called after the `ready` event is emitted.
 
-**Note:** To see example return values of this API compared to other locale and language APIs, see [`app.getPreferredSystemLanguages()`](#appgetpreferredsystemlanguages).
+> [!NOTE]
+> To see example return values of this API compared to other locale and language APIs, see [`app.getPreferredSystemLanguages()`](#appgetpreferredsystemlanguages).
 
 ### `app.getLocaleCountryCode()`
 
 Returns `string` - User operating system's locale two-letter [ISO 3166](https://www.iso.org/iso-3166-country-codes.html) country code. The value is taken from native OS APIs.
 
-**Note:** When unable to detect locale country code, it returns empty string.
+> [!NOTE]
+> When unable to detect locale country code, it returns empty string.
 
 ### `app.getSystemLocale()`
 
@@ -712,9 +729,11 @@ Different operating systems also use the regional data differently:
 
 Therefore, this API can be used for purposes such as choosing a format for rendering dates and times in a calendar app, especially when the developer wants the format to be consistent with the OS.
 
-**Note:** This API must be called after the `ready` event is emitted.
+> [!NOTE]
+> This API must be called after the `ready` event is emitted.
 
-**Note:** To see example return values of this API compared to other locale and language APIs, see [`app.getPreferredSystemLanguages()`](#appgetpreferredsystemlanguages).
+> [!NOTE]
+> To see example return values of this API compared to other locale and language APIs, see [`app.getPreferredSystemLanguages()`](#appgetpreferredsystemlanguages).
 
 ### `app.getPreferredSystemLanguages()`
 
@@ -759,6 +778,22 @@ bar, and on macOS, you can visit it from dock menu.
 
 Clears the recent documents list.
 
+### `app.getRecentDocuments()` _macOS_ _Windows_
+
+Returns `string[]` - An array containing documents in the most recent documents list.
+
+```js
+const { app } = require('electron')
+
+const path = require('node:path')
+
+const file = path.join(app.getPath('desktop'), 'foo.txt')
+app.addRecentDocument(file)
+
+const recents = app.getRecentDocuments()
+console.log(recents) // ['/path/to/desktop/foo.txt'}
+```
+
 ### `app.setAsDefaultProtocolClient(protocol[, path, args])`
 
 * `protocol` string - The name of your protocol, without `://`. For example,
@@ -777,16 +812,18 @@ Once registered, all links with `your-protocol://` will be opened with the
 current executable. The whole link, including protocol, will be passed to your
 application as a parameter.
 
-**Note:** On macOS, you can only register protocols that have been added to
-your app's `info.plist`, which cannot be modified at runtime. However, you can
-change the file during build time via [Electron Forge][electron-forge],
-[Electron Packager][electron-packager], or by editing `info.plist` with a text
-editor. Please refer to [Apple's documentation][CFBundleURLTypes] for details.
+> [!NOTE]
+> On macOS, you can only register protocols that have been added to
+> your app's `info.plist`, which cannot be modified at runtime. However, you can
+> change the file during build time via [Electron Forge][electron-forge],
+> [Electron Packager][electron-packager], or by editing `info.plist` with a text
+> editor. Please refer to [Apple's documentation][CFBundleURLTypes] for details.
 
-**Note:** In a Windows Store environment (when packaged as an `appx`) this API
-will return `true` for all calls but the registry key it sets won't be accessible
-by other applications.  In order to register your Windows Store application
-as a default protocol handler you must [declare the protocol in your manifest](https://learn.microsoft.com/en-us/uwp/schemas/appxpackage/uapmanifestschema/element-uap-protocol).
+> [!NOTE]
+> In a Windows Store environment (when packaged as an `appx`) this API
+> will return `true` for all calls but the registry key it sets won't be accessible
+> by other applications.  In order to register your Windows Store application
+> as a default protocol handler you must [declare the protocol in your manifest](https://learn.microsoft.com/en-us/uwp/schemas/appxpackage/uapmanifestschema/element-uap-protocol).
 
 The API uses the Windows Registry and `LSSetDefaultHandlerForURLScheme` internally.
 
@@ -810,11 +847,12 @@ protocol (aka URI scheme). If so, it will remove the app as the default handler.
 Returns `boolean` - Whether the current executable is the default handler for a
 protocol (aka URI scheme).
 
-**Note:** On macOS, you can use this method to check if the app has been
-registered as the default protocol handler for a protocol. You can also verify
-this by checking `~/Library/Preferences/com.apple.LaunchServices.plist` on the
-macOS machine. Please refer to
-[Apple's documentation][LSCopyDefaultHandlerForURLScheme] for details.
+> [!NOTE]
+> On macOS, you can use this method to check if the app has been
+> registered as the default protocol handler for a protocol. You can also verify
+> this by checking `~/Library/Preferences/com.apple.LaunchServices.plist` on the
+> macOS machine. Please refer to
+> [Apple's documentation][LSCopyDefaultHandlerForURLScheme] for details.
 
 The API uses the Windows Registry and `LSCopyDefaultHandlerForURLScheme` internally.
 
@@ -858,8 +896,9 @@ Adds `tasks` to the [Tasks][tasks] category of the Jump List on Windows.
 
 Returns `boolean` - Whether the call succeeded.
 
-**Note:** If you'd like to customize the Jump List even more use
-`app.setJumpList(categories)` instead.
+> [!NOTE]
+> If you'd like to customize the Jump List even more use
+> `app.setJumpList(categories)` instead.
 
 ### `app.getJumpListSettings()` _Windows_
 
@@ -897,21 +936,24 @@ following strings:
 If `categories` is `null` the previously set custom Jump List (if any) will be
 replaced by the standard Jump List for the app (managed by Windows).
 
-**Note:** If a `JumpListCategory` object has neither the `type` nor the `name`
-property set then its `type` is assumed to be `tasks`. If the `name` property
+> [!NOTE]
+> If a `JumpListCategory` object has neither the `type` nor the `name`
+> property set then its `type` is assumed to be `tasks`. If the `name` property
 is set but the `type` property is omitted then the `type` is assumed to be
 `custom`.
 
-**Note:** Users can remove items from custom categories, and Windows will not
-allow a removed item to be added back into a custom category until **after**
-the next successful call to `app.setJumpList(categories)`. Any attempt to
-re-add a removed item to a custom category earlier than that will result in the
-entire custom category being omitted from the Jump List. The list of removed
-items can be obtained using `app.getJumpListSettings()`.
+> [!NOTE]
+> Users can remove items from custom categories, and Windows will not
+> allow a removed item to be added back into a custom category until **after**
+> the next successful call to `app.setJumpList(categories)`. Any attempt to
+> re-add a removed item to a custom category earlier than that will result in the
+> entire custom category being omitted from the Jump List. The list of removed
+> items can be obtained using `app.getJumpListSettings()`.
 
-**Note:** The maximum length of a Jump List item's `description` property is
-260 characters. Beyond this limit, the item will not be added to the Jump
-List, nor will it be displayed.
+> [!NOTE]
+> The maximum length of a Jump List item's `description` property is
+> 260 characters. Beyond this limit, the item will not be added to the Jump
+> List, nor will it be displayed.
 
 Here's a very simple example of creating a custom Jump List:
 
@@ -1000,6 +1042,7 @@ starts:
 
 ```js
 const { app, BrowserWindow } = require('electron')
+
 let myWindow = null
 
 const additionalData = { myKey: 'myValue' }
@@ -1172,6 +1215,13 @@ Disables hardware acceleration for current app.
 
 This method can only be called before app is ready.
 
+### `app.isHardwareAccelerationEnabled()`
+
+Returns `boolean` - whether hardware acceleration is currently disabled.
+
+ > [!NOTE]
+ > This information is only usable after the `gpu-info-update` event is emitted.
+
 ### `app.disableDomainBlockingFor3DAPIs()`
 
 By default, Chromium disables 3D APIs (e.g. WebGL) until restart on a per
@@ -1188,7 +1238,8 @@ Returns [`ProcessMetric[]`](structures/process-metric.md): Array of `ProcessMetr
 
 Returns [`GPUFeatureStatus`](structures/gpu-feature-status.md) - The Graphics Feature Status from `chrome://gpu/`.
 
-**Note:** This information is only usable after the `gpu-info-update` event is emitted.
+> [!NOTE]
+> This information is only usable after the `gpu-info-update` event is emitted.
 
 ### `app.getGPUInfo(infoType)`
 
@@ -1201,6 +1252,8 @@ For `infoType` equal to `complete`:
 
 For `infoType` equal to `basic`:
   Promise is fulfilled with `Object` containing fewer attributes than when requested with `complete`. Here's an example of basic response:
+
+<!-- eslint-skip -->
 
 ```js
 {
@@ -1242,11 +1295,13 @@ badge.
 
 On macOS, it shows on the dock icon. On Linux, it only works for Unity launcher.
 
-**Note:** Unity launcher requires a `.desktop` file to work. For more information,
-please read the [Unity integration documentation][unity-requirement].
+> [!NOTE]
+> Unity launcher requires a `.desktop` file to work. For more information,
+> please read the [Unity integration documentation][unity-requirement].
 
-**Note:** On macOS, you need to ensure that your application has the permission
-to display notifications for this method to work.
+> [!NOTE]
+> On macOS, you need to ensure that your application has the permission
+> to display notifications for this method to work.
 
 ### `app.getBadgeCount()` _Linux_ _macOS_
 
@@ -1313,6 +1368,7 @@ latest version.
 
 ``` js
 const { app } = require('electron')
+
 const path = require('node:path')
 
 const appFolder = path.dirname(process.execPath)
@@ -1348,7 +1404,76 @@ details. Disabled by default.
 
 This API must be called after the `ready` event is emitted.
 
-**Note:** Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default.
+> [!NOTE]
+> Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default. Calling this method will enable the following accessibility support features: `nativeAPIs`, `webContents`, `inlineTextBoxes`, and `extendedProperties`.
+
+### `app.getAccessibilitySupportFeatures()` _macOS_ _Windows_
+
+Returns `string[]` - Array of strings naming currently enabled accessibility support components. Possible values:
+
+* `nativeAPIs` - Native OS accessibility APIs integration enabled.
+* `webContents` - Web contents accessibility tree exposure enabled.
+* `inlineTextBoxes` - Inline text boxes (character bounding boxes) enabled.
+* `extendedProperties` - Extended accessibility properties enabled.
+* `screenReader` - Screen reader specific mode enabled.
+* `html` - HTML accessibility tree construction enabled.
+* `labelImages` - Accessibility support for automatic image annotations.
+* `pdfPrinting` - Accessibility support for PDF printing enabled.
+
+Notes:
+
+* The array may be empty if no accessibility modes are active.
+* Use `app.isAccessibilitySupportEnabled()` for the legacy boolean check;
+  prefer this method for granular diagnostics or telemetry.
+
+Example:
+
+```js
+const { app } = require('electron')
+
+app.whenReady().then(() => {
+  if (app.getAccessibilitySupportFeatures().includes('screenReader')) {
+    // Change some app UI to better work with Screen Readers.
+  }
+})
+```
+
+### `app.setAccessibilitySupportFeatures(features)` _macOS_ _Windows_
+
+* `features` string[] - An array of the accessibility features to enable.
+
+Possible values are:
+
+* `nativeAPIs` - Native OS accessibility APIs integration enabled.
+* `webContents` - Web contents accessibility tree exposure enabled.
+* `inlineTextBoxes` - Inline text boxes (character bounding boxes) enabled.
+* `extendedProperties` - Extended accessibility properties enabled.
+* `screenReader` - Screen reader specific mode enabled.
+* `html` - HTML accessibility tree construction enabled.
+* `labelImages` - Accessibility support for automatic image annotations.
+* `pdfPrinting` - Accessibility support for PDF printing enabled.
+
+To disable all supported features, pass an empty array `[]`.
+
+Example:
+
+```js
+const { app } = require('electron')
+
+app.whenReady().then(() => {
+  // Enable a subset of features:
+  app.setAccessibilitySupportFeatures([
+    'screenReader',
+    'pdfPrinting',
+    'webContents'
+  ])
+
+  // Other logic
+
+  // Some time later, disable all features:
+  app.setAccessibilitySupportFeatures([])
+})
+```
 
 ### `app.showAboutPanel()`
 
@@ -1386,6 +1511,7 @@ Returns `Function` - This function **must** be called once you have finished acc
 
 ```js
 const { app, dialog } = require('electron')
+
 const fs = require('node:fs')
 
 let filepath
@@ -1476,7 +1602,8 @@ By using this API, important information such as password and other sensitive in
 See [Apple's documentation](https://developer.apple.com/library/archive/technotes/tn2150/_index.html) for more
 details.
 
-**Note:** Enable `Secure Keyboard Entry` only when it is needed and disable it when it is no longer needed.
+> [!NOTE]
+> Enable `Secure Keyboard Entry` only when it is needed and disable it when it is no longer needed.
 
 ### `app.setProxy(config)`
 
@@ -1490,7 +1617,7 @@ and internal requests made by the runtime (ex: geolocation queries).
 
 This method can only be called after app is ready.
 
-#### `app.resolveProxy(url)`
+### `app.resolveProxy(url)`
 
 * `url` URL
 
@@ -1538,7 +1665,8 @@ See [Chromium's accessibility docs](https://www.chromium.org/developers/design-d
 
 This API must be called after the `ready` event is emitted.
 
-**Note:** Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default.
+> [!NOTE]
+> Rendering accessibility tree can significantly affect the performance of your app. It should not be enabled by default.
 
 ### `app.applicationMenu`
 
@@ -1551,11 +1679,13 @@ An `Integer` property that returns the badge count for current app. Setting the 
 
 On macOS, setting this with any nonzero integer shows on the dock icon. On Linux, this property only works for Unity launcher.
 
-**Note:** Unity launcher requires a `.desktop` file to work. For more information,
-please read the [Unity integration documentation][unity-requirement].
+> [!NOTE]
+> Unity launcher requires a `.desktop` file to work. For more information,
+> please read the [Unity integration documentation][unity-requirement].
 
-**Note:** On macOS, you need to ensure that your application has the permission
-to display notifications for this property to take effect.
+> [!NOTE]
+> On macOS, you need to ensure that your application has the permission
+> to display notifications for this property to take effect.
 
 ### `app.commandLine` _Readonly_
 

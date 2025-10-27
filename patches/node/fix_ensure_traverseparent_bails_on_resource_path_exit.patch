@@ -8,10 +8,10 @@ resource path. This commit ensures that the TraverseParent function
 bails out if the parent path is outside of the resource path.
 
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index 210a01d24e11764dc9fc37a77b354f11383693f8..4e9f70a1c41b44d2a1863b778d4f1e37279178d9 100644
+index 55d628f0c5e7f330e548878807de26d51ef025b5..c06779dea471b6f6a8dd29d4657162ef0faec043 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
-@@ -290,8 +290,41 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
+@@ -291,8 +291,41 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
      Realm* realm, const std::filesystem::path& check_path) {
    std::filesystem::path current_path = check_path;
    auto env = realm->env();
@@ -53,7 +53,7 @@ index 210a01d24e11764dc9fc37a77b354f11383693f8..4e9f70a1c41b44d2a1863b778d4f1e37
    do {
      current_path = current_path.parent_path();
  
-@@ -310,6 +343,12 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
+@@ -311,6 +344,12 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
        return nullptr;
      }
  

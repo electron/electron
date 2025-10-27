@@ -37,23 +37,27 @@ class Debugger final : public gin::Wrappable<Debugger>,
                        public content::DevToolsAgentHostClient,
                        private content::WebContentsObserver {
  public:
-  static gin::Handle<Debugger> Create(v8::Isolate* isolate,
-                                      content::WebContents* web_contents);
+  static Debugger* Create(v8::Isolate* isolate,
+                          content::WebContents* web_contents);
 
-  // gin::Wrappable
+  // Make public for cppgc::MakeGarbageCollected.
+  explicit Debugger(content::WebContents* web_contents);
+  ~Debugger() override;
+
+  // gin_helper::Wrappable
   static gin::WrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
+
+  const char* GetClassName() const { return "Debugger"; }
 
   // disable copy
   Debugger(const Debugger&) = delete;
   Debugger& operator=(const Debugger&) = delete;
 
  protected:
-  Debugger(v8::Isolate* isolate, content::WebContents* web_contents);
-  ~Debugger() override;
-
   // content::DevToolsAgentHostClient:
   void AgentHostClosed(content::DevToolsAgentHost* agent_host) override;
   void DispatchProtocolMessage(content::DevToolsAgentHost* agent_host,

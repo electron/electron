@@ -39,10 +39,10 @@ index e87c180342b967756efeb701c73207fcee8754f1..42e37564e585987d367921568f0f1d2b
            NOTREACHED();
        }
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc
-index b6985bd63a34c55154fcfae601add6ce6c451704..fb44cc65b1a15c8b69410a2a2cb925a0326bb438 100644
+index ce768e551dd96678c04035503a481d375f5887bd..0cec5e73e4ae4441262461ba3c8446cdd8dc04a0 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc
-@@ -147,7 +147,8 @@ bool GlobalAcceleratorListenerOzone::StartListeningForAccelerator(
+@@ -153,7 +153,8 @@ bool GlobalAcceleratorListenerOzone::StartListeningForAccelerator(
    const bool registered =
        platform_global_shortcut_listener_->RegisterAccelerator(
            accelerator.key_code(), accelerator.IsAltDown(),
@@ -52,7 +52,7 @@ index b6985bd63a34c55154fcfae601add6ce6c451704..fb44cc65b1a15c8b69410a2a2cb925a0
    if (registered) {
      registered_hot_keys_.insert(accelerator);
    }
-@@ -162,14 +163,15 @@ void GlobalAcceleratorListenerOzone::StopListeningForAccelerator(
+@@ -168,14 +169,15 @@ void GlobalAcceleratorListenerOzone::StopListeningForAccelerator(
  
    platform_global_shortcut_listener_->UnregisterAccelerator(
        accelerator.key_code(), accelerator.IsAltDown(), accelerator.IsCtrlDown(),
@@ -70,7 +70,7 @@ index b6985bd63a34c55154fcfae601add6ce6c451704..fb44cc65b1a15c8b69410a2a2cb925a0
    int modifiers = 0;
    if (is_alt_down) {
      modifiers |= ui::EF_ALT_DOWN;
-@@ -180,6 +182,9 @@ void GlobalAcceleratorListenerOzone::OnKeyPressed(ui::KeyboardCode key_code,
+@@ -186,6 +188,9 @@ void GlobalAcceleratorListenerOzone::OnKeyPressed(ui::KeyboardCode key_code,
    if (is_shift_down) {
      modifiers |= ui::EF_SHIFT_DOWN;
    }
@@ -95,10 +95,10 @@ index 9e63dd9d33abc89a7bbef75992925356470ebb26..9071afc9bb01db832164909a202effaf
  
    bool is_listening_ = false;
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_win.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_win.cc
-index 034ccea0cda4265abbfc889178f4cba4f3bd7eb8..384f0968aca07cde1fe6434a318e5334f6ecbe9e 100644
+index d3838460df1f61dbcee1cc6586632cb218fec97a..4351cfeea03b8adc5da8500db1faf6d8b8811454 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_win.cc
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_win.cc
-@@ -67,6 +67,8 @@ void GlobalAcceleratorListenerWin::OnWndProc(HWND hwnd,
+@@ -66,6 +66,8 @@ void GlobalAcceleratorListenerWin::OnWndProc(HWND hwnd,
    modifiers |= (LOWORD(lparam) & MOD_SHIFT) ? ui::EF_SHIFT_DOWN : 0;
    modifiers |= (LOWORD(lparam) & MOD_ALT) ? ui::EF_ALT_DOWN : 0;
    modifiers |= (LOWORD(lparam) & MOD_CONTROL) ? ui::EF_CONTROL_DOWN : 0;
@@ -107,7 +107,7 @@ index 034ccea0cda4265abbfc889178f4cba4f3bd7eb8..384f0968aca07cde1fe6434a318e5334
    ui::Accelerator accelerator(ui::KeyboardCodeForWindowsKeyCode(key_code),
                                modifiers);
  
-@@ -97,6 +99,7 @@ bool GlobalAcceleratorListenerWin::StartListeningForAccelerator(
+@@ -96,6 +98,7 @@ bool GlobalAcceleratorListenerWin::StartListeningForAccelerator(
    modifiers |= accelerator.IsShiftDown() ? MOD_SHIFT : 0;
    modifiers |= accelerator.IsCtrlDown() ? MOD_CONTROL : 0;
    modifiers |= accelerator.IsAltDown() ? MOD_ALT : 0;

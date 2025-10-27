@@ -28,7 +28,9 @@ class WebContents;
 
 namespace gin {
 class Arguments;
-}
+template <typename T>
+class WeakCell;
+}  // namespace gin
 
 namespace electron {
 namespace api {
@@ -78,7 +80,7 @@ class HidChooserController
   void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
 
  private:
-  api::Session* GetSession();
+  gin::WeakCell<api::Session>* GetSession();
   void OnGotDevices(std::vector<device::mojom::HidDeviceInfoPtr> devices);
   bool DisplayDevice(const device::mojom::HidDeviceInfo& device) const;
   bool FilterMatchesAny(const device::mojom::HidDeviceInfo& device) const;

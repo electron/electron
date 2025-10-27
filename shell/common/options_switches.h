@@ -26,6 +26,8 @@ inline constexpr std::string_view kMinWidth = "minWidth";
 inline constexpr std::string_view kMinHeight = "minHeight";
 inline constexpr std::string_view kMaxWidth = "maxWidth";
 inline constexpr std::string_view kMaxHeight = "maxHeight";
+inline constexpr std::string_view kinnerWidth = "innerWidth";
+inline constexpr std::string_view kinnerHeight = "innerHeight";
 inline constexpr std::string_view kResizable = "resizable";
 inline constexpr std::string_view kMovable = "movable";
 inline constexpr std::string_view kMinimizable = "minimizable";
@@ -121,6 +123,8 @@ inline constexpr std::string_view kRoundedCorners = "roundedCorners";
 
 inline constexpr std::string_view ktitleBarOverlay = "titleBarOverlay";
 
+inline constexpr std::string_view kAccentColor = "accentColor";
+
 // The color to use as the theme and symbol colors respectively for Window
 // Controls Overlay if enabled on Windows.
 inline constexpr std::string_view kOverlayButtonColor = "color";
@@ -179,6 +183,9 @@ inline constexpr std::string_view kOffscreen = "offscreen";
 
 inline constexpr std::string_view kUseSharedTexture = "useSharedTexture";
 
+inline constexpr std::string_view kSharedTexturePixelFormat =
+    "sharedTexturePixelFormat";
+
 inline constexpr std::string_view kNodeIntegrationInSubFrames =
     "nodeIntegrationInSubFrames";
 
@@ -215,9 +222,6 @@ inline constexpr std::string_view kSpellcheck = "spellcheck";
 inline constexpr std::string_view kEnableDeprecatedPaste =
     "enableDeprecatedPaste";
 
-// Whether the -electron-corner-smoothing CSS rule is enabled.
-inline constexpr std::string_view kEnableCornerSmoothingCSS =
-    "enableCornerSmoothingCSS";
 }  // namespace options
 
 // Following are actually command line switches, should be moved to other files.
@@ -304,6 +308,10 @@ inline constexpr base::cstring_view kDisableNTLMv2 = "disable-ntlm-v2";
 // Indicates that preloads for service workers are registered.
 inline constexpr base::cstring_view kServiceWorkerPreload =
     "service-worker-preload";
+
+// If set, flag node::ProcessInitializationFlags::kNoStdioInitialization would
+// be set for node initialization.
+inline constexpr base::cstring_view kNoStdioInit = "no-stdio-init";
 
 }  // namespace switches
 

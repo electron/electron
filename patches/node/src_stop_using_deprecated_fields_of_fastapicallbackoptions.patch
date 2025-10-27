@@ -12,10 +12,10 @@ branch of Node.js. This patch can be removed when Electron upgrades to
 a stable Node release that contains the change. -- Charles)
 
 diff --git a/src/crypto/crypto_timing.cc b/src/crypto/crypto_timing.cc
-index 3d8ccc77b5952a999c5fe48792259d32b402c460..867a1c4aca54b9d41490d23a5eb55088b7e941cc 100644
+index dbc46400501b61814d5be0ec1cb01b0dcd94e1d0..fe669d40c31a29334b047b9cfee3067f64ef0a7b 100644
 --- a/src/crypto/crypto_timing.cc
 +++ b/src/crypto/crypto_timing.cc
-@@ -59,7 +59,8 @@ bool FastTimingSafeEqual(Local<Value> receiver,
+@@ -60,7 +60,8 @@ bool FastTimingSafeEqual(Local<Value> receiver,
    if (a.length() != b.length() || !a.getStorageIfAligned(&data_a) ||
        !b.getStorageIfAligned(&data_b)) {
      TRACK_V8_FAST_API_CALL("crypto.timingSafeEqual.error");
@@ -26,10 +26,10 @@ index 3d8ccc77b5952a999c5fe48792259d32b402c460..867a1c4aca54b9d41490d23a5eb55088
    }
  
 diff --git a/src/histogram.cc b/src/histogram.cc
-index 0f0cde7be431dcb80c5314b1a9da49886c436d1c..f6d2bd439cad8b9f91c9d9a6cdb302e64130a5e2 100644
+index b655808e43d7c700ddeab7690e287bdbc9bfa50a..b0f7ae4e3af652c6dfe09f66d88485c5783f4037 100644
 --- a/src/histogram.cc
 +++ b/src/histogram.cc
-@@ -195,7 +195,8 @@ void HistogramBase::FastRecord(Local<Value> unused,
+@@ -187,7 +187,8 @@ void HistogramBase::FastRecord(Local<Value> unused,
                                 const int64_t value,
                                 FastApiCallbackOptions& options) {
    if (value < 1) {
@@ -39,31 +39,11 @@ index 0f0cde7be431dcb80c5314b1a9da49886c436d1c..f6d2bd439cad8b9f91c9d9a6cdb302e6
      return;
    }
    HistogramBase* histogram;
-diff --git a/src/node_file.cc b/src/node_file.cc
-index 3d7e303741a73134e140152bed637fe5ae8bc1db..5e744bc34b9dc364e8f20adfd37ee41d76451170 100644
---- a/src/node_file.cc
-+++ b/src/node_file.cc
-@@ -1061,13 +1061,8 @@ static int32_t FastInternalModuleStat(
-     // NOLINTNEXTLINE(runtime/references) This is V8 api.
-     FastApiCallbackOptions& options) {
-   // This needs a HandleScope which needs an isolate.
--  Isolate* isolate = Isolate::TryGetCurrent();
--  if (!isolate) {
--    options.fallback = true;
--    return -1;
--  }
--
--  HandleScope scope(isolate);
-+  Environment* env = Environment::GetCurrent(options.isolate);
-+  HandleScope scope(env->isolate());
- 
-   auto path = std::filesystem::path(input.data, input.data + input.length);
- 
 diff --git a/src/node_wasi.cc b/src/node_wasi.cc
-index 468c2e59903fefe58d9c178d3afac3ef5b09f611..23a376e52e08a8af49dd47c47488552e01287426 100644
+index 090866960beb8f1759c99e95536924b8b61fb723..3f91b651b83a20e70d5b368e012f5ee4b9d16092 100644
 --- a/src/node_wasi.cc
 +++ b/src/node_wasi.cc
-@@ -251,17 +251,19 @@ R WASI::WasiFunction<FT, F, R, Args...>::FastCallback(
+@@ -275,17 +275,19 @@ R WASI::WasiFunction<FT, F, R, Args...>::FastCallback(
      return EinvalError<R>();
    }
  

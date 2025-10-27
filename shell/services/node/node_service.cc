@@ -9,8 +9,10 @@
 
 #include "base/command_line.h"
 #include "base/no_destructor.h"
+#include "base/process/process.h"
 #include "base/strings/utf_string_conversions.h"
 #include "electron/mas.h"
+#include "net/base/network_change_notifier.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/host_resolver.mojom.h"
 #include "services/network/public/mojom/network_context.mojom.h"
@@ -28,15 +30,19 @@
 
 namespace electron {
 
-mojo::Remote<node::mojom::NodeServiceClient> g_client_remote;
+mojo::Remote<node::mojom::NodeServiceClient>& GetRemote() {
+  static base::NoDestructor<mojo::Remote<node::mojom::NodeServiceClient>>
+      instance;
+  return *instance;
+}
 
 void V8FatalErrorCallback(const char* location, const char* message) {
-  if (g_client_remote.is_bound() && g_client_remote.is_connected()) {
+  if (GetRemote().is_bound() && GetRemote().is_connected()) {
     auto* isolate = v8::Isolate::TryGetCurrent();
     std::ostringstream outstream;
     node::GetNodeReport(isolate, message, location,
                         v8::Local<v8::Object>() /* error */, outstream);
-    g_client_remote->OnV8FatalError(location, outstream.str());
+    GetRemote()->OnV8FatalError(location, outstream.str());
   }
 
 #if !IS_MAS_BUILD()
@@ -99,9 +105,7 @@ NodeService::~NodeService() {
     ParentPort::GetInstance()->Close();
     js_env_->DestroyMicrotasksRunner();
     node::Stop(node_env_.get(), node::StopFlags::kDoNotTerminateIsolate);
-  }
-  if (g_client_remote.is_bound()) {
-    g_client_remote.reset();
+    GetRemote().reset();
   }
 }
 
@@ -111,8 +115,8 @@ void NodeService::Initialize(
   if (NodeBindings::IsInitialized())
     return;
 
-  g_client_remote.Bind(std::move(client_pending_remote));
-  g_client_remote.reset_on_disconnect();
+  GetRemote().Bind(std::move(client_pending_remote));
+  GetRemote().reset_on_disconnect();
 
   ParentPort::GetInstance()->Initialize(std::move(params->port));
 
@@ -123,9 +127,14 @@ void NodeService::Initialize(
 
   js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
 
-  v8::HandleScope scope(js_env_->isolate());
+  v8::Isolate* const isolate = js_env_->isolate();
+  v8::HandleScope scope{isolate};
 
-  node_bindings_->Initialize(js_env_->isolate()->GetCurrentContext());
+  node_bindings_->Initialize(isolate, isolate->GetCurrentContext());
+
+  network_change_notifier_ = net::NetworkChangeNotifier::CreateIfNeeded(
+      net::NetworkChangeNotifier::CONNECTION_UNKNOWN,
+      net::NetworkChangeNotifier::ConnectionSubtype::SUBTYPE_UNKNOWN);
 
   // Append program path for process.argv0
   auto program = base::CommandLine::ForCurrentProcess()->GetProgram();
@@ -137,7 +146,7 @@ void NodeService::Initialize(
 
   // Create the global environment.
   node_env_ = node_bindings_->CreateEnvironment(
-      js_env_->isolate()->GetCurrentContext(), js_env_->platform(),
+      isolate, isolate->GetCurrentContext(), js_env_->platform(),
       js_env_->max_young_generation_size_in_bytes(), params->args,
       params->exec_args);
 
@@ -147,12 +156,12 @@ void NodeService::Initialize(
   node::SetProcessExitHandler(
       node_env_.get(), [this](node::Environment* env, int exit_code) {
         // Destroy node platform.
-        env->set_trace_sync_io(false);
+        node_env_stopped_ = true;
         ParentPort::GetInstance()->Close();
         js_env_->DestroyMicrotasksRunner();
-        node::Stop(env, node::StopFlags::kDoNotTerminateIsolate);
-        node_env_stopped_ = true;
+        GetRemote().reset();
         receiver_.ResetWithReason(exit_code, "process_exit_termination");
+        node::DefaultProcessExitHandler(env, exit_code);
       });
 
   node_env_->set_trace_sync_io(node_env_->options()->trace_sync_io);

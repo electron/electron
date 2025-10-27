@@ -57,6 +57,8 @@ struct Converter<blink::WebMouseEvent> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      blink::WebMouseEvent* out);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const blink::WebMouseEvent& in);
 };
 
 template <>

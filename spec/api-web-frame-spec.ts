@@ -162,14 +162,14 @@ describe('webFrame module', () => {
       });
     });
 
-    describe('findFrameByRoutingId()', () => {
+    describe('findFrameByToken()', () => {
       it('does not crash when not found', async () => {
-        const equal = await w.executeJavaScript('webFrame.findFrameByRoutingId(-1) === null');
+        const equal = await w.executeJavaScript('webFrame.findFrameByToken("unknown") === null');
         expect(equal).to.be.true();
       });
 
       it('returns the webFrame when found', async () => {
-        const equal = await w.executeJavaScript('isSameWebFrame(webFrame.findFrameByRoutingId(childFrame.routingId), childFrame)');
+        const equal = await w.executeJavaScript('isSameWebFrame(webFrame.findFrameByToken(childFrame.frameToken), childFrame)');
         expect(equal).to.be.true();
       });
     });

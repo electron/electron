@@ -113,6 +113,7 @@ These individual tutorials expand on topics discussed in the guide above.
 * [dialog](api/dialog.md)
 * [globalShortcut](api/global-shortcut.md)
 * [inAppPurchase](api/in-app-purchase.md)
+* [ImageView](api/image-view.md)
 * [ipcMain](api/ipc-main.md)
 * [Menu](api/menu.md)
 * [MenuItem](api/menu-item.md)

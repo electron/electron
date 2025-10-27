@@ -16,12 +16,26 @@ namespace electron {
 
 ElectronDesktopWindowTreeHostWin::ElectronDesktopWindowTreeHostWin(
     NativeWindowViews* native_window_view,
+    views::Widget* widget,
     views::DesktopNativeWidgetAura* desktop_native_widget_aura)
-    : views::DesktopWindowTreeHostWin(native_window_view->widget(),
-                                      desktop_native_widget_aura),
-      native_window_view_(native_window_view) {}
+    : views::DesktopWindowTreeHostWin{widget, desktop_native_widget_aura},
+      native_window_view_{native_window_view} {}
 
 ElectronDesktopWindowTreeHostWin::~ElectronDesktopWindowTreeHostWin() = default;
+
+bool ElectronDesktopWindowTreeHostWin::ShouldUpdateWindowTransparency() const {
+  // If transparency is updated for an opaque window before widget init is
+  // completed, the window flickers white before the background color is applied
+  // and we don't want that. We do, however, want translucent windows to be
+  // properly transparent, so ensure it gets updated in that case.
+  if (!widget_init_done_ && !native_window_view_->IsTranslucent())
+    return false;
+  return views::DesktopWindowTreeHostWin::ShouldUpdateWindowTransparency();
+}
+
+void ElectronDesktopWindowTreeHostWin::OnWidgetInitDone() {
+  widget_init_done_ = true;
+}
 
 bool ElectronDesktopWindowTreeHostWin::PreHandleMSG(UINT message,
                                                     WPARAM w_param,
@@ -50,7 +64,16 @@ bool ElectronDesktopWindowTreeHostWin::GetDwmFrameInsetsInPixels(
     gfx::Insets* insets) const {
   // Set DWMFrameInsets to prevent maximized frameless window from bleeding
   // into other monitors.
+
   if (IsMaximized() && !native_window_view_->has_frame()) {
+    // We avoid doing this when the window is translucent (e.g. using
+    // backgroundMaterial effects), because setting zero insets can interfere
+    // with DWM rendering of blur or acrylic, potentially causing visual
+    // glitches.
+    const std::string& bg_material = native_window_view_->background_material();
+    if (!bg_material.empty() && bg_material != "none") {
+      return false;
+    }
     // This would be equivalent to calling:
     // DwmExtendFrameIntoClientArea({0, 0, 0, 0});
     //
@@ -119,11 +142,49 @@ bool ElectronDesktopWindowTreeHostWin::HandleMouseEvent(ui::MouseEvent* event) {
     if (prevent_default) {
       electron::api::WebContents::SetDisableDraggableRegions(true);
       views::DesktopWindowTreeHostWin::HandleMouseEvent(event);
+      electron::api::WebContents::SetDisableDraggableRegions(false);
     }
     return prevent_default;
   }
 
   return views::DesktopWindowTreeHostWin::HandleMouseEvent(event);
+}
+
+void ElectronDesktopWindowTreeHostWin::HandleVisibilityChanged(bool visible) {
+  if (native_window_view_->widget())
+    native_window_view_->widget()->OnNativeWidgetVisibilityChanged(visible);
+
+  if (visible)
+    UpdateAllowScreenshots();
+}
+
+void ElectronDesktopWindowTreeHostWin::SetAllowScreenshots(bool allow) {
+  if (allow_screenshots_ == allow)
+    return;
+
+  allow_screenshots_ = allow;
+
+  // If the window is not visible, do not set the window display affinity
+  // because `SetWindowDisplayAffinity` will attempt to compose the window,
+  if (!IsVisible())
+    return;
+
+  UpdateAllowScreenshots();
+}
+
+void ElectronDesktopWindowTreeHostWin::UpdateAllowScreenshots() {
+  bool allowed = views::DesktopWindowTreeHostWin::AreScreenshotsAllowed();
+  if (allowed == allow_screenshots_)
+    return;
+
+  // On some older Windows versions, setting the display affinity
+  // to WDA_EXCLUDEFROMCAPTURE won't prevent the window from being
+  // captured - setting WS_EX_LAYERED mitigates this issue.
+  if (base::win::GetVersion() < base::win::Version::WIN11_22H2)
+    native_window_view_->SetLayered();
+  ::SetWindowDisplayAffinity(
+      GetAcceleratedWidget(),
+      allow_screenshots_ ? WDA_NONE : WDA_EXCLUDEFROMCAPTURE);
 }
 
 void ElectronDesktopWindowTreeHostWin::OnNativeThemeUpdated(

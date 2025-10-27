@@ -18,7 +18,6 @@
 #include "components/spellcheck/renderer/spellcheck_worditerator.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/function_template.h"
-#include "shell/common/gin_helper/microtasks_scope.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "third_party/blink/public/web/web_text_checking_completion.h"
 #include "third_party/blink/public/web/web_text_checking_result.h"

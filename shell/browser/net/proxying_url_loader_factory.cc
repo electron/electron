@@ -394,7 +394,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::
       "HTTP/1.1 %i Internal Redirect\n"
       "Location: %s\n"
       "Non-Authoritative-Reason: WebRequest API\n\n",
-      kInternalRedirectStatusCode, redirect_url_.spec().c_str());
+      kInternalRedirectStatusCode, redirect_url_.spec());
 
   // Cross-origin requests need to modify the Origin header to 'null'. Since
   // CorsURLLoader sets |request_initiator| to the Origin request header in
@@ -797,7 +797,7 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   bool bypass_custom_protocol_handlers =
       options & kBypassCustomProtocolHandlers;
   if (!bypass_custom_protocol_handlers) {
-    auto it = intercepted_handlers_->find(request.url.scheme_piece());
+    auto it = intercepted_handlers_->find(request.url.scheme());
     if (it != intercepted_handlers_->end()) {
       mojo::PendingRemote<network::mojom::URLLoaderFactory> loader_remote;
       this->Clone(loader_remote.InitWithNewPipeAndPassReceiver());

@@ -8,28 +8,38 @@
 #include "base/containers/to_value_list.h"
 #include "base/json/json_writer.h"
 #include "base/logging.h"
+#include "base/memory/ptr_util.h"
+#include "base/no_destructor.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/threading/thread_local.h"
 #include "base/values.h"
 #include "gin/converter.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/process_util.h"
 #include "third_party/electron_node/src/node_process-inl.h"
 
 namespace electron::util {
 
 v8::MaybeLocal<v8::Value> CompileAndCall(
+    v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     const char* id,
-    std::vector<v8::Local<v8::String>>* parameters,
-    std::vector<v8::Local<v8::Value>>* arguments) {
-  v8::Isolate* isolate = context->GetIsolate();
-  v8::TryCatch try_catch(isolate);
+    v8::LocalVector<v8::String>* parameters,
+    v8::LocalVector<v8::Value>* arguments) {
+  v8::TryCatch try_catch{isolate};
 
-  thread_local node::builtins::BuiltinLoader builtin_loader;
-  v8::MaybeLocal<v8::Function> compiled = builtin_loader.LookupAndCompile(
-      context, id, parameters, node::Realm::GetCurrent(context));
+  static base::NoDestructor<
+      base::ThreadLocalOwnedPointer<node::builtins::BuiltinLoader>>
+      builtin_loader;
+  if (!builtin_loader->Get()) {
+    builtin_loader->Set(base::WrapUnique(new node::builtins::BuiltinLoader));
+  }
+  v8::MaybeLocal<v8::Function> compiled =
+      builtin_loader->Get()->LookupAndCompile(context, id, parameters,
+                                              node::Realm::GetCurrent(context));
 
   if (compiled.IsEmpty()) {
     // TODO(samuelmaddock): how can we get the compilation error message?
@@ -65,8 +75,13 @@ void EmitWarning(const std::string_view warning_msg,
 void EmitWarning(v8::Isolate* isolate,
                  const std::string_view warning_msg,
                  const std::string_view warning_type) {
-  node::ProcessEmitWarningGeneric(node::Environment::GetCurrent(isolate),
-                                  warning_msg, warning_type);
+  node::Environment* env = node::Environment::GetCurrent(isolate);
+  if (!env) {
+    // No Node.js environment available, fall back to console logging.
+    LOG(WARNING) << "[" << warning_type << "] " << warning_msg;
+    return;
+  }
+  node::ProcessEmitWarningGeneric(env, warning_msg, warning_type);
 }
 
 void EmitDeprecationWarning(const std::string_view warning_msg,
@@ -78,8 +93,14 @@ void EmitDeprecationWarning(const std::string_view warning_msg,
 void EmitDeprecationWarning(v8::Isolate* isolate,
                             const std::string_view warning_msg,
                             const std::string_view deprecation_code) {
-  node::ProcessEmitWarningGeneric(node::Environment::GetCurrent(isolate),
-                                  warning_msg, "DeprecationWarning",
+  node::Environment* env = node::Environment::GetCurrent(isolate);
+  if (!env) {
+    // No Node.js environment available, fall back to console logging.
+    LOG(WARNING) << "[DeprecationWarning] " << warning_msg
+                 << " (code: " << deprecation_code << ")";
+    return;
+  }
+  node::ProcessEmitWarningGeneric(env, warning_msg, "DeprecationWarning",
                                   deprecation_code);
 }
 
@@ -128,6 +149,26 @@ node::Environment* CreateEnvironment(v8::Isolate* isolate,
   }
 
   return env;
+}
+
+ExplicitMicrotasksScope::ExplicitMicrotasksScope(v8::MicrotaskQueue* queue)
+    : microtask_queue_(queue), original_policy_(queue->microtasks_policy()) {
+  // In browser-like processes, some nested run loops (macOS usually) may
+  // re-enter. This is safe because we expect the policy was explicit in the
+  // first place for those processes. However, in renderer processes, there may
+  // be unexpected behavior if this code is triggered within a pending microtask
+  // scope.
+  if (electron::IsBrowserProcess() || electron::IsUtilityProcess()) {
+    DCHECK_EQ(original_policy_, v8::MicrotasksPolicy::kExplicit);
+  } else {
+    DCHECK_EQ(microtask_queue_->GetMicrotasksScopeDepth(), 0);
+  }
+
+  microtask_queue_->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
+}
+
+ExplicitMicrotasksScope::~ExplicitMicrotasksScope() {
+  microtask_queue_->set_microtasks_policy(original_policy_);
 }
 
 }  // namespace electron::util

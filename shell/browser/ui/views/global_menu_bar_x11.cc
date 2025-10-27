@@ -8,8 +8,8 @@
 #include <glib-object.h>
 
 #include "base/functional/bind.h"
+#include "base/notimplemented.h"
 #include "base/strings/utf_string_conversions.h"
-#include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/views/global_menu_bar_registrar_x11.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
@@ -165,18 +165,16 @@ std::string GetMenuModelStatus(ElectronMenuModel* model) {
     int status = model->GetTypeAt(i) | (model->IsVisibleAt(i) << 3) |
                  (model->IsEnabledAt(i) << 4) |
                  (model->IsItemCheckedAt(i) << 5);
-    ret += absl::StrFormat(
-        "%s-%X\n", base::UTF16ToUTF8(model->GetLabelAt(i)).c_str(), status);
+    ret += absl::StrFormat("%s-%X\n", base::UTF16ToUTF8(model->GetLabelAt(i)),
+                           status);
   }
   return ret;
 }
 
 }  // namespace
 
-GlobalMenuBarX11::GlobalMenuBarX11(NativeWindowViews* window)
-    : window_(window),
-      xwindow_(static_cast<x11::Window>(
-          window_->GetNativeWindow()->GetHost()->GetAcceleratedWidget())) {
+GlobalMenuBarX11::GlobalMenuBarX11(gfx::AcceleratedWidget accelerated_widget)
+    : xwindow_(static_cast<x11::Window>(accelerated_widget)) {
   EnsureMethodsLoaded();
   if (server_new)
     InitServer(xwindow_);

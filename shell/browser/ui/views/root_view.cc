@@ -20,13 +20,8 @@ bool IsAltKey(const input::NativeWebKeyboardEvent& event) {
 }
 
 bool IsAltModifier(const input::NativeWebKeyboardEvent& event) {
-  using Modifiers = input::NativeWebKeyboardEvent::Modifiers;
-  int modifiers = event.GetModifiers();
-  modifiers &= ~Modifiers::kNumLockOn;
-  modifiers &= ~Modifiers::kCapsLockOn;
-  return (modifiers == Modifiers::kAltKey) ||
-         (modifiers == (Modifiers::kAltKey | Modifiers::kIsLeft)) ||
-         (modifiers == (Modifiers::kAltKey | Modifiers::kIsRight));
+  using Mods = input::NativeWebKeyboardEvent::Modifiers;
+  return (event.GetModifiers() & Mods::kKeyModifiers) == Mods::kAltKey;
 }
 
 }  // namespace

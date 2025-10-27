@@ -109,6 +109,7 @@ Starts the service worker or does nothing if already running.
 
 ```js
 const { app, session } = require('electron')
+
 const { serviceWorkers } = session.defaultSession
 
 // Collect service workers scopes

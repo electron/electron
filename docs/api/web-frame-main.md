@@ -66,6 +66,16 @@ These methods can be accessed from the `webFrameMain` module:
 Returns `WebFrameMain | undefined` - A frame with the given process and routing IDs,
 or `undefined` if there is no WebFrameMain associated with the given IDs.
 
+### `webFrameMain.fromFrameToken(processId, frameToken)`
+
+* `processId` Integer - An `Integer` representing the internal ID of the process which owns the frame.
+* `frameToken` string - A `string` token identifying the unique frame. Can also
+  be retrieved in the renderer process via
+  [`webFrame.frameToken`](web-frame.md#webframeframetoken-readonly).
+
+Returns `WebFrameMain | null` - A frame with the given process and frame token,
+or `null` if there is no WebFrameMain associated with the given IDs.
+
 ## Class: WebFrameMain
 
 Process: [Main](../glossary.md#main-process)<br />
@@ -236,6 +246,11 @@ not used again.
 #### `frame.name` _Readonly_
 
 A `string` representing the frame name.
+
+#### `frame.frameToken` _Readonly_
+
+A `string` which uniquely identifies the frame within its associated renderer
+process. This is equivalent to [`webFrame.frameToken`](web-frame.md#webframeframetoken-readonly).
 
 #### `frame.osProcessId` _Readonly_
 

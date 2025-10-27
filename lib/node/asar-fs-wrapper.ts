@@ -52,16 +52,20 @@ const {
   getValidatedPath,
   getOptions,
   getDirent
-} = __non_webpack_require__('internal/fs/utils');
+} = __non_webpack_require__('internal/fs/utils') as typeof import('@node/lib/internal/fs/utils');
+
+const {
+  assignFunctionName
+} = __non_webpack_require__('internal/util') as typeof import('@node/lib/internal/util');
 
 const {
   validateBoolean,
   validateFunction
-} = __non_webpack_require__('internal/validators');
+} = __non_webpack_require__('internal/validators') as typeof import('@node/lib/internal/validators');
 
 // In the renderer node internals use the node global URL but we do not set that to be
 // the global URL instance.  We need to do instanceof checks against the internal URL impl
-const { URL: NodeURL } = __non_webpack_require__('internal/url');
+const { URL: NodeURL } = __non_webpack_require__('internal/url') as typeof import('@node/lib/internal/url');
 
 // Separate asar package's path from full path.
 const splitPath = (archivePathOrBuffer: string | Buffer | URL) => {
@@ -235,7 +239,10 @@ const overrideAPI = function (module: Record<string, any>, name: string, pathArg
   };
 
   if (old[util.promisify.custom]) {
-    module[name][util.promisify.custom] = makePromiseFunction(old[util.promisify.custom], pathArgumentIndex);
+    module[name][util.promisify.custom] = assignFunctionName(
+      name,
+      makePromiseFunction(old[util.promisify.custom], pathArgumentIndex)
+    );
   }
 
   if (module.promises && module.promises[name]) {
@@ -735,11 +742,11 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       }
 
       const dirent = getDirent(currentPath, result[0][i], type);
-      const stat = internalBinding('fs').internalModuleStat(binding, resultPath);
+      const stat = internalBinding('fs').internalModuleStat(resultPath);
 
       context.readdirResults.push(dirent);
-      if (dirent.isDirectory() || stat === 1) {
-        context.pathsQueue.push(path.join(dirent.path, dirent.name));
+      if (dirent!.isDirectory() || stat === 1) {
+        context.pathsQueue.push(path.join(dirent!.path, dirent!.name));
       }
     }
   }
@@ -748,7 +755,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     for (let i = 0; i < result.length; i++) {
       const resultPath = path.join(currentPath, result[i]);
       const relativeResultPath = path.relative(context.basePath, resultPath);
-      const stat = internalBinding('fs').internalModuleStat(binding, resultPath);
+      const stat = internalBinding('fs').internalModuleStat(resultPath);
       context.readdirResults.push(relativeResultPath);
 
       if (stat === 1) {
@@ -818,7 +825,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         if (context.withFileTypes) {
           readdirResult = [
             [...readdirResult], readdirResult.map((p: string) => {
-              return internalBinding('fs').internalModuleStat(binding, path.join(pathArg, p));
+              return internalBinding('fs').internalModuleStat(path.join(pathArg, p));
             })
           ];
         }
@@ -850,13 +857,13 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   const { readdir } = fs;
   fs.readdir = function (pathArgument: string, options: ReaddirOptions, callback: ReaddirCallback) {
     callback = typeof options === 'function' ? options : callback;
-    validateFunction(callback, 'callback');
+    validateFunction(callback, 'callback')!;
 
     options = getOptions(options);
     pathArgument = getValidatedPath(pathArgument);
 
     if (options?.recursive != null) {
-      validateBoolean(options?.recursive, 'options.recursive');
+      validateBoolean(options?.recursive, 'options.recursive')!;
     }
 
     if (options?.recursive) {
@@ -907,7 +914,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     pathArgument = getValidatedPath(pathArgument);
 
     if (options?.recursive != null) {
-      validateBoolean(options?.recursive, 'options.recursive');
+      validateBoolean(options?.recursive, 'options.recursive')!;
     }
 
     if (options?.recursive) {
@@ -950,7 +957,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     pathArgument = getValidatedPath(pathArgument);
 
     if (options?.recursive != null) {
-      validateBoolean(options?.recursive, 'options.recursive');
+      validateBoolean(options?.recursive, 'options.recursive')!;
     }
 
     if (options?.recursive) {
@@ -1003,9 +1010,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   });
 
   const { internalModuleStat } = binding;
-  internalBinding('fs').internalModuleStat = (receiver: unknown, pathArgument: string) => {
+  internalBinding('fs').internalModuleStat = (pathArgument: string) => {
     const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return internalModuleStat(receiver, pathArgument);
+    if (!pathInfo.isAsar) return internalModuleStat(pathArgument);
     const { asarPath, filePath } = pathInfo;
 
     // -ENOENT
@@ -1040,7 +1047,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       if (withFileTypes) {
         initialItem = [
           [...initialItem], initialItem.map((p: string) => {
-            return internalBinding('fs').internalModuleStat(binding, path.join(originalPath, p));
+            return internalBinding('fs').internalModuleStat(path.join(originalPath, p));
           })
         ];
       }
@@ -1073,7 +1080,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
               readdirResult = [
                 [...files], files.map((p: string) => {
-                  return internalBinding('fs').internalModuleStat(binding, path.join(direntPath, p));
+                  return internalBinding('fs').internalModuleStat(path.join(direntPath, p));
                 })
               ];
             } else {
@@ -1094,7 +1101,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         const { 0: pathArg, 1: readDir } = queue.pop();
         for (const ent of readDir) {
           const direntPath = path.join(pathArg, ent);
-          const stat = internalBinding('fs').internalModuleStat(binding, direntPath);
+          const stat = internalBinding('fs').internalModuleStat(direntPath);
           result.push(path.relative(originalPath, direntPath));
 
           if (stat === 1) {
@@ -1148,7 +1155,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         if (context.withFileTypes) {
           readdirResult = [
             [...readdirResult], readdirResult.map((p: string) => {
-              return internalBinding('fs').internalModuleStat(binding, path.join(pathArg, p));
+              return internalBinding('fs').internalModuleStat(path.join(pathArg, p));
             })
           ];
         }
@@ -1238,7 +1245,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     // command as a single path to an archive.
     const { exec, execSync } = childProcess;
     childProcess.exec = invokeWithNoAsar(exec);
-    childProcess.exec[util.promisify.custom] = invokeWithNoAsar(exec[util.promisify.custom]);
+    childProcess.exec[util.promisify.custom] = assignFunctionName('exec', invokeWithNoAsar(exec[util.promisify.custom]));
     childProcess.execSync = invokeWithNoAsar(execSync);
 
     overrideAPI(childProcess, 'execFile');

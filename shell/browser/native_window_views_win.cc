@@ -7,6 +7,7 @@
 #include <wrl/client.h>
 
 #include "base/win/atl.h"  // Must be before UIAutomationCore.h
+#include "base/win/registry.h"
 #include "base/win/scoped_handle.h"
 #include "base/win/windows_version.h"
 #include "content/public/browser/browser_accessibility_state.h"
@@ -15,11 +16,12 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/ui/views/win_frame_view.h"
+#include "shell/common/color_util.h"
 #include "shell/common/electron_constants.h"
+#include "skia/ext/skia_utils_win.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/resize_utils.h"
-#include "ui/views/widget/native_widget_private.h"
 
 // Must be included after other Windows headers.
 #include <UIAutomationClient.h>
@@ -28,6 +30,38 @@
 namespace electron {
 
 namespace {
+
+void SetWindowBorderAndCaptionColor(HWND hwnd, COLORREF color, bool has_frame) {
+  HRESULT result;
+  if (has_frame) {
+    result =
+        DwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, &color, sizeof(color));
+
+    if (FAILED(result))
+      LOG(WARNING) << "Failed to set caption color";
+  }
+
+  result =
+      DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &color, sizeof(color));
+
+  if (FAILED(result))
+    LOG(WARNING) << "Failed to set border color";
+}
+
+bool IsAccentColorOnTitleBarsEnabled() {
+  base::win::RegKey key;
+  if (key.Open(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\DWM",
+               KEY_READ) != ERROR_SUCCESS) {
+    return false;
+  }
+
+  DWORD enabled = 0;
+  if (key.ReadValueDW(L"ColorPrevalence", &enabled) != ERROR_SUCCESS) {
+    return false;
+  }
+
+  return enabled != 0;
+}
 
 // Convert Win32 WM_QUERYENDSESSIONS to strings.
 const std::vector<std::string> EndSessionToStringVec(LPARAM end_session_id) {
@@ -290,11 +324,6 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
 
       return false;
     }
-    case WM_RBUTTONUP: {
-      if (!has_frame())
-        electron::api::WebContents::SetDisableDraggableRegions(false);
-      return false;
-    }
     case WM_GETMINMAXINFO: {
       WINDOWPLACEMENT wp;
       wp.length = sizeof(WINDOWPLACEMENT);
@@ -430,11 +459,12 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       return false;
     }
     case WM_SYSCOMMAND: {
-      // Mask is needed to account for double clicking title bar to maximize
-      WPARAM max_mask = 0xFFF0;
-      if (transparent() && ((w_param & max_mask) == SC_MAXIMIZE)) {
+      WPARAM cmd = w_param & 0xFFF0;
+      // Needed to account for double clicking title bar to maximize.
+      if (transparent() && (cmd == SC_MAXIMIZE))
         return true;
-      }
+      if (cmd == SC_MINIMIZE)
+        was_snapped_ = IsSnapped();
       return false;
     }
     case WM_INITMENU: {
@@ -448,6 +478,19 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
         EnableMenuItem(menu, SC_RESTORE,
                        MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
         return true;
+      }
+      return false;
+    }
+    case WM_DWMCOLORIZATIONCOLORCHANGED: {
+      UpdateWindowAccentColor(IsActive());
+      return false;
+    }
+    case WM_SETTINGCHANGE: {
+      if (l_param) {
+        const wchar_t* setting_name = reinterpret_cast<const wchar_t*>(l_param);
+        std::wstring setting_str(setting_name);
+        if (setting_str == L"ImmersiveColorSet")
+          UpdateWindowAccentColor(IsActive());
       }
       return false;
     }
@@ -466,7 +509,7 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       WINDOWPLACEMENT wp;
       wp.length = sizeof(WINDOWPLACEMENT);
 
-      if (GetWindowPlacement(GetAcceleratedWidget(), &wp)) {
+      if (GetWindowPlacement(GetAcceleratedWidget(), &wp) && !was_snapped_) {
         last_normal_placement_bounds_ = gfx::Rect(wp.rcNormalPosition);
       }
 
@@ -474,8 +517,11 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       // multiple times for one resize because of the SetWindowPlacement call.
       if (w_param == SIZE_MAXIMIZED &&
           last_window_state_ != ui::mojom::WindowShowState::kMaximized) {
-        if (last_window_state_ == ui::mojom::WindowShowState::kMinimized)
+        if (last_window_state_ == ui::mojom::WindowShowState::kMinimized) {
           NotifyWindowRestore();
+          if (was_snapped_)
+            was_snapped_ = false;
+        }
         last_window_state_ = ui::mojom::WindowShowState::kMaximized;
         NotifyWindowMaximize();
         ResetWindowControls();
@@ -499,6 +545,8 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
           } else {
             last_window_state_ = ui::mojom::WindowShowState::kNormal;
             NotifyWindowRestore();
+            if (was_snapped_)
+              was_snapped_ = false;
           }
           break;
         default:
@@ -507,6 +555,76 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       ResetWindowControls();
       break;
     }
+  }
+}
+
+void NativeWindowViews::UpdateWindowAccentColor(bool active) {
+  if (base::win::GetVersion() < base::win::Version::WIN11)
+    return;
+
+  std::optional<COLORREF> border_color;
+  bool should_apply_accent = false;
+
+  if (std::holds_alternative<SkColor>(accent_color_)) {
+    // If the user has explicitly set an accent color, use it
+    // regardless of whether the system accent color is enabled.
+    SkColor color = std::get<SkColor>(accent_color_);
+    border_color =
+        RGB(SkColorGetR(color), SkColorGetG(color), SkColorGetB(color));
+    should_apply_accent = true;
+  } else if (std::holds_alternative<bool>(accent_color_)) {
+    // Allow the user to optionally force system color on/off.
+    should_apply_accent = std::get<bool>(accent_color_);
+  } else if (std::holds_alternative<std::monostate>(accent_color_)) {
+    // If no explicit color was set, default to the system accent color.
+    should_apply_accent = IsAccentColorOnTitleBarsEnabled() && active;
+  }
+
+  // Use system accent color as fallback if no explicit color was set.
+  if (!border_color.has_value() && should_apply_accent) {
+    std::optional<DWORD> system_accent_color = GetSystemAccentColor();
+    if (system_accent_color.has_value()) {
+      border_color = RGB(GetRValue(system_accent_color.value()),
+                         GetGValue(system_accent_color.value()),
+                         GetBValue(system_accent_color.value()));
+    }
+  }
+
+  COLORREF final_color = border_color.value_or(DWMWA_COLOR_DEFAULT);
+  SetWindowBorderAndCaptionColor(GetAcceleratedWidget(), final_color,
+                                 has_frame());
+}
+
+void NativeWindowViews::SetAccentColor(
+    std::variant<std::monostate, bool, SkColor> accent_color) {
+  accent_color_ = accent_color;
+}
+
+/*
+ * Returns the window's accent color, per the following heuristic:
+ *
+ * - If |accent_color_| is an SkColor, return that color as a hex string.
+ * - If |accent_color_| is true, return the system accent color as a hex string.
+ * - If |accent_color_| is false, return false.
+ * - Otherwise, return the system accent color as a hex string.
+ */
+std::variant<bool, std::string> NativeWindowViews::GetAccentColor() const {
+  std::optional<DWORD> system_color = GetSystemAccentColor();
+
+  if (std::holds_alternative<SkColor>(accent_color_)) {
+    return ToRGBHex(std::get<SkColor>(accent_color_));
+  } else if (std::holds_alternative<bool>(accent_color_)) {
+    if (std::get<bool>(accent_color_)) {
+      if (!system_color.has_value())
+        return false;
+      return ToRGBHex(skia::COLORREFToSkColor(system_color.value()));
+    } else {
+      return false;
+    }
+  } else {
+    if (!system_color.has_value())
+      return false;
+    return ToRGBHex(skia::COLORREFToSkColor(system_color.value()));
   }
 }
 
@@ -542,7 +660,7 @@ void NativeWindowViews::SetRoundedCorners(bool rounded) {
 void NativeWindowViews::SetForwardMouseMessages(bool forward) {
   if (forward && !forwarding_mouse_messages_) {
     forwarding_mouse_messages_ = true;
-    forwarding_windows_.insert(this);
+    forwarding_windows_->insert(this);
 
     // Subclassing is used to fix some issues when forwarding mouse messages;
     // see comments in |SubclassProc|.
@@ -554,11 +672,11 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
     }
   } else if (!forward && forwarding_mouse_messages_) {
     forwarding_mouse_messages_ = false;
-    forwarding_windows_.erase(this);
+    forwarding_windows_->erase(this);
 
     RemoveWindowSubclass(legacy_window_, SubclassProc, 1);
 
-    if (forwarding_windows_.empty()) {
+    if (forwarding_windows_->empty()) {
       UnhookWindowsHookEx(mouse_hook_);
       mouse_hook_ = nullptr;
     }
@@ -605,7 +723,7 @@ LRESULT CALLBACK NativeWindowViews::MouseHookProc(int n_code,
   // the cursor since they are in a state where they would otherwise ignore all
   // mouse input.
   if (w_param == WM_MOUSEMOVE) {
-    for (auto* window : forwarding_windows_) {
+    for (auto* window : *forwarding_windows_) {
       // At first I considered enumerating windows to check whether the cursor
       // was directly above the window, but since nothing bad seems to happen
       // if we post the message even if some other window occludes it I have

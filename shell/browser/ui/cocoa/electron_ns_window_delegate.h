@@ -24,6 +24,8 @@ class NativeWindowMac;
   int level_;
   bool is_resizable_;
 
+  bool is_borderless_;
+
   // Whether the window is currently minimized. Used to work
   // around a macOS bug with child window minimization.
   bool is_minimized_;

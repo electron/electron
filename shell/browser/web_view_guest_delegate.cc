@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
+#include "content/browser/web_contents/web_contents_view.h"  // nogncheck
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -28,14 +29,15 @@ WebViewGuestDelegate::~WebViewGuestDelegate() {
 
 void WebViewGuestDelegate::AttachToIframe(
     content::WebContents* embedder_web_contents,
-    int embedder_frame_id) {
+    blink::LocalFrameToken& embedder_frame_token) {
   embedder_web_contents_ = embedder_web_contents;
 
   int embedder_process_id = embedder_web_contents_->GetPrimaryMainFrame()
                                 ->GetProcess()
                                 ->GetDeprecatedID();
-  auto* embedder_frame =
-      content::RenderFrameHost::FromID(embedder_process_id, embedder_frame_id);
+  auto* embedder_frame = content::RenderFrameHost::FromFrameToken(
+      content::GlobalRenderFrameHostToken(embedder_process_id,
+                                          embedder_frame_token));
   DCHECK_EQ(embedder_web_contents_,
             content::WebContents::FromRenderFrameHost(embedder_frame));
 
@@ -111,10 +113,14 @@ WebViewGuestDelegate::CreateNewGuestWindow(
     auto* guest_contents_impl =
         static_cast<content::WebContentsImpl*>(guest_contents.release());
     auto* new_guest_view = guest_contents_impl->GetView();
-    content::RenderWidgetHostView* widget_view =
-        new_guest_view->CreateViewForWidget(
-            guest_contents_impl->GetRenderViewHost()->GetWidget());
-    if (!create_params.initially_hidden)
+
+    content::RenderWidgetHostView* widget_view = nullptr;
+    if (new_guest_view) {
+      widget_view = new_guest_view->CreateViewForWidget(
+          guest_contents_impl->GetRenderViewHost()->GetWidget());
+    }
+
+    if (widget_view && !create_params.initially_hidden)
       widget_view->Show();
     return base::WrapUnique(
         static_cast<content::WebContentsImpl*>(guest_contents_impl));

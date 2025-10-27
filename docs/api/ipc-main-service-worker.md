@@ -11,6 +11,10 @@ Process: [Main](../glossary.md#main-process)
 
 <!-- TODO(samuelmaddock): refactor doc gen to allow generics to reduce duplication -->
 
+> [!WARNING]
+> Electron's built-in classes cannot be subclassed in user code.
+> For more information, see [the FAQ](../faq.md#class-inheritance-does-not-work-with-electron-built-in-modules).
+
 ### Instance Methods
 
 #### `ipcMainServiceWorker.on(channel, listener)`

@@ -10,8 +10,21 @@ however those files were cherry-picked from main branch and do not
 really in 20/21. We have to wait until 22 is released to be able to
 build with upstream GN files.
 
+diff --git a/configure.py b/configure.py
+index 91283ca577f580dbf1e0c4e2dbf851a9ceaa38ed..e8eaff30ec947677db2d45425f9180759d0c55de 100755
+--- a/configure.py
++++ b/configure.py
+@@ -1728,7 +1728,7 @@ def configure_v8(o, configs):
+   # Until we manage to get rid of all those, v8_enable_sandbox cannot be used.
+   # Note that enabling pointer compression without enabling sandbox is unsupported by V8,
+   # so this can be broken at any time.
+-  o['variables']['v8_enable_sandbox'] = 0
++  o['variables']['v8_enable_sandbox'] = 1 if options.enable_pointer_compression else 0
+   o['variables']['v8_enable_pointer_compression_shared_cage'] = 1 if options.enable_pointer_compression else 0
+   o['variables']['v8_enable_external_code_space'] = 1 if options.enable_pointer_compression else 0
+   o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0
 diff --git a/node.gni b/node.gni
-index a2123cc6c6d21c53fafc8934203b3720393e7b11..245a43920c7baf000ba63192a84a4c3fd219be7d 100644
+index d4438f7fd61598afac2c1e3184721a759d22b10c..e2407027ab05e59b2f0f1c213b98ea469db7a91b 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -5,10 +5,10 @@
@@ -27,7 +40,7 @@ index a2123cc6c6d21c53fafc8934203b3720393e7b11..245a43920c7baf000ba63192a84a4c3f
  
    # The location of OpenSSL - use the one from node's deps by default.
    node_openssl_path = "$node_path/deps/openssl"
-@@ -44,7 +44,7 @@ declare_args() {
+@@ -50,7 +50,7 @@ declare_args() {
    node_openssl_system_ca_path = ""
  
    # Initialize v8 platform during node.js startup.
@@ -36,7 +49,7 @@ index a2123cc6c6d21c53fafc8934203b3720393e7b11..245a43920c7baf000ba63192a84a4c3f
  
    # Custom build tag.
    node_tag = ""
-@@ -64,10 +64,16 @@ declare_args() {
+@@ -70,10 +70,16 @@ declare_args() {
    # TODO(zcbenz): There are few broken things for now:
    #   1. cross-os compilation is not supported.
    #   2. node_mksnapshot crashes when cross-compiling for x64 from arm64.
@@ -54,71 +67,11 @@ index a2123cc6c6d21c53fafc8934203b3720393e7b11..245a43920c7baf000ba63192a84a4c3f
  }
  
  assert(!node_enable_inspector || node_use_openssl,
-diff --git a/src/inspector/unofficial.gni b/src/inspector/unofficial.gni
-index 5d87f3c901ab509e534598ed1eb0796a96355b5e..3d7aa148678b2646b88fa7c32abec91791b02b82 100644
---- a/src/inspector/unofficial.gni
-+++ b/src/inspector/unofficial.gni
-@@ -13,7 +13,7 @@ template("inspector_gn_build") {
-   }
- 
-   node_gen_dir = get_label_info("../..", "target_gen_dir")
--  protocol_tool_path = "../../tools/inspector_protocol"
-+  protocol_tool_path = "../../deps/inspector_protocol"
- 
-   gypi_values = exec_script(
-       "../../tools/gypi_to_gn.py",
-@@ -35,6 +35,8 @@ template("inspector_gn_build") {
-     ]
- 
-     args = [
-+      "--inspector_protocol_dir",
-+      rebase_path(protocol_tool_path, root_build_dir),
-       "--jinja_dir",
-       # jinja is in third_party.
-       rebase_path("//third_party/", root_build_dir),
-@@ -72,4 +74,37 @@ template("inspector_gn_build") {
-     outputs = [ "$node_gen_dir/src/{{source_name_part}}.json" ]
-     args = [ "{{source}}" ] + rebase_path(outputs, root_build_dir)
-   }
-+
-+  config("crdtp_config") {
-+    include_dirs = [ protocol_tool_path ]
-+  }
-+
-+  static_library("crdtp") {
-+    public_configs = [ ":crdtp_config" ]
-+    sources = [
-+      "$protocol_tool_path/crdtp/cbor.cc",
-+      "$protocol_tool_path/crdtp/cbor.h",
-+      "$protocol_tool_path/crdtp/dispatch.cc",
-+      "$protocol_tool_path/crdtp/dispatch.h",
-+      "$protocol_tool_path/crdtp/error_support.cc",
-+      "$protocol_tool_path/crdtp/error_support.h",
-+      "$protocol_tool_path/crdtp/export.h",
-+      "$protocol_tool_path/crdtp/find_by_first.h",
-+      "$protocol_tool_path/crdtp/frontend_channel.h",
-+      "$protocol_tool_path/crdtp/glue.h",
-+      "$protocol_tool_path/crdtp/json.cc",
-+      "$protocol_tool_path/crdtp/json.h",
-+      "$protocol_tool_path/crdtp/parser_handler.h",
-+      "$protocol_tool_path/crdtp/protocol_core.cc",
-+      "$protocol_tool_path/crdtp/protocol_core.h",
-+      "$protocol_tool_path/crdtp/serializable.cc",
-+      "$protocol_tool_path/crdtp/serializable.h",
-+      "$protocol_tool_path/crdtp/span.cc",
-+      "$protocol_tool_path/crdtp/span.h",
-+      "$protocol_tool_path/crdtp/status.cc",
-+      "$protocol_tool_path/crdtp/status.h",
-+      "$protocol_tool_path/crdtp/json_platform.cc",
-+      "$protocol_tool_path/crdtp/json_platform.h",
-+    ]
-+  }
- }
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 894fd515202cc3a1f933c2bbc618dd09869ad904..4f1ed661e9c432f3b50f2e7e348ad9794ff773d0 100644
+index b83aa87c969fb4e71cb202816713af869bb76283..c54df6fee333ddfe59b9df7e0ddd2935b4dcb33f 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -781,6 +781,7 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -789,6 +789,7 @@ void BuiltinLoader::RegisterExternalReferences(
    registry->Register(GetNatives);
  
    RegisterExternalReferencesForInternalizedBuiltinCode(registry);
@@ -127,7 +80,7 @@ index 894fd515202cc3a1f933c2bbc618dd09869ad904..4f1ed661e9c432f3b50f2e7e348ad979
  
  }  // namespace builtins
 diff --git a/src/node_builtins.h b/src/node_builtins.h
-index a73de23a1debfdac66873e0baccf882e383bfc36..7ac5291be093773ee7efd39e77e01bf5d5ce5247 100644
+index f9426599f2d5dc6ad061407f0c4eb2c9203a4433..302030f610965f07dd6998d282275c1bdf738009 100644
 --- a/src/node_builtins.h
 +++ b/src/node_builtins.h
 @@ -74,6 +74,8 @@ using BuiltinCodeCacheMap =
@@ -140,10 +93,10 @@ index a73de23a1debfdac66873e0baccf882e383bfc36..7ac5291be093773ee7efd39e77e01bf5
  // Handles compilation and caching of built-in JavaScript modules and
  // bootstrap scripts, whose source are bundled into the binary as static data.
 diff --git a/tools/install.py b/tools/install.py
-index 17515720ba9c85d533465365188021074a8d30f4..92f83a83be67aafc9ead6923b868dbb0de39db34 100755
+index 8797b59e59c85a8877b977fa3281e50165e6f6b2..0af01e075616195f38fb242626dcab770ec1eb57 100755
 --- a/tools/install.py
 +++ b/tools/install.py
-@@ -212,6 +212,7 @@ def headers(options, action):
+@@ -222,6 +222,7 @@ def headers(options, action):
        'include/cppgc/internal/caged-heap-local-data.h',
        'include/cppgc/internal/caged-heap.h',
        'include/cppgc/internal/compiler-specific.h',
@@ -151,7 +104,7 @@ index 17515720ba9c85d533465365188021074a8d30f4..92f83a83be67aafc9ead6923b868dbb0
        'include/cppgc/internal/finalizer-trait.h',
        'include/cppgc/internal/gc-info.h',
        'include/cppgc/internal/logging.h',
-@@ -291,6 +292,7 @@ def headers(options, action):
+@@ -301,6 +302,7 @@ def headers(options, action):
        'include/v8-promise.h',
        'include/v8-proxy.h',
        'include/v8-regexp.h',
@@ -306,7 +259,7 @@ index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2
  }  // namespace js2c
  }  // namespace node
 diff --git a/tools/search_files.py b/tools/search_files.py
-index 65d0e1be42f0a85418491ebb548278cf431aa6a0..d4a31342f1c6107b029394c6e1d00a1d1e877e03 100755
+index 856878c33681a73d41016729dabe48b0a6a80589..91a11852d206b65485fe90fd037a0bd17a16c20b 100755
 --- a/tools/search_files.py
 +++ b/tools/search_files.py
 @@ -14,6 +14,7 @@ if __name__ == '__main__':
@@ -314,14 +267,19 @@ index 65d0e1be42f0a85418491ebb548278cf431aa6a0..d4a31342f1c6107b029394c6e1d00a1d
      files = SearchFiles(*sys.argv[2:])
      files = [ os.path.relpath(x, sys.argv[1]) for x in files ]
 +    files = [os.path.normpath(x).replace(os.sep, '/') for x in files]
-     print('\n'.join(files))
-   except Exception as e:
-     print(str(e))
+     # Apply the same transform in SearchFiles after relpath
+     if sys.platform == 'win32':
+       files = [ x.replace('\\', '/') for x in files ]
 diff --git a/unofficial.gni b/unofficial.gni
-index 9e496d99d7141bf42ef7374a3c676c7b333eeeab..a2f3a769ceaa08db6d7438223884dc5aeab1340d 100644
+index 865a0d5ce9c6792e57f4216bcaa594ca6fc7b1c8..26ebc811272ef2990f8d090c54e7f5294aab9d37 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -145,6 +145,7 @@ template("node_gn_build") {
+@@ -147,31 +147,41 @@ template("node_gn_build") {
+     public_configs = [
+       ":node_external_config",
+       "deps/googletest:googletest_config",
++      ":zstd_include_config"
+     ]
      public_deps = [
        "deps/ada",
        "deps/uv",
@@ -329,19 +287,31 @@ index 9e496d99d7141bf42ef7374a3c676c7b333eeeab..a2f3a769ceaa08db6d7438223884dc5a
        "deps/simdjson",
        "$node_v8_path",
      ]
-@@ -156,7 +157,6 @@ template("node_gn_build") {
+     deps = [
+       ":run_node_js2c",
+-      "deps/brotli",
+       "deps/cares",
+       "deps/histogram",
        "deps/llhttp",
        "deps/nbytes",
        "deps/nghttp2",
 -      "deps/ngtcp2",
        "deps/postject",
-       "deps/sqlite",
        "deps/uvwasi",
-@@ -165,7 +165,11 @@ template("node_gn_build") {
+-      "deps/zstd",
+       "//third_party/zlib",
++      "//third_party/brotli:dec",
++      "//third_party/brotli:enc",
++      "//third_party/zstd:decompress",
++      "//third_party/zstd:headers",
+       "$node_simdutf_path",
        "$node_v8_path:v8_libplatform",
      ]
  
-+    cflags_cc = [ "-Wno-unguarded-availability-new" ]
++    cflags_cc = [
++      "-Wno-unguarded-availability-new",
++      "-Wno-return-stack-address"
++    ]
 +
      sources = [
 +      "src/node_snapshot_stub.cc",
@@ -349,7 +319,7 @@ index 9e496d99d7141bf42ef7374a3c676c7b333eeeab..a2f3a769ceaa08db6d7438223884dc5a
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
  
-@@ -185,11 +189,12 @@ template("node_gn_build") {
+@@ -194,7 +204,7 @@ template("node_gn_build") {
      }
      if (node_use_openssl) {
        deps += [ "deps/ncrypto" ]
@@ -357,13 +327,19 @@ index 9e496d99d7141bf42ef7374a3c676c7b333eeeab..a2f3a769ceaa08db6d7438223884dc5a
 +      public_deps += [ "//third_party/boringssl" ]
        sources += gypi_values.node_crypto_sources
      }
-     if (node_enable_inspector) {
-       deps += [
-+        "src/inspector:crdtp",
-         "src/inspector:node_protocol_generated_sources",
-         "src/inspector:v8_inspector_compress_protocol_json",
-       ]
-@@ -282,6 +287,7 @@ template("node_gn_build") {
+     if (node_use_sqlite) {
+@@ -223,6 +233,10 @@ template("node_gn_build") {
+     }
+   }
+ 
++  config("zstd_include_config") {
++    include_dirs = [ "//third_party/zstd/src/lib" ]
++  }
++
+   executable(target_name) {
+     forward_variables_from(invoker, "*")
+ 
+@@ -297,6 +311,7 @@ template("node_gn_build") {
    }
  
    executable("node_js2c") {
@@ -371,7 +347,7 @@ index 9e496d99d7141bf42ef7374a3c676c7b333eeeab..a2f3a769ceaa08db6d7438223884dc5a
      deps = [
        "deps/uv",
        "$node_simdutf_path",
-@@ -292,26 +298,75 @@ template("node_gn_build") {
+@@ -307,26 +322,75 @@ template("node_gn_build") {
        "src/embedded_data.cc",
        "src/embedded_data.h",
      ]
@@ -457,7 +433,7 @@ index 9e496d99d7141bf42ef7374a3c676c7b333eeeab..a2f3a769ceaa08db6d7438223884dc5a
      outputs = [ "$target_gen_dir/node_javascript.cc" ]
  
      # Get the path to node_js2c executable of the host toolchain.
-@@ -325,11 +380,11 @@ template("node_gn_build") {
+@@ -340,11 +404,11 @@ template("node_gn_build") {
          get_label_info(":node_js2c($host_toolchain)", "name") +
          host_executable_suffix
  

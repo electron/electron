@@ -17,8 +17,8 @@ namespace electron {
 
 class NativeWindowViews;
 
-class FramelessView : public views::NonClientFrameView {
-  METADATA_HEADER(FramelessView, views::NonClientFrameView)
+class FramelessView : public views::FrameView {
+  METADATA_HEADER(FramelessView, views::FrameView)
 
  public:
   FramelessView();
@@ -46,7 +46,7 @@ class FramelessView : public views::NonClientFrameView {
   int ResizingBorderHitTestImpl(const gfx::Point& point,
                                 const gfx::Insets& resize_border);
 
-  // views::NonClientFrameView:
+  // views::FrameView:
   gfx::Rect GetBoundsForClientView() const override;
   gfx::Rect GetWindowBoundsForClientBounds(
       const gfx::Rect& client_bounds) const override;

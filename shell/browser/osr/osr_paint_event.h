@@ -13,7 +13,7 @@
 #include "services/viz/privileged/mojom/compositing/frame_sink_video_capture.mojom.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "ui/gfx/canvas.h"
-#include "ui/gfx/native_widget_types.h"
+#include "ui/gfx/native_ui_types.h"
 
 #include <cstdint>
 
@@ -77,6 +77,9 @@ struct OffscreenSharedTextureValue {
   // In OSR case, it is the same with `dirtyRect` that needs to be painted.
   gfx::Rect content_rect;
 
+  // Color space of the video frame.
+  gfx::ColorSpace color_space;
+
   // Extra metadata for the video frame.
   // See comments in src\media\base\video_frame_metadata.h for more details.
   std::optional<gfx::Rect> capture_update_rect;
@@ -99,6 +102,7 @@ struct OffscreenSharedTextureValue {
 #elif BUILDFLAG(IS_LINUX)
   std::vector<OffscreenNativePixmapPlaneInfo> planes;
   uint64_t modifier;
+  bool supports_zero_copy_webgpu_import;
 #endif
 };
 

@@ -15,6 +15,7 @@
 #include "base/containers/unique_ptr_adapters.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
+#include "base/sequence_checker.h"
 #include "chrome/browser/devtools/devtools_embedder_message_dispatcher.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
@@ -173,6 +174,7 @@ class InspectableWebContents
   void RecordPerformanceHistogramMedium(const std::string& name,
                                         double duration) override {}
   void RecordUserMetricsAction(const std::string& name) override {}
+  void RecordNewBadgeUsage(const std::string& feature_name) override {}
   void RecordImpression(const ImpressionEvent& event) override {}
   void RecordResize(const ResizeEvent& event) override {}
   void RecordClick(const ClickEvent& event) override {}
@@ -181,6 +183,7 @@ class InspectableWebContents
   void RecordChange(const ChangeEvent& event) override {}
   void RecordKeyDown(const KeyDownEvent& event) override {}
   void RecordSettingAccess(const SettingAccessEvent& event) override {}
+  void RecordFunctionCall(const FunctionCallEvent& event) override {}
   void ShowSurvey(DispatchCallback callback,
                   const std::string& trigger) override {}
   void CanShowSurvey(DispatchCallback callback,
@@ -188,8 +191,13 @@ class InspectableWebContents
   void DoAidaConversation(DispatchCallback callback,
                           const std::string& request,
                           int stream_id) override {}
+  void AidaCodeComplete(DispatchCallback callback,
+                        const std::string& request) override {}
   void RegisterAidaClientEvent(DispatchCallback callback,
                                const std::string& request) override {}
+  void DispatchHttpRequest(
+      DispatchCallback callback,
+      const DevToolsDispatchHttpRequestParams& params) override {}
 
   // content::DevToolsFrontendHostDelegate:
   void HandleMessageFromDevToolsFrontend(base::Value::Dict message);
@@ -270,6 +278,8 @@ class InspectableWebContents
   // The DevTools frontend *must* call `Register` for each setting prior to
   // use, which guarantees that this set must not be persisted.
   base::flat_set<std::string> synced_setting_names_;
+
+  SEQUENCE_CHECKER(sequence_checker_);
 
   base::WeakPtrFactory<InspectableWebContents> weak_factory_{this};
 };

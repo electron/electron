@@ -157,6 +157,7 @@ has been included below for completeness:
 | [Cloneable Types](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm) | Simple | ✅ | ✅ | See the linked document on cloneable types |
 | `Element` | Complex | ✅ | ✅ | Prototype modifications are dropped.  Sending custom elements will not work. |
 | `Blob` | Complex | ✅ | ✅ | N/A |
+| `VideoFrame` | Complex | ✅ | ✅ | N/A |
 | `Symbol` | N/A | ❌ | ❌ | Symbols cannot be copied across contexts so they are dropped |
 
 If the type you care about is not in the above table, it is probably not supported.
@@ -189,7 +190,9 @@ Be very cautious about which globals and APIs you expose to untrusted remote con
 
 ```js
 const { contextBridge } = require('electron')
+
 const crypto = require('node:crypto')
+
 contextBridge.exposeInMainWorld('nodeCrypto', {
   sha256sum (data) {
     const hash = crypto.createHash('sha256')

@@ -10,13 +10,13 @@ the exported symbols in SQLite to avoid conflicts with Node.js.
 This should be upstreamed to SQLite.
 
 diff --git a/amalgamation/rename_exports.h b/amalgamation/rename_exports.h
-index 91a69bfdea89ed1845c330e71105cf818b6f0e2f..dcf92ac793f04c061d6db64bf26fcb98884490cf 100644
+index f61b7c38dcfa3a69ccc392c3e808fc8c2622773f..f4d5bb88a176ccb28c37420d30ac88c690486f96 100644
 --- a/amalgamation/rename_exports.h
 +++ b/amalgamation/rename_exports.h
 @@ -367,6 +367,15 @@
- #define sqlite3session_patchset chrome_sqlite3session_patchset  // Lines 11609-11613
- #define sqlite3session_patchset_strm chrome_sqlite3session_patchset_strm  // Lines 12888-12892
- #define sqlite3session_table_filter chrome_sqlite3session_table_filter  // Lines 11379-11386
+ #define sqlite3session_patchset chrome_sqlite3session_patchset  // Lines 11682-11686
+ #define sqlite3session_patchset_strm chrome_sqlite3session_patchset_strm  // Lines 12948-12952
+ #define sqlite3session_table_filter chrome_sqlite3session_table_filter  // Lines 11450-11457
 +#define sqlite3_win32_write_debug chrome_sqlite3_win32_write_debug
 +#define sqlite3_win32_sleep chrome_sqlite3_win32_sleep
 +#define sqlite3_win32_is_nt chrome_sqlite3_win32_is_nt

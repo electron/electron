@@ -7,18 +7,18 @@ Refs https://github.com/electron/electron/pull/45055#issuecomment-2559095439
 Can be removed when upstream adopts relevant V8 version.
 
 diff --git a/src/crypto/crypto_timing.cc b/src/crypto/crypto_timing.cc
-index 867a1c4aca54b9d41490d23a5eb55088b7e941cc..09f4c65a18efea262b1f854f993c6f18273f48f5 100644
+index fe669d40c31a29334b047b9cfee3067f64ef0a7b..9e5de7bbe574add017cd12ee091304d01e6458d6 100644
 --- a/src/crypto/crypto_timing.cc
 +++ b/src/crypto/crypto_timing.cc
-@@ -11,7 +11,6 @@
- namespace node {
+@@ -12,7 +12,6 @@ namespace node {
  
+ using v8::CFunction;
  using v8::FastApiCallbackOptions;
 -using v8::FastApiTypedArray;
  using v8::FunctionCallbackInfo;
  using v8::Local;
  using v8::Object;
-@@ -50,14 +49,13 @@ void TimingSafeEqual(const FunctionCallbackInfo<Value>& args) {
+@@ -51,14 +50,13 @@ void TimingSafeEqual(const FunctionCallbackInfo<Value>& args) {
  }
  
  bool FastTimingSafeEqual(Local<Value> receiver,
@@ -38,7 +38,7 @@ index 867a1c4aca54b9d41490d23a5eb55088b7e941cc..09f4c65a18efea262b1f854f993c6f18
      TRACK_V8_FAST_API_CALL("crypto.timingSafeEqual.error");
      v8::HandleScope scope(options.isolate);
      THROW_ERR_CRYPTO_TIMING_SAFE_EQUAL_LENGTH(options.isolate);
-@@ -65,7 +63,7 @@ bool FastTimingSafeEqual(Local<Value> receiver,
+@@ -66,7 +64,7 @@ bool FastTimingSafeEqual(Local<Value> receiver,
    }
  
    TRACK_V8_FAST_API_CALL("crypto.timingSafeEqual.ok");
@@ -46,9 +46,9 @@ index 867a1c4aca54b9d41490d23a5eb55088b7e941cc..09f4c65a18efea262b1f854f993c6f18
 +  return CRYPTO_memcmp(a_buffer_data, b_buffer_data, a_buffer_length) == 0;
  }
  
- static v8::CFunction fast_equal(v8::CFunction::Make(FastTimingSafeEqual));
+ static CFunction fast_timing_safe_equal(CFunction::Make(FastTimingSafeEqual));
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index cd51d9acf9540d506ec35812b9d2c530fce24912..07068344262f7b73a83073d4da75bffe8b747a61 100644
+index e39852c8e0392e0a9ae5d4ea58be115416e19233..c94b14741c827a81d69a6f036426a344e563ad72 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -44,6 +44,14 @@
@@ -74,7 +74,7 @@ index cd51d9acf9540d506ec35812b9d2c530fce24912..07068344262f7b73a83073d4da75bffe
  using v8::FunctionCallbackInfo;
  using v8::Global;
  using v8::HandleScope;
-@@ -582,19 +589,24 @@ void SlowCopy(const FunctionCallbackInfo<Value>& args) {
+@@ -584,19 +591,24 @@ void SlowCopy(const FunctionCallbackInfo<Value>& args) {
  
  // Assume caller has properly validated args.
  uint32_t FastCopy(Local<Value> receiver,
@@ -107,7 +107,7 @@ index cd51d9acf9540d506ec35812b9d2c530fce24912..07068344262f7b73a83073d4da75bffe
    return to_copy;
  }
  
-@@ -858,19 +870,17 @@ void Compare(const FunctionCallbackInfo<Value> &args) {
+@@ -865,19 +877,17 @@ void Compare(const FunctionCallbackInfo<Value> &args) {
  }
  
  int32_t FastCompare(v8::Local<v8::Value>,
@@ -135,7 +135,7 @@ index cd51d9acf9540d506ec35812b9d2c530fce24912..07068344262f7b73a83073d4da75bffe
  }
  
  static v8::CFunction fast_compare(v8::CFunction::Make(FastCompare));
-@@ -1141,14 +1151,13 @@ void SlowIndexOfNumber(const FunctionCallbackInfo<Value>& args) {
+@@ -1149,14 +1159,13 @@ void SlowIndexOfNumber(const FunctionCallbackInfo<Value>& args) {
  }
  
  int32_t FastIndexOfNumber(v8::Local<v8::Value>,
@@ -153,7 +153,7 @@ index cd51d9acf9540d506ec35812b9d2c530fce24912..07068344262f7b73a83073d4da75bffe
  }
  
  static v8::CFunction fast_index_of_number(
-@@ -1501,21 +1510,31 @@ void SlowWriteString(const FunctionCallbackInfo<Value>& args) {
+@@ -1496,21 +1505,31 @@ void SlowWriteString(const FunctionCallbackInfo<Value>& args) {
  
  template <encoding encoding>
  uint32_t FastWriteString(Local<Value> receiver,
@@ -192,64 +192,12 @@ index cd51d9acf9540d506ec35812b9d2c530fce24912..07068344262f7b73a83073d4da75bffe
 +      std::min<uint32_t>(dst_size - offset, max_length));
  }
  
- static v8::CFunction fast_write_string_ascii(
-diff --git a/src/node_external_reference.h b/src/node_external_reference.h
-index 8d49a119c218323674e29a522ecf71bd22cdaf1b..d39693f2f45f39e45960453112b0f6460a1b3a4d 100644
---- a/src/node_external_reference.h
-+++ b/src/node_external_reference.h
-@@ -40,16 +40,16 @@ using CFunctionCallbackWithStrings =
-              const v8::FastOneByteString& base);
- using CFunctionCallbackWithTwoUint8Arrays =
-     int32_t (*)(v8::Local<v8::Value>,
--                const v8::FastApiTypedArray<uint8_t>&,
--                const v8::FastApiTypedArray<uint8_t>&);
-+                v8::Local<v8::Value>,
-+                v8::Local<v8::Value>);
- using CFunctionCallbackWithTwoUint8ArraysFallback =
-     bool (*)(v8::Local<v8::Value>,
--             const v8::FastApiTypedArray<uint8_t>&,
--             const v8::FastApiTypedArray<uint8_t>&,
-+             v8::Local<v8::Value>,
-+             v8::Local<v8::Value>,
-              v8::FastApiCallbackOptions&);
- using CFunctionCallbackWithUint8ArrayUint32Int64Bool =
-     int32_t (*)(v8::Local<v8::Value>,
--                const v8::FastApiTypedArray<uint8_t>&,
-+                v8::Local<v8::Value>,
-                 uint32_t,
-                 int64_t,
-                 bool);
-@@ -68,18 +68,20 @@ using CFunctionWithBool = void (*)(v8::Local<v8::Value>,
- 
- using CFunctionWriteString =
-     uint32_t (*)(v8::Local<v8::Value> receiver,
--                 const v8::FastApiTypedArray<uint8_t>& dst,
-+                 v8::Local<v8::Value> dst,
-                  const v8::FastOneByteString& src,
-                  uint32_t offset,
--                 uint32_t max_length);
-+                 uint32_t max_length,
-+                 v8::FastApiCallbackOptions&);
- 
- using CFunctionBufferCopy =
-     uint32_t (*)(v8::Local<v8::Value> receiver,
--                 const v8::FastApiTypedArray<uint8_t>& source,
--                 const v8::FastApiTypedArray<uint8_t>& target,
-+                 v8::Local<v8::Value> source,
-+                 v8::Local<v8::Value> target,
-                  uint32_t target_start,
-                  uint32_t source_start,
--                 uint32_t to_copy);
-+                 uint32_t to_copy,
-+                 v8::FastApiCallbackOptions&);
- 
- // This class manages the external references from the V8 heap
- // to the C++ addresses in Node.js.
+ static const v8::CFunction fast_write_string_ascii(
 diff --git a/src/util.h b/src/util.h
-index 0d4676ddade8d91d101b6aeb8763886a234f0bae..7af9ed01a919927ae3897d4989206ec23cfe50d3 100644
+index dcd6548d41be786c42ce8328d89e532a8e9d43a2..7c98de621ca4d53cbaaa5bd4488aab20c7b033a7 100644
 --- a/src/util.h
 +++ b/src/util.h
-@@ -59,6 +59,7 @@
+@@ -62,6 +62,7 @@
  namespace node {
  
  constexpr char kPathSeparator = std::filesystem::path::preferred_separator;
@@ -257,7 +205,7 @@ index 0d4676ddade8d91d101b6aeb8763886a234f0bae..7af9ed01a919927ae3897d4989206ec2
  
  #ifdef _WIN32
  /* MAX_PATH is in characters, not bytes. Make sure we have enough headroom. */
-@@ -579,6 +580,16 @@ class BufferValue : public MaybeStackBuffer<char> {
+@@ -589,6 +590,16 @@ class BufferValue : public MaybeStackBuffer<char> {
        static_cast<char*>(name->Buffer()->Data()) + name##_offset;              \
    if (name##_length > 0) CHECK_NE(name##_data, nullptr);
  

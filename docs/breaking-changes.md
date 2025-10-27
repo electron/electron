@@ -12,6 +12,74 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (39.0)
+
+### Deprecated: `--host-rules` command line switch
+
+Chromium is deprecating the `--host-rules` switch.
+
+You should use `--host-resolver-rules` instead.
+
+### Behavior Changed: window.open popups are always resizable
+
+Per current [WHATWG spec](https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-open-dev), the `window.open` API will now always create a resizable popup window.
+
+To restore previous behavior:
+
+```js
+webContents.setWindowOpenHandler((details) => {
+  return {
+    action: 'allow',
+    overrideBrowserWindowOptions: {
+      resizable: details.features.includes('resizable=yes')
+    }
+  }
+})
+```
+
+### Behavior Changed: shared texture OSR `paint` event data structure
+
+When using shared texture offscreen rendering feature, the `paint` event now emits a more structured object.
+It moves the `sharedTextureHandle`, `planes`, `modifier` into a unified `handle` property.
+See [here](https://www.electronjs.org/docs/latest/api/structures/offscreen-shared-texture) for more details.
+
+## Planned Breaking API Changes (38.0)
+
+### Removed: `ELECTRON_OZONE_PLATFORM_HINT` environment variable
+
+The default value of the `--ozone-platform` flag [changed to `auto`](https://chromium-review.googlesource.com/c/chromium/src/+/6775426).
+
+Electron now defaults to running as a native Wayland app when launched in a Wayland session (when `XDG_SESSION_TYPE=wayland`).
+Users can force XWayland by passing `--ozone-platform=x11`.
+
+### Removed: `ORIGINAL_XDG_CURRENT_DESKTOP` environment variable
+
+Previously, Electron changed the value of `XDG_CURRENT_DESKTOP` internally to `Unity`, and stored the original name of the desktop session
+in a separate variable. `XDG_CURRENT_DESKTOP` is no longer overriden and now reflects the actual desktop environment.
+
+### Removed: macOS 11 support
+
+macOS 11 (Big Sur) is no longer supported by [Chromium](https://chromium-review.googlesource.com/c/chromium/src/+/6594615).
+
+Older versions of Electron will continue to run on Big Sur, but macOS 12 (Monterey)
+or later will be required to run Electron v38.0.0 and higher.
+
+### Removed: `plugin-crashed` event
+
+The `plugin-crashed` event has been removed from `webContents`.
+
+### Deprecated: `webFrame.routingId` property
+
+The `routingId` property will be removed from `webFrame` objects.
+
+You should use `webFrame.frameToken` instead.
+
+### Deprecated: `webFrame.findFrameByRoutingId(routingId)`
+
+The `webFrame.findFrameByRoutingId(routingId)` function will be removed.
+
+You should use `webFrame.findFrameByToken(frameToken)` instead.
+
 ## Planned Breaking API Changes (37.0)
 
 ### Utility Process unhandled rejection behavior change
@@ -26,6 +94,16 @@ process.on('unhandledRejection', () => {
   process.exit(1)
 })
 ```
+
+### Behavior Changed: `process.exit()` kills utility process synchronously
+
+Calling `process.exit()` in a utility process will now kill the utility process synchronously.
+This brings the behavior of `process.exit()` in line with Node.js behavior.
+
+Please refer to the
+[Node.js docs](https://nodejs.org/docs/latest-v22.x/api/process.html#processexitcode) and
+[PR #45690](https://github.com/electron/electron/pull/45690) to understand the potential
+implications of that, e.g., when calling `console.log()` before `process.exit()`.
 
 ### Behavior Changed: WebUSB and WebSerial Blocklist Support
 
@@ -141,7 +219,7 @@ On Linux, the required portal version for file dialogs has been reverted
 to 3 from 4. Using the `defaultPath` option of the Dialog API is not
 supported when using portal file chooser dialogs unless the portal
 backend is version 4 or higher. The `--xdg-portal-required-version`
-[command-line switch](/api/command-line-switches.md#--xdg-portal-required-versionversion)
+[command-line switch](api/command-line-switches.md#--xdg-portal-required-versionversion)
 can be used to force a required version for your application.
 See [#44426](https://github.com/electron/electron/pull/44426) for more details.
 

@@ -15,7 +15,6 @@
 
 #include "base/cancelable_callback.h"
 #include "base/containers/contains.h"
-#include "base/containers/map_util.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/files/scoped_file.h"
@@ -59,8 +58,6 @@ const char kFreedesktopPortalName[] = "org.freedesktop.portal.Desktop";
 const char kFreedesktopPortalPath[] = "/org/freedesktop/portal/desktop";
 const char kFreedesktopPortalOpenURI[] = "org.freedesktop.portal.OpenURI";
 
-const char kOriginalXdgCurrentDesktopEnvVar[] = "ORIGINAL_XDG_CURRENT_DESKTOP";
-
 const char kMethodOpenDirectory[] = "OpenDirectory";
 
 class ShowItemHelper {
@@ -76,14 +73,8 @@ class ShowItemHelper {
   ShowItemHelper& operator=(const ShowItemHelper&) = delete;
 
   void ShowItemInFolder(const base::FilePath& full_path) {
-    if (!bus_) {
-      // Sets up the D-Bus connection.
-      dbus::Bus::Options bus_options;
-      bus_options.bus_type = dbus::Bus::SESSION;
-      bus_options.connection_type = dbus::Bus::PRIVATE;
-      bus_options.dbus_task_runner = dbus_thread_linux::GetTaskRunner();
-      bus_ = base::MakeRefCounted<dbus::Bus>(bus_options);
-    }
+    if (!bus_)
+      bus_ = dbus_thread_linux::GetSharedSessionBus();
 
     if (!dbus_proxy_) {
       dbus_proxy_ = bus_->GetObjectProxy(DBUS_SERVICE_DBUS,
@@ -285,12 +276,6 @@ bool XDGUtil(const std::vector<std::string>& argv,
     base::nix::CreateLaunchOptionsWithXdgActivation(base::BindOnce(
         [](base::RepeatingClosure quit_loop, base::LaunchOptions* options_out,
            base::LaunchOptions options) {
-          // Correct the XDG_CURRENT_DESKTOP environment variable before calling
-          // XDG, in case it was changed for compatibility.
-          if (const auto* orig = base::FindOrNull(
-                  options.environment, kOriginalXdgCurrentDesktopEnvVar))
-            options.environment.emplace(base::nix::kXdgCurrentDesktopEnvVar,
-                                        *orig);
           *options_out = std::move(options);
           std::move(quit_loop).Run();
         },
@@ -348,7 +333,7 @@ void ShowItemInFolder(const base::FilePath& full_path) {
 
 void OpenPath(const base::FilePath& full_path, OpenCallback callback) {
   // This is async, so we don't care about the return value.
-  XDGOpen(full_path.DirName(), full_path.value(), true, std::move(callback));
+  XDGOpen(full_path.DirName(), full_path.value(), false, std::move(callback));
 }
 
 void OpenFolder(const base::FilePath& full_path) {
@@ -430,7 +415,7 @@ std::optional<std::string> GetDesktopName() {
 
 std::string GetXdgAppId() {
   if (std::optional<std::string> desktop_file_name = GetDesktopName()) {
-    const std::string kDesktopExtension{".desktop"};
+    constexpr std::string_view kDesktopExtension = ".desktop";
     if (base::EndsWith(*desktop_file_name, kDesktopExtension,
                        base::CompareCase::INSENSITIVE_ASCII)) {
       desktop_file_name->resize(desktop_file_name->size() -

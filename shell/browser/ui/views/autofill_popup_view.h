@@ -14,8 +14,9 @@
 #include "shell/browser/osr/osr_view_proxy.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
+#include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/drag_controller.h"
-#include "ui/views/focus/widget_focus_manager.h"
+#include "ui/views/focus/native_view_focus_manager.h"
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/views/widget/widget_observer.h"
 
@@ -43,8 +44,10 @@ class AutofillPopupChildView : public views::View {
   explicit AutofillPopupChildView(const std::u16string& suggestion)
       : suggestion_(suggestion) {
     SetFocusBehavior(FocusBehavior::ALWAYS);
-    SetAccessibleRole(ax::mojom::Role::kMenuItem);
-    SetAccessibleName(suggestion);
+
+    auto& view_a11y = GetViewAccessibility();
+    view_a11y.SetRole(ax::mojom::Role::kMenuItem);
+    view_a11y.SetName(suggestion);
   }
 
   // disable copy
@@ -57,7 +60,7 @@ class AutofillPopupChildView : public views::View {
 };
 
 class AutofillPopupView : public views::WidgetDelegateView,
-                          private views::WidgetFocusChangeListener,
+                          private views::NativeViewFocusChangeListener,
                           private views::WidgetObserver,
                           public views::DragController {
  public:

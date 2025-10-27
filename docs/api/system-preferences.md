@@ -6,6 +6,7 @@ Process: [Main](../glossary.md#main-process), [Utility](../glossary.md#utility-p
 
 ```js
 const { systemPreferences } = require('electron')
+
 console.log(systemPreferences.getEffectiveAppearance())
 ```
 
@@ -13,7 +14,7 @@ console.log(systemPreferences.getEffectiveAppearance())
 
 The `systemPreferences` object emits the following events:
 
-### Event: 'accent-color-changed' _Windows_
+### Event: 'accent-color-changed' _Windows_ _Linux_
 
 Returns:
 
@@ -181,7 +182,7 @@ Some popular `key` and `type`s are:
 Removes the `key` in `NSUserDefaults`. This can be used to restore the default
 or global value of a `key` previously set with `setUserDefault`.
 
-### `systemPreferences.getAccentColor()` _Windows_ _macOS_
+### `systemPreferences.getAccentColor()`
 
 Returns `string` - The users current system wide accent color preference in RGBA
 hexadecimal form.

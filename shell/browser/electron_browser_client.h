@@ -31,6 +31,7 @@ class FilePath;
 namespace content {
 class ClientCertificateDelegate;
 class PlatformNotificationService;
+class NavigationThrottleRegistry;
 class QuotaPermissionContext;
 }  // namespace content
 
@@ -75,8 +76,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
                               base::OnceCallback<void(bool, bool)> callback);
 
   // content::NavigatorDelegate
-  std::vector<std::unique_ptr<content::NavigationThrottle>>
-  CreateThrottlesForNavigation(content::NavigationHandle* handle) override;
+  void CreateThrottlesForNavigation(
+      content::NavigationThrottleRegistry& registry) override;
 
   // content::ContentBrowserClient:
   std::string GetApplicationLocale() override;
@@ -132,6 +133,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   void OverrideWebPreferences(content::WebContents* web_contents,
                               content::SiteInstance& main_frame_site,
                               blink::web_pref::WebPreferences* prefs) override;
+  bool WebPreferencesNeedUpdateForColorRelatedStateChanges(
+      content::WebContents& web_contents,
+      const content::SiteInstance& main_frame_site) const override;
   void RegisterPendingSiteInstance(
       content::RenderFrameHost* render_frame_host,
       content::SiteInstance* pending_site_instance) override;

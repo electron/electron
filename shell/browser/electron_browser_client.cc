@@ -36,6 +36,7 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/login_delegate.h"
+#include "content/public/browser/navigation_throttle_registry.h"
 #include "content/public/browser/overlay_window.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -304,7 +305,7 @@ const extensions::Extension* GetEnabledExtensionFromEffectiveURL(
   if (!registry)
     return nullptr;
 
-  return registry->enabled_extensions().GetByID(effective_url.host());
+  return registry->enabled_extensions().GetByID(effective_url.GetHost());
 }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
@@ -411,7 +412,6 @@ void ElectronBrowserClient::OverrideWebPreferences(
   prefs->javascript_can_access_clipboard = false;
   prefs->allow_scripts_to_close_windows = true;
   prefs->local_storage_enabled = true;
-  prefs->databases_enabled = true;
   prefs->allow_universal_access_from_file_urls =
       electron::fuses::IsGrantFileProtocolExtraPrivilegesEnabled();
   prefs->allow_file_access_from_file_urls =
@@ -427,9 +427,11 @@ void ElectronBrowserClient::OverrideWebPreferences(
   renderer_prefs->can_accept_load_drops = false;
 
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
-  prefs->in_forced_colors = native_theme->InForcedColorsMode();
+  prefs->in_forced_colors = native_theme->forced_colors() !=
+                            ui::ColorProviderKey::ForcedColors::kNone;
   prefs->preferred_color_scheme =
-      native_theme->ShouldUseDarkColors()
+      native_theme->preferred_color_scheme() ==
+              ui::NativeTheme::PreferredColorScheme::kDark
           ? blink::mojom::PreferredColorScheme::kDark
           : blink::mojom::PreferredColorScheme::kLight;
 
@@ -439,6 +441,22 @@ void ElectronBrowserClient::OverrideWebPreferences(
   if (auto* web_preferences = WebContentsPreferences::From(web_contents)) {
     web_preferences->OverrideWebkitPrefs(prefs, renderer_prefs);
   }
+}
+
+bool ElectronBrowserClient::WebPreferencesNeedUpdateForColorRelatedStateChanges(
+    content::WebContents& web_contents,
+    const content::SiteInstance& main_frame_site) const {
+  const auto& prefs = web_contents.GetOrCreateWebPreferences();
+  ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
+  bool in_forced_colors = native_theme->forced_colors() !=
+                          ui::ColorProviderKey::ForcedColors::kNone;
+  blink::mojom::PreferredColorScheme preferred_color_scheme =
+      native_theme->preferred_color_scheme() ==
+              ui::NativeTheme::PreferredColorScheme::kDark
+          ? blink::mojom::PreferredColorScheme::kDark
+          : blink::mojom::PreferredColorScheme::kLight;
+  return prefs.in_forced_colors != in_forced_colors ||
+         prefs.preferred_color_scheme != preferred_color_scheme;
 }
 
 void ElectronBrowserClient::RegisterPendingSiteInstance(
@@ -533,7 +551,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   if (process_type == ::switches::kUtilityProcess ||
       process_type == ::switches::kRendererProcess) {
     // Copy following switches to child process.
-    static constexpr std::array<const char*, 9U> kCommonSwitchNames = {
+    static constexpr std::array<const char*, 10U> kCommonSwitchNames = {
         switches::kStandardSchemes.c_str(),
         switches::kEnableSandbox.c_str(),
         switches::kSecureSchemes.c_str(),
@@ -542,6 +560,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
         switches::kFetchSchemes.c_str(),
         switches::kServiceWorkerSchemes.c_str(),
         switches::kStreamingSchemes.c_str(),
+        switches::kNoStdioInit.c_str(),
         switches::kCodeCacheSchemes.c_str()};
     command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
                                    kCommonSwitchNames);
@@ -952,24 +971,20 @@ bool ElectronBrowserClient::HandleExternalProtocol(
   return true;
 }
 
-std::vector<std::unique_ptr<content::NavigationThrottle>>
-ElectronBrowserClient::CreateThrottlesForNavigation(
-    content::NavigationHandle* handle) {
-  std::vector<std::unique_ptr<content::NavigationThrottle>> throttles;
-  throttles.push_back(std::make_unique<ElectronNavigationThrottle>(handle));
+void ElectronBrowserClient::CreateThrottlesForNavigation(
+    content::NavigationThrottleRegistry& registry) {
+  registry.AddThrottle(std::make_unique<ElectronNavigationThrottle>(registry));
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  throttles.push_back(
-      std::make_unique<extensions::ExtensionNavigationThrottle>(handle));
+  registry.AddThrottle(
+      std::make_unique<extensions::ExtensionNavigationThrottle>(registry));
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-  throttles.push_back(std::make_unique<PDFIFrameNavigationThrottle>(handle));
-  throttles.push_back(std::make_unique<pdf::PdfNavigationThrottle>(
-      handle, std::make_unique<ChromePdfStreamDelegate>()));
+  registry.AddThrottle(std::make_unique<PDFIFrameNavigationThrottle>(registry));
+  registry.AddThrottle(std::make_unique<pdf::PdfNavigationThrottle>(
+      registry, std::make_unique<ChromePdfStreamDelegate>()));
 #endif
-
-  return throttles;
 }
 
 content::MediaObserver* ElectronBrowserClient::GetMediaObserver() {
@@ -1653,7 +1668,7 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
       render_frame_host->GetProcess()->GetBrowserContext();
   auto* extension = extensions::ExtensionRegistry::Get(browser_context)
                         ->enabled_extensions()
-                        .GetByID(site.host());
+                        .GetByID(site.GetHost());
   if (!extension)
     return;
   extensions::ExtensionsBrowserClient::Get()

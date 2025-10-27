@@ -1,5 +1,4 @@
-import { nativeImage } from 'electron';
-import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain } from 'electron/main';
+import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, systemPreferences, WebContents, WebFrameMain } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -16,6 +15,7 @@ import { setTimeout } from 'node:timers/promises';
 import * as nodeUrl from 'node:url';
 
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
+import { randomString } from './lib/net-helpers';
 import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
 import { ifit, ifdescribe, defer, listen, waitUntil } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
@@ -232,6 +232,36 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  describe('window.accessibleTitle', () => {
+    const title = 'Window Title';
+    let w: BrowserWindow;
+    beforeEach(() => {
+      w = new BrowserWindow({ show: false, title, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+    });
+    afterEach(async () => {
+      await closeWindow(w);
+      w = null as unknown as BrowserWindow;
+    });
+
+    it('should default to the window title', async () => {
+      expect(w.accessibleTitle).to.equal(title);
+    });
+
+    it('should be mutable', async () => {
+      const accessibleTitle = randomString(20);
+      w.accessibleTitle = accessibleTitle;
+      expect(w.accessibleTitle).to.equal(accessibleTitle);
+    });
+
+    it('should be clearable', async () => {
+      const accessibleTitle = randomString(20);
+      w.accessibleTitle = accessibleTitle;
+      expect(w.accessibleTitle).to.equal(accessibleTitle);
+      w.accessibleTitle = '';
+      expect(w.accessibleTitle).to.equal(title);
+    });
+  });
+
   describe('window.close()', () => {
     let w: BrowserWindow;
     beforeEach(() => {
@@ -300,8 +330,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
     it('can set content protection', async () => {
       const w = new BrowserWindow({ show: false });
-      // @ts-expect-error This is a private API
-      expect(w._isContentProtected()).to.equal(false);
+      expect(w.isContentProtected()).to.equal(false);
 
       const shown = once(w, 'show');
 
@@ -309,8 +338,7 @@ describe('BrowserWindow module', () => {
       await shown;
 
       w.setContentProtection(true);
-      // @ts-expect-error This is a private API
-      expect(w._isContentProtected()).to.equal(true);
+      expect(w.isContentProtected()).to.equal(true);
     });
 
     it('does not remove content protection after the window is hidden and shown', async () => {
@@ -329,8 +357,7 @@ describe('BrowserWindow module', () => {
       w.show();
       await shown;
 
-      // @ts-expect-error This is a private API
-      expect(w._isContentProtected()).to.equal(true);
+      expect(w.isContentProtected()).to.equal(true);
     });
   });
 
@@ -2524,6 +2551,116 @@ describe('BrowserWindow module', () => {
       expect(() => {
         w.setProgressBar(0.5, { mode: 'normal' });
       }).to.not.throw();
+    });
+  });
+
+  ifdescribe(process.platform === 'win32')('BrowserWindow.{get|set}AccentColor', () => {
+    afterEach(closeAllWindows);
+
+    it('throws if called with an invalid parameter', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(() => {
+        // @ts-ignore this is wrong on purpose.
+        w.setAccentColor([1, 2, 3]);
+      }).to.throw('Invalid accent color value - must be null, hex string, or boolean');
+    });
+
+    it('throws if called with an invalid parameter', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(() => {
+        // @ts-ignore this is wrong on purpose.
+        w.setAccentColor(new Date());
+      }).to.throw('Invalid accent color value - must be null, hex string, or boolean');
+    });
+
+    it('can be reset with null', () => {
+      const w = new BrowserWindow({ show: false });
+      w.setAccentColor('#FF0000');
+      expect(w.getAccentColor()).to.equal('#FF0000');
+      w.setAccentColor(null);
+      expect(w.getAccentColor()).to.not.equal('#FF0000');
+    });
+
+    it('returns the accent color after setting it to a string', () => {
+      const w = new BrowserWindow({ show: false });
+      const testColor = '#FF0000';
+      w.setAccentColor(testColor);
+      const accentColor = w.getAccentColor();
+      expect(accentColor).to.be.a('string');
+      expect(accentColor).to.equal(testColor);
+    });
+
+    it('returns the accent color after setting it to false', () => {
+      const w = new BrowserWindow({ show: false });
+      w.setAccentColor(false);
+      const accentColor = w.getAccentColor();
+      expect(accentColor).to.be.a('boolean');
+      expect(accentColor).to.equal(false);
+    });
+
+    it('returns a system color when set to true', () => {
+      const w = new BrowserWindow({ show: false });
+      w.setAccentColor(true);
+      const accentColor = w.getAccentColor();
+      expect(accentColor).to.be.a('string');
+      expect(accentColor).to.match(/^#[0-9A-F]{6}$/i);
+    });
+
+    it('matches the systemPreferences system color when true', () => {
+      const w = new BrowserWindow({ show: false });
+      w.setAccentColor(true);
+      const accentColor = w.getAccentColor() as string;
+      const systemColor = systemPreferences.getAccentColor().slice(0, 6);
+      expect(accentColor).to.equal(`#${systemColor}`);
+    });
+
+    it('returns the correct accent color after multiple changes', () => {
+      const w = new BrowserWindow({ show: false });
+
+      const testColor1 = '#00FF00';
+      w.setAccentColor(testColor1);
+      expect(w.getAccentColor()).to.equal(testColor1);
+
+      w.setAccentColor(false);
+      expect(w.getAccentColor()).to.equal(false);
+
+      const testColor2 = '#0000FF';
+      w.setAccentColor(testColor2);
+      expect(w.getAccentColor()).to.equal(testColor2);
+
+      w.setAccentColor(true);
+      const systemColor = w.getAccentColor();
+      expect(systemColor).to.be.a('string');
+      expect(systemColor).to.match(/^#[0-9A-F]{6}$/i);
+    });
+
+    it('handles CSS color names correctly', () => {
+      const w = new BrowserWindow({ show: false });
+      const testColor = 'red';
+      w.setAccentColor(testColor);
+      const accentColor = w.getAccentColor();
+      expect(accentColor).to.be.a('string');
+      expect(accentColor).to.equal('#FF0000');
+    });
+
+    it('handles RGB color values correctly', () => {
+      const w = new BrowserWindow({ show: false });
+      const testColor = 'rgb(255, 128, 0)';
+      w.setAccentColor(testColor);
+      const accentColor = w.getAccentColor();
+      expect(accentColor).to.be.a('string');
+      expect(accentColor).to.equal('#FF8000');
+    });
+
+    it('persists accent color across window operations', () => {
+      const w = new BrowserWindow({ show: false });
+      const testColor = '#ABCDEF';
+      w.setAccentColor(testColor);
+
+      w.show();
+      w.hide();
+
+      expect(w.getAccentColor()).to.equal(testColor);
     });
   });
 
@@ -5342,7 +5479,7 @@ describe('BrowserWindow module', () => {
           thickFrame: true,
           transparent: true
         });
-        expect(w.isResizable()).to.be.true('resizable');
+        expect(w.isResizable()).to.be.false('resizable');
         w.maximize();
         expect(w.isMaximized()).to.be.true('maximized');
         const bounds = w.getBounds();
@@ -5461,6 +5598,57 @@ describe('BrowserWindow module', () => {
           expect(w.getTitle()).to.eql('Electron Test Main');
           w.setTitle('NEW TITLE');
           expect(w.getTitle()).to.eql('NEW TITLE');
+        });
+      });
+    });
+
+    describe('hasShadow state', () => {
+      describe('with properties', () => {
+        it('returns a boolean on all platforms', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.shadow).to.be.a('boolean');
+        });
+
+        // On Windows there's no shadow by default & it can't be changed dynamically.
+        it('can be changed with hasShadow option', () => {
+          const hasShadow = process.platform !== 'darwin';
+          const w = new BrowserWindow({ show: false, hasShadow });
+          expect(w.shadow).to.equal(hasShadow);
+        });
+
+        it('can be changed with setHasShadow method', () => {
+          const w = new BrowserWindow({ show: false });
+          w.shadow = false;
+          expect(w.shadow).to.be.false('hasShadow');
+          w.shadow = true;
+          expect(w.shadow).to.be.true('hasShadow');
+          w.shadow = false;
+          expect(w.shadow).to.be.false('hasShadow');
+        });
+      });
+
+      describe('with functions', () => {
+        it('returns a boolean on all platforms', () => {
+          const w = new BrowserWindow({ show: false });
+          const hasShadow = w.hasShadow();
+          expect(hasShadow).to.be.a('boolean');
+        });
+
+        // On Windows there's no shadow by default & it can't be changed dynamically.
+        it('can be changed with hasShadow option', () => {
+          const hasShadow = process.platform !== 'darwin';
+          const w = new BrowserWindow({ show: false, hasShadow });
+          expect(w.hasShadow()).to.equal(hasShadow);
+        });
+
+        it('can be changed with setHasShadow method', () => {
+          const w = new BrowserWindow({ show: false });
+          w.setHasShadow(false);
+          expect(w.hasShadow()).to.be.false('hasShadow');
+          w.setHasShadow(true);
+          expect(w.hasShadow()).to.be.true('hasShadow');
+          w.setHasShadow(false);
+          expect(w.hasShadow()).to.be.false('hasShadow');
         });
       });
     });
@@ -5951,6 +6139,54 @@ describe('BrowserWindow module', () => {
         await leaveFullScreen;
       });
 
+      it('should not crash if rounded corners are disabled', async () => {
+        const w = new BrowserWindow({
+          frame: false,
+          roundedCorners: false
+        });
+
+        const enterFullScreen = once(w, 'enter-full-screen');
+        w.setFullScreen(true);
+        await enterFullScreen;
+
+        await setTimeout();
+
+        const leaveFullScreen = once(w, 'leave-full-screen');
+        w.setFullScreen(false);
+        await leaveFullScreen;
+      });
+
+      it('should not crash if opening a borderless child window from fullscreen parent', async () => {
+        const parent = new BrowserWindow();
+
+        const parentFS = once(parent, 'enter-full-screen');
+        parent.setFullScreen(true);
+        await parentFS;
+
+        await setTimeout();
+
+        const child = new BrowserWindow({
+          width: 400,
+          height: 300,
+          show: false,
+          parent,
+          frame: false,
+          roundedCorners: false
+        });
+
+        await setTimeout();
+
+        const childFS = once(child, 'enter-full-screen');
+        child.show();
+        await childFS;
+
+        await setTimeout();
+
+        const leaveFullScreen = once(child, 'leave-full-screen');
+        child.setFullScreen(false);
+        await leaveFullScreen;
+      });
+
       it('should be able to load a URL while transitioning to fullscreen', async () => {
         const w = new BrowserWindow({ fullscreen: true });
         w.loadFile(path.join(fixtures, 'pages', 'c.html'));
@@ -6210,57 +6446,6 @@ describe('BrowserWindow module', () => {
           expect(w.isClosable()).to.be.false('isClosable');
           w.setClosable(true);
           expect(w.isClosable()).to.be.true('isClosable');
-        });
-      });
-    });
-
-    describe('hasShadow state', () => {
-      describe('with properties', () => {
-        it('returns a boolean on all platforms', () => {
-          const w = new BrowserWindow({ show: false });
-          expect(w.shadow).to.be.a('boolean');
-        });
-
-        // On Windows there's no shadow by default & it can't be changed dynamically.
-        it('can be changed with hasShadow option', () => {
-          const hasShadow = process.platform !== 'darwin';
-          const w = new BrowserWindow({ show: false, hasShadow });
-          expect(w.shadow).to.equal(hasShadow);
-        });
-
-        it('can be changed with setHasShadow method', () => {
-          const w = new BrowserWindow({ show: false });
-          w.shadow = false;
-          expect(w.shadow).to.be.false('hasShadow');
-          w.shadow = true;
-          expect(w.shadow).to.be.true('hasShadow');
-          w.shadow = false;
-          expect(w.shadow).to.be.false('hasShadow');
-        });
-      });
-
-      describe('with functions', () => {
-        it('returns a boolean on all platforms', () => {
-          const w = new BrowserWindow({ show: false });
-          const hasShadow = w.hasShadow();
-          expect(hasShadow).to.be.a('boolean');
-        });
-
-        // On Windows there's no shadow by default & it can't be changed dynamically.
-        it('can be changed with hasShadow option', () => {
-          const hasShadow = process.platform !== 'darwin';
-          const w = new BrowserWindow({ show: false, hasShadow });
-          expect(w.hasShadow()).to.equal(hasShadow);
-        });
-
-        it('can be changed with setHasShadow method', () => {
-          const w = new BrowserWindow({ show: false });
-          w.setHasShadow(false);
-          expect(w.hasShadow()).to.be.false('hasShadow');
-          w.setHasShadow(true);
-          expect(w.hasShadow()).to.be.true('hasShadow');
-          w.setHasShadow(false);
-          expect(w.hasShadow()).to.be.false('hasShadow');
         });
       });
     });
@@ -6634,52 +6819,6 @@ describe('BrowserWindow module', () => {
         await once(w.webContents, 'paint') as [any, Electron.Rectangle, Electron.NativeImage];
         expect(w.webContents.frameRate).to.equal(30);
       });
-    });
-  });
-
-  describe('offscreen rendering image', () => {
-    afterEach(closeAllWindows);
-
-    const imagePath = path.join(fixtures, 'assets', 'osr.png');
-    const targetImage = nativeImage.createFromPath(imagePath);
-    const nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS;
-    ifit(nativeModulesEnabled && ['win32'].includes(process.platform))('use shared texture, hardware acceleration enabled', (done) => {
-      const { ExtractPixels, InitializeGpu } = require('@electron-ci/osr-gpu');
-
-      try {
-        InitializeGpu();
-      } catch (e) {
-        console.log('Failed to initialize GPU, this spec needs a valid GPU device. Skipping...');
-        console.error(e);
-        done();
-        return;
-      }
-
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          offscreen: {
-            useSharedTexture: true
-          }
-        },
-        transparent: true,
-        frame: false,
-        width: 128,
-        height: 128
-      });
-
-      w.webContents.once('paint', async (e, dirtyRect) => {
-        try {
-          expect(e.texture).to.be.not.null();
-          const pixels = ExtractPixels(e.texture!.textureInfo);
-          const img = nativeImage.createFromBitmap(pixels, { width: dirtyRect.width, height: dirtyRect.height, scaleFactor: 1 });
-          expect(img.toBitmap().equals(targetImage.toBitmap())).to.equal(true);
-          done();
-        } catch (e) {
-          done(e);
-        }
-      });
-      w.loadFile(imagePath);
     });
   });
 

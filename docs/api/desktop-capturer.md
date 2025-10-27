@@ -70,8 +70,9 @@ stopButton.addEventListener('click', () => {
 
 See [`navigator.mediaDevices.getDisplayMedia`](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia) for more information.
 
-**Note:** `navigator.mediaDevices.getDisplayMedia` does not permit the use of `deviceId` for
-selection of a source - see [specification](https://w3c.github.io/mediacapture-screen-share/#constraints).
+> [!NOTE]
+> `navigator.mediaDevices.getDisplayMedia` does not permit the use of `deviceId` for
+> selection of a source - see [specification](https://w3c.github.io/mediacapture-screen-share/#constraints).
 
 ## Methods
 
@@ -92,8 +93,9 @@ The `desktopCapturer` module has the following methods:
 
 Returns `Promise<DesktopCapturerSource[]>` - Resolves with an array of [`DesktopCapturerSource`](structures/desktop-capturer-source.md) objects, each `DesktopCapturerSource` represents a screen or an individual window that can be captured.
 
-**Note** Capturing the screen contents requires user consent on macOS 10.15 Catalina or higher,
-which can detected by [`systemPreferences.getMediaAccessStatus`][].
+> [!NOTE]
+> Capturing the screen contents requires user consent on macOS 10.15 Catalina or higher,
+> which can detected by [`systemPreferences.getMediaAccessStatus`][].
 
 [`navigator.mediaDevices.getUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/MediaDevices/getUserMedia
 [`systemPreferences.getMediaAccessStatus`]: system-preferences.md#systempreferencesgetmediaaccessstatusmediatype-windows-macos

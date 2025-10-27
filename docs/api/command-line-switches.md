@@ -8,6 +8,7 @@ is emitted:
 
 ```js
 const { app } = require('electron')
+
 app.commandLine.appendSwitch('remote-debugging-port', '8315')
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1')
 
@@ -77,7 +78,8 @@ Passing `--enable-logging=file` will result in logs being saved to the file
 specified by `--log-file=...`, or to `electron_debug.log` in the user-data
 directory if `--log-file` is not specified.
 
-> **Note:** On Windows, logs from child processes cannot be sent to stderr.
+> [!NOTE]
+> On Windows, logs from child processes cannot be sent to stderr.
 > Logging to a file is the most reliable way to collect logs on Windows.
 
 See also `--log-file`, `--log-level`, `--v`, and `--vmodule`.
@@ -88,7 +90,7 @@ Field trials to be forcefully enabled or disabled.
 
 For example: `WebRTC-Audio-Red-For-Opus/Enabled/`
 
-### --host-rules=`rules`
+### --host-rules=`rules` _Deprecated_
 
 A comma-separated list of `rules` that control how hostnames are mapped.
 
@@ -106,9 +108,23 @@ These mappings apply to the endpoint host in a net request (the TCP connect
 and host resolver in a direct connection, and the `CONNECT` in an HTTP proxy
 connection, and the endpoint host in a `SOCKS` proxy connection).
 
+**Deprecated:** Use the `--host-resolver-rules` switch instead.
+
 ### --host-resolver-rules=`rules`
 
-Like `--host-rules` but these `rules` only apply to the host resolver.
+A comma-separated list of `rules` that control how hostnames are mapped.
+
+For example:
+
+* `MAP * 127.0.0.1` Forces all hostnames to be mapped to 127.0.0.1
+* `MAP *.google.com proxy` Forces all google.com subdomains to be resolved to
+  "proxy".
+* `MAP test.com [::1]:77` Forces "test.com" to resolve to IPv6 loopback. Will
+  also force the port of the resulting socket address to be 77.
+* `MAP * baz, EXCLUDE www.google.com` Remaps everything to "baz", except for
+  "www.google.com".
+
+These `rules` only apply to the host resolver.
 
 ### --ignore-certificate-errors
 
@@ -181,6 +197,11 @@ Disables the Chromium [sandbox](https://www.chromium.org/developers/design-docum
 Forces renderer process and Chromium helper processes to run un-sandboxed.
 Should only be used for testing.
 
+### --no-stdio-init
+
+Disable stdio initialization during node initialization.
+Used to avoid node initialization crash when the nul device is disabled on Windows platform.
+
 ### --proxy-bypass-list=`hosts`
 
 Instructs Electron to bypass the proxy server for the given semi-colon-separated
@@ -191,6 +212,7 @@ For example:
 
 ```js
 const { app } = require('electron')
+
 app.commandLine.appendSwitch('proxy-bypass-list', '<local>;*.google.com;*foo.com;1.2.3.4:5678')
 ```
 
@@ -256,9 +278,10 @@ the required version is unavailable. Current default is set to `3`.
 
 Electron supports some of the [CLI flags][node-cli] supported by Node.js.
 
-**Note:** Passing unsupported command line switches to Electron when it is not running in `ELECTRON_RUN_AS_NODE` will have no effect.
+> [!NOTE]
+> Passing unsupported command line switches to Electron when it is not running in `ELECTRON_RUN_AS_NODE` will have no effect.
 
-### `--inspect-brk\[=\[host:]port]`
+### `--inspect-brk[=[host:]port]`
 
 Activate inspector on host:port and break at start of user script. Default host:port is 127.0.0.1:9229.
 
@@ -270,13 +293,13 @@ Activate inspector on `host:port` and break at start of the first internal
 JavaScript script executed when the inspector is available.
 Default `host:port` is `127.0.0.1:9229`.
 
-### `--inspect-port=\[host:]port`
+### `--inspect-port=[host:]port`
 
 Set the `host:port` to be used when the inspector is activated. Useful when activating the inspector by sending the SIGUSR1 signal. Default host is `127.0.0.1`.
 
 Aliased to `--debug-port=[host:]port`.
 
-### `--inspect\[=\[host:]port]`
+### `--inspect[=[host:]port]`
 
 Activate inspector on `host:port`. Default is `127.0.0.1:9229`.
 
@@ -291,6 +314,10 @@ Aliased to `--debug[=[host:]port`.
 Specify ways of the inspector web socket url exposure.
 
 By default inspector websocket url is available in stderr and under /json/list endpoint on `http://host:port/json/list`.
+
+### `--experimental-network-inspection`
+
+Enable support for devtools network inspector events, for visibility into requests made by the nodejs `http` and `https` modules.
 
 ### `--no-deprecation`
 
@@ -323,6 +350,26 @@ Set the directory to which all Node.js diagnostic output files are written. Defa
 
 Affects the default output directory of [v8.setHeapSnapshotNearHeapLimit](https://nodejs.org/docs/latest/api/v8.html#v8setheapsnapshotnearheaplimitlimit).
 
+### `--no-experimental-global-navigator`
+
+Disable exposition of [Navigator API][] on the global scope from Node.js.
+
+## Chromium Flags
+
+There isn't a documented list of all Chromium switches, but there are a few ways to find them.
+
+The easiest way is through Chromium's flags page, which you can access at `about://flags`. These flags don't directly match switch names, but they show up in the process's command-line arguments.
+
+To see these arguments, enable a flag in `about://flags`, then go to `about://version` in Chromium. You'll find a list of command-line arguments, including `--flag-switches-begin --your --list --flag-switches-end`, which contains the list of your flag enabled switches.
+
+Most flags are included as part of `--enable-features=`, but some are standalone switches, like `--enable-experimental-web-platform-features`.
+
+A complete list of flags exists in [Chromium's flag metadata page](https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/flag-metadata.json), but this list includes platform, environment and GPU specific, expired and potentially non-functional flags, so many of them might not always work in every situation.
+
+Keep in mind that standalone switches can sometimes be split into individual features, so there's no fully complete list of switches.
+
+Finally, you'll need to ensure that the version of Chromium in Electron matches the version of the browser you're using to cross-reference the switches.
+
 [app]: app.md
 [append-switch]: command-line.md#commandlineappendswitchswitch-value
 [debugging-main-process]: ../tutorial/debugging-main-process.md
@@ -331,3 +378,4 @@ Affects the default output directory of [v8.setHeapSnapshotNearHeapLimit](https:
 [play-silent-audio]: https://github.com/atom/atom/pull/9485/files
 [ready]: app.md#event-ready
 [severities]: https://source.chromium.org/chromium/chromium/src/+/main:base/logging.h?q=logging::LogSeverity&ss=chromium
+[Navigator API]: https://github.com/nodejs/node/blob/main/doc/api/globals.md#navigator

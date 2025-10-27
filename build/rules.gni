@@ -67,10 +67,6 @@ template("mac_xib_bundle_data") {
     ibtool_flags = [
       "--minimum-deployment-target",
       mac_deployment_target,
-
-      # TODO(rsesek): Enable this once all the bots are on Xcode 7+.
-      # "--target-device",
-      # "mac",
     ]
   }
 

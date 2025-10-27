@@ -1289,6 +1289,53 @@ describe('session module', () => {
         expect(item.getContentDisposition()).to.equal(contentDisposition);
       });
 
+      it('can perform a download with referer header', async () => {
+        const server = http.createServer((req, res) => {
+          const { referer } = req.headers;
+          if (!referer || !referer.startsWith('http://www.electronjs.org')) {
+            res.statusCode = 403;
+            res.end();
+          } else {
+            res.writeHead(200, {
+              'Content-Length': mockPDF.length,
+              'Content-Type': 'application/pdf',
+              'Content-Disposition': req.url === '/?testFilename' ? 'inline' : contentDisposition
+            });
+            res.end(mockPDF);
+          }
+        });
+
+        const { port } = await listen(server);
+
+        const w = new BrowserWindow({ show: false });
+        const downloadDone: Promise<Electron.DownloadItem> = new Promise((resolve) => {
+          w.webContents.session.once('will-download', (e, item) => {
+            item.savePath = downloadFilePath;
+            item.on('done', () => {
+              try {
+                resolve(item);
+              } catch { }
+            });
+          });
+        });
+
+        w.webContents.downloadURL(`${url}:${port}`, {
+          headers: {
+            // Setting a Referer header with HTTPS scheme while the download URL's
+            // scheme is HTTP might lead to download failure.
+            referer: 'http://www.electronjs.org'
+          }
+        });
+
+        const item = await downloadDone;
+        expect(item.getState()).to.equal('completed');
+        expect(item.getFilename()).to.equal('mock.pdf');
+        expect(item.getMimeType()).to.equal('application/pdf');
+        expect(item.getReceivedBytes()).to.equal(mockPDF.length);
+        expect(item.getTotalBytes()).to.equal(mockPDF.length);
+        expect(item.getContentDisposition()).to.equal(contentDisposition);
+      });
+
       it('throws when called with invalid headers', () => {
         const w = new BrowserWindow({ show: false });
         expect(() => {

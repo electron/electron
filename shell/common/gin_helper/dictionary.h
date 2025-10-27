@@ -67,6 +67,15 @@ class Dictionary : public gin::Dictionary {
     return result.FromMaybe(false);
   }
 
+  // Convenience function for using a default value if the
+  // specified key isn't present in the dictionary.
+  template <typename T>
+  T ValueOrDefault(const std::string_view key, T default_value) const {
+    if (auto value = T{}; Get(key, &value))
+      return value;
+    return default_value;
+  }
+
   // Like normal Get but put result in an std::optional.
   template <typename T>
   bool GetOptional(const std::string_view key, std::optional<T>* out) const {

@@ -10,6 +10,13 @@
 #include "content/public/common/color_parser.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 
+#if BUILDFLAG(IS_WIN)
+#include <dwmapi.h>
+
+#include "base/win/registry.h"
+#include "skia/ext/skia_utils_win.h"
+#endif
+
 namespace {
 
 bool IsHexFormatWithAlpha(const std::string& str) {
@@ -28,7 +35,7 @@ bool IsHexFormatWithAlpha(const std::string& str) {
 
 namespace electron {
 
-SkColor ParseCSSColor(const std::string& color_string) {
+std::optional<SkColor> ParseCSSColor(const std::string& color_string) {
   // ParseCssColorString expects RGBA and we historically use ARGB
   // so we need to convert before passing to ParseCssColorString.
   std::string converted_color_str;
@@ -42,7 +49,7 @@ SkColor ParseCSSColor(const std::string& color_string) {
 
   SkColor color;
   if (!content::ParseCssColorString(converted_color_str, &color))
-    color = SK_ColorWHITE;
+    return std::nullopt;
 
   return color;
 }
@@ -61,5 +68,26 @@ std::string ToRGBAHex(SkColor color, bool include_hash) {
   }
   return color_str;
 }
+
+#if BUILDFLAG(IS_WIN)
+std::optional<DWORD> GetSystemAccentColor() {
+  base::win::RegKey key;
+  if (key.Open(HKEY_CURRENT_USER, L"SOFTWARE\\Microsoft\\Windows\\DWM",
+               KEY_READ) != ERROR_SUCCESS) {
+    return std::nullopt;
+  }
+
+  DWORD accent_color = 0;
+  if (key.ReadValueDW(L"AccentColor", &accent_color) != ERROR_SUCCESS) {
+    return std::nullopt;
+  }
+
+  return accent_color;
+}
+
+SkColor GetSysSkColor(int which) {
+  return skia::COLORREFToSkColor(GetSysColor(which));
+}
+#endif
 
 }  // namespace electron

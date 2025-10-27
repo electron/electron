@@ -7,6 +7,7 @@ import { once } from 'node:events';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
+import { singleModifierCombinations } from './lib/accelerator-helpers';
 import { ifit } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 import { sortMenuItems } from '../lib/browser/api/menu-utils';
@@ -927,19 +928,22 @@ describe('Menu module', function () {
       w.show();
     });
 
-    it('does not crash when rendering menu item with Super or meta accelerator', async () => {
-      const menu = Menu.buildFromTemplate([{
-        label: 'Test Super',
-        accelerator: 'Super+Ctrl+T'
-      }, {
-        label: 'Test Meta',
-        accelerator: 'Meta+Ctrl+T'
-      }]);
-      const menuWillClose = once(menu, 'menu-will-close');
-      menu.popup({ window: w });
-      menu.closePopup();
-      await menuWillClose;
-    });
+    const chunkSize = 10;
+    let chunkCount = 0;
+    const totalChunks = Math.ceil(singleModifierCombinations.length / chunkSize);
+    for (let i = 0; i < singleModifierCombinations.length; i += chunkSize) {
+      const chunk = singleModifierCombinations.slice(i, i + chunkSize);
+      it(`does not crash when rendering menu item with single accelerator combinations ${++chunkCount}/${totalChunks}`, async () => {
+        const menu = Menu.buildFromTemplate([
+          ...chunk.map(combination => ({
+            label: `Test ${combination}`,
+            accelerator: combination
+          }))
+        ]);
+        menu.popup({ window: w });
+        menu.closePopup();
+      });
+    }
   });
 
   describe('Menu.setApplicationMenu', () => {

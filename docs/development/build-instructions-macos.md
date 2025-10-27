@@ -10,8 +10,8 @@ Follow the guidelines below for building **Electron itself** on macOS, for the p
 * [Xcode](https://developer.apple.com/technologies/tools/). The exact version
   needed depends on what branch you are building, but the latest version of
   Xcode is generally a good bet for building `main`.
-* [node.js](https://nodejs.org) (external)
-* Python >= 3.7
+* Python >= 3.9
+* [Node.js](https://nodejs.org/download/) >= 22.12.0
 
 ### Arm64-specific prerequisites
 

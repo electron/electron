@@ -28,6 +28,7 @@
 namespace electron {
 
 class RootViewMac;
+class NativeAppWindowFrameViewMacClient;
 
 class NativeWindowMac : public NativeWindow,
                         public ui::NativeThemeObserver,
@@ -39,8 +40,8 @@ class NativeWindowMac : public NativeWindow,
   // NativeWindow:
   void OnTitleChanged() override;
   void SetContentView(views::View* view) override;
-  void CloseImpl() override;
-  void CloseImmediatelyImpl() override;
+  void Close() override;
+  void CloseImmediately() override;
   void Focus(bool focus) override;
   bool IsFocused() const override;
   void Show() override;
@@ -174,6 +175,8 @@ class NativeWindowMac : public NativeWindow,
   // cleanup in destructor.
   void Cleanup();
 
+  void SetBorderless(bool borderless);
+
   void UpdateVibrancyRadii(bool fullscreen);
 
   void UpdateWindowOriginalFrame();
@@ -222,7 +225,7 @@ class NativeWindowMac : public NativeWindow,
   // views::WidgetDelegate:
   views::View* GetContentsView() override;
   bool CanMaximize() const override;
-  std::unique_ptr<views::NonClientFrameView> CreateNonClientFrameView(
+  std::unique_ptr<views::FrameView> CreateFrameView(
       views::Widget* widget) override;
   void OnWidgetInitialized() override;
 
@@ -307,6 +310,9 @@ class NativeWindowMac : public NativeWindow,
 
   // The presentation options before entering simple fullscreen mode.
   NSApplicationPresentationOptions simple_fullscreen_options_;
+
+  // Client that provides app-specific frame behaviors to NativeFrameViewMac.
+  std::unique_ptr<NativeAppWindowFrameViewMacClient> frame_view_client_;
 };
 
 }  // namespace electron

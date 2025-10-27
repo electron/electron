@@ -60,6 +60,10 @@ following properties:
     `strict-origin-when-cross-origin`.
   * `cache` string (optional) - can be `default`, `no-store`, `reload`,
     `no-cache`, `force-cache` or `only-if-cached`.
+  * `priority` string (optional) - can be `throttled`, `idle`, `lowest`,
+    `low`, `medium`, or `highest`. Defaults to `idle`.
+  * `priorityIncremental` boolean (optional) - the incremental loading flag as part
+    of HTTP extensible priorities (RFC 9218). Default is `true`.
 
 `options` properties such as `protocol`, `host`, `hostname`, `port` and `path`
 strictly follow the Node.js model as described in the

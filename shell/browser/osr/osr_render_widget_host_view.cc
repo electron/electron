@@ -13,6 +13,7 @@
 #include "base/location.h"
 #include "base/memory/ptr_util.h"
 #include "base/memory/raw_ptr.h"
+#include "base/notimplemented.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/time/time.h"
@@ -44,7 +45,7 @@
 #include "ui/gfx/geometry/dip_util.h"
 #include "ui/gfx/geometry/size_conversions.h"
 #include "ui/gfx/image/image_skia.h"
-#include "ui/gfx/native_widget_types.h"
+#include "ui/gfx/native_ui_types.h"
 #include "ui/gfx/skbitmap_operations.h"
 #include "ui/latency/latency_info.h"
 
@@ -153,6 +154,7 @@ class ElectronDelegatedFrameHostClient
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     bool transparent,
     bool offscreen_use_shared_texture,
+    const std::string& offscreen_shared_texture_pixel_format,
     bool painting,
     int frame_rate,
     const OnPaintCallback& callback,
@@ -164,6 +166,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       parent_host_view_(parent_host_view),
       transparent_(transparent),
       offscreen_use_shared_texture_(offscreen_use_shared_texture),
+      offscreen_shared_texture_pixel_format_(
+          offscreen_shared_texture_pixel_format),
       callback_(callback),
       frame_rate_(frame_rate),
       size_(initial_size),
@@ -331,9 +335,7 @@ void OffScreenRenderWidgetHostView::Hide() {
     return;
 
   if (render_widget_host_) {
-    // TODO(codebytere) - remove when CL:6250383 is released.
-    if (render_widget_host_->delegate())
-      render_widget_host_->WasHidden();
+    render_widget_host_->WasHidden();
 
     auto* provider = content::RenderWidgetHostImpl::From(render_widget_host_)
                          ->render_frame_metadata_provider();
@@ -487,7 +489,8 @@ uint32_t OffScreenRenderWidgetHostView::GetCaptureSequenceNumber() const {
 void OffScreenRenderWidgetHostView::CopyFromSurface(
     const gfx::Rect& src_rect,
     const gfx::Size& output_size,
-    base::OnceCallback<void(const SkBitmap&)> callback) {
+    base::OnceCallback<void(const viz::CopyOutputBitmapWithMetadata&)>
+        callback) {
   delegated_frame_host()->CopyFromCompositingSurface(src_rect, output_size,
                                                      std::move(callback));
 }
@@ -549,7 +552,8 @@ OffScreenRenderWidgetHostView::CreateViewForWidget(
   }
 
   return new OffScreenRenderWidgetHostView(
-      transparent_, offscreen_use_shared_texture_, true,
+      transparent_, offscreen_use_shared_texture_,
+      offscreen_shared_texture_pixel_format_, true,
       embedder_host_view->frame_rate(), callback_, render_widget_host,
       embedder_host_view, size());
 }
@@ -834,7 +838,7 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
   mouse_wheel_phase_handler_.SendWheelEndForTouchpadScrollingIfNeeded(
       should_route_event);
   mouse_wheel_phase_handler_.AddPhaseIfNeededAndScheduleEndEvent(
-      mouse_wheel_event, false);
+      mouse_wheel_event, false, true);
 
   if (!IsPopupWidget()) {
     if (popup_host_view_) {
@@ -962,7 +966,7 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   SetupFrameRate(false);
 
   display::Display display =
-      display::Screen::GetScreen()->GetDisplayNearestView(GetNativeView());
+      display::Screen::Get()->GetDisplayNearestView(GetNativeView());
   const float scaleFactor = display.device_scale_factor();
   float sf = GetDeviceScaleFactor();
   const bool sf_did_change = scaleFactor != sf;

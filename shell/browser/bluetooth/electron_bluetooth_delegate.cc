@@ -7,6 +7,7 @@
 #include <memory>
 #include <utility>
 
+#include "base/notimplemented.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_context.h"

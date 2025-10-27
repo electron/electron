@@ -39,34 +39,22 @@ Each Electron release provides binaries for macOS, Windows, and Linux.
 
 * macOS (Big Sur and up): Electron provides 64-bit Intel and Apple Silicon / ARM binaries for macOS.
 * Windows (Windows 10 and up): Electron provides `ia32` (`x86`), `x64` (`amd64`), and `arm64` binaries for Windows. Windows on ARM support was added in Electron 5.0.8. Support for Windows 7, 8 and 8.1 was [removed in Electron 23, in line with Chromium's Windows deprecation policy](https://www.electronjs.org/blog/windows-7-to-8-1-deprecation-notice).
-* Linux: The prebuilt binaries of Electron are built on Ubuntu 20.04. They have also been verified to work on:
+* Linux: The prebuilt binaries of Electron are built on Ubuntu 22.04. They have also been verified to work on:
   * Ubuntu 18.04 and newer
   * Fedora 32 and newer
   * Debian 10 and newer
 
-## Quick start & Electron Fiddle
+## Electron Fiddle
 
 Use [`Electron Fiddle`](https://github.com/electron/fiddle)
 to build, run, and package small Electron experiments, to see code examples for all of Electron's APIs, and
 to try out different versions of Electron. It's designed to make the start of your journey with
 Electron easier.
 
-Alternatively, clone and run the
-[electron/electron-quick-start](https://github.com/electron/electron-quick-start)
-repository to see a minimal Electron app in action:
-
-```sh
-git clone https://github.com/electron/electron-quick-start
-cd electron-quick-start
-npm install
-npm start
-```
-
 ## Resources for learning Electron
 
 * [electronjs.org/docs](https://electronjs.org/docs) - All of Electron's documentation
 * [electron/fiddle](https://github.com/electron/fiddle) - A tool to build, run, and package small Electron experiments
-* [electron/electron-quick-start](https://github.com/electron/electron-quick-start) - A very basic starter Electron app
 * [electronjs.org/community#boilerplates](https://electronjs.org/community#boilerplates) - Sample starter apps created by the community
 
 ## Programmatic usage

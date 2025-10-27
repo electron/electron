@@ -51,8 +51,8 @@ class ResolveHostFunction
   // network::mojom::ResolveHostClient implementation
   void OnComplete(int result,
                   const net::ResolveErrorInfo& resolve_error_info,
-                  const std::optional<net::AddressList>& resolved_addresses,
-                  const std::optional<net::HostResolverEndpointResults>&
+                  const net::AddressList& resolved_addresses,
+                  const net::HostResolverEndpointResults&
                       endpoint_results_with_metadata) override;
 
   SEQUENCE_CHECKER(sequence_checker_);

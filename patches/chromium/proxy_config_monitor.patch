@@ -6,7 +6,7 @@ Subject: proxy_config_monitor.patch
 Allow monitoring proxy config changes for a pref service.
 
 diff --git a/chrome/browser/net/proxy_config_monitor.cc b/chrome/browser/net/proxy_config_monitor.cc
-index 1c1bce347bbebe0e1932d025f0cd3b773bdd1590..c541bc048d90021f9d4ffaff135e3320b77d8fe1 100644
+index 50e7a07af841ff55cd24c0a79eef5dcc68807933..ed40ecdb91ddd7139f8f463809594ddfca793fcc 100644
 --- a/chrome/browser/net/proxy_config_monitor.cc
 +++ b/chrome/browser/net/proxy_config_monitor.cc
 @@ -11,7 +11,9 @@
@@ -23,10 +23,10 @@ index 1c1bce347bbebe0e1932d025f0cd3b773bdd1590..c541bc048d90021f9d4ffaff135e3320
  #include "chrome/browser/ash/profiles/profile_helper.h"
  #endif  // BUILDFLAG(IS_CHROMEOS)
  
--#if BUILDFLAG(ENABLE_EXTENSIONS)
+-#if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
 +#if 0
  #include "chrome/browser/extensions/api/proxy/proxy_api.h"
- #endif
+ #endif // BUILDFLAG(ENABLE_EXTENSIONS_CORE)
  
  using content::BrowserThread;
  
@@ -62,9 +62,9 @@ index 1c1bce347bbebe0e1932d025f0cd3b773bdd1590..c541bc048d90021f9d4ffaff135e3320
                                                              net_error);
 +#endif
  }
- #endif
+ #endif  // BUILDFLAG(ENABLE_EXTENSIONS_CORE)
 diff --git a/chrome/browser/net/proxy_config_monitor.h b/chrome/browser/net/proxy_config_monitor.h
-index c808604a9b586eb5524a10b7561987e5b29747ea..68980ce4bf50d6bde5329f6d45209be86d878769 100644
+index 6c060b52d25799c6a7c4e4ee86ed7490060560d6..c81481a4451ff50b6ace5372a68b8615819affb3 100644
 --- a/chrome/browser/net/proxy_config_monitor.h
 +++ b/chrome/browser/net/proxy_config_monitor.h
 @@ -40,11 +40,12 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
@@ -83,10 +83,10 @@ index c808604a9b586eb5524a10b7561987e5b29747ea..68980ce4bf50d6bde5329f6d45209be8
    // associated with a profile. Must be destroyed before |local_state|.
 @@ -94,7 +95,7 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
  
- #if BUILDFLAG(ENABLE_EXTENSIONS)
+ #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
    mojo::ReceiverSet<network::mojom::ProxyErrorClient> error_receiver_set_;
 -  raw_ptr<Profile> profile_ = nullptr;
 +  // raw_ptr<Profile> profile_ = nullptr;
- #endif
+ #endif  // BUILDFLAG(ENABLE_EXTENSIONS_CORE)
  };
  

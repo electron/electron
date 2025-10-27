@@ -129,6 +129,26 @@ describe('utilityProcess module', () => {
       expect(code).to.equal(exitCode);
     });
 
+    it('does not run JS after process.exit is called', async () => {
+      const file = path.join(os.tmpdir(), `no-js-after-exit-log-${Math.random()}`);
+      const child = utilityProcess.fork(path.join(fixturesPath, 'no-js-after-exit.js'), [`--testPath=${file}`]);
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(1);
+      let handle = null;
+      const lines = [];
+      try {
+        handle = await fs.open(file);
+        for await (const line of handle.readLines()) {
+          lines.push(line);
+        }
+      } finally {
+        await handle?.close();
+        await fs.rm(file, { force: true });
+      }
+      expect(lines.length).to.equal(1);
+      expect(lines[0]).to.equal('before exit');
+    });
+
     // 32-bit system will not have V8 Sandbox enabled.
     // WoA testing does not have VS toolchain configured to build native addons.
     ifit(process.arch !== 'ia32' && process.arch !== 'arm' && !isWindowsOnArm)('emits \'error\' when fatal error is triggered from V8', async () => {
@@ -235,6 +255,41 @@ describe('utilityProcess module', () => {
       });
       await once(child, 'exit');
       expect(log).to.equal(pathToFileURL(fixtureFile) + '\n');
+    });
+
+    it('import \'electron/lol\' should throw', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'electron-modules', 'import-lol.mjs'), [], {
+        stdio: ['ignore', 'ignore', 'pipe']
+      });
+      let stderr = '';
+      child.stderr!.on('data', (data) => { stderr += data.toString('utf8'); });
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(1);
+      expect(stderr).to.match(/Error \[ERR_MODULE_NOT_FOUND\]/);
+    });
+
+    it('import \'electron/main\' should not throw', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'electron-modules', 'import-main.mjs'));
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('import \'electron/renderer\' should not throw', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'electron-modules', 'import-renderer.mjs'));
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('import \'electron/common\' should not throw', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'electron-modules', 'import-common.mjs'));
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('import \'electron/utility\' should not throw', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'electron-modules', 'import-utility.mjs'));
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
     });
   });
 
@@ -779,6 +834,34 @@ describe('utilityProcess module', () => {
       const stat = await fs.stat(path.join(tmpDir, files[0]));
       expect(stat.size).to.be.greaterThan(0);
       await fs.rm(tmpDir, { recursive: true });
+    });
+
+    it('supports --no-experimental-global-navigator flag', async () => {
+      {
+        const child = utilityProcess.fork(path.join(fixturesPath, 'navigator.js'), [], {
+          stdio: 'ignore'
+        });
+        await once(child, 'spawn');
+        const [data] = await once(child, 'message');
+        expect(data).to.be.true();
+        const exit = once(child, 'exit');
+        expect(child.kill()).to.be.true();
+        await exit;
+      }
+      {
+        const child = utilityProcess.fork(path.join(fixturesPath, 'navigator.js'), [], {
+          stdio: 'ignore',
+          execArgv: [
+            '--no-experimental-global-navigator'
+          ]
+        });
+        await once(child, 'spawn');
+        const [data] = await once(child, 'message');
+        expect(data).to.be.false();
+        const exit = once(child, 'exit');
+        expect(child.kill()).to.be.true();
+        await exit;
+      }
     });
   });
 });

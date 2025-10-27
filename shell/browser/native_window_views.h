@@ -12,6 +12,7 @@
 #include <string>
 
 #include "base/memory/raw_ptr.h"
+#include "base/no_destructor.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "ui/base/ozone_buildflags.h"
@@ -24,9 +25,14 @@
 #include "shell/browser/ui/win/taskbar_host.h"
 #endif
 
+namespace gin {
+class Arguments;
+}  // namespace gin
+
 namespace electron {
 
 #if BUILDFLAG(IS_LINUX)
+class ClientFrameViewLinux;
 class GlobalMenuBarX11;
 #endif
 
@@ -48,8 +54,8 @@ class NativeWindowViews : public NativeWindow,
 
   // NativeWindow:
   void SetContentView(views::View* view) override;
-  void CloseImpl() override;
-  void CloseImmediatelyImpl() override;
+  void Close() override;
+  void CloseImmediately() override;
   void Focus(bool focus) override;
   bool IsFocused() const override;
   void Show() override;
@@ -83,6 +89,7 @@ class NativeWindowViews : public NativeWindow,
   bool IsResizable() const override;
   void SetAspectRatio(double aspect_ratio,
                       const gfx::Size& extra_size) override;
+  bool CanResize() const override;
   void SetMovable(bool movable) override;
   bool IsMovable() const override;
   void SetMinimizable(bool minimizable) override;
@@ -99,6 +106,7 @@ class NativeWindowViews : public NativeWindow,
   ui::ZOrderLevel GetZOrderLevel() const override;
   void Center() override;
   void Invalidate() override;
+  [[nodiscard]] bool IsActive() const override;
   void FlashFrame(bool flash) override;
   void SetSkipTaskbar(bool skip) override;
   void SetExcludedFromShownWindowsMenu(bool excluded) override {}
@@ -150,6 +158,9 @@ class NativeWindowViews : public NativeWindow,
   void IncrementChildModals();
   void DecrementChildModals();
 
+  void SetTitleBarOverlay(const gin_helper::Dictionary& options,
+                          gin::Arguments* args);
+
 #if BUILDFLAG(IS_WIN)
   // Catch-all message handling and filtering. Called before
   // HWNDMessageHandler's built-in handling, which may preempt some
@@ -167,20 +178,32 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
 #if BUILDFLAG(IS_WIN)
+  void SetAccentColor(
+      std::variant<std::monostate, bool, SkColor> accent_color) override;
+  std::variant<bool, std::string> GetAccentColor() const override;
+  void UpdateWindowAccentColor(bool active) override;
   TaskbarHost& taskbar_host() { return taskbar_host_; }
   void UpdateThickFrame();
+  void SetLayered();
 #endif
 
   SkColor overlay_button_color() const { return overlay_button_color_; }
+  SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
+
+#if BUILDFLAG(IS_LINUX)
+  // returns the ClientFrameViewLinux iff that is our FrameView type,
+  // nullptr otherwise.
+  ClientFrameViewLinux* GetClientFrameViewLinux();
+#endif
+
+ private:
   void set_overlay_button_color(SkColor color) {
     overlay_button_color_ = color;
   }
-  SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
   void set_overlay_symbol_color(SkColor color) {
     overlay_symbol_color_ = color;
   }
 
- private:
   // views::WidgetObserver:
   void OnWidgetActivationChanged(views::Widget* widget, bool active) override;
   void OnWidgetBoundsChanged(views::Widget* widget,
@@ -197,7 +220,7 @@ class NativeWindowViews : public NativeWindow,
       gfx::NativeView child,
       const gfx::Point& location) override;
   views::ClientView* CreateClientView(views::Widget* widget) override;
-  std::unique_ptr<views::NonClientFrameView> CreateNonClientFrameView(
+  std::unique_ptr<views::FrameView> CreateFrameView(
       views::Widget* widget) override;
   void OnWidgetMove() override;
 #if BUILDFLAG(IS_WIN)
@@ -281,7 +304,8 @@ class NativeWindowViews : public NativeWindow,
   base::win::ScopedGDIObject<HICON> app_icon_;
 
   // The set of windows currently forwarding mouse messages.
-  static inline absl::flat_hash_set<NativeWindowViews*> forwarding_windows_;
+  static inline base::NoDestructor<absl::flat_hash_set<NativeWindowViews*>>
+      forwarding_windows_;
   static HHOOK mouse_hook_;
   bool forwarding_mouse_messages_ = false;
   HWND legacy_window_ = nullptr;
@@ -301,6 +325,11 @@ class NativeWindowViews : public NativeWindow,
 
   // Whether the window is currently being moved.
   bool is_moving_ = false;
+
+  // Whether or not the window was previously snapped e.g. before minimizing.
+  bool was_snapped_ = false;
+
+  std::variant<std::monostate, bool, SkColor> accent_color_;
 
   std::optional<gfx::Rect> pending_bounds_change_;
 

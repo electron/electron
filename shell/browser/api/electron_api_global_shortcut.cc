@@ -15,12 +15,12 @@
 #include "electron/shell/common/electron_constants.h"
 #include "extensions/common/command.h"
 #include "gin/dictionary.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/api/electron_api_system_preferences.h"
 #include "shell/browser/browser.h"
 #include "shell/common/gin_converters/accelerator_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/node_includes.h"
 
 #if BUILDFLAG(IS_MAC)
@@ -49,7 +49,8 @@ bool MapHasMediaKeys(
 
 namespace electron::api {
 
-gin::WrapperInfo GlobalShortcut::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo GlobalShortcut::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
 
 GlobalShortcut::GlobalShortcut() {}
 
@@ -218,14 +219,16 @@ void GlobalShortcut::UnregisterAll() {
 }
 
 // static
-gin::Handle<GlobalShortcut> GlobalShortcut::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new GlobalShortcut());
+gin_helper::Handle<GlobalShortcut> GlobalShortcut::Create(
+    v8::Isolate* isolate) {
+  return gin_helper::CreateHandle(isolate, new GlobalShortcut());
 }
 
 // static
 gin::ObjectTemplateBuilder GlobalShortcut::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::Wrappable<GlobalShortcut>::GetObjectTemplateBuilder(isolate)
+  return gin_helper::DeprecatedWrappable<
+             GlobalShortcut>::GetObjectTemplateBuilder(isolate)
       .SetMethod("registerAll", &GlobalShortcut::RegisterAll)
       .SetMethod("register", &GlobalShortcut::Register)
       .SetMethod("isRegistered", &GlobalShortcut::IsRegistered)
@@ -245,8 +248,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin::Dictionary dict{isolate, exports};
   dict.Set("globalShortcut", electron::api::GlobalShortcut::Create(isolate));
 }
 
