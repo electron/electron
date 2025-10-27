@@ -19,10 +19,10 @@ jobs:
           webhook-type: webhook-trigger
           payload: |
             {
-              "base_ref": "${{ github.event.pull_request.base.ref }}",
-              "title": "${{ github.event.pull_request.title }}",
-              "url": "${{ github.event.pull_request.html_url }}",
-              "user": "${{ github.event.pull_request.user.login }}"
+              "base_ref": ${{ toJSON(github.event.pull_request.base.ref) }},
+              "title": ${{ toJSON(github.event.pull_request.title) }},
+              "url": ${{ toJSON(github.event.pull_request.html_url) }},
+              "user": ${{ toJSON(github.event.pull_request.user.login) }}
             }
   pull-request-labeled-deprecation-review-complete:
     name: deprecation-review/complete label added
