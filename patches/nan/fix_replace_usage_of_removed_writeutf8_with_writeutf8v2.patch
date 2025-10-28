@@ -6,10 +6,10 @@ Subject: fix: replace usage of removed WriteUtf8 with WriteUtf8V2
 Refs https://chromium-review.googlesource.com/c/v8/v8/+/6495189
 
 diff --git a/nan.h b/nan.h
-index f4865a77e60d5105ed2426037984ddcbfa58bbca..d0b3e919f275bd4451eef9ad6aa1a78629ce862c 100644
+index f0bfc0c6cc01b97156cb900615ec2df4b70ef5e8..0f120365630e7e2a37964f09cc129d05c6648c90 100644
 --- a/nan.h
 +++ b/nan.h
-@@ -418,12 +418,18 @@ template<typename P> class WeakCallbackInfo;
+@@ -427,12 +427,18 @@ template<typename P> class WeakCallbackInfo;
  
  namespace imp {
    static const size_t kMaxLength = 0x3fffffff;
@@ -31,7 +31,7 @@ index f4865a77e60d5105ed2426037984ddcbfa58bbca..d0b3e919f275bd4451eef9ad6aa1a786
    static const unsigned kReplaceInvalidUtf8 = v8::String::REPLACE_INVALID_UTF8;
  #else
    static const unsigned kReplaceInvalidUtf8 = 0;
-@@ -1157,11 +1163,11 @@ class Utf8String {
+@@ -1167,11 +1173,11 @@ class Utf8String {
            str_ = static_cast<char*>(malloc(len));
            assert(str_ != 0);
          }
@@ -47,7 +47,7 @@ index f4865a77e60d5105ed2426037984ddcbfa58bbca..d0b3e919f275bd4451eef9ad6aa1a786
  #else
          // See https://github.com/nodejs/nan/issues/832.
          // Disable the warning as there is no way around it.
-@@ -1173,6 +1179,8 @@ class Utf8String {
+@@ -1183,6 +1189,8 @@ class Utf8String {
  #pragma GCC diagnostic push
  #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
  #endif
@@ -56,7 +56,7 @@ index f4865a77e60d5105ed2426037984ddcbfa58bbca..d0b3e919f275bd4451eef9ad6aa1a786
          length_ = string->WriteUtf8(str_, static_cast<int>(len), 0, flags);
  #ifdef __GNUC__
  #pragma GCC diagnostic pop
-@@ -1499,9 +1507,10 @@ class Utf8String {
+@@ -1509,9 +1517,10 @@ class Utf8String {
            str_ = static_cast<char*>(malloc(len));
            assert(str_ != 0);
          }

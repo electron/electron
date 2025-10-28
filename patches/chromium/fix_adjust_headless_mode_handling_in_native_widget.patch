@@ -19,7 +19,7 @@ https://chromium-review.googlesource.com/c/chromium/src/+/6936895
 as we depend on the removed functionality in this patch.
 
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index f651286bc85f3640ec072b05eb2f0d118e02417a..94ee607bc9de2bf388a736c438613b51de1a5ac2 100644
+index ce52245628c72018da8ec4a3155dafa74e42c8e3..89a078d1ce00667bd83def21e341b03ca6c79ee3 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -522,7 +522,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -45,10 +45,10 @@ index 11954a3adfb6d517b6dc8e780a4a9aba8a0bf98a..1ddc1f34055c8b42177703ccc2f0d006
    // window's workspace and fullscreen state, and can be retrieved from or
    // applied to a window.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index e523151fb670af28cf2c54548c5009825fdbed92..66d5724f848b328a19362a3c0f6346704ddb50ac 100644
+index 2239b085ac7fd87fe06aef1001551f8afe8e21e4..9ead3ab0755fe5c3500893325f0597e07e7241cc 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-@@ -554,6 +554,7 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+@@ -556,6 +556,7 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
    bool is_miniaturized_ = false;
    bool is_window_key_ = false;
    bool is_mouse_capture_active_ = false;
@@ -57,10 +57,10 @@ index e523151fb670af28cf2c54548c5009825fdbed92..66d5724f848b328a19362a3c0f634670
    gfx::Rect window_bounds_before_fullscreen_;
  
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index e1a1cdb2ec192d2ee5a555ecccf041f757336f79..68a210eaf34d6d410a14478ad5bf0c78faa30388 100644
+index ae113be147f5bfe9d6218a20495897600cc5299d..cb67460205f4db04a3256151d49a2713688c7627 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -465,6 +465,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -467,6 +467,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    if (!is_tooltip) {
      tooltip_manager_ = std::make_unique<TooltipManagerMac>(GetNSWindowMojo());
    }
@@ -68,7 +68,7 @@ index e1a1cdb2ec192d2ee5a555ecccf041f757336f79..68a210eaf34d6d410a14478ad5bf0c78
  
    if (params.workspace.length()) {
      std::string restoration_data;
-@@ -482,6 +483,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -484,6 +485,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
      window_params->modal_type = widget->widget_delegate()->GetModalType();
      window_params->is_translucent =
          params.opacity == Widget::InitParams::WindowOpacity::kTranslucent;
@@ -76,7 +76,7 @@ index e1a1cdb2ec192d2ee5a555ecccf041f757336f79..68a210eaf34d6d410a14478ad5bf0c78
      window_params->is_tooltip = is_tooltip;
  
      // macOS likes to put shadows on most things. However, frameless windows
-@@ -663,9 +665,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -665,9 +667,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // case it will never become visible but we want its compositor to produce
    // frames for screenshooting and screencasting.
    UpdateCompositorProperties();
@@ -90,7 +90,7 @@ index e1a1cdb2ec192d2ee5a555ecccf041f757336f79..68a210eaf34d6d410a14478ad5bf0c78
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index 566acaeff6b746c97db606cbda71b29e82570453..28f14b53aa9f2daf25431231539a5dbfc3c42b95 100644
+index c44058711170316552ea05f97b8b8af694da8ca3..2895f8d17e7d045a3fae3f83e4dc117d48b7b29f 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
 @@ -222,6 +222,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
@@ -121,7 +121,7 @@ index 566acaeff6b746c97db606cbda71b29e82570453..28f14b53aa9f2daf25431231539a5dbf
  
    if (params.opacity == views::Widget::InitParams::WindowOpacity::kInferred &&
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index ce34d038564570f4edc8e36fd29524bd93c0b462..808abf2ce1c797591304a8ece9e8a169f034273e 100644
+index 40bba1d16a37f0b3c563faef86402641418dd994..bad7f48f50d5cd1c716963f660f63c7ec0d6449a 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
 @@ -324,6 +324,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
@@ -158,7 +158,7 @@ index ce34d038564570f4edc8e36fd29524bd93c0b462..808abf2ce1c797591304a8ece9e8a169
    // True if the window size will follow the content preferred size.
    bool is_autosized() const { return is_autosized_; }
  
-@@ -1715,6 +1728,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1718,6 +1731,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // If true, the mouse is currently down.
    bool is_mouse_button_pressed_ = false;
  

@@ -244,12 +244,26 @@ to enable this behavior.
 Even when `nodeIntegration: false` is used, to truly enforce strong isolation
 and prevent the use of Node primitives `contextIsolation` **must** also be used.
 
+Beware that _disabling context isolation_ for a renderer process by setting
+`nodeIntegration: true` _also disables process sandboxing_ for that process.
+See section below.
+
 :::info
 For more information on what `contextIsolation` is and how to enable it please
 see our dedicated [Context Isolation](context-isolation.md) document.
 :::
 
 ### 4. Enable process sandboxing
+
+:::info
+This recommendation is the default behavior in Electron since 20.0.0.
+
+Additionally, process sandboxing can be enforced for all renderer processes
+application wide: [Enabling the sandbox globally](sandbox.md#enabling-the-sandbox-globally)
+
+_Disabling context isolation_ (see above) _also disables process sandboxing_,
+regardless of the default, `sandbox: false` or globally enabled sandboxing!
+:::
 
 [Sandboxing](https://chromium.googlesource.com/chromium/src/+/HEAD/docs/design/sandbox.md)
 is a Chromium feature that uses the operating system to
@@ -285,7 +299,7 @@ const { session } = require('electron')
 const { URL } = require('node:url')
 
 session
-  .fromPartition('some-partition')
+  .defaultSession
   .setPermissionRequestHandler((webContents, permission, callback) => {
     const parsedUrl = new URL(webContents.getURL())
 
@@ -301,6 +315,8 @@ session
     }
   })
 ```
+
+Note: `session.defaultSession` is only available after `app.whenReady` is called.
 
 ### 6. Do not disable `webSecurity`
 
@@ -391,6 +407,8 @@ session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
   })
 })
 ```
+
+Note: `session.defaultSession` is only available after `app.whenReady` is called.
 
 #### CSP meta tag
 

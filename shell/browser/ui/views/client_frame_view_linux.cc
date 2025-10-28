@@ -28,6 +28,7 @@
 #include "ui/linux/nav_button_provider.h"
 #include "ui/native_theme/native_theme.h"
 #include "ui/strings/grit/ui_strings.h"
+#include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/controls/button/image_button.h"
 #include "ui/views/style/typography.h"
 #include "ui/views/widget/widget.h"
@@ -86,7 +87,7 @@ ClientFrameViewLinux::ClientFrameViewLinux()
   for (auto& button : nav_buttons_) {
     auto image_button = std::make_unique<views::ImageButton>();
     image_button->SetImageVerticalAlignment(views::ImageButton::ALIGN_MIDDLE);
-    image_button->SetAccessibleName(
+    image_button->GetViewAccessibility().SetName(
         l10n_util::GetStringUTF16(button.accessibility_id));
     button.button = AddChildView(std::move(image_button));
   }
