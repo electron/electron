@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 7a9290fb225feb033bc3baf5227fdc5dc14d8a60..7bb8cdf811bda8c7b57cc9576f1f23d0d334e351 100644
+index 2edc8252e3e83ab0238383091ebea5a21df3186f..3bbea6f7c13914e8f6e791cd77cab82b1eed51dd 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1069,6 +1069,7 @@ component("base") {
@@ -194,23 +194,10 @@ index e12c1d078147d956a1d9b1bc498c1b1d6fe7b974..233362259dc4e728ed37435e65041764
  }
  
  }  // namespace base
-diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index 20b4524c33b4477e12025a2334380d85eb9649cb..4b648046b325fe0df7f014b1718664222c8754af 100644
---- a/components/os_crypt/sync/BUILD.gn
-+++ b/components/os_crypt/sync/BUILD.gn
-@@ -64,6 +64,8 @@ component("sync") {
-       "os_crypt_mac.mm",
-     ]
-     deps += [ "//crypto:mock_apple_keychain" ]
-+    deps += ["//electron/build/config:generate_mas_config"]
-+
-   } else if (is_win) {
-     sources += [ "os_crypt_win.cc" ]
-     deps += [ "//components/version_info" ]
-diff --git a/components/os_crypt/sync/keychain_password_mac.mm b/components/os_crypt/sync/keychain_password_mac.mm
-index 1d4c16a300227e5e8269e2c2564cb5e87ec8ee65..3bcbb33700b2b9349795c05c12e44b4fafcc0370 100644
---- a/components/os_crypt/sync/keychain_password_mac.mm
-+++ b/components/os_crypt/sync/keychain_password_mac.mm
+diff --git a/components/os_crypt/common/keychain_password_mac.mm b/components/os_crypt/common/keychain_password_mac.mm
+index caa0e420956a31be1bd744319a0e40a0e50b46cf..f19628cc0cdba39b232f55935e8eee9786b02a77 100644
+--- a/components/os_crypt/common/keychain_password_mac.mm
++++ b/components/os_crypt/common/keychain_password_mac.mm
 @@ -16,6 +16,7 @@
  #include "base/strings/string_view_util.h"
  #include "build/branding_buildflags.h"
@@ -219,6 +206,18 @@ index 1d4c16a300227e5e8269e2c2564cb5e87ec8ee65..3bcbb33700b2b9349795c05c12e44b4f
  #include "third_party/abseil-cpp/absl/cleanup/cleanup.h"
  
  using crypto::apple::Keychain;
+diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
+index 2d155f49248a24b5551cb93e010ac1a0c0f94261..23aa391aaf380f87310fb295277809f8b105d6e8 100644
+--- a/components/os_crypt/sync/BUILD.gn
++++ b/components/os_crypt/sync/BUILD.gn
+@@ -61,6 +61,7 @@ component("sync") {
+     deps += [
+       "//components/os_crypt/common:keychain_password_mac",
+       "//crypto:mock_apple_keychain",
++      "//electron/build/config:generate_mas_config"
+     ]
+   } else if (is_win) {
+     sources += [ "os_crypt_win.cc" ]
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
 index ba813851fde2660c21f99248a124161d2ac2ca07..c34f920e4a592b6798f5307c726bc34ebedf3f88 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
@@ -797,7 +796,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index f7b00799e71eaec7ab92747e94305fcb14b667e1..0d64ec4f4f9353c6ad0aeefde34219112b081997 100644
+index dfd3674692bc984821b52f1d410c1fa2ca56c42e..25dd06214e3aea73ebe556f9b8498ef8a63e42d6 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -703,6 +703,7 @@ static_library("test_support") {
@@ -817,7 +816,7 @@ index f7b00799e71eaec7ab92747e94305fcb14b667e1..0d64ec4f4f9353c6ad0aeefde3421911
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2067,6 +2070,7 @@ test("content_browsertests") {
+@@ -2068,6 +2071,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -825,7 +824,7 @@ index f7b00799e71eaec7ab92747e94305fcb14b667e1..0d64ec4f4f9353c6ad0aeefde3421911
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3405,6 +3409,7 @@ test("content_unittests") {
+@@ -3406,6 +3410,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1396,7 +1395,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index bf9258eeacb85f6b2e424ecd7bb6b9a653673f4b..5a3da145062137ba010cffd47bae475efb5743d0 100644
+index ac8db428b19dc3d442dc668b4e601d56f7b48c61..c6dfcdb6ac8ccc145eaad4087677add1afb217e1 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -428,6 +428,7 @@ component("core") {
@@ -1408,10 +1407,10 @@ index bf9258eeacb85f6b2e424ecd7bb6b9a653673f4b..5a3da145062137ba010cffd47bae475e
  
    if (is_mac) {
 diff --git a/third_party/blink/renderer/core/editing/build.gni b/third_party/blink/renderer/core/editing/build.gni
-index 0dfded158c60568d10486452c9d496a5759ac946..f8393cac3f954e2eb82610d3d70857ddfff77985 100644
+index c771cee7be34f36521de34ef893ee578b648a8c8..b0bd447b848bfdb7a9ff9cd98ba95574cb846cc2 100644
 --- a/third_party/blink/renderer/core/editing/build.gni
 +++ b/third_party/blink/renderer/core/editing/build.gni
-@@ -364,10 +364,14 @@ blink_core_sources_editing = [
+@@ -362,10 +362,14 @@ blink_core_sources_editing = [
  if (is_mac) {
    blink_core_sources_editing += [
      "commands/smart_replace_cf.cc",

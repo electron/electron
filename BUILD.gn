@@ -592,6 +592,7 @@ source_set("electron_lib") {
     use_libcxx_modules = false
 
     deps += [
+      "//components/os_crypt/common:keychain_password_mac",
       "//components/remote_cocoa/app_shim",
       "//components/remote_cocoa/browser",
       "//content/browser:mac_helpers",
