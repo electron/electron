@@ -13,7 +13,7 @@ https://github.com/electron/electron/pull/48675#issuecomment-3452781711
 for more info.
 
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-index e268573d360b1..3034ad52ab2f9 100644
+index e268573d360b1744c739bc516e81261c3869cd23..3034ad52ab2f90e12d134eb0190e71dbd60fc105 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 @@ -131,8 +131,8 @@ int NextServiceId() {
@@ -49,7 +49,7 @@ index e268573d360b1..3034ad52ab2f9 100644
                                  kPropertyOverlayIconName, "", false);
    properties_->SetProperty<"s">(kInterfaceStatusNotifierItem, kPropertyStatus,
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
-index 78c0ddf50ae6c..984673954bb7f 100644
+index 78c0ddf50ae6cafed1badaeb951b1dab3110f095..984673954bb7f0b4c902677c70ab88c602201060 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
 @@ -35,7 +35,7 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
