@@ -121,22 +121,3 @@ and that number is reduced to two in major version 10, the three-argument versio
 continue to work until, at minimum, major version 12. Past the minimum two-version
 threshold, we will attempt to support backwards compatibility beyond two versions
 until the maintainers feel the maintenance burden is too high to continue doing so.
-
-### End-of-life
-
-When a release branch reaches the end of its support cycle, the series
-will be deprecated in NPM and a final end-of-support release will be
-made. This release will add a warning to inform that an unsupported
-version of Electron is in use.
-
-These steps are to help app developers learn when a branch they're
-using becomes unsupported, but without being excessively intrusive
-to end users.
-
-If an application has exceptional circumstances and needs to stay
-on an unsupported series of Electron, developers can silence the
-end-of-support warning by omitting the final release from the app's
-`package.json` `devDependencies`. For example, since the 1-6-x series
-ended with an end-of-support 1.6.18 release, developers could choose
-to stay in the 1-6-x series without warnings with `devDependency` of
-`"electron": 1.6.0 - 1.6.17`.
