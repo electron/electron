@@ -173,10 +173,10 @@ index 7c31a69ccd7a74d75e5df63d895b91239d243a92..1b435cb43592afba984fe203d1ccf2d9
  }
  
 diff --git a/third_party/blink/renderer/core/frame/pausable_script_executor.h b/third_party/blink/renderer/core/frame/pausable_script_executor.h
-index fa65331f40b90d812b71a489fd560e9359152d2b..390714d631dc88ef92d59ef9618a5706b4b52f22 100644
+index f2c94689450f0333a144ccf82cf147c194896e6b..1c2e9fe36c297f7d614d9ca290e4d13c83d11eb5 100644
 --- a/third_party/blink/renderer/core/frame/pausable_script_executor.h
 +++ b/third_party/blink/renderer/core/frame/pausable_script_executor.h
-@@ -48,7 +48,8 @@ class CORE_EXPORT PausableScriptExecutor final
+@@ -47,7 +47,8 @@ class CORE_EXPORT PausableScriptExecutor final
                             mojom::blink::LoadEventBlockingOption,
                             mojom::blink::WantResultOption,
                             mojom::blink::PromiseResultOption,
@@ -186,7 +186,7 @@ index fa65331f40b90d812b71a489fd560e9359152d2b..390714d631dc88ef92d59ef9618a5706
  
    class Executor : public GarbageCollected<Executor> {
     public:
-@@ -65,6 +66,7 @@ class CORE_EXPORT PausableScriptExecutor final
+@@ -64,6 +65,7 @@ class CORE_EXPORT PausableScriptExecutor final
                           mojom::blink::WantResultOption,
                           mojom::blink::PromiseResultOption,
                           WebScriptExecutionCallback,
@@ -194,7 +194,7 @@ index fa65331f40b90d812b71a489fd560e9359152d2b..390714d631dc88ef92d59ef9618a5706
                           Executor*);
    ~PausableScriptExecutor() override;
  
-@@ -83,6 +85,7 @@ class CORE_EXPORT PausableScriptExecutor final
+@@ -82,6 +84,7 @@ class CORE_EXPORT PausableScriptExecutor final
  
    Member<ScriptState> script_state_;
    WebScriptExecutionCallback callback_;

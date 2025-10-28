@@ -923,16 +923,16 @@ index 2f34f45aaf89e6f4600be1d2b8444c636b0cc83f..5bfd45c5efbf300a36e016af80e18fb9
    virtual mojom::ResultCode OnError();
  
 diff --git a/printing/printing_context_linux.cc b/printing/printing_context_linux.cc
-index 1bf52330b555e14cf32c356321bef36442fab3d5..ee7ab77226a2aaf8f4250188a15af63dde70bce0 100644
+index e83735211e30a77ef1bc82b6a252da02a18626fc..b0c8fd3c5e3c5b3d2d64bee9df513e1b4829809c 100644
 --- a/printing/printing_context_linux.cc
 +++ b/printing/printing_context_linux.cc
-@@ -55,9 +55,8 @@ void PrintingContextLinux::AskUserForSettings(int max_pages,
+@@ -54,9 +54,8 @@ void PrintingContextLinux::AskUserForSettings(int max_pages,
                                                bool is_scripted,
                                                PrintSettingsCallback callback) {
    if (!print_dialog_) {
--    // Can only get here if the renderer is sending bad messages.
--    // http://crbug.com/341777
--    NOTREACHED();
+-    // Can only get here if the renderer is sending bad messages. Ignore.
+-    // https://crbug.com/41088489
+-    return;
 +    print_dialog_ = ui::LinuxUi::instance()->CreatePrintDialog(this);
 +    print_dialog_->UseDefaultSettings();
    }
