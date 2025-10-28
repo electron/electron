@@ -49,6 +49,7 @@ class InspectableWebContentsView : public views::View {
   void SetCornerRadii(const gfx::RoundedCornersF& corner_radii);
 
   void ShowDevTools(bool activate);
+  void ActivateDevTools();
   void CloseDevTools();
   bool IsDevToolsViewShowing();
   bool IsDevToolsViewFocused();
