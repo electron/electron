@@ -118,16 +118,16 @@ async function main () {
     return process.exit(buildStatus !== 0 ? buildStatus : signal);
   }
 
-  const { status: installStatus } = cp.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install'], {
+  const { status: installStatus, signal: installSignal } = cp.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install'], {
     env,
     cwd: NAN_DIR,
     stdio: 'inherit',
     shell: process.platform === 'win32'
   });
 
-  if (installStatus !== 0 || signal != null) {
+  if (installStatus !== 0 || installSignal != null) {
     console.error('Failed to install nan node_modules');
-    return process.exit(installStatus !== 0 ? installStatus : signal);
+    return process.exit(installStatus !== 0 ? installStatus : installSignal);
   }
 
   const onlyTests = args.only?.split(',');
