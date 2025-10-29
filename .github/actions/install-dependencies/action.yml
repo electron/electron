@@ -17,4 +17,4 @@ runs:
   - name: Install Dependencies
     shell: bash
     run: |
-      script/yarn install --immutable
+      yarn install --immutable
