@@ -74,11 +74,11 @@ jobs:
         # but then we would lint its contents (at least gn format), and it doesn't pass it.
 
         cd src/electron
-        node script/yarn install --immutable
-        node script/yarn lint
+        yarn install --immutable
+        yarn lint
     - name: Run Script Typechecker
       shell: bash
       run: |
         cd src/electron
-        node script/yarn tsc -p tsconfig.script.json
+        yarn tsc -p tsconfig.script.json
     
