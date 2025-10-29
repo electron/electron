@@ -78,7 +78,8 @@ app.whenReady().then(() => {
 
 ### `new Tray(image, [guid])`
 
-* `image` ([NativeImage](native-image.md) | string)
+* `image` ([NativeImage](native-image.md) | string | Object)
+  * `layers` ([NativeImage](native-image.md) | string)[] _macOS_ - An array of images to be composited as layers for the tray icon. Each image will be drawn on top of the previous one. This allows composing template images with non-template images (e.g., colored badges or indicators). Template images will automatically adapt to appear correctly regardless of the effective appearance where the tray icon is rendered, which can vary per screen.
 * `guid` string (optional) _Windows_ _macOS_ - A unique string used to identify the tray icon. Must adhere to [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) format.
 
 **Windows**
@@ -240,13 +241,15 @@ Destroys the tray icon immediately.
 
 #### `tray.setImage(image)`
 
-* `image` ([NativeImage](native-image.md) | string)
+* `image` ([NativeImage](native-image.md) | string | Object)
+  * `layers` ([NativeImage](native-image.md) | string)[] _macOS_ - An array of images to be composited as layers for the tray icon. Each image will be drawn on top of the previous one. This allows composing template images with non-template images (e.g., colored badges or indicators). Template images will automatically adapt to appear correctly regardless of the effective appearance where the tray icon is rendered, which can vary per screen.
 
 Sets the `image` associated with this tray icon.
 
 #### `tray.setPressedImage(image)` _macOS_
 
-* `image` ([NativeImage](native-image.md) | string)
+* `image` ([NativeImage](native-image.md) | string | Object)
+  * `layers` ([NativeImage](native-image.md) | string)[] - An array of images to be composited as layers for the tray icon. Each image will be drawn on top of the previous one. This allows composing template images with non-template images. Template images will automatically adapt to appear correctly regardless of the effective appearance where the tray icon is rendered.
 
 Sets the `image` associated with this tray icon when pressed on macOS.
 
@@ -384,6 +387,34 @@ app.whenReady().then(() => {
 * To make sure your icon isn't grainy on retina monitors, be sure your `@2x` image is 144dpi.
 * If you are bundling your application (e.g., with webpack for development), be sure that the file names are not being mangled or hashed. The filename needs to end in Template, and the `@2x` image needs to have the same filename as the standard image, or MacOS will not magically invert your image's colors or use the high density image.
 * 16x16 (72dpi) and 32x32@2x (144dpi) work well for most icons.
+
+**Multi-layered icons (macOS only):**
+
+On macOS, you can pass an options object with a `layers` array to create a multi-layered tray icon. This allows you to compose template images with non-template images, such as adding a colored badge or indicator on top of a template base icon:
+
+```js
+const { nativeImage, Tray } = require('electron')
+
+const tray = new Tray('/path/to/icon.png')
+
+// Single image (works on all platforms)
+tray.setImage('/path/to/icon.png')
+
+// Multi-layer icon (macOS only)
+const templateIcon = nativeImage.createFromPath('/path/to/iconTemplate.png')
+const colorOverlay = nativeImage.createFromPath('/path/to/colorOverlay.png')
+tray.setImage({
+  layers: [templateIcon, colorOverlay]
+})
+```
+
+**How layers work:**
+
+* Images are drawn in array order (first layer at bottom, last layer on top)
+* Template images (where `isTemplateImage()` returns `true`) automatically adapt to appear correctly regardless of the effective appearance where the tray icon is rendered, which can vary per screen
+* Non-template images are drawn as-is, preserving their colors
+* Each layer is centered if it's smaller than the maximum size
+* This enables combining adaptive template icons with fixed-color elements (like notification badges)
 
 ### Windows
 
