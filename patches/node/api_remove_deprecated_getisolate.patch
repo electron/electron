@@ -310,9 +310,18 @@ index 27aeac589b19cd681923fb848ce5f36c66fc05e2..5f2900869763f40cac54e3cb3fe2e24e
          module_api_version(module_api_version) {
      napi_clear_last_error(this);
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 4a35e41e78a22993f87ab9d5919f401a7b742438..b87167d3895b75aeba4e8a373a2fe176faac8889 100644
+index 4a35e41e78a22993f87ab9d5919f401a7b742438..327d7b77bc306db8193fa68bc7129c33670976cb 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
+@@ -91,7 +91,7 @@ ModuleCacheKey ModuleCacheKey::From(Local<Context> context,
+                                     Local<String> specifier,
+                                     Local<FixedArray> import_attributes) {
+   CHECK_EQ(import_attributes->Length() % elements_per_attribute, 0);
+-  Isolate* isolate = context->GetIsolate();
++  Isolate* isolate = Isolate::GetCurrent();
+   std::size_t h1 = specifier->GetIdentityHash();
+   size_t num_attributes = import_attributes->Length() / elements_per_attribute;
+   ImportAttributeVector attributes;
 @@ -1016,7 +1016,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
      return {};
    }
