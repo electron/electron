@@ -15,10 +15,10 @@ described in 97b353a (#34993):
 This patch can be removed when we fix that crash.
 
 diff --git a/chrome/browser/chrome_browser_main.cc b/chrome/browser/chrome_browser_main.cc
-index 9cb826530cf567e98baf91a60ca1f7496aca9431..2d0e92f9f373f8ef6ffa3c292811df957d457c95 100644
+index 2034b961d99225ebe9b606af915f5d90fdae913e..a7ee864ae4d14d36bdf5f7f4fb0ba86255dc9c6f 100644
 --- a/chrome/browser/chrome_browser_main.cc
 +++ b/chrome/browser/chrome_browser_main.cc
-@@ -1412,6 +1412,17 @@ void ChromeBrowserMainParts::PostProfileInit(Profile* profile,
+@@ -1475,6 +1475,17 @@ void ChromeBrowserMainParts::PostProfileInit(Profile* profile,
                         profile->GetPath()));
    }
  
