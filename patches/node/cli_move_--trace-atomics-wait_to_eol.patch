@@ -15,10 +15,10 @@ Reviewed-By: Benjamin Gruenbaum <benjamingr@gmail.com>
 Reviewed-By: Yagiz Nizipli <yagiz.nizipli@sentry.io>
 
 diff --git a/doc/api/cli.md b/doc/api/cli.md
-index 9a0e83b95a72486ab9751b3b8818f4beeb527041..1da7126b9d51238e9b89ee6bed602df3f5598a9e 100644
+index a97053929c81ac18bcb3beda7cecb69621b6e70c..a54d0e46c8e4e3aa6be433fba73ef9a3228fa175 100644
 --- a/doc/api/cli.md
 +++ b/doc/api/cli.md
-@@ -2727,39 +2727,6 @@ added: v12.0.0
+@@ -2749,39 +2749,6 @@ added: v12.0.0
  Set default [`tls.DEFAULT_MIN_VERSION`][] to 'TLSv1.3'. Use to disable support
  for TLSv1.2, which is not as secure as TLSv1.3.
  
@@ -58,7 +58,7 @@ index 9a0e83b95a72486ab9751b3b8818f4beeb527041..1da7126b9d51238e9b89ee6bed602df3
  ### `--trace-deprecation`
  
  <!-- YAML
-@@ -3445,7 +3412,6 @@ one is included in the list below.
+@@ -3483,7 +3450,6 @@ one is included in the list below.
  * `--tls-min-v1.1`
  * `--tls-min-v1.2`
  * `--tls-min-v1.3`
@@ -67,10 +67,10 @@ index 9a0e83b95a72486ab9751b3b8818f4beeb527041..1da7126b9d51238e9b89ee6bed602df3
  * `--trace-env-js-stack`
  * `--trace-env-native-stack`
 diff --git a/doc/node.1 b/doc/node.1
-index e3b2c45af01b2e9b9522964da2572988edd2b9e9..64e975546285a1042dda6fdb54fdd502f338a929 100644
+index fed2c77c2afed665be7aa17c2d53824f049a909e..7a3c09a40fca9458f83be1e7d8eec930b7d2d263 100644
 --- a/doc/node.1
 +++ b/doc/node.1
-@@ -542,11 +542,6 @@ but the option is supported for compatibility with older Node.js versions.
+@@ -556,11 +556,6 @@ but the option is supported for compatibility with older Node.js versions.
  Set default minVersion to 'TLSv1.3'. Use to disable support for TLSv1.2 in
  favour of TLSv1.3, which is more secure.
  .
@@ -83,7 +83,7 @@ index e3b2c45af01b2e9b9522964da2572988edd2b9e9..64e975546285a1042dda6fdb54fdd502
  Print stack traces for deprecations.
  .
 diff --git a/src/node.cc b/src/node.cc
-index 2dfdaec589e9b88af73ba388ea3c059ef27d243b..67d9a87f5ed97a10d29378f9067c8203941f62e2 100644
+index f012b365455bb111cddea44fcff020804086ab72..b99b5170553af51466fd1ee69af3be5026f3fada 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -232,44 +232,6 @@ void Environment::WaitForInspectorFrontendByOptions() {
@@ -150,10 +150,10 @@ index 2dfdaec589e9b88af73ba388ea3c059ef27d243b..67d9a87f5ed97a10d29378f9067c8203
      isolate_->SetPromiseHook(TracePromises);
    }
 diff --git a/src/node_options.cc b/src/node_options.cc
-index e8424d7539db191a55edebb7d33a3c1dc37e2403..556776b79282d953fdc371d1901f21ca301bec1a 100644
+index 4bbace2f702777fa12ba9246984894721df99b50..b067685822dc056e446e1a9402a5a6cba86cc722 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -773,10 +773,6 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
+@@ -827,10 +827,6 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
              "throw an exception on deprecations",
              &EnvironmentOptions::throw_deprecation,
              kAllowedInEnvvar);
@@ -165,7 +165,7 @@ index e8424d7539db191a55edebb7d33a3c1dc37e2403..556776b79282d953fdc371d1901f21ca
              "show stack traces on deprecations",
              &EnvironmentOptions::trace_deprecation,
 diff --git a/src/node_options.h b/src/node_options.h
-index 418dee360f867c363f1576012b32213a51c4fdd0..7078d2493ed696bc5bd92df9c629b714c1a8fbfb 100644
+index d8751a6ee734233e2fc24866ed87d9cd516072ae..e12abb55e43068e8446eaabc65deb63cc469f554 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -205,7 +205,6 @@ class EnvironmentOptions : public Options {
