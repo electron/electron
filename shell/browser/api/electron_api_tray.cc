@@ -195,10 +195,60 @@ bool Tray::IsDestroyed() {
   return !tray_icon_;
 }
 
+#if BUILDFLAG(IS_MAC)
+std::optional<std::vector<gfx::Image>> Tray::ParseImageLayers(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> image) {
+  // Check if first argument is an options object with layers
+  if (!image->IsObject() || image->IsNull()) {
+    return std::nullopt;
+  }
+
+  gin_helper::Dictionary options(isolate, image.As<v8::Object>());
+  v8::Local<v8::Value> layers_value;
+  if (!options.Get("layers", &layers_value) || !layers_value->IsArray()) {
+    return std::nullopt;
+  }
+
+  v8::Local<v8::Array> layers_array = layers_value.As<v8::Array>();
+  std::vector<gfx::Image> layers;
+
+  for (uint32_t i = 0; i < layers_array->Length(); i++) {
+    v8::Local<v8::Value> layer_value;
+    if (!layers_array->Get(isolate->GetCurrentContext(), i)
+             .ToLocal(&layer_value)) {
+      continue;
+    }
+
+    NativeImage* layer_image = nullptr;
+    if (!NativeImage::TryConvertNativeImage(isolate, layer_value,
+                                            &layer_image)) {
+      continue;
+    }
+
+    layers.emplace_back(layer_image->image());
+  }
+
+  if (layers.empty()) {
+    return std::nullopt;
+  }
+
+  return layers;
+}
+#endif
+
 void Tray::SetImage(v8::Isolate* isolate, v8::Local<v8::Value> image) {
   if (!CheckAlive())
     return;
 
+#if BUILDFLAG(IS_MAC)
+  if (auto layers = ParseImageLayers(isolate, image)) {
+    tray_icon_->SetImage(ComposeMultiLayerTrayImage(layers.value()));
+    return;
+  }
+#endif
+
+  // Standard mode: single image
   NativeImage* native_image = nullptr;
   if (!NativeImage::TryConvertNativeImage(isolate, image, &native_image))
     return;
@@ -214,6 +264,14 @@ void Tray::SetPressedImage(v8::Isolate* isolate, v8::Local<v8::Value> image) {
   if (!CheckAlive())
     return;
 
+#if BUILDFLAG(IS_MAC)
+  if (auto layers = ParseImageLayers(isolate, image)) {
+    tray_icon_->SetPressedImage(ComposeMultiLayerTrayImage(layers.value()));
+    return;
+  }
+#endif
+
+  // Standard mode: single image
   NativeImage* native_image = nullptr;
   if (!NativeImage::TryConvertNativeImage(isolate, image, &native_image))
     return;
