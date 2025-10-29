@@ -1,0 +1,39 @@
+name: Check Suite Completed
+
+on:
+  check_suite:
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  action-required:
+    name: Action required
+    if: ${{ github.event.check_suite.conclusion == 'action_required' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub App token
+        uses: electron/github-app-auth-action@384fd19694fe7b6dcc9a684746c6976ad78228ae # v1.1.1
+        id: generate-token
+        with:
+          creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
+          org: electron
+      - name: Find pull request
+        id: find-pull-request
+        env:
+          SHA: ${{ github.event.check_suite.head_sha }}
+        run: |
+          URL=$(gh pr list --search "is:open ${SHA}" -R electron/electron --json url --jq '.[0].url')
+          if [[ -z "$URL" ]]; then
+            echo "URL=$URL" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Set PR triage status
+        if: ${{ steps.find-pull-request.outputs.URL }}
+        uses: dsanders11/project-actions/edit-item@2134fe7cc71c58b7ae259c82a8e63c6058255678 # v1.7.0
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          project-number: 118
+          item: ${{ steps.find-pull-request.outputs.URL }}
+          field: Status
+          field-value: Needs CI Approval
+          fail-if-item-not-found: false
