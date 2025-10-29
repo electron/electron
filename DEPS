@@ -39,9 +39,6 @@ vars = {
   # To use an mtime cache for patched files to speed up builds.
   'use_mtime_cache': True,
 
-  # TODO: remove this, see https://chromium-review.googlesource.com/c/chromium/src/+/7088768.
-  'download_reclient': True,
-
   # To allow in-house builds to checkout those manually.
   'checkout_chromium': True,
   'checkout_node': True,
