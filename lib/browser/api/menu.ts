@@ -46,11 +46,11 @@ Menu.prototype._isCommandIdEnabled = function (id) {
 };
 
 Menu.prototype._shouldCommandIdWorkWhenHidden = function (id) {
-  return this.commandsMap[id] ? !!this.commandsMap[id].acceleratorWorksWhenHidden : false;
+  return this.commandsMap[id]?.acceleratorWorksWhenHidden ?? false;
 };
 
 Menu.prototype._isCommandIdVisible = function (id) {
-  return this.commandsMap[id] ? this.commandsMap[id].visible : false;
+  return this.commandsMap[id]?.visible ?? false;
 };
 
 Menu.prototype._getAcceleratorForCommandId = function (id, useDefaultAccelerator) {
@@ -61,12 +61,12 @@ Menu.prototype._getAcceleratorForCommandId = function (id, useDefaultAccelerator
 };
 
 Menu.prototype._shouldRegisterAcceleratorForCommandId = function (id) {
-  return this.commandsMap[id] ? this.commandsMap[id].registerAccelerator : false;
+  return this.commandsMap[id]?.registerAccelerator ?? false;
 };
 
 if (process.platform === 'darwin') {
   Menu.prototype._getSharingItemForCommandId = function (id) {
-    return this.commandsMap[id] ? this.commandsMap[id].sharingItem : null;
+    return this.commandsMap[id]?.sharingItem ?? null;
   };
 }
 
