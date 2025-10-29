@@ -199,7 +199,7 @@ jobs:
     - name: Install Datadog CLI
       run: |
         cd src/electron
-        node script/yarn global add @datadog/datadog-ci
+        
     - name: Run Electron Tests
       shell: bash
       env:
@@ -225,7 +225,7 @@ jobs:
               export ELECTRON_FORCE_TEST_SUITE_EXIT="true"
             fi
           fi
-          node script/yarn test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
+          yarn test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
         else
           chown :builduser .. && chmod g+w ..
           chown -R :builduser . && chmod -R g+w .
@@ -242,9 +242,9 @@ jobs:
             export MOCHA_TIMEOUT=180000
             echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
             cd electron
-            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
+            runuser -u builduser -- xvfb-run script/actions/run-tests.sh yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
           else
-            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
+            runuser -u builduser -- xvfb-run script/actions/run-tests.sh yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
           fi
         fi
     - name: Upload Test results to Datadog
@@ -256,9 +256,8 @@ jobs:
         DD_TAGS: "os.architecture:${{ inputs.target-arch }},os.family:${{ inputs.target-platform }},os.platform:${{ inputs.target-platform }},asan:${{ inputs.is-asan }}"
       run: |
         if ! [ -z $DD_API_KEY ] && [ -f src/electron/junit/test-results-main.xml ]; then
-          export DATADOG_PATH=`node src/electron/script/yarn global bin`
-          $DATADOG_PATH/datadog-ci junit upload src/electron/junit/test-results-main.xml
-        fi          
+          yarn dlx @datadog/datadog-ci junit upload src/electron/junit/test-results-main.xml
+        fi
       if: always() && !cancelled()
     - name: Upload Test Artifacts
       if: always() && !cancelled()
