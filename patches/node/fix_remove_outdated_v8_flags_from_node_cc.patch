@@ -13,7 +13,7 @@ This patch can be removed when we upgrade to a V8 version that
 contains the above CLs.
 
 diff --git a/src/node.cc b/src/node.cc
-index 07684482f855363e26c3d7299a585a8a5654015e..627337efae49319e2a77b4686176ce92a8493024 100644
+index 2d8d0000d52411992d2bd513cc7dd96b2292bab9..bebd75922733bbf219f125a3a6f35d98bc8210d3 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -816,7 +816,7 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
@@ -23,9 +23,9 @@ index 07684482f855363e26c3d7299a585a8a5654015e..627337efae49319e2a77b4686176ce92
 -  v8_args.emplace_back("--no-harmony-import-assertions");
 +  // v8_args.emplace_back("--no-harmony-import-assertions");
  
-   auto env_opts = per_process::cli_options->per_isolate->per_env;
-   if (std::find(v8_args.begin(), v8_args.end(),
-@@ -828,7 +828,7 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
+   if (!per_process::cli_options->per_isolate->max_old_space_size_percentage
+            .empty()) {
+@@ -835,7 +835,7 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
  
    // Support stable Phase 5 WebAssembly proposals
    v8_args.emplace_back("--experimental-wasm-imported-strings");

@@ -16,7 +16,7 @@ patch:
 (cherry picked from commit 30329d06235a9f9733b1d4da479b403462d1b326)
 
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 67b4cc2037b8e02f6382cd12a7abb157d0dbac65..4906c6c4c0ab5260d6e6387d0ed8e0687f982a38 100644
+index da2c468f11cdc320cfec794b1b8b24904b93491e..98e1e1e75bae94038bba0049447ab48b0acfb8cc 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
 @@ -62,31 +62,6 @@ inline uv_loop_t* IsolateData::event_loop() const {

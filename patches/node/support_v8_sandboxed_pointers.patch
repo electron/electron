@@ -64,7 +64,7 @@ index f23cedf4f2449d8edc9a8de1b70332e75d693cdd..976653dd1e9363e046788fc3419a9b64
    return Buffer::New(env, ab, 0, ab->ByteLength()).FromMaybe(Local<Value>());
  }
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 6346f8f7199cf7b7d3736c59571606fff102fbb6..7eea2eaefcad5780663a6b87985925ae5d70a5f9 100644
+index 4505786745c54a529f904d5e7813a86204e0a78b..eab18ab9888e2f7c0757fefab80505d8c99dc742 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -359,10 +359,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
@@ -143,10 +143,10 @@ index 6346f8f7199cf7b7d3736c59571606fff102fbb6..7eea2eaefcad5780663a6b87985925ae
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
  #ifndef OPENSSL_IS_BORINGSSL
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index ebc7fddeccf04a92c610849b626b33f900d63493..ed7d202d1b041f8a6cd43ae767d696fb29ab9cd9 100644
+index 1592134716da2de40de4ba028ee937b765423e37..8f3ba65f1fef2c066d6df6087a08ba71100d1090 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
-@@ -243,7 +243,7 @@ class ByteSource {
+@@ -242,7 +242,7 @@ class ByteSource {
    // Creates a v8::BackingStore that takes over responsibility for
    // any allocated data. The ByteSource will be reset with size = 0
    // after being called.
@@ -189,7 +189,7 @@ index f616223cfb0f6e10f7cf57ada9704316bde2797e..eb6dad44a49d997097c8fb5009eeb60a
    Local<Value> ret;
    if (!Buffer::New(env, ab, 0, ab->ByteLength()).ToLocal(&ret)) return {};
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
-index 61b6ecd240c9500f21f683065a2f920af3afb502..ad2b1c76325cb5c8f18a618c5a85ae87b6a7bbe7 100644
+index 6be3920632b25db450025ebab6a2636e4811cdbe..b49916d2b5fc5e58cf3fb67329430fd3df8fb813 100644
 --- a/src/node_i18n.cc
 +++ b/src/node_i18n.cc
 @@ -104,7 +104,7 @@ namespace {

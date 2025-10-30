@@ -20,7 +20,7 @@ index 82225b0a53dd828750991a4e15a060b736b6ea2b..4b0d31356a2496a7fc67876a22da2453
    V(performance_entry_callback, v8::Function)                                  \
    V(prepare_stack_trace_callback, v8::Function)                                \
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index c06779dea471b6f6a8dd29d4657162ef0faec043..6204986dc97686a248d6ae483f3a413ee5c51e47 100644
+index 35bfada261258407982d9e24cf7b3e820235c941..ed22da844a61b14b8580cd3d6bb3a233b8559b38 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -21,6 +21,7 @@ namespace modules {
@@ -76,8 +76,8 @@ index c06779dea471b6f6a8dd29d4657162ef0faec043..6204986dc97686a248d6ae483f3a413e
 +  if (read_err < 0) {
      return nullptr;
    }
-   // In some systems, std::string is annotated to generate an
-@@ -249,6 +279,12 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
+   simdjson::ondemand::document document;
+@@ -237,6 +267,12 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
    return &cached.first->second;
  }
  
@@ -90,7 +90,7 @@ index c06779dea471b6f6a8dd29d4657162ef0faec043..6204986dc97686a248d6ae483f3a413e
  void BindingData::ReadPackageJSON(const FunctionCallbackInfo<Value>& args) {
    CHECK_GE(args.Length(), 1);  // path, [is_esm, base, specifier]
    CHECK(args[0]->IsString());  // path
-@@ -643,6 +679,8 @@ void InitImportMetaPathHelpers(const FunctionCallbackInfo<Value>& args) {
+@@ -597,6 +633,8 @@ void InitImportMetaPathHelpers(const FunctionCallbackInfo<Value>& args) {
  void BindingData::CreatePerIsolateProperties(IsolateData* isolate_data,
                                               Local<ObjectTemplate> target) {
    Isolate* isolate = isolate_data->isolate();
@@ -99,7 +99,7 @@ index c06779dea471b6f6a8dd29d4657162ef0faec043..6204986dc97686a248d6ae483f3a413e
    SetMethod(isolate, target, "readPackageJSON", ReadPackageJSON);
    SetMethod(isolate,
              target,
-@@ -685,6 +723,8 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
+@@ -635,6 +673,8 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
  
  void BindingData::RegisterExternalReferences(
      ExternalReferenceRegistry* registry) {
@@ -107,9 +107,9 @@ index c06779dea471b6f6a8dd29d4657162ef0faec043..6204986dc97686a248d6ae483f3a413e
 +
    registry->Register(ReadPackageJSON);
    registry->Register(GetNearestParentPackageJSONType);
-   registry->Register(GetNearestParentPackageJSON);
+   registry->Register(GetPackageScopeConfig<false>);
 diff --git a/src/node_modules.h b/src/node_modules.h
-index eb2900d8f8385238f89a6dcc972a28e5fcb1d288..e28f38d98f4f8749048af135f0dcbe55aa69c4fe 100644
+index e4ba6b75bc86d14deada835903ba68a4cb0eccc5..ae77f9ec81b358bd356993617cd07671d382e8ca 100644
 --- a/src/node_modules.h
 +++ b/src/node_modules.h
 @@ -54,6 +54,8 @@ class BindingData : public SnapshotableObject {
@@ -119,5 +119,5 @@ index eb2900d8f8385238f89a6dcc972a28e5fcb1d288..e28f38d98f4f8749048af135f0dcbe55
 +  static void OverrideReadFileSync(
 +      const v8::FunctionCallbackInfo<v8::Value>& args);
    static void ReadPackageJSON(const v8::FunctionCallbackInfo<v8::Value>& args);
-   static void GetNearestParentPackageJSON(
+   static void GetNearestParentPackageJSONType(
        const v8::FunctionCallbackInfo<v8::Value>& args);
