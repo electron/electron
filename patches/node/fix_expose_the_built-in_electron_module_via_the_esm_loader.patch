@@ -103,19 +103,21 @@ index c27ee4c6612c6a7ea0b6355f03563e8724fd0e40..5f03cf14e948d449d303b22ab6710b55
  
    const packageConfig = packageJsonReader.read(packageJSONPath, { __proto__: null, specifier, base, isESM: true });
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 147d96bda8098fe16e5d0053e36eab05fb489c22..e50e91a7710fa396691aa0f28ef4849bd76017dc 100644
+index 147d96bda8098fe16e5d0053e36eab05fb489c22..3c82913ca381eba30596f22a734b49dcba9b6f5b 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -215,7 +215,7 @@ function createCJSModuleWrap(url, source, isMain, format, loadCJS = loadCJSModul
+@@ -215,7 +215,9 @@ function createCJSModuleWrap(url, source, isMain, format, loadCJS = loadCJSModul
    const { exportNames, module } = cjsPreparseModuleExports(filename, source, format);
    cjsCache.set(url, module);
  
 -  const wrapperNames = [...exportNames];
-+  const wrapperNames = filename === 'electron' ? [...Object.keys(module.exports)] : [...exportNames];
++  const wrapperNames = filename === 'electron' ?
++    ['default', ...Object.keys(module.exports)] :
++    [...exportNames];
    if (!exportNames.has('default')) {
      ArrayPrototypePush(wrapperNames, 'default');
    }
-@@ -319,6 +319,10 @@ translators.set('require-commonjs', (url, source, isMain) => {
+@@ -319,6 +321,10 @@ translators.set('require-commonjs', (url, source, isMain) => {
    return createCJSModuleWrap(url, source, isMain, 'commonjs');
  });
  
