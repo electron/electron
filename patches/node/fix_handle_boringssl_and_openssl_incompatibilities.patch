@@ -204,42 +204,6 @@ index e805a984322..f3c48f89b9b 100644
    MarkPopErrorOnReturn mark_pop_error_on_return;
  
    const auto& key = data_.GetAsymmetricKey();
-diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
-index e7546cec4c1..99a08cd545f 100644
---- a/src/crypto/crypto_rsa.cc
-+++ b/src/crypto/crypto_rsa.cc
-@@ -511,8 +511,31 @@ bool GetRsaKeyDetail(Environment* env,
-                       env->mgf1_hash_algorithm_string(),
-                       OneByteString(env->isolate(), digest))
-                 .IsNothing()) {
-+<<<<<<< HEAD
-           return false;
-+||||||| constructed fake ancestor
-+          return Nothing<void>();
-+        }
-+      }
-+
-+      if (params->saltLength != nullptr) {
-+        if (ASN1_INTEGER_get_int64(&salt_length, params->saltLength) != 1) {
-+          ThrowCryptoError(env, ERR_get_error(), "ASN1_INTEGER_get_in64 error");
-+          return Nothing<void>();
-+=======
-+          return Nothing<void>();
-+        }
-+      }
-+
-+      if (params->saltLength != nullptr) {
-+#ifndef OPENSSL_IS_BORINGSSL
-+        // TODO(codebytere): Upstream a shim to BoringSSL?
-+        if (ASN1_INTEGER_get_int64(&salt_length, params->saltLength) != 1) {
-+          ThrowCryptoError(env, ERR_get_error(), "ASN1_INTEGER_get_in64 error");
-+          return Nothing<void>();
-+>>>>>>> fix: handle BoringSSL and OpenSSL incompatibilities
-         }
-+#endif
-       }
- 
-       if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
 index 205e248e0f2..12b0d804c6f 100644
 --- a/src/crypto/crypto_util.cc
