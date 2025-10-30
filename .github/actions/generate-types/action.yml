@@ -17,7 +17,7 @@ runs:
       git clone https://github.com/electron/electron.git tmpdir
       cd tmpdir
       git checkout $(cat ${{ inputs.sha-file }})
-      yarn install --immutable
+      node script/yarn.js install --immutable
       echo "#!/usr/bin/env node\nglobal.x=1" > node_modules/typescript/bin/tsc
       node node_modules/.bin/electron-docs-parser --dir=./ --outDir=./ --moduleVersion=0.0.0-development
       node node_modules/.bin/electron-typescript-definitions --api=electron-api.json --outDir=artifacts
