@@ -427,9 +427,8 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
     this._started = true;
     const stringifyValues = (obj: Record<string, { name: string, value: string | string[] }>) => {
       const ret: Record<string, string> = {};
-      for (const k of Object.keys(obj)) {
-        const kv = obj[k];
-        ret[kv.name] = kv.value.toString();
+      for (const { name, value } of Object.values(obj)) {
+        ret[name] = value.toString();
       }
       return ret;
     };
