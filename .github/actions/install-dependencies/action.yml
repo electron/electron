@@ -18,4 +18,4 @@ runs:
     shell: bash
     run: |
       cd src/electron
-      node script/yarn.js install --immutable
+      node script/yarn install --immutable
