@@ -12,7 +12,7 @@ See:
 https://chromium-review.googlesource.com/c/v8/v8/+/6826001
 
 diff --git a/test/fixtures/test-runner/output/describe_it.snapshot b/test/fixtures/test-runner/output/describe_it.snapshot
-index 347f3789693ddae7e7f9bd4125d8b19a31c1e764..35913d7f487dbd56eb8015e20f14a447de1db9bc 100644
+index 67d4af7f1b9f45d48b35c930cb1490ee019d0bdf..21d8744340c5a4c002d8c91266f46c2b66591b6e 100644
 --- a/test/fixtures/test-runner/output/describe_it.snapshot
 +++ b/test/fixtures/test-runner/output/describe_it.snapshot
 @@ -690,6 +690,8 @@ not ok 54 - timeouts
