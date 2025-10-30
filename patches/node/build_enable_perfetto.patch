@@ -33,10 +33,10 @@ index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..a154559a56bf383d3c26af523c9bb07b
  
    // Non-alphabetic chars.
 diff --git a/lib/internal/http.js b/lib/internal/http.js
-index 251f51ec454f9cba4023b8b6729241ee753aac13..1de8cac6e3953ce9cab9db03530da327199acfd5 100644
+index 4f250a2e70a20fddeeb7886e0c269822883f7ccf..4e5c2dd1f13e6818576c3c4c88200b5cf5fb1257 100644
 --- a/lib/internal/http.js
 +++ b/lib/internal/http.js
-@@ -8,8 +8,8 @@ const {
+@@ -10,8 +10,8 @@ const {
  const { setUnrefTimeout } = require('internal/timers');
  const { getCategoryEnabledBuffer, trace } = internalBinding('trace_events');
  const {
@@ -46,8 +46,8 @@ index 251f51ec454f9cba4023b8b6729241ee753aac13..1de8cac6e3953ce9cab9db03530da327
 +  CHAR_UPPERCASE_E,
  } = require('internal/constants');
  
- let utcCache;
-@@ -44,11 +44,13 @@ function isTraceHTTPEnabled() {
+ const { URL } = require('internal/url');
+@@ -50,11 +50,13 @@ function isTraceHTTPEnabled() {
  const traceEventCategory = 'node,node.http';
  
  function traceBegin(...args) {
@@ -62,7 +62,7 @@ index 251f51ec454f9cba4023b8b6729241ee753aac13..1de8cac6e3953ce9cab9db03530da327
 +  trace(CHAR_UPPERCASE_E, traceEventCategory, ...args);
  }
  
- module.exports = {
+ function ipToInt(ip) {
 diff --git a/node.gyp b/node.gyp
 index 0e0071b508f605bb9b7722f8304814dc176d907e..bcb9f371c4e4d8c665058115dc39eaa65125d679 100644
 --- a/node.gyp
