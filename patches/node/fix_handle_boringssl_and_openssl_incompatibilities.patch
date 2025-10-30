@@ -17,10 +17,18 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index e1c2da6969a1ce937d397735e844930f3234bba7..367195f7b27e8eba075994009ba343dc8576abf7 100644
+index e1c2da6969a1ce937d397735e844930f3234bba7..0bed152014949c22b6c610198df39a2522890279 100644
 --- a/deps/ncrypto/ncrypto.cc
 +++ b/deps/ncrypto/ncrypto.cc
-@@ -1130,7 +1130,9 @@ int64_t X509View::getValidToTime() const {
+@@ -11,6 +11,7 @@
+ #include <array>
+ #include <cstring>
+ #include <string_view>
++#include <vector>
+ #if OPENSSL_VERSION_MAJOR >= 3
+ #include <openssl/core_names.h>
+ #include <openssl/params.h>
+@@ -1130,7 +1131,9 @@ int64_t X509View::getValidToTime() const {
    return tp;
  #else
    struct tm tp;
@@ -31,7 +39,7 @@ index e1c2da6969a1ce937d397735e844930f3234bba7..367195f7b27e8eba075994009ba343dc
    return PortableTimeGM(&tp);
  #endif
  }
-@@ -1142,7 +1144,9 @@ int64_t X509View::getValidFromTime() const {
+@@ -1142,7 +1145,9 @@ int64_t X509View::getValidFromTime() const {
    return tp;
  #else
    struct tm tp;
@@ -41,50 +49,50 @@ index e1c2da6969a1ce937d397735e844930f3234bba7..367195f7b27e8eba075994009ba343dc
    return PortableTimeGM(&tp);
  #endif
  }
-@@ -2889,7 +2893,7 @@ const char* SSLPointer::getClientHelloAlpn() const {
-   const unsigned char* buf;
-   size_t len;
-   size_t rem;
+@@ -2886,10 +2891,6 @@ std::optional<uint32_t> SSLPointer::verifyPeerCertificate() const {
+ const char* SSLPointer::getClientHelloAlpn() const {
+   if (ssl_ == nullptr) return {};
+ #ifndef OPENSSL_IS_BORINGSSL
+-  const unsigned char* buf;
+-  size_t len;
+-  size_t rem;
 -
-+#ifndef OPENSSL_IS_BORINGSSL
    if (!SSL_client_hello_get0_ext(
            get(),
            TLSEXT_TYPE_application_layer_protocol_negotiation,
-@@ -2902,10 +2906,16 @@ const char* SSLPointer::getClientHelloAlpn() const {
-   len = (buf[0] << 8) | buf[1];
-   if (len + 2 != rem) return {};
-   return reinterpret_cast<const char*>(buf + 3);
-+<<<<<<< HEAD
- #else
-   // Boringssl doesn't have a public API for this.
-   return {};
- #endif
-+||||||| constructed fake ancestor
-+=======
-+#endif
-+  return {};
-+>>>>>>> fix: handle BoringSSL and OpenSSL incompatibilities
- }
- 
- const char* SSLPointer::getClientHelloServerName() const {
-@@ -2914,7 +2924,7 @@ const char* SSLPointer::getClientHelloServerName() const {
-   const unsigned char* buf;
-   size_t len;
-   size_t rem;
--
+@@ -3090,9 +3091,11 @@ const Cipher Cipher::AES_256_GCM = Cipher::FromNid(NID_aes_256_gcm);
+ const Cipher Cipher::AES_128_KW = Cipher::FromNid(NID_id_aes128_wrap);
+ const Cipher Cipher::AES_192_KW = Cipher::FromNid(NID_id_aes192_wrap);
+ const Cipher Cipher::AES_256_KW = Cipher::FromNid(NID_id_aes256_wrap);
 +#ifndef OPENSSL_IS_BORINGSSL
-   if (!SSL_client_hello_get0_ext(get(), TLSEXT_TYPE_server_name, &buf, &rem) ||
-       rem <= 2) {
-     return {};
-@@ -2973,6 +2983,8 @@ EVPKeyPointer SSLPointer::getPeerTempKey() const {
-   if (!SSL_get_server_tmp_key(get(), &raw_key)) return {};
- #endif
-   return EVPKeyPointer(raw_key);
+ const Cipher Cipher::AES_128_OCB = Cipher::FromNid(NID_aes_128_ocb);
+ const Cipher Cipher::AES_192_OCB = Cipher::FromNid(NID_aes_192_ocb);
+ const Cipher Cipher::AES_256_OCB = Cipher::FromNid(NID_aes_256_ocb);
 +#endif
-+  return {};
- }
+ const Cipher Cipher::CHACHA20_POLY1305 = Cipher::FromNid(NID_chacha20_poly1305);
  
- std::optional<std::string_view> SSLPointer::getCipherName() const {
+ bool Cipher::isGcmMode() const {
+diff --git a/deps/ncrypto/ncrypto.h b/deps/ncrypto/ncrypto.h
+index 175ec8ba0f2a908ffad2ce48434aeed573b09c90..3218590ddce1e92c2a9d776f20f9fb016612061d 100644
+--- a/deps/ncrypto/ncrypto.h
++++ b/deps/ncrypto/ncrypto.h
+@@ -306,9 +306,13 @@ class Cipher final {
+ #else
+   static constexpr size_t MAX_AUTH_TAG_LENGTH = 16;
+ #endif
+-  static_assert(EVP_GCM_TLS_TAG_LEN <= MAX_AUTH_TAG_LENGTH &&
+-                EVP_CCM_TLS_TAG_LEN <= MAX_AUTH_TAG_LENGTH &&
+-                EVP_CHACHAPOLY_TLS_TAG_LEN <= MAX_AUTH_TAG_LENGTH);
++  static_assert(EVP_GCM_TLS_TAG_LEN <= MAX_AUTH_TAG_LENGTH
++#ifndef OPENSSL_IS_BORINGSSL
++                && EVP_CCM_TLS_TAG_LEN <= MAX_AUTH_TAG_LENGTH
++                && EVP_CHACHAPOLY_TLS_TAG_LEN <= MAX_AUTH_TAG_LENGTH);
++#else
++                );
++#endif
+ 
+   Cipher() = default;
+   Cipher(const EVP_CIPHER* cipher) : cipher_(cipher) {}
 diff --git a/node.gni b/node.gni
 index e2407027ab05e59b2f0f1c213b98ea469db7a91b..c64761b730e61edcdc0e46a48699f2fd5bb1c0a6 100644
 --- a/node.gni
@@ -99,17 +107,27 @@ index e2407027ab05e59b2f0f1c213b98ea469db7a91b..c64761b730e61edcdc0e46a48699f2fd
    # The location of simdutf - use the one from node's deps by default.
    node_simdutf_path = "//third_party/simdutf"
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index 5ed2f8b35a1e2f8348a0f3891f37944f49371256..26dab5e64d793fad8585cb5cfb316669ad378805 100644
+index 5ed2f8b35a1e2f8348a0f3891f37944f49371256..bd453ae633b2833cc3c6e3e415b43792dc5bf2e5 100644
 --- a/src/crypto/crypto_cipher.cc
 +++ b/src/crypto/crypto_cipher.cc
-@@ -905,6 +905,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
-           env,
-           "RSA_PKCS1_PADDING is no longer supported for private decryption");
+@@ -447,6 +447,7 @@ bool CipherBase::InitAuthenticated(const char* cipher_type,
      }
+   } else {
+     if (auth_tag_len == kNoAuthTagLength) {
++#ifndef OPENSSL_IS_BORINGSSL
+       // We treat ChaCha20-Poly1305 specially. Like GCM, the authentication tag
+       // length defaults to 16 bytes when encrypting. Unlike GCM, the
+       // authentication tag length also defaults to 16 bytes when decrypting,
+@@ -458,6 +459,9 @@ bool CipherBase::InitAuthenticated(const char* cipher_type,
+           env(), "authTagLength required for %s", cipher_type);
+         return false;
+       }
++#else
++      return false;
 +#endif
-   }
+     }
  
-   Digest digest;
+     // TODO(tniessen) Support CCM decryption in FIPS mode
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
 index d005bf0ffb93445fa6611a1beb1b465764271ede..01770687bd191c61af02e76d7de24bbac5c47b8f 100644
 --- a/src/crypto/crypto_common.cc
@@ -192,8 +210,21 @@ index e35fda9ad2e8c52c75492d66566dc6e6c57dd2ae..46a7d1396dc1a175ae99f4e403721f17
      case DHPointer::CheckPublicKeyResult::NONE:
        break;
    }
+diff --git a/src/crypto/crypto_hash.cc b/src/crypto/crypto_hash.cc
+index 33cde71b105c7cf22b559583d2e46bfb50016f6d..659910992dff7c05bb7e367e1cba14256b46dea4 100644
+--- a/src/crypto/crypto_hash.cc
++++ b/src/crypto/crypto_hash.cc
+@@ -232,7 +232,7 @@ void Hash::OneShotDigest(const FunctionCallbackInfo<Value>& args) {
+   enum encoding output_enc = ParseEncoding(isolate, args[4], args[5], HEX);
+ 
+   bool is_xof = (EVP_MD_flags(md) & EVP_MD_FLAG_XOF) != 0;
+-  int output_length = EVP_MD_size(md);
++  size_t output_length = EVP_MD_size(md);
+ 
+   // This is to cause hash() to fail when an incorrect
+   // outputLength option was passed for a non-XOF hash function.
 diff --git a/src/crypto/crypto_keys.cc b/src/crypto/crypto_keys.cc
-index e805a984322c8348ceba950fe6f45e002ade10b3..f3c48f89b9b7ca99a8c1b1d04a1a3b2487d3fd16 100644
+index e805a984322c8348ceba950fe6f45e002ade10b3..cac769084b2fc39713b1a2a5ca80012b74d25a9b 100644
 --- a/src/crypto/crypto_keys.cc
 +++ b/src/crypto/crypto_keys.cc
 @@ -1034,6 +1034,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
@@ -204,6 +235,16 @@ index e805a984322c8348ceba950fe6f45e002ade10b3..f3c48f89b9b7ca99a8c1b1d04a1a3b24
    MarkPopErrorOnReturn mark_pop_error_on_return;
  
    const auto& key = data_.GetAsymmetricKey();
+@@ -1043,6 +1044,9 @@ bool KeyObjectHandle::CheckEcKeyData() const {
+ 
+   return data_.GetKeyType() == kKeyTypePrivate ? ctx.privateCheck()
+                                                : ctx.publicCheck();
++#else
++  return false;
++#endif
+ }
+ 
+ void KeyObjectHandle::CheckEcKeyData(const FunctionCallbackInfo<Value>& args) {
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
 index 205e248e0f20f019e189a6c69d3c011a616b3939..12b0d804c6f1d4998b85160b0aac8eb7a3b5576b 100644
 --- a/src/crypto/crypto_util.cc
