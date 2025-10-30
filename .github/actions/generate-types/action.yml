@@ -15,10 +15,13 @@ runs:
     run: |
       git checkout $(cat ${{ inputs.sha-file }})
       rm -rf node_modules
-      node script/yarn.js install
+      node script/yarn.js install --immutable
       echo "#!/usr/bin/env node\nglobal.x=1" > node_modules/typescript/bin/tsc
       node node_modules/.bin/electron-docs-parser --dir=./ --outDir=./ --moduleVersion=0.0.0-development
       node node_modules/.bin/electron-typescript-definitions --api=electron-api.json --outDir=artifacts
       mv artifacts/electron.d.ts artifacts/${{ inputs.filename }}
       git checkout .
     working-directory: ./electron
+    env:
+      YARN_ENABLE_IMMUTABLE_INSTALLS: false
+
