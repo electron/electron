@@ -242,9 +242,9 @@ jobs:
             export MOCHA_TIMEOUT=180000
             echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
             cd electron
-            runuser -u builduser -- xvfb-run script/actions/run-tests.sh node script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
+            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
           else
-            runuser -u builduser -- xvfb-run script/actions/run-tests.sh node script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
+            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
           fi
         fi
     - name: Upload Test results to Datadog
