@@ -35,7 +35,8 @@ async function main () {
     ...process.env,
     npm_config_nodedir: nodeDir,
     npm_config_arch: process.env.NPM_CONFIG_ARCH,
-    npm_config_yes: 'true'
+    npm_config_yes: 'true',
+    YARN_ENABLE_IMMUTABLE_INSTALLS: 'false'
   };
 
   const clangDir = path.resolve(BASE, 'third_party', 'llvm-build', 'Release+Asserts', 'bin');
