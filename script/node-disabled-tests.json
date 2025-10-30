@@ -75,6 +75,7 @@
   "parallel/test-snapshot-worker",
   "parallel/test-strace-openat-openssl",
   "parallel/test-sqlite-backup",
+  "parallel/test-max-old-space-size-percentage",
   "parallel/test-tls-alpn-server-client",
   "parallel/test-tls-cli-min-version-1.0",
   "parallel/test-tls-cli-max-version-1.2",
