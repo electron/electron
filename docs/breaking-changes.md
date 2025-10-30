@@ -41,15 +41,21 @@ webContents.setWindowOpenHandler((details) => {
 
 When using shared texture offscreen rendering feature, the `paint` event now emits a more structured object.
 It moves the `sharedTextureHandle`, `planes`, `modifier` into a unified `handle` property.
-See [here](https://www.electronjs.org/docs/latest/api/structures/offscreen-shared-texture) for more details.
+See the [OffscreenSharedTexture](./api/structures/offscreen-shared-texture.md) API structure for more details.
 
 ## Planned Breaking API Changes (38.0)
 
 ### Removed: `ELECTRON_OZONE_PLATFORM_HINT` environment variable
 
-The default value of the `--ozone-plaftform` flag [changed to `auto`](https://chromium-review.googlesource.com/c/chromium/src/+/6775426).
+The default value of the `--ozone-platform` flag [changed to `auto`](https://chromium-review.googlesource.com/c/chromium/src/+/6775426).
 
-You should use the `XDG_SESSION_TYPE=wayland` environment variable instead to use Wayland.
+Electron now defaults to running as a native Wayland app when launched in a Wayland session (when `XDG_SESSION_TYPE=wayland`).
+Users can force XWayland by passing `--ozone-platform=x11`.
+
+### Removed: `ORIGINAL_XDG_CURRENT_DESKTOP` environment variable
+
+Previously, Electron changed the value of `XDG_CURRENT_DESKTOP` internally to `Unity`, and stored the original name of the desktop session
+in a separate variable. `XDG_CURRENT_DESKTOP` is no longer overriden and now reflects the actual desktop environment.
 
 ### Removed: macOS 11 support
 

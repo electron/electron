@@ -64,10 +64,10 @@ index 251f51ec454f9cba4023b8b6729241ee753aac13..1de8cac6e3953ce9cab9db03530da327
  
  module.exports = {
 diff --git a/node.gyp b/node.gyp
-index d604e0ddd973174aa7be6f2d250af7b9c2b0fcfd..8e97aa3f44087213425927113fe72bca9ddef45b 100644
+index 0e0071b508f605bb9b7722f8304814dc176d907e..bcb9f371c4e4d8c665058115dc39eaa65125d679 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -176,7 +176,6 @@
+@@ -174,7 +174,6 @@
        'src/timers.cc',
        'src/timer_wrap.cc',
        'src/tracing/agent.cc',
@@ -75,7 +75,7 @@ index d604e0ddd973174aa7be6f2d250af7b9c2b0fcfd..8e97aa3f44087213425927113fe72bca
        'src/tracing/node_trace_writer.cc',
        'src/tracing/trace_event.cc',
        'src/tracing/traced_value.cc',
-@@ -304,7 +303,6 @@
+@@ -302,7 +301,6 @@
        'src/tcp_wrap.h',
        'src/timers.h',
        'src/tracing/agent.h',
@@ -105,7 +105,7 @@ index 40c8aea35c931c46fc62b717c978eab0659645fd..348cdfb0b42aa18f352c220cea0b896c
      if (!json_writer_)
        return;
 diff --git a/src/tracing/agent.cc b/src/tracing/agent.cc
-index 7ce59674356f9743438350949be42fa7ead2afbe..30bff4272ed8eb5146e3b73a4849c187177fc3bd 100644
+index eddcf6c3bf91b730d6ca72960e3048ceed7e7844..184e8647b2148bc597d9d3eb63f86ae99917c642 100644
 --- a/src/tracing/agent.cc
 +++ b/src/tracing/agent.cc
 @@ -2,7 +2,9 @@
@@ -144,7 +144,7 @@ index 7ce59674356f9743438350949be42fa7ead2afbe..30bff4272ed8eb5146e3b73a4849c187
  
    // This thread should be created *after* async handles are created
    // (within NodeTraceWriter and NodeTraceBuffer constructors).
-@@ -143,8 +151,10 @@ void Agent::StopTracing() {
+@@ -148,8 +156,10 @@ void Agent::StopTracing() {
      return;
    // Perform final Flush on TraceBuffer. We don't want the tracing controller
    // to flush the buffer again on destruction of the V8::Platform.
@@ -156,7 +156,7 @@ index 7ce59674356f9743438350949be42fa7ead2afbe..30bff4272ed8eb5146e3b73a4849c187
    started_ = false;
  
    // Thread should finish when the tracing loop is stopped.
-@@ -202,6 +212,7 @@ std::string Agent::GetEnabledCategories() const {
+@@ -207,6 +217,7 @@ std::string Agent::GetEnabledCategories() const {
    return categories;
  }
  
@@ -164,7 +164,7 @@ index 7ce59674356f9743438350949be42fa7ead2afbe..30bff4272ed8eb5146e3b73a4849c187
  void Agent::AppendTraceEvent(TraceObject* trace_event) {
    for (const auto& id_writer : writers_)
      id_writer.second->AppendTraceEvent(trace_event);
-@@ -211,18 +222,21 @@ void Agent::AddMetadataEvent(std::unique_ptr<TraceObject> event) {
+@@ -216,18 +227,21 @@ void Agent::AddMetadataEvent(std::unique_ptr<TraceObject> event) {
    Mutex::ScopedLock lock(metadata_events_mutex_);
    metadata_events_.push_back(std::move(event));
  }
@@ -187,7 +187,7 @@ index 7ce59674356f9743438350949be42fa7ead2afbe..30bff4272ed8eb5146e3b73a4849c187
  void TracingController::AddMetadataEvent(
      const unsigned char* category_group_enabled,
      const char* name,
-@@ -246,6 +260,6 @@ void TracingController::AddMetadataEvent(
+@@ -251,6 +265,6 @@ void TracingController::AddMetadataEvent(
    if (node_agent != nullptr)
      node_agent->AddMetadataEvent(std::move(trace_event));
  }

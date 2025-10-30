@@ -255,7 +255,8 @@ bool Archive::Init() {
   }
 #endif
 
-  std::optional<base::Value> value = base::JSONReader::Read(header);
+  std::optional<base::Value> value =
+      base::JSONReader::Read(header, base::JSON_PARSE_CHROMIUM_EXTENSIONS);
   if (!value || !value->is_dict()) {
     LOG(ERROR) << "Failed to parse header";
     return false;

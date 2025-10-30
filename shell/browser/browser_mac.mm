@@ -137,13 +137,10 @@ void Browser::Focus(gin::Arguments* args) {
   gin_helper::Dictionary opts;
   bool steal_focus = false;
 
-  if (args->GetNext(&opts)) {
-    gin_helper::ErrorThrower thrower(args->isolate());
-    if (!opts.Get("steal", &steal_focus)) {
-      thrower.ThrowError(
-          "Expected options object to contain a 'steal' boolean property");
-      return;
-    }
+  if (args->GetNext(&opts) && !opts.Get("steal", &steal_focus)) {
+    args->ThrowTypeError(
+        "Expected options object to contain a 'steal' boolean property");
+    return;
   }
 
   [[AtomApplication sharedApplication] activateIgnoringOtherApps:steal_focus];

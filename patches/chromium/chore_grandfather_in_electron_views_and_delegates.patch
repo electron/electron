@@ -10,10 +10,10 @@ Subject: chore: "grandfather in" Electron Views and Delegates
 6448510: Lock further access to View::set_owned_by_client(). | https://chromium-review.googlesource.com/c/chromium/src/+/6448510
 
 diff --git a/ui/views/view.h b/ui/views/view.h
-index ee028fccef7dcc9c3522d09e503d2ac49ffd329a..a56c2f87ee21a2bba2cb65acd426cb192124fa85 100644
+index 4fada89e37b9c63f7690fbbdd2ef4ecf86b5d756..73dd5aa59d8d1bb05aaed080e27426cc58da2d61 100644
 --- a/ui/views/view.h
 +++ b/ui/views/view.h
-@@ -80,6 +80,19 @@ class ArcNotificationContentView;
+@@ -81,6 +81,19 @@ class ArcNotificationContentView;
  class WideFrameView;
  }  // namespace ash
  
@@ -33,7 +33,7 @@ index ee028fccef7dcc9c3522d09e503d2ac49ffd329a..a56c2f87ee21a2bba2cb65acd426cb19
  namespace exo {
  class ShellSurfaceBase;
  }
-@@ -324,6 +337,14 @@ class VIEWS_EXPORT View : public ui::LayerDelegate,
+@@ -325,6 +338,14 @@ class VIEWS_EXPORT View : public ui::LayerDelegate,
   public:
    class OwnedByClientPassKey {
     private:
@@ -49,7 +49,7 @@ index ee028fccef7dcc9c3522d09e503d2ac49ffd329a..a56c2f87ee21a2bba2cb65acd426cb19
      // These existing cases are "grandfathered in", but there shouldn't be more.
      // See comments atop class.
 diff --git a/ui/views/widget/widget_delegate.h b/ui/views/widget/widget_delegate.h
-index ff9c5abfdb02d9798b1491e2bbc296f2c7c74398..47d8a897d58b0d3829734105e81b887684dd009b 100644
+index 1f9c24adbdbe5d2bbd72099d234569c9fdbf863d..b437dd07f15f99cfaa35874f69fd4f19a1b343ba 100644
 --- a/ui/views/widget/widget_delegate.h
 +++ b/ui/views/widget/widget_delegate.h
 @@ -168,6 +168,12 @@ namespace crostini {
@@ -81,7 +81,7 @@ index ff9c5abfdb02d9798b1491e2bbc296f2c7c74398..47d8a897d58b0d3829734105e81b8876
      // DO NOT ADD TO THIS LIST!
      // These existing cases are "grandfathered in", but there shouldn't be more.
      // See comments atop `RegisterDeleteDelegateCallback()`.
-@@ -921,6 +929,7 @@ class VIEWS_EXPORT WidgetDelegateView : public WidgetDelegate, public View {
+@@ -920,6 +928,7 @@ class VIEWS_EXPORT WidgetDelegateView : public WidgetDelegate, public View {
    View* GetContentsView() override;
  
   private:

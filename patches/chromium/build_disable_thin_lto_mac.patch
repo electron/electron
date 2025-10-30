@@ -11,15 +11,15 @@ This patch can (and should) be removed when we can prevent those symbols
 from being stripped in the release build.
 
 diff --git a/build/config/compiler/compiler.gni b/build/config/compiler/compiler.gni
-index 0611cd47ef35d3b137a3278896a9174ae2fc3c31..a076c0f461b50fea86679a148b857739f7ec2c3d 100644
+index 2cf6def300d9d92d476ca4ca792347a49bafc26a..8e54f1d3e50a2c56b0cf35a8e56f97f6622401d5 100644
 --- a/build/config/compiler/compiler.gni
 +++ b/build/config/compiler/compiler.gni
-@@ -88,7 +88,7 @@ declare_args() {
-   # have the same LLVM revisions as us, making bitcode useless to them.
+@@ -85,7 +85,7 @@ declare_args() {
+   # Chrome's clang. crbug.com/1033839
    use_thin_lto =
        is_cfi || (is_clang && is_official_build && chrome_pgo_phase != 1 &&
--                 (is_linux || is_win || is_mac ||
-+                 (is_linux || is_win ||
-                   (is_ios && use_lld && !is_cronet_build) ||
+-                 (is_linux || is_win || is_mac || (is_ios && use_lld) ||
++                 (is_linux || is_win || (is_ios && use_lld) ||
                    (is_android && target_os != "chromeos") ||
                    (is_chromeos && is_chromeos_device)))
+ 

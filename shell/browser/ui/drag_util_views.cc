@@ -12,6 +12,7 @@
 #include "ui/base/dragdrop/os_exchange_data.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/point.h"
+#include "ui/gfx/image/image_skia.h"
 #include "ui/views/button_drag_utils.h"
 #include "ui/views/widget/widget.h"
 #include "url/gurl.h"
@@ -38,7 +39,7 @@ void DragFileItems(const std::vector<base::FilePath>& files,
   }
   data->SetFilenames(file_infos);
 
-  gfx::Point location = display::Screen::GetScreen()->GetCursorScreenPoint();
+  gfx::Point location = display::Screen::Get()->GetCursorScreenPoint();
   // TODO(varunjain): Properly determine and send DragEventSource below.
   aura::client::GetDragDropClient(root_window)
       ->StartDragAndDrop(

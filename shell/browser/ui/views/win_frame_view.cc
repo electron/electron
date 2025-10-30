@@ -39,18 +39,6 @@ void WinFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
   }
 }
 
-SkColor WinFrameView::GetReadableFeatureColor(SkColor background_color) {
-  // color_utils::GetColorWithMaxContrast()/IsDark() aren't used here because
-  // they switch based on the Chrome light/dark endpoints, while we want to use
-  // the system native behavior below.
-  const auto windows_luma = [](SkColor c) {
-    return 0.25f * SkColorGetR(c) + 0.625f * SkColorGetG(c) +
-           0.125f * SkColorGetB(c);
-  };
-  return windows_luma(background_color) <= 128.0f ? SK_ColorWHITE
-                                                  : SK_ColorBLACK;
-}
-
 void WinFrameView::InvalidateCaptionButtons() {
   if (!caption_button_container_)
     return;
@@ -89,7 +77,7 @@ views::View* WinFrameView::TargetForRect(views::View* root,
       return this;
   }
 
-  return NonClientFrameView::TargetForRect(root, rect);
+  return FrameView::TargetForRect(root, rect);
 }
 
 int WinFrameView::NonClientHitTest(const gfx::Point& point) {
@@ -170,7 +158,7 @@ void WinFrameView::Layout(PassKey) {
   if (window()->IsWindowControlsOverlayEnabled()) {
     LayoutWindowControlsOverlay();
   }
-  LayoutSuperclass<NonClientFrameView>(this);
+  LayoutSuperclass<FrameView>(this);
 }
 
 int WinFrameView::FrameTopBorderThickness(bool restored) const {
@@ -280,6 +268,10 @@ void WinFrameView::LayoutWindowControlsOverlay() {
 
   window()->SetWindowControlsOverlayRect(bounding_rect);
   window()->NotifyLayoutWindowControlsOverlay();
+}
+
+bool WinFrameView::GetShouldPaintAsActive() {
+  return ShouldPaintAsActive();
 }
 
 BEGIN_METADATA(WinFrameView)

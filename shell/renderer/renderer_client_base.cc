@@ -233,7 +233,7 @@ void RendererClientBase::RenderThreadStarted() {
   extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
   extensions_renderer_client_->RenderThreadStarted();
 
-  WTF::String extension_scheme(extensions::kExtensionScheme);
+  blink::String extension_scheme(extensions::kExtensionScheme);
   // Extension resources are HTTP-like and safe to expose to the fetch API. The
   // rules for the fetch API are consistent with XHR.
   blink::SchemeRegistry::RegisterURLSchemeAsSupportingFetchAPI(
@@ -270,7 +270,7 @@ void RendererClientBase::RenderThreadStarted() {
       ParseSchemesCLISwitch(command_line, switches::kBypassCSPSchemes);
   for (const std::string& scheme : csp_bypassing_schemes)
     blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
-        WTF::String::FromUTF8(scheme));
+        blink::String::FromUTF8(scheme));
 
   std::vector<std::string> code_cache_schemes_list =
       ParseSchemesCLISwitch(command_line, switches::kCodeCacheSchemes);
