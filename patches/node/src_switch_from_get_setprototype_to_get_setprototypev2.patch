@@ -38,7 +38,7 @@ index 487b8b7adfd35646d20fdb15be5fd6f2bee9315b..6a3c4e6952a8f3250bf1b57652a1622e
      }
      return false;
 diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
-index de3d1f2f1832740b24480267f8c573794179859c..6e1680a74e21240ab99be86dcf23e60a05174888 100644
+index 7b2efa49468c0bed2f5935552addd3ab37d0a50b..413db3ed9b88d7b7fb2ac6dd1153dade9ff830fd 100644
 --- a/src/js_native_api_v8.cc
 +++ b/src/js_native_api_v8.cc
 @@ -1577,7 +1577,7 @@ napi_status NAPI_CDECL napi_get_prototype(napi_env env,
@@ -135,10 +135,10 @@ index b1ee513fc0873a51b4885f612dbf7b950b5cf2ca..2f23cc63f148a792f1302e1d2d888227
    Local<Object> internal_constants = Object::New(isolate);
    CHECK(internal_constants->SetPrototype(env->context(),
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 556776b79282d953fdc371d1901f21ca301bec1a..b33193c4d017b35aec5e73c1ead04cfb3ba50d55 100644
+index b067685822dc056e446e1a9402a5a6cba86cc722..e93e8684e518b30a2514768a269be6d32d1f5b94 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -1493,7 +1493,8 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
+@@ -1552,7 +1552,8 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
  
    Local<Map> options = Map::New(isolate);
    if (options
@@ -148,7 +148,7 @@ index 556776b79282d953fdc371d1901f21ca301bec1a..b33193c4d017b35aec5e73c1ead04cfb
            .IsNothing()) {
      return;
    }
-@@ -1533,7 +1534,8 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
+@@ -1592,7 +1593,8 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
    if (!ToV8Value(context, _ppop_instance.aliases_).ToLocal(&aliases)) return;
  
    if (aliases.As<Object>()
@@ -159,7 +159,7 @@ index 556776b79282d953fdc371d1901f21ca301bec1a..b33193c4d017b35aec5e73c1ead04cfb
      return;
    }
 diff --git a/src/node_webstorage.cc b/src/node_webstorage.cc
-index 1705e430099c5a363e02010f83d729b0aa54f8e5..0577777723747327dc57830ace316aebc0cfd891 100644
+index 9a7b7db881a564a68683c55cb10919454e80edbf..bf88ce68f9173ef24a283dd370e71903220b0077 100644
 --- a/src/node_webstorage.cc
 +++ b/src/node_webstorage.cc
 @@ -532,7 +532,7 @@ template <typename T>

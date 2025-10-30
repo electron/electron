@@ -40,11 +40,11 @@ index 9b41db8b0714b7408f79cbd5b4c460d9bc08f239..35ecfb9bbaf2c8e7351e1c69da84c82a
  
  /**
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index c52e20d742942667f43ea3e151fc6702260b176b..cbb3e7f4df72f83cb8a1afc25a7429218792e964 100644
+index 1ff4971d6fedf6090120a63ba0af420dd6929c8b..4a35e41e78a22993f87ab9d5919f401a7b742438 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
-@@ -901,7 +901,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
-   return module->module_.Get(isolate);
+@@ -1063,7 +1063,7 @@ Maybe<ModuleWrap*> ModuleWrap::ResolveModule(
+   return Just(module_wrap);
  }
  
 -static MaybeLocal<Promise> ImportModuleDynamically(
@@ -52,7 +52,7 @@ index c52e20d742942667f43ea3e151fc6702260b176b..cbb3e7f4df72f83cb8a1afc25a742921
      Local<Context> context,
      Local<Data> host_defined_options,
      Local<Value> resource_name,
-@@ -973,12 +973,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
+@@ -1135,12 +1135,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
    Realm* realm = Realm::GetCurrent(args);
    HandleScope handle_scope(isolate);
  
@@ -68,7 +68,7 @@ index c52e20d742942667f43ea3e151fc6702260b176b..cbb3e7f4df72f83cb8a1afc25a742921
  }
  
  void ModuleWrap::HostInitializeImportMetaObjectCallback(
-@@ -1020,13 +1021,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
+@@ -1182,13 +1183,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
    Realm* realm = Realm::GetCurrent(args);
    Isolate* isolate = realm->isolate();
  
@@ -87,7 +87,7 @@ index c52e20d742942667f43ea3e151fc6702260b176b..cbb3e7f4df72f83cb8a1afc25a742921
  
  MaybeLocal<Value> ModuleWrap::SyntheticModuleEvaluationStepsCallback(
 diff --git a/src/module_wrap.h b/src/module_wrap.h
-index 9363ce73e51cde3d3a94f9912f072d532d0f8560..c0e972ed293157726efc5fa76dfa62d3da51c22a 100644
+index 695b73ca7ffea850cd88e94546125d12ddc991f6..09602a8e619ba52f3525e3d312047c6dba0484a5 100644
 --- a/src/module_wrap.h
 +++ b/src/module_wrap.h
 @@ -8,6 +8,7 @@
@@ -98,8 +98,8 @@ index 9363ce73e51cde3d3a94f9912f072d532d0f8560..c0e972ed293157726efc5fa76dfa62d3
  #include "v8-script.h"
  
  namespace node {
-@@ -33,7 +34,14 @@ enum HostDefinedOptions : int {
-   kLength = 9,
+@@ -86,7 +87,14 @@ struct ModuleCacheKey : public MemoryRetainer {
+         hash(hash) {}
  };
  
 -class ModuleWrap : public BaseObject {
@@ -111,10 +111,10 @@ index 9363ce73e51cde3d3a94f9912f072d532d0f8560..c0e972ed293157726efc5fa76dfa62d3
 +    v8::Local<v8::FixedArray> import_assertions);
 +
 +class NODE_EXTERN ModuleWrap : public BaseObject {
-  public:
-   enum InternalFields {
-     kModuleSlot = BaseObject::kInternalFieldCount,
-@@ -92,6 +100,8 @@ class ModuleWrap : public BaseObject {
+   using ResolveCache =
+       std::unordered_map<ModuleCacheKey, uint32_t, ModuleCacheKey::Hash>;
+ 
+@@ -151,6 +159,8 @@ class ModuleWrap : public BaseObject {
    static void CreateRequiredModuleFacade(
        const v8::FunctionCallbackInfo<v8::Value>& args);
  
@@ -123,11 +123,11 @@ index 9363ce73e51cde3d3a94f9912f072d532d0f8560..c0e972ed293157726efc5fa76dfa62d3
   private:
    ModuleWrap(Realm* realm,
               v8::Local<v8::Object> object,
-@@ -131,7 +141,6 @@ class ModuleWrap : public BaseObject {
+@@ -190,7 +200,6 @@ class ModuleWrap : public BaseObject {
        v8::Local<v8::String> specifier,
        v8::Local<v8::FixedArray> import_attributes,
        v8::Local<v8::Module> referrer);
 -  static ModuleWrap* GetFromModule(node::Environment*, v8::Local<v8::Module>);
  
-   v8::Global<v8::Module> module_;
-   std::unordered_map<std::string, v8::Global<v8::Object>> resolve_cache_;
+   // This method may throw a JavaScript exception, so the return type is
+   // wrapped in a Maybe.

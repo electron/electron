@@ -44,10 +44,10 @@ index 2f23cc63f148a792f1302e1d2d88822730abaa33..42678e5d11e5ff9543bf12ec02fee7d3
  
    DefineErrnoConstants(err_constants);
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index 96101167016573e80fff520256ebb78c71d83302..cdc50b7e9abc2b5944ffd9c5ea1882f4fb9e1421 100644
+index a9031da142db9969c6197a4a15e38b8197a73f73..d658ed374318a9b3946fda52371a13ae7058a069 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
-@@ -2108,7 +2108,7 @@ void StatementSync::Iterate(const FunctionCallbackInfo<Value>& args) {
+@@ -2110,7 +2110,7 @@ void StatementSync::Iterate(const FunctionCallbackInfo<Value>& args) {
    if (iter->object()
            ->GetPrototype()
            .As<Object>()

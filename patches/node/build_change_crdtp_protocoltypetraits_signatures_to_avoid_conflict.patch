@@ -14,7 +14,7 @@ error: duplicate symbol: crdtp::ProtocolTypeTraits<std::__Cr::basic_string<char,
 Some distinguishing change should be upstreamed to Node.js.
 
 diff --git a/src/inspector/node_string.cc b/src/inspector/node_string.cc
-index 8521730bd03cdfce47e9b5d0f5d68a568bc3de8c..28f4598aa7ea0e93350f79566c06d0f08313be9f 100644
+index e2148e954217b9b999e9713e95f1a115ccf7d657..7ec7464cdc0ef00e6600fb897ae99e44ed0f4ad8 100644
 --- a/src/inspector/node_string.cc
 +++ b/src/inspector/node_string.cc
 @@ -7,7 +7,8 @@

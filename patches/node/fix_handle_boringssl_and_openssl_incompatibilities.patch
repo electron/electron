@@ -228,7 +228,7 @@ index d94f6e1c82c4a62547b3b395f375c86ce4deb5de..b81b9005365272217c77e2b9289bd9f8
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index c08dab17fa229d1d67d3ad5174c97192989b2bd0..a3d309d832c73ddc79564b9644d825bec7459e7f 100644
+index d1430cd66dd045dcb52dd166e1eabc7202d1bd94..8f50d0cc132ac65fa74cf1fc2172247b5ad42962 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -141,7 +141,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
@@ -240,7 +240,7 @@ index c08dab17fa229d1d67d3ad5174c97192989b2bd0..a3d309d832c73ddc79564b9644d825be
        X509* ca = sk_X509_value(extra_certs, i);
  
        // NOTE: Increments reference count on `ca`
-@@ -1773,11 +1773,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
+@@ -1831,11 +1831,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
    // If the user specified "auto" for dhparams, the JavaScript layer will pass
    // true to this function instead of the original string. Any other string
    // value will be interpreted as custom DH parameters below.
@@ -254,7 +254,7 @@ index c08dab17fa229d1d67d3ad5174c97192989b2bd0..a3d309d832c73ddc79564b9644d825be
    DHPointer dh;
    {
      BIOPointer bio(LoadBIO(env, args[0]));
-@@ -2003,7 +2004,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
+@@ -2061,7 +2062,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
    }
  
    // Add CA certs too
@@ -396,10 +396,10 @@ index ca5edc8ebdf2550bb62b7969a5650733a2647f4f..198e18b58f31e361a9d2865cbe81e067
      return EVPKeyCtxPointer();
  
 diff --git a/src/crypto/crypto_keys.cc b/src/crypto/crypto_keys.cc
-index 7238cda445fd663e6b45fa134f31d017bb267dfc..522655555cdb2ab2083797f736bf167d1f42c15e 100644
+index fe852bdebacae49dce19a731a46fe9f1bb66eb1b..5dbcaafaf26aa3b638fdfd471cedab87c9296319 100644
 --- a/src/crypto/crypto_keys.cc
 +++ b/src/crypto/crypto_keys.cc
-@@ -949,6 +949,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
+@@ -948,6 +948,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
  }
  
  bool KeyObjectHandle::CheckEcKeyData() const {
@@ -407,7 +407,7 @@ index 7238cda445fd663e6b45fa134f31d017bb267dfc..522655555cdb2ab2083797f736bf167d
    MarkPopErrorOnReturn mark_pop_error_on_return;
  
    const auto& key = data_.GetAsymmetricKey();
-@@ -965,6 +966,9 @@ bool KeyObjectHandle::CheckEcKeyData() const {
+@@ -964,6 +965,9 @@ bool KeyObjectHandle::CheckEcKeyData() const {
  #else
    return EVP_PKEY_public_check(ctx.get()) == 1;
  #endif
@@ -449,7 +449,7 @@ index 05a3882c7e17d78e27aabb29891aa250789a47c0..1f2fccce6ed8f14525557644e0bdd130
  
        if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 7c548d32b40365343f0e208c3aa856a1c847f4c3..6346f8f7199cf7b7d3736c59571606fff102fbb6 100644
+index 9c2360df7150571377eff37fc5e958d17900da30..4505786745c54a529f904d5e7813a86204e0a78b 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -207,7 +207,8 @@ void TestFipsCrypto(const v8::FunctionCallbackInfo<v8::Value>& args) {
@@ -506,15 +506,14 @@ index 7c548d32b40365343f0e208c3aa856a1c847f4c3..6346f8f7199cf7b7d3736c59571606ff
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -705,10 +697,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -705,9 +697,11 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
 +#ifndef OPENSSL_IS_BORINGSSL
-   Environment* env = Environment::GetCurrent(args);
    if (CRYPTO_secure_malloc_initialized())
      args.GetReturnValue().Set(
-         BigInt::New(env->isolate(), CRYPTO_secure_used()));
+         BigInt::New(args.GetIsolate(), CRYPTO_secure_used()));
 +#endif
  }
  }  // namespace
@@ -555,20 +554,20 @@ index d9c533f100d25aeab1fe8589932a8ddead431258..2acab8786a8a752b17961445edeb872c
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index ed85bf11f6f325823b59b3b0275908f9210c1b24..e3509abbc3bf84ac0edcd495eb3dde6219dbfc2d 100644
+index 31fc23fdbfabceab3cffd81a3e6650dde1ccd13a..3026b3d814ae652a9996c1dcba62b4fa678ac871 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -7,7 +7,7 @@
- #include "node_external_reference.h"
+@@ -8,7 +8,7 @@
  #include "node_internals.h"
  #include "node_sea.h"
+ #include "uv.h"
 -#if HAVE_OPENSSL
 +#if HAVE_OPENSSL && !defined(OPENSSL_IS_BORINGSSL)
  #include "openssl/opensslv.h"
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index cdbd9ca39e907ab22515293eac2c5512223f4ca2..418dee360f867c363f1576012b32213a51c4fdd0 100644
+index 2e73fd2a05e329910d4c064474880f770c9f5957..d8751a6ee734233e2fc24866ed87d9cd516072ae 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@
