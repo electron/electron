@@ -18,10 +18,10 @@ This can be removed when Node.js upgrades to a version of V8 containing CLs
 from the above issue.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index cb37fa080fc8e8d524cfa2758c4a8c2c5652324d..8e227ddd1be50c046a8cf2895a31d607eb7d31de 100644
+index 4fad275c865..b4ca77a1c3f 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -316,6 +316,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
+@@ -319,6 +319,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
                      MultiIsolatePlatform* platform,
                      const SnapshotData* snapshot_data,
                      const IsolateSettings& settings) {
@@ -32,7 +32,7 @@ index cb37fa080fc8e8d524cfa2758c4a8c2c5652324d..8e227ddd1be50c046a8cf2895a31d607
    Isolate* isolate = Isolate::Allocate();
    if (isolate == nullptr) return nullptr;
  
-@@ -359,9 +363,12 @@ Isolate* NewIsolate(ArrayBufferAllocator* allocator,
+@@ -368,9 +372,12 @@ Isolate* NewIsolate(ArrayBufferAllocator* allocator,
                      uv_loop_t* event_loop,
                      MultiIsolatePlatform* platform,
                      const EmbedderSnapshotData* snapshot_data,
@@ -46,46 +46,11 @@ index cb37fa080fc8e8d524cfa2758c4a8c2c5652324d..8e227ddd1be50c046a8cf2895a31d607
    return NewIsolate(&params,
                      event_loop,
                      platform,
-diff --git a/src/env.cc b/src/env.cc
-index 85641b68b1e6f6dd4149f33ba13f76bccc8bf47d..c6209cc7cf317de1bb9217e39dd760e5a83303e2 100644
---- a/src/env.cc
-+++ b/src/env.cc
-@@ -578,14 +578,6 @@ IsolateData::IsolateData(Isolate* isolate,
-   // We do not care about overflow since we just want this to be different
-   // from the cppgc id.
-   uint16_t non_cppgc_id = cppgc_id + 1;
--  if (cpp_heap == nullptr) {
--    cpp_heap_ = CppHeap::Create(platform, v8::CppHeapCreateParams{{}});
--    // TODO(joyeecheung): pass it into v8::Isolate::CreateParams and let V8
--    // own it when we can keep the isolate registered/task runner discoverable
--    // during isolate disposal.
--    isolate->AttachCppHeap(cpp_heap_.get());
--  }
--
-   {
-     // GC could still be run after the IsolateData is destroyed, so we store
-     // the ids in a static map to ensure pointers to them are still valid
-@@ -608,15 +600,6 @@ IsolateData::IsolateData(Isolate* isolate,
-   }
- }
- 
--IsolateData::~IsolateData() {
--  if (cpp_heap_ != nullptr) {
--    v8::Locker locker(isolate_);
--    // The CppHeap must be detached before being terminated.
--    isolate_->DetachCppHeap();
--    cpp_heap_->Terminate();
--  }
--}
--
- // Deprecated API, embedders should use v8::Object::Wrap() directly instead.
- void SetCppgcReference(Isolate* isolate,
-                        Local<Object> object,
 diff --git a/src/env.h b/src/env.h
-index 2d5fa8dbd75851bca30453548f6cbe0159509f26..c346e3a9c827993036438685d758a734f9ce8c05 100644
+index d34aec43630..d27579ede0e 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -157,7 +157,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
+@@ -141,7 +141,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
        ArrayBufferAllocator* node_allocator = nullptr,
        const EmbedderSnapshotData* embedder_snapshot_data = nullptr,
        std::shared_ptr<PerIsolateOptions> options = nullptr);
@@ -93,53 +58,11 @@ index 2d5fa8dbd75851bca30453548f6cbe0159509f26..c346e3a9c827993036438685d758a734
  
    SET_MEMORY_INFO_NAME(IsolateData)
    SET_SELF_SIZE(IsolateData)
-@@ -260,7 +259,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
-   const SnapshotData* snapshot_data_;
-   std::optional<SnapshotConfig> snapshot_config_;
- 
--  std::unique_ptr<v8::CppHeap> cpp_heap_;
-   std::shared_ptr<PerIsolateOptions> options_;
-   worker::Worker* worker_context_ = nullptr;
-   PerIsolateWrapperData* wrapper_data_;
-diff --git a/src/node.cc b/src/node.cc
-index 5a7378890dc310bb3779974c79f387e7cdda15b0..0725cc97510375bc616534ddf3de4b231bae6bf5 100644
---- a/src/node.cc
-+++ b/src/node.cc
-@@ -1295,6 +1295,14 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
-     result->platform_ = per_process::v8_platform.Platform();
-   }
- 
-+  if (!(flags & ProcessInitializationFlags::kNoInitializeCppgc)) {
-+    v8::PageAllocator* allocator = nullptr;
-+    if (result->platform_ != nullptr) {
-+      allocator = result->platform_->GetPageAllocator();
-+    }
-+    cppgc::InitializeProcess(allocator);
-+  }
-+
-   if (!(flags & ProcessInitializationFlags::kNoInitializeV8)) {
-     V8::Initialize();
- 
-@@ -1304,14 +1312,6 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
-     absl::SetMutexDeadlockDetectionMode(absl::OnDeadlockCycle::kIgnore);
-   }
- 
--  if (!(flags & ProcessInitializationFlags::kNoInitializeCppgc)) {
--    v8::PageAllocator* allocator = nullptr;
--    if (result->platform_ != nullptr) {
--      allocator = result->platform_->GetPageAllocator();
--    }
--    cppgc::InitializeProcess(allocator);
--  }
--
- #if NODE_USE_V8_WASM_TRAP_HANDLER
-   bool use_wasm_trap_handler =
-       !per_process::cli_options->disable_wasm_trap_handler;
 diff --git a/src/node.h b/src/node.h
-index d3a965661d068db359bb1bb4b14e59c28bb615f9..16a0c71aef949b0ddd27def9dc843298f9a6b75f 100644
+index f7b3f90b0c2..5b6fa2c3405 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -590,7 +590,8 @@ NODE_EXTERN v8::Isolate* NewIsolate(
+@@ -604,7 +604,8 @@ NODE_EXTERN v8::Isolate* NewIsolate(
      struct uv_loop_s* event_loop,
      MultiIsolatePlatform* platform,
      const EmbedderSnapshotData* snapshot_data = nullptr,
@@ -150,7 +73,7 @@ index d3a965661d068db359bb1bb4b14e59c28bb615f9..16a0c71aef949b0ddd27def9dc843298
      std::shared_ptr<ArrayBufferAllocator> allocator,
      struct uv_loop_s* event_loop,
 diff --git a/src/node_main_instance.cc b/src/node_main_instance.cc
-index 4119ac1b002681d39711eac810ca2fcc2702ffc7..790347056cde949ffe6cf8498a7eca0c4864c997 100644
+index dd6ecd1f9d8..334d5cb7df7 100644
 --- a/src/node_main_instance.cc
 +++ b/src/node_main_instance.cc
 @@ -44,6 +44,8 @@ NodeMainInstance::NodeMainInstance(const SnapshotData* snapshot_data,
@@ -162,22 +85,11 @@ index 4119ac1b002681d39711eac810ca2fcc2702ffc7..790347056cde949ffe6cf8498a7eca0c
  
    isolate_ =
        NewIsolate(isolate_params_.get(), event_loop, platform, snapshot_data);
-@@ -81,9 +83,9 @@ NodeMainInstance::~NodeMainInstance() {
-     // This should only be done on a main instance that owns its isolate.
-     // IsolateData must be freed before UnregisterIsolate() is called.
-     isolate_data_.reset();
--    platform_->UnregisterIsolate(isolate_);
-   }
-   isolate_->Dispose();
-+  platform_->UnregisterIsolate(isolate_);
- }
- 
- ExitCode NodeMainInstance::Run() {
 diff --git a/src/node_worker.cc b/src/node_worker.cc
-index 29c4b1de42b3127a98871d200c80197bf974b31f..8555ab556b5b74a1cf9cf30747f1f417bfe4e4d9 100644
+index 7bae29747d8..62c53368d11 100644
 --- a/src/node_worker.cc
 +++ b/src/node_worker.cc
-@@ -177,6 +177,9 @@ class WorkerThreadData {
+@@ -181,6 +181,9 @@ class WorkerThreadData {
      SetIsolateCreateParamsForNode(&params);
      w->UpdateResourceConstraints(&params.constraints);
      params.array_buffer_allocator_shared = allocator;
@@ -187,153 +99,3 @@ index 29c4b1de42b3127a98871d200c80197bf974b31f..8555ab556b5b74a1cf9cf30747f1f417
      Isolate* isolate =
          NewIsolate(&params, &loop_, w->platform_, w->snapshot_data());
      if (isolate == nullptr) {
-@@ -245,13 +248,8 @@ class WorkerThreadData {
-         *static_cast<bool*>(data) = true;
-       }, &platform_finished);
- 
--      // The order of these calls is important; if the Isolate is first disposed
--      // and then unregistered, there is a race condition window in which no
--      // new Isolate at the same address can successfully be registered with
--      // the platform.
--      // (Refs: https://github.com/nodejs/node/issues/30846)
--      w_->platform_->UnregisterIsolate(isolate);
-       isolate->Dispose();
-+      w_->platform_->UnregisterIsolate(isolate);
- 
-       // Wait until the platform has cleaned up all relevant resources.
-       while (!platform_finished) {
-diff --git a/src/util.cc b/src/util.cc
-index 0c01d338b9d1ced7f173ac862239315f91326791..5ca32f026f9f001ddadc14965705fe005600eddd 100644
---- a/src/util.cc
-+++ b/src/util.cc
-@@ -726,8 +726,8 @@ RAIIIsolateWithoutEntering::RAIIIsolateWithoutEntering(const SnapshotData* data)
- }
- 
- RAIIIsolateWithoutEntering::~RAIIIsolateWithoutEntering() {
--  per_process::v8_platform.Platform()->UnregisterIsolate(isolate_);
-   isolate_->Dispose();
-+  per_process::v8_platform.Platform()->UnregisterIsolate(isolate_);
- }
- 
- RAIIIsolate::RAIIIsolate(const SnapshotData* data)
-diff --git a/test/cctest/node_test_fixture.h b/test/cctest/node_test_fixture.h
-index 3414c0be8ad777f0b9836323150071b688831a38..82013ffe7667d53248bd616efb79b294e4ae47dd 100644
---- a/test/cctest/node_test_fixture.h
-+++ b/test/cctest/node_test_fixture.h
-@@ -123,8 +123,8 @@ class NodeTestFixture : public NodeZeroIsolateTestFixture {
-   void TearDown() override {
-     platform->DrainTasks(isolate_);
-     isolate_->Exit();
--    platform->UnregisterIsolate(isolate_);
-     isolate_->Dispose();
-+    platform->UnregisterIsolate(isolate_);
-     isolate_ = nullptr;
-     NodeZeroIsolateTestFixture::TearDown();
-   }
-diff --git a/test/cctest/test_cppgc.cc b/test/cctest/test_cppgc.cc
-index edd413ae9b956b2e59e8166785adef6a8ff06d51..d1c1549efcb0320bc0f7d354db2101acc0930005 100644
---- a/test/cctest/test_cppgc.cc
-+++ b/test/cctest/test_cppgc.cc
-@@ -46,18 +46,15 @@ int CppGCed::kDestructCount = 0;
- int CppGCed::kTraceCount = 0;
- 
- TEST_F(NodeZeroIsolateTestFixture, ExistingCppHeapTest) {
--  v8::Isolate* isolate =
--      node::NewIsolate(allocator.get(), &current_loop, platform.get());
- 
-   // Create and attach the CppHeap before we set up the IsolateData so that
-   // it recognizes the existing heap.
-   std::unique_ptr<v8::CppHeap> cpp_heap =
-       v8::CppHeap::Create(platform.get(), v8::CppHeapCreateParams{{}});
- 
--  // TODO(joyeecheung): pass it into v8::Isolate::CreateParams and let V8
--  // own it when we can keep the isolate registered/task runner discoverable
--  // during isolate disposal.
--  isolate->AttachCppHeap(cpp_heap.get());
-+  v8::Isolate* isolate =
-+      node::NewIsolate(allocator.get(), &current_loop, platform.get(),
-+      nullptr, {}, std::move(cpp_heap));
- 
-   // Try creating Context + IsolateData + Environment.
-   {
-@@ -102,13 +99,11 @@ TEST_F(NodeZeroIsolateTestFixture, ExistingCppHeapTest) {
-     platform->DrainTasks(isolate);
- 
-     // Cleanup.
--    isolate->DetachCppHeap();
--    cpp_heap->Terminate();
-     platform->DrainTasks(isolate);
-   }
- 
--  platform->UnregisterIsolate(isolate);
-   isolate->Dispose();
-+  platform->UnregisterIsolate(isolate);
- 
-   // Check that all the objects are created and destroyed properly.
-   EXPECT_EQ(CppGCed::kConstructCount, 100);
-diff --git a/test/cctest/test_environment.cc b/test/cctest/test_environment.cc
-index 008cda77b650dc2d904ae00e7629b5ad05d297ad..103931516cea9beb7f25c53526928e67b3c90d2d 100644
---- a/test/cctest/test_environment.cc
-+++ b/test/cctest/test_environment.cc
-@@ -625,6 +625,9 @@ TEST_F(NodeZeroIsolateTestFixture, CtrlCWithOnlySafeTerminationTest) {
-   // Allocate and initialize Isolate.
-   v8::Isolate::CreateParams create_params;
-   create_params.array_buffer_allocator = allocator.get();
-+  create_params.cpp_heap =
-+      v8::CppHeap::Create(platform.get(), v8::CppHeapCreateParams{{}})
-+          .release();
-   v8::Isolate* isolate = v8::Isolate::Allocate();
-   CHECK_NOT_NULL(isolate);
-   platform->RegisterIsolate(isolate, &current_loop);
-@@ -675,8 +678,8 @@ TEST_F(NodeZeroIsolateTestFixture, CtrlCWithOnlySafeTerminationTest) {
-   }
- 
-   // Cleanup.
--  platform->UnregisterIsolate(isolate);
-   isolate->Dispose();
-+  platform->UnregisterIsolate(isolate);
- }
- #endif  // _WIN32
- 
-diff --git a/test/cctest/test_platform.cc b/test/cctest/test_platform.cc
-index 53644accf29749bf8fc18b641ae1eaef93cd6f98..7e5b143fb4b633e18a4b2d7440cba7e077c50950 100644
---- a/test/cctest/test_platform.cc
-+++ b/test/cctest/test_platform.cc
-@@ -102,8 +102,8 @@ TEST_F(NodeZeroIsolateTestFixture, IsolatePlatformDelegateTest) {
- 
-   // Graceful shutdown
-   delegate->Shutdown();
--  platform->UnregisterIsolate(isolate);
-   isolate->Dispose();
-+  platform->UnregisterIsolate(isolate);
- }
- 
- TEST_F(PlatformTest, TracingControllerNullptr) {
-diff --git a/test/fuzzers/fuzz_env.cc b/test/fuzzers/fuzz_env.cc
-index bace3051f8cecd5050d4707f2431973752a22188..5ca295848a974c70ff1a9094eb288ef7e658d8e5 100644
---- a/test/fuzzers/fuzz_env.cc
-+++ b/test/fuzzers/fuzz_env.cc
-@@ -65,8 +65,8 @@ public:
-   void Teardown() {
-     platform->DrainTasks(isolate_);
-     isolate_->Exit();
--    platform->UnregisterIsolate(isolate_);
-     isolate_->Dispose();
-+    platform->UnregisterIsolate(isolate_);
-     isolate_ = nullptr;
-   }
- };
-diff --git a/test/fuzzers/fuzz_strings.cc b/test/fuzzers/fuzz_strings.cc
-index 8f5e1a473e3148e0bcdcc3c2fd582685665ce461..936876cdae20d29618d3789a5ab46a1b3101a79d 100644
---- a/test/fuzzers/fuzz_strings.cc
-+++ b/test/fuzzers/fuzz_strings.cc
-@@ -72,8 +72,8 @@ public:
-   void Teardown() {
-     platform->DrainTasks(isolate_);
-     isolate_->Exit();
--    platform->UnregisterIsolate(isolate_);
-     isolate_->Dispose();
-+    platform->UnregisterIsolate(isolate_);
-     isolate_ = nullptr;
-   }
- };
