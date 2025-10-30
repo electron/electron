@@ -153,7 +153,7 @@ const LINTERS = [{
 }, {
   key: 'javascript',
   roots: ['build', 'default_app', 'lib', 'npm', 'script', 'spec'],
-  ignoreRoots: ['spec/node_modules'],
+  ignoreRoots: ['spec/node_modules', 'spec/fixtures/native-addon'],
   test: filename => filename.endsWith('.js') || filename.endsWith('.ts') || filename.endsWith('.mjs'),
   run: async (opts, filenames) => {
     const eslint = new ESLint({
