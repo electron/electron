@@ -22,5 +22,6 @@ runs:
       node node_modules/.bin/electron-docs-parser --dir=./ --outDir=./ --moduleVersion=0.0.0-development
       node node_modules/.bin/electron-typescript-definitions --api=electron-api.json --outDir=artifacts
       mv artifacts/electron.d.ts artifacts/${{ inputs.filename }}
+      cd ..
       rm -rf tmpdir
     working-directory: ./electron
