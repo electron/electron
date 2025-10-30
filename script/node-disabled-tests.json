@@ -41,6 +41,7 @@
   "parallel/test-module-loading-globalpaths",
   "parallel/test-module-print-timing",
   "parallel/test-openssl-ca-options",
+  "parallel/test-os-checked-function",
   "parallel/test-process-versions",
   "parallel/test-process-get-builtin",
   "parallel/test-repl",
