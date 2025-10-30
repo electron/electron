@@ -19,4 +19,4 @@ runs:
     run: |
       cd src/electron
       export NODE_OPTIONS="--max-old-space-size=4096"
-      node script/yarn install --immutable
+      node script/yarn.js install --immutable
