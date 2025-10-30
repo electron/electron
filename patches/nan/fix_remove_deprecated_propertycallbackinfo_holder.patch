@@ -1,0 +1,238 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 30 Oct 2025 09:11:54 +0000
+Subject: fix: remove deprecated PropertyCallbackInfo::Holder()
+
+Removed upstream in https://chromium-review.googlesource.com/c/v8/v8/+/7013355.
+
+Nan should be migrated to use info.This() instead of info.Holder().
+
+diff --git a/test/cpp/accessors.cpp b/test/cpp/accessors.cpp
+index 5848a40920c35680360a9d8b1390e983c6896996..a68b82ca839e2fa1940959fc66ac283c1c25851f 100644
+--- a/test/cpp/accessors.cpp
++++ b/test/cpp/accessors.cpp
+@@ -90,7 +90,7 @@ NAN_METHOD(SetterGetter::New) {
+ 
+ NAN_GETTER(SetterGetter::GetProp1) {
+   SetterGetter* settergetter =
+-    ObjectWrap::Unwrap<SetterGetter>(info.Holder());
++    ObjectWrap::Unwrap<SetterGetter>(info.This());
+   assert(strlen(settergetter->log) < sizeof (settergetter->log));
+   strncat(
+       settergetter->log
+@@ -112,7 +112,7 @@ NAN_GETTER(SetterGetter::GetProp1) {
+ 
+ NAN_GETTER(SetterGetter::GetProp2) {
+   SetterGetter* settergetter =
+-    ObjectWrap::Unwrap<SetterGetter>(info.Holder());
++    ObjectWrap::Unwrap<SetterGetter>(info.This());
+   assert(strlen(settergetter->log) < sizeof (settergetter->log));
+   strncat(
+       settergetter->log
+@@ -134,7 +134,7 @@ NAN_GETTER(SetterGetter::GetProp2) {
+ 
+ NAN_SETTER(SetterGetter::SetProp2) {
+   SetterGetter* settergetter =
+-      ObjectWrap::Unwrap<SetterGetter>(info.Holder());
++      ObjectWrap::Unwrap<SetterGetter>(info.This());
+   strncpy(
+       settergetter->prop2
+     , *Utf8String(value)
+@@ -159,7 +159,7 @@ NAN_SETTER(SetterGetter::SetProp2) {
+ 
+ NAN_METHOD(SetterGetter::Log) {
+   SetterGetter* settergetter =
+-    ObjectWrap::Unwrap<SetterGetter>(info.Holder());
++    ObjectWrap::Unwrap<SetterGetter>(info.This());
+ 
+   info.GetReturnValue().Set(Nan::New(settergetter->log).ToLocalChecked());
+ }
+diff --git a/test/cpp/accessors2.cpp b/test/cpp/accessors2.cpp
+index f5a2b312ca62256bc43141fad145cd68fc300446..59125d33c19856938907ab4dd28dc60037065a16 100644
+--- a/test/cpp/accessors2.cpp
++++ b/test/cpp/accessors2.cpp
+@@ -88,7 +88,7 @@ NAN_METHOD(SetterGetter::New) {
+ 
+ NAN_GETTER(SetterGetter::GetProp1) {
+   SetterGetter* settergetter =
+-    ObjectWrap::Unwrap<SetterGetter>(info.Holder());
++    ObjectWrap::Unwrap<SetterGetter>(info.This());
+   assert(strlen(settergetter->log) < sizeof (settergetter->log));
+   strncat(
+       settergetter->log
+@@ -110,7 +110,7 @@ NAN_GETTER(SetterGetter::GetProp1) {
+ 
+ NAN_GETTER(SetterGetter::GetProp2) {
+   SetterGetter* settergetter =
+-    ObjectWrap::Unwrap<SetterGetter>(info.Holder());
++    ObjectWrap::Unwrap<SetterGetter>(info.This());
+   assert(strlen(settergetter->log) < sizeof (settergetter->log));
+   strncat(
+       settergetter->log
+@@ -132,7 +132,7 @@ NAN_GETTER(SetterGetter::GetProp2) {
+ 
+ NAN_SETTER(SetterGetter::SetProp2) {
+   SetterGetter* settergetter =
+-      ObjectWrap::Unwrap<SetterGetter>(info.Holder());
++      ObjectWrap::Unwrap<SetterGetter>(info.This());
+   strncpy(
+       settergetter->prop2
+     , *Nan::Utf8String(value)
+@@ -157,7 +157,7 @@ NAN_SETTER(SetterGetter::SetProp2) {
+ 
+ NAN_METHOD(SetterGetter::Log) {
+   SetterGetter* settergetter =
+-    ObjectWrap::Unwrap<SetterGetter>(info.Holder());
++    ObjectWrap::Unwrap<SetterGetter>(info.This());
+ 
+   info.GetReturnValue().Set(Nan::New(settergetter->log).ToLocalChecked());
+ }
+diff --git a/test/cpp/indexedinterceptors.cpp b/test/cpp/indexedinterceptors.cpp
+index 19b7673ff4c07236b11e1947d805979c21a0876e..668aa22f00ecc624ea4a66de93d289cdc7aad722 100644
+--- a/test/cpp/indexedinterceptors.cpp
++++ b/test/cpp/indexedinterceptors.cpp
+@@ -74,7 +74,7 @@ NAN_METHOD(IndexedInterceptor::New) {
+ 
+ NAN_INDEX_GETTER(IndexedInterceptor::PropertyGetter) {
+   IndexedInterceptor* interceptor =
+-    ObjectWrap::Unwrap<IndexedInterceptor>(info.Holder());
++    ObjectWrap::Unwrap<IndexedInterceptor>(info.This());
+   if (index == 0) {
+     info.GetReturnValue().Set(Nan::New(interceptor->buf).ToLocalChecked());
+   } else {
+@@ -85,7 +85,7 @@ NAN_INDEX_GETTER(IndexedInterceptor::PropertyGetter) {
+ 
+ NAN_INDEX_SETTER(IndexedInterceptor::PropertySetter) {
+   IndexedInterceptor* interceptor =
+-    ObjectWrap::Unwrap<IndexedInterceptor>(info.Holder());
++    ObjectWrap::Unwrap<IndexedInterceptor>(info.This());
+   if (index == 0) {
+     std::strncpy(
+         interceptor->buf
+@@ -107,7 +107,7 @@ NAN_INDEX_ENUMERATOR(IndexedInterceptor::PropertyEnumerator) {
+ 
+ NAN_INDEX_DELETER(IndexedInterceptor::PropertyDeleter) {
+   IndexedInterceptor* interceptor =
+-    ObjectWrap::Unwrap<IndexedInterceptor>(info.Holder());
++    ObjectWrap::Unwrap<IndexedInterceptor>(info.This());
+   std::strncpy(interceptor->buf, "goober", sizeof (interceptor->buf));
+   info.GetReturnValue().Set(True());
+   return Intercepted::Yes();
+diff --git a/test/cpp/methodswithdata.cpp b/test/cpp/methodswithdata.cpp
+index 8a908e3246f1efd77290597e500185010293c473..fc5c6f055f946324026814007252d727402796a5 100644
+--- a/test/cpp/methodswithdata.cpp
++++ b/test/cpp/methodswithdata.cpp
+@@ -75,7 +75,7 @@ NAN_GETTER(SetterGetter::GetProp1) {
+   std::string datavalue = *Nan::Utf8String(info.Data());
+   assert(datavalue == "prop1-data");
+   SetterGetter* settergetter =
+-    ObjectWrap::Unwrap<SetterGetter>(info.Holder());
++    ObjectWrap::Unwrap<SetterGetter>(info.This());
+   assert(strlen(settergetter->log) < sizeof (settergetter->log));
+   strncat(
+       settergetter->log
+@@ -100,7 +100,7 @@ NAN_GETTER(SetterGetter::GetProp2) {
+   assert(datavalue == "prop2-data");
+ 
+   SetterGetter* settergetter =
+-    ObjectWrap::Unwrap<SetterGetter>(info.Holder());
++    ObjectWrap::Unwrap<SetterGetter>(info.This());
+   assert(strlen(settergetter->log) < sizeof (settergetter->log));
+   strncat(
+       settergetter->log
+@@ -125,7 +125,7 @@ NAN_SETTER(SetterGetter::SetProp2) {
+   assert(datavalue == "prop2-data");
+ 
+   SetterGetter* settergetter =
+-      ObjectWrap::Unwrap<SetterGetter>(info.Holder());
++      ObjectWrap::Unwrap<SetterGetter>(info.This());
+   strncpy(
+       settergetter->prop2
+     , *Utf8String(value)
+@@ -150,7 +150,7 @@ NAN_SETTER(SetterGetter::SetProp2) {
+ 
+ NAN_METHOD(SetterGetter::Log) {
+   SetterGetter* settergetter =
+-    ObjectWrap::Unwrap<SetterGetter>(info.Holder());
++    ObjectWrap::Unwrap<SetterGetter>(info.This());
+ 
+   info.GetReturnValue().Set(Nan::New(settergetter->log).ToLocalChecked());
+ }
+diff --git a/test/cpp/namedinterceptors.cpp b/test/cpp/namedinterceptors.cpp
+index 9f4b3b2000188fbeb53a5ec53969226916bac9da..d0761e5880d91792470ae4fecd0b5dfd3770bfef 100644
+--- a/test/cpp/namedinterceptors.cpp
++++ b/test/cpp/namedinterceptors.cpp
+@@ -74,7 +74,7 @@ NAN_METHOD(NamedInterceptor::New) {
+ 
+ NAN_PROPERTY_GETTER(NamedInterceptor::PropertyGetter) {
+   NamedInterceptor* interceptor =
+-    ObjectWrap::Unwrap<NamedInterceptor>(info.Holder());
++    ObjectWrap::Unwrap<NamedInterceptor>(info.This());
+   if (!std::strcmp(*Nan::Utf8String(property), "prop")) {
+     info.GetReturnValue().Set(Nan::New(interceptor->buf).ToLocalChecked());
+   } else {
+@@ -85,7 +85,7 @@ NAN_PROPERTY_GETTER(NamedInterceptor::PropertyGetter) {
+ 
+ NAN_PROPERTY_SETTER(NamedInterceptor::PropertySetter) {
+   NamedInterceptor* interceptor =
+-    ObjectWrap::Unwrap<NamedInterceptor>(info.Holder());
++    ObjectWrap::Unwrap<NamedInterceptor>(info.This());
+   if (!std::strcmp(*Nan::Utf8String(property), "prop")) {
+     std::strncpy(
+         interceptor->buf
+@@ -106,7 +106,7 @@ NAN_PROPERTY_ENUMERATOR(NamedInterceptor::PropertyEnumerator) {
+ 
+ NAN_PROPERTY_DELETER(NamedInterceptor::PropertyDeleter) {
+   NamedInterceptor* interceptor =
+-    ObjectWrap::Unwrap<NamedInterceptor>(info.Holder());
++    ObjectWrap::Unwrap<NamedInterceptor>(info.This());
+   std::strncpy(interceptor->buf, "goober", sizeof (interceptor->buf));
+   info.GetReturnValue().Set(True());
+   return Intercepted::Yes();
+diff --git a/test/cpp/objectwraphandle.cpp b/test/cpp/objectwraphandle.cpp
+index ac4f79aa256c82d2a8b64fa5a0d44d5c2ebbd9c7..64dd9e7ad95d1f37a6223dfd8e385b9d122ba3bc 100644
+--- a/test/cpp/objectwraphandle.cpp
++++ b/test/cpp/objectwraphandle.cpp
+@@ -47,17 +47,17 @@ class MyObject : public ObjectWrap {
+   }
+ 
+   static NAN_METHOD(GetHandle) {
+-    MyObject* obj = ObjectWrap::Unwrap<MyObject>(info.Holder());
++    MyObject* obj = ObjectWrap::Unwrap<MyObject>(info.This());
+     info.GetReturnValue().Set(obj->handle());
+   }
+ 
+   static NAN_METHOD(GetHandleConst) {
+-    MyObject const *obj = ObjectWrap::Unwrap<MyObject>(info.Holder());
++    MyObject const *obj = ObjectWrap::Unwrap<MyObject>(info.This());
+     info.GetReturnValue().Set(obj->handle());
+   }
+ 
+   static NAN_METHOD(GetValue) {
+-    MyObject* obj = ObjectWrap::Unwrap<MyObject>(info.Holder());
++    MyObject* obj = ObjectWrap::Unwrap<MyObject>(info.This());
+     info.GetReturnValue().Set(obj->value_);
+   }
+ 
+diff --git a/test/cpp/wrappedobjectfactory.cpp b/test/cpp/wrappedobjectfactory.cpp
+index 9930a5f12913f703391e3d183b56a37569c60887..ec3955e496ed623966c83b5a5b661103892622fd 100644
+--- a/test/cpp/wrappedobjectfactory.cpp
++++ b/test/cpp/wrappedobjectfactory.cpp
+@@ -49,7 +49,7 @@ class InnerObject : public ObjectWrap {
+   }
+ 
+   static NAN_METHOD(GetValue) {
+-    InnerObject* obj = ObjectWrap::Unwrap<InnerObject>(info.Holder());
++    InnerObject* obj = ObjectWrap::Unwrap<InnerObject>(info.This());
+     info.GetReturnValue().Set(obj->value_);
+   }
+ 
+@@ -102,7 +102,7 @@ class MyObject : public ObjectWrap {
+   }
+ 
+   static NAN_METHOD(GetValue) {
+-    MyObject* obj = ObjectWrap::Unwrap<MyObject>(info.Holder());
++    MyObject* obj = ObjectWrap::Unwrap<MyObject>(info.This());
+     info.GetReturnValue().Set(obj->value_);
+   }
+ 
