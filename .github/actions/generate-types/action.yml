@@ -13,7 +13,7 @@ runs:
   - name: Generating Types for SHA in ${{ inputs.sha-file }}
     shell: bash
     run: |
-      git checkout $(cat ../${{ inputs.sha-file }})
+      git checkout $(cat ${{ inputs.sha-file }})
       rm -rf node_modules
       node script/yarn.js install
       echo "#!/usr/bin/env node\nglobal.x=1" > node_modules/typescript/bin/tsc
