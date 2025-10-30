@@ -7,7 +7,7 @@ Instead of disabling the tests, flag them as flaky so they still run
 but don't cause CI failures on flakes.
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index 67c0c04d2365e59db111258d008f8c73173e3e96..a4204e7580e7823399f6057d57c09cba56b5ff78 100644
+index 9822dc622ebfc2d1a31539474b78e03e64426195..045a415f7b9f461bd9b2c97d42051f2580b7df1a 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
 @@ -5,6 +5,16 @@ prefix parallel
@@ -28,7 +28,7 @@ index 67c0c04d2365e59db111258d008f8c73173e3e96..a4204e7580e7823399f6057d57c09cba
  test-net-write-fully-async-hex-string: PASS, FLAKY
  # https://github.com/nodejs/node/issues/52273
 diff --git a/test/sequential/sequential.status b/test/sequential/sequential.status
-index 4ae3b6c5fd2eb633ae78bed1824046d862d7579b..d291954d4451b63aeb2bf46232e8705150eb9e79 100644
+index f6c9c77379930a8234cd4c5f933c261d6bd1a238..28d5378e4051b78e9a7ff81886c3382e92a5da2e 100644
 --- a/test/sequential/sequential.status
 +++ b/test/sequential/sequential.status
 @@ -7,6 +7,18 @@ prefix sequential
