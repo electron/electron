@@ -1,5 +1,6 @@
 [
   "abort/test-abort-backtrace",
+  "es-module/test-esm-wasm",
   "es-module/test-vm-compile-function-lineoffset",
   "parallel/test-async-context-frame",
   "parallel/test-bootstrap-modules",
