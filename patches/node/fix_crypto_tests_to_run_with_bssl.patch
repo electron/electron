@@ -11,7 +11,7 @@ before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
 diff --git a/test/parallel/test-crypto-async-sign-verify.js b/test/parallel/test-crypto-async-sign-verify.js
-index d385926e994..2eeffbf17d4 100644
+index d385926e9943052bbe1793d4b1e39846e1a69562..2eeffbf17d443db2e17b3bbc46d2f487de3e6e73 100644
 --- a/test/parallel/test-crypto-async-sign-verify.js
 +++ b/test/parallel/test-crypto-async-sign-verify.js
 @@ -89,6 +89,7 @@ test('rsa_public.pem', 'rsa_private.pem', 'sha256', false,
@@ -49,7 +49,7 @@ index d385926e994..2eeffbf17d4 100644
    }));
  }
 diff --git a/test/parallel/test-crypto-certificate.js b/test/parallel/test-crypto-certificate.js
-index 4a5f1f149fe..b3287f428ce 100644
+index 4a5f1f149fe6c739f7f1d2ee17df6e61a942d621..b3287f428ce6b3fde11d449c601a57ff5e3843f9 100644
 --- a/test/parallel/test-crypto-certificate.js
 +++ b/test/parallel/test-crypto-certificate.js
 @@ -40,8 +40,10 @@ function copyArrayBuffer(buf) {
@@ -78,7 +78,7 @@ index 4a5f1f149fe..b3287f428ce 100644
  
  {
 diff --git a/test/parallel/test-crypto-cipheriv-decipheriv.js b/test/parallel/test-crypto-cipheriv-decipheriv.js
-index 6742722f9e9..8801ddfe702 100644
+index 6742722f9e90914b4dc8c079426d10040d476f72..8801ddfe7023fd0f7d5657b86a9164d75765322e 100644
 --- a/test/parallel/test-crypto-cipheriv-decipheriv.js
 +++ b/test/parallel/test-crypto-cipheriv-decipheriv.js
 @@ -62,6 +62,10 @@ function testCipher2(key, iv) {
@@ -93,7 +93,7 @@ index 6742722f9e9..8801ddfe702 100644
    // AES Key Wrap test vector comes from RFC3394
    const plaintext = Buffer.from('00112233445566778899AABBCCDDEEFF', 'hex');
 diff --git a/test/parallel/test-crypto-dh-curves.js b/test/parallel/test-crypto-dh-curves.js
-index 81a469c226c..58b66045dba 100644
+index 81a469c226c261564dee1e0b06b6571b18a41f1f..58b66045dba4201b7ebedd78b129420ffc316051 100644
 --- a/test/parallel/test-crypto-dh-curves.js
 +++ b/test/parallel/test-crypto-dh-curves.js
 @@ -16,7 +16,7 @@ const p = 'FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74' +
@@ -106,7 +106,7 @@ index 81a469c226c..58b66045dba 100644
  
  const availableCurves = new Set(crypto.getCurves());
 diff --git a/test/parallel/test-crypto-dh-errors.js b/test/parallel/test-crypto-dh-errors.js
-index 0af4db03107..b14b4bbf88b 100644
+index 0af4db0310750cea9350ecff7fc44404c6df6c83..b14b4bbf88b902b6de916b92e3d48335c01df911 100644
 --- a/test/parallel/test-crypto-dh-errors.js
 +++ b/test/parallel/test-crypto-dh-errors.js
 @@ -27,7 +27,7 @@ assert.throws(() => crypto.createDiffieHellman('abcdef', 13.37), {
@@ -128,7 +128,7 @@ index 0af4db03107..b14b4bbf88b 100644
    }
  }
 diff --git a/test/parallel/test-crypto-dh.js b/test/parallel/test-crypto-dh.js
-index d7ffbe5eca9..b4e7002d862 100644
+index d7ffbe5eca92734aa2380f482c7f9bfe7e2a36c7..b4e7002d862907d2af3b4f8e985700bd03300809 100644
 --- a/test/parallel/test-crypto-dh.js
 +++ b/test/parallel/test-crypto-dh.js
 @@ -60,18 +60,17 @@ const {
@@ -186,7 +186,7 @@ index d7ffbe5eca9..b4e7002d862 100644
 +  });
  }
 diff --git a/test/parallel/test-crypto-hash-stream-pipe.js b/test/parallel/test-crypto-hash-stream-pipe.js
-index d22281abbd5..5f0c6a4aed2 100644
+index d22281abbd5c3cab3aaa3ac494301fa6b4a8a968..5f0c6a4aed2e868a1a1049212edf218791cd6868 100644
 --- a/test/parallel/test-crypto-hash-stream-pipe.js
 +++ b/test/parallel/test-crypto-hash-stream-pipe.js
 @@ -30,11 +30,11 @@ const crypto = require('crypto');
@@ -207,7 +207,7 @@ index d22281abbd5..5f0c6a4aed2 100644
  s.pipe(h).on('data', common.mustCall(function(c) {
    assert.strictEqual(c, expect);
 diff --git a/test/parallel/test-crypto-hash.js b/test/parallel/test-crypto-hash.js
-index 929dd36c669..8ebe599bbd2 100644
+index 929dd36c669239804f2cfc5168bd3bf6e15855e6..8ebe599bbd21ad30e5041e0eab1e5898caf33e49 100644
 --- a/test/parallel/test-crypto-hash.js
 +++ b/test/parallel/test-crypto-hash.js
 @@ -182,7 +182,7 @@ assert.throws(
@@ -220,7 +220,7 @@ index 929dd36c669..8ebe599bbd2 100644
    assert.strictEqual(crypto.createHash('shake128').digest('hex'),
                       '7f9c2ba4e88f827d616045507605853e');
 diff --git a/test/parallel/test-crypto-padding.js b/test/parallel/test-crypto-padding.js
-index 48cd1ed4df6..d09e01712c6 100644
+index 48cd1ed4df61aaddeee8785cb90f83bdd9628187..d09e01712c617597833bb1320a32a967bcf1d318 100644
 --- a/test/parallel/test-crypto-padding.js
 +++ b/test/parallel/test-crypto-padding.js
 @@ -84,14 +84,13 @@ assert.throws(function() {
@@ -265,7 +265,7 @@ index 48cd1ed4df6..d09e01712c6 100644
  
  // No-pad encrypted string should return the same:
 diff --git a/test/parallel/test-crypto-rsa-dsa.js b/test/parallel/test-crypto-rsa-dsa.js
-index 119bc3c2d20..8d13b105fa4 100644
+index 119bc3c2d20ea7d681f0b579f9d91ad46cdc3634..8d13b105fa426015a873c411ad1d7f64b3d9580e 100644
 --- a/test/parallel/test-crypto-rsa-dsa.js
 +++ b/test/parallel/test-crypto-rsa-dsa.js
 @@ -29,12 +29,11 @@ const dsaPkcs8KeyPem = fixtures.readKey('dsa_private_pkcs8.pem');
@@ -305,7 +305,7 @@ index 119bc3c2d20..8d13b105fa4 100644
  
    // DSA signatures vary across runs so there is no static string to verify
 diff --git a/test/parallel/test-crypto-scrypt.js b/test/parallel/test-crypto-scrypt.js
-index eafdfe392bd..2907e017537 100644
+index eafdfe392bde8eb1fde1dc7e7e9ae51682c74b87..2907e0175379266c90acb9df829d10283bd46652 100644
 --- a/test/parallel/test-crypto-scrypt.js
 +++ b/test/parallel/test-crypto-scrypt.js
 @@ -192,7 +192,7 @@ for (const options of incompatibleOptions) {
@@ -318,7 +318,7 @@ index eafdfe392bd..2907e017537 100644
    };
    assert.throws(() => crypto.scrypt('pass', 'salt', 1, options, () => {}),
 diff --git a/test/parallel/test-crypto-sign-verify.js b/test/parallel/test-crypto-sign-verify.js
-index a66f0a94efd..dc5846db0e3 100644
+index a66f0a94efd7c952c1d2320fbc7a39fe3a88a8a1..dc5846db0e3dcf8f7cb5f7efcdbc81c1d767ab88 100644
 --- a/test/parallel/test-crypto-sign-verify.js
 +++ b/test/parallel/test-crypto-sign-verify.js
 @@ -33,7 +33,7 @@ const keySize = 2048;
@@ -376,7 +376,7 @@ index a66f0a94efd..dc5846db0e3 100644
    for (const [file, length] of keys) {
      const privKey = fixtures.readKey(file);
 diff --git a/test/parallel/test-crypto-stream.js b/test/parallel/test-crypto-stream.js
-index 747af780469..ed0916b036a 100644
+index 747af780469c22eb8e4c6c35424043e868f75c3d..ed0916b036a9af23d805007ebd609973ee954473 100644
 --- a/test/parallel/test-crypto-stream.js
 +++ b/test/parallel/test-crypto-stream.js
 @@ -73,9 +73,9 @@ const cipher = crypto.createCipheriv('aes-128-cbc', key, iv);
@@ -393,7 +393,7 @@ index 747af780469..ed0916b036a 100644
    } : {
      message: /bad[\s_]decrypt/i,
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
-index 84111740cd9..b1621d31053 100644
+index 84111740cd9ef6425b747e24e984e66e46b0b2ef..b1621d310536fae3fdec91a6a9d275ec8fc99a98 100644
 --- a/test/parallel/test-crypto.js
 +++ b/test/parallel/test-crypto.js
 @@ -62,7 +62,7 @@ assert.throws(() => {
@@ -450,7 +450,7 @@ index 84111740cd9..b1621d31053 100644
  console.log(crypto.randomBytes(16));
  
 diff --git a/test/parallel/test-tls-alert-handling.js b/test/parallel/test-tls-alert-handling.js
-index 7bd42bbe721..de49dbdc2b7 100644
+index 7bd42bbe721c4c9442410d524c5ca740078fc72c..de49dbdc2b75517f497af353a6b24b1beb11ed69 100644
 --- a/test/parallel/test-tls-alert-handling.js
 +++ b/test/parallel/test-tls-alert-handling.js
 @@ -43,7 +43,8 @@ const errorHandler = common.mustCall((err) => {
@@ -473,7 +473,7 @@ index 7bd42bbe721..de49dbdc2b7 100644
      assert.match(err.reason, expectedErrorReason);
    }));
 diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
-index bd788ec4ed8..1a5477ba928 100644
+index bd788ec4ed88289d35798b8af8c9490a68e081a2..1a5477ba928bce93320f8056db02e1a7b8ddcdf3 100644
 --- a/test/parallel/test-webcrypto-wrap-unwrap.js
 +++ b/test/parallel/test-webcrypto-wrap-unwrap.js
 @@ -20,14 +20,15 @@ const kWrappingData = {
@@ -531,7 +531,7 @@ index bd788ec4ed8..1a5477ba928 100644
  function generateWrappingKeys() {
    return Promise.all(Object.keys(kWrappingData).map(async (name) => {
 diff --git a/test/parallel/test-x509-escaping.js b/test/parallel/test-x509-escaping.js
-index b507af88e1f..825ba4c8dce 100644
+index b507af88e1f7f3424b7b5d6d683a295b9d208e5e..825ba4c8dce775f401080a0522565bb7a087bcc3 100644
 --- a/test/parallel/test-x509-escaping.js
 +++ b/test/parallel/test-x509-escaping.js
 @@ -448,7 +448,7 @@ const { hasOpenSSL3 } = require('../common/crypto');

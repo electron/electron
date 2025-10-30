@@ -7,7 +7,7 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index d10f861c969..4fad275c865 100644
+index d10f861c96931d06fb50dcdb66f2e79b0dee55a7..4fad275c865398834805a1c39813aa44b698db39 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -109,6 +109,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
@@ -26,7 +26,7 @@ index d10f861c969..4fad275c865 100644
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 12b0d804c6f..768208f2802 100644
+index 12b0d804c6f1d4998b85160b0aac8eb7a3b5576b..768208f2802d743f757b38a16294993c2158b6bf 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -377,6 +377,7 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(
@@ -63,7 +63,7 @@ index 12b0d804c6f..768208f2802 100644
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
    args.GetReturnValue().Set(
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
-index 3c4f419aa29..584d0f62743 100644
+index 3c4f419aa29470b3280174b58680b9421b0340b5..584d0f6274387a09ba86550aa3a3b8130b1f4654 100644
 --- a/src/node_i18n.cc
 +++ b/src/node_i18n.cc
 @@ -182,7 +182,7 @@ MaybeLocal<Object> TranscodeLatin1ToUcs2(Environment* env,
@@ -94,7 +94,7 @@ index 3c4f419aa29..584d0f62743 100644
  
  constexpr const char* EncodingName(const enum encoding encoding) {
 diff --git a/src/node_internals.h b/src/node_internals.h
-index 12ea72b61b0..64442215714 100644
+index 12ea72b61b0a5e194207bb369dfed4b8667107cb..64442215714a98f648971e517ddd9c77e38fe3f2 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
 @@ -121,7 +121,9 @@ v8::MaybeLocal<v8::Object> InitializePrivateSymbols(
@@ -118,7 +118,7 @@ index 12ea72b61b0..64442215714 100644
  
    // Delegate to V8's allocator for compatibility with the V8 memory cage.
 diff --git a/src/node_serdes.cc b/src/node_serdes.cc
-index 00fcd4b6afc..5f96ee2051e 100644
+index 00fcd4b6afccce47ff21c4447d9cd60f25c11835..5f96ee2051e5339456185efddb149c4d43093f31 100644
 --- a/src/node_serdes.cc
 +++ b/src/node_serdes.cc
 @@ -29,6 +29,26 @@ using v8::ValueSerializer;
@@ -220,7 +220,7 @@ index 00fcd4b6afc..5f96ee2051e 100644
  }
  
 diff --git a/src/node_trace_events.cc b/src/node_trace_events.cc
-index ef659f1c39f..225b1465b7c 100644
+index ef659f1c39f7ee958879bf395377bc99911fc346..225b1465b7c97d972a38968faf6d685017a80bf0 100644
 --- a/src/node_trace_events.cc
 +++ b/src/node_trace_events.cc
 @@ -129,12 +129,28 @@ static void GetCategoryEnabledBuffer(const FunctionCallbackInfo<Value>& args) {

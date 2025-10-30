@@ -8,7 +8,7 @@ an API override to replace the native `ReadFileSync` in the `modules`
 binding.
 
 diff --git a/src/env_properties.h b/src/env_properties.h
-index 2884149d82d..dded4bf3d71 100644
+index 2884149d82d180e0d2ecfa7ac8fd92f201f1cb55..dded4bf3d7106d127efbad81087f0c375b2b2c95 100644
 --- a/src/env_properties.h
 +++ b/src/env_properties.h
 @@ -490,6 +490,7 @@
@@ -20,7 +20,7 @@ index 2884149d82d..dded4bf3d71 100644
    V(performance_entry_callback, v8::Function)                                  \
    V(prepare_stack_trace_callback, v8::Function)                                \
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index b93ccedaf70..bdbc511ef3f 100644
+index b93ccedaf703f86ae2092c304785394c471d520c..bdbc511ef3f680bbac6770b89f47acaee95d56a2 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -23,6 +23,7 @@ namespace modules {
@@ -109,7 +109,7 @@ index b93ccedaf70..bdbc511ef3f 100644
    registry->Register(GetNearestParentPackageJSONType);
    registry->Register(GetPackageScopeConfig<false>);
 diff --git a/src/node_modules.h b/src/node_modules.h
-index e4ba6b75bc8..ae77f9ec81b 100644
+index e4ba6b75bc86d14deada835903ba68a4cb0eccc5..ae77f9ec81b358bd356993617cd07671d382e8ca 100644
 --- a/src/node_modules.h
 +++ b/src/node_modules.h
 @@ -54,6 +54,8 @@ class BindingData : public SnapshotableObject {
