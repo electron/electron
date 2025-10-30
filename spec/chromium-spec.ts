@@ -1909,10 +1909,10 @@ describe('chromium features', () => {
       });
 
       it('delivers messages that match the origin', async () => {
-        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+        const w = new BrowserWindow({ show: false });
         w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
         const data = await w.webContents.executeJavaScript(`
-          window.open(${JSON.stringify(serverURL)}, '', 'show=no,contextIsolation=no,nodeIntegration=yes');
+          window.open(${JSON.stringify(serverURL)}, '', 'show=no');
           new Promise(resolve => window.addEventListener('message', resolve, {once: true})).then(e => e.data)
         `);
         expect(data).to.equal('deliver');

@@ -7,7 +7,7 @@ Subject: build: ensure native module compilation fails if not using a new
 This should not be upstreamed, it is a quality-of-life patch for downstream module builders.
 
 diff --git a/common.gypi b/common.gypi
-index 6b79de07be3f839af5b0644f19bfef9c33de590e..c28d6f5fe2c922f0b1e3f7e56289c78e7b91c294 100644
+index 29a912f58e7b522ae21fddac510946cbcbaaa4cc..aea3a882c338eb757bef9e85fabab3fc7e7495f7 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -89,6 +89,8 @@
@@ -42,10 +42,10 @@ index 6b79de07be3f839af5b0644f19bfef9c33de590e..c28d6f5fe2c922f0b1e3f7e56289c78e
        # list in v8/BUILD.gn.
        ['v8_enable_v8_checks == 1', {
 diff --git a/configure.py b/configure.py
-index e8eaff30ec947677db2d45425f9180759d0c55de..dc2d9d80059e845b33444f8bdc29e82d0fe0e26b 100755
+index 96eedd5d9ae05ee6704724290973251059d5dd78..52060f9c6dc1bcec67a0fd4710e01e73a6cf276c 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1710,6 +1710,7 @@ def configure_library(lib, output, pkgname=None):
+@@ -1711,6 +1711,7 @@ def configure_library(lib, output, pkgname=None):
  def configure_v8(o, configs):
    set_configuration_variable(configs, 'v8_enable_v8_checks', release=1, debug=0)
  
@@ -54,7 +54,7 @@ index e8eaff30ec947677db2d45425f9180759d0c55de..dc2d9d80059e845b33444f8bdc29e82d
    o['variables']['v8_enable_javascript_promise_hooks'] = 1
    o['variables']['v8_enable_lite_mode'] = 1 if options.v8_lite_mode else 0
 diff --git a/src/node.h b/src/node.h
-index a336f44dc1e785ea237865077216d41ab032c0af..96c599aa6448e2aa8e57e84f811564a5281c139a 100644
+index c5ade4bd30456cde33379c6202b65709650d3ec0..f7b3f90b0c2cfbeacc5bc50112dd711df8d3c364 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -22,6 +22,12 @@
