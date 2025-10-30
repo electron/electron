@@ -140,7 +140,7 @@ state is `hidden` in order to minimize power consumption.
   move.
 * On Linux the type of modal windows will be changed to `dialog`.
 * On Linux many desktop environments do not support hiding a modal window.
-* On Wayland (Linux) it is generally not possible to programatically resize windows after creation,
+* On Wayland (Linux) it is generally not possible to programmatically resize windows after creation,
   or to change their position or focus state without user input. If your app requires these
   functionalities, run it in XWayland compatibility mode by appending the flag `--ozone-platform=x11`.
 
