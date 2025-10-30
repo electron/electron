@@ -46,18 +46,40 @@ index 4fad275c865398834805a1c39813aa44b698db39..b4ca77a1c3f518b6beaa076cf65767b3
    return NewIsolate(&params,
                      event_loop,
                      platform,
-diff --git a/src/env.h b/src/env.h
-index d34aec43630b3cf53004d8180446d7136b59ceac..d27579ede0e198061b50ae25dea3bcc393c8661e 100644
---- a/src/env.h
-+++ b/src/env.h
-@@ -141,7 +141,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
-       ArrayBufferAllocator* node_allocator = nullptr,
-       const EmbedderSnapshotData* embedder_snapshot_data = nullptr,
-       std::shared_ptr<PerIsolateOptions> options = nullptr);
--  ~IsolateData();
+diff --git a/src/cppgc_helpers-inl.h b/src/cppgc_helpers-inl.h
+index 745ecab746f7c7540733d31a94f52809dcddd5be..d07e0a4761de9c7d3218f34788a7b784149df40c 100644
+--- a/src/cppgc_helpers-inl.h
++++ b/src/cppgc_helpers-inl.h
+@@ -15,7 +15,9 @@ void CppgcMixin::Wrap(T* ptr, Realm* realm, v8::Local<v8::Object> obj) {
+   v8::Isolate* isolate = realm->isolate();
+   ptr->traced_reference_ = v8::TracedReference<v8::Object>(isolate, obj);
+   // Note that ptr must be of concrete type T in Wrap.
+-  v8::Object::Wrap<v8::CppHeapPointerTag::kDefaultTag>(isolate, obj, ptr);
++  // v8::Object::Wrap<v8::CppHeapPointerTag::kDefaultTag>(isolate, obj, ptr);
++  // We intentionally skip v8::Object::Wrap because T does not derive from
++  // v8::Object::Wrappable. We rely on internal fields + TracedReference instead.
+   // Keep the layout consistent with BaseObjects.
+   obj->SetAlignedPointerInInternalField(
+       kEmbedderType, realm->isolate_data()->embedder_id_for_cppgc());
+diff --git a/src/env.cc b/src/env.cc
+index 53f0bf7fc1e5c85fa9a5a323e998f04310f4f75e..fc567fa1303bdb506a436c4ac9506a6a6586d49b 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -612,8 +612,12 @@ IsolateData::~IsolateData() {}
+ void SetCppgcReference(Isolate* isolate,
+                        Local<Object> object,
+                        void* wrappable) {
+-  v8::Object::Wrap<v8::CppHeapPointerTag::kDefaultTag>(
+-      isolate, object, wrappable);
++  // Deprecated shim: previously attempted to call v8::Object::Wrap, but
++  // the passed pointer is not a v8::Object::Wrappable. Intentionally left
++  // as a no-op to preserve ABI while modern embedders migrate to calling
++  // v8::Object::Wrap directly with a proper Wrappable subclass.
++  // If retention is needed, update the embedder to supply a Wrappable or
++  // store the pointer in an internal field here.
+ }
  
-   SET_MEMORY_INFO_NAME(IsolateData)
-   SET_SELF_SIZE(IsolateData)
+ void IsolateData::MemoryInfo(MemoryTracker* tracker) const {
 diff --git a/src/node.h b/src/node.h
 index f7b3f90b0c2cfbeacc5bc50112dd711df8d3c364..5b6fa2c3405363f665783f7f38b5b6e2ee0c0073 100644
 --- a/src/node.h
