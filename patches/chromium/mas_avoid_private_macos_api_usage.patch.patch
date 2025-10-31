@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 2edc8252e3e83ab0238383091ebea5a21df3186f..3bbea6f7c13914e8f6e791cd77cab82b1eed51dd 100644
+index 7aa2eeb7769e7be0d58f03d35445e3b5564e2718..af777c45221b5db1b2f5699101ad61eed99fc40e 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1069,6 +1069,7 @@ component("base") {
@@ -581,7 +581,7 @@ index e51fd827f7afc01a5189737f86a2414627a6546e..bb50f03ba5622c2bfb96bc75d145f471
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 548abd4a6857cc47691c276b4b11cb34eadedcdf..3a4ca077145fcd65fcb7ca1be85beabda0112e72 100644
+index 4c555d3c077216fd25d45b5f9727ff3e20b80e83..648cfefa2cdf87524dc4bb12f8d8b37419921ef9 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -344,6 +344,7 @@ source_set("browser") {
@@ -702,10 +702,10 @@ index ea86cb14edf163b02a2b0fda0ab3fb6245edd717..9a507a70493e5a648a25968f917a7829
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 19c948e949386a1678767cbc606304e65400c507..9394e841d84593ea846b785cffe2ab06efffd7d1 100644
+index f57ce1a0430df7692be55685e79121ed604daf2a..3fbc26fb179a64a2f1eab027a05b16241c185b28 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -274,6 +274,7 @@ source_set("common") {
+@@ -273,6 +273,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -796,7 +796,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index dfd3674692bc984821b52f1d410c1fa2ca56c42e..25dd06214e3aea73ebe556f9b8498ef8a63e42d6 100644
+index 25638e35e38d59adb261185e1387256ba16fc9bd..2b2f7e003bacea00a1421ce3bedf71747b567928 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -703,6 +703,7 @@ static_library("test_support") {
@@ -1395,7 +1395,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index ac8db428b19dc3d442dc668b4e601d56f7b48c61..c6dfcdb6ac8ccc145eaad4087677add1afb217e1 100644
+index e54ba53ed4866e568ae5c2dfe65e72adfe253e03..07d046634534efb28ee4584dd1b11678f7473e8f 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -428,6 +428,7 @@ component("core") {
@@ -1407,7 +1407,7 @@ index ac8db428b19dc3d442dc668b4e601d56f7b48c61..c6dfcdb6ac8ccc145eaad4087677add1
  
    if (is_mac) {
 diff --git a/third_party/blink/renderer/core/editing/build.gni b/third_party/blink/renderer/core/editing/build.gni
-index c771cee7be34f36521de34ef893ee578b648a8c8..b0bd447b848bfdb7a9ff9cd98ba95574cb846cc2 100644
+index 4f04476e9175bae9e89eb9ea4316bffe49a9eb91..e77615c7b26518f4930ac1b004b413173fa0f46b 100644
 --- a/third_party/blink/renderer/core/editing/build.gni
 +++ b/third_party/blink/renderer/core/editing/build.gni
 @@ -362,10 +362,14 @@ blink_core_sources_editing = [
