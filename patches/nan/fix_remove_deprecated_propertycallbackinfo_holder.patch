@@ -5,39 +5,27 @@ Subject: fix: remove deprecated PropertyCallbackInfo::Holder()
 
 Removed upstream in https://chromium-review.googlesource.com/c/v8/v8/+/7013355.
 
-Nan should be migrated to use info.This() instead of info.Holder().
+Property interceptors should be migrated to use info.This if they are installed
+on the object instance otherwise info.HolderV2 if they are installed on the
+prototype chain.
 
+diff --git a/nan_callbacks_12_inl.h b/nan_callbacks_12_inl.h
+index ff3b654de5bcc7a187c4361b9eec26ea4b62a1eb..e40383c095ab329b2e20b7e68ade507788a79fb6 100644
+--- a/nan_callbacks_12_inl.h
++++ b/nan_callbacks_12_inl.h
+@@ -160,7 +160,7 @@ class PropertyCallbackInfo {
+   inline v8::Isolate* GetIsolate() const { return info_.GetIsolate(); }
+   inline v8::Local<v8::Value> Data() const { return data_; }
+   inline v8::Local<v8::Object> This() const { return info_.This(); }
+-  inline v8::Local<v8::Object> Holder() const { return info_.Holder(); }
++  inline v8::Local<v8::Object> Holder() const { return info_.HolderV2(); }
+   inline ReturnValue<T> GetReturnValue() const {
+     return ReturnValue<T>(info_.GetReturnValue());
+   }
 diff --git a/test/cpp/accessors.cpp b/test/cpp/accessors.cpp
-index 5848a40920c35680360a9d8b1390e983c6896996..a68b82ca839e2fa1940959fc66ac283c1c25851f 100644
+index 5848a40920c35680360a9d8b1390e983c6896996..e8506e4727e707ca766fe1b4229272ba18864ae0 100644
 --- a/test/cpp/accessors.cpp
 +++ b/test/cpp/accessors.cpp
-@@ -90,7 +90,7 @@ NAN_METHOD(SetterGetter::New) {
- 
- NAN_GETTER(SetterGetter::GetProp1) {
-   SetterGetter* settergetter =
--    ObjectWrap::Unwrap<SetterGetter>(info.Holder());
-+    ObjectWrap::Unwrap<SetterGetter>(info.This());
-   assert(strlen(settergetter->log) < sizeof (settergetter->log));
-   strncat(
-       settergetter->log
-@@ -112,7 +112,7 @@ NAN_GETTER(SetterGetter::GetProp1) {
- 
- NAN_GETTER(SetterGetter::GetProp2) {
-   SetterGetter* settergetter =
--    ObjectWrap::Unwrap<SetterGetter>(info.Holder());
-+    ObjectWrap::Unwrap<SetterGetter>(info.This());
-   assert(strlen(settergetter->log) < sizeof (settergetter->log));
-   strncat(
-       settergetter->log
-@@ -134,7 +134,7 @@ NAN_GETTER(SetterGetter::GetProp2) {
- 
- NAN_SETTER(SetterGetter::SetProp2) {
-   SetterGetter* settergetter =
--      ObjectWrap::Unwrap<SetterGetter>(info.Holder());
-+      ObjectWrap::Unwrap<SetterGetter>(info.This());
-   strncpy(
-       settergetter->prop2
-     , *Utf8String(value)
 @@ -159,7 +159,7 @@ NAN_SETTER(SetterGetter::SetProp2) {
  
  NAN_METHOD(SetterGetter::Log) {
@@ -119,36 +107,9 @@ index 19b7673ff4c07236b11e1947d805979c21a0876e..668aa22f00ecc624ea4a66de93d289cd
    info.GetReturnValue().Set(True());
    return Intercepted::Yes();
 diff --git a/test/cpp/methodswithdata.cpp b/test/cpp/methodswithdata.cpp
-index 8a908e3246f1efd77290597e500185010293c473..fc5c6f055f946324026814007252d727402796a5 100644
+index 8a908e3246f1efd77290597e500185010293c473..a1ac03c891c14bcd96c139514866acc4c2bd393c 100644
 --- a/test/cpp/methodswithdata.cpp
 +++ b/test/cpp/methodswithdata.cpp
-@@ -75,7 +75,7 @@ NAN_GETTER(SetterGetter::GetProp1) {
-   std::string datavalue = *Nan::Utf8String(info.Data());
-   assert(datavalue == "prop1-data");
-   SetterGetter* settergetter =
--    ObjectWrap::Unwrap<SetterGetter>(info.Holder());
-+    ObjectWrap::Unwrap<SetterGetter>(info.This());
-   assert(strlen(settergetter->log) < sizeof (settergetter->log));
-   strncat(
-       settergetter->log
-@@ -100,7 +100,7 @@ NAN_GETTER(SetterGetter::GetProp2) {
-   assert(datavalue == "prop2-data");
- 
-   SetterGetter* settergetter =
--    ObjectWrap::Unwrap<SetterGetter>(info.Holder());
-+    ObjectWrap::Unwrap<SetterGetter>(info.This());
-   assert(strlen(settergetter->log) < sizeof (settergetter->log));
-   strncat(
-       settergetter->log
-@@ -125,7 +125,7 @@ NAN_SETTER(SetterGetter::SetProp2) {
-   assert(datavalue == "prop2-data");
- 
-   SetterGetter* settergetter =
--      ObjectWrap::Unwrap<SetterGetter>(info.Holder());
-+      ObjectWrap::Unwrap<SetterGetter>(info.This());
-   strncpy(
-       settergetter->prop2
-     , *Utf8String(value)
 @@ -150,7 +150,7 @@ NAN_SETTER(SetterGetter::SetProp2) {
  
  NAN_METHOD(SetterGetter::Log) {
