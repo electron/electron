@@ -140,10 +140,10 @@ state is `hidden` in order to minimize power consumption.
   move.
 * On Linux the type of modal windows will be changed to `dialog`.
 * On Linux many desktop environments do not support hiding a modal window.
-* On Wayland (Linux) it is generally not possible to programmatically resize
-  windows after creation, or to position, move, focus, or blur windows without
-  user input. If your app requires these functionalities, run it in XWayland
-  compatibility mode by appending the flag `--ozone-platform=x11`.
+* On Wayland (Linux) it is generally not possible to programmatically resize windows
+  after creation, or to position, move, focus, or blur windows without user input.
+  If your app needs these capabilities, run it in Xwayland by appending the flag
+  `--ozone-platform=x11`.
 
 ## Class: BrowserWindow extends `BaseWindow`
 
@@ -660,8 +660,8 @@ the [close event](#event-close).
 
 Focuses on the window.
 
-On Wayland (Linux), the desktop environment may show a notification
-or flash the app icon if the window or app is not already focused.
+On Wayland (Linux), the desktop environment may show a notification or flash
+the app icon if the window or app is not already focused.
 
 #### `win.blur()`
 
@@ -879,8 +879,7 @@ See [Setting `backgroundColor`](#setting-the-backgroundcolor-property).
 Resizes and moves the window's client area (e.g. the web page) to
 the supplied bounds.
 
-On Wayland (Linux), has the same limitations as `setContentSize` and
-`setPosition`.
+On Wayland (Linux), has the same limitations as `setContentSize` and `setPosition`.
 
 #### `win.getContentBounds()`
 
@@ -911,8 +910,7 @@ Returns `boolean` - whether the window is enabled.
 
 Resizes the window to `width` and `height`. If `width` or `height` are below any set minimum size constraints the window will snap to its minimum size.
 
-On Wayland (Linux), may not work as some window managers restrict
-programmatic window resizing.
+On Wayland (Linux), may not work as some window managers restrict programmatic window resizing.
 
 #### `win.getSize()`
 
@@ -926,8 +924,7 @@ Returns `Integer[]` - Contains the window's width and height.
 
 Resizes the window's client area (e.g. the web page) to `width` and `height`.
 
-On Wayland (Linux), may not work as some window managers restrict
-programmatic window resizing.
+On Wayland (Linux), may not work as some window managers restrict programmatic window resizing.
 
 #### `win.getContentSize()`
 
