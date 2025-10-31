@@ -13,7 +13,7 @@ https://github.com/electron/electron/pull/48675#issuecomment-3452781711
 for more info.
 
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-index e268573d360b1744c739bc516e81261c3869cd23..3034ad52ab2f90e12d134eb0190e71dbd60fc105 100644
+index e268573d360b1744c739bc516e81261c3869cd23..cf69e72a1a391451a31e28356cb6b86fc6010646 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 @@ -131,8 +131,8 @@ int NextServiceId() {
@@ -27,18 +27,22 @@ index e268573d360b1744c739bc516e81261c3869cd23..3034ad52ab2f90e12d134eb0190e71db
  }
  
  using DbusImage = std::tuple</*width=*/int32_t,
-@@ -222,8 +222,9 @@ base::FilePath WriteIconFile(size_t icon_file_id,
+@@ -222,12 +222,13 @@ base::FilePath WriteIconFile(size_t icon_file_id,
  
  }  // namespace
  
 -StatusIconLinuxDbus::StatusIconLinuxDbus()
--    : bus_(dbus_thread_linux::GetSharedSessionBus()),
 +StatusIconLinuxDbus::StatusIconLinuxDbus(const std::string_view app_name)
-+    : app_name_(app_name),
-+      bus_(dbus_thread_linux::GetSharedSessionBus()),
+     : bus_(dbus_thread_linux::GetSharedSessionBus()),
        should_write_icon_to_file_(ShouldWriteIconToFile()),
        icon_task_runner_(base::ThreadPool::CreateSequencedTaskRunner(
            {base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+-           base::TaskShutdownBehavior::BLOCK_SHUTDOWN})) {
++           base::TaskShutdownBehavior::BLOCK_SHUTDOWN})),
++      app_name_(app_name) {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+   CheckStatusNotifierWatcherHasOwner();
+ }
 @@ -402,7 +403,7 @@ void StatusIconLinuxDbus::OnHostRegisteredResponse(dbus::Response* response) {
    properties_->SetProperty<"s">(kInterfaceStatusNotifierItem, kPropertyCategory,
                                  kPropertyValueCategory, false);
