@@ -18,7 +18,11 @@ runs:
     shell: bash
     run: |
       cd src/electron
-      free -h
+      if [ "$(uname)" = "Linux" ]; then
+        free -h
+        available_mem=$(free -m | grep Mem | awk '{print $7}')
+        echo "Available memory: $available_mem MB"
+      fi    
       node script/yarn.js install --immutable
     env:
       NODE_OPTIONS: --max-old-space-size=8192
