@@ -26,7 +26,7 @@ index dbc46400501b61814d5be0ec1cb01b0dcd94e1d0..fe669d40c31a29334b047b9cfee3067f
    }
  
 diff --git a/src/histogram.cc b/src/histogram.cc
-index b655808e43d7c700ddeab7690e287bdbc9bfa50a..b0f7ae4e3af652c6dfe09f66d88485c5783f4037 100644
+index 4a67b4a725ff768cbd10aef72a84af311d6ec9ec..ec7d5b1120724b7c752f92a3e3124a33cf51c0f5 100644
 --- a/src/histogram.cc
 +++ b/src/histogram.cc
 @@ -187,7 +187,8 @@ void HistogramBase::FastRecord(Local<Value> unused,
@@ -40,10 +40,10 @@ index b655808e43d7c700ddeab7690e287bdbc9bfa50a..b0f7ae4e3af652c6dfe09f66d88485c5
    }
    HistogramBase* histogram;
 diff --git a/src/node_wasi.cc b/src/node_wasi.cc
-index 090866960beb8f1759c99e95536924b8b61fb723..3f91b651b83a20e70d5b368e012f5ee4b9d16092 100644
+index 85e549e4592e1d718eced31ae165dee250149b08..9b5ada71c174567498c4902259d97f9d11fefb91 100644
 --- a/src/node_wasi.cc
 +++ b/src/node_wasi.cc
-@@ -275,17 +275,19 @@ R WASI::WasiFunction<FT, F, R, Args...>::FastCallback(
+@@ -274,17 +274,19 @@ R WASI::WasiFunction<FT, F, R, Args...>::FastCallback(
      return EinvalError<R>();
    }
  

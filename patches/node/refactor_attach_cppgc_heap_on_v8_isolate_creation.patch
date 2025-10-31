@@ -102,10 +102,10 @@ index 2d5fa8dbd75851bca30453548f6cbe0159509f26..c346e3a9c827993036438685d758a734
    worker::Worker* worker_context_ = nullptr;
    PerIsolateWrapperData* wrapper_data_;
 diff --git a/src/node.cc b/src/node.cc
-index 627337efae49319e2a77b4686176ce92a8493024..f0c0b6229048a2e9bc05684fab44ab09bc34e1f6 100644
+index bebd75922733bbf219f125a3a6f35d98bc8210d3..029b0d219e3bbfa4306d7d5fb5e75f1abc1571bb 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -1295,6 +1295,14 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+@@ -1288,6 +1288,14 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
      result->platform_ = per_process::v8_platform.Platform();
    }
  
@@ -120,7 +120,7 @@ index 627337efae49319e2a77b4686176ce92a8493024..f0c0b6229048a2e9bc05684fab44ab09
    if (!(flags & ProcessInitializationFlags::kNoInitializeV8)) {
      V8::Initialize();
  
-@@ -1304,14 +1312,6 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+@@ -1297,14 +1305,6 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
      absl::SetMutexDeadlockDetectionMode(absl::OnDeadlockCycle::kIgnore);
    }
  
