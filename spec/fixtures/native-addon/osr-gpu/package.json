@@ -1,5 +1,9 @@
 {
-  "main": "./lib/osr-gpu.js",
   "name": "@electron-ci/osr-gpu",
-  "version": "0.0.1"
+  "version": "0.0.1",
+  "main": "./lib/osr-gpu.js",
+  "private": true,
+  "scripts": {
+    "install": "node-gyp configure && node-gyp build"
+  }
 }

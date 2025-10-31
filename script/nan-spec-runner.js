@@ -9,7 +9,7 @@ const NAN_DIR = path.resolve(BASE, 'third_party', 'nan');
 const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
 const utils = require('./lib/utils');
-const { YARN_VERSION } = require('./yarn');
+const { YARN_SCRIPT_PATH } = require('./yarn');
 
 if (!require.main) {
   throw new Error('Must call the nan spec runner directly');
@@ -35,7 +35,9 @@ async function main () {
     ...process.env,
     npm_config_nodedir: nodeDir,
     npm_config_arch: process.env.NPM_CONFIG_ARCH,
-    npm_config_yes: 'true'
+    npm_config_yes: 'true',
+    YARN_ENABLE_IMMUTABLE_INSTALLS: 'false',
+    YARN_ENABLE_HARDENED_MODE: 0
   };
 
   const clangDir = path.resolve(BASE, 'third_party', 'llvm-build', 'Release+Asserts', 'bin');
@@ -118,7 +120,7 @@ async function main () {
     return process.exit(buildStatus !== 0 ? buildStatus : signal);
   }
 
-  const { status: installStatus, signal: installSignal } = cp.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install'], {
+  const { status: installStatus, signal: installSignal } = cp.spawnSync(process.execPath, [YARN_SCRIPT_PATH, 'install'], {
     env,
     cwd: NAN_DIR,
     stdio: 'inherit',
