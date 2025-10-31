@@ -6,9 +6,13 @@ on:
   schedule:
     - cron: "0 0 * * *"
 
+permissions: {}
+
 jobs:
   build-git-cache-linux:
     runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
     container:
       image: ghcr.io/electron/build:bc2f48b2415a670de18d13605b1cf0eb5fdbaae1
       options: --user root
@@ -30,6 +34,8 @@ jobs:
 
   build-git-cache-windows:
     runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
     container:
       image: ghcr.io/electron/build:bc2f48b2415a670de18d13605b1cf0eb5fdbaae1
       options: --user root --device /dev/fuse --cap-add SYS_ADMIN
@@ -52,6 +58,8 @@ jobs:
 
   build-git-cache-macos:
     runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
     # This job updates the same git cache as linux, so it needs to run after the linux one.
     needs: build-git-cache-linux
     container:
