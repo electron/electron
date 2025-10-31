@@ -564,9 +564,9 @@ and subscribing to the `ready` event if the app is not ready yet.
   * `steal` boolean _macOS_ - Make the receiver the active app even if another app is
   currently active.
 
-On macOS, makes the application the active app. On Windows, focuses on the application's first window.
-On Linux, either focuses on the first visible window (X11) or requests focus but
-may instead show a notification or flash the app icon (Wayland).
+On macOS, makes the application the active app. On Windows, focuses on the application's
+first window. On Linux, either focuses on the first visible window (X11) or requests
+focus but may instead show a notification or flash the app icon (Wayland).
 
 You should seek to use the `steal` option as sparingly as possible.
 
