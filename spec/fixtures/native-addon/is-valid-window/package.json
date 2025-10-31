@@ -6,5 +6,8 @@
   "licenses": "MIT",
   "dependencies": {
     "nan": "2.x"
+  },
+  "scripts": {
+    "install": "node-gyp configure && node-gyp build"
   }
 }
