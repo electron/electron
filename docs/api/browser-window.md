@@ -140,6 +140,9 @@ state is `hidden` in order to minimize power consumption.
   move.
 * On Linux the type of modal windows will be changed to `dialog`.
 * On Linux many desktop environments do not support hiding a modal window.
+* On Wayland (Linux) it is generally not possible to programatically resize windows after creation,
+  or to change their position or focus state without user input. If your app requires these
+  functionalities, run it in XWayland compatibility mode by appending the flag `--ozone-platform=x11`.
 
 ## Class: BrowserWindow extends `BaseWindow`
 
@@ -656,9 +659,13 @@ the [close event](#event-close).
 
 Focuses on the window.
 
+On Wayland, acts more like an urgency hint and may not actually focus the window.
+
 #### `win.blur()`
 
 Removes focus from the window.
+
+Not supported on Wayland.
 
 #### `win.isFocused()`
 
@@ -675,6 +682,8 @@ Shows and gives focus to the window.
 #### `win.showInactive()`
 
 Shows the window but doesn't focus on it.
+
+Not supported on Wayland.
 
 #### `win.hide()`
 
@@ -824,6 +833,8 @@ Closes the currently open [Quick Look][quick-look] panel.
 
 Resizes and moves the window to the supplied bounds. Any properties that are not supplied will default to their current values.
 
+On Wayland, has the same limitations as `setSize` and `setPosition`.
+
 ```js
 const { BrowserWindow } = require('electron')
 
@@ -866,6 +877,8 @@ See [Setting `backgroundColor`](#setting-the-backgroundcolor-property).
 Resizes and moves the window's client area (e.g. the web page) to
 the supplied bounds.
 
+On Wayland, has the same limitations as `setContentSize` and `setPosition`.
+
 #### `win.getContentBounds()`
 
 Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window's client area as `Object`.
@@ -895,6 +908,8 @@ Returns `boolean` - whether the window is enabled.
 
 Resizes the window to `width` and `height`. If `width` or `height` are below any set minimum size constraints the window will snap to its minimum size.
 
+On Wayland, may not always work as some compositors (e.g. tiling window managers) restrict programmatic window resizing.
+
 #### `win.getSize()`
 
 Returns `Integer[]` - Contains the window's width and height.
@@ -906,6 +921,8 @@ Returns `Integer[]` - Contains the window's width and height.
 * `animate` boolean (optional) _macOS_
 
 Resizes the window's client area (e.g. the web page) to `width` and `height`.
+
+On Wayland, may not always work as some compositors (e.g. tiling window managers) restrict programmatic window resizing.
 
 #### `win.getContentSize()`
 
@@ -1057,6 +1074,8 @@ Moves window to the center of the screen.
 * `animate` boolean (optional) _macOS_
 
 Moves window to `x` and `y`.
+
+Not supported on Wayland.
 
 #### `win.getPosition()`
 
