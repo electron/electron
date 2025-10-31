@@ -18,5 +18,6 @@ runs:
     shell: bash
     run: |
       cd src/electron
-      export NODE_OPTIONS="--max-old-space-size=4096"
       node script/yarn.js install --immutable
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
