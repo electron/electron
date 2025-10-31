@@ -32,7 +32,7 @@
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "coffeescript": "^2.4.1",
-    "dbus-native": "github:nornagon/dbus-native#master",
+    "dbus-ts": "^0.0.7",
     "dirty-chai": "^2.0.1",
     "express": "^4.20.0",
     "graceful-fs": "^4.1.15",
