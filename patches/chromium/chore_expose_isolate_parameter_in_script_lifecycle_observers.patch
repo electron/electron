@@ -66,10 +66,10 @@ index 32dfed04e2fd7cd2e60c7cf145d182f4163feb68..c44c488ef90f4ceaada28666f80a5919
    void DidChangeScrollOffset() override;
    blink::WebMediaStreamDeviceObserver* MediaStreamDeviceObserver() override;
 diff --git a/content/renderer/service_worker/service_worker_context_client.cc b/content/renderer/service_worker/service_worker_context_client.cc
-index bf221ce102ea9ca25655f14a7cd90c625799d4b0..c4d81b211016616f6cbbdfcfae6620d4931ce775 100644
+index 37691ecee7a72b2ec47ff575239f628116cf136b..c67e3faf7440514e203e5b15a68fc34525a045a2 100644
 --- a/content/renderer/service_worker/service_worker_context_client.cc
 +++ b/content/renderer/service_worker/service_worker_context_client.cc
-@@ -322,6 +322,7 @@ void ServiceWorkerContextClient::WorkerContextStarted(
+@@ -318,6 +318,7 @@ void ServiceWorkerContextClient::WorkerContextStarted(
  }
  
  void ServiceWorkerContextClient::WillEvaluateScript(
@@ -77,7 +77,7 @@ index bf221ce102ea9ca25655f14a7cd90c625799d4b0..c4d81b211016616f6cbbdfcfae6620d4
      v8::Local<v8::Context> v8_context) {
    DCHECK(worker_task_runner_->RunsTasksInCurrentSequence());
    start_timing_->script_evaluation_start_time = base::TimeTicks::Now();
-@@ -340,8 +341,8 @@ void ServiceWorkerContextClient::WillEvaluateScript(
+@@ -336,8 +337,8 @@ void ServiceWorkerContextClient::WillEvaluateScript(
  
    DCHECK(proxy_);
    GetContentClient()->renderer()->WillEvaluateServiceWorkerOnWorkerThread(
@@ -89,10 +89,10 @@ index bf221ce102ea9ca25655f14a7cd90c625799d4b0..c4d81b211016616f6cbbdfcfae6620d4
  
  void ServiceWorkerContextClient::DidEvaluateScript(bool success) {
 diff --git a/content/renderer/service_worker/service_worker_context_client.h b/content/renderer/service_worker/service_worker_context_client.h
-index 2f3ba35491d17aa76f9baf8ba1cd53680a923654..477c6ac5a77c69cc4f062366c52adff3a36bdc76 100644
+index 1f5e24bc38d6ced52e4773236522e9520efc6f6d..a22ca5968fce5e6a0c436ec9b40f0e2f7c1482cf 100644
 --- a/content/renderer/service_worker/service_worker_context_client.h
 +++ b/content/renderer/service_worker/service_worker_context_client.h
-@@ -168,7 +168,8 @@ class ServiceWorkerContextClient
+@@ -165,7 +165,8 @@ class ServiceWorkerContextClient
    void WorkerContextStarted(
        blink::WebServiceWorkerContextProxy* proxy,
        scoped_refptr<base::SequencedTaskRunner> worker_task_runner) override;
