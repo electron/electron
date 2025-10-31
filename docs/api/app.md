@@ -565,8 +565,8 @@ and subscribing to the `ready` event if the app is not ready yet.
   currently active.
 
 On macOS, makes the application the active app. On Windows, focuses on the application's first window.
-On Linux, either focuses on the first visible window (X11) or acts like an urgency hint but does not
-take focus (Wayland).
+On Linux, either focuses on the first visible window (X11) or requests focus but
+may instead show a notification or flash the app icon (Wayland).
 
 You should seek to use the `steal` option as sparingly as possible.
 
