@@ -403,7 +403,7 @@ describe('BrowserWindow module', () => {
         }
       ];
       server = http.createServer((req, res) => {
-        function respond () {
+        function respond() {
           if (req.method === 'POST') {
             let body = '';
             req.on('data', (data) => {
@@ -6728,9 +6728,8 @@ describe('BrowserWindow module', () => {
       expect(data.constructor.name).to.equal('NativeImage');
       expect(data.isEmpty()).to.be.false('data is empty');
       const size = data.getSize();
-      const { scaleFactor } = screen.getPrimaryDisplay();
-      expect(size.width).to.be.closeTo(100 * scaleFactor, 2);
-      expect(size.height).to.be.closeTo(100 * scaleFactor, 2);
+      expect(size.width).to.equal(100);
+      expect(size.height).to.equal(100);
     });
 
     it('does not crash after navigation', () => {

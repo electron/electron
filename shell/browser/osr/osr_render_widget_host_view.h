@@ -149,7 +149,6 @@ class OffScreenRenderWidgetHostView
       const gfx::Size& output_size,
       base::OnceCallback<void(const viz::CopyOutputBitmapWithMetadata&)>
           callback) override;
-  display::ScreenInfo GetScreenInfo() const override;
   void TransformPointToRootSurface(gfx::PointF* point) override {}
   gfx::Rect GetBoundsInRootWindow() override;
   std::optional<content::DisplayFeature> GetDisplayFeature() override;
@@ -169,6 +168,7 @@ class OffScreenRenderWidgetHostView
       const std::optional<std::vector<gfx::Rect>>& character_bounds) override {}
   gfx::Size GetCompositorViewportPixelSize() override;
   ui::Compositor* GetCompositor() override;
+  display::ScreenInfos GetNewScreenInfosForUpdate() override;
 
   content::RenderWidgetHostViewBase* CreateViewForWidget(
       content::RenderWidgetHost*,
