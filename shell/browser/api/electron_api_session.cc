@@ -884,6 +884,24 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
          blink::PermissionType permission_type,
          ElectronPermissionManager::StatusCallback callback,
          const base::Value& details) {
+#if (BUILDFLAG(IS_MAC))
+        if (permission_type == blink::PermissionType::GEOLOCATION) {
+          if (ElectronPermissionManager::
+                  IsGeolocationDisabledViaCommandLine()) {
+            auto original_callback = std::move(callback);
+            callback = base::BindOnce(
+                [](ElectronPermissionManager::StatusCallback callback,
+                   blink::mojom::PermissionStatus /*ignored_status*/) {
+                  // Always deny regardless of what
+                  // blink::mojom::PermissionStatus is passed here
+                  std::move(callback).Run(content::PermissionResult(
+                      blink::mojom::PermissionStatus::DENIED,
+                      content::PermissionStatusSource::UNSPECIFIED));
+                },
+                std::move(original_callback));
+          }
+        }
+#endif
         handler->Run(web_contents, permission_type, std::move(callback),
                      details);
       },
