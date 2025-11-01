@@ -120,19 +120,6 @@ To accept files being dragged into your Electron app from the operating system, 
 
 An example demonstrating how to accept files dragged into your application and access their file paths.
 
-#### Preload.js
-
-In `preload.js`, use the [`contextBridge`][] and `webUtils` to safely expose a method that converts File objects to system paths:
-
-```js
-const { contextBridge } = require('electron')
-const { webUtils } = require('electron')
-
-contextBridge.exposeInMainWorld('electronAPI', {
-  getFilePath: (file) => webUtils.getPathForFile(file)
-})
-```
-
 #### Index.html
 
 Create a drop zone element where users can drag and drop files:
@@ -209,15 +196,15 @@ dropzone.addEventListener('drop', (event) => {
   const file = event.dataTransfer.files[0]
   if (!file) return
 
-  // Get the file path using the exposed API
-  const filePath = window.electronAPI.getFilePath(file)
-  pathOutput.textContent = `📁 File Path: ${filePath}`
+  //  Safely show only the file name (not full path)
+  //  Note: For security reasons, Electron recommends not exposing full file paths to the renderer. Only share minimal or non-sensitive information such as the file name.
+  pathOutput.textContent = `📁 File: ${file.name}`
 })
 ```
 
-#### Main.js
+### Main.js
 
-In the main process, set up your BrowserWindow with the preload script:
+In the main process, set up your BrowserWindow and load the renderer file:
 
 ```fiddle docs/fiddles/features/drag-and-drop
 const { app, BrowserWindow } = require('electron')
@@ -227,9 +214,6 @@ function createWindow () {
   const win = new BrowserWindow({
     width: 600,
     height: 400,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
-    }
   })
 
   win.loadFile('index.html')
@@ -250,10 +234,12 @@ app.on('activate', () => {
 })
 ```
 
-After launching the Electron application, try dragging a file from your file system into the drop zone. The application will display the full file path.
+After launching the Electron application, try dragging a file from your file system into the drop zone. The application will display the file name in the drop zone.
 
 ![Drag and drop into Electron](../images/From_Os_To_Electron.gif)
 
 ### Security Note
 
-This example uses `webUtils.getPathForFile()`, which is the recommended way to access file paths in the renderer process while maintaining security through context isolation. The `file.path` property is not directly available in renderer processes for security reasons.
+> ⚠️ **Tip:** If your app needs to work with the actual file paths, handle them **in the main process** and communicate securely via IPC.
+
+When you need to access full file paths securely, use webUtils.getPathForFile(), which is the recommended method for maintaining security through context isolation.
