@@ -10,7 +10,7 @@ The presentation of menus varies depending on the operating system:
 
 - Under Windows and Linux, menus are visually similar to Chromium.
 - Under macOS, these will be native menus.
- 
+
 > [!TIP]
 > See also: [A detailed guide about how to implement menus in your application](../tutorial/menus.md).
 
