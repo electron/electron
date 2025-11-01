@@ -43,6 +43,10 @@ See [`Menu`](menu.md) for examples.
     menu items.
   * `registerAccelerator` boolean (optional) _Linux_ _Windows_ - If false, the accelerator won't be registered
     with the system, but it will still be displayed. Defaults to true.
+  * `alternate` boolean (optional) _macOS_ - If true, the menu item will be marked as an alternate menu item.
+    When marked as alternate, the item is hidden by default and only shown when the option/alt key is held,
+    replacing the previous non-alternate menu item in the same menu. The alternate item must be placed
+    immediately after the item it replaces in the menu structure. Defaults to false.
   * `sharingItem` SharingItem (optional) _macOS_ - The item to share when the `role` is `shareMenu`.
   * `submenu` (MenuItemConstructorOptions[] | [Menu](menu.md)) (optional) - Should be specified
     for `submenu` type menu items. If `submenu` is specified, the `type: 'submenu'` can be omitted.
@@ -157,6 +161,30 @@ A `boolean` indicating if the accelerator should be registered with the
 system or just displayed.
 
 This property can be dynamically changed.
+
+#### `menuItem.alternate` _macOS_
+
+A `boolean` indicating if the menu item is marked as an alternate item. When
+marked as alternate, the item is hidden by default and only shown when the
+option/alt key is held, replacing the previous non-alternate menu item in the
+same menu. The alternate item must be positioned immediately after the item it
+replaces in the menu structure.
+
+**Example:**
+
+```js
+const menu = Menu.buildFromTemplate([
+  {
+    label: 'Close',
+    accelerator: 'CmdOrCtrl+W'
+  },
+  {
+    label: 'Close All',
+    accelerator: 'Alt+CmdOrCtrl+W',
+    alternate: true // This replaces "Close" when Alt/Option is held
+  }
+])
+```
 
 #### `menuItem.sharingItem` _macOS_
 
