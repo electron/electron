@@ -123,37 +123,39 @@ const fileTypeToMode = new Map<AsarFileType, number>([
   [AsarFileType.kLink, constants.S_IFLNK]
 ]);
 
-const asarStatsToFsStats = function (stats: NodeJS.AsarFileStat, options?: any) {
-  const { Stats } = require('fs');
+const asarStatsToFsStats = function (filePath: string, stats: NodeJS.AsarFileStat, options?: any) {
+  const { lstatSync } = require('fs');
 
+  const nStats = lstatSync(path.dirname(filePath), options);
   const mode = constants.S_IROTH | constants.S_IRGRP | constants.S_IRUSR | constants.S_IWUSR | fileTypeToMode.get(stats.type)!;
+  const timeMs = fakeTime.getTime();
+  const timeNs = BigInt(timeMs) * 1_000_000n;
 
-  const statsObject = new Stats(
-    1, // dev
-    mode, // mode
-    1, // nlink
+  Object.entries({
+    dev: 1,
+    mode,
+    nlink: 1,
     uid,
     gid,
-    0, // rdev
-    undefined, // blksize
-    ++nextInode, // ino
-    stats.size,
-    undefined, // blocks,
-    fakeTime.getTime(), // atim_msec
-    fakeTime.getTime(), // mtim_msec
-    fakeTime.getTime(), // ctim_msec
-    fakeTime.getTime() // birthtim_msec
-  );
+    rdev: 0,
+    blksize: undefined,
+    ino: ++nextInode,
+    blocks: undefined,
+    atimeMs: timeMs,
+    mtimeMs: timeMs,
+    ctimeMs: timeMs,
+    birthtimeMs: timeMs,
+    atimeNs: timeNs,
+    mtimeNs: timeNs,
+    ctimeNs: timeNs,
+    birthtimeNs: timeNs
+  }).forEach(([key, value]) => {
+    if (key in nStats) {
+      nStats[key] = (options?.bigint === true && typeof value === 'number') ? BigInt(value) : value;
+    }
+  });
 
-  if (options?.bigint === true) {
-    Object.entries(statsObject).forEach(([key, value]) => {
-      if (typeof value === 'number') {
-        statsObject[key] = BigInt(value);
-      }
-    });
-  }
-
-  return statsObject;
+  return nStats;
 };
 
 const enum AsarError {
@@ -331,7 +333,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       return null;
     }
 
-    return asarStatsToFsStats(stats, options);
+    return asarStatsToFsStats(filePath, stats, options);
   };
 
   const { lstat } = fs;
@@ -358,7 +360,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       return;
     }
 
-    const fsStats = asarStatsToFsStats(stats, options);
+    const fsStats = asarStatsToFsStats(filePath, stats, options);
     nextTick(callback, [null, fsStats]);
   };
 
