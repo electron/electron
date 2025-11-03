@@ -85,6 +85,7 @@ jobs:
       target-platform: ${{ inputs.target-platform }}
       test-runs-on: ${{ inputs.test-runs-on }}
       test-container: ${{ inputs.test-container }}
+      yarn-hardened-mode: ${{ inputs.yarn-hardened-mode }}
     secrets: inherit
   nn-test:
     uses: ./.github/workflows/pipeline-segment-node-nan-test.yml

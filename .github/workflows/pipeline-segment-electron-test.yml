@@ -30,6 +30,11 @@ on:
         required: false
         type: boolean
         default: false
+      yarn-hardened-mode:
+        description: 'Enable yarn hardened mode'
+        required: false
+        type: string
+        default: '0'
 
 concurrency:
   group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ github.ref_protected == true && github.run_id || github.ref }}
@@ -208,6 +213,7 @@ jobs:
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         DISPLAY: ':99.0'
         NPM_CONFIG_MSVS_VERSION: '2022'
+        YARN_ENABLE_HARDENED_MODE: ${{ inputs.yarn-hardened-mode }}
       run: |
         cd src/electron
         export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
