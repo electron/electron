@@ -15,10 +15,10 @@ Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1538048}
 
 diff --git a/ui/ozone/platform/wayland/host/wayland_event_source.cc b/ui/ozone/platform/wayland/host/wayland_event_source.cc
-index 4cc15e842b633e93f1d6654225765769eb75fffd..4e421ccbd36d4efebd43c9def5b575b7d8d5e336 100644
+index 3ef7ad3369d458d56eb4e4702533005bc2de6261..44339caac5a2d818eb999786cd5093167c55a992 100644
 --- a/ui/ozone/platform/wayland/host/wayland_event_source.cc
 +++ b/ui/ozone/platform/wayland/host/wayland_event_source.cc
-@@ -336,6 +336,13 @@ void WaylandEventSource::OnPointerFocusChanged(
+@@ -334,6 +334,13 @@ void WaylandEventSource::OnPointerFocusChanged(
      // Save new pointer location.
      pointer_location_ = location;
      window_manager_->SetPointerFocusedWindow(window);
