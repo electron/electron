@@ -891,9 +891,9 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
             auto original_callback = std::move(callback);
             callback = base::BindOnce(
                 [](ElectronPermissionManager::StatusCallback callback,
-                   blink::mojom::PermissionStatus /*ignored_status*/) {
+                   content::PermissionResult /*ignored_result*/) {
                   // Always deny regardless of what
-                  // blink::mojom::PermissionStatus is passed here
+                  // content::PermissionResult is passed here
                   std::move(callback).Run(content::PermissionResult(
                       blink::mojom::PermissionStatus::DENIED,
                       content::PermissionStatusSource::UNSPECIFIED));
