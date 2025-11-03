@@ -16,10 +16,10 @@ Notes: This is an Electron-specific feature. Upstreaming is not planned as it
 provides custom fingerprinting control that differs from Chromium's privacy model.
 
 diff --git a/chrome/browser/chrome_content_browser_client.cc b/chrome/browser/chrome_content_browser_client.cc
-index 0f9cce15267e6cead92df02f05699e473383f47e..346f828e270e44c7d0af430fc0b562419205647b 100644
+index e074f73a23e838ada279701427853ea6b01f16cf..283b2e02ca360114114c00be6838e4ad05916baf 100644
 --- a/chrome/browser/chrome_content_browser_client.cc
 +++ b/chrome/browser/chrome_content_browser_client.cc
-@@ -8738,20 +8738,8 @@ ChromeContentBrowserClient::GetClipboardTypesIfPolicyApplied(
+@@ -8761,20 +8761,8 @@ ChromeContentBrowserClient::GetClipboardTypesIfPolicyApplied(
  bool ChromeContentBrowserClient::ShouldEnableCanvasNoise(
      content::BrowserContext* browser_context,
      const GURL& url) {
@@ -42,13 +42,15 @@ index 0f9cce15267e6cead92df02f05699e473383f47e..346f828e270e44c7d0af430fc0b56241
  }
  
  bool ChromeContentBrowserClient::UsePrefetchPrerenderIntegration() {
-@@ -8760,5 +8748,5 @@ bool ChromeContentBrowserClient::UsePrefetchPrerenderIntegration() {
+@@ -8783,7 +8771,7 @@ bool ChromeContentBrowserClient::UsePrefetchPrerenderIntegration() {
  }
  
  bool ChromeContentBrowserClient::UsePreloadServingMetrics() {
 -  return features::kDsePreload2UsePreloadServingMetrics.Get();
 +  return features::kDsePreload2UsePreloadServingMetricsdo.Get();
  }
+ 
+ #if !BUILDFLAG(IS_ANDROID)
 diff --git a/components/fingerprinting_protection_filter/interventions/common/interventions_features.cc b/components/fingerprinting_protection_filter/interventions/common/interventions_features.cc
 index 31bc9e364dd625cea2de4dc471f4df0f503f3364..8ff02830c1d4017ea2a3ef111b169c0381307f0f 100644
 --- a/components/fingerprinting_protection_filter/interventions/common/interventions_features.cc
