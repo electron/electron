@@ -37,7 +37,8 @@ async function main () {
     npm_config_arch: process.env.NPM_CONFIG_ARCH,
     npm_config_yes: 'true',
     YARN_ENABLE_IMMUTABLE_INSTALLS: 'false',
-    YARN_ENABLE_HARDENED_MODE: 0
+    YARN_ENABLE_HARDENED_MODE: 0,
+    NPM_CONFIG_LOGLEVEL: 'verbose'
   };
 
   const clangDir = path.resolve(BASE, 'third_party', 'llvm-build', 'Release+Asserts', 'bin');
@@ -120,7 +121,7 @@ async function main () {
     return process.exit(buildStatus !== 0 ? buildStatus : signal);
   }
 
-  const { status: installStatus, signal: installSignal } = cp.spawnSync(process.execPath, [YARN_SCRIPT_PATH, 'install'], {
+  const { status: installStatus, signal: installSignal } = cp.spawnSync(process.execPath, [YARN_SCRIPT_PATH, 'install', '--inline-builds'], {
     env,
     cwd: NAN_DIR,
     stdio: 'inherit',
