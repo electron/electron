@@ -28,10 +28,10 @@ The patch should be removed in favor of either:
 Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 5f6fb36d9302e557ff56f770ff70b091ade0f53a..81e91f51d119b2e02f432c2e7ae81f6d118811b3 100644
+index 3624c9c96f3ac526e99fb09c378144439c707442..fd818f40e9c3e1efe15dcbb369270a27e2f50483 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -11454,6 +11454,11 @@ url::Origin NavigationRequest::GetOriginForURLLoaderFactoryUnchecked() {
+@@ -11466,6 +11466,11 @@ url::Origin NavigationRequest::GetOriginForURLLoaderFactoryUnchecked() {
              target_rph_id);
    }
  
