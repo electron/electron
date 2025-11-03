@@ -28,6 +28,7 @@ const getNodeGypVersion = () => {
 };
 
 async function main () {
+  console.log('Starting NAN spec runner');
   const outDir = utils.getOutDir({ shouldLog: true });
   const nodeDir = path.resolve(BASE, 'out', outDir, 'gen', 'node_headers');
   const env = {
@@ -109,16 +110,18 @@ async function main () {
   }
 
   const nodeGypVersion = getNodeGypVersion();
+  console.log(`Using node-gyp version: ${nodeGypVersion}`);
   const { status: buildStatus, signal } = cp.spawnSync(NPX_CMD, [`node-gyp@${nodeGypVersion}`, 'rebuild', '--verbose', '--directory', 'test', '-j', 'max'], {
     env,
     cwd: NAN_DIR,
     stdio: 'inherit',
     shell: process.platform === 'win32'
   });
-
   if (buildStatus !== 0 || signal != null) {
     console.error('Failed to build nan test modules');
     return process.exit(buildStatus !== 0 ? buildStatus : signal);
+  } else {
+    console.log('Successfully built nan test modules');
   }
 
   const { status: installStatus, signal: installSignal } = cp.spawnSync(process.execPath, [YARN_SCRIPT_PATH, 'install', '--inline-builds'], {
@@ -131,6 +134,8 @@ async function main () {
   if (installStatus !== 0 || installSignal != null) {
     console.error('Failed to install nan node_modules');
     return process.exit(installStatus !== 0 ? installStatus : installSignal);
+  } else {
+    console.log('Successfully installed nan node_modules');
   }
 
   const onlyTests = args.only?.split(',');
@@ -150,6 +155,10 @@ async function main () {
       return !onlyTests || onlyTests.includes(test) || onlyTests.includes(test.replace('.js', '')) || onlyTests.includes(test.replace('-test.js', ''));
     })
     .map(test => `test/js/${test}`);
+
+  // Get list of files in NAN_DIR/node_modules/.bin
+  const binFiles = fs.readdirSync(path.resolve(NAN_DIR, 'node_modules', '.bin'));
+  console.log(`Found node_modules bin files: ${binFiles.join(', ')}`);
 
   const testChild = cp.spawn(utils.getAbsoluteElectronExec(), ['node_modules/.bin/tap', ...testsToRun], {
     env: {
