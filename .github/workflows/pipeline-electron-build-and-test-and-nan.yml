@@ -54,6 +54,10 @@ on:
         required: false
         type: boolean
         default: false
+      yarn-hardened-mode:
+        description: 'Enable hardened mode for yarn'
+        type: string
+        default: '0'        
 
 concurrency:
   group: electron-build-and-test-and-nan-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref_protected == true && github.run_id || github.ref }}
@@ -71,6 +75,7 @@ jobs:
       gn-build-type: ${{ inputs.gn-build-type }}
       generate-symbols: ${{ inputs.generate-symbols }}
       upload-to-storage: ${{ inputs.upload-to-storage }}
+      yarn-hardened-mode: ${{ inputs.yarn-hardened-mode }}
     secrets: inherit
   test:
     uses: ./.github/workflows/pipeline-segment-electron-test.yml

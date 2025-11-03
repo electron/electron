@@ -1,5 +1,9 @@
 name: 'Install Dependencies'
 description: 'Installs yarn depdencies using cache when available'
+inputs:
+  yarn-hardened-mode:
+    description: 'Enable hardened mode for yarn'
+    default: '0'
 runs:
   using: "composite"
   steps:
@@ -18,11 +22,6 @@ runs:
     shell: bash
     run: |
       cd src/electron
-      if [ "$(uname)" = "Linux" ]; then
-        free -h
-        available_mem=$(free -m | grep Mem | awk '{print $7}')
-        echo "Available memory: $available_mem MB"
-      fi    
       node script/yarn.js install --immutable
     env:
-      NODE_OPTIONS: --max-old-space-size=8192
+      YARN_ENABLE_HARDENED_MODE: ${{ inputs.yarn-hardened-mode }}

@@ -278,6 +278,7 @@ jobs:
       gn-build-type: testing
       generate-symbols: false
       upload-to-storage: '0'
+      yarn-hardened-mode: '1'
     secrets: inherit
 
   linux-x64-asan:
