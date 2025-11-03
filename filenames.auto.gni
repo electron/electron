@@ -106,6 +106,7 @@ auto_filenames = {
     "docs/api/structures/jump-list-item.md",
     "docs/api/structures/keyboard-event.md",
     "docs/api/structures/keyboard-input-event.md",
+    "docs/api/structures/layered-tray-image.md",
     "docs/api/structures/media-access-permission-request.md",
     "docs/api/structures/memory-info.md",
     "docs/api/structures/memory-usage-details.md",

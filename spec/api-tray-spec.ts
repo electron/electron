@@ -53,7 +53,7 @@ describe('tray module', () => {
         }
       });
 
-      it('accepts an object with layers array in constructor', () => {
+      it('accepts layered image object in constructor', () => {
         const templateImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo_Template.png'));
         const colorImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
         expect(() => {
@@ -176,7 +176,7 @@ describe('tray module', () => {
     });
 
     ifdescribe(process.platform === 'darwin')('with layered images', () => {
-      it('accepts an object with layers array', () => {
+      it('accepts layered image object', () => {
         const templateImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo_Template.png'));
         const colorImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
         expect(() => {
@@ -215,7 +215,7 @@ describe('tray module', () => {
     });
 
     ifdescribe(process.platform === 'darwin')('with layered images', () => {
-      it('accepts an object with layers array', () => {
+      it('accepts layered image object', () => {
         const templateImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo_Template.png'));
         const colorImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
         expect(() => {

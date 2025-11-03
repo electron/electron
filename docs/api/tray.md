@@ -78,8 +78,7 @@ app.whenReady().then(() => {
 
 ### `new Tray(image, [guid])`
 
-* `image` ([NativeImage](native-image.md) | string | Object)
-  * `layers` ([NativeImage](native-image.md) | string)[] _macOS_ - An array of images to be composited as layers for the tray icon. Each image will be drawn on top of the previous one. This allows composing template images with non-template images (e.g., colored badges or indicators). Template images will automatically adapt to appear correctly regardless of the effective appearance where the tray icon is rendered, which can vary per screen.
+* `image` ([NativeImage](native-image.md) | string | [LayeredTrayImage](structures/layered-tray-image.md) _macOS_)
 * `guid` string (optional) _Windows_ _macOS_ - A unique string used to identify the tray icon. Must adhere to [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) format.
 
 **Windows**
@@ -91,6 +90,8 @@ On Windows, if the executable is signed and the signature contains an organizati
 On macOS, the `guid` is a string used to uniquely identify the tray icon and allow it to retain its position between relaunches. Using the same string for a new tray item will create it in the same position as the previous tray item to use the string.
 
 Creates a new tray icon associated with the `image`.
+
+The `LayeredTrayImage` option is only available on macOS.
 
 ### Instance Events
 
@@ -241,17 +242,19 @@ Destroys the tray icon immediately.
 
 #### `tray.setImage(image)`
 
-* `image` ([NativeImage](native-image.md) | string | Object)
-  * `layers` ([NativeImage](native-image.md) | string)[] _macOS_ - An array of images to be composited as layers for the tray icon. Each image will be drawn on top of the previous one. This allows composing template images with non-template images (e.g., colored badges or indicators). Template images will automatically adapt to appear correctly regardless of the effective appearance where the tray icon is rendered, which can vary per screen.
+* `image` ([NativeImage](native-image.md) | string | [LayeredTrayImage](structures/layered-tray-image.md) _macOS_)
 
 Sets the `image` associated with this tray icon.
 
+The `LayeredTrayImage` option is only available on macOS.
+
 #### `tray.setPressedImage(image)` _macOS_
 
-* `image` ([NativeImage](native-image.md) | string | Object)
-  * `layers` ([NativeImage](native-image.md) | string)[] - An array of images to be composited as layers for the tray icon. Each image will be drawn on top of the previous one. This allows composing template images with non-template images. Template images will automatically adapt to appear correctly regardless of the effective appearance where the tray icon is rendered.
+* `image` ([NativeImage](native-image.md) | string | [LayeredTrayImage](structures/layered-tray-image.md) _macOS_)
 
 Sets the `image` associated with this tray icon when pressed on macOS.
+
+The `LayeredTrayImage` option is only available on macOS.
 
 #### `tray.setToolTip(toolTip)`
 
@@ -390,7 +393,7 @@ app.whenReady().then(() => {
 
 **Multi-layered icons (macOS only):**
 
-On macOS, you can pass an options object with a `layers` array to create a multi-layered tray icon. This allows you to compose template images with non-template images, such as adding a colored badge or indicator on top of a template base icon:
+On macOS, you can pass a [LayeredTrayImage](structures/layered-tray-image.md) object to create a multi-layered tray icon. This allows you to compose template images with non-template images, such as adding a colored badge or indicator on top of a template base icon:
 
 ```js
 const { nativeImage, Tray } = require('electron')
