@@ -57,7 +57,7 @@ index 2239b085ac7fd87fe06aef1001551f8afe8e21e4..9ead3ab0755fe5c3500893325f0597e0
    gfx::Rect window_bounds_before_fullscreen_;
  
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index ae113be147f5bfe9d6218a20495897600cc5299d..cb67460205f4db04a3256151d49a2713688c7627 100644
+index d2204fd2b737f7f3e146cb1be80c3be6bfce8cd4..9064b3d019aca6e8b77b10c3f0d0447b52f5245a 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -467,6 +467,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
