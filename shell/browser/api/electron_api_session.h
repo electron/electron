@@ -61,6 +61,7 @@ struct PreloadScript;
 namespace api {
 
 class NetLog;
+class WebRequest;
 
 class Session final : public gin::Wrappable<Session>,
                       public gin_helper::Constructible<Session>,
@@ -169,7 +170,7 @@ class Session final : public gin::Wrappable<Session>,
   v8::Local<v8::Value> Extensions(v8::Isolate* isolate);
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> ServiceWorkerContext(v8::Isolate* isolate);
-  v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
+  WebRequest* WebRequest(v8::Isolate* isolate);
   api::NetLog* NetLog(v8::Isolate* isolate);
   void Preconnect(const gin_helper::Dictionary& options, gin::Arguments* args);
   v8::Local<v8::Promise> CloseAllConnections();
@@ -217,7 +218,7 @@ class Session final : public gin::Wrappable<Session>,
   v8::TracedReference<v8::Value> protocol_;
   cppgc::Member<api::NetLog> net_log_;
   v8::TracedReference<v8::Value> service_worker_context_;
-  v8::TracedReference<v8::Value> web_request_;
+  cppgc::Member<api::WebRequest> web_request_;
 
   raw_ptr<v8::Isolate> isolate_;
 

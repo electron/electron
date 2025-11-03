@@ -204,7 +204,8 @@ CalculateOnBeforeSendHeadersDelta(const net::HttpRequestHeaders* old_headers,
 
 }  // namespace
 
-gin::DeprecatedWrapperInfo WebRequest::kWrapperInfo = {gin::kEmbedderNativeGin};
+const gin::WrapperInfo WebRequest::kWrapperInfo = {{gin::kEmbedderNativeGin},
+                                                   gin::kElectronWebRequest};
 
 WebRequest::RequestFilter::RequestFilter(
     std::set<URLPattern> include_url_patterns,
@@ -318,8 +319,7 @@ WebRequest::~WebRequest() = default;
 
 gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin_helper::DeprecatedWrappable<WebRequest>::GetObjectTemplateBuilder(
-             isolate)
+  return gin::Wrappable<WebRequest>::GetObjectTemplateBuilder(isolate)
       .SetMethod(
           "onBeforeRequest",
           &WebRequest::SetResponseListener<ResponseEvent::kOnBeforeRequest>)
@@ -342,8 +342,12 @@ gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
                  &WebRequest::SetSimpleListener<SimpleEvent::kOnCompleted>);
 }
 
-const char* WebRequest::GetTypeName() {
-  return GetClassName();
+const gin::WrapperInfo* WebRequest::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* WebRequest::GetHumanReadableName() const {
+  return "Electron / WebRequest";
 }
 
 bool WebRequest::HasListener() const {
@@ -777,22 +781,16 @@ void WebRequest::OnLoginAuthResult(
 }
 
 // static
-gin_helper::Handle<WebRequest> WebRequest::FromOrCreate(
-    v8::Isolate* isolate,
-    content::BrowserContext* browser_context) {
-  v8::Local<v8::Value> web_request =
-      Session::FromOrCreate(isolate, browser_context)->WebRequest(isolate);
-  gin_helper::Handle<WebRequest> handle;
-  gin::ConvertFromV8(isolate, web_request, &handle);
-  DCHECK(!handle.IsEmpty());
-  return handle;
+WebRequest* WebRequest::FromOrCreate(v8::Isolate* isolate,
+                                     content::BrowserContext* browser_context) {
+  return Session::FromOrCreate(isolate, browser_context)->WebRequest(isolate);
 }
 
 // static
-gin_helper::Handle<WebRequest> WebRequest::Create(
-    base::PassKey<Session> passkey,
-    v8::Isolate* isolate) {
-  return gin_helper::CreateHandle(isolate, new WebRequest{std::move(passkey)});
+WebRequest* WebRequest::Create(v8::Isolate* isolate,
+                               base::PassKey<Session> passkey) {
+  return cppgc::MakeGarbageCollected<WebRequest>(
+      isolate->GetCppHeap()->GetAllocationHandle(), std::move(passkey));
 }
 
 }  // namespace electron::api
