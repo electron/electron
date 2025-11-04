@@ -214,6 +214,7 @@ jobs:
         DISPLAY: ':99.0'
         NPM_CONFIG_MSVS_VERSION: '2022'
         YARN_ENABLE_HARDENED_MODE: ${{ inputs.yarn-hardened-mode }}
+        NODE_OPTIONS: --max-old-space-size=8192
       run: |
         cd src/electron
         export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
