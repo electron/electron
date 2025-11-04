@@ -160,10 +160,9 @@ async function main () {
   const { status: binStatus, signal: binSignal, stdout: tapPath } = cp.spawnSync(process.execPath, [YARN_SCRIPT_PATH, 'bin', 'tap'], {
     env,
     cwd: NAN_DIR,
-    stdio: 'inherit',
     shell: process.platform === 'win32'
   });
-  if (binStatus !== 0 || binSignal != null) {
+  if (binStatus !== 0 || binSignal != null || !tapPath) {
     console.error('Failed to get tap binary via yarn');
     return process.exit(binStatus !== 0 ? binStatus : binSignal);
   }
