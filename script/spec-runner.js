@@ -394,7 +394,8 @@ async function installSpecModules (dir) {
     npm_config_msvs_version: '2022',
     ...process.env,
     CXXFLAGS: process.env.CXXFLAGS,
-    npm_config_yes: 'true'
+    npm_config_yes: 'true',
+    NPM_CONFIG_LOGLEVEL: 'verbose'
   };
   if (args.electronVersion) {
     env.npm_config_target = args.electronVersion;
@@ -418,7 +419,7 @@ async function installSpecModules (dir) {
   if (fs.existsSync(path.resolve(dir, 'node_modules'))) {
     await fs.promises.rm(path.resolve(dir, 'node_modules'), { force: true, recursive: true });
   }
-  const yarnArgs = [YARN_SCRIPT_PATH, 'install', '--immutable'];
+  const yarnArgs = [YARN_SCRIPT_PATH, 'install', '--immutable', '--inline-builds'];
   // if npm_config_arch is set, pass that to yarn as well
   if (process.env.npm_config_arch) {
     yarnArgs.push(`--arch=${process.env.npm_config_arch}`);
