@@ -80,10 +80,10 @@ index 39fa45f0a0f9076bd7ac0be6f455dd540a276512..3d0381d463eed73470b28085830f2a23
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index e550b21eba674396ba97b9ec21535964502d1b36..24e13b4f6ab01bdbefba791002edb0a4faf4811a 100644
+index d27effbf90aba2a888f479b6999fd16e58fdbcbf..1fd7f6166efd55ccc74a91763c87b1fe7987aaff 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2369,7 +2369,8 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2376,7 +2376,8 @@ bool Browser::IsWebContentsCreationOverridden(
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
      const std::string& frame_name,
@@ -93,7 +93,7 @@ index e550b21eba674396ba97b9ec21535964502d1b36..24e13b4f6ab01bdbefba791002edb0a4
    if (HasActorTask(profile(), opener)) {
      // If an ExecutionEngine is acting on the opener, prevent it from creating a
      // new WebContents. We'll instead force the navigation to happen in the same
-@@ -2382,7 +2383,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2389,7 +2390,7 @@ bool Browser::IsWebContentsCreationOverridden(
    return (window_container_type ==
                content::mojom::WindowContainerType::BACKGROUND &&
            ShouldCreateBackgroundContents(source_site_instance, opener_url,
@@ -103,7 +103,7 @@ index e550b21eba674396ba97b9ec21535964502d1b36..24e13b4f6ab01bdbefba791002edb0a4
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index e0d63627518a5e0e1bdef510f3c0d849db4cc0d8..a052d78b6578a1e1fab88e1acafff77e5871c335 100644
+index 46715de09311e36046c9d49e6eb0a6444532f49f..0883f12668347f76d20517df95885b2c73d98598 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -935,8 +935,7 @@ class Browser : public TabStripModelObserver,
@@ -159,7 +159,7 @@ index 3bbd4e568ba99245622a96f0801d2b6cd203025f..1e0b7d16b33daed980961dd49c667a3b
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index c7eaf8d34ea50ba356ed1997f2fe6477aee9bcb1..acb8b12f0b2796ef836069ce54539e1ac6b66dc5 100644
+index 24f78a1c6b439c2f66683bb43b784f696f9a7419..7a5b6eccffe451787101042673d6efe4456237b4 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -210,15 +210,14 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(

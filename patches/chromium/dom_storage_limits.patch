@@ -9,7 +9,7 @@ Previous versions of this patch attempted to circumvent
 the restriction altogether.
 However, this can lead to other problems, such as crashing
 the Dev Tools when attempting to read or write values that exceed
-`IPC::Channel::kMaximumMessageSize` (128MiB).
+`IPC::mojom::kChannelMaximumMessageSize` (128MiB).
 
 Increasing the quota rather than bypassing it reduces the
 amount of chromium code that needs to be changed for Electron

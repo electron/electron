@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index de8cfaabed0e4ed3db9b55729f7ea22014f63dd2..45df203c236ed0f36f079ad0dcbe98e9fc177b08 100644
+index 0447540c064d7234775e8faf13718d9b786c9395..2a41ce63b49e905128a804da579cf1749cc17c37 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -64,8 +64,8 @@ index de8cfaabed0e4ed3db9b55729f7ea22014f63dd2..45df203c236ed0f36f079ad0dcbe98e9
 +#if !BUILDFLAG(IS_ANDROID) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
-   params.window_action = ShouldFocusPictureInPictureWindow(params)
-@@ -679,6 +684,7 @@ PictureInPictureWindowManager::GetOverlayView(
+   params.window_action =
+@@ -680,6 +685,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -73,7 +73,7 @@ index de8cfaabed0e4ed3db9b55729f7ea22014f63dd2..45df203c236ed0f36f079ad0dcbe98e9
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -717,6 +723,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -718,6 +724,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
