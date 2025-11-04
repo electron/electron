@@ -22,6 +22,10 @@ runs:
     shell: bash
     run: |
       cd src/electron
-      node script/yarn.js install --immutable
+      if [ "$TARGET_ARCH" = "x86" ]; then
+        export npm_config_arch="ia32"
+      fi
+      node script/yarn.js install --immutable --inline-builds
     env:
+      NPM_CONFIG_LOGLEVEL: 'verbose'
       YARN_ENABLE_HARDENED_MODE: ${{ inputs.yarn-hardened-mode }}
