@@ -1454,6 +1454,7 @@ libcxx_headers = [
   "//third_party/libc++/src/include/__type_traits/is_valid_expansion.h",
   "//third_party/libc++/src/include/__type_traits/is_void.h",
   "//third_party/libc++/src/include/__type_traits/is_volatile.h",
+  "//third_party/libc++/src/include/__type_traits/is_within_lifetime.h",
   "//third_party/libc++/src/include/__type_traits/lazy.h",
   "//third_party/libc++/src/include/__type_traits/make_32_64_or_128_bit.h",
   "//third_party/libc++/src/include/__type_traits/make_const_lvalue_ref.h",
