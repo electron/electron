@@ -734,12 +734,10 @@ describe('webRequest module', () => {
       expect(reqHeaders['/'].foo).to.equal('bar');
     });
 
-    it('authenticates a WebSocket via onAuthRequired', async () => {
+    it('authenticates a WebSocket via login event', async () => {
       const authServer = http.createServer();
       const wssAuth = new WebSocket.Server({ noServer: true });
       const expected = 'Basic ' + Buffer.from('user:pass').toString('base64');
-      let sawAuthChallenge = false;
-      let sawOnAuthRequired = false;
 
       wssAuth.on('connection', ws => {
         ws.send('Authenticated!');
@@ -754,36 +752,38 @@ describe('webRequest module', () => {
               'Content-Length: 0\r\n' +
               '\r\n'
           );
-          sawAuthChallenge = true;
           socket.destroy();
           return;
         }
+
         wssAuth.handleUpgrade(req, socket as Socket, head, ws => {
           wssAuth.emit('connection', ws, req);
         });
       });
 
       const { port } = await listen(authServer);
-      const sesAuth = session.fromPartition(`WebRequestWSAuth-${Date.now()}`);
-
-      // Supply credentials when challenged.
-      sesAuth.webRequest.onAuthRequired({ urls: [`ws://localhost:${port}/*`] }, (_details, callback) => {
-        sawOnAuthRequired = true;
-        callback({
-          cancel: false,
-          authCredentials: { username: 'user', password: 'pass' }
-        });
-      });
+      const ses = session.fromPartition(`WebRequestWSAuth-${Date.now()}`);
 
       const contents = (webContents as typeof ElectronInternal.WebContents).create({
-        session: sesAuth,
+        session: ses,
         sandbox: true
       });
+
       defer(() => {
         contents.destroy();
         authServer.close();
         wssAuth.close();
-        sesAuth.webRequest.onAuthRequired(null);
+      });
+
+      ses.webRequest.onBeforeRequest({ urls: ['ws://*/*'] }, (details, callback) => {
+        callback({});
+      });
+
+      contents.on('login', (event, details: any, _: any, callback: (u: string, p: string) => void) => {
+        if (details?.url?.startsWith(`ws://localhost:${port}`)) {
+          event.preventDefault();
+          callback('user', 'pass');
+        }
       });
 
       await contents.loadFile(path.join(fixturesPath, 'blank.html'));
@@ -807,8 +807,6 @@ describe('webRequest module', () => {
       });`);
 
       expect(message).to.equal('Authenticated!');
-      expect(sawAuthChallenge).to.be.true();
-      expect(sawOnAuthRequired).to.be.true();
     });
   });
 });

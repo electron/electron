@@ -104,7 +104,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   void ContinueToStartRequest(int error_code);
   void OnHeadersReceivedComplete(int error_code);
   void ContinueToHeadersReceived();
-  void OnAuthRequiredComplete(WebRequestAPI::AuthRequiredResponse rv);
+  void OnAuthRequiredComplete(api::WebRequest::AuthRequiredResponse rv);
   void OnHeadersReceivedCompleteForAuth(const net::AuthChallengeInfo& auth_info,
                                         int rv);
   void ContinueToCompleted();

@@ -45,6 +45,23 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
                               const std::set<std::string>& set_headers,
                               int error_code)>;
 
+  // AuthRequiredResponse indicates how an OnAuthRequired call is handled.
+  enum class AuthRequiredResponse {
+    // No credentials were provided.
+    AUTH_REQUIRED_RESPONSE_NO_ACTION,
+    // AuthCredentials is filled in with a username and password, which should
+    // be used in a response to the provided auth challenge.
+    AUTH_REQUIRED_RESPONSE_SET_AUTH,
+    // The request should be canceled.
+    AUTH_REQUIRED_RESPONSE_CANCEL_AUTH,
+    // The action will be decided asynchronously. |callback| will be invoked
+    // when the decision is made, and one of the other AuthRequiredResponse
+    // values will be passed in with the same semantics as described above.
+    AUTH_REQUIRED_RESPONSE_IO_PENDING,
+  };
+
+  using AuthCallback = base::OnceCallback<void(AuthRequiredResponse)>;
+
   // Convenience wrapper around api::Session::FromOrCreate()->WebRequest().
   // Creates the Session and WebRequest if they don't already exist.
   // Note that the WebRequest is owned by the session, not by the caller.
@@ -83,11 +100,10 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
   void OnSendHeaders(extensions::WebRequestInfo* info,
                      const network::ResourceRequest& request,
                      const net::HttpRequestHeaders& headers);
-  AuthRequiredResponse OnAuthRequired(
-      const extensions::WebRequestInfo* info,
-      const net::AuthChallengeInfo& auth_info,
-      AuthCallback callback,
-      net::AuthCredentials* credentials) override;
+  AuthRequiredResponse OnAuthRequired(const extensions::WebRequestInfo* info,
+                                      const net::AuthChallengeInfo& auth_info,
+                                      AuthCallback callback,
+                                      net::AuthCredentials* credentials);
   void OnBeforeRedirect(extensions::WebRequestInfo* info,
                         const network::ResourceRequest& request,
                         const GURL& new_location);
@@ -121,7 +137,6 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
     kOnBeforeRequest,
     kOnBeforeSendHeaders,
     kOnHeadersReceived,
-    kOnAuthRequired
   };
 
   using SimpleListener = base::RepeatingCallback<void(v8::Local<v8::Value>)>;
@@ -158,15 +173,18 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
       const net::HttpResponseHeaders* original_response_headers,
       scoped_refptr<net::HttpResponseHeaders>* override_response_headers);
 
-  void OnAuthRequiredListenerResult(uint64_t id,
-                                    net::AuthCredentials* credentials,
-                                    v8::Local<v8::Value> response);
   void OnBeforeRequestListenerResult(uint64_t id,
                                      v8::Local<v8::Value> response);
   void OnBeforeSendHeadersListenerResult(uint64_t id,
                                          v8::Local<v8::Value> response);
   void OnHeadersReceivedListenerResult(uint64_t id,
                                        v8::Local<v8::Value> response);
+  // Callback invoked by LoginHandler when auth credentials are supplied via
+  // the unified 'login' event. Bridges back into WebRequest's AuthCallback.
+  void OnLoginAuthResult(
+      uint64_t id,
+      net::AuthCredentials* credentials,
+      const std::optional<net::AuthCredentials>& maybe_creds);
 
   class RequestFilter {
    public:

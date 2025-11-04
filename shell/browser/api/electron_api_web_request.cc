@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_web_request.h"
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -26,6 +27,7 @@
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/browser/login_handler.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
@@ -284,9 +286,6 @@ struct WebRequest::BlockedRequest {
   // |callback| must be NULL.
   // Only valid for OnAuthRequired.
   AuthCallback auth_callback;
-  // If non-empty, this contains the auth credentials that may be filled in.
-  // Only valid for OnAuthRequired.
-  raw_ptr<net::AuthCredentials> auth_credentials = nullptr;
   // Only used for onBeforeSendHeaders.
   raw_ptr<net::HttpRequestHeaders> request_headers = nullptr;
   // Only used for onHeadersReceived.
@@ -297,6 +296,8 @@ struct WebRequest::BlockedRequest {
   std::string status_line;
   // Only used for onBeforeRequest.
   raw_ptr<GURL> new_url = nullptr;
+  // Owns the LoginHandler while waiting for auth credentials.
+  std::unique_ptr<LoginHandler> login_handler;
 };
 
 WebRequest::SimpleListenerInfo::SimpleListenerInfo(RequestFilter filter_,
@@ -325,9 +326,6 @@ gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
       .SetMethod(
           "onBeforeSendHeaders",
           &WebRequest::SetResponseListener<ResponseEvent::kOnBeforeSendHeaders>)
-      .SetMethod(
-          "onAuthRequired",
-          &WebRequest::SetResponseListener<ResponseEvent::kOnAuthRequired>)
       .SetMethod(
           "onHeadersReceived",
           &WebRequest::SetResponseListener<ResponseEvent::kOnHeadersReceived>)
@@ -604,33 +602,28 @@ WebRequest::AuthRequiredResponse WebRequest::OnAuthRequired(
     const net::AuthChallengeInfo& auth_info,
     WebRequest::AuthCallback callback,
     net::AuthCredentials* credentials) {
-  const auto iter = response_listeners_.find(ResponseEvent::kOnAuthRequired);
-  if (iter == std::end(response_listeners_))
-    return AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_NO_ACTION;
-
-  const auto& info = iter->second;
-  if (!info.filter.MatchesRequest(request_info))
-    return AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_NO_ACTION;
-
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  gin_helper::Dictionary details(isolate, v8::Object::New(isolate));
-  FillDetails(&details, request_info);
-  details.Set("isProxy", auth_info.is_proxy);
-  details.Set("scheme", auth_info.scheme);
-  details.Set("host", auth_info.challenger.host());
-  details.Set("port", static_cast<int>(auth_info.challenger.port()));
-  details.Set("realm", auth_info.realm);
+  content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(
+      request_info->render_process_id, request_info->frame_routing_id);
+  content::WebContents* web_contents = nullptr;
+  if (rfh)
+    web_contents = content::WebContents::FromRenderFrameHost(rfh);
 
   BlockedRequest blocked_request;
   blocked_request.auth_callback = std::move(callback);
-  blocked_request.auth_credentials = credentials;
   blocked_requests_[request_info->id] = std::move(blocked_request);
 
-  ResponseCallback response =
-      base::BindOnce(&WebRequest::OnAuthRequiredListenerResult,
-                     base::Unretained(this), request_info->id, credentials);
-  info.listener.Run(gin::ConvertToV8(isolate, details), std::move(response));
+  auto login_callback =
+      base::BindOnce(&WebRequest::OnLoginAuthResult, base::Unretained(this),
+                     request_info->id, credentials);
+
+  scoped_refptr<net::HttpResponseHeaders> response_headers =
+      request_info->response_headers;
+  blocked_requests_[request_info->id].login_handler =
+      std::make_unique<LoginHandler>(
+          auth_info, web_contents,
+          static_cast<base::ProcessId>(request_info->render_process_id),
+          request_info->url, response_headers, std::move(login_callback));
+
   return AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_IO_PENDING;
 }
 
@@ -763,44 +756,23 @@ void WebRequest::HandleSimpleEvent(SimpleEvent event,
   info.listener.Run(gin::ConvertToV8(isolate, details));
 }
 
-void WebRequest::OnAuthRequiredListenerResult(uint64_t id,
-                                              net::AuthCredentials* credentials,
-                                              v8::Local<v8::Value> response) {
-  const auto iter = blocked_requests_.find(id);
-  if (iter == std::end(blocked_requests_))
-    return;
-
-  auto& request = iter->second;
-  DCHECK(!request.auth_callback.is_null());
+void WebRequest::OnLoginAuthResult(
+    uint64_t id,
+    net::AuthCredentials* credentials,
+    const std::optional<net::AuthCredentials>& maybe_creds) {
+  auto iter = blocked_requests_.find(id);
+  if (iter == blocked_requests_.end())
+    NOTREACHED();
 
   AuthRequiredResponse action =
       AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_NO_ACTION;
-  if (response->IsObject()) {
-    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    gin::Dictionary dict(isolate, response.As<v8::Object>());
-    bool cancel = false;
-    dict.Get("cancel", &cancel);
-    if (cancel) {
-      action = AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_CANCEL_AUTH;
-    } else {
-      v8::Local<v8::Value> creds_value;
-      if (dict.Get("authCredentials", &creds_value) &&
-          creds_value->IsObject()) {
-        gin::Dictionary creds_dict(isolate, creds_value.As<v8::Object>());
-        std::string username;
-        std::string password;
-        creds_dict.Get("username", &username);
-        creds_dict.Get("password", &password);
-        if (!username.empty() || !password.empty()) {
-          *credentials = net::AuthCredentials(base::ASCIIToUTF16(username),
-                                              base::ASCIIToUTF16(password));
-          action = AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_SET_AUTH;
-        }
-      }
-    }
+  if (maybe_creds.has_value()) {
+    *credentials = maybe_creds.value();
+    action = AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_SET_AUTH;
   }
+
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
-      FROM_HERE, base::BindOnce(std::move(request.auth_callback), action));
+      FROM_HERE, base::BindOnce(std::move(iter->second.auth_callback), action));
   blocked_requests_.erase(iter);
 }
 
