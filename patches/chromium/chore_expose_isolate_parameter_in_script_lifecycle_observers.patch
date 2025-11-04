@@ -245,10 +245,10 @@ index 16066fe34ee0335a0dabe00b6890e5844349c0b5..cc84479f65bdbe56cb4b38bfcef0d752
  
    // Returns true if we should allow register V8 extensions to be added.
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index d46f3b764f653c990e57fb2c67121c8fd6b1b115..fe30a119d9befbde7c461637cf670a4b861efe05 100644
+index 80ee0065d1b16520389b6809402438f087430fa3..3991bc8caee23bb4129eedf7213a770d19439290 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
-@@ -426,7 +426,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
+@@ -428,7 +428,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
                                int32_t world_id) override {}
    void DidInstallConditionalFeatures(v8::Local<v8::Context>,
                                       int32_t world_id) override {}

@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 2a127468d8fcb1d24c2e05ce0e54528386686dff..430ceff387516f71fac947017df1e45e4929f164 100644
+index 915b9ee6137c0aa4e8d68fa7484c0dca4d933ed5..60198ccd9bf560eb5ad47a2355abb3bfd3ce7de6 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1069,6 +1069,7 @@ component("base") {
@@ -581,7 +581,7 @@ index 6f3496b2541fa21fd0bba1d95026eab30e3ab96d..ef481cd946a15f5eaba928fa4e720e6c
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 4d4d187ad8c62c4e18454b385c8003a5c478d3ad..20c94074e61cffcf2806fa6b713b0603631f98f8 100644
+index e2da5b711ce506cefce52f95c8da10d08ac055c1..f0e5f62eca84deb25cd4566f9d75ade8316272ee 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -343,6 +343,7 @@ source_set("browser") {
@@ -796,7 +796,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 88911eb5fe3d6e6423b12e2116704988cd032592..5852f0936d8a8de32fcce44f9833fca8aa4fcd7f 100644
+index 8cf282bec04846cfccae6d4ff8a842c7d192cb6d..949e9405860efae0f6b4814fd29c05af721c9237 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -703,6 +703,7 @@ static_library("test_support") {
@@ -824,7 +824,7 @@ index 88911eb5fe3d6e6423b12e2116704988cd032592..5852f0936d8a8de32fcce44f9833fca8
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3403,6 +3407,7 @@ test("content_unittests") {
+@@ -3404,6 +3408,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",

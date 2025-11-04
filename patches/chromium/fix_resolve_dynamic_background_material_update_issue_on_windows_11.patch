@@ -8,7 +8,7 @@ such as the background turning black when maximizing the window and
 dynamic background material settings not taking effect.
 
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 956dc87cb07559038a63cec0b5174cec09619bdb..68635b0c0153c3464ab6c7d317177098a7ec644c 100644
+index 5a1f74a2efaf2bbfb8f9dc27e4b97f78f5b01a65..ed3a1f7764709d0e735ecf352dad832ad6b305a9 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 @@ -183,6 +183,10 @@ void DesktopWindowTreeHostWin::FinishTouchDrag(gfx::Point screen_point) {
