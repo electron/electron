@@ -156,18 +156,18 @@ async function main () {
     })
     .map(test => `test/js/${test}`);
 
-  // Get list of files in NAN_DIR/node_modules/.bin
-  console.log(`Dumping NAN_DIR: ${path.resolve(NAN_DIR)}`);
-  const nanFiles = fs.readdirSync(path.resolve(NAN_DIR));
-  console.log(`Found NAN_DIR files: ${nanFiles.join(', ')}`);
-  console.log(`Dumping NAN_DIR/node_modules: ${path.resolve(NAN_DIR, 'node_modules')}`);
-  const nmFiles = fs.readdirSync(path.resolve(NAN_DIR, 'node_modules'));
-  console.log(`Found node_modules files: ${nmFiles.join(', ')}`);
-  console.log(`Dumping NAN_DIR/node_modules/.bin: ${path.resolve(NAN_DIR, 'node_modules', '.bin')}`);
-  const binFiles = fs.readdirSync(path.resolve(NAN_DIR, 'node_modules', '.bin'));
-  console.log(`Found node_modules bin files: ${binFiles.join(', ')}`);
-
-  const testChild = cp.spawn(utils.getAbsoluteElectronExec(), ['node_modules/.bin/tap', ...testsToRun], {
+  // Run node script/yarn.js bin tap to get location of tap binary
+  const { status: binStatus, signal: binSignal, stdout: tapPath } = cp.spawnSync(process.execPath, [YARN_SCRIPT_PATH, 'bin', 'tap'], {
+    env,
+    cwd: NAN_DIR,
+    stdio: 'inherit',
+    shell: process.platform === 'win32'
+  });
+  if (binStatus !== 0 || binSignal != null) {
+    console.error('Failed to get tap binary via yarn');
+    return process.exit(binStatus !== 0 ? binStatus : binSignal);
+  }
+  const testChild = cp.spawn(utils.getAbsoluteElectronExec(), [tapPath, ...testsToRun], {
     env: {
       ...process.env,
       ELECTRON_RUN_AS_NODE: 'true'
