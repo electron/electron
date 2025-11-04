@@ -10,10 +10,10 @@ on Windows.  We should refactor our code so that this patch isn't
 necessary.
 
 diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
-index d17495e674e0455ef8b487714559efd688d375a1..dada6a92c2dd8b19a2001960da570744ad027858 100644
+index 4d91ef6f19fb4cd957954155b303c66c48694896..8f8b98d4f616a7d9a2f60db1f22b4f279e5c7804 100644
 --- a/testing/variations/fieldtrial_testing_config.json
 +++ b/testing/variations/fieldtrial_testing_config.json
-@@ -25581,6 +25581,21 @@
+@@ -25624,6 +25624,21 @@
              ]
          }
      ],
@@ -67,7 +67,7 @@ index c1d8107ec3e32d31811572aa1d7a7c7a242da7d9..463abf871c7e169dc1ca9f523d74fc14
  
  }  // namespace views::features
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index d58b59288d881a2d74ea357f1e9e27870d24ac72..956dc87cb07559038a63cec0b5174cec09619bdb 100644
+index fd23b8036c7f2d8bf3ed1bba126f8ee813f688a8..5a1f74a2efaf2bbfb8f9dc27e4b97f78f5b01a65 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 @@ -84,6 +84,23 @@ namespace {
@@ -219,7 +219,7 @@ index d58b59288d881a2d74ea357f1e9e27870d24ac72..956dc87cb07559038a63cec0b5174cec
  }
  
  gfx::Rect
-@@ -917,21 +956,29 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
+@@ -917,18 +956,26 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
  
  void DesktopWindowTreeHostWin::GetWindowMask(const gfx::Size& size_px,
                                               SkPath* path) {
@@ -239,10 +239,7 @@ index d58b59288d881a2d74ea357f1e9e27870d24ac72..956dc87cb07559038a63cec0b5174cec
 -  if (!path->isEmpty()) {
 -    const float scale =
 -        display::win::GetScreenWin()->GetScaleFactorForHWND(GetHWND());
--    SkScalar sk_scale = SkFloatToScalar(scale);
--    SkMatrix matrix;
--    matrix.setScale(sk_scale, sk_scale);
--    path->transform(matrix);
+-    *path = path->makeTransform(SkMatrix::Scale(scale, scale));
 +  if (Widget* widget = GetWidget(); widget && widget->non_client_view()) {
 +    widget->non_client_view()->GetWindowMask(
 +        display::win::GetScreenWin()->ScreenToDIPSize(GetHWND(),
@@ -252,10 +249,7 @@ index d58b59288d881a2d74ea357f1e9e27870d24ac72..956dc87cb07559038a63cec0b5174cec
 +    if (!path->isEmpty()) {
 +      const float scale =
 +          display::win::GetScreenWin()->GetScaleFactorForHWND(GetHWND());
-+      SkScalar sk_scale = SkFloatToScalar(scale);
-+      SkMatrix matrix;
-+      matrix.setScale(sk_scale, sk_scale);
-+      path->transform(matrix);
++      *path = path->makeTransform(SkMatrix::Scale(scale, scale));
 +    }
 +  } else if (!window_enlargement_.IsZero()) {
 +    path->addRect(SkRect::MakeXYWH(0, 0, adjusted_size_in_px.width(),
