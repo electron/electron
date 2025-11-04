@@ -8,7 +8,6 @@
 #include <string>
 
 #include "content/public/renderer/render_frame_observer.h"
-#include "ipc/platform_file_for_transit.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 namespace electron {
@@ -40,8 +39,6 @@ class ElectronRenderFrameObserver : private content::RenderFrameObserver {
   [[nodiscard]] bool ShouldNotifyClient(int world_id) const;
 
   void CreateIsolatedWorldContext();
-  void OnTakeHeapSnapshot(IPC::PlatformFileForTransit file_handle,
-                          const std::string& channel);
 
   bool has_delayed_node_initialization_ = false;
   raw_ptr<content::RenderFrame> render_frame_;
