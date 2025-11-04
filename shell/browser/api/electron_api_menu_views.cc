@@ -10,6 +10,7 @@
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/native_window_views.h"
+#include "shell/common/callback_util.h"
 #include "ui/display/screen.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
@@ -54,7 +55,7 @@ void MenuViews::PopupAt(BaseWindow* window,
   // callback, it is fine passing OnceCallback to it because we reset the
   // menu runner immediately when the menu is closed.
   int32_t window_id = window->weak_map_id();
-  auto close_callback = base::AdaptCallbackForRepeating(
+  auto close_callback = electron::AdaptCallbackForRepeating(
       base::BindOnce(&MenuViews::OnClosed, weak_factory_.GetWeakPtr(),
                      window_id, std::move(callback_with_ref)));
   auto& runner = menu_runners_[window_id] =
