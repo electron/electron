@@ -56,6 +56,7 @@
 #include "electron/fuses.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "extensions/common/extension_id.h"
+#include "ipc/constants.mojom.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
 #include "mojo/public/cpp/bindings/self_owned_associated_receiver.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -1388,8 +1389,8 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
   new ProxyingURLLoaderFactory(
       web_request.get(), protocol_registry->intercept_handlers(),
       render_process_id,
-      frame_host ? frame_host->GetRoutingID() : MSG_ROUTING_NONE, &next_id_,
-      std::move(navigation_ui_data), std::move(navigation_id),
+      frame_host ? frame_host->GetRoutingID() : IPC::mojom::kRoutingIdNone,
+      &next_id_, std::move(navigation_ui_data), std::move(navigation_id),
       std::move(proxied_receiver), std::move(target_factory_remote),
       std::move(header_client_receiver), type);
 }
