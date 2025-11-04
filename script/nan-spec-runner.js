@@ -166,6 +166,14 @@ async function main () {
     console.error('Failed to get tap binary via yarn');
     return process.exit(binStatus !== 0 ? binStatus : binSignal);
   }
+  console.log(`Using tap binary at: ${tapPath.toString().trim()}`);
+  // check if tapPath exists
+  if (!fs.existsSync(tapPath.toString().trim())) {
+    console.error('Tap binary does not exist at the path returned by yarn');
+    const tapDir = path.dirname(tapPath.toString().trim());
+    console.error(`Tap binary directory contents: ${fs.readdirSync(tapDir).join(', ')}`);
+    return process.exit(1);
+  }
   const testChild = cp.spawn(utils.getAbsoluteElectronExec(), [tapPath, ...testsToRun], {
     env: {
       ...process.env,
