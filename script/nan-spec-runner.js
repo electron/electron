@@ -124,6 +124,19 @@ async function main () {
     console.log('Successfully built nan test modules');
   }
 
+  const nodeLinkerArgs = ['config', 'set', 'nodeLinker', 'node-modules'];
+  const { status: yarnCfgStatus, signal: yarnCfgSignal } = cp.spawnSync(process.execPath, [YARN_SCRIPT_PATH, ...nodeLinkerArgs], {
+    env,
+    cwd: NAN_DIR,
+    stdio: 'inherit',
+    shell: process.platform === 'win32'
+  });
+
+  if (yarnCfgStatus !== 0 || yarnCfgSignal != null) {
+    console.error('Failed to set yarn config');
+    return process.exit(yarnCfgStatus !== 0 ? yarnCfgStatus : yarnCfgSignal);
+  }
+
   const { status: installStatus, signal: installSignal } = cp.spawnSync(process.execPath, [YARN_SCRIPT_PATH, 'install', '--inline-builds'], {
     env,
     cwd: NAN_DIR,
@@ -156,25 +169,7 @@ async function main () {
     })
     .map(test => `test/js/${test}`);
 
-  // Run node script/yarn.js bin tap to get location of tap binary
-  const { status: binStatus, signal: binSignal, stdout: tapPath } = cp.spawnSync(process.execPath, [YARN_SCRIPT_PATH, 'bin', 'tap'], {
-    env,
-    cwd: NAN_DIR,
-    shell: process.platform === 'win32'
-  });
-  if (binStatus !== 0 || binSignal != null || !tapPath) {
-    console.error('Failed to get tap binary via yarn');
-    return process.exit(binStatus !== 0 ? binStatus : binSignal);
-  }
-  console.log(`Using tap binary at: ${tapPath.toString().trim()}`);
-  // check if tapPath exists
-  if (!fs.existsSync(tapPath.toString().trim())) {
-    console.error('Tap binary does not exist at the path returned by yarn');
-    const tapDir = path.dirname(tapPath.toString().trim());
-    console.error(`Tap binary directory contents: ${fs.readdirSync(tapDir).join(', ')}`);
-    return process.exit(1);
-  }
-  const testChild = cp.spawn(utils.getAbsoluteElectronExec(), [tapPath, ...testsToRun], {
+  const testChild = cp.spawn(utils.getAbsoluteElectronExec(), ['node_modules/.bin/tap', ...testsToRun], {
     env: {
       ...process.env,
       ELECTRON_RUN_AS_NODE: 'true'
