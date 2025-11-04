@@ -157,6 +157,13 @@ async function main () {
     .map(test => `test/js/${test}`);
 
   // Get list of files in NAN_DIR/node_modules/.bin
+  console.log(`Dumping NAN_DIR: ${path.resolve(NAN_DIR)}`);
+  const nanFiles = fs.readdirSync(path.resolve(NAN_DIR));
+  console.log(`Found NAN_DIR files: ${nanFiles.join(', ')}`);
+  console.log(`Dumping NAN_DIR/node_modules: ${path.resolve(NAN_DIR, 'node_modules')}`);
+  const nmFiles = fs.readdirSync(path.resolve(NAN_DIR, 'node_modules'));
+  console.log(`Found node_modules files: ${nmFiles.join(', ')}`);
+  console.log(`Dumping NAN_DIR/node_modules/.bin: ${path.resolve(NAN_DIR, 'node_modules', '.bin')}`);
   const binFiles = fs.readdirSync(path.resolve(NAN_DIR, 'node_modules', '.bin'));
   console.log(`Found node_modules bin files: ${binFiles.join(', ')}`);
 
