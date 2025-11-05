@@ -239,11 +239,11 @@ class ProxyingURLLoaderFactory
       mojo::PendingReceiver<network::mojom::TrustedHeaderClient> receiver)
       override;
 
-  api::WebRequest* web_request() { return web_request_; }
-
   bool IsForServiceWorkerScript() const;
 
  private:
+  api::WebRequest* web_request() { return web_request_; }
+
   void OnTargetFactoryError();
   void OnProxyBindingError();
   void RemoveRequest(int32_t network_service_request_id, uint64_t request_id);
