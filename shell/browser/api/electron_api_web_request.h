@@ -69,7 +69,6 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
-
   bool HasListener() const;
   int OnBeforeRequest(extensions::WebRequestInfo* info,
                       const network::ResourceRequest& request,
