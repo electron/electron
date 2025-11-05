@@ -766,7 +766,8 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
   auto* isolate_data = node::CreateIsolateData(isolate, uv_loop_, platform);
   isolate_data->max_young_gen_size = max_young_generation_size;
   context->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
-                                           static_cast<void*>(isolate_data));
+                                           static_cast<void*>(isolate_data),
+                                           v8::kEmbedderDataTypeTagDefault);
 
   uint64_t env_flags = node::EnvironmentFlags::kDefaultFlags |
                        node::EnvironmentFlags::kHideConsoleWindows |
@@ -891,7 +892,8 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     // Since we're about to free `isolate_data`, clear that entry
     v8::HandleScope handle_scope{isolate};
     context.Get(isolate)->SetAlignedPointerInEmbedderData(
-        kElectronContextEmbedderDataIndex, nullptr);
+        kElectronContextEmbedderDataIndex, nullptr,
+        v8::kEmbedderDataTypeTagDefault);
     context.Reset();
 
     node::FreeEnvironment(nenv);
