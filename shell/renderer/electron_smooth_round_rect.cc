@@ -302,8 +302,8 @@ SkPath DrawSmoothRoundRect(float x,
              bottom_right_smoothness, SkPoint::Make(x + width, y + height), 2);
 
   // Bottom left corner
-  DrawCorner(path, bottom_left_radius, left_bottom_smoothness,
-             bottom_left_smoothness, SkPoint::Make(x, y + height), 3);
+  DrawCorner(path, bottom_left_radius, bottom_left_smoothness,
+             left_bottom_smoothness, SkPoint::Make(x, y + height), 3);
 
   path.close();
   return path;
