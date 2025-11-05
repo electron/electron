@@ -26,6 +26,9 @@ runs:
         export npm_config_arch="ia32"
       fi
       node script/yarn.js install --immutable --inline-builds
+      if [ "$BUILD_TYPE" = "win" ]; then
+        node script/yarn.js run dugite download-git
+      fi
     env:
       NPM_CONFIG_LOGLEVEL: 'verbose'
       YARN_ENABLE_HARDENED_MODE: ${{ inputs.yarn-hardened-mode }}
