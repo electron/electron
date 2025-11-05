@@ -7,9 +7,11 @@
 
 #include <map>
 #include <set>
+#include <string>
 
 #include "base/memory/raw_ptr.h"
-#include "shell/browser/net/web_request_api_interface.h"
+#include "net/base/completion_once_callback.h"
+#include "services/network/public/cpp/resource_request.h"
 #include "shell/common/gin_helper/wrappable.h"
 
 class URLPattern;
@@ -19,6 +21,7 @@ class BrowserContext;
 }
 
 namespace extensions {
+struct WebRequestInfo;
 enum class WebRequestResourceType : uint8_t;
 }  // namespace extensions
 
@@ -33,9 +36,13 @@ class Handle;
 
 namespace electron::api {
 
-class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest>,
-                         public WebRequestAPI {
+class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
  public:
+  using BeforeSendHeadersCallback =
+      base::OnceCallback<void(const std::set<std::string>& removed_headers,
+                              const std::set<std::string>& set_headers,
+                              int error_code)>;
+
   // Return the WebRequest object attached to |browser_context|, create if there
   // is no one.
   // Note that the lifetime of WebRequest object is managed by Session, instead
@@ -62,38 +69,38 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest>,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
-  // WebRequestAPI:
-  bool HasListener() const override;
+
+  bool HasListener() const;
   int OnBeforeRequest(extensions::WebRequestInfo* info,
                       const network::ResourceRequest& request,
                       net::CompletionOnceCallback callback,
-                      GURL* new_url) override;
+                      GURL* new_url);
   int OnBeforeSendHeaders(extensions::WebRequestInfo* info,
                           const network::ResourceRequest& request,
                           BeforeSendHeadersCallback callback,
-                          net::HttpRequestHeaders* headers) override;
+                          net::HttpRequestHeaders* headers);
   int OnHeadersReceived(
       extensions::WebRequestInfo* info,
       const network::ResourceRequest& request,
       net::CompletionOnceCallback callback,
       const net::HttpResponseHeaders* original_response_headers,
       scoped_refptr<net::HttpResponseHeaders>* override_response_headers,
-      GURL* allowed_unsafe_redirect_url) override;
+      GURL* allowed_unsafe_redirect_url);
   void OnSendHeaders(extensions::WebRequestInfo* info,
                      const network::ResourceRequest& request,
-                     const net::HttpRequestHeaders& headers) override;
+                     const net::HttpRequestHeaders& headers);
   void OnBeforeRedirect(extensions::WebRequestInfo* info,
                         const network::ResourceRequest& request,
-                        const GURL& new_location) override;
+                        const GURL& new_location);
   void OnResponseStarted(extensions::WebRequestInfo* info,
-                         const network::ResourceRequest& request) override;
+                         const network::ResourceRequest& request);
   void OnErrorOccurred(extensions::WebRequestInfo* info,
                        const network::ResourceRequest& request,
-                       int net_error) override;
+                       int net_error);
   void OnCompleted(extensions::WebRequestInfo* info,
                    const network::ResourceRequest& request,
-                   int net_error) override;
-  void OnRequestWillBeDestroyed(extensions::WebRequestInfo* info) override;
+                   int net_error);
+  void OnRequestWillBeDestroyed(extensions::WebRequestInfo* info);
 
  private:
   WebRequest(v8::Isolate* isolate, content::BrowserContext* browser_context);

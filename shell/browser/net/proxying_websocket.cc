@@ -17,7 +17,7 @@
 namespace electron {
 
 ProxyingWebSocket::ProxyingWebSocket(
-    WebRequestAPI* web_request_api,
+    api::WebRequest* web_request_api,
     WebSocketFactory factory,
     const network::ResourceRequest& request,
     mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
@@ -219,7 +219,7 @@ void ProxyingWebSocket::OnHeadersReceived(const std::string& headers,
 }
 
 void ProxyingWebSocket::StartProxying(
-    WebRequestAPI* web_request_api,
+    api::WebRequest* web_request_api,
     WebSocketFactory factory,
     const GURL& url,
     const net::SiteForCookies& site_for_cookies,

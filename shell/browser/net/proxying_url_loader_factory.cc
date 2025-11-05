@@ -732,7 +732,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnRequestError(
 }
 
 ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
-    WebRequestAPI* web_request_api,
+    api::WebRequest* web_request_api,
     const HandlersMap& intercepted_handlers,
     int render_process_id,
     int frame_routing_id,

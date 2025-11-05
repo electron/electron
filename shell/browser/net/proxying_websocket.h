@@ -19,7 +19,7 @@
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/websocket.mojom.h"
-#include "shell/browser/net/web_request_api_interface.h"
+#include "shell/browser/api/electron_api_web_request.h"
 #include "url/gurl.h"
 #include "url/origin.h"
 
@@ -52,7 +52,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   };
 
   ProxyingWebSocket(
-      WebRequestAPI* web_request_api,
+      api::WebRequest* web_request_api,
       WebSocketFactory factory,
       const network::ResourceRequest& request,
       mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
@@ -97,7 +97,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
                          OnHeadersReceivedCallback callback) override;
 
   static void StartProxying(
-      WebRequestAPI* web_request_api,
+      api::WebRequest* web_request_api,
       WebSocketFactory factory,
       const GURL& url,
       const net::SiteForCookies& site_for_cookies,
@@ -136,7 +136,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   void OnMojoConnectionError();
 
   // Passed from api::WebRequest.
-  raw_ptr<WebRequestAPI> web_request_api_;
+  raw_ptr<api::WebRequest> web_request_api_;
 
   // Saved to feed the api::WebRequest.
   network::ResourceRequest request_;

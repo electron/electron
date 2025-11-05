@@ -145,8 +145,9 @@ void ElectronExtensionLoader::FinishExtensionLoad(
   if (extension) {
     extension_registrar_->AddExtension(extension);
 
-    // Write extension install time to ExtensionPrefs. This is required by
-    // WebRequestAPI which calls extensions::ExtensionPrefs::GetInstallTime.
+    // Write extension install time to ExtensionPrefs.
+    // This is required by extensions::WebRequestAPI
+    // which calls extensions::ExtensionPrefs::GetInstallTime.
     //
     // Implementation for writing the pref was based on
     // PreferenceAPIBase::SetExtensionControlledPref.
