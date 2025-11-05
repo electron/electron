@@ -197,7 +197,7 @@ class ProxyingURLLoaderFactory
   };
 
   ProxyingURLLoaderFactory(
-      api::WebRequest* web_request_api,
+      api::WebRequest* web_request,
       const HandlersMap& intercepted_handlers,
       int render_process_id,
       int frame_routing_id,
@@ -239,7 +239,7 @@ class ProxyingURLLoaderFactory
       mojo::PendingReceiver<network::mojom::TrustedHeaderClient> receiver)
       override;
 
-  api::WebRequest* web_request_api() { return web_request_api_; }
+  api::WebRequest* web_request() { return web_request_; }
 
   bool IsForServiceWorkerScript() const;
 
@@ -251,8 +251,7 @@ class ProxyingURLLoaderFactory
 
   bool ShouldIgnoreConnectionsLimit(const network::ResourceRequest& request);
 
-  // Passed from api::WebRequest.
-  raw_ptr<api::WebRequest> web_request_api_;
+  raw_ptr<api::WebRequest> web_request_;
 
   // This is passed from api::Protocol.
   //

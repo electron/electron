@@ -52,7 +52,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   };
 
   ProxyingWebSocket(
-      api::WebRequest* web_request_api,
+      api::WebRequest* web_request,
       WebSocketFactory factory,
       const network::ResourceRequest& request,
       mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
@@ -97,7 +97,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
                          OnHeadersReceivedCallback callback) override;
 
   static void StartProxying(
-      api::WebRequest* web_request_api,
+      api::WebRequest* web_request,
       WebSocketFactory factory,
       const GURL& url,
       const net::SiteForCookies& site_for_cookies,
@@ -136,7 +136,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   void OnMojoConnectionError();
 
   // Passed from api::WebRequest.
-  raw_ptr<api::WebRequest> web_request_api_;
+  raw_ptr<api::WebRequest> web_request_;
 
   // Saved to feed the api::WebRequest.
   network::ResourceRequest request_;
