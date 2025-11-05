@@ -75,6 +75,3 @@ enable_linux_installer = false
 
 # Disable "Save to Drive" feature in PDF viewer
 enable_pdf_save_to_drive = false
-
-# Explictly disable use_reclient until reclient is completely removed
-use_reclient = false
