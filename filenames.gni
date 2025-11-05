@@ -580,6 +580,7 @@ filenames = {
     "shell/common/asar/asar_util.h",
     "shell/common/asar/scoped_temporary_file.cc",
     "shell/common/asar/scoped_temporary_file.h",
+    "shell/common/callback_util.h",
     "shell/common/color_util.cc",
     "shell/common/color_util.h",
     "shell/common/crash_keys.cc",
