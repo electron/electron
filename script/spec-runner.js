@@ -430,19 +430,6 @@ async function installSpecModules (dir) {
     console.log(`${fail} Failed to yarn install in '${dir}'`);
     process.exit(1);
   }
-  if (process.platform === 'win32') {
-    const dugInstallArgs = [YARN_SCRIPT_PATH, 'run', 'dugite', 'download-git'];
-    const { dugStatus } = childProcess.spawnSync(process.execPath, dugInstallArgs, {
-      env,
-      cwd: dir,
-      stdio: 'inherit',
-      shell: process.platform === 'win32'
-    });
-    if (dugStatus !== 0 && !process.env.IGNORE_YARN_INSTALL_ERROR) {
-      console.log(`${fail} Failed to download git for dugite.`);
-      process.exit(1);
-    }
-  }
 }
 
 function getSpecHash () {
