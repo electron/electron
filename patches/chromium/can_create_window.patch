@@ -21,7 +21,7 @@ index 204d1908aa403c0db48c4a40c5f2068c6453e16e..034e8a1204badd4facef51a048f12e7c
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index f93c1c23b64113264137bd6072addaaf84c23857..718df2a14b3fc7f0a828ce650ad0306e157c7341 100644
+index 1970be34f8dea7839b9b4fc494edb03f126880cd..e7f0d19cce740e286ef0e833d1aeaa62722f3f85 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5382,6 +5382,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -77,7 +77,7 @@ index 599077542beacefc94f9e7ce6167312c9d66aaae..389896afb982dd0fc48274857c18fcd9
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index c7a3d91b090fe8f720967c24575af660cf85820e..0a783879995f11116e87570ee302d66b0a910cac 100644
+index 759d220cdd24a099cbe3080d822f24b666717b22..f7d2f76eeca29b1e48143a887fd4836db8d07872 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -884,6 +884,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -90,7 +90,7 @@ index c7a3d91b090fe8f720967c24575af660cf85820e..0a783879995f11116e87570ee302d66b
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index b28b86b461be3b3cb30ec379ce20328c1bd53600..251ec7f0c239f5ad4844a4b0a2adaf92b7930b47 100644
+index 0d0e5e0eabbcb8ce19b675dadf5580f8381fb8ce..b10f6ae7612556e2f4cff60d38a88b5f1ad1757d 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -203,6 +203,7 @@ class NetworkService;

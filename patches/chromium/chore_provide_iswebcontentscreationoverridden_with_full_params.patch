@@ -223,7 +223,7 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index f0fa45a50aaf07ee3f3db44b52ca09197786ddb4..bfbed6585f8c0dd26aaaaaf7852b572a93770b76 100644
+index e9e4fa4ce6be3dbd03fd75a80b838591d6798cdc..bb41ba516a1ff3750459a235c4b2ecf55754a538 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5316,8 +5316,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -385,7 +385,7 @@ index 756d4192271d6a65cfe8e1511737c565b543cb1f..5688f6f745056565c3c01947f741c4d1
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index d02d9468560eb451753fd56aa46bc4f191535e95..6e5c10f94a16039dc90cb2bdf90c4c854afc8a53 100644
+index 3af22f9e041996cedebc1d9ffd402e9fcccceaea..e488b8d4d8f81ad2a0b8a6a1cc13fb886fd26e62 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
 @@ -208,8 +208,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
