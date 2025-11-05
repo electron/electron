@@ -14,7 +14,7 @@ vars = {
   'mantle_version':
     '78d3966b3c331292ea29ec38661b25df0a245948',
   'engflow_reclient_configs_version':
-    '955335c30a752e9ef7bff375baab5e0819b6c00d',
+    'd3a4d5e20f46c7cc771cf59cf6bd8e6f3c763ee1',
 
   'pyyaml_version': '3.12',
 
