@@ -20,6 +20,7 @@
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "ui/compositor/layer.h"
 #include "ui/views/animation/animation_builder.h"
 #include "ui/views/background.h"
 #include "ui/views/layout/flex_layout.h"
@@ -315,9 +316,27 @@ void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
     tween_type = gfx::Tween::EASE_IN_OUT;
   }
 
-  gfx::Rect size = gfx::Rect(0, 0, bounds.width(), bounds.height());
+  gfx::Rect current_bounds = view_->bounds();
+
+  gfx::Rect current_size =
+      gfx::Rect(0, 0, current_bounds.width(), current_bounds.height());
+  gfx::Rect target_size = gfx::Rect(0, 0, bounds.width(), bounds.height());
+
+  gfx::Rect max_size =
+      gfx::Rect(0, 0, std::max(current_bounds.width(), bounds.width()),
+                std::max(current_bounds.height(), bounds.height()));
 
   view_->SetPaintToLayer();
+
+  // if the view's size is smaller than the target size, we need to set the
+  // view's bounds immediatley to the new size (not position) and set the
+  // layer's clip rect to animate from there.
+  if (view_->width() < bounds.width() || view_->height() < bounds.height()) {
+    view_->SetBoundsRect(gfx::Rect(current_bounds.origin(), max_size.size()));
+
+    ui::Layer* layer = view_->layer();
+    layer->SetClipRect(current_size);
+  }
 
   views::AnimationBuilder()
       .SetPreemptionStrategy(
@@ -332,7 +351,7 @@ void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
       .SetDuration(base::Milliseconds(duration))
       .SetBounds(view_, bounds, tween_type)
       .SetClipRect(
-          view_, size,
+          view_, target_size,
           tween_type);  // We have to set the clip rect independently of the
                         // bounds, because animating the bounds of the layer
                         // will not animate the underlying view's bounds.
