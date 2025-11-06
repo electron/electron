@@ -76,7 +76,8 @@ class PreloadRealmLifetimeController
     }
     auto* controller = static_cast<PreloadRealmLifetimeController*>(
         context->GetAlignedPointerFromEmbedderData(
-            kElectronContextEmbedderDataIndex));
+            kElectronContextEmbedderDataIndex,
+            v8::kEmbedderDataTypeTagDefault));
     CHECK(controller);
     return controller;
   }

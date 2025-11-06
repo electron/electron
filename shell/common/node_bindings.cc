@@ -551,7 +551,7 @@ node::IsolateData* NodeBindings::isolate_data(
   }
   auto* isolate_data = static_cast<node::IsolateData*>(
       context->GetAlignedPointerFromEmbedderData(
-          kElectronContextEmbedderDataIndex));
+          kElectronContextEmbedderDataIndex, v8::kEmbedderDataTypeTagDefault));
   CHECK(isolate_data);
   CHECK(isolate_data->event_loop());
   return isolate_data;
