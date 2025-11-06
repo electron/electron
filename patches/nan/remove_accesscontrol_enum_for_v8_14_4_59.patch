@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Thu, 6 Nov 2025 15:17:50 -0500
+Subject: Remove AccessControl enum for v8 14.4.59
+
+xref: [api] Remove deprecated interceptor callback types
+and AccessControl enum.
+
+https://chromium-review.googlesource.com/c/v8/v8/+/7112747
+
+diff --git a/nan.h b/nan.h
+index 20ec9daca6befd0ff2bf7eff6a164d4e47a545aa..c6187a9e428e744baa2941f4f5a0ed589cdd3440 100644
+--- a/nan.h
++++ b/nan.h
+@@ -2596,7 +2596,11 @@ NAN_DEPRECATED inline void SetAccessor(
+   , GetterCallback getter
+   , SetterCallback setter
+   , v8::Local<v8::Value> data
++#if !defined(V8_MAJOR_VERSION) || V8_MAJOR_VERSION < 14 || \
++    (V8_MAJOR_VERSION == 14 && (!defined(V8_MINOR_VERSION) || V8_MINOR_VERSION < 4)) || \
++    (V8_MAJOR_VERSION == 14 && V8_MINOR_VERSION == 4 && (!defined(V8_BUILD_NUMBER) || V8_BUILD_NUMBER < 59))
+   , v8::AccessControl settings
++#endif
+   , v8::PropertyAttribute attribute
+   , imp::Sig signature) {
+   HandleScope scope;
+@@ -2651,7 +2655,11 @@ inline void SetAccessor(
+   , GetterCallback getter
+   , SetterCallback setter = 0
+   , v8::Local<v8::Value> data = v8::Local<v8::Value>()
++#if !defined(V8_MAJOR_VERSION) || V8_MAJOR_VERSION < 14 || \
++    (V8_MAJOR_VERSION == 14 && (!defined(V8_MINOR_VERSION) || V8_MINOR_VERSION < 4)) || \
++    (V8_MAJOR_VERSION == 14 && V8_MINOR_VERSION == 4 && (!defined(V8_BUILD_NUMBER) || V8_BUILD_NUMBER < 59))
+   , v8::AccessControl settings = v8::DEFAULT
++#endif
+   , v8::PropertyAttribute attribute = v8::None) {
+   HandleScope scope;
+ 
+@@ -2702,7 +2710,11 @@ inline bool SetAccessor(
+   , GetterCallback getter
+   , SetterCallback setter = 0
+   , v8::Local<v8::Value> data = v8::Local<v8::Value>()
++#if !defined(V8_MAJOR_VERSION) || V8_MAJOR_VERSION < 14 || \
++    (V8_MAJOR_VERSION == 14 && (!defined(V8_MINOR_VERSION) || V8_MINOR_VERSION < 4)) || \
++    (V8_MAJOR_VERSION == 14 && V8_MINOR_VERSION == 4 && (!defined(V8_BUILD_NUMBER) || V8_BUILD_NUMBER < 59))
+   , v8::AccessControl settings = v8::DEFAULT
++#endif
+   , v8::PropertyAttribute attribute = v8::None) {
+   HandleScope scope;
+ 
