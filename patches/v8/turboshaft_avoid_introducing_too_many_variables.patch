@@ -23,10 +23,10 @@ Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#103534}
 
 diff --git a/src/compiler/turboshaft/branch-elimination-reducer.h b/src/compiler/turboshaft/branch-elimination-reducer.h
-index c1862c2f1eeb2f4c8d8f1198d41e1f6113adb258..bf15cd9efc16fddaf99f959344c54257d6dfe21c 100644
+index f115c86894f0cf739d6381f7844e5589831cc209..d917d27bd3964ba07b41efa49b86435ae7720064 100644
 --- a/src/compiler/turboshaft/branch-elimination-reducer.h
 +++ b/src/compiler/turboshaft/branch-elimination-reducer.h
-@@ -371,6 +371,10 @@ class BranchEliminationReducer : public Next {
+@@ -323,6 +323,10 @@ class BranchEliminationReducer : public Next {
        goto no_change;
      }
  
@@ -38,7 +38,7 @@ index c1862c2f1eeb2f4c8d8f1198d41e1f6113adb258..bf15cd9efc16fddaf99f959344c54257
        V<Word32> condition =
            __ template MapToNewGraph<true>(branch->condition());
 diff --git a/src/compiler/turboshaft/copying-phase.h b/src/compiler/turboshaft/copying-phase.h
-index ae9a67b8406214246cc13780d3b79ddbe7789cb8..14f31ad867f292d7a00ed8b596cd747ac7764c7e 100644
+index c1d20d06016a61927dc1791df44079b0793ba3a0..095b2ed41e6cbd524e364a4b71279262d3f7b8e6 100644
 --- a/src/compiler/turboshaft/copying-phase.h
 +++ b/src/compiler/turboshaft/copying-phase.h
 @@ -714,9 +714,23 @@ class GraphVisitor : public OutputGraphAssembler<GraphVisitor<AfterNext>,
@@ -69,7 +69,7 @@ index ae9a67b8406214246cc13780d3b79ddbe7789cb8..14f31ad867f292d7a00ed8b596cd747a
      }
      // Just going through the regular VisitOp function.
 diff --git a/src/compiler/turboshaft/graph.h b/src/compiler/turboshaft/graph.h
-index 936c8b0269a9b87a4ffa20c40bbd908fb8c69010..a3c1c40e4e7097f518e107d85786c7cc5466e595 100644
+index 030171f54156b2c6c89887856444f99463b3b98a..7fa8245290a0e311150f7ac3d86212bd1943a37c 100644
 --- a/src/compiler/turboshaft/graph.h
 +++ b/src/compiler/turboshaft/graph.h
 @@ -608,6 +608,7 @@ class Graph {
@@ -106,7 +106,7 @@ index 936c8b0269a9b87a4ffa20c40bbd908fb8c69010..a3c1c40e4e7097f518e107d85786c7cc
      op_to_block_.SwapData(companion.op_to_block_);
      source_positions_.SwapData(companion.source_positions_);
      operation_origins_.SwapData(companion.operation_origins_);
-@@ -1206,6 +1212,9 @@ class Graph {
+@@ -1204,6 +1210,9 @@ class Graph {
    GrowingOpIndexSidetable<SourcePosition> source_positions_;
    GrowingOpIndexSidetable<OpIndex> operation_origins_;
    uint32_t dominator_tree_depth_ = 0;
@@ -325,10 +325,10 @@ index 181d298bfa27d21f013016b34a586078d12f8a58..92d6f7b36d4c5c0a64723f7d18427a62
  
  #undef TRACE
 diff --git a/src/compiler/turboshaft/turbolev-graph-builder.cc b/src/compiler/turboshaft/turbolev-graph-builder.cc
-index a716474214131adfcfd95af7e492ec1d83c99893..9fe6313137c97847750b2c3362eb114f5671d0dc 100644
+index 1963ddb4442e450b7f186f517574e31b4d961030..e9db0d8260c784a1da406b7b70d2e623135b572d 100644
 --- a/src/compiler/turboshaft/turbolev-graph-builder.cc
 +++ b/src/compiler/turboshaft/turbolev-graph-builder.cc
-@@ -115,12 +115,7 @@ class BlockOriginTrackingReducer : public Next {
+@@ -104,12 +104,7 @@ class BlockOriginTrackingReducer : public Next {
    }
    void Bind(Block* block) {
      Next::Bind(block);
@@ -342,7 +342,7 @@ index a716474214131adfcfd95af7e492ec1d83c99893..9fe6313137c97847750b2c3362eb114f
      turboshaft_block_origins_[block->index()] = maglev_input_block_;
    }
  
-@@ -516,9 +511,11 @@ class GraphBuildingNodeProcessor {
+@@ -504,9 +499,11 @@ class GraphBuildingNodeProcessor {
        block_mapping_[block] =
            block->is_loop() ? __ NewLoopHeader() : __ NewBlock();
      }
@@ -357,7 +357,7 @@ index a716474214131adfcfd95af7e492ec1d83c99893..9fe6313137c97847750b2c3362eb114f
  
      // Initializing undefined constant so that we don't need to recreate it too
      // often.
-@@ -604,9 +601,20 @@ class GraphBuildingNodeProcessor {
+@@ -590,9 +587,20 @@ class GraphBuildingNodeProcessor {
      Block* turboshaft_block = Map(maglev_block);
  
      if (__ current_block() != nullptr) {
@@ -382,7 +382,7 @@ index a716474214131adfcfd95af7e492ec1d83c99893..9fe6313137c97847750b2c3362eb114f
  
  #ifdef DEBUG
 diff --git a/src/compiler/turboshaft/variable-reducer.h b/src/compiler/turboshaft/variable-reducer.h
-index ccc19512d40bbc06071d499b012b5a6fa059d706..f4c75010845bc86c5b79d3a2429dac77835e32f8 100644
+index b11338bdf6e928cd09a0bdbad42fd835c8210c36..03cc2fa77f0d4a194893a8be5747d6de887e5ee9 100644
 --- a/src/compiler/turboshaft/variable-reducer.h
 +++ b/src/compiler/turboshaft/variable-reducer.h
 @@ -9,6 +9,7 @@
@@ -409,7 +409,7 @@ index ccc19512d40bbc06071d499b012b5a6fa059d706..f4c75010845bc86c5b79d3a2429dac77
    void Bind(Block* new_block) {
      Next::Bind(new_block);
  
-@@ -191,6 +201,26 @@ class VariableReducer : public RequiredOptimizationReducer<AfterNext> {
+@@ -190,6 +200,26 @@ class VariableReducer : public RequiredOptimizationReducer<AfterNext> {
      return table_.GetPredecessorValue(var, predecessor_index);
    }
  
@@ -436,7 +436,7 @@ index ccc19512d40bbc06071d499b012b5a6fa059d706..f4c75010845bc86c5b79d3a2429dac77
    void SetVariable(Variable var, OpIndex new_index) {
      DCHECK(!is_temporary_);
      if (V8_UNLIKELY(__ generating_unreachable_operations())) return;
-@@ -207,10 +237,12 @@ class VariableReducer : public RequiredOptimizationReducer<AfterNext> {
+@@ -206,10 +236,12 @@ class VariableReducer : public RequiredOptimizationReducer<AfterNext> {
  
    Variable NewLoopInvariantVariable(MaybeRegisterRepresentation rep) {
      DCHECK(!is_temporary_);
@@ -449,7 +449,7 @@ index ccc19512d40bbc06071d499b012b5a6fa059d706..f4c75010845bc86c5b79d3a2429dac77
      return table_.NewKey(VariableData{rep, false}, OpIndex::Invalid());
    }
  
-@@ -316,6 +348,10 @@ class VariableReducer : public RequiredOptimizationReducer<AfterNext> {
+@@ -314,6 +346,10 @@ class VariableReducer : public RequiredOptimizationReducer<AfterNext> {
        __ input_graph().block_count(), std::nullopt, __ phase_zone()};
    bool is_temporary_ = false;
  
@@ -461,7 +461,7 @@ index ccc19512d40bbc06071d499b012b5a6fa059d706..f4c75010845bc86c5b79d3a2429dac77
    // it, in order to save memory and not reallocate it for each merge.
    ZoneVector<Snapshot> predecessors_{__ phase_zone()};
 diff --git a/test/unittests/compiler/turboshaft/control-flow-unittest.cc b/test/unittests/compiler/turboshaft/control-flow-unittest.cc
-index 204ef0f0676511a31e79e5ecff32d53018fa1ea8..1d23775d8c0cd8f2591db997501acc799d7d4dd6 100644
+index 49e1c8c2561bd010d12e5229c4d6594b9846b40b..b39b073a2ea899550fe0df6a81dcebc2d75efa49 100644
 --- a/test/unittests/compiler/turboshaft/control-flow-unittest.cc
 +++ b/test/unittests/compiler/turboshaft/control-flow-unittest.cc
 @@ -55,7 +55,7 @@ TEST_F(ControlFlowTest, DefaultBlockInlining) {
