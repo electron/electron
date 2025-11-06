@@ -206,7 +206,7 @@ jobs:
       if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
       run: |
         cd src/electron/spec
-        node script/yarn.js install --immutable --inline-builds        
+        node ../script/yarn.js install --immutable --inline-builds
       env:
         NPM_CONFIG_LOGLEVEL: 'verbose'
         YARN_ENABLE_HARDENED_MODE: 0
