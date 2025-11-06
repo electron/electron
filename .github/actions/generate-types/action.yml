@@ -22,6 +22,3 @@ runs:
       mv artifacts/electron.d.ts artifacts/${{ inputs.filename }}
       git checkout .
     working-directory: ./electron
-    env:
-      YARN_ENABLE_IMMUTABLE_INSTALLS: false
-

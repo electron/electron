@@ -2657,7 +2657,6 @@ describe('webContents module', () => {
         const errMsg = Buffer.concat(stderr).toString().trim();
         console.error(`Error parsing PDF file, exit code was ${code}; signal was ${signal}, error: ${errMsg}`);
       }
-      console.log(`PDF Reader Output: ${Buffer.concat(stdout).toString().trim()}`);
       return JSON.parse(Buffer.concat(stdout).toString().trim());
     };
 

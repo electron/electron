@@ -28,7 +28,6 @@ const getNodeGypVersion = () => {
 };
 
 async function main () {
-  console.log('Starting NAN spec runner');
   const outDir = utils.getOutDir({ shouldLog: true });
   const nodeDir = path.resolve(BASE, 'out', outDir, 'gen', 'node_headers');
   const env = {
@@ -38,8 +37,7 @@ async function main () {
     npm_config_arch: process.env.NPM_CONFIG_ARCH,
     npm_config_yes: 'true',
     YARN_ENABLE_IMMUTABLE_INSTALLS: 'false',
-    YARN_ENABLE_HARDENED_MODE: 0,
-    NPM_CONFIG_LOGLEVEL: 'verbose'
+    YARN_ENABLE_HARDENED_MODE: 0
   };
 
   const clangDir = path.resolve(BASE, 'third_party', 'llvm-build', 'Release+Asserts', 'bin');
@@ -110,7 +108,6 @@ async function main () {
   }
 
   const nodeGypVersion = getNodeGypVersion();
-  console.log(`Using node-gyp version: ${nodeGypVersion}`);
   const { status: buildStatus, signal } = cp.spawnSync(NPX_CMD, [`node-gyp@${nodeGypVersion}`, 'rebuild', '--verbose', '--directory', 'test', '-j', 'max'], {
     env,
     cwd: NAN_DIR,
@@ -120,8 +117,6 @@ async function main () {
   if (buildStatus !== 0 || signal != null) {
     console.error('Failed to build nan test modules');
     return process.exit(buildStatus !== 0 ? buildStatus : signal);
-  } else {
-    console.log('Successfully built nan test modules');
   }
 
   const nodeLinkerArgs = ['config', 'set', 'nodeLinker', 'node-modules'];
@@ -137,7 +132,7 @@ async function main () {
     return process.exit(yarnCfgStatus !== 0 ? yarnCfgStatus : yarnCfgSignal);
   }
 
-  const { status: installStatus, signal: installSignal } = cp.spawnSync(process.execPath, [YARN_SCRIPT_PATH, 'install', '--inline-builds'], {
+  const { status: installStatus, signal: installSignal } = cp.spawnSync(process.execPath, [YARN_SCRIPT_PATH, 'install'], {
     env,
     cwd: NAN_DIR,
     stdio: 'inherit',
@@ -147,8 +142,6 @@ async function main () {
   if (installStatus !== 0 || installSignal != null) {
     console.error('Failed to install nan node_modules');
     return process.exit(installStatus !== 0 ? installStatus : installSignal);
-  } else {
-    console.log('Successfully installed nan node_modules');
   }
 
   const onlyTests = args.only?.split(',');
