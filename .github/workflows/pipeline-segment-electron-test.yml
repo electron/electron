@@ -201,10 +201,15 @@ jobs:
     #    sudo security authorizationdb write com.apple.trust-settings.admin allow
     #    cd src/electron
     #    ./script/codesign/generate-identity.sh
-    - name: Install Datadog CLI
+
+    - name: Install spec dependencies for ARM32
+      if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
       run: |
-        cd src/electron
-        
+        cd src/electron/spec
+        node script/yarn.js install --immutable --inline-builds        
+      env:
+        NPM_CONFIG_LOGLEVEL: 'verbose'
+        YARN_ENABLE_HARDENED_MODE: 0
     - name: Run Electron Tests
       shell: bash
       env:
