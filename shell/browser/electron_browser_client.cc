@@ -224,7 +224,7 @@
 #include "components/pdf/browser/pdf_url_loader_request_interceptor.h"
 #include "components/pdf/common/constants.h"  // nogncheck
 #include "shell/browser/electron_pdf_document_helper_client.h"
-#include "ui/webui/resources/cr_components/help_bubble/help_bubble.mojom.h" // nogncheck
+#include "ui/webui/resources/cr_components/help_bubble/help_bubble.mojom.h"  // nogncheck
 #endif
 
 using content::BrowserThread;
