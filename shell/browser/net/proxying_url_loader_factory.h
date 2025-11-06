@@ -245,8 +245,6 @@ class ProxyingURLLoaderFactory
   bool IsForServiceWorkerScript() const;
 
  private:
-  api::WebRequest* web_request() { return web_request_; }
-
   void OnTargetFactoryError();
   void OnProxyBindingError();
   void RemoveRequest(int32_t network_service_request_id, uint64_t request_id);
@@ -254,7 +252,7 @@ class ProxyingURLLoaderFactory
 
   bool ShouldIgnoreConnectionsLimit(const network::ResourceRequest& request);
 
-  cppgc::WeakPersistent<api::WebRequest> web_request_;
+  const cppgc::WeakPersistent<api::WebRequest> web_request_;
 
   // This is passed from api::Protocol.
   //
