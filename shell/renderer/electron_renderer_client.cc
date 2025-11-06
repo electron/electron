@@ -18,6 +18,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/v8_util.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/web_worker_observer.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
@@ -240,7 +241,9 @@ void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
 }
 
 void ElectronRendererClient::SetUpWebAssemblyTrapHandler() {
-  // Noop, setup happens in `NodeBindings::NodeBindings`.
+  // content/renderer layer already takes care of the feature flag detection
+  // so no need to check for features::kWebAssemblyTrapHandler here.
+  electron::SetUpWebAssemblyTrapHandler();
 }
 
 node::Environment* ElectronRendererClient::GetEnvironment(
