@@ -394,7 +394,7 @@ static_library("chrome") {
         "//components/pdf/browser",
         "//components/pdf/renderer",
         "//ui/base/interaction",
-        "//ui/webui/resources/cr_components/help_bubble:mojo_bindings"
+        "//ui/webui/resources/cr_components/help_bubble:mojo_bindings",
       ]
     }
   } else {
