@@ -66,28 +66,15 @@ const child = new BaseWindow({ parent, modal: true })
 
 ## Resource management
 
-When you add a [`WebContentsView`](web-contents-view.md) to a `BaseWindow` and the `BaseWindow`
-is closed, the [`webContents`](web-contents.md) of the `WebContentsView` are not destroyed
-automatically.
+When you add a [`WebContentsView`](web-contents-view.md) to a `BaseWindow`, the [`webContents`](web-contents.md)
+of the `WebContentsView` are automatically closed when the `BaseWindow` is closed. This prevents
+memory leaks and ensures proper cleanup of resources.
 
-It is your responsibility to close the `webContents` when you no longer need them, e.g. when
-the `BaseWindow` is closed:
-
-```js
-const { BaseWindow, WebContentsView } = require('electron')
-
-const win = new BaseWindow({ width: 800, height: 600 })
-
-const view = new WebContentsView()
-win.contentView.addChildView(view)
-
-win.on('closed', () => {
-  view.webContents.close()
-})
-```
-
-Unlike with a [`BrowserWindow`](browser-window.md), if you don't explicitly close the
-`webContents`, you'll encounter memory leaks.
+> [!NOTE]
+> This behavior differs from previous versions where you had to manually close `webContents`.
+> If you need to keep `webContents` alive after the window closes, you should store a reference
+> to them and prevent the automatic cleanup, or detach them from the view hierarchy before
+> the window closes.
 
 ## Class: BaseWindow
 

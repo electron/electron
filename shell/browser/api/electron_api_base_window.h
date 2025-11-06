@@ -273,6 +273,9 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   // Remove this window from parent window's |child_windows_|.
   void RemoveFromParentChildWindows();
 
+  // Close all webContents from WebContentsViews in the view hierarchy.
+  void CloseWebContentsViews();
+
   template <typename... Args>
   void EmitEventSoon(std::string_view eventName) {
     content::GetUIThreadTaskRunner({})->PostTask(

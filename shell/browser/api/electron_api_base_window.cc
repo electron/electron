@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_base_window.h"
 
 #include <algorithm>
+#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -16,6 +17,7 @@
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_view.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/api/electron_api_web_contents_view.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
 #include "shell/common/color_util.h"
@@ -182,6 +184,10 @@ void BaseWindow::OnWindowClosed() {
   MarkDestroyed();
 
   Emit("closed");
+
+  // Automatically close all webContents from WebContentsViews in the view
+  // hierarchy.
+  CloseWebContentsViews();
 
   RemoveFromParentChildWindows();
 
@@ -1159,6 +1165,52 @@ void BaseWindow::RemoveFromParentChildWindows() {
   }
 
   parent->child_windows_.Remove(weak_map_id());
+}
+
+void BaseWindow::CloseWebContentsViews() {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  if (content_view_.IsEmpty())
+    return;
+
+  // Helper lambda to recursively close webContents from WebContentsViews.
+  std::function<void(v8::Local<v8::Value>)> closeWebContentsInView =
+      [isolate](v8::Local<v8::Value> view_value) {
+        if (view_value.IsEmpty() || !view_value->IsObject())
+          return;
+
+        // Check if this is a WebContentsView.
+        gin_helper::Handle<WebContentsView> web_contents_view;
+        if (gin::ConvertFromV8(isolate, view_value, &web_contents_view) &&
+            !web_contents_view.IsEmpty()) {
+          // Get the webContents and close it if it's not already destroyed.
+          gin_helper::Handle<WebContents> web_contents =
+              web_contents_view->GetWebContents(isolate);
+          if (!web_contents.IsEmpty() && !web_contents->IsDestroyed() &&
+              web_contents->web_contents()) {
+            web_contents->Close();
+          }
+        }
+
+        // Check if this is a View (to recursively check children).
+        // Note: WebContentsView extends View, so this will also process
+        // children of WebContentsViews.
+        gin_helper::Handle<View> view;
+        if (gin::ConvertFromV8(isolate, view_value, &view) &&
+            !view.IsEmpty()) {
+          // Recursively process all children.
+          std::vector<v8::Local<v8::Value>> children = view->GetChildren();
+          for (auto& child : children) {
+            closeWebContentsInView(child);
+          }
+        }
+      };
+
+  v8::Local<v8::Value> content_view = GetContentView();
+  if (!content_view.IsEmpty()) {
+    closeWebContentsInView(content_view);
+  }
 }
 
 // static
