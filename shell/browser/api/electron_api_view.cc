@@ -20,6 +20,7 @@
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "ui/views/animation/animation_builder.h"
 #include "ui/views/background.h"
 #include "ui/views/layout/flex_layout.h"
 #include "ui/views/layout/layout_manager_base.h"
@@ -280,10 +281,46 @@ void View::RemoveChildView(gin_helper::Handle<View> child) {
   }
 }
 
-void View::SetBounds(const gfx::Rect& bounds) {
+void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
+  bool animate = false;
+  int duration = 250;
+  std::string easing = "linear";
+
+  gin_helper::Dictionary options;
+  if (args->GetNext(&options)) {
+    options.Get("animate", &animate);
+    options.Get("duration", &duration);
+    options.Get("easing", &easing);
+  }
+
+  if (duration < 0)
+    duration = 0;
+
   if (!view_)
     return;
-  view_->SetBoundsRect(bounds);
+
+  if (!animate) {
+    view_->SetBoundsRect(bounds);
+
+    return;
+  }
+
+  gfx::Tween::Type tween_type = gfx::Tween::LINEAR;
+
+  if (easing == "ease-in") {
+    tween_type = gfx::Tween::EASE_IN;
+  } else if (easing == "ease-out") {
+    tween_type = gfx::Tween::EASE_OUT;
+  } else if (easing == "ease-in-out") {
+    tween_type = gfx::Tween::EASE_IN_OUT;
+  }
+
+  view_->SetPaintToLayer(ui::LAYER_TEXTURED);
+
+  views::AnimationBuilder()
+      .Once()
+      .SetDuration(base::Milliseconds(duration))
+      .SetBounds(view_, bounds, tween_type);
 }
 
 gfx::Rect View::GetBounds() const {
