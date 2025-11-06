@@ -62,9 +62,13 @@ it becomes the topmost view.
 
 If the view passed as a parameter is not a child of this view, this method is a no-op.
 
-#### `view.setBounds(bounds)`
+#### `view.setBounds(bounds[, options])`
 
 * `bounds` [Rectangle](structures/rectangle.md) - New bounds of the View.
+* `options` Object (optional) - Options for the bounds change.
+  * `animate` boolean (optional) - If true, the bounds change will be animated.
+  * `duration` Integer (optional) - Duration of the animation in milliseconds.
+  * `easing` string (optional) - Easing function for the animation. Can be `linear`, `ease-in`, `ease-out`, or `ease-in-out`. Default is `linear`.
 
 #### `view.getBounds()`
 
