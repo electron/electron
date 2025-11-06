@@ -67,7 +67,7 @@ index 5f5ea15678bd76399fdbbb8904fe155657f49335..a67c124878fb710599fed5d9714bfa72
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kApplyInitialUrlToWebContents);
  
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index fd23b8036c7f2d8bf3ed1bba126f8ee813f688a8..5a1f74a2efaf2bbfb8f9dc27e4b97f78f5b01a65 100644
+index fd23b8036c7f2d8bf3ed1bba126f8ee813f688a8..392de361fe395b81b346abb477d91d495d00ba34 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 @@ -84,6 +84,23 @@ namespace {
@@ -252,8 +252,8 @@ index fd23b8036c7f2d8bf3ed1bba126f8ee813f688a8..5a1f74a2efaf2bbfb8f9dc27e4b97f78
 +      *path = path->makeTransform(SkMatrix::Scale(scale, scale));
 +    }
 +  } else if (!window_enlargement_.IsZero()) {
-+    path->addRect(SkRect::MakeXYWH(0, 0, adjusted_size_in_px.width(),
-+                                   adjusted_size_in_px.height()));
++    *path = SkPath::Rect(SkRect::MakeXYWH(0, 0, adjusted_size_in_px.width(),
++                                          adjusted_size_in_px.height()));
    }
  }
  
