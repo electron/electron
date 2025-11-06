@@ -61,7 +61,6 @@
 #include "mojo/public/cpp/bindings/self_owned_associated_receiver.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "net/ssl/ssl_private_key.h"
-#include "pdf/buildflags.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
@@ -1678,6 +1677,11 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
   extensions::ExtensionsBrowserClient::Get()
       ->RegisterBrowserInterfaceBindersForFrame(map, render_frame_host,
                                                 extension);
+#endif
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  map->Add<help_bubble::mojom::PdfHelpBubbleHandlerFactory>(
+      &pdf::PdfHelpBubbleHandlerFactory::Create);
 #endif
 }
 
