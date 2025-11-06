@@ -581,7 +581,7 @@ index 6f3496b2541fa21fd0bba1d95026eab30e3ab96d..ef481cd946a15f5eaba928fa4e720e6c
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 233ba3825c5c516c031cd58c6a619a0eacf460a3..cd6f190904ae4e993741d50a3389bfecd5ced966 100644
+index bc58374ed9ce5c94e64742ead089de3ffd7351f4..36884dd700ed4d878b449c00da091497689074f2 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -343,6 +343,7 @@ source_set("browser") {
@@ -796,7 +796,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index a5f65d4322c487d844c4d927240fc1f9c593a7d8..74b0c72455fea8537952af028d6f6cc5ccc96612 100644
+index 7c54ae91e60c7cb0b7c66d9c86b3d350d35ae34f..b4cfa7b08843c0410c5d11f46018d1f9fe89c40e 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -703,6 +703,7 @@ static_library("test_support") {
@@ -824,7 +824,7 @@ index a5f65d4322c487d844c4d927240fc1f9c593a7d8..74b0c72455fea8537952af028d6f6cc5
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3407,6 +3411,7 @@ test("content_unittests") {
+@@ -3408,6 +3412,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",

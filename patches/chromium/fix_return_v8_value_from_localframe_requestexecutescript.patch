@@ -203,10 +203,10 @@ index f2c94689450f0333a144ccf82cf147c194896e6b..1c2e9fe36c297f7d614d9ca290e4d13c
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
 diff --git a/third_party/blink/renderer/core/frame/web_frame_test.cc b/third_party/blink/renderer/core/frame/web_frame_test.cc
-index 99ecf8b4a62f11b8bf05f61899ce5f0cf9f6ef59..43d7477c1b0dbd2a6c6985f730235d1f65dc998f 100644
+index 4aea5af7b5f5b389a046cbc4da42336f5987688e..317b5ec050c4221595a77f87ca320ca07e335e04 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_test.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_test.cc
-@@ -295,6 +295,7 @@ void ExecuteScriptsInMainWorld(
+@@ -296,6 +296,7 @@ void ExecuteScriptsInMainWorld(
        DOMWrapperWorld::kMainWorldId, sources, user_gesture,
        mojom::blink::EvaluationTiming::kSynchronous,
        mojom::blink::LoadEventBlockingOption::kDoNotBlock, std::move(callback),

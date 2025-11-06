@@ -10,10 +10,10 @@ on Windows.  We should refactor our code so that this patch isn't
 necessary.
 
 diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
-index 4bdea77f719dab99f44202132c0a5017dd5d61e0..a9956c211300d2693c5f0ccb26f867fbeb8b8799 100644
+index dffb16c851e3b336bdd1091735a51e2086e87d2e..a9bed1920ff9b1272fd41518b27a0056f0ef1825 100644
 --- a/testing/variations/fieldtrial_testing_config.json
 +++ b/testing/variations/fieldtrial_testing_config.json
-@@ -25629,6 +25629,21 @@
+@@ -25633,6 +25633,21 @@
              ]
          }
      ],
@@ -36,7 +36,7 @@ index 4bdea77f719dab99f44202132c0a5017dd5d61e0..a9956c211300d2693c5f0ccb26f867fb
          {
              "platforms": [
 diff --git a/ui/views/views_features.cc b/ui/views/views_features.cc
-index eddb6b33f0df6f494ae9dfa63851c924e2d2350c..d74308e69e794637410597c7dd9a06b2d5fff425 100644
+index 9ecf5330bb9b3a5a7b12f3b9bb76192ea1694d07..202d3e3df60ec8d23b4cbd3e5814c3fce1b07871 100644
 --- a/ui/views/views_features.cc
 +++ b/ui/views/views_features.cc
 @@ -22,6 +22,14 @@ BASE_FEATURE(kAnnounceTextAdditionalAttributes,
@@ -55,7 +55,7 @@ index eddb6b33f0df6f494ae9dfa63851c924e2d2350c..d74308e69e794637410597c7dd9a06b2
  // to kKeyboardAccessibleTooltip in //ui/base/ui_base_features.cc.
  BASE_FEATURE(kKeyboardAccessibleTooltipInViews,
 diff --git a/ui/views/views_features.h b/ui/views/views_features.h
-index c1d8107ec3e32d31811572aa1d7a7c7a242da7d9..463abf871c7e169dc1ca9f523d74fc14d58541cc 100644
+index 5f5ea15678bd76399fdbbb8904fe155657f49335..a67c124878fb710599fed5d9714bfa723d0d67a5 100644
 --- a/ui/views/views_features.h
 +++ b/ui/views/views_features.h
 @@ -14,6 +14,7 @@ namespace views::features {
@@ -64,8 +64,8 @@ index c1d8107ec3e32d31811572aa1d7a7c7a242da7d9..463abf871c7e169dc1ca9f523d74fc14
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableTouchDragCursorSync);
 +VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableTransparentHwndEnlargement);
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kKeyboardAccessibleTooltipInViews);
+ VIEWS_EXPORT BASE_DECLARE_FEATURE(kApplyInitialUrlToWebContents);
  
- }  // namespace views::features
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 index fd23b8036c7f2d8bf3ed1bba126f8ee813f688a8..5a1f74a2efaf2bbfb8f9dc27e4b97f78f5b01a65 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
