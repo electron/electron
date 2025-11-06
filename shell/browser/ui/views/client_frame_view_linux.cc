@@ -41,7 +41,6 @@ namespace {
 
 // These values should be the same as Chromium uses.
 constexpr int kResizeBorder = 10;
-constexpr int kResizeInsideBoundsSize = 5;
 
 ui::NavButtonProvider::ButtonState ButtonStateToNavButtonProviderState(
     views::Button::ButtonState state) {
@@ -152,8 +151,19 @@ gfx::Insets ClientFrameViewLinux::RestoredMirroredFrameBorderInsets() const {
 
 gfx::Insets ClientFrameViewLinux::RestoredFrameBorderInsets() const {
   gfx::Insets insets = GetFrameProvider()->GetFrameThicknessDip();
-  insets.SetToMax(GetInputInsets());
-  return insets;
+  const gfx::Insets input = GetInputInsets();
+
+  auto expand_if_visible = [](int side_thickness, int min_band) {
+    return side_thickness > 0 ? std::max(side_thickness, min_band) : 0;
+  };
+
+  gfx::Insets merged;
+  merged.set_top(expand_if_visible(insets.top(), input.top()));
+  merged.set_left(expand_if_visible(insets.left(), input.left()));
+  merged.set_bottom(expand_if_visible(insets.bottom(), input.bottom()));
+  merged.set_right(expand_if_visible(insets.right(), input.right()));
+
+  return merged;
 }
 
 gfx::Insets ClientFrameViewLinux::GetInputInsets() const {
@@ -198,9 +208,7 @@ void ClientFrameViewLinux::OnWindowButtonOrderingChange() {
 }
 
 int ClientFrameViewLinux::ResizingBorderHitTest(const gfx::Point& point) {
-  return ResizingBorderHitTestImpl(point,
-                                   RestoredMirroredFrameBorderInsets() +
-                                       gfx::Insets(kResizeInsideBoundsSize));
+  return ResizingBorderHitTestImpl(point, RestoredMirroredFrameBorderInsets());
 }
 
 gfx::Rect ClientFrameViewLinux::GetBoundsForClientView() const {
