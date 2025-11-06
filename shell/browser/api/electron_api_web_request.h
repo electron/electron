@@ -81,7 +81,7 @@ class WebRequest final : public gin::Wrappable<WebRequest> {
 
   static const char* GetClassName() { return "WebRequest"; }
 
-  // gin_helper::Wrappable:
+  // gin::Wrappable:
   static const gin::WrapperInfo kWrapperInfo;
   const gin::WrapperInfo* wrapper_info() const override;
   const char* GetHumanReadableName() const override;
