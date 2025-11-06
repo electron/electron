@@ -317,13 +317,10 @@ void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
   }
 
   gfx::Rect current_bounds = view_->bounds();
-
-  gfx::Rect current_size =
-      gfx::Rect(0, 0, current_bounds.width(), current_bounds.height());
   gfx::Rect target_size = gfx::Rect(0, 0, bounds.width(), bounds.height());
-
   gfx::Rect max_size =
-      gfx::Rect(0, 0, std::max(current_bounds.width(), bounds.width()),
+      gfx::Rect(current_bounds.x(), current_bounds.y(),
+                std::max(current_bounds.width(), bounds.width()),
                 std::max(current_bounds.height(), bounds.height()));
 
   view_->SetPaintToLayer();
@@ -332,10 +329,11 @@ void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
   // view's bounds immediatley to the new size (not position) and set the
   // layer's clip rect to animate from there.
   if (view_->width() < bounds.width() || view_->height() < bounds.height()) {
-    view_->SetBoundsRect(gfx::Rect(current_bounds.origin(), max_size.size()));
+    view_->SetBoundsRect(max_size);
 
     ui::Layer* layer = view_->layer();
-    layer->SetClipRect(current_size);
+    layer->SetClipRect(
+        gfx::Rect(0, 0, current_bounds.width(), current_bounds.height()));
   }
 
   views::AnimationBuilder()
@@ -344,7 +342,6 @@ void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
       .OnEnded(base::BindOnce(
           [](views::View* view, const gfx::Rect& final_bounds) {
             view->SetBoundsRect(final_bounds);
-            view->DestroyLayer();
           },
           view_, bounds))
       .Once()
