@@ -1,0 +1,95 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Thu, 6 Nov 2025 11:47:29 -0500
+Subject: fix deprecation of v8::Context and v8::Object API methods
+
+ref: https://chromium-review.googlesource.com/c/v8/v8/+/7087956
+
+diff --git a/nan.h b/nan.h
+index 0f120365630e7e2a37964f09cc129d05c6648c90..20ec9daca6befd0ff2bf7eff6a164d4e47a545aa 100644
+--- a/nan.h
++++ b/nan.h
+@@ -823,14 +823,14 @@ inline uv_loop_t* GetCurrentEventLoop() {
+   inline void* GetInternalFieldPointer(
+       v8::Local<v8::Object> object
+     , int index) {
+-    return object->GetAlignedPointerFromInternalField(index);
++    return object->GetAlignedPointerFromInternalField(index, v8::kEmbedderDataTypeTagDefault);
+   }
+ 
+   inline void SetInternalFieldPointer(
+       v8::Local<v8::Object> object
+     , int index
+     , void* value) {
+-    object->SetAlignedPointerInInternalField(index, value);
++    object->SetAlignedPointerInInternalField(index, value, v8::kEmbedderDataTypeTagDefault);
+   }
+ 
+ # define NAN_GC_CALLBACK(name)                                                 \
+diff --git a/nan_weak.h b/nan_weak.h
+index 7e7ab07b8512dbbcc1f09c498e221032d2cd345f..968ecee9e95b4c841406d900cf177a37564561d5 100644
+--- a/nan_weak.h
++++ b/nan_weak.h
+@@ -276,7 +276,7 @@ inline void Persistent<T, M>::SetWeak(
+     int count = self->InternalFieldCount();
+     void *internal_fields[kInternalFieldsInWeakCallback] = {0, 0};
+     for (int i = 0; i < count && i < kInternalFieldsInWeakCallback; i++) {
+-      internal_fields[i] = self->GetAlignedPointerFromInternalField(i);
++      internal_fields[i] = self->GetAlignedPointerFromInternalField(i, v8::kEmbedderDataTypeTagDefault);
+     }
+     wcbd = new WeakCallbackInfo<P>(
+         reinterpret_cast<Persistent<v8::Value>*>(this)
+@@ -284,7 +284,7 @@ inline void Persistent<T, M>::SetWeak(
+       , 0
+       , internal_fields[0]
+       , internal_fields[1]);
+-    self->SetAlignedPointerInInternalField(0, wcbd);
++    self->SetAlignedPointerInInternalField(0, wcbd, v8::kEmbedderDataTypeTagDefault);
+     v8::PersistentBase<T>::SetWeak(
+         static_cast<WeakCallbackInfo<P>*>(0)
+       , WeakCallbackInfo<P>::template invoketwofield<true>
+@@ -314,7 +314,7 @@ inline void Persistent<T, M>::SetWeak(
+     int count = self->InternalFieldCount();
+     void *internal_fields[kInternalFieldsInWeakCallback] = {0, 0};
+     for (int i = 0; i < count && i < kInternalFieldsInWeakCallback; i++) {
+-      internal_fields[i] = self->GetAlignedPointerFromInternalField(i);
++      internal_fields[i] = self->GetAlignedPointerFromInternalField(i, v8::kEmbedderDataTypeTagDefault);
+     }
+     wcbd = new WeakCallbackInfo<P>(
+         reinterpret_cast<Persistent<v8::Value>*>(this)
+@@ -322,7 +322,7 @@ inline void Persistent<T, M>::SetWeak(
+       , 0
+       , internal_fields[0]
+       , internal_fields[1]);
+-    self->SetAlignedPointerInInternalField(0, wcbd);
++    self->SetAlignedPointerInInternalField(0, wcbd, v8::kEmbedderDataTypeTagDefault);
+     v8::PersistentBase<T>::SetPhantom(
+         static_cast<WeakCallbackInfo<P>*>(0)
+       , WeakCallbackInfo<P>::invoketwofield
+@@ -353,7 +353,7 @@ inline void Persistent<T, M>::SetWeak(
+     int count = self->InternalFieldCount();
+     void *internal_fields[kInternalFieldsInWeakCallback] = {0, 0};
+     for (int i = 0; i < count && i < kInternalFieldsInWeakCallback; i++) {
+-      internal_fields[i] = self->GetAlignedPointerFromInternalField(i);
++      internal_fields[i] = self->GetAlignedPointerFromInternalField(i, v8::kEmbedderDataTypeTagDefault);
+     }
+     wcbd = new WeakCallbackInfo<P>(
+         reinterpret_cast<Persistent<v8::Value>*>(this)
+@@ -361,7 +361,7 @@ inline void Persistent<T, M>::SetWeak(
+       , 0
+       , internal_fields[0]
+       , internal_fields[1]);
+-    self->SetAlignedPointerInInternalField(0, wcbd);
++    self->SetAlignedPointerInInternalField(0, wcbd, v8::kEmbedderDataTypeTagDefault);
+     v8::PersistentBase<T>::SetPhantom(
+         WeakCallbackInfo<P>::invoketwofield
+       , 0
+@@ -389,7 +389,7 @@ inline void Persistent<T, M>::SetWeak(
+     int count = self->InternalFieldCount();
+     void *internal_fields[kInternalFieldsInWeakCallback] = {0, 0};
+     for (int i = 0; i < count && i < kInternalFieldsInWeakCallback; i++) {
+-      internal_fields[i] = self->GetAlignedPointerFromInternalField(i);
++      internal_fields[i] = self->GetAlignedPointerFromInternalField(i, v8::kEmbedderDataTypeTagDefault);
+     }
+     wcbd = new WeakCallbackInfo<P>(
+         reinterpret_cast<Persistent<v8::Value>*>(this)
