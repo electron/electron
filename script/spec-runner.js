@@ -21,6 +21,7 @@ const fail = chalk.red('✗');
 const FAILURE_STATUS_KEY = 'Electron_Spec_Runner_Failures';
 
 const args = minimist(process.argv, {
+  boolean: ['skipYarnInstall'],
   string: ['runners', 'target', 'electronVersion'],
   number: ['enableRerun'],
   unknown: arg => unknownFlags.push(arg)
@@ -95,7 +96,7 @@ async function main () {
   const somethingChanged = (currentSpecHash !== lastSpecHash) ||
       (lastSpecInstallHash !== currentSpecInstallHash);
 
-  if (somethingChanged) {
+  if (somethingChanged && !args.skipYarnInstall) {
     await installSpecModules(path.resolve(__dirname, '..', 'spec'));
     await getSpecHash().then(saveSpecHash);
   }

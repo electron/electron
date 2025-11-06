@@ -218,8 +218,7 @@ jobs:
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         DISPLAY: ':99.0'
         NPM_CONFIG_MSVS_VERSION: '2022'
-        YARN_ENABLE_HARDENED_MODE: ${{ inputs.yarn-hardened-mode }}
-        NODE_OPTIONS: --max-old-space-size=12288
+        YARN_ENABLE_HARDENED_MODE: ${{ inputs.yarn-hardened-mode }}      
       run: |
         cd src/electron
         export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
@@ -256,7 +255,12 @@ jobs:
             cd electron
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
           else
-            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
+            if [ "${{ inputs.target-arch }}" = "arm" ]; then
+              runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --skipYarnInstall --runners=main --trace-uncaught --enable-logging --files $tests_files
+            else 
+              runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
+            fi
+            
           fi
         fi
     - name: Upload Test results to Datadog
