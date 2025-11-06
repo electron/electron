@@ -27,7 +27,7 @@ runs:
       fi
       node script/yarn.js install --immutable --inline-builds
       if [ "$BUILD_TYPE" = "win" ]; then
-        node script/yarn.js run dugite download-git
+        node node_modules/dugite/script/download-git.js
       fi
     env:
       NPM_CONFIG_LOGLEVEL: 'verbose'
