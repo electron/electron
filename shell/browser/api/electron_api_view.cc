@@ -315,12 +315,27 @@ void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
     tween_type = gfx::Tween::EASE_IN_OUT;
   }
 
-  view_->SetPaintToLayer(ui::LAYER_TEXTURED);
+  gfx::Rect size = gfx::Rect(0, 0, bounds.width(), bounds.height());
+
+  view_->SetPaintToLayer();
 
   views::AnimationBuilder()
+      .SetPreemptionStrategy(
+          ui::LayerAnimator::IMMEDIATELY_ANIMATE_TO_NEW_TARGET)
+      .OnEnded(base::BindOnce(
+          [](views::View* view, const gfx::Rect& final_bounds) {
+            view->SetBoundsRect(final_bounds);
+            view->DestroyLayer();
+          },
+          view_, bounds))
       .Once()
       .SetDuration(base::Milliseconds(duration))
-      .SetBounds(view_, bounds, tween_type);
+      .SetBounds(view_, bounds, tween_type)
+      .SetClipRect(
+          view_, size,
+          tween_type);  // We have to set the clip rect independently of the
+                        // bounds, because animating the bounds of the layer
+                        // will not animate the underlying view's bounds.
 }
 
 gfx::Rect View::GetBounds() const {
