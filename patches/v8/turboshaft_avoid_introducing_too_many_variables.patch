@@ -1,0 +1,475 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Wed, 5 Nov 2025 14:06:54 +0100
+Subject: [turboshaft] Avoid introducing too many Variables
+
+.... if we have very large merges.
+
+Cf https://crbug.com/418027512#comment5 for explanations of why this
+is necessary (and the following comment for why I don't see a good
+alternative to this CL).
+
+I've locally confirmed that this fixes the OOM from
+https://crbug.com/457625181, and it reduces memory consumption on
+binaries/crbug-40219016-zelda/zelda.wasm (from
+https://crbug.com/418027512) by 20+%.
+
+Bug: 418027512, 457625181
+Change-Id: If55af659667723ce85ff71bcac66a43aff863e05
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7119378
+Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#103534}
+
+diff --git a/src/compiler/turboshaft/branch-elimination-reducer.h b/src/compiler/turboshaft/branch-elimination-reducer.h
+index f115c86894f0cf739d6381f7844e5589831cc209..d917d27bd3964ba07b41efa49b86435ae7720064 100644
+--- a/src/compiler/turboshaft/branch-elimination-reducer.h
++++ b/src/compiler/turboshaft/branch-elimination-reducer.h
+@@ -323,6 +323,10 @@ class BranchEliminationReducer : public Next {
+       goto no_change;
+     }
+ 
++    if (!__ CanCreateNVariables(destination_origin->OpCountUpperBound())) {
++      goto no_change;
++    }
++
+     if (const BranchOp* branch = last_op.template TryCast<BranchOp>()) {
+       V<Word32> condition =
+           __ template MapToNewGraph<true>(branch->condition());
+diff --git a/src/compiler/turboshaft/copying-phase.h b/src/compiler/turboshaft/copying-phase.h
+index 875861d005435b1c2a1591886c053ca360c3e2f2..b43958499d5b6d6e72b81d965d0729bb213c7ae6 100644
+--- a/src/compiler/turboshaft/copying-phase.h
++++ b/src/compiler/turboshaft/copying-phase.h
+@@ -714,9 +714,23 @@ class GraphVisitor : public OutputGraphAssembler<GraphVisitor<AfterNext>,
+     if (Asm().CanAutoInlineBlocksWithSinglePredecessor() &&
+         terminator.Is<GotoOp>()) {
+       Block* destination = terminator.Cast<GotoOp>().destination;
+-      if (destination->PredecessorCount() == 1) {
+-        block_to_inline_now_ = destination;
+-        return;
++      // Inlining the destination will require setting it in needs_variables_
++      // mode; we thus check that we can actually create enough variables to do
++      // this.
++      // TODO(dmercadier): in practice, the only reason we need variables for
++      // the destination is because we could be currently in a phase that cloned
++      // the current block, which could lead to {destination} being cloned as
++      // well. No all phases can do this, so we could check that we're not in
++      // such a phase, and if so, not use variables for the destination. One way
++      // to do this would be to have a DisallowCloningReducer which would
++      // static_assert that LoopUnrolling/LoopPeeling/BranchElimination aren't
++      // on the stack and would also prevent using CloneSubGraph,
++      // CloneAndInlineBlock and CloneBlockAndGoto.
++      if (Asm().CanCreateNVariables(destination->OpCountUpperBound())) {
++        if (destination->PredecessorCount() == 1) {
++          block_to_inline_now_ = destination;
++          return;
++        }
+       }
+     }
+     // Just going through the regular VisitOp function.
+diff --git a/src/compiler/turboshaft/graph.h b/src/compiler/turboshaft/graph.h
+index 936c8b0269a9b87a4ffa20c40bbd908fb8c69010..a3c1c40e4e7097f518e107d85786c7cc5466e595 100644
+--- a/src/compiler/turboshaft/graph.h
++++ b/src/compiler/turboshaft/graph.h
+@@ -608,6 +608,7 @@ class Graph {
+     operation_origins_.Reset();
+     operation_types_.Reset();
+     dominator_tree_depth_ = 0;
++    max_merge_pred_count_ = 0;
+ #ifdef DEBUG
+     block_type_refinement_.Reset();
+     // Do not reset of graph_created_from_turbofan_ as it is propagated along
+@@ -791,6 +792,8 @@ class Graph {
+     bound_blocks_.push_back(block);
+     uint32_t depth = block->ComputeDominator();
+     dominator_tree_depth_ = std::max<uint32_t>(dominator_tree_depth_, depth);
++    max_merge_pred_count_ =
++        std::max<uint32_t>(max_merge_pred_count_, block->PredecessorCount());
+ 
+ #ifdef DEBUG
+     if (v8_flags.turboshaft_trace_emitted) {
+@@ -1016,6 +1019,8 @@ class Graph {
+ 
+   uint32_t DominatorTreeDepth() const { return dominator_tree_depth_; }
+ 
++  uint32_t max_merge_pred_count() const { return max_merge_pred_count_; }
++
+   const GrowingOpIndexSidetable<Type>& operation_types() const {
+     return operation_types_;
+   }
+@@ -1068,6 +1073,7 @@ class Graph {
+     std::swap(next_block_, companion.next_block_);
+     std::swap(block_permutation_, companion.block_permutation_);
+     std::swap(graph_zone_, companion.graph_zone_);
++    std::swap(max_merge_pred_count_, companion.max_merge_pred_count_);
+     op_to_block_.SwapData(companion.op_to_block_);
+     source_positions_.SwapData(companion.source_positions_);
+     operation_origins_.SwapData(companion.operation_origins_);
+@@ -1206,6 +1212,9 @@ class Graph {
+   GrowingOpIndexSidetable<SourcePosition> source_positions_;
+   GrowingOpIndexSidetable<OpIndex> operation_origins_;
+   uint32_t dominator_tree_depth_ = 0;
++  // {max_merge_pred_count_} stores the maximum number of predecessors that any
++  // Merge in the graph has.
++  uint32_t max_merge_pred_count_ = 0;
+   GrowingOpIndexSidetable<Type> operation_types_;
+ #ifdef DEBUG
+   GrowingBlockSidetable<TypeRefinements> block_type_refinement_;
+diff --git a/src/compiler/turboshaft/loop-peeling-reducer.h b/src/compiler/turboshaft/loop-peeling-reducer.h
+index a9b5eaaf4c88354164b3a5833d4bd6b2760b12a0..b7df7acb61d048669a2cacfbc4e2156df69788dc 100644
+--- a/src/compiler/turboshaft/loop-peeling-reducer.h
++++ b/src/compiler/turboshaft/loop-peeling-reducer.h
+@@ -57,8 +57,7 @@ class LoopPeelingReducer : public Next {
+     const Block* dst = gto.destination;
+     if (dst->IsLoop() && !gto.is_backedge && CanPeelLoop(dst)) {
+       if (ShouldSkipOptimizationStep()) goto no_change;
+-      PeelFirstIteration(dst);
+-      return {};
++      if (PeelFirstIteration(dst)) return {};
+     } else if (IsEmittingPeeledIteration() && dst == current_loop_header_) {
+       // We skip the backedge of the loop: PeelFirstIeration will instead emit a
+       // forward edge to the non-peeled header.
+@@ -111,13 +110,21 @@ class LoopPeelingReducer : public Next {
+     kEmittingUnpeeledBody
+   };
+ 
+-  void PeelFirstIteration(const Block* header) {
++  bool PeelFirstIteration(const Block* header) {
+     TRACE("LoopPeeling: peeling loop at " << header->index());
+     DCHECK_EQ(peeling_, PeelingStatus::kNotPeeling);
+     ScopedModification<PeelingStatus> scope(&peeling_,
+                                             PeelingStatus::kEmittingPeeledLoop);
+     current_loop_header_ = header;
+ 
++    constexpr int kNumberOfLoopCopies = 2;  // peeled + unpeeled
++    size_t op_count_upper_bound =
++        loop_finder_.GetLoopInfo(header).op_count * kNumberOfLoopCopies;
++    if (!__ CanCreateNVariables(op_count_upper_bound)) {
++      TRACE("> Too many variables, skipping peeling");
++      return false;
++    }
++
+     // Emitting the peeled iteration.
+     auto loop_body = loop_finder_.GetLoopBody(header);
+     // Note that this call to CloneSubGraph will not emit the backedge because
+@@ -133,7 +140,7 @@ class LoopPeelingReducer : public Next {
+       // While peeling, we realized that the 2nd iteration of the loop is not
+       // reachable.
+       TRACE("> Second iteration is not reachable, stopping now");
+-      return;
++      return true;
+     }
+ 
+     // We now emit the regular unpeeled loop.
+@@ -141,6 +148,7 @@ class LoopPeelingReducer : public Next {
+     TRACE("> Emitting unpeeled loop body");
+     __ CloneSubGraph(loop_body, /* keep_loop_kinds */ true,
+                      /* is_loop_after_peeling */ true);
++    return true;
+   }
+ 
+   bool CanPeelLoop(const Block* header) {
+diff --git a/src/compiler/turboshaft/loop-unrolling-reducer.h b/src/compiler/turboshaft/loop-unrolling-reducer.h
+index 181d298bfa27d21f013016b34a586078d12f8a58..92d6f7b36d4c5c0a64723f7d18427a62347bad9f 100644
+--- a/src/compiler/turboshaft/loop-unrolling-reducer.h
++++ b/src/compiler/turboshaft/loop-unrolling-reducer.h
+@@ -211,6 +211,11 @@ class V8_EXPORT_PRIVATE LoopUnrollingAnalyzer {
+            info.op_count < kMaxLoopSizeForPartialUnrolling;
+   }
+ 
++  size_t GetLoopOpCount(const Block* loop_header) {
++    DCHECK(loop_header->IsLoop());
++    return loop_finder_.GetLoopInfo(loop_header).op_count;
++  }
++
+   // The returned unroll count is the total number of copies of the loop body
+   // in the resulting graph, i.e., an unroll count of N means N-1 copies of the
+   // body which were partially unrolled, and 1 for the original/remaining body.
+@@ -383,14 +388,12 @@ class LoopUnrollingReducer : public Next {
+       // header (note that loop headers only have 2 predecessor, including the
+       // backedge), and that isn't the backedge.
+       if (ShouldSkipOptimizationStep()) goto no_change;
+-      if (analyzer_.ShouldRemoveLoop(dst)) {
+-        RemoveLoop(dst);
++      if (analyzer_.ShouldRemoveLoop(dst) && RemoveLoop(dst)) {
+         return {};
+-      } else if (analyzer_.ShouldFullyUnrollLoop(dst)) {
+-        FullyUnrollLoop(dst);
++      } else if (analyzer_.ShouldFullyUnrollLoop(dst) && FullyUnrollLoop(dst)) {
+         return {};
+-      } else if (analyzer_.ShouldPartiallyUnrollLoop(dst)) {
+-        PartiallyUnrollLoop(dst);
++      } else if (analyzer_.ShouldPartiallyUnrollLoop(dst) &&
++                 PartiallyUnrollLoop(dst)) {
+         return {};
+       }
+     } else if ((unrolling_ == UnrollingStatus::kUnrolling) &&
+@@ -467,9 +470,9 @@ class LoopUnrollingReducer : public Next {
+     // and would like to not emit the loop body that follows.
+     kRemoveLoop,
+   };
+-  void RemoveLoop(const Block* header);
+-  void FullyUnrollLoop(const Block* header);
+-  void PartiallyUnrollLoop(const Block* header);
++  bool RemoveLoop(const Block* header);
++  bool FullyUnrollLoop(const Block* header);
++  bool PartiallyUnrollLoop(const Block* header);
+   void FixLoopPhis(const Block* input_graph_loop, Block* output_graph_loop,
+                    const Block* backedge_block);
+   bool IsRunningBuiltinPipeline() {
+@@ -508,10 +511,16 @@ class LoopUnrollingReducer : public Next {
+ };
+ 
+ template <class Next>
+-void LoopUnrollingReducer<Next>::PartiallyUnrollLoop(const Block* header) {
++bool LoopUnrollingReducer<Next>::PartiallyUnrollLoop(const Block* header) {
+   TRACE("LoopUnrolling: partially unrolling loop at " << header->index().id());
+   DCHECK_EQ(unrolling_, UnrollingStatus::kNotUnrolling);
+   DCHECK(!skip_next_stack_check_);
++
++  if (!__ CanCreateNVariables(analyzer_.GetLoopOpCount(header))) {
++    TRACE("> Too many variables, skipping unrolling");
++    return false;
++  }
++
+   unrolling_ = UnrollingStatus::kUnrolling;
+ 
+   auto loop_body = analyzer_.GetLoopBody(header);
+@@ -533,7 +542,7 @@ void LoopUnrollingReducer<Next>::PartiallyUnrollLoop(const Block* header) {
+       __ CloneSubGraph(loop_body, /* keep_loop_kinds */ true);
+   if (StopUnrollingIfUnreachable(output_graph_header)) {
+     TRACE("> Next iteration is unreachable, stopping unrolling");
+-    return;
++    return true;
+   }
+ 
+   // Emitting the subsequent folded iterations. We set `unrolling_` to
+@@ -549,7 +558,7 @@ void LoopUnrollingReducer<Next>::PartiallyUnrollLoop(const Block* header) {
+     __ CloneSubGraph(loop_body, /* keep_loop_kinds */ false);
+     if (StopUnrollingIfUnreachable(output_graph_header)) {
+       TRACE("> Next iteration is unreachable, stopping unrolling");
+-      return;
++      return true;
+     }
+   }
+ 
+@@ -567,6 +576,7 @@ void LoopUnrollingReducer<Next>::PartiallyUnrollLoop(const Block* header) {
+ 
+   unrolling_ = UnrollingStatus::kNotUnrolling;
+   TRACE("> Finished partially unrolling loop " << header->index().id());
++  return true;
+ }
+ 
+ template <class Next>
+@@ -622,10 +632,20 @@ void LoopUnrollingReducer<Next>::FixLoopPhis(const Block* input_graph_loop,
+ }
+ 
+ template <class Next>
+-void LoopUnrollingReducer<Next>::RemoveLoop(const Block* header) {
++bool LoopUnrollingReducer<Next>::RemoveLoop(const Block* header) {
+   TRACE("LoopUnrolling: removing loop at " << header->index().id());
+   DCHECK_EQ(unrolling_, UnrollingStatus::kNotUnrolling);
+   DCHECK(!skip_next_stack_check_);
++
++  if (!__ CanCreateNVariables(analyzer_.GetLoopOpCount(header))) {
++    TRACE("> Too many variables, skipping removal");
++    // TODO(dmercadier): in theory, RemoveLoop shouldn't need Variables, since
++    // it cannot be called while unrolling an outer loop, since we only unroll
++    // innermost loops. We should teach CloneAndInlineBlock that it doesn't
++    // always need to introduce Variables, and then remove this bailout.
++    return false;
++  }
++
+   // When removing a loop, we still need to emit the header (since it has to
+   // always be executed before the 1st iteration anyways), but by setting
+   // {unrolling_} to `kRemoveLoop`, the final Branch of the loop will become a
+@@ -633,15 +653,21 @@ void LoopUnrollingReducer<Next>::RemoveLoop(const Block* header) {
+   unrolling_ = UnrollingStatus::kRemoveLoop;
+   __ CloneAndInlineBlock(header);
+   unrolling_ = UnrollingStatus::kNotUnrolling;
++  return true;
+ }
+ 
+ template <class Next>
+-void LoopUnrollingReducer<Next>::FullyUnrollLoop(const Block* header) {
++bool LoopUnrollingReducer<Next>::FullyUnrollLoop(const Block* header) {
+   TRACE("LoopUnrolling: fully unrolling loop at " << header->index().id());
+   DCHECK_EQ(unrolling_, UnrollingStatus::kNotUnrolling);
+   DCHECK(!skip_next_stack_check_);
+   ScopedModification<bool> skip_stack_checks(&skip_next_stack_check_, true);
+ 
++  if (!__ CanCreateNVariables(analyzer_.GetLoopOpCount(header))) {
++    TRACE("> Too many variables, skipping unrolling");
++    return false;
++  }
++
+   size_t iter_count = analyzer_.GetIterationCount(header).exact_count();
+   TRACE("> iter_count: " << iter_count);
+ 
+@@ -654,7 +680,7 @@ void LoopUnrollingReducer<Next>::FullyUnrollLoop(const Block* header) {
+     __ CloneSubGraph(loop_body, /* keep_loop_kinds */ false);
+     if (StopUnrollingIfUnreachable()) {
+       TRACE("> Next iteration is unreachable, stopping unrolling");
+-      return;
++      return true;
+     }
+   }
+ 
+@@ -667,6 +693,7 @@ void LoopUnrollingReducer<Next>::FullyUnrollLoop(const Block* header) {
+ 
+   unrolling_ = UnrollingStatus::kNotUnrolling;
+   TRACE("> Finished fully unrolling loop " << header->index().id());
++  return true;
+ }
+ 
+ #undef TRACE
+diff --git a/src/compiler/turboshaft/turbolev-graph-builder.cc b/src/compiler/turboshaft/turbolev-graph-builder.cc
+index 9d1dafe2b0b733c88283b21eddb36c9827912eca..bcb461488899bcbf3a130845f39f0005bd34131e 100644
+--- a/src/compiler/turboshaft/turbolev-graph-builder.cc
++++ b/src/compiler/turboshaft/turbolev-graph-builder.cc
+@@ -118,12 +118,7 @@ class BlockOriginTrackingReducer : public Next {
+   }
+   void Bind(Block* block) {
+     Next::Bind(block);
+-    // The 1st block we bind doesn't exist in Maglev and is meant to hold
+-    // Constants (which in Maglev are not in any block), and thus
+-    // {maglev_input_block_} should still be nullptr. In all other cases,
+-    // {maglev_input_block_} should not be nullptr.
+-    DCHECK_EQ(maglev_input_block_ == nullptr,
+-              block == &__ output_graph().StartBlock());
++    DCHECK_NOT_NULL(maglev_input_block_);
+     turboshaft_block_origins_[block->index()] = maglev_input_block_;
+   }
+ 
+@@ -519,9 +514,11 @@ class GraphBuildingNodeProcessor {
+       block_mapping_[block] =
+           block->is_loop() ? __ NewLoopHeader() : __ NewBlock();
+     }
+-    // Constants are not in a block in Maglev but are in Turboshaft. We bind a
+-    // block now, so that Constants can then be emitted.
+-    __ Bind(__ NewBlock());
++    // Constants are not in a block in Maglev but are in Turboshaft. We bind the
++    // 1st block now, so that Constants can then be emitted.
++    const maglev::BasicBlock* first_maglev_block = graph->blocks().front();
++    __ SetMaglevInputBlock(first_maglev_block);
++    __ Bind(block_mapping_[first_maglev_block]);
+ 
+     // Initializing undefined constant so that we don't need to recreate it too
+     // often.
+@@ -607,9 +604,20 @@ class GraphBuildingNodeProcessor {
+     Block* turboshaft_block = Map(maglev_block);
+ 
+     if (__ current_block() != nullptr) {
+-      // The first block for Constants doesn't end with a Jump, so we add one
+-      // now.
+-      __ Goto(turboshaft_block);
++      // We must be in the first block of the graph, inserted by Turboshaft in
++      // PreProcessGraph so that constants can be bound in a block. No need to
++      // do anything else: we don't emit a Goto so that the actual 1st block of
++      // the Maglev graph gets inlined into this first block of the Turboshaft
++      // graph, which, in addition to saving a Goto, saves the need to clone the
++      // destination into the current block later, and also ensures that
++      // Parameters are always in the 1st block.
++      DCHECK_EQ(__ output_graph().block_count(), 1);
++      DCHECK_EQ(maglev_block->id(), 0);
++      DCHECK_EQ(__ current_block(), block_mapping_[maglev_block]);
++      // maglev_input_block should have been set by calling SetMaglevInputBlock
++      // in PreProcessGraph.
++      DCHECK_EQ(__ maglev_input_block(), maglev_block);
++      return maglev::BlockProcessResult::kContinue;
+     }
+ 
+ #ifdef DEBUG
+diff --git a/src/compiler/turboshaft/variable-reducer.h b/src/compiler/turboshaft/variable-reducer.h
+index b11338bdf6e928cd09a0bdbad42fd835c8210c36..03cc2fa77f0d4a194893a8be5747d6de887e5ee9 100644
+--- a/src/compiler/turboshaft/variable-reducer.h
++++ b/src/compiler/turboshaft/variable-reducer.h
+@@ -9,6 +9,7 @@
+ #include <optional>
+ 
+ #include "src/base/logging.h"
++#include "src/base/macros.h"
+ #include "src/codegen/machine-type.h"
+ #include "src/compiler/turboshaft/assembler.h"
+ #include "src/compiler/turboshaft/graph.h"
+@@ -91,6 +92,15 @@ class VariableReducer : public RequiredOptimizationReducer<AfterNext> {
+  public:
+   TURBOSHAFT_REDUCER_BOILERPLATE(VariableReducer)
+ 
++  ~VariableReducer() {
++    if (too_many_variables_bailouts_count_ != 0 &&
++        V8_UNLIKELY(v8_flags.trace_turbo_bailouts)) {
++      std::cout << "Bailing out from block cloning "
++                << too_many_variables_bailouts_count_ << " time"
++                << (too_many_variables_bailouts_count_ > 1 ? "s" : "") << "\n";
++    }
++  }
++
+   void Bind(Block* new_block) {
+     Next::Bind(new_block);
+ 
+@@ -190,6 +200,26 @@ class VariableReducer : public RequiredOptimizationReducer<AfterNext> {
+     return table_.GetPredecessorValue(var, predecessor_index);
+   }
+ 
++  bool CanCreateNVariables(size_t n) {
++    // Merges with many predecessors combined with many variables can quickly
++    // blow up memory since the SnapshotTable needs to create a state whose
++    // size can be up to number_of_predecessor*variable_count (note: in
++    // practice, it's often not quite variable_count but less since only
++    // variables that are live in at least one predecessor are counted). To
++    // avoid OOM or otherwise huge memory consumption, we thus stop creating
++    // variables (and bail out on optimizations that need variables) when this
++    // number becomes too large. I somewhat arbitrarily selected 100K here,
++    // which sounds high, but in terms of memory, it's just 100K*8=800KB, which
++    // is less than 1MB, which isn't going to amount for much in a function
++    // that is probably very large if it managed to reach this limit.
++    constexpr uint32_t kMaxAllowedMergeStateSize = 100'000;
++    bool can_create =
++        __ input_graph().max_merge_pred_count() * (variable_count_ + n) <
++        kMaxAllowedMergeStateSize;
++    if (!can_create) too_many_variables_bailouts_count_++;
++    return can_create;
++  }
++
+   void SetVariable(Variable var, OpIndex new_index) {
+     DCHECK(!is_temporary_);
+     if (V8_UNLIKELY(__ generating_unreachable_operations())) return;
+@@ -206,10 +236,12 @@ class VariableReducer : public RequiredOptimizationReducer<AfterNext> {
+ 
+   Variable NewLoopInvariantVariable(MaybeRegisterRepresentation rep) {
+     DCHECK(!is_temporary_);
++    variable_count_++;
+     return table_.NewKey(VariableData{rep, true}, OpIndex::Invalid());
+   }
+   Variable NewVariable(MaybeRegisterRepresentation rep) {
+     DCHECK(!is_temporary_);
++    variable_count_++;
+     return table_.NewKey(VariableData{rep, false}, OpIndex::Invalid());
+   }
+ 
+@@ -314,6 +346,10 @@ class VariableReducer : public RequiredOptimizationReducer<AfterNext> {
+       __ input_graph().block_count(), std::nullopt, __ phase_zone()};
+   bool is_temporary_ = false;
+ 
++  // Tracks the number of variables that have been created.
++  uint32_t variable_count_ = 0;
++  uint32_t too_many_variables_bailouts_count_ = 0;
++
+   // {predecessors_} is used during merging, but we use an instance variable for
+   // it, in order to save memory and not reallocate it for each merge.
+   ZoneVector<Snapshot> predecessors_{__ phase_zone()};
+diff --git a/test/unittests/compiler/turboshaft/control-flow-unittest.cc b/test/unittests/compiler/turboshaft/control-flow-unittest.cc
+index 49e1c8c2561bd010d12e5229c4d6594b9846b40b..b39b073a2ea899550fe0df6a81dcebc2d75efa49 100644
+--- a/test/unittests/compiler/turboshaft/control-flow-unittest.cc
++++ b/test/unittests/compiler/turboshaft/control-flow-unittest.cc
+@@ -55,7 +55,7 @@ TEST_F(ControlFlowTest, DefaultBlockInlining) {
+ // BranchElimination should remove such branches by cloning the block with the
+ // branch. In the end, the graph should contain (almost) no branches anymore.
+ TEST_F(ControlFlowTest, BranchElimination) {
+-  static constexpr int kSize = 10000;
++  static constexpr int kSize = 200;
+ 
+   auto test = CreateFromGraph(1, [](auto& Asm) {
+     V<Word32> cond =
