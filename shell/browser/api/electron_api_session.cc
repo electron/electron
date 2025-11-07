@@ -1688,8 +1688,8 @@ gin::WeakCell<Session>* Session::FromBrowserContext(
 }
 
 // static
-Session* Session::CreateFrom(v8::Isolate* isolate,
-                             ElectronBrowserContext* browser_context) {
+Session* Session::FromOrCreate(v8::Isolate* isolate,
+                               ElectronBrowserContext* browser_context) {
   gin::WeakCell<Session>* existing = FromBrowserContext(browser_context);
   if (existing && existing->Get()) {
     return existing->Get();
@@ -1730,7 +1730,7 @@ Session* Session::FromPartition(v8::Isolate* isolate,
     browser_context =
         ElectronBrowserContext::From(partition, true, std::move(options));
   }
-  return CreateFrom(isolate, browser_context);
+  return FromOrCreate(isolate, browser_context);
 }
 
 // static
@@ -1751,7 +1751,7 @@ Session* Session::FromPath(gin::Arguments* args,
   browser_context =
       ElectronBrowserContext::FromPath(std::move(path), std::move(options));
 
-  return CreateFrom(args->isolate(), browser_context);
+  return FromOrCreate(args->isolate(), browser_context);
 }
 
 // static

@@ -740,7 +740,7 @@ gin_helper::Handle<WebRequest> WebRequest::FromOrCreate(
   if (handle.IsEmpty()) {
     // Make sure the |Session| object has the |webRequest| property created.
     v8::Local<v8::Value> web_request =
-        Session::CreateFrom(
+        Session::FromOrCreate(
             isolate, static_cast<ElectronBrowserContext*>(browser_context))
             ->WebRequest(isolate);
     gin::ConvertFromV8(isolate, web_request, &handle);

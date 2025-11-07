@@ -73,8 +73,8 @@ class Session final : public gin::Wrappable<Session>,
                       private content::DownloadManager::Observer {
  public:
   // Gets or creates Session from the |browser_context|.
-  static Session* CreateFrom(v8::Isolate* isolate,
-                             ElectronBrowserContext* browser_context);
+  static Session* FromOrCreate(v8::Isolate* isolate,
+                               ElectronBrowserContext* browser_context);
   static void New();  // Dummy, do not use!
 
   static gin::WeakCell<Session>* FromBrowserContext(
