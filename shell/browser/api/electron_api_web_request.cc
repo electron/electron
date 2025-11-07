@@ -736,15 +736,10 @@ void WebRequest::HandleSimpleEvent(SimpleEvent event,
 gin_helper::Handle<WebRequest> WebRequest::FromOrCreate(
     v8::Isolate* isolate,
     content::BrowserContext* browser_context) {
-  gin_helper::Handle<WebRequest> handle = From(isolate, browser_context);
-  if (handle.IsEmpty()) {
-    // Make sure the |Session| object has the |webRequest| property created.
-    v8::Local<v8::Value> web_request =
-        Session::FromOrCreate(
-            isolate, static_cast<ElectronBrowserContext*>(browser_context))
-            ->WebRequest(isolate);
-    gin::ConvertFromV8(isolate, web_request, &handle);
-  }
+  v8::Local<v8::Value> web_request =
+      Session::FromOrCreate(isolate, browser_context)->WebRequest(isolate);
+  gin_helper::Handle<WebRequest> handle;
+  gin::ConvertFromV8(isolate, web_request, &handle);
   DCHECK(!handle.IsEmpty());
   return handle;
 }

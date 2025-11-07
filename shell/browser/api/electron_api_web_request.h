@@ -43,10 +43,9 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
                               const std::set<std::string>& set_headers,
                               int error_code)>;
 
-  // Return the WebRequest object attached to |browser_context|, create if there
-  // is no one.
-  // Note that the lifetime of WebRequest object is managed by Session, instead
-  // of the caller.
+  // Convenience wrapper around api::Session::FromOrCreate()->WebRequest().
+  // Creates the Session and WebRequest if they don't already exist.
+  // Note that the WebRequest is owned by the session, not by the caller.
   static gin_helper::Handle<WebRequest> FromOrCreate(
       v8::Isolate* isolate,
       content::BrowserContext* browser_context);
