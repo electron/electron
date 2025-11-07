@@ -7,6 +7,7 @@ const http = require('node:http');
 // eslint-disable-next-line camelcase,@typescript-eslint/no-unused-vars
 const promises_1 = require('node:timers/promises');
 const v8 = require('node:v8');
+const math = require('mathjs');
 
 if (app.commandLine.hasSwitch('boot-eval')) {
   // eslint-disable-next-line no-eval
@@ -21,7 +22,14 @@ app.whenReady().then(() => {
       const js = Buffer.concat(chunks).toString('utf8');
       (async () => {
         try {
-          const result = await Promise.resolve(eval(js)); // eslint-disable-line no-eval
+          // Evaluate the expression safely using mathjs. Only mathematical expressions are supported.
+          let result;
+          try {
+            result = math.evaluate(js);
+          } catch (err) {
+            res.end(v8.serialize({ error: 'Invalid expression: ' + err.message }));
+            return;
+          }
           res.end(v8.serialize({ result }));
         } catch (e) {
           res.end(v8.serialize({ error: e.stack }));
