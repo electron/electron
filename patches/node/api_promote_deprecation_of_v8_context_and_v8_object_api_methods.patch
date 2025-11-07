@@ -1,0 +1,119 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Wed, 5 Nov 2025 16:41:23 -0500
+Subject: Promote deprecation of v8::Context and v8::Object API methods
+
+https://chromium-review.googlesource.com/c/v8/v8/+/7087956
+
+diff --git a/src/base_object-inl.h b/src/base_object-inl.h
+index 37d83e41b618a07aca98118260abe9618f11256d..26d5c1bd3c8191fce1d22b969996b6bf35ef6d3b 100644
+--- a/src/base_object-inl.h
++++ b/src/base_object-inl.h
+@@ -75,7 +75,7 @@ bool BaseObject::IsBaseObject(IsolateData* isolate_data,
+   }
+ 
+   uint16_t* ptr = static_cast<uint16_t*>(
+-      obj->GetAlignedPointerFromInternalField(BaseObject::kEmbedderType));
++      obj->GetAlignedPointerFromInternalField(BaseObject::kEmbedderType, v8::kEmbedderDataTypeTagDefault));
+   return ptr == isolate_data->embedder_id_for_non_cppgc();
+ }
+ 
+@@ -83,21 +83,21 @@ void BaseObject::TagBaseObject(IsolateData* isolate_data,
+                                v8::Local<v8::Object> object) {
+   DCHECK_GE(object->InternalFieldCount(), BaseObject::kInternalFieldCount);
+   object->SetAlignedPointerInInternalField(
+-      BaseObject::kEmbedderType, isolate_data->embedder_id_for_non_cppgc());
++      BaseObject::kEmbedderType, isolate_data->embedder_id_for_non_cppgc(), v8::kEmbedderDataTypeTagDefault);
+ }
+ 
+ void BaseObject::SetInternalFields(IsolateData* isolate_data,
+                                    v8::Local<v8::Object> object,
+                                    void* slot) {
+   TagBaseObject(isolate_data, object);
+-  object->SetAlignedPointerInInternalField(BaseObject::kSlot, slot);
++  object->SetAlignedPointerInInternalField(BaseObject::kSlot, slot, v8::kEmbedderDataTypeTagDefault);
+ }
+ 
+ BaseObject* BaseObject::FromJSObject(v8::Local<v8::Value> value) {
+   v8::Local<v8::Object> obj = value.As<v8::Object>();
+   DCHECK_GE(obj->InternalFieldCount(), BaseObject::kInternalFieldCount);
+   return static_cast<BaseObject*>(
+-      obj->GetAlignedPointerFromInternalField(BaseObject::kSlot));
++      obj->GetAlignedPointerFromInternalField(BaseObject::kSlot, v8::kEmbedderDataTypeTagDefault));
+ }
+ 
+ template <typename T>
+diff --git a/src/env-inl.h b/src/env-inl.h
+index 5dfbd564d5bbd22ebf3b529a07b73e85cbe51986..b0c3c52cab63c6ae67079aa752bd58dd4f162451 100644
+--- a/src/env-inl.h
++++ b/src/env-inl.h
+@@ -199,7 +199,8 @@ inline Environment* Environment::GetCurrent(v8::Local<v8::Context> context) {
+   }
+   return static_cast<Environment*>(
+       context->GetAlignedPointerFromEmbedderData(
+-          ContextEmbedderIndex::kEnvironment));
++          ContextEmbedderIndex::kEnvironment,
++          v8::kEmbedderDataTypeTagDefault));
+ }
+ 
+ inline Environment* Environment::GetCurrent(
+diff --git a/src/node_context_data.h b/src/node_context_data.h
+index d81c75daaae47b8b0b489cf357a32e437e7a6cf7..b0aab2f7b2538b6e2cacc9ffd52473b7b4ffff38 100644
+--- a/src/node_context_data.h
++++ b/src/node_context_data.h
+@@ -135,7 +135,8 @@ class ContextEmbedderTag {
+     // context.
+     context->SetAlignedPointerInEmbedderData(
+         ContextEmbedderIndex::kContextTag,
+-        ContextEmbedderTag::kNodeContextTagPtr);
++        ContextEmbedderTag::kNodeContextTagPtr,
++        v8::kEmbedderDataTypeTagDefault);
+   }
+ 
+   static inline bool IsNodeContext(v8::Local<v8::Context> context) {
+@@ -147,7 +148,8 @@ class ContextEmbedderTag {
+       return false;
+     }
+     if (context->GetAlignedPointerFromEmbedderData(
+-            ContextEmbedderIndex::kContextTag) !=
++            ContextEmbedderIndex::kContextTag,
++            v8::kEmbedderDataTypeTagDefault) !=
+         ContextEmbedderTag::kNodeContextTagPtr) [[unlikely]] {
+       return false;
+     }
+diff --git a/src/node_object_wrap.h b/src/node_object_wrap.h
+index cb13d84388bcc6806d3b038a51e1cc2d1feccda1..687b2cf3e63b2a3306e2cbac67e3e216dac49aa6 100644
+--- a/src/node_object_wrap.h
++++ b/src/node_object_wrap.h
+@@ -49,7 +49,7 @@ class ObjectWrap {
+     assert(handle->InternalFieldCount() > 0);
+     // Cast to ObjectWrap before casting to T.  A direct cast from void
+     // to T won't work right when T has more than one base class.
+-    void* ptr = handle->GetAlignedPointerFromInternalField(0);
++    void* ptr = handle->GetAlignedPointerFromInternalField(0, v8::kEmbedderDataTypeTagDefault);
+     ObjectWrap* wrap = static_cast<ObjectWrap*>(ptr);
+     return static_cast<T*>(wrap);
+   }
+@@ -75,7 +75,7 @@ class ObjectWrap {
+   inline void Wrap(v8::Local<v8::Object> handle) {
+     assert(persistent().IsEmpty());
+     assert(handle->InternalFieldCount() > 0);
+-    handle->SetAlignedPointerInInternalField(0, this);
++    handle->SetAlignedPointerInInternalField(0, this, v8::kEmbedderDataTypeTagDefault);
+     persistent().Reset(v8::Isolate::GetCurrent(), handle);
+     MakeWeak();
+   }
+diff --git a/src/node_realm-inl.h b/src/node_realm-inl.h
+index f162d1506c990a5fe578be6f1324427e3f9023f4..b57bb0b42e98b954c0c8662c667e589d6c68a5d3 100644
+--- a/src/node_realm-inl.h
++++ b/src/node_realm-inl.h
+@@ -21,7 +21,8 @@ inline Realm* Realm::GetCurrent(v8::Local<v8::Context> context) {
+     return nullptr;
+   }
+   return static_cast<Realm*>(
+-      context->GetAlignedPointerFromEmbedderData(ContextEmbedderIndex::kRealm));
++      context->GetAlignedPointerFromEmbedderData(ContextEmbedderIndex::kRealm,
++                                                 v8::kEmbedderDataTypeTagDefault));
+ }
+ 
+ inline Realm* Realm::GetCurrent(
