@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 2a127468d8fcb1d24c2e05ce0e54528386686dff..430ceff387516f71fac947017df1e45e4929f164 100644
+index 73d636ded85feb3db6582d5eab8c713fb7304b31..9c2c027ec7c22578d10d089d624f3ec395d23f1c 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1069,6 +1069,7 @@ component("base") {
@@ -581,7 +581,7 @@ index 6f3496b2541fa21fd0bba1d95026eab30e3ab96d..ef481cd946a15f5eaba928fa4e720e6c
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 4d4d187ad8c62c4e18454b385c8003a5c478d3ad..20c94074e61cffcf2806fa6b713b0603631f98f8 100644
+index bc58374ed9ce5c94e64742ead089de3ffd7351f4..36884dd700ed4d878b449c00da091497689074f2 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -343,6 +343,7 @@ source_set("browser") {
@@ -796,7 +796,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 88911eb5fe3d6e6423b12e2116704988cd032592..5852f0936d8a8de32fcce44f9833fca8aa4fcd7f 100644
+index 7c54ae91e60c7cb0b7c66d9c86b3d350d35ae34f..b4cfa7b08843c0410c5d11f46018d1f9fe89c40e 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -703,6 +703,7 @@ static_library("test_support") {
@@ -816,7 +816,7 @@ index 88911eb5fe3d6e6423b12e2116704988cd032592..5852f0936d8a8de32fcce44f9833fca8
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2066,6 +2069,7 @@ test("content_browsertests") {
+@@ -2067,6 +2070,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index 88911eb5fe3d6e6423b12e2116704988cd032592..5852f0936d8a8de32fcce44f9833fca8
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3403,6 +3407,7 @@ test("content_unittests") {
+@@ -3408,6 +3412,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1395,10 +1395,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index e54ba53ed4866e568ae5c2dfe65e72adfe253e03..07d046634534efb28ee4584dd1b11678f7473e8f 100644
+index e934eb2b317f28dd91f8aa8c69d1cdd974006232..bcc9c361d427d460f0d845bea61e14f440af0a4f 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -428,6 +428,7 @@ component("core") {
+@@ -443,6 +443,7 @@ component("core") {
      "//ui/gfx/geometry",
      "//ui/gfx/geometry:geometry_skia",
      "//ui/strings",

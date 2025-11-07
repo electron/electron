@@ -121,7 +121,7 @@ index c44058711170316552ea05f97b8b8af694da8ca3..2895f8d17e7d045a3fae3f83e4dc117d
  
    if (params.opacity == views::Widget::InitParams::WindowOpacity::kInferred &&
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index 40bba1d16a37f0b3c563faef86402641418dd994..bad7f48f50d5cd1c716963f660f63c7ec0d6449a 100644
+index 64d07b209f72fc593c861d84d2baf0ca52ce9aed..1569f9115371d4eaa18bb34eb4d91a1380d257d5 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
 @@ -324,6 +324,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,

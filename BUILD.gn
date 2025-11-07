@@ -761,11 +761,13 @@ source_set("electron_lib") {
   if (enable_pdf_viewer) {
     deps += [
       "//chrome/browser/resources/pdf:resources",
+      "//chrome/browser/ui:browser_element_identifiers",
       "//components/pdf/browser",
       "//components/pdf/browser:interceptors",
       "//components/pdf/common:constants",
       "//components/pdf/common:util",
       "//components/pdf/renderer",
+      "//components/user_education/webui",
       "//pdf",
       "//pdf:content_restriction",
     ]
