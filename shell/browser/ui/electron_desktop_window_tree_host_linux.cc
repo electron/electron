@@ -100,13 +100,19 @@ void ElectronDesktopWindowTreeHostLinux::OnWindowStateChanged(
 void ElectronDesktopWindowTreeHostLinux::OnWindowTiledStateChanged(
     ui::WindowTiledEdges new_tiled_edges) {
   if (auto* const view = native_window_view_->GetClientFrameViewLinux()) {
-    bool maximized = new_tiled_edges.top && new_tiled_edges.left &&
-                     new_tiled_edges.bottom && new_tiled_edges.right;
+    // GNOME on Ubuntu reports all edges as tiled
+    // even if the window is only half-tiled so do not trust individual edge
+    // values.
+    bool maximized = native_window_view_->IsMaximized();
     bool tiled = new_tiled_edges.top || new_tiled_edges.left ||
                  new_tiled_edges.bottom || new_tiled_edges.right;
     view->set_tiled(tiled && !maximized);
   }
   UpdateFrameHints();
+  ScheduleRelayout();
+  if (GetWidget()->non_client_view()) {
+    GetWidget()->non_client_view()->SchedulePaint();
+  }
 }
 
 void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
