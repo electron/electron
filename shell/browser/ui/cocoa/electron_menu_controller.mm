@@ -457,6 +457,43 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   return item;
 }
 
+- (void)applyStateToMenuItem:(NSMenuItem*)item {
+  id represented = item.representedObject;
+  if (!represented)
+    return;
+
+  if (![represented
+          isKindOfClass:[WeakPtrToElectronMenuModelAsNSObject class]]) {
+    NSLog(@"representedObject is not a WeakPtrToElectronMenuModelAsNSObject");
+    return;
+  }
+
+  electron::ElectronMenuModel* model =
+      [WeakPtrToElectronMenuModelAsNSObject getFrom:represented];
+  if (!model)
+    return;
+
+  NSInteger index = item.tag;
+  int count = model->GetItemCount();
+  if (index < 0 || index >= count)
+    return;
+
+  item.hidden = !model->IsVisibleAt(index);
+  item.enabled = model->IsEnabledAt(index);
+  item.state = model->IsItemCheckedAt(index) ? NSControlStateValueOn
+                                             : NSControlStateValueOff;
+}
+
+// Recursively refreshes the menu tree starting from |menu|, applying the
+// model state to each menu item.
+- (void)refreshMenuTree:(NSMenu*)menu {
+  for (NSMenuItem* item in menu.itemArray) {
+    [self applyStateToMenuItem:item];
+    if (item.submenu)
+      [self refreshMenuTree:item.submenu];
+  }
+}
+
 // Adds an item or a hierarchical menu to the item at the |index|,
 // associated with the entry in the model identified by |modelIndex|.
 - (void)addItemToMenu:(NSMenu*)menu
