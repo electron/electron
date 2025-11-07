@@ -11,6 +11,7 @@
 #include "base/no_destructor.h"
 #include "base/process/process.h"
 #include "base/strings/utf_string_conversions.h"
+#include "content/public/common/content_features.h"
 #include "electron/mas.h"
 #include "net/base/network_change_notifier.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
@@ -22,6 +23,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/v8_util.h"
 #include "shell/services/node/parent_port.h"
 
 #if !IS_MAS_BUILD()
@@ -125,6 +127,11 @@ void NodeService::Initialize(
 
   v8::Isolate* const isolate = js_env_->isolate();
   v8::HandleScope scope{isolate};
+
+  // Initialize after setting up the V8 isolate.
+  if (base::FeatureList::IsEnabled(features::kWebAssemblyTrapHandler)) {
+    electron::SetUpWebAssemblyTrapHandler();
+  }
 
   node_bindings_->Initialize(isolate, isolate->GetCurrentContext());
 
