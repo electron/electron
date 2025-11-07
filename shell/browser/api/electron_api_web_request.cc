@@ -313,7 +313,6 @@ WebRequest::ResponseListenerInfo::ResponseListenerInfo() = default;
 WebRequest::ResponseListenerInfo::~ResponseListenerInfo() = default;
 
 WebRequest::WebRequest(base::PassKey<Session>,
-                       v8::Isolate* isolate,
                        content::BrowserContext* browser_context)
     : browser_context_{browser_context} {
   browser_context_->SetUserData(kUserDataKey, std::make_unique<UserData>(this));
@@ -751,7 +750,7 @@ gin_helper::Handle<WebRequest> WebRequest::Create(
     v8::Isolate* isolate,
     content::BrowserContext* browser_context) {
   return gin_helper::CreateHandle(
-      isolate, new WebRequest{std::move(passkey), isolate, browser_context});
+      isolate, new WebRequest{std::move(passkey), browser_context});
 }
 
 }  // namespace electron::api

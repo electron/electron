@@ -100,9 +100,7 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
   void OnRequestWillBeDestroyed(extensions::WebRequestInfo* info);
 
  private:
-  WebRequest(base::PassKey<Session>,
-             v8::Isolate* isolate,
-             content::BrowserContext* browser_context);
+  WebRequest(base::PassKey<Session>, content::BrowserContext* browser_context);
   ~WebRequest() override;
 
   // Contains info about requests that are blocked waiting for a response from
