@@ -806,7 +806,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@napi-rs/canvas@npm:^0.1.65":
+"@napi-rs/canvas@npm:^0.1.80":
   version: 0.1.81
   resolution: "@napi-rs/canvas@npm:0.1.81"
   dependencies:
@@ -4092,7 +4092,7 @@ __metadata:
     mocha: "npm:^10.0.0"
     mocha-junit-reporter: "npm:^1.18.0"
     mocha-multi-reporters: "npm:^1.1.7"
-    pdfjs-dist: "npm:^4.2.67"
+    pdfjs-dist: "npm:^5.4.296"
     ps-list: "npm:^7.0.0"
     q: "npm:^1.5.1"
     send: "npm:^0.19.0"
@@ -9473,15 +9473,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pdfjs-dist@npm:^4.2.67":
-  version: 4.10.38
-  resolution: "pdfjs-dist@npm:4.10.38"
+"pdfjs-dist@npm:^5.4.296":
+  version: 5.4.296
+  resolution: "pdfjs-dist@npm:5.4.296"
   dependencies:
-    "@napi-rs/canvas": "npm:^0.1.65"
+    "@napi-rs/canvas": "npm:^0.1.80"
   dependenciesMeta:
     "@napi-rs/canvas":
       optional: true
-  checksum: 10c0/77b022109be7aac00372750a53decea3979409e6ef1cf93bf554351569cd4d1fafc70afae4a9a3e4b4de3facf59d3acd54d324b0fcff781374bcb00493d449ce
+  checksum: 10c0/a9e438f12771963f7c29934b4d5e58d508fa43954e4e4cbf951b040c6c89891d048e3d9d3799ed9ec6ceade677628a25f88062b300c5425777ce0b522e457532
   languageName: node
   linkType: hard
 
