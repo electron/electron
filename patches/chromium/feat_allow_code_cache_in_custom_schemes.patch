@@ -405,7 +405,7 @@ index c81434acc7cad0f6aa2e807c3c4037052863179e..d0da89f78308fc95778a5ce705a43f03
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index 039d39d55ff6984df478d62c40e852d60ab35c21..175abe714683841f046c7516c11e17ed24b225ab 100644
+index 87894c72227acdd951d61e3985d97215750a9748..5f270d100e76b441b1bfde0aed6ab850b843d8f6 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
 @@ -136,6 +136,9 @@ struct SchemeRegistry {
