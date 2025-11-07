@@ -2633,11 +2633,13 @@ describe('webContents module', () => {
   ifdescribe(features.isPrintingEnabled())('printToPDF()', () => {
     let server: http.Server | null;
     const readPDF = async (data: any) => {
+      console.log('Reading PDF file with pdf-reader');
       const tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'e-spec-printtopdf-'));
       const pdfPath = path.resolve(tmpDir, 'test.pdf');
       await fs.promises.writeFile(pdfPath, data);
       const pdfReaderPath = path.resolve(fixturesPath, 'api', 'pdf-reader.mjs');
 
+      console.log(`Spawning pdf-reader process: ${process.execPath} ${pdfReaderPath} ${pdfPath}`);
       const result = cp.spawn(process.execPath, [pdfReaderPath, pdfPath], {
         stdio: 'pipe'
       });
@@ -2649,10 +2651,14 @@ describe('webContents module', () => {
 
       const [code, signal] = await new Promise<[number | null, NodeJS.Signals | null]>((resolve) => {
         result.on('close', (code, signal) => {
+          console.log(`pdf-reader process exited with code ${code} and signal ${signal}`);
           resolve([code, signal]);
         });
       });
+      console.log('Cleaning up temporary files');
       await fs.promises.rm(tmpDir, { force: true, recursive: true });
+      console.log('Temporary files cleaned up');
+      console.log('STDERR from pdf-reader:', Buffer.concat(stderr).toString());
       if (code !== 0) {
         const errMsg = Buffer.concat(stderr).toString().trim();
         console.error(`Error parsing PDF file, exit code was ${code}; signal was ${signal}, error: ${errMsg}`);
@@ -2772,14 +2778,15 @@ describe('webContents module', () => {
         A5: { width: 5.83, height: 8.27 },
         A6: { width: 4.13, height: 5.83 }
       };
-
+      console.log('In printToPdf with custom page sizes test, about to load file');
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
-
+      console.log('File loaded, starting tests for different page sizes');
       for (const format of Object.keys(paperFormats) as PageSizeString[]) {
+        console.log(`Testing printToPDF with pageSize: ${format}`);
         const data = await w.webContents.printToPDF({ pageSize: format });
-
+        console.log(`PDF generated for pageSize: ${format}, reading PDF info`);
         const pdfInfo = await readPDF(data);
-
+        console.log(`PDF info read for pageSize: ${format}`);
         // page.view is [top, left, width, height].
         const width = pdfInfo.view[2] / 72;
         const height = pdfInfo.view[3] / 72;
