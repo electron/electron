@@ -23,6 +23,7 @@
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "net/base/completion_once_callback.h"
+#include "net/ssl/ssl_info.h"
 #include "net/traffic_annotation/network_traffic_annotation.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/mojom/network_context.mojom.h"
@@ -115,6 +116,7 @@ class ProxyingURLLoaderFactory
                              OnBeforeSendHeadersCallback callback) override;
     void OnHeadersReceived(const std::string& headers,
                            const net::IPEndPoint& endpoint,
+                           const std::optional<net::SSLInfo>& ssl_info,
                            OnHeadersReceivedCallback callback) override;
 
    private:
