@@ -684,7 +684,7 @@ function renderTrops (commit: Commit, excludeBranch: string) {
     .map(([branch, key]) => renderTrop(branch, key))
     .join(', ');
   return body
-    ? `<span style="font-size:small;">(Also in ${body})</span>`
+    ? `<sup>(Also in ${body})</sup>`
     : body;
 }
 

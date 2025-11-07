@@ -10,7 +10,7 @@ change, it seems to introduce an incompatibility when compiling
 using clang modules. Disabling them resolves the issue.
 
 diff --git a/unofficial.gni b/unofficial.gni
-index a64d2e4ac475abc049fff7ea62ec76de565a747d..ab456452d102088005fc4bfcb394d2de5ec44889 100644
+index dd686d2f7c8d2f6e8d6bd13a7bf2b4b140556ba9..97e4bcfaa8aa42a5fc2b68ccdd8128eac8886532 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -195,6 +195,10 @@ template("node_gn_build") {
@@ -24,7 +24,7 @@ index a64d2e4ac475abc049fff7ea62ec76de565a747d..ab456452d102088005fc4bfcb394d2de
      }
      if (is_posix) {
        configs -= [ "//build/config/gcc:symbol_visibility_hidden" ]
-@@ -350,6 +354,12 @@ template("node_gn_build") {
+@@ -367,6 +371,12 @@ template("node_gn_build") {
      include_dirs = [ "src", "tools" ]
      configs += [ "//build/config/compiler:no_exit_time_destructors" ]
  

@@ -15,10 +15,10 @@ described in 97b353a (#34993):
 This patch can be removed when we fix that crash.
 
 diff --git a/chrome/browser/chrome_browser_main.cc b/chrome/browser/chrome_browser_main.cc
-index 9cb826530cf567e98baf91a60ca1f7496aca9431..2d0e92f9f373f8ef6ffa3c292811df957d457c95 100644
+index 2034b961d99225ebe9b606af915f5d90fdae913e..a7ee864ae4d14d36bdf5f7f4fb0ba86255dc9c6f 100644
 --- a/chrome/browser/chrome_browser_main.cc
 +++ b/chrome/browser/chrome_browser_main.cc
-@@ -1412,6 +1412,17 @@ void ChromeBrowserMainParts::PostProfileInit(Profile* profile,
+@@ -1475,6 +1475,17 @@ void ChromeBrowserMainParts::PostProfileInit(Profile* profile,
                         profile->GetPath()));
    }
  
@@ -37,7 +37,7 @@ index 9cb826530cf567e98baf91a60ca1f7496aca9431..2d0e92f9f373f8ef6ffa3c292811df95
  
  #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(IS_LINUX) || \
 diff --git a/chrome/browser/extensions/api/language_settings_private/language_settings_private_api.cc b/chrome/browser/extensions/api/language_settings_private/language_settings_private_api.cc
-index 5bad748fdfc7944a44dbe4dd7891eda31e3128d3..c1701b71a76695c3e941009bdd55777167907834 100644
+index 3e617c9bf924e089e27784f960f08a21b98fee0a..8fd91821d588b5d70d1b320b64cc640c77be8d7d 100644
 --- a/chrome/browser/extensions/api/language_settings_private/language_settings_private_api.cc
 +++ b/chrome/browser/extensions/api/language_settings_private/language_settings_private_api.cc
 @@ -275,15 +275,21 @@ LanguageSettingsPrivateGetLanguageListFunction::Run() {
@@ -180,10 +180,10 @@ index bd0d77323277ee422ec4f75cee9f7d4e9bf198b3..d0ed451fe104b9671d6002ca72e8ca3a
  
  }  // namespace
 diff --git a/chrome/browser/site_isolation/spellcheck_per_process_browsertest.cc b/chrome/browser/site_isolation/spellcheck_per_process_browsertest.cc
-index 8aef94fbd6788d1216648d873cdea3136d8e51c0..1a18086f01c21b34e1ce5ecf750591456a8f3d32 100644
+index 081e422f9a29fc36eea19ed730b430ba5ceb2861..7817bc7a6f9f2c7fdeb08c9b185d2dd3c8cc61f7 100644
 --- a/chrome/browser/site_isolation/spellcheck_per_process_browsertest.cc
 +++ b/chrome/browser/site_isolation/spellcheck_per_process_browsertest.cc
-@@ -133,21 +133,26 @@ class MockSpellCheckHost : spellcheck::mojom::SpellCheckHost {
+@@ -134,21 +134,26 @@ class MockSpellCheckHost : spellcheck::mojom::SpellCheckHost {
  #if BUILDFLAG(IS_WIN)
    void InitializeDictionaries(
        InitializeDictionariesCallback callback) override {
@@ -222,9 +222,9 @@ index 8aef94fbd6788d1216648d873cdea3136d8e51c0..1a18086f01c21b34e1ce5ecf75059145
    }
  
    void OnDictionariesInitialized() {
-@@ -259,7 +264,17 @@ class ChromeSitePerProcessSpellCheckTest : public ChromeSitePerProcessTest {
-  public:
-   ChromeSitePerProcessSpellCheckTest() = default;
+@@ -263,7 +268,17 @@ class ChromeSitePerProcessSpellCheckTest : public ChromeSitePerProcessTest {
+         blink::features::kRestrictSpellingAndGrammarHighlights);
+   }
  
 -  void SetUp() override { ChromeSitePerProcessTest::SetUp(); }
 +  void SetUp() override {
@@ -241,7 +241,7 @@ index 8aef94fbd6788d1216648d873cdea3136d8e51c0..1a18086f01c21b34e1ce5ecf75059145
  
   protected:
    // Tests that spelling in out-of-process subframes is checked.
-@@ -366,3 +381,29 @@ IN_PROC_BROWSER_TEST_F(ChromeSitePerProcessSpellCheckTest,
+@@ -370,3 +385,29 @@ IN_PROC_BROWSER_TEST_F(ChromeSitePerProcessSpellCheckTest,
    EXPECT_TRUE(host->SpellingPanelVisible());
  }
  #endif  // BUILDFLAG(HAS_SPELLCHECK_PANEL)
@@ -272,7 +272,7 @@ index 8aef94fbd6788d1216648d873cdea3136d8e51c0..1a18086f01c21b34e1ce5ecf75059145
 +}
 +#endif  // BUILDFLAG(IS_WIN) && BUILDFLAG(USE_BROWSER_SPELLCHECKER)
 diff --git a/chrome/browser/spellchecker/spell_check_host_chrome_impl.cc b/chrome/browser/spellchecker/spell_check_host_chrome_impl.cc
-index c51c5747f45010548fe0cb7d31016605cf43c8e3..a99eb10c4ba77a1d3a89a308acffb5064d690b4a 100644
+index 4eda6aba66af11df4e8719e075e807564d54baac..29d9399c78fc6b4d597ab1f0dc53571131bffd95 100644
 --- a/chrome/browser/spellchecker/spell_check_host_chrome_impl.cc
 +++ b/chrome/browser/spellchecker/spell_check_host_chrome_impl.cc
 @@ -186,21 +186,27 @@ void SpellCheckHostChromeImpl::InitializeDictionaries(
@@ -399,7 +399,7 @@ index 31ab441aedd69c08c6f1beefa2129e60bd44a7f3..308c90516a9881b82da5cedec5d80208
 +  RunSpellCheckReturnMessageTest();
 +}
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index 02da80b42f936f347c9043f4499d9a324bdf43d2..8fbb2025d157e58c90c701f9e3478f6c99b88aa1 100644
+index 97b8fc0f38650e816bcae00e074543766f71e0d0..83d9e177e9b5e13587655915b9fbbddf5f9f275d 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
 @@ -170,7 +170,9 @@ SpellcheckService::SpellcheckService(content::BrowserContext* context)
@@ -413,7 +413,7 @@ index 02da80b42f936f347c9043f4499d9a324bdf43d2..8fbb2025d157e58c90c701f9e3478f6c
      // If initialization of the spellcheck service is on-demand, it is up to the
      // instantiator of the spellcheck service to call InitializeDictionaries
      // with a callback.
-@@ -492,7 +494,9 @@ void SpellcheckService::LoadDictionaries() {
+@@ -493,7 +495,9 @@ void SpellcheckService::LoadDictionaries() {
    }
  
  #if BUILDFLAG(USE_BROWSER_SPELLCHECKER)
@@ -424,7 +424,7 @@ index 02da80b42f936f347c9043f4499d9a324bdf43d2..8fbb2025d157e58c90c701f9e3478f6c
      // Only want to fire the callback on first call to LoadDictionaries
      // originating from InitializeDictionaries, since supported platform
      // dictionaries are cached throughout the browser session and not
-@@ -520,7 +524,9 @@ bool SpellcheckService::IsSpellcheckEnabled() const {
+@@ -521,7 +525,9 @@ bool SpellcheckService::IsSpellcheckEnabled() const {
  
    bool enable_if_uninitialized = false;
  #if BUILDFLAG(IS_WIN)

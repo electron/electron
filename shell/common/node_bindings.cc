@@ -99,6 +99,7 @@
   V(electron_common_environment)      \
   V(electron_common_features)         \
   V(electron_common_native_image)     \
+  V(electron_common_shared_texture)   \
   V(electron_common_shell)            \
   V(electron_common_v8_util)
 
@@ -284,12 +285,10 @@ v8::MaybeLocal<v8::Promise> HostImportModuleWithPhaseDynamically(
           context, v8_host_defined_options, v8_referrer_resource_url,
           v8_specifier, import_phase, v8_import_attributes);
     case ESMHandlerPlatform::kNodeJS:
-      // TODO: Switch to node::loader::ImportModuleDynamicallyWithPhase
-      // once we land the Node.js version that has it in upstream.
       CHECK(import_phase == v8::ModuleImportPhase::kEvaluation);
-      return node::loader::ImportModuleDynamically(
+      return node::loader::ImportModuleDynamicallyWithPhase(
           context, v8_host_defined_options, v8_referrer_resource_url,
-          v8_specifier, v8_import_attributes);
+          v8_specifier, import_phase, v8_import_attributes);
     case ESMHandlerPlatform::kNone:
     default:
       return {};

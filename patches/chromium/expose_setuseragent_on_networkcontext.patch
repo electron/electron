@@ -33,10 +33,10 @@ index 0ab8187b0db8ae6db46d81738f653a2bc4c566f6..de3d55e85c22317f7f9375eb94d0d5d4
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index cf1cee2251d8ba88535acc1e41cf82986b62f259..27c1a38d0f1b06cbc0722f2067fe39a4f86f0903 100644
+index 3598823a6400c4e5045621950433d2688cfbba89..66379714141b83a2ded90f88ce8b89bf900ca5a6 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -1910,6 +1910,13 @@ void NetworkContext::EnableDurableMessageCollector(
+@@ -1911,6 +1911,13 @@ void NetworkContext::EnableDurableMessageCollector(
    it->second->AddReceiver(std::move(receiver));
  }
  
@@ -63,10 +63,10 @@ index 90cf1a70c068771ac98b2d5a283cba5e54c05ff4..0dc8de8d4e37e48cb28d8112c0233ac8
    void SetEnableReferrers(bool enable_referrers) override;
  #if BUILDFLAG(IS_CT_SUPPORTED)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 00374e2ad12939733983fc6ea4643ff72134942a..ed149b049cb837adb17dfbd302f3ccc597c85fba 100644
+index 58c53f7bab65af0b797f502a4633ca47933e26f0..474baf5e969c4397c9f61c9dea7ec2a466510dd8 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -1353,6 +1353,9 @@ interface NetworkContext {
+@@ -1352,6 +1352,9 @@ interface NetworkContext {
        mojo_base.mojom.UnguessableToken throttling_profile_id,
        pending_receiver<DurableMessageCollector> receiver);
  

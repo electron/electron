@@ -342,6 +342,8 @@ describe('webFrameMain module', () => {
       const crashEvent = once(w.webContents, 'render-process-gone');
       w.webContents.forcefullyCrashRenderer();
       await crashEvent;
+      // A short wait seems to be required to reproduce the crash.
+      await setTimeout(100);
       await w.webContents.loadURL(server.url);
       // Log just to keep mainFrame in scope.
       console.log('mainFrame.url', mainFrame.url);
