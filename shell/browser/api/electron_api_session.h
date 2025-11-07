@@ -75,6 +75,12 @@ class Session final : public gin::Wrappable<Session>,
   // Gets or creates Session from the |browser_context|.
   static Session* FromOrCreate(v8::Isolate* isolate,
                                ElectronBrowserContext* browser_context);
+
+  // Convenience wrapper around the previous method: Checks that
+  // |browser_context| is an ElectronBrowserContext before downcasting.
+  static Session* FromOrCreate(v8::Isolate* isolate,
+                               content::BrowserContext* browser_context);
+
   static void New();  // Dummy, do not use!
 
   static gin::WeakCell<Session>* FromBrowserContext(

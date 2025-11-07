@@ -1689,6 +1689,15 @@ gin::WeakCell<Session>* Session::FromBrowserContext(
 
 // static
 Session* Session::FromOrCreate(v8::Isolate* isolate,
+                               content::BrowserContext* context) {
+  if (ElectronBrowserContext::IsValidContext(context))
+    return FromOrCreate(isolate, static_cast<ElectronBrowserContext*>(context));
+  DCHECK(false);
+  return {};
+}
+
+// static
+Session* Session::FromOrCreate(v8::Isolate* isolate,
                                ElectronBrowserContext* browser_context) {
   gin::WeakCell<Session>* existing = FromBrowserContext(browser_context);
   if (existing && existing->Get()) {
