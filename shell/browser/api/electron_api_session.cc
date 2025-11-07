@@ -1361,8 +1361,7 @@ v8::Local<v8::Value> Session::ServiceWorkerContext(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
   if (web_request_.IsEmptyThreadSafe()) {
-    auto handle = WebRequest::Create(base::PassKey<Session>{}, isolate,
-                                     browser_context());
+    auto handle = WebRequest::Create(base::PassKey<Session>{}, isolate);
     web_request_.Reset(isolate, handle.ToV8());
   }
   return web_request_.Get(isolate);

@@ -9,7 +9,6 @@
 #include <set>
 #include <string>
 
-#include "base/memory/raw_ptr.h"
 #include "base/types/pass_key.h"
 #include "net/base/completion_once_callback.h"
 #include "services/network/public/cpp/resource_request.h"
@@ -54,10 +53,8 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
       content::BrowserContext* browser_context);
 
   // Return a new WebRequest object. This can only be called by api::Session.
-  static gin_helper::Handle<WebRequest> Create(
-      base::PassKey<Session>,
-      v8::Isolate* isolate,
-      content::BrowserContext* browser_context);
+  static gin_helper::Handle<WebRequest> Create(base::PassKey<Session>,
+                                               v8::Isolate* isolate);
 
   static const char* GetClassName() { return "WebRequest"; }
 
@@ -100,7 +97,7 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
   void OnRequestWillBeDestroyed(extensions::WebRequestInfo* info);
 
  private:
-  WebRequest(base::PassKey<Session>, content::BrowserContext* browser_context);
+  explicit WebRequest(base::PassKey<Session>);
   ~WebRequest() override;
 
   // Contains info about requests that are blocked waiting for a response from
@@ -211,9 +208,6 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
   std::map<SimpleEvent, SimpleListenerInfo> simple_listeners_;
   std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;
   std::map<uint64_t, BlockedRequest> blocked_requests_;
-
-  // Weak-ref, it manages us.
-  raw_ptr<content::BrowserContext> browser_context_;
 };
 
 }  // namespace electron::api

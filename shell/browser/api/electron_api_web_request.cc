@@ -72,14 +72,6 @@ namespace electron::api {
 
 namespace {
 
-const char kUserDataKey[] = "WebRequest";
-
-// BrowserContext <=> WebRequest relationship.
-struct UserData : public base::SupportsUserData::Data {
-  explicit UserData(WebRequest* data) : data(data) {}
-  raw_ptr<WebRequest> data;
-};
-
 extensions::WebRequestResourceType ParseResourceType(std::string_view value) {
   if (auto iter = ResourceTypes.find(value); iter != ResourceTypes.end())
     return iter->second;
@@ -312,15 +304,8 @@ WebRequest::ResponseListenerInfo::ResponseListenerInfo(
 WebRequest::ResponseListenerInfo::ResponseListenerInfo() = default;
 WebRequest::ResponseListenerInfo::~ResponseListenerInfo() = default;
 
-WebRequest::WebRequest(base::PassKey<Session>,
-                       content::BrowserContext* browser_context)
-    : browser_context_{browser_context} {
-  browser_context_->SetUserData(kUserDataKey, std::make_unique<UserData>(this));
-}
-
-WebRequest::~WebRequest() {
-  browser_context_->RemoveUserData(kUserDataKey);
-}
+WebRequest::WebRequest(base::PassKey<Session>) {}
+WebRequest::~WebRequest() = default;
 
 gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
@@ -747,10 +732,8 @@ gin_helper::Handle<WebRequest> WebRequest::FromOrCreate(
 // static
 gin_helper::Handle<WebRequest> WebRequest::Create(
     base::PassKey<Session> passkey,
-    v8::Isolate* isolate,
-    content::BrowserContext* browser_context) {
-  return gin_helper::CreateHandle(
-      isolate, new WebRequest{std::move(passkey), browser_context});
+    v8::Isolate* isolate) {
+  return gin_helper::CreateHandle(isolate, new WebRequest{std::move(passkey)});
 }
 
 }  // namespace electron::api
