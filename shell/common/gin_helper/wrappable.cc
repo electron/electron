@@ -22,7 +22,8 @@ bool IsValidWrappable(const v8::Local<v8::Value>& val,
 
   const gin::DeprecatedWrapperInfo* info =
       static_cast<gin::DeprecatedWrapperInfo*>(
-          port->GetAlignedPointerFromInternalField(gin::kWrapperInfoIndex));
+          port->GetAlignedPointerFromInternalField(
+              gin::kWrapperInfoIndex, v8::kEmbedderDataTypeTagDefault));
   if (info != wrapper_info)
     return false;
 
@@ -36,7 +37,8 @@ WrappableBase::~WrappableBase() {
     return;
 
   v8::HandleScope scope(isolate());
-  GetWrapper()->SetAlignedPointerInInternalField(0, nullptr);
+  GetWrapper()->SetAlignedPointerInInternalField(
+      0, nullptr, v8::kEmbedderDataTypeTagDefault);
   wrapper_.ClearWeak();
   wrapper_.Reset();
 }
@@ -58,7 +60,8 @@ void WrappableBase::InitWith(v8::Isolate* isolate,
                              v8::Local<v8::Object> wrapper) {
   CHECK(wrapper_.IsEmpty());
   isolate_ = isolate;
-  wrapper->SetAlignedPointerInInternalField(0, this);
+  wrapper->SetAlignedPointerInInternalField(0, this,
+                                            v8::kEmbedderDataTypeTagDefault);
   wrapper_.Reset(isolate, wrapper);
   wrapper_.SetWeak(this, FirstWeakCallback,
                    v8::WeakCallbackType::kInternalFields);
@@ -158,9 +161,10 @@ v8::MaybeLocal<v8::Object> DeprecatedWrappableBase::GetWrapperImpl(
     return v8::MaybeLocal<v8::Object>(wrapper);
   }
 
-  int indices[] = {gin::kWrapperInfoIndex, gin::kEncodedValueIndex};
-  void* values[] = {info, this};
-  wrapper->SetAlignedPointerInInternalFields(2, indices, values);
+  wrapper->SetAlignedPointerInInternalField(gin::kWrapperInfoIndex, info,
+                                            v8::kEmbedderDataTypeTagDefault);
+  wrapper->SetAlignedPointerInInternalField(gin::kEncodedValueIndex, this,
+                                            v8::kEmbedderDataTypeTagDefault);
   wrapper_.Reset(isolate, wrapper);
   wrapper_.SetWeak(this, FirstWeakCallback,
                    v8::WeakCallbackType::kInternalFields);
@@ -180,7 +184,8 @@ void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val) {
   v8::Local<v8::Object> obj = val.As<v8::Object>();
   if (obj->InternalFieldCount() != 1)
     return nullptr;
-  return obj->GetAlignedPointerFromInternalField(0);
+  return obj->GetAlignedPointerFromInternalField(
+      0, v8::kEmbedderDataTypeTagDefault);
 }
 
 void* FromV8Impl(v8::Isolate* isolate,
@@ -205,7 +210,8 @@ void* FromV8Impl(v8::Isolate* isolate,
     return nullptr;
   }
 
-  return obj->GetAlignedPointerFromInternalField(gin::kEncodedValueIndex);
+  return obj->GetAlignedPointerFromInternalField(
+      gin::kEncodedValueIndex, v8::kEmbedderDataTypeTagDefault);
 }
 
 }  // namespace internal
@@ -219,7 +225,8 @@ DeprecatedWrapperInfo* DeprecatedWrapperInfo::From(
   if (object->InternalFieldCount() != kNumberOfInternalFields)
     return NULL;
   DeprecatedWrapperInfo* info = static_cast<DeprecatedWrapperInfo*>(
-      object->GetAlignedPointerFromInternalField(kWrapperInfoIndex));
+      object->GetAlignedPointerFromInternalField(
+          kWrapperInfoIndex, v8::kEmbedderDataTypeTagDefault));
   return info->embedder == kEmbedderNativeGin ? info : NULL;
 }
 
