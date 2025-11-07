@@ -312,9 +312,10 @@ WebRequest::ResponseListenerInfo::ResponseListenerInfo(
 WebRequest::ResponseListenerInfo::ResponseListenerInfo() = default;
 WebRequest::ResponseListenerInfo::~ResponseListenerInfo() = default;
 
-WebRequest::WebRequest(v8::Isolate* isolate,
+WebRequest::WebRequest(base::PassKey<Session>,
+                       v8::Isolate* isolate,
                        content::BrowserContext* browser_context)
-    : browser_context_(browser_context) {
+    : browser_context_{browser_context} {
   browser_context_->SetUserData(kUserDataKey, std::make_unique<UserData>(this));
 }
 
@@ -746,12 +747,13 @@ gin_helper::Handle<WebRequest> WebRequest::FromOrCreate(
 
 // static
 gin_helper::Handle<WebRequest> WebRequest::Create(
+    base::PassKey<Session> passkey,
     v8::Isolate* isolate,
     content::BrowserContext* browser_context) {
   DCHECK(From(isolate, browser_context).IsEmpty())
       << "WebRequest already created";
-  return gin_helper::CreateHandle(isolate,
-                                  new WebRequest(isolate, browser_context));
+  return gin_helper::CreateHandle(
+      isolate, new WebRequest{std::move(passkey), isolate, browser_context});
 }
 
 // static

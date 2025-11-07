@@ -10,6 +10,7 @@
 #include <string>
 
 #include "base/memory/raw_ptr.h"
+#include "base/types/pass_key.h"
 #include "net/base/completion_once_callback.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "shell/common/gin_helper/wrappable.h"
@@ -36,6 +37,8 @@ class Handle;
 
 namespace electron::api {
 
+class Session;
+
 class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
  public:
   using BeforeSendHeadersCallback =
@@ -52,6 +55,7 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
 
   // Return a new WebRequest object, this should only be called by Session.
   static gin_helper::Handle<WebRequest> Create(
+      base::PassKey<Session>,
       v8::Isolate* isolate,
       content::BrowserContext* browser_context);
 
@@ -101,7 +105,9 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
   void OnRequestWillBeDestroyed(extensions::WebRequestInfo* info);
 
  private:
-  WebRequest(v8::Isolate* isolate, content::BrowserContext* browser_context);
+  WebRequest(base::PassKey<Session>,
+             v8::Isolate* isolate,
+             content::BrowserContext* browser_context);
   ~WebRequest() override;
 
   // Contains info about requests that are blocked waiting for a response from

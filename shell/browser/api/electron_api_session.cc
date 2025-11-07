@@ -19,6 +19,7 @@
 #include "base/files/file_util.h"
 #include "base/scoped_observation.h"
 #include "base/strings/string_util.h"
+#include "base/types/pass_key.h"
 #include "base/uuid.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/predictors/predictors_traffic_annotations.h"  // nogncheck
@@ -1360,7 +1361,8 @@ v8::Local<v8::Value> Session::ServiceWorkerContext(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
   if (web_request_.IsEmptyThreadSafe()) {
-    auto handle = WebRequest::Create(isolate, browser_context());
+    auto handle = WebRequest::Create(base::PassKey<Session>{}, isolate,
+                                     browser_context());
     web_request_.Reset(isolate, handle.ToV8());
   }
   return web_request_.Get(isolate);
