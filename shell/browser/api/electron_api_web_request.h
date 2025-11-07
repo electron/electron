@@ -53,14 +53,9 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
       v8::Isolate* isolate,
       content::BrowserContext* browser_context);
 
-  // Return a new WebRequest object, this should only be called by Session.
+  // Return a new WebRequest object. This can only be called by api::Session.
   static gin_helper::Handle<WebRequest> Create(
       base::PassKey<Session>,
-      v8::Isolate* isolate,
-      content::BrowserContext* browser_context);
-
-  // Find the WebRequest object attached to |browser_context|.
-  static gin_helper::Handle<WebRequest> From(
       v8::Isolate* isolate,
       content::BrowserContext* browser_context);
 

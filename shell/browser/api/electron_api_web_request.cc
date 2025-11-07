@@ -750,23 +750,8 @@ gin_helper::Handle<WebRequest> WebRequest::Create(
     base::PassKey<Session> passkey,
     v8::Isolate* isolate,
     content::BrowserContext* browser_context) {
-  DCHECK(From(isolate, browser_context).IsEmpty())
-      << "WebRequest already created";
   return gin_helper::CreateHandle(
       isolate, new WebRequest{std::move(passkey), isolate, browser_context});
-}
-
-// static
-gin_helper::Handle<WebRequest> WebRequest::From(
-    v8::Isolate* isolate,
-    content::BrowserContext* browser_context) {
-  if (!browser_context)
-    return {};
-  auto* user_data =
-      static_cast<UserData*>(browser_context->GetUserData(kUserDataKey));
-  if (!user_data)
-    return {};
-  return gin_helper::CreateHandle(isolate, user_data->data.get());
 }
 
 }  // namespace electron::api
