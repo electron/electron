@@ -323,7 +323,7 @@ void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
                 std::max(current_bounds.width(), bounds.width()),
                 std::max(current_bounds.height(), bounds.height()));
 
-  view_->SetPaintToLayer();
+  view_->SetPaintToLayer(ui::LAYER_NOT_DRAWN);
 
   // if the view's size is smaller than the target size, we need to set the
   // view's bounds immediatley to the new size (not position) and set the
@@ -332,8 +332,10 @@ void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
     view_->SetBoundsRect(max_size);
 
     ui::Layer* layer = view_->layer();
-    layer->SetClipRect(
-        gfx::Rect(0, 0, current_bounds.width(), current_bounds.height()));
+    if (layer) {
+      layer->SetClipRect(
+          gfx::Rect(0, 0, current_bounds.width(), current_bounds.height()));
+    }
   }
 
   views::AnimationBuilder()
