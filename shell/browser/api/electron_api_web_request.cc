@@ -72,14 +72,6 @@ namespace electron::api {
 
 namespace {
 
-const char kUserDataKey[] = "WebRequest";
-
-// BrowserContext <=> WebRequest relationship.
-struct UserData : public base::SupportsUserData::Data {
-  explicit UserData(WebRequest* data) : data(data) {}
-  raw_ptr<WebRequest> data;
-};
-
 extensions::WebRequestResourceType ParseResourceType(std::string_view value) {
   if (auto iter = ResourceTypes.find(value); iter != ResourceTypes.end())
     return iter->second;
@@ -312,15 +304,8 @@ WebRequest::ResponseListenerInfo::ResponseListenerInfo(
 WebRequest::ResponseListenerInfo::ResponseListenerInfo() = default;
 WebRequest::ResponseListenerInfo::~ResponseListenerInfo() = default;
 
-WebRequest::WebRequest(v8::Isolate* isolate,
-                       content::BrowserContext* browser_context)
-    : browser_context_(browser_context) {
-  browser_context_->SetUserData(kUserDataKey, std::make_unique<UserData>(this));
-}
-
-WebRequest::~WebRequest() {
-  browser_context_->RemoveUserData(kUserDataKey);
-}
+WebRequest::WebRequest(base::PassKey<Session>) {}
+WebRequest::~WebRequest() = default;
 
 gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
@@ -736,40 +721,19 @@ void WebRequest::HandleSimpleEvent(SimpleEvent event,
 gin_helper::Handle<WebRequest> WebRequest::FromOrCreate(
     v8::Isolate* isolate,
     content::BrowserContext* browser_context) {
-  gin_helper::Handle<WebRequest> handle = From(isolate, browser_context);
-  if (handle.IsEmpty()) {
-    // Make sure the |Session| object has the |webRequest| property created.
-    v8::Local<v8::Value> web_request =
-        Session::CreateFrom(
-            isolate, static_cast<ElectronBrowserContext*>(browser_context))
-            ->WebRequest(isolate);
-    gin::ConvertFromV8(isolate, web_request, &handle);
-  }
+  v8::Local<v8::Value> web_request =
+      Session::FromOrCreate(isolate, browser_context)->WebRequest(isolate);
+  gin_helper::Handle<WebRequest> handle;
+  gin::ConvertFromV8(isolate, web_request, &handle);
   DCHECK(!handle.IsEmpty());
   return handle;
 }
 
 // static
 gin_helper::Handle<WebRequest> WebRequest::Create(
-    v8::Isolate* isolate,
-    content::BrowserContext* browser_context) {
-  DCHECK(From(isolate, browser_context).IsEmpty())
-      << "WebRequest already created";
-  return gin_helper::CreateHandle(isolate,
-                                  new WebRequest(isolate, browser_context));
-}
-
-// static
-gin_helper::Handle<WebRequest> WebRequest::From(
-    v8::Isolate* isolate,
-    content::BrowserContext* browser_context) {
-  if (!browser_context)
-    return {};
-  auto* user_data =
-      static_cast<UserData*>(browser_context->GetUserData(kUserDataKey));
-  if (!user_data)
-    return {};
-  return gin_helper::CreateHandle(isolate, user_data->data.get());
+    base::PassKey<Session> passkey,
+    v8::Isolate* isolate) {
+  return gin_helper::CreateHandle(isolate, new WebRequest{std::move(passkey)});
 }
 
 }  // namespace electron::api

@@ -19,6 +19,7 @@
 #include "base/files/file_util.h"
 #include "base/scoped_observation.h"
 #include "base/strings/string_util.h"
+#include "base/types/pass_key.h"
 #include "base/uuid.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/predictors/predictors_traffic_annotations.h"  // nogncheck
@@ -1361,7 +1362,7 @@ v8::Local<v8::Value> Session::ServiceWorkerContext(v8::Isolate* isolate) {
 
 v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
   if (web_request_.IsEmptyThreadSafe()) {
-    auto handle = WebRequest::Create(isolate, browser_context());
+    auto handle = WebRequest::Create(base::PassKey<Session>{}, isolate);
     web_request_.Reset(isolate, handle.ToV8());
   }
   return web_request_.Get(isolate);
@@ -1689,8 +1690,17 @@ gin::WeakCell<Session>* Session::FromBrowserContext(
 }
 
 // static
-Session* Session::CreateFrom(v8::Isolate* isolate,
-                             ElectronBrowserContext* browser_context) {
+Session* Session::FromOrCreate(v8::Isolate* isolate,
+                               content::BrowserContext* context) {
+  if (ElectronBrowserContext::IsValidContext(context))
+    return FromOrCreate(isolate, static_cast<ElectronBrowserContext*>(context));
+  DCHECK(false);
+  return {};
+}
+
+// static
+Session* Session::FromOrCreate(v8::Isolate* isolate,
+                               ElectronBrowserContext* browser_context) {
   gin::WeakCell<Session>* existing = FromBrowserContext(browser_context);
   if (existing && existing->Get()) {
     return existing->Get();
@@ -1731,7 +1741,7 @@ Session* Session::FromPartition(v8::Isolate* isolate,
     browser_context =
         ElectronBrowserContext::From(partition, true, std::move(options));
   }
-  return CreateFrom(isolate, browser_context);
+  return FromOrCreate(isolate, browser_context);
 }
 
 // static
@@ -1752,7 +1762,7 @@ Session* Session::FromPath(gin::Arguments* args,
   browser_context =
       ElectronBrowserContext::FromPath(std::move(path), std::move(options));
 
-  return CreateFrom(args->isolate(), browser_context);
+  return FromOrCreate(args->isolate(), browser_context);
 }
 
 // static
