@@ -9,7 +9,7 @@
 #include <set>
 #include <string>
 
-#include "base/memory/raw_ptr.h"
+#include "base/types/pass_key.h"
 #include "net/base/completion_once_callback.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "shell/common/gin_helper/wrappable.h"
@@ -36,6 +36,8 @@ class Handle;
 
 namespace electron::api {
 
+class Session;
+
 class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
  public:
   using BeforeSendHeadersCallback =
@@ -43,23 +45,16 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
                               const std::set<std::string>& set_headers,
                               int error_code)>;
 
-  // Return the WebRequest object attached to |browser_context|, create if there
-  // is no one.
-  // Note that the lifetime of WebRequest object is managed by Session, instead
-  // of the caller.
+  // Convenience wrapper around api::Session::FromOrCreate()->WebRequest().
+  // Creates the Session and WebRequest if they don't already exist.
+  // Note that the WebRequest is owned by the session, not by the caller.
   static gin_helper::Handle<WebRequest> FromOrCreate(
       v8::Isolate* isolate,
       content::BrowserContext* browser_context);
 
-  // Return a new WebRequest object, this should only be called by Session.
-  static gin_helper::Handle<WebRequest> Create(
-      v8::Isolate* isolate,
-      content::BrowserContext* browser_context);
-
-  // Find the WebRequest object attached to |browser_context|.
-  static gin_helper::Handle<WebRequest> From(
-      v8::Isolate* isolate,
-      content::BrowserContext* browser_context);
+  // Return a new WebRequest object. This can only be called by api::Session.
+  static gin_helper::Handle<WebRequest> Create(base::PassKey<Session>,
+                                               v8::Isolate* isolate);
 
   static const char* GetClassName() { return "WebRequest"; }
 
@@ -102,7 +97,7 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
   void OnRequestWillBeDestroyed(extensions::WebRequestInfo* info);
 
  private:
-  WebRequest(v8::Isolate* isolate, content::BrowserContext* browser_context);
+  explicit WebRequest(base::PassKey<Session>);
   ~WebRequest() override;
 
   // Contains info about requests that are blocked waiting for a response from
@@ -213,9 +208,6 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest> {
   std::map<SimpleEvent, SimpleListenerInfo> simple_listeners_;
   std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;
   std::map<uint64_t, BlockedRequest> blocked_requests_;
-
-  // Weak-ref, it manages us.
-  raw_ptr<content::BrowserContext> browser_context_;
 };
 
 }  // namespace electron::api
