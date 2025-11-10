@@ -146,6 +146,27 @@ struct Converter<views::SizeBounds> {
         .Build();
   }
 };
+
+template <>
+struct Converter<gfx::Tween::Type> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     gfx::Tween::Type* out) {
+    std::string easing = base::ToLowerASCII(gin::V8ToString(isolate, val));
+    if (easing == "linear") {
+      *out = gfx::Tween::LINEAR;
+    } else if (easing == "ease-in") {
+      *out = gfx::Tween::EASE_IN;
+    } else if (easing == "ease-out") {
+      *out = gfx::Tween::EASE_OUT;
+    } else if (easing == "ease-in-out") {
+      *out = gfx::Tween::EASE_IN_OUT;
+    } else {
+      return false;
+    }
+    return true;
+  }
+};
 }  // namespace gin
 
 namespace electron::api {
@@ -285,7 +306,7 @@ void View::RemoveChildView(gin_helper::Handle<View> child) {
 void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
   bool animate = false;
   int duration = 250;
-  std::string easing = "linear";
+  gfx::Tween::Type easing = gfx::Tween::LINEAR;
 
   gin_helper::Dictionary options;
   if (args->GetNext(&options)) {
@@ -304,16 +325,6 @@ void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
     view_->SetBoundsRect(bounds);
 
     return;
-  }
-
-  gfx::Tween::Type tween_type = gfx::Tween::LINEAR;
-
-  if (easing == "ease-in") {
-    tween_type = gfx::Tween::EASE_IN;
-  } else if (easing == "ease-out") {
-    tween_type = gfx::Tween::EASE_OUT;
-  } else if (easing == "ease-in-out") {
-    tween_type = gfx::Tween::EASE_IN_OUT;
   }
 
   gfx::Rect current_bounds = view_->bounds();
@@ -349,12 +360,12 @@ void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
           view_, bounds))
       .Once()
       .SetDuration(base::Milliseconds(duration))
-      .SetBounds(view_, bounds, tween_type)
+      .SetBounds(view_, bounds, easing)
       .SetClipRect(
           view_, target_size,
-          tween_type);  // We have to set the clip rect independently of the
-                        // bounds, because animating the bounds of the layer
-                        // will not animate the underlying view's bounds.
+          easing);  // We have to set the clip rect independently of the
+                    // bounds, because animating the bounds of the layer
+                    // will not animate the underlying view's bounds.
 }
 
 gfx::Rect View::GetBounds() const {
