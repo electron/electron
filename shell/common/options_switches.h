@@ -222,6 +222,8 @@ inline constexpr std::string_view kSpellcheck = "spellcheck";
 inline constexpr std::string_view kEnableDeprecatedPaste =
     "enableDeprecatedPaste";
 
+inline constexpr std::string_view kModal = "modal";
+
 }  // namespace options
 
 // Following are actually command line switches, should be moved to other files.
