@@ -32,6 +32,13 @@ class LoginHandler : public content::LoginDelegate {
       scoped_refptr<net::HttpResponseHeaders> response_headers,
       bool first_auth_attempt,
       content::LoginDelegate::LoginAuthRequiredCallback auth_required_callback);
+  LoginHandler(
+      const net::AuthChallengeInfo& auth_info,
+      content::WebContents* web_contents,
+      base::ProcessId process_id,
+      const GURL& url,
+      scoped_refptr<net::HttpResponseHeaders> response_headers,
+      content::LoginDelegate::LoginAuthRequiredCallback auth_required_callback);
   ~LoginHandler() override;
 
   // disable copy
