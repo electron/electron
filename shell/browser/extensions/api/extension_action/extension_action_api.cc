@@ -33,8 +33,7 @@ void ExtensionActionAPI::Observer::OnExtensionActionAPIShuttingDown() {}
 // ExtensionActionAPI
 //
 
-ExtensionActionAPI::ExtensionActionAPI(content::BrowserContext* context)
-    : browser_context_(context), extension_prefs_(nullptr) {}
+ExtensionActionAPI::ExtensionActionAPI(content::BrowserContext*) {}
 
 // static
 BrowserContextKeyedAPIFactory<ExtensionActionAPI>*
@@ -47,10 +46,6 @@ ExtensionActionAPI::GetFactoryInstance() {
 // static
 ExtensionActionAPI* ExtensionActionAPI::Get(content::BrowserContext* context) {
   return BrowserContextKeyedAPIFactory<ExtensionActionAPI>::Get(context);
-}
-
-ExtensionPrefs* ExtensionActionAPI::GetExtensionPrefs() {
-  return nullptr;
 }
 
 void ExtensionActionAPI::Shutdown() {}
