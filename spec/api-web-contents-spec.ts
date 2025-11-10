@@ -2766,6 +2766,7 @@ describe('webContents module', () => {
 
     it('with custom page sizes', async function () {
       this.timeout(120000);
+      this.retries(0);
       const paperFormats: Record<PageSizeString, ElectronInternal.PageSize> = {
         Letter: { width: 8.5, height: 11 },
         Legal: { width: 8.5, height: 14 },
