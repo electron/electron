@@ -82,6 +82,10 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest>,
   void OnSendHeaders(extensions::WebRequestInfo* info,
                      const network::ResourceRequest& request,
                      const net::HttpRequestHeaders& headers) override;
+  AuthRequiredResponse OnAuthRequired(const extensions::WebRequestInfo* info,
+                                      const net::AuthChallengeInfo& auth_info,
+                                      AuthCallback callback,
+                                      net::AuthCredentials* credentials) override;
   void OnBeforeRedirect(extensions::WebRequestInfo* info,
                         const network::ResourceRequest& request,
                         const GURL& new_location) override;
@@ -157,6 +161,12 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest>,
                                          v8::Local<v8::Value> response);
   void OnHeadersReceivedListenerResult(uint64_t id,
                                        v8::Local<v8::Value> response);
+  // Callback invoked by LoginHandler when auth credentials are supplied via
+  // the unified 'login' event. Bridges back into WebRequest's AuthCallback.
+  void OnLoginAuthResult(
+      uint64_t id,
+      net::AuthCredentials* credentials,
+      const std::optional<net::AuthCredentials>& maybe_creds);
 
   class RequestFilter {
    public:
@@ -174,7 +184,7 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest>,
                         bool is_match_pattern = true);
     void AddType(extensions::WebRequestResourceType type);
 
-    bool MatchesRequest(extensions::WebRequestInfo* info) const;
+    bool MatchesRequest(const extensions::WebRequestInfo* info) const;
 
    private:
     bool MatchesURL(const GURL& url,
