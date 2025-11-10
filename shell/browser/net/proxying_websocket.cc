@@ -207,9 +207,11 @@ void ProxyingWebSocket::OnBeforeSendHeaders(
   OnBeforeRequestComplete(net::OK);
 }
 
-void ProxyingWebSocket::OnHeadersReceived(const std::string& headers,
-                                          const net::IPEndPoint& endpoint,
-                                          OnHeadersReceivedCallback callback) {
+void ProxyingWebSocket::OnHeadersReceived(
+    const std::string& headers,
+    const net::IPEndPoint& endpoint,
+    const std::optional<net::SSLInfo>& ssl_info,
+    OnHeadersReceivedCallback callback) {
   DCHECK(receiver_as_header_client_.is_bound());
 
   on_headers_received_callback_ = std::move(callback);
