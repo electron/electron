@@ -1883,47 +1883,24 @@ namespace {
 
 using electron::api::Session;
 
-v8::Local<v8::Value> FromPartition(const std::string& partition,
-                                   gin::Arguments* args) {
+Session* FromPartition(const std::string& partition, gin::Arguments* args) {
   if (!electron::Browser::Get()->is_ready()) {
     args->ThrowTypeError("Session can only be received when app is ready");
-    return v8::Null(args->isolate());
+    return {};
   }
   base::Value::Dict options;
   args->GetNext(&options);
-  Session* session =
-      Session::FromPartition(args->isolate(), partition, std::move(options));
-
-  if (session) {
-    v8::Local<v8::Object> wrapper;
-    if (!session->GetWrapper(args->isolate()).ToLocal(&wrapper)) {
-      return v8::Null(args->isolate());
-    }
-    return wrapper;
-  } else {
-    return v8::Null(args->isolate());
-  }
+  return Session::FromPartition(args->isolate(), partition, std::move(options));
 }
 
-v8::Local<v8::Value> FromPath(const base::FilePath& path,
-                              gin::Arguments* args) {
+Session* FromPath(const base::FilePath& path, gin::Arguments* args) {
   if (!electron::Browser::Get()->is_ready()) {
     args->ThrowTypeError("Session can only be received when app is ready");
-    return v8::Null(args->isolate());
+    return {};
   }
   base::Value::Dict options;
   args->GetNext(&options);
-  Session* session = Session::FromPath(args, path, std::move(options));
-
-  if (session) {
-    v8::Local<v8::Object> wrapper;
-    if (!session->GetWrapper(args->isolate()).ToLocal(&wrapper)) {
-      return v8::Null(args->isolate());
-    }
-    return wrapper;
-  } else {
-    return v8::Null(args->isolate());
-  }
+  return Session::FromPath(args, path, std::move(options));
 }
 
 void Initialize(v8::Local<v8::Object> exports,
