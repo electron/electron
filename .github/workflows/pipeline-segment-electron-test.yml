@@ -208,6 +208,7 @@ jobs:
         cd src/electron/spec
         node ../script/yarn.js install --immutable
       env:
+        NODE_OPTIONS: --max-old-space-size=8192
         YARN_ENABLE_HARDENED_MODE: ${{ inputs.yarn-hardened-mode }}
     - name: Run Electron Tests
       shell: bash
