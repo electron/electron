@@ -1368,15 +1368,11 @@ v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
   return web_request_.Get(isolate);
 }
 
-v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
+NetLog* Session::NetLog(v8::Isolate* isolate) {
   if (!net_log_) {
     net_log_ = NetLog::Create(isolate, browser_context());
   }
-
-  v8::Local<v8::Object> wrapper;
-  return net_log_->GetWrapper(isolate).ToLocal(&wrapper)
-             ? wrapper.As<v8::Value>()
-             : v8::Null(isolate);
+  return net_log_;
 }
 
 static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
