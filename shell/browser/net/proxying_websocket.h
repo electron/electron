@@ -16,6 +16,7 @@
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
+#include "net/ssl/ssl_info.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/websocket.mojom.h"
@@ -94,6 +95,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
                            OnBeforeSendHeadersCallback callback) override;
   void OnHeadersReceived(const std::string& headers,
                          const net::IPEndPoint& endpoint,
+                         const std::optional<net::SSLInfo>& ssl_info,
                          OnHeadersReceivedCallback callback) override;
 
   static void StartProxying(

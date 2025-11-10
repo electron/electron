@@ -343,6 +343,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnBeforeSendHeaders(
 void ProxyingURLLoaderFactory::InProgressRequest::OnHeadersReceived(
     const std::string& headers,
     const net::IPEndPoint& remote_endpoint,
+    const std::optional<net::SSLInfo>& ssl_info,
     OnHeadersReceivedCallback callback) {
   if (!current_request_uses_header_client_) {
     std::move(callback).Run(net::OK, std::nullopt, GURL());
