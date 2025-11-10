@@ -21,6 +21,7 @@
 #if BUILDFLAG(IS_LINUX) && (defined(ARCH_CPU_X86_64) || defined(ARCH_CPU_ARM64))
 #define ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX
 #include "base/command_line.h"
+#include "base/debug/stack_trace.h"
 #include "components/crash/core/app/crashpad.h"  // nogncheck
 #include "content/public/common/content_switches.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
