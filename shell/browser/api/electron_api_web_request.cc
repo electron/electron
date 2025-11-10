@@ -5,12 +5,14 @@
 #include "shell/browser/api/electron_api_web_request.h"
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
 
 #include "base/containers/fixed_flat_map.h"
 #include "base/memory/raw_ptr.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
 #include "content/public/browser/web_contents.h"
@@ -25,6 +27,7 @@
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/browser/login_handler.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
@@ -100,7 +103,7 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
 
 // Overloaded by multiple types to fill the |details| object.
 void ToDictionary(gin_helper::Dictionary* details,
-                  extensions::WebRequestInfo* info) {
+                  const extensions::WebRequestInfo* info) {
   details->Set("id", info->id);
   details->Set("url", info->url);
   details->Set("method", info->method);
@@ -247,7 +250,7 @@ bool WebRequest::RequestFilter::MatchesType(
 }
 
 bool WebRequest::RequestFilter::MatchesRequest(
-    extensions::WebRequestInfo* info) const {
+    const extensions::WebRequestInfo* info) const {
   // Matches URL and type, and does not match exclude URL.
   return MatchesURL(info->url, include_url_patterns_) &&
          !MatchesURL(info->url, exclude_url_patterns_) &&
@@ -279,6 +282,10 @@ struct WebRequest::BlockedRequest {
   net::CompletionOnceCallback callback;
   // Only used for onBeforeSendHeaders.
   BeforeSendHeadersCallback before_send_headers_callback;
+  // The callback to invoke for auth. If |auth_callback.is_null()| is false,
+  // |callback| must be NULL.
+  // Only valid for OnAuthRequired.
+  AuthCallback auth_callback;
   // Only used for onBeforeSendHeaders.
   raw_ptr<net::HttpRequestHeaders> request_headers = nullptr;
   // Only used for onHeadersReceived.
@@ -289,6 +296,8 @@ struct WebRequest::BlockedRequest {
   std::string status_line;
   // Only used for onBeforeRequest.
   raw_ptr<GURL> new_url = nullptr;
+  // Owns the LoginHandler while waiting for auth credentials.
+  std::unique_ptr<LoginHandler> login_handler;
 };
 
 WebRequest::SimpleListenerInfo::SimpleListenerInfo(RequestFilter filter_,
@@ -588,6 +597,36 @@ void WebRequest::OnSendHeaders(extensions::WebRequestInfo* info,
   HandleSimpleEvent(SimpleEvent::kOnSendHeaders, info, request, headers);
 }
 
+WebRequest::AuthRequiredResponse WebRequest::OnAuthRequired(
+    const extensions::WebRequestInfo* request_info,
+    const net::AuthChallengeInfo& auth_info,
+    WebRequest::AuthCallback callback,
+    net::AuthCredentials* credentials) {
+  content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(
+      request_info->render_process_id, request_info->frame_routing_id);
+  content::WebContents* web_contents = nullptr;
+  if (rfh)
+    web_contents = content::WebContents::FromRenderFrameHost(rfh);
+
+  BlockedRequest blocked_request;
+  blocked_request.auth_callback = std::move(callback);
+  blocked_requests_[request_info->id] = std::move(blocked_request);
+
+  auto login_callback =
+      base::BindOnce(&WebRequest::OnLoginAuthResult, base::Unretained(this),
+                     request_info->id, credentials);
+
+  scoped_refptr<net::HttpResponseHeaders> response_headers =
+      request_info->response_headers;
+  blocked_requests_[request_info->id].login_handler =
+      std::make_unique<LoginHandler>(
+          auth_info, web_contents,
+          static_cast<base::ProcessId>(request_info->render_process_id),
+          request_info->url, response_headers, std::move(login_callback));
+
+  return AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_IO_PENDING;
+}
+
 void WebRequest::OnBeforeRedirect(extensions::WebRequestInfo* info,
                                   const network::ResourceRequest& request,
                                   const GURL& new_location) {
@@ -715,6 +754,26 @@ void WebRequest::HandleSimpleEvent(SimpleEvent event,
   gin_helper::Dictionary details(isolate, v8::Object::New(isolate));
   FillDetails(&details, request_info, args...);
   info.listener.Run(gin::ConvertToV8(isolate, details));
+}
+
+void WebRequest::OnLoginAuthResult(
+    uint64_t id,
+    net::AuthCredentials* credentials,
+    const std::optional<net::AuthCredentials>& maybe_creds) {
+  auto iter = blocked_requests_.find(id);
+  if (iter == blocked_requests_.end())
+    NOTREACHED();
+
+  AuthRequiredResponse action =
+      AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_NO_ACTION;
+  if (maybe_creds.has_value()) {
+    *credentials = maybe_creds.value();
+    action = AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_SET_AUTH;
+  }
+
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, base::BindOnce(std::move(iter->second.auth_callback), action));
+  blocked_requests_.erase(iter);
 }
 
 // static
