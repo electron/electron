@@ -586,6 +586,7 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
   if (auto* service =
           SpellcheckServiceFactory::GetForContext(browser_context)) {
     service->SetHunspellObserver(this);
+    service->InitializeDictionaries(base::DoNothing());
   }
 #endif
 }
