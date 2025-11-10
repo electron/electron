@@ -547,7 +547,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 6f3496b2541fa21fd0bba1d95026eab30e3ab96d..ef481cd946a15f5eaba928fa4e720e6c42556a93 100644
+index f69cd6100f2ac5ccb6f185e0d0bf186073ed5953..29a40923a55287b608c2ffae63a1dbbc2a7e7c1d 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -34,6 +34,7 @@
@@ -558,7 +558,7 @@ index 6f3496b2541fa21fd0bba1d95026eab30e3ab96d..ef481cd946a15f5eaba928fa4e720e6c
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2085,15 +2086,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2090,15 +2091,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -1804,22 +1804,18 @@ index 890d86acb0e92760590b4d0860dd41eaa70486c7..2e9e16cb47606f627b1473a479a6e8ae
    // Query the display's refresh rate.
    double refresh_rate = 1.0 / screen.minimumRefreshInterval;
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index f29089286f4848400a67c3b7eaf21a1ba291cc1e..fa92acfa219f82cf53207e3a7479e44b223e9050 100644
+index 35e9149e221721c6d4332de530877588022bc7c7..2910455828b7d5025daa8e62071a68a67bed46d5 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -333,6 +333,12 @@ component("gfx") {
-     "//ui/base:ui_data_pack",
-   ]
- 
-+  if (is_mac) {
-+    deps += [
-+      "//electron/build/config:generate_mas_config"
-+    ]
-+  }
+@@ -277,6 +277,8 @@ component("gfx") {
+       "CoreGraphics.framework",
+       "CoreText.framework",
+     ]
 +
-   if (!is_apple) {
++    deps += ["//electron/build/config:generate_mas_config"]
+   }
+   if (is_ios) {
      sources += [
-       "platform_font_skia.cc",
 diff --git a/ui/gfx/platform_font_mac.mm b/ui/gfx/platform_font_mac.mm
 index bbe355cf69f160866188216cc274d75bd35603db..06ee100d7ea2e892dbf3c0b1adc96c5013ef678a 100644
 --- a/ui/gfx/platform_font_mac.mm

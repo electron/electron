@@ -391,7 +391,7 @@ index 225e017909b8869231b870eaaf161a0b5e93e2a0..846a5251429630b8528a84a3d67ed56c
    if (schemes.allow_non_standard_schemes_in_origins)
      url::EnableNonStandardSchemesForAndroidWebView();
 diff --git a/content/public/common/content_client.h b/content/public/common/content_client.h
-index c81434acc7cad0f6aa2e807c3c4037052863179e..d0da89f78308fc95778a5ce705a43f03c9c5813f 100644
+index 33e2ff42e4d9da442d522b959a4a21c2f7032b6b..a0d81212327fc17e1f4704e78803c1d7d82b2016 100644
 --- a/content/public/common/content_client.h
 +++ b/content/public/common/content_client.h
 @@ -139,6 +139,9 @@ class CONTENT_EXPORT ContentClient {
