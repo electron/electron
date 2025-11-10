@@ -111,10 +111,10 @@ index 0d0e5e0eabbcb8ce19b675dadf5580f8381fb8ce..b10f6ae7612556e2f4cff60d38a88b5f
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index be43d917f1c881e1c97ccb72860fddab4b113e3c..5a88086b6957b9addc0598d58c41288f0065b0e6 100644
+index 822aa432131b68722307c3d57a73bc0e5bd589ff..541a17144b2d906865a025711dee0be776712a93 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
-@@ -34,6 +34,17 @@ namespace content {
+@@ -35,6 +35,17 @@ namespace content {
  
  WebContentsDelegate::WebContentsDelegate() = default;
  
@@ -133,7 +133,7 @@ index be43d917f1c881e1c97ccb72860fddab4b113e3c..5a88086b6957b9addc0598d58c41288f
      WebContents* source,
      const OpenURLParams& params,
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 3d67b3751ef13c9a43e48a124aefaea24db9140c..dea523e84616527b9ac0a25e67c8664aafd3b511 100644
+index 31f7b81c176f8011e370c03b9f9d5016b12f6def..5780c53b97d983652a4e08009533a33abee228c8 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -18,6 +18,7 @@
@@ -151,7 +151,7 @@ index 3d67b3751ef13c9a43e48a124aefaea24db9140c..dea523e84616527b9ac0a25e67c8664a
 +#include "content/public/browser/web_contents.h"
  #include "content/public/common/window_container_type.mojom-forward.h"
  #include "third_party/blink/public/common/input/web_mouse_event.h"
- #include "third_party/blink/public/common/mediastream/media_stream_request.h"
+ #include "third_party/blink/public/common/page/drag_operation.h"
 @@ -385,6 +387,16 @@ class CONTENT_EXPORT WebContentsDelegate {
        const StoragePartitionConfig& partition_config,
        SessionStorageNamespace* session_storage_namespace);

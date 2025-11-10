@@ -83,10 +83,10 @@ index 2b562b8f8adaced3a87b45f04472313cee3eb479..e8b3edf974c6471ef72654544999e9fe
                             const gfx::PointF& client_pt);
    void PreHandleDragExit();
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 54ab4e1426eaa19bfe71b5fdd52e115aae4f0c45..7f2d61d74ccdebee7310a67aaa8819eea52afa13 100644
+index 9223d7355402f07c666df7ac4c19e9eab7d90e99..2bd315eadaf1790d5e3fe104f18c20ffb20de99f 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
-@@ -126,6 +126,12 @@ bool WebContentsDelegate::HandleContextMenu(RenderFrameHost& render_frame_host,
+@@ -127,6 +127,12 @@ bool WebContentsDelegate::HandleContextMenu(RenderFrameHost& render_frame_host,
    return false;
  }
  
@@ -100,7 +100,7 @@ index 54ab4e1426eaa19bfe71b5fdd52e115aae4f0c45..7f2d61d74ccdebee7310a67aaa8819ee
      WebContents* source,
      const input::NativeWebKeyboardEvent& event) {
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 816b53d21e568a3d7a6f5902d87c5315ffedeee2..bf56692686ed554214081c322aedae2df023fedc 100644
+index 1a73f726ac1cf55b2834cf8db57b84add376cf7a..8115f86ee33c56080ff472fb0f0f227ce2c01e0c 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -311,6 +311,13 @@ class CONTENT_EXPORT WebContentsDelegate {

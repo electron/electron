@@ -237,10 +237,10 @@ index eebcf3d97557d5a95c00b483910a23717d1775c5..1cc8474a5f369cd0b13c328179c9be56
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 5a88086b6957b9addc0598d58c41288f0065b0e6..54ab4e1426eaa19bfe71b5fdd52e115aae4f0c45 100644
+index 541a17144b2d906865a025711dee0be776712a93..9223d7355402f07c666df7ac4c19e9eab7d90e99 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
-@@ -160,8 +160,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
+@@ -161,8 +161,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
      SiteInstance* source_site_instance,
      mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -251,7 +251,7 @@ index 5a88086b6957b9addc0598d58c41288f0065b0e6..54ab4e1426eaa19bfe71b5fdd52e115a
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index dea523e84616527b9ac0a25e67c8664aafd3b511..816b53d21e568a3d7a6f5902d87c5315ffedeee2 100644
+index 5780c53b97d983652a4e08009533a33abee228c8..1a73f726ac1cf55b2834cf8db57b84add376cf7a 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -365,8 +365,7 @@ class CONTENT_EXPORT WebContentsDelegate {

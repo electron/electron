@@ -61,10 +61,10 @@ index b65ced55f997d5064b9d9338190567f8c264fce8..e8acd2828ed05deefa335ce2bb461f0c
    Widget* GetWidget();
    const Widget* GetWidget() const;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 75a21333701b3501f785229ae9a358c5cac685df..579becb9a32704d932b8dfba477515af8529a2d4 100644
+index 1826e096e258004471ce2bd0c01bcdaff9d60022..faa7972cd2fb60bc9d20506309ce65ef4cafd233 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -3243,15 +3243,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3247,15 +3247,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      }
      // We must let Windows handle the caption buttons if it's drawing them, or
      // they won't work.
@@ -86,7 +86,7 @@ index 75a21333701b3501f785229ae9a358c5cac685df..579becb9a32704d932b8dfba477515af
        return 0;
      }
    }
-@@ -3274,6 +3278,7 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3278,6 +3282,7 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      // handle alt-space, or in the frame itself.
      is_right_mouse_pressed_on_caption_ = false;
      ReleaseCapture();
@@ -94,7 +94,7 @@ index 75a21333701b3501f785229ae9a358c5cac685df..579becb9a32704d932b8dfba477515af
      // |point| is in window coordinates, but WM_NCHITTEST and TrackPopupMenu()
      // expect screen coordinates.
      POINT screen_point = CR_POINT_INITIALIZER_FROM_LPARAM(l_param);
-@@ -3281,7 +3286,17 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3285,7 +3290,17 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      w_param = static_cast<WPARAM>(SendMessage(
          hwnd(), WM_NCHITTEST, 0, MAKELPARAM(screen_point.x, screen_point.y)));
      if (w_param == HTCAPTION || w_param == HTSYSMENU) {
