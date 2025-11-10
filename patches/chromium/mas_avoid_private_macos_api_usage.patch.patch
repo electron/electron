@@ -476,7 +476,7 @@ index f3ea2bf2d15d815a2409441a9033a92d5d8967c1..ce52245628c72018da8ec4a3155dafa7
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 40718df4d3d7092309ea7027ae6c59a7963fd03c..89f08e2693d9101e89dd007df80881ff726195ad 100644
+index da33fa857f85484853d14f24d0601f4c284fd67a..9af007dfc14e442d34ebe82fc678ea9f32782cdf 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -387,6 +387,7 @@ viz_component("service") {
@@ -487,7 +487,7 @@ index 40718df4d3d7092309ea7027ae6c59a7963fd03c..89f08e2693d9101e89dd007df80881ff
    }
  
    if (is_ios) {
-@@ -710,6 +711,7 @@ viz_source_set("unit_tests") {
+@@ -712,6 +713,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -581,7 +581,7 @@ index f69cd6100f2ac5ccb6f185e0d0bf186073ed5953..29a40923a55287b608c2ffae63a1dbbc
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index bc58374ed9ce5c94e64742ead089de3ffd7351f4..36884dd700ed4d878b449c00da091497689074f2 100644
+index 1ffce9951a2f82c1052cfa8c434f43bd7d32d604..e44e635927026a2d3dd0627668b5e89aa7104050 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -343,6 +343,7 @@ source_set("browser") {
@@ -714,11 +714,11 @@ index f57ce1a0430df7692be55685e79121ed604daf2a..3fbc26fb179a64a2f1eab027a05b1624
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 8404e4d6b8b2fc2d5f1597d5cbfcbcea2e692091..678121670b4977853e6fa1515f37d1ad21a3bd33 100644
+index 844867f9d4f52e0d591c674238f99cec42cd9ac8..f02673ec1f36f83c2aea9642e2fd1a3fde5da3a0 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -322,6 +322,7 @@ target(link_target_type, "renderer") {
-     "//ui/surface",
+@@ -323,6 +323,7 @@ target(link_target_type, "renderer") {
+     "//ui/strings:auto_image_annotation_strings_grit",
      "//url",
      "//v8",
 +    "//electron/build/config:generate_mas_config",
@@ -796,10 +796,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 7c54ae91e60c7cb0b7c66d9c86b3d350d35ae34f..b4cfa7b08843c0410c5d11f46018d1f9fe89c40e 100644
+index 795c9054faa75b3c20d091e6fe56f0a865f293ff..bacde6a543504003064ee42642d20973d0e6492a 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -703,6 +703,7 @@ static_library("test_support") {
+@@ -702,6 +702,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -807,7 +807,7 @@ index 7c54ae91e60c7cb0b7c66d9c86b3d350d35ae34f..b4cfa7b08843c0410c5d11f46018d1f9
    ]
  
    data_deps = [
-@@ -1178,6 +1179,8 @@ static_library("browsertest_support") {
+@@ -1177,6 +1178,8 @@ static_library("browsertest_support") {
    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
    # enable the diagnostic by removing this line.
    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -816,7 +816,7 @@ index 7c54ae91e60c7cb0b7c66d9c86b3d350d35ae34f..b4cfa7b08843c0410c5d11f46018d1f9
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2067,6 +2070,7 @@ test("content_browsertests") {
+@@ -2066,6 +2069,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1395,7 +1395,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index e934eb2b317f28dd91f8aa8c69d1cdd974006232..bcc9c361d427d460f0d845bea61e14f440af0a4f 100644
+index aa7ca96851b87c8b32fd22a1388e8dba8973d3e7..2998555b064d91a9f1f2df9fc1a913d00c2d61d4 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -443,6 +443,7 @@ component("core") {
