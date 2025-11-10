@@ -15,10 +15,10 @@ import * as webStream from 'node:stream/web';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
+import { collectStreamBody, getResponse } from './lib/net-helpers';
 import { listen, defer, ifit } from './lib/spec-helpers';
 import { WebmGenerator } from './lib/video-helpers';
 import { closeAllWindows, closeWindow } from './lib/window-helpers';
-import { collectStreamBody, getResponse } from './lib/net-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -1588,7 +1588,7 @@ describe('protocol module', () => {
       defer(() => server.close());
       const { url } = await listen(server);
       // Make a request using net.request with bypassCustomProtocolHandlers: true
-      const request = net.request({method: 'GET', url, bypassCustomProtocolHandlers: true });
+      const request = net.request({ method: 'GET', url, bypassCustomProtocolHandlers: true });
       const response = await getResponse(request);
       const body = await collectStreamBody(response);
       expect(response.statusCode).to.equal(200);
