@@ -2,10 +2,13 @@
 
 > Perform copy and paste operations on the system clipboard.
 
-Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process) (non-sandboxed only)
+Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process) _Deprecated_ (non-sandboxed only)
+
+> [!NOTE]
+> Using the `clipoard` API from the renderer process is deprecated.
 
 > [!IMPORTANT]
-> If you want to call this API from a renderer process with context isolation enabled,
+> If you want to call this API from a renderer process,
 > place the API call in your preload script and
 > [expose](../tutorial/context-isolation.md#after-context-isolation-enabled) it using the
 > [`contextBridge`](context-bridge.md) API.
