@@ -24,7 +24,7 @@ Reviewed-By: Joyee Cheung <joyeec9h3@gmail.com>
 Reviewed-By: Rafael Gonzaga <rafael.nunu@hotmail.com>
 
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 75be21c9e8b413f522240a906da06d26c44d5b71..e94c2b5f2cf7cac413cd5cb782fa1cca6d764960 100644
+index 5de3ebb04b12286a07e3041d0a6dd1cc9072e76a..52075b7d21c7c4674ccd81698ea5595c95698120 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
 @@ -3056,42 +3056,6 @@ static void GetFormatOfExtensionlessFile(
@@ -136,7 +136,7 @@ index 75be21c9e8b413f522240a906da06d26c44d5b71..e94c2b5f2cf7cac413cd5cb782fa1cca
                      std::make_error_code(std::errc::file_exists),
                      "cp",
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index 14f2a35f87e8c2fa17898147d7247cc00c066f35..871282c6f8780ee0bca1e7230c0c2d83fd0c98c0 100644
+index ed22da844a61b14b8580cd3d6bb3a233b8559b38..2c5c14f506f39abefe3c8c802862264aef3a4fe4 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -360,12 +360,13 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
@@ -201,7 +201,7 @@ index 14f2a35f87e8c2fa17898147d7247cc00c066f35..871282c6f8780ee0bca1e7230c0c2d83
  
    if (package_json == nullptr) {
 diff --git a/src/util-inl.h b/src/util-inl.h
-index 816156282790383e896b28eb46a3b4703bbe17f0..7274e5da8cc9eb164ec46ec2f7932691ed6ba9dc 100644
+index 17b870e2dd91ab6affd1097d0a4f691d5a1d9d80..9ca2ff66d812b54a7e0f845f0f0fd63f7accbfe1 100644
 --- a/src/util-inl.h
 +++ b/src/util-inl.h
 @@ -678,12 +678,11 @@ inline bool IsWindowsBatchFile(const char* filename) {
@@ -281,7 +281,7 @@ index 816156282790383e896b28eb46a3b4703bbe17f0..7274e5da8cc9eb164ec46ec2f7932691
  
  }  // namespace node
 diff --git a/src/util.h b/src/util.h
-index dab48c59e1cd947a32cf08e5ab23cd60fe32303e..91bfb8d94b1c053b59c20e25306ef0f08e977f49 100644
+index 8460fe26bbf9e83d080fdfc458d570d0ee29e6f0..6137a32dc8f6208e05b8505e3603f3a747192cea 100644
 --- a/src/util.h
 +++ b/src/util.h
 @@ -507,6 +507,8 @@ class MaybeStackBuffer {
