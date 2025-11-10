@@ -344,6 +344,7 @@ void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
       .OnEnded(base::BindOnce(
           [](views::View* view, const gfx::Rect& final_bounds) {
             view->SetBoundsRect(final_bounds);
+            view->DestroyLayer();
           },
           view_, bounds))
       .Once()
