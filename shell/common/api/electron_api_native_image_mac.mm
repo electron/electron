@@ -120,9 +120,18 @@ gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
       name.erase(pos, to_remove.length());
     }
 
-    NSImage* image = [NSImage imageNamed:base::SysUTF8ToNSString(name)];
+    NSImage* image = nil;
+    NSString* ns_name = base::SysUTF8ToNSString(name);
 
-    if (!image.valid) {
+    // Treat non-Cocoa-prefixed names as SF Symbols first.
+    if (!base::StartsWith(name, "NS") && !base::StartsWith(name, "NX")) {
+      image = [NSImage imageWithSystemSymbolName:ns_name
+                        accessibilityDescription:nil];
+    } else {
+      image = [NSImage imageNamed:ns_name];
+    }
+
+    if (!image || !image.valid) {
       return CreateEmpty(args->isolate());
     }
 
