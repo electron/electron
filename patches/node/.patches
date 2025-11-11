@@ -46,3 +46,4 @@ fix_task_starvation_in_inspector_context_test.patch
 fix_expose_readfilesync_override_for_modules.patch
 fix_array_out-of-bounds_read_in_boyer-moore_search.patch
 chore_add_missing_include_of_iterator.patch
+src_use_cp_utf8_for_wide_file_names_on_win32.patch
