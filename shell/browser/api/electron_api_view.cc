@@ -303,6 +303,23 @@ void View::RemoveChildView(gin_helper::Handle<View> child) {
   }
 }
 
+ui::Layer* View::GetLayer() {
+  if (!view_)
+    return nullptr;
+
+  if (view_->layer())
+    return view_->layer();
+
+  view_->SetPaintToLayer();
+
+  ui::Layer* layer = view_->layer();
+
+  layer->SetFillsBoundsOpaquely(false);
+  layer->SetOpacity(1.0f);
+
+  return layer;
+}
+
 void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
   bool animate = false;
   int duration = 250;
@@ -327,14 +344,33 @@ void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
     return;
   }
 
+  ui::Layer* layer = GetLayer();
+
   gfx::Rect current_bounds = view_->bounds();
+
+  if (bounds.size() == current_bounds.size()) {
+    // If the size isn't changing, we can just animate the bounds directly.
+
+    views::AnimationBuilder()
+        .SetPreemptionStrategy(
+            ui::LayerAnimator::IMMEDIATELY_ANIMATE_TO_NEW_TARGET)
+        .OnEnded(base::BindOnce(
+            [](views::View* view, const gfx::Rect& final_bounds) {
+              view->SetBoundsRect(final_bounds);
+            },
+            view_, bounds))
+        .Once()
+        .SetDuration(base::Milliseconds(duration))
+        .SetBounds(view_, bounds, easing);
+
+    return;
+  }
+
   gfx::Rect target_size = gfx::Rect(0, 0, bounds.width(), bounds.height());
   gfx::Rect max_size =
       gfx::Rect(current_bounds.x(), current_bounds.y(),
                 std::max(current_bounds.width(), bounds.width()),
                 std::max(current_bounds.height(), bounds.height()));
-
-  view_->SetPaintToLayer(ui::LAYER_NOT_DRAWN);
 
   // if the view's size is smaller than the target size, we need to set the
   // view's bounds immediatley to the new size (not position) and set the
@@ -353,11 +389,13 @@ void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
       .SetPreemptionStrategy(
           ui::LayerAnimator::IMMEDIATELY_ANIMATE_TO_NEW_TARGET)
       .OnEnded(base::BindOnce(
-          [](views::View* view, const gfx::Rect& final_bounds) {
+          [](views::View* view, const gfx::Rect& final_bounds,
+             ui::Layer* layer) {
             view->SetBoundsRect(final_bounds);
-            view->DestroyLayer();
+            if (layer)
+              layer->SetClipRect(gfx::Rect());
           },
-          view_, bounds))
+          view_, bounds, layer))
       .Once()
       .SetDuration(base::Milliseconds(duration))
       .SetBounds(view_, bounds, easing)
