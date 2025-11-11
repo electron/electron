@@ -112,10 +112,10 @@ index 13a211107294e856616d1626fa1dc9c79eb5646c..549a36886d665c1a8100f09b7a86c8dc
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 132a0cf07682e68b8f188c265dd7e11fe66f2641..cd73879c90c20c225f7c178c6c7f2aff22648dfb 100644
+index a28a4bfc26a797dc862c59a337b4ed43b76eb06d..4da33fa9eef14b76f06d2741942fc387b2cde37d 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -406,6 +406,9 @@ URLLoader::URLLoader(
+@@ -386,6 +386,9 @@ URLLoader::URLLoader(
                                    mojo::SimpleWatcher::ArmingPolicy::MANUAL,
                                    TaskRunner(request.priority)),
        per_factory_orb_state_(context.GetMutableOrbState()),
@@ -125,7 +125,7 @@ index 132a0cf07682e68b8f188c265dd7e11fe66f2641..cd73879c90c20c225f7c178c6c7f2aff
        devtools_request_id_(request.devtools_request_id),
        options_(PopulateOptions(options,
                                 factory_params_->is_orb_enabled,
-@@ -545,7 +548,7 @@ void URLLoader::SetUpUrlRequestCallbacks(
+@@ -525,7 +528,7 @@ void URLLoader::SetUpUrlRequestCallbacks(
          &URLLoader::IsSharedDictionaryReadAllowed, base::Unretained(this)));
    }
  
@@ -134,7 +134,7 @@ index 132a0cf07682e68b8f188c265dd7e11fe66f2641..cd73879c90c20c225f7c178c6c7f2aff
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1157,6 +1160,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1122,6 +1125,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
@@ -155,10 +155,10 @@ index 132a0cf07682e68b8f188c265dd7e11fe66f2641..cd73879c90c20c225f7c178c6c7f2aff
  
    ad_auction_event_record_request_helper_.HandleResponse(
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index d78b426e45a805ce03ec9ad6e160995f18d6ff24..26d998bdf534c5aa85dcef75f2df0a4f39296bfb 100644
+index f437df6e20b7d4e28f5e57e2134c5c7fa9da2bdc..661fef04f6b76abef852ba8eef63b1f78b01652c 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -623,6 +623,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -624,6 +624,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    std::unique_ptr<ResourceScheduler::ScheduledResourceRequest>
        resource_scheduler_request_handle_;
  

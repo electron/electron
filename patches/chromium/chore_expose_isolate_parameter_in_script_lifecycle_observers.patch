@@ -8,10 +8,10 @@ where callsites that deal with multiple contexts need to distinguish
 the current isolate.
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 1c5a9e693fd3b09213118fb32e4509e1d4a59364..921b7bb4b817ed753e08c2c058a23a2ccdaef40e 100644
+index 6fa11f89ea212eabd7fdc979d2d99138b1f3c88e..a35372743ce69d7cb04c54fcb75b49c0b6fe87c7 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -398,6 +398,7 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -389,6 +389,7 @@ class CONTENT_EXPORT ContentRendererClient {
    // WillDestroyServiceWorkerContextOnWorkerThread() is called.
    virtual void WillEvaluateServiceWorkerOnWorkerThread(
        blink::WebServiceWorkerContextProxy* context_proxy,
@@ -34,10 +34,10 @@ index bbfac47a74f989482343c222b78f187b70297e4e..3677ca3345fbc775d139684a12fe3624
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 3f512dcaec9f1d8a1375277ab8c6649d69070a33..45c8978bf9a45c14b15436851cdab9ae3d958f25 100644
+index f0a6a03efe20bf674a6fb2d4ad33de4a829cef53..c0deee8987c60ce4cf35eac80ad17240b8f11ee0 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4671,10 +4671,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4668,10 +4668,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
      observer.DidInstallConditionalFeatures(context, world_id);
  }
  
@@ -52,10 +52,10 @@ index 3f512dcaec9f1d8a1375277ab8c6649d69070a33..45c8978bf9a45c14b15436851cdab9ae
  
  void RenderFrameImpl::DidChangeScrollOffset() {
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index b3fd71b237c134853f796a1d8d803e4d28519d53..0b74cee0213daebef1e66d0abebd23787d764997 100644
+index 621cd9ae7f43470ed4414a48d62330b36c7058e9..f0c5f4f55062c85ee1e6b8da74b8f0c6ced75e81 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -604,7 +604,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -605,7 +605,8 @@ class CONTENT_EXPORT RenderFrameImpl
                                int world_id) override;
    void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
                                       int world_id) override;
@@ -245,10 +245,10 @@ index 16066fe34ee0335a0dabe00b6890e5844349c0b5..cc84479f65bdbe56cb4b38bfcef0d752
  
    // Returns true if we should allow register V8 extensions to be added.
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index d46f3b764f653c990e57fb2c67121c8fd6b1b115..fe30a119d9befbde7c461637cf670a4b861efe05 100644
+index 80ee0065d1b16520389b6809402438f087430fa3..3991bc8caee23bb4129eedf7213a770d19439290 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
-@@ -426,7 +426,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
+@@ -428,7 +428,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
                                int32_t world_id) override {}
    void DidInstallConditionalFeatures(v8::Local<v8::Context>,
                                       int32_t world_id) override {}

@@ -73,8 +73,14 @@ class Session final : public gin::Wrappable<Session>,
                       private content::DownloadManager::Observer {
  public:
   // Gets or creates Session from the |browser_context|.
-  static Session* CreateFrom(v8::Isolate* isolate,
-                             ElectronBrowserContext* browser_context);
+  static Session* FromOrCreate(v8::Isolate* isolate,
+                               ElectronBrowserContext* browser_context);
+
+  // Convenience wrapper around the previous method: Checks that
+  // |browser_context| is an ElectronBrowserContext before downcasting.
+  static Session* FromOrCreate(v8::Isolate* isolate,
+                               content::BrowserContext* browser_context);
+
   static void New();  // Dummy, do not use!
 
   static gin::WeakCell<Session>* FromBrowserContext(
@@ -164,7 +170,7 @@ class Session final : public gin::Wrappable<Session>,
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> ServiceWorkerContext(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
-  v8::Local<v8::Value> NetLog(v8::Isolate* isolate);
+  api::NetLog* NetLog(v8::Isolate* isolate);
   void Preconnect(const gin_helper::Dictionary& options, gin::Arguments* args);
   v8::Local<v8::Promise> CloseAllConnections();
   v8::Local<v8::Value> GetPath(v8::Isolate* isolate);

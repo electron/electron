@@ -754,7 +754,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   script_executor_ = std::make_unique<extensions::ScriptExecutor>(web_contents);
 #endif
 
-  session_ = Session::CreateFrom(isolate, GetBrowserContext());
+  session_ = Session::FromOrCreate(isolate, GetBrowserContext());
 
   SetUserAgent(GetBrowserContext()->GetUserAgent());
 
@@ -776,7 +776,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 {
   DCHECK(type != Type::kRemote)
       << "Can't take ownership of a remote WebContents";
-  session_ = Session::CreateFrom(isolate, GetBrowserContext());
+  session_ = Session::FromOrCreate(isolate, GetBrowserContext());
   InitWithSessionAndOptions(isolate, std::move(web_contents),
                             session_->browser_context(),
                             gin::Dictionary::CreateEmpty(isolate));
@@ -2261,7 +2261,8 @@ void WebContents::WebContentsDestroyed() {
   v8::Local<v8::Object> wrapper;
   if (!GetWrapper(isolate).ToLocal(&wrapper))
     return;
-  wrapper->SetAlignedPointerInInternalField(0, nullptr);
+  wrapper->SetAlignedPointerInInternalField(0, nullptr,
+                                            v8::kEmbedderDataTypeTagDefault);
 
   // Tell WebViewGuestDelegate that the WebContents has been destroyed.
   if (guest_delegate_)

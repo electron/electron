@@ -118,13 +118,6 @@ You should at least follow these steps to improve the security of your applicati
 19. [Check which fuses you can change](#19-check-which-fuses-you-can-change)
 20. [Do not expose Electron APIs to untrusted web content](#20-do-not-expose-electron-apis-to-untrusted-web-content)
 
-To automate the detection of misconfigurations and insecure patterns, it is
-possible to use
-[Electronegativity](https://github.com/doyensec/electronegativity). For
-additional details on potential weaknesses and implementation bugs when
-developing applications using Electron, please refer to this
-[guide for developers and auditors](https://doyensec.com/resources/us-17-Carettoni-Electronegativity-A-Study-Of-Electron-Security-wp.pdf).
-
 ### 1. Only load secure content
 
 Any resources not included with your application should be loaded using a

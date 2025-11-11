@@ -80,10 +80,10 @@ index 39fa45f0a0f9076bd7ac0be6f455dd540a276512..3d0381d463eed73470b28085830f2a23
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index d27effbf90aba2a888f479b6999fd16e58fdbcbf..1fd7f6166efd55ccc74a91763c87b1fe7987aaff 100644
+index b3eb633c290c5385a58b66a97b1a57b3fe080ab2..faf64b12913aac5cef8a614a0baabb16771dbb3c 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2376,7 +2376,8 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2373,7 +2373,8 @@ bool Browser::IsWebContentsCreationOverridden(
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
      const std::string& frame_name,
@@ -93,7 +93,7 @@ index d27effbf90aba2a888f479b6999fd16e58fdbcbf..1fd7f6166efd55ccc74a91763c87b1fe
    if (HasActorTask(profile(), opener)) {
      // If an ExecutionEngine is acting on the opener, prevent it from creating a
      // new WebContents. We'll instead force the navigation to happen in the same
-@@ -2389,7 +2390,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2386,7 +2387,7 @@ bool Browser::IsWebContentsCreationOverridden(
    return (window_container_type ==
                content::mojom::WindowContainerType::BACKGROUND &&
            ShouldCreateBackgroundContents(source_site_instance, opener_url,
@@ -103,10 +103,10 @@ index d27effbf90aba2a888f479b6999fd16e58fdbcbf..1fd7f6166efd55ccc74a91763c87b1fe
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 46715de09311e36046c9d49e6eb0a6444532f49f..0883f12668347f76d20517df95885b2c73d98598 100644
+index 0c296e8bf3b055b8e6f07adcc9b088febd489f14..533041e1948726eef266625e541f65735dc81e8f 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -935,8 +935,7 @@ class Browser : public TabStripModelObserver,
+@@ -942,8 +942,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -159,7 +159,7 @@ index 3bbd4e568ba99245622a96f0801d2b6cd203025f..1e0b7d16b33daed980961dd49c667a3b
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index 24f78a1c6b439c2f66683bb43b784f696f9a7419..7a5b6eccffe451787101042673d6efe4456237b4 100644
+index 97a429245bfc15aa321d73c142e1ba7cc8c60dec..43a907ff56743580fda414570e6bce5a00b1f247 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -210,15 +210,14 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
@@ -223,10 +223,10 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index c47fe83984ca1c592138acafc354651ce1b559fc..c6f031e408768a31198f7e875d03d59cacaef9a7 100644
+index eebcf3d97557d5a95c00b483910a23717d1775c5..1cc8474a5f369cd0b13c328179c9be560b167468 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5290,8 +5290,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5329,8 +5329,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    if (delegate_ &&
        delegate_->IsWebContentsCreationOverridden(
            opener, source_site_instance, params.window_container_type,
@@ -237,10 +237,10 @@ index c47fe83984ca1c592138acafc354651ce1b559fc..c6f031e408768a31198f7e875d03d59c
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index df972f1ce594f2d4651202b650ff2d41fe19ecd0..a92305042eef86fbabeae6fe02b48668a349be99 100644
+index 541a17144b2d906865a025711dee0be776712a93..9223d7355402f07c666df7ac4c19e9eab7d90e99 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
-@@ -160,8 +160,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
+@@ -161,8 +161,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
      SiteInstance* source_site_instance,
      mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -251,7 +251,7 @@ index df972f1ce594f2d4651202b650ff2d41fe19ecd0..a92305042eef86fbabeae6fe02b48668
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 98492cff13c97388d001fc33cc948261990edef1..88b4810d3b91df0dd6b932412edd4ff249bedde0 100644
+index 5780c53b97d983652a4e08009533a33abee228c8..1a73f726ac1cf55b2834cf8db57b84add376cf7a 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -365,8 +365,7 @@ class CONTENT_EXPORT WebContentsDelegate {
@@ -385,7 +385,7 @@ index 756d4192271d6a65cfe8e1511737c565b543cb1f..5688f6f745056565c3c01947f741c4d1
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index d02d9468560eb451753fd56aa46bc4f191535e95..6e5c10f94a16039dc90cb2bdf90c4c854afc8a53 100644
+index 3af22f9e041996cedebc1d9ffd402e9fcccceaea..e488b8d4d8f81ad2a0b8a6a1cc13fb886fd26e62 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
 @@ -208,8 +208,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
