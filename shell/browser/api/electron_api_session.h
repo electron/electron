@@ -170,7 +170,7 @@ class Session final : public gin::Wrappable<Session>,
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> ServiceWorkerContext(v8::Isolate* isolate);
   v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
-  v8::Local<v8::Value> NetLog(v8::Isolate* isolate);
+  api::NetLog* NetLog(v8::Isolate* isolate);
   void Preconnect(const gin_helper::Dictionary& options, gin::Arguments* args);
   v8::Local<v8::Promise> CloseAllConnections();
   v8::Local<v8::Value> GetPath(v8::Isolate* isolate);
