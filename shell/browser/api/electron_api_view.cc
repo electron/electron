@@ -378,7 +378,6 @@ void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
   if (view_->width() < bounds.width() || view_->height() < bounds.height()) {
     view_->SetBoundsRect(max_size);
 
-    ui::Layer* layer = view_->layer();
     if (layer) {
       layer->SetClipRect(
           gfx::Rect(0, 0, current_bounds.width(), current_bounds.height()));
