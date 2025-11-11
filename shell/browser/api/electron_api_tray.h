@@ -36,11 +36,10 @@ namespace electron::api {
 class Menu;
 
 #if BUILDFLAG(IS_MAC)
-// Compose multiple layers into a single tray icon.
-// Template layers (determined from NSImage's isTemplate property) adapt to
-// light/dark mode, non-template layers preserve color.
-// Layers are drawn bottom-to-top (index 0 = bottom).
-gfx::Image ComposeMultiLayerTrayImage(const std::vector<gfx::Image>& layers);
+void SetLayeredTrayImages(TrayIcon* tray_icon,
+                          const std::vector<gfx::Image>& layers);
+void SetPressedLayeredTrayImages(TrayIcon* tray_icon,
+                                 const std::vector<gfx::Image>& layers);
 #endif
 
 class Tray final : public gin_helper::DeprecatedWrappable<Tray>,

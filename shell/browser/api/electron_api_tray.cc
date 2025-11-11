@@ -199,12 +199,11 @@ bool Tray::IsDestroyed() {
 std::optional<std::vector<gfx::Image>> Tray::ParseImageLayers(
     v8::Isolate* isolate,
     v8::Local<v8::Value> image) {
-  // Check if first argument is an options object with layers
-  if (!image->IsObject() || image->IsNull()) {
+  gin_helper::Dictionary options;
+  if (!gin::ConvertFromV8(isolate, image, &options)) {
     return std::nullopt;
   }
 
-  gin_helper::Dictionary options(isolate, image.As<v8::Object>());
   v8::Local<v8::Value> layers_value;
   if (!options.Get("layers", &layers_value) || !layers_value->IsArray()) {
     return std::nullopt;
@@ -243,7 +242,7 @@ void Tray::SetImage(v8::Isolate* isolate, v8::Local<v8::Value> image) {
 
 #if BUILDFLAG(IS_MAC)
   if (auto layers = ParseImageLayers(isolate, image)) {
-    tray_icon_->SetImage(ComposeMultiLayerTrayImage(layers.value()));
+    SetLayeredTrayImages(tray_icon_.get(), layers.value());
     return;
   }
 #endif
@@ -266,7 +265,7 @@ void Tray::SetPressedImage(v8::Isolate* isolate, v8::Local<v8::Value> image) {
 
 #if BUILDFLAG(IS_MAC)
   if (auto layers = ParseImageLayers(isolate, image)) {
-    tray_icon_->SetPressedImage(ComposeMultiLayerTrayImage(layers.value()));
+    SetPressedLayeredTrayImages(tray_icon_.get(), layers.value());
     return;
   }
 #endif
