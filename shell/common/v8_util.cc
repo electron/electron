@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/base_switches.h"
 #include "base/memory/raw_ptr.h"
 #include "gin/converter.h"
 #include "shell/common/api/electron_api_native_image.h"
@@ -16,6 +17,15 @@
 #include "third_party/blink/public/common/messaging/web_message_port.h"
 #include "ui/gfx/image/image_skia.h"
 #include "v8/include/v8.h"
+
+#if BUILDFLAG(IS_LINUX) && (defined(ARCH_CPU_X86_64) || defined(ARCH_CPU_ARM64))
+#define ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX
+#include "base/command_line.h"
+#include "base/debug/stack_trace.h"
+#include "components/crash/core/app/crashpad.h"  // nogncheck
+#include "content/public/common/content_switches.h"
+#include "v8/include/v8-wasm-trap-handler-posix.h"
+#endif
 
 namespace electron {
 
@@ -238,6 +248,51 @@ v8::Local<v8::Value> DeserializeV8Value(v8::Isolate* isolate,
 v8::Local<v8::Value> DeserializeV8Value(v8::Isolate* isolate,
                                         base::span<const uint8_t> data) {
   return V8Deserializer(isolate, data).Deserialize();
+}
+
+void SetUpWebAssemblyTrapHandler() {
+#if BUILDFLAG(IS_WIN)
+  // On Windows we use the default trap handler provided by V8.
+  v8::V8::EnableWebAssemblyTrapHandler(true);
+#elif BUILDFLAG(IS_MAC)
+  // On macOS, Crashpad uses exception ports to handle signals in a
+  // different process. As we cannot just pass a callback to this other
+  // process, we ask V8 to install its own signal handler to deal with
+  // WebAssembly traps.
+  v8::V8::EnableWebAssemblyTrapHandler(true);
+#elif defined(ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX)
+  const bool crash_reporter_enabled =
+      crash_reporter::GetHandlerSocket(nullptr, nullptr);
+
+  if (crash_reporter_enabled) {
+    // If either --enable-crash-reporter or --enable-crash-reporter-for-testing
+    // is enabled it should take care of signal handling for us, use the default
+    // implementation which doesn't register an additional handler.
+    v8::V8::EnableWebAssemblyTrapHandler(false);
+    return;
+  }
+
+  const bool use_v8_default_handler =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(
+          ::switches::kDisableInProcessStackTraces);
+
+  if (use_v8_default_handler) {
+    // There is no signal handler yet, but it's okay if v8 registers one.
+    v8::V8::EnableWebAssemblyTrapHandler(/*use_v8_signal_handler=*/true);
+    return;
+  }
+
+  if (base::debug::SetStackDumpFirstChanceCallback(
+          v8::TryHandleWebAssemblyTrapPosix)) {
+    // Crashpad and Breakpad are disabled, but the in-process stack dump
+    // handlers are enabled, so set the callback on the stack dump handlers.
+    v8::V8::EnableWebAssemblyTrapHandler(/*use_v8_signal_handler=*/false);
+    return;
+  }
+
+  // As the registration of the callback failed, we don't enable trap
+  // handlers.
+#endif
 }
 
 namespace util {
