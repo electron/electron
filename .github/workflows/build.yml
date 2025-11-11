@@ -63,6 +63,10 @@ jobs:
         filters: |
           docs:
             - 'docs/**'
+            - README.md
+            - SECURITY.md
+            - CONTRIBUTING.md
+            - CODE_OF_CONDUCT.md
           src:
             - '!docs/**'
     - name: Set Outputs for Build Image SHA & Docs Only
