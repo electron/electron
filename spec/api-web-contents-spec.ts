@@ -2640,30 +2640,22 @@ describe('webContents module', () => {
       const pdfReaderPath = path.resolve(fixturesPath, 'api', 'pdf-reader.mjs');
 
       console.log(`Spawning pdf-reader process: ${process.execPath} ${pdfReaderPath} ${pdfPath}`);
-      const result = cp.spawn(process.execPath, [pdfReaderPath, pdfPath], {
-        stdio: 'pipe'
+      const result = cp.spawnSync(process.execPath, [pdfReaderPath, pdfPath], {
+        stdio: 'pipe',
+        shell: true
       });
 
-      const stdout: Buffer[] = [];
-      const stderr: Buffer[] = [];
-      result.stdout.on('data', (chunk) => stdout.push(chunk));
-      result.stderr.on('data', (chunk) => stderr.push(chunk));
+      console.log(`pdf-reader process exited with code ${result.status} and signal ${result.signal}`);
 
-      const [code, signal] = await new Promise<[number | null, NodeJS.Signals | null]>((resolve) => {
-        result.on('close', (code, signal) => {
-          console.log(`pdf-reader process exited with code ${code} and signal ${signal}`);
-          resolve([code, signal]);
-        });
-      });
       console.log('Cleaning up temporary files');
       await fs.promises.rm(tmpDir, { force: true, recursive: true });
       console.log('Temporary files cleaned up');
-      console.log('STDERR from pdf-reader:', Buffer.concat(stderr).toString());
-      if (code !== 0) {
-        const errMsg = Buffer.concat(stderr).toString().trim();
-        console.error(`Error parsing PDF file, exit code was ${code}; signal was ${signal}, error: ${errMsg}`);
+      console.log('STDERR from pdf-reader:', result.stderr.toString());
+      if (result.status !== 0) {
+        const errMsg = result.stderr.toString().trim();
+        console.error(`Error parsing PDF file, exit code was ${result.status}; signal was ${result.signal}, error: ${errMsg}`);
       }
-      return JSON.parse(Buffer.concat(stdout).toString().trim());
+      return JSON.parse(result.stdout.toString().trim());
     };
 
     let w: BrowserWindow;
