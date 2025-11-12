@@ -36,7 +36,8 @@ def main():
           dsyms.remove(dsym)
       dsym_zip_file = os.path.join(args.build_dir, dsym_name)
       print('Making dsym zip: ' + dsym_zip_file)
-      make_zip(dsym_zip_file, licenses, dsyms)
+      # Use xz compression to reduce file size and stay under GitHub's 2GB limit
+      make_zip(dsym_zip_file, licenses, dsyms, use_xz=True)
       dsym_snapshot_name = 'dsym-snapshot.zip'
       dsym_snapshot_zip_file = os.path.join(args.build_dir, dsym_snapshot_name)
       print('Making dsym snapshot zip: ' + dsym_snapshot_zip_file)

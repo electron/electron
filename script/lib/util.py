@@ -66,11 +66,15 @@ def download(text, url, path):
   return path
 
 
-def make_zip(zip_file_path, files, dirs):
+def make_zip(zip_file_path, files, dirs, use_xz=False):
   safe_unlink(zip_file_path)
   if sys.platform == 'darwin':
     allfiles = files + dirs
-    execute(['zip', '-r', '-y', '-9', zip_file_path] + allfiles)
+    if use_xz:
+      # Use xz compression for better compression ratio (vs deflate)
+      execute(['zip', '-r', '-y', '-9', '-Z', 'xz', zip_file_path] + allfiles)
+    else:
+      execute(['zip', '-r', '-y', '-9', zip_file_path] + allfiles)
   else:
     with zipfile.ZipFile(zip_file_path, "w",
                          zipfile.ZIP_DEFLATED,
