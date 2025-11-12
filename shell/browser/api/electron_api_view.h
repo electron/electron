@@ -70,7 +70,7 @@ class View : public gin_helper::EventEmitter<View>,
   void OnChildViewRemoved(views::View* observed_view,
                           views::View* child) override;
 
-  void GetLayer();
+  ui::Layer* GetLayer();
   void ApplyBorderRadius();
   void ReorderChildView(gin_helper::Handle<View> child, size_t index);
 
