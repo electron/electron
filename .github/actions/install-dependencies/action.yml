@@ -29,5 +29,3 @@ runs:
       if [ "$BUILD_TYPE" = "win" ]; then
         node node_modules/dugite/script/download-git.js
       fi
-    env:
-      YARN_ENABLE_HARDENED_MODE: ${{ inputs.yarn-hardened-mode }}

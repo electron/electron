@@ -208,8 +208,6 @@ jobs:
         cd src/electron/spec
         node ../script/yarn.js config set nodeLinker node-modules;
         node ../script/yarn.js install --immutable
-      env:
-        YARN_ENABLE_HARDENED_MODE: ${{ inputs.yarn-hardened-mode }}
     - name: Run Electron Tests
       shell: bash
       env:
@@ -218,7 +216,6 @@ jobs:
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         DISPLAY: ':99.0'
         NPM_CONFIG_MSVS_VERSION: '2022'
-        YARN_ENABLE_HARDENED_MODE: ${{ inputs.yarn-hardened-mode }}
       run: |
         cd src/electron
         export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
