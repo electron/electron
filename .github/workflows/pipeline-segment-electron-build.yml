@@ -61,7 +61,7 @@ on:
       yarn-hardened-mode:
         description: 'Enable hardened mode for yarn'
         type: string
-        default: '0'
+        default: '1'
 
 concurrency:
   group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.target-variant }}-${{ inputs.is-asan }}-${{ github.ref_protected == true && github.run_id || github.ref }}

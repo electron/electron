@@ -34,7 +34,7 @@ on:
         description: 'Enable yarn hardened mode'
         required: false
         type: string
-        default: '0'
+        default: '1'
 
 concurrency:
   group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ github.ref_protected == true && github.run_id || github.ref }}
@@ -206,6 +206,7 @@ jobs:
       if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
       run: |
         cd src/electron/spec
+        node ../script/yarn.js config set nodeLinker node-modules;
         node ../script/yarn.js install --immutable
       env:
         YARN_ENABLE_HARDENED_MODE: ${{ inputs.yarn-hardened-mode }}

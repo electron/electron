@@ -3,7 +3,7 @@ description: 'Installs yarn depdencies using cache when available'
 inputs:
   yarn-hardened-mode:
     description: 'Enable hardened mode for yarn'
-    default: '0'
+    default: '1'
 runs:
   using: "composite"
   steps:
