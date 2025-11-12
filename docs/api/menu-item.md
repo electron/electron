@@ -34,7 +34,34 @@ See [`Menu`](menu.md) for examples.
   * `sublabel` string (optional) _macOS_ - Available in macOS >= 14.4
   * `toolTip` string (optional) _macOS_ - Hover text for this menu item.
   * `accelerator` string (optional) - An [Accelerator](../tutorial/keyboard-shortcuts.md#accelerators) string.
-  * `icon` ([NativeImage](native-image.md) | string) (optional)
+  * `icon` ([NativeImage](native-image.md) | string) (optional) -  
+    Specifies an icon for the menu item.
+
+    When a `string` is provided, it is interpreted as a **file path** to an image file  
+    (either absolute or relative to your app’s directory). It is **not** treated as a
+    system or named icon (for example, passing `"close"` will not use the OS’s default close icon).
+
+    To use an image from code instead of a file path, create a [`NativeImage`](native-image.md)
+    and pass it to the `icon` option:
+
+    ```js
+    // Using a file path string
+    const menu = new MenuItem({
+      label: 'Open',
+      icon: path.join(__dirname, 'assets', 'open.png')
+    })
+
+    // Using a NativeImage
+    const { nativeImage } = require('electron')
+    const img = nativeImage.createFromPath(path.join(__dirname, 'assets', 'open.png'))
+    const menu2 = new MenuItem({ label: 'Open', icon: img })
+    ```
+
+    > [!NOTE]
+    > Under the hood, Electron converts the image via `ui::ImageModel::FromImage`
+    > (see [`electron/shell/browser/api/electron_api_menu.cc`](https://github.com/electron/electron/blob/main/shell/browser/api/electron_api_menu.cc)),
+    > which confirms the string form represents an image file path.
+
   * `enabled` boolean (optional) - If false, the menu item will be greyed out and
     unclickable.
   * `acceleratorWorksWhenHidden` boolean (optional) _macOS_ - default is `true`, and when `false` will prevent the accelerator from triggering the item if the item is not visible.
@@ -65,6 +92,8 @@ See [`Menu`](menu.md) for examples.
 
 > [!NOTE]
 > `acceleratorWorksWhenHidden` is specified as being macOS-only because accelerators always work when items are hidden on Windows and Linux. The option is exposed to users to give them the option to turn it off, as this is possible in native macOS development.
+
+---
 
 ### Instance Properties
 
@@ -117,8 +146,8 @@ An `Accelerator | null` indicating the item's [user-assigned accelerator](https:
 
 #### `menuItem.icon`
 
-A `NativeImage | string` (optional) indicating the
-item's icon, if set.
+A `NativeImage | string` (optional) indicating the item's icon, if set.  
+When a `string` is provided, it is treated as a **file path** to an image (not a named system icon).
 
 #### `menuItem.sublabel`
 
