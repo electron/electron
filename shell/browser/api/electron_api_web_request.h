@@ -10,6 +10,7 @@
 #include <string>
 
 #include "base/types/pass_key.h"
+#include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "net/base/completion_once_callback.h"
 #include "services/network/public/cpp/resource_request.h"
@@ -83,6 +84,7 @@ class WebRequest final : public gin::Wrappable<WebRequest> {
 
   // gin::Wrappable:
   static const gin::WrapperInfo kWrapperInfo;
+  void Trace(cppgc::Visitor*) const override;
   const gin::WrapperInfo* wrapper_info() const override;
   const char* GetHumanReadableName() const override;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
@@ -239,6 +241,8 @@ class WebRequest final : public gin::Wrappable<WebRequest> {
   std::map<SimpleEvent, SimpleListenerInfo> simple_listeners_;
   std::map<ResponseEvent, ResponseListenerInfo> response_listeners_;
   std::map<uint64_t, BlockedRequest> blocked_requests_;
+
+  gin::WeakCellFactory<WebRequest> weak_factory_{this};
 };
 
 }  // namespace electron::api

@@ -350,6 +350,11 @@ const char* WebRequest::GetHumanReadableName() const {
   return "Electron / WebRequest";
 }
 
+void WebRequest::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<WebRequest>::Trace(visitor);
+  visitor->Trace(weak_factory_);
+}
+
 bool WebRequest::HasListener() const {
   return !(simple_listeners_.empty() && response_listeners_.empty());
 }
