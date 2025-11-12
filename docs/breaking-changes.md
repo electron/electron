@@ -12,6 +12,14 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (40.0)
+
+### Deprecated: `clipboard` API access from renderer processes
+
+Using the `clipboard` API directly in the renderer process is deprecated.
+If you want to call this API from a renderer process, place the API call in
+your preload script and expose it using the [contextBridge](https://www.electronjs.org/docs/latest/api/context-bridge) API.
+
 ## Planned Breaking API Changes (39.0)
 
 ### Deprecated: `--host-rules` command line switch
