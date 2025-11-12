@@ -34,6 +34,7 @@
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
 #include "url/gurl.h"
+#include "v8/include/cppgc/persistent.h"
 
 namespace mojo {
 template <typename T>
@@ -244,8 +245,6 @@ class ProxyingURLLoaderFactory
   bool IsForServiceWorkerScript() const;
 
  private:
-  api::WebRequest* web_request() { return web_request_; }
-
   void OnTargetFactoryError();
   void OnProxyBindingError();
   void RemoveRequest(int32_t network_service_request_id, uint64_t request_id);
@@ -253,7 +252,7 @@ class ProxyingURLLoaderFactory
 
   bool ShouldIgnoreConnectionsLimit(const network::ResourceRequest& request);
 
-  raw_ptr<api::WebRequest> web_request_;
+  const cppgc::WeakPersistent<api::WebRequest> web_request_;
 
   // This is passed from api::Protocol.
   //

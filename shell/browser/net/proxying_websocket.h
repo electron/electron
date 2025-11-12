@@ -23,6 +23,7 @@
 #include "shell/browser/api/electron_api_web_request.h"
 #include "url/gurl.h"
 #include "url/origin.h"
+#include "v8/include/cppgc/persistent.h"
 
 namespace electron {
 
@@ -123,7 +124,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   void OnMojoConnectionError();
 
   // Passed from api::WebRequest.
-  raw_ptr<api::WebRequest> web_request_;
+  const cppgc::WeakPersistent<api::WebRequest> web_request_;
 
   // Saved to feed the api::WebRequest.
   network::ResourceRequest request_;
