@@ -117,19 +117,6 @@ async function main () {
     return process.exit(buildStatus !== 0 ? buildStatus : signal);
   }
 
-  const nodeLinkerArgs = ['config', 'set', 'nodeLinker', 'node-modules'];
-  const { status: yarnCfgStatus, signal: yarnCfgSignal } = cp.spawnSync(process.execPath, [YARN_SCRIPT_PATH, ...nodeLinkerArgs], {
-    env,
-    cwd: NAN_DIR,
-    stdio: 'inherit',
-    shell: process.platform === 'win32'
-  });
-
-  if (yarnCfgStatus !== 0 || yarnCfgSignal != null) {
-    console.error('Failed to set yarn config');
-    return process.exit(yarnCfgStatus !== 0 ? yarnCfgStatus : yarnCfgSignal);
-  }
-
   const { status: installStatus, signal: installSignal } = cp.spawnSync(process.execPath, [YARN_SCRIPT_PATH, 'install'], {
     env,
     cwd: NAN_DIR,
