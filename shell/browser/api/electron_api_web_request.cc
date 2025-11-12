@@ -22,6 +22,7 @@
 #include "gin/converter.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
+#include "gin/persistent.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
@@ -390,9 +391,11 @@ int WebRequest::HandleOnBeforeRequestResponseEvent(
   gin_helper::Dictionary details(isolate, v8::Object::New(isolate));
   FillDetails(&details, request_info, request, *new_url);
 
-  ResponseCallback response =
-      base::BindOnce(&WebRequest::OnBeforeRequestListenerResult,
-                     base::Unretained(this), request_info->id);
+  auto& allocation_handle = isolate->GetCppHeap()->GetAllocationHandle();
+  ResponseCallback response = base::BindOnce(
+      &WebRequest::OnBeforeRequestListenerResult,
+      gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle)),
+      request_info->id);
   info.listener.Run(gin::ConvertToV8(isolate, details), std::move(response));
   return net::ERR_IO_PENDING;
 }
