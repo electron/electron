@@ -194,10 +194,17 @@ Returns `NativeImage`
 
 Creates a new `NativeImage` instance from `dataUrl`, a base 64 encoded [Data URL][data-url] string.
 
-### `nativeImage.createFromNamedImage(imageName[, hslShift])` _macOS_
+### `nativeImage.createFromNamedImage(imageName[, hslShift, options])` _macOS_
 
 * `imageName` string
 * `hslShift` number[] (optional)
+* `options` Object (optional)
+  * `pointSize` Number (optional) - Defaults to `13.0`.
+  * `weight` String (optional) - Defaults to `semibold`. Can be one of the
+    following values: `ultralight`, `thin`, `light`, `regular`, `medium`,
+    `semibold`, `bold`, `heavy`, `black`.
+  * `scale` String (optional) - Defaults to `small`. Can be one of the following values:
+    `small`, `medium`, `large`.
 
 Returns `NativeImage`
 
