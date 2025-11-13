@@ -784,7 +784,7 @@ index da4206187f7c7d2becb8a101c1ff5346a10e13f4..03f0910926f3d403121e227cee32a546
    // Recreate the buffer in the constructor.
    BindingData* binding = realm->AddBindingData<BindingData>(holder);
 diff --git a/src/util-inl.h b/src/util-inl.h
-index 5699d76fdfee4b260aa23929f1fb678389ad99e7..4e9c4fea85d12e72362e5049a33c233fd41594e8 100644
+index 5699d76fdfee4b260aa23929f1fb678389ad99e7..d07bceb425f00882db116975a92f4835d7c2cf3b 100644
 --- a/src/util-inl.h
 +++ b/src/util-inl.h
 @@ -336,14 +336,14 @@ v8::Maybe<void> FromV8Array(v8::Local<v8::Context> context,
@@ -804,6 +804,15 @@ index 5699d76fdfee4b260aa23929f1fb678389ad99e7..4e9c4fea85d12e72362e5049a33c233f
    if (str.size() >= static_cast<size_t>(v8::String::kMaxLength)) [[unlikely]] {
      // V8 only has a TODO comment about adding an exception when the maximum
      // string size is exceeded.
+@@ -359,7 +359,7 @@ v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
+ v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
+                                     std::u16string_view str,
+                                     v8::Isolate* isolate) {
+-  if (isolate == nullptr) isolate = context->GetIsolate();
++  if (isolate == nullptr) isolate = v8::Isolate::GetCurrent();
+   if (str.length() >= static_cast<size_t>(v8::String::kMaxLength))
+       [[unlikely]] {
+     // V8 only has a TODO comment about adding an exception when the maximum
 @@ -379,7 +379,7 @@ v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
  v8::MaybeLocal<v8::Value> ToV8Value(v8::Local<v8::Context> context,
                                      v8_inspector::StringView str,

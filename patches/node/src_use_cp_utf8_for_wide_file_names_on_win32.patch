@@ -197,7 +197,7 @@ index 529b7cfc15536c3fe5e7798c0f82698121751f2a..cbc3283fc2d511cce2eae0048cc9bf0f
  
    if (package_json == nullptr) {
 diff --git a/src/util-inl.h b/src/util-inl.h
-index 4e9c4fea85d12e72362e5049a33c233fd41594e8..bab397370601464da37b4fbac399887e07bba35c 100644
+index d07bceb425f00882db116975a92f4835d7c2cf3b..6898e8ea794675e903e13e2b45524d572a3f68bb 100644
 --- a/src/util-inl.h
 +++ b/src/util-inl.h
 @@ -718,12 +718,11 @@ inline bool IsWindowsBatchFile(const char* filename) {
