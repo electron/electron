@@ -194,10 +194,17 @@ Returns `NativeImage`
 
 Creates a new `NativeImage` instance from `dataUrl`, a base 64 encoded [Data URL][data-url] string.
 
-### `nativeImage.createFromNamedImage(imageName[, hslShift])` _macOS_
+### `nativeImage.createFromNamedImage(imageName[, hslShift, options])` _macOS_
 
 * `imageName` string
 * `hslShift` number[] (optional)
+* `options` Object (optional)
+  * `pointSize` Number (optional) - Defaults to `13.0`.
+  * `weight` String (optional) - Defaults to `semibold`. Can be one of the
+    following values: `ultralight`, `thin`, `light`, `regular`, `medium`,
+    `semibold`, `bold`, `heavy`, `black`.
+  * `scale` String (optional) - Defaults to `small`. Can be one of the following values:
+    `small`, `medium`, `large`.
 
 Returns `NativeImage`
 
@@ -229,6 +236,23 @@ echo -e '#import <Cocoa/Cocoa.h>\nint main() { NSLog(@"%@", SYSTEM_IMAGE_NAME); 
 ```
 
 where `SYSTEM_IMAGE_NAME` should be replaced with any value from [this list](https://developer.apple.com/documentation/appkit/nsimagename?language=objc).
+
+### `nativeImage.createMenuSymbol(imageName)` _macOS_
+
+* `imageName` string
+
+Returns `NativeImage`
+
+Creates a new `NativeImage` instance from an SF Symbol for use in a native [Menu](./menu.md). See [SF Symbols](https://developer.apple.com/sf-symbols/) for a list of possible values.
+
+```js
+const { nativeImage, MenuItem } = require('electron')
+
+const item = new MenuItem({
+  icon: nativeImage.createMenuSymbol('folder.badge.plus'),
+  label: 'Create Folder'
+})
+```
 
 ## Class: NativeImage
 
