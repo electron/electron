@@ -11,7 +11,7 @@ its own blended handler between Node and Blink.
 Not upstreamable.
 
 diff --git a/lib/internal/modules/esm/utils.js b/lib/internal/modules/esm/utils.js
-index 4a4279459341e87784ee8efa832dc74371c4a708..88d84786e72cf8712e0b9bda16c418d4087fe549 100644
+index a9076a7ae941284d4585829292e2ece25c2b90e4..7335fe20f34fdd822276575686379dd954f1c8e1 100644
 --- a/lib/internal/modules/esm/utils.js
 +++ b/lib/internal/modules/esm/utils.js
 @@ -34,7 +34,7 @@ const {
@@ -21,14 +21,14 @@ index 4a4279459341e87784ee8efa832dc74371c4a708..88d84786e72cf8712e0b9bda16c418d4
 -const { getOptionValue } = require('internal/options');
 +const { getOptionValue, getEmbedderOptions } = require('internal/options');
  const {
-   loadPreloadModules,
-   initializeFrozenIntrinsics,
-@@ -291,12 +291,13 @@ let _forceDefaultLoader = false;
-  * @param {boolean} [forceDefaultLoader] - A boolean indicating disabling custom loaders.
+   emitExperimentalWarning,
+   kEmptyObject,
+@@ -285,12 +285,13 @@ let _shouldSpawnLoaderHookWorker = true;
+  *   should be spawned later.
   */
- function initializeESM(forceDefaultLoader = false) {
+ function initializeESM(shouldSpawnLoaderHookWorker = true) {
 +  const shouldSetOnIsolate = !getEmbedderOptions().shouldNotRegisterESMLoader;
-   _forceDefaultLoader = forceDefaultLoader;
+   _shouldSpawnLoaderHookWorker = shouldSpawnLoaderHookWorker;
    initializeDefaultConditions();
    // Setup per-realm callbacks that locate data or callbacks that we keep
    // track of for different ESM modules.
@@ -40,10 +40,10 @@ index 4a4279459341e87784ee8efa832dc74371c4a708..88d84786e72cf8712e0b9bda16c418d4
  
  /**
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 5783728da2894270f902f47b210008df0e911bde..8fed194cbae9ce75bd0805b4df30b4de64fbbefa 100644
+index 26e6bcfa30be8b22b20e66ffe2f8d0b7d60fc6cc..fa2f28989be19e8ea8f53b990ae96be92ef3c3a3 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
-@@ -1097,7 +1097,7 @@ Maybe<ModuleWrap*> ModuleWrap::ResolveModule(
+@@ -1098,7 +1098,7 @@ Maybe<ModuleWrap*> ModuleWrap::ResolveModule(
    return Just(module_wrap);
  }
  
@@ -52,7 +52,7 @@ index 5783728da2894270f902f47b210008df0e911bde..8fed194cbae9ce75bd0805b4df30b4de
      Local<Context> context,
      Local<Data> host_defined_options,
      Local<Value> resource_name,
-@@ -1185,14 +1185,16 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
+@@ -1186,14 +1186,16 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
    Realm* realm = Realm::GetCurrent(args);
    HandleScope handle_scope(isolate);
  
@@ -72,7 +72,7 @@ index 5783728da2894270f902f47b210008df0e911bde..8fed194cbae9ce75bd0805b4df30b4de
  }
  
  void ModuleWrap::HostInitializeImportMetaObjectCallback(
-@@ -1234,13 +1236,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
+@@ -1235,13 +1237,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
    Realm* realm = Realm::GetCurrent(args);
    Isolate* isolate = realm->isolate();
  
