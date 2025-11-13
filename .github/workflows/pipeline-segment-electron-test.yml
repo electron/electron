@@ -140,8 +140,6 @@ jobs:
         CLOUDFLARE_USER_CA_CERT: ${{ secrets.CLOUDFLARE_USER_CA_CERT }}
         AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Install Dependencies
-      uses: ./src/electron/.github/actions/install-dependencies
     - name: Set Chromium Git Cookie
       uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Get Depot Tools
@@ -190,6 +188,14 @@ jobs:
       run: |
         cd src/out/Default
         unzip -:o dist.zip
+    - name: Set environment variables for testing
+      run: |
+        BASE=$(pwd)/src/electron
+        echo "npm_config_nodedir=$BASE/out/Default/gen/node_headers" >> $GITHUB_ENV
+        echo "npm_config_yes=true" >> $GITHUB_ENV
+        echo "npm_config_msvs_version=2022" >> $GITHUB_ENV
+    - name: Install Dependencies
+      uses: ./src/electron/.github/actions/install-dependencies
     #- name: Import & Trust Self-Signed Codesigning Cert on MacOS
     #  if: ${{ inputs.target-platform == 'macos' && inputs.target-arch == 'x64' }}
     #  run: |
