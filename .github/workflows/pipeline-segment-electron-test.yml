@@ -197,6 +197,12 @@ jobs:
     #    cd src/electron
     #    ./script/codesign/generate-identity.sh
 
+    - name: Install spec dependencies for ARM32
+      if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
+      run: |
+        cd src/electron/spec
+        node ../script/yarn.js config set nodeLinker node-modules;
+        node ../script/yarn.js install --immutable
     - name: Run Electron Tests
       shell: bash
       env:
@@ -222,7 +228,7 @@ jobs:
               export ELECTRON_FORCE_TEST_SUITE_EXIT="true"
             fi
           fi
-          node script/yarn.js test --skipYarnInstall --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
+          node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
         else
           chown :builduser .. && chmod g+w ..
           chown -R :builduser . && chmod -R g+w .
@@ -239,9 +245,14 @@ jobs:
             export MOCHA_TIMEOUT=180000
             echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
             cd electron
-            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --skipYarnInstall --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
-          else          
-            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --skipYarnInstall --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
+            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
+          else
+            if [ "${{ inputs.target-arch }}" = "arm" ]; then
+              runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --skipYarnInstall --runners=main --trace-uncaught --enable-logging --files $tests_files
+            else 
+              runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
+            fi
+            
           fi
         fi
     - name: Upload Test results to Datadog
