@@ -22,7 +22,8 @@ your preload script and expose it using the [contextBridge](https://www.electron
 
 ### Behavior Changed: MacOS dSYM files now compressed with tar.xz
 
-Debug symbols for MacOS (dSYM) now use xz compression in order to handle larger file sizes.
+Debug symbols for MacOS (dSYM) now use xz compression in order to handle larger file sizes. `dsym.zip` files are now
+`dsym.tar.xz` files. End users using debug symbols may need to update their zip utilities.
 
 ## Planned Breaking API Changes (39.0)
 
