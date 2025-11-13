@@ -197,12 +197,6 @@ jobs:
     #    cd src/electron
     #    ./script/codesign/generate-identity.sh
 
-    - name: Install spec dependencies for ARM32
-      if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
-      run: |
-        cd src/electron/spec
-        node ../script/yarn.js config set nodeLinker node-modules;
-        node ../script/yarn.js install --immutable
     - name: Run Electron Tests
       shell: bash
       env:
