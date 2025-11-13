@@ -8,10 +8,10 @@ resource path. This commit ensures that the TraverseParent function
 bails out if the parent path is outside of the resource path.
 
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index 9eec93f52f0d0b2e45ae04ff357b4ced0770782f..b93ccedaf703f86ae2092c304785394c471d520c 100644
+index cbc3283fc2d511cce2eae0048cc9bf0fa917d38a..3b4d82da2ad30cafa96611eaa2d68ddf1badeac0 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
-@@ -284,8 +284,41 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
+@@ -320,8 +320,41 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
      Realm* realm, const std::filesystem::path& check_path) {
    std::filesystem::path current_path = check_path;
    auto env = realm->env();
@@ -47,22 +47,22 @@ index 9eec93f52f0d0b2e45ae04ff357b4ced0770782f..b93ccedaf703f86ae2092c304785394c
 +        });
 +  };
 +
-+  bool did_original_path_start_with_resources_path = starts_with(check_path.
-+      generic_string(), resources_path);
++  bool did_original_path_start_with_resources_path = starts_with(
++      ConvertGenericPathToUTF8(check_path), resources_path);
 +
    do {
      current_path = current_path.parent_path();
  
-@@ -304,6 +337,12 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
-       return nullptr;
+@@ -341,6 +374,12 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
+       }
      }
  
 +    // If current path is outside the resources path, bail.
 +    if (did_original_path_start_with_resources_path &&
-+        !starts_with(current_path.generic_string(), resources_path)) {
++        !starts_with(ConvertGenericPathToUTF8(current_path), resources_path)) {
 +      return nullptr;
 +    }
 +
      // Check if the path ends with `/node_modules`
-     if (current_path.generic_string().ends_with("/node_modules")) {
+     if (current_path.filename() == "node_modules") {
        return nullptr;
