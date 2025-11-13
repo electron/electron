@@ -1,7 +1,7 @@
-From 4cf9311810b0561ee8b532a694526c7904e18367 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Leszek Swirski <leszeks@chromium.org>
 Date: Wed, 12 Nov 2025 16:46:01 +0100
-Subject: [PATCH] [compiler] Preserve field repr in property array extension
+Subject: [compiler] Preserve field repr in property array extension
 
 Walk the descriptor array in lockstep with the property array when
 extending the latter.
@@ -13,10 +13,9 @@ Commit-Queue: Leszek Swirski <leszeks@chromium.org>
 Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
 Reviewed-by: Igor Sheludko <ishell@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#103674}
----
 
 diff --git a/src/compiler/access-builder.cc b/src/compiler/access-builder.cc
-index d8f618f..ad6172b 100644
+index 0df286daceb0002af9c8ce73633b4ef2ece5f2d5..bad4292c7ef198cacd3a9e80b563234e8a69fe36 100644
 --- a/src/compiler/access-builder.cc
 +++ b/src/compiler/access-builder.cc
 @@ -4,6 +4,8 @@
@@ -28,7 +27,7 @@ index d8f618f..ad6172b 100644
  #include "src/compiler/type-cache.h"
  #include "src/handles/handles-inl.h"
  #include "src/objects/arguments.h"
-@@ -1070,12 +1072,16 @@
+@@ -1099,12 +1101,16 @@ FieldAccess AccessBuilder::ForFeedbackVectorSlot(int index) {
  }
  
  // static
@@ -51,7 +50,7 @@ index d8f618f..ad6172b 100644
  }
  
 diff --git a/src/compiler/access-builder.h b/src/compiler/access-builder.h
-index 8e7d9cd..4feaefc 100644
+index 2974012bc3d41ddad7bf8c89d8d91ac7cf2a9c49..2b648443fde2aa1a73b64ecb56d9c7fe8221ced8 100644
 --- a/src/compiler/access-builder.h
 +++ b/src/compiler/access-builder.h
 @@ -11,6 +11,7 @@
@@ -62,7 +61,7 @@ index 8e7d9cd..4feaefc 100644
  
  namespace v8 {
  namespace internal {
-@@ -318,7 +319,8 @@
+@@ -323,7 +324,8 @@ class V8_EXPORT_PRIVATE AccessBuilder final
    static FieldAccess ForFeedbackVectorSlot(int index);
  
    // Provides access to PropertyArray slots.
@@ -73,7 +72,7 @@ index 8e7d9cd..4feaefc 100644
    // Provides access to ScopeInfo flags.
    static FieldAccess ForScopeInfoFlags();
 diff --git a/src/compiler/js-native-context-specialization.cc b/src/compiler/js-native-context-specialization.cc
-index faeda3e..dc8fcd4 100644
+index c16f14ebacbd45311583f7e22195142ddb47ab73..8200bd59f0c4ad05bd3e3c739155807af85a8f93 100644
 --- a/src/compiler/js-native-context-specialization.cc
 +++ b/src/compiler/js-native-context-specialization.cc
 @@ -38,6 +38,7 @@
@@ -84,7 +83,7 @@ index faeda3e..dc8fcd4 100644
  #include "src/objects/string.h"
  
  namespace v8 {
-@@ -4235,25 +4236,59 @@
+@@ -4227,25 +4228,59 @@ Node* JSNativeContextSpecialization::BuildExtendPropertiesBackingStore(
    // for intermediate states of chains of property additions. That makes
    // it unclear what the best approach is here.
    DCHECK_EQ(map.UnusedPropertyFields(), 0);
@@ -150,7 +149,7 @@ index faeda3e..dc8fcd4 100644
    }
  
    // Compute new length and hash.
-@@ -4291,7 +4326,8 @@
+@@ -4283,7 +4318,8 @@ Node* JSNativeContextSpecialization::BuildExtendPropertiesBackingStore(
    a.Store(AccessBuilder::ForMap(), jsgraph()->PropertyArrayMapConstant());
    a.Store(AccessBuilder::ForPropertyArrayLengthAndHash(), new_length_and_hash);
    for (int i = 0; i < new_length; ++i) {
@@ -161,7 +160,7 @@ index faeda3e..dc8fcd4 100644
    return a.Finish();
  }
 diff --git a/src/compiler/turboshaft/turbolev-early-lowering-reducer-inl.h b/src/compiler/turboshaft/turbolev-early-lowering-reducer-inl.h
-index 0c63f5c..d8b5571 100644
+index bf0832ecc67bec1a6da711b9bff7266ba3df7d51..a6452e7cfb9e7d7d6d222bd625d13dabe4f97cb7 100644
 --- a/src/compiler/turboshaft/turbolev-early-lowering-reducer-inl.h
 +++ b/src/compiler/turboshaft/turbolev-early-lowering-reducer-inl.h
 @@ -14,6 +14,7 @@
@@ -172,7 +171,7 @@ index 0c63f5c..d8b5571 100644
  #include "src/objects/instance-type-inl.h"
  
  namespace v8::internal::compiler::turboshaft {
-@@ -318,8 +319,32 @@
+@@ -323,8 +324,32 @@ class TurbolevEarlyLoweringReducer : public Next {
    }
  
    V<PropertyArray> ExtendPropertiesBackingStore(
@@ -206,7 +205,7 @@ index 0c63f5c..d8b5571 100644
      // Allocate new PropertyArray.
      int new_length = old_length + JSObject::kFieldsAdded;
      Uninitialized<PropertyArray> new_property_array =
-@@ -330,18 +355,28 @@
+@@ -335,18 +360,28 @@ class TurbolevEarlyLoweringReducer : public Next {
                         __ HeapConstant(factory_->property_array_map()));
  
      // Copy existing properties over.
@@ -240,10 +239,10 @@ index 0c63f5c..d8b5571 100644
      }
  
 diff --git a/src/compiler/turboshaft/turbolev-graph-builder.cc b/src/compiler/turboshaft/turbolev-graph-builder.cc
-index 38bf830..8200b0b 100644
+index e9db0d8260c784a1da406b7b70d2e623135b572d..8758e09fd7bcdb9221904147b5f7e9ac366e49b6 100644
 --- a/src/compiler/turboshaft/turbolev-graph-builder.cc
 +++ b/src/compiler/turboshaft/turbolev-graph-builder.cc
-@@ -2793,10 +2793,11 @@
+@@ -2666,10 +2666,11 @@ class GraphBuildingNodeProcessor {
    maglev::ProcessResult Process(maglev::ExtendPropertiesBackingStore* node,
                                  const maglev::ProcessingState& state) {
      GET_FRAME_STATE_MAYBE_ABORT(frame_state, node->eager_deopt_info());
@@ -260,10 +259,10 @@ index 38bf830..8200b0b 100644
    }
  
 diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
-index f66c80d..0a1e2fc 100644
+index 784f6b4eaad502b514b4a9e36560138a7fd50df2..733fad289b326f6f52369431aa00136715ee0283 100644
 --- a/src/maglev/maglev-graph-builder.cc
 +++ b/src/maglev/maglev-graph-builder.cc
-@@ -5210,7 +5210,7 @@
+@@ -5282,7 +5282,7 @@ ReduceResult MaglevGraphBuilder::BuildExtendPropertiesBackingStore(
    // potentially causing a sandbox violation. This CHECK defends against that.
    SBXCHECK_GE(length, 0);
    return AddNewNode<ExtendPropertiesBackingStore>({property_array, receiver},
@@ -273,10 +272,10 @@ index f66c80d..0a1e2fc 100644
  
  MaybeReduceResult MaglevGraphBuilder::TryBuildStoreField(
 diff --git a/src/maglev/maglev-ir.h b/src/maglev/maglev-ir.h
-index 7342b8e..9d317f41 100644
+index a994392e3f4697ec8c6ffc3f9a64d6093a712f20..7f20ae81b5b12b2b747f0b46caebd9258d399ab1 100644
 --- a/src/maglev/maglev-ir.h
 +++ b/src/maglev/maglev-ir.h
-@@ -9215,8 +9215,10 @@
+@@ -8531,8 +8531,10 @@ class ExtendPropertiesBackingStore
    using Base = FixedInputValueNodeT<2, ExtendPropertiesBackingStore>;
  
   public:
@@ -289,7 +288,7 @@ index 7342b8e..9d317f41 100644
  
    static constexpr OpProperties kProperties =
        OpProperties::CanAllocate() | OpProperties::CanRead() |
-@@ -9236,9 +9238,11 @@
+@@ -8552,9 +8554,11 @@ class ExtendPropertiesBackingStore
    void GenerateCode(MaglevAssembler*, const ProcessingState&);
    void PrintParams(std::ostream&) const;
  
