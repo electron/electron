@@ -136,10 +136,10 @@ index 5de3ebb04b12286a07e3041d0a6dd1cc9072e76a..52075b7d21c7c4674ccd81698ea5595c
                      std::make_error_code(std::errc::file_exists),
                      "cp",
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index ed22da844a61b14b8580cd3d6bb3a233b8559b38..2c5c14f506f39abefe3c8c802862264aef3a4fe4 100644
+index 62050791174563f88b8629d576eed8959b3c2e20..0e820f8623ecf41008a938f16d11bd3206a7b0c1 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
-@@ -360,12 +360,13 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
+@@ -327,22 +327,24 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
  
      // Stop the search when the process doesn't have permissions
      // to walk upwards
@@ -158,10 +158,6 @@ index ed22da844a61b14b8580cd3d6bb3a233b8559b38..2c5c14f506f39abefe3c8c802862264a
 +      }
      }
  
-     // If current path is outside the resources path, bail.
-@@ -375,13 +376,14 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
-     }
- 
      // Check if the path ends with `/node_modules`
 -    if (current_path.generic_string().ends_with("/node_modules")) {
 +    if (current_path.filename() == "node_modules") {
@@ -176,7 +172,7 @@ index ed22da844a61b14b8580cd3d6bb3a233b8559b38..2c5c14f506f39abefe3c8c802862264a
      if (package_json != nullptr) {
        return package_json;
      }
-@@ -403,20 +405,12 @@ void BindingData::GetNearestParentPackageJSONType(
+@@ -364,20 +366,12 @@ void BindingData::GetNearestParentPackageJSONType(
  
    ToNamespacedPath(realm->env(), &path_value);
  
