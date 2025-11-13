@@ -20,6 +20,10 @@ Using the `clipboard` API directly in the renderer process is deprecated.
 If you want to call this API from a renderer process, place the API call in
 your preload script and expose it using the [contextBridge](https://www.electronjs.org/docs/latest/api/context-bridge) API.
 
+### Behavior Changed: MacOS dSYM files now compressed with tar.xz
+
+Debug symbols for MacOS (dSYM) now use xz compression in order to handle larger file sizes.
+
 ## Planned Breaking API Changes (39.0)
 
 ### Deprecated: `--host-rules` command line switch
