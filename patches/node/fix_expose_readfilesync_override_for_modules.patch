@@ -20,7 +20,7 @@ index 2884149d82d180e0d2ecfa7ac8fd92f201f1cb55..dded4bf3d7106d127efbad81087f0c37
    V(performance_entry_callback, v8::Function)                                  \
    V(prepare_stack_trace_callback, v8::Function)                                \
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index b93ccedaf703f86ae2092c304785394c471d520c..bdbc511ef3f680bbac6770b89f47acaee95d56a2 100644
+index 9eec93f52f0d0b2e45ae04ff357b4ced0770782f..eea4ba313d8dbcf7b88b79f5a3e9ba2eb39d7c3e 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -23,6 +23,7 @@ namespace modules {
@@ -90,7 +90,7 @@ index b93ccedaf703f86ae2092c304785394c471d520c..bdbc511ef3f680bbac6770b89f47acae
  void BindingData::ReadPackageJSON(const FunctionCallbackInfo<Value>& args) {
    CHECK_GE(args.Length(), 1);  // path, [is_esm, base, specifier]
    CHECK(args[0]->IsString());  // path
-@@ -674,6 +710,8 @@ void SaveCompileCacheEntry(const FunctionCallbackInfo<Value>& args) {
+@@ -635,6 +671,8 @@ void SaveCompileCacheEntry(const FunctionCallbackInfo<Value>& args) {
  void BindingData::CreatePerIsolateProperties(IsolateData* isolate_data,
                                               Local<ObjectTemplate> target) {
    Isolate* isolate = isolate_data->isolate();
@@ -99,7 +99,7 @@ index b93ccedaf703f86ae2092c304785394c471d520c..bdbc511ef3f680bbac6770b89f47acae
    SetMethod(isolate, target, "readPackageJSON", ReadPackageJSON);
    SetMethod(isolate,
              target,
-@@ -733,6 +771,8 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
+@@ -694,6 +732,8 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
  
  void BindingData::RegisterExternalReferences(
      ExternalReferenceRegistry* registry) {
