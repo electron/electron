@@ -190,8 +190,7 @@ jobs:
         unzip -:o dist.zip
     - name: Set environment variables for testing
       run: |
-        BASE=$(pwd)/src/electron
-        echo "npm_config_nodedir=$BASE/out/Default/gen/node_headers" >> $GITHUB_ENV
+        echo "npm_config_nodedir=$(pwd)/src/out/Default/gen/node_headers" >> $GITHUB_ENV
         echo "npm_config_yes=true" >> $GITHUB_ENV
         echo "npm_config_msvs_version=2022" >> $GITHUB_ENV
     - name: Install Dependencies
