@@ -230,6 +230,15 @@ echo -e '#import <Cocoa/Cocoa.h>\nint main() { NSLog(@"%@", SYSTEM_IMAGE_NAME); 
 
 where `SYSTEM_IMAGE_NAME` should be replaced with any value from [this list](https://developer.apple.com/documentation/appkit/nsimagename?language=objc).
 
+For SF Symbols, usage looks as follows:
+
+```js
+const image = nativeImage.createFromNamedImage('square.and.pencil')
+```
+
+where `'square.and.pencil'` is the symbol name from the
+[SF Symbols app](https://developer.apple.com/sf-symbols/).
+
 ## Class: NativeImage
 
 > Natively wrap images such as tray, dock, and application icons.
