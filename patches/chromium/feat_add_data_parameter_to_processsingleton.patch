@@ -180,7 +180,7 @@ index 08cbe32a258bf478f1da0a07064d3e9ef14c44a5..b9f2a43cb90fac4b031a4b4da38d6435
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 8bff42918d0780b3c89ad06886e0853a8e5b9052..3e89d1333e97ca3e32807a52612e0c3e83c83b88 100644
+index ae659d84a5ae2f2e87ce288477506575f8d86839..d93c7e8487ab1a2bbb5f56f2ca44868f947e6bfc 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -81,10 +81,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {

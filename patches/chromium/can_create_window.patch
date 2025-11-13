@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 6e79165d538668580a1061857dfdefd4b3d5906c..469cfce5b48987268f7e95ea0e5edd75623558e8 100644
+index 5fd88f202c3024caaee12d00f6128af96172d06e..8e1228336a141f9812b03a9a4e810c797f14446b 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -9965,6 +9965,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -232,7 +232,7 @@ index 82e9d3dfb5f7da76d89fe15ae61d379fa46e177d..fd035512099a54dff6cc951a2226c23a
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index c583c10c0f3d6e0a7e02bcd54bc8237e932914fe..139c4f7f39d5d43bd4ddae4afedf7e60ac8437c7 100644
+index 270f3f5e94bf2d07d44105488e2f8b02f951ae7b..0fba63098ae66f3537427132e38978aa91c992d9 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -2340,6 +2340,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
@@ -242,5 +242,5 @@ index c583c10c0f3d6e0a7e02bcd54bc8237e932914fe..139c4f7f39d5d43bd4ddae4afedf7e60
 +  window_features.raw_features = features;
 +
    if (window_features.is_partitioned_popin) {
-     UseCounter::Count(*entered_window,
-                       WebFeature::kPartitionedPopin_OpenAttempt);
+     if (!IsFeatureEnabled(
+             network::mojom::PermissionsPolicyFeature::kPartitionedPopins,
