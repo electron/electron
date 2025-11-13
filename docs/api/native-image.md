@@ -236,7 +236,7 @@ For SF Symbols, usage looks as follows:
 const image = nativeImage.createFromNamedImage('square.and.pencil')
 ```
 
-where `"square.and.pencil"` is the symbol name from the
+where `'square.and.pencil'` is the symbol name from the
 [SF Symbols app](https://developer.apple.com/sf-symbols/).
 
 ## Class: NativeImage
