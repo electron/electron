@@ -262,7 +262,7 @@ index 61683d0eddb04c494ca5e650e7d556b44968ec49..5492456a9138b250e97a5479838bb443
  
  }  // namespace ui
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index 37e3d53abeca3a90649064053100cf9938b1f406..87dfa1e1c230f3aba90ba9520684828e958de093 100644
+index af5f9cdb01d18abf00bb5b20e5f2ab5e4ce24dc6..378939d2d2b48f1f591523db431005d038e2a88b 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 @@ -25,6 +25,7 @@
@@ -317,8 +317,8 @@ index 37e3d53abeca3a90649064053100cf9938b1f406..87dfa1e1c230f3aba90ba9520684828e
 +  return file_dialog::IsPortalAvailable();
  }
  
- bool SelectFileDialogLinuxPortal::IsRunning(
-@@ -386,11 +393,14 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+ void SelectFileDialogLinuxPortal::ListenerDestroyed() {
+@@ -385,11 +392,14 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
      const PortalFilterSet& filter_set) {
    dbus_xdg::Dictionary dict;
  
@@ -336,7 +336,7 @@ index 37e3d53abeca3a90649064053100cf9938b1f406..87dfa1e1c230f3aba90ba9520684828e
        [[fallthrough]];
      case SelectFileDialog::SELECT_FOLDER:
      case SelectFileDialog::Type::SELECT_EXISTING_FOLDER:
-@@ -403,6 +413,11 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -402,6 +412,11 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
        break;
    }
  

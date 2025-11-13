@@ -34,7 +34,7 @@ index bbfac47a74f989482343c222b78f187b70297e4e..3677ca3345fbc775d139684a12fe3624
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index f0a6a03efe20bf674a6fb2d4ad33de4a829cef53..c0deee8987c60ce4cf35eac80ad17240b8f11ee0 100644
+index 7070884305eb648c9aa0020f8161202671e1f671..cdb0711205111f8fc76e995e6690fb5fa76ee9cb 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -4668,10 +4668,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(

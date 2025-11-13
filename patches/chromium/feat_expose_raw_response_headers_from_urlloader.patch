@@ -17,7 +17,7 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index 4c6da7daa167e8e687d43b6c59948fdc694052f7..1f9a142462146f1cef675455a782996b0d533cfd 100644
+index 177aa95b01f8020d3a6a61124405f03ad4c1bace..645bafa225b758cd1aab1e998da740758337cba6 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
 @@ -196,6 +196,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
@@ -37,7 +37,7 @@ index 4c6da7daa167e8e687d43b6c59948fdc694052f7..1f9a142462146f1cef675455a782996b
           allow_cookies_from_browser == other.allow_cookies_from_browser &&
           include_request_cookies_with_response ==
 diff --git a/services/network/public/cpp/resource_request.h b/services/network/public/cpp/resource_request.h
-index 759539fe29d5599936254e1ddf50ff54b4fa8c46..6fba963f21ac5a3b4bb1e140e5120ccdee1720bc 100644
+index 53143c10acf2ac064cbc6605ef60ada3ab648c0d..c08a0ac7eadd749e3a3dc2c5fd489472665bb8df 100644
 --- a/services/network/public/cpp/resource_request.h
 +++ b/services/network/public/cpp/resource_request.h
 @@ -99,6 +99,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
@@ -49,7 +49,7 @@ index 759539fe29d5599936254e1ddf50ff54b4fa8c46..6fba963f21ac5a3b4bb1e140e5120ccd
      mojo::PendingRemote<mojom::CookieAccessObserver> cookie_observer;
      mojo::PendingRemote<mojom::TrustTokenAccessObserver> trust_token_observer;
 diff --git a/services/network/public/cpp/url_request_mojom_traits.cc b/services/network/public/cpp/url_request_mojom_traits.cc
-index 828d1d573b4710cddacf84a5cc16058831c7a4d4..fb7dc02e15863212d705a60eeab665e0833b1e4a 100644
+index 646be484e4d5b3b917bed0ee2d0a52fdf57a8291..b49035fab82ddb29e211e1e215c70aab0a625222 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.cc
 +++ b/services/network/public/cpp/url_request_mojom_traits.cc
 @@ -67,6 +67,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
@@ -61,7 +61,7 @@ index 828d1d573b4710cddacf84a5cc16058831c7a4d4..fb7dc02e15863212d705a60eeab665e0
      return false;
    }
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index 3a028b9a2ff0cac114bca857f3a87c4ed331e0a1..e53ed3ceef61961bce7b9ce45098f83c82ea23ce 100644
+index 9867e5115459f6d0a074d79183e53c3dba0187db..06ec0cea64750057b67108fbfeb1f9d850b0793f 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
 @@ -108,6 +108,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
@@ -76,7 +76,7 @@ index 3a028b9a2ff0cac114bca857f3a87c4ed331e0a1..e53ed3ceef61961bce7b9ce45098f83c
        network::ResourceRequest::TrustedParams::EnabledClientHints>&
    enabled_client_hints(
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index df9bd2130004821582903699aac1b38403c785a6..8b10c16a10119f2628300b3c52cca0fe5a6bd6e4 100644
+index affb80d9ffcc8da3f572b1a1461d2cd648ef3376..3f6301b1732171073c5fb072feaf12e3fb55c74c 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
 @@ -111,6 +111,9 @@ struct TrustedUrlRequestParams {
