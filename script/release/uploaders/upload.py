@@ -88,7 +88,7 @@ def main():
       upload_electron(release, ts_defs_path, args)
 
     dsym_zip = os.path.join(OUT_DIR, DSYM_NAME)
-    shutil.copy2(os.path.join(OUT_DIR, 'dsym.zip'), dsym_zip)
+    shutil.copy2(os.path.join(OUT_DIR, 'dsym.tar.xz'), dsym_zip)
     upload_electron(release, dsym_zip, args)
 
     dsym_snapshot_zip = os.path.join(OUT_DIR, DSYM_SNAPSHOT_NAME)
