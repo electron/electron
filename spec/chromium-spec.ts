@@ -915,7 +915,7 @@ describe('chromium features', () => {
 
           if (action !== 'none') {
             // Make the PermissionRequestHandler behave according to action variable passed for this test
-            testSession.setPermissionRequestHandler((_wc, permission, callback) => {
+            testSession.setPermissionRequestHandler((_wc: Electron.WebContents, permission: string, callback: (allow: boolean) => void) => {
               if (permission === 'geolocation') {
                 if (action === 'allow') callback(true);
                 else if (action === 'deny') callback(false);
