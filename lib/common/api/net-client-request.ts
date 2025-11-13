@@ -289,7 +289,8 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
     referrerPolicy: options.referrerPolicy,
     cache: options.cache,
     allowNonHttpProtocols: Object.hasOwn(options, kAllowNonHttpProtocols),
-    priority: options.priority
+    priority: options.priority,
+    bypassCustomProtocolHandlers: options.bypassCustomProtocolHandlers
   };
   if ('priorityIncremental' in options) {
     urlLoaderOptions.priorityIncremental = options.priorityIncremental;
