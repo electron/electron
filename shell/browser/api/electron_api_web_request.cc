@@ -402,11 +402,11 @@ int WebRequest::HandleOnBeforeRequestResponseEvent(
 
 void WebRequest::OnBeforeRequestListenerResult(uint64_t id,
                                                v8::Local<v8::Value> response) {
-  const auto iter = blocked_requests_.find(id);
-  if (iter == std::end(blocked_requests_))
+  auto nh = blocked_requests_.extract(id);
+  if (!nh)
     return;
 
-  auto& request = iter->second;
+  auto& request = nh.mapped();
 
   int result = net::OK;
   if (response->IsObject()) {
@@ -424,7 +424,6 @@ void WebRequest::OnBeforeRequestListenerResult(uint64_t id,
 
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(std::move(request.callback), result));
-  blocked_requests_.erase(iter);
 }
 
 int WebRequest::OnBeforeSendHeaders(extensions::WebRequestInfo* info,
@@ -469,11 +468,11 @@ int WebRequest::HandleOnBeforeSendHeadersResponseEvent(
 void WebRequest::OnBeforeSendHeadersListenerResult(
     uint64_t id,
     v8::Local<v8::Value> response) {
-  const auto iter = blocked_requests_.find(id);
-  if (iter == std::end(blocked_requests_))
+  auto nh = blocked_requests_.extract(id);
+  if (!nh)
     return;
 
-  auto& request = iter->second;
+  auto& request = nh.mapped();
 
   net::HttpRequestHeaders* old_headers = request.request_headers;
   net::HttpRequestHeaders new_headers;
@@ -511,7 +510,6 @@ void WebRequest::OnBeforeSendHeadersListenerResult(
       FROM_HERE,
       base::BindOnce(std::move(request.before_send_headers_callback),
                      updated_headers.first, updated_headers.second, result));
-  blocked_requests_.erase(iter);
 }
 
 int WebRequest::OnHeadersReceived(
@@ -563,11 +561,11 @@ int WebRequest::HandleOnHeadersReceivedResponseEvent(
 void WebRequest::OnHeadersReceivedListenerResult(
     uint64_t id,
     v8::Local<v8::Value> response) {
-  const auto iter = blocked_requests_.find(id);
-  if (iter == std::end(blocked_requests_))
+  auto nh = blocked_requests_.extract(id);
+  if (!nh)
     return;
 
-  auto& request = iter->second;
+  auto& request = nh.mapped();
 
   int result = net::OK;
   bool user_modified_headers = false;
@@ -600,7 +598,6 @@ void WebRequest::OnHeadersReceivedListenerResult(
 
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(std::move(request.callback), result));
-  blocked_requests_.erase(iter);
 }
 
 void WebRequest::OnSendHeaders(extensions::WebRequestInfo* info,
@@ -772,9 +769,8 @@ void WebRequest::OnLoginAuthResult(
     uint64_t id,
     net::AuthCredentials* credentials,
     const std::optional<net::AuthCredentials>& maybe_creds) {
-  auto iter = blocked_requests_.find(id);
-  if (iter == blocked_requests_.end())
-    NOTREACHED();
+  auto nh = blocked_requests_.extract(id);
+  CHECK(nh);
 
   AuthRequiredResponse action =
       AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_NO_ACTION;
@@ -784,8 +780,7 @@ void WebRequest::OnLoginAuthResult(
   }
 
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
-      FROM_HERE, base::BindOnce(std::move(iter->second.auth_callback), action));
-  blocked_requests_.erase(iter);
+      FROM_HERE, base::BindOnce(std::move(nh.mapped().auth_callback), action));
 }
 
 // static
