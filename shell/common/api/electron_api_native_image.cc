@@ -569,6 +569,12 @@ gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
     std::string name) {
   return CreateEmpty(args->isolate());
 }
+
+gin_helper::Handle<NativeImage> NativeImage::CreateMenuSymbol(
+    gin::Arguments* args,
+    std::string name) {
+  return CreateEmpty(args->isolate());
+}
 #endif
 
 // static
@@ -634,6 +640,7 @@ void Initialize(v8::Local<v8::Object> exports,
   native_image.SetMethod("createFromDataURL", &NativeImage::CreateFromDataURL);
   native_image.SetMethod("createFromNamedImage",
                          &NativeImage::CreateFromNamedImage);
+  native_image.SetMethod("createMenuSymbol", &NativeImage::CreateMenuSymbol);
 #if !BUILDFLAG(IS_LINUX)
   native_image.SetMethod("createThumbnailFromPath",
                          &NativeImage::CreateThumbnailFromPath);

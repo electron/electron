@@ -82,6 +82,8 @@ class NativeImage final : public gin_helper::DeprecatedWrappable<NativeImage> {
   static gin_helper::Handle<NativeImage> CreateFromNamedImage(
       gin::Arguments* args,
       std::string name);
+  static gin_helper::Handle<NativeImage> CreateMenuSymbol(gin::Arguments* args,
+                                                          std::string name);
 #if !BUILDFLAG(IS_LINUX)
   static v8::Local<v8::Promise> CreateThumbnailFromPath(
       v8::Isolate* isolate,
