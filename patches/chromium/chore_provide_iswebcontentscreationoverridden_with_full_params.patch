@@ -159,10 +159,10 @@ index 3bbd4e568ba99245622a96f0801d2b6cd203025f..1e0b7d16b33daed980961dd49c667a3b
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index 97a429245bfc15aa321d73c142e1ba7cc8c60dec..43a907ff56743580fda414570e6bce5a00b1f247 100644
+index 36baad877619ad506e07ff385a250c60e9c3f94a..6b5f5352be13e583f996cc131fbdd36f57f96041 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-@@ -210,15 +210,14 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
+@@ -216,15 +216,14 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -181,7 +181,7 @@ index 97a429245bfc15aa321d73c142e1ba7cc8c60dec..43a907ff56743580fda414570e6bce5a
                                                                    java_gurl);
  }
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.h b/components/embedder_support/android/delegate/web_contents_delegate_android.h
-index 261d38394a9ff6f81848b94d6b183b2062c37ba9..0c6a26599bb8fef6f9ee6180fc0a98760d857b19 100644
+index 1676a7d1e1734d196aeb3d2e27997de1743f034c..9be7c579c08af7b9b0de947a9d9af39b4d510b3c 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.h
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.h
 @@ -78,8 +78,7 @@ class WebContentsDelegateAndroid : public content::WebContentsDelegate {
@@ -223,10 +223,10 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index eebcf3d97557d5a95c00b483910a23717d1775c5..1cc8474a5f369cd0b13c328179c9be560b167468 100644
+index b50aa1890036c762ec0df75d133f7b9fb29df4cd..f2f80c86e7910cf513aa916a80c51502bb186f58 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5329,8 +5329,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5250,8 +5250,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    if (delegate_ &&
        delegate_->IsWebContentsCreationOverridden(
            opener, source_site_instance, params.window_container_type,
@@ -237,7 +237,7 @@ index eebcf3d97557d5a95c00b483910a23717d1775c5..1cc8474a5f369cd0b13c328179c9be56
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 541a17144b2d906865a025711dee0be776712a93..9223d7355402f07c666df7ac4c19e9eab7d90e99 100644
+index 4f79d90a7d30a6ce2a3720ef94c1ade264d20e16..923d8834e231b91e7a692e0178ece122b8d70536 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -161,8 +161,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
@@ -251,10 +251,10 @@ index 541a17144b2d906865a025711dee0be776712a93..9223d7355402f07c666df7ac4c19e9ea
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 5780c53b97d983652a4e08009533a33abee228c8..1a73f726ac1cf55b2834cf8db57b84add376cf7a 100644
+index 1dab9cf23213d497bb6354d3b909911b014675ba..30d7c81394df4e0f382d9a67fcd414b2d07903db 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
-@@ -365,8 +365,7 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -377,8 +377,7 @@ class CONTENT_EXPORT WebContentsDelegate {
        SiteInstance* source_site_instance,
        mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
