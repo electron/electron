@@ -384,7 +384,7 @@ index 71158ca9a7101911bb76f0c1b5300b0ff0e326b3..1441b9d4f9560c8b26d4beffe31449ed
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 433f12928857e288b6b0d4f4dd3d1f29da08cf6c..bb95aabec2e0d5c7b3a5d315c9a3f8cb3a45c8d2 100644
+index e00bf1b56121eca5ebcedc3dac25c7f873828523..40e1dec573cd626cad415e419204d10516b0ec0f 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -21,6 +21,7 @@
@@ -432,7 +432,7 @@ index 433f12928857e288b6b0d4f4dd3d1f29da08cf6c..bb95aabec2e0d5c7b3a5d315c9a3f8cb
  @implementation NativeWidgetMacNSWindow {
   @private
    CommandDispatcher* __strong _commandDispatcher;
-@@ -389,6 +398,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -399,6 +408,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -441,7 +441,7 @@ index 433f12928857e288b6b0d4f4dd3d1f29da08cf6c..bb95aabec2e0d5c7b3a5d315c9a3f8cb
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -400,6 +411,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -410,6 +421,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
@@ -581,10 +581,10 @@ index f69cd6100f2ac5ccb6f185e0d0bf186073ed5953..29a40923a55287b608c2ffae63a1dbbc
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 4b2d7e9ce68ad678f6f7f4b8379b6b6437967be1..10317f8dcaf990dec20a0fcc4b48af9b15934ad3 100644
+index 28140ff5ea05a3edf32034d6dcd4305bc35ce523..ba75db5616911295d69e9e20fed88cb7cd14478d 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -343,6 +343,7 @@ source_set("browser") {
+@@ -342,6 +342,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -714,10 +714,10 @@ index f57ce1a0430df7692be55685e79121ed604daf2a..3fbc26fb179a64a2f1eab027a05b1624
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 844867f9d4f52e0d591c674238f99cec42cd9ac8..f02673ec1f36f83c2aea9642e2fd1a3fde5da3a0 100644
+index 28e7f247df52ff84f50811e05ef22027a1a92536..780f0b5a528c2344d1d8a30b1f4a846e1eaa7192 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -323,6 +323,7 @@ target(link_target_type, "renderer") {
+@@ -327,6 +327,7 @@ target(link_target_type, "renderer") {
      "//ui/strings:auto_image_annotation_strings_grit",
      "//url",
      "//v8",
@@ -796,7 +796,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 795c9054faa75b3c20d091e6fe56f0a865f293ff..bacde6a543504003064ee42642d20973d0e6492a 100644
+index f9c5e8de687409857baf732a4227317e7d503b40..5adbe891175aa1f762558bfa0251e12ca6a94c6f 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -702,6 +702,7 @@ static_library("test_support") {
@@ -816,7 +816,7 @@ index 795c9054faa75b3c20d091e6fe56f0a865f293ff..bacde6a543504003064ee42642d20973
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2066,6 +2069,7 @@ test("content_browsertests") {
+@@ -2065,6 +2068,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index 795c9054faa75b3c20d091e6fe56f0a865f293ff..bacde6a543504003064ee42642d20973
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3408,6 +3412,7 @@ test("content_unittests") {
+@@ -3406,6 +3410,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
