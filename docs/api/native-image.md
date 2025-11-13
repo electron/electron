@@ -233,7 +233,7 @@ where `SYSTEM_IMAGE_NAME` should be replaced with any value from [this list](htt
 For SF Symbols, usage looks as follows:
 
 ```js
-const image = nativeImage.createFromNamedImage("square.and.pencil")
+const image = nativeImage.createFromNamedImage('square.and.pencil')
 ```
 
 where `"square.and.pencil"` is the symbol name from the
