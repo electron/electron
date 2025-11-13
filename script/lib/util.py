@@ -84,6 +84,12 @@ def make_zip(zip_file_path, files, dirs):
       zip_file.close()
 
 
+def make_tar_xz(tar_file_path, files, dirs):
+  safe_unlink(tar_file_path)
+  allfiles = files + dirs
+  execute(['tar', '-cJf', tar_file_path] + allfiles)
+
+
 def rm_rf(path):
   try:
     shutil.rmtree(path)
