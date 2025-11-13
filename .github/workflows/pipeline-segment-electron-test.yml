@@ -30,11 +30,6 @@ on:
         required: false
         type: boolean
         default: false
-      yarn-hardened-mode:
-        description: 'Enable yarn hardened mode'
-        required: false
-        type: string
-        default: '1'
 
 concurrency:
   group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ github.ref_protected == true && github.run_id || github.ref }}

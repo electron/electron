@@ -58,10 +58,6 @@ on:
         required: false
         type: boolean
         default: false
-      yarn-hardened-mode:
-        description: 'Enable hardened mode for yarn'
-        type: string
-        default: '1'
 
 concurrency:
   group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.target-variant }}-${{ inputs.is-asan }}-${{ github.ref_protected == true && github.run_id || github.ref }}
@@ -126,8 +122,6 @@ jobs:
         cache-dependency-path: src/electron/yarn.lock
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
-      with:
-        yarn-hardened-mode: ${{ inputs.yarn-hardened-mode }}
     - name: Install AZCopy
       if: ${{ inputs.target-platform == 'macos' }}
       run: brew install azcopy
