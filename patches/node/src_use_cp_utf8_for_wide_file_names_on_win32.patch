@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Fedor Indutny <238531+indutny@users.noreply.github.com>
-Date: Fri, 7 Nov 2025 19:41:44 -0800
+From: Fedor Indutny <indutny@signal.org>
+Date: Tue, 11 Nov 2025 13:43:01 -0800
 Subject: src: use CP_UTF8 for wide file names on win32
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -136,10 +136,10 @@ index 969e7d08086f8442bed476feaf15599b8c79db7c..e7459654401c275dfb86207831016ed7
                      std::make_error_code(std::errc::file_exists),
                      "cp",
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index d8477191efafba3c41c06d765f4b03bd00b8573c..5444e556b89ba5b71739753eaafa706cd9727013 100644
+index 529b7cfc15536c3fe5e7798c0f82698121751f2a..cbc3283fc2d511cce2eae0048cc9bf0fa917d38a 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
-@@ -365,12 +365,13 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
+@@ -332,22 +332,24 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
  
      // Stop the search when the process doesn't have permissions
      // to walk upwards
@@ -158,10 +158,6 @@ index d8477191efafba3c41c06d765f4b03bd00b8573c..5444e556b89ba5b71739753eaafa706c
 +      }
      }
  
-     // If current path is outside the resources path, bail.
-@@ -380,13 +381,14 @@ const BindingData::PackageConfig* BindingData::TraverseParent(
-     }
- 
      // Check if the path ends with `/node_modules`
 -    if (current_path.generic_string().ends_with("/node_modules")) {
 +    if (current_path.filename() == "node_modules") {
@@ -176,7 +172,7 @@ index d8477191efafba3c41c06d765f4b03bd00b8573c..5444e556b89ba5b71739753eaafa706c
      if (package_json != nullptr) {
        return package_json;
      }
-@@ -408,20 +410,12 @@ void BindingData::GetNearestParentPackageJSONType(
+@@ -369,20 +371,12 @@ void BindingData::GetNearestParentPackageJSONType(
  
    ToNamespacedPath(realm->env(), &path_value);
  
