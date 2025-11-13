@@ -15,6 +15,7 @@
 #include "base/apple/foundation_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/bind_post_task.h"
+#include "base/values.h"
 #include "gin/arguments.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -104,15 +105,63 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   return handle;
 }
 
+gin_helper::Handle<NativeImage> NativeImage::CreateMenuSymbol(
+    gin::Arguments* args,
+    std::string name) {
+  @autoreleasepool {
+    float pointSize = 13.0;
+    NSFontWeight weight = NSFontWeightSemibold;
+    NSImageSymbolScale scale = NSImageSymbolScaleSmall;
+
+    NSImage* image =
+        [NSImage imageWithSystemSymbolName:base::SysUTF8ToNSString(name)
+                  accessibilityDescription:nil];
+
+    NSImageSymbolConfiguration* symbol_config =
+        [NSImageSymbolConfiguration configurationWithPointSize:pointSize
+                                                        weight:weight
+                                                         scale:scale];
+
+    image = [image imageWithSymbolConfiguration:symbol_config];
+
+    NSData* png_data = bufferFromNSImage(image);
+
+    gin_helper::Handle<NativeImage> handle =
+        CreateFromPNG(args->isolate(), electron::util::as_byte_span(png_data));
+
+    gfx::Size size = handle->GetSize(1.0);
+
+    float aspect_ratio =
+        static_cast<float>(size.width()) / static_cast<float>(size.height());
+
+    int new_width = 14;
+    int new_height = static_cast<int>(14 / aspect_ratio);
+
+    // prevent tall symbols from exceeding menu item height (e.g. chevron.right)
+    if (new_height >= 16) {
+      new_height = 14;
+      new_width = static_cast<int>(14 * aspect_ratio);
+    }
+
+    gin_helper::Handle<NativeImage> sized = handle->Resize(
+        args,
+        base::Value::Dict().Set("width", new_width).Set("height", new_height));
+
+    sized->SetTemplateImage(true);
+
+    return sized;
+  }
+}
+
 gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
     gin::Arguments* args,
     std::string name) {
   @autoreleasepool {
     std::vector<double> hsl_shift;
 
-    float pointSize = 13.0;
-    NSFontWeight weight = NSFontWeightSemibold;
-    NSImageSymbolScale scale = NSImageSymbolScaleSmall;
+    float pointSize = 30.0;
+    NSFontWeight weight = NSFontWeightRegular;
+    NSImageSymbolScale scale = NSImageSymbolScaleMedium;
 
     args->GetNext(&hsl_shift);
 

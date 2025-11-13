@@ -368,6 +368,18 @@ describe('nativeImage module', () => {
     });
   });
 
+  describe('createMenuSymbol(name)', () => {
+    it('returns empty for invalid options', () => {
+      const image = nativeImage.createMenuSymbol('totally_not_real');
+      expect(image.isEmpty()).to.be.true();
+    });
+
+    ifit(process.platform === 'darwin')('returns a valid image on darwin', function () {
+      const image = nativeImage.createMenuSymbol('atom');
+      expect(image.isEmpty()).to.be.false();
+    });
+  });
+
   describe('resize(options)', () => {
     it('returns a resized image', () => {
       const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
