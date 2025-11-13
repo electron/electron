@@ -1,0 +1,302 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Wed, 12 Nov 2025 16:46:01 +0100
+Subject: [compiler] Preserve field repr in property array extension
+
+Walk the descriptor array in lockstep with the property array when
+extending the latter.
+
+Fixed: 460017370
+Change-Id: If0b4fc3c5f62fc0cc373588cbddc3c0a95c7225c
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7146166
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#103674}
+
+diff --git a/src/compiler/access-builder.cc b/src/compiler/access-builder.cc
+index e64f349dd31bbc7e8732e614d439a63dea5b7d19..c49b4dc2b29a44229ed0451b6d89f16ecb4ad53e 100644
+--- a/src/compiler/access-builder.cc
++++ b/src/compiler/access-builder.cc
+@@ -4,6 +4,8 @@
+ 
+ #include "src/compiler/access-builder.h"
+ 
++#include "src/codegen/machine-type.h"
++#include "src/compiler/property-access-builder.h"
+ #include "src/compiler/type-cache.h"
+ #include "src/handles/handles-inl.h"
+ #include "src/objects/arguments.h"
+@@ -1124,12 +1126,16 @@ FieldAccess AccessBuilder::ForFeedbackVectorSlot(int index) {
+ }
+ 
+ // static
+-FieldAccess AccessBuilder::ForPropertyArraySlot(int index) {
++FieldAccess AccessBuilder::ForPropertyArraySlot(int index,
++                                                Representation representation) {
+   int offset = PropertyArray::OffsetOfElementAt(index);
+-  FieldAccess access = {kTaggedBase,       offset,
+-                        Handle<Name>(),    OptionalMapRef(),
+-                        Type::Any(),       MachineType::AnyTagged(),
+-                        kFullWriteBarrier, "PropertyArraySlot"};
++  MachineType machine_type =
++      representation.IsHeapObject() || representation.IsDouble()
++          ? MachineType::TaggedPointer()
++          : MachineType::AnyTagged();
++  FieldAccess access = {
++      kTaggedBase, offset,       Handle<Name>(),    OptionalMapRef(),
++      Type::Any(), machine_type, kFullWriteBarrier, "PropertyArraySlot"};
+   return access;
+ }
+ 
+diff --git a/src/compiler/access-builder.h b/src/compiler/access-builder.h
+index b0a21495d9e93e0886795c4ec6c2f4f4101556ca..c8f2481edf96fb35cf026c85f3fb80fa18781c70 100644
+--- a/src/compiler/access-builder.h
++++ b/src/compiler/access-builder.h
+@@ -11,6 +11,7 @@
+ #include "src/compiler/write-barrier-kind.h"
+ #include "src/objects/elements-kind.h"
+ #include "src/objects/js-objects.h"
++#include "src/objects/property-details.h"
+ 
+ namespace v8 {
+ namespace internal {
+@@ -329,7 +330,8 @@ class V8_EXPORT_PRIVATE AccessBuilder final
+   static FieldAccess ForFeedbackVectorSlot(int index);
+ 
+   // Provides access to PropertyArray slots.
+-  static FieldAccess ForPropertyArraySlot(int index);
++  static FieldAccess ForPropertyArraySlot(int index,
++                                          Representation representation);
+ 
+   // Provides access to ScopeInfo flags.
+   static FieldAccess ForScopeInfoFlags();
+diff --git a/src/compiler/js-native-context-specialization.cc b/src/compiler/js-native-context-specialization.cc
+index 686882029c5a00a3af42e24de25a30b235d98a9c..22d566a96f461e19a2221adba426ab077e68efdf 100644
+--- a/src/compiler/js-native-context-specialization.cc
++++ b/src/compiler/js-native-context-specialization.cc
+@@ -37,6 +37,7 @@
+ #include "src/objects/elements-kind.h"
+ #include "src/objects/feedback-vector.h"
+ #include "src/objects/heap-number.h"
++#include "src/objects/property-details.h"
+ #include "src/objects/string.h"
+ 
+ namespace v8 {
+@@ -4185,25 +4186,59 @@ Node* JSNativeContextSpecialization::BuildExtendPropertiesBackingStore(
+   // for intermediate states of chains of property additions. That makes
+   // it unclear what the best approach is here.
+   DCHECK_EQ(map.UnusedPropertyFields(), 0);
+-  int length = map.NextFreePropertyIndex() - map.GetInObjectProperties();
++  int in_object_length = map.GetInObjectProperties();
++  int length = map.NextFreePropertyIndex() - in_object_length;
+   // Under normal circumstances, NextFreePropertyIndex() will always be larger
+   // than GetInObjectProperties(). However, an attacker able to corrupt heap
+   // memory can break this invariant, in which case we'll get confused here,
+   // potentially causing a sandbox violation. This CHECK defends against that.
+   SBXCHECK_GE(length, 0);
+   int new_length = length + JSObject::kFieldsAdded;
++
++  // Find the descriptor index corresponding to the first out-of-object
++  // property.
++  DescriptorArrayRef descs = map.instance_descriptors(broker());
++  InternalIndex first_out_of_object_descriptor(in_object_length);
++  InternalIndex number_of_descriptors(descs.object()->number_of_descriptors());
++  for (InternalIndex i(in_object_length); i < number_of_descriptors; ++i) {
++    PropertyDetails details = descs.GetPropertyDetails(i);
++    // Skip over non-field properties.
++    if (details.location() != PropertyLocation::kField) {
++      continue;
++    }
++    // Skip over in-object fields.
++    // TODO(leszeks): We could make this smarter, like a binary search.
++    if (details.field_index() < in_object_length) {
++      continue;
++    }
++    first_out_of_object_descriptor = i;
++    break;
++  }
++
+   // Collect the field values from the {properties}.
+-  ZoneVector<Node*> values(zone());
++  ZoneVector<std::pair<Node*, Representation>> values(zone());
+   values.reserve(new_length);
+-  for (int i = 0; i < length; ++i) {
++
++  // Walk the property descriptors alongside the property values, to make
++  // sure to get and store them with the right machine type.
++  InternalIndex descriptor = first_out_of_object_descriptor;
++  for (int i = 0; i < length; ++i, ++descriptor) {
++    PropertyDetails details = descs.GetPropertyDetails(descriptor);
++    while (details.location() != PropertyLocation::kField) {
++      ++descriptor;
++      details = descs.GetPropertyDetails(descriptor);
++    }
++    DCHECK_EQ(i, details.field_index() - in_object_length);
+     Node* value = effect = graph()->NewNode(
+-        simplified()->LoadField(AccessBuilder::ForFixedArraySlot(i)),
++        simplified()->LoadField(
++            AccessBuilder::ForPropertyArraySlot(i, details.representation())),
+         properties, effect, control);
+-    values.push_back(value);
++    values.push_back({value, details.representation()});
+   }
+   // Initialize the new fields to undefined.
+   for (int i = 0; i < JSObject::kFieldsAdded; ++i) {
+-    values.push_back(jsgraph()->UndefinedConstant());
++    values.push_back(
++        {jsgraph()->UndefinedConstant(), Representation::Tagged()});
+   }
+ 
+   // Compute new length and hash.
+@@ -4241,7 +4276,8 @@ Node* JSNativeContextSpecialization::BuildExtendPropertiesBackingStore(
+   a.Store(AccessBuilder::ForMap(), jsgraph()->PropertyArrayMapConstant());
+   a.Store(AccessBuilder::ForPropertyArrayLengthAndHash(), new_length_and_hash);
+   for (int i = 0; i < new_length; ++i) {
+-    a.Store(AccessBuilder::ForFixedArraySlot(i), values[i]);
++    a.Store(AccessBuilder::ForPropertyArraySlot(i, values[i].second),
++            values[i].first);
+   }
+   return a.Finish();
+ }
+diff --git a/src/compiler/turboshaft/maglev-early-lowering-reducer-inl.h b/src/compiler/turboshaft/maglev-early-lowering-reducer-inl.h
+index e85e7809c4f447e550db75e0d223b13102f8818f..429a5ed8a2fcacc61565b5bc54f269ba0013f64a 100644
+--- a/src/compiler/turboshaft/maglev-early-lowering-reducer-inl.h
++++ b/src/compiler/turboshaft/maglev-early-lowering-reducer-inl.h
+@@ -14,6 +14,7 @@
+ #include "src/compiler/turboshaft/representations.h"
+ #include "src/deoptimizer/deoptimize-reason.h"
+ #include "src/objects/contexts.h"
++#include "src/objects/descriptor-array-inl.h"
+ #include "src/objects/instance-type-inl.h"
+ 
+ namespace v8::internal::compiler::turboshaft {
+@@ -323,8 +324,32 @@ class MaglevEarlyLoweringReducer : public Next {
+   }
+ 
+   V<PropertyArray> ExtendPropertiesBackingStore(
+-      V<PropertyArray> old_property_array, V<JSObject> object, int old_length,
++      V<PropertyArray> old_property_array, V<JSObject> object,
++      const compiler::MapRef& old_map, int old_length,
+       V<FrameState> frame_state, const FeedbackSource& feedback) {
++    int in_object_length = old_map.GetInObjectProperties();
++
++    // Find the descriptor index corresponding to the first out-of-object
++    // property.
++    DescriptorArrayRef descs = old_map.instance_descriptors(broker_);
++    InternalIndex first_out_of_object_descriptor(in_object_length);
++    InternalIndex number_of_descriptors(
++        descs.object()->number_of_descriptors());
++    for (InternalIndex i(in_object_length); i < number_of_descriptors; ++i) {
++      PropertyDetails details = descs.GetPropertyDetails(i);
++      // Skip over non-field properties.
++      if (details.location() != PropertyLocation::kField) {
++        continue;
++      }
++      // Skip over in-object fields.
++      // TODO(leszeks): We could make this smarter, like a binary search.
++      if (details.field_index() < in_object_length) {
++        continue;
++      }
++      first_out_of_object_descriptor = i;
++      break;
++    }
++
+     // Allocate new PropertyArray.
+     int new_length = old_length + JSObject::kFieldsAdded;
+     Uninitialized<PropertyArray> new_property_array =
+@@ -335,18 +360,28 @@ class MaglevEarlyLoweringReducer : public Next {
+                        __ HeapConstant(factory_->property_array_map()));
+ 
+     // Copy existing properties over.
+-    for (int i = 0; i < old_length; i++) {
++    InternalIndex descriptor = first_out_of_object_descriptor;
++    for (int i = 0; i < old_length; ++i, ++descriptor) {
++      PropertyDetails details = descs.GetPropertyDetails(descriptor);
++      while (details.location() != PropertyLocation::kField) {
++        ++descriptor;
++        details = descs.GetPropertyDetails(descriptor);
++      }
++      DCHECK_EQ(i, details.field_index() - in_object_length);
++      Representation r = details.representation();
++
+       V<Object> old_value = __ template LoadField<Object>(
+-          old_property_array, AccessBuilder::ForPropertyArraySlot(i));
++          old_property_array, AccessBuilder::ForPropertyArraySlot(i, r));
+       __ InitializeField(new_property_array,
+-                         AccessBuilder::ForPropertyArraySlot(i), old_value);
++                         AccessBuilder::ForPropertyArraySlot(i, r), old_value);
+     }
+ 
+     // Initialize new properties to undefined.
+     V<Undefined> undefined = __ HeapConstant(factory_->undefined_value());
+     for (int i = 0; i < JSObject::kFieldsAdded; ++i) {
+       __ InitializeField(new_property_array,
+-                         AccessBuilder::ForPropertyArraySlot(old_length + i),
++                         AccessBuilder::ForPropertyArraySlot(
++                             old_length + i, Representation::Tagged()),
+                          undefined);
+     }
+ 
+diff --git a/src/compiler/turboshaft/turbolev-graph-builder.cc b/src/compiler/turboshaft/turbolev-graph-builder.cc
+index d1167f18a503814ac4a9dd40934b7e129adde298..3f81f2b506dd20270fd2cb9319686f1d19e76455 100644
+--- a/src/compiler/turboshaft/turbolev-graph-builder.cc
++++ b/src/compiler/turboshaft/turbolev-graph-builder.cc
+@@ -2635,10 +2635,11 @@ class GraphBuildingNodeProcessor {
+   maglev::ProcessResult Process(maglev::ExtendPropertiesBackingStore* node,
+                                 const maglev::ProcessingState& state) {
+     GET_FRAME_STATE_MAYBE_ABORT(frame_state, node->eager_deopt_info());
+-    SetMap(node, __ ExtendPropertiesBackingStore(
+-                     Map(node->property_array_input()),
+-                     Map(node->object_input()), node->old_length(), frame_state,
+-                     node->eager_deopt_info()->feedback_to_update()));
++    SetMap(node,
++           __ ExtendPropertiesBackingStore(
++               Map(node->property_array_input()), Map(node->object_input()),
++               node->old_map(), node->old_length(), frame_state,
++               node->eager_deopt_info()->feedback_to_update()));
+     return maglev::ProcessResult::kContinue;
+   }
+ 
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 7f4a2a1bbf005b4721f49165dde53af279cf2297..9896835862deb22bb7fedaca255fc8b6a628bb0d 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -5929,7 +5929,7 @@ ValueNode* MaglevGraphBuilder::BuildExtendPropertiesBackingStore(
+   // potentially causing a sandbox violation. This CHECK defends against that.
+   SBXCHECK_GE(length, 0);
+   return AddNewNode<ExtendPropertiesBackingStore>({property_array, receiver},
+-                                                  length);
++                                                  map, length);
+ }
+ 
+ MaybeReduceResult MaglevGraphBuilder::TryBuildStoreField(
+diff --git a/src/maglev/maglev-ir.h b/src/maglev/maglev-ir.h
+index c25a717211564ff78476ba1145d517b972c51674..9b1b3adacfda8e28df8b5f513d799602895627ca 100644
+--- a/src/maglev/maglev-ir.h
++++ b/src/maglev/maglev-ir.h
+@@ -8333,8 +8333,10 @@ class ExtendPropertiesBackingStore
+   using Base = FixedInputValueNodeT<2, ExtendPropertiesBackingStore>;
+ 
+  public:
+-  explicit ExtendPropertiesBackingStore(uint64_t bitfield, int old_length)
+-      : Base(bitfield), old_length_(old_length) {}
++  explicit ExtendPropertiesBackingStore(uint64_t bitfield,
++                                        const compiler::MapRef& old_map,
++                                        int old_length)
++      : Base(bitfield), old_map_(old_map), old_length_(old_length) {}
+ 
+   static constexpr OpProperties kProperties =
+       OpProperties::CanAllocate() | OpProperties::CanRead() |
+@@ -8354,9 +8356,11 @@ class ExtendPropertiesBackingStore
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+ 
++  const compiler::MapRef& old_map() const { return old_map_; }
+   int old_length() const { return old_length_; }
+ 
+  private:
++  const compiler::MapRef old_map_;
+   const int old_length_;
+ };
+ 
