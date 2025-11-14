@@ -315,7 +315,6 @@ ui::Layer* View::GetLayer() {
   ui::Layer* layer = view_->layer();
 
   layer->SetFillsBoundsOpaquely(false);
-  layer->SetOpacity(1.0f);
 
   return layer;
 }
