@@ -3,10 +3,14 @@ name: Archaeologist
 on:
   pull_request:
 
+permissions: {}
+
 jobs:
    archaeologist-dig:
     name: Archaeologist Dig
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout Electron
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
