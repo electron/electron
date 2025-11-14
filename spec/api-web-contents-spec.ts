@@ -2764,7 +2764,7 @@ describe('webContents module', () => {
 
     type PageSizeString = Exclude<Required<Electron.PrintToPDFOptions>['pageSize'], Electron.Size>;
 
-    it('with custom page sizes', async function () {
+    it('with custom page sizes', async () => {
       const paperFormats: Record<PageSizeString, ElectronInternal.PageSize> = {
         Letter: { width: 8.5, height: 11 },
         Legal: { width: 8.5, height: 14 },
