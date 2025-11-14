@@ -2765,8 +2765,6 @@ describe('webContents module', () => {
     type PageSizeString = Exclude<Required<Electron.PrintToPDFOptions>['pageSize'], Electron.Size>;
 
     it('with custom page sizes', async function () {
-      this.timeout(120000);
-      this.retries(0);
       const paperFormats: Record<PageSizeString, ElectronInternal.PageSize> = {
         Letter: { width: 8.5, height: 11 },
         Legal: { width: 8.5, height: 14 },
@@ -2780,10 +2778,14 @@ describe('webContents module', () => {
         A5: { width: 5.83, height: 8.27 },
         A6: { width: 4.13, height: 5.83 }
       };
+
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
+
       for (const format of Object.keys(paperFormats) as PageSizeString[]) {
         const data = await w.webContents.printToPDF({ pageSize: format });
+
         const pdfInfo = await readPDF(data);
+
         // page.view is [top, left, width, height].
         const width = pdfInfo.view[2] / 72;
         const height = pdfInfo.view[3] / 72;
