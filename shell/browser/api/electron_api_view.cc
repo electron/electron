@@ -324,11 +324,19 @@ void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
   int duration = 250;
   gfx::Tween::Type easing = gfx::Tween::LINEAR;
 
-  gin_helper::Dictionary options;
-  if (args->GetNext(&options)) {
-    options.Get("animate", &animate);
-    options.Get("duration", &duration);
-    options.Get("easing", &easing);
+  if (args && args->Length() > 1) {
+    v8::Local<v8::Value> next_arg = args->PeekNext();
+
+    if (next_arg->IsBoolean()) {
+      args->GetNext(&animate);
+    } else if (next_arg->IsObject()) {
+      animate = true;
+
+      gin_helper::Dictionary dict;
+      args->GetNext(&dict);
+      dict.Get("duration", &duration);
+      dict.Get("easing", &easing);
+    }
   }
 
   if (duration < 0)
@@ -339,7 +347,6 @@ void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
 
   if (!animate) {
     view_->SetBoundsRect(bounds);
-
     return;
   }
 
