@@ -62,7 +62,6 @@
 #include "shell/common/logging.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/v8_util.h"
 #include "ui/base/idle/idle.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/ui_base_switches.h"
@@ -274,10 +273,6 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 
   // Initialize field trials.
   InitializeFieldTrials();
-
-  if (base::FeatureList::IsEnabled(features::kWebAssemblyTrapHandler)) {
-    electron::SetUpWebAssemblyTrapHandler();
-  }
 
   // Reinitialize logging now that the app has had a chance to set the app name
   // and/or user data directory.
