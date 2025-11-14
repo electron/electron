@@ -38,7 +38,7 @@ index a7a637438116a1c7846194dea4412100a45c9331..bb3877d546bfea141d3d6ebb396b88fa
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 1d7d033888bf8b9ff3ea1e938dc9d92fd09f2bfe..6848fbc7db0e1b2cea9edaf054818053cfdbc406 100644
+index 1d7d033888bf8b9ff3ea1e938dc9d92fd09f2bfe..c84f5af15c60ad386efa36d8e1b4112b1bf6a659 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -18,12 +18,16 @@
@@ -103,6 +103,20 @@ index 1d7d033888bf8b9ff3ea1e938dc9d92fd09f2bfe..6848fbc7db0e1b2cea9edaf054818053
        break;
  
      default:
+@@ -737,11 +745,11 @@ bool VideoOverlayWindowViews::HideLiveCaptionDialogForGestureIfNecessary(
+   if (event->type() != ui::EventType::kGestureTap) {
+     return false;
+   }
+-
++#if 0
+   if (!live_caption_dialog_->GetVisible()) {
+     return false;
+   }
+-
++#endif
+   if (!GetLiveCaptionDialogBounds().Contains(event->location())) {
+     SetLiveCaptionDialogVisibility(false);
+     event->SetHandled();
 @@ -1219,6 +1227,7 @@ void VideoOverlayWindowViews::SetUpViews() {
    timestamp->SetBackgroundColor(SK_ColorTRANSPARENT);
    timestamp->SetHorizontalAlignment(gfx::ALIGN_LEFT);
@@ -161,15 +175,7 @@ index 1d7d033888bf8b9ff3ea1e938dc9d92fd09f2bfe..6848fbc7db0e1b2cea9edaf054818053
    // The play/pause button and replay/forward 10 seconds buttons should not be
    // visible while dragging the progress bar or for live media.
    const bool is_dragging_progress_bar =
-@@ -1976,6 +1988,7 @@ void VideoOverlayWindowViews::OnGestureEvent(ui::GestureEvent* event) {
-   if (HideLiveCaptionDialogForGestureIfNecessary(event)) {
-     return;
-   }
-+#endif
- 
-   // Otherwise, just use default gesture event handling.
-   views::Widget::OnGestureEvent(event);
-@@ -2041,18 +2054,25 @@ gfx::Rect VideoOverlayWindowViews::GetProgressViewBounds() {
+@@ -2041,18 +2053,25 @@ gfx::Rect VideoOverlayWindowViews::GetProgressViewBounds() {
  }
  
  gfx::Rect VideoOverlayWindowViews::GetLiveCaptionButtonBounds() {
@@ -195,7 +201,7 @@ index 1d7d033888bf8b9ff3ea1e938dc9d92fd09f2bfe..6848fbc7db0e1b2cea9edaf054818053
    MediaEngagementService* service =
        MediaEngagementService::Get(Profile::FromBrowserContext(
            GetController()->GetWebContents()->GetBrowserContext()));
-@@ -2061,6 +2081,8 @@ bool VideoOverlayWindowViews::HasHighMediaEngagement(
+@@ -2061,6 +2080,8 @@ bool VideoOverlayWindowViews::HasHighMediaEngagement(
    }
  
    return service->HasHighEngagement(origin);
@@ -204,7 +210,7 @@ index 1d7d033888bf8b9ff3ea1e938dc9d92fd09f2bfe..6848fbc7db0e1b2cea9edaf054818053
  }
  
  bool VideoOverlayWindowViews::IsTrustedForMediaPlayback() const {
-@@ -2317,11 +2339,14 @@ void VideoOverlayWindowViews::UpdateTimestampLabel(base::TimeDelta current_time,
+@@ -2317,11 +2338,14 @@ void VideoOverlayWindowViews::UpdateTimestampLabel(base::TimeDelta current_time,
  }
  
  void VideoOverlayWindowViews::OnLiveCaptionButtonPressed() {
@@ -219,7 +225,7 @@ index 1d7d033888bf8b9ff3ea1e938dc9d92fd09f2bfe..6848fbc7db0e1b2cea9edaf054818053
    if (wanted_visibility == live_caption_dialog_->GetVisible()) {
      return;
    }
-@@ -2344,6 +2369,7 @@ void VideoOverlayWindowViews::SetLiveCaptionDialogVisibility(
+@@ -2344,6 +2368,7 @@ void VideoOverlayWindowViews::SetLiveCaptionDialogVisibility(
    for (auto* control : controls_to_be_disabled_when_live_caption_is_open) {
      control->SetEnabled(!wanted_visibility);
    }
