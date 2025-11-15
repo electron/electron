@@ -79,6 +79,8 @@ filenames = {
     "shell/browser/notifications/win/notification_presenter_win.h",
     "shell/browser/notifications/win/windows_toast_notification.cc",
     "shell/browser/notifications/win/windows_toast_notification.h",
+    "shell/browser/notifications/win/windows_toast_activator.cc",
+    "shell/browser/notifications/win/windows_toast_activator.h",
     "shell/browser/relauncher_win.cc",
     "shell/browser/ui/certificate_trust_win.cc",
     "shell/browser/ui/file_dialog_win.cc",
