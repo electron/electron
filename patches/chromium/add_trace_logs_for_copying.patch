@@ -1,0 +1,111 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Aiday Marlen Kyzy <amarlenkyzy@microsoft.com>
+Date: Mon, 10 Nov 2025 11:45:27 +0100
+Subject: add trace logs for copying
+
+This patch adds trace logs for copying.
+
+diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
+index 292bd1f9de78828e739dae24a45a1dd3d6585240..70ffae6c6099d0110e282e8fa5b28422e37100a2 100644
+--- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
++++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
+@@ -32,6 +32,7 @@
+ #include "third_party/blink/renderer/core/editing/commands/clipboard_commands.h"
+ 
+ #include "base/auto_reset.h"
++#include "base/trace_event/trace_event.h"
+ #include "third_party/blink/public/platform/web_content_settings_client.h"
+ #include "third_party/blink/renderer/core/clipboard/clipboard_utilities.h"
+ #include "third_party/blink/renderer/core/clipboard/data_transfer.h"
+@@ -220,7 +221,9 @@ bool ClipboardCommands::DispatchClipboardEvent(LocalFrame& frame,
+ 
+   // Invalidate clipboard here for security.
+   data_transfer->SetAccessPolicy(DataTransferAccessPolicy::kNumb);
+-  return !no_default_processing;
++  const bool should_continue_with_default_processing = !no_default_processing;
++  TRACE_EVENT("input", "ClipboardCommands::DispatchClipboardEvent", "should_continue_with_default_processing", true);
++  return should_continue_with_default_processing;
+ }
+ 
+ bool ClipboardCommands::DispatchCopyOrCutEvent(LocalFrame& frame,
+@@ -358,9 +361,11 @@ bool ClipboardCommands::ExecuteCopy(LocalFrame& frame,
+     frame.GetSystemClipboard()->WritePlainText(frame.SelectedTextForClipboard(),
+                                                GetSmartReplaceOption(frame));
+     frame.GetSystemClipboard()->CommitWrite();
++    TRACE_EVENT("input", "Document::execCommand", "copied_plain_url", frame.GetDocument()->Url().GetString());
+     return true;
+   }
+   WriteSelectionToClipboard(frame);
++  TRACE_EVENT("input", "Document::execCommand", "write_selection_url", frame.GetDocument()->Url().GetString());
+   return true;
+ }
+ 
+diff --git a/third_party/blink/renderer/core/editing/commands/document_exec_command.cc b/third_party/blink/renderer/core/editing/commands/document_exec_command.cc
+index 19ffa0fbdc460b4644432c13f3fad58508174f18..299485dce04750bb8b89c8c0e425b06702237359 100644
+--- a/third_party/blink/renderer/core/editing/commands/document_exec_command.cc
++++ b/third_party/blink/renderer/core/editing/commands/document_exec_command.cc
+@@ -31,6 +31,7 @@
+ 
+ #include "base/auto_reset.h"
+ #include "base/metrics/histogram_functions.h"
++#include "base/trace_event/trace_event.h"
+ #include "third_party/blink/renderer/bindings/core/v8/v8_union_string_trustedhtml.h"
+ #include "third_party/blink/renderer/core/dom/events/scoped_event_queue.h"
+ #include "third_party/blink/renderer/core/editing/commands/editing_commands_utilities.h"
+@@ -142,6 +143,7 @@ bool Document::execCommand(const String& command_name,
+   String checked_value =
+       TrustedTypesCheck(this, editor_command, value, exception_state);
+   if (exception_state.HadException())
++    TRACE_EVENT("input", "Document::execCommand", "command_name", command_name, "exception_state", exception_state);
+     return false;
+ 
+   base::UmaHistogramSparse("WebCore.Document.execCommand",
+diff --git a/third_party/blink/renderer/core/editing/commands/editor_command.cc b/third_party/blink/renderer/core/editing/commands/editor_command.cc
+index fba2ec9f01e47f8291dcb9574bf22aa8f2c55ac1..3aa95d0f3120d64ad8de1f135cf2d7c55ef5d343 100644
+--- a/third_party/blink/renderer/core/editing/commands/editor_command.cc
++++ b/third_party/blink/renderer/core/editing/commands/editor_command.cc
+@@ -31,6 +31,7 @@
+ #include <iterator>
+ 
+ #include "base/metrics/histogram_functions.h"
++#include "base/trace_event/trace_event.h"
+ #include "third_party/blink/public/platform/platform.h"
+ #include "third_party/blink/renderer/core/css/css_property_names.h"
+ #include "third_party/blink/renderer/core/css/css_property_value_set.h"
+@@ -2083,6 +2084,9 @@ LocalFrame& EditorCommand::GetFrame() const {
+ bool EditorCommand::Execute(const String& parameter,
+                             Event* triggering_event) const {
+   if (!CanExecute(triggering_event)) {
++    if (command_->command_type == EditingCommandType::kCopy) {
++        TRACE_EVENT("input", "EditorCommand::Execute", "can_not_execute_copy", true);
++    }
+     return false;
+   }
+ 
+diff --git a/third_party/blink/renderer/core/editing/editor.cc b/third_party/blink/renderer/core/editing/editor.cc
+index 272040fd3de75b3995d9fe47f8cd834126dfe37b..c28d634d80d239d76c5389fc69b4ca1f11140585 100644
+--- a/third_party/blink/renderer/core/editing/editor.cc
++++ b/third_party/blink/renderer/core/editing/editor.cc
+@@ -240,14 +240,18 @@ bool Editor::CanCopy() const {
+   if (ImageElementFromImageDocument(GetFrame().GetDocument()))
+     return true;
+   FrameSelection& selection = GetFrameSelection();
+-  if (!selection.IsAvailable())
++  if (!selection.IsAvailable()) {
++    TRACE_EVENT("input", "Editor::CanCopy", "selection_not_available", true);
+     return false;
++  }
+   frame_->GetDocument()->UpdateStyleAndLayout(DocumentUpdateReason::kEditing);
+   const VisibleSelectionInFlatTree& visible_selection =
+       selection.ComputeVisibleSelectionInFlatTree();
+-  return visible_selection.IsRange() &&
+-         !IsInPasswordFieldWithUnrevealedPassword(
+-             ToPositionInDOMTree(visible_selection.Start()));
++  const bool can_copy = visible_selection.IsRange() &&
++                       !IsInPasswordFieldWithUnrevealedPassword(
++                           ToPositionInDOMTree(visible_selection.Start()));
++  TRACE_EVENT("input", "Editor::CanCopy", "can_copy", can_copy);
++  return can_copy;
+ }
+ 
+ bool Editor::CanPaste() const {
