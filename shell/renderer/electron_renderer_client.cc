@@ -9,6 +9,7 @@
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/containers/contains.h"
+#include "base/debug/stack_trace.h"
 #include "content/public/renderer/render_frame.h"
 #include "net/http/http_request_headers.h"
 #include "shell/common/api/electron_bindings.h"
