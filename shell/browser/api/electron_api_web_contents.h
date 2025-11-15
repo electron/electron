@@ -845,6 +845,8 @@ class WebContents final : public ExclusiveAccessContext,
   // that field to ensure the dtor destroys them in the right order.
   raw_ptr<WebContentsZoomController> zoom_controller_ = nullptr;
 
+  std::optional<GURL> pending_unload_url_ = std::nullopt;
+
   // Maps url to file path, used by the file requests sent from devtools.
   typedef std::map<std::string, base::FilePath> PathsMap;
   PathsMap saved_files_;

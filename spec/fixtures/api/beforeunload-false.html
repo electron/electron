@@ -5,8 +5,11 @@
   var unloadPrevented = false;
   window.onbeforeunload = function() {
     if (!unloadPrevented) {
+      console.log('beforeunload: preventing unload');
       unloadPrevented = true;
       return false;
+    } else {
+      console.log('beforeunload: allowing unload');
     }
   }
 </script>

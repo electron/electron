@@ -2397,6 +2397,9 @@ void WebContents::LoadURL(const GURL& url,
     return;
   }
 
+  if (web_contents()->NeedToFireBeforeUnloadOrUnloadEvents())
+    pending_unload_url_ = url;
+
   // Discard non-committed entries to ensure we don't re-use a pending entry.
   web_contents()->GetController().DiscardNonCommittedEntries();
   web_contents()->GetController().LoadURLWithParams(params);
@@ -3901,8 +3904,15 @@ void WebContents::RunBeforeUnloadDialog(content::WebContents* web_contents,
                                         content::RenderFrameHost* rfh,
                                         bool is_reload,
                                         DialogClosedCallback callback) {
-  // TODO: asyncify?
   bool default_prevented = Emit("will-prevent-unload");
+
+  if (pending_unload_url_.has_value() && !default_prevented) {
+    Emit("did-fail-load", static_cast<int>(net::ERR_ABORTED),
+         net::ErrorToShortString(net::ERR_ABORTED),
+         pending_unload_url_.value().possibly_invalid_spec(), true);
+    pending_unload_url_.reset();
+  }
+
   std::move(callback).Run(default_prevented, std::u16string());
 }
 
