@@ -78,11 +78,11 @@ jobs:
         # but then we would lint its contents (at least gn format), and it doesn't pass it.
 
         cd src/electron
-        node script/yarn install --frozen-lockfile
-        node script/yarn lint
+        node script/yarn.js install --immutable
+        node script/yarn.js lint
     - name: Run Script Typechecker
       shell: bash
       run: |
         cd src/electron
-        node script/yarn tsc -p tsconfig.script.json
+        node script/yarn.js tsc -p tsconfig.script.json
     

@@ -5,6 +5,7 @@
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
     "@azure/storage-blob": "^12.28.0",
+    "@datadog/datadog-ci": "^4.1.2",
     "@electron/asar": "^4.0.1",
     "@electron/docs-parser": "^2.0.0",
     "@electron/fiddle-core": "^1.3.4",
@@ -40,6 +41,7 @@
     "lint-staged": "^16.1.0",
     "markdownlint-cli2": "^0.18.0",
     "minimist": "^1.2.8",
+    "node-gyp": "^11.4.2",
     "null-loader": "^4.0.1",
     "pre-flight": "^2.0.0",
     "process": "^0.11.10",
@@ -133,7 +135,9 @@
       "node script/gen-libc++-filenames.js"
     ]
   },
-  "resolutions": {
-    "nan": "nodejs/nan#e14bdcd1f72d62bca1d541b66da43130384ec213"
-  }
+  "packageManager": "yarn@4.10.3+sha512.c38cafb5c7bb273f3926d04e55e1d8c9dfa7d9c3ea1f36a4868fa028b9e5f72298f0b7f401ad5eb921749eb012eb1c3bb74bf7503df3ee43fd600d14a018266f",
+  "workspaces": [
+    "spec",
+    "spec/fixtures/native-addon/*"
+  ]
 }

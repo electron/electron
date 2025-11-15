@@ -333,7 +333,7 @@ jobs:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: electron-arc-centralus-linux-arm64-4core
       build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
-      test-container: '{"image":"ghcr.io/electron/test:arm32v7-${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init","volumes":["/home/runner/externals:/mnt/runner-externals"]}'
+      test-container: '{"image":"ghcr.io/electron/test:arm32v7-${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init --memory=12g","volumes":["/home/runner/externals:/mnt/runner-externals"]}'
       target-platform: linux
       target-arch: arm
       is-release: false

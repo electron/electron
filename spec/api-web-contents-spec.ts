@@ -2657,7 +2657,13 @@ describe('webContents module', () => {
         const errMsg = Buffer.concat(stderr).toString().trim();
         console.error(`Error parsing PDF file, exit code was ${code}; signal was ${signal}, error: ${errMsg}`);
       }
-      return JSON.parse(Buffer.concat(stdout).toString().trim());
+      try {
+        return JSON.parse(Buffer.concat(stdout).toString().trim());
+      } catch (err) {
+        console.error('Error parsing PDF file:', err);
+        console.error('Raw output:', Buffer.concat(stdout).toString().trim());
+        throw err;
+      }
     };
 
     let w: BrowserWindow;
