@@ -11,18 +11,18 @@ really in 20/21. We have to wait until 22 is released to be able to
 build with upstream GN files.
 
 diff --git a/configure.py b/configure.py
-index 7f73f084ef1a8336089e6a16423c2eb310c0b9f2..96eedd5d9ae05ee6704724290973251059d5dd78 100755
+index 750ddc8ace6cad894e738f6e1d983b5906acc10f..e063f9131d4d547d231811dafea03c8c52b611e6 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1730,7 +1730,7 @@ def configure_v8(o, configs):
+@@ -1736,7 +1736,7 @@ def configure_v8(o, configs):
    # Until we manage to get rid of all those, v8_enable_sandbox cannot be used.
    # Note that enabling pointer compression without enabling sandbox is unsupported by V8,
    # so this can be broken at any time.
 -  o['variables']['v8_enable_sandbox'] = 0
 +  o['variables']['v8_enable_sandbox'] = 1 if options.enable_pointer_compression else 0
-   o['variables']['v8_enable_pointer_compression_shared_cage'] = 1 if options.enable_pointer_compression else 0
-   o['variables']['v8_enable_external_code_space'] = 1 if options.enable_pointer_compression else 0
-   o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0
+   # We set v8_enable_pointer_compression_shared_cage to 0 always, even when
+   # pointer compression is enabled so that we don't accidentally enable shared
+   # cage mode when pointer compression is on.
 diff --git a/node.gni b/node.gni
 index d4438f7fd61598afac2c1e3184721a759d22b10c..e2407027ab05e59b2f0f1c213b98ea469db7a91b 100644
 --- a/node.gni

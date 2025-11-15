@@ -6,7 +6,7 @@ Subject: fix: lazyload fs in esm loaders to apply asar patches
 Changes { foo } from fs to just "fs.foo" so that our patching of fs is applied to esm loaders
 
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index e8a2326e158550786620439fa4039c2b449624cc..c17867136a07022a740d6bf957fe7a8138a48c11 100644
+index 5f1921d15bc1d3a68c35990f85e36a0e8a5b3ec4..99c6ce57c04768d125dd0a1c6bd62bca7aae27bc 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
 @@ -9,7 +9,7 @@ const {
@@ -50,7 +50,7 @@ index 5f03cf14e948d449d303b22ab6710b5508fb83b2..72cc9444ca93ef7a1526e23314693aea
      });
      const { search, hash } = resolved;
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 3c82913ca381eba30596f22a734b49dcba9b6f5b..1f967df42128a05e49acfa6d409737c06a3372e3 100644
+index 52b8b5d9255f782af96aa859dec4ffa6ca82c9d0..96869be3c48b84106a5fe2cb752fe979a211d96a 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -24,7 +24,7 @@ const {
@@ -62,12 +62,12 @@ index 3c82913ca381eba30596f22a734b49dcba9b6f5b..1f967df42128a05e49acfa6d409737c0
  const { dirname, extname } = require('path');
  const {
    assertBufferSource,
-@@ -350,7 +350,7 @@ translators.set('commonjs', function commonjsStrategy(url, source, isMain) {
+@@ -362,7 +362,7 @@ translators.set('commonjs', function commonjsStrategy(url, translateContext, par
  
    try {
      // We still need to read the FS to detect the exports.
--    source ??= readFileSync(new URL(url), 'utf8');
-+    source ??= fs.readFileSync(new URL(url), 'utf8');
+-    translateContext.source ??= readFileSync(new URL(url), 'utf8');
++    translateContext.source ??= fs.readFileSync(new URL(url), 'utf8');
    } catch {
      // Continue regardless of error.
    }
