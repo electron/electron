@@ -56,7 +56,8 @@
     "url": "^0.11.4",
     "webpack": "^5.95.0",
     "webpack-cli": "^6.0.1",
-    "wrapper-webpack-plugin": "^2.2.0"
+    "wrapper-webpack-plugin": "^2.2.0",
+    "yaml": "^2.8.1"
   },
   "private": true,
   "scripts": {
@@ -131,6 +132,10 @@
     "DEPS": [
       "node script/gen-hunspell-filenames.js",
       "node script/gen-libc++-filenames.js"
+    ],
+    ".github/workflows/pipeline-segment-electron-build.yml": [
+      "node script/copy-pipeline-segment-publish.js",
+      "git add .github/workflows/pipeline-segment-electron-publish.yml"
     ]
   },
   "resolutions": {

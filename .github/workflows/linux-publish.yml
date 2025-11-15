@@ -43,9 +43,11 @@ jobs:
       uses: ./src/electron/.github/actions/checkout
 
   publish-x64:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      attestations: write
       contents: read
+      id-token: write
     needs: checkout-linux
     with:
       environment: production-release
@@ -60,9 +62,11 @@ jobs:
     secrets: inherit
 
   publish-arm:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      attestations: write
       contents: read
+      id-token: write
     needs: checkout-linux
     with:
       environment: production-release
@@ -77,9 +81,11 @@ jobs:
     secrets: inherit
 
   publish-arm64:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      attestations: write
       contents: read
+      id-token: write
     needs: checkout-linux
     with:
       environment: production-release

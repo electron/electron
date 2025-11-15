@@ -85,4 +85,8 @@ jobs:
       run: |
         cd src/electron
         node script/yarn tsc -p tsconfig.script.json
-    
+    - name: Check GHA Workflows
+      shell: bash
+      run: |
+        cd src/electron
+        node script/copy-pipeline-segment-publish.js --check
