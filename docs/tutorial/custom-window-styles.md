@@ -17,12 +17,24 @@ To create a frameless window, set the [`BaseWindowContructorOptions`][] `frame`
 ![Transparent Window](../images/transparent-window.png)
 ![Transparent Window in macOS Mission Control](../images/transparent-window-mission-control.png)
 
-To create a fully transparent window, set the [`BaseWindowContructorOptions`][] `transparent` param in the `BrowserWindow` constructor to `true`.
+### Using the [`BrowserWindow`](../api/browser-window.md) API
+
+To create a fully transparent window, set the [`BaseWindowConstructorOptions`][] `transparent` param in the `BrowserWindow` constructor to `true`.
 
 The following fiddle takes advantage of a transparent window and CSS styling to create
 the illusion of a circular window.
 
 ```fiddle docs/fiddles/features/window-customization/custom-window-styles/transparent-windows
+
+```
+
+### Using the [`BaseWindow`](../api/base-window.md) API
+
+The same result can be achieved using the `BaseWindow` API. However, note that you need to call
+[view.setBackgroundColor](../api/view#viewsetbackgroundcolorcolor) to set
+the background color of any added views to transparent.
+
+```fiddle docs/fiddles/features/window-customization/custom-window-styles/base-window-transparent-windows
 
 ```
 

@@ -30,6 +30,12 @@ leftView.setBounds({ x: 0, y: 0, width: 400, height: 600 })
 rightView.setBounds({ x: 400, y: 0, width: 400, height: 600 })
 ```
 
+## Window customization
+
+The `BaseWindow` class exposes various ways to modify the look and behavior of
+your app's windows. For more details, see the [Window Customization](../tutorial/window-customization.md)
+tutorial.
+
 ## Parent and child windows
 
 By using `parent` option, you can create child windows:
