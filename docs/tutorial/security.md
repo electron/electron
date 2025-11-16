@@ -97,34 +97,6 @@ either `process.env` or the `window` object.
 
 You should at least follow these steps to improve the security of your application:
 
-1. [Only load secure content](#1-only-load-secure-content)
-2. [Do not enable Node.js integration for remote content](#2-do-not-enable-nodejs-integration-for-remote-content)
-3. [Enable context isolation in all renderers](#3-enable-context-isolation)
-4. [Enable process sandboxing](#4-enable-process-sandboxing)
-5. [Use `ses.setPermissionRequestHandler()` in all sessions that load remote content](#5-handle-session-permission-requests-from-remote-content)
-6. [Do not disable `webSecurity`](#6-do-not-disable-websecurity)
-7. [Define a `Content-Security-Policy`](#7-define-a-content-security-policy) and use restrictive rules (i.e. `script-src 'self'`)
-8. [Do not enable `allowRunningInsecureContent`](#8-do-not-enable-allowrunninginsecurecontent)
-9. [Do not enable experimental features](#9-do-not-enable-experimental-features)
-10. [Do not use `enableBlinkFeatures`](#10-do-not-use-enableblinkfeatures)
-11. [`<webview>`: Do not use `allowpopups`](#11-do-not-use-allowpopups-for-webviews)
-12. [`<webview>`: Verify options and params](#12-verify-webview-options-before-creation)
-13. [Disable or limit navigation](#13-disable-or-limit-navigation)
-14. [Disable or limit creation of new windows](#14-disable-or-limit-creation-of-new-windows)
-15. [Do not use `shell.openExternal` with untrusted content](#15-do-not-use-shellopenexternal-with-untrusted-content)
-16. [Use a current version of Electron](#16-use-a-current-version-of-electron)
-17. [Validate the `sender` of all IPC messages](#17-validate-the-sender-of-all-ipc-messages)
-18. [Avoid usage of the `file://` protocol and prefer usage of custom protocols](#18-avoid-usage-of-the-file-protocol-and-prefer-usage-of-custom-protocols)
-19. [Check which fuses you can change](#19-check-which-fuses-you-can-change)
-20. [Do not expose Electron APIs to untrusted web content](#20-do-not-expose-electron-apis-to-untrusted-web-content)
-
-To automate the detection of misconfigurations and insecure patterns, it is
-possible to use
-[Electronegativity](https://github.com/doyensec/electronegativity). For
-additional details on potential weaknesses and implementation bugs when
-developing applications using Electron, please refer to this
-[guide for developers and auditors](https://doyensec.com/resources/us-17-Carettoni-Electronegativity-A-Study-Of-Electron-Security-wp.pdf).
-
 ### 1. Only load secure content
 
 Any resources not included with your application should be loaded using a
