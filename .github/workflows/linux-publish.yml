@@ -17,9 +17,13 @@ on:
         type: boolean
         default: false
 
+permissions: {}
+
 jobs:
   checkout-linux:
     runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
     container:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
       options: --user root
@@ -40,6 +44,8 @@ jobs:
 
   publish-x64:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    permissions:
+      contents: read
     needs: checkout-linux
     with:
       environment: production-release
@@ -55,6 +61,8 @@ jobs:
 
   publish-arm:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    permissions:
+      contents: read
     needs: checkout-linux
     with:
       environment: production-release
@@ -70,6 +78,8 @@ jobs:
 
   publish-arm64:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    permissions:
+      contents: read
     needs: checkout-linux
     with:
       environment: production-release

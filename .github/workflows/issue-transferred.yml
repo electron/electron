@@ -10,6 +10,7 @@ jobs:
   issue-transferred:
     name: Issue Transferred
     runs-on: ubuntu-latest
+    permissions: {}
     if: ${{ !github.event.changes.new_repository.private }}
     steps:
       - name: Generate GitHub App token

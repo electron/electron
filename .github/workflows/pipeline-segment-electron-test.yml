@@ -35,10 +35,7 @@ concurrency:
   group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
 
-permissions:
-  contents: read
-  issues: read
-  pull-requests: read
+permissions: {}
 
 env:
   CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
@@ -53,6 +50,10 @@ jobs:
       run:
         shell: bash
     runs-on: ${{ inputs.test-runs-on }}
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
     container: ${{ fromJSON(inputs.test-container) }}
     strategy:
       fail-fast: false
