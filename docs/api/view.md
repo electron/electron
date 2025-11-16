@@ -62,7 +62,7 @@ it becomes the topmost view.
 
 If the view passed as a parameter is not a child of this view, this method is a no-op.
 
-#### `view.setBounds(bounds[, animate])`
+#### `view.setBounds(bounds[, options])`
 
 * `bounds` [Rectangle](structures/rectangle.md) - New bounds of the View.
 * `options` Object (optional) - Options for setting the bounds.
