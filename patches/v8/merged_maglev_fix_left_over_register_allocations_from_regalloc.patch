@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Olivier=20Fl=C3=BCckiger?= <olivf@chromium.org>
+Date: Wed, 5 Nov 2025 14:11:51 +0100
+Subject: Merged: [maglev] Fix left over register allocations from regalloc
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The regalloc should clear the node allocations when it is done.
+Failing to do so can cause the codegen to use stale register state.
+In this concrete example the exception handler trampolines would not
+load from the spill slot due to the left over allocation.
+
+Bug: 457351015
+(cherry picked from commit 7ef5ae531a9e79a084b5f0bebd5496d5d481e0ea)
+
+Change-Id: Ibf50e9c77f68654abf1b610bc1f37ccd17904c84
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7137280
+Reviewed-by: Victor Gomes <victorgomes@chromium.org>
+Commit-Queue: Victor Gomes <victorgomes@chromium.org>
+Auto-Submit: Olivier Flückiger <olivf@chromium.org>
+Cr-Commit-Position: refs/branch-heads/14.2@{#35}
+Cr-Branched-From: 37f82dbb9f640dc5eea09870dd391cd3712546e5-refs/heads/14.2.231@{#1}
+Cr-Branched-From: d1a6089b861336cf4b3887edfd3fdd280b23b5dd-refs/heads/main@{#102804}
+
+diff --git a/src/maglev/maglev-code-generator.cc b/src/maglev/maglev-code-generator.cc
+index 4207c84b70267b98a3fa5069cb1bbcee6df78d6a..d096c6d4d5b6ff175a960b1a0dcaf0ff68d21bdd 100644
+--- a/src/maglev/maglev-code-generator.cc
++++ b/src/maglev/maglev-code-generator.cc
+@@ -801,6 +801,12 @@ class MaglevCodeGeneratingNodeProcessor {
+ 
+   template <typename NodeT>
+   ProcessResult Process(NodeT* node, const ProcessingState& state) {
++#ifdef DEBUG
++    if constexpr (std::is_base_of_v<ValueNode, NodeT>) {
++      // Regalloc must clear its temp allocations.
++      DCHECK(!node->regalloc_info()->has_register());
++    }
++#endif
+     if (v8_flags.code_comments) {
+       std::stringstream ss;
+       ss << "--   " << graph_labeller()->NodeId(node) << ": "
+diff --git a/src/maglev/maglev-regalloc.cc b/src/maglev/maglev-regalloc.cc
+index efba3bc4758a18ed03acc97732c971a2fb59cac2..1906a263bd01b01c616bf3fc75a805f24a747852 100644
+--- a/src/maglev/maglev-regalloc.cc
++++ b/src/maglev/maglev-regalloc.cc
+@@ -631,6 +631,9 @@ void StraightForwardRegisterAllocator::AllocateRegisters() {
+     AllocateControlNode(block->control_node(), block);
+     ApplyPatches(block);
+   }
++
++  // Clean up remaining register allocations at the end
++  ClearRegisters();
+ }
+ 
+ void StraightForwardRegisterAllocator::FreeRegistersUsedBy(ValueNode* node) {
+@@ -1607,8 +1610,8 @@ void StraightForwardRegisterAllocator::SpillRegisters() {
+   double_registers_.ForEachUsedRegister(spill);
+ }
+ 
+-template <typename RegisterT>
+-void StraightForwardRegisterAllocator::SpillAndClearRegisters(
++template <typename RegisterT, bool spill>
++void StraightForwardRegisterAllocator::ClearRegisters(
+     RegisterFrameState<RegisterT>& registers) {
+   while (registers.used() != registers.empty()) {
+     RegisterT reg = registers.used().first();
+@@ -1617,7 +1620,9 @@ void StraightForwardRegisterAllocator::SpillAndClearRegisters(
+       printing_visitor_->os()
+           << "  clearing registers with " << PrintNodeLabel(node) << "\n";
+     }
+-    Spill(node);
++    if (spill) {
++      Spill(node);
++    }
+     registers.FreeRegistersUsedBy(node);
+     DCHECK(!registers.used().has(reg));
+   }
+@@ -1628,6 +1633,11 @@ void StraightForwardRegisterAllocator::SpillAndClearRegisters() {
+   SpillAndClearRegisters(double_registers_);
+ }
+ 
++void StraightForwardRegisterAllocator::ClearRegisters() {
++  ClearRegisters(general_registers_);
++  ClearRegisters(double_registers_);
++}
++
+ void StraightForwardRegisterAllocator::SaveRegisterSnapshot(NodeBase* node) {
+   RegisterSnapshot snapshot;
+   general_registers_.ForEachUsedRegister([&](Register reg, ValueNode* node) {
+diff --git a/src/maglev/maglev-regalloc.h b/src/maglev/maglev-regalloc.h
+index 6688f494c4cfcee74e9836765960089b42926c72..ad0ff7beb73e5e02130a310941b0e4bb69c2c9c1 100644
+--- a/src/maglev/maglev-regalloc.h
++++ b/src/maglev/maglev-regalloc.h
+@@ -224,8 +224,13 @@ class StraightForwardRegisterAllocator {
+   void Spill(ValueNode* node);
+   void SpillRegisters();
+ 
++  template <typename RegisterT, bool spill = false>
++  void ClearRegisters(RegisterFrameState<RegisterT>& registers);
+   template <typename RegisterT>
+-  void SpillAndClearRegisters(RegisterFrameState<RegisterT>& registers);
++  void SpillAndClearRegisters(RegisterFrameState<RegisterT>& registers) {
++    ClearRegisters<RegisterT, true>(registers);
++  }
++  void ClearRegisters();
+   void SpillAndClearRegisters();
+ 
+   void SaveRegisterSnapshot(NodeBase* node);
