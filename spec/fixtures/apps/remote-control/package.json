@@ -1,4 +1,7 @@
 {
   "name": "electron-test-remote-control",
-  "main": "main.js"
+  "main": "main.js",
+  "dependencies": {
+    "mathjs": "^15.1.0"
+}
 }
