@@ -211,6 +211,7 @@ new Promise<string>((resolve, reject) => {
     });
   })
   .then((tarballPath) => {
+    // TODO: Remove NPX
     const existingVersionJSON = childProcess.execSync(`npx npm@7 view ${rootPackageJson.name}@${currentElectronVersion} --json`).toString('utf-8');
     // It's possible this is a re-run and we already have published the package, if not we just publish like normal
     if (!existingVersionJSON) {
