@@ -1,5 +1,8 @@
 {
-  "main": "./lib/echo.js",
   "name": "@electron-ci/echo",
-  "version": "0.0.1"
+  "version": "0.0.1",
+  "main": "./lib/echo.js",
+  "scripts": {
+    "install": "node-gyp configure && node-gyp build"
+  }
 }
