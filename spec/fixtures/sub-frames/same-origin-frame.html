@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Same Origin Frame Test</title>
+</head>
+<body>
+  <h1>Same Origin Frame</h1>
+  <script>
+    const { ipcRenderer } = require('electron');
+    
+    // Report that this frame loaded with Node integration
+    ipcRenderer.send('same-origin-frame-loaded', {
+      location: window.location.href,
+      hasNodeIntegration: typeof process !== 'undefined'
+    });
+  </script>
+</body>
+</html>

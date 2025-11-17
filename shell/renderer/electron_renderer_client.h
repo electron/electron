@@ -64,6 +64,14 @@ class ElectronRendererClient : public RendererClientBase {
   // a book of the environments created.
   base::flat_set<std::shared_ptr<node::Environment>> environments_;
 
+  // Track which V8 context owns which Node environment to handle same-origin
+  // iframe reuse. When same-origin iframes share a V8 context, we need to
+  // prevent creating multiple Node environments in the same context.
+  // See: https://github.com/electron/electron/issues/47648
+  std::map<v8::Global<v8::Context>, 
+           std::shared_ptr<node::Environment>,
+           v8::GlobalValueMapTraits<v8::Context>::Compare> context_to_environment_;
+
   // Getting main script context from web frame would lazily initializes
   // its script context. Doing so in a web page without scripts would trigger
   // assertion, so we have to keep a book of injected web frames.

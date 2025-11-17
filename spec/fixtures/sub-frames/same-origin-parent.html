@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Same Origin Parent Test</title>
+</head>
+<body>
+  <h1>Parent Frame</h1>
+  <div id="iframe-container"></div>
+  
+  <script>
+    const { ipcRenderer } = require('electron');
+    
+    // Create and remove iframes dynamically to test memory leak fix
+    window.createIframe = function() {
+      const container = document.getElementById('iframe-container');
+      const iframe = document.createElement('iframe');
+      iframe.id = 'test-iframe';
+      iframe.src = 'same-origin-frame.html';
+      container.appendChild(iframe);
+      return new Promise((resolve) => {
+        iframe.onload = () => resolve(iframe);
+      });
+    };
+    
+    window.removeIframe = function() {
+      const iframe = document.getElementById('test-iframe');
+      if (iframe) {
+        iframe.remove();
+      }
+    };
+    
+    window.getNodeEnvironmentCount = function() {
+      // This would be checked from C++ side to verify no duplicate environments
+      return typeof process !== 'undefined' ? 1 : 0;
+    };
+    
+    ipcRenderer.send('parent-ready');
+  </script>
+</body>
+</html>

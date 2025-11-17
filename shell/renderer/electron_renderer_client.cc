@@ -101,6 +101,18 @@ void ElectronRendererClient::DidCreateScriptContext(
   if (!ShouldLoadPreload(isolate, renderer_context, render_frame))
     return;
 
+  // Fix for issue #47648: Check if this V8 context already has a Node environment.
+  // Same-origin iframes share a V8 context, but Node.js assumes one environment
+  // per context. Creating multiple environments causes memory leaks because
+  // node::Environment::GetCurrent() only returns the first one created.
+  v8::Global<v8::Context> global_context(isolate, renderer_context);
+  auto context_iter = context_to_environment_.find(global_context);
+  if (context_iter != context_to_environment_.end()) {
+    // Context already has an environment - this is a same-origin iframe reuse.
+    // Do not create another environment to prevent memory leak.
+    return;
+  }
+
   injected_frames_.insert(render_frame);
 
   if (!node_integration_initialized_) {
@@ -160,6 +172,9 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   environments_.insert(env);
 
+  // Track the context-to-environment mapping for proper cleanup
+  context_to_environment_.emplace(std::move(global_context), env);
+
   // Add Electron extended APIs.
   electron_bindings_->BindTo(env->isolate(), env->process_object());
   gin_helper::Dictionary process_dict(env->isolate(), env->process_object());
@@ -184,10 +199,17 @@ void ElectronRendererClient::WillReleaseScriptContext(
   if (injected_frames_.erase(render_frame) == 0)
     return;
 
-  node::Environment* env = node::Environment::GetCurrent(context);
-  const auto iter = std::ranges::find_if(
+  // Fix for issue #47648: Use our context mapping instead of GetCurrent()
+  // which only returns the first environment created for a context.
+  v8::Global<v8::Context> global_context(isolate, context);
+  auto context_iter = context_to_environment_.find(global_context);
+  if (context_iter == context_to_environment_.end())
+    return;  // No environment found for this context
+
+  node::Environment* env = context_iter->second.get();
+  const auto env_iter = std::ranges::find_if(
       environments_, [env](auto& item) { return env == item.get(); });
-  if (iter == environments_.end())
+  if (env_iter == environments_.end())
     return;
 
   gin_helper::EmitEvent(isolate, env->process_object(), "exit");
@@ -200,8 +222,11 @@ void ElectronRendererClient::WillReleaseScriptContext(
   {
     util::ExplicitMicrotasksScope microtasks_scope(
         context->GetMicrotaskQueue());
-    environments_.erase(iter);
+    environments_.erase(env_iter);
   }
+
+  // Remove the context-to-environment mapping
+  context_to_environment_.erase(context_iter);
 
   // ElectronBindings is tracking node environments.
   electron_bindings_->EnvironmentDestroyed(env);

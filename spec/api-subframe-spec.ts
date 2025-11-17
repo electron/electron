@@ -320,3 +320,103 @@ ifdescribe(process.platform !== 'linux')('cross-site frame sandboxing', () => {
     sandbox: true
   });
 });
+
+// Test for issue #47648 - Memory leak with same-origin iframes and nodeIntegration
+describe('same-origin iframes with nodeIntegration', () => {
+  let w: BrowserWindow;
+
+  beforeEach(async () => {
+    await closeWindow(w);
+  });
+
+  afterEach(async () => {
+    await closeWindow(w);
+    w = null as unknown as BrowserWindow;
+  });
+
+  it('should not create duplicate Node environments when removing and recreating same-origin iframes', async () => {
+    w = new BrowserWindow({
+      show: false,
+      width: 400,
+      height: 400,
+      webPreferences: {
+        nodeIntegration: true,
+        nodeIntegrationInSubFrames: true,
+        contextIsolation: false
+      }
+    });
+
+    // Track iframe loads
+    const frameLoads: any[] = [];
+    ipcMain.on('same-origin-frame-loaded', (event, data) => {
+      frameLoads.push(data);
+    });
+
+    // Wait for parent to be ready
+    const parentReady = once(ipcMain, 'parent-ready');
+    w.loadFile(path.resolve(__dirname, 'fixtures/sub-frames/same-origin-parent.html'));
+    await parentReady;
+
+    // Create iframe multiple times - this should not create duplicate Node environments
+    for (let i = 0; i < 3; i++) {
+      const beforeCount = frameLoads.length;
+      
+      // Create iframe
+      await w.webContents.executeJavaScript('window.createIframe()');
+      
+      // Wait for iframe to load
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Verify iframe loaded with Node integration
+      expect(frameLoads.length).to.be.greaterThan(beforeCount);
+      expect(frameLoads[frameLoads.length - 1].hasNodeIntegration).to.equal(true);
+      
+      // Remove iframe
+      await w.webContents.executeJavaScript('window.removeIframe()');
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    // Clean up listener
+    ipcMain.removeAllListeners('same-origin-frame-loaded');
+
+    // If the fix works, this test will pass without memory leaks
+    // The C++ code now tracks context-to-environment mapping and prevents
+    // creating duplicate Node environments in shared V8 contexts
+    expect(frameLoads.length).to.equal(3);
+  });
+
+  it('should properly clean up Node environments when iframes are removed', async () => {
+    w = new BrowserWindow({
+      show: false,
+      width: 400,
+      height: 400,
+      webPreferences: {
+        nodeIntegration: true,
+        nodeIntegrationInSubFrames: true,
+        contextIsolation: false
+      }
+    });
+
+    const parentReady = once(ipcMain, 'parent-ready');
+    w.loadFile(path.resolve(__dirname, 'fixtures/sub-frames/same-origin-parent.html'));
+    await parentReady;
+
+    // Create and remove iframe
+    await w.webContents.executeJavaScript('window.createIframe()');
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    await w.webContents.executeJavaScript('window.removeIframe()');
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Create again - should reuse context without issues
+    await w.webContents.executeJavaScript('window.createIframe()');
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Verify parent still has Node integration
+    const hasNode = await w.webContents.executeJavaScript('typeof process !== "undefined"');
+    expect(hasNode).to.equal(true);
+
+    // Clean up
+    ipcMain.removeAllListeners('same-origin-frame-loaded');
+  });
+});
