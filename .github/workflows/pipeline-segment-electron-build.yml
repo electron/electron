@@ -59,6 +59,8 @@ on:
         type: boolean
         default: false
 
+permissions: {}
+
 concurrency:
   group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.target-variant }}-${{ inputs.is-asan }}-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
@@ -81,6 +83,8 @@ jobs:
       run:
         shell: bash
     runs-on: ${{ inputs.build-runs-on }}
+    permissions:
+      contents: read
     container: ${{ fromJSON(inputs.build-container) }}
     environment: ${{ inputs.environment }}
     env:
@@ -117,7 +121,7 @@ jobs:
       if: ${{ inputs.target-platform == 'macos' }}
       uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
       with:
-        node-version: 20.19.x
+        node-version: 22.21.x
         cache: yarn
         cache-dependency-path: src/electron/yarn.lock
     - name: Install Dependencies

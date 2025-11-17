@@ -1218,7 +1218,7 @@ This method can only be called before app is ready.
 
 ### `app.isHardwareAccelerationEnabled()`
 
-Returns `boolean` - whether hardware acceleration is currently disabled.
+Returns `boolean` - whether hardware acceleration is currently enabled.
 
  > [!NOTE]
  > This information is only usable after the `gpu-info-update` event is emitted.

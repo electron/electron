@@ -586,7 +586,7 @@ index 57e068ae249d618c2658638f9f3b03e1fedb6524..8c51ae4e0a435971c6d0288af8781087
    data_.Reset();
    return ret;
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index bdbc511ef3f680bbac6770b89f47acaee95d56a2..d8477191efafba3c41c06d765f4b03bd00b8573c 100644
+index eea4ba313d8dbcf7b88b79f5a3e9ba2eb39d7c3e..529b7cfc15536c3fe5e7798c0f82698121751f2a 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -69,7 +69,7 @@ void BindingData::Deserialize(v8::Local<v8::Context> context,
@@ -598,7 +598,7 @@ index bdbc511ef3f680bbac6770b89f47acaee95d56a2..d8477191efafba3c41c06d765f4b03bd
    Realm* realm = Realm::GetCurrent(context);
    BindingData* binding = realm->AddBindingData<BindingData>(holder);
    CHECK_NOT_NULL(binding);
-@@ -735,7 +735,7 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
+@@ -696,7 +696,7 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
    Realm* realm = Realm::GetCurrent(context);
    realm->AddBindingData<BindingData>(target);
  

@@ -17,6 +17,7 @@
 #include "base/files/file_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "shell/common/asar/asar_util.h"
+#include "shell/common/asar/integrity_digest.h"
 
 namespace asar {
 
@@ -38,6 +39,9 @@ std::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
 
   NSDictionary* integrity = [[NSBundle mainBundle]
       objectForInfoDictionaryKey:@"ElectronAsarIntegrity"];
+
+  if (!IsIntegrityDictionaryValid(integrity))
+    return std::nullopt;
 
   // Integrity not provided
   if (!integrity)

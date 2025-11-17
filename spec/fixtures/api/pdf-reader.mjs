@@ -1,7 +1,8 @@
-import * as pdfjs from 'pdfjs-dist';
+import { app } from 'electron';
 
 async function getPDFDoc () {
   try {
+    const pdfjs = await import('pdfjs-dist');
     const doc = await pdfjs.getDocument(process.argv[2]).promise;
     const page = await doc.getPage(1);
     const { items } = await page.getTextContent();
@@ -20,4 +21,4 @@ async function getPDFDoc () {
   }
 }
 
-getPDFDoc();
+app.whenReady().then(() => getPDFDoc());

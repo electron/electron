@@ -80,19 +80,6 @@ void GPUInfoEnumerator::EndVideoEncodeAcceleratorSupportedProfile() {
   value_stack_.pop();
 }
 
-void GPUInfoEnumerator::BeginImageDecodeAcceleratorSupportedProfile() {
-  value_stack_.push(std::move(current_));
-  current_ = {};
-}
-
-void GPUInfoEnumerator::EndImageDecodeAcceleratorSupportedProfile() {
-  auto& top_value = value_stack_.top();
-  top_value.Set(kImageDecodeAcceleratorSupportedProfileKey,
-                std::move(current_));
-  current_ = std::move(top_value);
-  value_stack_.pop();
-}
-
 void GPUInfoEnumerator::BeginAuxAttributes() {
   value_stack_.push(std::move(current_));
   current_ = {};
