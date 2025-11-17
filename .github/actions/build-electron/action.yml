@@ -188,7 +188,7 @@ runs:
       shell: bash
       run: |
         cd src/electron
-        node script/yarn create-typescript-definitions
+        node script/yarn.js create-typescript-definitions
     - name: Publish Electron Dist ${{ inputs.step-suffix }}
       if: ${{ inputs.is-release == 'true' }}
       shell: bash
