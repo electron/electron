@@ -671,7 +671,7 @@ describe('contextBridge', () => {
         it('should release the global hold on methods sent across contexts', async () => {
           await makeBindingWindow(() => {
             const trackedValues: WeakRef<object>[] = [];
-            require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', { trackedValues: trackedValues.filter(value => value.deref()).length }));
+            require('electron').ipcRenderer.on('get-gc-info', (e: any) => e.sender.send('gc-info', { trackedValues: trackedValues.filter(value => value.deref()).length }));
             contextBridge.exposeInMainWorld('example', {
               getFunction: () => () => 123,
               track: (value: object) => { trackedValues.push(new WeakRef(value)); }
@@ -699,7 +699,7 @@ describe('contextBridge', () => {
         it('should not leak the global hold on methods sent across contexts when reloading a sandboxed renderer', async () => {
           await makeBindingWindow(() => {
             const trackedValues: WeakRef<object>[] = [];
-            require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', { trackedValues: trackedValues.filter(value => value.deref()).length }));
+            require('electron').ipcRenderer.on('get-gc-info', (e: any) => e.sender.send('gc-info', { trackedValues: trackedValues.filter(value => value.deref()).length }));
             contextBridge.exposeInMainWorld('example', {
               getFunction: () => () => 123,
               track: (value: object) => { trackedValues.push(new WeakRef(value)); }
