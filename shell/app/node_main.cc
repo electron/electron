@@ -195,10 +195,6 @@ int NodeMain() {
     std::vector<std::string> args = ElectronCommandLine::AsUtf8();
     ExitIfContainsDisallowedFlags(args);
 
-    // --js-source-phase-imports are not yet enabled in Chromium V8.
-    // TODO(codebytere): Enable it once V8 enables it.
-    args.push_back("--no-js-source-phase-imports");
-
     uint64_t process_flags =
         node::ProcessInitializationFlags::kNoInitializeV8 |
         node::ProcessInitializationFlags::kNoInitializeNodeV8Platform;

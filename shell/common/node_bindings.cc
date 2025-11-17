@@ -686,10 +686,6 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
 #endif
   }
 
-  // --js-source-phase-imports are not yet enabled in Chromium V8.
-  // TODO(codebytere): Enable it once V8 enables it.
-  args.push_back("--no-js-source-phase-imports");
-
   std::shared_ptr<node::InitializationResult> result =
       node::InitializeOncePerProcess(
           args,
