@@ -216,12 +216,14 @@
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "chrome/browser/pdf/chrome_pdf_stream_delegate.h"
+#include "chrome/browser/pdf/pdf_help_bubble_handler_factory.h"
 #include "chrome/browser/plugins/pdf_iframe_navigation_throttle.h"  // nogncheck
 #include "components/pdf/browser/pdf_document_helper.h"             // nogncheck
 #include "components/pdf/browser/pdf_navigation_throttle.h"
 #include "components/pdf/browser/pdf_url_loader_request_interceptor.h"
 #include "components/pdf/common/constants.h"  // nogncheck
 #include "shell/browser/electron_pdf_document_helper_client.h"
+#include "ui/webui/resources/cr_components/help_bubble/help_bubble.mojom.h"  // nogncheck
 #endif
 
 using content::BrowserThread;
@@ -1270,11 +1272,11 @@ bool ElectronBrowserClient::WillInterceptWebSocket(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   auto* browser_context = frame->GetProcess()->GetBrowserContext();
-  auto web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
+  auto* web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
 
   // NOTE: Some unit test environments do not initialize
   // BrowserContextKeyedAPI factories for e.g. WebRequest.
-  if (!web_request.get())
+  if (!web_request)
     return false;
 
   bool has_listener = web_request->HasListener();
@@ -1302,8 +1304,8 @@ void ElectronBrowserClient::CreateWebSocket(
   v8::HandleScope scope(isolate);
   auto* browser_context = frame->GetProcess()->GetBrowserContext();
 
-  auto web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
-  DCHECK(web_request.get());
+  auto* web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
+  DCHECK(web_request);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   if (!web_request->HasListener()) {
@@ -1320,7 +1322,7 @@ void ElectronBrowserClient::CreateWebSocket(
 #endif
 
   ProxyingWebSocket::StartProxying(
-      web_request.get(), std::move(factory), url, site_for_cookies, user_agent,
+      web_request, std::move(factory), url, site_for_cookies, user_agent,
       std::move(handshake_client), true, frame->GetProcess()->GetDeprecatedID(),
       frame->GetRoutingID(), frame->GetLastCommittedOrigin(), browser_context,
       &next_id_);
@@ -1344,8 +1346,9 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
     scoped_refptr<base::SequencedTaskRunner> navigation_response_task_runner) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  auto web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
-  DCHECK(web_request.get());
+  auto* const web_request =
+      api::WebRequest::FromOrCreate(isolate, browser_context);
+  DCHECK(web_request);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   if (!web_request->HasListener()) {
@@ -1386,13 +1389,18 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
 
   auto* protocol_registry =
       ProtocolRegistry::FromBrowserContext(browser_context);
-  new ProxyingURLLoaderFactory(
-      web_request.get(), protocol_registry->intercept_handlers(),
+  new ProxyingURLLoaderFactory{
+      web_request,
+      protocol_registry->intercept_handlers(),
       render_process_id,
       frame_host ? frame_host->GetRoutingID() : IPC::mojom::kRoutingIdNone,
-      &next_id_, std::move(navigation_ui_data), std::move(navigation_id),
-      std::move(proxied_receiver), std::move(target_factory_remote),
-      std::move(header_client_receiver), type);
+      &next_id_,
+      std::move(navigation_ui_data),
+      std::move(navigation_id),
+      std::move(proxied_receiver),
+      std::move(target_factory_remote),
+      std::move(header_client_receiver),
+      type};
 }
 
 std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>
@@ -1675,6 +1683,11 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
   extensions::ExtensionsBrowserClient::Get()
       ->RegisterBrowserInterfaceBindersForFrame(map, render_frame_host,
                                                 extension);
+#endif
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  map->Add<help_bubble::mojom::PdfHelpBubbleHandlerFactory>(
+      &pdf::PdfHelpBubbleHandlerFactory::Create);
 #endif
 }
 

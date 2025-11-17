@@ -553,7 +553,7 @@ bool NativeWindowViews::IsFocused() const {
 }
 
 void NativeWindowViews::Show() {
-  if (is_modal() && NativeWindow::parent() && !widget()->IsVisible())
+  if (is_modal() && NativeWindow::parent())
     static_cast<NativeWindowViews*>(parent())->IncrementChildModals();
 
   widget()->native_widget_private()->Show(GetRestoredState(), gfx::Rect());
@@ -1363,7 +1363,8 @@ void NativeWindowViews::SetFocusable(bool focusable) {
     ex_style |= WS_EX_NOACTIVATE;
   ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
   SetSkipTaskbar(!focusable);
-  Focus(false);
+  if (!focusable)
+    Focus(false);
 #endif
 }
 

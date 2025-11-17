@@ -23,6 +23,7 @@
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "net/base/completion_once_callback.h"
+#include "net/ssl/ssl_info.h"
 #include "net/traffic_annotation/network_traffic_annotation.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/mojom/network_context.mojom.h"
@@ -33,6 +34,7 @@
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
 #include "url/gurl.h"
+#include "v8/include/cppgc/persistent.h"
 
 namespace mojo {
 template <typename T>
@@ -115,6 +117,7 @@ class ProxyingURLLoaderFactory
                              OnBeforeSendHeadersCallback callback) override;
     void OnHeadersReceived(const std::string& headers,
                            const net::IPEndPoint& endpoint,
+                           const std::optional<net::SSLInfo>& ssl_info,
                            OnHeadersReceivedCallback callback) override;
 
    private:
@@ -242,8 +245,6 @@ class ProxyingURLLoaderFactory
   bool IsForServiceWorkerScript() const;
 
  private:
-  api::WebRequest* web_request() { return web_request_; }
-
   void OnTargetFactoryError();
   void OnProxyBindingError();
   void RemoveRequest(int32_t network_service_request_id, uint64_t request_id);
@@ -251,7 +252,7 @@ class ProxyingURLLoaderFactory
 
   bool ShouldIgnoreConnectionsLimit(const network::ResourceRequest& request);
 
-  raw_ptr<api::WebRequest> web_request_;
+  const cppgc::WeakPersistent<api::WebRequest> web_request_;
 
   // This is passed from api::Protocol.
   //

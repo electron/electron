@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 2a127468d8fcb1d24c2e05ce0e54528386686dff..430ceff387516f71fac947017df1e45e4929f164 100644
+index 73d636ded85feb3db6582d5eab8c713fb7304b31..9c2c027ec7c22578d10d089d624f3ec395d23f1c 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1069,6 +1069,7 @@ component("base") {
@@ -384,7 +384,7 @@ index 71158ca9a7101911bb76f0c1b5300b0ff0e326b3..1441b9d4f9560c8b26d4beffe31449ed
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 433f12928857e288b6b0d4f4dd3d1f29da08cf6c..bb95aabec2e0d5c7b3a5d315c9a3f8cb3a45c8d2 100644
+index e00bf1b56121eca5ebcedc3dac25c7f873828523..40e1dec573cd626cad415e419204d10516b0ec0f 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -21,6 +21,7 @@
@@ -432,7 +432,7 @@ index 433f12928857e288b6b0d4f4dd3d1f29da08cf6c..bb95aabec2e0d5c7b3a5d315c9a3f8cb
  @implementation NativeWidgetMacNSWindow {
   @private
    CommandDispatcher* __strong _commandDispatcher;
-@@ -389,6 +398,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -399,6 +408,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -441,7 +441,7 @@ index 433f12928857e288b6b0d4f4dd3d1f29da08cf6c..bb95aabec2e0d5c7b3a5d315c9a3f8cb
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -400,6 +411,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -410,6 +421,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
@@ -476,7 +476,7 @@ index f3ea2bf2d15d815a2409441a9033a92d5d8967c1..ce52245628c72018da8ec4a3155dafa7
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 40718df4d3d7092309ea7027ae6c59a7963fd03c..89f08e2693d9101e89dd007df80881ff726195ad 100644
+index da33fa857f85484853d14f24d0601f4c284fd67a..9af007dfc14e442d34ebe82fc678ea9f32782cdf 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -387,6 +387,7 @@ viz_component("service") {
@@ -487,7 +487,7 @@ index 40718df4d3d7092309ea7027ae6c59a7963fd03c..89f08e2693d9101e89dd007df80881ff
    }
  
    if (is_ios) {
-@@ -710,6 +711,7 @@ viz_source_set("unit_tests") {
+@@ -712,6 +713,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -547,7 +547,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 6f3496b2541fa21fd0bba1d95026eab30e3ab96d..ef481cd946a15f5eaba928fa4e720e6c42556a93 100644
+index f69cd6100f2ac5ccb6f185e0d0bf186073ed5953..29a40923a55287b608c2ffae63a1dbbc2a7e7c1d 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -34,6 +34,7 @@
@@ -558,7 +558,7 @@ index 6f3496b2541fa21fd0bba1d95026eab30e3ab96d..ef481cd946a15f5eaba928fa4e720e6c
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2085,15 +2086,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2090,15 +2091,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -581,10 +581,10 @@ index 6f3496b2541fa21fd0bba1d95026eab30e3ab96d..ef481cd946a15f5eaba928fa4e720e6c
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 4d4d187ad8c62c4e18454b385c8003a5c478d3ad..20c94074e61cffcf2806fa6b713b0603631f98f8 100644
+index 28140ff5ea05a3edf32034d6dcd4305bc35ce523..ba75db5616911295d69e9e20fed88cb7cd14478d 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -343,6 +343,7 @@ source_set("browser") {
+@@ -342,6 +342,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -714,11 +714,11 @@ index f57ce1a0430df7692be55685e79121ed604daf2a..3fbc26fb179a64a2f1eab027a05b1624
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 8404e4d6b8b2fc2d5f1597d5cbfcbcea2e692091..678121670b4977853e6fa1515f37d1ad21a3bd33 100644
+index 28e7f247df52ff84f50811e05ef22027a1a92536..780f0b5a528c2344d1d8a30b1f4a846e1eaa7192 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -322,6 +322,7 @@ target(link_target_type, "renderer") {
-     "//ui/surface",
+@@ -327,6 +327,7 @@ target(link_target_type, "renderer") {
+     "//ui/strings:auto_image_annotation_strings_grit",
      "//url",
      "//v8",
 +    "//electron/build/config:generate_mas_config",
@@ -796,10 +796,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 88911eb5fe3d6e6423b12e2116704988cd032592..5852f0936d8a8de32fcce44f9833fca8aa4fcd7f 100644
+index f9c5e8de687409857baf732a4227317e7d503b40..5adbe891175aa1f762558bfa0251e12ca6a94c6f 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -703,6 +703,7 @@ static_library("test_support") {
+@@ -702,6 +702,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -807,7 +807,7 @@ index 88911eb5fe3d6e6423b12e2116704988cd032592..5852f0936d8a8de32fcce44f9833fca8
    ]
  
    data_deps = [
-@@ -1178,6 +1179,8 @@ static_library("browsertest_support") {
+@@ -1177,6 +1178,8 @@ static_library("browsertest_support") {
    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
    # enable the diagnostic by removing this line.
    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -816,7 +816,7 @@ index 88911eb5fe3d6e6423b12e2116704988cd032592..5852f0936d8a8de32fcce44f9833fca8
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2066,6 +2069,7 @@ test("content_browsertests") {
+@@ -2065,6 +2068,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index 88911eb5fe3d6e6423b12e2116704988cd032592..5852f0936d8a8de32fcce44f9833fca8
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3403,6 +3407,7 @@ test("content_unittests") {
+@@ -3406,6 +3410,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1395,10 +1395,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index e54ba53ed4866e568ae5c2dfe65e72adfe253e03..07d046634534efb28ee4584dd1b11678f7473e8f 100644
+index aa7ca96851b87c8b32fd22a1388e8dba8973d3e7..2998555b064d91a9f1f2df9fc1a913d00c2d61d4 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -428,6 +428,7 @@ component("core") {
+@@ -443,6 +443,7 @@ component("core") {
      "//ui/gfx/geometry",
      "//ui/gfx/geometry:geometry_skia",
      "//ui/strings",
@@ -1804,22 +1804,18 @@ index 890d86acb0e92760590b4d0860dd41eaa70486c7..2e9e16cb47606f627b1473a479a6e8ae
    // Query the display's refresh rate.
    double refresh_rate = 1.0 / screen.minimumRefreshInterval;
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index f29089286f4848400a67c3b7eaf21a1ba291cc1e..fa92acfa219f82cf53207e3a7479e44b223e9050 100644
+index 35e9149e221721c6d4332de530877588022bc7c7..2910455828b7d5025daa8e62071a68a67bed46d5 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -333,6 +333,12 @@ component("gfx") {
-     "//ui/base:ui_data_pack",
-   ]
- 
-+  if (is_mac) {
-+    deps += [
-+      "//electron/build/config:generate_mas_config"
-+    ]
-+  }
+@@ -277,6 +277,8 @@ component("gfx") {
+       "CoreGraphics.framework",
+       "CoreText.framework",
+     ]
 +
-   if (!is_apple) {
++    deps += ["//electron/build/config:generate_mas_config"]
+   }
+   if (is_ios) {
      sources += [
-       "platform_font_skia.cc",
 diff --git a/ui/gfx/platform_font_mac.mm b/ui/gfx/platform_font_mac.mm
 index bbe355cf69f160866188216cc274d75bd35603db..06ee100d7ea2e892dbf3c0b1adc96c5013ef678a 100644
 --- a/ui/gfx/platform_font_mac.mm

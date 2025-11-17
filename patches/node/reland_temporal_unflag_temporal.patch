@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Fri, 7 Nov 2025 16:36:35 -0500
+Subject: Reland "[temporal] Unflag Temporal"
+
+https://chromium-review.googlesource.com/c/v8/v8/+/7123876
+
+diff --git a/test/common/globals.js b/test/common/globals.js
+index 34563b304f0e708ae066f8303a09e37b6bf123d6..cffba7d5f1936c4459b5afd91b8bc45b9038436d 100644
+--- a/test/common/globals.js
++++ b/test/common/globals.js
+@@ -69,6 +69,7 @@ const intrinsics = new Set([
+   'SuppressedError',
+   'DisposableStack',
+   'AsyncDisposableStack',
++  'Temporal'
+ ]);
+ 
+ if (global.gc) {
