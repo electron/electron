@@ -48,7 +48,7 @@ jobs:
     container: ${{ fromJSON(inputs.check-container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
       with:
         path: src/electron
         fetch-depth: 0
@@ -115,7 +115,7 @@ jobs:
     - name: Add CHROMIUM_BUILDTOOLS_PATH to env
       run: echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
     - name: Checkout Electron
-      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
       with:
         path: src/electron
         fetch-depth: 0
