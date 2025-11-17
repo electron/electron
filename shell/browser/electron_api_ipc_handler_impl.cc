@@ -49,6 +49,8 @@ void ElectronApiIPCHandlerImpl::Message(bool internal,
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
     auto* event = MakeIPCEvent(isolate, session->Get(), internal);
+    if (!event)
+      return;
     v8::Local<v8::Object> event_object =
         event->GetWrapper(isolate).ToLocalChecked();
     session->Get()->Message(event_object, channel, std::move(arguments));
@@ -64,6 +66,8 @@ void ElectronApiIPCHandlerImpl::Invoke(bool internal,
     v8::HandleScope handle_scope(isolate);
     auto* event =
         MakeIPCEvent(isolate, session->Get(), internal, std::move(callback));
+    if (!event)
+      return;
     v8::Local<v8::Object> event_object =
         event->GetWrapper(isolate).ToLocalChecked();
     session->Get()->Invoke(event_object, channel, std::move(arguments));
@@ -78,6 +82,8 @@ void ElectronApiIPCHandlerImpl::ReceivePostMessage(
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
     auto* event = MakeIPCEvent(isolate, session->Get(), false);
+    if (!event)
+      return;
     v8::Local<v8::Object> event_object =
         event->GetWrapper(isolate).ToLocalChecked();
     session->Get()->ReceivePostMessage(event_object, channel,
@@ -95,6 +101,8 @@ void ElectronApiIPCHandlerImpl::MessageSync(bool internal,
     v8::HandleScope handle_scope(isolate);
     auto* event =
         MakeIPCEvent(isolate, session->Get(), internal, std::move(callback));
+    if (!event)
+      return;
     v8::Local<v8::Object> event_object =
         event->GetWrapper(isolate).ToLocalChecked();
     session->Get()->MessageSync(event_object, channel, std::move(arguments));
@@ -108,6 +116,8 @@ void ElectronApiIPCHandlerImpl::MessageHost(const std::string& channel,
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
     auto* event = MakeIPCEvent(isolate, session->Get(), false);
+    if (!event)
+      return;
     v8::Local<v8::Object> event_object =
         event->GetWrapper(isolate).ToLocalChecked();
     session->Get()->MessageHost(event_object, channel, std::move(arguments));
