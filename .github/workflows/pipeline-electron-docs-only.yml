@@ -54,12 +54,12 @@ jobs:
       shell: bash
       run: |
         cd src/electron
-        node script/yarn create-typescript-definitions
-        node script/yarn tsc -p tsconfig.default_app.json --noEmit
+        node script/yarn.js create-typescript-definitions
+        node script/yarn.js tsc -p tsconfig.default_app.json --noEmit
         for f in build/webpack/*.js
         do
             out="${f:29}"
             if [ "$out" != "base.js" ]; then
-            node script/yarn webpack --config $f --output-filename=$out --output-path=./.tmp --env mode=development
+            node script/yarn.js webpack --config $f --output-filename=$out --output-path=./.tmp --env mode=development
             fi
         done

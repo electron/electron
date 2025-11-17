@@ -40,6 +40,7 @@ DevToolsSecurity -enable
 # security import "$dir"/public.key -k $KEY_CHAIN
 
 # Generate Trust Settings
+# TODO: Remove NPX
 npm_config_yes=true npx ts-node "$(dirname $0)"/gen-trust.ts "$dir"/certificate.cer "$dir"/trust.xml
 
 # Import Trust Settings
