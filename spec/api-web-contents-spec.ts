@@ -109,6 +109,7 @@ describe('webContents module', () => {
       await closeAllWindows();
       await cleanupWebContents();
     });
+
     it('does not emit if beforeunload returns undefined in a BrowserWindow', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('will-prevent-unload', () => {
@@ -158,6 +159,35 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('will-prevent-unload', event => event.preventDefault());
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      const wait = once(w, 'closed');
+      w.close();
+      await wait;
+    });
+
+    it('fails loading a subsequent page after beforeunload is not prevented', async () => {
+      const w = new BrowserWindow({ show: false });
+
+      const didFailLoad = once(w.webContents, 'did-fail-load');
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await w.webContents.executeJavaScript('console.log(\'gesture\')', true);
+
+      w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'a.html'));
+      const [, code, , validatedURL] = await didFailLoad;
+      expect(code).to.equal(-3); // ERR_ABORTED
+      const { href: expectedURL } = url.pathToFileURL(path.join(__dirname, 'fixtures', 'pages', 'a.html'));
+      expect(validatedURL).to.equal(expectedURL);
+    });
+
+    it('allows loading a subsequent page after beforeunload is prevented', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.webContents.once('will-prevent-unload', event => event.preventDefault());
+
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await w.webContents.executeJavaScript('console.log(\'gesture\')', true);
+      await w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'a.html'));
+      const pageTitle = await w.webContents.executeJavaScript('document.title');
+      expect(pageTitle).to.equal('test');
+
       const wait = once(w, 'closed');
       w.close();
       await wait;

@@ -1252,7 +1252,8 @@ Captures a snapshot of the page within `rect`. Omitting `rect` will capture the 
 
 Returns `Promise<void>` - the promise will resolve when the page has finished loading
 (see [`did-finish-load`](web-contents.md#event-did-finish-load)), and rejects
-if the page fails to load (see [`did-fail-load`](web-contents.md#event-did-fail-load)).
+if the page fails to load (see
+[`did-fail-load`](web-contents.md#event-did-fail-load)). A noop rejection handler is already attached, which avoids unhandled rejection errors. If the existing page has a beforeUnload handler, [`did-fail-load`](web-contents.md#event-did-fail-load) will be called unless [`will-prevent-unload`](web-contents.md#event-did-fail-load) is handled.
 
 Same as [`webContents.loadURL(url[, options])`](web-contents.md#contentsloadurlurl-options).
 
