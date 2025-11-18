@@ -100,7 +100,7 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   // Registers and unregisters extensions.
   raw_ptr<ExtensionRegistrar> extension_registrar_;
 
-  // Holds keep-alives for relaunching apps.
+  // Holds keep-alive for relaunching apps.
   //   ShellKeepAliveRequester keep_alive_requester_;
 
   // Indicates that we posted the (asynchronous) task to start reloading.
