@@ -325,7 +325,7 @@ index 181d298bfa27d21f013016b34a586078d12f8a58..92d6f7b36d4c5c0a64723f7d18427a62
  
  #undef TRACE
 diff --git a/src/compiler/turboshaft/turbolev-graph-builder.cc b/src/compiler/turboshaft/turbolev-graph-builder.cc
-index 9d1dafe2b0b733c88283b21eddb36c9827912eca..bcb461488899bcbf3a130845f39f0005bd34131e 100644
+index 3db187b8c48cc0c7168be039e7d90078c4df7bda..d80362036da4c80e192ed489e3c66e8bfed271ba 100644
 --- a/src/compiler/turboshaft/turbolev-graph-builder.cc
 +++ b/src/compiler/turboshaft/turbolev-graph-builder.cc
 @@ -118,12 +118,7 @@ class BlockOriginTrackingReducer : public Next {
