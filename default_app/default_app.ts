@@ -6,19 +6,16 @@ import * as url from 'node:url';
 
 let mainWindow: BrowserWindow | null = null;
 
-// Quit when all windows are closed.
 app.on('window-all-closed', () => {
   app.quit();
 });
 
 function decorateURL (url: string) {
-  // safely add `?utm_source=default_app
   const parsedUrl = new URL(url);
   parsedUrl.searchParams.append('utm_source', 'default_app');
   return parsedUrl.toString();
 }
 
-// Find the shortest path to the electron binary
 const absoluteElectronPath = process.execPath;
 const relativeElectronPath = path.relative(process.cwd(), absoluteElectronPath);
 const electronPath = absoluteElectronPath.length < relativeElectronPath.length

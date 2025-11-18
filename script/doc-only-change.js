@@ -10,7 +10,6 @@ async function checkIfDocOnlyChange () {
 
   if (prNumber || prURL) {
     try {
-      // extract the PR number from the PR URL.
       if (!prNumber || isNaN(prNumber)) {
         if (args.prURL) {
           prNumber = prURL.split('/').pop();

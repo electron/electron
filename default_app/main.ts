@@ -14,10 +14,9 @@ type DefaultAppOptions = {
   webdriver: boolean;
   interactive: boolean;
   abi: boolean;
-  modules: string[];
+  modules: string[]
 }
 
-// Parse command line options.
 const argv = process.argv.slice(1);
 
 const option: DefaultAppOptions = {
@@ -69,13 +68,11 @@ if (nextArgIsRequire) {
   process.exit(1);
 }
 
-// Set up preload modules
 if (option.modules.length > 0) {
   (Module as any)._preloadModules(option.modules);
 }
 
 async function loadApplicationPackage (packagePath: string) {
-  // Add a flag indicating app is started from default app.
   Object.defineProperty(process, 'defaultApp', {
     configurable: false,
     enumerable: true,
@@ -83,7 +80,6 @@ async function loadApplicationPackage (packagePath: string) {
   });
 
   try {
-    // Override app's package.json data.
     packagePath = path.resolve(packagePath);
     const packageJsonPath = path.join(packagePath, 'package.json');
     let appPath;
@@ -115,8 +111,7 @@ async function loadApplicationPackage (packagePath: string) {
       } else {
         app.setDesktopName(`${app.name}.desktop`);
       }
-      // Set v8 flags, deliberately lazy load so that apps that do not use this
-      // feature do not pay the price
+      // Lazy load v8 module
       if (packageJson.v8Flags) {
         (await import('node:v8')).setFlagsFromString(packageJson.v8Flags);
       }
@@ -133,7 +128,6 @@ async function loadApplicationPackage (packagePath: string) {
       return;
     }
 
-    // Run the app.
     await import(url.pathToFileURL(filePath).toString());
   } catch (e) {
     console.error('App threw an error during load');
@@ -164,7 +158,6 @@ async function startRepl () {
     process.exit(1);
   }
 
-  // Prevent quitting.
   app.on('window-all-closed', () => {});
 
   const GREEN = '32';
@@ -219,10 +212,7 @@ async function startRepl () {
     defineBuiltin(repl.context, api, () => electron[api]);
   }
 
-  // Copied from node/lib/repl.js. For better DX, we don't want to
-  // show e.g 'contentTracing' at a higher priority than 'const', so
-  // we only trigger custom tab-completion when no common words are
-  // potentially matches.
+  // Custom tab-completion: prioritize common keywords over Electron APIs
   const commonWords = [
     'async', 'await', 'break', 'case', 'catch', 'const', 'continue',
     'debugger', 'default', 'delete', 'do', 'else', 'export', 'false',
@@ -250,11 +240,8 @@ async function startRepl () {
   };
 }
 
-// Start the specified app if there is one specified in command line, otherwise
-// start the default app.
 if (option.file && !option.webdriver) {
   const file = option.file;
-  // eslint-disable-next-line n/no-deprecated-api
   const protocol = url.parse(file).protocol;
   const extension = path.extname(file);
   if (protocol === 'http:' || protocol === 'https:' || protocol === 'file:' || protocol === 'chrome:') {

@@ -1,7 +1,6 @@
 const { ipcRenderer, contextBridge } = require('electron/renderer');
 
 const policy = window.trustedTypes.createPolicy('electron-default-app', {
-  // we trust the SVG contents
   createHTML: input => input
 });
 

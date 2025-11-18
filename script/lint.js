@@ -15,9 +15,6 @@ const ELECTRON_ROOT = path.normalize(path.dirname(__dirname));
 const SOURCE_ROOT = path.resolve(ELECTRON_ROOT, '..');
 const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, 'third_party', 'depot_tools');
 
-// Augment the PATH for this script so that we can find executables
-// in the depot_tools folder even if folks do not have an instance of
-// DEPOT_TOOLS in their path already
 process.env.PATH = `${process.env.PATH}${path.delimiter}${DEPOT_TOOLS}`;
 
 const IGNORELIST = new Set([
@@ -95,7 +92,6 @@ function cpplint (args) {
   args.unshift(`--root=${SOURCE_ROOT}`);
   const cmd = IS_WINDOWS ? 'cpplint.bat' : 'cpplint.py';
   const result = childProcess.spawnSync(cmd, args, { encoding: 'utf8', shell: true });
-  // cpplint.py writes EVERYTHING to stderr, including status messages
   if (result.stderr) {
     for (const line of result.stderr.split(/[\r\n]+/)) {
       if (line.length && !line.startsWith('Done processing ') && line !== 'Total errors found: 0') {
@@ -288,12 +284,10 @@ const LINTERS = [{
     const { getCodeBlocks } = await import('@electron/lint-roller/dist/lib/markdown.js');
     let errors = false;
 
-    // Run markdownlint on all Markdown files
     for (const chunk of chunkFilenames(filenames)) {
       spawnAndCheckExitCode('markdownlint-cli2', chunk);
     }
 
-    // Run the remaining checks only in docs
     const docs = filenames.filter(filename => path.dirname(filename).split(path.sep)[0] === 'docs');
 
     for (const filename of docs) {
@@ -329,15 +323,10 @@ const LINTERS = [{
 
           // Ensure non-empty content in fiddle code blocks matches the file content
           if (codeBlock.lang === 'fiddle' && codeBlock.value.trim() !== '') {
-            // This is copied and adapted from the website repo:
-            // https://github.com/electron/website/blob/62a55ca0dd14f97339e1a361b5418d2f11c34a75/src/transformers/fiddle-embedder.ts#L89C6-L101
             const parseFiddleEmbedOptions = (
               optStrings
             ) => {
-              // If there are optional parameters, parse them out to pass to the getFiddleAST method.
               return optStrings.reduce((opts, option) => {
-                // Use indexOf to support bizarre combinations like `|key=Myvalue=2` (which will properly
-                // parse to {'key': 'Myvalue=2'})
                 const firstEqual = option.indexOf('=');
                 const key = option.slice(0, firstEqual);
                 const value = option.slice(firstEqual + 1);
@@ -379,12 +368,7 @@ const LINTERS = [{
     });
     const clean = await runEslint(
       eslint,
-      docs.filter(
-        // TODO(dsanders11): Once we move to newer ESLint and the flat config,
-        // switch to using `ignorePatterns` and `warnIgnore: false` instead of
-        // explicitly filtering out this file that we don't want to lint
-        (filename) => !filename.endsWith('docs/breaking-changes.md')
-      ),
+      docs.filter((filename) => !filename.endsWith('docs/breaking-changes.md')),
       { fix: opts.fix, verbose: opts.verbose }
     );
     errors ||= !clean;

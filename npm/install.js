@@ -26,19 +26,14 @@ let arch = process.env.npm_config_arch || process.arch;
 
 if (platform === 'darwin' && process.platform === 'darwin' && arch === 'x64' &&
     process.env.npm_config_arch === undefined) {
-  // When downloading for macOS ON macOS and we think we need x64 we should
-  // check if we're running under rosetta and download the arm64 version if appropriate
   try {
     const output = childProcess.execSync('sysctl -in sysctl.proc_translated');
     if (output.toString().trim() === '1') {
       arch = 'arm64';
     }
-  } catch {
-    // Ignore failure
-  }
+  } catch {}
 }
 
-// downloads if not cached
 downloadArtifact({
   version,
   artifactName: 'electron',
@@ -70,13 +65,10 @@ function isInstalled () {
   return fs.existsSync(electronPath);
 }
 
-// unzips and makes path.txt point at the correct executable
 function extractFile (zipPath) {
   const distPath = process.env.ELECTRON_OVERRIDE_DIST_PATH || path.join(__dirname, 'dist');
 
   return extract(zipPath, { dir: path.join(__dirname, 'dist') }).then(() => {
-    // If the zip contains an "electron.d.ts" file,
-    // move that up
     const srcTypeDefPath = path.join(distPath, 'electron.d.ts');
     const targetTypeDefPath = path.join(__dirname, 'electron.d.ts');
     const hasTypeDefinitions = fs.existsSync(srcTypeDefPath);
@@ -85,7 +77,6 @@ function extractFile (zipPath) {
       fs.renameSync(srcTypeDefPath, targetTypeDefPath);
     }
 
-    // Write a "path.txt" file.
     return fs.promises.writeFile(path.join(__dirname, 'path.txt'), platformPath);
   });
 }

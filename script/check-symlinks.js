@@ -24,7 +24,7 @@ const traverse = (p) => {
       realPath = fs.realpathSync(childPath);
     } catch (err) {
       if (err.path) {
-        console.error('Detected an invalid symlink');
+        console.error('Invalid symlink detected');
         console.error('Source:', childPath);
         let link = fs.readlinkSync(childPath);
         if (!link.startsWith('.')) {

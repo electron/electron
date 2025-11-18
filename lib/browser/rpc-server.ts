@@ -8,7 +8,6 @@ import { webFrameMain } from 'electron/main';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Implements window.close()
 ipcMainInternal.on(IPC_MESSAGES.BROWSER_WINDOW_CLOSE, function (event) {
   if (event.type !== 'frame') return;
 
@@ -29,7 +28,6 @@ ipcMainInternal.handle(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO, function (e
   return event.sender._getProcessMemoryInfo();
 });
 
-// Methods not listed in this set are called directly in the renderer process.
 const allowedClipboardMethods = (() => {
   switch (process.platform) {
     case 'darwin':
@@ -64,8 +62,7 @@ const getPreloadScriptsFromEvent = (event: ElectronInternal.IpcMainInternalEvent
     throw new Error(`getPreloadScriptsFromEvent: event.type is invalid (${(event as any).type})`);
   }
 
-  // TODO(samuelmaddock): Remove filter after Session.setPreloads is fully
-  // deprecated. The new API will prevent relative paths from being registered.
+  // TODO: Remove filter after Session.setPreloads deprecation
   return preloadScripts.filter(script => path.isAbsolute(script.filePath));
 };
 
