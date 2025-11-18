@@ -2,3 +2,4 @@ chore_allow_customizing_microtask_policy_per_context.patch
 turboshaft_avoid_introducing_too_many_variables.patch
 cherry-pick-4cf9311810b0.patch
 merged_maglev_fix_left_over_register_allocations_from_regalloc.patch
+cherry-pick-62af07e96173.patch
