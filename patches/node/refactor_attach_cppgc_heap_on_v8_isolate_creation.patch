@@ -18,10 +18,10 @@ This can be removed when Node.js upgrades to a version of V8 containing CLs
 from the above issue.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index a869bc0a145009b57db3f37208e405d9356cc20f..072deb1fa70313e33397f6ff994e3f3548e86092 100644
+index 6e7c0dbe31d0fef23288787df44e58c44bd47c5d..451796ffc4ec93b6e317dd49d92070c61aca04e5 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -319,6 +319,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
+@@ -336,6 +336,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
                      MultiIsolatePlatform* platform,
                      const SnapshotData* snapshot_data,
                      const IsolateSettings& settings) {
@@ -29,10 +29,10 @@ index a869bc0a145009b57db3f37208e405d9356cc20f..072deb1fa70313e33397f6ff994e3f35
 +    params->cpp_heap =
 +        v8::CppHeap::Create(platform, v8::CppHeapCreateParams{{}}).release();
 +  }
-   Isolate* isolate = Isolate::Allocate();
+   IsolateGroup group = GetOrCreateIsolateGroup();
+   Isolate* isolate = Isolate::Allocate(group);
    if (isolate == nullptr) return nullptr;
- 
-@@ -374,9 +378,12 @@ Isolate* NewIsolate(ArrayBufferAllocator* allocator,
+@@ -392,9 +396,12 @@ Isolate* NewIsolate(ArrayBufferAllocator* allocator,
                      uv_loop_t* event_loop,
                      MultiIsolatePlatform* platform,
                      const EmbedderSnapshotData* snapshot_data,
@@ -102,7 +102,7 @@ index 53f0bf7fc1e5c85fa9a5a323e998f04310f4f75e..a78817467518245c4a190e870e0eb306
        isolate, object, wrappable);
  }
 diff --git a/src/node.h b/src/node.h
-index f7b3f90b0c2cfbeacc5bc50112dd711df8d3c364..7fae281a6e0f3c1a9f0eb97536883bb26c16d94d 100644
+index 9c624e4ef26c1b06a6c4bca7def245935189ce07..84c121f13caa1472cef67113fbc7b7213e7af7e1 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -604,7 +604,8 @@ NODE_EXTERN v8::Isolate* NewIsolate(
@@ -115,7 +115,7 @@ index f7b3f90b0c2cfbeacc5bc50112dd711df8d3c364..7fae281a6e0f3c1a9f0eb97536883bb2
  NODE_EXTERN v8::Isolate* NewIsolate(
      std::shared_ptr<ArrayBufferAllocator> allocator,
      struct uv_loop_s* event_loop,
-@@ -1617,9 +1618,10 @@ void RegisterSignalHandler(int signal,
+@@ -1625,9 +1626,10 @@ void RegisterSignalHandler(int signal,
  // work with only Node.js versions with v8::Object::Wrap() should use that
  // instead.
  NODE_DEPRECATED("Use v8::Object::Wrap()",

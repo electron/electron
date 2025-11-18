@@ -197,10 +197,10 @@ index 529b7cfc15536c3fe5e7798c0f82698121751f2a..cbc3283fc2d511cce2eae0048cc9bf0f
  
    if (package_json == nullptr) {
 diff --git a/src/util-inl.h b/src/util-inl.h
-index da9268dcf2ff432ddeec7c0f61a147b73f3130e2..82b2760f535345d126bc3dcf3890573d36dbb497 100644
+index d07bceb425f00882db116975a92f4835d7c2cf3b..6898e8ea794675e903e13e2b45524d572a3f68bb 100644
 --- a/src/util-inl.h
 +++ b/src/util-inl.h
-@@ -698,12 +698,11 @@ inline bool IsWindowsBatchFile(const char* filename) {
+@@ -718,12 +718,11 @@ inline bool IsWindowsBatchFile(const char* filename) {
    return !extension.empty() && (extension == "cmd" || extension == "bat");
  }
  
@@ -216,7 +216,7 @@ index da9268dcf2ff432ddeec7c0f61a147b73f3130e2..82b2760f535345d126bc3dcf3890573d
                        0,
                        &str[0],
                        static_cast<int>(str.size()),
-@@ -711,6 +710,59 @@ inline std::wstring ConvertToWideString(const std::string& str,
+@@ -731,6 +730,59 @@ inline std::wstring ConvertToWideString(const std::string& str,
                        size_needed);
    return wstrTo;
  }
@@ -277,7 +277,7 @@ index da9268dcf2ff432ddeec7c0f61a147b73f3130e2..82b2760f535345d126bc3dcf3890573d
  
  inline v8::MaybeLocal<v8::Object> NewDictionaryInstance(
 diff --git a/src/util.h b/src/util.h
-index 6da57f95165bbdedb65dab6eaae8c39b815ee4e5..e65d6dbf359f61d051efe4e129c9035ed90cc8f6 100644
+index 1db426df35e4976427b578a2974041ec9e92cf4c..52e6a149d6760640d93c56ce91a759ae9207a8c7 100644
 --- a/src/util.h
 +++ b/src/util.h
 @@ -507,6 +507,8 @@ class MaybeStackBuffer {
@@ -289,7 +289,7 @@ index 6da57f95165bbdedb65dab6eaae8c39b815ee4e5..e65d6dbf359f61d051efe4e129c9035e
  
   private:
    size_t length_;
-@@ -1026,9 +1028,15 @@ class JSONOutputStream final : public v8::OutputStream {
+@@ -1038,9 +1040,15 @@ class JSONOutputStream final : public v8::OutputStream {
  // Returns true if OS==Windows and filename ends in .bat or .cmd,
  // case insensitive.
  inline bool IsWindowsBatchFile(const char* filename);
