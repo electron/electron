@@ -1,7 +1,7 @@
-From 62af07e96173fb03b504f60b01e67d9f2dda695b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Igor Sheludko <ishell@chromium.org>
 Date: Mon, 13 Oct 2025 14:22:20 +0200
-Subject: [PATCH] [ic] Cleanup AccessorAssembler::CallGetterIfAccessor()
+Subject: [ic] Cleanup AccessorAssembler::CallGetterIfAccessor()
 
 This CL
  - reorders parameters to make |expected_receiver_mode| a mandatory
@@ -15,13 +15,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7036691
 Commit-Queue: Igor Sheludko <ishell@chromium.org>
 Reviewed-by: Leszek Swirski <leszeks@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#103085}
----
 
 diff --git a/src/codegen/code-stub-assembler.cc b/src/codegen/code-stub-assembler.cc
-index a8e0c85..b749310 100644
+index f56eba583a0a2117fc895f12b7a0712f59e3a1b6..e27d74877d9ef9b9bfa958b9b49773fd7b3c3d08 100644
 --- a/src/codegen/code-stub-assembler.cc
 +++ b/src/codegen/code-stub-assembler.cc
-@@ -11662,7 +11662,8 @@
+@@ -11549,7 +11549,8 @@ void CodeStubAssembler::ForEachEnumerableOwnProperty(
  
                var_value = CallGetterIfAccessor(
                    value_or_accessor, object, var_details.value(), context,
@@ -31,7 +30,7 @@ index a8e0c85..b749310 100644
                Goto(&value_ready);
  
                BIND(&slow_load);
-@@ -12158,15 +12159,11 @@
+@@ -12045,15 +12046,11 @@ template void CodeStubAssembler::LoadPropertyFromDictionary(
      TNode<SwissNameDictionary> dictionary, TNode<IntPtrT> name_index,
      TVariable<Uint32T>* var_details, TVariable<Object>* var_value);
  
@@ -50,27 +49,19 @@ index a8e0c85..b749310 100644
    TVARIABLE(Object, var_value, value);
    Label done(this), if_accessor_info(this, Label::kDeferred);
  
-@@ -12207,44 +12204,51 @@
+@@ -12094,44 +12091,51 @@ TNode<Object> CodeStubAssembler::CallGetterIfAccessor(
  
        BIND(&if_function_template_info);
        {
 -        Label use_cached_property(this);
 -        TNode<HeapObject> cached_property_name = LoadObjectField<HeapObject>(
 -            getter, FunctionTemplateInfo::kCachedPropertyNameOffset);
-+        if (holder.has_value()) {
-+          Label use_cached_property(this);
-+          TNode<HeapObject> cached_property_name = LoadObjectField<HeapObject>(
-+              getter, FunctionTemplateInfo::kCachedPropertyNameOffset);
- 
+-
 -        Label* has_cached_property = mode == kCallJSGetterUseCachedName
 -                                         ? &use_cached_property
 -                                         : if_bailout;
 -        GotoIfNot(IsTheHole(cached_property_name), has_cached_property);
-+          Label* has_cached_property = mode == kCallJSGetterUseCachedName
-+                                           ? &use_cached_property
-+                                           : if_bailout;
-+          GotoIfNot(IsTheHole(cached_property_name), has_cached_property);
- 
+-
 -        TNode<JSReceiver> js_receiver;
 -        switch (expected_receiver_mode) {
 -          case kExpectingJSReceiver:
@@ -92,13 +83,16 @@ index a8e0c85..b749310 100644
 -            Builtin::kCallFunctionTemplate_Generic, creation_context, getter,
 -            Int32Constant(i::JSParameterCount(0)), caller_context, js_receiver);
 -        Goto(&done);
--
--        if (mode == kCallJSGetterUseCachedName) {
--          Bind(&use_cached_property);
--
--          var_value =
--              GetProperty(context, holder_receiver, cached_property_name);
--
++        if (holder.has_value()) {
++          Label use_cached_property(this);
++          TNode<HeapObject> cached_property_name = LoadObjectField<HeapObject>(
++              getter, FunctionTemplateInfo::kCachedPropertyNameOffset);
++
++          Label* has_cached_property = mode == kCallJSGetterUseCachedName
++                                           ? &use_cached_property
++                                           : if_bailout;
++          GotoIfNot(IsTheHole(cached_property_name), has_cached_property);
++
 +          TNode<JSReceiver> js_receiver;
 +          switch (expected_receiver_mode) {
 +            case kExpectingJSReceiver:
@@ -120,14 +114,19 @@ index a8e0c85..b749310 100644
 +                                  creation_context, getter,
 +                                  Int32Constant(i::JSParameterCount(0)),
 +                                  caller_context, js_receiver);
-           Goto(&done);
-+
++          Goto(&done);
+ 
+-        if (mode == kCallJSGetterUseCachedName) {
+-          Bind(&use_cached_property);
 +          if (mode == kCallJSGetterUseCachedName) {
 +            Bind(&use_cached_property);
-+
+ 
+-          var_value =
+-              GetProperty(context, holder_receiver, cached_property_name);
 +            var_value =
 +                GetProperty(context, holder_receiver, cached_property_name);
-+
+ 
+-          Goto(&done);
 +            Goto(&done);
 +          }
 +        } else {
@@ -137,12 +136,40 @@ index a8e0c85..b749310 100644
          }
        }
      } else {
-@@ -12256,56 +12260,61 @@
+@@ -12143,56 +12147,61 @@ TNode<Object> CodeStubAssembler::CallGetterIfAccessor(
    // AccessorInfo case.
    BIND(&if_accessor_info);
    {
 -    TNode<AccessorInfo> accessor_info = CAST(value);
 -    Label if_array(this), if_function(this), if_wrapper(this);
+-
+-    // Dispatch based on {holder} instance type.
+-    TNode<Map> holder_map = LoadMap(holder);
+-    TNode<Uint16T> holder_instance_type = LoadMapInstanceType(holder_map);
+-    GotoIf(IsJSArrayInstanceType(holder_instance_type), &if_array);
+-    GotoIf(IsJSFunctionInstanceType(holder_instance_type), &if_function);
+-    Branch(IsJSPrimitiveWrapperInstanceType(holder_instance_type), &if_wrapper,
+-           if_bailout);
+-
+-    // JSArray AccessorInfo case.
+-    BIND(&if_array);
+-    {
+-      // We only deal with the "length" accessor on JSArray.
+-      GotoIfNot(IsLengthString(
+-                    LoadObjectField(accessor_info, AccessorInfo::kNameOffset)),
+-                if_bailout);
+-      TNode<JSArray> array = CAST(holder);
+-      var_value = LoadJSArrayLength(array);
+-      Goto(&done);
+-    }
+-
+-    // JSFunction AccessorInfo case.
+-    BIND(&if_function);
+-    {
+-      // We only deal with the "prototype" accessor on JSFunction here.
+-      GotoIfNot(IsPrototypeString(
+-                    LoadObjectField(accessor_info, AccessorInfo::kNameOffset)),
+-                if_bailout);
 +    if (holder.has_value()) {
 +      TNode<AccessorInfo> accessor_info = CAST(value);
 +      Label if_array(this), if_function(this), if_wrapper(this);
@@ -153,14 +180,7 @@ index a8e0c85..b749310 100644
 +      GotoIf(IsJSFunctionInstanceType(holder_instance_type), &if_function);
 +      Branch(IsJSPrimitiveWrapperInstanceType(holder_instance_type),
 +             &if_wrapper, if_bailout);
- 
--    // Dispatch based on {holder} instance type.
--    TNode<Map> holder_map = LoadMap(holder);
--    TNode<Uint16T> holder_instance_type = LoadMapInstanceType(holder_map);
--    GotoIf(IsJSArrayInstanceType(holder_instance_type), &if_array);
--    GotoIf(IsJSFunctionInstanceType(holder_instance_type), &if_function);
--    Branch(IsJSPrimitiveWrapperInstanceType(holder_instance_type), &if_wrapper,
--           if_bailout);
++
 +      // JSArray AccessorInfo case.
 +      BIND(&if_array);
 +      {
@@ -173,15 +193,9 @@ index a8e0c85..b749310 100644
 +        Goto(&done);
 +      }
  
--    // JSArray AccessorInfo case.
--    BIND(&if_array);
--    {
--      // We only deal with the "length" accessor on JSArray.
--      GotoIfNot(IsLengthString(
--                    LoadObjectField(accessor_info, AccessorInfo::kNameOffset)),
--                if_bailout);
--      TNode<JSArray> array = CAST(holder);
--      var_value = LoadJSArrayLength(array);
+-      TNode<JSFunction> function = CAST(holder);
+-      GotoIfPrototypeRequiresRuntimeLookup(function, holder_map, if_bailout);
+-      var_value = LoadJSFunctionPrototype(function, if_bailout);
 -      Goto(&done);
 -    }
 +      // JSFunction AccessorInfo case.
@@ -191,26 +205,13 @@ index a8e0c85..b749310 100644
 +        GotoIfNot(IsPrototypeString(LoadObjectField(accessor_info,
 +                                                    AccessorInfo::kNameOffset)),
 +                  if_bailout);
- 
--    // JSFunction AccessorInfo case.
--    BIND(&if_function);
--    {
--      // We only deal with the "prototype" accessor on JSFunction here.
--      GotoIfNot(IsPrototypeString(
--                    LoadObjectField(accessor_info, AccessorInfo::kNameOffset)),
--                if_bailout);
++
 +        TNode<JSFunction> function = CAST(*holder);
 +        GotoIfPrototypeRequiresRuntimeLookup(function, holder_map, if_bailout);
 +        var_value = LoadJSFunctionPrototype(function, if_bailout);
 +        Goto(&done);
 +      }
  
--      TNode<JSFunction> function = CAST(holder);
--      GotoIfPrototypeRequiresRuntimeLookup(function, holder_map, if_bailout);
--      var_value = LoadJSFunctionPrototype(function, if_bailout);
--      Goto(&done);
--    }
--
 -    // JSPrimitiveWrapper AccessorInfo case.
 -    BIND(&if_wrapper);
 -    {
@@ -245,7 +246,7 @@ index a8e0c85..b749310 100644
      }
    }
  
-@@ -12390,7 +12399,7 @@
+@@ -12277,7 +12286,7 @@ void CodeStubAssembler::TryGetOwnProperty(
      }
      TNode<Object> value = CallGetterIfAccessor(
          var_value->value(), object, var_details->value(), context, receiver,
@@ -255,10 +256,10 @@ index a8e0c85..b749310 100644
      Goto(if_found_value);
    }
 diff --git a/src/codegen/code-stub-assembler.h b/src/codegen/code-stub-assembler.h
-index 090c349..00e7b9e 100644
+index 506442eddf629a893a6661ff87bdf85c21d93445..f143592226c4009167e38e1b883e3448eb588776 100644
 --- a/src/codegen/code-stub-assembler.h
 +++ b/src/codegen/code-stub-assembler.h
-@@ -4646,12 +4646,16 @@
+@@ -4582,12 +4582,16 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
                                      const ForEachKeyValueFunction& body,
                                      Label* bailout);
  
@@ -280,10 +281,10 @@ index 090c349..00e7b9e 100644
    TNode<IntPtrT> TryToIntptr(TNode<Object> key, Label* if_not_intptr,
                               TVariable<Int32T>* var_instance_type = nullptr);
 diff --git a/src/ic/accessor-assembler.cc b/src/ic/accessor-assembler.cc
-index af8e6dd..6ed2691 100644
+index c1cd3790f12418ecf7d3f027475abde3b8e2dedd..457fbc25d91e740190662a564ba315e390830b7f 100644
 --- a/src/ic/accessor-assembler.cc
 +++ b/src/ic/accessor-assembler.cc
-@@ -845,9 +845,13 @@
+@@ -845,9 +845,13 @@ void AccessorAssembler::HandleLoadICSmiHandlerLoadNamedCase(
        TVARIABLE(Object, var_value);
        LoadPropertyFromDictionary<PropertyDictionary>(
            properties, var_name_index.value(), &var_details, &var_value);
@@ -298,7 +299,7 @@ index af8e6dd..6ed2691 100644
        exit_point->Return(value);
      }
    }
-@@ -925,17 +929,18 @@
+@@ -925,17 +929,18 @@ void AccessorAssembler::HandleLoadICSmiHandlerLoadNamedCase(
  
    BIND(&global);
    {
@@ -324,7 +325,7 @@ index af8e6dd..6ed2691 100644
    }
  
    BIND(&interceptor);
-@@ -1221,9 +1226,14 @@
+@@ -1221,9 +1226,14 @@ void AccessorAssembler::HandleLoadICProtoHandler(
            TVARIABLE(Object, var_value);
            LoadPropertyFromDictionary<PropertyDictionary>(
                properties, name_index, &var_details, &var_value);
@@ -340,7 +341,7 @@ index af8e6dd..6ed2691 100644
            exit_point->Return(value);
          }
        },
-@@ -2960,9 +2970,12 @@
+@@ -2960,9 +2970,12 @@ void AccessorAssembler::GenericPropertyLoad(
  
    BIND(&if_found_on_lookup_start_object);
    {
@@ -355,10 +356,10 @@ index af8e6dd..6ed2691 100644
    }
  
 diff --git a/src/ic/accessor-assembler.h b/src/ic/accessor-assembler.h
-index 29cbf28..30bb186 100644
+index 29cbf283ff143d1c62ba13e93e3b4fbef0931226..30bb186feb0cec20228b27aadd1c26949188e991 100644
 --- a/src/ic/accessor-assembler.h
 +++ b/src/ic/accessor-assembler.h
-@@ -138,9 +138,7 @@
+@@ -138,9 +138,7 @@ class V8_EXPORT_PRIVATE AccessorAssembler : public CodeStubAssembler {
      TNode<Object> name() const { return name_; }
      TNode<TaggedIndex> slot() const { return slot_; }
      TNode<HeapObject> vector() const { return vector_; }
@@ -369,7 +370,7 @@ index 29cbf28..30bb186 100644
      TNode<Smi> enum_index() const { return *enum_index_; }
      TNode<Object> cache_type() const { return *cache_type_; }
  
-@@ -152,6 +150,11 @@
+@@ -152,6 +150,11 @@ class V8_EXPORT_PRIVATE AccessorAssembler : public CodeStubAssembler {
        return receiver_;
      }
  
@@ -381,7 +382,7 @@ index 29cbf28..30bb186 100644
      bool IsEnumeratedKeyedLoad() const { return enum_index_ != std::nullopt; }
  
     private:
-@@ -160,7 +163,7 @@
+@@ -160,7 +163,7 @@ class V8_EXPORT_PRIVATE AccessorAssembler : public CodeStubAssembler {
      TNode<Object> name_;
      TNode<TaggedIndex> slot_;
      TNode<HeapObject> vector_;
@@ -390,7 +391,7 @@ index 29cbf28..30bb186 100644
      std::optional<TNode<Smi>> enum_index_;
      std::optional<TNode<Object>> cache_type_;
    };
-@@ -202,6 +205,11 @@
+@@ -202,6 +205,11 @@ class V8_EXPORT_PRIVATE AccessorAssembler : public CodeStubAssembler {
        return receiver_;
      }
  
