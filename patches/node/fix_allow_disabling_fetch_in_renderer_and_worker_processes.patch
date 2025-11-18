@@ -9,10 +9,10 @@ conflict with Blink's in renderer and worker processes.
 We should try to upstream some version of this.
 
 diff --git a/doc/api/cli.md b/doc/api/cli.md
-index cc990c01704484cbaa314320b3b3b72acffb6940..6b985c9fce6ec607df0e04f93b3cd5b84233d0b9 100644
+index 38c66ec426205c07925e4d634e877a8cbb47b255..9b9a5455b9d597bb4009074c922d2c7c5aa975f1 100644
 --- a/doc/api/cli.md
 +++ b/doc/api/cli.md
-@@ -1767,6 +1767,14 @@ changes:
+@@ -1770,6 +1770,14 @@ changes:
  
  Disable using [syntax detection][] to determine module type.
  
@@ -27,7 +27,7 @@ index cc990c01704484cbaa314320b3b3b72acffb6940..6b985c9fce6ec607df0e04f93b3cd5b8
  ### `--no-experimental-global-navigator`
  
  <!-- YAML
-@@ -3436,6 +3444,7 @@ one is included in the list below.
+@@ -3439,6 +3447,7 @@ one is included in the list below.
  * `--no-addons`
  * `--no-async-context-frame`
  * `--no-deprecation`
@@ -36,7 +36,7 @@ index cc990c01704484cbaa314320b3b3b72acffb6940..6b985c9fce6ec607df0e04f93b3cd5b8
  * `--no-experimental-repl-await`
  * `--no-experimental-sqlite`
 diff --git a/doc/node.1 b/doc/node.1
-index 6210cbf42b26d4673f67aac43874ea28c8955fd5..565068cc3aca0eb03642e1160b814b48cb0c3c45 100644
+index dad692863f2cc6b6d4fad86915cd1700d52e8279..6d451ef912d1162a242b7952f94d2071d8238673 100644
 --- a/doc/node.1
 +++ b/doc/node.1
 @@ -198,6 +198,9 @@ Enable transformation of TypeScript-only syntax into JavaScript code.
@@ -50,10 +50,10 @@ index 6210cbf42b26d4673f67aac43874ea28c8955fd5..565068cc3aca0eb03642e1160b814b48
  Disable experimental support for the WebSocket API.
  .
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index 35b43990c8f24f0888f89173f5662050a11b26ed..2c0d12c0fa9c85ac7ffb41dabda83760ed1ae3ee 100644
+index fd0a81f5216d8bcf662c7e8bb972ed789eda8645..72944995cf3cc30d8bc33bfef8c6690c652cdcf9 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -110,6 +110,7 @@ function prepareExecution(options) {
+@@ -117,6 +117,7 @@ function prepareExecution(options) {
    setupSQLite();
    setupQuic();
    setupWebStorage();
@@ -61,7 +61,7 @@ index 35b43990c8f24f0888f89173f5662050a11b26ed..2c0d12c0fa9c85ac7ffb41dabda83760
    setupWebsocket();
    setupEventsource();
    setupCodeCoverage();
-@@ -312,6 +313,16 @@ function setupWarningHandler() {
+@@ -345,6 +346,16 @@ function setupWarningHandler() {
    }
  }
  
@@ -79,10 +79,10 @@ index 35b43990c8f24f0888f89173f5662050a11b26ed..2c0d12c0fa9c85ac7ffb41dabda83760
  function setupWebsocket() {
    if (getOptionValue('--no-experimental-websocket')) {
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 2a3ab5e73cdb98bde9df1465d5fb5e40ad7799f7..9317191d22f51fd75157e849eb67678d1ee6a2a1 100644
+index 03c1dde6de237e44539dccea3295cf4339260b1e..c53c40b36ec311f433c8a0cbb1c06287576e1453 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -537,7 +537,11 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
+@@ -545,7 +545,11 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
              &EnvironmentOptions::experimental_eventsource,
              kAllowedInEnvvar,
              false);
