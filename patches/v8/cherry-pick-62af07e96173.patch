@@ -1,0 +1,405 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Mon, 13 Oct 2025 14:22:20 +0200
+Subject: [ic] Cleanup AccessorAssembler::CallGetterIfAccessor()
+
+This CL
+ - reorders parameters to make |expected_receiver_mode| a mandatory
+   one and properly computed,
+ - makes sure we don't pass PropertyCell as a holder when JSReceiver is
+   expected.
+
+Bug: 450328966
+Change-Id: I921dfbd99245d01143600b4f4713fe602c817657
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7036691
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#103085}
+
+diff --git a/src/codegen/code-stub-assembler.cc b/src/codegen/code-stub-assembler.cc
+index e450d1809b457f5cee145649348cade9f74cb5a8..064989e71eaaa24d19dd75ed23b66c70c221e014 100644
+--- a/src/codegen/code-stub-assembler.cc
++++ b/src/codegen/code-stub-assembler.cc
+@@ -11409,7 +11409,8 @@ void CodeStubAssembler::ForEachEnumerableOwnProperty(
+ 
+               var_value = CallGetterIfAccessor(
+                   value_or_accessor, object, var_details.value(), context,
+-                  object, next_key, &slow_load, kCallJSGetterUseCachedName);
++                  object, kExpectingJSReceiver, next_key, &slow_load,
++                  kCallJSGetterUseCachedName);
+               Goto(&value_ready);
+ 
+               BIND(&slow_load);
+@@ -11905,15 +11906,11 @@ template void CodeStubAssembler::LoadPropertyFromDictionary(
+     TNode<SwissNameDictionary> dictionary, TNode<IntPtrT> name_index,
+     TVariable<Uint32T>* var_details, TVariable<Object>* var_value);
+ 
+-// |value| is the property backing store's contents, which is either a value or
+-// an accessor pair, as specified by |details|. |holder| is a JSReceiver or a
+-// PropertyCell. Returns either the original value, or the result of the getter
+-// call.
+ TNode<Object> CodeStubAssembler::CallGetterIfAccessor(
+-    TNode<Object> value, TNode<Union<JSReceiver, PropertyCell>> holder,
++    TNode<Object> value, std::optional<TNode<JSReceiver>> holder,
+     TNode<Uint32T> details, TNode<Context> context, TNode<JSAny> receiver,
+-    TNode<Object> name, Label* if_bailout, GetOwnPropertyMode mode,
+-    ExpectedReceiverMode expected_receiver_mode) {
++    ExpectedReceiverMode expected_receiver_mode, TNode<Object> name,
++    Label* if_bailout, GetOwnPropertyMode mode) {
+   TVARIABLE(Object, var_value, value);
+   Label done(this), if_accessor_info(this, Label::kDeferred);
+ 
+@@ -11954,44 +11951,51 @@ TNode<Object> CodeStubAssembler::CallGetterIfAccessor(
+ 
+       BIND(&if_function_template_info);
+       {
+-        Label use_cached_property(this);
+-        TNode<HeapObject> cached_property_name = LoadObjectField<HeapObject>(
+-            getter, FunctionTemplateInfo::kCachedPropertyNameOffset);
+-
+-        Label* has_cached_property = mode == kCallJSGetterUseCachedName
+-                                         ? &use_cached_property
+-                                         : if_bailout;
+-        GotoIfNot(IsTheHole(cached_property_name), has_cached_property);
+-
+-        TNode<JSReceiver> js_receiver;
+-        switch (expected_receiver_mode) {
+-          case kExpectingJSReceiver:
+-            js_receiver = CAST(receiver);
+-            break;
+-          case kExpectingAnyReceiver:
+-            // TODO(ishell): in case the function template info has a signature
+-            // and receiver is not a JSReceiver the signature check in
+-            // CallFunctionTemplate builtin will fail anyway, so we can short
+-            // cut it here and throw kIllegalInvocation immediately.
+-            js_receiver = ToObject_Inline(context, receiver);
+-            break;
+-        }
+-        TNode<JSReceiver> holder_receiver = CAST(holder);
+-        TNode<NativeContext> creation_context =
+-            GetCreationContext(holder_receiver, if_bailout);
+-        TNode<Context> caller_context = context;
+-        var_value = CallBuiltin(
+-            Builtin::kCallFunctionTemplate_Generic, creation_context, getter,
+-            Int32Constant(i::JSParameterCount(0)), caller_context, js_receiver);
+-        Goto(&done);
++        if (holder.has_value()) {
++          Label use_cached_property(this);
++          TNode<HeapObject> cached_property_name = LoadObjectField<HeapObject>(
++              getter, FunctionTemplateInfo::kCachedPropertyNameOffset);
++
++          Label* has_cached_property = mode == kCallJSGetterUseCachedName
++                                           ? &use_cached_property
++                                           : if_bailout;
++          GotoIfNot(IsTheHole(cached_property_name), has_cached_property);
++
++          TNode<JSReceiver> js_receiver;
++          switch (expected_receiver_mode) {
++            case kExpectingJSReceiver:
++              js_receiver = CAST(receiver);
++              break;
++            case kExpectingAnyReceiver:
++              // TODO(ishell): in case the function template info has a
++              // signature and receiver is not a JSReceiver the signature check
++              // in CallFunctionTemplate builtin will fail anyway, so we can
++              // short cut it here and throw kIllegalInvocation immediately.
++              js_receiver = ToObject_Inline(context, receiver);
++              break;
++          }
++          TNode<JSReceiver> holder_receiver = *holder;
++          TNode<NativeContext> creation_context =
++              GetCreationContext(holder_receiver, if_bailout);
++          TNode<Context> caller_context = context;
++          var_value = CallBuiltin(Builtin::kCallFunctionTemplate_Generic,
++                                  creation_context, getter,
++                                  Int32Constant(i::JSParameterCount(0)),
++                                  caller_context, js_receiver);
++          Goto(&done);
+ 
+-        if (mode == kCallJSGetterUseCachedName) {
+-          Bind(&use_cached_property);
++          if (mode == kCallJSGetterUseCachedName) {
++            Bind(&use_cached_property);
+ 
+-          var_value =
+-              GetProperty(context, holder_receiver, cached_property_name);
++            var_value =
++                GetProperty(context, holder_receiver, cached_property_name);
+ 
+-          Goto(&done);
++            Goto(&done);
++          }
++        } else {
++          // |holder| must be available in order to handle lazy AccessorPair
++          // case (we need it for computing the function's context).
++          Unreachable();
+         }
+       }
+     } else {
+@@ -12003,56 +12007,61 @@ TNode<Object> CodeStubAssembler::CallGetterIfAccessor(
+   // AccessorInfo case.
+   BIND(&if_accessor_info);
+   {
+-    TNode<AccessorInfo> accessor_info = CAST(value);
+-    Label if_array(this), if_function(this), if_wrapper(this);
+-
+-    // Dispatch based on {holder} instance type.
+-    TNode<Map> holder_map = LoadMap(holder);
+-    TNode<Uint16T> holder_instance_type = LoadMapInstanceType(holder_map);
+-    GotoIf(IsJSArrayInstanceType(holder_instance_type), &if_array);
+-    GotoIf(IsJSFunctionInstanceType(holder_instance_type), &if_function);
+-    Branch(IsJSPrimitiveWrapperInstanceType(holder_instance_type), &if_wrapper,
+-           if_bailout);
+-
+-    // JSArray AccessorInfo case.
+-    BIND(&if_array);
+-    {
+-      // We only deal with the "length" accessor on JSArray.
+-      GotoIfNot(IsLengthString(
+-                    LoadObjectField(accessor_info, AccessorInfo::kNameOffset)),
+-                if_bailout);
+-      TNode<JSArray> array = CAST(holder);
+-      var_value = LoadJSArrayLength(array);
+-      Goto(&done);
+-    }
+-
+-    // JSFunction AccessorInfo case.
+-    BIND(&if_function);
+-    {
+-      // We only deal with the "prototype" accessor on JSFunction here.
+-      GotoIfNot(IsPrototypeString(
+-                    LoadObjectField(accessor_info, AccessorInfo::kNameOffset)),
+-                if_bailout);
++    if (holder.has_value()) {
++      TNode<AccessorInfo> accessor_info = CAST(value);
++      Label if_array(this), if_function(this), if_wrapper(this);
++      // Dispatch based on {holder} instance type.
++      TNode<Map> holder_map = LoadMap(*holder);
++      TNode<Uint16T> holder_instance_type = LoadMapInstanceType(holder_map);
++      GotoIf(IsJSArrayInstanceType(holder_instance_type), &if_array);
++      GotoIf(IsJSFunctionInstanceType(holder_instance_type), &if_function);
++      Branch(IsJSPrimitiveWrapperInstanceType(holder_instance_type),
++             &if_wrapper, if_bailout);
++
++      // JSArray AccessorInfo case.
++      BIND(&if_array);
++      {
++        // We only deal with the "length" accessor on JSArray.
++        GotoIfNot(IsLengthString(LoadObjectField(accessor_info,
++                                                 AccessorInfo::kNameOffset)),
++                  if_bailout);
++        TNode<JSArray> array = CAST(*holder);
++        var_value = LoadJSArrayLength(array);
++        Goto(&done);
++      }
+ 
+-      TNode<JSFunction> function = CAST(holder);
+-      GotoIfPrototypeRequiresRuntimeLookup(function, holder_map, if_bailout);
+-      var_value = LoadJSFunctionPrototype(function, if_bailout);
+-      Goto(&done);
+-    }
++      // JSFunction AccessorInfo case.
++      BIND(&if_function);
++      {
++        // We only deal with the "prototype" accessor on JSFunction here.
++        GotoIfNot(IsPrototypeString(LoadObjectField(accessor_info,
++                                                    AccessorInfo::kNameOffset)),
++                  if_bailout);
++
++        TNode<JSFunction> function = CAST(*holder);
++        GotoIfPrototypeRequiresRuntimeLookup(function, holder_map, if_bailout);
++        var_value = LoadJSFunctionPrototype(function, if_bailout);
++        Goto(&done);
++      }
+ 
+-    // JSPrimitiveWrapper AccessorInfo case.
+-    BIND(&if_wrapper);
+-    {
+-      // We only deal with the "length" accessor on JSPrimitiveWrapper string
+-      // wrappers.
+-      GotoIfNot(IsLengthString(
+-                    LoadObjectField(accessor_info, AccessorInfo::kNameOffset)),
+-                if_bailout);
+-      TNode<Object> holder_value = LoadJSPrimitiveWrapperValue(CAST(holder));
+-      GotoIfNot(TaggedIsNotSmi(holder_value), if_bailout);
+-      GotoIfNot(IsString(CAST(holder_value)), if_bailout);
+-      var_value = LoadStringLengthAsSmi(CAST(holder_value));
+-      Goto(&done);
++      // JSPrimitiveWrapper AccessorInfo case.
++      BIND(&if_wrapper);
++      {
++        // We only deal with the "length" accessor on JSPrimitiveWrapper string
++        // wrappers.
++        GotoIfNot(IsLengthString(LoadObjectField(accessor_info,
++                                                 AccessorInfo::kNameOffset)),
++                  if_bailout);
++        TNode<Object> holder_value = LoadJSPrimitiveWrapperValue(CAST(*holder));
++        GotoIfNot(TaggedIsNotSmi(holder_value), if_bailout);
++        GotoIfNot(IsString(CAST(holder_value)), if_bailout);
++        var_value = LoadStringLengthAsSmi(CAST(holder_value));
++        Goto(&done);
++      }
++    } else {
++      // |holder| must be available in order to handle AccessorInfo case (we
++      // need to pass it to the callback).
++      Unreachable();
+     }
+   }
+ 
+@@ -12137,7 +12146,7 @@ void CodeStubAssembler::TryGetOwnProperty(
+     }
+     TNode<Object> value = CallGetterIfAccessor(
+         var_value->value(), object, var_details->value(), context, receiver,
+-        unique_name, if_bailout, mode, expected_receiver_mode);
++        expected_receiver_mode, unique_name, if_bailout, mode);
+     *var_value = value;
+     Goto(if_found_value);
+   }
+diff --git a/src/codegen/code-stub-assembler.h b/src/codegen/code-stub-assembler.h
+index e94cdf9571d80da43301c5449bbd35f6f35ba98d..600af286fa7a8f337962a88c76cc288a161776f3 100644
+--- a/src/codegen/code-stub-assembler.h
++++ b/src/codegen/code-stub-assembler.h
+@@ -4537,12 +4537,16 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
+                                     const ForEachKeyValueFunction& body,
+                                     Label* bailout);
+ 
++  // |value| is the property backing store's contents, which is either a value
++  // or an accessor pair, as specified by |details|. |holder| is a JSReceiver
++  // or empty std::nullopt if holder is not available.
++  // Returns either the original value, or the result of the getter call.
+   TNode<Object> CallGetterIfAccessor(
+-      TNode<Object> value, TNode<Union<JSReceiver, PropertyCell>> holder,
++      TNode<Object> value, std::optional<TNode<JSReceiver>> holder,
+       TNode<Uint32T> details, TNode<Context> context, TNode<JSAny> receiver,
+-      TNode<Object> name, Label* if_bailout,
+-      GetOwnPropertyMode mode = kCallJSGetterDontUseCachedName,
+-      ExpectedReceiverMode expected_receiver_mode = kExpectingJSReceiver);
++      ExpectedReceiverMode expected_receiver_mode, TNode<Object> name,
++      Label* if_bailout,
++      GetOwnPropertyMode mode = kCallJSGetterDontUseCachedName);
+ 
+   TNode<IntPtrT> TryToIntptr(TNode<Object> key, Label* if_not_intptr,
+                              TVariable<Int32T>* var_instance_type = nullptr);
+diff --git a/src/ic/accessor-assembler.cc b/src/ic/accessor-assembler.cc
+index b31ca4fc378764fe02e921ba027929e494dc22a8..cb5e3f868bd5848dab3686a762ab8d6860ae2ecf 100644
+--- a/src/ic/accessor-assembler.cc
++++ b/src/ic/accessor-assembler.cc
+@@ -850,9 +850,13 @@ void AccessorAssembler::HandleLoadICSmiHandlerLoadNamedCase(
+       TVARIABLE(Object, var_value);
+       LoadPropertyFromDictionary<PropertyDictionary>(
+           properties, var_name_index.value(), &var_details, &var_value);
++
++      ExpectedReceiverMode expected_receiver_mode =
++          p->IsLoadSuperIC() ? kExpectingAnyReceiver : kExpectingJSReceiver;
++
+       TNode<Object> value = CallGetterIfAccessor(
+           var_value.value(), CAST(holder), var_details.value(), p->context(),
+-          p->receiver(), p->name(), miss);
++          p->receiver(), expected_receiver_mode, p->name(), miss);
+       exit_point->Return(value);
+     }
+   }
+@@ -930,17 +934,18 @@ void AccessorAssembler::HandleLoadICSmiHandlerLoadNamedCase(
+ 
+   BIND(&global);
+   {
+-    CSA_DCHECK(this, IsPropertyCell(CAST(holder)));
+     // Ensure the property cell doesn't contain the hole.
+-    TNode<Object> value =
+-        LoadObjectField(CAST(holder), PropertyCell::kValueOffset);
++    TNode<Object> value = LoadPropertyCellValue(CAST(holder));
++    GotoIf(IsPropertyCellHole(value), miss);
+     TNode<Uint32T> details = Unsigned(LoadAndUntagToWord32ObjectField(
+         CAST(holder), PropertyCell::kPropertyDetailsRawOffset));
+-    GotoIf(IsPropertyCellHole(value), miss);
+ 
+-    exit_point->Return(CallGetterIfAccessor(value, CAST(holder), details,
+-                                            p->context(), p->receiver(),
+-                                            p->name(), miss));
++    ExpectedReceiverMode expected_receiver_mode =
++        p->IsLoadSuperIC() ? kExpectingAnyReceiver : kExpectingJSReceiver;
++
++    exit_point->Return(CallGetterIfAccessor(
++        value, std::nullopt, details, p->context(), p->receiver(),
++        expected_receiver_mode, p->name(), miss));
+   }
+ 
+   BIND(&interceptor);
+@@ -1221,9 +1226,14 @@ void AccessorAssembler::HandleLoadICProtoHandler(
+           TVARIABLE(Object, var_value);
+           LoadPropertyFromDictionary<PropertyDictionary>(
+               properties, name_index, &var_details, &var_value);
++
++          ExpectedReceiverMode expected_receiver_mode =
++              p->IsLoadSuperIC() ? kExpectingAnyReceiver : kExpectingJSReceiver;
++
+           TNode<Object> value = CallGetterIfAccessor(
+               var_value.value(), CAST(var_holder->value()), var_details.value(),
+-              p->context(), p->receiver(), p->name(), miss);
++              p->context(), p->receiver(), expected_receiver_mode, p->name(),
++              miss);
+           exit_point->Return(value);
+         }
+       },
+@@ -2934,9 +2944,12 @@ void AccessorAssembler::GenericPropertyLoad(
+ 
+   BIND(&if_found_on_lookup_start_object);
+   {
++    ExpectedReceiverMode expected_receiver_mode =
++        p->IsLoadSuperIC() ? kExpectingAnyReceiver : kExpectingJSReceiver;
++
+     TNode<Object> value = CallGetterIfAccessor(
+         var_value.value(), CAST(lookup_start_object), var_details.value(),
+-        p->context(), p->receiver(), p->name(), slow);
++        p->context(), p->receiver(), expected_receiver_mode, p->name(), slow);
+     Return(value);
+   }
+ 
+diff --git a/src/ic/accessor-assembler.h b/src/ic/accessor-assembler.h
+index 9c4127c91f66ca5883325f77361833d874e841a6..1c77a5177fa029b647a891d1c77c6157948e7210 100644
+--- a/src/ic/accessor-assembler.h
++++ b/src/ic/accessor-assembler.h
+@@ -138,9 +138,7 @@ class V8_EXPORT_PRIVATE AccessorAssembler : public CodeStubAssembler {
+     TNode<Object> name() const { return name_; }
+     TNode<TaggedIndex> slot() const { return slot_; }
+     TNode<HeapObject> vector() const { return vector_; }
+-    TNode<JSAny> lookup_start_object() const {
+-      return lookup_start_object_.value();
+-    }
++    TNode<JSAny> lookup_start_object() const { return lookup_start_object_; }
+     TNode<Smi> enum_index() const { return *enum_index_; }
+     TNode<Object> cache_type() const { return *cache_type_; }
+ 
+@@ -152,6 +150,11 @@ class V8_EXPORT_PRIVATE AccessorAssembler : public CodeStubAssembler {
+       return receiver_;
+     }
+ 
++    // This is useful for figuring out whether we know anything about receiver
++    // type. If |receiver| and |lookup_start_object| are different TNodes
++    // then this ICParameters object belongs to LoadSuperIC.
++    bool IsLoadSuperIC() const { return lookup_start_object_ != receiver_; }
++
+     bool IsEnumeratedKeyedLoad() const { return enum_index_ != std::nullopt; }
+ 
+    private:
+@@ -160,7 +163,7 @@ class V8_EXPORT_PRIVATE AccessorAssembler : public CodeStubAssembler {
+     TNode<Object> name_;
+     TNode<TaggedIndex> slot_;
+     TNode<HeapObject> vector_;
+-    std::optional<TNode<JSAny>> lookup_start_object_;
++    TNode<JSAny> lookup_start_object_;
+     std::optional<TNode<Smi>> enum_index_;
+     std::optional<TNode<Object>> cache_type_;
+   };
+@@ -202,6 +205,11 @@ class V8_EXPORT_PRIVATE AccessorAssembler : public CodeStubAssembler {
+       return receiver_;
+     }
+ 
++    // This is useful for figuring out whether we know anything about receiver
++    // type. If |receiver| and |lookup_start_object| are different TNodes
++    // then this ICParameters object belongs to LoadSuperIC.
++    bool IsLoadSuperIC() const { return lookup_start_object_ != receiver_; }
++
+    private:
+     LazyNode<Context> context_;
+     TNode<JSAny> receiver_;
