@@ -8575,7 +8575,7 @@ describe('BrowserWindow module', () => {
       const preferencesPath = path.join(app.getPath('userData'), 'Local State');
       const windowName = 'test-restore-window';
 
-      it('should emit restored-window-state when windowStatePersistence is enabled and state exists', async () => {
+      it('should emit restored-persisted-state when windowStatePersistence is enabled and state exists', async () => {
         await createAndSaveWindowState(preferencesPath, windowName, { width: 300, height: 200 });
 
         const restoredPromise = new Promise<void>((resolve) => {
@@ -8585,7 +8585,7 @@ describe('BrowserWindow module', () => {
             show: false
           });
 
-          w.once('restored-window-state', () => {
+          w.once('restored-persisted-state', () => {
             resolve();
             w.destroy();
           });
@@ -8594,7 +8594,7 @@ describe('BrowserWindow module', () => {
         await restoredPromise;
       });
 
-      it('should not emit restored-window-state when windowStatePersistence is disabled', async () => {
+      it('should not emit restored-persisted-state when windowStatePersistence is disabled', async () => {
         await createAndSaveWindowState(preferencesPath, windowName, { width: 300, height: 200 });
 
         let eventEmitted = false;
@@ -8605,7 +8605,7 @@ describe('BrowserWindow module', () => {
           show: false
         });
 
-        w.on('restored-window-state', () => {
+        w.on('restored-persisted-state', () => {
           eventEmitted = true;
         });
 
@@ -8616,7 +8616,7 @@ describe('BrowserWindow module', () => {
         w.destroy();
       });
 
-      it('should not emit restored-window-state when no window state exists on disk', async () => {
+      it('should not emit restored-persisted-state when no window state exists on disk', async () => {
         // Clear any existing state to ensure no state exists
         BrowserWindow.clearPersistedState(windowName);
 
@@ -8628,7 +8628,7 @@ describe('BrowserWindow module', () => {
           show: false
         });
 
-        w.on('restored-window-state', () => {
+        w.on('restored-persisted-state', () => {
           eventEmitted = true;
         });
 
