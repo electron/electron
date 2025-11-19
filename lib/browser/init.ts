@@ -40,7 +40,7 @@ process.on('uncaughtException', function (error) {
 // Emit 'exit' event on quit.
 const { app } = require('electron');
 
-app.on('quit', (_event, exitCode) => {
+app.on('quit', (_event: any, exitCode: number) => {
   process.emit('exit', exitCode);
 });
 
@@ -161,27 +161,6 @@ require('@electron/internal/browser/api/web-contents-view');
 
 // Set main startup script of the app.
 const mainStartupScript = packageJson.main || 'index.js';
-
-const KNOWN_XDG_DESKTOP_VALUES = new Set(['Pantheon', 'Unity:Unity7', 'pop:GNOME']);
-
-function currentPlatformSupportsAppIndicator () {
-  if (process.platform !== 'linux') return false;
-  const currentDesktop = process.env.XDG_CURRENT_DESKTOP;
-
-  if (!currentDesktop) return false;
-  if (KNOWN_XDG_DESKTOP_VALUES.has(currentDesktop)) return true;
-  // ubuntu based or derived session (default ubuntu one, communitheme…) supports
-  // indicator too.
-  if (/ubuntu/ig.test(currentDesktop)) return true;
-
-  return false;
-}
-
-// Workaround for electron/electron#5050 and electron/electron#9046
-process.env.ORIGINAL_XDG_CURRENT_DESKTOP = process.env.XDG_CURRENT_DESKTOP;
-if (currentPlatformSupportsAppIndicator()) {
-  process.env.XDG_CURRENT_DESKTOP = 'Unity';
-}
 
 // Quit when all windows are closed and no other one is listening to this.
 app.on('window-all-closed', () => {

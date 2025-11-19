@@ -104,9 +104,10 @@
   should have rounded corners. Default is `true`. Setting this property
   to `false` will prevent the window from being fullscreenable on macOS.
   On Windows versions older than Windows 11 Build 22000 this property has no effect, and frameless windows will not have rounded corners.
-* `thickFrame` boolean (optional) - Use `WS_THICKFRAME` style for frameless windows on
-  Windows, which adds standard window frame. Setting it to `false` will remove
-  window shadow and window animations. Default is `true`.
+* `thickFrame` boolean (optional) _Windows_ - Use `WS_THICKFRAME` style for
+  frameless windows on Windows, which adds the standard window frame. Setting it
+  to `false` will remove window shadow and window animations, and disable window
+  resizing via dragging the window edges. Default is `true`.
 * `vibrancy` string (optional) _macOS_ - Add a type of vibrancy effect to
   the window, only on macOS. Can be `appearance-based`, `titlebar`, `selection`,
   `menu`, `popover`, `sidebar`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`,

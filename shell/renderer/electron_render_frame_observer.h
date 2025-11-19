@@ -8,7 +8,6 @@
 #include <string>
 
 #include "content/public/renderer/render_frame_observer.h"
-#include "ipc/ipc_platform_file.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
 namespace electron {
@@ -31,7 +30,8 @@ class ElectronRenderFrameObserver : private content::RenderFrameObserver {
   void DidClearWindowObject() override;
   void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
                                      int world_id) override;
-  void WillReleaseScriptContext(v8::Local<v8::Context> context,
+  void WillReleaseScriptContext(v8::Isolate* const isolate,
+                                v8::Local<v8::Context> context,
                                 int world_id) override;
   void OnDestruct() override;
   void DidMeaningfulLayout(blink::WebMeaningfulLayout layout_type) override;
@@ -39,8 +39,6 @@ class ElectronRenderFrameObserver : private content::RenderFrameObserver {
   [[nodiscard]] bool ShouldNotifyClient(int world_id) const;
 
   void CreateIsolatedWorldContext();
-  void OnTakeHeapSnapshot(IPC::PlatformFileForTransit file_handle,
-                          const std::string& channel);
 
   bool has_delayed_node_initialization_ = false;
   raw_ptr<content::RenderFrame> render_frame_;

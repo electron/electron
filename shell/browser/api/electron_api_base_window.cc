@@ -44,11 +44,13 @@
 #endif
 
 #if BUILDFLAG(IS_WIN)
+#include <variant>
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/taskbar_host.h"
 #include "ui/base/win/shell.h"
 #elif BUILDFLAG(IS_LINUX)
 #include "shell/browser/ui/views/opaque_frame_view.h"
+#include "ui/gfx/image/image_skia.h"
 #endif
 
 #if BUILDFLAG(IS_WIN)
@@ -128,7 +130,7 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
 #endif
 }
 
-BaseWindow::BaseWindow(gin_helper::Arguments* args,
+BaseWindow::BaseWindow(gin::Arguments* args,
                        const gin_helper::Dictionary& options)
     : BaseWindow(args->isolate(), options) {
   InitWithArgs(args);
@@ -455,7 +457,7 @@ bool BaseWindow::IsFullscreen() const {
 }
 
 void BaseWindow::SetBounds(const gfx::Rect& bounds,
-                           gin_helper::Arguments* args) {
+                           gin::Arguments* const args) {
   bool animate = false;
   args->GetNext(&animate);
   window_->SetBounds(bounds, animate);
@@ -474,7 +476,7 @@ gfx::Rect BaseWindow::GetNormalBounds() const {
 }
 
 void BaseWindow::SetContentBounds(const gfx::Rect& bounds,
-                                  gin_helper::Arguments* args) {
+                                  gin::Arguments* const args) {
   bool animate = false;
   args->GetNext(&animate);
   window_->SetContentBounds(bounds, animate);
@@ -484,7 +486,7 @@ gfx::Rect BaseWindow::GetContentBounds() const {
   return window_->GetContentBounds();
 }
 
-void BaseWindow::SetSize(int width, int height, gin_helper::Arguments* args) {
+void BaseWindow::SetSize(int width, int height, gin::Arguments* args) {
   bool animate = false;
   gfx::Size size = window_->GetMinimumSize();
   size.SetToMax(gfx::Size(width, height));
@@ -496,12 +498,12 @@ std::array<int, 2U> BaseWindow::GetSize() const {
   return ToArray(window_->GetSize());
 }
 
-void BaseWindow::SetContentSize(int width,
-                                int height,
-                                gin_helper::Arguments* args) {
+void BaseWindow::SetContentSize(const int width,
+                                const int height,
+                                gin::Arguments* const args) {
   bool animate = false;
   args->GetNext(&animate);
-  window_->SetContentSize(gfx::Size(width, height), animate);
+  window_->SetContentSize(gfx::Size{width, height}, animate);
 }
 
 std::array<int, 2U> BaseWindow::GetContentSize() const {
@@ -524,7 +526,8 @@ std::array<int, 2U> BaseWindow::GetMaximumSize() const {
   return ToArray(window_->GetMaximumSize());
 }
 
-void BaseWindow::SetSheetOffset(double offsetY, gin_helper::Arguments* args) {
+void BaseWindow::SetSheetOffset(const double offsetY,
+                                gin::Arguments* const args) {
   double offsetX = 0.0;
   args->GetNext(&offsetX);
   window_->SetSheetOffset(offsetX, offsetY);
@@ -578,7 +581,7 @@ bool BaseWindow::IsClosable() const {
   return window_->IsClosable();
 }
 
-void BaseWindow::SetAlwaysOnTop(bool top, gin_helper::Arguments* args) {
+void BaseWindow::SetAlwaysOnTop(bool top, gin::Arguments* args) {
   std::string level = "floating";
   int relative_level = 0;
   args->GetNext(&level);
@@ -597,19 +600,21 @@ void BaseWindow::Center() {
   window_->Center();
 }
 
-void BaseWindow::SetPosition(int x, int y, gin_helper::Arguments* args) {
+void BaseWindow::SetPosition(const int x,
+                             const int y,
+                             gin::Arguments* const args) {
   bool animate = false;
   args->GetNext(&animate);
-  window_->SetPosition(gfx::Point(x, y), animate);
+  window_->SetPosition(gfx::Point{x, y}, animate);
 }
 
 std::array<int, 2U> BaseWindow::GetPosition() const {
   return ToArray(window_->GetPosition());
 }
 void BaseWindow::MoveAbove(const std::string& sourceId,
-                           gin_helper::Arguments* args) {
+                           gin::Arguments* const args) {
   if (!window_->MoveAbove(sourceId))
-    args->ThrowError("Invalid media source id");
+    args->ThrowTypeError("Invalid media source id");
 }
 
 void BaseWindow::MoveTop() {
@@ -717,8 +722,7 @@ bool BaseWindow::IsDocumentEdited() const {
   return window_->IsDocumentEdited();
 }
 
-void BaseWindow::SetIgnoreMouseEvents(bool ignore,
-                                      gin_helper::Arguments* args) {
+void BaseWindow::SetIgnoreMouseEvents(bool ignore, gin::Arguments* const args) {
   gin_helper::Dictionary options;
   bool forward = false;
   args->GetNext(&options) && options.Get("forward", &forward);
@@ -770,9 +774,9 @@ void BaseWindow::RemoveMenu() {
 }
 
 void BaseWindow::SetParentWindow(v8::Local<v8::Value> value,
-                                 gin_helper::Arguments* args) {
+                                 gin::Arguments* const args) {
   if (IsModal()) {
-    args->ThrowError("Can not be called for modal window");
+    args->ThrowTypeError("Can not be called for modal window");
     return;
   }
 
@@ -787,7 +791,7 @@ void BaseWindow::SetParentWindow(v8::Local<v8::Value> value,
     window_->SetParentWindow(parent->window_.get());
     parent->child_windows_.Set(isolate(), weak_map_id(), GetWrapper());
   } else {
-    args->ThrowError("Must pass BaseWindow instance or null");
+    args->ThrowTypeError("Must pass BaseWindow instance or null");
   }
 }
 
@@ -805,7 +809,7 @@ v8::Local<v8::Value> BaseWindow::GetNativeWindowHandle() {
 }
 #endif
 
-void BaseWindow::SetProgressBar(double progress, gin_helper::Arguments* args) {
+void BaseWindow::SetProgressBar(double progress, gin::Arguments* args) {
   gin_helper::Dictionary options;
   std::string mode;
   args->GetNext(&options) && options.Get("mode", &mode);
@@ -829,7 +833,7 @@ void BaseWindow::SetOverlayIcon(const gfx::Image& overlay,
 }
 
 void BaseWindow::SetVisibleOnAllWorkspaces(bool visible,
-                                           gin_helper::Arguments* args) {
+                                           gin::Arguments* const args) {
   gin_helper::Dictionary options;
   bool visibleOnFullScreen = false;
   bool skipTransformProcessType = false;
@@ -849,9 +853,9 @@ void BaseWindow::SetAutoHideCursor(bool auto_hide) {
   window_->SetAutoHideCursor(auto_hide);
 }
 
-void BaseWindow::SetVibrancy(v8::Isolate* isolate,
+void BaseWindow::SetVibrancy(v8::Isolate* const isolate,
                              v8::Local<v8::Value> value,
-                             gin_helper::Arguments* args) {
+                             gin::Arguments* const args) {
   std::string type = gin::V8ToString(isolate, value);
   gin_helper::Dictionary options;
   int animation_duration_ms = 0;
@@ -936,10 +940,11 @@ void BaseWindow::ToggleTabBar() {
   window_->ToggleTabBar();
 }
 
-void BaseWindow::AddTabbedWindow(NativeWindow* window,
-                                 gin_helper::Arguments* args) {
+void BaseWindow::AddTabbedWindow(NativeWindow* const window,
+                                 gin::Arguments* const args) {
   if (!window_->AddTabbedWindow(window))
-    args->ThrowError("AddTabbedWindow cannot be called by a window on itself.");
+    args->ThrowTypeError(
+        "AddTabbedWindow cannot be called by a window on itself.");
 }
 
 v8::Local<v8::Value> BaseWindow::GetTabbingIdentifier() {
@@ -966,15 +971,15 @@ bool BaseWindow::IsMenuBarVisible() const {
   return window_->IsMenuBarVisible();
 }
 
-void BaseWindow::SetAspectRatio(double aspect_ratio,
-                                gin_helper::Arguments* args) {
+void BaseWindow::SetAspectRatio(const double aspect_ratio,
+                                gin::Arguments* const args) {
   gfx::Size extra_size;
   args->GetNext(&extra_size);
   window_->SetAspectRatio(aspect_ratio, extra_size);
 }
 
 void BaseWindow::PreviewFile(const std::string& path,
-                             gin_helper::Arguments* args) {
+                             gin::Arguments* const args) {
   std::string display_name;
   if (!args->GetNext(&display_name))
     display_name = path;
@@ -1011,7 +1016,7 @@ bool BaseWindow::IsModal() const {
   return window_->is_modal();
 }
 
-bool BaseWindow::SetThumbarButtons(gin_helper::Arguments* args) {
+bool BaseWindow::SetThumbarButtons(gin::Arguments* args) {
 #if BUILDFLAG(IS_WIN)
   std::vector<TaskbarHost::ThumbarButton> buttons;
   if (!args->GetNext(&buttons)) {
@@ -1103,22 +1108,35 @@ bool BaseWindow::IsSnapped() const {
   return window_->IsSnapped();
 }
 
-void BaseWindow::SetAccentColor(gin_helper::Arguments* args) {
-  bool accent_color = false;
-  std::string accent_color_string;
-  if (args->GetNext(&accent_color_string)) {
-    std::optional<SkColor> maybe_color = ParseCSSColor(accent_color_string);
-    if (maybe_color.has_value()) {
-      window_->SetAccentColor(maybe_color.value());
+void BaseWindow::SetAccentColor(gin::Arguments* const args) {
+  v8::Local<v8::Value> ac_val;
+  args->GetNext(&ac_val);
+
+  if (!ac_val.IsEmpty() && ac_val->IsNull()) {
+    window_->SetAccentColor(std::monostate{});
+    window_->UpdateWindowAccentColor(window_->IsActive());
+    return;
+  }
+
+  if (!ac_val.IsEmpty() && ac_val->IsBoolean()) {
+    const bool ac_flag = ac_val->BooleanValue(args->isolate());
+    window_->SetAccentColor(ac_flag);
+    window_->UpdateWindowAccentColor(window_->IsActive());
+    return;
+  }
+
+  if (!ac_val.IsEmpty() && ac_val->IsString()) {
+    std::string ac_str;
+    gin::ConvertFromV8(args->isolate(), ac_val, &ac_str);
+    if (const std::optional<SkColor> ac_color = ParseCSSColor(ac_str)) {
+      window_->SetAccentColor(*ac_color);
       window_->UpdateWindowAccentColor(window_->IsActive());
     }
-  } else if (args->GetNext(&accent_color)) {
-    window_->SetAccentColor(accent_color);
-    window_->UpdateWindowAccentColor(window_->IsActive());
-  } else {
-    args->ThrowError(
-        "Invalid accent color value - must be a string or boolean");
+    return;
   }
+
+  args->ThrowTypeError(
+      "Invalid accent color value - must be null, hex string, or boolean");
 }
 
 v8::Local<v8::Value> BaseWindow::GetAccentColor() const {
@@ -1133,7 +1151,7 @@ v8::Local<v8::Value> BaseWindow::GetAccentColor() const {
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
 void BaseWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
-                                    gin_helper::Arguments* args) {
+                                    gin::Arguments* args) {
   static_cast<NativeWindowViews*>(window_.get())
       ->SetTitleBarOverlay(options, args);
 }
@@ -1176,7 +1194,7 @@ void BaseWindow::ClearWindowState(const std::string& window_name) {
 }
 
 // static
-gin_helper::WrappableBase* BaseWindow::New(gin_helper::Arguments* args) {
+gin_helper::WrappableBase* BaseWindow::New(gin::Arguments* const args) {
   auto options = gin_helper::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 

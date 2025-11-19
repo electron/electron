@@ -35,10 +35,7 @@ concurrency:
   group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
 
-permissions:
-  contents: read
-  issues: read
-  pull-requests: read
+permissions: {}
 
 env:
   CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
@@ -53,6 +50,10 @@ jobs:
       run:
         shell: bash
     runs-on: ${{ inputs.test-runs-on }}
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
     container: ${{ fromJSON(inputs.test-container) }}
     strategy:
       fail-fast: false
@@ -68,11 +69,12 @@ jobs:
       if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
       run: |
         cp $(which node) /mnt/runner-externals/node20/bin/
+        cp $(which node) /mnt/runner-externals/node24/bin/
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'win' }}
-      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
       with:
-        node-version: 20.19.x
+        node-version: 22.21.x
     - name: Add TCC permissions on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
@@ -110,11 +112,6 @@ jobs:
             configure_sys_tccdb "$values"
           fi
         done
-
-        # Ref: https://github.com/getsentry/sentry-cocoa/blob/main/scripts/ci-enable-permissions.sh
-        if [ "$OSTYPE" = "darwin24" ]; then
-          defaults write ~/Library/Group\ Containers/group.com.apple.replayd/ScreenCaptureApprovals.plist "/bin/bash" -date "3024-09-23 12:00:00 +0000"
-        fi
     - name: Turn off the unexpectedly quit dialog on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: defaults write com.apple.CrashReporter DialogType server
@@ -122,11 +119,17 @@ jobs:
       if: ${{ inputs.target-platform == 'macos' }}
       run: sudo xcode-select --switch /Applications/Xcode_16.4.app
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+    - name: Turn off screenshot nag on macOS
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        defaults write ~/Library/Group\ Containers/group.com.apple.replayd/ScreenCaptureApprovals.plist "/bin/bash" -date "3024-09-23 12:00:00 +0000"
+        src/electron/script/actions/screencapture-nag-remover.sh -a $(which bash)
+        src/electron/script/actions/screencapture-nag-remover.sh -a /opt/hca/hosted-compute-agent
     - name: Setup SSH Debugging
       if: ${{ inputs.target-platform == 'macos' && (inputs.enable-ssh || env.ACTIONS_STEP_DEBUG == 'true') }}
       uses: ./src/electron/.github/actions/ssh-debug
@@ -165,33 +168,29 @@ jobs:
         echo "DISABLE_CRASH_REPORTER_TESTS=true" >> $GITHUB_ENV
         echo "IS_ASAN=true" >> $GITHUB_ENV
     - name: Download Generated Artifacts
-      uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+      uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
       with:
         name: generated_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./generated_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
     - name: Download Src Artifacts
-      uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0
+      uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
       with:
         name: src_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./src_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
     - name: Restore Generated Artifacts
       run: ./src/electron/script/actions/restore-artifacts.sh
-    - name: Unzip Dist, Mksnapshot & Chromedriver (win)
+    - name: Unzip Dist (win)
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
       run: |
         Set-ExecutionPolicy Bypass -Scope Process -Force
         cd src/out/Default
         Expand-Archive -Force dist.zip -DestinationPath ./
-        Expand-Archive -Force chromedriver.zip -DestinationPath ./
-        Expand-Archive -Force mksnapshot.zip -DestinationPath ./
-    - name: Unzip Dist, Mksnapshot & Chromedriver (unix)
+    - name: Unzip Dist (unix)
       if: ${{ inputs.target-platform != 'win' }}
       run: |
         cd src/out/Default
         unzip -:o dist.zip
-        unzip -:o chromedriver.zip
-        unzip -:o mksnapshot.zip
     #- name: Import & Trust Self-Signed Codesigning Cert on MacOS
     #  if: ${{ inputs.target-platform == 'macos' && inputs.target-arch == 'x64' }}
     #  run: |
@@ -227,7 +226,7 @@ jobs:
               export ELECTRON_FORCE_TEST_SUITE_EXIT="true"
             fi
           fi
-          node script/yarn test --runners=main --trace-uncaught --enable-logging --files $tests_files
+          node script/yarn test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
         else
           chown :builduser .. && chmod g+w ..
           chown -R :builduser . && chmod -R g+w .
@@ -264,7 +263,7 @@ jobs:
       if: always() && !cancelled()
     - name: Upload Test Artifacts
       if: always() && !cancelled()
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
       with:
         name: test_artifacts_${{ env.ARTIFACT_KEY }}_${{ matrix.shard }}
         path: src/electron/spec/artifacts

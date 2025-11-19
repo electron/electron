@@ -1,4 +1,4 @@
-import { app, BrowserWindow, BaseWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain, BrowserWindowConstructorOptions } from 'electron/main';
+import { app, BrowserWindow, BaseWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, systemPreferences, WebContents, WebFrameMain, BrowserWindowConstructorOptions } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -2596,7 +2596,23 @@ describe('BrowserWindow module', () => {
       expect(() => {
         // @ts-ignore this is wrong on purpose.
         w.setAccentColor([1, 2, 3]);
-      }).to.throw('Invalid accent color value - must be a string or boolean');
+      }).to.throw('Invalid accent color value - must be null, hex string, or boolean');
+    });
+
+    it('throws if called with an invalid parameter', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(() => {
+        // @ts-ignore this is wrong on purpose.
+        w.setAccentColor(new Date());
+      }).to.throw('Invalid accent color value - must be null, hex string, or boolean');
+    });
+
+    it('can be reset with null', () => {
+      const w = new BrowserWindow({ show: false });
+      w.setAccentColor('#FF0000');
+      expect(w.getAccentColor()).to.equal('#FF0000');
+      w.setAccentColor(null);
+      expect(w.getAccentColor()).to.not.equal('#FF0000');
     });
 
     it('returns the accent color after setting it to a string', () => {
@@ -2622,6 +2638,14 @@ describe('BrowserWindow module', () => {
       const accentColor = w.getAccentColor();
       expect(accentColor).to.be.a('string');
       expect(accentColor).to.match(/^#[0-9A-F]{6}$/i);
+    });
+
+    it('matches the systemPreferences system color when true', () => {
+      const w = new BrowserWindow({ show: false });
+      w.setAccentColor(true);
+      const accentColor = w.getAccentColor() as string;
+      const systemColor = systemPreferences.getAccentColor().slice(0, 6);
+      expect(accentColor).to.equal(`#${systemColor}`);
     });
 
     it('returns the correct accent color after multiple changes', () => {
@@ -5489,7 +5513,7 @@ describe('BrowserWindow module', () => {
           thickFrame: true,
           transparent: true
         });
-        expect(w.isResizable()).to.be.true('resizable');
+        expect(w.isResizable()).to.be.false('resizable');
         w.maximize();
         expect(w.isMaximized()).to.be.true('maximized');
         const bounds = w.getBounds();

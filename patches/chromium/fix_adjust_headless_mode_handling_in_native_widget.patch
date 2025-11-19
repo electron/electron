@@ -14,32 +14,157 @@ input list).
 We also need to ensure that an initial paint is scheduled when
 the compositor is unsuspended in headles mode.
 
+Additionally, this patch reverts
+https://chromium-review.googlesource.com/c/chromium/src/+/6936895
+as we depend on the removed functionality in this patch.
+
+diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
+index ce52245628c72018da8ec4a3155dafa74e42c8e3..89a078d1ce00667bd83def21e341b03ca6c79ee3 100644
+--- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
++++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
+@@ -522,7 +522,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+   is_translucent_window_ = params->is_translucent;
+   pending_restoration_data_ = params->state_restoration_data;
+ 
+-  if (display::Screen::Get()->IsHeadless()) {
++  if (params->is_headless_mode_window) {
+     headless_mode_window_ = std::make_optional<HeadlessModeWindow>();
+   }
+ 
+diff --git a/components/remote_cocoa/common/native_widget_ns_window.mojom b/components/remote_cocoa/common/native_widget_ns_window.mojom
+index 11954a3adfb6d517b6dc8e780a4a9aba8a0bf98a..1ddc1f34055c8b42177703ccc2f0d006294430da 100644
+--- a/components/remote_cocoa/common/native_widget_ns_window.mojom
++++ b/components/remote_cocoa/common/native_widget_ns_window.mojom
+@@ -81,6 +81,8 @@ struct NativeWidgetNSWindowInitParams {
+   // NSWindowCollectionBehaviorParticipatesInCycle (this is not the
+   // default for NSWindows with NSWindowStyleMaskBorderless).
+   bool force_into_collection_cycle;
++  // If true, the window was created in headless mode.
++  bool is_headless_mode_window;
+   // An opaque blob of AppKit data which includes, among other things, a
+   // window's workspace and fullscreen state, and can be retrieved from or
+   // applied to a window.
+diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
+index 2239b085ac7fd87fe06aef1001551f8afe8e21e4..9ead3ab0755fe5c3500893325f0597e07e7241cc 100644
+--- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
++++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
+@@ -556,6 +556,7 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+   bool is_miniaturized_ = false;
+   bool is_window_key_ = false;
+   bool is_mouse_capture_active_ = false;
++  bool is_headless_mode_window_ = false;
+   bool is_zoomed_ = false;
+   gfx::Rect window_bounds_before_fullscreen_;
+ 
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 48dfca966a594f54523c129fa49d2a561cb41dec..049cf4f1adcf4f64cd8692f6e6eda7418008e799 100644
+index d2204fd2b737f7f3e146cb1be80c3be6bfce8cd4..9064b3d019aca6e8b77b10c3f0d0447b52f5245a 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -664,9 +664,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -467,6 +467,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+   if (!is_tooltip) {
+     tooltip_manager_ = std::make_unique<TooltipManagerMac>(GetNSWindowMojo());
+   }
++  is_headless_mode_window_ = params.ShouldInitAsHeadless();
+ 
+   if (params.workspace.length()) {
+     std::string restoration_data;
+@@ -484,6 +485,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+     window_params->modal_type = widget->widget_delegate()->GetModalType();
+     window_params->is_translucent =
+         params.opacity == Widget::InitParams::WindowOpacity::kTranslucent;
++    window_params->is_headless_mode_window = is_headless_mode_window_;
+     window_params->is_tooltip = is_tooltip;
+ 
+     // macOS likes to put shadows on most things. However, frameless windows
+@@ -665,9 +667,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // case it will never become visible but we want its compositor to produce
    // frames for screenshooting and screencasting.
    UpdateCompositorProperties();
 -  layer()->SetVisible(is_visible_);
+-  if (is_visible_ || display::Screen::Get()->IsHeadless()) {
 +  layer()->SetVisible(is_visible_ || is_headless_mode_window_);
-   if (is_visible_ || is_headless_mode_window_) {
++  if (is_visible_ || is_headless_mode_window_) {
      compositor_->Unsuspend();
 +    layer()->SchedulePaint(layer()->bounds());
    }
  
    // Register the CGWindowID (used to identify this window for video capture)
+diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
+index c44058711170316552ea05f97b8b8af694da8ca3..2895f8d17e7d045a3fae3f83e4dc117d48b7b29f 100644
+--- a/ui/views/widget/widget.cc
++++ b/ui/views/widget/widget.cc
+@@ -222,6 +222,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
+   }
+ }
+ 
++bool Widget::InitParams::ShouldInitAsHeadless() const {
++  if (headless_mode) {
++    return true;
++  }
++
++  if (Widget* top_level_widget = GetTopLevelWidgetForNativeView(parent)) {
++    return top_level_widget->is_headless();
++  }
++
++  return false;
++}
++
+ void Widget::InitParams::SetParent(Widget* parent_widget) {
+   SetParent(parent_widget->GetNativeView());
+ }
+@@ -469,6 +481,7 @@ void Widget::Init(InitParams params) {
+ 
+   params.child |= (params.type == InitParams::TYPE_CONTROL);
+   is_top_level_ = !params.child;
++  is_headless_ = params.ShouldInitAsHeadless();
+   is_autosized_ = params.autosize;
+ 
+   if (params.opacity == views::Widget::InitParams::WindowOpacity::kInferred &&
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index b1bae5f73c9509e9fc837220a103d0dcff501ab2..aa5ab5fe546c1ebf8cc57b2a32f21b7c1802e4f2 100644
+index 64d07b209f72fc593c861d84d2baf0ca52ce9aed..1569f9115371d4eaa18bb34eb4d91a1380d257d5 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
-@@ -1298,6 +1298,8 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
-   // True if widget was created in headless mode.
-   bool is_headless() const { return is_headless_; }
+@@ -324,6 +324,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+     // case where |activatable| is |kDefault|.
+     bool CanActivate() const;
  
++    // Returns whether the widget should be initialized as headless by checking
++    // if |headless_mode| or the associated top level widget's |is_headless_|
++    // are set.
++    bool ShouldInitAsHeadless() const;
++
+     // Returns the z-order level, based on the overriding |z_order| but also
+     // taking into account special levels due to |type|.
+     ui::ZOrderLevel EffectiveZOrderLevel() const;
+@@ -504,6 +509,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+     // If true then the widget uses software compositing.
+     bool force_software_compositing = false;
+ 
++    // If set, the widget was created in headless mode.
++    bool headless_mode = false;
++
+     // If set, the window size will follow the content preferred size.
+     bool autosize = false;
+ 
+@@ -1291,6 +1299,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+   // with it. TYPE_CONTROL and TYPE_TOOLTIP is not considered top level.
+   bool is_top_level() const { return is_top_level_; }
+ 
++  // True if widget was created in headless mode.
++  bool is_headless() const { return is_headless_; }
++
 +  void DisableHeadlessMode() { is_headless_ = false; }
 +
    // True if the window size will follow the content preferred size.
    bool is_autosized() const { return is_autosized_; }
+ 
+@@ -1718,6 +1731,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+   // If true, the mouse is currently down.
+   bool is_mouse_button_pressed_ = false;
+ 
++  // If set, the widget was created in headless mode.
++  bool is_headless_ = false;
++
+   // If set, the window size will follow the content preferred size.
+   bool is_autosized_ = false;
  

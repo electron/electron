@@ -39,7 +39,7 @@ index aed835411f5728c5685baa43eda2dd1585119b18..0e66085b1c457c1f1f6be241c7d331d7
      gpu::SurfaceHandle child_window) {
    NOTREACHED();
 diff --git a/components/viz/host/host_display_client.h b/components/viz/host/host_display_client.h
-index 9e94f648060e9873a120f2c45591ad599a2e62df..93dabe09e44bda68644dcab568a827a92c550e4a 100644
+index 07fe1ea0e8e5f28428a164eedc28d4e5150ab13b..1a20c4b5765ce504c64c0dabfe3080fb65dbc03d 100644
 --- a/components/viz/host/host_display_client.h
 +++ b/components/viz/host/host_display_client.h
 @@ -39,6 +39,9 @@ class VIZ_HOST_EXPORT HostDisplayClient : public mojom::DisplayClient {
@@ -62,7 +62,7 @@ index 9e94f648060e9873a120f2c45591ad599a2e62df..93dabe09e44bda68644dcab568a827a9
  #endif
  
 diff --git a/components/viz/host/layered_window_updater_impl.cc b/components/viz/host/layered_window_updater_impl.cc
-index 8f726bde2cb5da6acfe630006af0fc3a09811d6c..45d8cae3ba0fca9a1514f83032a10c8820b3126d 100644
+index 36b9e09ca63aeec83c381918be2dbc933611e6ee..e58cb70d07cc61478bbd4e9a0233a11af6148c20 100644
 --- a/components/viz/host/layered_window_updater_impl.cc
 +++ b/components/viz/host/layered_window_updater_impl.cc
 @@ -46,7 +46,9 @@ void LayeredWindowUpdaterImpl::OnAllocatedSharedMemory(
@@ -90,11 +90,11 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index de0ed691367bda45e5310b1f132171e3a1f2dd3f..53848189bc02cd73446409667ad918e456727ce9 100644
+index 9af007dfc14e442d34ebe82fc678ea9f32782cdf..850f8627170b4de652b2975f47d7bc48458d8ed7 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -174,6 +174,8 @@ viz_component("service") {
-     "display_embedder/skia_output_surface_impl_on_gpu_debug_capture.h",
+@@ -176,6 +176,8 @@ viz_component("service") {
+     "display_embedder/skia_output_surface_shared_image_interface.h",
      "display_embedder/skia_render_copy_results.cc",
      "display_embedder/skia_render_copy_results.h",
 +    "display_embedder/software_output_device_proxy.cc",
@@ -180,7 +180,7 @@ index 07502f4ff2afd53a43d8f0ab68d4c4c39f6c0737..20d51f86d5084edf0b05ce0ab11fcd12
    HWND child_hwnd;
    auto device = CreateSoftwareOutputDeviceWin(
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.h b/components/viz/service/display_embedder/output_surface_provider_impl.h
-index e4b46a79560e7698a6400b2ab8a57f38205a8718..3cb2518c6644cf0618f625d981befd466a3dfb2c 100644
+index f49bbc5d568f0cb323a22997a949e2cae8f35d59..c0154ee828e67b197eb2ddb1abf04c0aede0d264 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.h
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.h
 @@ -54,7 +54,8 @@ class VIZ_SERVICE_EXPORT OutputSurfaceProviderImpl
@@ -238,10 +238,10 @@ index 67d5ff67d74c107a867b39b306c6528425b87e05..5fd12a25c9e319e8e675955926271c9d
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..ef5cb8ae4c398e5834496c8b24eb98c41b10a7b3
+index 0000000000000000000000000000000000000000..601e646c293ac18e692663642f540577168924d6
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
-@@ -0,0 +1,162 @@
+@@ -0,0 +1,161 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -252,7 +252,7 @@ index 0000000000000000000000000000000000000000..ef5cb8ae4c398e5834496c8b24eb98c4
 +#include "base/threading/thread_checker.h"
 +#include "base/trace_event/trace_event.h"
 +#include "build/build_config.h"
-+#include "components/viz/common/resources/resource_sizes.h"
++#include "components/viz/common/resources/shared_image_format_utils.h"
 +#include "mojo/public/cpp/system/platform_handle.h"
 +#include "services/viz/privileged/mojom/compositing/layered_window_updater.mojom.h"
 +#include "skia/ext/platform_canvas.h"
@@ -262,7 +262,7 @@ index 0000000000000000000000000000000000000000..ef5cb8ae4c398e5834496c8b24eb98c4
 +#if BUILDFLAG(IS_WIN)
 +#include "components/viz/service/display_embedder/output_device_backing.h"
 +#include "skia/ext/skia_utils_win.h"
-+#include "ui/gfx/gdi_util.h"
++#include "ui/gfx/win/gdi_util.h"
 +#include "ui/gfx/win/hwnd_util.h"
 +#else
 +#include "mojo/public/cpp/base/shared_memory_utils.h"
@@ -337,18 +337,17 @@ index 0000000000000000000000000000000000000000..ef5cb8ae4c398e5834496c8b24eb98c4
 +void SoftwareOutputDeviceProxy::ResizeDelegated() {
 +  canvas_.reset();
 +
-+  size_t required_bytes;
-+  if (!ResourceSizes::MaybeSizeInBytes(viewport_pixel_size_,
-+                                       SinglePlaneFormat::kRGBA_8888,
-+                                       &required_bytes)) {
++  auto required_bytes = SharedMemorySizeForSharedImageFormat(
++      SinglePlaneFormat::kRGBA_8888, viewport_pixel_size_);
++  if (!required_bytes) {
 +    DLOG(ERROR) << "Invalid viewport size " << viewport_pixel_size_.ToString();
 +    return;
 +  }
 +
 +  base::UnsafeSharedMemoryRegion region =
-+      base::UnsafeSharedMemoryRegion::Create(required_bytes);
++      base::UnsafeSharedMemoryRegion::Create(required_bytes.value());
 +  if (!region.IsValid()) {
-+    DLOG(ERROR) << "Failed to allocate " << required_bytes << " bytes";
++    DLOG(ERROR) << "Failed to allocate " << required_bytes.value() << " bytes";
 +    return;
 +  }
 +
@@ -359,7 +358,7 @@ index 0000000000000000000000000000000000000000..ef5cb8ae4c398e5834496c8b24eb98c4
 +#else
 +  shm_mapping_ = region.Map();
 +  if (!shm_mapping_.IsValid()) {
-+    DLOG(ERROR) << "Failed to map " << required_bytes << " bytes";
++    DLOG(ERROR) << "Failed to map " << required_bytes.value() << " bytes";
 +    return;
 +  }
 +
@@ -509,10 +508,10 @@ index 0000000000000000000000000000000000000000..e1a22ee881c0fd679ac2d2d4d11a3c93
 +
 +#endif  // COMPONENTS_VIZ_SERVICE_DISPLAY_EMBEDDER_SOFTWARE_OUTPUT_DEVICE_PROXY_H_
 diff --git a/components/viz/service/display_embedder/software_output_device_win.cc b/components/viz/service/display_embedder/software_output_device_win.cc
-index 9119e302ad073a3b22ba47f800e7214b580e122b..0d5b95a424a62a77785088dbd759af4f977b010e 100644
+index b5154321105f08335b67ad2d552afa61337a4976..cb28230d9a8da6bd2259ef0c898013293421ac56 100644
 --- a/components/viz/service/display_embedder/software_output_device_win.cc
 +++ b/components/viz/service/display_embedder/software_output_device_win.cc
-@@ -157,7 +157,7 @@ void SoftwareOutputDeviceWinProxy::EndPaintDelegated(
+@@ -156,7 +156,7 @@ void SoftwareOutputDeviceWinProxy::EndPaintDelegated(
    if (!canvas_)
      return;
  
@@ -522,7 +521,7 @@ index 9119e302ad073a3b22ba47f800e7214b580e122b..0d5b95a424a62a77785088dbd759af4f
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 346e41638ffefe5e5945aa3cfe0ec38887041a0b..38ed2eb97132201eb0adfd8b855c1611eab777f0 100644
+index d8f845998240032f668324665d61b2efd60c0e1c..9eb5ab874ceecb4902b9272ce574d81302cf2802 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -131,7 +131,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -564,10 +563,10 @@ index 399fba1a3d4e601dc2cdd5f1f4def8b7fd7a3011..8bcbe0d26c80323155d536c0d3a177a1
    gpu::SyncPointManager* GetSyncPointManager() override;
    gpu::Scheduler* GetGpuScheduler() override;
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 0c9dabd7e85042499b60d0a27a506745771bea6f..5f1896f4494b86c8385d3f5415863f5a7167715a 100644
+index 43d29976d8bd42d3ee6857db7d61f31c26795848..1d5852b1e4f1e628bd9b24b381ff3b17a4dd9165 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -386,8 +386,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -381,8 +381,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();
@@ -585,10 +584,10 @@ index 0c9dabd7e85042499b60d0a27a506745771bea6f..5f1896f4494b86c8385d3f5415863f5a
        compositor_data.display_client->GetBoundRemote(resize_task_runner_);
    mojo::AssociatedRemote<viz::mojom::ExternalBeginFrameController>
 diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
-index e063835e87f08e6a2359886a96d7b78954e3d5b2..34bcf67726f64466d11a56d7a315ce7e05a0cb3d 100644
+index 78a96bff9ba9e24dababf758ba38f9b430b39a14..7b46e68f52e3c13f731ce486706004423c871eb1 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
-@@ -119,7 +119,6 @@ interface DisplayClient {
+@@ -120,7 +120,6 @@ interface DisplayClient {
  
    // Creates a LayeredWindowUpdater implementation to draw into a layered
    // window.
@@ -597,10 +596,10 @@ index e063835e87f08e6a2359886a96d7b78954e3d5b2..34bcf67726f64466d11a56d7a315ce7e
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index 3066550e422058eec23d5fe3e655625f5446d694..7358b05a646a2f80717a91182c4929776a404179 100644
+index e440ae1c216333afe1d90114d48a3bf7f39cf41f..4b3aba1c87e2e0fe1628681fb8b5cf19bfc54f80 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-@@ -39,6 +39,7 @@ struct RootCompositorFrameSinkParams {
+@@ -40,6 +40,7 @@ struct RootCompositorFrameSinkParams {
    bool send_swap_size_notifications = false;
    // Disables begin frame rate limiting for the display compositor.
    bool disable_frame_rate_limit = false;
@@ -620,7 +619,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index f1a4674323d96bc6a1a291b0aaa4c2a35b20648e..682b23f083eff17bc36cdc4698e35d853beb90cc 100644
+index 010a30bcd09ca39215f0b31ec59425067a2392a4..7f428fe96da978aa951354eb41f9ebec46cc6e9c 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -87,6 +87,7 @@ class DisplayPrivate;

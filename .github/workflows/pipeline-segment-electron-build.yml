@@ -59,6 +59,8 @@ on:
         type: boolean
         default: false
 
+permissions: {}
+
 concurrency:
   group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.target-variant }}-${{ inputs.is-asan }}-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
@@ -66,6 +68,7 @@ concurrency:
 env:
   CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
   CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+  DD_API_KEY: ${{ secrets.DD_API_KEY }}
   ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
@@ -80,16 +83,19 @@ jobs:
       run:
         shell: bash
     runs-on: ${{ inputs.build-runs-on }}
+    permissions:
+      contents: read
     container: ${{ fromJSON(inputs.build-container) }}
     environment: ${{ inputs.environment }}
     env:
       TARGET_ARCH: ${{ inputs.target-arch }}
+      TARGET_PLATFORM: ${{ inputs.target-platform }}
     steps:
     - name: Create src dir
       run: |
         mkdir src
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         path: src/electron
         fetch-depth: 0
@@ -113,9 +119,9 @@ jobs:
       run: df -h
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'macos' }}
-      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+      uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
       with:
-        node-version: 20.19.x
+        node-version: 22.21.x
         cache: yarn
         cache-dependency-path: src/electron/yarn.lock
     - name: Install Dependencies
@@ -157,7 +163,7 @@ jobs:
       if: ${{ inputs.target-platform == 'linux' }}
       uses: ./src/electron/.github/actions/restore-cache-aks
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         path: src/electron
         fetch-depth: 0

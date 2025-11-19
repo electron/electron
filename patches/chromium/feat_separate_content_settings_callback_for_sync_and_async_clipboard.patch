@@ -20,7 +20,7 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 21abffe390a8213ce1a5b71f382b37a60a014f52..38134a075fbb3586eec543591c88fcf7dcd53e3d 100644
+index c9b607c9bd09d43099a1704d5d4139c64e4beac4..18ad7ed73b0ed4de158519c01342f0bfd7cc3666 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
 @@ -536,6 +536,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
@@ -32,10 +32,10 @@ index 21abffe390a8213ce1a5b71f382b37a60a014f52..38134a075fbb3586eec543591c88fcf7
        break;
    }
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 93375d87a26961edd8ae0c25fecc0ea5afc8c0bc..f6a28f5efae758a93aa52ebd28e25ece996f0e7e 100644
+index eeacd30992233f44f8972f242f37637cb240dc06..e56096991dfbffa3a16aa3aca602b59fbd48a4d5 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
-@@ -88,6 +88,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+@@ -94,6 +94,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
      case PermissionType::AUTOMATIC_FULLSCREEN:
      case PermissionType::WEB_APP_INSTALLATION:
      case PermissionType::LOCAL_NETWORK_ACCESS:
@@ -91,7 +91,7 @@ index 5c82a641538802bc459782ea422a1186045b054a..c286d87043ec4cb2e51ec9d82d08e4c8
    // Always keep this at the end.
    NUM,
 diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
-index 66270fa219491e0b9f09113e45452cd8c2890b52..47c73522cbd7c1d12dabfecf6f55a74690ebc189 100644
+index da2bcae965ddc183b5794bc8c44aec4f1754f1d2..2b24e692042a352e931278ead6a06e057f73eda6 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
 @@ -43,7 +43,8 @@ enum PermissionName {
@@ -119,7 +119,7 @@ index 36410ff29d9c82e59f93fbb82968064bd330dfde..6c3f994e0b184f78bd9442002bb4dfae
    virtual void PassiveInsecureContentFound(const WebURL&) {}
  
 diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-index a5ac9d4a417ac8e75e761c40841f41ab9057c761..292bd1f9de78828e739dae24a45a1dd3d6585240 100644
+index 80c15ef5381aa08c0c6ce3f51534bb04af64775d..9a9024ba766226848974e5518ccbffa79ee55e65 100644
 --- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 +++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 @@ -123,7 +123,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
@@ -141,10 +141,10 @@ index a5ac9d4a417ac8e75e761c40841f41ab9057c761..292bd1f9de78828e739dae24a45a1dd3
  
  bool ClipboardCommands::ExecuteCopy(LocalFrame& frame,
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index b533436f91ba67c6060d4a1976f7c197b6db3afc..63df740efad1e407f0990d2ba48a9cbcb8bdb6f8 100644
+index 691726eb23434005adc559534fc0aeede937cc92..a980ed6afb84eceef9c9b594b325e8e3783821ec 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-@@ -146,6 +146,8 @@ String PermissionNameToString(PermissionName name) {
+@@ -145,6 +145,8 @@ String PermissionNameToString(PermissionName name) {
        return "web-printing";
      case PermissionName::SMART_CARD:
        return "smart-card";

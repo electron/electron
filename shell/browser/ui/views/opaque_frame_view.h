@@ -40,7 +40,7 @@ class OpaqueFrameView : public FramelessView {
   int ResizingBorderHitTest(const gfx::Point& point) override;
   void InvalidateCaptionButtons() override;
 
-  // views::NonClientFrameView:
+  // views::FrameView:
   gfx::Rect GetBoundsForClientView() const override;
   gfx::Rect GetWindowBoundsForClientBounds(
       const gfx::Rect& client_bounds) const override;

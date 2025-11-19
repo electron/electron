@@ -221,10 +221,10 @@ class IPCRenderFrame : public IPCBase<IPCRenderFrame>,
 
   void OnDestruct() override { electron_ipc_remote_.reset(); }
 
-  void WillReleaseScriptContext(v8::Local<v8::Context> context,
+  void WillReleaseScriptContext(v8::Isolate* const isolate,
+                                v8::Local<v8::Context> context,
                                 int32_t world_id) override {
-    if (weak_context_.IsEmpty() ||
-        weak_context_.Get(context->GetIsolate()) == context) {
+    if (weak_context_.IsEmpty() || weak_context_.Get(isolate) == context) {
       OnDestruct();
     }
   }

@@ -18,12 +18,12 @@ This partially (leaves the removal of the feature flag) reverts
 ef865130abd5539e7bce12308659b19980368f12.
 
 diff --git a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.h b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.h
-index 428902f90950b2e9434c8a624a313268ebb80cd4..afcc3bc481be6a16119f7e2af647276cb0dafa1e 100644
+index 13e928e3790735fdad68fbca0a8a8e9d0836fdee..2719f8853e840d6f890d01220345644db163fd07 100644
 --- a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.h
 +++ b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.h
-@@ -12,6 +12,8 @@
+@@ -11,6 +11,8 @@
+ #include "base/metrics/field_trial_params.h"
  #import "content/app_shim_remote_cocoa/web_contents_view_cocoa.h"
- #include "content/common/web_contents_ns_view_bridge.mojom.h"
  
 +extern CONTENT_EXPORT const base::FeatureParam<bool>
 +    kEnhancedWindowOcclusionDetection;
@@ -31,10 +31,14 @@ index 428902f90950b2e9434c8a624a313268ebb80cd4..afcc3bc481be6a16119f7e2af647276c
      kDisplaySleepAndAppHideDetection;
  
 diff --git a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
-index 32523e6a6f800de3917d18825f94c66ef4ea4388..634d68b9a2840d7c9e7c3b5e23d8b1b8ac02456b 100644
+index a5570988c3721d9f6bd05c402a7658d3af6f2c2c..0a2dba6aa2d48bc39d2a55c8b4d6606744c10ca7 100644
 --- a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
 +++ b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
-@@ -19,6 +19,12 @@
+@@ -14,9 +14,16 @@
+ #include "base/mac/mac_util.h"
+ #include "base/metrics/field_trial_params.h"
+ #include "base/no_destructor.h"
++#include "content/common/features.h"
  #include "content/public/browser/content_browser_client.h"
  #include "content/public/common/content_client.h"
  
@@ -47,7 +51,7 @@ index 32523e6a6f800de3917d18825f94c66ef4ea4388..634d68b9a2840d7c9e7c3b5e23d8b1b8
  namespace {
  
  NSString* const kWindowDidChangePositionInWindowList =
-@@ -127,7 +133,8 @@ - (void)dealloc {
+@@ -125,7 +132,8 @@ - (void)dealloc {
  
  - (BOOL)isManualOcclusionDetectionEnabled {
    return [WebContentsOcclusionCheckerMac
@@ -58,10 +62,18 @@ index 32523e6a6f800de3917d18825f94c66ef4ea4388..634d68b9a2840d7c9e7c3b5e23d8b1b8
  
  // Alternative implementation of orderWindow:relativeTo:. Replaces
 diff --git a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
-index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7cef78ca4ee 100644
+index 17d6d7d935f93afefa9123f56ef9c138c3070f93..8dfa7501a6a2998e107bf9b51f5e5c3d52e880bf 100644
 --- a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
-@@ -29,6 +29,7 @@
+@@ -16,6 +16,7 @@
+ #import "content/app_shim_remote_cocoa/web_drag_source_mac.h"
+ #import "content/browser/web_contents/web_contents_view_mac.h"
+ #import "content/browser/web_contents/web_drag_dest_mac.h"
++#include "content/common/features.h"
+ #include "content/public/browser/content_browser_client.h"
+ #include "content/public/common/content_client.h"
+ #include "ui/base/clipboard/clipboard_constants.h"
+@@ -28,6 +29,7 @@
  #include "ui/resources/grit/ui_resources.h"
  
  using content::DropData;
@@ -69,7 +81,7 @@ index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7ce
  using remote_cocoa::mojom::DraggingInfo;
  using remote_cocoa::mojom::SelectionDirection;
  
-@@ -124,12 +125,15 @@ @implementation WebContentsViewCocoa {
+@@ -123,17 +125,20 @@ @implementation WebContentsViewCocoa {
    WebDragSource* __strong _dragSource;
    NSDragOperation _dragOperation;
  
@@ -78,16 +90,25 @@ index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7ce
  }
  
  + (void)initialize {
+-  if (![WebContentsOcclusionCheckerMac
+-          manualOcclusionDetectionSupportedForCurrentMacOSVersion]) {
+-    return;
+-  }
++  if (base::FeatureList::IsEnabled(kMacWebContentsOcclusion)) {
++    if (![WebContentsOcclusionCheckerMac
++            manualOcclusionDetectionSupportedForCurrentMacOSVersion]) {
++      return;
++    }
+ 
 -  // Create the WebContentsOcclusionCheckerMac shared instance.
 -  [WebContentsOcclusionCheckerMac sharedInstance];
-+  if (base::FeatureList::IsEnabled(kMacWebContentsOcclusion)) {
 +    // Create the WebContentsOcclusionCheckerMac shared instance.
 +    [WebContentsOcclusionCheckerMac sharedInstance];
 +  }
  }
  
  - (instancetype)initWithViewsHostableView:(ui::ViewsHostableView*)v {
-@@ -440,6 +444,7 @@ - (void)updateWebContentsVisibility:
+@@ -444,6 +449,7 @@ - (void)updateWebContentsVisibility:
      (remote_cocoa::mojom::Visibility)visibility {
    using remote_cocoa::mojom::Visibility;
  
@@ -95,7 +116,7 @@ index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7ce
    if (!_host)
      return;
  
-@@ -485,6 +490,20 @@ - (void)updateWebContentsVisibility {
+@@ -489,6 +495,20 @@ - (void)updateWebContentsVisibility {
    [self updateWebContentsVisibility:visibility];
  }
  
@@ -116,7 +137,7 @@ index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7ce
  - (void)resizeSubviewsWithOldSize:(NSSize)oldBoundsSize {
    // Subviews do not participate in auto layout unless the the size this view
    // changes. This allows RenderWidgetHostViewMac::SetBounds(..) to select a
-@@ -507,11 +526,39 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
+@@ -511,11 +531,39 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
  
    NSWindow* oldWindow = [self window];
  
@@ -160,7 +181,7 @@ index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7ce
    }
  
    if (newWindow) {
-@@ -519,26 +566,66 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
+@@ -523,26 +571,66 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
                             selector:@selector(windowChangedOcclusionState:)
                                 name:NSWindowDidChangeOcclusionStateNotification
                               object:newWindow];
@@ -233,11 +254,11 @@ index d8167e854a3264b19a07544039fd01aba45e27a1..2e5a4ae715529e3b7b5c8fbb7195c7ce
  }
  
 diff --git a/content/common/features.cc b/content/common/features.cc
-index c0723c13069f570206ea6b536b1a41a1200e3d48..fe5b95303d6cf06b99889307930252effdea6e0f 100644
+index d9fdcd11f23449e22e17df833140c1f80d503486..18d3c146ec38ada48dc1c32904fe170a0a53a6f2 100644
 --- a/content/common/features.cc
 +++ b/content/common/features.cc
-@@ -324,6 +324,14 @@ BASE_FEATURE(kIOSurfaceCapturer,
-              base::FEATURE_ENABLED_BY_DEFAULT);
+@@ -312,6 +312,14 @@ BASE_FEATURE(kInterestGroupUpdateIfOlderThan, base::FEATURE_ENABLED_BY_DEFAULT);
+ BASE_FEATURE(kIOSurfaceCapturer, base::FEATURE_ENABLED_BY_DEFAULT);
  #endif
  
 +// Feature that controls whether WebContentsOcclusionChecker should handle
@@ -249,13 +270,13 @@ index c0723c13069f570206ea6b536b1a41a1200e3d48..fe5b95303d6cf06b99889307930252ef
 +#endif
 +
  // When enabled, child process will not terminate itself when IPC is reset.
- BASE_FEATURE(kKeepChildProcessAfterIPCReset,
-              "KeepChildProcessAfterIPCReset",
+ BASE_FEATURE(kKeepChildProcessAfterIPCReset, base::FEATURE_DISABLED_BY_DEFAULT);
+ 
 diff --git a/content/common/features.h b/content/common/features.h
-index 93017367d5ef77b00a73d849608a7af16fe44527..394ee07b58a9b6021143b2168b1065350420cfca 100644
+index 5b6d84c51b082bc80e9fd03b79a4ff4704b75eb7..b043a236891cdc83342820a38babf4cfd99b4d40 100644
 --- a/content/common/features.h
 +++ b/content/common/features.h
-@@ -101,6 +101,9 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(kInterestGroupUpdateIfOlderThan);
+@@ -112,6 +112,9 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(kInterestGroupUpdateIfOlderThan);
  #if BUILDFLAG(IS_MAC)
  CONTENT_EXPORT BASE_DECLARE_FEATURE(kIOSurfaceCapturer);
  #endif

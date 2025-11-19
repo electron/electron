@@ -1279,15 +1279,16 @@ Sets the properties for the window's taskbar button.
 
 #### `win.setAccentColor(accentColor)` _Windows_
 
-* `accentColor` boolean | string - The accent color for the window. By default, follows user preference in System Settings.
+* `accentColor` boolean | string | null - The accent color for the window. By default, follows user preference in System Settings. To reset to system default, pass `null`.
 
 Sets the system accent color and highlighting of active window border.
 
 The `accentColor` parameter accepts the following values:
 
-* **Color string** - Sets a custom accent color using standard CSS color formats (Hex, RGB, RGBA, HSL, HSLA, or named colors). Alpha values in RGBA/HSLA formats are ignored and the color is treated as fully opaque.
-* **`true`** - Uses the system's default accent color from user preferences in System Settings.
-* **`false`** - Explicitly disables accent color highlighting for the window.
+* **Color string** - Like `true`, but sets a custom accent color using standard CSS color formats (Hex, RGB, RGBA, HSL, HSLA, or named colors). Alpha values in RGBA/HSLA formats are ignored and the color is treated as fully opaque.
+* **`true`** - Enable accent color highlighting for the window with the system accent color regardless of whether accent colors are enabled for windows in System `Settings.`
+* **`false`** - Disable accent color highlighting for the window regardless of whether accent colors are currently enabled for windows in System Settings.
+* **`null`** - Reset window accent color behavior to follow behavior set in System Settings.
 
 Examples:
 
@@ -1300,11 +1301,14 @@ win.setAccentColor('#ff0000')
 // RGB format (alpha ignored if present).
 win.setAccentColor('rgba(255,0,0,0.5)')
 
-// Use system accent color.
+// Enable accent color, using the color specified in System Settings.
 win.setAccentColor(true)
 
 // Disable accent color.
 win.setAccentColor(false)
+
+// Reset window accent color behavior to follow behavior set in System Settings.
+win.setAccentColor(null)
 ```
 
 #### `win.getAccentColor()` _Windows_

@@ -140,6 +140,10 @@ state is `hidden` in order to minimize power consumption.
   move.
 * On Linux the type of modal windows will be changed to `dialog`.
 * On Linux many desktop environments do not support hiding a modal window.
+* On Wayland (Linux) it is generally not possible to programmatically resize windows
+  after creation, or to position, move, focus, or blur windows without user input.
+  If your app needs these capabilities, run it in Xwayland by appending the flag
+  `--ozone-platform=x11`.
 
 ## Class: BrowserWindow extends `BaseWindow`
 
@@ -656,9 +660,14 @@ the [close event](#event-close).
 
 Focuses on the window.
 
+On Wayland (Linux), the desktop environment may show a notification or flash
+the app icon if the window or app is not already focused.
+
 #### `win.blur()`
 
 Removes focus from the window.
+
+Not supported on Wayland (Linux).
 
 #### `win.isFocused()`
 
@@ -675,6 +684,8 @@ Shows and gives focus to the window.
 #### `win.showInactive()`
 
 Shows the window but doesn't focus on it.
+
+Not supported on Wayland (Linux).
 
 #### `win.hide()`
 
@@ -824,6 +835,8 @@ Closes the currently open [Quick Look][quick-look] panel.
 
 Resizes and moves the window to the supplied bounds. Any properties that are not supplied will default to their current values.
 
+On Wayland (Linux), has the same limitations as `setSize` and `setPosition`.
+
 ```js
 const { BrowserWindow } = require('electron')
 
@@ -866,6 +879,8 @@ See [Setting `backgroundColor`](#setting-the-backgroundcolor-property).
 Resizes and moves the window's client area (e.g. the web page) to
 the supplied bounds.
 
+On Wayland (Linux), has the same limitations as `setContentSize` and `setPosition`.
+
 #### `win.getContentBounds()`
 
 Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window's client area as `Object`.
@@ -895,6 +910,8 @@ Returns `boolean` - whether the window is enabled.
 
 Resizes the window to `width` and `height`. If `width` or `height` are below any set minimum size constraints the window will snap to its minimum size.
 
+On Wayland (Linux), may not work as some window managers restrict programmatic window resizing.
+
 #### `win.getSize()`
 
 Returns `Integer[]` - Contains the window's width and height.
@@ -906,6 +923,8 @@ Returns `Integer[]` - Contains the window's width and height.
 * `animate` boolean (optional) _macOS_
 
 Resizes the window's client area (e.g. the web page) to `width` and `height`.
+
+On Wayland (Linux), may not work as some window managers restrict programmatic window resizing.
 
 #### `win.getContentSize()`
 
@@ -1044,11 +1063,15 @@ this method throws an error.
 
 #### `win.moveTop()`
 
-Moves window to top(z-order) regardless of focus
+Moves window to top(z-order) regardless of focus.
+
+Not supported on Wayland (Linux).
 
 #### `win.center()`
 
 Moves window to the center of the screen.
+
+Not supported on Wayland (Linux).
 
 #### `win.setPosition(x, y[, animate])`
 
@@ -1057,6 +1080,8 @@ Moves window to the center of the screen.
 * `animate` boolean (optional) _macOS_
 
 Moves window to `x` and `y`.
+
+Not supported on Wayland (Linux).
 
 #### `win.getPosition()`
 
@@ -1442,15 +1467,16 @@ Sets the properties for the window's taskbar button.
 
 #### `win.setAccentColor(accentColor)` _Windows_
 
-* `accentColor` boolean | string - The accent color for the window. By default, follows user preference in System Settings.
+* `accentColor` boolean | string | null - The accent color for the window. By default, follows user preference in System Settings. To reset to system default, pass `null`.
 
 Sets the system accent color and highlighting of active window border.
 
 The `accentColor` parameter accepts the following values:
 
-* **Color string** - Sets a custom accent color using standard CSS color formats (Hex, RGB, RGBA, HSL, HSLA, or named colors). Alpha values in RGBA/HSLA formats are ignored and the color is treated as fully opaque.
-* **`true`** - Uses the system's default accent color from user preferences in System Settings.
-* **`false`** - Explicitly disables accent color highlighting for the window.
+* **Color string** - Like `true`, but sets a custom accent color using standard CSS color formats (Hex, RGB, RGBA, HSL, HSLA, or named colors). Alpha values in RGBA/HSLA formats are ignored and the color is treated as fully opaque.
+* **`true`** - Enable accent color highlighting for the window with the system accent color regardless of whether accent colors are enabled for windows in System `Settings.`
+* **`false`** - Disable accent color highlighting for the window regardless of whether accent colors are currently enabled for windows in System Settings.
+* **`null`** - Reset window accent color behavior to follow behavior set in System Settings.
 
 Examples:
 
@@ -1463,11 +1489,14 @@ win.setAccentColor('#ff0000')
 // RGB format (alpha ignored if present).
 win.setAccentColor('rgba(255,0,0,0.5)')
 
-// Use system accent color.
+// Enable accent color, using the color specified in System Settings.
 win.setAccentColor(true)
 
 // Disable accent color.
 win.setAccentColor(false)
+
+// Reset window accent color behavior to follow behavior set in System Settings.
+win.setAccentColor(null)
 ```
 
 #### `win.getAccentColor()` _Windows_
@@ -1570,10 +1599,17 @@ events.
 
 Prevents the window contents from being captured by other apps.
 
-On macOS it sets the NSWindow's [`sharingType`](https://developer.apple.com/documentation/appkit/nswindow/sharingtype-swift.property?language=objc) to [`NSWindowSharingNone`](https://developer.apple.com/documentation/appkit/nswindow/sharingtype-swift.enum/none?language=objc).
-On Windows it calls [`SetWindowDisplayAffinity`](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity) with `WDA_EXCLUDEFROMCAPTURE`.
+On Windows, it calls [`SetWindowDisplayAffinity`](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity) with `WDA_EXCLUDEFROMCAPTURE`.
 For Windows 10 version 2004 and up the window will be removed from capture entirely,
 older Windows versions behave as if `WDA_MONITOR` is applied capturing a black window.
+
+On macOS, it sets the `NSWindow`'s
+[`sharingType`](https://developer.apple.com/documentation/appkit/nswindow/sharingtype-swift.property?language=objc)
+to
+[`NSWindowSharingNone`](https://developer.apple.com/documentation/appkit/nswindow/sharingtype-swift.enum/none?language=objc).
+Unfortunately, due to an intentional change in macOS, newer Mac applications that use
+`ScreenCaptureKit` will capture your window despite `win.setContentProtection(true)`.
+See [here](https://github.com/electron/electron/issues/48258#issuecomment-3269893618).
 
 #### `win.isContentProtected()` _macOS_ _Windows_
 

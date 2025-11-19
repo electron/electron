@@ -31,7 +31,9 @@ enum class BridgeErrorTarget {
 };
 
 v8::MaybeLocal<v8::Value> PassValueToOtherContext(
+    v8::Isolate* source_isolate,
     v8::Local<v8::Context> source_context,
+    v8::Isolate* destination_isolate,
     v8::Local<v8::Context> destination_context,
     v8::Local<v8::Value> value,
     /**

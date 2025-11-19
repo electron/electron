@@ -7,7 +7,7 @@ Electron does not support Profiles, so we need to patch it out of any
 code that we use.
 
 diff --git a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
-index c390a83277f564f1a67a7dcffa36b9d77a35bc0b..b13273a4b194ad5e8ca2d1639ebca831f9607b1e 100644
+index bd19708922b3d9224cc3a05f515c455ce4fb1e69..7198d9f9b22c8725c7ecdf6931ff36859ffaf506 100644
 --- a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
 +++ b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
 @@ -45,6 +45,7 @@ namespace {
@@ -27,12 +27,12 @@ index c390a83277f564f1a67a7dcffa36b9d77a35bc0b..b13273a4b194ad5e8ca2d1639ebca831
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index 1362d0c69043ac5d1f7e72cf7ac72c272193844c..08efd98ca16555f6a7bbfb4ae3165130e843c981 100644
+index 328abdd79d287225d0e6ec6becc455e169d6e5d0..10e5e702a43dbb70e13d00b48000e0b4cc974e7a 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
-@@ -271,10 +271,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
+@@ -248,10 +248,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
  
- #if BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(ENABLE_PDF_INK2)
+ #if BUILDFLAG(ENABLE_PDF_INK2)
  bool IsPdfAnnotationsEnabledByPolicy(content::BrowserContext* context) {
 +# if 0
    PrefService* prefs =
@@ -42,7 +42,7 @@ index 1362d0c69043ac5d1f7e72cf7ac72c272193844c..08efd98ca16555f6a7bbfb4ae3165130
 +#endif
 +  return true;
  }
- #endif  // BUILDFLAG(IS_CHROMEOS) || BUILDFLAG(ENABLE_PDF_INK2)
+ #endif  // BUILDFLAG(ENABLE_PDF_INK2)
  
 diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
 index bc0bad82ebcdceadc505e912ff27202b452fefab..6b77c57fccc4619a1df3b4ed661d2bdd60960228 100644
@@ -84,7 +84,7 @@ index bc0bad82ebcdceadc505e912ff27202b452fefab..6b77c57fccc4619a1df3b4ed661d2bdd
  
  ProfileSelection ProfileSelections::GetProfileSelection(
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index 4c52386f9ddf13f1453903cda3954b6c596028f2..8fbb2025d157e58c90c701f9e3478f6c99b88aa1 100644
+index f8a36ced14288698849cd5730309e29d47d3d1d4..97b8fc0f38650e816bcae00e074543766f71e0d0 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
 @@ -21,8 +21,10 @@

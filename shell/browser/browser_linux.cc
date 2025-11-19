@@ -134,7 +134,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
   const std::vector<std::string> argv = {
       "xdg-mime", "query", "default",
-      base::StrCat({"x-scheme-handler/", url.scheme_piece()})};
+      base::StrCat({"x-scheme-handler/", url.scheme()})};
 
   return base::ASCIIToUTF16(GetXdgAppOutput(argv).value_or(std::string()));
 }

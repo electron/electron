@@ -43,10 +43,13 @@ defaults:
   run:
     shell: bash
 
+permissions: {}
+
 jobs:
   setup:
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pull-requests: read
     outputs:
         docs: ${{ steps.filter.outputs.docs }}
@@ -54,7 +57,7 @@ jobs:
         build-image-sha: ${{ steps.set-output.outputs.build-image-sha }}
         docs-only: ${{ steps.set-output.outputs.docs-only }}
     steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.0.2
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         ref: ${{ github.event.pull_request.head.sha }}
     - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
@@ -63,6 +66,10 @@ jobs:
         filters: |
           docs:
             - 'docs/**'
+            - README.md
+            - SECURITY.md
+            - CONTRIBUTING.md
+            - CODE_OF_CONDUCT.md
           src:
             - '!docs/**'
     - name: Set Outputs for Build Image SHA & Docs Only
@@ -80,6 +87,8 @@ jobs:
     needs: setup
     if: ${{ !inputs.skip-lint }}
     uses: ./.github/workflows/pipeline-electron-lint.yml
+    permissions:
+      contents: read
     with:
       container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root"}'
     secrets: inherit
@@ -89,6 +98,8 @@ jobs:
     needs: [setup, checkout-linux]
     if: ${{ needs.setup.outputs.docs-only == 'true' }}
     uses: ./.github/workflows/pipeline-electron-docs-only.yml
+    permissions:
+      contents: read
     with:
       container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
     secrets: inherit
@@ -98,6 +109,8 @@ jobs:
     needs: setup
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-macos}}
     runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
     container:
       image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
       options: --user root
@@ -111,7 +124,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         path: src/electron
         fetch-depth: 0
@@ -126,6 +139,8 @@ jobs:
     needs: setup
     if: ${{ !inputs.skip-linux}}
     runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
     container:
       image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
       options: --user root
@@ -141,7 +156,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha}}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         path: src/electron
         fetch-depth: 0
@@ -155,6 +170,8 @@ jobs:
     needs: setup
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
     container:
       image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
       options: --user root --device /dev/fuse --cap-add SYS_ADMIN
@@ -171,7 +188,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha}}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         path: src/electron
         fetch-depth: 0
@@ -185,16 +202,20 @@ jobs:
   # GN Check Jobs
   macos-gn-check:
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
+    permissions:
+      contents: read
     needs: checkout-macos
     with:
       target-platform: macos
       target-archs: x64 arm64
-      check-runs-on: macos-14
+      check-runs-on: macos-15
       gn-build-type: testing
     secrets: inherit
 
   linux-gn-check:
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
+    permissions:
+      contents: read
     needs: checkout-linux
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
@@ -207,6 +228,8 @@ jobs:
 
   windows-gn-check:
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
+    permissions:
+      contents: read
     needs: checkout-windows
     with:
       target-platform: win
@@ -225,7 +248,7 @@ jobs:
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-macos
     with:
-      build-runs-on: macos-14-xlarge
+      build-runs-on: macos-15-xlarge
       test-runs-on: macos-15-large
       target-platform: macos
       target-arch: x64
@@ -244,7 +267,7 @@ jobs:
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-macos
     with:
-      build-runs-on: macos-14-xlarge
+      build-runs-on: macos-15-xlarge
       test-runs-on: macos-15
       target-platform: macos
       target-arch: arm64
@@ -400,6 +423,8 @@ jobs:
   gha-done:
     name: GitHub Actions Completed
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs: [docs-only, macos-x64, macos-arm64, linux-x64, linux-x64-asan, linux-arm, linux-arm64, windows-x64, windows-x86, windows-arm64]
     if: always() && !contains(needs.*.result, 'failure')
     steps: 

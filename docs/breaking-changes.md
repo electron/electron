@@ -12,6 +12,19 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (40.0)
+
+### Deprecated: `clipboard` API access from renderer processes
+
+Using the `clipboard` API directly in the renderer process is deprecated.
+If you want to call this API from a renderer process, place the API call in
+your preload script and expose it using the [contextBridge](https://www.electronjs.org/docs/latest/api/context-bridge) API.
+
+### Behavior Changed: MacOS dSYM files now compressed with tar.xz
+
+Debug symbols for MacOS (dSYM) now use xz compression in order to handle larger file sizes. `dsym.zip` files are now
+`dsym.tar.xz` files. End users using debug symbols may need to update their zip utilities.
+
 ## Planned Breaking API Changes (39.0)
 
 ### Deprecated: `--host-rules` command line switch
@@ -20,13 +33,42 @@ Chromium is deprecating the `--host-rules` switch.
 
 You should use `--host-resolver-rules` instead.
 
+### Behavior Changed: window.open popups are always resizable
+
+Per current [WHATWG spec](https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-open-dev), the `window.open` API will now always create a resizable popup window.
+
+To restore previous behavior:
+
+```js
+webContents.setWindowOpenHandler((details) => {
+  return {
+    action: 'allow',
+    overrideBrowserWindowOptions: {
+      resizable: details.features.includes('resizable=yes')
+    }
+  }
+})
+```
+
+### Behavior Changed: shared texture OSR `paint` event data structure
+
+When using shared texture offscreen rendering feature, the `paint` event now emits a more structured object.
+It moves the `sharedTextureHandle`, `planes`, `modifier` into a unified `handle` property.
+See the [OffscreenSharedTexture](./api/structures/offscreen-shared-texture.md) API structure for more details.
+
 ## Planned Breaking API Changes (38.0)
 
 ### Removed: `ELECTRON_OZONE_PLATFORM_HINT` environment variable
 
-The default value of the `--ozone-plaftform` flag [changed to `auto`](https://chromium-review.googlesource.com/c/chromium/src/+/6775426).
+The default value of the `--ozone-platform` flag [changed to `auto`](https://chromium-review.googlesource.com/c/chromium/src/+/6775426).
 
-You should use the `XDG_SESSION_TYPE=wayland` environment variable instead to use Wayland.
+Electron now defaults to running as a native Wayland app when launched in a Wayland session (when `XDG_SESSION_TYPE=wayland`).
+Users can force XWayland by passing `--ozone-platform=x11`.
+
+### Removed: `ORIGINAL_XDG_CURRENT_DESKTOP` environment variable
+
+Previously, Electron changed the value of `XDG_CURRENT_DESKTOP` internally to `Unity`, and stored the original name of the desktop session
+in a separate variable. `XDG_CURRENT_DESKTOP` is no longer overriden and now reflects the actual desktop environment.
 
 ### Removed: macOS 11 support
 
@@ -50,29 +92,6 @@ You should use `webFrame.frameToken` instead.
 The `webFrame.findFrameByRoutingId(routingId)` function will be removed.
 
 You should use `webFrame.findFrameByToken(frameToken)` instead.
-
-### Behavior Changed: window.open popups are always resizable
-
-Per current [WHATWG spec](https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-open-dev), the `window.open` API will now always create a resizable popup window.
-
-To restore previous behavior:
-
-```js
-webContents.setWindowOpenHandler((details) => {
-  return {
-    action: 'allow',
-    overrideBrowserWindowOptions: {
-      resizable: details.features.includes('resizable=yes')
-    }
-  }
-})
-```
-
-### Behavior Changed: shared texture OSR `paint` event data structure
-
-When using shared texture offscreen rendering feature, the `paint` event now emits a more structured object.
-It moves the `sharedTextureHandle`, `planes`, `modifier` into a unified `handle` property.
-See [here](https://www.electronjs.org/docs/latest/api/structures/offscreen-shared-texture) for more details.
 
 ## Planned Breaking API Changes (37.0)
 

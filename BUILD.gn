@@ -480,6 +480,7 @@ source_set("electron_lib") {
     "//device/bluetooth",
     "//device/bluetooth/public/cpp",
     "//gin",
+    "//gpu/ipc/client",
     "//media/capture/mojom:video_capture",
     "//media/mojo/mojom",
     "//media/mojo/mojom:web_speech_recognition",
@@ -586,7 +587,13 @@ source_set("electron_lib") {
   }
 
   if (is_mac) {
+    # Disable C++ modules to resolve linking error when including MacOS SDK
+    # headers from third_party/electron_node/deps/uv/include/uv/darwin.h
+    # TODO(samuelmaddock): consider revisiting this in the future
+    use_libcxx_modules = false
+
     deps += [
+      "//components/os_crypt/common:keychain_password_mac",
       "//components/remote_cocoa/app_shim",
       "//components/remote_cocoa/browser",
       "//content/browser:mac_helpers",
@@ -655,6 +662,7 @@ source_set("electron_lib") {
       "//ui/events/devices/x11",
       "//ui/events/platform/x11",
       "//ui/gtk:gtk_config",
+      "//ui/linux:display_server_utils",
       "//ui/linux:linux_ui",
       "//ui/linux:linux_ui_factory",
       "//ui/wm",
@@ -688,7 +696,6 @@ source_set("electron_lib") {
       "//components/app_launch_prefetch",
       "//components/crash/core/app:crash_export_thunks",
       "//third_party/libxml:xml_writer",
-      "//ui/native_theme:native_theme_browser",
       "//ui/wm",
       "//ui/wm/public",
     ]
@@ -755,11 +762,13 @@ source_set("electron_lib") {
   if (enable_pdf_viewer) {
     deps += [
       "//chrome/browser/resources/pdf:resources",
+      "//chrome/browser/ui:browser_element_identifiers",
       "//components/pdf/browser",
       "//components/pdf/browser:interceptors",
       "//components/pdf/common:constants",
       "//components/pdf/common:util",
       "//components/pdf/renderer",
+      "//components/user_education/webui",
       "//pdf",
       "//pdf:content_restriction",
     ]
@@ -1617,6 +1626,29 @@ group("copy_node_headers") {
 
 group("node_headers") {
   public_deps = [ ":tar_node_headers" ]
+}
+
+group("testing_build") {
+  public_deps = [
+    ":electron_dist_zip",
+    ":electron_mksnapshot_zip",
+    ":node_headers",
+  ]
+}
+
+group("release_build") {
+  public_deps = [ ":testing_build" ]
+  if (is_official_build) {
+    public_deps += [ ":electron_symbols" ]
+  }
+  if (is_linux) {
+    public_deps += [
+      ":hunspell_dictionaries_zip",
+      ":libcxx_headers_zip",
+      ":libcxx_objects_zip",
+      ":libcxxabi_headers_zip",
+    ]
+  }
 }
 
 if (is_linux && is_official_build) {

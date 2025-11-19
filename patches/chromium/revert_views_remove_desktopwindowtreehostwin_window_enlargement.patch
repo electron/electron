@@ -10,10 +10,10 @@ on Windows.  We should refactor our code so that this patch isn't
 necessary.
 
 diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
-index 85f5e8902836f91994e9dd4018d1db4d126ffc69..f17308098e72c0087203a18ddd2967cb50b424c1 100644
+index 21026b6a40bbccf616b3a6390bb8359d23470380..c52e49e673616df91b115d39c5c78bcd1d7db7ff 100644
 --- a/testing/variations/fieldtrial_testing_config.json
 +++ b/testing/variations/fieldtrial_testing_config.json
-@@ -25240,6 +25240,21 @@
+@@ -25731,6 +25731,21 @@
              ]
          }
      ],
@@ -36,12 +36,12 @@ index 85f5e8902836f91994e9dd4018d1db4d126ffc69..f17308098e72c0087203a18ddd2967cb
          {
              "platforms": [
 diff --git a/ui/views/views_features.cc b/ui/views/views_features.cc
-index 52c03930806efdb180d45bb68d4b6cd72cb8bec7..8307938f271c46b57aeceb6e4faaad88f45add5e 100644
+index 9ecf5330bb9b3a5a7b12f3b9bb76192ea1694d07..202d3e3df60ec8d23b4cbd3e5814c3fce1b07871 100644
 --- a/ui/views/views_features.cc
 +++ b/ui/views/views_features.cc
-@@ -31,6 +31,14 @@ BASE_FEATURE(kEnableTouchDragCursorSync,
-              "EnableTouchDragCursorSync",
-              base::FEATURE_ENABLED_BY_DEFAULT);
+@@ -22,6 +22,14 @@ BASE_FEATURE(kAnnounceTextAdditionalAttributes,
+ // crbug.com/370856871.
+ BASE_FEATURE(kEnableTouchDragCursorSync, base::FEATURE_ENABLED_BY_DEFAULT);
  
 +// Enables enlargement of HWNDs to a minimum size of 64x64 to handle reported
 +// graphical glitches on certain hardware.
@@ -55,19 +55,19 @@ index 52c03930806efdb180d45bb68d4b6cd72cb8bec7..8307938f271c46b57aeceb6e4faaad88
  // to kKeyboardAccessibleTooltip in //ui/base/ui_base_features.cc.
  BASE_FEATURE(kKeyboardAccessibleTooltipInViews,
 diff --git a/ui/views/views_features.h b/ui/views/views_features.h
-index 58063f2452dc484a97c79b382067d9b34875e344..d586436498263c595a17454f54644d2deb05f308 100644
+index 5f5ea15678bd76399fdbbb8904fe155657f49335..a67c124878fb710599fed5d9714bfa723d0d67a5 100644
 --- a/ui/views/views_features.h
 +++ b/ui/views/views_features.h
-@@ -15,6 +15,7 @@ namespace views::features {
+@@ -14,6 +14,7 @@ namespace views::features {
+ // Please keep alphabetized.
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kAnnounceTextAdditionalAttributes);
- VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnablePlatformHighContrastInkDrop);
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableTouchDragCursorSync);
 +VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableTransparentHwndEnlargement);
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kKeyboardAccessibleTooltipInViews);
+ VIEWS_EXPORT BASE_DECLARE_FEATURE(kApplyInitialUrlToWebContents);
  
- }  // namespace views::features
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 54a94e1348fa196eaee8314076c47286c9ab0bcc..ed4d2c4d849085c0e7830c5d52d47daf2700ce34 100644
+index fd23b8036c7f2d8bf3ed1bba126f8ee813f688a8..392de361fe395b81b346abb477d91d495d00ba34 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 @@ -84,6 +84,23 @@ namespace {
@@ -94,7 +94,7 @@ index 54a94e1348fa196eaee8314076c47286c9ab0bcc..ed4d2c4d849085c0e7830c5d52d47daf
  // Updates the cursor clip region. Used for mouse locking.
  void UpdateMouseLockRegion(aura::Window* window, bool locked) {
    if (!locked) {
-@@ -333,9 +350,14 @@ bool DesktopWindowTreeHostWin::IsVisible() const {
+@@ -329,9 +346,14 @@ bool DesktopWindowTreeHostWin::IsVisible() const {
  }
  
  void DesktopWindowTreeHostWin::SetSize(const gfx::Size& size) {
@@ -111,7 +111,7 @@ index 54a94e1348fa196eaee8314076c47286c9ab0bcc..ed4d2c4d849085c0e7830c5d52d47daf
  }
  
  void DesktopWindowTreeHostWin::StackAbove(aura::Window* window) {
-@@ -350,30 +372,40 @@ void DesktopWindowTreeHostWin::StackAtTop() {
+@@ -346,30 +368,40 @@ void DesktopWindowTreeHostWin::StackAtTop() {
  }
  
  void DesktopWindowTreeHostWin::CenterWindow(const gfx::Size& size) {
@@ -154,7 +154,7 @@ index 54a94e1348fa196eaee8314076c47286c9ab0bcc..ed4d2c4d849085c0e7830c5d52d47daf
    return display::win::GetScreenWin()->ScreenToDIPRect(GetHWND(), pixel_bounds);
  }
  
-@@ -682,37 +714,44 @@ void DesktopWindowTreeHostWin::HideImpl() {
+@@ -677,37 +709,44 @@ void DesktopWindowTreeHostWin::HideImpl() {
  // other get/set methods work in DIP.
  
  gfx::Rect DesktopWindowTreeHostWin::GetBoundsInPixels() const {
@@ -219,7 +219,7 @@ index 54a94e1348fa196eaee8314076c47286c9ab0bcc..ed4d2c4d849085c0e7830c5d52d47daf
  }
  
  gfx::Rect
-@@ -922,21 +961,29 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
+@@ -917,18 +956,26 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
  
  void DesktopWindowTreeHostWin::GetWindowMask(const gfx::Size& size_px,
                                               SkPath* path) {
@@ -239,10 +239,7 @@ index 54a94e1348fa196eaee8314076c47286c9ab0bcc..ed4d2c4d849085c0e7830c5d52d47daf
 -  if (!path->isEmpty()) {
 -    const float scale =
 -        display::win::GetScreenWin()->GetScaleFactorForHWND(GetHWND());
--    SkScalar sk_scale = SkFloatToScalar(scale);
--    SkMatrix matrix;
--    matrix.setScale(sk_scale, sk_scale);
--    path->transform(matrix);
+-    *path = path->makeTransform(SkMatrix::Scale(scale, scale));
 +  if (Widget* widget = GetWidget(); widget && widget->non_client_view()) {
 +    widget->non_client_view()->GetWindowMask(
 +        display::win::GetScreenWin()->ScreenToDIPSize(GetHWND(),
@@ -252,22 +249,19 @@ index 54a94e1348fa196eaee8314076c47286c9ab0bcc..ed4d2c4d849085c0e7830c5d52d47daf
 +    if (!path->isEmpty()) {
 +      const float scale =
 +          display::win::GetScreenWin()->GetScaleFactorForHWND(GetHWND());
-+      SkScalar sk_scale = SkFloatToScalar(scale);
-+      SkMatrix matrix;
-+      matrix.setScale(sk_scale, sk_scale);
-+      path->transform(matrix);
++      *path = path->makeTransform(SkMatrix::Scale(scale, scale));
 +    }
 +  } else if (!window_enlargement_.IsZero()) {
-+    path->addRect(SkRect::MakeXYWH(0, 0, adjusted_size_in_px.width(),
-+                                   adjusted_size_in_px.height()));
++    *path = SkPath::Rect(SkRect::MakeXYWH(0, 0, adjusted_size_in_px.width(),
++                                          adjusted_size_in_px.height()));
    }
  }
  
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index 13cfa18bf406f244ec361a1230ccce440ad9785a..d8be4dffee3947e7ac6dc09cb8e1f2a6a834789b 100644
+index e8acd2828ed05deefa335ce2bb461f0c3be8d7b7..0cd07fd5fb55dcc0d972de4c027fcb895d156592 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-@@ -176,7 +176,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+@@ -175,7 +175,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
    void ShowImpl() override;
    void HideImpl() override;
    gfx::Rect GetBoundsInPixels() const override;

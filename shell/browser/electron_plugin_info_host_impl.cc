@@ -49,7 +49,7 @@ void ElectronPluginInfoHostImpl::PluginsLoaded(
   std::vector<WebPluginInfo> matching_plugins;
   std::vector<std::string> mime_types;
   PluginService::GetInstance()->GetPluginInfoArray(
-      params.url, params.mime_type, true, &matching_plugins, &mime_types);
+      params.url, params.mime_type, &matching_plugins, &mime_types);
   if (!matching_plugins.empty()) {
     output->plugin = matching_plugins[0];
     output->actual_mime_type = mime_types[0];

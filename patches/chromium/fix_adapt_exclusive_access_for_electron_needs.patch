@@ -16,10 +16,10 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index c38ce5558472c785837f1d4d2542f2edf2ffab58..219f562f51b45d2c961246e232ef4daf9d1f5c19 100644
+index 3d17e79f291e6d3925d29cf349c30b4f7c7a6f54..a7494e62a6a49a71e5aef2c8abb4ec29426a5d23 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-@@ -46,7 +46,7 @@
+@@ -47,7 +47,7 @@
  #include "components/prefs/pref_service.h"
  #endif
  
@@ -28,7 +28,7 @@ index c38ce5558472c785837f1d4d2542f2edf2ffab58..219f562f51b45d2c961246e232ef4daf
  #include "chrome/browser/ui/blocked_content/popunder_preventer.h"
  #endif  // !BUILDFLAG(IS_ANDROID)
  
-@@ -271,7 +271,7 @@ void FullscreenController::EnterFullscreenModeForTab(
+@@ -196,7 +196,7 @@ void FullscreenController::EnterFullscreenModeForTab(
      return;
    }
  
@@ -37,7 +37,7 @@ index c38ce5558472c785837f1d4d2542f2edf2ffab58..219f562f51b45d2c961246e232ef4daf
    if (!popunder_preventer_) {
      popunder_preventer_ = std::make_unique<PopunderPreventer>(web_contents);
    } else {
-@@ -391,12 +391,14 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
+@@ -326,12 +326,14 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
  void FullscreenController::FullscreenTabOpeningPopup(
      content::WebContents* opener,
      content::WebContents* popup) {
@@ -52,7 +52,7 @@ index c38ce5558472c785837f1d4d2542f2edf2ffab58..219f562f51b45d2c961246e232ef4daf
  }
  #endif  // !BUILDFLAG(IS_ANDROID)
  
-@@ -487,8 +489,7 @@ void FullscreenController::FullscreenTransitionCompleted() {
+@@ -415,8 +417,7 @@ void FullscreenController::FullscreenTransitionCompleted() {
  #endif  // DCHECK_IS_ON()
    tab_fullscreen_target_display_id_ = display::kInvalidDisplayId;
    started_fullscreen_transition_ = false;
@@ -62,7 +62,7 @@ index c38ce5558472c785837f1d4d2542f2edf2ffab58..219f562f51b45d2c961246e232ef4daf
    if (!IsTabFullscreen()) {
      // Activate any popup windows created while content fullscreen, after exit.
      popunder_preventer_.reset();
-@@ -623,18 +624,17 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -552,19 +553,18 @@ void FullscreenController::EnterFullscreenModeInternal(
    // Do not enter fullscreen mode if disallowed by pref. This prevents the user
    // from manually entering fullscreen mode and also disables kiosk mode on
    // desktop platforms.
@@ -76,6 +76,7 @@ index c38ce5558472c785837f1d4d2542f2edf2ffab58..219f562f51b45d2c961246e232ef4daf
      return;
 -  }
  #endif
+   fullscreen_parameters_ = fullscreen_tab_params;
    started_fullscreen_transition_ = true;
    toggled_into_fullscreen_ = true;
 +#if 0
@@ -86,7 +87,7 @@ index c38ce5558472c785837f1d4d2542f2edf2ffab58..219f562f51b45d2c961246e232ef4daf
    if (option == TAB) {
      origin = GetRequestingOrigin();
      tab_fullscreen_ = true;
-@@ -671,6 +671,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -602,6 +602,7 @@ void FullscreenController::EnterFullscreenModeInternal(
        origin = url::Origin::Create(extension_url_.value());
      }
    }
@@ -94,7 +95,7 @@ index c38ce5558472c785837f1d4d2542f2edf2ffab58..219f562f51b45d2c961246e232ef4daf
  
    fullscreen_start_time_ = base::TimeTicks::Now();
    if (option == BROWSER) {
-@@ -692,6 +693,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -623,6 +624,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
      return;
    }
  
@@ -102,12 +103,13 @@ index c38ce5558472c785837f1d4d2542f2edf2ffab58..219f562f51b45d2c961246e232ef4daf
    // `fullscreen_start_time_` is null if a fullscreen tab moves to a new window.
    if (fullscreen_start_time_ && exclusive_access_tab()) {
      ukm::SourceId source_id =
-@@ -703,18 +705,19 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -634,19 +636,20 @@ void FullscreenController::ExitFullscreenModeInternal() {
          .Record(ukm::UkmRecorder::Get());
      fullscreen_start_time_.reset();
    }
 +#endif
  
+   fullscreen_parameters_.reset();
    toggled_into_fullscreen_ = false;
    started_fullscreen_transition_ = true;
 -#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_ANDROID)
@@ -125,26 +127,13 @@ index c38ce5558472c785837f1d4d2542f2edf2ffab58..219f562f51b45d2c961246e232ef4daf
    exclusive_access_manager()->context()->ExitFullscreen();
    extension_url_.reset();
    exclusive_access_manager()->UpdateBubble(base::NullCallback());
-@@ -778,8 +781,12 @@ url::Origin FullscreenController::GetEmbeddingOrigin() const {
- void FullscreenController::RecordMetricsOnFullscreenApiRequested(
-     content::RenderFrameHost* requesting_frame) {
-   history::HistoryService* service =
-+  #if 0
-       HistoryServiceFactory::GetForProfileWithoutCreating(
-           exclusive_access_manager()->context()->GetProfile());
-+  #else
-+      nullptr;
-+  #endif
-   if (service) {
-     // Check if the origin has been visited more than a day ago and whether it's
-     // on an allowlist, then record those bits of information in a metric.
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.h b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
-index 0fa707f6dfcfb26ed15488b099cc03efe548785b..0ef6faf1e2385b091df36b0c0efb89167b17ac34 100644
+index e80fa0ad07db3b670812b7b8b4fe09e1986933be..f86bd0cbfe79462617ed191b616cb5b6237c5ce8 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.h
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
-@@ -254,7 +254,7 @@ class FullscreenController : public ExclusiveAccessControllerBase {
-   // Used in testing to set the state to tab fullscreen.
-   bool is_tab_fullscreen_for_testing_ = false;
+@@ -261,7 +261,7 @@ class FullscreenController : public ExclusiveAccessControllerBase {
+   // Set of parameters used to enter fullscreen
+   std::optional<FullscreenTabParams> fullscreen_parameters_;
  
 -#if !BUILDFLAG(IS_ANDROID)
 +#if 0

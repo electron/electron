@@ -8,14 +8,20 @@
 #include <memory>
 #include <string>
 
+#include "base/functional/bind.h"
 #include "base/values.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/wrappable.h"
 
 #if BUILDFLAG(IS_WIN)
+#include "base/callback_list.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_observer.h"
-#include "ui/gfx/sys_color_change_listener.h"
+#endif
+#if BUILDFLAG(IS_LINUX)
+#include "base/memory/raw_ptr.h"
+#include "ui/native_theme/native_theme.h"
+#include "ui/native_theme/native_theme_observer.h"
 #endif
 
 namespace gin_helper {
@@ -42,8 +48,10 @@ class SystemPreferences final
       public gin_helper::EventEmitterMixin<SystemPreferences>
 #if BUILDFLAG(IS_WIN)
     ,
-      public BrowserObserver,
-      public gfx::SysColorChangeListener
+      public BrowserObserver
+#elif BUILDFLAG(IS_LINUX)
+    ,
+      public ui::NativeThemeObserver
 #endif
 {
  public:
@@ -55,8 +63,8 @@ class SystemPreferences final
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  std::string GetAccentColor();
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
-  static std::string GetAccentColor();
   std::string GetColor(gin_helper::ErrorThrower thrower,
                        const std::string& color);
   std::string GetMediaAccessStatus(gin_helper::ErrorThrower thrower,
@@ -65,8 +73,8 @@ class SystemPreferences final
 #if BUILDFLAG(IS_WIN)
   void InitializeWindow();
 
-  // gfx::SysColorChangeListener:
-  void OnSysColorChange() override;
+  // Called by `hwnd_subscription_`.
+  void OnWndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
   // BrowserObserver:
   void OnFinishLaunching(base::Value::Dict launch_info) override;
@@ -117,6 +125,10 @@ class SystemPreferences final
   // TODO(MarshallOfSound): Write tests for these methods once we
   // are running tests on a Mojave machine
   v8::Local<v8::Value> GetEffectiveAppearance(v8::Isolate* isolate);
+
+#elif BUILDFLAG(IS_LINUX)
+  // ui::NativeThemeObserver:
+  void OnNativeThemeUpdated(ui::NativeTheme* theme) override;
 #endif
   v8::Local<v8::Value> GetAnimationSettings(v8::Isolate* isolate);
 
@@ -159,7 +171,14 @@ class SystemPreferences final
 
   std::string current_color_;
 
-  std::unique_ptr<gfx::ScopedSysColorChangeListener> color_change_listener_;
+  // Color/high contrast mode change observer.
+  base::CallbackListSubscription hwnd_subscription_;
+#endif
+#if BUILDFLAG(IS_LINUX)
+  void OnNativeThemeUpdatedOnUI();
+
+  raw_ptr<ui::NativeTheme> ui_theme_;
+  std::string current_accent_color_;
 #endif
 };
 

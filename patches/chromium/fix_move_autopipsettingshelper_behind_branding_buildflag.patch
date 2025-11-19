@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 32f0f62dbc4f0c541440fd99d20e0fc80825f480..bcf7e67eb024a6ec8d2470a338e016c6779840a4 100644
+index a8a1ec300d9286f641f4676be54121eddc9c0ba1..b25a7fe369207f24b52cf1c98abe70f403b95ded 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -18,20 +18,20 @@ index 32f0f62dbc4f0c541440fd99d20e0fc80825f480..bcf7e67eb024a6ec8d2470a338e016c6
  #include "base/numerics/safe_conversions.h"
 +#include "build/branding_buildflags.h"
  #include "chrome/browser/picture_in_picture/picture_in_picture_bounds_cache.h"
- #include "chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker.h"
  #include "chrome/browser/ui/browser_navigator_params.h"
-@@ -28,8 +29,10 @@
+ #include "content/public/browser/document_picture_in_picture_window_controller.h"
+@@ -31,8 +32,10 @@
  #include "base/task/sequenced_task_runner.h"
  // TODO(crbug.com/421608904): include auto_picture_in_picture_tab_helper for
- // Android.
+ // Android when supporting document PiP.
 +#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
  #include "chrome/browser/picture_in_picture/auto_picture_in_picture_tab_helper.h"
  #include "chrome/browser/picture_in_picture/auto_pip_setting_overlay_view.h"
 +#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker.h"
  #include "chrome/browser/picture_in_picture/picture_in_picture_window.h"
  #include "media/base/media_switches.h"
- #include "net/base/url_util.h"
-@@ -64,6 +67,7 @@ constexpr double kMaxWindowSizeRatio = 0.8;
+@@ -67,6 +70,7 @@ constexpr double kMaxWindowSizeRatio = 0.8;
  // `kMaxWindowSizeRatio`.
  constexpr double kMaxSiteRequestedWindowSizeRatio = 0.25;
  
@@ -39,7 +39,7 @@ index 32f0f62dbc4f0c541440fd99d20e0fc80825f480..bcf7e67eb024a6ec8d2470a338e016c6
  // Returns true if a document picture-in-picture window should be focused upon
  // opening it.
  bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
-@@ -80,6 +84,7 @@ bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
+@@ -83,6 +87,7 @@ bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
    // AutoPictureInPictureTabHelper.
    return !auto_picture_in_picture_tab_helper->IsInAutoPictureInPicture();
  }
@@ -47,7 +47,7 @@ index 32f0f62dbc4f0c541440fd99d20e0fc80825f480..bcf7e67eb024a6ec8d2470a338e016c6
  
  // Returns the maximum area in pixels that the site can request a
  // picture-in-picture window to be.
-@@ -217,7 +222,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
+@@ -220,7 +225,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
      return false;
    }
  
@@ -56,7 +56,7 @@ index 32f0f62dbc4f0c541440fd99d20e0fc80825f480..bcf7e67eb024a6ec8d2470a338e016c6
    // The user manually closed the pip window, so let the tab helper know in case
    // the auto-pip permission dialog was visible.
    if (auto* tab_helper = AutoPictureInPictureTabHelper::FromWebContents(
-@@ -556,7 +561,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
+@@ -571,7 +576,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
  
  // static
  void PictureInPictureWindowManager::SetWindowParams(NavigateParams& params) {
@@ -64,8 +64,8 @@ index 32f0f62dbc4f0c541440fd99d20e0fc80825f480..bcf7e67eb024a6ec8d2470a338e016c6
 +#if !BUILDFLAG(IS_ANDROID) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
-   params.window_action = ShouldFocusPictureInPictureWindow(params)
-@@ -657,6 +662,7 @@ PictureInPictureWindowManager::GetOverlayView(
+   params.window_action =
+@@ -672,6 +677,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -73,7 +73,7 @@ index 32f0f62dbc4f0c541440fd99d20e0fc80825f480..bcf7e67eb024a6ec8d2470a338e016c6
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -695,6 +701,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -710,6 +716,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
@@ -83,10 +83,10 @@ index 32f0f62dbc4f0c541440fd99d20e0fc80825f480..bcf7e67eb024a6ec8d2470a338e016c6
  
  PictureInPictureOcclusionTracker*
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 489d68b6452a4814f4cba1e65ab036629583f5b5..a306cbb8e5bfa585bceb140a0c66d1c64b7a8813 100644
+index 601b178ef0e90753559083f506c9a62a7434c530..2a0f9f87d833504e34ad7d72c0cdd974c0318639 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-@@ -471,11 +471,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -451,11 +451,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
  
  #endif  // BUILDFLAG(IS_WIN)
  

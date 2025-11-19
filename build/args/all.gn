@@ -2,7 +2,7 @@ is_electron_build = true
 root_extra_deps = [ "//electron" ]
 
 # Registry of NMVs --> https://github.com/nodejs/node/blob/main/doc/abi_version_registry.json
-node_module_version = 140
+node_module_version = 143
 
 v8_promise_internal_field_count = 1
 v8_embedder_string = "-electron.0"
@@ -19,14 +19,14 @@ proprietary_codecs = true
 
 enable_printing = true
 
+# Refs https://chromium-review.googlesource.com/c/chromium/src/+/6986517
+# CI is using MacOS 15.5 which doesn't have the required modulemaps.
+use_clang_modules = false
+
 # Removes DLLs from the build, which are only meant to be used for Chromium development.
 # See https://github.com/electron/electron/pull/17985
 angle_enable_vulkan_validation_layers = false
 dawn_enable_vulkan_validation_layers = false
-
-# Removes dxc dll's that are only used experimentally.
-# See https://bugs.chromium.org/p/chromium/issues/detail?id=1474897
-dawn_use_built_dxc = false
 
 # These are disabled because they cause the zip manifest to differ between
 # testing and release builds.
@@ -72,3 +72,6 @@ enterprise_cloud_content_analysis = false
 
 # We don't use anything from here, and it causes target collisions
 enable_linux_installer = false
+
+# Disable "Save to Drive" feature in PDF viewer
+enable_pdf_save_to_drive = false
