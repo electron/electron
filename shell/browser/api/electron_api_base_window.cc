@@ -1173,9 +1173,9 @@ void BaseWindow::RemoveFromParentChildWindows() {
 }
 
 // static
-void BaseWindow::ClearWindowState(const std::string& window_name) {
+void BaseWindow::ClearPersistedState(const std::string& window_name) {
   if (window_name.empty()) {
-    LOG(WARNING) << "Cannot clear window state: window name is empty";
+    LOG(WARNING) << "Cannot clear persisted window state: window name is empty";
     return;
   }
 
@@ -1201,7 +1201,7 @@ gin_helper::WrappableBase* BaseWindow::New(gin::Arguments* const args) {
   std::string error_message;
   if (!IsWindowNameValid(options, &error_message)) {
     // Window name is already in use throw an error and do not create the window
-    args->ThrowError(error_message);
+    args->ThrowTypeError(error_message);
     return nullptr;
   }
 
@@ -1421,7 +1421,8 @@ void Initialize(v8::Local<v8::Object> exports,
                                          .ToLocalChecked());
   constructor.SetMethod("fromId", &BaseWindow::FromWeakMapID);
   constructor.SetMethod("getAllWindows", &BaseWindow::GetAll);
-  constructor.SetMethod("clearWindowState", &BaseWindow::ClearWindowState);
+  constructor.SetMethod("clearPersistedState",
+                        &BaseWindow::ClearPersistedState);
 
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("BaseWindow", constructor);

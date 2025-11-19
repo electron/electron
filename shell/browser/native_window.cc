@@ -876,7 +876,7 @@ void NativeWindow::SaveWindowState() {
     return;
   }
 
-  const display::Screen* screen = display::Screen::GetScreen();
+  const display::Screen* screen = display::Screen::Get();
   DCHECK(screen);
   // GetDisplayMatching returns a fake display with 1920x1080 resolution at
   // (0,0) when no physical displays are attached.
@@ -979,7 +979,7 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
       gfx::Rect(*saved_left, *saved_top, *saved_right - *saved_left,
                 *saved_bottom - *saved_top);
 
-  display::Screen* screen = display::Screen::GetScreen();
+  display::Screen* screen = display::Screen::Get();
   DCHECK(screen);
 
   // Set the primary display as the target display for restoration.

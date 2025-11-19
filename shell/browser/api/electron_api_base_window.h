@@ -47,7 +47,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 
   // Clears window state from the Local State JSON file in
   // app.getPath('userData') via PrefService.
-  static void ClearWindowState(const std::string& window_name);
+  static void ClearPersistedState(const std::string& window_name);
 
   static bool IsWindowNameValid(const gin_helper::Dictionary& options,
                                 std::string* error_message);

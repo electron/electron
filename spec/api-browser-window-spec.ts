@@ -7371,7 +7371,7 @@ describe('BrowserWindow module', () => {
 
         beforeEach(async () => {
           await setTimeout(2000);
-          BrowserWindow.clearWindowState(windowName);
+          BrowserWindow.clearPersistedState(windowName);
           w = new BrowserWindow({
             show: false,
             width: 400,
@@ -7497,7 +7497,7 @@ describe('BrowserWindow module', () => {
         // Timeout here plays nice with CI
         await setTimeout(2000);
         // Let's start with a clean slate everytime
-        BrowserWindow.clearWindowState(windowName);
+        BrowserWindow.clearPersistedState(windowName);
       });
 
       afterEach(closeAllWindows);
@@ -7517,7 +7517,7 @@ describe('BrowserWindow module', () => {
         const stateBefore = getWindowStateFromDisk(windowName, preferencesPath);
         expect(stateBefore).to.not.be.null('window state with window name "test-window-clear" should exist but does not');
 
-        BrowserWindow.clearWindowState(windowName);
+        BrowserWindow.clearPersistedState(windowName);
 
         await waitForPrefsUpdate(getPrefsModTime(preferencesPath), preferencesPath);
 
@@ -7550,7 +7550,7 @@ describe('BrowserWindow module', () => {
 
         w1.destroy();
 
-        BrowserWindow.clearWindowState(windowName);
+        BrowserWindow.clearPersistedState(windowName);
 
         const w2 = new BrowserWindow({
           height: 200,
@@ -7569,7 +7569,7 @@ describe('BrowserWindow module', () => {
 
       it('should not throw when clearing non-existent window state', () => {
         expect(() => {
-          BrowserWindow.clearWindowState('non-existent-window');
+          BrowserWindow.clearPersistedState('non-existent-window');
         }).to.not.throw();
       });
 
@@ -7597,7 +7597,7 @@ describe('BrowserWindow module', () => {
         expect(getWindowStateFromDisk(windowName1, preferencesPath)).to.not.be.null('window state with window name "test-window-1" should exist but does not');
         expect(getWindowStateFromDisk(windowName2, preferencesPath)).to.not.be.null('window state with window name "test-window-2" should exist but does not');
 
-        BrowserWindow.clearWindowState(windowName1);
+        BrowserWindow.clearPersistedState(windowName1);
 
         await waitForPrefsUpdate(getPrefsModTime(preferencesPath), preferencesPath);
 
@@ -7615,7 +7615,7 @@ describe('BrowserWindow module', () => {
         // Timeout here plays nice with CI
         await setTimeout(2000);
         // Let's start with a clean slate everytime
-        BrowserWindow.clearWindowState(windowName);
+        BrowserWindow.clearPersistedState(windowName);
       });
 
       afterEach(closeAllWindows);
@@ -7646,7 +7646,7 @@ describe('BrowserWindow module', () => {
 
         it('should use default window options when no saved state exists', async () => {
           const defaultBounds = { width: 500, height: 400, x: 200, y: 250 };
-          // BrowserWindow.clearWindowState(windowName) is called in beforeEach
+          // BrowserWindow.clearPersistedState(windowName) is called in beforeEach
           const w = new BrowserWindow({
             name: windowName,
             windowStatePersistence: true,
@@ -7835,8 +7835,8 @@ describe('BrowserWindow module', () => {
           const window2Name = 'test-window-2';
 
           // Clear any existing state
-          BrowserWindow.clearWindowState(window1Name);
-          BrowserWindow.clearWindowState(window2Name);
+          BrowserWindow.clearPersistedState(window1Name);
+          BrowserWindow.clearPersistedState(window2Name);
 
           const workArea = screen.getPrimaryDisplay().workArea;
 
@@ -8244,9 +8244,9 @@ describe('BrowserWindow module', () => {
           };
 
           // Clear window state for all three windows from previous tests
-          BrowserWindow.clearWindowState(window1Name);
-          BrowserWindow.clearWindowState(window2Name);
-          BrowserWindow.clearWindowState(window3Name);
+          BrowserWindow.clearPersistedState(window1Name);
+          BrowserWindow.clearPersistedState(window2Name);
+          BrowserWindow.clearPersistedState(window3Name);
 
           // Create and save state for all three windows
           const w1 = new BrowserWindow({
@@ -8618,7 +8618,7 @@ describe('BrowserWindow module', () => {
 
       it('should not emit restored-window-state when no window state exists on disk', async () => {
         // Clear any existing state to ensure no state exists
-        BrowserWindow.clearWindowState(windowName);
+        BrowserWindow.clearPersistedState(windowName);
 
         let eventEmitted = false;
 
