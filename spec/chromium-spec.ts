@@ -2881,7 +2881,12 @@ describe('chromium features', () => {
   // This is intentionally disabled on arm macs: https://chromium-review.googlesource.com/c/chromium/src/+/4143761
   ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64')('webgl', () => {
     it('can be gotten as context in canvas', async () => {
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          additionalArguments: ['--enable-unsafe-swiftshader']
+        }
+      });
       w.loadURL('about:blank');
       await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
       const canWebglContextBeCreated = await w.webContents.executeJavaScript(`
