@@ -1,5 +1,9 @@
 {
   "name": "@electron-ci/uv-dlopen",
   "version": "0.0.1",
-  "main": "index.js"
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "install": "node-gyp configure && node-gyp build"
+  }
 }
