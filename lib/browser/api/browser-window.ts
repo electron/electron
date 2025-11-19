@@ -111,7 +111,7 @@ BrowserWindow.getAllWindows = () => {
   return BaseWindow.getAllWindows().filter(isBrowserWindow) as any[] as BWT[];
 };
 
-BrowserWindow.clearWindowState = BaseWindow.clearWindowState;
+BrowserWindow.clearPersistedState = BaseWindow.clearPersistedState;
 
 BrowserWindow.getFocusedWindow = () => {
   for (const window of BrowserWindow.getAllWindows()) {

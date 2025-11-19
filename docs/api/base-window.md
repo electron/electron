@@ -400,7 +400,7 @@ Returns `BaseWindow | null` - The window that is focused in this application, ot
 
 Returns `BaseWindow | null` - The window with the given `id`.
 
-#### `BaseWindow.clearWindowState(windowName)`
+#### `BaseWindow.clearPersistedState(name)`
 
 * `windowName` string - The window `name` to clear state for (see [BaseWindowConstructorOptions](structures/base-window-options.md)).
 
