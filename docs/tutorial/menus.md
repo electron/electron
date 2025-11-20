@@ -202,6 +202,8 @@ macOS has a number of platform-specific menu roles available. Many of these map 
 * `clearRecentDocuments` - Map to the [`clearRecentDocuments`](https://developer.apple.com/documentation/appkit/nsdocumentcontroller/clearrecentdocuments(_:)) action.
 * `shareMenu` - The submenu is [share menu][ShareMenu]. The `sharingItem` property must also be set to indicate the item to share.
 
+[ShareMenu]: https://developer.apple.com/documentation/appkit/nssharemenu
+
 > [!IMPORTANT]
 > When specifying a `role` on macOS, `label` and `accelerator` are the only
 > options that will affect the menu item. All other options will be ignored.

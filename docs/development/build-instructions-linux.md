@@ -132,27 +132,34 @@ Building Electron with compilers other than `clang` is not supported.
 When packaging Electron apps for Linux distributions, ensure the following runtime libraries are available. These are derived from Chromium's dependencies and are required for Electron apps to function correctly. Package names vary by distribution.
 
 ### Core GUI and System Libraries
-- **GTK 3** (`libgtk-3-0` on Ubuntu/Debian, `gtk3` on RHEL/Fedora): GUI rendering, window management.
-- **DBus** (`libdbus-1-3` on Ubuntu/Debian, `dbus-libs` on RHEL/Fedora): Inter-process communication (used by powerMonitor, notifications).
-- **libnotify** (`libnotify4` on Ubuntu/Debian, `libnotify` on RHEL/Fedora): Desktop notifications.
+
+* **GTK 3** (`libgtk-3-0` on Ubuntu/Debian, `gtk3` on RHEL/Fedora): GUI rendering, window management.
+* **DBus** (`libdbus-1-3` on Ubuntu/Debian, `dbus-libs` on RHEL/Fedora): Inter-process communication (used by powerMonitor, notifications).
+* **libnotify** (`libnotify4` on Ubuntu/Debian, `libnotify` on RHEL/Fedora): Desktop notifications.
 
 ### Audio and Multimedia
-- **ALSA** (`libasound2` on Ubuntu/Debian, `alsa-lib` on RHEL/Fedora): Audio support.
+
+* **ALSA** (`libasound2` on Ubuntu/Debian, `alsa-lib` on RHEL/Fedora): Audio support.
 
 ### Printing and Capabilities
-- **CUPS** (`libcups2` on Ubuntu/Debian, `cups-libs` on RHEL/Fedora): Printing support.
-- **libcap** (`libcap2` on Ubuntu/Debian, `libcap` on RHEL/Fedora): POSIX capabilities.
+
+* **CUPS** (`libcups2` on Ubuntu/Debian, `cups-libs` on RHEL/Fedora): Printing support.
+* **libcap** (`libcap2` on Ubuntu/Debian, `libcap` on RHEL/Fedora): POSIX capabilities.
 
 ### X11 and Display
-- **libXtst** (`libxtst6` on Ubuntu/Debian, `libXtst` on RHEL/Fedora): X11 testing and input simulation.
-- **libXrandr** (`libxrandr2` on Ubuntu/Debian, `libXrandr` on RHEL/Fedora): X11 display configuration.
-- **X11 core** (`libx11-6`, `libxcb1`, etc. on Ubuntu/Debian; `libX11`, `libxcb` on RHEL/Fedora): Basic X11 integration.
+
+* **libXtst** (`libxtst6` on Ubuntu/Debian, `libXtst` on RHEL/Fedora): X11 testing and input simulation.
+* **libXrandr** (`libxrandr2` on Ubuntu/Debian, `libXrandr` on RHEL/Fedora): X11 display configuration.
+* **X11 core** (`libx11-6`, `libxcb1`, etc. on Ubuntu/Debian; `libX11`, `libxcb` on RHEL/Fedora): Basic X11 integration.
 
 ### Security and Networking
-- **NSS** (`libnss3` on Ubuntu/Debian, `nss` on RHEL/Fedora): SSL/TLS and cryptography.
+
+* **NSS** (`libnss3` on Ubuntu/Debian, `nss` on RHEL/Fedora): SSL/TLS and cryptography.
 
 ### Optional/Legacy
-- **libgnome-keyring** (`libgnome-keyring0` on Ubuntu/Debian, `libgnome-keyring` on RHEL/Fedora): Secure credential storage (distribution-dependent).
+
+* **libgnome-keyring** (`libgnome-keyring0` on Ubuntu/Debian, `libgnome-keyring` on RHEL/Fedora): Secure credential storage (distribution-dependent).
 
 ### Not Required
-- **libXScrnSaver** (`libxss1` on Ubuntu/Debian, `libXScrnSaver` on RHEL/Fedora): Not needed; powerMonitor uses DBus for idle detection. Omit to avoid issues on distributions like RHEL10 where it's unavailable.
+
+* **libXScrnSaver** (`libxss1` on Ubuntu/Debian, `libXScrnSaver` on RHEL/Fedora): Not needed; powerMonitor uses DBus for idle detection. Omit to avoid issues on distributions like RHEL10 where it's unavailable.
