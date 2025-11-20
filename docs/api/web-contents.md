@@ -247,7 +247,7 @@ Returns:
     May be `null` if accessed after the frame has either navigated or been destroyed.
   * `initiator` WebFrameMain | null (optional) - The frame which initiated the
     navigation, which can be a parent frame (e.g. via `window.open` with a
-    frame's name) or a child frame (e.g. an unsandboxed iframe navigating its
+    frame's name), a child frame (e.g. an unsandboxed iframe navigating its
     parent via `<a target="_top">`), or null if the navigation was not initiated
     by a frame. This can also be null if the initiating frame was deleted before
     the event was emitted.
@@ -282,7 +282,7 @@ Returns:
     May be `null` if accessed after the frame has either navigated or been destroyed.
   * `initiator` WebFrameMain | null (optional) - The frame which initiated the
     navigation, which can be a parent frame (e.g. via `window.open` with a
-    frame's name) or a child frame (e.g. an unsandboxed iframe navigating its
+    frame's name), a child frame (e.g. an unsandboxed iframe navigating its
     parent via `<a target="_top">`), or null if the navigation was not initiated
     by a frame. This can also be null if the initiating frame was deleted before
     the event was emitted.
@@ -315,7 +315,7 @@ Returns:
     May be `null` if accessed after the frame has either navigated or been destroyed.
   * `initiator` WebFrameMain | null (optional) - The frame which initiated the
     navigation, which can be a parent frame (e.g. via `window.open` with a
-    frame's name) or a child frame (e.g. an unsandboxed iframe navigating its
+    frame's name), a child frame (e.g. an unsandboxed iframe navigating its
     parent via `<a target="_top">`), or null if the navigation was not initiated
     by a frame. This can also be null if the initiating frame was deleted before
     the event was emitted.
@@ -341,7 +341,7 @@ Returns:
     May be `null` if accessed after the frame has either navigated or been destroyed.
   * `initiator` WebFrameMain | null (optional) - The frame which initiated the
     navigation, which can be a parent frame (e.g. via `window.open` with a
-    frame's name) or a child frame (e.g. an unsandboxed iframe navigating its
+    frame's name), a child frame (e.g. an unsandboxed iframe navigating its
     parent via `<a target="_top">`), or null if the navigation was not initiated
     by a frame. This can also be null if the initiating frame was deleted before
     the event was emitted.
@@ -374,7 +374,7 @@ Returns:
     May be `null` if accessed after the frame has either navigated or been destroyed.
   * `initiator` WebFrameMain | null (optional) - The frame which initiated the
     navigation, which can be a parent frame (e.g. via `window.open` with a
-    frame's name) or a child frame (e.g. an unsandboxed iframe navigating its
+    frame's name), a child frame (e.g. an unsandboxed iframe navigating its
     parent via `<a target="_top">`), or null if the navigation was not initiated
     by a frame. This can also be null if the initiating frame was deleted before
     the event was emitted.
