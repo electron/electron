@@ -1,6 +1,6 @@
 # Multi-Monitor Testing
 
-The `virtualDisplay` addon leverages macOS CoreGraphics APIs to create virtual displays, allowing you to write and run multi-monitor tests without the need for physical monitors.
+The `virtualDisplay` addon leverages macOS CoreGraphics APIs to create virtual displays, allowing you to write and run multi-monitor tests without the need for physical monitors. Due to macOS CoreGraphics quirks, reading the entire guide once before writing tests is recommended.
 
 ## Methods
 
