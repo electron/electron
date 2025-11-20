@@ -4726,6 +4726,9 @@ __metadata:
     webpack: "npm:^5.95.0"
     webpack-cli: "npm:^6.0.1"
     wrapper-webpack-plugin: "npm:^2.2.0"
+  dependenciesMeta:
+    dugite:
+      built: true
   languageName: unknown
   linkType: soft
 

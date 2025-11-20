@@ -22,6 +22,3 @@ runs:
         export npm_config_arch="ia32"
       fi
       node script/yarn.js install --immutable
-      if [ "$BUILD_TYPE" = "win" ]; then
-        node node_modules/dugite/script/download-git.js
-      fi
