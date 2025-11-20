@@ -27,30 +27,48 @@ const displayId = virtualDisplay.create({
 
 **Returns:** `number` - Unique display ID used to identify the display. Returns `0` on failure to create display.
 
-#### `virtualDisplay.destroy(displayId)`
-
-Removes the virtual display.
-
-```js @ts-nocheck
-const success = virtualDisplay.destroy(displayId)
-```
-
-**Returns:** `boolean` - Success status
+> [!NOTE]
+> It is recommended to call [`virtualDisplay.forceCleanup()`](#virtualdisplayforcecleanup) before every test to prevent display creation from failing in that test. macOS CoreGraphics maintains an internal display ID allocation pool that can become corrupted when virtual displays are created and destroyed rapidly during testing. Without proper cleanup, subsequent display creation may fail with inconsistent display IDs, resulting in test flakiness.
 
 #### `virtualDisplay.forceCleanup()`
 
 Performs a complete cleanup of all virtual displays and resets the macOS CoreGraphics display system.
 
-It is recommended to call this before every test to prevent test failures. macOS CoreGraphics maintains an internal display ID allocation pool that can become corrupted when virtual displays are created and destroyed rapidly during testing. Without proper cleanup, subsequent display creation may fail with inconsistent display IDs, resulting in test flakiness.
-
 ```js @ts-nocheck
-// Recommended test pattern
 beforeEach(() => {
   virtualDisplay.forceCleanup()
 })
 ```
 
-**Returns:** `boolean` - Success status
+#### `virtualDisplay.destroy(displayId)`
+
+Removes the virtual display.
+
+```js @ts-nocheck
+virtualDisplay.destroy(displayId)
+```
+
+> [!NOTE]
+> Always destroy virtual displays after use to prevent corrupting the macOS CoreGraphics display pool and affecting subsequent tests.
+
+## Recommended usage pattern
+
+```js @ts-nocheck
+describe('multi-monitor tests', () => {
+  const virtualDisplay = require('@electron-ci/virtual-display')
+  beforeEach(() => {
+    virtualDisplay.forceCleanup()
+  })
+
+  it('should handle multiple displays', () => {
+    const display1 = virtualDisplay.create({ width: 1920, height: 1080, x: 0, y: 0 })
+    const display2 = virtualDisplay.create({ width: 2560, height: 1440, x: 1920, y: 0 })
+    // Your test logic here
+    virtualDisplay.destroy(display1)
+    virtualDisplay.destroy(display2)
+  })
+})
+```
 
 ## Display Constraints
 
@@ -77,8 +95,7 @@ const display2 = virtualDisplay.create({ x: 500, y: 0, width: 1920, height: 1080
 
 // macOS automatically repositions display2 to x: 1920 to prevent overlap
 const actualBounds = screen.getAllDisplays().map(d => d.bounds)
-// Result: [{ x: 0, y: 0, width: 1920, height: 1080 },
-//          { x: 1920, y: 0, width: 1920, height: 1080 }]
+// Result: [{ x: 0, y: 0, width: 1920, height: 1080 }, { x: 1920, y: 0, width: 1920, height: 1080 }]
 ```
 
 **Gap:**
