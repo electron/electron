@@ -139,5 +139,10 @@
   "workspaces": [
     "spec",
     "spec/fixtures/native-addon/*"
-  ]
+  ],
+  "dependenciesMeta": {
+    "dugite": {
+      "built": true
+    }
+  }
 }
