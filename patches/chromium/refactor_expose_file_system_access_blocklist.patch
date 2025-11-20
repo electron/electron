@@ -8,11 +8,11 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index dcbd14a2e6c8f39a68f0ce7ea9dbc17a0deef070..43c66151ae48983d6f36fdec3637cfdad8863a37 100644
+index ff5f771212a489cc202b39100a0b42413b904e0c..ebede6f938eb1ec08cc472cba65f2faf1c6f971c 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -84,11 +84,13 @@
- #include "chrome/browser/ui/browser_window/public/browser_window_interface_iterator.h"
+ #include "chrome/browser/ui/browser_window/public/browser_window_interface_iterator.h"  // nogncheck crbug.com/40147906
  #include "chrome/browser/ui/tabs/public/tab_features.h"
  #include "chrome/browser/ui/views/file_system_access/file_system_access_page_action_controller.h"
 +#if 0

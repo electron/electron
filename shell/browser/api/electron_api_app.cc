@@ -62,6 +62,7 @@
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/browser/relauncher.h"
 #include "shell/common/application_info.h"
+#include "shell/common/callback_util.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/base_converter.h"
@@ -735,7 +736,8 @@ void App::AllowCertificateError(
     bool is_main_frame_request,
     bool strict_enforcement,
     base::OnceCallback<void(content::CertificateRequestResultType)> callback) {
-  auto adapted_callback = base::AdaptCallbackForRepeating(std::move(callback));
+  auto adapted_callback =
+      electron::AdaptCallbackForRepeating(std::move(callback));
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   bool prevent_default = Emit(
@@ -1140,11 +1142,22 @@ void App::DisableHardwareAcceleration(gin_helper::ErrorThrower thrower) {
         "before app is ready");
     return;
   }
+
+  // If the GpuDataManager is already initialized, disable hardware
+  // acceleration immediately. Otherwise, set a flag to disable it in
+  // OnPreCreateThreads().
   if (content::GpuDataManager::Initialized()) {
     content::GpuDataManager::GetInstance()->DisableHardwareAcceleration();
   } else {
     disable_hw_acceleration_ = true;
   }
+}
+
+bool App::IsHardwareAccelerationEnabled() {
+  if (content::GpuDataManager::Initialized())
+    return content::GpuDataManager::GetInstance()
+        ->HardwareAccelerationEnabled();
+  return !disable_hw_acceleration_;
 }
 
 void App::DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower) {
@@ -1776,7 +1789,8 @@ void ConfigureHostResolver(v8::Isolate* isolate,
   // NetworkContext is created, but before anything has the chance to use it.
   content::GetNetworkService()->ConfigureStubHostResolver(
       enable_built_in_resolver, enable_happy_eyeballs_v3, secure_dns_mode,
-      doh_config, additional_dns_query_types_enabled);
+      doh_config, additional_dns_query_types_enabled,
+      {} /*fallback_doh_nameservers*/);
 }
 
 // static
@@ -1926,6 +1940,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  &App::SetAccessibilitySupportEnabled)
       .SetMethod("disableHardwareAcceleration",
                  &App::DisableHardwareAcceleration)
+      .SetMethod("isHardwareAccelerationEnabled",
+                 &App::IsHardwareAccelerationEnabled)
       .SetMethod("disableDomainBlockingFor3DAPIs",
                  &App::DisableDomainBlockingFor3DAPIs)
       .SetMethod("getFileIcon", &App::GetFileIcon)

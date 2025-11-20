@@ -57,7 +57,7 @@ index 2239b085ac7fd87fe06aef1001551f8afe8e21e4..9ead3ab0755fe5c3500893325f0597e0
    gfx::Rect window_bounds_before_fullscreen_;
  
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index ae113be147f5bfe9d6218a20495897600cc5299d..cb67460205f4db04a3256151d49a2713688c7627 100644
+index d2204fd2b737f7f3e146cb1be80c3be6bfce8cd4..9064b3d019aca6e8b77b10c3f0d0447b52f5245a 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -467,6 +467,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
@@ -121,7 +121,7 @@ index c44058711170316552ea05f97b8b8af694da8ca3..2895f8d17e7d045a3fae3f83e4dc117d
  
    if (params.opacity == views::Widget::InitParams::WindowOpacity::kInferred &&
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index 40bba1d16a37f0b3c563faef86402641418dd994..bad7f48f50d5cd1c716963f660f63c7ec0d6449a 100644
+index 64d07b209f72fc593c861d84d2baf0ca52ce9aed..1569f9115371d4eaa18bb34eb4d91a1380d257d5 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
 @@ -324,6 +324,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,

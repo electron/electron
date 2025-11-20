@@ -565,8 +565,9 @@ and subscribing to the `ready` event if the app is not ready yet.
   * `steal` boolean _macOS_ - Make the receiver the active app even if another app is
   currently active.
 
-On Linux, focuses on the first visible window. On macOS, makes the application
-the active app. On Windows, focuses on the application's first window.
+On macOS, makes the application the active app. On Windows, focuses on the application's
+first window. On Linux, either focuses on the first visible window (X11) or requests
+focus but may instead show a notification or flash the app icon (Wayland).
 
 You should seek to use the `steal` option as sparingly as possible.
 
@@ -1214,6 +1215,13 @@ This API must be called after the `ready` event is emitted.
 Disables hardware acceleration for current app.
 
 This method can only be called before app is ready.
+
+### `app.isHardwareAccelerationEnabled()`
+
+Returns `boolean` - whether hardware acceleration is currently enabled.
+
+ > [!NOTE]
+ > This information is only usable after the `gpu-info-update` event is emitted.
 
 ### `app.disableDomainBlockingFor3DAPIs()`
 

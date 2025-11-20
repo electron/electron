@@ -99,6 +99,7 @@
   V(electron_common_environment)      \
   V(electron_common_features)         \
   V(electron_common_native_image)     \
+  V(electron_common_shared_texture)   \
   V(electron_common_shell)            \
   V(electron_common_v8_util)
 
@@ -284,12 +285,10 @@ v8::MaybeLocal<v8::Promise> HostImportModuleWithPhaseDynamically(
           context, v8_host_defined_options, v8_referrer_resource_url,
           v8_specifier, import_phase, v8_import_attributes);
     case ESMHandlerPlatform::kNodeJS:
-      // TODO: Switch to node::loader::ImportModuleDynamicallyWithPhase
-      // once we land the Node.js version that has it in upstream.
       CHECK(import_phase == v8::ModuleImportPhase::kEvaluation);
-      return node::loader::ImportModuleDynamically(
+      return node::loader::ImportModuleDynamicallyWithPhase(
           context, v8_host_defined_options, v8_referrer_resource_url,
-          v8_specifier, v8_import_attributes);
+          v8_specifier, import_phase, v8_import_attributes);
     case ESMHandlerPlatform::kNone:
     default:
       return {};
@@ -553,7 +552,7 @@ node::IsolateData* NodeBindings::isolate_data(
   }
   auto* isolate_data = static_cast<node::IsolateData*>(
       context->GetAlignedPointerFromEmbedderData(
-          kElectronContextEmbedderDataIndex));
+          kElectronContextEmbedderDataIndex, v8::kEmbedderDataTypeTagDefault));
   CHECK(isolate_data);
   CHECK(isolate_data->event_loop());
   return isolate_data;
@@ -768,7 +767,8 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
   auto* isolate_data = node::CreateIsolateData(isolate, uv_loop_, platform);
   isolate_data->max_young_gen_size = max_young_generation_size;
   context->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
-                                           static_cast<void*>(isolate_data));
+                                           static_cast<void*>(isolate_data),
+                                           v8::kEmbedderDataTypeTagDefault);
 
   uint64_t env_flags = node::EnvironmentFlags::kDefaultFlags |
                        node::EnvironmentFlags::kHideConsoleWindows |
@@ -893,7 +893,8 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     // Since we're about to free `isolate_data`, clear that entry
     v8::HandleScope handle_scope{isolate};
     context.Get(isolate)->SetAlignedPointerInEmbedderData(
-        kElectronContextEmbedderDataIndex, nullptr);
+        kElectronContextEmbedderDataIndex, nullptr,
+        v8::kEmbedderDataTypeTagDefault);
     context.Reset();
 
     node::FreeEnvironment(nenv);

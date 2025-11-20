@@ -101,7 +101,7 @@
 #endif
 
 #if BUILDFLAG(IS_MAC)
-#include "components/os_crypt/sync/keychain_password_mac.h"
+#include "components/os_crypt/common/keychain_password_mac.h"
 #include "shell/browser/ui/cocoa/views_delegate_mac.h"
 #else
 #include "shell/browser/ui/views/electron_views_delegate.h"

@@ -16,7 +16,7 @@ sys.path.append(
 
 from zipfile import ZipFile
 from lib.config import PLATFORM, get_target_arch, \
-                       get_zip_name, set_verbose_mode, \
+                       get_zip_name, get_tar_name, set_verbose_mode, \
                        is_verbose_mode, get_platform_key, \
                        verbose_mode_print
 from lib.util import get_electron_branding, execute, get_electron_version, \
@@ -33,7 +33,8 @@ OUT_DIR = get_out_dir()
 
 DIST_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION)
 SYMBOLS_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'symbols')
-DSYM_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'dsym')
+# Use tar.xz compression for dsym files due to size
+DSYM_NAME = get_tar_name(PROJECT_NAME, ELECTRON_VERSION, 'dsym')
 DSYM_SNAPSHOT_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION,
                                   'dsym-snapshot')
 PDB_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'pdb')
@@ -88,7 +89,7 @@ def main():
       upload_electron(release, ts_defs_path, args)
 
     dsym_zip = os.path.join(OUT_DIR, DSYM_NAME)
-    shutil.copy2(os.path.join(OUT_DIR, 'dsym.zip'), dsym_zip)
+    shutil.copy2(os.path.join(OUT_DIR, 'dsym.tar.xz'), dsym_zip)
     upload_electron(release, dsym_zip, args)
 
     dsym_snapshot_zip = os.path.join(OUT_DIR, DSYM_SNAPSHOT_NAME)

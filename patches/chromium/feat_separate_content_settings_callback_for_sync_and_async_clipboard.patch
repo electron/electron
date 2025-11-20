@@ -20,7 +20,7 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index fc516272be02a3dac1086e4aaf2015dc946cc3c2..86b8df2b23dc975a6db87f04005cb105054305b0 100644
+index c9b607c9bd09d43099a1704d5d4139c64e4beac4..18ad7ed73b0ed4de158519c01342f0bfd7cc3666 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
 @@ -536,6 +536,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
@@ -32,7 +32,7 @@ index fc516272be02a3dac1086e4aaf2015dc946cc3c2..86b8df2b23dc975a6db87f04005cb105
        break;
    }
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 2011a912add2bbd74129e7ecad9ca6f5bade24ee..87dc1b64e3cedf6d59d8ab2dc811bf8300193bdc 100644
+index eeacd30992233f44f8972f242f37637cb240dc06..e56096991dfbffa3a16aa3aca602b59fbd48a4d5 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
 @@ -94,6 +94,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
@@ -119,7 +119,7 @@ index 36410ff29d9c82e59f93fbb82968064bd330dfde..6c3f994e0b184f78bd9442002bb4dfae
    virtual void PassiveInsecureContentFound(const WebURL&) {}
  
 diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-index a5ac9d4a417ac8e75e761c40841f41ab9057c761..292bd1f9de78828e739dae24a45a1dd3d6585240 100644
+index 80c15ef5381aa08c0c6ce3f51534bb04af64775d..9a9024ba766226848974e5518ccbffa79ee55e65 100644
 --- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 +++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 @@ -123,7 +123,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,

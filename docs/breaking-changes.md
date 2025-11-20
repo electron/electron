@@ -12,6 +12,19 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (40.0)
+
+### Deprecated: `clipboard` API access from renderer processes
+
+Using the `clipboard` API directly in the renderer process is deprecated.
+If you want to call this API from a renderer process, place the API call in
+your preload script and expose it using the [contextBridge](https://www.electronjs.org/docs/latest/api/context-bridge) API.
+
+### Behavior Changed: MacOS dSYM files now compressed with tar.xz
+
+Debug symbols for MacOS (dSYM) now use xz compression in order to handle larger file sizes. `dsym.zip` files are now
+`dsym.tar.xz` files. End users using debug symbols may need to update their zip utilities.
+
 ## Planned Breaking API Changes (39.0)
 
 ### Deprecated: `--host-rules` command line switch
@@ -41,7 +54,7 @@ webContents.setWindowOpenHandler((details) => {
 
 When using shared texture offscreen rendering feature, the `paint` event now emits a more structured object.
 It moves the `sharedTextureHandle`, `planes`, `modifier` into a unified `handle` property.
-See [here](https://www.electronjs.org/docs/latest/api/structures/offscreen-shared-texture) for more details.
+See the [OffscreenSharedTexture](./api/structures/offscreen-shared-texture.md) API structure for more details.
 
 ## Planned Breaking API Changes (38.0)
 

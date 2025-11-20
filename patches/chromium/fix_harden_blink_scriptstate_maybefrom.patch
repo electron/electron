@@ -56,7 +56,7 @@ index cecf528475cb832ed1876381878eade582bc83d6..71308b2d963c2d083328aad6be356dc5
  
  enum EmbedderDataTag : uint16_t {
 diff --git a/third_party/blink/renderer/platform/bindings/script_state.cc b/third_party/blink/renderer/platform/bindings/script_state.cc
-index 7c602990a3f9a3083308d282fe79bf858b642cdf..f8ee61b8b2a45371d259717215a1fb4511514567 100644
+index 8b6522c9299bef5ab766795b64a1ba30bc382a12..a714aeb8a62886bedb3820b33b49b1ebdb9c7cc0 100644
 --- a/third_party/blink/renderer/platform/bindings/script_state.cc
 +++ b/third_party/blink/renderer/platform/bindings/script_state.cc
 @@ -14,6 +14,12 @@ namespace blink {
@@ -72,30 +72,30 @@ index 7c602990a3f9a3083308d282fe79bf858b642cdf..f8ee61b8b2a45371d259717215a1fb45
  // static
  void ScriptState::SetCreateCallback(CreateCallback create_callback) {
    DCHECK(create_callback);
-@@ -39,6 +45,10 @@ ScriptState::ScriptState(v8::Local<v8::Context> context,
+@@ -40,6 +46,10 @@ ScriptState::ScriptState(v8::Local<v8::Context> context,
    context_.SetWeak(this, &OnV8ContextCollectedCallback);
    context->SetAlignedPointerInEmbedderData(kV8ContextPerContextDataIndex, this,
                                             gin::kBlinkScriptState);
 +#if defined(ARCH_CPU_32_BITS)
 +  context->SetAlignedPointerInEmbedderData(
-+      kV8ContextPerContextDataTagIndex, ScriptState::kScriptStateTagPtr);
++      kV8ContextPerContextDataTagIndex, ScriptState::kScriptStateTagPtr, v8::kEmbedderDataTypeTagDefault);
 +#endif  // defined(ARCH_CPU_32_BITS)
    RendererResourceCoordinator::Get()->OnScriptStateCreated(this,
                                                             execution_context);
  }
-@@ -82,6 +92,10 @@ void ScriptState::DissociateContext() {
+@@ -83,6 +93,10 @@ void ScriptState::DissociateContext() {
    // Cut the reference from V8 context to ScriptState.
    GetContext()->SetAlignedPointerInEmbedderData(
        kV8ContextPerContextDataIndex, nullptr, gin::kBlinkScriptState);
 +#if defined(ARCH_CPU_32_BITS)
 +  GetContext()->SetAlignedPointerInEmbedderData(
-+      kV8ContextPerContextDataTagIndex, nullptr);
++      kV8ContextPerContextDataTagIndex, nullptr, v8::kEmbedderDataTypeTagDefault);
 +#endif  // defined(ARCH_CPU_32_BITS)
    reference_from_v8_context_.Clear();
  
    // Cut the reference from ScriptState to V8 context.
 diff --git a/third_party/blink/renderer/platform/bindings/script_state.h b/third_party/blink/renderer/platform/bindings/script_state.h
-index f06885f429a395b5c2eb55c89803837b550d765c..1d64099b32c2a9a0d68e8b5317d17e13789dc299 100644
+index 5ccdf26cead17031d510589b74288cbe79692779..bf3023d5305c05c5d92953b5bf5f655f964e5c28 100644
 --- a/third_party/blink/renderer/platform/bindings/script_state.h
 +++ b/third_party/blink/renderer/platform/bindings/script_state.h
 @@ -6,6 +6,7 @@
@@ -106,7 +106,7 @@ index f06885f429a395b5c2eb55c89803837b550d765c..1d64099b32c2a9a0d68e8b5317d17e13
  #include "gin/public/context_holder.h"
  #include "gin/public/gin_embedders.h"
  #include "third_party/blink/public/common/tokens/tokens.h"
-@@ -188,6 +189,15 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
+@@ -188,6 +189,16 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
          kV8ContextPerContextDataIndex) {
        return nullptr;
      }
@@ -114,7 +114,8 @@ index f06885f429a395b5c2eb55c89803837b550d765c..1d64099b32c2a9a0d68e8b5317d17e13
 +    if (context->GetNumberOfEmbedderDataFields() <=
 +        kV8ContextPerContextDataTagIndex ||
 +        context->GetAlignedPointerFromEmbedderData(
-+            kV8ContextPerContextDataTagIndex) !=
++            kV8ContextPerContextDataTagIndex,
++            v8::kEmbedderDataTypeTagDefault) !=
 +        ScriptState::kScriptStateTagPtr) {
 +      return nullptr;
 +    }
@@ -122,7 +123,7 @@ index f06885f429a395b5c2eb55c89803837b550d765c..1d64099b32c2a9a0d68e8b5317d17e13
      ScriptState* script_state =
          static_cast<ScriptState*>(context->GetAlignedPointerFromEmbedderData(
              isolate, kV8ContextPerContextDataIndex, gin::kBlinkScriptState));
-@@ -267,6 +277,14 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
+@@ -270,6 +281,14 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
        static_cast<int>(gin::kPerContextDataStartIndex) +
        static_cast<int>(gin::kEmbedderBlink);
  
