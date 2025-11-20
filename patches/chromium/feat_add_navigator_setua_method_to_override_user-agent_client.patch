@@ -1,0 +1,467 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Muthukumar <mk@verveflux.com>
+Date: Thu, 20 Nov 2025 17:52:21 +0530
+Subject: feat: Add navigator.setUA() method to override User-Agent Client
+ Hints
+
+This commit implements a new `navigator.userAgentData.setUA()` method that
+allows customizing the values returned by `getHighEntropyValues()`.
+
+Changes:
+- Added UAOverrideValues dictionary to navigator_ua_data.idl defining the
+  structure for custom UA values (brands, platform, architecture, etc.)
+- Added setUA() method to NavigatorUAData interface to accept override values
+- Implemented override storage using optional member variables in NavigatorUAData
+- Modified getHighEntropyValues(), brands(), mobile(), and platform() methods
+  to return override values when set, falling back to defaults
+- Fixed NavigatorUA to cache NavigatorUAData instance instead of creating new
+  instances on each access, ensuring overrides persist across calls
+- Made NavigatorUA inherit from GarbageCollectedMixin for proper memory management
+- Updated NavigatorBase::Trace() to call NavigatorUA::Trace() for proper GC
+- Added v8_ua_override_values.{cc,h} to generated_in_core.gni build config
+
+Usage:
+```js
+navigator.userAgentData.setUA({
+  brands: [{ brand: "CustomBrowser", version: "1" }],
+  platform: "Windows",
+  architecture: "x86",
+  bitness: "64",
+  mobile: false,
+  // ... other fields
+});
+
+// Now returns custom values
+const hints = await navigator.userAgentData.getHighEntropyValues([
+  'brands', 'platform', 'architecture', 'bitness'
+]);
+
+diff --git a/third_party/blink/renderer/bindings/generated_in_core.gni b/third_party/blink/renderer/bindings/generated_in_core.gni
+index b755b23b7347245eebe4f2bff02624b6a3cb177b..327f2bef55d05226232fdafda8ac2259e56b9b3b 100644
+--- a/third_party/blink/renderer/bindings/generated_in_core.gni
++++ b/third_party/blink/renderer/bindings/generated_in_core.gni
+@@ -504,6 +504,8 @@ generated_dictionary_sources_in_core = [
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_trusted_type_policy_options.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_ua_data_values.cc",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_ua_data_values.h",
++  "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_ua_override_values.cc",
++  "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_ua_override_values.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_ui_event_init.cc",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_ui_event_init.h",
+   "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_underlying_source.cc",
+diff --git a/third_party/blink/renderer/core/execution_context/navigator_base.cc b/third_party/blink/renderer/core/execution_context/navigator_base.cc
+index 64bdfb1a106da63a6699b518a7f0d8ceb631bab8..770d0c4077a963009063e2b5144c507aaab05949 100644
+--- a/third_party/blink/renderer/core/execution_context/navigator_base.cc
++++ b/third_party/blink/renderer/core/execution_context/navigator_base.cc
+@@ -75,6 +75,7 @@ String NavigatorBase::platform() const {
+ void NavigatorBase::Trace(Visitor* visitor) const {
+   ScriptWrappable::Trace(visitor);
+   NavigatorLanguage::Trace(visitor);
++  NavigatorUA::Trace(visitor);
+   ExecutionContextClient::Trace(visitor);
+   Supplementable<NavigatorBase>::Trace(visitor);
+ }
+diff --git a/third_party/blink/renderer/core/frame/navigator_ua.cc b/third_party/blink/renderer/core/frame/navigator_ua.cc
+index 6275dbfa196ca0211b89205289fa42d5cd348e3c..b4ff0369e8f704dfd2bf95a696d0aaee4fe903a3 100644
+--- a/third_party/blink/renderer/core/frame/navigator_ua.cc
++++ b/third_party/blink/renderer/core/frame/navigator_ua.cc
+@@ -12,29 +12,39 @@
+ namespace blink {
+ 
+ NavigatorUAData* NavigatorUA::userAgentData() {
+-  NavigatorUAData* ua_data =
+-      MakeGarbageCollected<NavigatorUAData>(GetUAExecutionContext());
++  // Return cached instance if it exists
++  if (ua_data_) {
++    return ua_data_;
++  }
++
++  // Create and cache the NavigatorUAData instance
++  ua_data_ = MakeGarbageCollected<NavigatorUAData>(GetUAExecutionContext());
+ 
+   UserAgentMetadata metadata = GetUserAgentMetadata();
+-  ua_data->SetBrandVersionList(metadata.brand_version_list);
+-  ua_data->SetMobile(metadata.mobile);
+-  ua_data->SetPlatform(String::FromUTF8(metadata.platform),
++  ua_data_->SetBrandVersionList(metadata.brand_version_list);
++  ua_data_->SetMobile(metadata.mobile);
++  ua_data_->SetPlatform(String::FromUTF8(metadata.platform),
+                        String::FromUTF8(metadata.platform_version));
+-  ua_data->SetArchitecture(String::FromUTF8(metadata.architecture));
+-  ua_data->SetModel(String::FromUTF8(metadata.model));
+-  ua_data->SetUAFullVersion(String::FromUTF8(metadata.full_version));
+-  ua_data->SetBitness(String::FromUTF8(metadata.bitness));
+-  ua_data->SetFullVersionList(metadata.brand_full_version_list);
+-  ua_data->SetWoW64(metadata.wow64);
++  ua_data_->SetArchitecture(String::FromUTF8(metadata.architecture));
++  ua_data_->SetModel(String::FromUTF8(metadata.model));
++  ua_data_->SetUAFullVersion(String::FromUTF8(metadata.full_version));
++  ua_data_->SetBitness(String::FromUTF8(metadata.bitness));
++  ua_data_->SetFullVersionList(metadata.brand_full_version_list);
++  ua_data_->SetWoW64(metadata.wow64);
+   Vector<String> form_factors;
+   form_factors.reserve(
+       base::checked_cast<wtf_size_t>(metadata.form_factors.size()));
+   for (auto& ff : metadata.form_factors) {
+     form_factors.push_back(String::FromUTF8(ff));
+   }
+-  ua_data->SetFormFactors(std::move(form_factors));
++  ua_data_->SetFormFactors(std::move(form_factors));
++
++  return ua_data_;
++}
+ 
+-  return ua_data;
++void NavigatorUA::Trace(Visitor* visitor) const {
++  visitor->Trace(ua_data_);
++  GarbageCollectedMixin::Trace(visitor);
+ }
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/frame/navigator_ua.h b/third_party/blink/renderer/core/frame/navigator_ua.h
+index 306ecc0d53f962f6e15d8523ca12bebcf1016763..cbcc88326032455da808a68f19aff895eccb0dc5 100644
+--- a/third_party/blink/renderer/core/frame/navigator_ua.h
++++ b/third_party/blink/renderer/core/frame/navigator_ua.h
+@@ -8,14 +8,17 @@
+ #include "third_party/blink/public/common/user_agent/user_agent_metadata.h"
+ #include "third_party/blink/renderer/core/core_export.h"
+ #include "third_party/blink/renderer/core/frame/navigator_ua_data.h"
++#include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
+ 
+ namespace blink {
+ 
+-class CORE_EXPORT NavigatorUA {
++class CORE_EXPORT NavigatorUA : public GarbageCollectedMixin {
+  public:
+   NavigatorUAData* userAgentData();
+ 
++  void Trace(Visitor* visitor) const override;
++
+  protected:
+   virtual UserAgentMetadata GetUserAgentMetadata() const = 0;
+   virtual ExecutionContext* GetUAExecutionContext() const = 0;
+@@ -23,6 +26,9 @@ class CORE_EXPORT NavigatorUA {
+   // Record identifiability study metrics for NavigatorUAData if the user is in
+   // the study.
+   void MaybeRecordMetrics(const NavigatorUAData& ua_data);
++
++ private:
++  Member<NavigatorUAData> ua_data_;
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/frame/navigator_ua_data.cc b/third_party/blink/renderer/core/frame/navigator_ua_data.cc
+index 08300d8d6cf1174c7080193c4dbd02306f88d4bf..2b00a89a0446b7cbfe98d113bd1aff9dc63c7019 100644
+--- a/third_party/blink/renderer/core/frame/navigator_ua_data.cc
++++ b/third_party/blink/renderer/core/frame/navigator_ua_data.cc
+@@ -15,6 +15,7 @@
+ #include "third_party/blink/public/mojom/use_counter/metrics/web_feature.mojom-blink.h"
+ #include "third_party/blink/renderer/bindings/core/v8/script_promise_resolver.h"
+ #include "third_party/blink/renderer/bindings/core/v8/v8_ua_data_values.h"
++#include "third_party/blink/renderer/bindings/core/v8/v8_ua_override_values.h"
+ #include "third_party/blink/renderer/core/execution_context/execution_context.h"
+ #include "third_party/blink/renderer/core/frame/dactyloscoper.h"
+ #include "third_party/blink/renderer/core/frame/web_feature_forward.h"
+@@ -140,8 +141,82 @@ void NavigatorUAData::SetFormFactors(Vector<String> form_factors) {
+   form_factors_ = std::move(form_factors);
+ }
+ 
++void NavigatorUAData::setUA(const UAOverrideValues* override_values) {
++  if (!override_values) {
++    has_override_ = false;
++    return;
++  }
++
++  has_override_ = true;
++
++  // Override brands
++  if (override_values->hasBrands()) {
++    override_brand_set_.clear();
++    for (const auto& brand : override_values->brands()) {
++      override_brand_set_.push_back(brand);
++    }
++  }
++
++  // Override fullVersionList
++  if (override_values->hasFullVersionList()) {
++    override_full_version_list_.clear();
++    for (const auto& brand : override_values->fullVersionList()) {
++      override_full_version_list_.push_back(brand);
++    }
++  }
++
++  // Override mobile
++  if (override_values->hasMobile()) {
++    override_mobile_ = override_values->mobile();
++  }
++
++  // Override platform
++  if (override_values->hasPlatform()) {
++    override_platform_ = override_values->platform();
++  }
++
++  // Override platformVersion
++  if (override_values->hasPlatformVersion()) {
++    override_platform_version_ = override_values->platformVersion();
++  }
++
++  // Override architecture
++  if (override_values->hasArchitecture()) {
++    override_architecture_ = override_values->architecture();
++  }
++
++  // Override model
++  if (override_values->hasModel()) {
++    override_model_ = override_values->model();
++  }
++
++  // Override uaFullVersion
++  if (override_values->hasUaFullVersion()) {
++    override_ua_full_version_ = override_values->uaFullVersion();
++  }
++
++  // Override bitness
++  if (override_values->hasBitness()) {
++    override_bitness_ = override_values->bitness();
++  }
++
++  // Override wow64
++  if (override_values->hasWow64()) {
++    override_wow64_ = override_values->wow64();
++  }
++
++  // Override formFactors
++  if (override_values->hasFormFactors()) {
++    override_form_factors_ = override_values->formFactors();
++  }
++}
++
+ bool NavigatorUAData::mobile() const {
+   if (GetExecutionContext()) {
++    // Return override if set
++    if (has_override_ && override_mobile_.has_value()) {
++      return override_mobile_.value();
++    }
+     return is_mobile_;
+   }
+   return false;
+@@ -159,7 +234,12 @@ const HeapVector<Member<NavigatorUABrandVersion>>& NavigatorUAData::brands()
+     if (IdentifiabilityStudySettings::Get()->ShouldSampleSurface(
+             identifiable_surface)) [[unlikely]] {
+       IdentifiableTokenBuilder token_builder;
+-      for (const auto& brand : brand_set_) {
++
++      // Use override brands if set, otherwise use default brands
++      const HeapVector<Member<NavigatorUABrandVersion>>& brands_to_use =
++          (has_override_ && !override_brand_set_.empty()) ? override_brand_set_ : brand_set_;
++
++      for (const auto& brand : brands_to_use) {
+         token_builder.AddValue(brand->hasBrand());
+         if (brand->hasBrand())
+           token_builder.AddAtomic(brand->brand().Utf8());
+@@ -172,6 +252,10 @@ const HeapVector<Member<NavigatorUABrandVersion>>& NavigatorUAData::brands()
+           .Record(context->UkmRecorder());
+     }
+ 
++    // Return override brands if set
++    if (has_override_ && !override_brand_set_.empty()) {
++      return override_brand_set_;
++    }
+     return brand_set_;
+   }
+ 
+@@ -180,6 +264,10 @@ const HeapVector<Member<NavigatorUABrandVersion>>& NavigatorUAData::brands()
+ 
+ const String& NavigatorUAData::platform() const {
+   if (GetExecutionContext()) {
++    // Return override if set
++    if (has_override_ && override_platform_.has_value()) {
++      return override_platform_.value();
++    }
+     return platform_;
+   }
+   return g_empty_string;
+@@ -234,8 +322,19 @@ ScriptPromise<UADataValues> NavigatorUAData::getHighEntropyValues(
+   // Use `brands()` and not `brand_set_` directly since the former also
+   // records IdentifiabilityStudy metrics.
+   values->setBrands(brands());
+-  values->setMobile(is_mobile_);
+-  values->setPlatform(platform_);
++
++  // Use override mobile if set, otherwise use default
++  bool mobile_value = (has_override_ && override_mobile_.has_value())
++                          ? override_mobile_.value()
++                          : is_mobile_;
++  values->setMobile(mobile_value);
++
++  // Use override platform if set, otherwise use default
++  String platform_value = (has_override_ && override_platform_.has_value())
++                              ? override_platform_.value()
++                              : platform_;
++  values->setPlatform(platform_value);
++
+   // Record IdentifiabilityStudy metrics for `mobile()` and `platform()` (the
+   // `brands()` part is already recorded inside that function).
+   Dactyloscoper::RecordDirectSurface(
+@@ -248,34 +347,60 @@ ScriptPromise<UADataValues> NavigatorUAData::getHighEntropyValues(
+   if (AllowedToCollectHighEntropyValues(execution_context)) {
+     for (const String& hint : hints) {
+       if (hint == "platformVersion") {
+-        values->setPlatformVersion(platform_version_);
+-        MaybeRecordMetric(record_identifiability, hint, platform_version_,
++        String value = (has_override_ && override_platform_version_.has_value())
++                           ? override_platform_version_.value()
++                           : platform_version_;
++        values->setPlatformVersion(value);
++        MaybeRecordMetric(record_identifiability, hint, value,
+                           execution_context);
+       } else if (hint == "architecture") {
+-        values->setArchitecture(architecture_);
+-        MaybeRecordMetric(record_identifiability, hint, architecture_,
++        String value = (has_override_ && override_architecture_.has_value())
++                           ? override_architecture_.value()
++                           : architecture_;
++        values->setArchitecture(value);
++        MaybeRecordMetric(record_identifiability, hint, value,
+                           execution_context);
+       } else if (hint == "model") {
+-        values->setModel(model_);
+-        MaybeRecordMetric(record_identifiability, hint, model_,
++        String value = (has_override_ && override_model_.has_value())
++                           ? override_model_.value()
++                           : model_;
++        values->setModel(value);
++        MaybeRecordMetric(record_identifiability, hint, value,
+                           execution_context);
+       } else if (hint == "uaFullVersion") {
+-        values->setUaFullVersion(ua_full_version_);
+-        MaybeRecordMetric(record_identifiability, hint, ua_full_version_,
++        String value = (has_override_ && override_ua_full_version_.has_value())
++                           ? override_ua_full_version_.value()
++                           : ua_full_version_;
++        values->setUaFullVersion(value);
++        MaybeRecordMetric(record_identifiability, hint, value,
+                           execution_context);
+       } else if (hint == "bitness") {
+-        values->setBitness(bitness_);
+-        MaybeRecordMetric(record_identifiability, hint, bitness_,
++        String value = (has_override_ && override_bitness_.has_value())
++                           ? override_bitness_.value()
++                           : bitness_;
++        values->setBitness(value);
++        MaybeRecordMetric(record_identifiability, hint, value,
+                           execution_context);
+       } else if (hint == "fullVersionList") {
+-        values->setFullVersionList(full_version_list_);
++        // Use override fullVersionList if set
++        if (has_override_ && !override_full_version_list_.empty()) {
++          values->setFullVersionList(override_full_version_list_);
++        } else {
++          values->setFullVersionList(full_version_list_);
++        }
+       } else if (hint == "wow64") {
+-        values->setWow64(is_wow64_);
+-        MaybeRecordMetric(record_identifiability, hint, is_wow64_ ? "?1" : "?0",
++        bool value = (has_override_ && override_wow64_.has_value())
++                         ? override_wow64_.value()
++                         : is_wow64_;
++        values->setWow64(value);
++        MaybeRecordMetric(record_identifiability, hint, value ? "?1" : "?0",
+                           execution_context);
+       } else if (hint == "formFactors") {
+-        values->setFormFactors(form_factors_);
+-        MaybeRecordMetric(record_identifiability, hint, form_factors_,
++        Vector<String> value = (has_override_ && override_form_factors_.has_value())
++                                   ? override_form_factors_.value()
++                                   : form_factors_;
++        values->setFormFactors(value);
++        MaybeRecordMetric(record_identifiability, hint, value,
+                           execution_context);
+       }
+     }
+@@ -311,6 +436,8 @@ void NavigatorUAData::Trace(Visitor* visitor) const {
+   visitor->Trace(brand_set_);
+   visitor->Trace(full_version_list_);
+   visitor->Trace(empty_brand_set_);
++  visitor->Trace(override_brand_set_);
++  visitor->Trace(override_full_version_list_);
+   ScriptWrappable::Trace(visitor);
+   ExecutionContextClient::Trace(visitor);
+ }
+diff --git a/third_party/blink/renderer/core/frame/navigator_ua_data.h b/third_party/blink/renderer/core/frame/navigator_ua_data.h
+index 101c7334645e053d892893d7552650464b6fbf6c..772440d45b03f18657cd3f02757d7080bca7a42c 100644
+--- a/third_party/blink/renderer/core/frame/navigator_ua_data.h
++++ b/third_party/blink/renderer/core/frame/navigator_ua_data.h
+@@ -18,6 +18,7 @@ namespace blink {
+ class NavigatorUABrandVersion;
+ class ScriptState;
+ class UADataValues;
++class UAOverrideValues;
+ 
+ class NavigatorUAData : public ScriptWrappable, ExecutionContextClient {
+   DEFINE_WRAPPERTYPEINFO();
+@@ -48,6 +49,9 @@ class NavigatorUAData : public ScriptWrappable, ExecutionContextClient {
+                                                    const Vector<String>&) const;
+   ScriptObject toJSON(ScriptState*) const;
+ 
++  // Custom UA override method
++  void setUA(const UAOverrideValues* override_values);
++
+   void Trace(Visitor* visitor) const final;
+ 
+  private:
+@@ -64,6 +68,20 @@ class NavigatorUAData : public ScriptWrappable, ExecutionContextClient {
+   bool is_wow64_ = false;
+   Vector<String> form_factors_;
+ 
++  // Custom UA override values
++  bool has_override_ = false;
++  HeapVector<Member<NavigatorUABrandVersion>> override_brand_set_;
++  HeapVector<Member<NavigatorUABrandVersion>> override_full_version_list_;
++  std::optional<bool> override_mobile_;
++  std::optional<String> override_platform_;
++  std::optional<String> override_platform_version_;
++  std::optional<String> override_architecture_;
++  std::optional<String> override_model_;
++  std::optional<String> override_ua_full_version_;
++  std::optional<String> override_bitness_;
++  std::optional<bool> override_wow64_;
++  std::optional<Vector<String>> override_form_factors_;
++
+   void AddBrandVersion(const String& brand, const String& version);
+   void AddBrandFullVersion(const String& brand, const String& version);
+ };
+diff --git a/third_party/blink/renderer/core/frame/navigator_ua_data.idl b/third_party/blink/renderer/core/frame/navigator_ua_data.idl
+index 3ffb91920d77477e8ef1dc3b9d1de202dc9259ba..635a2444038615ed0a465bdca528570b881d6121 100644
+--- a/third_party/blink/renderer/core/frame/navigator_ua_data.idl
++++ b/third_party/blink/renderer/core/frame/navigator_ua_data.idl
+@@ -4,10 +4,28 @@
+ 
+ // https://github.com/WICG/ua-client-hints
+ 
++// Custom UA override values for setUA()
++dictionary UAOverrideValues {
++  sequence<NavigatorUABrandVersion> brands;
++  boolean mobile;
++  DOMString platform;
++  DOMString platformVersion;
++  DOMString architecture;
++  DOMString model;
++  DOMString uaFullVersion;
++  DOMString bitness;
++  sequence<NavigatorUABrandVersion> fullVersionList;
++  boolean wow64;
++  sequence<DOMString> formFactors;
++};
++
+ [Exposed=(Window,Worker)] interface NavigatorUAData {
+   [HighEntropy, MeasureAs=NavigatorUAData_Brands] readonly attribute FrozenArray<NavigatorUABrandVersion> brands;
+   [HighEntropy=Direct, MeasureAs=NavigatorUAData_Mobile]  readonly attribute boolean mobile;
+   [HighEntropy=Direct, MeasureAs=NavigatorUAData_Platform] readonly attribute DOMString platform;
+   [HighEntropy, CallWith=ScriptState, MeasureAs=NavigatorUAData_GetHighEntropyValues] Promise<UADataValues> getHighEntropyValues(sequence<DOMString> hints);
+   [HighEntropy, CallWith=ScriptState, MeasureAs=NavigatorUAData_toJSON] object toJSON();
++
++  // Custom method to override UA values
++  void setUA(UAOverrideValues overrideValues);
+ };

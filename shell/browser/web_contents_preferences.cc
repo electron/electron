@@ -10,10 +10,13 @@
 #include <utility>
 #include <vector>
 
+#include "base/bit_cast.h"
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/memory/ptr_util.h"
+#include "base/strings/string_number_conversions.h"
 #include "cc/base/switches.h"
+#include "content/browser/fingerprinting_protection/canvas_noise_token_data.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "content/public/common/content_switches.h"
@@ -203,6 +206,22 @@ void WebContentsPreferences::SetFromDictionary(
   if (web_preferences.Get("defaultEncoding", &encoding))
     default_encoding_ = encoding;
   web_preferences.Get(options::kCustomArgs, &custom_args_);
+
+  // Parse canvasSeed from custom_args_ and store it in BrowserContext
+  for (const auto& arg : custom_args_) {
+    if (arg.find("canvasSeed=") == 0) {
+      std::string seed_value = arg.substr(11);  // length of "canvasSeed="
+      double seed_double = 0.0;
+      if (base::StringToDouble(seed_value, &seed_double)) {
+        uint64_t seed_uint64 = base::bit_cast<uint64_t>(seed_double);
+        // Store the seed in the BrowserContext for use by canvas noise
+        content::CanvasNoiseTokenData::SetCanvasSeed(
+            web_contents_->GetBrowserContext(), seed_uint64);
+        break;
+      }
+    }
+  }
+
   web_preferences.Get("commandLineSwitches", &custom_switches_);
   web_preferences.Get("disablePopups", &disable_popups_);
   web_preferences.Get("disableDialogs", &disable_dialogs_);

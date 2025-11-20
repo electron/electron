@@ -1,0 +1,224 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Muthukumar <mk@verveflux.com>
+Date: Sun, 26 Oct 2025 18:00:05 +0530
+Subject: Added canvas noise per renderer
+
+This patch enables custom canvas noise seed support per WebContents in Electron.
+It allows Electron apps to control canvas fingerprinting by passing canvasSeed
+via additionalArguments in webPreferences, providing deterministic canvas noise
+for fingerprinting protection.
+
+The patch also simplifies Chrome's ShouldEnableCanvasNoise to always return true,
+bypassing the profile and tracking protection checks which are not applicable to
+Electron's use case.
+
+Notes: This is an Electron-specific feature. Upstreaming is not planned as it
+provides custom fingerprinting control that differs from Chromium's privacy model.
+
+diff --git a/chrome/browser/chrome_content_browser_client.cc b/chrome/browser/chrome_content_browser_client.cc
+index e074f73a23e838ada279701427853ea6b01f16cf..283b2e02ca360114114c00be6838e4ad05916baf 100644
+--- a/chrome/browser/chrome_content_browser_client.cc
++++ b/chrome/browser/chrome_content_browser_client.cc
+@@ -8761,20 +8761,8 @@ ChromeContentBrowserClient::GetClipboardTypesIfPolicyApplied(
+ bool ChromeContentBrowserClient::ShouldEnableCanvasNoise(
+     content::BrowserContext* browser_context,
+     const GURL& url) {
+-  Profile* profile = Profile::FromBrowserContext(browser_context);
+-  bool feature_enable = fingerprinting_protection_interventions::features::
+-      IsCanvasInterventionsEnabledForIncognitoState(
+-          profile->IsIncognitoProfile());
+-  // System profiles are considered incognito, but will not query from
+-  // ProfileKeyedServices and will return nullptr. We should only check user
+-  // bypass if the profile returns TrackingProtectionSettings.
+-  privacy_sandbox::TrackingProtectionSettings* tracking_protections_settings =
+-      TrackingProtectionSettingsFactory::GetForProfile(profile);
+-  if (tracking_protections_settings) {
+-    return feature_enable &&
+-           !tracking_protections_settings->HasTrackingProtectionException(url);
+-  }
+-  return feature_enable;
++  // Always enable canvas noise for fingerprinting protection
++  return true;
+ }
+ 
+ bool ChromeContentBrowserClient::UsePrefetchPrerenderIntegration() {
+@@ -8783,7 +8771,7 @@ bool ChromeContentBrowserClient::UsePrefetchPrerenderIntegration() {
+ }
+ 
+ bool ChromeContentBrowserClient::UsePreloadServingMetrics() {
+-  return features::kDsePreload2UsePreloadServingMetrics.Get();
++  return features::kDsePreload2UsePreloadServingMetricsdo.Get();
+ }
+ 
+ #if !BUILDFLAG(IS_ANDROID)
+diff --git a/components/fingerprinting_protection_filter/interventions/common/interventions_features.cc b/components/fingerprinting_protection_filter/interventions/common/interventions_features.cc
+index 31bc9e364dd625cea2de4dc471f4df0f503f3364..8ff02830c1d4017ea2a3ef111b169c0381307f0f 100644
+--- a/components/fingerprinting_protection_filter/interventions/common/interventions_features.cc
++++ b/components/fingerprinting_protection_filter/interventions/common/interventions_features.cc
+@@ -10,13 +10,13 @@ namespace fingerprinting_protection_interventions::features {
+ 
+ // Whether the canvas interventions should be enabled that add noise to the
+ // readback values.
+-BASE_FEATURE(kCanvasNoise, base::FeatureState::FEATURE_DISABLED_BY_DEFAULT);
++BASE_FEATURE(kCanvasNoise, base::FeatureState::FEATURE_ENABLED_BY_DEFAULT);
+ 
+ BASE_FEATURE_PARAM(bool,
+                    kCanvasNoiseInRegularMode,
+                    &kCanvasNoise,
+                    "enable_in_regular_mode",
+-                   false);
++                   true);
+ 
+ // [Experimental] Whether readback of canvases should be blocked.
+ BASE_FEATURE(kBlockCanvasReadback,
+diff --git a/content/browser/fingerprinting_protection/canvas_noise_token_data.cc b/content/browser/fingerprinting_protection/canvas_noise_token_data.cc
+index eec809e0edbf4b362e120dad0194a38c6f71acb6..11532d93e28aa1aca169f488e73b3ca49de615c2 100644
+--- a/content/browser/fingerprinting_protection/canvas_noise_token_data.cc
++++ b/content/browser/fingerprinting_protection/canvas_noise_token_data.cc
+@@ -8,15 +8,20 @@
+ #include <memory>
+ #include <string_view>
+ 
++#include "base/bit_cast.h"
++#include "base/command_line.h"
+ #include "base/containers/span.h"
+ #include "base/feature_list.h"
+ #include "base/hash/hash.h"
++#include "base/logging.h"
+ #include "base/numerics/byte_conversions.h"
+ #include "base/strings/strcat.h"
+ #include "base/strings/string_number_conversions.h"
++#include "base/strings/utf_string_conversions.h"
+ #include "base/supports_user_data.h"
+ #include "base/types/pass_key.h"
+ #include "base/unguessable_token.h"
++#include "build/build_config.h"
+ #include "components/fingerprinting_protection_filter/interventions/common/interventions_features.h"
+ #include "content/public/browser/browser_context.h"
+ #include "crypto/hash.h"
+@@ -31,12 +36,24 @@ namespace content {
+ namespace {
+ const void* const kBrowserContextCanvasNoiseTokenKey =
+     &kBrowserContextCanvasNoiseTokenKey;
++const void* const kBrowserContextCanvasSeedKey =
++    &kBrowserContextCanvasSeedKey;
+ 
+ // FNV constants
+ // https://datatracker.ietf.org/doc/html/draft-eastlake-fnv#name-fnv-constants
+ constexpr uint64_t kFnvPrime = 0x00000100000001b3;
+ constexpr uint64_t kFnvOffset = 0xcbf29ce484222325;
+ 
++// Helper class to store canvas seed in BrowserContext
++class CanvasSeedData : public base::SupportsUserData::Data {
++ public:
++  explicit CanvasSeedData(uint64_t seed) : seed_(seed) {}
++  uint64_t seed() const { return seed_; }
++
++ private:
++  uint64_t seed_;
++};
++
+ blink::NoiseToken DeriveInitialNoiseHash(blink::NoiseToken token,
+                                          std::string_view domain) {
+   uint64_t token_hash = kFnvOffset;
+@@ -54,25 +71,63 @@ blink::NoiseToken DeriveInitialNoiseHash(blink::NoiseToken token,
+ // static
+ blink::NoiseToken CanvasNoiseTokenData::GetBrowserToken(
+     BrowserContext* context) {
+-  CHECK(base::FeatureList::IsEnabled(
+-      fingerprinting_protection_interventions::features::kCanvasNoise));
++  // First, check if a canvas seed was stored in the BrowserContext
++  auto* seed_data = static_cast<CanvasSeedData*>(
++      context->GetUserData(&kBrowserContextCanvasSeedKey));
++
++  if (seed_data) {
++    uint64_t seed = seed_data->seed();
++    return blink::NoiseToken(seed);
++  }
++
++  // Try to get canvasSeed from command line arguments (fallback for non-Electron or testing)
++  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
++
++  // Check if we have the canvasSeed argument
++  // Note: additionalArguments from Electron are passed as regular arguments, not switches
++  // So we need to parse them from the arguments list
++  const base::CommandLine::StringVector& args = command_line->GetArgs();
+ 
+-  CanvasNoiseTokenData* data = static_cast<CanvasNoiseTokenData*>(
+-      context->GetUserData(&kBrowserContextCanvasNoiseTokenKey));
+-  if (data != nullptr) {
+-    return data->session_token_;
++  for (const auto& arg : args) {
++#if BUILDFLAG(IS_WIN)
++    std::string arg_str = base::WideToUTF8(arg);
++#else
++    const std::string& arg_str = arg;
++#endif
++
++    // Look for canvasSeed=value pattern
++    if (arg_str.find("canvasSeed=") == 0) {
++      std::string seed_value = arg_str.substr(11); // length of "canvasSeed="
++
++      // Try to parse as double first (handles floats like "6578.1123123123")
++      double seed_double = 0.0;
++      if (base::StringToDouble(seed_value, &seed_double)) {
++        // Convert double to uint64_t by reinterpreting the bits
++        // This preserves the full precision of the floating-point number
++        uint64_t seed_uint64 = base::bit_cast<uint64_t>(seed_double);
++        return blink::NoiseToken(seed_uint64);
++      }
++    }
+   }
+-  return CanvasNoiseTokenData::SetNewToken(context);
++
++  // Fallback: Generate a random token if canvasSeed not found or invalid
++  blink::NoiseToken new_token = blink::NoiseToken(base::RandUint64());
++  return new_token;
+ }
+ 
+ // static
+ blink::NoiseToken CanvasNoiseTokenData::GetToken(BrowserContext* context,
+                                                  const url::Origin& origin) {
++  blink::NoiseToken browser_token = GetBrowserToken(context);
++
+   if (!origin.opaque()) {
+-    return DeriveInitialNoiseHash(GetBrowserToken(context), origin.Serialize());
++    blink::NoiseToken final_token = DeriveInitialNoiseHash(browser_token, origin.Serialize());
++    return final_token;
+   }
+-  return DeriveInitialNoiseHash(GetBrowserToken(context),
+-                                base::UnguessableToken::Create().ToString());
++
++  std::string random_str = base::UnguessableToken::Create().ToString();
++  blink::NoiseToken final_token = DeriveInitialNoiseHash(browser_token, random_str);
++  return final_token;
+ }
+ 
+ // static
+@@ -87,4 +142,10 @@ blink::NoiseToken CanvasNoiseTokenData::SetNewToken(BrowserContext* context) {
+   return token;
+ }
+ 
++// static
++void CanvasNoiseTokenData::SetCanvasSeed(BrowserContext* context, uint64_t seed) {
++  context->SetUserData(&kBrowserContextCanvasSeedKey,
++                       std::make_unique<CanvasSeedData>(seed));
++}
++
+ }  // namespace content
+diff --git a/content/browser/fingerprinting_protection/canvas_noise_token_data.h b/content/browser/fingerprinting_protection/canvas_noise_token_data.h
+index 818250095ef94eab25439b6767f5ab2150f6ce25..7058fc30f12e377d405778fc3e294cb4db7ce87c 100644
+--- a/content/browser/fingerprinting_protection/canvas_noise_token_data.h
++++ b/content/browser/fingerprinting_protection/canvas_noise_token_data.h
+@@ -33,6 +33,11 @@ class CONTENT_EXPORT CanvasNoiseTokenData
+   // Regenerates the noise token, returning the updated token value.
+   static blink::NoiseToken SetNewToken(BrowserContext* context);
+ 
++  // Sets a custom canvas seed for the BrowserContext.
++  // This should be called from Electron when creating WebContents with
++  // custom canvas seeds from additionalArguments.
++  static void SetCanvasSeed(BrowserContext* context, uint64_t seed);
++
+  private:
+   // Helper to generate the 64 bit BrowserContext-associated token, which will
+   // be different per BrowserContext.

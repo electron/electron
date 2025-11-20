@@ -1055,6 +1055,20 @@ std::string ElectronBrowserClient::GetUserAgent() {
   return user_agent_override_;
 }
 
+std::string ElectronBrowserClient::GetUserAgentBasedOnPolicy(
+    content::BrowserContext* context) {
+  if (context) {
+    // Cast to ElectronBrowserContext to access GetUserAgent
+    auto* electron_context = static_cast<ElectronBrowserContext*>(context);
+    std::string session_ua = electron_context->GetUserAgent();
+    if (!session_ua.empty()) {
+      return session_ua;
+    }
+  }
+  // Fall back to the global user agent
+  return GetUserAgent();
+}
+
 void ElectronBrowserClient::SetUserAgent(const std::string& user_agent) {
   user_agent_override_ = user_agent;
 }
@@ -1581,6 +1595,13 @@ std::string ElectronBrowserClient::GetApplicationLocale() {
 
 bool ElectronBrowserClient::ShouldEnableStrictSiteIsolation() {
   // Enable site isolation. It is off by default in Chromium <= 69.
+  return true;
+}
+
+bool ElectronBrowserClient::ShouldEnableCanvasNoise(
+    content::BrowserContext* browser_context,
+    const GURL& url) {
+  // Always enable canvas noise for fingerprinting protection in Electron
   return true;
 }
 

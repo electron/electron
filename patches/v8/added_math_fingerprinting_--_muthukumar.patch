@@ -1,0 +1,350 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Muthukumar <mk@verveflux.com>
+Date: Tue, 4 Nov 2025 02:49:02 +0530
+Subject: Added Math Fingerprinting -- MUTHUKUMAR
+
+Adds JavaScript API to control Math function fingerprinting via
+deterministic noise injection. Each context can set a unique seed
+to produce consistent but different Math results across tabs.
+
+- Math.setSeed(seed): Control noise generation (0 = disabled)
+- Modifies 17 Math functions with imperceptible noise
+- Noise is deterministic based on seed + function ID
+- Default: seed = 0 (no fingerprinting protection)
+
+diff --git a/src/builtins/math.tq b/src/builtins/math.tq
+index 8a63e3e1d49c40d04065b0bf5b6555fc009eef38..7d12621d897d2df564408350bb98cc7ff47e6b74 100644
+--- a/src/builtins/math.tq
++++ b/src/builtins/math.tq
+@@ -4,6 +4,37 @@
+ 
+ namespace math {
+ 
++// Deterministic precision reduction using per-session math seed
++// This creates different noise for each session based on math seed stored in context,
++// providing fingerprinting protection across different render processes
++
++transitioning macro ApplyMathPrecisionReduction(implicit context: Context)(
++    value: float64, functionId: uint32): float64 {
++  // Special handling for special values - always return them unchanged
++  if (Float64IsNaN(value) || Float64IsSomeInfinity(value)) {
++    return value;
++  }
++
++  // Get the math seed from the native context
++  const nativeContext = LoadNativeContext(context);
++  const mathSeedSmi: Smi = *NativeContextSlot(nativeContext, ContextSlot::MATH_SEED_INDEX);
++  const mathSeed = Convert<intptr>(mathSeedSmi);
++
++  if (mathSeed == 0) {
++    return value;
++  }
++
++  // Combine the math seed with the function ID for unique per-function noise
++  const seedFloat = Convert<float64>(Convert<uintptr>(mathSeed));
++  const idFloat = Convert<float64>(Convert<uintptr>(functionId));
++  const combined = seedFloat + idFloat;  // Create a very small deterministic noise factor (scaled to be imperceptible)
++  // The noise is proportional to the magnitude of the value
++  const noiseFactor = (combined * 3.14159265359) * 0.000000000000001;
++  const adjustedValue = value + (noiseFactor * Float64Abs(value));
++
++  return adjustedValue;
++}
++
+ transitioning macro ReduceToSmiOrFloat64(implicit context: Context)(
+                                          x: JSAny): never
+     labels SmiResult(Smi), Float64Result(float64) {
+@@ -162,7 +193,9 @@ extern macro Float64Acos(float64): float64;
+ transitioning javascript builtin MathAcos(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Acos(value));
++  const result = Float64Acos(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x1001);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.acosh
+@@ -171,7 +204,9 @@ extern macro Float64Acosh(float64): float64;
+ transitioning javascript builtin MathAcosh(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Acosh(value));
++  const result = Float64Acosh(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x1002);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.asin
+@@ -180,7 +215,9 @@ extern macro Float64Asin(float64): float64;
+ transitioning javascript builtin MathAsin(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Asin(value));
++  const result = Float64Asin(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x1003);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.asinh
+@@ -189,7 +226,9 @@ extern macro Float64Asinh(float64): float64;
+ transitioning javascript builtin MathAsinh(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Asinh(value));
++  const result = Float64Asinh(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x1004);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.atan
+@@ -198,7 +237,9 @@ extern macro Float64Atan(float64): float64;
+ transitioning javascript builtin MathAtan(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Atan(value));
++  const result = Float64Atan(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x1005);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.atan2
+@@ -208,7 +249,9 @@ transitioning javascript builtin MathAtan2(
+     js-implicit context: NativeContext)(y: JSAny, x: JSAny): Number {
+   const yValue = Convert<float64>(ToNumber_Inline(y));
+   const xValue = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Atan2(yValue, xValue));
++  const result = Float64Atan2(yValue, xValue);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x1006);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.atanh
+@@ -217,7 +260,9 @@ extern macro Float64Atanh(float64): float64;
+ transitioning javascript builtin MathAtanh(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Atanh(value));
++  const result = Float64Atanh(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x1007);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.cbrt
+@@ -226,7 +271,9 @@ extern macro Float64Cbrt(float64): float64;
+ transitioning javascript builtin MathCbrt(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Cbrt(value));
++  const result = Float64Cbrt(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x1008);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.clz32
+@@ -244,7 +291,9 @@ extern macro Float64Cos(float64): float64;
+ transitioning javascript builtin MathCos(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Cos(value));
++  const result = Float64Cos(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x1009);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.cosh
+@@ -253,7 +302,9 @@ extern macro Float64Cosh(float64): float64;
+ transitioning javascript builtin MathCosh(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Cosh(value));
++  const result = Float64Cosh(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x100A);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.exp
+@@ -262,7 +313,9 @@ extern macro Float64Exp(float64): float64;
+ transitioning javascript builtin MathExp(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Exp(value));
++  const result = Float64Exp(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x100B);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.expm1
+@@ -271,7 +324,9 @@ extern macro Float64Expm1(float64): float64;
+ transitioning javascript builtin MathExpm1(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Expm1(value));
++  const result = Float64Expm1(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x100C);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.fround
+@@ -305,7 +360,9 @@ extern macro Float64Log(float64): float64;
+ transitioning javascript builtin MathLog(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Log(value));
++  const result = Float64Log(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x100F);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.log1p
+@@ -314,7 +371,9 @@ extern macro Float64Log1p(float64): float64;
+ transitioning javascript builtin MathLog1p(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Log1p(value));
++  const result = Float64Log1p(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x1010);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.log10
+@@ -323,7 +382,9 @@ extern macro Float64Log10(float64): float64;
+ transitioning javascript builtin MathLog10(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Log10(value));
++  const result = Float64Log10(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x1011);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.log2
+@@ -332,7 +393,9 @@ extern macro Float64Log2(float64): float64;
+ transitioning javascript builtin MathLog2(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Log2(value));
++  const result = Float64Log2(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x1012);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.sin
+@@ -341,7 +404,9 @@ extern macro Float64Sin(float64): float64;
+ transitioning javascript builtin MathSin(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Sin(value));
++  const result = Float64Sin(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x1013);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.sign
+@@ -365,7 +430,9 @@ extern macro Float64Sinh(float64): float64;
+ transitioning javascript builtin MathSinh(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Sinh(value));
++  const result = Float64Sinh(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x1015);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.sqrt
+@@ -374,7 +441,9 @@ extern macro Float64Sqrt(float64): float64;
+ transitioning javascript builtin MathSqrt(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Sqrt(value));
++  const result = Float64Sqrt(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x1016);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.tan
+@@ -383,7 +452,9 @@ extern macro Float64Tan(float64): float64;
+ transitioning javascript builtin MathTan(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Tan(value));
++  const result = Float64Tan(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x1017);
++  return Convert<Number>(adjustedResult);
+ }
+ 
+ // ES6 #sec-math.tanh
+@@ -392,7 +463,21 @@ extern macro Float64Tanh(float64): float64;
+ transitioning javascript builtin MathTanh(
+     js-implicit context: NativeContext)(x: JSAny): Number {
+   const value = Convert<float64>(ToNumber_Inline(x));
+-  return Convert<Number>(Float64Tanh(value));
++  const result = Float64Tanh(value);
++  const adjustedResult = ApplyMathPrecisionReduction(result, 0x1018);
++  return Convert<Number>(adjustedResult);
++}
++
++// Custom Math.setSeed function for fingerprinting protection
++transitioning javascript builtin MathSetSeed(
++    js-implicit context: NativeContext)(seed: JSAny): Undefined {
++  const nativeContext = LoadNativeContext(context);
++  const seedNumber = ToNumber_Inline(seed);
++  const seedFloat = Convert<float64>(seedNumber);
++  const seedIntptr = ChangeFloat64ToIntPtr(seedFloat);
++  const seedSmi = Convert<Smi>(seedIntptr);
++  *NativeContextSlot(nativeContext, ContextSlot::MATH_SEED_INDEX) = seedSmi;
++  return Undefined;
+ }
+ 
+ // Fast path for few arguments to avoid loop comparison.
+diff --git a/src/heap/factory.cc b/src/heap/factory.cc
+index 6c69bcbe95b8c7360f8385f84b581be81a3c243b..f7fdb7f885cd048a199035b3bf39e1f974716490 100644
+--- a/src/heap/factory.cc
++++ b/src/heap/factory.cc
+@@ -1344,6 +1344,7 @@ Handle<NativeContext> Factory::NewNativeContext() {
+   context->set_is_wasm_js_installed(Smi::zero());
+   context->set_is_wasm_jspi_installed(Smi::zero());
+   context->set_math_random_index(Smi::zero());
++  context->set_math_seed(Smi::zero());  // Initialize to 0, use Math.setSeed() to set
+   context->set_serialized_objects(*empty_fixed_array());
+   context->init_microtask_queue(isolate(), nullptr);
+   context->set_retained_maps(*empty_weak_array_list());
+diff --git a/src/init/bootstrapper.cc b/src/init/bootstrapper.cc
+index fb436382bc8c473047674f88be33d21b84b15a26..69a51d29f94e8990a4d9129854a024f8177e0540 100644
+--- a/src/init/bootstrapper.cc
++++ b/src/init/bootstrapper.cc
+@@ -3516,6 +3516,10 @@ void Genesis::InitializeGlobal(DirectHandle<JSGlobalObject> global_object,
+     SimpleInstallFunction(isolate_, math, "trunc", Builtin::kMathTrunc, 1,
+                           kAdapt);
+ 
++    // Install Math.setSeed for fingerprinting protection
++    SimpleInstallFunction(isolate_, math, "setSeed", Builtin::kMathSetSeed, 1,
++                          kAdapt);
++
+     // Install math constants.
+     double const kE = base::ieee754::exp(1.0);
+     double const kPI = 3.1415926535897932;
+diff --git a/src/objects/contexts.h b/src/objects/contexts.h
+index 17624a909ad4050249a541a50afdf312f0eed86d..c7ce1df44cc03ff586781f82d03bb95c13845186 100644
+--- a/src/objects/contexts.h
++++ b/src/objects/contexts.h
+@@ -274,6 +274,7 @@ enum ContextLookupFlags {
+   V(MATH_RANDOM_INDEX_INDEX, Smi, math_random_index)                           \
+   V(MATH_RANDOM_STATE_INDEX, ByteArray, math_random_state)                     \
+   V(MATH_RANDOM_CACHE_INDEX, FixedDoubleArray, math_random_cache)              \
++  V(MATH_SEED_INDEX, Smi, math_seed)                                           \
+   V(NORMALIZED_MAP_CACHE_INDEX, Object, normalized_map_cache)                  \
+   V(NUMBER_FUNCTION_INDEX, JSFunction, number_function)                        \
+   V(OBJECT_FUNCTION_INDEX, JSFunction, object_function)                        \
+diff --git a/src/objects/contexts.tq b/src/objects/contexts.tq
+index db515f76b00769f962dda78386bd8d557d300554..3be03004163acc5fc775391c617db60aae0af4bb 100644
+--- a/src/objects/contexts.tq
++++ b/src/objects/contexts.tq
+@@ -156,6 +156,7 @@ extern enum ContextSlot extends intptr constexpr 'Context::Field' {
+   JS_SET_MAP_INDEX: Slot<NativeContext, Map>,
+   MATH_RANDOM_CACHE_INDEX: Slot<NativeContext, FixedDoubleArray>,
+   MATH_RANDOM_INDEX_INDEX: Slot<NativeContext, Smi>,
++  MATH_SEED_INDEX: Slot<NativeContext, Smi>,
+   NUMBER_FUNCTION_INDEX: Slot<NativeContext, JSFunction>,
+   PROXY_REVOCABLE_RESULT_MAP_INDEX: Slot<NativeContext, Map>,
+   REFLECT_APPLY_INDEX: Slot<NativeContext, Callable>,
