@@ -52,7 +52,6 @@ Depending on desktop environment and distribution:
 ## Distribution-Specific Package Names
 
 ### Ubuntu / Debian
-
 ```bash
 # Core dependencies
 libgtk-3-0
@@ -122,7 +121,6 @@ kwallet
 ```
 
 ### openSUSE
-
 ```bash
 # Core dependencies
 libgtk-3-0
