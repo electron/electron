@@ -35,4 +35,80 @@ describe('fuses', () => {
       return await bw.webContents.executeJavaScript("ajax('file:///etc/passwd')");
     }, path.join(__dirname, 'fixtures', 'pages', 'fetch.html'))).to.eventually.be.rejectedWith('Failed to fetch');
   });
+
+  describe('cookie_encryption', () => {
+    it('allows setting and retrieving cookies when enabled', async () => {
+      const rc = await startRemoteControlApp(['--set-fuse-cookie_encryption=1']);
+      const result = await rc.remotely(async () => {
+        const { session } = require('electron');
+        const ses = session.defaultSession;
+        const testUrl = 'https://example.com';
+
+        await ses.clearStorageData({ storages: ['cookies'] });
+
+        await ses.cookies.set({
+          url: testUrl,
+          name: 'test_cookie',
+          value: 'encrypted_value_12345',
+          expirationDate: Math.floor(Date.now() / 1000) + 3600
+        });
+
+        await ses.cookies.set({
+          url: testUrl,
+          name: 'secure_cookie',
+          value: 'secret_data_67890',
+          secure: true,
+          httpOnly: true,
+          expirationDate: Math.floor(Date.now() / 1000) + 7200
+        });
+
+        const cookies = await ses.cookies.get({ url: testUrl });
+        const testCookie = cookies.find((c: Electron.Cookie) => c.name === 'test_cookie');
+        const secureCookie = cookies.find((c: Electron.Cookie) => c.name === 'secure_cookie');
+
+        return {
+          cookieCount: cookies.length,
+          testCookieValue: testCookie?.value,
+          secureCookieValue: secureCookie?.value,
+          secureCookieIsSecure: secureCookie?.secure,
+          secureCookieIsHttpOnly: secureCookie?.httpOnly
+        };
+      });
+
+      expect(result.cookieCount).to.equal(2);
+      expect(result.testCookieValue).to.equal('encrypted_value_12345');
+      expect(result.secureCookieValue).to.equal('secret_data_67890');
+      expect(result.secureCookieIsSecure).to.be.true();
+      expect(result.secureCookieIsHttpOnly).to.be.true();
+    });
+
+    it('persists cookies across sessions when enabled', async () => {
+      const rc = await startRemoteControlApp(['--set-fuse-cookie_encryption=1']);
+
+      await rc.remotely(async () => {
+        const { session } = require('electron');
+        await session.defaultSession.clearStorageData({ storages: ['cookies'] });
+        await session.defaultSession.cookies.set({
+          url: 'https://example.com',
+          name: 'persistent_cookie',
+          value: 'persist_me',
+          expirationDate: Math.floor(Date.now() / 1000) + 86400
+        });
+      });
+
+      await rc.remotely(async () => {
+        const { session } = require('electron');
+        await session.defaultSession.cookies.flushStore();
+      });
+
+      const result = await rc.remotely(async () => {
+        const { session } = require('electron');
+        const cookies = await session.defaultSession.cookies.get({ url: 'https://example.com' });
+        const cookie = cookies.find((c: Electron.Cookie) => c.name === 'persistent_cookie');
+        return cookie?.value;
+      });
+
+      expect(result).to.equal('persist_me');
+    });
+  });
 });

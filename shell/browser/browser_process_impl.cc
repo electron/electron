@@ -10,6 +10,8 @@
 
 #include "base/command_line.h"
 #include "base/files/file_path.h"
+#include "base/functional/bind.h"
+#include "base/logging.h"
 #include "base/notimplemented.h"
 #include "base/path_service.h"
 #include "chrome/browser/browser_process.h"
@@ -44,6 +46,27 @@
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_job_manager.h"
+#endif
+
+#if BUILDFLAG(IS_LINUX)
+#include "chrome/browser/browser_features.h"
+#include "components/os_crypt/async/browser/freedesktop_secret_key_provider.h"
+#include "components/os_crypt/async/browser/secret_portal_key_provider.h"
+#include "components/password_manager/core/browser/password_manager_switches.h"  // nogncheck
+#include "shell/common/application_info.h"
+#endif
+
+#if BUILDFLAG(IS_WIN)
+#include "components/os_crypt/async/browser/dpapi_key_provider.h"
+#endif
+
+#if BUILDFLAG(IS_MAC)
+#include "chrome/common/chrome_features.h"
+#include "components/os_crypt/async/browser/keychain_key_provider.h"
+#endif
+
+#if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
+#include "components/os_crypt/async/browser/posix_key_provider.h"
 #endif
 
 BrowserProcessImpl::BrowserProcessImpl() {
@@ -116,8 +139,14 @@ void BrowserProcessImpl::PostEarlyInitialization() {
   PrefServiceFactory prefs_factory;
   auto pref_registry = base::MakeRefCounted<PrefRegistrySimple>();
   PrefProxyConfigTrackerImpl::RegisterPrefs(pref_registry.get());
+
 #if BUILDFLAG(IS_WIN)
   OSCrypt::RegisterLocalPrefs(pref_registry.get());
+#endif
+
+#if BUILDFLAG(IS_LINUX)
+  os_crypt_async::SecretPortalKeyProvider::RegisterLocalPrefs(
+      pref_registry.get());
 #endif
 
   in_memory_pref_store_ = base::MakeRefCounted<ValueMapPrefStore>();
@@ -419,16 +448,54 @@ void BrowserProcessImpl::CreateNetworkQualityObserver() {
 }
 
 void BrowserProcessImpl::CreateOSCryptAsync() {
-  // source: https://chromium-review.googlesource.com/c/chromium/src/+/4455776
+  std::vector<std::pair<size_t, std::unique_ptr<os_crypt_async::KeyProvider>>>
+      providers;
 
-  // For now, initialize OSCryptAsync with no providers. This delegates all
-  // encryption operations to OSCrypt.
-  // TODO(crbug.com/1373092): Add providers behind features, as support for them
-  // is added.
-  os_crypt_async_ = std::make_unique<os_crypt_async::OSCryptAsync>(
-      std::vector<
-          std::pair<size_t, std::unique_ptr<os_crypt_async::KeyProvider>>>());
+#if BUILDFLAG(IS_WIN)
+  // The DPAPI key provider requires OSCrypt::Init to have already been called
+  // to initialize the key storage. This happens in
+  // BrowserMainPartsWin::PreCreateMainMessageLoop.
+  providers.emplace_back(std::make_pair(
+      /*precedence=*/10u,
+      std::make_unique<os_crypt_async::DPAPIKeyProvider>(local_state())));
+#endif  // BUILDFLAG(IS_WIN)
 
-  // Trigger async initialization of OSCrypt key providers.
-  os_crypt_async_->GetInstance(base::DoNothing());
+#if BUILDFLAG(IS_LINUX)
+  base::CommandLine* cmd_line = base::CommandLine::ForCurrentProcess();
+  const auto password_store =
+      cmd_line->GetSwitchValueASCII(password_manager::kPasswordStore);
+  if (password_store != "basic") {
+    if (base::FeatureList::IsEnabled(features::kDbusSecretPortal)) {
+      // Use a higher priority than the FreedesktopSecretKeyProvider.
+      providers.emplace_back(
+          /*precedence=*/15u,
+          std::make_unique<os_crypt_async::SecretPortalKeyProvider>(
+              local_state(),
+              base::FeatureList::IsEnabled(
+                  features::kSecretPortalKeyProviderUseForEncryption)));
+    }
+  }
+  providers.emplace_back(
+      /*precedence=*/10u,
+      std::make_unique<os_crypt_async::FreedesktopSecretKeyProvider>(
+          password_store, electron::GetApplicationName(), nullptr));
+#endif  // BUILDFLAG(IS_LINUX)
+
+#if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
+  // On other POSIX systems, this is the only key provider. On Linux, it is used
+  // as a fallback.
+  providers.emplace_back(
+      /*precedence=*/5u, std::make_unique<os_crypt_async::PosixKeyProvider>());
+#endif  // BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
+
+#if BUILDFLAG(IS_MAC)
+  if (base::FeatureList::IsEnabled(features::kUseKeychainKeyProvider)) {
+    providers.emplace_back(std::make_pair(
+        /*precedence=*/10u,
+        std::make_unique<os_crypt_async::KeychainKeyProvider>()));
+  }
+#endif  // BUILDFLAG(IS_MAC)
+
+  os_crypt_async_ =
+      std::make_unique<os_crypt_async::OSCryptAsync>(std::move(providers));
 }
