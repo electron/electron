@@ -405,10 +405,10 @@ index 33e2ff42e4d9da442d522b959a4a21c2f7032b6b..a0d81212327fc17e1f4704e78803c1d7
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index 94cbe0bb382b4b64db390dcd6d725e13f54b6666..5c3949c01f27cab5e4f8a56bbbf11c0f9718eed2 100644
+index f3908c04715ab399f61dd6bd781f5378f14584e2..c119360ff5dee3b51e6db65b9628aa7a27d0a213 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
-@@ -136,6 +136,9 @@ struct SchemeRegistry {
+@@ -131,6 +131,9 @@ struct SchemeRegistry {
        kMaterializedViewScheme,
    };
  
@@ -418,7 +418,7 @@ index 94cbe0bb382b4b64db390dcd6d725e13f54b6666..5c3949c01f27cab5e4f8a56bbbf11c0f
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -673,6 +676,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+@@ -668,6 +671,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
    return GetSchemeRegistry().empty_document_schemes;
  }
  
