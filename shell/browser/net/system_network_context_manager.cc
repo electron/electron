@@ -279,7 +279,12 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   // process, send it the required key.
   if (content::IsOutOfProcessNetworkService() &&
       electron::fuses::IsCookieEncryptionEnabled()) {
+    // On Windows, OSCrypt Async manages the encryption key via the DPAPI key
+    // provider, and there is no need to send the key separately to OSCrypt
+    // sync.
+#if !BUILDFLAG(IS_WIN)
     network_service->SetEncryptionKey(OSCrypt::GetRawEncryptionKey());
+#endif
   }
 }
 
