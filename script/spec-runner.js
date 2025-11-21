@@ -375,7 +375,7 @@ async function runTestUsingElectron (specDir, testName, shouldRerun, additionalA
     if (shouldRerun) {
       await rerunFailedTests(specDir, testName);
     } else {
-      return false;
+      process.exit(1);
     }
   }
   console.log(`${pass} Electron ${testName} process tests passed.`);

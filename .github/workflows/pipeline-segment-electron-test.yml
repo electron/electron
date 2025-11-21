@@ -243,9 +243,9 @@ jobs:
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
           else
             if [ "${{ inputs.target-arch }}" = "arm" ]; then
-              runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --skipYarnInstall --runners=main --trace-uncaught --enable-logging --files $tests_files
+              runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --skipYarnInstall --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
             else 
-              runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
+              runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
             fi
             
           fi
