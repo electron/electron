@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 73d636ded85feb3db6582d5eab8c713fb7304b31..9c2c027ec7c22578d10d089d624f3ec395d23f1c 100644
+index e1a46e92f8afcff9907fffec19acbf96b61241de..5f84d2c36be58346f924f9c1c7f6e9b7ef823a9f 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1069,6 +1069,7 @@ component("base") {
+@@ -1071,6 +1071,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
