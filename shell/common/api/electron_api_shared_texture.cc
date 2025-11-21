@@ -126,6 +126,8 @@ std::string TransferVideoPixelFormatToString(media::VideoPixelFormat format) {
       return "rgba";
     case media::PIXEL_FORMAT_RGBAF16:
       return "rgbaf16";
+    case media::PIXEL_FORMAT_NV12:
+      return "nv12";
     default:
       NOTREACHED();
   }
@@ -566,6 +568,8 @@ struct Converter<ImportSharedTextureInfo> {
         out->pixel_format = media::PIXEL_FORMAT_ABGR;
       else if (pixel_format_str == "rgbaf16")
         out->pixel_format = media::PIXEL_FORMAT_RGBAF16;
+      else if (pixel_format_str == "nv12")
+        out->pixel_format = media::PIXEL_FORMAT_NV12;
       else
         return false;
     }
@@ -729,6 +733,14 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
       sii->CreateSharedImage({si_format, coded_size, color_space,
                               shared_image_usage, "SharedTextureVideoFrame"},
                              std::move(gmb_handle));
+
+  if (!si) {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "Failed to create shared image from shared texture handle. Texture "
+        "format or dimension might not be supported on current device or "
+        "platform.");
+    return v8::Null(isolate);
+  }
 
   ImportedSharedTexture* imported = new ImportedSharedTexture();
   imported->pixel_format = shared_texture.pixel_format;
