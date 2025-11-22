@@ -70,8 +70,13 @@ void OffScreenWebContentsView::OnWindowClosed() {
   }
 }
 
-gfx::Size OffScreenWebContentsView::GetSize() {
+gfx::Size OffScreenWebContentsView::GetSize() const {
   return native_window_ ? native_window_->GetSize() : gfx::Size();
+}
+
+void OffScreenWebContentsView::Resize(const gfx::Rect& new_bounds) {
+  // OSR doesn't support resize via this method - it uses SetSize on the view
+  // directly. This is a no-op to satisfy the interface.
 }
 
 #if !BUILDFLAG(IS_MAC)

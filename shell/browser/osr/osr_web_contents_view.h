@@ -48,7 +48,8 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void OnWindowResize() override;
   void OnWindowClosed() override;
 
-  gfx::Size GetSize();
+  gfx::Size GetSize() const override;
+  void Resize(const gfx::Rect& new_bounds) override;
 
   // content::WebContentsView:
   gfx::NativeView GetNativeView() const override;
