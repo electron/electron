@@ -91,6 +91,7 @@ SpellCheckClient::~SpellCheckClient() {
 
 void SpellCheckClient::RequestCheckingOfText(
     const blink::WebString& textToCheck,
+    ShouldForceRefreshTextCheckService should_force_refresh,
     std::unique_ptr<blink::WebTextCheckingCompletion> completionCallback) {
   std::u16string text(textToCheck.Utf16());
   // Ignore invalid requests.
