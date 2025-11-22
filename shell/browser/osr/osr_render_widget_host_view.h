@@ -131,6 +131,7 @@ class OffScreenRenderWidgetHostView
   void UpdateFrameSinkIdRegistration() override;
   void InvalidateLocalSurfaceIdAndAllocationGroup() override;
   void ResetFallbackToFirstNavigationSurface() override;
+  void OnUnconfirmedTapConvertedToTap() override {}
   void InitAsPopup(content::RenderWidgetHostView* parent_host_view,
                    const gfx::Rect& bounds,
                    const gfx::Rect& anchor_rect) override;
