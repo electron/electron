@@ -419,24 +419,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@dbus-types/notifications@npm:^0.0.5":
-  version: 0.0.5
-  resolution: "@dbus-types/notifications@npm:0.0.5"
-  dependencies:
-    "@dbus-types/dbus": "npm:^0.0.4"
-  checksum: 10c0/9e5caae1a30a53507bd5de4ae471ad2681da9ec0cb374b7d4f8bbc65c1ce8bd6858a826277d6462c5540d463759cb0bd4caa24ae438ddf43be286970dd527950
-  languageName: node
-  linkType: hard
-
-"@dbus-types/systemd@npm:^0.0.5":
-  version: 0.0.5
-  resolution: "@dbus-types/systemd@npm:0.0.5"
-  dependencies:
-    "@dbus-types/dbus": "npm:^0.0.4"
-  checksum: 10c0/5d18030470d7f0da19a3ecb022225584eb0d7465bd174d20d2fb11da75e665ffd11bebde3f038d4b65ad823cf8e742b70a4cadc2ce93a86e6b1cc3af6201f8d2
-  languageName: node
-  linkType: hard
-
 "@discoveryjs/json-ext@npm:^0.6.1":
   version: 0.6.3
   resolution: "@discoveryjs/json-ext@npm:0.6.3"
@@ -4691,8 +4673,6 @@ __metadata:
   dependencies:
     "@azure/storage-blob": "npm:^12.28.0"
     "@datadog/datadog-ci": "npm:^4.1.2"
-    "@dbus-types/notifications": "npm:^0.0.5"
-    "@dbus-types/systemd": "npm:^0.0.5"
     "@electron/asar": "npm:^4.0.1"
     "@electron/docs-parser": "npm:^2.0.0"
     "@electron/fiddle-core": "npm:^1.3.4"

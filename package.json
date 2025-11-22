@@ -144,9 +144,5 @@
     "dugite": {
       "built": true
     }
-  },
-  "dependencies": {
-    "@dbus-types/notifications": "^0.0.5",
-    "@dbus-types/systemd": "^0.0.5"
   }
 }

@@ -6,7 +6,6 @@
 //
 // See https://pypi.python.org/pypi/python-dbusmock for more information about
 // python-dbusmock.
-import { Interfaces as Systemd } from '@dbus-types/systemd';
 import { expect } from 'chai';
 import * as dbus from 'dbus-ts';
 
@@ -21,7 +20,7 @@ describe('powerMonitor', () => {
 
   ifdescribe(process.platform === 'linux' && process.env.DBUS_SYSTEM_BUS_ADDRESS != null)('when powerMonitor module is loaded with dbus mock', () => {
     before(async () => {
-      const systemBus = await dbus.systemBus<Systemd>();
+      const systemBus = await dbus.systemBus();
       const loginService = systemBus.getService('org.freedesktop.login1');
       logindMock = await loginService.getInterface('/org/freedesktop/login1', 'org.freedesktop.DBus.Mock');
       getCalls = promisify(logindMock.GetCalls.bind(logindMock));
