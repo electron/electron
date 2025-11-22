@@ -109,18 +109,14 @@ gin_helper::Handle<NativeImage> NativeImage::CreateMenuSymbol(
     gin::Arguments* args,
     std::string name) {
   @autoreleasepool {
-    float pointSize = 13.0;
-    NSFontWeight weight = NSFontWeightSemibold;
-    NSImageSymbolScale scale = NSImageSymbolScaleSmall;
-
     NSImage* image =
         [NSImage imageWithSystemSymbolName:base::SysUTF8ToNSString(name)
                   accessibilityDescription:nil];
 
-    NSImageSymbolConfiguration* symbol_config =
-        [NSImageSymbolConfiguration configurationWithPointSize:pointSize
-                                                        weight:weight
-                                                         scale:scale];
+    NSImageSymbolConfiguration* symbol_config = [NSImageSymbolConfiguration
+        configurationWithPointSize:13.0
+                            weight:NSFontWeightSemibold
+                             scale:NSImageSymbolScaleSmall];
 
     image = [image imageWithSymbolConfiguration:symbol_config];
 
@@ -134,8 +130,14 @@ gin_helper::Handle<NativeImage> NativeImage::CreateMenuSymbol(
     float aspect_ratio =
         static_cast<float>(size.width()) / static_cast<float>(size.height());
 
-    int new_height = 14;
-    int new_width = static_cast<int>(14 * aspect_ratio);
+    int new_width = 14;
+    int new_height = static_cast<int>(14 / aspect_ratio);
+
+    // prevent tall symbols from exceeding menu item height (e.g. chevron.right)
+    if (new_height >= 16) {
+      new_height = 14;
+      new_width = static_cast<int>(14 * aspect_ratio);
+    }
 
     gin_helper::Handle<NativeImage> sized = handle->Resize(
         args,
@@ -157,47 +159,53 @@ gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
     NSFontWeight weight = NSFontWeightRegular;
     NSImageSymbolScale scale = NSImageSymbolScaleMedium;
 
-    args->GetNext(&hsl_shift);
+    v8::Local<v8::Value> opts;
+    if (args->GetNext(&opts)) {
+      if (opts->IsArray()) {
+        // Treat an array as a HSL shift.
+        gin::ConvertFromV8(args->isolate(), opts, &hsl_shift);
+      } else {
+        gin_helper::Dictionary options(args->isolate(), opts.As<v8::Object>());
+        options.Get("hslShift", &hsl_shift);
 
-    gin_helper::Dictionary options;
-    if (args->GetNext(&options)) {
-      options.Get("pointSize", &pointSize);
+        options.Get("pointSize", &pointSize);
 
-      std::string weight_str;
-      options.Get("weight", &weight_str);
+        std::string weight_str;
+        options.Get("weight", &weight_str);
 
-      // We unfortunately have to map from string to NSFontWeight manually, as
-      // NSFontWeight maps to a double under the hood.
-      if (weight_str == "ultralight") {
-        weight = NSFontWeightUltraLight;
-      } else if (weight_str == "thin") {
-        weight = NSFontWeightThin;
-      } else if (weight_str == "light") {
-        weight = NSFontWeightLight;
-      } else if (weight_str == "regular") {
-        weight = NSFontWeightRegular;
-      } else if (weight_str == "medium") {
-        weight = NSFontWeightMedium;
-      } else if (weight_str == "semibold") {
-        weight = NSFontWeightSemibold;
-      } else if (weight_str == "bold") {
-        weight = NSFontWeightBold;
-      } else if (weight_str == "heavy") {
-        weight = NSFontWeightHeavy;
-      } else if (weight_str == "black") {
-        weight = NSFontWeightBlack;
-      }
+        // We unfortunately have to map from string to NSFontWeight manually, as
+        // NSFontWeight maps to a double under the hood.
+        if (weight_str == "ultralight") {
+          weight = NSFontWeightUltraLight;
+        } else if (weight_str == "thin") {
+          weight = NSFontWeightThin;
+        } else if (weight_str == "light") {
+          weight = NSFontWeightLight;
+        } else if (weight_str == "regular") {
+          weight = NSFontWeightRegular;
+        } else if (weight_str == "medium") {
+          weight = NSFontWeightMedium;
+        } else if (weight_str == "semibold") {
+          weight = NSFontWeightSemibold;
+        } else if (weight_str == "bold") {
+          weight = NSFontWeightBold;
+        } else if (weight_str == "heavy") {
+          weight = NSFontWeightHeavy;
+        } else if (weight_str == "black") {
+          weight = NSFontWeightBlack;
+        }
 
-      std::string scale_str;
-      options.Get("scale", &scale_str);
+        std::string scale_str;
+        options.Get("scale", &scale_str);
 
-      // Similarly, map from string to NSImageSymbolScale.
-      if (scale_str == "small") {
-        scale = NSImageSymbolScaleSmall;
-      } else if (scale_str == "medium") {
-        scale = NSImageSymbolScaleMedium;
-      } else if (scale_str == "large") {
-        scale = NSImageSymbolScaleLarge;
+        // Similarly, map from string to NSImageSymbolScale.
+        if (scale_str == "small") {
+          scale = NSImageSymbolScaleSmall;
+        } else if (scale_str == "medium") {
+          scale = NSImageSymbolScaleMedium;
+        } else if (scale_str == "large") {
+          scale = NSImageSymbolScaleLarge;
+        }
       }
     }
 
