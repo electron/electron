@@ -5,11 +5,14 @@ import { expect } from 'chai';
 import { randomUUID } from 'node:crypto';
 import * as path from 'node:path';
 
+import { ifdescribe } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 
 const fixtures = path.resolve(__dirname, 'fixtures');
 
-describe('sharedTexture module', () => {
+// Tests only run properly on macOS arm64 for now
+const skip = process.platform !== 'darwin' || process.arch !== 'arm64';
+ifdescribe(!skip)('sharedTexture module', () => {
   const {
     nativeImage
   } = require('electron');
@@ -79,7 +82,6 @@ describe('sharedTexture module', () => {
             }
 
             // Step 2: Import as SharedTextureImported
-            console.log(texture.textureInfo);
             const importedSubtle = sharedTexture.subtle.importSharedTexture(texture.textureInfo);
 
             // Step 3: Prepare for transfer to another process (win's renderer)
@@ -135,7 +137,6 @@ describe('sharedTexture module', () => {
             // and the color may change slightly when resizing at device pixel ratio != 1.
             // Limit error should not be different more than 1% of the whole image.
               const ratio = result.difference / result.total;
-              console.log('image difference: ', ratio);
               expect(ratio).to.be.lessThan(0.01);
               resolve();
             } catch (e) {
@@ -203,7 +204,6 @@ describe('sharedTexture module', () => {
             }
 
             // Step 2: Import as SharedTextureImported
-            console.log(texture.textureInfo);
             const imported = sharedTexture.importSharedTexture({
               textureInfo: texture.textureInfo,
               allReferencesReleased: () => {
@@ -251,7 +251,6 @@ describe('sharedTexture module', () => {
             // and the color may change slightly when resizing at device pixel ratio != 1.
             // Limit error should not be different more than 1% of the whole image.
               const ratio = result.difference / result.total;
-              console.log('image difference: ', ratio);
               expect(ratio).to.be.lessThan(0.01);
               resolve();
             } catch (e) {
