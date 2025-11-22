@@ -38,7 +38,7 @@ index a7a637438116a1c7846194dea4412100a45c9331..bb3877d546bfea141d3d6ebb396b88fa
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 1d7d033888bf8b9ff3ea1e938dc9d92fd09f2bfe..618d854676cada395ad6d29124ae34b719f68f64 100644
+index eb7e9f8d400b709a597e2f61a01fb88e66b0bd38..6e164f2dcc8dffaa25794900daa863e8577bbe34 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -18,12 +18,16 @@
@@ -152,7 +152,7 @@ index 1d7d033888bf8b9ff3ea1e938dc9d92fd09f2bfe..618d854676cada395ad6d29124ae34b7
  
    toggle_camera_button_ = vc_controls_container_view_->AddChildView(
        std::move(toggle_camera_button));
-@@ -1622,6 +1636,7 @@ void VideoOverlayWindowViews::OnUpdateControlsBounds() {
+@@ -1635,6 +1649,7 @@ void VideoOverlayWindowViews::OnUpdateControlsBounds() {
    timestamp_->SetSize({max_timestamp_width, kTimestampHeight});
    timestamp_->SetVisible(!is_live_);
  
@@ -160,7 +160,7 @@ index 1d7d033888bf8b9ff3ea1e938dc9d92fd09f2bfe..618d854676cada395ad6d29124ae34b7
    live_status_->SetPosition(timestamp_position);
    live_status_->SetMaximumWidthSingleLine(max_timestamp_width);
    live_status_->SetSize(
-@@ -1629,7 +1644,6 @@ void VideoOverlayWindowViews::OnUpdateControlsBounds() {
+@@ -1642,7 +1657,6 @@ void VideoOverlayWindowViews::OnUpdateControlsBounds() {
             .width(),
         kTimestampHeight});
    live_status_->SetVisible(is_live_);
@@ -168,7 +168,7 @@ index 1d7d033888bf8b9ff3ea1e938dc9d92fd09f2bfe..618d854676cada395ad6d29124ae34b7
    gfx::Rect live_caption_button_bounds(
        bottom_controls_bounds.right() - kBottomControlsHorizontalMargin -
            kActionButtonSize.width(),
-@@ -1642,7 +1656,7 @@ void VideoOverlayWindowViews::OnUpdateControlsBounds() {
+@@ -1655,7 +1669,7 @@ void VideoOverlayWindowViews::OnUpdateControlsBounds() {
    live_caption_dialog_->SetPosition(
        {live_caption_button_bounds.right() - live_caption_dialog_->width(),
         live_caption_button_bounds.y() - live_caption_dialog_->height()});
@@ -177,7 +177,7 @@ index 1d7d033888bf8b9ff3ea1e938dc9d92fd09f2bfe..618d854676cada395ad6d29124ae34b7
    // The play/pause button and replay/forward 10 seconds buttons should not be
    // visible while dragging the progress bar or for live media.
    const bool is_dragging_progress_bar =
-@@ -1971,11 +1985,13 @@ void VideoOverlayWindowViews::OnGestureEvent(ui::GestureEvent* event) {
+@@ -1984,11 +1998,13 @@ void VideoOverlayWindowViews::OnGestureEvent(ui::GestureEvent* event) {
      return;
    }
  
@@ -191,7 +191,7 @@ index 1d7d033888bf8b9ff3ea1e938dc9d92fd09f2bfe..618d854676cada395ad6d29124ae34b7
  
    // Otherwise, just use default gesture event handling.
    views::Widget::OnGestureEvent(event);
-@@ -2041,18 +2057,25 @@ gfx::Rect VideoOverlayWindowViews::GetProgressViewBounds() {
+@@ -2054,18 +2070,25 @@ gfx::Rect VideoOverlayWindowViews::GetProgressViewBounds() {
  }
  
  gfx::Rect VideoOverlayWindowViews::GetLiveCaptionButtonBounds() {
@@ -217,7 +217,7 @@ index 1d7d033888bf8b9ff3ea1e938dc9d92fd09f2bfe..618d854676cada395ad6d29124ae34b7
    MediaEngagementService* service =
        MediaEngagementService::Get(Profile::FromBrowserContext(
            GetController()->GetWebContents()->GetBrowserContext()));
-@@ -2061,6 +2084,8 @@ bool VideoOverlayWindowViews::HasHighMediaEngagement(
+@@ -2074,6 +2097,8 @@ bool VideoOverlayWindowViews::HasHighMediaEngagement(
    }
  
    return service->HasHighEngagement(origin);
@@ -226,7 +226,7 @@ index 1d7d033888bf8b9ff3ea1e938dc9d92fd09f2bfe..618d854676cada395ad6d29124ae34b7
  }
  
  bool VideoOverlayWindowViews::IsTrustedForMediaPlayback() const {
-@@ -2317,16 +2342,20 @@ void VideoOverlayWindowViews::UpdateTimestampLabel(base::TimeDelta current_time,
+@@ -2330,16 +2355,20 @@ void VideoOverlayWindowViews::UpdateTimestampLabel(base::TimeDelta current_time,
  }
  
  void VideoOverlayWindowViews::OnLiveCaptionButtonPressed() {

@@ -253,7 +253,7 @@ index fb3fdfca483ff5041ee98095af3f6ac2640adbaf..ada19d78ec1337b0c49a1597c877886f
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index 95134893c5eb6fa22b8e535a3495b2d4b3325447..71003cc065b579992dab4a781b696685cf506cce 100644
+index 422a9911ffafe19f484325cf9f4fe9b69d3a84dd..af9b897aac016a73199f7b2dffda227401aee85b 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
 @@ -8,6 +8,7 @@
@@ -264,7 +264,7 @@ index 95134893c5eb6fa22b8e535a3495b2d4b3325447..71003cc065b579992dab4a781b696685
  #include "base/functional/bind.h"
  #include "base/functional/callback_helpers.h"
  #include "base/metrics/histogram_functions.h"
-@@ -36,6 +37,7 @@
+@@ -34,6 +35,7 @@
  #include "third_party/blink/public/mojom/loader/code_cache.mojom-data-view.h"
  #include "url/gurl.h"
  #include "url/origin.h"
@@ -272,7 +272,7 @@ index 95134893c5eb6fa22b8e535a3495b2d4b3325447..71003cc065b579992dab4a781b696685
  
  using blink::mojom::CacheStorageError;
  
-@@ -110,6 +112,11 @@ std::optional<std::string> GetContextKeyForPersistentCacheCollection(
+@@ -108,6 +110,11 @@ std::optional<std::string> GetContextKeyForPersistentCacheCollection(
    return context_key;
  }
  
@@ -284,7 +284,7 @@ index 95134893c5eb6fa22b8e535a3495b2d4b3325447..71003cc065b579992dab4a781b696685
  bool CheckSecurityForAccessingCodeCacheData(
      const GURL& resource_url,
      int render_process_id,
-@@ -120,40 +127,56 @@ bool CheckSecurityForAccessingCodeCacheData(
+@@ -118,40 +125,56 @@ bool CheckSecurityForAccessingCodeCacheData(
  
    // Code caching is only allowed for http(s) and chrome/chrome-untrusted
    // scripts. Furthermore, there is no way for http(s) pages to load chrome or
@@ -405,7 +405,7 @@ index 33e2ff42e4d9da442d522b959a4a21c2f7032b6b..a0d81212327fc17e1f4704e78803c1d7
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index f3908c04715ab399f61dd6bd781f5378f14584e2..c119360ff5dee3b51e6db65b9628aa7a27d0a213 100644
+index eab40a41608b9c152b5c89b3a26f0fc11f7083a3..ddf9a58ab3edc7fa2c099ce23ff193a807320bdc 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
 @@ -131,6 +131,9 @@ struct SchemeRegistry {
