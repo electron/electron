@@ -75,7 +75,7 @@ describe('sharedTexture module', () => {
 
             if (!texture) {
               console.error('No texture, GPU may be unavailable, skipping.');
-              this.skip();
+              resolve();
             }
 
             // Step 2: Import as SharedTextureImported
@@ -145,7 +145,7 @@ describe('sharedTexture module', () => {
 
           ipcMain.on('webgpu-unavailable', () => {
             console.error('WebGPU is not available, skipping.');
-            this.skip();
+            resolve();
           });
 
           win.loadFile(htmlPath);
