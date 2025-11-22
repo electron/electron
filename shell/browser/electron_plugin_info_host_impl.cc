@@ -36,9 +36,9 @@ void ElectronPluginInfoHostImpl::GetPluginInfo(const GURL& url,
                                                GetPluginInfoCallback callback) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   GetPluginInfo_Params params = {url, origin, mime_type};
-  PluginService::GetInstance()->GetPluginsAsync(
-      base::BindOnce(&ElectronPluginInfoHostImpl::PluginsLoaded,
-                     weak_factory_.GetWeakPtr(), params, std::move(callback)));
+  const std::vector<WebPluginInfo>& plugins =
+      PluginService::GetInstance()->GetPlugins();
+  PluginsLoaded(params, std::move(callback), plugins);
 }
 
 void ElectronPluginInfoHostImpl::PluginsLoaded(
