@@ -22,4 +22,4 @@ runs:
       if [ "$TARGET_ARCH" = "x86" ]; then
         export npm_config_arch="ia32"
       fi
-      node script/yarn.js install --immutable
+      node script/yarn.js install --immutable-cache
