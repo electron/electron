@@ -563,16 +563,22 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 }
 
 - (void)menuDidClose:(NSMenu*)menu {
-  if (isMenuOpen_) {
-    isMenuOpen_ = NO;
-    if (model_)
-      model_->MenuWillClose();
-    // Post async task so that itemSelected runs before the close callback
-    // deletes the controller from the map which deallocates it
-    if (!closeCallback.is_null()) {
-      content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
-                                                   std::move(closeCallback));
-    }
+  // If the menu is already closed, do nothing.
+  if (!isMenuOpen_)
+    return;
+
+  // We should only respond to the top-level menu's close event.
+  if (menu != menu_)
+    return;
+
+  isMenuOpen_ = NO;
+  if (model_)
+    model_->MenuWillClose();
+  // Post async task so that itemSelected runs before the close callback
+  // deletes the controller from the map which deallocates it
+  if (!closeCallback.is_null()) {
+    content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
+                                                 std::move(closeCallback));
   }
 }
 
