@@ -200,11 +200,8 @@ Creates a new `NativeImage` instance from `dataUrl`, a base 64 encoded [Data URL
 * `options` Object | number[] (optional)
   * `hslShift` number[] (optional)
   * `pointSize` Number (optional) - Defaults to `30.0`.
-  * `weight` String (optional) - Defaults to `regular`. Can be one of the
-    following values: `ultralight`, `thin`, `light`, `regular`, `medium`,
-    `semibold`, `bold`, `heavy`, `black`.
-  * `scale` String (optional) - Defaults to `medium`. Can be one of the following values:
-    `small`, `medium`, `large`.
+  * `weight` 'ultralight' | 'thin' | 'light' | 'regular' | 'medium' | 'semibold' | 'bold' | 'heavy' | 'black' (optional) - Defaults to `regular`.
+  * `scale` 'small' | 'medium' | 'large' (optional) - Defaults to `medium`.
 
 Returns `NativeImage`
 
