@@ -11,7 +11,8 @@ runs:
     id: yarn-cache
     with:
       path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-      key: ${{ runner.os }}-yarn-${{ hashFiles('src/electron/yarn.lock') }}
+      # key: ${{ runner.os }}-yarn-${{ hashFiles('src/electron/yarn.lock') }} TODO: Restore after https://github.com/actions/runner/issues/449 is fixed
+      key: ${{ runner.os }}-yarn-${{ github.sha }} 
       restore-keys: |
         ${{ runner.os }}-yarn-
   - name: Install Dependencies
