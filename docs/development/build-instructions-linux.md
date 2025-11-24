@@ -6,7 +6,7 @@ Follow the guidelines below for building **Electron itself** on Linux, for the p
 
 ## Prerequisites
 
-Due to Electron's dependency on Chromium, prerequisties and depedencies for Electron change over time. [Chromium's documentation on building on Linux](https://chromium.googlesource.com/chromium/src/+/HEAD/docs/linux/build_instructions.md) has up to date information for building Chromium on Linux.  This documentation can generally
+Due to Electron's dependency on Chromium, prerequisites and dependencies for Electron change over time. [Chromium's documentation on building on Linux](https://chromium.googlesource.com/chromium/src/+/HEAD/docs/linux/build_instructions.md) has up to date information for building Chromium on Linux. This documentation can generally
 be followed for building Electron on Linux as well.
 
 Additionally, Electron's [Linux dependency installer](https://github.com/electron/build-images/blob/main/tools/install-deps.sh) can be referenced to get the current dependencies that Electron requires in addition to what Chromium installs via [build/install-deps.sh](https://chromium.googlesource.com/chromium/src/+/HEAD/build/install-build-deps.sh).
