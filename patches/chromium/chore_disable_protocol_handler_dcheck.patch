@@ -10,20 +10,14 @@ handlers. A DCHECK causes Electron to crash until we provide our own
 registry. This patch disables the check until we support this.
 
 diff --git a/extensions/browser/api/protocol_handlers/protocol_handlers_manager.cc b/extensions/browser/api/protocol_handlers/protocol_handlers_manager.cc
-index 902cf488c7d84923365c4197a70b06e61e3af038..dce80684853f89a68a2d21997102f48feb3df8f8 100644
+index 7f26a1c3a63c8717705cbf6fe09ca3812450e15d..81b038bc8a1e16d9d7c71b7d74451a2601a2e238 100644
 --- a/extensions/browser/api/protocol_handlers/protocol_handlers_manager.cc
 +++ b/extensions/browser/api/protocol_handlers/protocol_handlers_manager.cc
-@@ -129,7 +129,12 @@ void ProtocolHandlersManager::ProtocolHandlersSanityCheck() {
-   auto* ph_registry =
-       ExtensionsBrowserClient::Get()->GetProtocolHandlerRegistry(
+@@ -140,7 +140,6 @@ void ProtocolHandlersManager::ProtocolHandlersSanityCheck() {
            browser_context_);
--  DCHECK(ph_registry);
-+
-+  // TODO(samuelmaddock): Add support for extensions protocol handler. For now,
-+  // let's ignore this.
-+  if (!ph_registry)
-+    return;
-+
+   // Can be null for tests using dummy profiles.
+   if (!ph_registry) {
+-    CHECK_IS_TEST();
+     return;
+   }
    for (const auto& handler : ph_registry->GetExtensionProtocolHandlers()) {
-     DCHECK(handler.extension_id());
-     if (!enabled_ids.contains(*handler.extension_id())) {
