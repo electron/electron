@@ -666,18 +666,18 @@ index ac2f719be566020d9f41364560c12e6d6d0fe3d8..16d758a6936f66148a196761cfb875f6
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index a53e79851e4f01c8d256cf36d8fd6838737aa740..5d786ca1b6ae4314a871dee16b183f34669bcbf6 100644
+index 31dfa8c3c28b9eb184b6e84f4b10c57efec0765e..5990bda676df813dd318d9119a70aec0d8bb1832 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
-@@ -53,6 +53,7 @@
- #include "printing/mojom/print.mojom.h"
+@@ -54,6 +54,7 @@
  #include "printing/page_number.h"
  #include "printing/print_job_constants.h"
+ #include "printing/printing_features.h"
 +#include "printing/print_settings.h"
  #include "printing/units.h"
  #include "services/metrics/public/cpp/ukm_source_id.h"
  #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
-@@ -1240,14 +1241,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
+@@ -1250,14 +1251,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
    }
  
    print_in_progress_ = true;
@@ -694,7 +694,7 @@ index a53e79851e4f01c8d256cf36d8fd6838737aa740..5d786ca1b6ae4314a871dee16b183f34
    if (!weak_this) {
      return;
    }
-@@ -1278,12 +1279,14 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
+@@ -1288,12 +1289,14 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
    receivers_.Add(this, std::move(receiver));
  }
  
@@ -712,7 +712,7 @@ index a53e79851e4f01c8d256cf36d8fd6838737aa740..5d786ca1b6ae4314a871dee16b183f34
    ScopedIPC scoped_ipc(weak_ptr_factory_.GetWeakPtr());
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint) {
      return;
-@@ -1300,9 +1303,10 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
+@@ -1310,9 +1313,10 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
  
      is_loading_ = frame->WillPrintSoon();
      if (is_loading_) {
@@ -726,7 +726,7 @@ index a53e79851e4f01c8d256cf36d8fd6838737aa740..5d786ca1b6ae4314a871dee16b183f34
        SetupOnStopLoadingTimeout();
        return;
      }
-@@ -1312,7 +1316,7 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
+@@ -1322,7 +1326,7 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
    // plugin node and print that instead.
    auto plugin = delegate_->GetPdfElement(frame);
  
@@ -735,7 +735,7 @@ index a53e79851e4f01c8d256cf36d8fd6838737aa740..5d786ca1b6ae4314a871dee16b183f34
  
    if (render_frame_gone_) {
      return;
-@@ -1468,6 +1472,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
+@@ -1478,6 +1482,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
  
@@ -744,7 +744,7 @@ index a53e79851e4f01c8d256cf36d8fd6838737aa740..5d786ca1b6ae4314a871dee16b183f34
    print_preview_context_.OnPrintPreview();
  
  #if BUILDFLAG(IS_CHROMEOS)
-@@ -2080,17 +2086,25 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2090,17 +2096,25 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -773,7 +773,7 @@ index a53e79851e4f01c8d256cf36d8fd6838737aa740..5d786ca1b6ae4314a871dee16b183f34
      DidFinishPrinting(PrintingResult::kFailPrintInit);
      return;
    }
-@@ -2111,8 +2125,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -2121,8 +2135,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
          print_pages_params_->params->print_scaling_option;
  
      auto self = weak_ptr_factory_.GetWeakPtr();
@@ -790,7 +790,7 @@ index a53e79851e4f01c8d256cf36d8fd6838737aa740..5d786ca1b6ae4314a871dee16b183f34
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2379,29 +2400,43 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2389,29 +2410,43 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
@@ -844,7 +844,7 @@ index a53e79851e4f01c8d256cf36d8fd6838737aa740..5d786ca1b6ae4314a871dee16b183f34
  }
  
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index 97cb6458bc9eec767db89b56abfc5f4b4136ff7b..d9a0b343158b8464b5c9aa8e0e655c0b6fb28b00 100644
+index 37f84d2001e7e1dff029f1556b7676a71ac2f6f2..8c89e826165db6de2c681c8fa97cd91a8706b0ae 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -258,7 +258,7 @@ class PrintRenderFrameHelper
