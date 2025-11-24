@@ -419,7 +419,7 @@ async function installSpecModules (dir) {
   if (fs.existsSync(path.resolve(dir, 'node_modules'))) {
     await fs.promises.rm(path.resolve(dir, 'node_modules'), { force: true, recursive: true });
   }
-  const yarnArgs = [YARN_SCRIPT_PATH, 'install'];
+  const yarnArgs = [YARN_SCRIPT_PATH, 'install', '--immutable'];
   const { status } = childProcess.spawnSync(process.execPath, yarnArgs, {
     env,
     cwd: dir,
