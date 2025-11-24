@@ -29,10 +29,10 @@ index 43ae133087a61c47c84349c7550485bd52b23847..d83fddd7afc1871b8064631d63c1b6b1
        const domTree = new Elements.ElementsTreeOutline.DOMTreeWidget(undefined, view);
        domTree.performUpdate();
 diff --git a/front_end/panels/elements/ElementsTreeOutline.ts b/front_end/panels/elements/ElementsTreeOutline.ts
-index 978d20872455d630f7f852e5f5269433295a8c6b..0cd5891377d402fceec26168efed94b4f7690365 100644
+index bd8093e1c0961648e782234ed5826273d6ace6d9..c6c8d9d29a84f872126ca0b7c847dffe08c285ad 100644
 --- a/front_end/panels/elements/ElementsTreeOutline.ts
 +++ b/front_end/panels/elements/ElementsTreeOutline.ts
-@@ -104,6 +104,7 @@ interface ViewInput {
+@@ -105,6 +105,7 @@ interface ViewInput {
  interface ViewOutput {
    elementsTreeOutline?: ElementsTreeOutline;
    highlightedTreeElement: ElementsTreeElement|null;
@@ -40,7 +40,7 @@ index 978d20872455d630f7f852e5f5269433295a8c6b..0cd5891377d402fceec26168efed94b4
    alreadyExpandedParentTreeElement: ElementsTreeElement|null;
  }
  
-@@ -135,6 +136,7 @@ export const DEFAULT_VIEW = (input: ViewInput, output: ViewOutput, target: HTMLE
+@@ -136,6 +137,7 @@ export const DEFAULT_VIEW = (input: ViewInput, output: ViewOutput, target: HTMLE
    // Node highlighting logic. FIXME: express as a lit template.
    const previousHighlightedNode = output.highlightedTreeElement?.node() ?? null;
    if (previousHighlightedNode !== input.currentHighlightedNode) {
@@ -48,7 +48,7 @@ index 978d20872455d630f7f852e5f5269433295a8c6b..0cd5891377d402fceec26168efed94b4
      let treeElement: ElementsTreeElement|null = null;
  
      if (output.highlightedTreeElement) {
-@@ -172,6 +174,7 @@ export const DEFAULT_VIEW = (input: ViewInput, output: ViewOutput, target: HTMLE
+@@ -173,6 +175,7 @@ export const DEFAULT_VIEW = (input: ViewInput, output: ViewOutput, target: HTMLE
      output.highlightedTreeElement = treeElement;
      output.elementsTreeOutline.setHoverEffect(treeElement);
      treeElement?.reveal(true);
@@ -56,7 +56,7 @@ index 978d20872455d630f7f852e5f5269433295a8c6b..0cd5891377d402fceec26168efed94b4
    }
  };
  
-@@ -224,6 +227,7 @@ export class DOMTreeWidget extends UI.Widget.Widget {
+@@ -225,6 +228,7 @@ export class DOMTreeWidget extends UI.Widget.Widget {
    #viewOutput: ViewOutput = {
      highlightedTreeElement: null,
      alreadyExpandedParentTreeElement: null,
@@ -64,7 +64,7 @@ index 978d20872455d630f7f852e5f5269433295a8c6b..0cd5891377d402fceec26168efed94b4
    };
    #highlightThrottler = new Common.Throttler.Throttler(100);
  
-@@ -238,8 +242,8 @@ export class DOMTreeWidget extends UI.Widget.Widget {
+@@ -239,8 +243,8 @@ export class DOMTreeWidget extends UI.Widget.Widget {
            SDK.OverlayModel.OverlayModel, SDK.OverlayModel.Events.HIGHLIGHT_NODE_REQUESTED, this.#highlightNode, this,
            {scoped: true});
        SDK.TargetManager.TargetManager.instance().addModelListener(
@@ -75,7 +75,7 @@ index 978d20872455d630f7f852e5f5269433295a8c6b..0cd5891377d402fceec26168efed94b4
      }
    }
  
-@@ -250,7 +254,13 @@ export class DOMTreeWidget extends UI.Widget.Widget {
+@@ -251,7 +255,13 @@ export class DOMTreeWidget extends UI.Widget.Widget {
      });
    }
  
@@ -90,7 +90,7 @@ index 978d20872455d630f7f852e5f5269433295a8c6b..0cd5891377d402fceec26168efed94b4
      this.#currentHighlightedNode = null;
      this.requestUpdate();
    }
-@@ -304,11 +314,11 @@ export class DOMTreeWidget extends UI.Widget.Widget {
+@@ -305,11 +315,11 @@ export class DOMTreeWidget extends UI.Widget.Widget {
            currentHighlightedNode: this.#currentHighlightedNode,
            onElementsTreeUpdated: this.onElementsTreeUpdated.bind(this),
            onSelectedNodeChanged: event => {
