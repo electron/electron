@@ -13,7 +13,7 @@ Additionally, Electron's [Linux dependency installer](https://github.com/electro
 
 ### Cross compilation
 
-If you want to build for an `arm` target you can use Electron's [Linux dependency installer](https://github.com/electron/build-images/blob/main/tools/install-deps.sh) to install the additional dependencies by passing the `--arm argument`
+If you want to build for an `arm` target, you can use Electron's [Linux dependency installer](https://github.com/electron/build-images/blob/main/tools/install-deps.sh) to install the additional dependencies by passing the `--arm argument`:
 
 ```sh
 $ sudo install-deps.sh --arm
