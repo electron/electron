@@ -10,7 +10,7 @@ import { nativeImage } from 'electron/common';
 import { app } from 'electron/main';
 
 import { expect } from 'chai';
-import * as dbus from 'dbus-ts';
+import * as dbus from 'dbus-native';
 
 import * as path from 'node:path';
 import { promisify } from 'node:util';
@@ -40,9 +40,10 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
     const path = '/org/freedesktop/Notifications';
     const iface = 'org.freedesktop.DBus.Mock';
     console.log(`session bus: ${process.env.DBUS_SESSION_BUS_ADDRESS}`);
-    const bus = await dbus.sessionBus();
+    const bus = dbus.sessionBus();
     const service = bus.getService(serviceName);
-    mock = await service.getInterface(path, iface);
+    const getInterface = promisify(service.getInterface.bind(service));
+    mock = await getInterface(path, iface);
     getCalls = promisify(mock.GetCalls.bind(mock));
     reset = promisify(mock.Reset.bind(mock));
   });

@@ -375,7 +375,7 @@ async function runTestUsingElectron (specDir, testName, shouldRerun, additionalA
     if (shouldRerun) {
       await rerunFailedTests(specDir, testName);
     } else {
-      return false;
+      process.exit(1);
     }
   }
   console.log(`${pass} Electron ${testName} process tests passed.`);
@@ -429,6 +429,19 @@ async function installSpecModules (dir) {
   if (status !== 0 && !process.env.IGNORE_YARN_INSTALL_ERROR) {
     console.log(`${fail} Failed to yarn install in '${dir}'`);
     process.exit(1);
+  }
+
+  if (process.platform === 'linux') {
+    const { status: rebuildStatus } = childProcess.spawnSync('npm', ['rebuild', 'abstract-socket'], {
+      env,
+      cwd: dir,
+      stdio: 'inherit',
+      shell: process.platform === 'win32'
+    });
+    if (rebuildStatus !== 0) {
+      console.log(`${fail} Failed to rebuild abstract-socket native module`);
+      process.exit(1);
+    }
   }
 }
 
