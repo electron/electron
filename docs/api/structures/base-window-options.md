@@ -72,6 +72,9 @@
   some GTK+3 desktop environments. Default is `false`.
 * `transparent` boolean (optional) - Makes the window [transparent](../../tutorial/custom-window-styles.md#transparent-windows).
   Default is `false`. On Windows, does not work unless the window is frameless.
+  When you add a [`View`](../view.md) to a `BaseWindow`, you'll need to call
+  [`view.setBackgroundColor`](../view.md#viewsetbackgroundcolorcolor) with a transparent
+  background color on that view to make its background transparent as well.
 * `type` string (optional) - The type of window, default is normal window. See more about
   this below.
 * `visualEffectState` string (optional) _macOS_ - Specify how the material
