@@ -1067,13 +1067,15 @@ describe('webContents module', () => {
       assert(devToolsWebContents !== null);
 
       const windowFocused = once(window, 'focus');
+      const devToolsBlurred = once(devToolsWebContents, 'blur');
       window.focus();
-      await windowFocused;
+      await Promise.all([windowFocused, devToolsBlurred]);
 
       expect(devToolsWebContents.isFocused()).to.be.false();
       const devToolsWebContentsFocused = once(devToolsWebContents, 'focus');
+      const windowBlurred = once(window, 'blur');
       window.webContents.inspectElement(100, 100);
-      await devToolsWebContentsFocused;
+      await Promise.all([devToolsWebContentsFocused, windowBlurred]);
 
       expect(devToolsWebContents.isFocused()).to.be.true();
       expect(window.isFocused()).to.be.false();

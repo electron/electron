@@ -7,7 +7,7 @@
 // See https://pypi.python.org/pypi/python-dbusmock for more information about
 // python-dbusmock.
 import { expect } from 'chai';
-import * as dbus from 'dbus-ts';
+import * as dbus from 'dbus-native';
 
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
@@ -20,9 +20,10 @@ describe('powerMonitor', () => {
 
   ifdescribe(process.platform === 'linux' && process.env.DBUS_SYSTEM_BUS_ADDRESS != null)('when powerMonitor module is loaded with dbus mock', () => {
     before(async () => {
-      const systemBus = await dbus.systemBus();
+      const systemBus = dbus.systemBus();
       const loginService = systemBus.getService('org.freedesktop.login1');
-      logindMock = await loginService.getInterface('/org/freedesktop/login1', 'org.freedesktop.DBus.Mock');
+      const getInterface = promisify(loginService.getInterface.bind(loginService));
+      logindMock = await getInterface('/org/freedesktop/login1', 'org.freedesktop.DBus.Mock');
       getCalls = promisify(logindMock.GetCalls.bind(logindMock));
       emitSignal = promisify(logindMock.EmitSignal.bind(logindMock));
       reset = promisify(logindMock.Reset.bind(logindMock));
