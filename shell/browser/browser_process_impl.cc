@@ -310,11 +310,6 @@ UsbSystemTrayIcon* BrowserProcessImpl::usb_system_tray_icon() {
   return nullptr;
 }
 
-subresource_filter::RulesetService*
-BrowserProcessImpl::fingerprinting_protection_ruleset_service() {
-  return nullptr;
-}
-
 os_crypt_async::OSCryptAsync* BrowserProcessImpl::os_crypt_async() {
   return os_crypt_async_.get();
 }
