@@ -13,6 +13,7 @@
 #include <variant>
 #include <vector>
 
+#include "base/files/file_path.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/media_stream_request.h"
 #include "mojo/public/cpp/bindings/remote.h"
