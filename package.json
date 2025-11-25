@@ -136,12 +136,20 @@
       "node script/gen-libc++-filenames.js"
     ]
   },
+  "resolutions": {
+    "dbus-native/xml2js": "0.5.0",
+    "abstract-socket": "github:deepak1556/node-abstractsocket#928cc591decd12aff7dad96449da8afc29832c19",
+    "minimist@npm:~0.0.1": "0.2.4"
+  },
   "packageManager": "yarn@4.11.0",
   "workspaces": [
     "spec",
     "spec/fixtures/native-addon/*"
   ],
   "dependenciesMeta": {
+    "abstract-socket": {
+      "built": true
+    },
     "dugite": {
       "built": true
     }
