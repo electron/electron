@@ -108,7 +108,7 @@ std::unique_ptr<base::Value::Dict> ParseManifest(
 
 void ElectronExtensionSystem::LoadComponentExtensions() {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-  std::string utf8_error;
+  std::u16string error;
   std::string pdf_manifest_string = pdf_extension_util::GetManifest();
   std::unique_ptr<base::Value::Dict> pdf_manifest =
       ParseManifest(pdf_manifest_string);
@@ -119,7 +119,7 @@ void ElectronExtensionSystem::LoadComponentExtensions() {
     scoped_refptr<const Extension> pdf_extension =
         extensions::Extension::Create(
             root_directory, extensions::mojom::ManifestLocation::kComponent,
-            *pdf_manifest, extensions::Extension::REQUIRE_KEY, &utf8_error);
+            *pdf_manifest, extensions::Extension::REQUIRE_KEY, &error);
     extension_loader_->registrar()->AddExtension(pdf_extension);
   }
 #endif

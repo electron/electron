@@ -65,6 +65,12 @@ async function main () {
     platformFlags.push(`-isysroot ${path.resolve(sdkPath, sdkToUse)}`);
   }
 
+  const cflags = [
+    '-Wno-trigraphs',
+    '-fPIC',
+    ...platformFlags
+  ].join(' ');
+
   const cxxflags = [
     '-std=c++20',
     '-Wno-trigraphs',
@@ -92,10 +98,10 @@ async function main () {
 
   if (process.platform !== 'win32') {
     env.CC = cc;
-    env.CFLAGS = cxxflags;
+    env.CFLAGS = cflags;
     env.CXX = cxx;
-    env.LD = ld;
     env.CXXFLAGS = cxxflags;
+    env.LD = ld;
     env.LDFLAGS = ldflags;
   }
 
@@ -112,16 +118,16 @@ async function main () {
     return process.exit(buildStatus !== 0 ? buildStatus : signal);
   }
 
-  const { status: installStatus } = cp.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install'], {
+  const { status: installStatus, signal: installSignal } = cp.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install'], {
     env,
     cwd: NAN_DIR,
     stdio: 'inherit',
     shell: process.platform === 'win32'
   });
 
-  if (installStatus !== 0 || signal != null) {
+  if (installStatus !== 0 || installSignal != null) {
     console.error('Failed to install nan node_modules');
-    return process.exit(installStatus !== 0 ? installStatus : signal);
+    return process.exit(installStatus !== 0 ? installStatus : installSignal);
   }
 
   const onlyTests = args.only?.split(',');
@@ -129,9 +135,9 @@ async function main () {
   const DISABLED_TESTS = new Set([
     'nannew-test.js',
     'buffer-test.js',
-    // we can't patch this test because it uses CRLF line endings
-    'methodswithdata-test.js',
-    // these two are incompatible with crrev.com/c/4733273
+    // These two are incompatible with crrev.com/c/4733273
+    // They are disabled upstream starting in "Node.js 24" (note: the incompatible change above
+    // landed in V8 v13.7), so we can remove them from this list once we upgrade Node.js to 24.
     'weak-test.js',
     'weak2-test.js'
   ]);

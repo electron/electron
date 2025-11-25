@@ -12,7 +12,7 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index 1cb8ea92e46ad45cd8bf9e99f38889964b16768f..3e80241add13eeeb3b5970932f23acec0d91fd4e 100644
+index c0a2f822e38712eaad30c5d1104b149fa28d985d..b967896479c7fd0f71c7b9e5407d63e1d62bfadd 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
 @@ -358,7 +358,8 @@ void Compositor::SetLayerTreeFrameSink(
@@ -53,7 +53,7 @@ index 1cb8ea92e46ad45cd8bf9e99f38889964b16768f..3e80241add13eeeb3b5970932f23acec
  void Compositor::SetSeamlessRefreshRates(
      const std::vector<float>& seamless_refresh_rates) {
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 682b23f083eff17bc36cdc4698e35d853beb90cc..df9e598b65594748d59284e1e91d61233eef83a0 100644
+index 7f428fe96da978aa951354eb41f9ebec46cc6e9c..7e5a008d7b158c1af9a47f549426818bc22212f5 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -514,6 +514,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,

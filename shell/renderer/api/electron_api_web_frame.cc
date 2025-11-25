@@ -11,12 +11,14 @@
 
 #include "base/containers/span.h"
 #include "base/memory/memory_pressure_listener.h"
+#include "base/no_destructor.h"
 #include "base/strings/strcat.h"
 #include "base/strings/utf_string_conversions.h"
 #include "components/spellcheck/renderer/spellcheck.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_frame_visitor.h"
+#include "gin/arguments.h"
 #include "gin/object_template_builder.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/api/api.mojom.h"
@@ -107,6 +109,13 @@ namespace api {
 
 namespace {
 
+class SpellCheckerHolder;
+
+std::set<SpellCheckerHolder*>& GetSpellCheckerHolderInstances() {
+  static base::NoDestructor<std::set<SpellCheckerHolder*>> instances;
+  return *instances;
+}
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 
 bool SpellCheckWord(content::RenderFrame* render_frame,
@@ -160,8 +169,8 @@ class ScriptExecutionCallback {
       v8::Local<v8::Context> source_context =
           result->GetCreationContextChecked(isolate);
       maybe_result = PassValueToOtherContext(
-          source_context, promise_.GetContext(), result,
-          source_context->Global(), false, BridgeErrorTarget::kSource);
+          isolate, source_context, promise_.isolate(), promise_.GetContext(),
+          result, source_context->Global(), false, BridgeErrorTarget::kSource);
       if (maybe_result.IsEmpty() || try_catch.HasCaught()) {
         success = false;
       }
@@ -282,7 +291,7 @@ class SpellCheckerHolder final : private content::RenderFrameObserver {
   // Find existing holder for the |render_frame|.
   static SpellCheckerHolder* FromRenderFrame(
       content::RenderFrame* render_frame) {
-    for (auto* holder : instances_) {
+    for (auto* holder : GetSpellCheckerHolderInstances()) {
       if (holder->render_frame() == render_frame)
         return holder;
     }
@@ -294,10 +303,10 @@ class SpellCheckerHolder final : private content::RenderFrameObserver {
       : content::RenderFrameObserver(render_frame),
         spell_check_client_(std::move(spell_check_client)) {
     DCHECK(!FromRenderFrame(render_frame));
-    instances_.insert(this);
+    GetSpellCheckerHolderInstances().insert(this);
   }
 
-  ~SpellCheckerHolder() final { instances_.erase(this); }
+  ~SpellCheckerHolder() final { GetSpellCheckerHolderInstances().erase(this); }
 
   void UnsetAndDestroy() {
     FrameSetSpellChecker set_spell_checker(nullptr, render_frame());
@@ -319,7 +328,8 @@ class SpellCheckerHolder final : private content::RenderFrameObserver {
     delete this;
   }
 
-  void WillReleaseScriptContext(v8::Local<v8::Context> context,
+  void WillReleaseScriptContext(v8::Isolate* const isolate,
+                                v8::Local<v8::Context> context,
                                 int world_id) final {
     // Unset spell checker when the script context is going to be released, as
     // the spell check implementation lives there.
@@ -327,8 +337,6 @@ class SpellCheckerHolder final : private content::RenderFrameObserver {
   }
 
  private:
-  static std::set<SpellCheckerHolder*> instances_;
-
   std::unique_ptr<SpellCheckClient> spell_check_client_;
 };
 
@@ -630,12 +638,11 @@ class WebFrameRenderer final
     return !context->GetContentSecurityPolicy()->ShouldCheckEval();
   }
 
-  v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* gin_args,
+  // webFrame.executeJavaScript(code[, userGesture][, callback])
+  v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* const args,
                                            const std::u16string& code) {
-    gin_helper::Arguments* args = static_cast<gin_helper::Arguments*>(gin_args);
-
-    v8::Isolate* isolate = args->isolate();
-    gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+    v8::Isolate* const isolate = args->isolate();
+    gin_helper::Promise<v8::Local<v8::Value>> promise{isolate};
     v8::Local<v8::Promise> handle = promise.GetHandle();
 
     content::RenderFrame* render_frame;
@@ -648,10 +655,14 @@ class WebFrameRenderer final
     const blink::WebScriptSource source{blink::WebString::FromUTF16(code)};
 
     bool has_user_gesture = false;
-    args->GetNext(&has_user_gesture);
+    if (auto next = args->PeekNext(); !next.IsEmpty() && next->IsBoolean()) {
+      args->GetNext(&has_user_gesture);
+    }
 
     ScriptExecutionCallback::CompletionCallback completion_callback;
-    args->GetNext(&completion_callback);
+    if (auto next = args->PeekNext(); !next.IsEmpty() && next->IsFunction()) {
+      args->GetNext(&completion_callback);
+    }
 
     auto* self = new ScriptExecutionCallback(std::move(promise),
                                              std::move(completion_callback));
@@ -672,14 +683,14 @@ class WebFrameRenderer final
     return handle;
   }
 
+  // executeJavaScriptInIsolatedWorld(
+  //   worldId, scripts[, userGesture][, callback])
   v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
-      gin::Arguments* gin_args,
-      int world_id,
+      gin::Arguments* const args,
+      const int world_id,
       const std::vector<gin_helper::Dictionary>& scripts) {
-    gin_helper::Arguments* args = static_cast<gin_helper::Arguments*>(gin_args);
-
-    v8::Isolate* isolate = args->isolate();
-    gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+    v8::Isolate* const isolate = args->isolate();
+    gin_helper::Promise<v8::Local<v8::Value>> promise{isolate};
     v8::Local<v8::Promise> handle = promise.GetHandle();
 
     content::RenderFrame* render_frame;
@@ -691,24 +702,14 @@ class WebFrameRenderer final
     }
 
     bool has_user_gesture = false;
-    args->GetNext(&has_user_gesture);
-
-    blink::mojom::EvaluationTiming script_execution_type =
-        blink::mojom::EvaluationTiming::kSynchronous;
-    blink::mojom::LoadEventBlockingOption load_blocking_option =
-        blink::mojom::LoadEventBlockingOption::kDoNotBlock;
-    std::string execution_type;
-    args->GetNext(&execution_type);
-
-    if (execution_type == "asynchronous") {
-      script_execution_type = blink::mojom::EvaluationTiming::kAsynchronous;
-    } else if (execution_type == "asynchronousBlockingOnload") {
-      script_execution_type = blink::mojom::EvaluationTiming::kAsynchronous;
-      load_blocking_option = blink::mojom::LoadEventBlockingOption::kBlock;
+    if (auto next = args->PeekNext(); !next.IsEmpty() && next->IsBoolean()) {
+      args->GetNext(&has_user_gesture);
     }
 
     ScriptExecutionCallback::CompletionCallback completion_callback;
-    args->GetNext(&completion_callback);
+    if (auto next = args->PeekNext(); !next.IsEmpty() && next->IsFunction()) {
+      args->GetNext(&completion_callback);
+    }
 
     std::vector<blink::WebScriptSource> sources;
     sources.reserve(scripts.size());
@@ -742,7 +743,9 @@ class WebFrameRenderer final
         world_id, base::span(sources),
         has_user_gesture ? blink::mojom::UserActivationOption::kActivate
                          : blink::mojom::UserActivationOption::kDoNotActivate,
-        script_execution_type, load_blocking_option, base::NullCallback(),
+        blink::mojom::EvaluationTiming::kSynchronous,
+        blink::mojom::LoadEventBlockingOption::kDoNotBlock,
+        base::NullCallback(),
         base::BindOnce(&ScriptExecutionCallback::Completed,
                        base::Unretained(self)),
         blink::BackForwardCacheAware::kPossiblyDisallow,
@@ -808,7 +811,7 @@ class WebFrameRenderer final
   void ClearCache(v8::Isolate* isolate) {
     blink::WebCache::Clear();
     base::MemoryPressureListener::NotifyMemoryPressure(
-        base::MemoryPressureListener::MEMORY_PRESSURE_LEVEL_CRITICAL);
+        base::MEMORY_PRESSURE_LEVEL_CRITICAL);
   }
 
   v8::Local<v8::Value> FindFrameByToken(v8::Isolate* isolate,
@@ -940,9 +943,6 @@ class WebFrameRenderer final
 
 gin::DeprecatedWrapperInfo WebFrameRenderer::kWrapperInfo = {
     gin::kEmbedderNativeGin};
-
-// static
-std::set<SpellCheckerHolder*> SpellCheckerHolder::instances_;
 
 }  // namespace api
 

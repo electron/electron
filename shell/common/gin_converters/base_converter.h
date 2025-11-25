@@ -35,6 +35,8 @@ struct Converter<base::TerminationStatus> {
       case base::TERMINATION_STATUS_INTEGRITY_FAILURE:
         return gin::ConvertToV8(isolate, "integrity-failure");
 #endif
+      case base::TERMINATION_STATUS_EVICTED_FOR_MEMORY:
+        return gin::ConvertToV8(isolate, "memory-eviction");
       case base::TERMINATION_STATUS_MAX_ENUM:
         NOTREACHED();
     }

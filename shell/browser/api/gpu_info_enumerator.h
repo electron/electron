@@ -21,8 +21,6 @@ class GPUInfoEnumerator final : public gpu::GPUInfo::Enumerator {
       "videoDecodeAcceleratorSupportedProfile";
   const char* const kVideoEncodeAcceleratorSupportedProfileKey =
       "videoEncodeAcceleratorSupportedProfile";
-  const char* const kImageDecodeAcceleratorSupportedProfileKey =
-      "imageDecodeAcceleratorSupportedProfile";
   const char* const kAuxAttributesKey = "auxAttributes";
   const char* const kOverlayInfo = "overlayInfo";
 
@@ -45,8 +43,6 @@ class GPUInfoEnumerator final : public gpu::GPUInfo::Enumerator {
   void EndVideoDecodeAcceleratorSupportedProfile() override;
   void BeginVideoEncodeAcceleratorSupportedProfile() override;
   void EndVideoEncodeAcceleratorSupportedProfile() override;
-  void BeginImageDecodeAcceleratorSupportedProfile() override;
-  void EndImageDecodeAcceleratorSupportedProfile() override;
   void BeginAuxAttributes() override;
   void EndAuxAttributes() override;
   void BeginOverlayInfo() override;

@@ -9,11 +9,12 @@ check out our [Electron Versioning](./electron-versioning.md) doc.
 
 | Electron | Alpha | Beta | Stable | EOL | Chrome | Node | Supported |
 | ------- | ----- | ------- | ------ | ------ | ---- | ---- | ---- |
-| 39.0.0 |  2025-Sep-04 | 2025-Oct-01 | 2025-Oct-28 | 2026-May-05 | M142 | TBD | ✅ |
+| 40.0.0 |  2025-Oct-30 | 2025-Dec-03 | 2026-Jan-13 | 2026-Jun-30 | M144 | TBD | ✅ |
+| 39.0.0 |  2025-Sep-04 | 2025-Oct-01 | 2025-Oct-28 | 2026-May-05 | M142 | v22.20 | ✅ |
 | 38.0.0 |  2025-Jun-26 | 2025-Aug-06 | 2025-Sep-02 | 2026-Mar-10 | M140 | v22.18 | ✅ |
 | 37.0.0 |  2025-May-01 | 2025-May-28 | 2025-Jun-24 | 2026-Jan-13 | M138 | v22.16 | ✅ |
-| 36.0.0 |  2025-Mar-06 | 2025-Apr-02 | 2025-Apr-29 | 2025-Oct-28 | M136 | v22.14 | ✅ |
-| 35.0.0 |  2025-Jan-16 | 2025-Feb-05 | 2025-Mar-04 | 2025-Sep-02 | M134 | v22.14 | ✅ |
+| 36.0.0 |  2025-Mar-06 | 2025-Apr-02 | 2025-Apr-29 | 2025-Oct-28 | M136 | v22.14 | 🚫 |
+| 35.0.0 |  2025-Jan-16 | 2025-Feb-05 | 2025-Mar-04 | 2025-Sep-02 | M134 | v22.14 | 🚫 |
 | 34.0.0 |  2024-Oct-17 | 2024-Nov-13 | 2025-Jan-14 | 2025-Jun-24 | M132 | v20.18 | 🚫 |
 | 33.0.0 |  2024-Aug-22 | 2024-Sep-18 | 2024-Oct-15 | 2025-Apr-29 | M130 | v20.18 | 🚫 |
 | 32.0.0 |  2024-Jun-14 | 2024-Jul-24 | 2024-Aug-20 | 2025-Mar-04 | M128 | v20.16 | 🚫 |
@@ -121,22 +122,3 @@ and that number is reduced to two in major version 10, the three-argument versio
 continue to work until, at minimum, major version 12. Past the minimum two-version
 threshold, we will attempt to support backwards compatibility beyond two versions
 until the maintainers feel the maintenance burden is too high to continue doing so.
-
-### End-of-life
-
-When a release branch reaches the end of its support cycle, the series
-will be deprecated in NPM and a final end-of-support release will be
-made. This release will add a warning to inform that an unsupported
-version of Electron is in use.
-
-These steps are to help app developers learn when a branch they're
-using becomes unsupported, but without being excessively intrusive
-to end users.
-
-If an application has exceptional circumstances and needs to stay
-on an unsupported series of Electron, developers can silence the
-end-of-support warning by omitting the final release from the app's
-`package.json` `devDependencies`. For example, since the 1-6-x series
-ended with an end-of-support 1.6.18 release, developers could choose
-to stay in the 1-6-x series without warnings with `devDependency` of
-`"electron": 1.6.0 - 1.6.17`.

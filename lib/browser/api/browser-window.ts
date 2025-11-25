@@ -111,7 +111,7 @@ BrowserWindow.getAllWindows = () => {
   return BaseWindow.getAllWindows().filter(isBrowserWindow) as any[] as BWT[];
 };
 
-BrowserWindow.clearWindowState = BaseWindow.clearWindowState;
+BrowserWindow.clearPersistedState = BaseWindow.clearPersistedState;
 
 BrowserWindow.getFocusedWindow = () => {
   for (const window of BrowserWindow.getAllWindows()) {
@@ -201,7 +201,14 @@ BrowserWindow.prototype.setBackgroundThrottling = function (allowed: boolean) {
 };
 
 BrowserWindow.prototype.addBrowserView = function (browserView: BrowserView) {
-  if (browserView.ownerWindow) { browserView.ownerWindow.removeBrowserView(browserView); }
+  if (this._browserViews.includes(browserView)) {
+    return;
+  }
+
+  const ownerWindow = browserView.ownerWindow;
+  if (ownerWindow && ownerWindow !== this) {
+    ownerWindow.removeBrowserView(browserView);
+  }
   this.contentView.addChildView(browserView.webContentsView);
   browserView.ownerWindow = this;
   browserView.webContents._setOwnerWindow(this);

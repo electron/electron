@@ -6,9 +6,13 @@ on:
   schedule:
     - cron: "0 0 * * *"
 
+permissions: {}
+
 jobs:
   build-git-cache-linux:
     runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
     container:
       image: ghcr.io/electron/build:bc2f48b2415a670de18d13605b1cf0eb5fdbaae1
       options: --user root
@@ -19,7 +23,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         path: src/electron
         fetch-depth: 0
@@ -30,6 +34,8 @@ jobs:
 
   build-git-cache-windows:
     runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
     container:
       image: ghcr.io/electron/build:bc2f48b2415a670de18d13605b1cf0eb5fdbaae1
       options: --user root --device /dev/fuse --cap-add SYS_ADMIN
@@ -41,7 +47,7 @@ jobs:
       TARGET_OS: 'win'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         path: src/electron
         fetch-depth: 0
@@ -52,6 +58,8 @@ jobs:
 
   build-git-cache-macos:
     runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
     # This job updates the same git cache as linux, so it needs to run after the linux one.
     needs: build-git-cache-linux
     container:
@@ -64,7 +72,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         path: src/electron
         fetch-depth: 0

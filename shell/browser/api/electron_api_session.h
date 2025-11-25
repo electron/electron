@@ -60,6 +60,9 @@ struct PreloadScript;
 
 namespace api {
 
+class NetLog;
+class WebRequest;
+
 class Session final : public gin::Wrappable<Session>,
                       public gin_helper::Constructible<Session>,
                       public gin_helper::EventEmitterMixin<Session>,
@@ -71,8 +74,14 @@ class Session final : public gin::Wrappable<Session>,
                       private content::DownloadManager::Observer {
  public:
   // Gets or creates Session from the |browser_context|.
-  static Session* CreateFrom(v8::Isolate* isolate,
-                             ElectronBrowserContext* browser_context);
+  static Session* FromOrCreate(v8::Isolate* isolate,
+                               ElectronBrowserContext* browser_context);
+
+  // Convenience wrapper around the previous method: Checks that
+  // |browser_context| is an ElectronBrowserContext before downcasting.
+  static Session* FromOrCreate(v8::Isolate* isolate,
+                               content::BrowserContext* browser_context);
+
   static void New();  // Dummy, do not use!
 
   static gin::WeakCell<Session>* FromBrowserContext(
@@ -161,15 +170,14 @@ class Session final : public gin::Wrappable<Session>,
   v8::Local<v8::Value> Extensions(v8::Isolate* isolate);
   v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
   v8::Local<v8::Value> ServiceWorkerContext(v8::Isolate* isolate);
-  v8::Local<v8::Value> WebRequest(v8::Isolate* isolate);
-  v8::Local<v8::Value> NetLog(v8::Isolate* isolate);
+  WebRequest* WebRequest(v8::Isolate* isolate);
+  api::NetLog* NetLog(v8::Isolate* isolate);
   void Preconnect(const gin_helper::Dictionary& options, gin::Arguments* args);
   v8::Local<v8::Promise> CloseAllConnections();
   v8::Local<v8::Value> GetPath(v8::Isolate* isolate);
   void SetCodeCachePath(gin::Arguments* args);
   v8::Local<v8::Promise> ClearCodeCaches(const gin_helper::Dictionary& options);
-  v8::Local<v8::Value> ClearData(gin_helper::ErrorThrower thrower,
-                                 gin::Arguments* args);
+  v8::Local<v8::Value> ClearData(gin::Arguments* args);
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   base::Value GetSpellCheckerLanguages();
   void SetSpellCheckerLanguages(gin_helper::ErrorThrower thrower,
@@ -208,9 +216,9 @@ class Session final : public gin::Wrappable<Session>,
   v8::TracedReference<v8::Value> cookies_;
   v8::TracedReference<v8::Value> extensions_;
   v8::TracedReference<v8::Value> protocol_;
-  v8::TracedReference<v8::Value> net_log_;
+  cppgc::Member<api::NetLog> net_log_;
   v8::TracedReference<v8::Value> service_worker_context_;
-  v8::TracedReference<v8::Value> web_request_;
+  cppgc::Member<api::WebRequest> web_request_;
 
   raw_ptr<v8::Isolate> isolate_;
 

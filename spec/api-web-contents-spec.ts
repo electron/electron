@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain, webContents, session, app, BrowserView, WebContents, BaseWindow, WebContentsView } from 'electron/main';
 
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -402,6 +402,15 @@ describe('webContents module', () => {
     let w: BrowserWindow;
     let s: http.Server;
 
+    before(function () {
+      session.fromPartition('loadurl-webcontents-spec').setPermissionRequestHandler((webContents, permission, callback) => {
+        if (permission === 'openExternal') {
+          return callback(false);
+        }
+        callback(true);
+      });
+    });
+
     afterEach(() => {
       if (s) {
         s.close();
@@ -410,9 +419,18 @@ describe('webContents module', () => {
     });
 
     beforeEach(async () => {
-      w = new BrowserWindow({ show: false });
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'loadurl-webcontents-spec'
+        }
+      });
     });
     afterEach(closeAllWindows);
+
+    after(async () => {
+      session.fromPartition('loadurl-webcontents-spec').setPermissionRequestHandler(null);
+    });
 
     it('resolves when done loading', async () => {
       await expect(w.loadURL('about:blank')).to.eventually.be.fulfilled();
@@ -901,7 +919,7 @@ describe('webContents module', () => {
           return w.webContents.navigationHistory.restore({ index: 2, entries });
         });
 
-        expect(formValue).to.equal('Hi!');
+        await waitUntil(() => formValue === 'Hi!');
       });
 
       it('should handle invalid base64 pageState', async () => {
@@ -994,6 +1012,41 @@ describe('webContents module', () => {
       w.webContents.closeDevTools();
       await devToolsClosed;
       expect(() => { webContents.getFocusedWebContents(); }).to.not.throw();
+    });
+
+    it('Inspect activates detached devtools window', async () => {
+      const window = new BrowserWindow({ show: true });
+      await window.loadURL('about:blank');
+      const webContentsBeforeOpenedDevtools = webContents.getAllWebContents();
+
+      const windowWasBlurred = once(window, 'blur');
+      window.webContents.openDevTools({ mode: 'detach' });
+      await windowWasBlurred;
+
+      let devToolsWebContents = null;
+      for (const newWebContents of webContents.getAllWebContents()) {
+        const oldWebContents = webContentsBeforeOpenedDevtools.find(
+          oldWebContents => {
+            return newWebContents.id === oldWebContents.id;
+          });
+        if (oldWebContents !== null) {
+          devToolsWebContents = newWebContents;
+          break;
+        }
+      }
+      assert(devToolsWebContents !== null);
+
+      const windowFocused = once(window, 'focus');
+      window.focus();
+      await windowFocused;
+
+      expect(devToolsWebContents.isFocused()).to.be.false();
+      const devToolsWebContentsFocused = once(devToolsWebContents, 'focus');
+      window.webContents.inspectElement(100, 100);
+      await devToolsWebContentsFocused;
+
+      expect(devToolsWebContents.isFocused()).to.be.true();
+      expect(window.isFocused()).to.be.false();
     });
   });
 

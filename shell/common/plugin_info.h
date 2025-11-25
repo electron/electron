@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include "content/public/common/content_plugin_info.h"
+#include "content/public/common/webplugininfo.h"
 #include "electron/buildflags/buildflags.h"
 
 namespace electron {

@@ -36,7 +36,7 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
-#include "ipc/ipc_channel.h"
+#include "ipc/constants.mojom.h"
 #include "net/http/http_response_headers.h"
 #include "net/http/http_status_code.h"
 #include "services/network/public/cpp/simple_url_loader.h"
@@ -60,10 +60,11 @@
 #include "v8/include/v8.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "chrome/common/extensions/chrome_manifest_url_handlers.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
 #include "extensions/browser/extension_registry.h"
+#include "extensions/common/manifest_handlers/chrome_url_overrides_handler.h"
+#include "extensions/common/manifest_handlers/devtools_page_handler.h"
 #include "extensions/common/permissions/permissions_data.h"
 #endif
 
@@ -92,7 +93,7 @@ constexpr std::string_view kFrontendHostMethod = "method";
 constexpr std::string_view kFrontendHostParams = "params";
 constexpr std::string_view kTitleFormat = "Developer Tools - %s";
 
-const size_t kMaxMessageChunkSize = IPC::Channel::kMaximumMessageSize / 4;
+const size_t kMaxMessageChunkSize = IPC::mojom::kChannelMaximumMessageSize / 4;
 
 base::Value::Dict RectToDictionary(const gfx::Rect& bounds) {
   return base::Value::Dict{}
@@ -109,7 +110,7 @@ gfx::Rect DictionaryToRect(const base::Value::Dict& dict) {
 }
 
 bool IsPointInScreen(const gfx::Point& point) {
-  return std::ranges::any_of(display::Screen::GetScreen()->GetAllDisplays(),
+  return std::ranges::any_of(display::Screen::Get()->GetAllDisplays(),
                              [&point](auto const& display) {
                                return display.bounds().Contains(point);
                              });
@@ -325,11 +326,11 @@ InspectableWebContents::InspectableWebContents(
     if (!IsPointInScreen(devtools_bounds_.origin())) {
       gfx::Rect display;
       if (!is_guest && web_contents_->GetNativeView()) {
-        display = display::Screen::GetScreen()
+        display = display::Screen::Get()
                       ->GetDisplayNearestView(web_contents_->GetNativeView())
                       .bounds();
       } else {
-        display = display::Screen::GetScreen()->GetPrimaryDisplay().bounds();
+        display = display::Screen::Get()->GetPrimaryDisplay().bounds();
       }
 
       devtools_bounds_.set_x(display.x() +
@@ -519,6 +520,12 @@ void InspectableWebContents::UpdateDevToolsZoomLevel(double level) {
 }
 
 void InspectableWebContents::ActivateWindow() {
+  if (embedder_message_dispatcher_) {
+    if (managed_devtools_web_contents_ && view_) {
+      view_->ActivateDevTools();
+    }
+  }
+
   // Set the zoom level.
   SetZoomLevelForWebContents(GetDevToolsWebContents(), GetDevToolsZoomLevel());
 }
@@ -680,7 +687,7 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             std::move(pending_remote)));
   } else if (const auto* const protocol_handler =
-                 protocol_registry->FindRegistered(gurl.scheme_piece())) {
+                 protocol_registry->FindRegistered(gurl.scheme())) {
     url_loader_factory = network::SharedURLLoaderFactory::Create(
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             ElectronURLLoaderFactory::Create(protocol_handler->first,

@@ -12,19 +12,28 @@ network problems. The best resolution is to try switching networks, or
 wait a bit and try installing again.
 
 You can also attempt to download Electron directly from
-[electron/electron/releases](https://github.com/electron/electron/releases)
+[GitHub Releases](https://github.com/electron/electron/releases)
 if installing via `npm` is failing.
 
-## When will Electron upgrade to latest Chrome?
+If you need to install Electron through a custom mirror or proxy, see
+the [Advanced Installation](./tutorial/installation.md) documentation for more details.
 
-The Chrome version of Electron is usually bumped within one or two weeks after
-a new stable Chrome version gets released. This estimate is not guaranteed and
-depends on the amount of work involved with upgrading.
+## How are Electron binaries downloaded?
 
-Only the stable channel of Chrome is used. If an important fix is in beta or dev
-channel, we will back-port it.
+When you run `npm install electron`, the Electron binary for the corresponding version is downloaded
+into your project's `node_modules` folder via npm's `postinstall` lifecycle script.
 
-For more information, please see the [security introduction](tutorial/security.md).
+This logic is handled by the [`@electron/get`](https://github.com/electron/get) utility package
+under the hood.
+
+## When will Electron upgrade to latest Chromium?
+
+Every new major version of Electron releases with a Chromium major version upgrade. By releasing every
+8 weeks, Electron is able to pull in every other major Chromium release on the very same day that it
+releases upstream. Security fixes will be backported to stable release channels ahead of time.
+
+See the [Electron Releases](./tutorial/electron-timelines.md) documentation for more details or
+[releases.electronjs.org](https://releases.electronjs.org) to see our Release Status dashboard.
 
 ## When will Electron upgrade to latest Node.js?
 

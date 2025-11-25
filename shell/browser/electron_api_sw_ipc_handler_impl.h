@@ -13,7 +13,6 @@
 #include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "shell/common/gin_helper/event.h"
-#include "shell/common/gin_helper/handle.h"
 
 namespace content {
 class RenderProcessHost;
@@ -75,7 +74,7 @@ class ElectronApiSWIPCHandlerImpl : public mojom::ElectronApiIPC,
   ElectronBrowserContext* GetBrowserContext();
   gin::WeakCell<api::Session>* GetSession();
 
-  gin_helper::Handle<gin_helper::internal::Event> MakeIPCEvent(
+  gin_helper::internal::Event* MakeIPCEvent(
       v8::Isolate* isolate,
       api::Session* session,
       bool internal,

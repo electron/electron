@@ -57,13 +57,13 @@ void InitializeFeatureList() {
       // See https://chromium-review.googlesource.com/c/chromium/src/+/6626905
       // Needed so that ElectronBrowserClient::RegisterPendingSiteInstance does
       // not throw a check.
-      std::string(", TraceSiteInstanceGetProcessCreation");
+      std::string(", TraceSiteInstanceGetProcessCreation") +
+      // See https://chromium-review.googlesource.com/c/chromium/src/+/6910012
+      // Needed until we rework some of our logic and checks to enable this
+      // properly.
+      std::string(",") + network::features::kLocalNetworkAccessChecks.name;
 
 #if BUILDFLAG(IS_WIN)
-  disable_features +=
-      // Delayed spellcheck initialization is causing the
-      // 'custom dictionary word list API' spec to crash.
-      std::string(",") + spellcheck::kWinDelaySpellcheckServiceInit.name;
   // Refs https://issues.chromium.org/issues/401996981
   // TODO(deepak1556): Remove this once test added in
   // https://github.com/electron/electron/pull/12904

@@ -11,6 +11,7 @@ jobs:
     name: backport/requested label added
     if: github.event.label.name == 'backport/requested 🗳'
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
       - name: Trigger Slack workflow
         uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
@@ -19,12 +20,16 @@ jobs:
           webhook-type: webhook-trigger
           payload: |
             {
-              "url": "${{ github.event.pull_request.html_url }}"
+              "base_ref": ${{ toJSON(github.event.pull_request.base.ref) }},
+              "title": ${{ toJSON(github.event.pull_request.title) }},
+              "url": ${{ toJSON(github.event.pull_request.html_url) }},
+              "user": ${{ toJSON(github.event.pull_request.user.login) }}
             }
   pull-request-labeled-deprecation-review-complete:
     name: deprecation-review/complete label added
     if: github.event.label.name == 'deprecation-review/complete ✅'
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
       - name: Generate GitHub App token
         uses: electron/github-app-auth-action@384fd19694fe7b6dcc9a684746c6976ad78228ae # v1.1.1

@@ -28,7 +28,7 @@ RC2 Ciphers: rc2-40-cbc
 It's unclear whether this would be accepted upstream. We should try regardless.
 
 diff --git a/crypto/cipher/get_cipher.cc b/crypto/cipher/get_cipher.cc
-index 2622dc78d1da236862312f55bc0a40f26116486e..ac7aff6518ad5c2a0e48bd91d60a1f825851b634 100644
+index 6513df01c4b3e4d33fc6b521d9aae78ec5499e73..52eb7fea420e3d81d274fd5c1e21e4da0229687f 100644
 --- a/crypto/cipher/get_cipher.cc
 +++ b/crypto/cipher/get_cipher.cc
 @@ -31,6 +31,7 @@ static const struct {
@@ -64,64 +64,64 @@ index 2622dc78d1da236862312f55bc0a40f26116486e..ac7aff6518ad5c2a0e48bd91d60a1f82
  
  const EVP_CIPHER *EVP_get_cipherbynid(int nid) {
 diff --git a/decrepit/evp/evp_do_all.cc b/decrepit/evp/evp_do_all.cc
-index 8fdf1c624794f568bfc77b7b6b0c510b23905a4d..2e40c031e8c681fe921331b26dbf63f4df2fcf71 100644
+index 891a73f229e3f0838cb2fa99b8fb24fdeac1962b..f7d0c5dc66f016eb9338c15e7f5ef59e6de2969d 100644
 --- a/decrepit/evp/evp_do_all.cc
 +++ b/decrepit/evp/evp_do_all.cc
 @@ -20,8 +20,10 @@ void EVP_CIPHER_do_all_sorted(void (*callback)(const EVP_CIPHER *cipher,
                                                 const char *unused, void *arg),
                                void *arg) {
-   callback(EVP_aes_128_cbc(), "AES-128-CBC", NULL, arg);
-+  callback(EVP_aes_128_cfb128(), "AES-128-CFB", NULL, arg);
-   callback(EVP_aes_192_cbc(), "AES-192-CBC", NULL, arg);
-   callback(EVP_aes_256_cbc(), "AES-256-CBC", NULL, arg);
-+  callback(EVP_aes_256_cfb128(), "AES-256-CFB", NULL, arg);
-   callback(EVP_aes_128_ctr(), "AES-128-CTR", NULL, arg);
-   callback(EVP_aes_192_ctr(), "AES-192-CTR", NULL, arg);
-   callback(EVP_aes_256_ctr(), "AES-256-CTR", NULL, arg);
+   callback(EVP_aes_128_cbc(), "AES-128-CBC", nullptr, arg);
++  callback(EVP_aes_128_cfb128(), "AES-128-CFB", nullptr, arg);
+   callback(EVP_aes_192_cbc(), "AES-192-CBC", nullptr, arg);
+   callback(EVP_aes_256_cbc(), "AES-256-CBC", nullptr, arg);
++  callback(EVP_aes_256_cfb128(), "AES-256-CFB", nullptr, arg);
+   callback(EVP_aes_128_ctr(), "AES-128-CTR", nullptr, arg);
+   callback(EVP_aes_192_ctr(), "AES-192-CTR", nullptr, arg);
+   callback(EVP_aes_256_ctr(), "AES-256-CTR", nullptr, arg);
 @@ -34,9 +36,13 @@ void EVP_CIPHER_do_all_sorted(void (*callback)(const EVP_CIPHER *cipher,
-   callback(EVP_aes_128_gcm(), "AES-128-GCM", NULL, arg);
-   callback(EVP_aes_192_gcm(), "AES-192-GCM", NULL, arg);
-   callback(EVP_aes_256_gcm(), "AES-256-GCM", NULL, arg);
-+  callback(EVP_bf_cbc(), "BF-CBC", NULL, arg);
-+  callback(EVP_bf_cfb(), "BF-CFB", NULL, arg);
-+  callback(EVP_bf_ecb(), "BF-ECB", NULL, arg);
-   callback(EVP_des_cbc(), "DES-CBC", NULL, arg);
-   callback(EVP_des_ecb(), "DES-ECB", NULL, arg);
-   callback(EVP_des_ede(), "DES-EDE", NULL, arg);
-+  callback(EVP_des_ede3(), "DES-EDE3", NULL, arg);
-   callback(EVP_des_ede_cbc(), "DES-EDE-CBC", NULL, arg);
-   callback(EVP_des_ede3_cbc(), "DES-EDE3-CBC", NULL, arg);
-   callback(EVP_rc2_cbc(), "RC2-CBC", NULL, arg);
+   callback(EVP_aes_128_gcm(), "AES-128-GCM", nullptr, arg);
+   callback(EVP_aes_192_gcm(), "AES-192-GCM", nullptr, arg);
+   callback(EVP_aes_256_gcm(), "AES-256-GCM", nullptr, arg);
++  callback(EVP_bf_cbc(), "BF-CBC", nullptr, arg);
++  callback(EVP_bf_cfb(), "BF-CFB", nullptr, arg);
++  callback(EVP_bf_ecb(), "BF-ECB", nullptr, arg);
+   callback(EVP_des_cbc(), "DES-CBC", nullptr, arg);
+   callback(EVP_des_ecb(), "DES-ECB", nullptr, arg);
+   callback(EVP_des_ede(), "DES-EDE", nullptr, arg);
++  callback(EVP_des_ede3(), "DES-EDE3", nullptr, arg);
+   callback(EVP_des_ede_cbc(), "DES-EDE-CBC", nullptr, arg);
+   callback(EVP_des_ede3_cbc(), "DES-EDE3-CBC", nullptr, arg);
+   callback(EVP_rc2_cbc(), "RC2-CBC", nullptr, arg);
 @@ -44,8 +50,10 @@ void EVP_CIPHER_do_all_sorted(void (*callback)(const EVP_CIPHER *cipher,
  
    // OpenSSL returns everything twice, the second time in lower case.
-   callback(EVP_aes_128_cbc(), "aes-128-cbc", NULL, arg);
-+  callback(EVP_aes_128_cfb128(), "aes-128-cfb", NULL, arg);
-   callback(EVP_aes_192_cbc(), "aes-192-cbc", NULL, arg);
-   callback(EVP_aes_256_cbc(), "aes-256-cbc", NULL, arg);
-+  callback(EVP_aes_256_cfb128(), "aes-256-cfb", NULL, arg);
-   callback(EVP_aes_128_ctr(), "aes-128-ctr", NULL, arg);
-   callback(EVP_aes_192_ctr(), "aes-192-ctr", NULL, arg);
-   callback(EVP_aes_256_ctr(), "aes-256-ctr", NULL, arg);
+   callback(EVP_aes_128_cbc(), "aes-128-cbc", nullptr, arg);
++  callback(EVP_aes_128_cfb128(), "aes-128-cfb", nullptr, arg);
+   callback(EVP_aes_192_cbc(), "aes-192-cbc", nullptr, arg);
+   callback(EVP_aes_256_cbc(), "aes-256-cbc", nullptr, arg);
++  callback(EVP_aes_256_cfb128(), "aes-256-cfb", nullptr, arg);
+   callback(EVP_aes_128_ctr(), "aes-128-ctr", nullptr, arg);
+   callback(EVP_aes_192_ctr(), "aes-192-ctr", nullptr, arg);
+   callback(EVP_aes_256_ctr(), "aes-256-ctr", nullptr, arg);
 @@ -58,9 +66,13 @@ void EVP_CIPHER_do_all_sorted(void (*callback)(const EVP_CIPHER *cipher,
-   callback(EVP_aes_128_gcm(), "aes-128-gcm", NULL, arg);
-   callback(EVP_aes_192_gcm(), "aes-192-gcm", NULL, arg);
-   callback(EVP_aes_256_gcm(), "aes-256-gcm", NULL, arg);
-+  callback(EVP_bf_cbc(), "bf-cbc", NULL, arg);
-+  callback(EVP_bf_cfb(), "bf-cfb", NULL, arg);
-+  callback(EVP_bf_ecb(), "bf-ecb", NULL, arg);
-   callback(EVP_des_cbc(), "des-cbc", NULL, arg);
-   callback(EVP_des_ecb(), "des-ecb", NULL, arg);
-   callback(EVP_des_ede(), "des-ede", NULL, arg);
-+  callback(EVP_des_ede3(), "des-ede3", NULL, arg);
-   callback(EVP_des_ede_cbc(), "des-ede-cbc", NULL, arg);
-   callback(EVP_des_ede3_cbc(), "des-ede3-cbc", NULL, arg);
-   callback(EVP_rc2_cbc(), "rc2-cbc", NULL, arg);
+   callback(EVP_aes_128_gcm(), "aes-128-gcm", nullptr, arg);
+   callback(EVP_aes_192_gcm(), "aes-192-gcm", nullptr, arg);
+   callback(EVP_aes_256_gcm(), "aes-256-gcm", nullptr, arg);
++  callback(EVP_bf_cbc(), "bf-cbc", nullptr, arg);
++  callback(EVP_bf_cfb(), "bf-cfb", nullptr, arg);
++  callback(EVP_bf_ecb(), "bf-ecb", nullptr, arg);
+   callback(EVP_des_cbc(), "des-cbc", nullptr, arg);
+   callback(EVP_des_ecb(), "des-ecb", nullptr, arg);
+   callback(EVP_des_ede(), "des-ede", nullptr, arg);
++  callback(EVP_des_ede3(), "des-ede3", nullptr, arg);
+   callback(EVP_des_ede_cbc(), "des-ede-cbc", nullptr, arg);
+   callback(EVP_des_ede3_cbc(), "des-ede3-cbc", nullptr, arg);
+   callback(EVP_rc2_cbc(), "rc2-cbc", nullptr, arg);
 diff --git a/include/openssl/cipher.h b/include/openssl/cipher.h
-index 13e68ad20ac08a462bb577d7f99e2c6f167579fa..4960d0eeb8f31bec4347ed2a1b63beba530de700 100644
+index ed2eeab57779d827eb19edcd435b4664d4079859..74bb77e03b562698cb887b25cc8a779631a809fb 100644
 --- a/include/openssl/cipher.h
 +++ b/include/openssl/cipher.h
-@@ -448,6 +448,7 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_des_ede3_ecb(void);
+@@ -552,6 +552,7 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_des_ede3_ecb(void);
  
  // EVP_aes_128_cfb128 is only available in decrepit.
  OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_128_cfb128(void);

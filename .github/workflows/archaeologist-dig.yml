@@ -3,19 +3,23 @@ name: Archaeologist
 on:
   pull_request:
 
+permissions: {}
+
 jobs:
    archaeologist-dig:
     name: Archaeologist Dig
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout Electron
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.0.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           fetch-depth: 0
       - name: Setup Node.js/npm
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
         with:
-          node-version: 20.19.x
+          node-version: 22.21.x
       - name: Setting Up Dig Site
         run: |
           echo "remote: ${{ github.event.pull_request.head.repo.clone_url }}"
@@ -41,7 +45,7 @@ jobs:
           sha-file: .dig-old
           filename: electron.old.d.ts
       - name: Upload artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 #v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 #v5.0.0
         with:
           name: artifacts
           path: electron/artifacts

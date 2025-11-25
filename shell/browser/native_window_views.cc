@@ -35,7 +35,6 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/image_converter.h"
-#include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
 #include "ui/aura/window_tree_host.h"
@@ -43,7 +42,7 @@
 #include "ui/compositor/compositor.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/image/image.h"
-#include "ui/gfx/native_widget_types.h"
+#include "ui/gfx/native_ui_types.h"
 #include "ui/ozone/public/ozone_platform.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/webview/webview.h"
@@ -85,7 +84,6 @@
 #include "shell/common/color_util.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/display/win/screen_win.h"
-#include "ui/gfx/color_utils.h"
 #include "ui/gfx/win/hwnd_util.h"
 #include "ui/gfx/win/msg_util.h"
 #endif
@@ -216,8 +214,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (transparent())
     thick_frame_ = false;
 
-  overlay_button_color_ = color_utils::GetSysSkColor(COLOR_BTNFACE);
-  overlay_symbol_color_ = color_utils::GetSysSkColor(COLOR_BTNTEXT);
+  overlay_button_color_ = GetSysSkColor(COLOR_BTNFACE);
+  overlay_symbol_color_ = GetSysSkColor(COLOR_BTNTEXT);
 
   if (std::string str; options.Get(options::kAccentColor, &str)) {
     std::optional<SkColor> parsed_color = ParseCSSColor(str);
@@ -268,7 +266,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   params.remove_standard_frame = !has_frame() || has_client_frame();
 
   // If a client frame, we need to draw our own shadows.
-  if (IsTranslucent() || has_client_frame())
+  if (transparent() || has_client_frame())
     params.opacity = InitParams::WindowOpacity::kTranslucent;
 
   // The given window is most likely not rectangular since it is translucent and
@@ -302,7 +300,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   widget()->Init(std::move(params));
   widget()->SetNativeWindowProperty(kNativeWindowKey.c_str(), this);
-  SetCanResize(resizable_);
+  widget()->OnSizeConstraintsChanged();
 
   const bool fullscreen = options.ValueOrDefault(options::kFullscreen, false);
 
@@ -356,11 +354,11 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     // frameless.
 
     DWORD frame_style = WS_CAPTION | WS_OVERLAPPED;
-    if (resizable_)
+    if (CanResize())
       frame_style |= WS_THICKFRAME;
     if (minimizable_)
       frame_style |= WS_MINIMIZEBOX;
-    if (maximizable_)
+    if (maximizable_ && CanResize())
       frame_style |= WS_MAXIMIZEBOX;
 
     // We should not show a frame for transparent window.
@@ -452,10 +450,10 @@ NativeWindowViews::~NativeWindowViews() {
 
 void NativeWindowViews::SetTitleBarOverlay(
     const gin_helper::Dictionary& options,
-    gin_helper::Arguments* args) {
+    gin::Arguments* args) {
   // Ensure WCO is already enabled on this window
   if (!IsWindowControlsOverlayEnabled()) {
-    args->ThrowError("Titlebar overlay is not enabled");
+    args->ThrowTypeError("Titlebar overlay is not enabled");
     return;
   }
 
@@ -466,7 +464,7 @@ void NativeWindowViews::SetTitleBarOverlay(
     // Parse the string as a CSS color
     SkColor color;
     if (!content::ParseCssColorString(val, &color)) {
-      args->ThrowError("Could not parse color as CSS color");
+      args->ThrowTypeError("Could not parse color as CSS color");
       return;
     }
 
@@ -480,7 +478,7 @@ void NativeWindowViews::SetTitleBarOverlay(
     // Parse the string as a CSS color
     SkColor color;
     if (!content::ParseCssColorString(val, &color)) {
-      args->ThrowError("Could not parse symbol color as CSS color");
+      args->ThrowTypeError("Could not parse symbol color as CSS color");
       return;
     }
 
@@ -555,7 +553,7 @@ bool NativeWindowViews::IsFocused() const {
 }
 
 void NativeWindowViews::Show() {
-  if (is_modal() && NativeWindow::parent() && !widget()->IsVisible())
+  if (is_modal() && NativeWindow::parent())
     static_cast<NativeWindowViews*>(parent())->IncrementChildModals();
 
   FlushPendingDisplayMode();
@@ -690,8 +688,8 @@ void NativeWindowViews::Maximize() {
 #if BUILDFLAG(IS_WIN)
   if (transparent()) {
     restore_bounds_ = GetBounds();
-    auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
-        GetNativeWindow());
+    auto display =
+        display::Screen::Get()->GetDisplayNearestWindow(GetNativeWindow());
     SetBounds(display.work_area(), false);
     NotifyWindowMaximize();
     return;
@@ -735,8 +733,8 @@ bool NativeWindowViews::IsMaximized() const {
   if (transparent() && !IsMinimized()) {
     // If the window is the same dimensions and placement as the
     // display, we consider it maximized.
-    auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
-        GetNativeWindow());
+    auto display =
+        display::Screen::Get()->GetDisplayNearestWindow(GetNativeWindow());
     return GetBounds() == display.work_area();
   }
 #endif
@@ -801,7 +799,7 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
     if (fullscreen) {
       restore_bounds_ = GetBounds();
       auto display =
-          display::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
+          display::Screen::Get()->GetDisplayNearestPoint(GetPosition());
       SetBounds(display.bounds(), false);
     } else {
       SetBounds(restore_bounds_, false);
@@ -870,7 +868,7 @@ void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
   // On Linux and Windows the minimum and maximum size should be updated with
   // window size when window is not resizable.
-  if (!resizable_) {
+  if (!CanResize()) {
     SetMaximumSize(bounds.size());
     SetMinimumSize(bounds.size());
   }
@@ -951,26 +949,21 @@ extensions::SizeConstraints NativeWindowViews::GetContentSizeConstraints()
 
 void NativeWindowViews::SetResizable(bool resizable) {
   if (resizable != resizable_) {
+    resizable_ = resizable;
     // On Linux there is no "resizable" property of a window, we have to set
     // both the minimum and maximum size to the window size to achieve it.
     if (resizable) {
       SetContentSizeConstraints(old_size_constraints_);
-      SetMaximizable(maximizable_);
     } else {
       old_size_constraints_ = GetContentSizeConstraints();
-      resizable_ = false;
       gfx::Size content_size = GetContentSize();
       SetContentSizeConstraints(
           extensions::SizeConstraints(content_size, content_size));
     }
-  }
-
-  resizable_ = resizable;
-  SetCanResize(resizable_);
-
 #if BUILDFLAG(IS_WIN)
-  UpdateThickFrame();
+    UpdateThickFrame();
 #endif
+  }
 }
 
 bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
@@ -1015,12 +1008,20 @@ void NativeWindowViews::MoveTop() {
 #endif
 }
 
+bool NativeWindowViews::CanResize() const {
+#if BUILDFLAG(IS_WIN)
+  return resizable_ && thick_frame_;
+#else
+  return resizable_;
+#endif
+}
+
 bool NativeWindowViews::IsResizable() const {
 #if BUILDFLAG(IS_WIN)
   if (has_frame())
     return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME;
 #endif
-  return resizable_;
+  return CanResize();
 }
 
 void NativeWindowViews::SetAspectRatio(double aspect_ratio,
@@ -1166,7 +1167,7 @@ ui::ZOrderLevel NativeWindowViews::GetZOrderLevel() const {
 void NativeWindowViews::Center() {
 #if BUILDFLAG(IS_LINUX)
   auto display =
-      display::Screen::GetScreen()->GetDisplayNearestWindow(GetNativeWindow());
+      display::Screen::Get()->GetDisplayNearestWindow(GetNativeWindow());
   gfx::Rect window_bounds_in_screen = display.work_area();
   window_bounds_in_screen.ClampToCenteredSize(GetSize());
   widget()->SetBounds(window_bounds_in_screen);
@@ -1364,7 +1365,8 @@ void NativeWindowViews::SetFocusable(bool focusable) {
     ex_style |= WS_EX_NOACTIVATE;
   ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
   SetSkipTaskbar(!focusable);
-  Focus(false);
+  if (!focusable)
+    Focus(false);
 #endif
 }
 
@@ -1821,7 +1823,7 @@ views::View* NativeWindowViews::GetInitiallyFocusedView() {
 }
 
 bool NativeWindowViews::CanMaximize() const {
-  return resizable_ && maximizable_;
+  return CanResize() && maximizable_;
 }
 
 bool NativeWindowViews::CanMinimize() const {
@@ -1846,8 +1848,8 @@ views::ClientView* NativeWindowViews::CreateClientView(views::Widget* widget) {
   return new NativeWindowClientView{widget, &root_view_, this};
 }
 
-std::unique_ptr<views::NonClientFrameView>
-NativeWindowViews::CreateNonClientFrameView(views::Widget* widget) {
+std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
+    views::Widget* widget) {
 #if BUILDFLAG(IS_WIN)
   auto frame_view = std::make_unique<WinFrameView>();
   frame_view->Init(this, widget);
@@ -1874,7 +1876,7 @@ electron::ClientFrameViewLinux* NativeWindowViews::GetClientFrameViewLinux() {
   // Check to make sure this window's non-client frame view is a
   // ClientFrameViewLinux.  If either has_frame() or has_client_frame()
   // are false, it will be an OpaqueFrameView or NativeFrameView instead.
-  // See NativeWindowViews::CreateNonClientFrameView.
+  // See NativeWindowViews::CreateFrameView.
   if (!has_frame() || !has_client_frame())
     return {};
   return static_cast<ClientFrameViewLinux*>(

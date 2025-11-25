@@ -1,4 +1,4 @@
-import { app, BrowserWindow, BaseWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain, BrowserWindowConstructorOptions } from 'electron/main';
+import { app, BrowserWindow, BaseWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, systemPreferences, WebContents, WebFrameMain, BrowserWindowConstructorOptions } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -2596,7 +2596,23 @@ describe('BrowserWindow module', () => {
       expect(() => {
         // @ts-ignore this is wrong on purpose.
         w.setAccentColor([1, 2, 3]);
-      }).to.throw('Invalid accent color value - must be a string or boolean');
+      }).to.throw('Invalid accent color value - must be null, hex string, or boolean');
+    });
+
+    it('throws if called with an invalid parameter', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(() => {
+        // @ts-ignore this is wrong on purpose.
+        w.setAccentColor(new Date());
+      }).to.throw('Invalid accent color value - must be null, hex string, or boolean');
+    });
+
+    it('can be reset with null', () => {
+      const w = new BrowserWindow({ show: false });
+      w.setAccentColor('#FF0000');
+      expect(w.getAccentColor()).to.equal('#FF0000');
+      w.setAccentColor(null);
+      expect(w.getAccentColor()).to.not.equal('#FF0000');
     });
 
     it('returns the accent color after setting it to a string', () => {
@@ -2622,6 +2638,14 @@ describe('BrowserWindow module', () => {
       const accentColor = w.getAccentColor();
       expect(accentColor).to.be.a('string');
       expect(accentColor).to.match(/^#[0-9A-F]{6}$/i);
+    });
+
+    it('matches the systemPreferences system color when true', () => {
+      const w = new BrowserWindow({ show: false });
+      w.setAccentColor(true);
+      const accentColor = w.getAccentColor() as string;
+      const systemColor = systemPreferences.getAccentColor().slice(0, 6);
+      expect(accentColor).to.equal(`#${systemColor}`);
     });
 
     it('returns the correct accent color after multiple changes', () => {
@@ -5489,7 +5513,7 @@ describe('BrowserWindow module', () => {
           thickFrame: true,
           transparent: true
         });
-        expect(w.isResizable()).to.be.true('resizable');
+        expect(w.isResizable()).to.be.false('resizable');
         w.maximize();
         expect(w.isMaximized()).to.be.true('maximized');
         const bounds = w.getBounds();
@@ -7148,6 +7172,27 @@ describe('BrowserWindow module', () => {
       }
     };
 
+    const createAndSaveWindowState = async (preferencesPath: string, windowName: string, options?: BrowserWindowConstructorOptions) => {
+      const w = new BrowserWindow({
+        name: windowName,
+        windowStatePersistence: {
+          displayMode: false
+        },
+        show: false,
+        ...options
+      });
+      if (!fs.existsSync(preferencesPath)) {
+        // File doesn't exist, wait for creation
+        await waitForPrefsFileCreation(preferencesPath);
+      } else {
+        // File exists, wait for update
+        const initialModTime = getPrefsModTime(preferencesPath);
+        await waitForPrefsUpdate(initialModTime, preferencesPath);
+      }
+      // Ensure window is destroyed because we can't create another window with the same name otherwise
+      w.destroy();
+    };
+
     describe('save window state', () => {
       const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'window-state-save');
       const sharedUserDataPath = path.join(os.tmpdir(), 'electron-window-state-test');
@@ -7326,7 +7371,7 @@ describe('BrowserWindow module', () => {
 
         beforeEach(async () => {
           await setTimeout(2000);
-          BrowserWindow.clearWindowState(windowName);
+          BrowserWindow.clearPersistedState(windowName);
           w = new BrowserWindow({
             show: false,
             width: 400,
@@ -7452,7 +7497,7 @@ describe('BrowserWindow module', () => {
         // Timeout here plays nice with CI
         await setTimeout(2000);
         // Let's start with a clean slate everytime
-        BrowserWindow.clearWindowState(windowName);
+        BrowserWindow.clearPersistedState(windowName);
       });
 
       afterEach(closeAllWindows);
@@ -7472,7 +7517,7 @@ describe('BrowserWindow module', () => {
         const stateBefore = getWindowStateFromDisk(windowName, preferencesPath);
         expect(stateBefore).to.not.be.null('window state with window name "test-window-clear" should exist but does not');
 
-        BrowserWindow.clearWindowState(windowName);
+        BrowserWindow.clearPersistedState(windowName);
 
         await waitForPrefsUpdate(getPrefsModTime(preferencesPath), preferencesPath);
 
@@ -7505,7 +7550,7 @@ describe('BrowserWindow module', () => {
 
         w1.destroy();
 
-        BrowserWindow.clearWindowState(windowName);
+        BrowserWindow.clearPersistedState(windowName);
 
         const w2 = new BrowserWindow({
           height: 200,
@@ -7524,7 +7569,7 @@ describe('BrowserWindow module', () => {
 
       it('should not throw when clearing non-existent window state', () => {
         expect(() => {
-          BrowserWindow.clearWindowState('non-existent-window');
+          BrowserWindow.clearPersistedState('non-existent-window');
         }).to.not.throw();
       });
 
@@ -7552,7 +7597,7 @@ describe('BrowserWindow module', () => {
         expect(getWindowStateFromDisk(windowName1, preferencesPath)).to.not.be.null('window state with window name "test-window-1" should exist but does not');
         expect(getWindowStateFromDisk(windowName2, preferencesPath)).to.not.be.null('window state with window name "test-window-2" should exist but does not');
 
-        BrowserWindow.clearWindowState(windowName1);
+        BrowserWindow.clearPersistedState(windowName1);
 
         await waitForPrefsUpdate(getPrefsModTime(preferencesPath), preferencesPath);
 
@@ -7566,32 +7611,11 @@ describe('BrowserWindow module', () => {
       const preferencesPath = path.join(app.getPath('userData'), 'Local State');
       const windowName = 'test-restore-window';
 
-      const createAndSaveWindowState = async (options?: BrowserWindowConstructorOptions) => {
-        const w = new BrowserWindow({
-          name: windowName,
-          windowStatePersistence: {
-            displayMode: false
-          },
-          show: false,
-          ...options
-        });
-        if (!fs.existsSync(preferencesPath)) {
-          // File doesn't exist, wait for creation
-          await waitForPrefsFileCreation(preferencesPath);
-        } else {
-          // File exists, wait for update
-          const initialModTime = getPrefsModTime(preferencesPath);
-          await waitForPrefsUpdate(initialModTime, preferencesPath);
-        }
-        // Ensure window is destroyed because we can't create another window with the same name otherwise
-        w.destroy();
-      };
-
       beforeEach(async () => {
         // Timeout here plays nice with CI
         await setTimeout(2000);
         // Let's start with a clean slate everytime
-        BrowserWindow.clearWindowState(windowName);
+        BrowserWindow.clearPersistedState(windowName);
       });
 
       afterEach(closeAllWindows);
@@ -7603,7 +7627,7 @@ describe('BrowserWindow module', () => {
         it('should restore bounds when windowStatePersistence is true', async () => {
           const workArea = screen.getPrimaryDisplay().workArea;
           const bounds = { width: 100, height: 100, x: workArea.x, y: workArea.y };
-          await createAndSaveWindowState(bounds);
+          await createAndSaveWindowState(preferencesPath, windowName, bounds);
           // Should override default constructor bounds
           const w = new BrowserWindow({
             name: windowName,
@@ -7622,7 +7646,7 @@ describe('BrowserWindow module', () => {
 
         it('should use default window options when no saved state exists', async () => {
           const defaultBounds = { width: 500, height: 400, x: 200, y: 250 };
-          // BrowserWindow.clearWindowState(windowName) is called in beforeEach
+          // BrowserWindow.clearPersistedState(windowName) is called in beforeEach
           const w = new BrowserWindow({
             name: windowName,
             windowStatePersistence: true,
@@ -7638,7 +7662,7 @@ describe('BrowserWindow module', () => {
         });
 
         it('should restore fullscreen state when windowStatePersistence is true', async () => {
-          await createAndSaveWindowState({ fullscreen: true });
+          await createAndSaveWindowState(preferencesPath, windowName, { fullscreen: true });
           await setTimeout(2000);
           const w = new BrowserWindow({
             name: windowName,
@@ -7654,7 +7678,7 @@ describe('BrowserWindow module', () => {
         });
 
         it('should restore kiosk state when windowStatePersistence is true', async () => {
-          await createAndSaveWindowState({ kiosk: true });
+          await createAndSaveWindowState(preferencesPath, windowName, { kiosk: true });
           await setTimeout(2000);
           const w = new BrowserWindow({
             name: windowName,
@@ -7673,7 +7697,7 @@ describe('BrowserWindow module', () => {
         it('should restore maximized state when windowStatePersistence is true', async () => {
           const width = screen.getPrimaryDisplay().workArea.width;
           const height = screen.getPrimaryDisplay().workArea.height;
-          await createAndSaveWindowState({ width, height });
+          await createAndSaveWindowState(preferencesPath, windowName, { width, height });
 
           const w = new BrowserWindow({
             name: windowName,
@@ -7691,7 +7715,7 @@ describe('BrowserWindow module', () => {
 
         it('should not restore state when windowStatePersistence is false', async () => {
           const bounds = { width: 400, height: 300, x: 100, y: 150 };
-          await createAndSaveWindowState(bounds);
+          await createAndSaveWindowState(preferencesPath, windowName, bounds);
 
           const defaultBounds = { width: 500, height: 400, x: 200, y: 250 };
           const w = new BrowserWindow({
@@ -7740,7 +7764,7 @@ describe('BrowserWindow module', () => {
         });
 
         it('should restore display modes when bounds is disabled', async () => {
-          await createAndSaveWindowState({ fullscreen: true });
+          await createAndSaveWindowState(preferencesPath, windowName, { fullscreen: true });
           await setTimeout(2000);
           const w = new BrowserWindow({
             name: windowName,
@@ -7757,7 +7781,7 @@ describe('BrowserWindow module', () => {
         });
 
         it('should respect fullscreenable property', async () => {
-          await createAndSaveWindowState({ fullscreen: true });
+          await createAndSaveWindowState(preferencesPath, windowName, { fullscreen: true });
 
           const w = new BrowserWindow({
             name: windowName,
@@ -7775,7 +7799,7 @@ describe('BrowserWindow module', () => {
         });
 
         it('should respect minWidth and minHeight properly', async () => {
-          await createAndSaveWindowState({ width: 200, height: 200 });
+          await createAndSaveWindowState(preferencesPath, windowName, { width: 200, height: 200 });
 
           const w = new BrowserWindow({
             name: windowName,
@@ -7791,7 +7815,7 @@ describe('BrowserWindow module', () => {
         });
 
         it('should respect maxWidth and maxHeight properly', async () => {
-          await createAndSaveWindowState({ width: 800, height: 800 });
+          await createAndSaveWindowState(preferencesPath, windowName, { width: 800, height: 800 });
 
           const w = new BrowserWindow({
             name: windowName,
@@ -7811,8 +7835,8 @@ describe('BrowserWindow module', () => {
           const window2Name = 'test-window-2';
 
           // Clear any existing state
-          BrowserWindow.clearWindowState(window1Name);
-          BrowserWindow.clearWindowState(window2Name);
+          BrowserWindow.clearPersistedState(window1Name);
+          BrowserWindow.clearPersistedState(window2Name);
 
           const workArea = screen.getPrimaryDisplay().workArea;
 
@@ -7874,7 +7898,7 @@ describe('BrowserWindow module', () => {
             y: workArea.y + workArea.height + 10
           };
 
-          await createAndSaveWindowState(offscreenBounds);
+          await createAndSaveWindowState(preferencesPath, windowName, offscreenBounds);
 
           const w = new BrowserWindow({
             name: windowName,
@@ -7904,7 +7928,7 @@ describe('BrowserWindow module', () => {
             y: workArea.y + workArea.height - 20
           };
 
-          await createAndSaveWindowState(overflowBounds);
+          await createAndSaveWindowState(preferencesPath, windowName, overflowBounds);
 
           const w = new BrowserWindow({
             name: windowName,
@@ -7933,7 +7957,7 @@ describe('BrowserWindow module', () => {
             y: workArea.y + workArea.height - 50
           };
 
-          await createAndSaveWindowState(overflowBounds);
+          await createAndSaveWindowState(preferencesPath, windowName, overflowBounds);
 
           const w = new BrowserWindow({
             name: windowName,
@@ -7960,7 +7984,7 @@ describe('BrowserWindow module', () => {
         });
 
         it('should respect show:false when restoring display modes', async () => {
-          await createAndSaveWindowState({ fullscreen: true });
+          await createAndSaveWindowState(preferencesPath, windowName, { fullscreen: true });
 
           const w = new BrowserWindow({
             name: windowName,
@@ -7988,19 +8012,27 @@ describe('BrowserWindow module', () => {
 
       // FIXME(nilayarya): Figure out why these tests fail on macOS-x64
       // virtualDisplay.create() is creating double displays on macOS-x64
-      ifdescribe(process.platform === 'darwin' && process.arch === 'arm64')('multi-monitor tests', () => {
+      const testMultiMonitor =
+      process.platform === 'darwin' &&
+      process.arch === 'arm64' &&
+      screen.getAllDisplays().length === 1;
+
+      ifdescribe(testMultiMonitor)('multi-monitor tests', () => {
         const virtualDisplay = require('@electron-ci/virtual-display');
         const primaryDisplay = screen.getPrimaryDisplay();
 
-        beforeEach(() => {
+        beforeEach(async () => {
           virtualDisplay.forceCleanup();
+          let attempts = 0;
+          while (screen.getAllDisplays().length > 1 && attempts++ < 20) await setTimeout(1000);
+          const displayCount = screen.getAllDisplays().length;
+          // We expect only the primary display to be present
+          expect(displayCount).to.equal(1, `Display cleanup failed: ${displayCount} displays remain`);
         });
 
         it('should restore window bounds correctly on a secondary display', async () => {
           const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
           const targetDisplayY = primaryDisplay.bounds.y;
-          // We expect only the primary display to be present before the tests start
-          expect(screen.getAllDisplays().length).to.equal(1);
 
           // Create a new virtual target display to the right of the primary display
           const targetDisplayId = virtualDisplay.create({
@@ -8025,7 +8057,7 @@ describe('BrowserWindow module', () => {
             y: targetDisplay.workArea.y + 100
           };
 
-          await createAndSaveWindowState(boundsOnTargetDisplay);
+          await createAndSaveWindowState(preferencesPath, windowName, boundsOnTargetDisplay);
 
           // Restore the window state by creating a new window with the same name
           const w = new BrowserWindow({
@@ -8044,8 +8076,6 @@ describe('BrowserWindow module', () => {
         it('should restore window to a visible location when saved display no longer exists', async () => {
           const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
           const targetDisplayY = primaryDisplay.bounds.y;
-          // We expect only the primary display to be present before the tests start
-          expect(screen.getAllDisplays().length).to.equal(1);
 
           // Create a new virtual target display to the right of the primary display
           const targetDisplayId = virtualDisplay.create({
@@ -8068,7 +8098,7 @@ describe('BrowserWindow module', () => {
           };
 
           // Save window state on the virtual display
-          await createAndSaveWindowState(boundsOnTargetDisplay);
+          await createAndSaveWindowState(preferencesPath, windowName, boundsOnTargetDisplay);
 
           virtualDisplay.destroy(targetDisplayId);
           // Wait for the target virtual display to be destroyed
@@ -8099,8 +8129,6 @@ describe('BrowserWindow module', () => {
         it('should fallback to nearest display when saved display no longer exists', async () => {
           const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
           const targetDisplayY = primaryDisplay.bounds.y;
-          // We expect only the primary display to be present before the tests start
-          expect(screen.getAllDisplays().length).to.equal(1);
 
           // Create first virtual display to the right of primary
           const middleDisplayId = virtualDisplay.create({
@@ -8135,7 +8163,7 @@ describe('BrowserWindow module', () => {
           };
 
           // Save window state on the rightmost display
-          await createAndSaveWindowState(boundsOnRightmostDisplay);
+          await createAndSaveWindowState(preferencesPath, windowName, boundsOnRightmostDisplay);
 
           // Destroy the rightmost display (where window was saved)
           virtualDisplay.destroy(rightmostDisplayId);
@@ -8167,8 +8195,6 @@ describe('BrowserWindow module', () => {
         it('should restore multiple named windows independently across displays', async () => {
           const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
           const targetDisplayY = primaryDisplay.bounds.y;
-          // We expect only the primary display to be present before the tests start
-          expect(screen.getAllDisplays().length).to.equal(1);
 
           // Create a first virtual display to the right of the primary display
           const targetDisplayId1 = virtualDisplay.create({
@@ -8220,9 +8246,9 @@ describe('BrowserWindow module', () => {
           };
 
           // Clear window state for all three windows from previous tests
-          BrowserWindow.clearWindowState(window1Name);
-          BrowserWindow.clearWindowState(window2Name);
-          BrowserWindow.clearWindowState(window3Name);
+          BrowserWindow.clearPersistedState(window1Name);
+          BrowserWindow.clearPersistedState(window2Name);
+          BrowserWindow.clearPersistedState(window3Name);
 
           // Create and save state for all three windows
           const w1 = new BrowserWindow({
@@ -8282,8 +8308,6 @@ describe('BrowserWindow module', () => {
         it('should restore fullscreen state on correct display', async () => {
           const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
           const targetDisplayY = primaryDisplay.bounds.y;
-          // We expect only the primary display to be present before the tests start
-          expect(screen.getAllDisplays().length).to.equal(1);
 
           // Create a new virtual target display to the right of the primary display
           const targetDisplayId = virtualDisplay.create({
@@ -8305,7 +8329,7 @@ describe('BrowserWindow module', () => {
             fullscreen: true
           };
 
-          await createAndSaveWindowState(initialBounds);
+          await createAndSaveWindowState(preferencesPath, windowName, initialBounds);
 
           const w = new BrowserWindow({
             name: windowName,
@@ -8331,8 +8355,6 @@ describe('BrowserWindow module', () => {
         it('should restore maximized state on correct display', async () => {
           const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
           const targetDisplayY = primaryDisplay.bounds.y;
-          // We expect only the primary display to be present before the tests start
-          expect(screen.getAllDisplays().length).to.equal(1);
 
           // Create a new virtual target display to the right of the primary display
           const targetDisplayId = virtualDisplay.create({
@@ -8386,8 +8408,6 @@ describe('BrowserWindow module', () => {
         it('should restore kiosk state on correct display', async () => {
           const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
           const targetDisplayY = primaryDisplay.bounds.y;
-          // We expect only the primary display to be present before the tests start
-          expect(screen.getAllDisplays().length).to.equal(1);
 
           // Create a new virtual target display to the right of the primary display
           const targetDisplayId = virtualDisplay.create({
@@ -8408,7 +8428,7 @@ describe('BrowserWindow module', () => {
             kiosk: true
           };
 
-          await createAndSaveWindowState(initialBounds);
+          await createAndSaveWindowState(preferencesPath, windowName, initialBounds);
 
           const w = new BrowserWindow({
             name: windowName,
@@ -8435,8 +8455,6 @@ describe('BrowserWindow module', () => {
         it('should maintain same bounds when target display resolution increases', async () => {
           const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
           const targetDisplayY = primaryDisplay.bounds.y;
-          // We expect only the primary display to be present before the tests start
-          expect(screen.getAllDisplays().length).to.equal(1);
 
           // Create initial virtual display
           const targetDisplayId = virtualDisplay.create({
@@ -8464,7 +8482,7 @@ describe('BrowserWindow module', () => {
             y: targetDisplay.workArea.y + 100
           };
 
-          await createAndSaveWindowState(initialBounds);
+          await createAndSaveWindowState(preferencesPath, windowName, initialBounds);
 
           // Destroy the target display and wait for the higher resolution display to take its place
           virtualDisplay.destroy(targetDisplayId);
@@ -8489,9 +8507,6 @@ describe('BrowserWindow module', () => {
         it('should reposition and resize window when target display resolution decreases', async () => {
           const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
           const targetDisplayY = primaryDisplay.bounds.y;
-          // We expect only the primary display to be present before the tests start
-          expect(screen.getAllDisplays().length).to.equal(1);
-
           // Create initial virtual display with high resolution
           const targetDisplayId = virtualDisplay.create({
             width: 2560,
@@ -8518,7 +8533,7 @@ describe('BrowserWindow module', () => {
             height: targetDisplay.bounds.height
           };
 
-          await createAndSaveWindowState(initialBounds);
+          await createAndSaveWindowState(preferencesPath, windowName, initialBounds);
 
           // Destroy and and wait for the lower resolution display to take its place
           virtualDisplay.destroy(targetDisplayId);
@@ -8545,6 +8560,74 @@ describe('BrowserWindow module', () => {
           w.destroy();
           virtualDisplay.destroy(lowerResDisplayId);
         });
+      });
+    });
+    describe('event emitters', () => {
+      const preferencesPath = path.join(app.getPath('userData'), 'Local State');
+      const windowName = 'test-restore-window';
+
+      it('should emit restored-persisted-state when windowStatePersistence is enabled and state exists', async () => {
+        await createAndSaveWindowState(preferencesPath, windowName, { width: 300, height: 200 });
+
+        const restoredPromise = new Promise<void>((resolve) => {
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          w.once('restored-persisted-state', () => {
+            resolve();
+            w.destroy();
+          });
+        });
+
+        await restoredPromise;
+      });
+
+      it('should not emit restored-persisted-state when windowStatePersistence is disabled', async () => {
+        await createAndSaveWindowState(preferencesPath, windowName, { width: 300, height: 200 });
+
+        let eventEmitted = false;
+
+        const w = new BrowserWindow({
+          name: windowName,
+          windowStatePersistence: false,
+          show: false
+        });
+
+        w.on('restored-persisted-state', () => {
+          eventEmitted = true;
+        });
+
+        // Wait for the event to be emitted for 5 seconds
+        await setTimeout(5000);
+
+        expect(eventEmitted).to.equal(false);
+        w.destroy();
+      });
+
+      it('should not emit restored-persisted-state when no window state exists on disk', async () => {
+        // Clear any existing state to ensure no state exists
+        BrowserWindow.clearPersistedState(windowName);
+
+        let eventEmitted = false;
+
+        const w = new BrowserWindow({
+          name: windowName,
+          windowStatePersistence: true,
+          show: false
+        });
+
+        w.on('restored-persisted-state', () => {
+          eventEmitted = true;
+        });
+
+        // Wait for the event to be emitted for 5 seconds
+        await setTimeout(5000);
+
+        expect(eventEmitted).to.equal(false);
+        w.destroy();
       });
     });
   });

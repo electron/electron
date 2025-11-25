@@ -39,18 +39,15 @@ ResourcesPrivateGetStringsFunction::~ResourcesPrivateGetStringsFunction() =
     default;
 
 ExtensionFunction::ResponseAction ResourcesPrivateGetStringsFunction::Run() {
-  std::optional<get_strings::Params> params(
-      get_strings::Params::Create(args()));
+  get_strings::Params params = get_strings::Params::Create(args()).value();
   base::Value::Dict dict;
 
-  api::resources_private::Component component = params->component;
-
-  switch (component) {
+  switch (params.component) {
     case api::resources_private::Component::kPdf:
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-      pdf_extension_util::AddStrings(
-          pdf_extension_util::PdfViewerContext::kPdfViewer, &dict);
-      pdf_extension_util::AddAdditionalData(browser_context(), &dict);
+      dict = pdf_extension_util::GetStrings(
+          pdf_extension_util::PdfViewerContext::kAll);
+      dict.Merge(pdf_extension_util::GetAdditionalData(browser_context()));
 #endif
       break;
     case api::resources_private::Component::kIdentity:
