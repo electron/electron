@@ -54,10 +54,10 @@ index a7309941d904b9ab32ff101dfd26be7e09fed1ac..d8c715ade23f078aa2efacc59a97f0f4
      if (mouse_event_callback.Run(mouse_event)) {
        return;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 185bc0a0b38ebc14a5e38fafb798ee706e33d41b..c53fae7d252cd6bfb60b10b1288287c3da6bdf6d 100644
+index 54c4bef958ce2a83785b1b6dda1665ff30994d13..5abcc24a30314022875085a221da5a25ed2fc367 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4448,6 +4448,12 @@ void WebContentsImpl::RenderWidgetWasResized(
+@@ -4456,6 +4456,12 @@ void WebContentsImpl::RenderWidgetWasResized(
                               width_changed);
  }
  
@@ -71,10 +71,10 @@ index 185bc0a0b38ebc14a5e38fafb798ee706e33d41b..c53fae7d252cd6bfb60b10b1288287c3
                                            const gfx::PointF& client_pt) {
    if (delegate_) {
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 563e943c90c03876dce8846ca32775b8929e569e..af8a1d0dfe51f641db7440f8df7faa9f5e37cf64 100644
+index afc44436f5b63d295e83ca7008095d351fed6c5d..37cb0c0638c5b7c6cb4a252d1a4841ca674d4c19 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1121,6 +1121,7 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1122,6 +1122,7 @@ class CONTENT_EXPORT WebContentsImpl
  
    double GetPendingZoomLevel(RenderWidgetHostImpl* rwh) override;
  
@@ -100,7 +100,7 @@ index 6c3ac2cf54bd7c20165b552f8c26da14cab94242..ec95bd923b1d78f74f097eea687bcc4b
      WebContents* source,
      const input::NativeWebKeyboardEvent& event) {
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 218191b02c6cdaa29247cc9dfd502ef8251b6182..062bd86aad148c8b1a08a146abb39daa8aacfadf 100644
+index 320a7288dd87f6e9c100fcff046ddfa7f0f6e179..3cf8ee74905be5ac4ee48b6587fbf91ade462bda 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -326,6 +326,13 @@ class CONTENT_EXPORT WebContentsDelegate {

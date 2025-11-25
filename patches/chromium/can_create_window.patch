@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 705a5c2310f3a67086b1f5d907b1d2fee1647fbb..df5711022ea45a2350e1bf22e7fe9ea81976807a 100644
+index 558ddaf4a329058c229b0ba23f6a84b3a7262d26..b97560e77c6066ad93dc9865a131a0823c5017e2 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -9896,6 +9896,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -9865,6 +9865,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index 705a5c2310f3a67086b1f5d907b1d2fee1647fbb..df5711022ea45a2350e1bf22e7fe9ea8
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index f09a55e0162fc0f48f2c2ec34b92934f919b1144..b8ef2015ecd9631f5b6f18fb40523fea31626e50 100644
+index 6c27d4b446d44cc3a40286c6c59f06c39d9cf4e4..ffe79a090045c22d8e225e09d1f13067d50e2501 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5321,6 +5321,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5329,6 +5329,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    create_params.initially_hidden = renderer_started_hidden;
    create_params.initial_popup_url = params.target_url;
  
@@ -35,7 +35,7 @@ index f09a55e0162fc0f48f2c2ec34b92934f919b1144..b8ef2015ecd9631f5b6f18fb40523fea
    // Even though all codepaths leading here are in response to a renderer
    // trying to open a new window, if the new window ends up in a different
    // browsing instance, then the RenderViewHost, RenderWidgetHost,
-@@ -5373,6 +5377,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5381,6 +5385,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // Sets the newly created WebContents WindowOpenDisposition.
    new_contents_impl->original_window_open_disposition_ = params.disposition;
  
@@ -48,7 +48,7 @@ index f09a55e0162fc0f48f2c2ec34b92934f919b1144..b8ef2015ecd9631f5b6f18fb40523fea
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -5414,12 +5424,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5422,12 +5432,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -133,7 +133,7 @@ index 7544c393932b0dea1f14b722d559cc78f294f20b..badec4ea2cc0ecf1920839cf6cf731a6
      WebContents* source,
      const OpenURLParams& params,
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 40251a29e59b5320bc6e7784169d588ebaab5959..91c3e9051a17beba411285dc6e470da8685018cc 100644
+index 0e2ce90fd9c4a4c4aba0caacf026aa7a42c82f3a..d1f16f9c48bb2c60094f4644a9c41526a73a45a0 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -18,6 +18,7 @@
@@ -232,7 +232,7 @@ index d92bab531c12c62a5321a23f4a0cb89691668127..c354a79c7c8dd047264df35b873e90c1
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 45e2ef9ee335f19269bd4c6eea76a6b35c41ea12..1903e309ac71555f839f74f0042796d698a3f0a1 100644
+index 8d074a93c5da744691143c93eb43bd036d9d8e64..825d538add57641e9d71bc744c5d292961df44ce 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -2349,6 +2349,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
