@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alex Rudenko <alexrudenko@chromium.org>
+Date: Thu, 20 Nov 2025 11:18:30 +0100
+Subject: Fix element tree flickering with node inspection
+
+Regressed in https://crrev.com/c/6888910. The highlighting in the tree
+outline emits the INSPECT_MODE_WILL_BE_TOGGLED on the overlay model
+causing the tree to clear the highlight immediately. This CL
+recovers the logic missed in the https://crrev.com/c/6888910
+to prevent re-entrancy during highlighting.
+
+Fixed: 462120622
+Change-Id: I08af098f7a142085c2fb16511031855623e07c4b
+Reviewed-on: https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/7170551
+Reviewed-by: Philip Pfaffe <pfaffe@chromium.org>
+Commit-Queue: Philip Pfaffe <pfaffe@chromium.org>
+Auto-Submit: Alex Rudenko <alexrudenko@chromium.org>
+
+diff --git a/front_end/panels/elements/DOMTreeWidget.test.ts b/front_end/panels/elements/DOMTreeWidget.test.ts
+index 43ae133087a61c47c84349c7550485bd52b23847..d83fddd7afc1871b8064631d63c1b6b1e5357b70 100644
+--- a/front_end/panels/elements/DOMTreeWidget.test.ts
++++ b/front_end/panels/elements/DOMTreeWidget.test.ts
+@@ -24,6 +24,7 @@ describeWithMockConnection('DOMTreeWidget', () => {
+         elementsTreeOutline,
+         alreadyExpandedParentTreeElement: null,
+         highlightedTreeElement: null,
++        isUpdatingHighlights: false,
+       });
+       const domTree = new Elements.ElementsTreeOutline.DOMTreeWidget(undefined, view);
+       domTree.performUpdate();
+diff --git a/front_end/panels/elements/ElementsTreeOutline.ts b/front_end/panels/elements/ElementsTreeOutline.ts
+index bd8093e1c0961648e782234ed5826273d6ace6d9..c6c8d9d29a84f872126ca0b7c847dffe08c285ad 100644
+--- a/front_end/panels/elements/ElementsTreeOutline.ts
++++ b/front_end/panels/elements/ElementsTreeOutline.ts
+@@ -105,6 +105,7 @@ interface ViewInput {
+ interface ViewOutput {
+   elementsTreeOutline?: ElementsTreeOutline;
+   highlightedTreeElement: ElementsTreeElement|null;
++  isUpdatingHighlights: boolean;
+   alreadyExpandedParentTreeElement: ElementsTreeElement|null;
+ }
+ 
+@@ -136,6 +137,7 @@ export const DEFAULT_VIEW = (input: ViewInput, output: ViewOutput, target: HTMLE
+   // Node highlighting logic. FIXME: express as a lit template.
+   const previousHighlightedNode = output.highlightedTreeElement?.node() ?? null;
+   if (previousHighlightedNode !== input.currentHighlightedNode) {
++    output.isUpdatingHighlights = true;
+     let treeElement: ElementsTreeElement|null = null;
+ 
+     if (output.highlightedTreeElement) {
+@@ -173,6 +175,7 @@ export const DEFAULT_VIEW = (input: ViewInput, output: ViewOutput, target: HTMLE
+     output.highlightedTreeElement = treeElement;
+     output.elementsTreeOutline.setHoverEffect(treeElement);
+     treeElement?.reveal(true);
++    output.isUpdatingHighlights = false;
+   }
+ };
+ 
+@@ -225,6 +228,7 @@ export class DOMTreeWidget extends UI.Widget.Widget {
+   #viewOutput: ViewOutput = {
+     highlightedTreeElement: null,
+     alreadyExpandedParentTreeElement: null,
++    isUpdatingHighlights: false,
+   };
+   #highlightThrottler = new Common.Throttler.Throttler(100);
+ 
+@@ -239,8 +243,8 @@ export class DOMTreeWidget extends UI.Widget.Widget {
+           SDK.OverlayModel.OverlayModel, SDK.OverlayModel.Events.HIGHLIGHT_NODE_REQUESTED, this.#highlightNode, this,
+           {scoped: true});
+       SDK.TargetManager.TargetManager.instance().addModelListener(
+-          SDK.OverlayModel.OverlayModel, SDK.OverlayModel.Events.INSPECT_MODE_WILL_BE_TOGGLED, this.#clearState, this,
+-          {scoped: true});
++          SDK.OverlayModel.OverlayModel, SDK.OverlayModel.Events.INSPECT_MODE_WILL_BE_TOGGLED,
++          this.#clearHighlightedNode, this, {scoped: true});
+     }
+   }
+ 
+@@ -251,7 +255,13 @@ export class DOMTreeWidget extends UI.Widget.Widget {
+     });
+   }
+ 
+-  #clearState(): void {
++  #clearHighlightedNode(): void {
++    // Highlighting an element via tree outline will emit the
++    // INSPECT_MODE_WILL_BE_TOGGLED event, therefore, we skip it if the view
++    // informed us that it is updating the element.
++    if (this.#viewOutput.isUpdatingHighlights) {
++      return;
++    }
+     this.#currentHighlightedNode = null;
+     this.requestUpdate();
+   }
+@@ -305,11 +315,11 @@ export class DOMTreeWidget extends UI.Widget.Widget {
+           currentHighlightedNode: this.#currentHighlightedNode,
+           onElementsTreeUpdated: this.onElementsTreeUpdated.bind(this),
+           onSelectedNodeChanged: event => {
+-            this.#clearState();
++            this.#clearHighlightedNode();
+             this.onSelectedNodeChanged(event);
+           },
+-          onElementCollapsed: this.#clearState.bind(this),
+-          onElementExpanded: this.#clearState.bind(this),
++          onElementCollapsed: this.#clearHighlightedNode.bind(this),
++          onElementExpanded: this.#clearHighlightedNode.bind(this),
+         },
+         this.#viewOutput, this.contentElement);
+   }
