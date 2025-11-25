@@ -95,7 +95,7 @@ jobs:
       run: |
         mkdir src
     - name: Checkout Electron
-      uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
       with:
         path: src/electron
         fetch-depth: 0
@@ -163,7 +163,7 @@ jobs:
       if: ${{ inputs.target-platform == 'linux' }}
       uses: ./src/electron/.github/actions/restore-cache-aks
     - name: Checkout Electron
-      uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
       with:
         path: src/electron
         fetch-depth: 0
