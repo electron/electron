@@ -16,6 +16,7 @@
 #include "base/win/wrapped_window_proc.h"
 #include "shell/common/color_util.h"
 #include "shell/common/process_util.h"
+#include "skia/ext/skia_utils_win.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/win/hwnd_util.h"
 
@@ -88,7 +89,7 @@ std::string SystemPreferences::GetAccentColor() {
   if (!color.has_value())
     return "";
 
-  return hexColorDWORDToRGBA(color.value());
+  return ToRGBAHex(skia::COLORREFToSkColor(color.value()), false);
 }
 
 std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
