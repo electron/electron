@@ -370,10 +370,9 @@ void ElectronBrowserMainParts::PostCreateThreads() {
   // Separate the WebPluginInfo registration for these processes.
   std::vector<content::WebPluginInfo> plugins;
   auto* plugin_service = content::PluginService::GetInstance();
-  plugin_service->RefreshPlugins();
   GetInternalPlugins(&plugins);
   for (const auto& plugin : plugins)
-    plugin_service->RegisterInternalPlugin(plugin, true);
+    plugin_service->RegisterInternalPlugin(plugin);
 #endif
 }
 
