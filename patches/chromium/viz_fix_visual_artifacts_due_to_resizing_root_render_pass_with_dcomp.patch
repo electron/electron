@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Niklas Wenzel <dev@nikwen.de>
+Date: Thu, 20 Nov 2025 11:51:44 -0800
+Subject: viz: Fix visual artifacts due to resizing root render pass with DComp
+
+Backport of crrev.com/c/7156576
+
+Refs https://github.com/electron/electron/issues/36280#issuecomment-3560964534
+
+Bug: 457463689
+Change-Id: I7e00eadb2a1c3b44d64939d1a870d89befee158b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7156576
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Reviewed-by: Jonathan Ross <jonross@chromium.org>
+Commit-Queue: Jonathan Ross <jonross@chromium.org>
+Reviewed-by: Michael Tang <tangm@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1547987}
+
+diff --git a/components/viz/service/display_embedder/skia_output_device_dcomp.cc b/components/viz/service/display_embedder/skia_output_device_dcomp.cc
+index 81649eb59eb71ac950779af0f521a1f2a02e3add..7ac9ea1cdc4416a7af8dc2a75404cbc15be6cfad 100644
+--- a/components/viz/service/display_embedder/skia_output_device_dcomp.cc
++++ b/components/viz/service/display_embedder/skia_output_device_dcomp.cc
+@@ -39,6 +39,11 @@
+ namespace viz {
+ 
+ namespace {
++// With DirectComposition, resize surface based on root render pass size to
++// avoid gutter which shows stale pixels.
++BASE_FEATURE(kDirectCompositionResizeBasedOnRootSurface,
++             base::FEATURE_ENABLED_BY_DEFAULT);
++
+ base::TimeTicks g_last_reshape_failure = base::TimeTicks();
+ 
+ NOINLINE void CheckForLoopFailures() {
+@@ -155,6 +160,8 @@ SkiaOutputDeviceDComp::SkiaOutputDeviceDComp(
+   capabilities_.renderer_allocates_images = true;
+   capabilities_.supports_viewporter = presenter_->SupportsViewporter();
+   capabilities_.supports_non_backed_solid_color_overlays = true;
++  capabilities_.resize_based_on_root_surface =
++      base::FeatureList::IsEnabled(kDirectCompositionResizeBasedOnRootSurface);
+ 
+   DCHECK(context_state_);
+   DCHECK(context_state_->gr_context() ||
