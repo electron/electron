@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index e8dfcec63428fbf61f1ec3ab71fce7af0a8d52f4..74d1271307800203c3558909daeea217885f4c76 100644
+index bd20a3ead53ff862d3eac85a8313f28338db29e0..9c93c52fbfec3e85ed06847d28409f5bf4bfe55b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1074,6 +1074,7 @@ component("base") {
+@@ -1076,6 +1076,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -231,10 +231,10 @@ index ba813851fde2660c21f99248a124161d2ac2ca07..c34f920e4a592b6798f5307c726bc34e
      "//net",
      "//ui/accelerated_widget_mac",
 diff --git a/components/remote_cocoa/app_shim/application_bridge.mm b/components/remote_cocoa/app_shim/application_bridge.mm
-index b5801f8d4b4d5f5ed9f70b61cbd63f28a80840a6..7bf371952ba5ce01f28c79ffe156ee33812d6874 100644
+index d5afd4be1ef4ac3fd1cfa7c09c667bc87b9a6b3a..4f005f2fe24ecfe1962fc64782fb7187161cbd7a 100644
 --- a/components/remote_cocoa/app_shim/application_bridge.mm
 +++ b/components/remote_cocoa/app_shim/application_bridge.mm
-@@ -12,6 +12,7 @@
+@@ -13,6 +13,7 @@
  #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
  #include "components/remote_cocoa/app_shim/native_widget_ns_window_host_helper.h"
  #include "components/system_media_controls/mac/remote_cocoa/system_media_controls_bridge.h"
@@ -242,7 +242,7 @@ index b5801f8d4b4d5f5ed9f70b61cbd63f28a80840a6..7bf371952ba5ce01f28c79ffe156ee33
  #include "mojo/public/cpp/bindings/associated_remote.h"
  #include "mojo/public/cpp/bindings/self_owned_receiver.h"
  #include "ui/accelerated_widget_mac/window_resize_helper_mac.h"
-@@ -51,6 +52,7 @@
+@@ -54,6 +55,7 @@
  
    // NativeWidgetNSWindowHostHelper:
    id GetNativeViewAccessible() override {
@@ -250,7 +250,7 @@ index b5801f8d4b4d5f5ed9f70b61cbd63f28a80840a6..7bf371952ba5ce01f28c79ffe156ee33
      if (!remote_accessibility_element_) {
        base::ProcessId browser_pid = base::kNullProcessId;
        std::vector<uint8_t> element_token;
-@@ -61,6 +63,9 @@ id GetNativeViewAccessible() override {
+@@ -64,6 +66,9 @@ id GetNativeViewAccessible() override {
            ui::RemoteAccessibility::GetRemoteElementFromToken(element_token);
      }
      return remote_accessibility_element_;
@@ -260,7 +260,7 @@ index b5801f8d4b4d5f5ed9f70b61cbd63f28a80840a6..7bf371952ba5ce01f28c79ffe156ee33
    }
    void DispatchKeyEvent(ui::KeyEvent* event) override {
      bool event_handled = false;
-@@ -99,7 +104,9 @@ void GetWordAt(const gfx::Point& location_in_content,
+@@ -102,7 +107,9 @@ void GetWordAt(const gfx::Point& location_in_content,
    mojo::AssociatedRemote<mojom::TextInputHost> text_input_host_remote_;
  
    std::unique_ptr<NativeWidgetNSWindowBridge> bridge_;
@@ -356,7 +356,7 @@ index 3a815ebf505bd95fa7f6b61ba433d98fbfe20225..149de0175c2ec0e41e3ba40caad7019c
 +
  @end
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-index 71158ca9a7101911bb76f0c1b5300b0ff0e326b3..1441b9d4f9560c8b26d4beffe31449ed2a1eed40 100644
+index 020050de162705651b4eb8378880cd4eb017d46c..2d3554861a570271d6f9b9a2c8b1de53860b9fd2 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 @@ -9,6 +9,7 @@
@@ -384,7 +384,7 @@ index 71158ca9a7101911bb76f0c1b5300b0ff0e326b3..1441b9d4f9560c8b26d4beffe31449ed
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index e00bf1b56121eca5ebcedc3dac25c7f873828523..40e1dec573cd626cad415e419204d10516b0ec0f 100644
+index a474e70cf3c10405b6f94f129f5a7312bb81fd73..9463bd647a4d47ff3241579255966f5e4409941a 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -21,6 +21,7 @@
@@ -432,7 +432,7 @@ index e00bf1b56121eca5ebcedc3dac25c7f873828523..40e1dec573cd626cad415e419204d105
  @implementation NativeWidgetMacNSWindow {
   @private
    CommandDispatcher* __strong _commandDispatcher;
-@@ -399,6 +408,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -393,6 +402,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -441,7 +441,7 @@ index e00bf1b56121eca5ebcedc3dac25c7f873828523..40e1dec573cd626cad415e419204d105
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -410,6 +421,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -404,6 +415,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
@@ -451,7 +451,7 @@ index e00bf1b56121eca5ebcedc3dac25c7f873828523..40e1dec573cd626cad415e419204d105
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index f3ea2bf2d15d815a2409441a9033a92d5d8967c1..ce52245628c72018da8ec4a3155dafa74e42c8e3 100644
+index 32c5dbcc5941f81c4ac03af97d1376dd1cf808a4..361523f87eb8f75a3d1bc39650ca04e6bd941471 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -462,7 +462,7 @@ index f3ea2bf2d15d815a2409441a9033a92d5d8967c1..ce52245628c72018da8ec4a3155dafa7
  #include "mojo/public/cpp/bindings/self_owned_receiver.h"
  #include "net/cert/x509_util_apple.h"
  #include "ui/accelerated_widget_mac/window_resize_helper_mac.h"
-@@ -692,10 +693,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -700,10 +701,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -581,7 +581,7 @@ index f69cd6100f2ac5ccb6f185e0d0bf186073ed5953..29a40923a55287b608c2ffae63a1dbbc
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index c8b07525003cca78899322cd2c87b57b6ed2130c..c27ea3068ea78a4ed39f17312754a3086a96d497 100644
+index c0a4466595dc5a7a345ebf87a820ef64a9eff895..10f58b8711d3f6e50655bd8ec41992f97eddea89 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -342,6 +342,7 @@ source_set("browser") {
@@ -1395,7 +1395,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index d7df5b0d7c1b3e7383ee5eb8588148f151968008..d27814544294fd74b8bc301626b578f051fe210c 100644
+index 613943b1ee6faf5c57fbc7b6c0130cf87a7ff413..3904d55d7504c3e62de36c8040d52c11951b6bab 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -443,6 +443,7 @@ component("core") {
@@ -1804,10 +1804,10 @@ index 890d86acb0e92760590b4d0860dd41eaa70486c7..2e9e16cb47606f627b1473a479a6e8ae
    // Query the display's refresh rate.
    double refresh_rate = 1.0 / screen.minimumRefreshInterval;
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 35e9149e221721c6d4332de530877588022bc7c7..2910455828b7d5025daa8e62071a68a67bed46d5 100644
+index f23cf9d02aa7a7fefb0bcd55d363e5c86de80f26..4968d2cd8f2e2b553120d0ad7225207c42b6bcec 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -277,6 +277,8 @@ component("gfx") {
+@@ -279,6 +279,8 @@ component("gfx") {
        "CoreGraphics.framework",
        "CoreText.framework",
      ]
@@ -1855,7 +1855,7 @@ index bbe355cf69f160866188216cc274d75bd35603db..06ee100d7ea2e892dbf3c0b1adc96c50
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index becf47ac859e2ea5d68d449010606bc787606239..45f13c71703bc2e67aa668b8360f555f592c9555 100644
+index 987d7cc4888df0e4bfc8e6a3ca8ba9ff185db6ef..ae7283dbf718767c8fa737d1b89cc87e1a765d0e 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -723,6 +723,8 @@ component("views") {
