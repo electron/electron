@@ -21,4 +21,11 @@ runs:
       if [ "$TARGET_ARCH" = "x86" ]; then
         export npm_config_arch="ia32"
       fi
-      node script/yarn.js install --immutable
+      # if running on linux arm skip yarn Builds
+      ARCH=$(uname -m)
+      if [ "$ARCH" = "armv7l" ]; then
+        echo "Skipping yarn build on linux arm"
+        node script/yarn.js install --immutable --mode=skip-build
+      else
+        node script/yarn.js install --immutable
+      fi
