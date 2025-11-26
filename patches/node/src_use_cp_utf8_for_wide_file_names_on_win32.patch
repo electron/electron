@@ -136,7 +136,7 @@ index 969e7d08086f8442bed476feaf15599b8c79db7c..e7459654401c275dfb86207831016ed7
                      std::make_error_code(std::errc::file_exists),
                      "cp",
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index 20befa1a72f5f97cad4c365d16d85dfbe4eb6fe3..d4f3356ae74ea642e223c88cc72d3a1529b369c8 100644
+index 5355f2f96e9c9f6548ae43fd38b0d89a825e6b60..15686c00524b6e9a31d6d27069605b1d9ebd5d38 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -345,22 +345,24 @@ const BindingData::PackageConfig* BindingData::TraverseParent(

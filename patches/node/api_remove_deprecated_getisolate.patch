@@ -586,7 +586,7 @@ index 57e068ae249d618c2658638f9f3b03e1fedb6524..8c51ae4e0a435971c6d0288af8781087
    data_.Reset();
    return ret;
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index 876f28134b0e53747c23f80a38c79d85b2190ff7..20befa1a72f5f97cad4c365d16d85dfbe4eb6fe3 100644
+index 6b1a9e257b0ce52820838f88c44ec546068fe419..5355f2f96e9c9f6548ae43fd38b0d89a825e6b60 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -70,7 +70,7 @@ void BindingData::Deserialize(v8::Local<v8::Context> context,
