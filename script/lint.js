@@ -153,7 +153,7 @@ const LINTERS = [{
 }, {
   key: 'javascript',
   roots: ['build', 'default_app', 'lib', 'npm', 'script', 'spec'],
-  ignoreRoots: ['spec/node_modules', 'spec/fixtures/native-addon'],
+  ignoreRoots: ['.github/workflows/node_modules', 'spec/node_modules', 'spec/fixtures/native-addon'],
   test: filename => filename.endsWith('.js') || filename.endsWith('.ts') || filename.endsWith('.mjs'),
   run: async (opts, filenames) => {
     const eslint = new ESLint({
@@ -282,7 +282,7 @@ const LINTERS = [{
 }, {
   key: 'md',
   roots: ['.'],
-  ignoreRoots: ['.git', 'node_modules', 'spec/node_modules', 'spec/fixtures/native-addon'],
+  ignoreRoots: ['.git', '.github/workflows/node_modules', 'node_modules', 'spec/node_modules', 'spec/fixtures/native-addon'],
   test: filename => filename.endsWith('.md'),
   run: async (opts, filenames) => {
     const { getCodeBlocks } = await import('@electron/lint-roller/dist/lib/markdown.js');

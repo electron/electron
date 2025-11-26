@@ -142,6 +142,7 @@
   },
   "packageManager": "yarn@4.11.0",
   "workspaces": [
+    ".github/workflows",
     "spec",
     "spec/fixtures/native-addon/*"
   ],
