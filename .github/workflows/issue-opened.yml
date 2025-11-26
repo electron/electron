@@ -56,6 +56,7 @@ jobs:
             const { chdir } = require('node:process');
             chdir('${{ github.workspace }}/.github/workflows');
 
+            const { ElectronVersions } = require('@electron/fiddle-core');
             const { fromMarkdown } = require('mdast-util-from-markdown');
             const { select } = require('unist-util-select');
             const semver = require('semver');
@@ -89,7 +90,6 @@ jobs:
                     labelExists = true;
                   } catch {}
 
-                  const { ElectronVersions } = await import('${{ github.workspace }}/node_modules/@electron/fiddle-core/dist/index.js');
                   const electronVersions = await ElectronVersions.create(undefined, { ignoreCache: true });
                   const validVersions = [...electronVersions.supportedMajors, ...electronVersions.prereleaseMajors];
 
