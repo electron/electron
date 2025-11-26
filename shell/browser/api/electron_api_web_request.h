@@ -82,10 +82,11 @@ class WebRequest final : public gin_helper::DeprecatedWrappable<WebRequest>,
   void OnSendHeaders(extensions::WebRequestInfo* info,
                      const network::ResourceRequest& request,
                      const net::HttpRequestHeaders& headers) override;
-  AuthRequiredResponse OnAuthRequired(const extensions::WebRequestInfo* info,
-                                      const net::AuthChallengeInfo& auth_info,
-                                      AuthCallback callback,
-                                      net::AuthCredentials* credentials) override;
+  AuthRequiredResponse OnAuthRequired(
+      const extensions::WebRequestInfo* info,
+      const net::AuthChallengeInfo& auth_info,
+      AuthCallback callback,
+      net::AuthCredentials* credentials) override;
   void OnBeforeRedirect(extensions::WebRequestInfo* info,
                         const network::ResourceRequest& request,
                         const GURL& new_location) override;
