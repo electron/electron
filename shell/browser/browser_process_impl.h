@@ -20,6 +20,7 @@
 #include "services/network/public/cpp/network_quality_tracker.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "shell/browser/net/system_network_context_manager.h"
+#include "ui/base/unowned_user_data/unowned_user_data_host.h"
 
 #if BUILDFLAG(IS_LINUX)
 #include "components/os_crypt/sync/key_storage_util_linux.h"
@@ -74,6 +75,8 @@ class BrowserProcessImpl : public BrowserProcess {
   void EndSession() override {}
   void FlushLocalStateAndReply(base::OnceClosure reply) override {}
   bool IsShuttingDown() override;
+  ui::UnownedUserDataHost& GetUnownedUserDataHost() override;
+  const ui::UnownedUserDataHost& GetUnownedUserDataHost() const override;
 
   metrics_services_manager::MetricsServicesManager* GetMetricsServicesManager()
       override;

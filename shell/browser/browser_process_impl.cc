@@ -98,6 +98,19 @@ GlobalFeatures* BrowserProcessImpl::GetFeatures() {
   return nullptr;
 }
 
+ui::UnownedUserDataHost& BrowserProcessImpl::GetUnownedUserDataHost() {
+  NOTIMPLEMENTED();
+  static base::NoDestructor<ui::UnownedUserDataHost> instance;
+  return *instance;
+}
+
+const ui::UnownedUserDataHost& BrowserProcessImpl::GetUnownedUserDataHost()
+    const {
+  NOTIMPLEMENTED();
+  static base::NoDestructor<ui::UnownedUserDataHost> instance;
+  return *instance;
+}
+
 void BrowserProcessImpl::PostEarlyInitialization() {
   PrefServiceFactory prefs_factory;
   auto pref_registry = base::MakeRefCounted<PrefRegistrySimple>();
