@@ -586,10 +586,10 @@ index 57e068ae249d618c2658638f9f3b03e1fedb6524..8c51ae4e0a435971c6d0288af8781087
    data_.Reset();
    return ret;
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index eea4ba313d8dbcf7b88b79f5a3e9ba2eb39d7c3e..529b7cfc15536c3fe5e7798c0f82698121751f2a 100644
+index 6b1a9e257b0ce52820838f88c44ec546068fe419..5355f2f96e9c9f6548ae43fd38b0d89a825e6b60 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
-@@ -69,7 +69,7 @@ void BindingData::Deserialize(v8::Local<v8::Context> context,
+@@ -70,7 +70,7 @@ void BindingData::Deserialize(v8::Local<v8::Context> context,
                                int index,
                                InternalFieldInfoBase* info) {
    DCHECK_IS_SNAPSHOT_SLOT(index);
@@ -598,7 +598,7 @@ index eea4ba313d8dbcf7b88b79f5a3e9ba2eb39d7c3e..529b7cfc15536c3fe5e7798c0f826981
    Realm* realm = Realm::GetCurrent(context);
    BindingData* binding = realm->AddBindingData<BindingData>(holder);
    CHECK_NOT_NULL(binding);
-@@ -696,7 +696,7 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
+@@ -709,7 +709,7 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
    Realm* realm = Realm::GetCurrent(context);
    realm->AddBindingData<BindingData>(target);
  
