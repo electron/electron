@@ -14,6 +14,12 @@ const bool debug_notifications =
     base::Environment::Create()->HasVar("ELECTRON_DEBUG_NOTIFICATIONS");
 
 NotificationOptions::NotificationOptions() = default;
+NotificationOptions::NotificationOptions(const NotificationOptions&) = default;
+NotificationOptions& NotificationOptions::operator=(
+    const NotificationOptions&) = default;
+NotificationOptions::NotificationOptions(NotificationOptions&&) = default;
+NotificationOptions& NotificationOptions::operator=(NotificationOptions&&) =
+    default;
 NotificationOptions::~NotificationOptions() = default;
 
 Notification::Notification(NotificationDelegate* delegate,
