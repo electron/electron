@@ -138,10 +138,16 @@ jobs:
         unzip -:o dist.zip
     - name: Setup Linux for Headless Testing
       run: sh -e /etc/init.d/xvfb start
+    - name: Add Clang problem matcher
+      shell: bash
+      run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Run Nan Tests
       run: |
         cd src
         node electron/script/nan-spec-runner.js
+    - name: Remove Clang problem matcher
+      shell: bash
+      run: echo "::remove-matcher owner=clang::"
     - name: Wait for active SSH sessions
       shell: bash
       if: always() && !cancelled()
