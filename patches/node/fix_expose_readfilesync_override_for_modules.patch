@@ -20,7 +20,7 @@ index 39803ae466fc81a6b2ff6e12093cdf2082790a9f..29ce687a03ccc8e45881f70d34e009e0
    V(performance_entry_callback, v8::Function)                                  \
    V(prepare_stack_trace_callback, v8::Function)                                \
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index 9eec93f52f0d0b2e45ae04ff357b4ced0770782f..876f28134b0e53747c23f80a38c79d85b2190ff7 100644
+index 9eec93f52f0d0b2e45ae04ff357b4ced0770782f..6b1a9e257b0ce52820838f88c44ec546068fe419 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -23,12 +23,14 @@ namespace modules {
@@ -63,7 +63,7 @@ index 9eec93f52f0d0b2e45ae04ff357b4ced0770782f..876f28134b0e53747c23f80a38c79d85
 +    Local<Value> args[] = {
 +        v8::String::NewFromUtf8(isolate, path.data()).ToLocalChecked(),
 +    };
-+    MaybeLocal<Value> result = modules_read_file_sync->Call(
++    MaybeLocal<Value> maybe_result = modules_read_file_sync->Call(
 +        realm->context(),
 +        Undefined(isolate),
 +        arraysize(args),
