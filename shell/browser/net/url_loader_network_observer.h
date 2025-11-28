@@ -58,6 +58,7 @@ class URLLoaderNetworkObserver
                        int64_t recv_bytes,
                        int64_t sent_bytes) override {}
   void OnWebSocketConnectedToPrivateNetwork(
+      const GURL& request_url,
       network::mojom::IPAddressSpace ip_address_space) override {}
   void OnCertificateRequested(
       const std::optional<base::UnguessableToken>& window_id,

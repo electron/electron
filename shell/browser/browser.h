@@ -23,6 +23,7 @@
 #endif
 
 #if BUILDFLAG(IS_MAC)
+#include "base/time/time.h"
 #include "ui/base/cocoa/secure_password_input.h"
 #endif
 

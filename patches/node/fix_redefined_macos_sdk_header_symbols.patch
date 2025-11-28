@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Maddock <smaddock@slack-corp.com>
+Date: Wed, 8 Oct 2025 10:50:03 -0400
+Subject: fix: redefined macos sdk header symbols
+
+https://chromium-review.googlesource.com/c/chromium/src/+/6950738
+
+Chromium has set the minimum MacOS SDK version to 26. With this
+change, it seems to introduce an incompatibility when compiling
+using clang modules. Disabling them resolves the issue.
+
+diff --git a/unofficial.gni b/unofficial.gni
+index dd686d2f7c8d2f6e8d6bd13a7bf2b4b140556ba9..97e4bcfaa8aa42a5fc2b68ccdd8128eac8886532 100644
+--- a/unofficial.gni
++++ b/unofficial.gni
+@@ -195,6 +195,10 @@ template("node_gn_build") {
+         "CoreFoundation.framework",
+         "Security.framework",
+       ]
++
++      # Fix for MacOSX26 SDK headers included twice due to usage of clang
++      # modules. Included once as a C header and again as C++.
++      use_libcxx_modules = false
+     }
+     if (is_posix) {
+       configs -= [ "//build/config/gcc:symbol_visibility_hidden" ]
+@@ -367,6 +371,12 @@ template("node_gn_build") {
+     include_dirs = [ "src", "tools" ]
+     configs += [ "//build/config/compiler:no_exit_time_destructors" ]
+ 
++    # Fix for MacOSX26 SDK headers included twice due to usage of clang modules.
++    # Included once as a C header and again as C++.
++    if (is_mac) {
++      use_libcxx_modules = false
++    }
++
+     if (!is_win) {
+       defines += [ "NODE_JS2C_USE_STRING_LITERALS" ]
+     }

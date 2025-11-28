@@ -4,14 +4,15 @@ on:
   issues:
     types: [labeled]
 
-permissions:  # added using https://github.com/step-security/secure-workflows
-  contents: read
+permissions: {}
 
 jobs:
   issue-labeled-with-status:
     name: status/{confirmed,reviewed} label added
     if: github.event.label.name == 'status/confirmed' || github.event.label.name == 'status/reviewed'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Generate GitHub App token
         uses: electron/github-app-auth-action@384fd19694fe7b6dcc9a684746c6976ad78228ae # v1.1.1
@@ -31,6 +32,8 @@ jobs:
     name: blocked/* label added
     if: startsWith(github.event.label.name, 'blocked/')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Generate GitHub App token
         uses: electron/github-app-auth-action@384fd19694fe7b6dcc9a684746c6976ad78228ae # v1.1.1
@@ -72,7 +75,7 @@ jobs:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
       - name: Create comment
         if: ${{ steps.check-for-comment.outputs.SHOULD_COMMENT }}
-        uses: actions-cool/issues-helper@50068f49b7b2b3857270ead65e2d02e4459b022c # v3.6.2
+        uses: actions-cool/issues-helper@9861779a695cf1898bd984c727f685f351cfc372 # v3.7.2
         with:
           actions: 'create-comment'
           token: ${{ steps.generate-token.outputs.token }}

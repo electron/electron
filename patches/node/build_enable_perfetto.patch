@@ -33,10 +33,10 @@ index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..a154559a56bf383d3c26af523c9bb07b
  
    // Non-alphabetic chars.
 diff --git a/lib/internal/http.js b/lib/internal/http.js
-index 251f51ec454f9cba4023b8b6729241ee753aac13..1de8cac6e3953ce9cab9db03530da327199acfd5 100644
+index 9bf929f7f3360f13058d3f446c18a36cd15bea58..abf9a06d891488288bccd98c437746c1ce48bf83 100644
 --- a/lib/internal/http.js
 +++ b/lib/internal/http.js
-@@ -8,8 +8,8 @@ const {
+@@ -11,8 +11,8 @@ const {
  const { setUnrefTimeout } = require('internal/timers');
  const { getCategoryEnabledBuffer, trace } = internalBinding('trace_events');
  const {
@@ -46,8 +46,8 @@ index 251f51ec454f9cba4023b8b6729241ee753aac13..1de8cac6e3953ce9cab9db03530da327
 +  CHAR_UPPERCASE_E,
  } = require('internal/constants');
  
- let utcCache;
-@@ -44,11 +44,13 @@ function isTraceHTTPEnabled() {
+ const { URL } = require('internal/url');
+@@ -51,11 +51,13 @@ function isTraceHTTPEnabled() {
  const traceEventCategory = 'node,node.http';
  
  function traceBegin(...args) {
@@ -62,9 +62,9 @@ index 251f51ec454f9cba4023b8b6729241ee753aac13..1de8cac6e3953ce9cab9db03530da327
 +  trace(CHAR_UPPERCASE_E, traceEventCategory, ...args);
  }
  
- module.exports = {
+ function ipToInt(ip) {
 diff --git a/node.gyp b/node.gyp
-index 442c1e7a6ddafbb7a7ec7a42a97ec04b28ea4d93..3a66c11d39dd2fd129c8f54098a9607e080ecca0 100644
+index 420d57135f48df59b2cbd33497ef90b6148017e6..eefb1e0577b881da7a1570fd7ac465fe8b06747c 100644
 --- a/node.gyp
 +++ b/node.gyp
 @@ -176,7 +176,6 @@
@@ -75,7 +75,7 @@ index 442c1e7a6ddafbb7a7ec7a42a97ec04b28ea4d93..3a66c11d39dd2fd129c8f54098a9607e
        'src/tracing/node_trace_writer.cc',
        'src/tracing/trace_event.cc',
        'src/tracing/traced_value.cc',
-@@ -304,7 +303,6 @@
+@@ -308,7 +307,6 @@
        'src/tcp_wrap.h',
        'src/timers.h',
        'src/tracing/agent.h',
@@ -105,7 +105,7 @@ index 40c8aea35c931c46fc62b717c978eab0659645fd..348cdfb0b42aa18f352c220cea0b896c
      if (!json_writer_)
        return;
 diff --git a/src/tracing/agent.cc b/src/tracing/agent.cc
-index 7ce59674356f9743438350949be42fa7ead2afbe..30bff4272ed8eb5146e3b73a4849c187177fc3bd 100644
+index eddcf6c3bf91b730d6ca72960e3048ceed7e7844..184e8647b2148bc597d9d3eb63f86ae99917c642 100644
 --- a/src/tracing/agent.cc
 +++ b/src/tracing/agent.cc
 @@ -2,7 +2,9 @@
@@ -144,7 +144,7 @@ index 7ce59674356f9743438350949be42fa7ead2afbe..30bff4272ed8eb5146e3b73a4849c187
  
    // This thread should be created *after* async handles are created
    // (within NodeTraceWriter and NodeTraceBuffer constructors).
-@@ -143,8 +151,10 @@ void Agent::StopTracing() {
+@@ -148,8 +156,10 @@ void Agent::StopTracing() {
      return;
    // Perform final Flush on TraceBuffer. We don't want the tracing controller
    // to flush the buffer again on destruction of the V8::Platform.
@@ -156,7 +156,7 @@ index 7ce59674356f9743438350949be42fa7ead2afbe..30bff4272ed8eb5146e3b73a4849c187
    started_ = false;
  
    // Thread should finish when the tracing loop is stopped.
-@@ -202,6 +212,7 @@ std::string Agent::GetEnabledCategories() const {
+@@ -207,6 +217,7 @@ std::string Agent::GetEnabledCategories() const {
    return categories;
  }
  
@@ -164,7 +164,7 @@ index 7ce59674356f9743438350949be42fa7ead2afbe..30bff4272ed8eb5146e3b73a4849c187
  void Agent::AppendTraceEvent(TraceObject* trace_event) {
    for (const auto& id_writer : writers_)
      id_writer.second->AppendTraceEvent(trace_event);
-@@ -211,18 +222,21 @@ void Agent::AddMetadataEvent(std::unique_ptr<TraceObject> event) {
+@@ -216,18 +227,21 @@ void Agent::AddMetadataEvent(std::unique_ptr<TraceObject> event) {
    Mutex::ScopedLock lock(metadata_events_mutex_);
    metadata_events_.push_back(std::move(event));
  }
@@ -187,7 +187,7 @@ index 7ce59674356f9743438350949be42fa7ead2afbe..30bff4272ed8eb5146e3b73a4849c187
  void TracingController::AddMetadataEvent(
      const unsigned char* category_group_enabled,
      const char* name,
-@@ -246,6 +260,6 @@ void TracingController::AddMetadataEvent(
+@@ -251,6 +265,6 @@ void TracingController::AddMetadataEvent(
    if (node_agent != nullptr)
      node_agent->AddMetadataEvent(std::move(trace_event));
  }

@@ -8,6 +8,8 @@ on:
         description: 'Container to run the docs-only ts compile in'
         type: string
 
+permissions: {}
+
 concurrency:
   group: electron-docs-only-${{ github.ref }}
   cancel-in-progress: true
@@ -19,11 +21,13 @@ jobs:
   docs-only:
     name: Docs Only Compile
     runs-on: electron-arc-centralus-linux-amd64-4core
+    permissions:
+      contents: read
     timeout-minutes: 20
     container: ${{ fromJSON(inputs.container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         path: src/electron
         fetch-depth: 0
@@ -39,7 +43,7 @@ jobs:
       with:
         target-platform: linux
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         path: src/electron
         fetch-depth: 0

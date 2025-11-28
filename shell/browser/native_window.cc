@@ -119,7 +119,8 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
       transparent_{options.ValueOrDefault(options::kTransparent, false)},
       enable_larger_than_screen_{
           options.ValueOrDefault(options::kEnableLargerThanScreen, false)},
-      is_modal_{parent != nullptr && options.ValueOrDefault("modal", false)},
+      is_modal_{parent != nullptr &&
+                options.ValueOrDefault(options::kModal, false)},
       has_frame_{options.ValueOrDefault(options::kFrame, true) &&
                  title_bar_style_ == TitleBarStyle::kNormal},
       parent_{parent} {
@@ -712,6 +713,10 @@ void NativeWindow::NotifyLayoutWindowControlsOverlay() {
                       *bounds);
 }
 
+void NativeWindow::NotifyWindowStateRestored() {
+  observers_.Notify(&NativeWindowObserver::OnWindowStateRestored);
+}
+
 #if BUILDFLAG(IS_WIN)
 void NativeWindow::NotifyWindowMessage(UINT message,
                                        WPARAM w_param,
@@ -871,7 +876,7 @@ void NativeWindow::SaveWindowState() {
     return;
   }
 
-  const display::Screen* screen = display::Screen::GetScreen();
+  const display::Screen* screen = display::Screen::Get();
   DCHECK(screen);
   // GetDisplayMatching returns a fake display with 1920x1080 resolution at
   // (0,0) when no physical displays are attached.
@@ -974,7 +979,7 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
       gfx::Rect(*saved_left, *saved_top, *saved_right - *saved_left,
                 *saved_bottom - *saved_top);
 
-  display::Screen* screen = display::Screen::GetScreen();
+  display::Screen* screen = display::Screen::Get();
   DCHECK(screen);
 
   // Set the primary display as the target display for restoration.
@@ -1035,6 +1040,8 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
   }
 
   is_being_restored_ = false;
+
+  NotifyWindowStateRestored();
 }
 
 void NativeWindow::FlushPendingDisplayMode() {

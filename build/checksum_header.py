@@ -12,7 +12,7 @@ TEMPLATE_H = """
 
 namespace electron::snapshot_checksum {
 
-const std::string kChecksum = "{checksum}";
+inline constexpr std::string_view kChecksum = "{checksum}";
 
 }  // namespace electron::snapshot_checksum
 

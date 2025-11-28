@@ -10,13 +10,14 @@ permissions: {}
 jobs:
   stale:
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
       - name: Generate GitHub App token
         uses: electron/github-app-auth-action@384fd19694fe7b6dcc9a684746c6976ad78228ae # v1.1.1
         id: generate-token
         with:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
-      - uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # tag: v9.1.0
+      - uses: actions/stale@5f858e3efba33a5ca4407a664cc011ad407f2008 # tag: v10.1.0
         with:
           repo-token: ${{ steps.generate-token.outputs.token }}
           days-before-stale: 90
@@ -27,10 +28,11 @@ jobs:
             This issue has been automatically marked as stale. **If this issue is still affecting you, please leave any comment** (for example, "bump"), and we'll keep it open. If you have any new additional information—in particular, if this is still reproducible in the [latest version of Electron](https://www.electronjs.org/releases/stable) or in the [beta](https://www.electronjs.org/releases/beta)—please include it with your comment!
           close-issue-message: >
             This issue has been closed due to inactivity, and will not be monitored.  If this is a bug and you can reproduce this issue on a [supported version of Electron](https://www.electronjs.org/docs/latest/tutorial/electron-timelines#timeline) please open a new issue and include instructions for reproducing the issue.
-          exempt-issue-labels: "discussion,security \U0001F512,enhancement :sparkles:,status/confirmed,stale-exempt,upgrade-follow-up"
+          exempt-issue-labels: "discussion,security \U0001F512,enhancement :sparkles:,status/confirmed,stale-exempt,upgrade-follow-up,tracking-upstream"
           only-pr-labels: not-a-real-label
   pending-repro:
     runs-on: ubuntu-latest
+    permissions: {}
     if: ${{ always() }}
     needs: stale
     steps:
@@ -39,7 +41,7 @@ jobs:
         id: generate-token
         with:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
-      - uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # tag: v9.1.0
+      - uses: actions/stale@5f858e3efba33a5ca4407a664cc011ad407f2008 # tag: v10.1.0
         with:
           repo-token: ${{ steps.generate-token.outputs.token }}
           days-before-stale: -1

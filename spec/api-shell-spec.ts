@@ -82,6 +82,11 @@ describe('shell module', () => {
       ]);
     });
 
+    ifit(process.platform === 'darwin')('throws when there is no application registered to open the URL', async () => {
+      const url = `unknownscheme-${Date.now()}://test`;
+      await expect(shell.openExternal(url)).to.eventually.be.rejectedWith(/No application found to open URL/);
+    });
+
     it('opens an external link in the renderer', async () => {
       const { url, requestReceived } = await urlOpened();
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: false, contextIsolation: false, nodeIntegration: true } });

@@ -195,8 +195,8 @@ void MediaAccessAllowed(const content::MediaStreamRequest& request,
 }
 
 void OnPermissionResponse(base::OnceCallback<void(bool)> callback,
-                          blink::mojom::PermissionStatus status) {
-  if (status == blink::mojom::PermissionStatus::GRANTED)
+                          content::PermissionResult result) {
+  if (result.status == blink::mojom::PermissionStatus::GRANTED)
     std::move(callback).Run(true);
   else
     std::move(callback).Run(false);

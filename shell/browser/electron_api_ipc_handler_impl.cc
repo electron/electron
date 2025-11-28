@@ -48,10 +48,10 @@ void ElectronApiIPCHandlerImpl::Message(bool internal,
   if (session && session->Get()) {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
-    auto event = MakeIPCEvent(isolate, session->Get(), internal);
-    if (event.IsEmpty())
-      return;
-    session->Get()->Message(event, channel, std::move(arguments));
+    auto* event = MakeIPCEvent(isolate, session->Get(), internal);
+    v8::Local<v8::Object> event_object =
+        event->GetWrapper(isolate).ToLocalChecked();
+    session->Get()->Message(event_object, channel, std::move(arguments));
   }
 }
 void ElectronApiIPCHandlerImpl::Invoke(bool internal,
@@ -62,11 +62,11 @@ void ElectronApiIPCHandlerImpl::Invoke(bool internal,
   if (session && session->Get()) {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
-    auto event =
+    auto* event =
         MakeIPCEvent(isolate, session->Get(), internal, std::move(callback));
-    if (event.IsEmpty())
-      return;
-    session->Get()->Invoke(event, channel, std::move(arguments));
+    v8::Local<v8::Object> event_object =
+        event->GetWrapper(isolate).ToLocalChecked();
+    session->Get()->Invoke(event_object, channel, std::move(arguments));
   }
 }
 
@@ -77,10 +77,11 @@ void ElectronApiIPCHandlerImpl::ReceivePostMessage(
   if (session && session->Get()) {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
-    auto event = MakeIPCEvent(isolate, session->Get(), false);
-    if (event.IsEmpty())
-      return;
-    session->Get()->ReceivePostMessage(event, channel, std::move(message));
+    auto* event = MakeIPCEvent(isolate, session->Get(), false);
+    v8::Local<v8::Object> event_object =
+        event->GetWrapper(isolate).ToLocalChecked();
+    session->Get()->ReceivePostMessage(event_object, channel,
+                                       std::move(message));
   }
 }
 
@@ -92,11 +93,11 @@ void ElectronApiIPCHandlerImpl::MessageSync(bool internal,
   if (session && session->Get()) {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
-    auto event =
+    auto* event =
         MakeIPCEvent(isolate, session->Get(), internal, std::move(callback));
-    if (event.IsEmpty())
-      return;
-    session->Get()->MessageSync(event, channel, std::move(arguments));
+    v8::Local<v8::Object> event_object =
+        event->GetWrapper(isolate).ToLocalChecked();
+    session->Get()->MessageSync(event_object, channel, std::move(arguments));
   }
 }
 
@@ -106,10 +107,10 @@ void ElectronApiIPCHandlerImpl::MessageHost(const std::string& channel,
   if (session && session->Get()) {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
-    auto event = MakeIPCEvent(isolate, session->Get(), false);
-    if (event.IsEmpty())
-      return;
-    session->Get()->MessageHost(event, channel, std::move(arguments));
+    auto* event = MakeIPCEvent(isolate, session->Get(), false);
+    v8::Local<v8::Object> event_object =
+        event->GetWrapper(isolate).ToLocalChecked();
+    session->Get()->MessageHost(event_object, channel, std::move(arguments));
   }
 }
 
@@ -123,8 +124,7 @@ gin::WeakCell<api::Session>* ElectronApiIPCHandlerImpl::GetSession() {
              : nullptr;
 }
 
-gin_helper::Handle<gin_helper::internal::Event>
-ElectronApiIPCHandlerImpl::MakeIPCEvent(
+gin_helper::internal::Event* ElectronApiIPCHandlerImpl::MakeIPCEvent(
     v8::Isolate* isolate,
     api::Session* session,
     bool internal,
@@ -159,9 +159,11 @@ ElectronApiIPCHandlerImpl::MakeIPCEvent(
   }
 
   content::RenderFrameHost* frame = GetRenderFrameHost();
-  gin_helper::Handle<gin_helper::internal::Event> event =
+  gin_helper::internal::Event* event =
       gin_helper::internal::Event::New(isolate);
-  gin_helper::Dictionary dict(isolate, event.ToV8().As<v8::Object>());
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
+  gin_helper::Dictionary dict(isolate, event_object);
   dict.Set("type", "frame");
   dict.Set("sender", web_contents());
   if (internal)
