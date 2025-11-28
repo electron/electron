@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Sanders <dsanders11@ucsbalum.com>
+Date: Tue, 14 Oct 2025 19:55:10 -0700
+Subject: fix: replace usage of removed WriteUtf8 with WriteUtf8V2
+
+Refs https://chromium-review.googlesource.com/c/v8/v8/+/6495189
+
+diff --git a/nan.h b/nan.h
+index f0bfc0c6cc01b97156cb900615ec2df4b70ef5e8..0f120365630e7e2a37964f09cc129d05c6648c90 100644
+--- a/nan.h
++++ b/nan.h
+@@ -427,12 +427,18 @@ template<typename P> class WeakCallbackInfo;
+ 
+ namespace imp {
+   static const size_t kMaxLength = 0x3fffffff;
+-  // v8::String::REPLACE_INVALID_UTF8 was introduced
+-  // in node.js v0.10.29 and v0.8.27.
+-#if NODE_MAJOR_VERSION > 0 || \
++#if V8_MAJOR_VERSION > 13 || \
++    V8_MAJOR_VERSION == 13 && V8_MINOR_VERSION > 3 || \
++    V8_MAJOR_VERSION == 13 && V8_MINOR_VERSION == 3 && V8_BUILD_NUMBER >= 16
++  // v8::String::WriteFlags::kReplaceInvalidUtf8 was introduced in
++  // v8 13.3.16
++  static const unsigned kReplaceInvalidUtf8 = v8::String::WriteFlags::kReplaceInvalidUtf8;
++#elif NODE_MAJOR_VERSION > 0 || \
+     NODE_MINOR_VERSION > 10 || \
+     NODE_MINOR_VERSION == 10 && NODE_PATCH_VERSION >= 29 || \
+     NODE_MINOR_VERSION == 8 && NODE_PATCH_VERSION >= 27
++  // v8::String::REPLACE_INVALID_UTF8 was introduced
++  // in node.js v0.10.29 and v0.8.27.
+   static const unsigned kReplaceInvalidUtf8 = v8::String::REPLACE_INVALID_UTF8;
+ #else
+   static const unsigned kReplaceInvalidUtf8 = 0;
+@@ -1167,11 +1173,11 @@ class Utf8String {
+           str_ = static_cast<char*>(malloc(len));
+           assert(str_ != 0);
+         }
+-        const int flags =
+-            v8::String::NO_NULL_TERMINATION | imp::kReplaceInvalidUtf8;
+ #if NODE_MAJOR_VERSION >= 11
+-        length_ = string->WriteUtf8(v8::Isolate::GetCurrent(), str_,
+-                                    static_cast<int>(len), 0, flags);
++        length_ = string->WriteUtf8V2(v8::Isolate::GetCurrent(),
++                                      str_,
++                                      len,
++                                      imp::kReplaceInvalidUtf8);
+ #else
+         // See https://github.com/nodejs/nan/issues/832.
+         // Disable the warning as there is no way around it.
+@@ -1183,6 +1189,8 @@ class Utf8String {
+ #pragma GCC diagnostic push
+ #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+ #endif
++        const int flags =
++            v8::String::NO_NULL_TERMINATION | imp::kReplaceInvalidUtf8;
+         length_ = string->WriteUtf8(str_, static_cast<int>(len), 0, flags);
+ #ifdef __GNUC__
+ #pragma GCC diagnostic pop
+@@ -1509,9 +1517,10 @@ class Utf8String {
+           str_ = static_cast<char*>(malloc(len));
+           assert(str_ != 0);
+         }
+-        const int flags =
+-            v8::String::NO_NULL_TERMINATION | imp::kReplaceInvalidUtf8;
+-        length_ = string->WriteUtf8(str_, static_cast<int>(len), 0, flags);
++        length_ = string->WriteUtf8V2(v8::Isolate::GetCurrent(),
++                                      str_,
++                                      len,
++                                      imp::kReplaceInvalidUtf8);
+         str_[length_] = '\0';
+       }
+     }

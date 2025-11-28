@@ -817,6 +817,7 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Whether offscreen rendering use gpu shared texture
   bool offscreen_use_shared_texture_ = false;
+  std::string offscreen_shared_texture_pixel_format_ = "argb";
 
   // Whether window is fullscreened by HTML5 api.
   bool html_fullscreen_ = false;
@@ -843,6 +844,8 @@ class WebContents final : public ExclusiveAccessContext,
   // Note: owned by inspectable_web_contents_, so declare this *after*
   // that field to ensure the dtor destroys them in the right order.
   raw_ptr<WebContentsZoomController> zoom_controller_ = nullptr;
+
+  std::optional<GURL> pending_unload_url_ = std::nullopt;
 
   // Maps url to file path, used by the file requests sent from devtools.
   typedef std::map<std::string, base::FilePath> PathsMap;

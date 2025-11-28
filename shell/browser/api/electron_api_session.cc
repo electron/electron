@@ -19,6 +19,7 @@
 #include "base/files/file_util.h"
 #include "base/scoped_observation.h"
 #include "base/strings/string_util.h"
+#include "base/types/pass_key.h"
 #include "base/uuid.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/predictors/predictors_traffic_annotations.h"  // nogncheck
@@ -586,6 +587,7 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
   if (auto* service =
           SpellcheckServiceFactory::GetForContext(browser_context)) {
     service->SetHunspellObserver(this);
+    service->InitializeDictionaries(base::DoNothing());
   }
 #endif
 }
@@ -815,27 +817,33 @@ void Session::SetDownloadPath(const base::FilePath& path) {
 }
 
 void Session::EnableNetworkEmulation(const gin_helper::Dictionary& options) {
-  auto conditions = network::mojom::NetworkConditions::New();
-
-  options.Get("offline", &conditions->offline);
-  options.Get("downloadThroughput", &conditions->download_throughput);
-  options.Get("uploadThroughput", &conditions->upload_throughput);
+  std::vector<network::mojom::MatchedNetworkConditionsPtr> matched_conditions;
+  network::mojom::MatchedNetworkConditionsPtr network_conditions =
+      network::mojom::MatchedNetworkConditions::New();
+  network_conditions->conditions = network::mojom::NetworkConditions::New();
+  options.Get("offline", &network_conditions->conditions->offline);
+  options.Get("downloadThroughput",
+              &network_conditions->conditions->download_throughput);
+  options.Get("uploadThroughput",
+              &network_conditions->conditions->upload_throughput);
   double latency = 0.0;
   if (options.Get("latency", &latency) && latency) {
-    conditions->latency = base::Milliseconds(latency);
+    network_conditions->conditions->latency = base::Milliseconds(latency);
   }
+  matched_conditions.emplace_back(std::move(network_conditions));
 
   auto* network_context =
       browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
   network_context->SetNetworkConditions(network_emulation_token_,
-                                        std::move(conditions));
+                                        std::move(matched_conditions));
 }
 
 void Session::DisableNetworkEmulation() {
   auto* network_context =
       browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
-  network_context->SetNetworkConditions(
-      network_emulation_token_, network::mojom::NetworkConditions::New());
+  std::vector<network::mojom::MatchedNetworkConditionsPtr> network_conditions;
+  network_context->SetNetworkConditions(network_emulation_token_,
+                                        std::move(network_conditions));
 }
 
 void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
@@ -878,6 +886,24 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
          blink::PermissionType permission_type,
          ElectronPermissionManager::StatusCallback callback,
          const base::Value& details) {
+#if (BUILDFLAG(IS_MAC))
+        if (permission_type == blink::PermissionType::GEOLOCATION) {
+          if (ElectronPermissionManager::
+                  IsGeolocationDisabledViaCommandLine()) {
+            auto original_callback = std::move(callback);
+            callback = base::BindOnce(
+                [](ElectronPermissionManager::StatusCallback callback,
+                   content::PermissionResult /*ignored_result*/) {
+                  // Always deny regardless of what
+                  // content::PermissionResult is passed here
+                  std::move(callback).Run(content::PermissionResult(
+                      blink::mojom::PermissionStatus::DENIED,
+                      content::PermissionStatusSource::UNSPECIFIED));
+                },
+                std::move(original_callback));
+          }
+        }
+#endif
         handler->Run(web_contents, permission_type, std::move(callback),
                      details);
       },
@@ -1352,23 +1378,17 @@ v8::Local<v8::Value> Session::ServiceWorkerContext(v8::Isolate* isolate) {
   return service_worker_context_.Get(isolate);
 }
 
-v8::Local<v8::Value> Session::WebRequest(v8::Isolate* isolate) {
-  if (web_request_.IsEmptyThreadSafe()) {
-    auto handle = WebRequest::Create(isolate, browser_context());
-    web_request_.Reset(isolate, handle.ToV8());
-  }
-  return web_request_.Get(isolate);
+WebRequest* Session::WebRequest(v8::Isolate* isolate) {
+  if (!web_request_)
+    web_request_ = WebRequest::Create(isolate, base::PassKey<Session>{});
+  return web_request_;
 }
 
-v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
+NetLog* Session::NetLog(v8::Isolate* isolate) {
   if (!net_log_) {
     net_log_ = NetLog::Create(isolate, browser_context());
   }
-
-  v8::Local<v8::Object> wrapper;
-  return net_log_->GetWrapper(isolate).ToLocal(&wrapper)
-             ? wrapper.As<v8::Value>()
-             : v8::Null(isolate);
+  return net_log_;
 }
 
 static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
@@ -1682,8 +1702,17 @@ gin::WeakCell<Session>* Session::FromBrowserContext(
 }
 
 // static
-Session* Session::CreateFrom(v8::Isolate* isolate,
-                             ElectronBrowserContext* browser_context) {
+Session* Session::FromOrCreate(v8::Isolate* isolate,
+                               content::BrowserContext* context) {
+  if (ElectronBrowserContext::IsValidContext(context))
+    return FromOrCreate(isolate, static_cast<ElectronBrowserContext*>(context));
+  DCHECK(false);
+  return {};
+}
+
+// static
+Session* Session::FromOrCreate(v8::Isolate* isolate,
+                               ElectronBrowserContext* browser_context) {
   gin::WeakCell<Session>* existing = FromBrowserContext(browser_context);
   if (existing && existing->Get()) {
     return existing->Get();
@@ -1724,7 +1753,7 @@ Session* Session::FromPartition(v8::Isolate* isolate,
     browser_context =
         ElectronBrowserContext::From(partition, true, std::move(options));
   }
-  return CreateFrom(isolate, browser_context);
+  return FromOrCreate(isolate, browser_context);
 }
 
 // static
@@ -1745,7 +1774,7 @@ Session* Session::FromPath(gin::Arguments* args,
   browser_context =
       ElectronBrowserContext::FromPath(std::move(path), std::move(options));
 
-  return CreateFrom(args->isolate(), browser_context);
+  return FromOrCreate(args->isolate(), browser_context);
 }
 
 // static
@@ -1870,47 +1899,24 @@ namespace {
 
 using electron::api::Session;
 
-v8::Local<v8::Value> FromPartition(const std::string& partition,
-                                   gin::Arguments* args) {
+Session* FromPartition(const std::string& partition, gin::Arguments* args) {
   if (!electron::Browser::Get()->is_ready()) {
     args->ThrowTypeError("Session can only be received when app is ready");
-    return v8::Null(args->isolate());
+    return {};
   }
   base::Value::Dict options;
   args->GetNext(&options);
-  Session* session =
-      Session::FromPartition(args->isolate(), partition, std::move(options));
-
-  if (session) {
-    v8::Local<v8::Object> wrapper;
-    if (!session->GetWrapper(args->isolate()).ToLocal(&wrapper)) {
-      return v8::Null(args->isolate());
-    }
-    return wrapper;
-  } else {
-    return v8::Null(args->isolate());
-  }
+  return Session::FromPartition(args->isolate(), partition, std::move(options));
 }
 
-v8::Local<v8::Value> FromPath(const base::FilePath& path,
-                              gin::Arguments* args) {
+Session* FromPath(const base::FilePath& path, gin::Arguments* args) {
   if (!electron::Browser::Get()->is_ready()) {
     args->ThrowTypeError("Session can only be received when app is ready");
-    return v8::Null(args->isolate());
+    return {};
   }
   base::Value::Dict options;
   args->GetNext(&options);
-  Session* session = Session::FromPath(args, path, std::move(options));
-
-  if (session) {
-    v8::Local<v8::Object> wrapper;
-    if (!session->GetWrapper(args->isolate()).ToLocal(&wrapper)) {
-      return v8::Null(args->isolate());
-    }
-    return wrapper;
-  } else {
-    return v8::Null(args->isolate());
-  }
+  return Session::FromPath(args, path, std::move(options));
 }
 
 void Initialize(v8::Local<v8::Object> exports,

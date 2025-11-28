@@ -51,7 +51,7 @@ index c19313c0b58baf0597a99d52ed7fcdb7faacc934..2748dd196fe1f56357348a204e24f0b8
    base::win::MessageWindow window_;  // The message-only window.
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index e0cfeb40e887545830a3294d865c2df466dda8fe..08cbe32a258bf478f1da0a07064d3e9ef14c44a5 100644
+index 9d7be37f1d1fbde55773b4005878d8ff03cac22a..08cbe32a258bf478f1da0a07064d3e9ef14c44a5 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -59,6 +59,7 @@
@@ -133,7 +133,7 @@ index e0cfeb40e887545830a3294d865c2df466dda8fe..08cbe32a258bf478f1da0a07064d3e9e
    // Create the socket file somewhere in /tmp which is usually mounted as a
    // normal filesystem. Some network filesystems (notably AFS) are screwy and
    // do not support Unix domain sockets.
--  if (!socket_dir_.CreateUniqueTempDir()) {
+-  if (!socket_dir_.CreateUniqueTempDir(/*prefix=*/FILE_PATH_LITERAL(""))) {
 -    LOG(ERROR) << "Failed to create socket directory.";
 +  base::FilePath tmp_dir;
 +  if (!base::GetTempDir(&tmp_dir)) {
@@ -165,7 +165,7 @@ index e0cfeb40e887545830a3294d865c2df466dda8fe..08cbe32a258bf478f1da0a07064d3e9e
    int dir_mode = 0;
    CHECK(base::GetPosixFilePermissions(socket_dir_.GetPath(), &dir_mode) &&
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 1bc2d932c882d68b5ed4ed3cdaaa903850ab4989..64ebf49c0d1b6396d1cfbe3bf91480f61b47688d 100644
+index ff44618efa8f8082b5da2c416802b781290c6cac..ae659d84a5ae2f2e87ce288477506575f8d86839 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -29,7 +29,9 @@
@@ -226,7 +226,7 @@ index 1bc2d932c882d68b5ed4ed3cdaaa903850ab4989..64ebf49c0d1b6396d1cfbe3bf91480f6
      // without ownership and explicitly get the ownership afterward.
 -    base::win::ScopedHandle only_me(::CreateMutex(NULL, FALSE, kMutexName));
 +    base::win::ScopedHandle only_me(::CreateMutex(NULL, FALSE, mutexName.c_str()));
-     if (!only_me.IsValid()) {
+     if (!only_me.is_valid()) {
        DPLOG(FATAL) << "CreateMutex failed";
        return false;
 @@ -429,6 +440,17 @@ bool ProcessSingleton::Create() {

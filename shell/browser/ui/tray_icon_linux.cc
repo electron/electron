@@ -6,7 +6,9 @@
 
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h"
+#include "shell/browser/browser.h"
 #include "shell/browser/ui/status_icon_gtk.h"
+#include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/image/image_skia_rep.h"
 
 namespace electron {
@@ -31,7 +33,7 @@ gfx::ImageSkia GetBestImageRep(const gfx::ImageSkia& image) {
 }  // namespace
 
 TrayIconLinux::TrayIconLinux()
-    : status_icon_dbus_(new StatusIconLinuxDbus),
+    : status_icon_dbus_(new StatusIconLinuxDbus(Browser::Get()->GetName())),
       status_icon_type_(StatusIconType::kDbus) {
   status_icon_dbus_->SetDelegate(this);
 }

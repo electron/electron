@@ -24,7 +24,7 @@
 #include "ui/gfx/image/image_util.h"
 
 #if BUILDFLAG(IS_WIN)
-#include "ui/gfx/icon_util.h"
+#include "ui/gfx/win/icon_util.h"
 #endif
 
 namespace electron::util {

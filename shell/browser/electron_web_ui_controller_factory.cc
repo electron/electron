@@ -25,7 +25,7 @@ ElectronWebUIControllerFactory::~ElectronWebUIControllerFactory() = default;
 content::WebUI::TypeID ElectronWebUIControllerFactory::GetWebUIType(
     content::BrowserContext* browser_context,
     const GURL& url) {
-  if (const std::string_view host = url.host_piece();
+  if (const std::string_view host = url.host();
       host == chrome::kChromeUIDevToolsHost ||
       host == chrome::kChromeUIAccessibilityHost) {
     return this;
@@ -44,7 +44,7 @@ std::unique_ptr<content::WebUIController>
 ElectronWebUIControllerFactory::CreateWebUIControllerForURL(
     content::WebUI* web_ui,
     const GURL& url) {
-  const std::string_view host = url.host_piece();
+  const std::string_view host = url.host();
 
   if (host == chrome::kChromeUIDevToolsHost) {
     auto* browser_context = web_ui->GetWebContents()->GetBrowserContext();

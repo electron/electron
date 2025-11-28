@@ -70,18 +70,24 @@ def make_zip(zip_file_path, files, dirs):
   safe_unlink(zip_file_path)
   if sys.platform == 'darwin':
     allfiles = files + dirs
-    execute(['zip', '-r', '-y', zip_file_path] + allfiles)
+    execute(['zip', '-r', '-y', '-9', zip_file_path] + allfiles)
   else:
     with zipfile.ZipFile(zip_file_path, "w",
                          zipfile.ZIP_DEFLATED,
                          allowZip64=True) as zip_file:
       for filename in files:
-        zip_file.write(filename, filename)
+        zip_file.write(filename, filename, compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
       for dirname in dirs:
         for root, _, filenames in os.walk(dirname):
           for f in filenames:
-            zip_file.write(os.path.join(root, f))
+            zip_file.write(os.path.join(root, f), compress_type=zipfile.ZIP_DEFLATED, compresslevel=9)
       zip_file.close()
+
+
+def make_tar_xz(tar_file_path, files, dirs):
+  safe_unlink(tar_file_path)
+  allfiles = files + dirs
+  execute(['tar', '-cJf', tar_file_path] + allfiles)
 
 
 def rm_rf(path):

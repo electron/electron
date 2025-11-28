@@ -1,7 +1,6 @@
 <html>
 <body>
 <script type="text/javascript" charset="utf-8">
-  const url = require('node:url')
   function tryPostMessage(...args) {
     try {
       window.opener.postMessage(...args)
@@ -9,7 +8,8 @@
       console.error(e)
     }
   }
-  if (url.parse(window.location.href, true).query.opened != null) {
+  const parsedURL = new URL(window.location.href);
+  if (parsedURL.searchParams.get('opened') != null) {
     // Ensure origins are properly checked by removing a single character from the end
     tryPostMessage('do not deliver substring origin', window.location.origin.substring(0, window.location.origin.length - 1))
     tryPostMessage('do not deliver file://', 'file://')

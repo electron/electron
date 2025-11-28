@@ -6,7 +6,7 @@ runs:
   - name: Get yarn cache directory path
     shell: bash
     id: yarn-cache-dir-path
-    run: echo "dir=$(node src/electron/script/yarn cache dir)" >> $GITHUB_OUTPUT
+    run: echo "dir=$(node src/electron/script/yarn.js config get cacheFolder)" >> $GITHUB_OUTPUT
   - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
     id: yarn-cache
     with:
@@ -18,4 +18,14 @@ runs:
     shell: bash
     run: |
       cd src/electron
-      node script/yarn install --frozen-lockfile --prefer-offline
+      if [ "$TARGET_ARCH" = "x86" ]; then
+        export npm_config_arch="ia32"
+      fi
+      # if running on linux arm skip yarn Builds
+      ARCH=$(uname -m)
+      if [ "$ARCH" = "armv7l" ]; then
+        echo "Skipping yarn build on linux arm"
+        node script/yarn.js install --immutable --mode=skip-build
+      else
+        node script/yarn.js install --immutable
+      fi

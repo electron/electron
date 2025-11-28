@@ -49,6 +49,10 @@ Disables the disk cache for HTTP requests.
 
 Disable HTTP/2 and SPDY/3.1 protocols.
 
+### --disable-geolocation _macOS_
+
+Disables the Geolocation API. Permission requests for geolocation will be denied internally regardless of the decision made by a handler set via `session.setPermissionRequestHandler`. This functionality is currently implemented only for macOS. Has no effect on other platforms.
+
 ### --disable-renderer-backgrounding
 
 Prevents Chromium from lowering the priority of invisible pages' renderer
@@ -192,6 +196,11 @@ proxy server flags that are passed.
 Disables the Chromium [sandbox](https://www.chromium.org/developers/design-documents/sandbox).
 Forces renderer process and Chromium helper processes to run un-sandboxed.
 Should only be used for testing.
+
+### --no-stdio-init
+
+Disable stdio initialization during node initialization.
+Used to avoid node initialization crash when the nul device is disabled on Windows platform.
 
 ### --proxy-bypass-list=`hosts`
 

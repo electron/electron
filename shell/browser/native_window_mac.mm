@@ -1718,8 +1718,8 @@ class NativeAppWindowFrameViewMacClient
   const raw_ptr<NativeWindowMac, DanglingUntriaged> native_app_window_;
 };
 
-std::unique_ptr<views::NonClientFrameView>
-NativeWindowMac::CreateNonClientFrameView(views::Widget* widget) {
+std::unique_ptr<views::FrameView> NativeWindowMac::CreateFrameView(
+    views::Widget* widget) {
   CHECK(!frame_view_client_);
   frame_view_client_ =
       std::make_unique<NativeAppWindowFrameViewMacClient>(widget, this);

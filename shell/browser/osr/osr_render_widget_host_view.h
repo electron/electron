@@ -69,14 +69,16 @@ class OffScreenRenderWidgetHostView
       public ui::CompositorDelegate,
       private OffscreenViewProxyObserver {
  public:
-  OffScreenRenderWidgetHostView(bool transparent,
-                                bool offscreen_use_shared_texture,
-                                bool painting,
-                                int frame_rate,
-                                const OnPaintCallback& callback,
-                                content::RenderWidgetHost* render_widget_host,
-                                OffScreenRenderWidgetHostView* parent_host_view,
-                                gfx::Size initial_size);
+  OffScreenRenderWidgetHostView(
+      bool transparent,
+      bool offscreen_use_shared_texture,
+      const std::string& offscreen_shared_texture_pixel_format,
+      bool painting,
+      int frame_rate,
+      const OnPaintCallback& callback,
+      content::RenderWidgetHost* render_widget_host,
+      OffScreenRenderWidgetHostView* parent_host_view,
+      gfx::Size initial_size);
   ~OffScreenRenderWidgetHostView() override;
 
   // disable copy
@@ -145,7 +147,8 @@ class OffScreenRenderWidgetHostView
   void CopyFromSurface(
       const gfx::Rect& src_rect,
       const gfx::Size& output_size,
-      base::OnceCallback<void(const SkBitmap&)> callback) override;
+      base::OnceCallback<void(const viz::CopyOutputBitmapWithMetadata&)>
+          callback) override;
   display::ScreenInfo GetScreenInfo() const override;
   void TransformPointToRootSurface(gfx::PointF* point) override {}
   gfx::Rect GetBoundsInRootWindow() override;
@@ -238,6 +241,10 @@ class OffScreenRenderWidgetHostView
     return offscreen_use_shared_texture_;
   }
 
+  const std::string offscreen_shared_texture_pixel_format() const {
+    return offscreen_shared_texture_pixel_format_;
+  }
+
   ui::Layer* root_layer() const { return root_layer_.get(); }
 
   content::DelegatedFrameHost* delegated_frame_host() const {
@@ -283,6 +290,7 @@ class OffScreenRenderWidgetHostView
 
   const bool transparent_;
   const bool offscreen_use_shared_texture_;
+  const std::string offscreen_shared_texture_pixel_format_;
   OnPaintCallback callback_;
   OnPopupPaintCallback parent_callback_;
 

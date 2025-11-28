@@ -40,7 +40,7 @@ class GinArgumentsToTuple {
 // Invoke a callback with arguments extracted from `args`.
 template <typename... Types>
 WrappableBase* InvokeFactory(
-    gin::Arguments* args,
+    gin::Arguments* const args,
     const base::RepeatingCallback<WrappableBase*(Types...)>& callback) {
   auto [ok, tup] = GinArgumentsToTuple<Types...>::GetArgs(args);
   if (!ok)
@@ -52,10 +52,10 @@ WrappableBase* InvokeFactory(
 
 template <typename Sig>
 void InvokeNew(const base::RepeatingCallback<Sig>& factory,
-               v8::Isolate* isolate,
-               gin_helper::Arguments* args) {
+               v8::Isolate* const isolate,
+               gin::Arguments* const args) {
   if (!args->IsConstructCall()) {
-    args->ThrowError("Requires constructor call");
+    args->ThrowTypeError("Requires constructor call");
     return;
   }
 

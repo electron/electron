@@ -51,7 +51,7 @@ class WrappableBase {
   virtual void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
   // Helper to init with arguments.
-  void InitWithArgs(gin::Arguments* args);
+  void InitWithArgs(const gin::Arguments* args);
 
   v8::Global<v8::Object> wrapper_;  // Weak
 

@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_EXTENSIONS_API_EXTENSION_ACTION_EXTENSION_ACTION_API_H_
 #define SHELL_BROWSER_EXTENSIONS_API_EXTENSION_ACTION_EXTENSION_ACTION_API_H_
 
-#include "base/memory/raw_ptr.h"
 #include "extensions/browser/browser_context_keyed_api_factory.h"
 #include "extensions/browser/extension_action.h"
 #include "extensions/browser/extension_function.h"
@@ -70,16 +69,10 @@ class ExtensionActionAPI : public BrowserContextKeyedAPI {
  private:
   friend class BrowserContextKeyedAPIFactory<ExtensionActionAPI>;
 
-  ExtensionPrefs* GetExtensionPrefs();
-
   // BrowserContextKeyedAPI implementation.
   void Shutdown() override;
   static const char* service_name() { return "ExtensionActionAPI"; }
   static const bool kServiceRedirectedInIncognito = true;
-
-  raw_ptr<content::BrowserContext> browser_context_;
-
-  raw_ptr<ExtensionPrefs> extension_prefs_;
 };
 
 // Implementation of the browserAction and pageAction APIs.

@@ -34,8 +34,7 @@ bool ShouldUseGlobalMenuBar() {
   if (env->HasVar("ELECTRON_FORCE_WINDOW_MENU_BAR"))
     return false;
 
-  dbus::Bus::Options options;
-  auto bus = base::MakeRefCounted<dbus::Bus>(options);
+  auto bus = base::MakeRefCounted<dbus::Bus>(dbus::Bus::Options{});
 
   dbus::ObjectProxy* object_proxy =
       bus->GetObjectProxy(DBUS_SERVICE_DBUS, dbus::ObjectPath(DBUS_PATH_DBUS));

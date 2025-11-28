@@ -33,8 +33,6 @@ inline constexpr char kElectronGlobalShortcutsUuid[] =
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 inline constexpr std::string_view kPDFExtensionPluginName =
     "Chromium PDF Viewer";
-inline constexpr std::string_view kPDFInternalPluginName =
-    "Chromium PDF Plugin";
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 }  // namespace electron

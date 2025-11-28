@@ -551,17 +551,17 @@ base::IDMap<WebContents*>& GetAllWebContents() {
 
 void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
                        base::ScopedClosureRunner capture_handle,
-                       const SkBitmap& bitmap) {
+                       const viz::CopyOutputBitmapWithMetadata& result) {
   auto ui_task_runner = content::GetUIThreadTaskRunner({});
   if (!ui_task_runner->RunsTasksInCurrentSequence()) {
     ui_task_runner->PostTask(
         FROM_HERE, base::BindOnce(&OnCapturePageDone, std::move(promise),
-                                  std::move(capture_handle), bitmap));
+                                  std::move(capture_handle), result));
     return;
   }
 
   // Hack to enable transparency in captured image
-  promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
+  promise.Resolve(gfx::Image::CreateFrom1xBitmap(result.bitmap));
   capture_handle.RunAndReset();
 }
 
@@ -754,7 +754,7 @@ WebContents::WebContents(v8::Isolate* isolate,
   script_executor_ = std::make_unique<extensions::ScriptExecutor>(web_contents);
 #endif
 
-  session_ = Session::CreateFrom(isolate, GetBrowserContext());
+  session_ = Session::FromOrCreate(isolate, GetBrowserContext());
 
   SetUserAgent(GetBrowserContext()->GetUserAgent());
 
@@ -776,7 +776,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 {
   DCHECK(type != Type::kRemote)
       << "Can't take ownership of a remote WebContents";
-  session_ = Session::CreateFrom(isolate, GetBrowserContext());
+  session_ = Session::FromOrCreate(isolate, GetBrowserContext());
   InitWithSessionAndOptions(isolate, std::move(web_contents),
                             session_->browser_context(),
                             gin::Dictionary::CreateEmpty(isolate));
@@ -814,6 +814,8 @@ WebContents::WebContents(v8::Isolate* isolate,
       options.Get(options::kOffscreen, &use_offscreen_dict);
       use_offscreen_dict.Get(options::kUseSharedTexture,
                              &offscreen_use_shared_texture_);
+      use_offscreen_dict.Get(options::kSharedTexturePixelFormat,
+                             &offscreen_shared_texture_pixel_format_);
     }
   }
 
@@ -851,6 +853,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     if (embedder_ && embedder_->IsOffScreen()) {
       auto* view = new OffScreenWebContentsView(
           false, offscreen_use_shared_texture_,
+          offscreen_shared_texture_pixel_format_,
           base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
       params.view = view;
       params.delegate_view = view;
@@ -872,6 +875,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     content::WebContents::CreateParams params(session->browser_context());
     auto* view = new OffScreenWebContentsView(
         transparent, offscreen_use_shared_texture_,
+        offscreen_shared_texture_pixel_format_,
         base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
     params.view = view;
     params.delegate_view = view;
@@ -1229,6 +1233,7 @@ void WebContents::MaybeOverrideCreateParamsForNewWindow(
     if (is_offscreen) {
       auto* view = new OffScreenWebContentsView(
           false, offscreen_use_shared_texture_,
+          offscreen_shared_texture_pixel_format_,
           base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
       create_params->view = view;
       create_params->delegate_view = view;
@@ -1765,14 +1770,15 @@ void WebContents::RenderFrameCreated(
     return;
   }
 
-  content::RenderFrameHost::LifecycleState lifecycle_state =
-      render_frame_host->GetLifecycleState();
-  if (lifecycle_state == content::RenderFrameHost::LifecycleState::kActive) {
+  if (render_frame_host->GetLifecycleState() ==
+      content::RenderFrameHost::LifecycleState::kActive) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    v8::HandleScope handle_scope(isolate);
+    v8::HandleScope handle_scope{isolate};
     auto details = gin_helper::Dictionary::CreateEmpty(isolate);
     details.SetGetter("frame", render_frame_host);
     Emit("frame-created", details);
+    content::WebContents::FromRenderFrameHost(render_frame_host)
+        ->SetSupportsDraggableRegions(true);
   }
 }
 
@@ -2255,7 +2261,8 @@ void WebContents::WebContentsDestroyed() {
   v8::Local<v8::Object> wrapper;
   if (!GetWrapper(isolate).ToLocal(&wrapper))
     return;
-  wrapper->SetAlignedPointerInInternalField(0, nullptr);
+  wrapper->SetAlignedPointerInInternalField(0, nullptr,
+                                            v8::kEmbedderDataTypeTagDefault);
 
   // Tell WebViewGuestDelegate that the WebContents has been destroyed.
   if (guest_delegate_)
@@ -2298,7 +2305,7 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
   rwh_impl->disable_hidden_ = !background_throttling_;
   web_contents()->GetRenderViewHost()->SetSchedulerThrottling(allowed);
 
-  if (rwh_impl->is_hidden()) {
+  if (rwh_impl->IsHidden()) {
     rwh_impl->WasShown({});
   }
 }
@@ -2389,6 +2396,9 @@ void WebContents::LoadURL(const GURL& url,
          true);
     return;
   }
+
+  if (web_contents()->NeedToFireBeforeUnloadOrUnloadEvents())
+    pending_unload_url_ = url;
 
   // Discard non-committed entries to ensure we don't re-use a pending entry.
   web_contents()->GetController().DiscardNonCommittedEntries();
@@ -2835,7 +2845,8 @@ void WebContents::EnableDeviceEmulation(
         frame_host->GetView()->GetRenderWidgetHost());
     if (widget_host_impl) {
       auto& frame_widget = widget_host_impl->GetAssociatedFrameWidget();
-      frame_widget->EnableDeviceEmulation(params);
+      frame_widget->EnableDeviceEmulation(
+          params, blink::mojom::DeviceEmulationCacheBehavior::kClearCache);
     }
   }
 }
@@ -3893,8 +3904,15 @@ void WebContents::RunBeforeUnloadDialog(content::WebContents* web_contents,
                                         content::RenderFrameHost* rfh,
                                         bool is_reload,
                                         DialogClosedCallback callback) {
-  // TODO: asyncify?
   bool default_prevented = Emit("will-prevent-unload");
+
+  if (pending_unload_url_.has_value() && !default_prevented) {
+    Emit("did-fail-load", static_cast<int>(net::ERR_ABORTED),
+         net::ErrorToShortString(net::ERR_ABORTED),
+         pending_unload_url_.value().possibly_invalid_spec(), true);
+    pending_unload_url_.reset();
+  }
+
   std::move(callback).Run(default_prevented, std::u16string());
 }
 
@@ -4197,8 +4215,8 @@ void WebContents::DevToolsIndexPath(
     return;
 
   std::vector<std::string> excluded_folders;
-  std::optional<base::Value> parsed_excluded_folders =
-      base::JSONReader::Read(excluded_folders_message);
+  std::optional<base::Value> parsed_excluded_folders = base::JSONReader::Read(
+      excluded_folders_message, base::JSON_PARSE_CHROMIUM_EXTENSIONS);
   if (parsed_excluded_folders && parsed_excluded_folders->is_list()) {
     for (const base::Value& folder_path : parsed_excluded_folders->GetList()) {
       if (folder_path.is_string())

@@ -21,7 +21,9 @@
   associated with the window, making it compatible with the Chromium
   OS-level sandbox and disabling the Node.js engine. This is not the same as
   the `nodeIntegration` option and the APIs available to the preload script
-  are more limited. Read more about the option [here](../../tutorial/sandbox.md).
+  are more limited. Default is `true` since Electron 20. The sandbox will
+  automatically be disabled when `nodeIntegration` is set to `true`.
+  Read more about the option [here](../../tutorial/sandbox.md).
 * `session` [Session](../session.md#class-session) (optional) - Sets the session used by the
   page. Instead of passing the Session object directly, you can also choose to
   use the `partition` option instead, which accepts a partition string. When
@@ -87,6 +89,11 @@
      paint event. Defaults to `false`. See the
     [offscreen rendering tutorial](../../tutorial/offscreen-rendering.md) for
     more details.
+  * `sharedTexturePixelFormat` string (optional) _Experimental_ - The requested output format of the shared texture. Defaults to `argb`.
+    The name is originated from Chromium [`media::VideoPixelFormat`](https://source.chromium.org/chromium/chromium/src/+/main:media/base/video_types.h) enum suffix and only subset of them are supported.
+    The actual output pixel format and color space of the texture should refer to [`OffscreenSharedTexture`](../structures/offscreen-shared-texture.md) object in the `paint` event.
+    * `argb` - The requested output texture format is 8-bit unorm RGBA, with SRGB SDR color space.
+    * `rgbaf16` - The requested output texture format is 16-bit float RGBA, with scRGB HDR color space.
 * `contextIsolation` boolean (optional) - Whether to run Electron APIs and
   the specified `preload` script in a separate JavaScript context. Defaults
   to `true`. The context that the `preload` script runs in will only have

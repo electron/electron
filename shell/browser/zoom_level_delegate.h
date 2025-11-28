@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/callback_list.h"
 #include "base/memory/raw_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/host_zoom_map.h"

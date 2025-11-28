@@ -71,7 +71,8 @@ auto LoadIntegrityConfig() {
 
   // Parse integrity config payload
   std::optional<base::Value> root =
-      base::JSONReader::Read(std::string_view{res_data, res_size});
+      base::JSONReader::Read(std::string_view{res_data, res_size},
+                             base::JSON_PARSE_CHROMIUM_EXTENSIONS);
 
   if (!root.has_value()) {
     LOG(FATAL) << "Invalid integrity config: NOT a valid JSON.";

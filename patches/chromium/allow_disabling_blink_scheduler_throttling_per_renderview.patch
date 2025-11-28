@@ -6,11 +6,11 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl_unittest.cc b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-index 318031e17f212b0e9a651dcc0e86e16af957ed8e..e68dcdc8039217ec59a60ef02c27b4f80f661d2a 100644
+index ab916b56116e911af3cf6655cdd68ce139e260b9..f148ce57ae6c75f6635fca487d9493199b79a9f3 100644
 --- a/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-@@ -168,6 +168,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
-               (std::optional<blink::NoiseToken> canvas_noise_token),
+@@ -167,6 +167,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
+               (bool supports_draggable_regions),
                (override));
  
 +  MOCK_METHOD(
@@ -23,10 +23,10 @@ index 318031e17f212b0e9a651dcc0e86e16af957ed8e..e68dcdc8039217ec59a60ef02c27b4f8
      return receiver_.BindNewEndpointAndPassDedicatedRemote();
    }
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 270750b9180a8ddab4f3cd2508fd398e07bf6377..20b2ae081a3710443ec919f1487dfbfe8f15de11 100644
+index 44fc40e608097797e4c2f5675bf10e5cdeb54d27..aa1d092cfc389fe81052160dc435981069a8a600 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -785,6 +785,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -756,6 +756,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
@@ -51,25 +51,25 @@ index 7944fe64e0da112fc670358b75506bb199bb5e4a..0e3c16c6af2a078943e9f39808134ab2
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index e95a313945397c6eff5514932ce15c5d4b6a8e1f..edb2638deb85dfd37651a00d4c370e51d94fcc6a 100644
+index c6434aedc2529a05c74d8163f2184990cd7cb14c..f19ed1ca1b5f28fc0373106c961a91976df12061 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -578,8 +578,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
+@@ -632,8 +632,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
    // OnShowWithPageVisibility will not call NotifyHostAndDelegateOnWasShown,
    // which updates `visibility_`, unless the host is hidden. Make sure no update
    // is needed.
--  CHECK(host_->is_hidden() || visibility_ == Visibility::VISIBLE);
+-  CHECK(host_->IsHidden() || visibility_ == Visibility::VISIBLE);
 -  OnShowWithPageVisibility(page_visibility);
-+  if (host_->is_hidden() || visibility_ == Visibility::VISIBLE)
++  if (host_->IsHidden() || visibility_ == Visibility::VISIBLE)
 +    OnShowWithPageVisibility(page_visibility);
  }
  
  void RenderWidgetHostViewAura::EnsurePlatformVisibility(
 diff --git a/content/public/browser/render_view_host.h b/content/public/browser/render_view_host.h
-index a599bc306198de0e172134ce4623b32b8fcd72fa..4960c518d49f98b39873d166597bfb4b5619ee02 100644
+index 782bed0fdc08d57eceb059f398f253fab9233b1b..f1ab5b981ea68af1b11313e67f2c5060f0a640b1 100644
 --- a/content/public/browser/render_view_host.h
 +++ b/content/public/browser/render_view_host.h
-@@ -74,6 +74,9 @@ class CONTENT_EXPORT RenderViewHost {
+@@ -73,6 +73,9 @@ class CONTENT_EXPORT RenderViewHost {
    virtual void WriteIntoTrace(
        perfetto::TracedProto<TraceProto> context) const = 0;
  
@@ -80,34 +80,34 @@ index a599bc306198de0e172134ce4623b32b8fcd72fa..4960c518d49f98b39873d166597bfb4b
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
 diff --git a/content/test/test_page_broadcast.h b/content/test/test_page_broadcast.h
-index 82ae7ab6279427e492ead6d1d386608eb9d3d844..2b79149bfcc0de968ffb45e310d697c5393f0d43 100644
+index 4c8d44cdb2fde8e174b78aee7defb980651da18e..f8bf421b5b32af4cd197cbf23f4bd281c3a12514 100644
 --- a/content/test/test_page_broadcast.h
 +++ b/content/test/test_page_broadcast.h
-@@ -53,6 +53,7 @@ class TestPageBroadcast : public blink::mojom::PageBroadcast {
+@@ -52,6 +52,7 @@ class TestPageBroadcast : public blink::mojom::PageBroadcast {
+   void UpdateColorProviders(
        const blink::ColorProviderColorMaps& color_provider_colors) override;
-   void UpdateCanvasNoiseToken(
-       std::optional<blink::NoiseToken> canvas_noise_token) override;
+   void SetSupportsDraggableRegions(bool supports_draggable_regions) override;
 +  void SetSchedulerThrottling(bool allowed) override {}
  
    mojo::AssociatedReceiver<blink::mojom::PageBroadcast> receiver_;
  };
 diff --git a/third_party/blink/public/mojom/page/page.mojom b/third_party/blink/public/mojom/page/page.mojom
-index e7be05ec6dc5f517b4a6f849a262d12dc6c1ca3d..5f4f425c77c8aadf269edfaec658a8d2ad74b2cd 100644
+index b00bc8a8a5044fbf46f627f9db56cea7f09d7ef6..114c3a4522d11c1348f681af500c487ccd97eea9 100644
 --- a/third_party/blink/public/mojom/page/page.mojom
 +++ b/third_party/blink/public/mojom/page/page.mojom
-@@ -182,4 +182,7 @@ interface PageBroadcast {
-   // the noise token at ReadyToCommit time and update blink::WebViews that
-   // were made at request time.
-   UpdateCanvasNoiseToken(blink.mojom.NoiseToken? canvas_noise_token);
+@@ -180,4 +180,7 @@ interface PageBroadcast {
+   // Indicates that the page's main frame should collect draggable regions set
+   // using the app-region CSS property.
+   SetSupportsDraggableRegions(bool supports_draggable_regions);
 +
 +  // Whether to enable the Renderer scheduler background throttling.
 +  SetSchedulerThrottling(bool allowed);
  };
 diff --git a/third_party/blink/public/web/web_view.h b/third_party/blink/public/web/web_view.h
-index 9c0fe6ad62872f05cfb1179b4b979139008976d2..6aca43e61ef7f1caea74c30e5c3ce4496d4c4188 100644
+index 932658273154ef2e022358e493a8e7c00c86e732..57bbfb5cde62c9496c351c861880a18918e22c05 100644
 --- a/third_party/blink/public/web/web_view.h
 +++ b/third_party/blink/public/web/web_view.h
-@@ -366,6 +366,7 @@ class BLINK_EXPORT WebView {
+@@ -355,6 +355,7 @@ class BLINK_EXPORT WebView {
    // Scheduling -----------------------------------------------------------
  
    virtual PageScheduler* Scheduler() const = 0;
@@ -116,10 +116,10 @@ index 9c0fe6ad62872f05cfb1179b4b979139008976d2..6aca43e61ef7f1caea74c30e5c3ce449
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index cd57d63a452cb4444d5d0b11b06c65c5bc11f5f1..68a102327e22302587f7cc402cb26ef2f02b261e 100644
+index e974581ae0c6b146b92054a56174ba8fdb666574..0d1cd0e4f502f44362fba6552080f31fe5c6b7ea 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -2504,6 +2504,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
+@@ -2505,6 +2505,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
    TRACE_EVENT2("navigation", "WebViewImpl::SetPageLifecycleStateInternal",
                 "old_state", old_state, "new_state", new_state);
  
@@ -130,7 +130,7 @@ index cd57d63a452cb4444d5d0b11b06c65c5bc11f5f1..68a102327e22302587f7cc402cb26ef2
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -4012,10 +4016,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -4013,10 +4017,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -155,10 +155,10 @@ index cd57d63a452cb4444d5d0b11b06c65c5bc11f5f1..68a102327e22302587f7cc402cb26ef2
    // Do not throttle if the page should be painting.
    bool is_visible =
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 7879bd064e9ef324e12b5c2f522f9c8a4fa29ad5..950df20815a607b678e0e67a19d22d37b579b85d 100644
+index aecdcea36ed0a502a9da68e871e0ee86040b4350..b2788642a20511f3725d045bc97bc108fba88752 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
-@@ -450,6 +450,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -445,6 +445,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    LocalDOMWindow* PagePopupWindow() const;
  
    PageScheduler* Scheduler() const override;
@@ -166,7 +166,7 @@ index 7879bd064e9ef324e12b5c2f522f9c8a4fa29ad5..950df20815a607b678e0e67a19d22d37
    void SetVisibilityState(mojom::blink::PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    mojom::blink::PageVisibilityState GetVisibilityState() override;
-@@ -943,6 +944,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -938,6 +939,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    // If true, we send IPC messages when |preferred_size_| changes.
    bool send_preferred_size_changes_ = false;
  

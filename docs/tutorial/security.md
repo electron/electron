@@ -98,7 +98,7 @@ either `process.env` or the `window` object.
 You should at least follow these steps to improve the security of your application:
 
 1. [Only load secure content](#1-only-load-secure-content)
-2. [Disable the Node.js integration in all renderers that display remote content](#2-do-not-enable-nodejs-integration-for-remote-content)
+2. [Do not enable Node.js integration for remote content](#2-do-not-enable-nodejs-integration-for-remote-content)
 3. [Enable context isolation in all renderers](#3-enable-context-isolation)
 4. [Enable process sandboxing](#4-enable-process-sandboxing)
 5. [Use `ses.setPermissionRequestHandler()` in all sessions that load remote content](#5-handle-session-permission-requests-from-remote-content)
@@ -117,13 +117,6 @@ You should at least follow these steps to improve the security of your applicati
 18. [Avoid usage of the `file://` protocol and prefer usage of custom protocols](#18-avoid-usage-of-the-file-protocol-and-prefer-usage-of-custom-protocols)
 19. [Check which fuses you can change](#19-check-which-fuses-you-can-change)
 20. [Do not expose Electron APIs to untrusted web content](#20-do-not-expose-electron-apis-to-untrusted-web-content)
-
-To automate the detection of misconfigurations and insecure patterns, it is
-possible to use
-[Electronegativity](https://github.com/doyensec/electronegativity). For
-additional details on potential weaknesses and implementation bugs when
-developing applications using Electron, please refer to this
-[guide for developers and auditors](https://doyensec.com/resources/us-17-Carettoni-Electronegativity-A-Study-Of-Electron-Security-wp.pdf).
 
 ### 1. Only load secure content
 
@@ -244,12 +237,26 @@ to enable this behavior.
 Even when `nodeIntegration: false` is used, to truly enforce strong isolation
 and prevent the use of Node primitives `contextIsolation` **must** also be used.
 
+Beware that _disabling context isolation_ for a renderer process by setting
+`nodeIntegration: true` _also disables process sandboxing_ for that process.
+See section below.
+
 :::info
 For more information on what `contextIsolation` is and how to enable it please
 see our dedicated [Context Isolation](context-isolation.md) document.
 :::
 
 ### 4. Enable process sandboxing
+
+:::info
+This recommendation is the default behavior in Electron since 20.0.0.
+
+Additionally, process sandboxing can be enforced for all renderer processes
+application wide: [Enabling the sandbox globally](sandbox.md#enabling-the-sandbox-globally)
+
+_Disabling context isolation_ (see above) _also disables process sandboxing_,
+regardless of the default, `sandbox: false` or globally enabled sandboxing!
+:::
 
 [Sandboxing](https://chromium.googlesource.com/chromium/src/+/HEAD/docs/design/sandbox.md)
 is a Chromium feature that uses the operating system to
@@ -285,7 +292,7 @@ const { session } = require('electron')
 const { URL } = require('node:url')
 
 session
-  .fromPartition('some-partition')
+  .defaultSession
   .setPermissionRequestHandler((webContents, permission, callback) => {
     const parsedUrl = new URL(webContents.getURL())
 
@@ -301,6 +308,8 @@ session
     }
   })
 ```
+
+Note: `session.defaultSession` is only available after `app.whenReady` is called.
 
 ### 6. Do not disable `webSecurity`
 
@@ -391,6 +400,8 @@ session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
   })
 })
 ```
+
+Note: `session.defaultSession` is only available after `app.whenReady` is called.
 
 #### CSP meta tag
 
@@ -804,10 +815,10 @@ that your application might have the rights for.
 
 #### How?
 
-We've made a module, [`@electron/fuses`](https://npmjs.com/package/@electron/fuses), to make
+[`@electron/fuses`](https://npmjs.com/package/@electron/fuses) is a module we made to make
 flipping these fuses easy. Check out the README of that module for more details on usage and
 potential error cases, and refer to
-[How do I flip the fuses?](./fuses.md#how-do-i-flip-the-fuses) in our documentation.
+[How do I flip fuses?](./fuses.md#how-do-i-flip-fuses) in our documentation.
 
 ### 20. Do not expose Electron APIs to untrusted web content
 

@@ -510,7 +510,7 @@ bool IsKillURL(const GURL& url) {
       content::kChromeUIMemoryExhaustHost,
   });
 
-  return kKillHosts.contains(url.host_piece());
+  return kKillHosts.contains(url.host());
 }
 
 GURL ResolvePossiblyRelativeURL(const std::string& url_string,

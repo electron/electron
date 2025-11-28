@@ -12,6 +12,8 @@
 #include <comdef.h>
 #include <commdlg.h>
 #include <dwmapi.h>
+#include <fcntl.h>
+#include <io.h>
 #include <objbase.h>
 #include <shellapi.h>
 #include <shlobj.h>
@@ -448,6 +450,17 @@ bool GetFolderPath(int key, base::FilePath* result) {
 
 void Beep() {
   MessageBeep(MB_OK);
+}
+
+bool IsNulDeviceEnabled() {
+  bool ret = true;
+  int fd = _open("nul", _O_RDWR);
+  if (fd < 0) {
+    ret = false;
+  } else {
+    _close(fd);
+  }
+  return ret;
 }
 
 }  // namespace platform_util

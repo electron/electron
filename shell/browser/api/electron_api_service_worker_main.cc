@@ -10,6 +10,7 @@
 #include "base/logging.h"
 #include "base/no_destructor.h"
 #include "content/browser/service_worker/service_worker_context_wrapper.h"  // nogncheck
+#include "content/browser/service_worker/service_worker_info.h"     // nogncheck
 #include "content/browser/service_worker/service_worker_version.h"  // nogncheck
 #include "gin/object_template_builder.h"
 #include "services/service_manager/public/cpp/interface_provider.h"

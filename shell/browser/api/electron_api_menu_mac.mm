@@ -157,7 +157,8 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   if (rightmostMenuPoint > screenRight)
     position.x = position.x - [menu size].width;
 
-  [popup_controllers_[window_id] setCloseCallback:std::move(close_callback)];
+  [popup_controllers_[window_id]
+      setPopupCloseCallback:std::move(close_callback)];
 
   if (frame && frame->render_frame_host()) {
     auto* rfh = frame->render_frame_host()->GetOutermostMainFrameOrEmbedder();

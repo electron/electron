@@ -7,6 +7,7 @@
 #include <numbers>
 #include "base/check.h"
 #include "base/check_op.h"
+#include "third_party/skia/include/core/SkPathBuilder.h"
 
 namespace electron {
 
@@ -99,7 +100,7 @@ constexpr CurveGeometry::CurveGeometry(float radius, float smoothness) {
       ((edge_connecting_offset - arc_curve_offset) * EDGE_CURVE_POINT_RATIO);
 }
 
-void DrawCorner(SkPath& path,
+void DrawCorner(SkPathBuilder& path,
                 float radius,
                 float smoothness1,
                 float smoothness2,
@@ -148,8 +149,9 @@ void DrawCorner(SkPath& path,
   {
     SkPoint arc_connecting_point =
         corner + QuarterRotate(curve2.arc_connecting_vector, quarter_rotations);
-    path.arcTo(SkPoint::Make(radius, radius), 0.0f, SkPath::kSmall_ArcSize,
-               SkPathDirection::kCW, arc_connecting_point);
+    path.arcTo(SkPoint::Make(radius, radius), 0.0f,
+               SkPathBuilder::kSmall_ArcSize, SkPathDirection::kCW,
+               arc_connecting_point);
   }
 
   // Draw the second smoothing curve
@@ -287,7 +289,7 @@ SkPath DrawSmoothRoundRect(float x,
   auto [left_top_smoothness, left_bottom_smoothness] = ConstrainSmoothness(
       height, smoothness, top_left_radius, bottom_left_radius);
 
-  SkPath path;
+  SkPathBuilder path;
 
   // Top left corner
   DrawCorner(path, top_left_radius, left_top_smoothness, top_left_smoothness,
@@ -302,11 +304,11 @@ SkPath DrawSmoothRoundRect(float x,
              bottom_right_smoothness, SkPoint::Make(x + width, y + height), 2);
 
   // Bottom left corner
-  DrawCorner(path, bottom_left_radius, left_bottom_smoothness,
-             bottom_left_smoothness, SkPoint::Make(x, y + height), 3);
+  DrawCorner(path, bottom_left_radius, bottom_left_smoothness,
+             left_bottom_smoothness, SkPoint::Make(x, y + height), 3);
 
   path.close();
-  return path;
+  return path.detach();
 }
 
 }  // namespace electron

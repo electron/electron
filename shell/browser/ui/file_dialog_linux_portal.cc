@@ -72,7 +72,8 @@ void CheckPortalAvailabilityOnBusThread() {
   options.bus_type = dbus::Bus::SESSION;
   options.connection_type = dbus::Bus::PRIVATE;
   options.dbus_task_runner = g_electron_dbus_thread_task_runner.Get();
-  scoped_refptr<dbus::Bus> bus = base::MakeRefCounted<dbus::Bus>(options);
+  scoped_refptr<dbus::Bus> bus =
+      base::MakeRefCounted<dbus::Bus>(std::move(options));
   dbus_utils::CheckForServiceAndStart(
       bus, kXdgPortalService,
       base::BindOnce(

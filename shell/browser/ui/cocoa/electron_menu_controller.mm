@@ -90,6 +90,7 @@ bool MenuHasVisibleItems(const electron::ElectronMenuModel* model) {
 // "(empty)" into the submenu. Matches Windows behavior.
 NSMenu* MakeEmptySubmenu() {
   NSMenu* submenu = [[NSMenu alloc] initWithTitle:@""];
+  submenu.autoenablesItems = NO;
   NSString* empty_menu_title =
       l10n_util::GetNSString(IDS_APP_MENU_EMPTY_SUBMENU);
 
@@ -185,8 +186,8 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   model_ = nullptr;
 }
 
-- (void)setCloseCallback:(base::OnceClosure)callback {
-  closeCallback = std::move(callback);
+- (void)setPopupCloseCallback:(base::OnceClosure)callback {
+  popupCloseCallback = std::move(callback);
 }
 
 - (void)populateWithModel:(electron::ElectronMenuModel*)model {
@@ -220,9 +221,9 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     isMenuOpen_ = NO;
     if (model_)
       model_->MenuWillClose();
-    if (!closeCallback.is_null()) {
-      content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
-                                                   std::move(closeCallback));
+    if (!popupCloseCallback.is_null()) {
+      content::GetUIThreadTaskRunner({})->PostTask(
+          FROM_HERE, std::move(popupCloseCallback));
     }
   }
 }
@@ -231,6 +232,9 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 // be invoked recursively.
 - (NSMenu*)menuFromModel:(electron::ElectronMenuModel*)model {
   NSMenu* menu = [[NSMenu alloc] initWithTitle:@""];
+  // We manually manage enabled/disabled/hidden state for every item,
+  // including Cocoa role-based selectors.
+  menu.autoenablesItems = NO;
 
   const int count = model->GetItemCount();
   for (int index = 0; index < count; index++) {
@@ -240,6 +244,7 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
       [self addItemToMenu:menu atIndex:index fromModel:model];
   }
 
+  menu.delegate = self;
   return menu;
 }
 
@@ -294,9 +299,11 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   if ([items count] == 0)
     return MakeEmptySubmenu();
   NSMenu* menu = [[NSMenu alloc] init];
+  menu.autoenablesItems = NO;
   NSArray* services = [NSSharingService sharingServicesForItems:items];
   for (NSSharingService* service in services)
     [menu addItem:[self menuItemForService:service withItems:items]];
+  [menu setDelegate:self];
   return menu;
 }
 
@@ -353,27 +360,22 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     std::u16string title = u"Services";
     NSString* sub_label = l10n_util::FixUpWindowsStyleLabel(title);
 
-    [item setTarget:nil];
-    [item setAction:nil];
+    item.target = nil;
+    item.action = nil;
     NSMenu* submenu = [[NSMenu alloc] initWithTitle:sub_label];
-    [item setSubmenu:submenu];
+    item.submenu = submenu;
     [NSApp setServicesMenu:submenu];
   } else if (role == u"sharemenu") {
     SharingItem sharing_item;
     model->GetSharingItemAt(index, &sharing_item);
-    [item setTarget:nil];
-    [item setAction:nil];
+    item.target = nil;
+    item.action = nil;
     [item setSubmenu:[self createShareMenuForItem:sharing_item]];
   } else if (type == electron::ElectronMenuModel::TYPE_SUBMENU &&
              model->IsVisibleAt(index)) {
-    // We need to specifically check that the submenu top-level item has been
-    // enabled as it's not validated by validateUserInterfaceItem
-    if (!model->IsEnabledAt(index))
-      [item setEnabled:NO];
-
     // Recursively build a submenu from the sub-model at this index.
-    [item setTarget:nil];
-    [item setAction:nil];
+    item.target = nil;
+    item.action = nil;
     electron::ElectronMenuModel* submenuModel =
         static_cast<electron::ElectronMenuModel*>(
             model->GetSubmenuModelAt(index));
@@ -388,8 +390,12 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
       }
     }
 
-    [submenu setTitle:[item title]];
-    [item setSubmenu:submenu];
+    submenu.title = item.title;
+    item.submenu = submenu;
+    item.tag = index;
+    item.representedObject =
+        [WeakPtrToElectronMenuModelAsNSObject weakPtrForModel:model];
+    submenu.delegate = self;
 
     // Set submenu's role.
     if ((role == u"window" || role == u"windowmenu") && [submenu numberOfItems])
@@ -404,9 +410,9 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     // the model so hierarchical menus check the correct index in the correct
     // model. Setting the target to |self| allows this class to participate
     // in validation of the menu items.
-    [item setTag:index];
-    [item setRepresentedObject:[WeakPtrToElectronMenuModelAsNSObject
-                                   weakPtrForModel:model]];
+    item.tag = index;
+    item.representedObject =
+        [WeakPtrToElectronMenuModelAsNSObject weakPtrForModel:model];
     ui::Accelerator accelerator;
     if (model->GetAcceleratorAtWithParams(index, useDefaultAccelerator_,
                                           &accelerator)) {
@@ -434,20 +440,20 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
         ui::MacKeyCodeForWindowsKeyCode(accelerator.key_code(), modifier_mask,
                                         nullptr, &character);
       }
-      [item setKeyEquivalent:[NSString stringWithFormat:@"%C", character]];
-      [item setKeyEquivalentModifierMask:modifier_mask];
+      item.keyEquivalent = [NSString stringWithFormat:@"%C", character];
+      item.keyEquivalentModifierMask = modifier_mask;
     }
 
     [(id)item
         setAllowsKeyEquivalentWhenHidden:(model->WorksWhenHiddenAt(index))];
 
     // Set menu item's role.
-    [item setTarget:self];
+    item.target = self;
     if (!role.empty()) {
       for (const Role& pair : kRolesMap) {
         if (role == base::ASCIIToUTF16(pair.role)) {
-          [item setTarget:nil];
-          [item setAction:pair.selector];
+          item.target = nil;
+          item.action = pair.selector;
           break;
         }
       }
@@ -457,6 +463,43 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   return item;
 }
 
+- (void)applyStateToMenuItem:(NSMenuItem*)item {
+  id represented = item.representedObject;
+  if (!represented)
+    return;
+
+  if (![represented
+          isKindOfClass:[WeakPtrToElectronMenuModelAsNSObject class]]) {
+    NSLog(@"representedObject is not a WeakPtrToElectronMenuModelAsNSObject");
+    return;
+  }
+
+  electron::ElectronMenuModel* model =
+      [WeakPtrToElectronMenuModelAsNSObject getFrom:represented];
+  if (!model)
+    return;
+
+  NSInteger index = item.tag;
+  int count = model->GetItemCount();
+  if (index < 0 || index >= count)
+    return;
+
+  item.hidden = !model->IsVisibleAt(index);
+  item.enabled = model->IsEnabledAt(index);
+  item.state = model->IsItemCheckedAt(index) ? NSControlStateValueOn
+                                             : NSControlStateValueOff;
+}
+
+// Recursively refreshes the menu tree starting from |menu|, applying the
+// model state to each menu item.
+- (void)refreshMenuTree:(NSMenu*)menu {
+  for (NSMenuItem* item in menu.itemArray) {
+    [self applyStateToMenuItem:item];
+    if (item.submenu)
+      [self refreshMenuTree:item.submenu];
+  }
+}
+
 // Adds an item or a hierarchical menu to the item at the |index|,
 // associated with the entry in the model identified by |modelIndex|.
 - (void)addItemToMenu:(NSMenu*)menu
@@ -464,32 +507,6 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
             fromModel:(electron::ElectronMenuModel*)model {
   [menu insertItem:[self makeMenuItemForIndex:index fromModel:model]
            atIndex:index];
-}
-
-// Called before the menu is to be displayed to update the state (enabled,
-// radio, etc) of each item in the menu.
-- (BOOL)validateUserInterfaceItem:(id<NSValidatedUserInterfaceItem>)item {
-  SEL action = [item action];
-  if (action == @selector(performShare:))
-    return YES;
-  if (action != @selector(itemSelected:))
-    return NO;
-
-  NSInteger modelIndex = [item tag];
-  electron::ElectronMenuModel* model = [WeakPtrToElectronMenuModelAsNSObject
-      getFrom:[(id)item representedObject]];
-  DCHECK(model);
-  if (model) {
-    BOOL checked = model->IsItemCheckedAt(modelIndex);
-    DCHECK([(id)item isKindOfClass:[NSMenuItem class]]);
-
-    [(id)item
-        setState:(checked ? NSControlStateValueOn : NSControlStateValueOff)];
-    [(id)item setHidden:(!model->IsVisibleAt(modelIndex))];
-
-    return model->IsEnabledAt(modelIndex);
-  }
-  return NO;
 }
 
 // Called when the user chooses a particular menu item. |sender| is the menu
@@ -526,10 +543,11 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     menu_ = menu;
   } else {
     menu_ = [[NSMenu alloc] initWithTitle:@""];
+    menu_.autoenablesItems = NO;
     if (model_)
       [self populateWithModel:model_.get()];
   }
-  [menu_ setDelegate:self];
+  menu_.delegate = self;
   return menu_;
 }
 
@@ -539,21 +557,35 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 
 - (void)menuWillOpen:(NSMenu*)menu {
   isMenuOpen_ = YES;
+  [self refreshMenuTree:menu];
   if (model_)
     model_->MenuWillShow();
 }
 
 - (void)menuDidClose:(NSMenu*)menu {
-  if (isMenuOpen_) {
-    isMenuOpen_ = NO;
-    if (model_)
-      model_->MenuWillClose();
-    // Post async task so that itemSelected runs before the close callback
-    // deletes the controller from the map which deallocates it
-    if (!closeCallback.is_null()) {
-      content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
-                                                   std::move(closeCallback));
-    }
+  // If the menu is already closed, do nothing.
+  if (!isMenuOpen_)
+    return;
+
+  bool has_close_cb = !popupCloseCallback.is_null();
+
+  // There are two scenarios where we should emit menu-did-close:
+  // 1. It's a popup and the top level menu is closed.
+  // 2. It's an application menu, and the current menu's supermenu
+  //    is the top-level menu.
+  if (menu != menu_) {
+    if (has_close_cb || menu.supermenu != menu_)
+      return;
+  }
+
+  isMenuOpen_ = NO;
+  if (model_)
+    model_->MenuWillClose();
+  // Post async task so that itemSelected runs before the close callback
+  // deletes the controller from the map which deallocates it.
+  if (has_close_cb) {
+    content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
+                                                 std::move(popupCloseCallback));
   }
 }
 

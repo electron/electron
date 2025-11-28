@@ -7,7 +7,14 @@
 
 #include <string>
 
+#include "base/memory/scoped_refptr.h"
 #include "content/public/browser/web_contents_user_data.h"
+#include "content/public/common/referrer.h"
+#include "url/gurl.h"
+
+namespace network {
+class ResourceRequestBody;
+}  // namespace network
 
 namespace electron {
 

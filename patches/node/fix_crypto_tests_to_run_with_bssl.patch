@@ -10,8 +10,44 @@ This should be upstreamed in some form, though it may need to be tweaked
 before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
+diff --git a/test/fixtures/crypto/rsa_pss.js b/test/fixtures/crypto/rsa_pss.js
+index 423f2c4d77bfc98bfbdab93c09aff8012c678cbd..fa0bcceb5697486930a9530732f9a9ab6e1bb5b0 100644
+--- a/test/fixtures/crypto/rsa_pss.js
++++ b/test/fixtures/crypto/rsa_pss.js
+@@ -1,6 +1,6 @@
+ 'use strict';
+ 
+-module.exports = function() {
++module.exports = function () {
+   const pkcs8 = Buffer.from(
+     '308204bf020100300d06092a864886f70d0101010500048204a9308204a5020100028' +
+     '2010100d3576092e62957364544e7e4233b7bdb293db2085122c479328546f9f0f712' +
+diff --git a/test/fixtures/webcrypto/supports-modern-algorithms.mjs b/test/fixtures/webcrypto/supports-modern-algorithms.mjs
+index 337ed577b143062d41e378cc1f820945e76cea08..76d5e805cbc0e756aef0013373baec31bd320f44 100644
+--- a/test/fixtures/webcrypto/supports-modern-algorithms.mjs
++++ b/test/fixtures/webcrypto/supports-modern-algorithms.mjs
+@@ -9,6 +9,7 @@ const shake256 = crypto.getHashes().includes('shake256');
+ const chacha = crypto.getCiphers().includes('chacha20-poly1305');
+ const ocb = hasOpenSSL(3);
+ const kmac = hasOpenSSL(3);
++const boringSSL = process.features.openssl_is_boringssl;
+ 
+ const { subtle } = globalThis.crypto;
+ const X25519 = await subtle.generateKey('X25519', false, ['deriveBits', 'deriveKey']);
+@@ -108,9 +109,9 @@ export const vectors = {
+     [true, 'RSA-PSS'],
+     [true, 'RSASSA-PKCS1-v1_5'],
+     [true, 'X25519'],
+-    [true, 'X448'],
++    [!boringSSL, 'X448'],
+     [true, 'Ed25519'],
+-    [true, 'Ed448'],
++    [!boringSSL, 'Ed448'],
+     [true, 'ECDH'],
+     [true, 'ECDSA'],
+     [pqc, 'ML-DSA-44'],
 diff --git a/test/parallel/test-crypto-async-sign-verify.js b/test/parallel/test-crypto-async-sign-verify.js
-index 7a5e72b1e8e498fdfa8de12aa9b9672dc047248c..f326c52894f86ef9c82c685a8685245138f01ed5 100644
+index d385926e9943052bbe1793d4b1e39846e1a69562..dbf7b04afa77f132aaa466c9ee02c5ffad0296bc 100644
 --- a/test/parallel/test-crypto-async-sign-verify.js
 +++ b/test/parallel/test-crypto-async-sign-verify.js
 @@ -89,6 +89,7 @@ test('rsa_public.pem', 'rsa_private.pem', 'sha256', false,
@@ -30,20 +66,19 @@ index 7a5e72b1e8e498fdfa8de12aa9b9672dc047248c..f326c52894f86ef9c82c685a86852451
  
  // Test Parallel Execution w/ KeyObject is threadsafe in openssl3
  {
-@@ -150,8 +152,10 @@ MCowBQYDK2VuAyEA6pwGRbadNQAI/tYN8+/p/0/hbsdHfOEGr1ADiLVk/Gc=
+@@ -150,7 +152,10 @@ MCowBQYDK2VuAyEA6pwGRbadNQAI/tYN8+/p/0/hbsdHfOEGr1ADiLVk/Gc=
    const data = crypto.randomBytes(32);
    const signature = crypto.randomBytes(16);
  
--  const expected = hasOpenSSL3 ?
--    /operation not supported for this keytype/ : /no default digest/;
-+  let expected = /no default digest/;
+-  const expected = hasOpenSSL3 ? /operation not supported for this keytype/ : /no default digest/;
++  let expected = hasOpenSSL3 ? /operation not supported for this keytype/ : /no default digest/;
 +  if (hasOpenSSL3 || process.features.openssl_is_boringssl) {
 +    expected = /operation[\s_]not[\s_]supported[\s_]for[\s_]this[\s_]keytype/i;
 +  }
  
    crypto.verify(undefined, data, untrustedKey, signature, common.mustCall((err) => {
      assert.ok(err);
-@@ -165,6 +169,6 @@ MCowBQYDK2VuAyEA6pwGRbadNQAI/tYN8+/p/0/hbsdHfOEGr1ADiLVk/Gc=
+@@ -164,6 +169,6 @@ MCowBQYDK2VuAyEA6pwGRbadNQAI/tYN8+/p/0/hbsdHfOEGr1ADiLVk/Gc=
    });
    crypto.sign('sha512', 'message', privateKey, common.mustCall((err) => {
      assert.ok(err);
@@ -81,7 +116,7 @@ index 4a5f1f149fe6c739f7f1d2ee17df6e61a942d621..b3287f428ce6b3fde11d449c601a57ff
  
  {
 diff --git a/test/parallel/test-crypto-cipheriv-decipheriv.js b/test/parallel/test-crypto-cipheriv-decipheriv.js
-index 88d07c3b957f57b85861542d174a0fd0ba8ceb66..1f430197579ff5f31322bfa0fa5e92e4c58588e2 100644
+index 6742722f9e90914b4dc8c079426d10040d476f72..8801ddfe7023fd0f7d5657b86a9164d75765322e 100644
 --- a/test/parallel/test-crypto-cipheriv-decipheriv.js
 +++ b/test/parallel/test-crypto-cipheriv-decipheriv.js
 @@ -62,6 +62,10 @@ function testCipher2(key, iv) {
@@ -222,6 +257,21 @@ index 929dd36c669239804f2cfc5168bd3bf6e15855e6..8ebe599bbd21ad30e5041e0eab1e5898
    // Default outputLengths.
    assert.strictEqual(crypto.createHash('shake128').digest('hex'),
                       '7f9c2ba4e88f827d616045507605853e');
+diff --git a/test/parallel/test-crypto-oneshot-hash-xof.js b/test/parallel/test-crypto-oneshot-hash-xof.js
+index 75cb4800ff1bd51fedd7bc4e2d7e6af6f4f48346..b4363c31592763235116d970a5f45d4cf63de373 100644
+--- a/test/parallel/test-crypto-oneshot-hash-xof.js
++++ b/test/parallel/test-crypto-oneshot-hash-xof.js
+@@ -7,6 +7,10 @@ if (!common.hasCrypto) common.skip('missing crypto');
+ const assert = require('assert');
+ const crypto = require('crypto');
+ 
++if (process.features.openssl_is_boringssl) {
++  common.skip('BoringSSL does not support XOF hash functions');
++}
++
+ // Test XOF hash functions and the outputLength option.
+ {
+   // Default outputLengths.
 diff --git a/test/parallel/test-crypto-padding.js b/test/parallel/test-crypto-padding.js
 index 48cd1ed4df61aaddeee8785cb90f83bdd9628187..d09e01712c617597833bb1320a32a967bcf1d318 100644
 --- a/test/parallel/test-crypto-padding.js
@@ -308,10 +358,10 @@ index 119bc3c2d20ea7d681f0b579f9d91ad46cdc3634..8d13b105fa426015a873c411ad1d7f64
  
    // DSA signatures vary across runs so there is no static string to verify
 diff --git a/test/parallel/test-crypto-scrypt.js b/test/parallel/test-crypto-scrypt.js
-index 03a18c7522531c7317f12705550117dc389a0245..2f0f46f2c6ddc62de89877cfa0ca80949a0f4c5e 100644
+index eafdfe392bde8eb1fde1dc7e7e9ae51682c74b87..2907e0175379266c90acb9df829d10283bd46652 100644
 --- a/test/parallel/test-crypto-scrypt.js
 +++ b/test/parallel/test-crypto-scrypt.js
-@@ -176,7 +176,7 @@ for (const options of bad) {
+@@ -192,7 +192,7 @@ for (const options of incompatibleOptions) {
  
  for (const options of toobig) {
    const expected = {
@@ -321,7 +371,7 @@ index 03a18c7522531c7317f12705550117dc389a0245..2f0f46f2c6ddc62de89877cfa0ca8094
    };
    assert.throws(() => crypto.scrypt('pass', 'salt', 1, options, () => {}),
 diff --git a/test/parallel/test-crypto-sign-verify.js b/test/parallel/test-crypto-sign-verify.js
-index 0589d60736e377f24dc8550f87a6b7624173fc44..113003826fc47a589cf2334f7345e33d3e189d0a 100644
+index a66f0a94efd7c952c1d2320fbc7a39fe3a88a8a1..dc5846db0e3dcf8f7cb5f7efcdbc81c1d767ab88 100644
 --- a/test/parallel/test-crypto-sign-verify.js
 +++ b/test/parallel/test-crypto-sign-verify.js
 @@ -33,7 +33,7 @@ const keySize = 2048;
@@ -336,7 +386,7 @@ index 0589d60736e377f24dc8550f87a6b7624173fc44..113003826fc47a589cf2334f7345e33d
 @@ -345,15 +345,15 @@ assert.throws(
          padding: crypto.constants.RSA_PKCS1_OAEP_PADDING
        });
-   }, hasOpenSSL3 ? {
+   }, hasOpenSSL(3) ? {
 -    code: 'ERR_OSSL_ILLEGAL_OR_UNSUPPORTED_PADDING_MODE',
 -    message: /illegal or unsupported padding mode/,
 +    code: /^ERR_OSSL_(RSA|EVP)_ILLEGAL_OR_UNSUPPORTED_PADDING_MODE$/,
@@ -355,7 +405,7 @@ index 0589d60736e377f24dc8550f87a6b7624173fc44..113003826fc47a589cf2334f7345e33d
    });
  }
  
-@@ -423,10 +423,12 @@ assert.throws(
+@@ -423,11 +423,13 @@ assert.throws(
      public: fixtures.readKey('ed25519_public.pem', 'ascii'),
      algo: null,
      sigLen: 64 },
@@ -363,12 +413,13 @@ index 0589d60736e377f24dc8550f87a6b7624173fc44..113003826fc47a589cf2334f7345e33d
    { private: fixtures.readKey('ed448_private.pem', 'ascii'),
      public: fixtures.readKey('ed448_public.pem', 'ascii'),
      algo: null,
+     supportsContext: true,
      sigLen: 114 },
 +    */
    { private: fixtures.readKey('rsa_private_2048.pem', 'ascii'),
      public: fixtures.readKey('rsa_public_2048.pem', 'ascii'),
      algo: 'sha1',
-@@ -497,7 +499,7 @@ assert.throws(
+@@ -547,7 +549,7 @@ assert.throws(
  
  {
    const data = Buffer.from('Hello world');
@@ -475,10 +526,10 @@ index 7bd42bbe721c4c9442410d524c5ca740078fc72c..de49dbdc2b75517f497af353a6b24b1b
      assert.match(err.reason, expectedErrorReason);
    }));
 diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
-index d1ca571af4be713082d32093bfb8a65f2aef9800..57b8df2ce18df58ff54b2d828af67e3c2e082fe0 100644
+index bd788ec4ed88289d35798b8af8c9490a68e081a2..1a5477ba928bce93320f8056db02e1a7b8ddcdf3 100644
 --- a/test/parallel/test-webcrypto-wrap-unwrap.js
 +++ b/test/parallel/test-webcrypto-wrap-unwrap.js
-@@ -18,14 +18,15 @@ const kWrappingData = {
+@@ -20,14 +20,15 @@ const kWrappingData = {
      wrap: { label: new Uint8Array(8) },
      pair: true
    },
@@ -498,14 +549,40 @@ index d1ca571af4be713082d32093bfb8a65f2aef9800..57b8df2ce18df58ff54b2d828af67e3c
      pair: false
    },
    'AES-GCM': {
-@@ -42,6 +43,7 @@ const kWrappingData = {
+@@ -46,30 +47,9 @@ if (!process.features.openssl_is_boringssl) {
+     generate: { length: 128 },
      wrap: { },
      pair: false
-   }
+-  };
+-  kWrappingData['ChaCha20-Poly1305'] = {
+-    wrap: {
+-      iv: new Uint8Array(12),
+-      additionalData: new Uint8Array(16),
+-      tagLength: 128
+-    },
+-    pair: false
+-  };
+-} else {
+-  common.printSkipMessage('Skipping unsupported AES-KW test case');
+-}
+-
+-if (hasOpenSSL(3)) {
+-  kWrappingData['AES-OCB'] = {
+-    generate: { length: 128 },
+-    wrap: {
+-      iv: new Uint8Array(15),
+-      additionalData: new Uint8Array(16),
+-      tagLength: 128
+-    },
+-    pair: false
+-  };
+-}
++  }
 +  */
- };
++};
  
  function generateWrappingKeys() {
+   return Promise.all(Object.keys(kWrappingData).map(async (name) => {
 diff --git a/test/parallel/test-x509-escaping.js b/test/parallel/test-x509-escaping.js
 index b507af88e1f7f3424b7b5d6d683a295b9d208e5e..825ba4c8dce775f401080a0522565bb7a087bcc3 100644
 --- a/test/parallel/test-x509-escaping.js

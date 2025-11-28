@@ -1,1 +1,2 @@
 chore_expose_ui_to_allow_electron_to_set_dock_side.patch
+fix_element_tree_flickering_with_node_inspection.patch

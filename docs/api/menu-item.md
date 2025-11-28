@@ -34,7 +34,8 @@ See [`Menu`](menu.md) for examples.
   * `sublabel` string (optional) _macOS_ - Available in macOS >= 14.4
   * `toolTip` string (optional) _macOS_ - Hover text for this menu item.
   * `accelerator` string (optional) - An [Accelerator](../tutorial/keyboard-shortcuts.md#accelerators) string.
-  * `icon` ([NativeImage](native-image.md) | string) (optional)
+  * `icon` ([NativeImage](native-image.md) | string) (optional) - Can be a
+    [NativeImage](native-image.md) or the file path of an icon.
   * `enabled` boolean (optional) - If false, the menu item will be greyed out and
     unclickable.
   * `acceleratorWorksWhenHidden` boolean (optional) _macOS_ - default is `true`, and when `false` will prevent the accelerator from triggering the item if the item is not visible.

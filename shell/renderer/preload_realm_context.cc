@@ -59,9 +59,11 @@ class PreloadRealmLifetimeController
     RegisterDebugger(initiator_execution_context);
 
     initiator_context()->SetAlignedPointerInEmbedderData(
-        kElectronContextEmbedderDataIndex, static_cast<void*>(this));
+        kElectronContextEmbedderDataIndex, static_cast<void*>(this),
+        v8::kEmbedderDataTypeTagDefault);
     realm_context()->SetAlignedPointerInEmbedderData(
-        kElectronContextEmbedderDataIndex, static_cast<void*>(this));
+        kElectronContextEmbedderDataIndex, static_cast<void*>(this),
+        v8::kEmbedderDataTypeTagDefault);
 
     metrics_ = base::ProcessMetrics::CreateCurrentProcessMetrics();
     RunInitScript();
@@ -74,7 +76,8 @@ class PreloadRealmLifetimeController
     }
     auto* controller = static_cast<PreloadRealmLifetimeController*>(
         context->GetAlignedPointerFromEmbedderData(
-            kElectronContextEmbedderDataIndex));
+            kElectronContextEmbedderDataIndex,
+            v8::kEmbedderDataTypeTagDefault));
     CHECK(controller);
     return controller;
   }
@@ -112,7 +115,8 @@ class PreloadRealmLifetimeController
   void ContextDestroyed() override {
     v8::HandleScope handle_scope(realm_isolate());
     realm_context()->SetAlignedPointerInEmbedderData(
-        kElectronContextEmbedderDataIndex, nullptr);
+        kElectronContextEmbedderDataIndex, nullptr,
+        v8::kEmbedderDataTypeTagDefault);
 
     // See ShadowRealmGlobalScope::ContextDestroyed
     shadow_realm_script_state_->DisposePerContextData();

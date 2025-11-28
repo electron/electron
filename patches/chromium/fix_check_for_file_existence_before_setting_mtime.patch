@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Tue, 21 Oct 2025 18:44:52 -0500
+Subject: fix: check for file existence before setting mtime
+
+Check for broken links by confirming the file exists before setting its utime.
+
+This patch should be upstreamed & removed.
+
+diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
+index 1a35e992913acae102adc3faf0065ef13e6dbd1b..39e0d541e228e71108fa23717a906a0c543fe268 100755
+--- a/tools/clang/scripts/update.py
++++ b/tools/clang/scripts/update.py
+@@ -201,10 +201,9 @@ def DownloadAndUnpack(url, output_dir, path_prefixes=None, is_known_zip=False):
+       # The nicest way to do this would be by passing a filter to extractall,
+       # but that functionality is not available in macOS system Python (3.9.6).
+       for m in members:
+-        # Confusingly, this checks if you're allowed to _not_ follow symlinks.
+-        if os.utime in os.supports_follow_symlinks:
+-          os.utime(os.path.join(output_dir, m.name), follow_symlinks=False)
+-        else:
++        # check for broken links before setting the file's utime
++        member_path = os.path.join(output_dir, m.name)
++        if os.path.exists(member_path):
+           os.utime(os.path.join(output_dir, m.name))
+ 
+ 

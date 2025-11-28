@@ -13,10 +13,12 @@
 #include "base/apple/bundle_locations.h"
 #include "base/base_switches.h"
 #include "base/command_line.h"
+#include "base/debug/leak_annotations.h"
 #include "base/debug/stack_trace.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
+#include "base/metrics/field_trial.h"
 #include "base/path_service.h"
 #include "base/strings/cstring_view.h"
 #include "base/strings/string_number_conversions.cc"
@@ -419,6 +421,11 @@ std::optional<int> ElectronMainDelegate::PreBrowserMain() {
   // This is initialized early because the service manager reads some feature
   // flags and we need to make sure the feature list is initialized before the
   // service manager reads the features.
+  if (!base::FieldTrialList::GetInstance()) {
+    base::FieldTrialList* leaked_field_trial_list = new base::FieldTrialList();
+    ANNOTATE_LEAKING_OBJECT_PTR(leaked_field_trial_list);
+    std::ignore = leaked_field_trial_list;
+  }
   InitializeFeatureList();
   // Initialize mojo core as soon as we have a valid feature list
   content::InitializeMojoCore();

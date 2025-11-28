@@ -92,4 +92,46 @@ describe('View', () => {
       expect(v.getVisible()).to.be.false();
     });
   });
+
+  describe('view.getBounds|setBounds', () => {
+    it('defaults to 0,0,0,0', () => {
+      const v = new View();
+      expect(v.getBounds()).to.deep.equal({ x: 0, y: 0, width: 0, height: 0 });
+    });
+
+    it('can be set and retrieved', () => {
+      const v = new View();
+      v.setBounds({ x: 10, y: 20, width: 300, height: 400 });
+      expect(v.getBounds()).to.deep.equal({ x: 10, y: 20, width: 300, height: 400 });
+    });
+
+    it('emits bounds-changed when bounds mutate', () => {
+      const v = new View();
+      let called = 0;
+      v.once('bounds-changed', () => { called++; });
+      v.setBounds({ x: 5, y: 6, width: 7, height: 8 });
+      expect(called).to.equal(1);
+    });
+
+    it('allows zero-size bounds', () => {
+      const v = new View();
+      v.setBounds({ x: 1, y: 2, width: 0, height: 0 });
+      expect(v.getBounds()).to.deep.equal({ x: 1, y: 2, width: 0, height: 0 });
+    });
+
+    it('allows negative coordinates', () => {
+      const v = new View();
+      v.setBounds({ x: -10, y: -20, width: 100, height: 50 });
+      expect(v.getBounds()).to.deep.equal({ x: -10, y: -20, width: 100, height: 50 });
+    });
+
+    it('child bounds remain relative after parent moves', () => {
+      const parent = new View();
+      const child = new View();
+      parent.addChildView(child);
+      child.setBounds({ x: 10, y: 15, width: 25, height: 30 });
+      parent.setBounds({ x: 50, y: 60, width: 500, height: 600 });
+      expect(child.getBounds()).to.deep.equal({ x: 10, y: 15, width: 25, height: 30 });
+    });
+  });
 });

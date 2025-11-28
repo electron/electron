@@ -28,7 +28,7 @@ class ElectronMenuModel;
   NSMenu* __strong menu_;
   BOOL isMenuOpen_;
   BOOL useDefaultAccelerator_;
-  base::OnceClosure closeCallback;
+  base::OnceClosure popupCloseCallback;
 }
 
 // Builds a NSMenu from the pre-built model (must not be nil). Changes made
@@ -36,7 +36,7 @@ class ElectronMenuModel;
 - (id)initWithModel:(electron::ElectronMenuModel*)model
     useDefaultAccelerator:(BOOL)use;
 
-- (void)setCloseCallback:(base::OnceClosure)callback;
+- (void)setPopupCloseCallback:(base::OnceClosure)callback;
 
 // Populate current NSMenu with |model|.
 - (void)populateWithModel:(electron::ElectronMenuModel*)model;

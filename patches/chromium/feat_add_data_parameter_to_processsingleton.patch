@@ -180,7 +180,7 @@ index 08cbe32a258bf478f1da0a07064d3e9ef14c44a5..b9f2a43cb90fac4b031a4b4da38d6435
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 64ebf49c0d1b6396d1cfbe3bf91480f61b47688d..bec94d4039379400ae8b00f1adbbb16a02ccbac0 100644
+index ae659d84a5ae2f2e87ce288477506575f8d86839..d93c7e8487ab1a2bbb5f56f2ca44868f947e6bfc 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -81,10 +81,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
@@ -258,11 +258,11 @@ index 64ebf49c0d1b6396d1cfbe3bf91480f61b47688d..bec94d4039379400ae8b00f1adbbb16a
  
 -  switch (AttemptToNotifyRunningChrome(remote_window_)) {
 +  switch (AttemptToNotifyRunningChrome(remote_window_, additional_data_)) {
-     case NotifyChromeResult::NOTIFY_SUCCESS:
+     case NotifyChromeResult::kSuccess:
        return PROCESS_NOTIFIED;
-     case NotifyChromeResult::NOTIFY_FAILED:
+     case NotifyChromeResult::kFailed:
 diff --git a/chrome/browser/win/chrome_process_finder.cc b/chrome/browser/win/chrome_process_finder.cc
-index 58a4c5adfda49fb4bd1b5351bd02d358946043bd..adaa070eb0f3cf8f771b57743a7436fd48a1e576 100644
+index 594f3bc08a4385c177fb488123cef79448e94850..5a1dde19a4bc2bf728eba4c738f831c3e5b73942 100644
 --- a/chrome/browser/win/chrome_process_finder.cc
 +++ b/chrome/browser/win/chrome_process_finder.cc
 @@ -39,7 +39,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
@@ -303,7 +303,7 @@ index 58a4c5adfda49fb4bd1b5351bd02d358946043bd..adaa070eb0f3cf8f771b57743a7436fd
    // window (otherwise it will just flash in the taskbar).
    ::AllowSetForegroundWindow(process_id);
 diff --git a/chrome/browser/win/chrome_process_finder.h b/chrome/browser/win/chrome_process_finder.h
-index 91e5e623840b9912bd05d024c12e3eb3f1ba2f53..63b5b10013c96dea4e77e5e56a060973a1752faa 100644
+index 62e232f41189a557534e0b01d912469b2ca26148..3a4dfb027cdc690ee7561fc8b632f35cb6b8f4be 100644
 --- a/chrome/browser/win/chrome_process_finder.h
 +++ b/chrome/browser/win/chrome_process_finder.h
 @@ -7,6 +7,7 @@

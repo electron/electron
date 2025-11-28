@@ -64,7 +64,7 @@ class ClientFrameViewLinux : public FramelessView,
   // Overridden from FramelessView:
   int ResizingBorderHitTest(const gfx::Point& point) override;
 
-  // Overridden from views::NonClientFrameView:
+  // Overridden from views::FrameView:
   gfx::Rect GetBoundsForClientView() const override;
   gfx::Rect GetWindowBoundsForClientBounds(
       const gfx::Rect& client_bounds) const override;

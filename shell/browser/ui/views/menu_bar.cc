@@ -10,6 +10,7 @@
 #include "shell/browser/ui/views/submenu_button.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/color/color_provider.h"
+#include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/background.h"
 #include "ui/views/layout/box_layout.h"
 
@@ -42,9 +43,11 @@ MenuBar::MenuBar(NativeWindow* window, RootView* root_view)
   SetLayoutManager(std::make_unique<views::BoxLayout>(
       views::BoxLayout::Orientation::kHorizontal));
   window_->AddObserver(this);
-  SetAccessibleName(std::u16string(),
+
+  auto& view_a11y = GetViewAccessibility();
+  view_a11y.SetName(std::u16string(),
                     ax::mojom::NameFrom::kAttributeExplicitlyEmpty);
-  SetAccessibleRole(ax::mojom::Role::kMenuBar);
+  view_a11y.SetRole(ax::mojom::Role::kMenuBar);
 }
 
 MenuBar::~MenuBar() {

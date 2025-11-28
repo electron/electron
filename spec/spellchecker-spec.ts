@@ -88,8 +88,8 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
         await closeWindow(w);
       });
 
-      // Context menu test can not run on Windows.
-      const shouldRun = process.platform !== 'win32';
+      // Context menu test can not run on Windows or Linux (https://github.com/electron/electron/pull/48657 broke linux).
+      const shouldRun = process.platform !== 'win32' && process.platform !== 'linux';
 
       ifit(shouldRun)('should detect correctly spelled words as correct', async () => {
         await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "typography"');

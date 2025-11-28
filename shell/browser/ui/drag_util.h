@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "third_party/blink/public/mojom/page/draggable_region.mojom-forward.h"
-#include "ui/gfx/native_widget_types.h"
+#include "ui/gfx/native_ui_types.h"
 
 class SkRegion;
 
