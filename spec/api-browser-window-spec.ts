@@ -8041,7 +8041,8 @@ describe('BrowserWindow module', () => {
             x: targetDisplayX,
             y: targetDisplayY
           });
-
+          // Wait for the target display to be created
+          while (screen.getAllDisplays().length !== 2) await setTimeout(1000);
           // Verify the virtual display is created correctly
           const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
           expect(targetDisplay.bounds.x).to.equal(targetDisplayX);
@@ -8085,6 +8086,8 @@ describe('BrowserWindow module', () => {
             y: targetDisplayY
           });
 
+          // Wait for the target display to be created
+          while (screen.getAllDisplays().length !== 2) await setTimeout(1000);
           // Verify the virtual display is created correctly - single check for targetDisplay.bounds.x
           const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
           expect(targetDisplay.bounds.x).to.equal(targetDisplayX);
@@ -8146,6 +8149,9 @@ describe('BrowserWindow module', () => {
             x: rightmostDisplayX,
             y: targetDisplayY
           });
+
+          // Wait for the target displays to be created
+          while (screen.getAllDisplays().length !== 3) await setTimeout(1000);
 
           // Verify the virtual displays are created correctly - single check for origin x values
           const middleDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
@@ -8210,6 +8216,9 @@ describe('BrowserWindow module', () => {
             x: targetDisplayX + 1920,
             y: targetDisplayY
           });
+
+          // Wait for the target displays to be created
+          while (screen.getAllDisplays().length !== 3) await setTimeout(1000);
 
           // Verify the virtual displays are created correctly - single check for origin x values
           const targetDisplay1 = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
@@ -8317,6 +8326,9 @@ describe('BrowserWindow module', () => {
             y: targetDisplayY
           });
 
+          // Wait for the target displays to be created
+          while (screen.getAllDisplays().length !== 2) await setTimeout(1000);
+
           const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
           expect(targetDisplay.bounds.x).to.equal(targetDisplayX);
 
@@ -8363,6 +8375,9 @@ describe('BrowserWindow module', () => {
             x: targetDisplayX,
             y: targetDisplayY
           });
+
+          // Wait for the target displays to be created
+          while (screen.getAllDisplays().length !== 2) await setTimeout(1000);
 
           const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
           expect(targetDisplay.bounds.x).to.equal(targetDisplayX);
@@ -8417,6 +8432,9 @@ describe('BrowserWindow module', () => {
             y: targetDisplayY
           });
 
+          // Wait for the target display to be created
+          while (screen.getAllDisplays().length !== 2) await setTimeout(1000);
+
           const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
 
           // Create window on target display and set kiosk: true
@@ -8463,6 +8481,8 @@ describe('BrowserWindow module', () => {
             x: targetDisplayX,
             y: targetDisplayY
           });
+          // Wait for the target display to be created
+          while (screen.getAllDisplays().length !== 2) await setTimeout(1000);
 
           const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
 
@@ -8473,6 +8493,9 @@ describe('BrowserWindow module', () => {
             x: targetDisplayX + targetDisplay.bounds.width,
             y: targetDisplayY
           });
+
+          // Wait for the target display to be created
+          while (screen.getAllDisplays().length !== 3) await setTimeout(1000);
 
           // Bounds for the test window on the virtual target display
           const initialBounds = {
@@ -8515,6 +8538,9 @@ describe('BrowserWindow module', () => {
             y: targetDisplayY
           });
 
+          // Wait for the target display to be created
+          while (screen.getAllDisplays().length !== 2) await setTimeout(1000);
+
           const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
 
           // Create a new virtual display with half the resolution of the target display shifted down
@@ -8524,6 +8550,9 @@ describe('BrowserWindow module', () => {
             x: targetDisplayX + targetDisplay.bounds.width,
             y: targetDisplay.bounds.height / 2
           });
+
+          // Wait for the target display to be created
+          while (screen.getAllDisplays().length !== 3) await setTimeout(1000);
 
           // Bounds that would overflow on a smaller display
           const initialBounds = {
