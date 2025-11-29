@@ -94,3 +94,4 @@ EXPORTS
   zlibCompileFlags
   zError
   get_crc_table
+
