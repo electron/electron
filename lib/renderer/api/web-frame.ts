@@ -4,9 +4,6 @@ import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-inte
 
 const { mainFrame, WebFrame } = process._linkedBinding('electron_renderer_web_frame');
 
-// @ts-expect-error - WebFrame types are cursed. It's an instanced class, but
-// the docs define it as a static module.
-// TODO(smaddock): Fix web-frame.md to define it as an instance class.
 const WebFramePrototype: Electron.WebFrame = WebFrame.prototype;
 
 const routingIdDeprecated = deprecate.warnOnce('webFrame.routingId', 'webFrame.frameToken');
