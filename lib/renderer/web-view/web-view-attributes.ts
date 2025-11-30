@@ -251,6 +251,34 @@ class WebPreferencesAttribute extends WebViewAttribute {
   }
 }
 
+// Attribute that specifies the module type for preload scripts.
+class TypeAttribute extends WebViewAttribute {
+  constructor (webViewImpl: WebViewImpl) {
+    super(WEB_VIEW_ATTRIBUTES.TYPE, webViewImpl);
+  }
+
+  public getValue () {
+    const value = this.webViewImpl.webviewNode.getAttribute(this.name);
+    // Only 'module' is supported as a valid type, default to empty string (CommonJS)
+    return value === 'module' ? 'module' : '';
+  }
+
+  public handleMutation = (oldValue: any, newValue: any) => {
+    // The type cannot change if the webview has already navigated.
+    if (!this.webViewImpl.beforeFirstNavigation) {
+      console.error(WEB_VIEW_ERROR_MESSAGES.ALREADY_NAVIGATED);
+      this.setValueIgnoreMutation(oldValue);
+      return;
+    }
+    
+    // Validate that only 'module' is accepted as a valid type
+    if (newValue && newValue !== 'module') {
+      console.warn(`Invalid type attribute value: ${newValue}. Only 'module' is supported.`);
+      this.setValueIgnoreMutation('');
+    }
+  };
+}
+
 // Sets up all of the webview attributes.
 export function setupWebViewAttributes (self: WebViewImpl) {
   return new Map<string, WebViewAttribute>([
@@ -266,6 +294,7 @@ export function setupWebViewAttributes (self: WebViewImpl) {
     [WEB_VIEW_ATTRIBUTES.PRELOAD, new PreloadAttribute(self)],
     [WEB_VIEW_ATTRIBUTES.BLINKFEATURES, new BlinkFeaturesAttribute(self)],
     [WEB_VIEW_ATTRIBUTES.DISABLEBLINKFEATURES, new DisableBlinkFeaturesAttribute(self)],
-    [WEB_VIEW_ATTRIBUTES.WEBPREFERENCES, new WebPreferencesAttribute(self)]
+    [WEB_VIEW_ATTRIBUTES.WEBPREFERENCES, new WebPreferencesAttribute(self)],
+    [WEB_VIEW_ATTRIBUTES.TYPE, new TypeAttribute(self)]
   ]);
 }

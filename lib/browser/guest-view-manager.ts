@@ -47,6 +47,11 @@ function makeWebPreferences (embedder: Electron.WebContents, params: Record<stri
     webPreferences.preload = netBinding.fileURLToFilePath(params.preload);
   }
 
+  // Handle module type for webview preload scripts
+  if (params.type === 'module') {
+    (webPreferences as any).webviewModuleType = 'module';
+  }
+
   // Security options that guest will always inherit from embedder
   const inheritedWebPreferences = new Map([
     ['contextIsolation', true],
