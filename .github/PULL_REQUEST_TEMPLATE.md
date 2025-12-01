@@ -1,4 +1,4 @@
-> [!IMPORTANT]  
+> [!IMPORTANT]
 > Please note that code reviews and merges will be delayed during our [quiet period in December](https://www.electronjs.org/blog/dec-quiet-period-25) and might not happen until January.
 
 #### Description of Change
