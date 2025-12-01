@@ -59,7 +59,7 @@ jobs:
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           FREE_BEFORE: ${{ steps.disk-before.outputs.free_kb }}
           FREE_AFTER: ${{ steps.disk-after.outputs.free_kb }}
-          RUNNER_NAME: ${{ matrix.runner }}
+          MATRIX_RUNNER: ${{ matrix.runner }}
         run: |
           TIMESTAMP=$(date +%s)
           FREE_BEFORE_GB=$(echo "scale=2; $FREE_BEFORE / 1024 / 1024" | bc)
@@ -81,21 +81,21 @@ jobs:
                 "points": [{"timestamp": ${TIMESTAMP}, "value": ${FREE_BEFORE_GB}}],
                 "type": 3,
                 "unit": "gigabyte",
-                "tags": ["runner:${RUNNER_NAME}", "platform:macos"]
+                "tags": ["runner:${MATRIX_RUNNER}", "platform:macos"]
               },
               {
                 "metric": "electron.macos.disk.free_space_after_cleanup_gb",
                 "points": [{"timestamp": ${TIMESTAMP}, "value": ${FREE_AFTER_GB}}],
                 "type": 3,
                 "unit": "gigabyte",
-                "tags": ["runner:${RUNNER_NAME}", "platform:macos"]
+                "tags": ["runner:${MATRIX_RUNNER}", "platform:macos"]
               },
               {
                 "metric": "electron.macos.disk.space_freed_gb",
                 "points": [{"timestamp": ${TIMESTAMP}, "value": ${SPACE_FREED_GB}}],
                 "type": 3,
                 "unit": "gigabyte",
-                "tags": ["runner:${RUNNER_NAME}", "platform:macos"]
+                "tags": ["runner:${MATRIX_RUNNER}", "platform:macos"]
               }
             ]
           }
