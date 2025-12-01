@@ -50,16 +50,16 @@ When `contextIsolation` is enabled in your `webPreferences` (this is the default
 
 The `contextBridge` module has the following methods:
 
-### `contextBridge.exposeInMainWorld(apiKey, api)`
+### `contextBridge.exposeInMainWorld<T=any>(apiKey, api)`
 
 * `apiKey` string - The key to inject the API onto `window` with.  The API will be accessible on `window[apiKey]`.
-* `api` any - Your API, more information on what this API can be and how it works is available below.
+* `api` T - Your API, more information on what this API can be and how it works is available below.
 
-### `contextBridge.exposeInIsolatedWorld(worldId, apiKey, api)`
+### `contextBridge.exposeInIsolatedWorld<T=any>(worldId, apiKey, api)`
 
 * `worldId` Integer - The ID of the world to inject the API into. `0` is the default world, `999` is the world used by Electron's `contextIsolation` feature. Using 999 would expose the object for preload context. We recommend using 1000+ while creating isolated world.
 * `apiKey` string - The key to inject the API onto `window` with.  The API will be accessible on `window[apiKey]`.
-* `api` any - Your API, more information on what this API can be and how it works is available below.
+* `api` T - Your API, more information on what this API can be and how it works is available below.
 
 ### `contextBridge.executeInMainWorld(executionScript)` _Experimental_
 
@@ -79,7 +79,8 @@ Returns `any` - A copy of the resulting value from executing the function in the
 
 ### API
 
-The `api` provided to [`exposeInMainWorld`](#contextbridgeexposeinmainworldapikey-api) must be a `Function`, `string`, `number`, `Array`, `boolean`, or an object
+The `api` provided to [`exposeInMainWorld`](#contextbridgeexposeinmainworldtanyapikey-api)
+must be a `Function`, `string`, `number`, `Array`, `boolean`, or an object
 whose keys are strings and values are a `Function`, `string`, `number`, `Array`, `boolean`, or another nested object that meets the same conditions.
 
 `Function` values are proxied to the other context and all other values are **copied** and **frozen**. Any data / primitives sent in
