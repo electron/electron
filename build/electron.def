@@ -4,3 +4,94 @@
 ; which is one of the executable names that node-gyp recognizes.
 ; See https://github.com/nodejs/node-gyp/commit/52ceec3a6d15de3a8f385f43dbe5ecf5456ad07a
 NAME node.exe
+
+; Export zlib symbols for native addon support
+; See https://github.com/electron/electron/issues/49089
+EXPORTS
+  ; Core compression/decompression functions
+  zlibVersion
+  deflate
+  deflateEnd
+  deflateInit_
+  deflateInit2_
+  deflateSetDictionary
+  deflateReset
+  deflateParams
+  deflateBound
+  deflateCopy
+  deflateResetKeep
+  deflatePending
+  deflatePrime
+  deflateTune
+  inflate
+  inflateEnd
+  inflateInit_
+  inflateInit2_
+  inflateSetDictionary
+  inflateReset
+  inflateReset2
+  inflateSync
+  inflateCopy
+  inflateResetKeep
+  inflatePrime
+  inflateMark
+  inflateGetHeader
+  inflateBack
+  inflateBackEnd
+  inflateBackInit_
+  inflateValidate
+  inflateCodesUsed
+  inflateSyncPoint
+  inflateUndermine
+  
+  ; Convenience functions
+  compress
+  compress2
+  compressBound
+  uncompress
+  uncompress2
+  
+  ; gzip file access functions
+  gzopen
+  gzdopen
+  gzbuffer
+  gzsetparams
+  gzread
+  gzfread
+  gzwrite
+  gzfwrite
+  gzprintf
+  gzvprintf
+  gzputs
+  gzgets
+  gzputc
+  gzgetc
+  gzungetc
+  gzflush
+  gzseek
+  gzrewind
+  gztell
+  gzoffset
+  gzeof
+  gzdirect
+  gzclose
+  gzclose_r
+  gzclose_w
+  gzerror
+  gzclearerr
+  
+  ; Checksum functions
+  adler32
+  adler32_z
+  adler32_combine
+  crc32
+  crc32_z
+  crc32_combine
+  crc32_combine_gen
+  crc32_combine_op
+  
+  ; Utility functions
+  zlibCompileFlags
+  zError
+  get_crc_table
+
