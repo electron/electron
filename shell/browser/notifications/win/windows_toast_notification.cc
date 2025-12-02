@@ -66,8 +66,8 @@ namespace {
 constexpr wchar_t kGroup[] = L"Notifications";
 
 void DebugLog(std::string_view log_msg) {
-  // if (electron::debug_notifications)
-  LOG(INFO) << log_msg;
+  if (electron::debug_notifications)
+    LOG(INFO) << log_msg;
 }
 
 std::wstring GetTag(const std::string_view notification_id) {
@@ -222,12 +222,11 @@ WindowsToastNotification::~WindowsToastNotification() {
   }
 }
 
-// Show posts the display request onto the toast background thread, which
+// This method posts a request onto the toast background thread, which
 // creates the toast xml then posts notification creation to the UI thread. This
 // avoids blocking the UI for expensive XML parsing and COM initialization or
 // the COM server becoming unavailable. All needed fields are captured before
 // posting the task.
-//
 // The method will eventually result in a display or failure signal being posted
 // back to the UI thread, where further callbacks (clicked, dismissed, failed)
 // are handled by ToastEventHandler.
@@ -251,7 +250,7 @@ void WindowsToastNotification::Show(const NotificationOptions& options) {
   auto task_runner = GetToastTaskRunner();
   DebugLog(base::StrCat({"Task runner valid: ", task_runner ? "yes" : "no"}));
 
-  //   // Post Show operation to background thread to prevent blocking
+  // Post Show operation to background thread to prevent blocking
   // This is the main entry point for the notification creation process
   bool posted = task_runner->PostTask(
       FROM_HERE,
