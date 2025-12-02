@@ -123,3 +123,89 @@ runs:
 
         Write-Host "Wiping Electron Directory"
         Remove-Item -Recurse -Force src\electron
+
+  - name: Diagnose cache extraction (Windows)
+    if: ${{ inputs.target-platform == 'win' }}
+    shell: powershell
+    run: |
+      Write-Host "=== Diagnosing Windows cache extraction ==="
+      Write-Host "Checking for symlinks and reparse points that may cause ninja failures"
+      Write-Host ""
+
+      # Count total reparse points (symlinks) in src
+      Write-Host "=== Counting reparse points in src ==="
+      $reparsePoints = Get-ChildItem -Path "src" -Recurse -Force -ErrorAction SilentlyContinue |
+        Where-Object { $_.Attributes -match 'ReparsePoint' }
+      $reparseCount = ($reparsePoints | Measure-Object).Count
+      Write-Host "Total reparse points found: $reparseCount"
+
+      if ($reparseCount -gt 0) {
+        Write-Host ""
+        Write-Host "=== First 30 reparse points ==="
+        $reparsePoints | Select-Object -First 30 | ForEach-Object {
+          $target = $_.Target
+          $exists = if ($target) { Test-Path $target } else { "N/A" }
+          Write-Host "  $($_.FullName)"
+          Write-Host "    -> Target: $target"
+          Write-Host "    -> Target exists: $exists"
+        }
+      }
+
+      # Check for broken symlinks
+      Write-Host ""
+      Write-Host "=== Checking for broken symlinks ==="
+      $brokenLinks = @()
+      $reparsePoints | ForEach-Object {
+        $target = $_.Target
+        if ($target -and !(Test-Path $target -ErrorAction SilentlyContinue)) {
+          $brokenLinks += $_
+        }
+      }
+      $brokenCount = ($brokenLinks | Measure-Object).Count
+      Write-Host "Broken symlinks found: $brokenCount"
+
+      if ($brokenCount -gt 0) {
+        Write-Host ""
+        Write-Host "=== First 20 broken symlinks ==="
+        $brokenLinks | Select-Object -First 20 | ForEach-Object {
+          Write-Host "  BROKEN: $($_.FullName) -> $($_.Target)"
+        }
+      }
+
+      # Check specific directories known to have issues
+      Write-Host ""
+      Write-Host "=== Checking third_party directories ==="
+      $dirsToCheck = @(
+        "src\third_party\crashpad",
+        "src\third_party\angle",
+        "src\third_party\dawn"
+      )
+
+      foreach ($dir in $dirsToCheck) {
+        if (Test-Path $dir) {
+          $dirReparse = Get-ChildItem -Path $dir -Recurse -Force -ErrorAction SilentlyContinue |
+            Where-Object { $_.Attributes -match 'ReparsePoint' }
+          $dirCount = ($dirReparse | Measure-Object).Count
+          Write-Host "  $dir - reparse points: $dirCount"
+        } else {
+          Write-Host "  $dir - NOT FOUND"
+        }
+      }
+
+      # Check for zero-byte files that might be failed symlink extractions
+      Write-Host ""
+      Write-Host "=== Checking for suspicious zero-byte files in third_party ==="
+      $zeroByteFiles = Get-ChildItem -Path "src\third_party" -Recurse -File -Force -ErrorAction SilentlyContinue |
+        Where-Object { $_.Length -eq 0 } |
+        Select-Object -First 50
+      $zeroCount = ($zeroByteFiles | Measure-Object).Count
+      Write-Host "Zero-byte files found (first 50): $zeroCount"
+
+      if ($zeroCount -gt 0) {
+        $zeroByteFiles | Select-Object -First 10 | ForEach-Object {
+          Write-Host "  ZERO-BYTE: $($_.FullName)"
+        }
+      }
+
+      Write-Host ""
+      Write-Host "=== Diagnostic complete ==="
