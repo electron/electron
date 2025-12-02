@@ -9,6 +9,8 @@ Subject: feat: configure launch options for service process
   Allows configuring base::LaunchOptions::handles_to_inherit, base::LaunchOptions::stdout_handle,
   base::LaunchOptions::stderr_handle and base::LaunchOptions::feedback_cursor_off when launching
   the child process.
+- Mac:
+  Allows configuring base::LaunchOptions::disclaim_responsibility when launching the child process.
 - All:
   Allows configuring base::LauncOptions::current_directory, base::LaunchOptions::enviroment
   and base::LaunchOptions::clear_environment.
@@ -165,10 +167,10 @@ index 0791b5317fc6846389f65f93734ae5e816d04623..48948b409d6da58ade72c60ed848df49
                           FinishStartSandboxedProcessOnLauncherThread,
                       this));
 diff --git a/content/browser/service_host/service_process_host_impl.cc b/content/browser/service_host/service_process_host_impl.cc
-index d9c14f91747bde0e76056d7f2f2ada166e67f994..53be16879777a3b9bef58ead5f7e420c1bf6acbe 100644
+index d9c14f91747bde0e76056d7f2f2ada166e67f994..09335acac17f526fb8d8e42e4b2d993b11045786 100644
 --- a/content/browser/service_host/service_process_host_impl.cc
 +++ b/content/browser/service_host/service_process_host_impl.cc
-@@ -69,6 +69,17 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
+@@ -69,6 +69,21 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
      utility_options.WithGpuClientAllowed();
    }
  
@@ -179,6 +181,10 @@ index d9c14f91747bde0e76056d7f2f2ada166e67f994..53be16879777a3b9bef58ead5f7e420c
 +#elif BUILDFLAG(IS_POSIX)
 +  utility_options.WithAdditionalFds(std::move(service_options.fds_to_remap));
 +#endif
++#if BUILDFLAG(IS_MAC)
++  utility_options.WithDisclaimResponsibility(
++      service_options.disclaim_responsibility);
++#endif
 +  utility_options.WithCurrentDirectory(service_options.current_directory);
 +  utility_options.WithEnvironment(service_options.environment,
 +                                  service_options.clear_environment);
@@ -187,7 +193,7 @@ index d9c14f91747bde0e76056d7f2f2ada166e67f994..53be16879777a3b9bef58ead5f7e420c
  
    UtilityProcessHost::Start(std::move(utility_options),
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index c798b3394db7638e38613a016c2dbb0bfcf54d03..1298ea85a176db2150a4101afc205745f32eb8f5 100644
+index c798b3394db7638e38613a016c2dbb0bfcf54d03..e90c8a9b2ac7d17fe7e5e814fd6eb3333f440bbe 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
 @@ -241,13 +241,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
@@ -207,7 +213,7 @@ index c798b3394db7638e38613a016c2dbb0bfcf54d03..1298ea85a176db2150a4101afc205745
  
  #if BUILDFLAG(USE_ZYGOTE)
  UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
-@@ -257,6 +257,36 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
+@@ -257,6 +257,45 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -241,10 +247,19 @@ index c798b3394db7638e38613a016c2dbb0bfcf54d03..1298ea85a176db2150a4101afc205745
 +}
 +#endif  // BUILDFLAG(IS_WIN)
 +
++#if BUILDFLAG(IS_MAC)
++UtilityProcessHost::Options&
++UtilityProcessHost::Options::WithDisclaimResponsibility(
++    bool disclaim_responsibility) {
++  disclaim_responsibility_ = disclaim_responsibility;
++  return *this;
++}
++#endif  // BUILDFLAG(IS_MAC)
++
  UtilityProcessHost::Options&
  UtilityProcessHost::Options::WithBoundReceiverOnChildProcessForTesting(
      mojo::GenericPendingReceiver receiver) {
-@@ -520,9 +550,26 @@ bool UtilityProcessHost::StartProcess() {
+@@ -520,9 +559,30 @@ bool UtilityProcessHost::StartProcess() {
    }
  #endif  // BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE) && !BUILDFLAG(IS_WIN)
  
@@ -269,11 +284,15 @@ index c798b3394db7638e38613a016c2dbb0bfcf54d03..1298ea85a176db2150a4101afc205745
 +#if BUILDFLAG(IS_WIN)
 +  delegate->SetFeedbackCursorOff(options_.feedback_cursor_off_);
 +#endif  // BUILDFLAG(IS_WIN)
++
++#if BUILDFLAG(IS_MAC)
++  delegate->SetDisclaimResponsibility(options_.disclaim_responsibility_);
++#endif  // BUILDFLAG(IS_MAC)
  
  #if BUILDFLAG(IS_WIN)
    if (!options_.preload_libraries_.empty()) {
 diff --git a/content/browser/service_host/utility_process_host.h b/content/browser/service_host/utility_process_host.h
-index 580fa663e729a43bef44a10de8983c4aecc312fb..f39af3df87786a472f987309ac0dea699b9f0d9f 100644
+index 580fa663e729a43bef44a10de8983c4aecc312fb..c339f2b8504beee6ed2e5746a8e6b961a7aa9746 100644
 --- a/content/browser/service_host/utility_process_host.h
 +++ b/content/browser/service_host/utility_process_host.h
 @@ -31,6 +31,7 @@
@@ -284,7 +303,7 @@ index 580fa663e729a43bef44a10de8983c4aecc312fb..f39af3df87786a472f987309ac0dea69
  #endif  // BUILDFLAG(IS_WIN)
  
  namespace base {
-@@ -134,14 +135,31 @@ class CONTENT_EXPORT UtilityProcessHost final
+@@ -134,14 +135,36 @@ class CONTENT_EXPORT UtilityProcessHost final
          std::variant<base::FilePath, base::ScopedFD> file);
  #endif
  
@@ -316,10 +335,15 @@ index 580fa663e729a43bef44a10de8983c4aecc312fb..f39af3df87786a472f987309ac0dea69
 +    Options& WithFeedbackCursorOff(bool feedback_cursor_off);
 +#endif  // BUILDFLAG(IS_WIN)
 +
++#if BUILDFLAG(IS_MAC)
++    // Specifies if the process should disclaim TCC responsibility.
++    Options& WithDisclaimResponsibility(bool disclaim_responsibility);
++#endif  // BUILDFLAG(IS_MAC)
++
      // Requests that the process bind a receiving pipe targeting the interface
      // named by `receiver`. Calls to this method generally end up in
      // `ChildThreadImpl::OnBindReceiver()` and the option is used for testing
-@@ -185,6 +203,27 @@ class CONTENT_EXPORT UtilityProcessHost final
+@@ -185,6 +208,32 @@ class CONTENT_EXPORT UtilityProcessHost final
      std::optional<raw_ptr<ZygoteCommunication>> zygote_for_testing_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -344,11 +368,16 @@ index 580fa663e729a43bef44a10de8983c4aecc312fb..f39af3df87786a472f987309ac0dea69
 +    bool feedback_cursor_off_ = false;
 +#endif  // BUILDFLAG(IS_WIN)
 +
++#if BUILDFLAG(IS_MAC)
++    // Specifies if the process should disclaim TCC responsibility.
++    bool disclaim_responsibility_ = false;
++#endif  // BUILDFLAG(IS_MAC)
++
  #if BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE)
      // Whether or not to bind viz::mojom::Gpu to the utility process.
      bool allowed_gpu_;
 diff --git a/content/browser/service_host/utility_sandbox_delegate.cc b/content/browser/service_host/utility_sandbox_delegate.cc
-index ffa237864328e19868ed0d29590981e972cae9fb..877318c5158a3cd48ff23aa05d3570ff7bb01a6b 100644
+index ffa237864328e19868ed0d29590981e972cae9fb..3d1607f4c6e4becf416391f7b8c5a966340a86b5 100644
 --- a/content/browser/service_host/utility_sandbox_delegate.cc
 +++ b/content/browser/service_host/utility_sandbox_delegate.cc
 @@ -39,17 +39,19 @@ UtilitySandboxedProcessLauncherDelegate::
@@ -406,8 +435,24 @@ index ffa237864328e19868ed0d29590981e972cae9fb..877318c5158a3cd48ff23aa05d3570ff
  
  #if BUILDFLAG(USE_ZYGOTE)
  ZygoteCommunication* UtilitySandboxedProcessLauncherDelegate::GetZygote() {
+@@ -189,6 +208,15 @@ UtilitySandboxedProcessLauncherDelegate::GetProcessRequirement() {
+ 
+   return std::nullopt;
+ }
++
++void UtilitySandboxedProcessLauncherDelegate::SetDisclaimResponsibility(
++    bool disclaim_responsibility) {
++  disclaim_responsibility_ = disclaim_responsibility;
++}
++
++bool UtilitySandboxedProcessLauncherDelegate::DisclaimResponsibility() {
++  return disclaim_responsibility_;
++}
+ #endif  // BUILDFLAG(IS_MAC)
+ 
+ }  // namespace content
 diff --git a/content/browser/service_host/utility_sandbox_delegate.h b/content/browser/service_host/utility_sandbox_delegate.h
-index f2e8c1d62c1cb1677f618b584ed401685b03034b..7c47ec471e4676365cf3e023808983cb3e7a18d0 100644
+index f2e8c1d62c1cb1677f618b584ed401685b03034b..00a20885092bd299e817685dd18c3971b25f721b 100644
 --- a/content/browser/service_host/utility_sandbox_delegate.h
 +++ b/content/browser/service_host/utility_sandbox_delegate.h
 @@ -36,7 +36,9 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
@@ -438,7 +483,12 @@ index f2e8c1d62c1cb1677f618b584ed401685b03034b..7c47ec471e4676365cf3e023808983cb
  
  #if BUILDFLAG(USE_ZYGOTE)
    void SetZygote(ZygoteCommunication* handle);
-@@ -77,9 +84,7 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
+@@ -74,12 +81,12 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
+ 
+ #if BUILDFLAG(IS_MAC)
+   std::optional<base::mac::ProcessRequirement> GetProcessRequirement() override;
++  void SetDisclaimResponsibility(bool disclaim_responsibility);
++  bool DisclaimResponsibility() override;
  #endif  // BUILDFLAG(IS_MAC)
  
   private:
@@ -448,7 +498,7 @@ index f2e8c1d62c1cb1677f618b584ed401685b03034b..7c47ec471e4676365cf3e023808983cb
  
  #if BUILDFLAG(IS_WIN)
    // Adds preload-libraries to the delegate blob for utility_main() to access
-@@ -95,12 +100,17 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
+@@ -95,12 +102,20 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
    std::optional<raw_ptr<ZygoteCommunication>> zygote_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -463,6 +513,9 @@ index f2e8c1d62c1cb1677f618b584ed401685b03034b..7c47ec471e4676365cf3e023808983cb
 +#if BUILDFLAG(IS_WIN)
 +  bool feedback_cursor_off_ = false;
 +#endif  // BUILDFLAG(IS_WIN)
++#if BUILDFLAG(IS_MAC)
++  bool disclaim_responsibility_ = false;
++#endif  // BUILDFLAG(IS_MAC)
  };
  }  // namespace content
  
@@ -489,10 +542,10 @@ index 39c96d4423b24695eee86353057cfeed19318b57..31b343d97b7672294644041c9bb1a4cd
  }
  
 diff --git a/content/public/browser/service_process_host.cc b/content/public/browser/service_process_host.cc
-index d1bc550a891979e2d41d8d5b18a2f9287468e460..5fcac7a8493e5065f80303067a04f59e7c4509ef 100644
+index d1bc550a891979e2d41d8d5b18a2f9287468e460..5d255f628788bc8b40d8df0039b08c06ffec8730 100644
 --- a/content/public/browser/service_process_host.cc
 +++ b/content/public/browser/service_process_host.cc
-@@ -53,12 +53,53 @@ ServiceProcessHost::Options::WithExtraCommandLineSwitches(
+@@ -53,12 +53,62 @@ ServiceProcessHost::Options::WithExtraCommandLineSwitches(
    return *this;
  }
  
@@ -543,11 +596,20 @@ index d1bc550a891979e2d41d8d5b18a2f9287468e460..5fcac7a8493e5065f80303067a04f59e
 +}
 +#endif  // #if BUILDFLAG(IS_WIN)
 +
++#if BUILDFLAG(IS_MAC)
++ServiceProcessHost::Options&
++ServiceProcessHost::Options::WithDisclaimResponsibility(
++    bool should_disclaim_responsibility) {
++  disclaim_responsibility = should_disclaim_responsibility;
++  return *this;
++}
++#endif  // BUILDFLAG(IS_MAC)
++
  #if BUILDFLAG(IS_WIN)
  ServiceProcessHost::Options&
  ServiceProcessHost::Options::WithPreloadedLibraries(
 diff --git a/content/public/browser/service_process_host.h b/content/public/browser/service_process_host.h
-index 0062d2cb6634b8b29977a0312516b1b13936b40a..611a52e908f4cb70fbe5628e220a082e45320b70 100644
+index 0062d2cb6634b8b29977a0312516b1b13936b40a..888ff36d70c83010f1f45e9eeb2dd6b573158db5 100644
 --- a/content/public/browser/service_process_host.h
 +++ b/content/public/browser/service_process_host.h
 @@ -14,6 +14,7 @@
@@ -569,7 +631,7 @@ index 0062d2cb6634b8b29977a0312516b1b13936b40a..611a52e908f4cb70fbe5628e220a082e
  namespace base {
  class Process;
  }  // namespace base
-@@ -94,11 +99,35 @@ class CONTENT_EXPORT ServiceProcessHost {
+@@ -94,11 +99,40 @@ class CONTENT_EXPORT ServiceProcessHost {
      // Specifies extra command line switches to append before launch.
      Options& WithExtraCommandLineSwitches(std::vector<std::string> switches);
  
@@ -602,10 +664,15 @@ index 0062d2cb6634b8b29977a0312516b1b13936b40a..611a52e908f4cb70fbe5628e220a082e
 +    Options& WithFeedbackCursorOff(bool feedback_cursor_off);
 +#endif  // #if BUILDFLAG(IS_WIN)
 +
++#if BUILDFLAG(IS_MAC)
++    // Specifies if the process should disclaim TCC responsibility.
++    Options& WithDisclaimResponsibility(bool disclaim_responsibility);
++#endif  // BUILDFLAG(IS_MAC)
++
  #if BUILDFLAG(IS_WIN)
      // Specifies libraries to preload before the sandbox is locked down. Paths
      // should be absolute paths. Libraries will be preloaded before sandbox
-@@ -127,11 +156,23 @@ class CONTENT_EXPORT ServiceProcessHost {
+@@ -127,11 +161,26 @@ class CONTENT_EXPORT ServiceProcessHost {
      std::optional<GURL> site;
      std::optional<int> child_flags;
      std::vector<std::string> extra_switches;
@@ -626,6 +693,9 @@ index 0062d2cb6634b8b29977a0312516b1b13936b40a..611a52e908f4cb70fbe5628e220a082e
 +#if BUILDFLAG(IS_WIN)
 +    bool feedback_cursor_off = false;
 +#endif  // BUILDFLAG(IS_WIN)
++#if BUILDFLAG(IS_MAC)
++    bool disclaim_responsibility = false;
++#endif  // BUILDFLAG(IS_MAC)
    };
  
    // An interface which can be implemented and registered/unregistered with
