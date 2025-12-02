@@ -16,11 +16,13 @@
 #include "base/containers/fixed_flat_map.h"
 #include "base/hash/hash.h"
 #include "base/logging.h"
+#include "base/no_destructor.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/thread_pool.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/notifications/notification_delegate.h"
@@ -97,14 +99,16 @@ const std::string FailureResultToString(HRESULT failure_reason) {
         "The notification platform does not have the proper privileges to "
         "complete the request."}});
 
+  std::string hresult_str = base::StrCat(
+      {" (HRESULT: ", base::NumberToString(static_cast<long>(failure_reason)),
+       ")"});
+
   if (const auto it = kFailureMessages.find(failure_reason);
       it != kFailureMessages.end()) {
-    return base::StrCat({"Notification failed - ", it->second});
+    return base::StrCat({"Notification failed - ", it->second, hresult_str});
   }
 
-  return base::StrCat({"Notification failed - Unknown failure reason (HRESULT ",
-                       base::NumberToString(static_cast<long>(failure_reason)),
-                       ")"});
+  return hresult_str;
 }
 
 constexpr char kToast[] = "toast";
@@ -155,6 +159,17 @@ ComPtr<winui::Notifications::IToastNotifier>*
     WindowsToastNotification::toast_notifier_ = nullptr;
 
 // static
+scoped_refptr<base::SequencedTaskRunner>
+WindowsToastNotification::GetToastTaskRunner() {
+  // Use function-local static to avoid exit-time destructor warning
+  static base::NoDestructor<scoped_refptr<base::SequencedTaskRunner>>
+      task_runner(base::ThreadPool::CreateSequencedTaskRunner(
+          {base::TaskPriority::USER_BLOCKING,
+           base::TaskShutdownBehavior::CONTINUE_ON_SHUTDOWN,
+           base::MayBlock()}));
+  return *task_runner;
+}
+
 bool WindowsToastNotification::Initialize() {
   // Just initialize, don't care if it fails or already initialized.
   Windows::Foundation::Initialize(RO_INIT_MULTITHREADED);
@@ -207,13 +222,277 @@ WindowsToastNotification::~WindowsToastNotification() {
   }
 }
 
+// This method posts a request onto the toast background thread, which
+// creates the toast xml then posts notification creation to the UI thread. This
+// avoids blocking the UI for expensive XML parsing and COM initialization or
+// the COM server becoming unavailable. All needed fields are captured before
+// posting the task.
+// The method will eventually result in a display or failure signal being posted
+// back to the UI thread, where further callbacks (clicked, dismissed, failed)
+// are handled by ToastEventHandler.
 void WindowsToastNotification::Show(const NotificationOptions& options) {
-  if (SUCCEEDED(ShowInternal(options))) {
-    DebugLog("Notification created");
-
-    if (delegate())
-      delegate()->NotificationDisplayed();
+  DebugLog("WindowsToastNotification::Show called");
+  DebugLog(base::StrCat(
+      {"toast_xml empty: ", options.toast_xml.empty() ? "yes" : "no"}));
+  if (!options.toast_xml.empty()) {
+    DebugLog(base::StrCat({"toast_xml length: ",
+                           base::NumberToString(options.toast_xml.length())}));
   }
+
+  // Capture all needed data on UI thread before posting to background thread
+  std::string notif_id = notification_id();
+  NotificationPresenter* presenter_ptr = presenter();
+  base::WeakPtr<Notification> weak_this = GetWeakPtr();
+  scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner =
+      content::GetUIThreadTaskRunner({});
+
+  DebugLog("Posting task to background thread");
+  auto task_runner = GetToastTaskRunner();
+  DebugLog(base::StrCat({"Task runner valid: ", task_runner ? "yes" : "no"}));
+
+  // Post Show operation to background thread to prevent blocking
+  // This is the main entry point for the notification creation process
+  bool posted = task_runner->PostTask(
+      FROM_HERE,
+      base::BindOnce(
+          &WindowsToastNotification::CreateToastNotificationOnBackgroundThread,
+          options, presenter_ptr, notif_id, weak_this, ui_task_runner));
+  DebugLog(base::StrCat(
+      {"Task posted to background thread: ", posted ? "yes" : "no"}));
+}
+
+// Creates the toast XML on the background thread. If the XML is invalid, posts
+// a failure event back to the UI thread. Otherwise, continues to create the
+// toast notification on the background thread.
+void WindowsToastNotification::CreateToastNotificationOnBackgroundThread(
+    const NotificationOptions& options,
+    NotificationPresenter* presenter,
+    const std::string& notification_id,
+    base::WeakPtr<Notification> weak_notification,
+    scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner) {
+  DebugLog("CreateToastXmlOnBackgroundThread called");
+  ComPtr<IXmlDocument> toast_xml;
+
+  if (!CreateToastXmlDocument(options, presenter, weak_notification,
+                              ui_task_runner, &toast_xml)) {
+    return;  // Error already posted to UI thread
+  }
+
+  // Continue to create the toast notification
+  ComPtr<ABI::Windows::UI::Notifications::IToastNotification>
+      toast_notification;
+  if (!CreateToastNotification(toast_xml, notification_id, weak_notification,
+                               ui_task_runner, &toast_notification)) {
+    return;  // Error already posted to UI thread
+  }
+
+  // Setup callbacks and show on UI thread (Show must be called on UI thread)
+  scoped_refptr<base::SingleThreadTaskRunner> ui_runner =
+      content::GetUIThreadTaskRunner({});
+  ui_runner->PostTask(
+      FROM_HERE,
+      base::BindOnce(&WindowsToastNotification::SetupAndShowOnUIThread,
+                     weak_notification, toast_notification));
+}
+
+// Creates the toast XML document on the background thread. Returns true on
+// success, false on failure. On failure, posts error to UI thread. static
+bool WindowsToastNotification::CreateToastXmlDocument(
+    const NotificationOptions& options,
+    NotificationPresenter* presenter,
+    base::WeakPtr<Notification> weak_notification,
+    scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner,
+    ComPtr<IXmlDocument>* toast_xml) {
+  // The custom xml takes priority over the preset template.
+  if (!options.toast_xml.empty()) {
+    DebugLog(base::StrCat({"Processing custom toast_xml, length: ",
+                           base::NumberToString(options.toast_xml.length())}));
+    HRESULT hr = XmlDocumentFromString(base::as_wcstr(options.toast_xml),
+                                       toast_xml->GetAddressOf());
+    DebugLog(base::StrCat({"XmlDocumentFromString returned HRESULT: ",
+                           base::NumberToString(hr)}));
+    if (FAILED(hr)) {
+      std::string err =
+          base::StrCat({"XML: Invalid XML, ERROR ", FailureResultToString(hr)});
+      DebugLog(base::StrCat({"XML parsing failed, posting error: ", err}));
+      PostNotificationFailedToUIThread(weak_notification, err, ui_task_runner);
+      DebugLog("PostNotificationFailedToUIThread called");
+      return false;
+    }
+    DebugLog("XML parsing succeeded");
+  } else {
+    auto* presenter_win = static_cast<NotificationPresenterWin*>(presenter);
+    std::wstring icon_path =
+        presenter_win->SaveIconToFilesystem(options.icon, options.icon_url);
+    std::u16string toast_xml_str =
+        GetToastXml(options.title, options.msg, icon_path, options.timeout_type,
+                    options.silent);
+    HRESULT hr = XmlDocumentFromString(base::as_wcstr(toast_xml_str),
+                                       toast_xml->GetAddressOf());
+    if (FAILED(hr)) {
+      std::string err =
+          base::StrCat({"XML: Invalid XML, ERROR ", FailureResultToString(hr)});
+      DebugLog(err);
+      PostNotificationFailedToUIThread(weak_notification, err, ui_task_runner);
+      return false;
+    }
+  }
+  return true;
+}
+
+// Creates the toast notification on the background thread. Returns true on
+// success, false on failure. On failure, posts error to UI thread. On success,
+// returns the created notification via out parameter.
+bool WindowsToastNotification::CreateToastNotification(
+    ComPtr<ABI::Windows::Data::Xml::Dom::IXmlDocument> toast_xml,
+    const std::string& notification_id,
+    base::WeakPtr<Notification> weak_notification,
+    scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner,
+    ComPtr<ABI::Windows::UI::Notifications::IToastNotification>*
+        toast_notification) {
+  ScopedHString toast_str(
+      RuntimeClass_Windows_UI_Notifications_ToastNotification);
+  if (!toast_str.success()) {
+    PostNotificationFailedToUIThread(
+        weak_notification, "Creating ScopedHString failed", ui_task_runner);
+    return false;
+  }
+
+  ComPtr<winui::Notifications::IToastNotificationFactory> toast_factory;
+  HRESULT hr =
+      Windows::Foundation::GetActivationFactory(toast_str, &toast_factory);
+  if (FAILED(hr)) {
+    std::string err =
+        base::StrCat({"WinAPI: GetActivationFactory failed, ERROR ",
+                      FailureResultToString(hr)});
+    DebugLog(err);
+    PostNotificationFailedToUIThread(weak_notification, err, ui_task_runner);
+    return false;
+  }
+
+  hr = toast_factory->CreateToastNotification(
+      toast_xml.Get(), toast_notification->GetAddressOf());
+  if (FAILED(hr)) {
+    std::string err =
+        base::StrCat({"WinAPI: CreateToastNotification failed, ERROR ",
+                      FailureResultToString(hr)});
+    DebugLog(err);
+    PostNotificationFailedToUIThread(weak_notification, err, ui_task_runner);
+    return false;
+  }
+
+  ComPtr<winui::Notifications::IToastNotification2> toast2;
+  hr = (*toast_notification)->QueryInterface(IID_PPV_ARGS(&toast2));
+  if (FAILED(hr)) {
+    std::string err =
+        base::StrCat({"WinAPI: Getting Notification interface failed, ERROR ",
+                      FailureResultToString(hr)});
+    DebugLog(err);
+    PostNotificationFailedToUIThread(weak_notification, err, ui_task_runner);
+    return false;
+  }
+
+  ScopedHString group(kGroup);
+  hr = toast2->put_Group(group);
+  if (FAILED(hr)) {
+    std::string err = base::StrCat(
+        {"WinAPI: Setting group failed, ERROR ", FailureResultToString(hr)});
+    DebugLog(err);
+    PostNotificationFailedToUIThread(weak_notification, err, ui_task_runner);
+    return false;
+  }
+
+  ScopedHString tag(GetTag(notification_id));
+  hr = toast2->put_Tag(tag);
+  if (FAILED(hr)) {
+    std::string err = base::StrCat(
+        {"WinAPI: Setting tag failed, ERROR ", FailureResultToString(hr)});
+    DebugLog(err);
+    PostNotificationFailedToUIThread(weak_notification, err, ui_task_runner);
+    return false;
+  }
+
+  return true;
+}
+
+// Sets up callbacks and shows the notification on the UI thread.
+// This part has to be called on the UI thread. This WinRT API
+// does not allow calls from background threads.
+void WindowsToastNotification::SetupAndShowOnUIThread(
+    base::WeakPtr<Notification> weak_notification,
+    ComPtr<ABI::Windows::UI::Notifications::IToastNotification> notification) {
+  auto* notif = static_cast<WindowsToastNotification*>(weak_notification.get());
+  if (!notif)
+    return;
+
+  // Setup callbacks and store notification on UI thread
+  HRESULT hr = notif->SetupCallbacks(notification.Get());
+  if (FAILED(hr)) {
+    std::string err = base::StrCat(
+        {"WinAPI: SetupCallbacks failed, ERROR ", FailureResultToString(hr)});
+    DebugLog(err);
+    notif->NotificationFailed(err);
+    return;
+  }
+
+  notif->toast_notification_ = notification;
+
+  // Show notification on UI thread (must be called on UI thread)
+  hr = (*toast_notifier_)->Show(notification.Get());
+  if (FAILED(hr)) {
+    std::string err = base::StrCat(
+        {"WinAPI: Show failed, ERROR ", FailureResultToString(hr)});
+    DebugLog(err);
+    notif->NotificationFailed(err);
+    return;
+  }
+
+  DebugLog("Notification created");
+  if (notif->delegate())
+    notif->delegate()->NotificationDisplayed();
+}
+
+// Posts a notification failure event back to the UI thread. If the UI thread's
+// task runner is not provided, it fetches it. On the UI thread, calls
+// NotificationFailed on the Notification instance (if it is still valid), which
+// will invoke the delegate (if set) and clean up.
+void WindowsToastNotification::PostNotificationFailedToUIThread(
+    base::WeakPtr<Notification> weak_notification,
+    const std::string& error,
+    scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner) {
+  DebugLog(base::StrCat(
+      {"PostNotificationFailedToUIThread called with error: ", error}));
+  if (!ui_task_runner) {
+    ui_task_runner = content::GetUIThreadTaskRunner({});
+  }
+  ui_task_runner->PostTask(
+      FROM_HERE,
+      base::BindOnce(
+          [](base::WeakPtr<Notification> weak_notification,
+             const std::string& error) {
+            DebugLog(
+                "PostNotificationFailedToUIThread lambda executing on UI "
+                "thread");
+            if (!weak_notification) {
+              DebugLog(base::StrCat(
+                  {"Notification failed but object destroyed: ", error}));
+              return;
+            }
+
+            // Call NotificationFailed - it will check for delegate internally
+            // and emit the event if delegate is set
+            DebugLog(base::StrCat(
+                {"Calling NotificationFailed with error: ", error}));
+            auto* delegate = weak_notification->delegate();
+            DebugLog(
+                base::StrCat({"Delegate is set: ", delegate ? "yes" : "no"}));
+
+            // Call NotificationFailed which will call delegate if set, then
+            // cleanup
+            weak_notification->NotificationFailed(error);
+            DebugLog("NotificationFailed call completed");
+          },
+          weak_notification, error));
 }
 
 void WindowsToastNotification::Remove() {
@@ -241,64 +520,6 @@ void WindowsToastNotification::Dismiss() {
   DebugLog("Hiding notification");
 
   (*toast_notifier_)->Hide(toast_notification_.Get());
-}
-
-HRESULT WindowsToastNotification::ShowInternal(
-    const NotificationOptions& options) {
-  ComPtr<IXmlDocument> toast_xml;
-  // The custom xml takes priority over the preset template.
-  if (!options.toast_xml.empty()) {
-    REPORT_AND_RETURN_IF_FAILED(
-        XmlDocumentFromString(base::as_wcstr(options.toast_xml), &toast_xml),
-        "XML: Invalid XML");
-  } else {
-    auto* presenter_win = static_cast<NotificationPresenterWin*>(presenter());
-    std::wstring icon_path =
-        presenter_win->SaveIconToFilesystem(options.icon, options.icon_url);
-    std::u16string toast_xml_str =
-        GetToastXml(options.title, options.msg, icon_path, options.timeout_type,
-                    options.silent);
-    REPORT_AND_RETURN_IF_FAILED(
-        XmlDocumentFromString(base::as_wcstr(toast_xml_str), &toast_xml),
-        "XML: Invalid XML");
-  }
-
-  ScopedHString toast_str(
-      RuntimeClass_Windows_UI_Notifications_ToastNotification);
-  if (!toast_str.success()) {
-    NotificationFailed("Creating ScopedHString failed");
-    return E_FAIL;
-  }
-
-  ComPtr<winui::Notifications::IToastNotificationFactory> toast_factory;
-  REPORT_AND_RETURN_IF_FAILED(
-      Windows::Foundation::GetActivationFactory(toast_str, &toast_factory),
-      "WinAPI: GetActivationFactory failed");
-
-  REPORT_AND_RETURN_IF_FAILED(toast_factory->CreateToastNotification(
-                                  toast_xml.Get(), &toast_notification_),
-                              "WinAPI: CreateToastNotification failed");
-
-  ComPtr<winui::Notifications::IToastNotification2> toast2;
-  REPORT_AND_RETURN_IF_FAILED(
-      toast_notification_->QueryInterface(IID_PPV_ARGS(&toast2)),
-      "WinAPI: Getting Notification interface failed");
-
-  ScopedHString group(kGroup);
-  REPORT_AND_RETURN_IF_FAILED(toast2->put_Group(group),
-                              "WinAPI: Setting group failed");
-
-  ScopedHString tag(GetTag(notification_id()));
-  REPORT_AND_RETURN_IF_FAILED(toast2->put_Tag(tag),
-                              "WinAPI: Setting tag failed");
-
-  REPORT_AND_RETURN_IF_FAILED(SetupCallbacks(toast_notification_.Get()),
-                              "WinAPI: SetupCallbacks failed");
-
-  REPORT_AND_RETURN_IF_FAILED(
-      (*toast_notifier_)->Show(toast_notification_.Get()),
-      "WinAPI: Show failed");
-  return S_OK;
 }
 
 std::u16string WindowsToastNotification::GetToastXml(
