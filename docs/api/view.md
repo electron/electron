@@ -113,7 +113,7 @@ Examples of valid `color` values:
 
 * `visible` boolean - If false, the view will be hidden from display.
 
-#### `view.getVisible()`
+#### `view.isVisible()`
 
 Returns `boolean` - Whether the view should be drawn. Note that this is
 different from whether the view is visible on screen—it may still be obscured

@@ -457,7 +457,7 @@ void View::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setBorderRadius", &View::SetBorderRadius)
       .SetMethod("setLayout", &View::SetLayout)
       .SetMethod("setVisible", &View::SetVisible)
-      .SetMethod("getVisible", &View::GetVisible);
+      .SetMethod("isVisible", &View::GetVisible);
 }
 
 }  // namespace electron::api

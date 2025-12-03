@@ -80,16 +80,16 @@ describe('View', () => {
     v.setBorderRadius(-9999999);
   });
 
-  describe('view.getVisible|setVisible', () => {
+  describe('view.isVisible|setVisible', () => {
     it('is visible by default', () => {
       const v = new View();
-      expect(v.getVisible()).to.be.true();
+      expect(v.isVisible()).to.be.true();
     });
 
     it('can be set to not visible', () => {
       const v = new View();
       v.setVisible(false);
-      expect(v.getVisible()).to.be.false();
+      expect(v.isVisible()).to.be.false();
     });
   });
 
