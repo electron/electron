@@ -394,7 +394,7 @@ void View::SetVisible(bool visible) {
   view_->SetVisible(visible);
 }
 
-bool View::GetVisible() const {
+bool View::IsVisible() const {
   return view_ ? view_->GetVisible() : false;
 }
 
@@ -457,7 +457,7 @@ void View::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setBorderRadius", &View::SetBorderRadius)
       .SetMethod("setLayout", &View::SetLayout)
       .SetMethod("setVisible", &View::SetVisible)
-      .SetMethod("isVisible", &View::GetVisible);
+      .SetMethod("isVisible", &View::IsVisible);
 }
 
 }  // namespace electron::api
