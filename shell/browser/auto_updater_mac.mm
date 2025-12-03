@@ -157,7 +157,11 @@ void AutoUpdater::CheckForUpdates() {
 void AutoUpdater::QuitAndInstall() {
   Delegate* delegate = AutoUpdater::GetDelegate();
   if (g_update_available) {
-    [[g_updater relaunchToInstallUpdate] subscribeError:^(NSError* error) {
+    [[g_updater relaunchToInstallUpdate] subscribeCompleted:^{
+      dispatch_async(dispatch_get_main_queue(), ^{
+        electron::Browser::Get()->Quit();
+      });
+    } error:^(NSError* error) {
       if (delegate)
         delegate->OnError(base::SysNSStringToUTF8(error.localizedDescription),
                           error.code, base::SysNSStringToUTF8(error.domain));
