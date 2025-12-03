@@ -515,7 +515,7 @@ gin_helper::Handle<DesktopCapturer> DesktopCapturer::Create(
 }
 
 // static
-#if !BUILDFLAG(IS_MAC)
+#if !BUILDFLAG(IS_MAC) && !BUILDFLAG(IS_LINUX)
 bool DesktopCapturer::IsDisplayMediaSystemPickerAvailable() {
   return false;
 }
