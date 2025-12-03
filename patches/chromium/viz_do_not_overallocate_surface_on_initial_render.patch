@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Niklas Wenzel <dev@nikwen.de>
+Date: Wed, 3 Dec 2025 17:08:55 +0100
+Subject: viz: Do not overallocate surface on initial render
+
+Manual backport of crrev.com/c/7129658
+
+Change-Id: I0baa5865dbe66efc7b0f3f793c8e89cdc6aaa0b6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7129658
+Commit-Queue: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Reviewed-by: Michael Tang <tangm@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1544293}
+
+diff --git a/components/viz/service/display/direct_renderer.cc b/components/viz/service/display/direct_renderer.cc
+index c03a4b3db61371021a94128f698126b5fef2f577..01abf5d36e2e117acf6f9cdc91307c9ac5616453 100644
+--- a/components/viz/service/display/direct_renderer.cc
++++ b/components/viz/service/display/direct_renderer.cc
+@@ -1081,10 +1081,13 @@ gfx::Size DirectRenderer::CalculateTextureSizeForRenderPass(
+ // buffer area and number of reallocations to quantify the trade-off.
+ gfx::Size DirectRenderer::CalculateSizeForOutputSurface(
+     const gfx::Size& requested_viewport_size) {
++  const gfx::Size surface_size = surface_size_for_swap_buffers();
++
+   // We're not able to clip back buffers if output surface does not support
+-  // clipping.
+-  if (requested_viewport_size == surface_size_for_swap_buffers() ||
++  // clipping. We don't round on the initial frame when a window is first shown.
++  if (requested_viewport_size == surface_size ||
+       !output_surface_->capabilities().supports_viewporter ||
++      surface_size.IsZero() ||
+       settings_->dont_round_texture_sizes_for_pixel_tests) {
+     device_viewport_size_ = requested_viewport_size;
+     return requested_viewport_size;
+@@ -1102,8 +1105,8 @@ gfx::Size DirectRenderer::CalculateSizeForOutputSurface(
+   // allows backings to be more easily reused during a resize operation.
+   const int request_width = requested_viewport_size.width();
+   const int request_height = requested_viewport_size.height();
+-  int surface_width = surface_size_for_swap_buffers().width();
+-  int surface_height = surface_size_for_swap_buffers().height();
++  int surface_width = surface_size.width();
++  int surface_height = surface_size.height();
+   constexpr int multiple = 256;
+ 
+   // If |request_width| or |request_height| is already a multiple of |multiple|,
