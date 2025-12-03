@@ -294,6 +294,7 @@ filenames = {
     "shell/browser/api/electron_api_protocol.h",
     "shell/browser/api/electron_api_push_notifications.cc",
     "shell/browser/api/electron_api_push_notifications.h",
+    "shell/browser/api/electron_api_safe_storage.h",
     "shell/browser/api/electron_api_safe_storage.cc",
     "shell/browser/api/electron_api_screen.cc",
     "shell/browser/api/electron_api_screen.h",

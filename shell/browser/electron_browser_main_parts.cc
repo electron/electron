@@ -470,6 +470,8 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
     DevToolsManagerDelegate::StartHttpHandler();
   }
 
+  fake_browser_process_->PreMainMessageLoopRun();
+
 #if !BUILDFLAG(IS_MAC)
   // The corresponding call in macOS is in ElectronApplicationDelegate.
   Browser::Get()->WillFinishLaunching();
@@ -478,8 +480,6 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
 
   // Notify observers that main thread message loop was initialized.
   Browser::Get()->PreMainMessageLoopRun();
-
-  fake_browser_process_->PreMainMessageLoopRun();
 
 #if BUILDFLAG(IS_WIN)
   ui::SelectFileDialog::SetFactory(
