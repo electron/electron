@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <kleinschmidtorama@gmail.com>
+Date: Thu, 4 Dec 2025 08:55:45 -0500
+Subject: Revert "Enable network sandbox by default on Windows"
+
+This reverts commit c6bd7f09744da20cbba08c7ffe86537885f4353d.
+
+diff --git a/sandbox/policy/features.cc b/sandbox/policy/features.cc
+index bd1e82c4116ed9550205752ba6f2735c36822f24..93b814e8e44f2dc62c18e248f9984097ee539350 100644
+--- a/sandbox/policy/features.cc
++++ b/sandbox/policy/features.cc
+@@ -17,13 +17,7 @@ namespace sandbox::policy::features {
+ #if !BUILDFLAG(IS_MAC) && !BUILDFLAG(IS_FUCHSIA)
+ // Enables network service sandbox.
+ // (Only causes an effect when feature kNetworkServiceInProcess is disabled.)
+-BASE_FEATURE(kNetworkServiceSandbox,
+-#if BUILDFLAG(IS_WIN)
+-             base::FEATURE_ENABLED_BY_DEFAULT
+-#else
+-             base::FEATURE_DISABLED_BY_DEFAULT
+-#endif  // BUILDFLAG(IS_WIN)
+-);
++BASE_FEATURE(kNetworkServiceSandbox, base::FEATURE_DISABLED_BY_DEFAULT);
+ 
+ #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+ // Enables a fine-grained seccomp-BPF syscall filter for the network service.
+diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
+index f1fffffa9ea746dc6a403ce5e2e429de57dc1a8a..59d8c855a0984db2f6c20cf406405695f9fdce3b 100644
+--- a/testing/variations/fieldtrial_testing_config.json
++++ b/testing/variations/fieldtrial_testing_config.json
+@@ -16431,6 +16431,21 @@
+             ]
+         }
+     ],
++    "NetworkServiceSandboxWindows": [
++        {
++            "platforms": [
++                "windows"
++            ],
++            "experiments": [
++                {
++                    "name": "Enabled_20231025",
++                    "enable_features": [
++                        "NetworkServiceSandbox"
++                    ]
++                }
++            ]
++        }
++    ],
+     "NetworkServiceTaskScheduler2": [
+         {
+             "platforms": [
