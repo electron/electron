@@ -7,7 +7,7 @@ Electron does not support Profiles, so we need to patch it out of any
 code that we use.
 
 diff --git a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
-index dee03f1b42e04cf3081aa58b858251ec38833efe..256b0559d0424682f25ed2653f67ada2679f0d25 100644
+index 21d5ab99800c0830cc31ec4ebb24e3f05cd904d8..ae4dbc1f75a90a6f16efa4bfd1b8ca73f12ed6d6 100644
 --- a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
 +++ b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
 @@ -45,6 +45,7 @@ namespace {

@@ -46,7 +46,7 @@ index e2771b7b281274cdcb601a5bc78a948ad592087b..48d116823a28213e50775f378e6ce04c
    // OnStop is called by StopAndDeAllocate.
    virtual void OnStop() = 0;
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index 74e053ca2a67af1cf57e8e31e588256b6bc42d73..39228ed4ddbb08b7ddecf9006b31dee8e5f2be4d 100644
+index 5e7f34178a549dc1e894262d0091b5b98c9ba48b..8d1de709cfa881df8a2a67bb6180aa78e9dfd6cf 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
 @@ -28,6 +28,61 @@
@@ -228,8 +228,8 @@ index 74e053ca2a67af1cf57e8e31e588256b6bc42d73..39228ed4ddbb08b7ddecf9006b31dee8
      } else {
        client()->OnError(media::VideoCaptureError::kScreenCaptureKitStreamError,
                          FROM_HERE, "Stream delegate called didStopWithError");
-@@ -622,23 +706,41 @@ void OnPipWindowIdChanged(
-   }
+@@ -625,23 +709,41 @@ void OnCapturesChanged(
+           captures) override {}
  
    // IOSurfaceCaptureDeviceBase:
 -  void OnStart() override {
@@ -285,7 +285,7 @@ index 74e053ca2a67af1cf57e8e31e588256b6bc42d73..39228ed4ddbb08b7ddecf9006b31dee8
    }
    void OnStop() override {
      DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
-@@ -697,7 +799,7 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -700,7 +802,7 @@ void ResetStreamTo(SCWindow* window) override {
  
   private:
    const DesktopMediaID source_;
@@ -294,7 +294,7 @@ index 74e053ca2a67af1cf57e8e31e588256b6bc42d73..39228ed4ddbb08b7ddecf9006b31dee8
    StreamCallback stream_created_callback_;
    const scoped_refptr<base::SingleThreadTaskRunner> device_task_runner_;
  
-@@ -714,6 +816,10 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -717,6 +819,10 @@ void ResetStreamTo(SCWindow* window) override {
    // Helper class that acts as output and delegate for `stream_`.
    ScreenCaptureKitDeviceHelper* __strong helper_;
  
@@ -305,7 +305,7 @@ index 74e053ca2a67af1cf57e8e31e588256b6bc42d73..39228ed4ddbb08b7ddecf9006b31dee8
    // This is used to detect when a captured presentation enters fullscreen mode.
    // If this happens, the module will call the ResetStreamTo function.
    std::unique_ptr<ScreenCaptureKitFullscreenModule> fullscreen_module_;
-@@ -728,6 +834,8 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -731,6 +837,8 @@ void ResetStreamTo(SCWindow* window) override {
    base::WeakPtrFactory<ScreenCaptureKitDeviceMac> weak_factory_{this};
  };
  

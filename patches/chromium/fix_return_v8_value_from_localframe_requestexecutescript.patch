@@ -59,7 +59,7 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..a54f1b3351efd2d8f324436f7f35cd43
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index cc1bccf5d168760532cc962ab7f7775e91255108..e5cd6d587deb47d1df8b4530d929cbba5cb8f443 100644
+index 808943d761385ec225ba7f99f35090705b529289..4c7be047995f44ff0c33bc24622daa7194e32df4 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -3202,6 +3202,7 @@ void LocalFrame::RequestExecuteScript(
@@ -104,7 +104,7 @@ index f3ea156c7ea1f215476976bcea2438d04c59a63f..146d44491158c4b6d3f33d61a6f242e8
        wants_result
            ? mojom::blink::WantResultOption::kWantResultDateAndRegExpAllowed
 diff --git a/third_party/blink/renderer/core/frame/pausable_script_executor.cc b/third_party/blink/renderer/core/frame/pausable_script_executor.cc
-index b6ce095c46b8c8cef5981827193f5a7c50c1f234..f67af3c5f65a0e5a6b7fd6bdecf605595c870dcd 100644
+index 2b83e5d674d54bff121153c22d17d560114b70d6..6b428f8dd0c7717577d98469d7a4c97cfbbd8951 100644
 --- a/third_party/blink/renderer/core/frame/pausable_script_executor.cc
 +++ b/third_party/blink/renderer/core/frame/pausable_script_executor.cc
 @@ -243,7 +243,7 @@ void PausableScriptExecutor::CreateAndRun(
