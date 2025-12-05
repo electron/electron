@@ -25,6 +25,13 @@ your preload script and expose it using the [contextBridge](https://www.electron
 Debug symbols for MacOS (dSYM) now use xz compression in order to handle larger file sizes. `dsym.zip` files are now
 `dsym.tar.xz` files. End users using debug symbols may need to update their zip utilities.
 
+### Behavior Changed: Updated Cookie Change Cause in the Cookie 'changed' Event
+
+We have updated the [cookie](https://www.electronjs.org/docs/latest/api/cookies#event-changed) change cause in the cookie 'changed' event.
+When a new cookie is set, the change cause is `inserted`.
+When a cookie is deleted, the change cause remains `explicit`.
+When the cookie being set is identical to an existing one (same name, domain, path, and value, with no actual changes), the change cause is `inserted-no-change-overwrite`.
+
 ## Planned Breaking API Changes (39.0)
 
 ### Deprecated: `--host-rules` command line switch
