@@ -30,6 +30,8 @@ v8::Local<v8::Value> DeserializeV8Value(v8::Isolate* isolate,
 v8::Local<v8::Value> DeserializeV8Value(v8::Isolate* isolate,
                                         base::span<const uint8_t> data);
 
+void SetUpWebAssemblyTrapHandler();
+
 namespace util {
 
 [[nodiscard]] base::span<uint8_t> as_byte_span(
