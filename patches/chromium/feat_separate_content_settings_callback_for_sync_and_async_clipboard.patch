@@ -20,10 +20,10 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index c9b607c9bd09d43099a1704d5d4139c64e4beac4..18ad7ed73b0ed4de158519c01342f0bfd7cc3666 100644
+index 23b38aa1733f6eabda0ab76b5f63f13e76958a6f..2f68573b8fa30a4d63f0b2fa8ff4a8e502436f2f 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -536,6 +536,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -537,6 +537,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::WEB_APP_INSTALLATION;
      case PermissionType::LOCAL_NETWORK_ACCESS:
        return ContentSettingsType::LOCAL_NETWORK_ACCESS;
@@ -119,10 +119,10 @@ index 36410ff29d9c82e59f93fbb82968064bd330dfde..6c3f994e0b184f78bd9442002bb4dfae
    virtual void PassiveInsecureContentFound(const WebURL&) {}
  
 diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-index 80c15ef5381aa08c0c6ce3f51534bb04af64775d..9a9024ba766226848974e5518ccbffa79ee55e65 100644
+index f2fb09422d49c66c6ef7991277cfd6479896c035..fe2fc66b2d203dd0c832e5bf6cc4c950c33cdfec 100644
 --- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 +++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-@@ -123,7 +123,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
+@@ -116,7 +116,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
      return true;
    }
    return frame.GetContentSettingsClient() &&
@@ -131,7 +131,7 @@ index 80c15ef5381aa08c0c6ce3f51534bb04af64775d..9a9024ba766226848974e5518ccbffa7
  }
  
  bool ClipboardCommands::CanWriteClipboard(LocalFrame& frame,
-@@ -312,7 +312,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
+@@ -305,7 +305,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
      return true;
    }
    return frame->GetContentSettingsClient() &&
