@@ -233,7 +233,7 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
                 render_frame_host->GetProcess()->GetDeprecatedID());
       } else if (permission_type == blink::PermissionType::GEOLOCATION) {
         if (IsGeolocationDisabledViaCommandLine()) {
-          results.push_back(content::PermissionResult(
+          results.emplace_back(content::PermissionResult(
               blink::mojom::PermissionStatus::DENIED,
               content::PermissionStatusSource::UNSPECIFIED));
           continue;
@@ -243,7 +243,7 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
               ->UserDidOptIntoLocationServices();
         }
       }
-      results.push_back(content::PermissionResult(
+      results.emplace_back(content::PermissionResult(
           blink::mojom::PermissionStatus::GRANTED,
           content::PermissionStatusSource::UNSPECIFIED));
     }

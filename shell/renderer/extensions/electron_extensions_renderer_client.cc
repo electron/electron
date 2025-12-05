@@ -12,7 +12,7 @@
 
 namespace electron {
 
-ElectronExtensionsRendererClient::ElectronExtensionsRendererClient() {}
+ElectronExtensionsRendererClient::ElectronExtensionsRendererClient() = default;
 
 ElectronExtensionsRendererClient::~ElectronExtensionsRendererClient() = default;
 
