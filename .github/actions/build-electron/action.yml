@@ -26,6 +26,9 @@ inputs:
   is-asan:
     description: 'The ASan Linux build'
     required: false
+  upload-src-gen-artifacts:
+    description: 'Whether to upload the src/gen artifacts'
+    required: false
 runs:
   using: "composite"
   steps:
@@ -250,3 +253,9 @@ runs:
       with:
         name: src_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./src_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
+    - name: Upload Src Gen Artifacts ${{ inputs.step-suffix }}
+      if: ${{ inputs.upload-src-gen-artifacts == 'true' }}
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: src_gen_artifacts_${{ env.ARTIFACT_KEY }}
+        path: ./src/out/Default/gen

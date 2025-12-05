@@ -53,6 +53,11 @@ on:
         required: false
         type: boolean
         default: false
+      upload-src-gen-artifacts:
+        description: 'Whether to upload the src/gen artifacts'
+        required: false
+        type: boolean
+        default: false
       enable-ssh:
         description: 'Enable SSH debugging'
         required: false
@@ -201,6 +206,7 @@ jobs:
         generate-symbols: '${{ inputs.generate-symbols }}'
         upload-to-storage: '${{ inputs.upload-to-storage }}'
         is-asan: '${{ inputs.is-asan }}'
+        upload-src-gen-artifacts: '${{ inputs.upload-src-gen-artifacts }}'
     - name: Set GN_EXTRA_ARGS for MAS Build
       if: ${{ inputs.target-platform == 'macos' && (inputs.target-variant == 'all' || inputs.target-variant == 'mas') }}
       run: |
