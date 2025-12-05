@@ -7,7 +7,7 @@ Electron does not support Profiles, so we need to patch it out of any
 code that we use.
 
 diff --git a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
-index 21d5ab99800c0830cc31ec4ebb24e3f05cd904d8..ae4dbc1f75a90a6f16efa4bfd1b8ca73f12ed6d6 100644
+index 21d5ab99800c0830cc31ec4ebb24e3f05cd904d8..3f8f514519d6e4a0abe3690f5df35de8ffae6fd4 100644
 --- a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
 +++ b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
 @@ -45,6 +45,7 @@ namespace {
@@ -26,6 +26,22 @@ index 21d5ab99800c0830cc31ec4ebb24e3f05cd904d8..ae4dbc1f75a90a6f16efa4bfd1b8ca73
  
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(
+@@ -63,6 +65,7 @@ bool ShouldEnableSkiaRenderer(content::WebContents* contents) {
+ // priority hierarchy is: enterprise policy > user choice > finch experiment.
+ bool ShouldEnableXfaForms(content::WebContents* contents) {
+   CHECK(contents);
++#if 0
+   const PrefService* prefs =
+       Profile::FromBrowserContext(contents->GetBrowserContext())->GetPrefs();
+ 
+@@ -70,6 +73,7 @@ bool ShouldEnableXfaForms(content::WebContents* contents) {
+   if (prefs->IsManagedPreference(prefs::kPdfXfaFormsEnabled)) {
+     return prefs->GetBoolean(prefs::kPdfXfaFormsEnabled);
+   }
++#endif
+ 
+   //  When the enterprise policy is not set, use finch/feature flag choice.
+   return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfXfaSupport);
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
 index 328abdd79d287225d0e6ec6becc455e169d6e5d0..10e5e702a43dbb70e13d00b48000e0b4cc974e7a 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
