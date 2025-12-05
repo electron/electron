@@ -259,10 +259,10 @@ index e3d80c533d3c0703af7a1a9d60270641288b8a3e..840c42313723a9f3b121355aaffafa7a
    bool AllowScriptExtensions() override { return false; }
  
 diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-index 17860c80651c526e03fd06e4b644c3332b241be7..741a8587e95789038168eb500d3995724e11b47d 100644
+index f8bcd6fada82f9f0d473fa02799d0218c0e53b0b..765f10c71c50f2d89f8cdaf06d07ce4a53ef298c 100644
 --- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
 +++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-@@ -181,6 +181,7 @@ void ServiceWorkerGlobalScopeProxy::WillEvaluateScript() {
+@@ -182,6 +182,7 @@ void ServiceWorkerGlobalScopeProxy::WillEvaluateScript() {
    ScriptState::Scope scope(
        WorkerGlobalScope()->ScriptController()->GetScriptState());
    Client().WillEvaluateScript(

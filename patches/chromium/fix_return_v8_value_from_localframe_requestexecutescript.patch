@@ -104,7 +104,7 @@ index f3ea156c7ea1f215476976bcea2438d04c59a63f..146d44491158c4b6d3f33d61a6f242e8
        wants_result
            ? mojom::blink::WantResultOption::kWantResultDateAndRegExpAllowed
 diff --git a/third_party/blink/renderer/core/frame/pausable_script_executor.cc b/third_party/blink/renderer/core/frame/pausable_script_executor.cc
-index 7c31a69ccd7a74d75e5df63d895b91239d243a92..1b435cb43592afba984fe203d1ccf2d9f4ef85f5 100644
+index b6ce095c46b8c8cef5981827193f5a7c50c1f234..f67af3c5f65a0e5a6b7fd6bdecf605595c870dcd 100644
 --- a/third_party/blink/renderer/core/frame/pausable_script_executor.cc
 +++ b/third_party/blink/renderer/core/frame/pausable_script_executor.cc
 @@ -243,7 +243,7 @@ void PausableScriptExecutor::CreateAndRun(
