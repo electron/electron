@@ -156,6 +156,7 @@ jobs:
         # Check if WSL is installed
         try {
           wsl --status
+          wsl --list --verbose
           Write-Host "WSL is already installed"
         } catch {
           Write-Host "WSL not found, installing..."
