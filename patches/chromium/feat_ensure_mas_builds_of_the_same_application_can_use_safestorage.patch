@@ -82,10 +82,10 @@ index f19628cc0cdba39b232f55935e8eee9786b02a77..036b50f53e78bc21ed1e1d6dd876b50a
    }
  
 diff --git a/crypto/apple/keychain.h b/crypto/apple/keychain.h
-index b5e604c525d66c172c80f65f38cdb23dccd4259d..7f48d66c83cf41d6d097eb43e271dd5ab43d01e9 100644
+index 1d2264a5229206f45d1a9bcb009d47180efa6a8b..1dcf2b1d09831012c7f5768a5c6193d529efc821 100644
 --- a/crypto/apple/keychain.h
 +++ b/crypto/apple/keychain.h
-@@ -18,6 +18,14 @@
+@@ -17,6 +17,14 @@
  
  namespace crypto::apple {
  
@@ -100,7 +100,7 @@ index b5e604c525d66c172c80f65f38cdb23dccd4259d..7f48d66c83cf41d6d097eb43e271dd5a
  // Wraps the KeychainServices API in a very thin layer, to allow it to be
  // mocked out for testing.
  
-@@ -45,13 +53,18 @@ class CRYPTO_EXPORT Keychain {
+@@ -44,13 +52,18 @@ class CRYPTO_EXPORT Keychain {
    // std::vector<uint8_t> arm is populated instead.
    virtual base::expected<std::vector<uint8_t>, OSStatus> FindGenericPassword(
        std::string_view service_name,

@@ -11,7 +11,7 @@ actions in the non-client caption area.
 draggable regions to allow events to propagate to the underlying renderer.
 
 diff --git a/ui/events/event.h b/ui/events/event.h
-index 2dc44d4787d5198cff7be2cf98ad5acf2d3a9a0b..27a0335aac2bd4239616cf71f5d015c931db2294 100644
+index cc3f9bc9383f8272a5cd95b1f2ac56529d86e493..5ca29b84cdaf42ef516ef819ae32b230258b034f 100644
 --- a/ui/events/event.h
 +++ b/ui/events/event.h
 @@ -588,6 +588,9 @@ class EVENTS_EXPORT MouseEvent : public LocatedEvent {
@@ -24,7 +24,7 @@ index 2dc44d4787d5198cff7be2cf98ad5acf2d3a9a0b..27a0335aac2bd4239616cf71f5d015c9
    // Event:
    std::string ToString() const override;
    std::unique_ptr<Event> Clone() const override;
-@@ -620,6 +623,8 @@ class EVENTS_EXPORT MouseEvent : public LocatedEvent {
+@@ -617,6 +620,8 @@ class EVENTS_EXPORT MouseEvent : public LocatedEvent {
  
    // Structure for holding pointer details for implementing PointerEvents API.
    PointerDetails pointer_details_;

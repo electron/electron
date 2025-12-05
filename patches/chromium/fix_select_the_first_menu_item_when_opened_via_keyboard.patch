@@ -6,10 +6,10 @@ Subject: fix: select the first menu item when opened via keyboard
 This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 4fd9d4eb67842ac4232d1fe4cbb3da60c2d8c9bb..750e8886015692287bc7fa045b40c5a030cf886b 100644
+index 8f7e90ab9908ae1e481c526cd7a5f8d0ed2ab545..8cba61d9563592f317c1a29a30cda1a1e91b5f24 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -713,6 +713,16 @@ void MenuController::Run(Widget* parent,
+@@ -717,6 +717,16 @@ void MenuController::Run(Widget* parent,
      SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
    }
  
@@ -26,7 +26,7 @@ index 4fd9d4eb67842ac4232d1fe4cbb3da60c2d8c9bb..750e8886015692287bc7fa045b40c5a0
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -2480,18 +2490,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+@@ -2505,18 +2515,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
      }
      item->GetSubmenu()->ShowAt(params);
  
