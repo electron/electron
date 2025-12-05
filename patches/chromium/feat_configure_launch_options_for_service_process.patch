@@ -111,7 +111,7 @@ index 1d981cec12769d145b694b61772b4c09616df9f0..cf9d9bfe7af12e16520354ebd1f7bc40
  }
  
 diff --git a/content/browser/child_process_launcher_helper_win.cc b/content/browser/child_process_launcher_helper_win.cc
-index 0791b5317fc6846389f65f93734ae5e816d04623..48948b409d6da58ade72c60ed848df4931d0eaab 100644
+index 0791b5317fc6846389f65f93734ae5e816d04623..71df2459fd759a75be573449accd3a4dd4f54e08 100644
 --- a/content/browser/child_process_launcher_helper_win.cc
 +++ b/content/browser/child_process_launcher_helper_win.cc
 @@ -24,6 +24,8 @@
@@ -128,18 +128,18 @@ index 0791b5317fc6846389f65f93734ae5e816d04623..48948b409d6da58ade72c60ed848df49
                                                 command_line());
    }
 +
-+  if (file_data_->stdout_handle.IsValid() || file_data_->stderr_handle.IsValid()) {
++  if (file_data_->stdout_handle.is_valid() || file_data_->stderr_handle.is_valid()) {
 +    // base::LaunchProcess requires that if any of the stdio handle is customized then
 +    // the other two handles should also be set.
 +    // https://source.chromium.org/chromium/chromium/src/+/main:base/process/launch_win.cc;l=341-350
 +    options->stdin_handle = INVALID_HANDLE_VALUE;
-+    if (file_data_->stdout_handle.IsValid()) {
++    if (file_data_->stdout_handle.is_valid()) {
 +      options->stdout_handle = file_data_->stdout_handle.get();
 +    } else {
 +      options->stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 +    }
 +
-+    if (file_data_->stderr_handle.IsValid()) {
++    if (file_data_->stderr_handle.is_valid()) {
 +      options->stderr_handle = file_data_->stderr_handle.get();
 +    } else {
 +      options->stderr_handle = GetStdHandle(STD_ERROR_HANDLE);
