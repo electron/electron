@@ -151,8 +151,8 @@ jobs:
       # Install wsl on windows runners
     - name: Install WSL (Windows only)
       if: ${{ inputs.target-platform == 'win' }}
+      shell: powershell
       run: |
-        pwd
         # Check if WSL is installed
         wsl --status || (
           echo "WSL not found, installing..."
