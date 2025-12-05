@@ -45,7 +45,7 @@ index e189d584f05f2ce6354c03a9b19f56985df8a15e..41b430e8f2416be098494f5c49fb97ca
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index f86774484fd307b693382140627a07c17b456f16..b6fcffd234f441dbc776b0e07a44367869c781d9 100644
+index c735b8d9c7c7d181433bf66717e17fe689fdd854..6178ffd5e3af4d9b0b6b7fff39b75111065e5c95 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
 @@ -9122,6 +9122,26 @@
@@ -214,7 +214,7 @@ index 8da54e9ff7fd7d4b0e732b556eed440ac33189d9..0ed3bc36ad14d96b6be0b7597f1660de
  
    sources -= blink_platform_avx_files
 diff --git a/third_party/blink/renderer/platform/geometry/contoured_rect.h b/third_party/blink/renderer/platform/geometry/contoured_rect.h
-index 65bd093f56eafc7dac2cd51f9d32f5c2879cb2ea..9a56422bcef24d8fcbfa24a7ff4626c670f1491b 100644
+index 17c97038dc0fdb97021ee4b1aa3c8a4ca459fb2b..71d697d738f6aee8cbbb700f1e6ad9acca980b7b 100644
 --- a/third_party/blink/renderer/platform/geometry/contoured_rect.h
 +++ b/third_party/blink/renderer/platform/geometry/contoured_rect.h
 @@ -52,19 +52,29 @@ class PLATFORM_EXPORT ContouredRect {
@@ -267,7 +267,7 @@ index 65bd093f56eafc7dac2cd51f9d32f5c2879cb2ea..9a56422bcef24d8fcbfa24a7ff4626c6
  
    // A Corner is a axis-aligned quad, with the points ordered (start, outer,
 diff --git a/third_party/blink/renderer/platform/geometry/path_builder.cc b/third_party/blink/renderer/platform/geometry/path_builder.cc
-index 1d6b8160e8db2a94ee61ed41ac9a74db5b1bfb17..373bcd30c6a4526262912021aaf2b560fedc3667 100644
+index 18f283e625101318ee14b50e6e765dfd1c9a1a44..44a3a55974c9e4b9e715574075f256615f45f38e 100644
 --- a/third_party/blink/renderer/platform/geometry/path_builder.cc
 +++ b/third_party/blink/renderer/platform/geometry/path_builder.cc
 @@ -4,6 +4,7 @@
@@ -312,7 +312,7 @@ index 1d6b8160e8db2a94ee61ed41ac9a74db5b1bfb17..373bcd30c6a4526262912021aaf2b560
  
    auto DrawAsSinglePath = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index a5f131a09e25135fce1c1f1d6c9895bd62556015..e6ba45082dae66102e25d1bc37f843bfee5151cf 100644
+index 54339c8364e6f4084cc30ab43b13307d13bfa3cf..5de11c85d877079f39d6c66ae1d5858b50fd2f7a 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -214,6 +214,10 @@

@@ -33,10 +33,10 @@ index 02876ca62dc50566fb15a1bd0e3b8415f0b1dd10..5a3b7c8d62acf8af2c043812cfd4ac2d
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index b0fd1c3f1a603957412b2b81bd4567b2210bcc6a..8aa284190ad5ee4bfa1453a9334ff7bca4c6d6f2 100644
+index 1b262af1100c1b705f909ce391cb32517ac7ee7e..8c8b036ad4af7c8953ebfb9af753d182fbe686ca 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4806,7 +4806,7 @@ static_library("browser") {
+@@ -4802,7 +4802,7 @@ static_library("browser") {
        ]
      }
  
@@ -46,10 +46,10 @@ index b0fd1c3f1a603957412b2b81bd4567b2210bcc6a..8aa284190ad5ee4bfa1453a9334ff7bc
        # than here in :chrome_dll.
        deps += [ "//chrome:packed_resources_integrity_header" ]
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 23e1308cf0fe4b3dc7c80cae214163328bd9307c..88162e132d6f3572489870b353ec3e4fc903f0b7 100644
+index d9cc73d698d90fdb8913ac7bb438dcd63cee40f4..b616a81ba0ec8b4bf9563cefd3ea8c82f3a23861 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -7598,9 +7598,12 @@ test("unit_tests") {
+@@ -7596,9 +7596,12 @@ test("unit_tests") {
        "//chrome/notification_helper",
      ]
  
@@ -63,7 +63,7 @@ index 23e1308cf0fe4b3dc7c80cae214163328bd9307c..88162e132d6f3572489870b353ec3e4f
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:win_unit_tests",
-@@ -8546,6 +8549,10 @@ test("unit_tests") {
+@@ -8545,6 +8548,10 @@ test("unit_tests") {
        "../browser/performance_manager/policies/background_tab_loading_policy_unittest.cc",
      ]
  
@@ -74,7 +74,7 @@ index 23e1308cf0fe4b3dc7c80cae214163328bd9307c..88162e132d6f3572489870b353ec3e4f
      sources += [
        # The importer code is not used on Android.
        "../common/importer/firefox_importer_utils_unittest.cc",
-@@ -8602,7 +8609,6 @@ test("unit_tests") {
+@@ -8601,7 +8608,6 @@ test("unit_tests") {
      # TODO(crbug.com/417513088): Maybe merge with the non-android `deps` declaration above?
      deps += [
        "../browser/screen_ai:screen_ai_install_state",

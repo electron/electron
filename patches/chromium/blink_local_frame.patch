@@ -15,10 +15,10 @@ Refs changes in:
 This patch reverts the changes to fix associated crashes in Electron.
 
 diff --git a/third_party/blink/renderer/core/frame/frame.cc b/third_party/blink/renderer/core/frame/frame.cc
-index 2670ea1361ccd8a9e3bac507e94dd25b7205ecf9..c12f78d925e4ccb4ac2fd3851a9c61e87058dc75 100644
+index 4bc8cb26984fa3ec8b9af20e88c816843a71b738..002980a2c006b55fe2723b9968d12a8690323188 100644
 --- a/third_party/blink/renderer/core/frame/frame.cc
 +++ b/third_party/blink/renderer/core/frame/frame.cc
-@@ -134,14 +134,6 @@ bool Frame::Detach(FrameDetachType type) {
+@@ -135,14 +135,6 @@ bool Frame::Detach(FrameDetachType type) {
  
    DCHECK(!IsDetached());
  
@@ -33,7 +33,7 @@ index 2670ea1361ccd8a9e3bac507e94dd25b7205ecf9..c12f78d925e4ccb4ac2fd3851a9c61e8
    if (type == FrameDetachType::kRemove) {
      if (provisional_frame_) {
        provisional_frame_->Detach(FrameDetachType::kRemove);
-@@ -166,6 +158,14 @@ bool Frame::Detach(FrameDetachType type) {
+@@ -167,6 +159,14 @@ bool Frame::Detach(FrameDetachType type) {
      GetWindowProxyManager()->ClearForSwap();
    }
  

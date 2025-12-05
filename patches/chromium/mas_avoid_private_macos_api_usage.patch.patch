@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 6412c1de58b90b04f0a73941f20251e5057e2b63..470018833d7285b5599c2251df45a963e42e9ac1 100644
+index e20c89852d113279a3240c3db8ed481597fcb754..82a95080211e5ae4ffdbdb0bb835909329449c3c 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1073,6 +1073,7 @@ component("base") {
+@@ -1074,6 +1074,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -796,7 +796,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 518d7099b7a6a58144aacc5d17e4472298ba4f25..f60598518dad664934d127348add40871f50a93f 100644
+index 4765ab0819b0e7f39453eba6407db09c7bc64271..9ed995848496e73d8b3250a88237a723494fc843 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -701,6 +701,7 @@ static_library("test_support") {
@@ -816,7 +816,7 @@ index 518d7099b7a6a58144aacc5d17e4472298ba4f25..f60598518dad664934d127348add4087
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2063,6 +2066,7 @@ test("content_browsertests") {
+@@ -2064,6 +2067,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index 518d7099b7a6a58144aacc5d17e4472298ba4f25..f60598518dad664934d127348add4087
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3403,6 +3407,7 @@ test("content_unittests") {
+@@ -3404,6 +3408,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -833,10 +833,10 @@ index 518d7099b7a6a58144aacc5d17e4472298ba4f25..f60598518dad664934d127348add4087
  
    if (is_chromeos) {
 diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
-index 23eccafa5fbc79d633168923855644f5811a4b80..7174d4816765fa2d3cde99a6756048a42b0c4a5a 100644
+index 7a9360beb22370b61d80f8a84f6b1f96d2d77c3b..708c61c16e7baa9fcc2124722714d7d908bd5345 100644
 --- a/content/web_test/BUILD.gn
 +++ b/content/web_test/BUILD.gn
-@@ -228,6 +228,7 @@ static_library("web_test_browser") {
+@@ -221,6 +221,7 @@ static_library("web_test_browser") {
      "//ui/gl",
      "//ui/shell_dialogs",
      "//url",
@@ -1757,10 +1757,10 @@ index 93e90c4eba9bc9b93d68e834eb6baabeb2d0ecf0..1b90f41d05f847a94adf2f4da827b1d0
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 41572ec01d71f56eb8815cf9845e2c4ccefb9964..90c72f19b557d985581c7250187616ee85821964 100644
+index 84dd167d2e5c110b263cbcd6915e787b60e16000..395b5b371b9d471cc5633ff1005223e98bbba771 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
-@@ -132,6 +132,12 @@ component("display") {
+@@ -134,6 +134,12 @@ component("display") {
      "//ui/gfx/geometry",
    ]
  
