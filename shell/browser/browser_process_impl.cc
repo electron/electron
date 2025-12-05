@@ -286,9 +286,11 @@ BrowserProcessImpl::component_updater() {
   return nullptr;
 }
 
+#if BUILDFLAG(IS_CHROMEOS)
 MediaFileSystemRegistry* BrowserProcessImpl::media_file_system_registry() {
   return nullptr;
 }
+#endif
 
 WebRtcLogUploader* BrowserProcessImpl::webrtc_log_uploader() {
   return nullptr;
