@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Deepak Mohan <hop2deep@gmail.com>
+Date: Fri, 5 Dec 2025 00:15:16 +0900
+Subject: [zlib][build] Fix zlib_symbols_visible on windows
+
+Followup to https://crrev.com/c/4322978, addresses
+the following error when attempting to build with
+zlib_symbols_visible=true on windows platform.
+
+```
+ERROR at //third_party/zlib/BUILD.gn:365:18: Item not found
+    configs -= [ "//build/config/gcc:symbol_visibility_hidden" ]
+                 ^--------------------------------------------
+You were trying to remove "//build/config/gcc:symbol_visibility_hidden"
+from the list but it wasn't there.
+```
+
+Bug: 42203738
+Change-Id: I51200141447386be14c0e6874548351f8ed3ed4f
+
+diff --git a/third_party/zlib/BUILD.gn b/third_party/zlib/BUILD.gn
+index afd3e8cc0f38e95b3b04835b46bd1197a63b4ed1..ae176ae97702bac31657e57a85e571d22e7eda22 100644
+--- a/third_party/zlib/BUILD.gn
++++ b/third_party/zlib/BUILD.gn
+@@ -367,7 +367,7 @@ component("zlib") {
+   configs -= [ "//build/config/compiler:chromium_code" ]
+   configs += [ "//build/config/compiler:no_chromium_code" ]
+ 
+-  if (zlib_symbols_visible) {
++  if (is_posix && zlib_symbols_visible) {
+     configs -= [ "//build/config/gcc:symbol_visibility_hidden" ]
+     configs += [ "//build/config/gcc:symbol_visibility_default" ]
+   }
