@@ -70,7 +70,7 @@ void OffScreenWebContentsView::OnWindowClosed() {
   }
 }
 
-gfx::Size OffScreenWebContentsView::GetSize() {
+gfx::Size OffScreenWebContentsView::GetSize() const {
   return native_window_ ? native_window_->GetSize() : gfx::Size();
 }
 
