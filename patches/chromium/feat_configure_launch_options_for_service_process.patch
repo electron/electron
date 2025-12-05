@@ -707,7 +707,7 @@ index c5fee4ad8b246bc1113a383794c6101bade24df3..61f0a0f62795b30105c42da363205284
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index 6dde72c5f585364deaeb1c55f42c27908a25a245..a5d6061446df0237d297231e518617de7e04c076 100644
+index dac5e25ceccf1a7f51c983cde387840e671513ae..e47117ec646378ecdb8d06dcb10cd9addacff571 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -605,11 +605,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {
@@ -723,7 +723,7 @@ index 6dde72c5f585364deaeb1c55f42c27908a25a245..a5d6061446df0237d297231e518617de
    options.feedback_cursor_off = true;
    // Network process runs in a job even when unsandboxed. This is to ensure it
    // does not outlive the browser, which could happen if there is a lot of I/O
-@@ -911,7 +909,7 @@ bool SandboxWin::InitTargetServices(TargetServices* target_services) {
+@@ -900,7 +898,7 @@ bool SandboxWin::InitTargetServices(TargetServices* target_services) {
  // static
  ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
      const base::CommandLine& cmd_line,
@@ -732,7 +732,7 @@ index 6dde72c5f585364deaeb1c55f42c27908a25a245..a5d6061446df0237d297231e518617de
      SandboxDelegate* delegate,
      TargetPolicy* policy) {
    const base::CommandLine& launcher_process_command_line =
-@@ -925,7 +923,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
+@@ -914,7 +912,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
    }
  
    // Add any handles to be inherited to the policy.
@@ -741,7 +741,7 @@ index 6dde72c5f585364deaeb1c55f42c27908a25a245..a5d6061446df0237d297231e518617de
      policy->AddHandleToShare(handle);
  
    if (!policy->GetConfig()->IsConfigured()) {
-@@ -940,6 +938,13 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
+@@ -929,6 +927,13 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
    // have no effect. These calls can fail with SBOX_ERROR_BAD_PARAMS.
    policy->SetStdoutHandle(GetStdHandle(STD_OUTPUT_HANDLE));
    policy->SetStderrHandle(GetStdHandle(STD_ERROR_HANDLE));
@@ -755,7 +755,7 @@ index 6dde72c5f585364deaeb1c55f42c27908a25a245..a5d6061446df0237d297231e518617de
  #endif
  
    if (!delegate->PreSpawnTarget(policy))
-@@ -951,7 +956,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
+@@ -940,7 +945,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
  // static
  ResultCode SandboxWin::StartSandboxedProcess(
      const base::CommandLine& cmd_line,
@@ -764,7 +764,7 @@ index 6dde72c5f585364deaeb1c55f42c27908a25a245..a5d6061446df0237d297231e518617de
      SandboxDelegate* delegate,
      StartSandboxedProcessCallback result_callback) {
    SandboxLaunchTimer timer;
-@@ -961,7 +966,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
+@@ -950,7 +955,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
                             *base::CommandLine::ForCurrentProcess())) {
      base::Process process;
      ResultCode result =
@@ -773,7 +773,7 @@ index 6dde72c5f585364deaeb1c55f42c27908a25a245..a5d6061446df0237d297231e518617de
      DWORD last_error = GetLastError();
      std::move(result_callback).Run(std::move(process), last_error, result);
      return SBOX_ALL_OK;
-@@ -971,7 +976,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
+@@ -960,7 +965,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
    timer.OnPolicyCreated();
  
    ResultCode result = GeneratePolicyForSandboxedProcess(

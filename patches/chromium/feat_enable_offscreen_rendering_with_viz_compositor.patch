@@ -619,10 +619,10 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 010a30bcd09ca39215f0b31ec59425067a2392a4..7f428fe96da978aa951354eb41f9ebec46cc6e9c 100644
+index a54db013c6057ec4af188e66bda932e2c5595d67..25176dd54365848ff09f0de77d31aed77de54a15 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -87,6 +87,7 @@ class DisplayPrivate;
+@@ -88,6 +88,7 @@ class DisplayPrivate;
  class ExternalBeginFrameController;
  }  // namespace mojom
  
