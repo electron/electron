@@ -38,6 +38,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
       bool transparent,
       bool offscreen_use_shared_texture,
       const std::string& offscreen_shared_texture_pixel_format,
+      float offscreen_device_scale_factor,
       const OnPaintCallback& callback);
   ~OffScreenWebContentsView() override;
 
@@ -113,6 +114,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   const bool transparent_;
   const bool offscreen_use_shared_texture_;
   const std::string offscreen_shared_texture_pixel_format_;
+  const float offscreen_device_scale_factor_;
   bool painting_ = true;
   int frame_rate_ = 60;
   OnPaintCallback callback_;

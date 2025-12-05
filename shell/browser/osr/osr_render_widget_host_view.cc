@@ -53,8 +53,6 @@ namespace electron {
 
 namespace {
 
-const float kDefaultScaleFactor = 1.0;
-
 ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
   int button_flags = 0;
   switch (event.button) {
@@ -94,6 +92,15 @@ ui::MouseWheelEvent UiMouseWheelEventFromWebMouseEvent(
   return {UiMouseEventFromWebMouseEvent(event),
           base::ClampFloor<int>(event.delta_x),
           base::ClampFloor<int>(event.delta_y)};
+}
+
+// TODO(reito): Remove this function and use default 1.0f when Electron 42.
+float GetDefaultDeviceScaleFactorFromDisplayInfo() {
+  display::Display display =
+      display::Screen::Get()->GetDisplayNearestView(gfx::NativeView());
+
+  const float factor = display.device_scale_factor();
+  return factor > 0 ? factor : 1.0f;
 }
 
 }  // namespace
@@ -155,6 +162,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
     bool transparent,
     bool offscreen_use_shared_texture,
     const std::string& offscreen_shared_texture_pixel_format,
+    float offscreen_device_scale_factor,
     bool painting,
     int frame_rate,
     const OnPaintCallback& callback,
@@ -168,6 +176,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       offscreen_use_shared_texture_(offscreen_use_shared_texture),
       offscreen_shared_texture_pixel_format_(
           offscreen_shared_texture_pixel_format),
+      offscreen_device_scale_factor_(offscreen_device_scale_factor),
       callback_(callback),
       frame_rate_(frame_rate),
       size_(initial_size),
@@ -184,11 +193,11 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   DCHECK(render_widget_host_);
   DCHECK(!render_widget_host_->GetView());
 
-  // Initialize a screen_infos_ struct as needed, to cache the scale factor.
-  if (screen_infos_.screen_infos.empty()) {
-    UpdateScreenInfo();
+  // TODO(reito): Remove this when Electron 42.
+  if (cc::MathUtil::IsWithinEpsilon(offscreen_device_scale_factor_, 0.0f)) {
+    offscreen_device_scale_factor_ =
+        GetDefaultDeviceScaleFactorFromDisplayInfo();
   }
-  screen_infos_.mutable_current().device_scale_factor = kDefaultScaleFactor;
 
   delegated_frame_host_allocator_.GenerateId();
   delegated_frame_host_surface_id_ =
@@ -209,15 +218,6 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   compositor_->SetAcceleratedWidget(gfx::kNullAcceleratedWidget);
   compositor_->SetDelegate(this);
   compositor_->SetRootLayer(root_layer_.get());
-
-  // For offscreen rendering with format rgbaf16, we need to set correct display
-  // color spaces to the compositor, otherwise it won't support hdr.
-  if (offscreen_use_shared_texture_ &&
-      offscreen_shared_texture_pixel_format_ == "rgbaf16") {
-    gfx::DisplayColorSpaces hdr_display_color_spaces(
-        gfx::ColorSpace::CreateSRGBLinear(), viz::SinglePlaneFormat::kRGBA_F16);
-    compositor_->SetDisplayColorSpaces(hdr_display_color_spaces);
-  }
 
   ResizeRootLayer(false);
 
@@ -504,19 +504,6 @@ void OffScreenRenderWidgetHostView::CopyFromSurface(
                                                      std::move(callback));
 }
 
-display::ScreenInfo OffScreenRenderWidgetHostView::GetScreenInfo() const {
-  display::ScreenInfo screen_info;
-  screen_info.depth = 24;
-  screen_info.depth_per_component = 8;
-  screen_info.orientation_angle = 0;
-  screen_info.device_scale_factor = GetDeviceScaleFactor();
-  screen_info.orientation_type =
-      display::mojom::ScreenOrientation::kLandscapePrimary;
-  screen_info.rect = gfx::Rect(size_);
-  screen_info.available_rect = gfx::Rect(size_);
-  return screen_info;
-}
-
 gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInRootWindow() {
   return gfx::Rect(size_);
 }
@@ -562,8 +549,8 @@ OffScreenRenderWidgetHostView::CreateViewForWidget(
 
   return new OffScreenRenderWidgetHostView(
       transparent_, offscreen_use_shared_texture_,
-      offscreen_shared_texture_pixel_format_, true,
-      embedder_host_view->frame_rate(), callback_, render_widget_host,
+      offscreen_shared_texture_pixel_format_, offscreen_device_scale_factor_,
+      true, embedder_host_view->frame_rate(), callback_, render_widget_host,
       embedder_host_view, size());
 }
 
@@ -971,35 +958,55 @@ void OffScreenRenderWidgetHostView::InvalidateBounds(const gfx::Rect& bounds) {
   CompositeFrame(bounds);
 }
 
+display::ScreenInfos
+OffScreenRenderWidgetHostView::GetNewScreenInfosForUpdate() {
+  display::ScreenInfo screen_info;
+  screen_info.depth = 24;
+  screen_info.depth_per_component = 8;
+  screen_info.orientation_angle = 0;
+  screen_info.orientation_type =
+      display::mojom::ScreenOrientation::kLandscapePrimary;
+  screen_info.rect = gfx::Rect(size_);
+  screen_info.available_rect = gfx::Rect(size_);
+  screen_info.device_scale_factor = offscreen_device_scale_factor_;
+
+  // When pixel format is 'rgbaf16', we need to set screen info to support HDR.
+  if (offscreen_use_shared_texture_ &&
+      offscreen_shared_texture_pixel_format_ == "rgbaf16") {
+    gfx::DisplayColorSpaces hdr_display_color_spaces{
+        gfx::ColorSpace::CreateSRGBLinear(), viz::SinglePlaneFormat::kRGBA_F16};
+    // The max luminance value doesn't matter so we set to a large value.
+    hdr_display_color_spaces.SetHDRMaxLuminanceRelative(100.0f);
+    screen_info.display_color_spaces = hdr_display_color_spaces;
+  }
+
+  display::ScreenInfos screen_infos{screen_info};
+  return screen_infos;
+}
+
 void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   SetupFrameRate(false);
 
-  display::Display display =
-      display::Screen::Get()->GetDisplayNearestView(GetNativeView());
-  const float scaleFactor = display.device_scale_factor();
-  float sf = GetDeviceScaleFactor();
-  const bool sf_did_change = scaleFactor != sf;
+  auto old_screen_info = screen_infos_.current();
+  UpdateScreenInfo();
 
-  // Initialize a screen_infos_ struct as needed, to cache the scale factor.
-  if (screen_infos_.screen_infos.empty()) {
-    UpdateScreenInfo();
-  }
-  screen_infos_.mutable_current().device_scale_factor = scaleFactor;
-
+  auto new_screen_info = screen_infos_.current();
   gfx::Size size = GetViewBounds().size();
 
-  if (!force && !sf_did_change && size == root_layer()->bounds().size())
+  if (!force && size == root_layer()->bounds().size() &&
+      old_screen_info == new_screen_info)
     return;
 
   root_layer()->SetBounds(gfx::Rect(size));
 
-  const gfx::Size& size_in_pixels =
-      gfx::ToFlooredSize(gfx::ConvertSizeToPixels(size, sf));
+  auto sf = GetDeviceScaleFactor();
+  const gfx::Size& size_in_pixels = SizeInPixels();
 
   if (compositor_) {
     compositor_allocator_.GenerateId();
     compositor_surface_id_ = compositor_allocator_.GetCurrentLocalSurfaceId();
     compositor_->SetScaleAndSize(sf, size_in_pixels, compositor_surface_id_);
+    compositor_->SetDisplayColorSpaces(new_screen_info.display_color_spaces);
   }
 
   delegated_frame_host_allocator_.GenerateId();
