@@ -1,0 +1,122 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Niklas Wenzel <dev@nikwen.de>
+Date: Wed, 3 Dec 2025 17:42:58 +0100
+Subject: viz: Fix visual artifacts while resizing window with DComp
+
+Manual backport of crrev.com/c/7115438
+
+Bug: 457463689
+Change-Id: I9c684effe15e0b112ae533faa243e5a035e9c875
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7115438
+Commit-Queue: David Sanders <dsanders11@ucsbalum.com>
+Reviewed-by: Michael Tang <tangm@microsoft.com>
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1553192}
+
+diff --git a/components/viz/service/display/direct_renderer.cc b/components/viz/service/display/direct_renderer.cc
+index 01abf5d36e2e117acf6f9cdc91307c9ac5616453..7e45d9ea46d0d4095169daf748e20c98db21969d 100644
+--- a/components/viz/service/display/direct_renderer.cc
++++ b/components/viz/service/display/direct_renderer.cc
+@@ -243,6 +243,31 @@ void DirectRenderer::DrawFrame(
+   current_frame()->device_viewport_size = device_viewport_size;
+   current_frame()->display_color_spaces = display_color_spaces;
+ 
++  gfx::Size surface_resource_size =
++      CalculateSizeForOutputSurface(device_viewport_size);
++
++#if BUILDFLAG(IS_WIN)
++  if (output_surface_->capabilities().clear_drawn_areas_outside_viewport &&
++      device_viewport_size != surface_resource_size) {
++    // On Windows with DirectComposition, we cannot synchronize the swap chain
++    // |Present| and the DComp |Commit| calls to take effect at the same time.
++    // (Both take effect asynchronously.) Hence, presenting a frame and changing
++    // the DComp layer clip rect can happen at different times. This can lead to
++    // ugly visual artifacts while resizing the window because it can reveal
++    // areas of the surface that are outside the viewport (crbug.com/457463689).
++    // To prevent those artifacts, we clear areas outside of the viewport with a
++    // transparent color. Transparency is expensive, so we use it only while
++    // resizing.
++    // This line gives us a transparent image format and triggers the background
++    // to be cleared in |SkiaRenderer::ClearFramebuffer|.
++    root_render_pass->has_transparent_background = true;
++    // Redraw and swap the whole surface.
++    root_render_pass->output_rect = gfx::Rect(surface_resource_size);
++    current_frame()->root_damage_rect = gfx::Rect(surface_resource_size);
++    current_frame()->device_viewport_size = surface_resource_size;
++  }
++#endif
++
+   output_surface_->SetNeedsMeasureNextDrawLatency();
+   BeginDrawingFrame();
+ 
+@@ -274,8 +299,6 @@ void DirectRenderer::DrawFrame(
+       current_frame()->display_color_spaces.GetOutputBufferFormat(
+           current_frame()->root_render_pass->content_color_usage,
+           frame_has_alpha));
+-  gfx::Size surface_resource_size =
+-      CalculateSizeForOutputSurface(device_viewport_size);
+   if (overlay_processor_) {
+     // Display transform and viewport size are needed for overlay validator on
+     // Android SurfaceControl, and viewport size is need on Windows. These need
+@@ -397,8 +420,10 @@ void DirectRenderer::DrawFrame(
+ 
+   // If we need to redraw the frame, the whole output should be considered
+   // damaged.
+-  if (needs_full_frame_redraw)
+-    current_frame()->root_damage_rect = gfx::Rect(device_viewport_size);
++  if (needs_full_frame_redraw) {
++    current_frame()->root_damage_rect =
++        gfx::Rect(current_frame()->device_viewport_size);
++  }
+ 
+   if (!skip_drawing_root_render_pass) {
+     DrawRenderPassAndExecuteCopyRequests(root_render_pass);
+diff --git a/components/viz/service/display/output_surface.h b/components/viz/service/display/output_surface.h
+index 589f4c10dad9c807c9e3ce7baba63795b629435b..641bbfc732c88141ddd929a4c334360462259ee4 100644
+--- a/components/viz/service/display/output_surface.h
++++ b/components/viz/service/display/output_surface.h
+@@ -106,6 +106,11 @@ class VIZ_SERVICE_EXPORT OutputSurface {
+ #if BUILDFLAG(IS_WIN)
+     // Whether this OutputSurface supports direct composition layers.
+     DCSupportLevel dc_support_level = DCSupportLevel::kNone;
++    // Whether to 1) clear all drawn areas outside the viewport with a
++    // transparent background color when drawing a frame and 2) swap them. This
++    // is necessary if the surface clip rect can get out of sync with the
++    // viewport size (e.g., due to a race condition).
++    bool clear_drawn_areas_outside_viewport = false;
+ #endif
+     // Whether this OutputSurface should skip DrawAndSwap(). This is true for
+     // the unified display on Chrome OS. All drawing is handled by the physical
+diff --git a/components/viz/service/display_embedder/skia_output_device_dcomp.cc b/components/viz/service/display_embedder/skia_output_device_dcomp.cc
+index 7ac9ea1cdc4416a7af8dc2a75404cbc15be6cfad..8e027d1382c5d639c1e114b8e25b6cea3af3445d 100644
+--- a/components/viz/service/display_embedder/skia_output_device_dcomp.cc
++++ b/components/viz/service/display_embedder/skia_output_device_dcomp.cc
+@@ -39,10 +39,8 @@
+ namespace viz {
+ 
+ namespace {
+-// With DirectComposition, resize surface based on root render pass size to
+-// avoid gutter which shows stale pixels.
+-BASE_FEATURE(kDirectCompositionResizeBasedOnRootSurface,
+-             base::FEATURE_ENABLED_BY_DEFAULT);
++// Apply fixes for crbug.com/457463689.
++BASE_FEATURE(kDirectCompositionResizeFixes, base::FEATURE_ENABLED_BY_DEFAULT);
+ 
+ base::TimeTicks g_last_reshape_failure = base::TimeTicks();
+ 
+@@ -161,7 +159,14 @@ SkiaOutputDeviceDComp::SkiaOutputDeviceDComp(
+   capabilities_.supports_viewporter = presenter_->SupportsViewporter();
+   capabilities_.supports_non_backed_solid_color_overlays = true;
+   capabilities_.resize_based_on_root_surface =
+-      base::FeatureList::IsEnabled(kDirectCompositionResizeBasedOnRootSurface);
++      base::FeatureList::IsEnabled(kDirectCompositionResizeFixes);
++  // With delegated compositing or a buffer queue, |Present| and |Commit| are
++  // synchronized and the clear is not needed.
++  capabilities_.clear_drawn_areas_outside_viewport =
++      base::FeatureList::IsEnabled(kDirectCompositionResizeFixes) &&
++      !IsDelegatedCompositingSupportedAndEnabled(
++          capabilities_.dc_support_level) &&
++      !IsBufferQueueSupportedAndEnabled(capabilities_.dc_support_level);
+ 
+   DCHECK(context_state_);
+   DCHECK(context_state_->gr_context() ||
