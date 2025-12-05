@@ -58,17 +58,7 @@ void InitializeFeatureList() {
       // See https://chromium-review.googlesource.com/c/chromium/src/+/6626905
       // Needed so that ElectronBrowserClient::RegisterPendingSiteInstance does
       // not throw a check.
-      std::string(", TraceSiteInstanceGetProcessCreation") +
-      // See https://chromium-review.googlesource.com/c/chromium/src/+/6910012
-      // Needed until we rework some of our logic and checks to enable this
-      // properly.
-      std::string(",") + network::features::kLocalNetworkAccessChecks.name +
-      // See https://chromium-review.googlesource.com/c/chromium/src/+/7204292
-      // This feature causes the following sandbox failure on Windows:
-      // sandbox\policy\win\sandbox_win.cc:777 Sandbox cannot access executable
-      // electron.exe. Check filesystem permissions are valid.
-      // See https://bit.ly/31yqMJR.: Access is denied. (0x5)
-      std::string(",") + sandbox::policy::features::kNetworkServiceSandbox;
+      std::string(", TraceSiteInstanceGetProcessCreation");
 
 #if BUILDFLAG(IS_WIN)
   // Refs https://issues.chromium.org/issues/401996981
@@ -77,6 +67,18 @@ void InitializeFeatureList() {
   // can work without this feature.
   enable_features += std::string(",") +
                      views::features::kEnableTransparentHwndEnlargement.name;
+
+  // See https://chromium-review.googlesource.com/c/chromium/src/+/6910012
+  // Needed until we rework some of our logic and checks to enable this
+  // properly.
+  disable_features +=
+      std::string(",") + network::features::kLocalNetworkAccessChecks.name +
+      // See https://chromium-review.googlesource.com/c/chromium/src/+/7204292
+      // This feature causes the following sandbox failure on Windows:
+      // sandbox\policy\win\sandbox_win.cc:777 Sandbox cannot access executable
+      // electron.exe. Check filesystem permissions are valid.
+      // See https://bit.ly/31yqMJR.: Access is denied. (0x5)
+      std::string(",") + sandbox::policy::features::kNetworkServiceSandbox;
 #endif
 
 #if BUILDFLAG(IS_MAC)
