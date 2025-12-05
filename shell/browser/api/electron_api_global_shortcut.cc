@@ -157,7 +157,8 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
     // received by GlobalShortcut will correspond to Alt+Shift+K as our command
     // id is basically a stringified accelerator.
     const std::string fake_extension_id = command_str + "+" + profile_id;
-    instance->OnCommandsChanged(fake_extension_id, profile_id, commands, this);
+    instance->OnCommandsChanged(fake_extension_id, profile_id, commands,
+                                gfx::kNullAcceleratedWidget, this);
     command_callback_map_[command_str] = callback;
     return true;
   } else {
