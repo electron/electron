@@ -134,8 +134,22 @@ const { appCodeLoaded } = process;
 delete process.appCodeLoaded;
 
 const { preloadPaths } = ipcRendererUtils.invokeSync<{ preloadPaths: string[] }>(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD);
-const cjsPreloads = preloadPaths.filter(p => path.extname(p) !== '.mjs');
-const esmPreloads = preloadPaths.filter(p => path.extname(p) === '.mjs');
+
+// Check if this is a webview with type="module"
+const isWebviewModuleType = (process as any).webviewModuleType === 'module';
+
+// Classify preload scripts based on file extension and webview module type
+const cjsPreloads = preloadPaths.filter(p => {
+  const isESMFile = path.extname(p) === '.mjs';
+  const shouldTreatAsModule = isWebviewModuleType && path.extname(p) === '.js';
+  return !isESMFile && !shouldTreatAsModule;
+});
+
+const esmPreloads = preloadPaths.filter(p => {
+  const isESMFile = path.extname(p) === '.mjs';
+  const shouldTreatAsModule = isWebviewModuleType && path.extname(p) === '.js';
+  return isESMFile || shouldTreatAsModule;
+});
 if (cjsPreloads.length) {
   // Load the preload scripts.
   for (const preloadScript of cjsPreloads) {
