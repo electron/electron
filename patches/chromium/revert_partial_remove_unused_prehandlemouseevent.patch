@@ -39,7 +39,7 @@ index bc1bfa1ac381ec94121a264d9dcbae9e02ab5a81..c6fc03ae158b3ce87fd684d765a3f1b0
    // event before sending it to the renderer. See enum for details on return
    // value.
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 2fa9876286ecda6a60a2c1970896cb275bbd7ab9..3f14e59de0e296b17f574aa40b879d2f373bb93e 100644
+index a7309941d904b9ab32ff101dfd26be7e09fed1ac..d8c715ade23f078aa2efacc59a97f0f4a8b62312 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -1589,6 +1589,10 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(
@@ -54,10 +54,10 @@ index 2fa9876286ecda6a60a2c1970896cb275bbd7ab9..3f14e59de0e296b17f574aa40b879d2f
      if (mouse_event_callback.Run(mouse_event)) {
        return;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 70ce66aeaecb2f34efb7db8a74c63f9f7f8cdbc8..e3769d79b173f758939981b6e58cc97e39cd71c1 100644
+index d9b20ad086f4b921a04cd3d120d225fb80455905..5b6be42aeb82432833946e1d94881834dc636892 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4448,6 +4448,12 @@ void WebContentsImpl::RenderWidgetWasResized(
+@@ -4453,6 +4453,12 @@ void WebContentsImpl::RenderWidgetWasResized(
                               width_changed);
  }
  
@@ -71,10 +71,10 @@ index 70ce66aeaecb2f34efb7db8a74c63f9f7f8cdbc8..e3769d79b173f758939981b6e58cc97e
                                            const gfx::PointF& client_pt) {
    if (delegate_) {
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 563e943c90c03876dce8846ca32775b8929e569e..af8a1d0dfe51f641db7440f8df7faa9f5e37cf64 100644
+index cf1b560bc7cf6d912a9000a2b9c73666e1a9f1eb..4f0a3e47bad7e58db60ea1a8f75cd3cb00956b09 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1121,6 +1121,7 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1122,6 +1122,7 @@ class CONTENT_EXPORT WebContentsImpl
  
    double GetPendingZoomLevel(RenderWidgetHostImpl* rwh) override;
  
@@ -83,7 +83,7 @@ index 563e943c90c03876dce8846ca32775b8929e569e..af8a1d0dfe51f641db7440f8df7faa9f
                             const gfx::PointF& client_pt);
    void PreHandleDragExit();
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 923d8834e231b91e7a692e0178ece122b8d70536..bdb490b9f5b76faf2f5ed09812b202fea1c63a73 100644
+index 6c3ac2cf54bd7c20165b552f8c26da14cab94242..ec95bd923b1d78f74f097eea687bcc4b2292ebba 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -127,6 +127,12 @@ bool WebContentsDelegate::HandleContextMenu(RenderFrameHost& render_frame_host,
@@ -100,10 +100,10 @@ index 923d8834e231b91e7a692e0178ece122b8d70536..bdb490b9f5b76faf2f5ed09812b202fe
      WebContents* source,
      const input::NativeWebKeyboardEvent& event) {
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 30d7c81394df4e0f382d9a67fcd414b2d07903db..b92971710565bcf650f47d83d3e6163095b345da 100644
+index 320a7288dd87f6e9c100fcff046ddfa7f0f6e179..3cf8ee74905be5ac4ee48b6587fbf91ade462bda 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
-@@ -323,6 +323,13 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -326,6 +326,13 @@ class CONTENT_EXPORT WebContentsDelegate {
    virtual bool HandleContextMenu(RenderFrameHost& render_frame_host,
                                   const ContextMenuParams& params);
  

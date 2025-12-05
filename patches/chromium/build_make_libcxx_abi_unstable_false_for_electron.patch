@@ -8,7 +8,7 @@ https://nornagon.medium.com/a-libc-odyssey-973e51649063
 See also https://github.com/electron/electron/issues/45810#issuecomment-2691417213.
 
 diff --git a/buildtools/third_party/libc++/__config_site b/buildtools/third_party/libc++/__config_site
-index 67075bd8b4d42e6e6d651cb0988d64eccb64cc23..ddf1693002aa171b3d91aa4ef08f5b360e4adddc 100644
+index 4645265e462428d0f92d2aa7b1a4eae575c53699..cee3ebd4c7523141cb2c0fc6a77624c6541465fb 100644
 --- a/buildtools/third_party/libc++/__config_site
 +++ b/buildtools/third_party/libc++/__config_site
 @@ -18,7 +18,9 @@

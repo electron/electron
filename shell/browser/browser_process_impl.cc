@@ -98,6 +98,19 @@ GlobalFeatures* BrowserProcessImpl::GetFeatures() {
   return nullptr;
 }
 
+ui::UnownedUserDataHost& BrowserProcessImpl::GetUnownedUserDataHost() {
+  NOTIMPLEMENTED();
+  static base::NoDestructor<ui::UnownedUserDataHost> instance;
+  return *instance;
+}
+
+const ui::UnownedUserDataHost& BrowserProcessImpl::GetUnownedUserDataHost()
+    const {
+  NOTIMPLEMENTED();
+  static base::NoDestructor<ui::UnownedUserDataHost> instance;
+  return *instance;
+}
+
 void BrowserProcessImpl::PostEarlyInitialization() {
   PrefServiceFactory prefs_factory;
   auto pref_registry = base::MakeRefCounted<PrefRegistrySimple>();
@@ -307,11 +320,6 @@ HidSystemTrayIcon* BrowserProcessImpl::hid_system_tray_icon() {
 }
 
 UsbSystemTrayIcon* BrowserProcessImpl::usb_system_tray_icon() {
-  return nullptr;
-}
-
-subresource_filter::RulesetService*
-BrowserProcessImpl::fingerprinting_protection_ruleset_service() {
   return nullptr;
 }
 

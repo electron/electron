@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Mon, 1 Dec 2025 10:27:23 -0500
+Subject: chore: handle deprecation of v8::ReturnValue<void>::Set(Local<S>)
+
+v8::ReturnValue<void>::Set(Local<S>) is now deprecated.
+
+See http://crbug.com/348660658 for details.
+
+diff --git a/nan_callbacks_12_inl.h b/nan_callbacks_12_inl.h
+index e40383c095ab329b2e20b7e68ade507788a79fb6..24979fb0d66595f5e80f493c78291d6600bfc34a 100644
+--- a/nan_callbacks_12_inl.h
++++ b/nan_callbacks_12_inl.h
+@@ -26,7 +26,24 @@ class ReturnValue {
+   // Handle setters
+   template <typename S> inline void Set(const v8::Local<S> &handle) {
+     TYPE_CHECK(T, S);
++#if defined(V8_MAJOR_VERSION) && defined(V8_MINOR_VERSION) && defined(V8_BUILD_NUMBER) && \
++    (V8_MAJOR_VERSION > 14 || \
++     (V8_MAJOR_VERSION == 14 && V8_MINOR_VERSION > 4) || \
++     (V8_MAJOR_VERSION == 14 && V8_MINOR_VERSION == 4 && V8_BUILD_NUMBER >= 230))
++    // For V8 14.4.230+, avoid deprecated Set method for ReturnValue<void>
++    if constexpr (std::is_void_v<T>) {
++      if (handle.IsEmpty()) {
++        // For void return type, do nothing to indicate success
++        // as per V8 deprecation guidance
++      } else {
++        value_.Set(handle->BooleanValue(value_.GetIsolate()));
++      }
++    } else {
++      value_.Set(handle);
++    }
++#else
+     value_.Set(handle);
++#endif
+   }
+ 
+   template <typename S> inline void Set(const Global<S> &handle) {
