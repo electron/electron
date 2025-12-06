@@ -12,7 +12,7 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index c0a2f822e38712eaad30c5d1104b149fa28d985d..b967896479c7fd0f71c7b9e5407d63e1d62bfadd 100644
+index bc42167ac59a59f2f3ab4205b9654a87686d1630..25e01405c9d525c0e3cd842c90ba77e2c7eb890a 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
 @@ -358,7 +358,8 @@ void Compositor::SetLayerTreeFrameSink(

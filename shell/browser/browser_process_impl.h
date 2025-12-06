@@ -111,7 +111,9 @@ class BrowserProcessImpl : public BrowserProcess {
   subresource_filter::RulesetService* subresource_filter_ruleset_service()
       override;
   component_updater::ComponentUpdateService* component_updater() override;
+#if BUILDFLAG(IS_CHROMEOS)
   MediaFileSystemRegistry* media_file_system_registry() override;
+#endif
   WebRtcLogUploader* webrtc_log_uploader() override;
   network_time::NetworkTimeTracker* network_time_tracker() override;
   gcm::GCMDriver* gcm_driver() override;

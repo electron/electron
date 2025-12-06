@@ -181,10 +181,10 @@ index 91e234e7fa29e50545fdaed64adcf68498f14c2d..15d5685d726d0ddb9ac964475b899714
  
    // Geometry notifications ----------------------------------------------
 diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-index 898d7caac98727210ac5780b576526a71ec5a5aa..3fdd5b3c41fd8d5dc920bed710dc10741e7e7423 100644
+index 8bd06f4c155cc0ed8afaf89347f9fc9728bb1e41..85ae42670cc038e18e4a0ea05e3de25c116b7a79 100644
 --- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-@@ -109,11 +109,12 @@ void LocalWindowProxy::DisposeContext(Lifecycle next_status,
+@@ -108,11 +108,12 @@ void LocalWindowProxy::DisposeContext(Lifecycle next_status,
  
    ScriptState::Scope scope(script_state_);
    v8::Local<v8::Context> context = script_state_->GetContext();

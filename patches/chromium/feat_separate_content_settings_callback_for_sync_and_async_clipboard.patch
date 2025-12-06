@@ -20,10 +20,10 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 23b38aa1733f6eabda0ab76b5f63f13e76958a6f..2f68573b8fa30a4d63f0b2fa8ff4a8e502436f2f 100644
+index 766ad28c66348f79164d8690faffb936bf659884..7b1131679ef84ca575629f46ad98483eeb4d8d9e 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -537,6 +537,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -538,6 +538,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::WEB_APP_INSTALLATION;
      case PermissionType::LOCAL_NETWORK_ACCESS:
        return ContentSettingsType::LOCAL_NETWORK_ACCESS;
@@ -32,7 +32,7 @@ index 23b38aa1733f6eabda0ab76b5f63f13e76958a6f..2f68573b8fa30a4d63f0b2fa8ff4a8e5
        break;
    }
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index eeacd30992233f44f8972f242f37637cb240dc06..e56096991dfbffa3a16aa3aca602b59fbd48a4d5 100644
+index 40cb6f6c4f6fe68d1351a19c4da03538d3dfd3d1..b2a8eea4c802b7fbe2a098c8fae8d640e2d0b169 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
 @@ -94,6 +94,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {

@@ -605,10 +605,10 @@ index 20bbbeddd18ef26b68defcdbd4a7c62706c43d0b..7b0071c169556a080ecbf5e8a6a3b878
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/chrome/browser/printing/printer_query_oop.cc b/chrome/browser/printing/printer_query_oop.cc
-index 68465045179c9bbe747679509453d8a802176568..eac20bd0ab74891ad9f38d43ee5b6ca51b5cff48 100644
+index f58d494764ea77c997770ae0257b7c21b248a0e0..6eb4a9436a9bee5420a29ec643b984cea0700faa 100644
 --- a/chrome/browser/printing/printer_query_oop.cc
 +++ b/chrome/browser/printing/printer_query_oop.cc
-@@ -128,7 +128,7 @@ void PrinterQueryOop::OnDidAskUserForSettings(
+@@ -126,7 +126,7 @@ void PrinterQueryOop::OnDidAskUserForSettings(
      std::unique_ptr<PrintSettings> new_settings,
      mojom::ResultCode result) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
