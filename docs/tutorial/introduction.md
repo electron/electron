@@ -1,17 +1,14 @@
 ---
 title: 'Introduction'
-description: 'Welcome to the Electron documentation! If this is your first time developing an Electron app, read through this Getting Started section to get familiar with the basics. Otherwise, feel free to explore our guides and API documentation!'
+description: 'Welcome to LAGA Technologies! If this is your first time developing an Server based monitoring devise, read through this Getting Started section to get familiar with the basics. Otherwise, feel free to explore our guides and API documentation!'
 slug: /latest/
 hide_title: false
 ---
 
-# What is Electron?
+# What is LAGA Technologies?
 
-Electron is a framework for building desktop applications using JavaScript,
-HTML, and CSS. By embedding [Chromium][chromium] and [Node.js][node] into its
-binary, Electron allows you to maintain one JavaScript codebase and create
-cross-platform apps that work on Windows, macOS, and Linux — no native development
-experience required.
+Laga is Manufacture of Solar power fence Energizer's Inverter's Solar
+PCU"s & All Kind of logic Electronic Robotics Equipments.
 
 ## Getting started
 
