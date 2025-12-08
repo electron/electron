@@ -353,10 +353,10 @@ index fa2f28989be19e8ea8f53b990ae96be92ef3c3a3..c26d1301d7b81a6c281d5465bfb29a57
    CHECK(!env->temporary_required_module_facade_original.IsEmpty());
    return env->temporary_required_module_facade_original.Get(isolate);
 diff --git a/src/node.h b/src/node.h
-index 84c121f13caa1472cef67113fbc7b7213e7af7e1..6a6f6f057f89ae72c680d19f4d478d421dede613 100644
+index 486d941cf0c5c4588604f3808807717aaed2f018..754e8ce35e006946c276b63c184cde6e1bbf881a 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -1064,7 +1064,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
+@@ -1065,7 +1065,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
  
  #define NODE_DEFINE_CONSTANT(target, constant)                                 \
    do {                                                                         \
@@ -365,7 +365,7 @@ index 84c121f13caa1472cef67113fbc7b7213e7af7e1..6a6f6f057f89ae72c680d19f4d478d42
      v8::Local<v8::Context> context = isolate->GetCurrentContext();             \
      v8::Local<v8::String> constant_name = v8::String::NewFromUtf8Literal(      \
          isolate, #constant, v8::NewStringType::kInternalized);                 \
-@@ -1080,7 +1080,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
+@@ -1081,7 +1081,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
  
  #define NODE_DEFINE_HIDDEN_CONSTANT(target, constant)                          \
    do {                                                                         \
