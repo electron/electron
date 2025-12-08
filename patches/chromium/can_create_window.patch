@@ -77,7 +77,7 @@ index 4c55f0abf8df5a3408f3f90d444ceff3c23ee1bc..72bdb5b5a4c2c21a7192b34bb293bd23
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 4dab398af0bdbc218c69d8bba2d7284810e7c55b..8fd33878089ee31597996651f9049bbbe16ce5a0 100644
+index 32398673f892e441645197e160fcd7199855810c..f84873ede89fd06a951e17d588f8f692893b7157 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -873,6 +873,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -90,7 +90,7 @@ index 4dab398af0bdbc218c69d8bba2d7284810e7c55b..8fd33878089ee31597996651f9049bbb
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index ec7e5dfb62173c01d9240c92c5a64bc806ae3d70..6c65b051d18bfbe959dde730963f9ab762ac6639 100644
+index 9876271141182d6d0836449fde5010788298a4f0..8e8ee6284ad2ab6453b4c0137e61aea2765583c6 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -203,6 +203,7 @@ class NetworkService;
@@ -232,7 +232,7 @@ index d92bab531c12c62a5321a23f4a0cb89691668127..c354a79c7c8dd047264df35b873e90c1
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index c5dd46ce9f706528216f3c5bbddf5ee9736070ab..973a5924eab09d889bcd6b5f7d365e9b69a9197f 100644
+index 96587060ba012823b8e2f61f22ebf3ee1efd3538..50ae67ac9153324b2e59dae324fc138a29cd9b63 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -2349,6 +2349,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,

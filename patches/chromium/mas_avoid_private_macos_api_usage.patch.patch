@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index e20c89852d113279a3240c3db8ed481597fcb754..82a95080211e5ae4ffdbdb0bb835909329449c3c 100644
+index 46fa8b689b94c6af236e5ed3f57311dcd207a84c..90d71c9ffc6b50cb66a484be35a31bac2a86eb02 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1074,6 +1074,7 @@ component("base") {
@@ -451,7 +451,7 @@ index a474e70cf3c10405b6f94f129f5a7312bb81fd73..9463bd647a4d47ff3241579255966f5e
    bool shouldShowWindowTitle = YES;
    if (_bridge)
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 32c5dbcc5941f81c4ac03af97d1376dd1cf808a4..361523f87eb8f75a3d1bc39650ca04e6bd941471 100644
+index 414874d84338ff12e707d52bc82483957d74d8ef..849da439a046aea133946572c79964858e4e7ba5 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -462,7 +462,7 @@ index 32c5dbcc5941f81c4ac03af97d1376dd1cf808a4..361523f87eb8f75a3d1bc39650ca04e6
  #include "mojo/public/cpp/bindings/self_owned_receiver.h"
  #include "net/cert/x509_util_apple.h"
  #include "ui/accelerated_widget_mac/window_resize_helper_mac.h"
-@@ -700,10 +701,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -731,10 +732,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -581,10 +581,10 @@ index 98cc3f87ea2c94c6fa59dcfe67785f28c64d9a4e..f568a37670ca554b7191c27a0ab80985
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index fe4075d91dffcc72d9f1a2cb43a249942a3c6aee..00b69e9c7fa22980ea3bea7d7e41b8dc5c96c9c8 100644
+index c4eaa06761e18659e9cf2f050b6fd3c60947c248..b8c367a2aa4d2f2fe9bec95393ae8f8150371e44 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -342,6 +342,7 @@ source_set("browser") {
+@@ -343,6 +343,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -702,10 +702,10 @@ index e918b3ac9c9fd0641dd1943a349ac3fa1626e860..6d0ad4ed5e8a48a19dbea3d729d7d54a
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 9ad7c71515f1b0e1e2d896b66c74521c2c057f43..fb7eed8f2d03d6c164a253295b439ed06753256f 100644
+index b6a912f16fa4af423c62186b403a6e6cb12c5d1b..cd65876fe4463d81afc8fa64ffbfd1460c896536 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -273,6 +273,7 @@ source_set("common") {
+@@ -271,6 +271,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -1774,7 +1774,7 @@ index 84dd167d2e5c110b263cbcd6915e787b60e16000..395b5b371b9d471cc5633ff1005223e9
      deps += [ "//build:ios_buildflags" ]
    }
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index 890d86acb0e92760590b4d0860dd41eaa70486c7..2e9e16cb47606f627b1473a479a6e8ae514cb88e 100644
+index 01eb13e944e3d45c99e230ac8a2959a2a80adc9f..e5477816adbb5beab65f68ff4d543d6fd2784bc0 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
 @@ -29,6 +29,7 @@
@@ -1802,7 +1802,7 @@ index 890d86acb0e92760590b4d0860dd41eaa70486c7..2e9e16cb47606f627b1473a479a6e8ae
 +#endif
  
    // Query the display's refresh rate.
-   double refresh_rate = 1.0 / screen.minimumRefreshInterval;
+   display.set_display_frequency(screen.maximumFramesPerSecond);
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
 index f23cf9d02aa7a7fefb0bcd55d363e5c86de80f26..4968d2cd8f2e2b553120d0ad7225207c42b6bcec 100644
 --- a/ui/gfx/BUILD.gn
