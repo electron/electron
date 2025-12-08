@@ -262,7 +262,7 @@ index 61683d0eddb04c494ca5e650e7d556b44968ec49..5492456a9138b250e97a5479838bb443
  
  }  // namespace ui
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index 6430ef980736b18133a0a7834c2cbe431a41fd12..27184261ba830111fed24b35d635bbcec69dfc67 100644
+index 6430ef980736b18133a0a7834c2cbe431a41fd12..f866fb717e6770c4eb6139fea835accdf571d551 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 @@ -21,9 +21,11 @@
@@ -286,16 +286,11 @@ index 6430ef980736b18133a0a7834c2cbe431a41fd12..27184261ba830111fed24b35d635bbce
    if (!service_started) {
      g_service_availability = ServiceAvailability::kNotAvailable;
      return;
-@@ -113,6 +115,16 @@ void OnServiceStarted(bool service_started) {
+@@ -113,6 +115,11 @@ void OnServiceStarted(bool service_started) {
                       base::BindOnce(&OnGetPropertyReply));
  }
  
-+void OnSystemdUnitStarted(dbus_xdg::SystemdUnitStatus) {
-+#if 0
-+  dbus_xdg::RequestXdgDesktopPortal(
-+      dbus_thread_linux::GetSharedSessionBus().get(),
-+      base::BindOnce(&OnServiceStarted));
-+#endif
++void OnSystemdUnitStarted(dbus_xdg::internal::SystemdUnitStatus) {
 +  file_dialog::StartPortalAvailabilityTestInBackground();
 +}
 +
@@ -303,12 +298,12 @@ index 6430ef980736b18133a0a7834c2cbe431a41fd12..27184261ba830111fed24b35d635bbce
  std::vector<uint8_t> PathToByteArray(const base::FilePath& path) {
    std::vector<uint8_t> bytes(path.value().begin(), path.value().end());
    // Null-terminate the array.
-@@ -163,18 +175,21 @@ void SelectFileDialogLinuxPortal::StartAvailabilityTestInBackground() {
+@@ -163,18 +170,21 @@ void SelectFileDialogLinuxPortal::StartAvailabilityTestInBackground() {
  
    GetMainTaskRunner() = base::SequencedTaskRunner::GetCurrentDefault();
  
 -  dbus_xdg::RequestXdgDesktopPortal(
-+  dbus_xdg::SetSystemdScopeUnitNameForXdgPortal(
++  dbus_xdg::internal::SetSystemdScopeUnitNameForXdgPortal(
        dbus_thread_linux::GetSharedSessionBus().get(),
 -      base::BindOnce(&OnServiceStarted));
 +      base::BindOnce(&OnSystemdUnitStarted));
@@ -327,7 +322,7 @@ index 6430ef980736b18133a0a7834c2cbe431a41fd12..27184261ba830111fed24b35d635bbce
  }
  
  void SelectFileDialogLinuxPortal::ListenerDestroyed() {
-@@ -378,11 +393,14 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -378,11 +388,14 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
      const PortalFilterSet& filter_set) {
    dbus_xdg::Dictionary dict;
  
@@ -345,7 +340,7 @@ index 6430ef980736b18133a0a7834c2cbe431a41fd12..27184261ba830111fed24b35d635bbce
        [[fallthrough]];
      case SelectFileDialog::SELECT_FOLDER:
      case SelectFileDialog::Type::SELECT_EXISTING_FOLDER:
-@@ -395,6 +413,11 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -395,6 +408,11 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
        break;
    }
  
