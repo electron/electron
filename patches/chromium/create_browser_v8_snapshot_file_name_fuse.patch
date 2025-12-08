@@ -73,7 +73,7 @@ index fee2fab8ab33a3829f055b0408e9e763443016cc..678c636c9ca08f8113dc67aafaf9761f
    return new ContentClient();
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index 8151396412bf6981f3424526386ad6257b8c895d..ecf1440a39bda59b44793a6671715484f1e15967 100644
+index 8151396412bf6981f3424526386ad6257b8c895d..ac5041c1666ac968251768f604f92434d92e374d 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
 @@ -9,6 +9,7 @@
@@ -84,14 +84,10 @@ index 8151396412bf6981f3424526386ad6257b8c895d..ecf1440a39bda59b44793a6671715484
  #include <vector>
  
  #include "base/notreached.h"
-@@ -181,6 +182,12 @@ class CONTENT_EXPORT ContentMainDelegate {
+@@ -181,6 +182,8 @@ class CONTENT_EXPORT ContentMainDelegate {
    virtual bool ShouldInitializePerfetto(InvokedIn invoked_in);
  #endif
  
-+  // Do we want to initialize feature list early?
-+  // This is an experimental feature and its tracking bug is crbug.com/423925400
-+  virtual bool IsInitFeatureListEarly();
-+
 +  virtual std::string_view GetBrowserV8SnapshotFilename();
 +
   protected:
