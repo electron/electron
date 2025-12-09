@@ -27,7 +27,7 @@ jobs:
     container: ${{ fromJSON(inputs.container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       with:
         path: src/electron
         fetch-depth: 0
@@ -43,7 +43,7 @@ jobs:
       with:
         target-platform: linux
     - name: Checkout Electron
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       with:
         path: src/electron
         fetch-depth: 0
