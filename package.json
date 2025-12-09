@@ -1,5 +1,5 @@
 {
-  "name": "electron",
+  "name": "@electron-ci/dev-root",
   "version": "0.0.0-development",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
