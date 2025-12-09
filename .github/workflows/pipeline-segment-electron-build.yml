@@ -154,20 +154,7 @@ jobs:
       shell: powershell
       run: |
         # Check if WSL is installed
-        try {
-          wsl --status
-          wsl --list --verbose
-          Write-Host "WSL is already installed"
-        } catch {
-          Write-Host "WSL not found, installing..."
-          dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
-          dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
-        }
-        try {
-          wsl --set-default-version 2
-        } catch {
-          Write-Host "WSL already installed or version already set"
-        }
+        wsl --install Ubuntu
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js
