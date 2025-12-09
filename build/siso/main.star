@@ -39,18 +39,18 @@ def init(ctx):
           "clang_large": step_config["platforms"]["default"],          
       })      
 
-    if runtime.os == "windows":
-      # Add additional Windows SDK headers needed by Electron      
-      win_toolchain_dir = win_sdk.toolchain_dir(ctx)
-      if win_toolchain_dir:
-        sdk_version = gn_logs.read(ctx).get("windows_sdk_version")
-        step_config["input_deps"][win_toolchain_dir + ":headers"].extend([
-          # third_party/electron_node/deps/uv/include/uv/win.h includes mswsock.h
-          path.join(win_toolchain_dir, "Windows Kits/10/Include", sdk_version, "um/mswsock.h"),
-          # third_party/electron_node/src/debug_utils.cc includes lm.h
-          path.join(win_toolchain_dir, "Windows Kits/10/Include", sdk_version, "um/Lm.h"),          
-        ])
-      
+    # Add additional Windows SDK headers needed by Electron      
+    win_toolchain_dir = win_sdk.toolchain_dir(ctx)
+    if win_toolchain_dir:
+      sdk_version = gn_logs.read(ctx).get("windows_sdk_version")
+      step_config["input_deps"][win_toolchain_dir + ":headers"].extend([
+        # third_party/electron_node/deps/uv/include/uv/win.h includes mswsock.h
+        path.join(win_toolchain_dir, "Windows Kits", "10/Include", sdk_version, "um/mswsock.h"),
+        # third_party/electron_node/src/debug_utils.cc includes lm.h
+        path.join(win_toolchain_dir, "Windows Kits", "10/Include", sdk_version, "um/Lm.h"),
+      ])
+
+    if runtime.os == "windows":      
       # Update platforms to match our default siso config instead of reclient configs.
       step_config["platforms"].update({
           "clang-cl": step_config["platforms"]["default"],

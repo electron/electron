@@ -129,6 +129,10 @@ jobs:
     - name: Install AZCopy
       if: ${{ inputs.target-platform == 'macos' }}
       run: brew install azcopy
+    - name: Enable windows toolchain
+      if: ${{ inputs.target-platform == 'win' }}
+      run: |
+        echo "ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN=1" >> $GITHUB_ENV      
     - name: Set GN_EXTRA_ARGS for Linux
       if: ${{ inputs.target-platform == 'linux' }}
       run: |
@@ -155,13 +159,15 @@ jobs:
         echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
         echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
     - name: Restore src cache via AZCopy
-      if: ${{ inputs.target-platform != 'linux' }}
+      if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/restore-cache-azcopy
       with:
         target-platform: ${{ inputs.target-platform }}
     - name: Restore src cache via AKS
-      if: ${{ inputs.target-platform == 'linux' }}
+      if: ${{ inputs.target-platform != 'macos' }}
       uses: ./src/electron/.github/actions/restore-cache-aks
+      with:
+        target-platform: ${{ inputs.target-platform }}      
     - name: Checkout Electron
       uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       with:
@@ -169,7 +175,7 @@ jobs:
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Fix Sync
-      if: ${{ inputs.target-platform != 'linux' }}
+      if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/fix-sync
       with:
         target-platform: ${{ inputs.target-platform }}
@@ -178,9 +184,21 @@ jobs:
     - name: Init Build Tools
       run: |
         e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }} --remote-build siso
+        e sanitize-config
     - name: Run Electron Only Hooks
       run: |
-        e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+        if [ "${{ inputs.target-platform }}" = "win" ]; then
+          rm -rf src/third_party/depot_tools/win_toolchain/vs_files*
+        fi
+        echo "solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]" > tmpgclient
+        if [ "${{ inputs.target-platform }}" = "win" ]; then          
+          echo "target_os=['win']" >> tmpgclient
+        fi
+        gclient runhooks --gclientfile=tmpgclient
+        # Fix VS Toolchain
+        if [ "${{ inputs.target-platform }}" = "win" ]; then
+          e d python3 src/build/vs_toolchain.py update --force
+        fi
     - name: Regenerate DEPS Hash
       run: |
         (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js
@@ -218,3 +236,11 @@ jobs:
         generate-symbols: '${{ inputs.generate-symbols }}'
         upload-to-storage: '${{ inputs.upload-to-storage }}'
         step-suffix: '(mas)'
+    - name: Wait for active SSH sessions
+      shell: bash
+      if: always() && !cancelled()
+      run: |
+        while [ -f /var/.ssh-lock ]
+        do
+          sleep 60
+        done        

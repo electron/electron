@@ -37,15 +37,14 @@ runs:
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
     - name: Set GN_EXTRA_ARGS for Windows
       shell: bash
-      if: ${{inputs.target-arch != 'x64' && inputs.target-platform == 'win' }}
+      if: ${{ inputs.target-platform == 'win' }}
       run: |
-        GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"${{ inputs.target-arch }}\""
+        GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"${{ inputs.target-arch }}\" use_v8_context_snapshot=true target_os=\"win\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
     - name: Add Clang problem matcher
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Build Electron ${{ inputs.step-suffix }}
-      if: ${{ inputs.target-platform != 'win' }}
       shell: bash
       run: |
         rm -rf "src/out/Default/Electron Framework.framework"
@@ -71,37 +70,14 @@ runs:
 
         # Upload build stats to Datadog
         if ! [ -z $DD_API_KEY ]; then
-          npx node electron/script/build-stats.mjs out/Default/siso.INFO --upload-stats || true          
+          if [ "$TARGET_PLATFORM" = "win" ]; then
+            npx node electron/script/build-stats.mjs out/Default/siso.exe.INFO --upload-stats || true
+          else
+            npx node electron/script/build-stats.mjs out/Default/siso.INFO --upload-stats || true
+          fi
         else
           echo "Skipping build-stats.mjs upload because DD_API_KEY is not set"
         fi
-    - name: Build Electron (Windows) ${{ inputs.step-suffix }}
-      if: ${{ inputs.target-platform == 'win' }}
-      shell: powershell
-      run: |
-        cd src\electron
-        git pack-refs
-        cd ..
-
-        $env:NINJA_SUMMARIZE_BUILD = 1
-        if ("${{ inputs.is-release }}" -eq "true") {          
-          e build --target electron:release_build
-        } else {
-          e build --target electron:testing_build
-        }
-        Copy-Item out\Default\.ninja_log out\electron_ninja_log
-        node electron\script\check-symlinks.js
-
-        # Upload build stats to Datadog
-        if ($env:DD_API_KEY) {
-          try {
-            npx node electron\script\build-stats.mjs out\Default\siso.exe.INFO --upload-stats
-          } catch {
-            Write-Host "Build stats upload failed, continuing..."
-          }
-        } else {
-          Write-Host "Skipping build-stats.mjs upload because DD_API_KEY is not set"
-        }
     - name: Verify dist.zip ${{ inputs.step-suffix }}
       shell: bash
       run: |
@@ -126,15 +102,7 @@ runs:
         sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
 
-        if [ "${{ inputs.target-platform }}" = "win" ]; then
-          cd out/Default
-          powershell Compress-Archive -update mksnapshot_args mksnapshot.zip
-          powershell mkdir mktmp\\gen\\v8
-          powershell Copy-Item gen\\v8\\embedded.S mktmp\\gen\\v8
-          powershell Compress-Archive -update -Path mktmp\\gen mksnapshot.zip
-        else
-          (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
-        fi
+        (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)        
     - name: Generate Cross-Arch Snapshot (arm/arm64)  ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ (inputs.target-arch == 'arm' || inputs.target-arch == 'arm64') && inputs.target-platform == 'linux' }}
@@ -168,12 +136,6 @@ runs:
           fi
           electron/script/zip_manifests/check-zip-manifest.py out/Default/chromedriver.zip electron/script/zip_manifests/chromedriver_zip.$target_os.${{ inputs.target-arch }}.manifest
         fi
-    - name: Create installed_software.json ${{ inputs.step-suffix }}
-      shell: powershell
-      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'win' }}
-      run: |
-        cd src
-        Get-CimInstance -Namespace root\cimv2 -Class Win32_product | Select vendor, description, @{l='install_location';e='InstallLocation'}, @{l='install_date';e='InstallDate'}, @{l='install_date_2';e='InstallDate2'}, caption, version, name, @{l='sku_number';e='SKUNumber'} | ConvertTo-Json | Out-File -Encoding utf8 -FilePath .\installed_software.json
     - name: Profile Windows Toolchain ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'win' }}
@@ -227,7 +189,7 @@ runs:
           script/release/uploaders/upload.py --verbose
         fi
     - name: Generate siso report
-      if: ${{ inputs.target-platform != 'win' && !cancelled() }}
+      if: ${{ !cancelled() }}
       shell: bash
       run: |
         cd src
@@ -236,17 +198,6 @@ runs:
         echo "SISO_REPORT_PATH=$SISO_REPORT_PATH" >> $GITHUB_ENV
         cat siso_report.txt
         echo "SISO REPORT AT $SISO_REPORT_PATH"
-    - name: Generate siso report (Windows)
-      if: ${{ inputs.target-platform == 'win' && !cancelled() }}
-      shell: powershell
-      run: |
-        cd src
-        e d siso report -C out\Default > siso_report.txt
-        $SISO_REPORT_PATH = Get-Content "siso_report.txt" | Select-String "report file:\s*(.+)" | ForEach-Object { 
-          $_.Matches.Groups[1].Value.Trim() 
-        }
-        echo "SISO_REPORT_PATH=$SISO_REPORT_PATH"
-        echo "SISO_REPORT_PATH=$SISO_REPORT_PATH" >> $env:GITHUB_ENV
     - name: Generate Artifact Key
       if: always() && !cancelled()
       shell: bash

@@ -11,12 +11,12 @@ on:
       skip-macos:
         type: boolean
         description: 'Skip macOS builds'
-        default: false
+        default: true
         required: false
       skip-linux:
         type: boolean
         description: 'Skip Linux builds'
-        default: false
+        default: true
         required: false
       skip-windows:
         type: boolean
@@ -107,7 +107,7 @@ jobs:
   # Checkout Jobs
   checkout-macos:
     needs: setup
-    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-macos}}
+    if: ${{ needs.setup.outputs.src == 'true' && inputs.skip-macos == 'false'}}
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
@@ -137,7 +137,7 @@ jobs:
 
   checkout-linux:
     needs: setup
-    if: ${{ !inputs.skip-linux}}
+    if: ${{ inputs.skip-linux == 'false' }}
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
@@ -372,8 +372,9 @@ jobs:
     needs: checkout-windows
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: windows-latest
+      build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-windows.outputs.build-image-sha }}","options":"--user root --device /dev/fuse --cap-add SYS_ADMIN","volumes":["/mnt/win-cache:/mnt/win-cache"]}'
       target-platform: win
       target-arch: x64
       is-release: false
@@ -391,8 +392,9 @@ jobs:
     needs: checkout-windows
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: windows-latest
+      build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-windows.outputs.build-image-sha }}","options":"--user root --device /dev/fuse --cap-add SYS_ADMIN","volumes":["/mnt/win-cache:/mnt/win-cache"]}'
       target-platform: win
       target-arch: x86
       is-release: false
@@ -410,8 +412,9 @@ jobs:
     needs: checkout-windows
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: windows-11-arm
+      build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-windows.outputs.build-image-sha }}","options":"--user root --device /dev/fuse --cap-add SYS_ADMIN","volumes":["/mnt/win-cache:/mnt/win-cache"]}'
       target-platform: win
       target-arch: arm64
       is-release: false
