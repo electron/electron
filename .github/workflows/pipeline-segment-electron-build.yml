@@ -152,8 +152,9 @@ jobs:
     - name: Install WSL (Windows only)
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
-      run: |
-        # Check if WSL is installed
+      run: |        
+        dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+        dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
         wsl --install -d Ubuntu
     - name: Generate DEPS Hash
       run: |
