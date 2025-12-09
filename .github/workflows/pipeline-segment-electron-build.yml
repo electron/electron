@@ -154,7 +154,7 @@ jobs:
       shell: powershell
       run: |
         # Check if WSL is installed
-        wsl --install Ubuntu
+        wsl --install -d Ubuntu
     - name: Generate DEPS Hash
       run: |
         node src/electron/script/generate-deps-hash.js
