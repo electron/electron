@@ -22,6 +22,14 @@ Note that on Mac, access to the system Keychain is required and
 these calls can block the current thread to collect user input.
 The same is true for Linux, if a password management tool is available.
 
+## Events
+
+The `safeStorage` module emits the following events:
+
+### Event: 'ready-to-use'
+
+Emitted when the safeStorage module is ready to use.
+
 ## Methods
 
 The `safeStorage` module has the following methods:
