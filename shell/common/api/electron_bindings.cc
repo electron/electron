@@ -178,7 +178,7 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
   dict.Set("total", mem_info.total.InKiB());
 
   // See Chromium's "base/process/process_metrics.h" for an explanation.
-  base::ByteCount free =
+  base::ByteSize free =
 #if BUILDFLAG(IS_WIN)
       mem_info.avail_phys;
 #else
