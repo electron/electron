@@ -24,6 +24,7 @@ app.whenReady().then(() => {
     // Note: this is currently experimental. If the system picker
     // is available, it will be used and the media request handler
     // will not be invoked.
+    // This is currently avaiable on MacOS (15+) and Linux with Wayland
   }, { useSystemPicker: true })
 
   mainWindow.loadFile('index.html')
