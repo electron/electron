@@ -140,7 +140,7 @@
     "abstract-socket": "github:deepak1556/node-abstractsocket#928cc591decd12aff7dad96449da8afc29832c19",
     "minimist@npm:~0.0.1": "0.2.4"
   },
-  "packageManager": "yarn@4.11.0",
+  "packageManager": "yarn@4.12.0",
   "workspaces": [
     "spec",
     "spec/fixtures/native-addon/*"
