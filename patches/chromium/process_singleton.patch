@@ -51,10 +51,10 @@ index c19313c0b58baf0597a99d52ed7fcdb7faacc934..2748dd196fe1f56357348a204e24f0b8
    base::win::MessageWindow window_;  // The message-only window.
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 9d7be37f1d1fbde55773b4005878d8ff03cac22a..08cbe32a258bf478f1da0a07064d3e9ef14c44a5 100644
+index 09f3425d08097eba3a9dc40d0a4af38209b06b1f..73aa4cb9652870b0bff4684d7c72ae7dbd852db8 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
-@@ -59,6 +59,7 @@
+@@ -55,6 +55,7 @@
  #include <memory>
  #include <set>
  #include <string>
@@ -79,7 +79,7 @@ index 9d7be37f1d1fbde55773b4005878d8ff03cac22a..08cbe32a258bf478f1da0a07064d3e9e
  #include "chrome/browser/ui/process_singleton_dialog_linux.h"
  #endif
  
-@@ -348,6 +350,8 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
+@@ -353,6 +355,8 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
  bool DisplayProfileInUseError(const base::FilePath& lock_path,
                                const std::string& hostname,
                                int pid) {
@@ -88,7 +88,7 @@ index 9d7be37f1d1fbde55773b4005878d8ff03cac22a..08cbe32a258bf478f1da0a07064d3e9e
    // Ensure there is an instance of ResourceBundle that is initialized for
    // localized string resource accesses.
    ui::ScopedStartupResourceBundle ensure_startup_resource_bundle;
-@@ -370,6 +374,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
+@@ -375,6 +379,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
  #else
    NOTREACHED();
  #endif
@@ -96,7 +96,7 @@ index 9d7be37f1d1fbde55773b4005878d8ff03cac22a..08cbe32a258bf478f1da0a07064d3e9e
  }
  
  bool IsChromeProcess(pid_t pid) {
-@@ -382,6 +387,21 @@ bool IsChromeProcess(pid_t pid) {
+@@ -387,6 +392,21 @@ bool IsChromeProcess(pid_t pid) {
                base::FilePath(chrome::kBrowserProcessExecutableName));
  }
  
@@ -118,7 +118,7 @@ index 9d7be37f1d1fbde55773b4005878d8ff03cac22a..08cbe32a258bf478f1da0a07064d3e9e
  // A helper class to hold onto a socket.
  class ScopedSocket {
   public:
-@@ -785,6 +805,10 @@ ProcessSingleton::~ProcessSingleton() {
+@@ -773,6 +793,10 @@ ProcessSingleton::~ProcessSingleton() {
    if (watcher_) {
      watcher_->OnEminentProcessSingletonDestruction();
    }
@@ -129,7 +129,7 @@ index 9d7be37f1d1fbde55773b4005878d8ff03cac22a..08cbe32a258bf478f1da0a07064d3e9e
  }
  
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
-@@ -1055,11 +1079,32 @@ bool ProcessSingleton::Create() {
+@@ -1045,11 +1069,32 @@ bool ProcessSingleton::Create() {
    // Create the socket file somewhere in /tmp which is usually mounted as a
    // normal filesystem. Some network filesystems (notably AFS) are screwy and
    // do not support Unix domain sockets.
@@ -165,7 +165,7 @@ index 9d7be37f1d1fbde55773b4005878d8ff03cac22a..08cbe32a258bf478f1da0a07064d3e9e
    int dir_mode = 0;
    CHECK(base::GetPosixFilePermissions(socket_dir_.GetPath(), &dir_mode) &&
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 1bc2d932c882d68b5ed4ed3cdaaa903850ab4989..64ebf49c0d1b6396d1cfbe3bf91480f61b47688d 100644
+index ff44618efa8f8082b5da2c416802b781290c6cac..ae659d84a5ae2f2e87ce288477506575f8d86839 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -29,7 +29,9 @@
@@ -226,7 +226,7 @@ index 1bc2d932c882d68b5ed4ed3cdaaa903850ab4989..64ebf49c0d1b6396d1cfbe3bf91480f6
      // without ownership and explicitly get the ownership afterward.
 -    base::win::ScopedHandle only_me(::CreateMutex(NULL, FALSE, kMutexName));
 +    base::win::ScopedHandle only_me(::CreateMutex(NULL, FALSE, mutexName.c_str()));
-     if (!only_me.IsValid()) {
+     if (!only_me.is_valid()) {
        DPLOG(FATAL) << "CreateMutex failed";
        return false;
 @@ -429,6 +440,17 @@ bool ProcessSingleton::Create() {

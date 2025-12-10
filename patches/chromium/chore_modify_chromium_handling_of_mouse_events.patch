@@ -11,7 +11,7 @@ actions in the non-client caption area.
 draggable regions to allow events to propagate to the underlying renderer.
 
 diff --git a/ui/events/event.h b/ui/events/event.h
-index 2dc44d4787d5198cff7be2cf98ad5acf2d3a9a0b..27a0335aac2bd4239616cf71f5d015c931db2294 100644
+index cc3f9bc9383f8272a5cd95b1f2ac56529d86e493..5ca29b84cdaf42ef516ef819ae32b230258b034f 100644
 --- a/ui/events/event.h
 +++ b/ui/events/event.h
 @@ -588,6 +588,9 @@ class EVENTS_EXPORT MouseEvent : public LocatedEvent {
@@ -24,7 +24,7 @@ index 2dc44d4787d5198cff7be2cf98ad5acf2d3a9a0b..27a0335aac2bd4239616cf71f5d015c9
    // Event:
    std::string ToString() const override;
    std::unique_ptr<Event> Clone() const override;
-@@ -620,6 +623,8 @@ class EVENTS_EXPORT MouseEvent : public LocatedEvent {
+@@ -617,6 +620,8 @@ class EVENTS_EXPORT MouseEvent : public LocatedEvent {
  
    // Structure for holding pointer details for implementing PointerEvents API.
    PointerDetails pointer_details_;
@@ -34,10 +34,10 @@ index 2dc44d4787d5198cff7be2cf98ad5acf2d3a9a0b..27a0335aac2bd4239616cf71f5d015c9
  
  class ScrollEvent;
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index d2651f4fcbb7991e9ec8f164e5bee51dab405c5a..d58b59288d881a2d74ea357f1e9e27870d24ac72 100644
+index 3b2fbefaeec2bac725d46bcfeea488122c873d76..fd23b8036c7f2d8bf3ed1bba126f8ee813f688a8 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -1378,6 +1378,10 @@ HBRUSH DesktopWindowTreeHostWin::GetBackgroundPaintBrush() {
+@@ -1375,6 +1375,10 @@ HBRUSH DesktopWindowTreeHostWin::GetBackgroundPaintBrush() {
    return background_paint_brush_;
  }
  
@@ -61,10 +61,10 @@ index b65ced55f997d5064b9d9338190567f8c264fce8..e8acd2828ed05deefa335ce2bb461f0c
    Widget* GetWidget();
    const Widget* GetWidget() const;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 75a21333701b3501f785229ae9a358c5cac685df..579becb9a32704d932b8dfba477515af8529a2d4 100644
+index a71630354ee345224371980675d09dc16fdcff16..a834cc49a3a02acdcd127f3f0fb084fa806435e5 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -3243,15 +3243,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3250,15 +3250,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      }
      // We must let Windows handle the caption buttons if it's drawing them, or
      // they won't work.
@@ -86,7 +86,7 @@ index 75a21333701b3501f785229ae9a358c5cac685df..579becb9a32704d932b8dfba477515af
        return 0;
      }
    }
-@@ -3274,6 +3278,7 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3281,6 +3285,7 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      // handle alt-space, or in the frame itself.
      is_right_mouse_pressed_on_caption_ = false;
      ReleaseCapture();
@@ -94,7 +94,7 @@ index 75a21333701b3501f785229ae9a358c5cac685df..579becb9a32704d932b8dfba477515af
      // |point| is in window coordinates, but WM_NCHITTEST and TrackPopupMenu()
      // expect screen coordinates.
      POINT screen_point = CR_POINT_INITIALIZER_FROM_LPARAM(l_param);
-@@ -3281,7 +3286,17 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3288,7 +3293,17 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      w_param = static_cast<WPARAM>(SendMessage(
          hwnd(), WM_NCHITTEST, 0, MAKELPARAM(screen_point.x, screen_point.y)));
      if (w_param == HTCAPTION || w_param == HTSYSMENU) {

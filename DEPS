@@ -2,9 +2,9 @@ gclient_gn_args_from = 'src'
 
 vars = {
   'chromium_version':
-    '143.0.7499.0',
+    '145.0.7568.0',
   'node_version':
-    'v22.20.0',
+    'v24.11.1',
   'nan_version':
     '675cefebca42410733da8a454c8d9391fcebfbc2',
   'squirrel.mac_version':
@@ -12,7 +12,7 @@ vars = {
   'reactiveobjc_version':
     '74ab5baccc6f7202c8ac69a8d1e152c29dc1ea76',
   'mantle_version':
-    '78d3966b3c331292ea29ec38661b25df0a245948',
+    '2a8e2123a3931038179ee06105c9e6ec336b12ea',
   'engflow_reclient_configs_version':
     '955335c30a752e9ef7bff375baab5e0819b6c00d',
 
@@ -29,9 +29,6 @@ vars = {
   
   # The path of the sysroots.json file.
   'sysroots_json_path': 'electron/script/sysroots.json',
-
-  # KEEP IN SYNC WITH utils.js FILE
-  'yarn_version': '1.22.22',
 
   # To be able to build clean Chromium from sources.
   'apply_patches': True,
@@ -155,7 +152,7 @@ hooks = [
     'action': [
       'python3',
       '-c',
-      'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["python3", "script/lib/npx.py", "yarn@' + (Var("yarn_version")) + '", "install", "--frozen-lockfile"]);',
+      'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["node", ".yarn/releases/yarn-4.12.0.cjs", "install", "--immutable"]);',
     ],
   },
   {

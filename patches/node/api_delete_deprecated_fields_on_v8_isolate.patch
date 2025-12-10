@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Wed, 5 Nov 2025 12:50:16 -0500
+Subject: Delete deprecated fields on v8::Isolate
+
+https://chromium-review.googlesource.com/c/v8/v8/+/7081397
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index ea3e9374c30be92ba5668e33773ffbb2aef55b30..44ba3c42c7a980eee19e1aadcbe7999eefeda989 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -231,8 +231,6 @@ void SetIsolateCreateParamsForNode(Isolate::CreateParams* params) {
+     // heap based on the actual physical memory.
+     params->constraints.ConfigureDefaults(total_memory, 0);
+   }
+-  params->embedder_wrapper_object_index = BaseObject::InternalFields::kSlot;
+-  params->embedder_wrapper_type_index = std::numeric_limits<int>::max();
+ 
+ #ifdef NODE_ENABLE_VTUNE_PROFILING
+   params->code_event_handler = vTune::GetVtuneCodeEventHandler();

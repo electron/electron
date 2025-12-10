@@ -10,10 +10,10 @@ on Windows.  We should refactor our code so that this patch isn't
 necessary.
 
 diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
-index f8d61bc2e80c1f32aaae252d5897e6ac65935898..daf0bf82438ec022784ecbfa8e5e8869ec251359 100644
+index cd4902bda5d14de5d28739624c831bf93261d555..5fc2fc80bd08de257537f43902ae1aa9fa123661 100644
 --- a/testing/variations/fieldtrial_testing_config.json
 +++ b/testing/variations/fieldtrial_testing_config.json
-@@ -25517,6 +25517,21 @@
+@@ -25569,6 +25569,21 @@
              ]
          }
      ],
@@ -36,7 +36,7 @@ index f8d61bc2e80c1f32aaae252d5897e6ac65935898..daf0bf82438ec022784ecbfa8e5e8869
          {
              "platforms": [
 diff --git a/ui/views/views_features.cc b/ui/views/views_features.cc
-index eddb6b33f0df6f494ae9dfa63851c924e2d2350c..d74308e69e794637410597c7dd9a06b2d5fff425 100644
+index 9ecf5330bb9b3a5a7b12f3b9bb76192ea1694d07..202d3e3df60ec8d23b4cbd3e5814c3fce1b07871 100644
 --- a/ui/views/views_features.cc
 +++ b/ui/views/views_features.cc
 @@ -22,6 +22,14 @@ BASE_FEATURE(kAnnounceTextAdditionalAttributes,
@@ -55,7 +55,7 @@ index eddb6b33f0df6f494ae9dfa63851c924e2d2350c..d74308e69e794637410597c7dd9a06b2
  // to kKeyboardAccessibleTooltip in //ui/base/ui_base_features.cc.
  BASE_FEATURE(kKeyboardAccessibleTooltipInViews,
 diff --git a/ui/views/views_features.h b/ui/views/views_features.h
-index c1d8107ec3e32d31811572aa1d7a7c7a242da7d9..463abf871c7e169dc1ca9f523d74fc14d58541cc 100644
+index 5f5ea15678bd76399fdbbb8904fe155657f49335..a67c124878fb710599fed5d9714bfa723d0d67a5 100644
 --- a/ui/views/views_features.h
 +++ b/ui/views/views_features.h
 @@ -14,6 +14,7 @@ namespace views::features {
@@ -64,10 +64,10 @@ index c1d8107ec3e32d31811572aa1d7a7c7a242da7d9..463abf871c7e169dc1ca9f523d74fc14
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableTouchDragCursorSync);
 +VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableTransparentHwndEnlargement);
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kKeyboardAccessibleTooltipInViews);
+ VIEWS_EXPORT BASE_DECLARE_FEATURE(kApplyInitialUrlToWebContents);
  
- }  // namespace views::features
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index d58b59288d881a2d74ea357f1e9e27870d24ac72..956dc87cb07559038a63cec0b5174cec09619bdb 100644
+index fd23b8036c7f2d8bf3ed1bba126f8ee813f688a8..392de361fe395b81b346abb477d91d495d00ba34 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 @@ -84,6 +84,23 @@ namespace {
@@ -219,7 +219,7 @@ index d58b59288d881a2d74ea357f1e9e27870d24ac72..956dc87cb07559038a63cec0b5174cec
  }
  
  gfx::Rect
-@@ -917,21 +956,29 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
+@@ -917,18 +956,26 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
  
  void DesktopWindowTreeHostWin::GetWindowMask(const gfx::Size& size_px,
                                               SkPath* path) {
@@ -239,10 +239,7 @@ index d58b59288d881a2d74ea357f1e9e27870d24ac72..956dc87cb07559038a63cec0b5174cec
 -  if (!path->isEmpty()) {
 -    const float scale =
 -        display::win::GetScreenWin()->GetScaleFactorForHWND(GetHWND());
--    SkScalar sk_scale = SkFloatToScalar(scale);
--    SkMatrix matrix;
--    matrix.setScale(sk_scale, sk_scale);
--    path->transform(matrix);
+-    *path = path->makeTransform(SkMatrix::Scale(scale, scale));
 +  if (Widget* widget = GetWidget(); widget && widget->non_client_view()) {
 +    widget->non_client_view()->GetWindowMask(
 +        display::win::GetScreenWin()->ScreenToDIPSize(GetHWND(),
@@ -252,14 +249,11 @@ index d58b59288d881a2d74ea357f1e9e27870d24ac72..956dc87cb07559038a63cec0b5174cec
 +    if (!path->isEmpty()) {
 +      const float scale =
 +          display::win::GetScreenWin()->GetScaleFactorForHWND(GetHWND());
-+      SkScalar sk_scale = SkFloatToScalar(scale);
-+      SkMatrix matrix;
-+      matrix.setScale(sk_scale, sk_scale);
-+      path->transform(matrix);
++      *path = path->makeTransform(SkMatrix::Scale(scale, scale));
 +    }
 +  } else if (!window_enlargement_.IsZero()) {
-+    path->addRect(SkRect::MakeXYWH(0, 0, adjusted_size_in_px.width(),
-+                                   adjusted_size_in_px.height()));
++    *path = SkPath::Rect(SkRect::MakeXYWH(0, 0, adjusted_size_in_px.width(),
++                                          adjusted_size_in_px.height()));
    }
  }
  

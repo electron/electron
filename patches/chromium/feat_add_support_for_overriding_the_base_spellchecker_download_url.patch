@@ -9,10 +9,10 @@ production use cases.  This is unlikely to be upstreamed as the change
 is entirely in //chrome.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
-index 9b081d7aa87d1c092b0a29039bdeb0023517333b..c061af1d0ff5d55043a8188d51a34984587da977 100644
+index cf981e70ee4c43fd4f9a195c7839c9e3cb7fc956..c00068a963d66a07a726ec562e5f8327b2c3faeb 100644
 --- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
 +++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
-@@ -53,6 +53,8 @@ GURL& GetDownloadUrlForTesting() {
+@@ -55,6 +55,8 @@ GURL& GetDownloadUrlForTesting() {
    return *download_url_for_testing;
  }
  
@@ -21,7 +21,7 @@ index 9b081d7aa87d1c092b0a29039bdeb0023517333b..c061af1d0ff5d55043a8188d51a34984
  // Close the file.
  void CloseDictionary(base::File file) {
    base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
-@@ -268,6 +270,10 @@ void SpellcheckHunspellDictionary::SetDownloadURLForTesting(const GURL url) {
+@@ -269,6 +271,10 @@ void SpellcheckHunspellDictionary::SetDownloadURLForTesting(const GURL url) {
    GetDownloadUrlForTesting() = url;
  }
  
@@ -32,7 +32,7 @@ index 9b081d7aa87d1c092b0a29039bdeb0023517333b..c061af1d0ff5d55043a8188d51a34984
  GURL SpellcheckHunspellDictionary::GetDictionaryURL() {
    if (GetDownloadUrlForTesting() != GURL()) {
      return GetDownloadUrlForTesting();
-@@ -276,6 +282,9 @@ GURL SpellcheckHunspellDictionary::GetDictionaryURL() {
+@@ -277,6 +283,9 @@ GURL SpellcheckHunspellDictionary::GetDictionaryURL() {
    std::string bdict_file = dictionary_file_.path.BaseName().MaybeAsASCII();
    DCHECK(!bdict_file.empty());
  
@@ -43,10 +43,10 @@ index 9b081d7aa87d1c092b0a29039bdeb0023517333b..c061af1d0ff5d55043a8188d51a34984
        "https://redirector.gvt1.com/edgedl/chrome/dict/";
  
 diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
-index caeaf418c3fcac7dba27110848205db851328881..52b54d5e88d3b73ca0b44113e2151896cf16e5e7 100644
+index 4e608a6c0147c6f41e12f16fee7c87d0db2f1733..5962abf8dbd5998f11e828ec70b3a6a8b1758f65 100644
 --- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
 +++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
-@@ -96,6 +96,8 @@ class SpellcheckHunspellDictionary : public SpellcheckDictionary {
+@@ -97,6 +97,8 @@ class SpellcheckHunspellDictionary : public SpellcheckDictionary {
    // Tests use this method to set a custom URL for downloading dictionaries.
    static void SetDownloadURLForTesting(const GURL url);
  

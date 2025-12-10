@@ -348,6 +348,11 @@ describe('nativeImage module', () => {
       expect(image.isEmpty()).to.be.false();
     });
 
+    ifit(process.platform === 'darwin')('returns a valid named symbol on darwin', function () {
+      const image = nativeImage.createFromNamedImage('atom');
+      expect(image.isEmpty()).to.be.false();
+    });
+
     ifit(process.platform === 'darwin')('returns allows an HSL shift for a valid image on darwin', function () {
       const image = nativeImage.createFromNamedImage('NSActionTemplate', [0.5, 0.2, 0.8]);
       expect(image.isEmpty()).to.be.false();

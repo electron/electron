@@ -20,10 +20,10 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index fc516272be02a3dac1086e4aaf2015dc946cc3c2..86b8df2b23dc975a6db87f04005cb105054305b0 100644
+index 766ad28c66348f79164d8690faffb936bf659884..7b1131679ef84ca575629f46ad98483eeb4d8d9e 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -536,6 +536,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -538,6 +538,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::WEB_APP_INSTALLATION;
      case PermissionType::LOCAL_NETWORK_ACCESS:
        return ContentSettingsType::LOCAL_NETWORK_ACCESS;
@@ -32,7 +32,7 @@ index fc516272be02a3dac1086e4aaf2015dc946cc3c2..86b8df2b23dc975a6db87f04005cb105
        break;
    }
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 2011a912add2bbd74129e7ecad9ca6f5bade24ee..87dc1b64e3cedf6d59d8ab2dc811bf8300193bdc 100644
+index 40cb6f6c4f6fe68d1351a19c4da03538d3dfd3d1..b2a8eea4c802b7fbe2a098c8fae8d640e2d0b169 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
 @@ -94,6 +94,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
@@ -119,10 +119,10 @@ index 36410ff29d9c82e59f93fbb82968064bd330dfde..6c3f994e0b184f78bd9442002bb4dfae
    virtual void PassiveInsecureContentFound(const WebURL&) {}
  
 diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-index a5ac9d4a417ac8e75e761c40841f41ab9057c761..292bd1f9de78828e739dae24a45a1dd3d6585240 100644
+index f2fb09422d49c66c6ef7991277cfd6479896c035..fe2fc66b2d203dd0c832e5bf6cc4c950c33cdfec 100644
 --- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 +++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-@@ -123,7 +123,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
+@@ -116,7 +116,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
      return true;
    }
    return frame.GetContentSettingsClient() &&
@@ -131,7 +131,7 @@ index a5ac9d4a417ac8e75e761c40841f41ab9057c761..292bd1f9de78828e739dae24a45a1dd3
  }
  
  bool ClipboardCommands::CanWriteClipboard(LocalFrame& frame,
-@@ -312,7 +312,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
+@@ -305,7 +305,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
      return true;
    }
    return frame->GetContentSettingsClient() &&

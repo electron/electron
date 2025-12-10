@@ -9,7 +9,7 @@ const NAN_DIR = path.resolve(BASE, 'third_party', 'nan');
 const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
 const utils = require('./lib/utils');
-const { YARN_VERSION } = require('./yarn');
+const { YARN_SCRIPT_PATH } = require('./yarn');
 
 if (!require.main) {
   throw new Error('Must call the nan spec runner directly');
@@ -112,13 +112,12 @@ async function main () {
     stdio: 'inherit',
     shell: process.platform === 'win32'
   });
-
   if (buildStatus !== 0 || signal != null) {
     console.error('Failed to build nan test modules');
     return process.exit(buildStatus !== 0 ? buildStatus : signal);
   }
 
-  const { status: installStatus, signal: installSignal } = cp.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install'], {
+  const { status: installStatus, signal: installSignal } = cp.spawnSync(process.execPath, [YARN_SCRIPT_PATH, 'install'], {
     env,
     cwd: NAN_DIR,
     stdio: 'inherit',
@@ -134,12 +133,7 @@ async function main () {
 
   const DISABLED_TESTS = new Set([
     'nannew-test.js',
-    'buffer-test.js',
-    // These two are incompatible with crrev.com/c/4733273
-    // They are disabled upstream starting in "Node.js 24" (note: the incompatible change above
-    // landed in V8 v13.7), so we can remove them from this list once we upgrade Node.js to 24.
-    'weak-test.js',
-    'weak2-test.js'
+    'buffer-test.js'
   ]);
   const testsToRun = fs.readdirSync(path.resolve(NAN_DIR, 'test', 'js'))
     .filter(test => !DISABLED_TESTS.has(test))

@@ -8,6 +8,8 @@ on:
         description: 'Container to run the docs-only ts compile in'
         type: string
 
+permissions: {}
+
 concurrency:
   group: electron-docs-only-${{ github.ref }}
   cancel-in-progress: true
@@ -19,11 +21,13 @@ jobs:
   docs-only:
     name: Docs Only Compile
     runs-on: electron-arc-centralus-linux-amd64-4core
+    permissions:
+      contents: read
     timeout-minutes: 20
     container: ${{ fromJSON(inputs.container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       with:
         path: src/electron
         fetch-depth: 0
@@ -39,7 +43,7 @@ jobs:
       with:
         target-platform: linux
     - name: Checkout Electron
-      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       with:
         path: src/electron
         fetch-depth: 0
@@ -50,12 +54,12 @@ jobs:
       shell: bash
       run: |
         cd src/electron
-        node script/yarn create-typescript-definitions
-        node script/yarn tsc -p tsconfig.default_app.json --noEmit
+        node script/yarn.js create-typescript-definitions
+        node script/yarn.js tsc -p tsconfig.default_app.json --noEmit
         for f in build/webpack/*.js
         do
             out="${f:29}"
             if [ "$out" != "base.js" ]; then
-            node script/yarn webpack --config $f --output-filename=$out --output-path=./.tmp --env mode=development
+            node script/yarn.js webpack --config $f --output-filename=$out --output-path=./.tmp --env mode=development
             fi
         done

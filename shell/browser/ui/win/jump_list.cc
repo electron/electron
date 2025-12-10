@@ -47,7 +47,7 @@ bool AppendTask(const JumpListItem& item, IObjectCollection* collection) {
 
   CComQIPtr<IPropertyStore> property_store(link);
   if (!base::win::SetStringValueForPropertyStore(property_store, PKEY_Title,
-                                                 item.title.c_str()))
+                                                 item.title))
     return false;
 
   return SUCCEEDED(collection->AddObject(link));

@@ -8,10 +8,10 @@ Subject: desktop_media_list.patch
 * Ensure "OnRefreshComplete()" even if there are no items in the list
 
 diff --git a/chrome/browser/media/webrtc/desktop_media_list.h b/chrome/browser/media/webrtc/desktop_media_list.h
-index 6fb778093f57942faebbc6a68a92967826476674..57cad85973c5cfe3a19f80fd318ec46f085ad4d0 100644
+index 8b0a4f2f8adbb622ef16c315f5c73c51712d7e62..fcfe5845be6afd98b5472faf45d9f6f784b90b1b 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list.h
-@@ -107,7 +107,8 @@ class DesktopMediaList {
+@@ -108,7 +108,8 @@ class DesktopMediaList {
    // once per DesktopMediaList instance.  It should not be called after
    // StartUpdating(), and StartUpdating() should not be called until |callback|
    // has been called.
@@ -22,7 +22,7 @@ index 6fb778093f57942faebbc6a68a92967826476674..57cad85973c5cfe3a19f80fd318ec46f
    virtual int GetSourceCount() const = 0;
    virtual const Source& GetSource(int index) const = 0;
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index 1f25e8321301b0a5cd8703b8a4e9ec840fc0331b..f95b2230135dbcd6b19a31215d4f10be3481148c 100644
+index 627b7a435b64fcfad916ebc2c8b11facad061c68..0ba7d5f4a33fc19802b744ea7f2147fa2d78bcb6 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
 @@ -70,12 +70,12 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
@@ -41,7 +41,7 @@ index 1f25e8321301b0a5cd8703b8a4e9ec840fc0331b..f95b2230135dbcd6b19a31215d4f10be
  
  int DesktopMediaListBase::GetSourceCount() const {
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.h b/chrome/browser/media/webrtc/desktop_media_list_base.h
-index de56c9b94f92e9abf69b1d4894e5d386cad6d3cd..f8955ef7cc43b1854b29841ed65260a1966a4b19 100644
+index 8c6d8036bfee537b365b233ae91640fbe9748200..2ddca1e19004b988c1a9a1b6d0159784d5261543 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.h
 @@ -39,7 +39,7 @@ class DesktopMediaListBase : public DesktopMediaList {
@@ -54,10 +54,10 @@ index de56c9b94f92e9abf69b1d4894e5d386cad6d3cd..f8955ef7cc43b1854b29841ed65260a1
    const Source& GetSource(int index) const override;
    DesktopMediaList::Type GetMediaListType() const override;
 diff --git a/chrome/browser/media/webrtc/fake_desktop_media_list.cc b/chrome/browser/media/webrtc/fake_desktop_media_list.cc
-index cea6af048e682e33b5d93e4a3bfb4072840ca4fe..1c98d2275fa73a9e105bbd8928e05b48a4a05c14 100644
+index 5f03c8c729fc02fe35da3fb6f05b002667a06a43..069c0366300afdec87318ac2e18d14ac53ed992e 100644
 --- a/chrome/browser/media/webrtc/fake_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/fake_desktop_media_list.cc
-@@ -79,7 +79,8 @@ void FakeDesktopMediaList::StartUpdating(DesktopMediaListObserver* observer) {
+@@ -89,7 +89,8 @@ void FakeDesktopMediaList::StartUpdating(DesktopMediaListObserver* observer) {
    thumbnail_ = gfx::ImageSkia::CreateFrom1xBitmap(bitmap);
  }
  
@@ -68,10 +68,10 @@ index cea6af048e682e33b5d93e4a3bfb4072840ca4fe..1c98d2275fa73a9e105bbd8928e05b48
  }
  
 diff --git a/chrome/browser/media/webrtc/fake_desktop_media_list.h b/chrome/browser/media/webrtc/fake_desktop_media_list.h
-index 786c526588d81b8b5b1b5dd3760719a53e005995..f66b7d0b4dfcbb8ed3dde5a9ff463ae2c8818d27 100644
+index 9e6829aed1927b5e74929836fb1f0a0cc253e04c..27b97cd6fbf498e3e50c5d6948be3b3184218b0e 100644
 --- a/chrome/browser/media/webrtc/fake_desktop_media_list.h
 +++ b/chrome/browser/media/webrtc/fake_desktop_media_list.h
-@@ -40,7 +40,8 @@ class FakeDesktopMediaList : public DesktopMediaList {
+@@ -41,7 +41,8 @@ class FakeDesktopMediaList : public DesktopMediaList {
    void SetThumbnailSize(const gfx::Size& thumbnail_size) override;
    void SetViewDialogWindowId(content::DesktopMediaID dialog_id) override;
    void StartUpdating(DesktopMediaListObserver* observer) override;
@@ -82,7 +82,7 @@ index 786c526588d81b8b5b1b5dd3760719a53e005995..f66b7d0b4dfcbb8ed3dde5a9ff463ae2
    const Source& GetSource(int index) const override;
    DesktopMediaList::Type GetMediaListType() const override;
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 3be638f1032815d39634b5725031d7f3124e1ad2..fce3e30bc736ac72a42d24956d4abf9f49c8fc41 100644
+index 50efe8dd0b715090bb2cef2b682ecead4b300ce3..eb7a094c3108f01a570b4bcb704ed075af377153 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -216,9 +216,13 @@ content::DesktopMediaID::Id GetUpdatedWindowId(
@@ -121,7 +121,7 @@ index 3be638f1032815d39634b5725031d7f3124e1ad2..fce3e30bc736ac72a42d24956d4abf9f
  }
  
  void NativeDesktopMediaList::Worker::OnCaptureResult(
-@@ -1009,6 +1019,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
+@@ -1010,6 +1020,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
          FROM_HERE, base::BindOnce(&Worker::RefreshThumbnails,
                                    base::Unretained(worker_.get()),
                                    std::move(native_ids), thumbnail_size_));

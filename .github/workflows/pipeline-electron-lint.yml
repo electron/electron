@@ -8,6 +8,8 @@ on:
         description: 'Container to run lint in'
         type: string
 
+permissions: {}
+
 concurrency:
   group: electron-lint-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
@@ -19,11 +21,13 @@ jobs:
   lint:
     name: Lint
     runs-on: electron-arc-centralus-linux-amd64-4core
+    permissions:
+      contents: read
     timeout-minutes: 20
     container: ${{ fromJSON(inputs.container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       with:
         path: src/electron
         fetch-depth: 0
@@ -74,11 +78,11 @@ jobs:
         # but then we would lint its contents (at least gn format), and it doesn't pass it.
 
         cd src/electron
-        node script/yarn install --frozen-lockfile
-        node script/yarn lint
+        node script/yarn.js install --immutable
+        node script/yarn.js lint
     - name: Run Script Typechecker
       shell: bash
       run: |
         cd src/electron
-        node script/yarn tsc -p tsconfig.script.json
+        node script/yarn.js tsc -p tsconfig.script.json
     

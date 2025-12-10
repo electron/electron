@@ -13,6 +13,7 @@ import { createGitHubTokenStrategy } from '../github-token';
 import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from '../types';
 
 const rootPackageJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../package.json'), 'utf-8'));
+rootPackageJson.name = 'electron';
 
 if (!process.env.ELECTRON_NPM_OTP) {
   console.error('Please set ELECTRON_NPM_OTP');
@@ -211,6 +212,7 @@ new Promise<string>((resolve, reject) => {
     });
   })
   .then((tarballPath) => {
+    // TODO: Remove NPX
     const existingVersionJSON = childProcess.execSync(`npx npm@7 view ${rootPackageJson.name}@${currentElectronVersion} --json`).toString('utf-8');
     // It's possible this is a re-run and we already have published the package, if not we just publish like normal
     if (!existingVersionJSON) {

@@ -9,13 +9,13 @@ don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/close_image_button.cc b/chrome/browser/ui/views/overlay/close_image_button.cc
-index 85df555841ac0d32d2f097547c9991cecf0f4b1a..7a108339448fad3105e87c9d9af678c2f85b8ed5 100644
+index a7a637438116a1c7846194dea4412100a45c9331..bb3877d546bfea141d3d6ebb396b88faab6ee34e 100644
 --- a/chrome/browser/ui/views/overlay/close_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/close_image_button.cc
-@@ -5,9 +5,12 @@
+@@ -4,9 +4,12 @@
+ 
  #include "chrome/browser/ui/views/overlay/close_image_button.h"
  
- #include "base/feature_list.h"
 +#include "build/branding_buildflags.h"
  #include "chrome/browser/ui/color/chrome_color_id.h"
  #include "chrome/grit/generated_resources.h"
@@ -25,7 +25,7 @@ index 85df555841ac0d32d2f097547c9991cecf0f4b1a..7a108339448fad3105e87c9d9af678c2
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
  #include "ui/base/models/image_model.h"
-@@ -28,7 +31,10 @@ CloseImageButton::CloseImageButton(PressedCallback callback)
+@@ -27,7 +30,10 @@ CloseImageButton::CloseImageButton(PressedCallback callback)
      : OverlayWindowImageButton(std::move(callback)) {
    SetSize(gfx::Size(kCloseButtonSize, kCloseButtonSize));
  
@@ -38,7 +38,7 @@ index 85df555841ac0d32d2f097547c9991cecf0f4b1a..7a108339448fad3105e87c9d9af678c2
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 3d9673db6bf535d3bc9518e7981ba8e84f4485bc..f737adbdc968e659cf5ba59e6cd5fd5fa093edff 100644
+index 7202d7f18e92fbc0cd759a1e4f84a26c0706dcc3..055b0d6a9a4dea735ed31365831690ae85d1c2ee 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -18,12 +18,16 @@
@@ -58,7 +58,18 @@ index 3d9673db6bf535d3bc9518e7981ba8e84f4485bc..f737adbdc968e659cf5ba59e6cd5fd5f
  #include "chrome/browser/ui/color/chrome_color_id.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_button.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_label_button.h"
-@@ -79,7 +83,7 @@
+@@ -32,8 +36,10 @@
+ #include "chrome/browser/ui/views/overlay/hang_up_button.h"
+ #include "chrome/browser/ui/views/overlay/minimize_button.h"
+ #include "chrome/browser/ui/views/overlay/overlay_controls_fade_animation.h"
++#if 0
+ #include "chrome/browser/ui/views/overlay/overlay_window_live_caption_button.h"
+ #include "chrome/browser/ui/views/overlay/overlay_window_live_caption_dialog.h"
++#endif
+ #include "chrome/browser/ui/views/overlay/playback_image_button.h"
+ #include "chrome/browser/ui/views/overlay/resize_handle_button.h"
+ #include "chrome/browser/ui/views/overlay/simple_overlay_window_image_button.h"
+@@ -79,7 +85,7 @@
  #include "ui/aura/window.h"
  #endif
  
@@ -67,7 +78,7 @@ index 3d9673db6bf535d3bc9518e7981ba8e84f4485bc..f737adbdc968e659cf5ba59e6cd5fd5f
  #include "chrome/browser/shell_integration_win.h"
  #include "content/public/browser/render_widget_host_view.h"
  #include "ui/aura/window.h"
-@@ -434,7 +438,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -401,7 +407,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  
@@ -76,33 +87,113 @@ index 3d9673db6bf535d3bc9518e7981ba8e84f4485bc..f737adbdc968e659cf5ba59e6cd5fd5f
    std::wstring app_user_model_id;
    Browser* browser = chrome::FindBrowserWithTab(controller->GetWebContents());
    if (browser) {
-@@ -1274,11 +1278,13 @@ void VideoOverlayWindowViews::SetUpViews() {
-             &VideoOverlayWindowViews::OnLiveCaptionButtonPressed,
-             base::Unretained(this)));
-     live_caption_button->SetSize(kActionButtonSize);
-+#if 0
-     live_caption_button->SetIsLiveCaptionDialogOpen(false);
-     live_caption_dialog = std::make_unique<OverlayWindowLiveCaptionDialog>(
-         Profile::FromBrowserContext(
-             controller_->GetWebContents()->GetBrowserContext()));
-     live_caption_dialog->SetVisible(false);
-+#endif
-     toggle_microphone_button =
-         std::make_unique<ToggleMicrophoneButton>(base::BindRepeating(
-             [](VideoOverlayWindowViews* overlay) {
-@@ -2415,9 +2421,10 @@ void VideoOverlayWindowViews::OnGestureEvent(ui::GestureEvent* event) {
-       event->SetHandled();
-       return;
+@@ -694,6 +700,7 @@ void VideoOverlayWindowViews::OnMouseEvent(ui::MouseEvent* event) {
      }
+ 
+     case ui::EventType::kMousePressed:
++#if 0
+       // Hide the live caption dialog if it's visible and the user clicks
+       // outside of it.
+       if (live_caption_dialog_ && live_caption_dialog_->GetVisible() &&
+@@ -702,6 +709,7 @@ void VideoOverlayWindowViews::OnMouseEvent(ui::MouseEvent* event) {
+         SetLiveCaptionDialogVisibility(false);
+         return;
+       }
++#endif
+       break;
+ 
+     default:
+@@ -737,11 +745,11 @@ bool VideoOverlayWindowViews::HideLiveCaptionDialogForGestureIfNecessary(
+   if (event->type() != ui::EventType::kGestureTap) {
+     return false;
+   }
 -
 +#if 0
-     // Otherwise, let the live caption dialog handle the gesture.
-     live_caption_dialog_->OnGestureTapEvent(event);
-+#endif
-     return;
+   if (!live_caption_dialog_->GetVisible()) {
+     return false;
    }
+-
++#endif
+   if (!GetLiveCaptionDialogBounds().Contains(event->location())) {
+     SetLiveCaptionDialogVisibility(false);
+     event->SetHandled();
+@@ -1219,6 +1227,7 @@ void VideoOverlayWindowViews::SetUpViews() {
+   timestamp->SetBackgroundColor(SK_ColorTRANSPARENT);
+   timestamp->SetHorizontalAlignment(gfx::ALIGN_LEFT);
  
-@@ -2576,6 +2583,7 @@ gfx::Rect VideoOverlayWindowViews::GetLiveCaptionDialogBounds() {
++#if 0
+   auto live_status = std::make_unique<views::Label>(
+       l10n_util::GetStringUTF16(IDS_PICTURE_IN_PICTURE_LIVE_STATUS_TEXT),
+       views::style::CONTEXT_LABEL, views::style::STYLE_CAPTION_BOLD);
+@@ -1238,6 +1247,7 @@ void VideoOverlayWindowViews::SetUpViews() {
+       Profile::FromBrowserContext(
+           controller_->GetWebContents()->GetBrowserContext()));
+   live_caption_dialog->SetVisible(false);
++#endif
+ 
+   auto toggle_microphone_button =
+       std::make_unique<ToggleMicrophoneButton>(base::BindRepeating(
+@@ -1360,13 +1370,15 @@ void VideoOverlayWindowViews::SetUpViews() {
+ 
+   timestamp_ =
+       playback_controls_container_view_->AddChildView(std::move(timestamp));
++
++#if 0
+   live_status_ =
+       playback_controls_container_view_->AddChildView(std::move(live_status));
+-
+   live_caption_button_ = playback_controls_container_view_->AddChildView(
+       std::move(live_caption_button));
+   live_caption_dialog_ =
+       controls_container_view_->AddChildView(std::move(live_caption_dialog));
++#endif
+ 
+   toggle_camera_button_ = vc_controls_container_view_->AddChildView(
+       std::move(toggle_camera_button));
+@@ -1645,6 +1657,7 @@ void VideoOverlayWindowViews::OnUpdateControlsBounds() {
+   timestamp_->SetSize({max_timestamp_width, kTimestampHeight});
+   timestamp_->SetVisible(!is_live_);
+ 
++#if 0
+   live_status_->SetPosition(timestamp_position);
+   live_status_->SetMaximumWidthSingleLine(max_timestamp_width);
+   live_status_->SetSize(
+@@ -1652,7 +1665,6 @@ void VideoOverlayWindowViews::OnUpdateControlsBounds() {
+            .width(),
+        kTimestampHeight});
+   live_status_->SetVisible(is_live_);
+-
+   gfx::Rect live_caption_button_bounds(
+       bottom_controls_bounds.right() - kBottomControlsHorizontalMargin -
+           kActionButtonSize.width(),
+@@ -1665,7 +1677,7 @@ void VideoOverlayWindowViews::OnUpdateControlsBounds() {
+   live_caption_dialog_->SetPosition(
+       {live_caption_button_bounds.right() - live_caption_dialog_->width(),
+        live_caption_button_bounds.y() - live_caption_dialog_->height()});
+-
++#endif
+   // The play/pause button and replay/forward 10 seconds buttons should not be
+   // visible while dragging the progress bar or for live media.
+   const bool is_dragging_progress_bar =
+@@ -2064,18 +2076,25 @@ gfx::Rect VideoOverlayWindowViews::GetProgressViewBounds() {
+ }
+ 
+ gfx::Rect VideoOverlayWindowViews::GetLiveCaptionButtonBounds() {
++#if 0
+   return live_caption_button_->GetMirroredBounds();
++#endif
++  return gfx::Rect();
+ }
+ 
+ gfx::Rect VideoOverlayWindowViews::GetLiveCaptionDialogBounds() {
++#if 0
+   if (!live_caption_dialog_->GetVisible()) {
+     return gfx::Rect();
+   }
+   return live_caption_dialog_->GetMirroredBounds();
++#endif
++  return gfx::Rect();
+ }
  
  bool VideoOverlayWindowViews::HasHighMediaEngagement(
      const url::Origin& origin) const {
@@ -110,7 +201,7 @@ index 3d9673db6bf535d3bc9518e7981ba8e84f4485bc..f737adbdc968e659cf5ba59e6cd5fd5f
    MediaEngagementService* service =
        MediaEngagementService::Get(Profile::FromBrowserContext(
            GetController()->GetWebContents()->GetBrowserContext()));
-@@ -2584,6 +2592,8 @@ bool VideoOverlayWindowViews::HasHighMediaEngagement(
+@@ -2084,6 +2103,8 @@ bool VideoOverlayWindowViews::HasHighMediaEngagement(
    }
  
    return service->HasHighEngagement(origin);
@@ -119,3 +210,26 @@ index 3d9673db6bf535d3bc9518e7981ba8e84f4485bc..f737adbdc968e659cf5ba59e6cd5fd5f
  }
  
  bool VideoOverlayWindowViews::IsTrustedForMediaPlayback() const {
+@@ -2340,11 +2361,14 @@ void VideoOverlayWindowViews::UpdateTimestampLabel(base::TimeDelta current_time,
+ }
+ 
+ void VideoOverlayWindowViews::OnLiveCaptionButtonPressed() {
++#if 0
+   SetLiveCaptionDialogVisibility(!live_caption_dialog_->GetVisible());
++#endif
+ }
+ 
+ void VideoOverlayWindowViews::SetLiveCaptionDialogVisibility(
+     bool wanted_visibility) {
++#if 0
+   if (wanted_visibility == live_caption_dialog_->GetVisible()) {
+     return;
+   }
+@@ -2367,6 +2391,7 @@ void VideoOverlayWindowViews::SetLiveCaptionDialogVisibility(
+   for (auto* control : controls_to_be_disabled_when_live_caption_is_open) {
+     control->SetEnabled(!wanted_visibility);
+   }
++#endif
+ }
+ 
+ void VideoOverlayWindowViews::OnFaviconReceived(const SkBitmap& image) {

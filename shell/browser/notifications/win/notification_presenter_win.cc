@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "base/files/file_util.h"
-#include "base/hash/md5.h"
+#include "base/hash/sha1.h"
 #include "base/logging.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
@@ -68,7 +68,7 @@ std::wstring NotificationPresenterWin::SaveIconToFilesystem(
 
   std::string filename;
   if (origin.is_valid()) {
-    filename = base::MD5String(origin.spec()) + ".png";
+    filename = base::SHA1HashString(origin.spec()) + ".png";
   } else {
     const int64_t now_usec = base::Time::Now().since_origin().InMicroseconds();
     filename = base::NumberToString(now_usec) + ".png";

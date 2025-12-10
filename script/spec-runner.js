@@ -21,6 +21,7 @@ const fail = chalk.red('✗');
 const FAILURE_STATUS_KEY = 'Electron_Spec_Runner_Failures';
 
 const args = minimist(process.argv, {
+  boolean: ['skipYarnInstall'],
   string: ['runners', 'target', 'electronVersion'],
   number: ['enableRerun'],
   unknown: arg => unknownFlags.push(arg)
@@ -36,10 +37,9 @@ for (const flag of unknownFlags) {
 }
 
 const utils = require('./lib/utils');
-const { YARN_VERSION } = require('./yarn');
+const { YARN_SCRIPT_PATH } = require('./yarn');
 
 const BASE = path.resolve(__dirname, '../..');
-const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
 const runners = new Map([
   ['main', { description: 'Main process specs', run: runMainProcessElectronTests }]
@@ -96,7 +96,7 @@ async function main () {
   const somethingChanged = (currentSpecHash !== lastSpecHash) ||
       (lastSpecInstallHash !== currentSpecInstallHash);
 
-  if (somethingChanged) {
+  if (somethingChanged && !args.skipYarnInstall) {
     await installSpecModules(path.resolve(__dirname, '..', 'spec'));
     await getSpecHash().then(saveSpecHash);
   }
@@ -375,7 +375,7 @@ async function runTestUsingElectron (specDir, testName, shouldRerun, additionalA
     if (shouldRerun) {
       await rerunFailedTests(specDir, testName);
     } else {
-      return false;
+      process.exit(1);
     }
   }
   console.log(`${pass} Electron ${testName} process tests passed.`);
@@ -419,7 +419,8 @@ async function installSpecModules (dir) {
   if (fs.existsSync(path.resolve(dir, 'node_modules'))) {
     await fs.promises.rm(path.resolve(dir, 'node_modules'), { force: true, recursive: true });
   }
-  const { status } = childProcess.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install', '--frozen-lockfile'], {
+  const yarnArgs = [YARN_SCRIPT_PATH, 'install', '--immutable'];
+  const { status } = childProcess.spawnSync(process.execPath, yarnArgs, {
     env,
     cwd: dir,
     stdio: 'inherit',
@@ -429,14 +430,27 @@ async function installSpecModules (dir) {
     console.log(`${fail} Failed to yarn install in '${dir}'`);
     process.exit(1);
   }
+
+  if (process.platform === 'linux') {
+    const { status: rebuildStatus } = childProcess.spawnSync('npm', ['rebuild', 'abstract-socket'], {
+      env,
+      cwd: dir,
+      stdio: 'inherit',
+      shell: process.platform === 'win32'
+    });
+    if (rebuildStatus !== 0) {
+      console.log(`${fail} Failed to rebuild abstract-socket native module`);
+      process.exit(1);
+    }
+  }
 }
 
 function getSpecHash () {
   return Promise.all([
     (async () => {
       const hasher = crypto.createHash('SHA256');
+      hasher.update(fs.readFileSync(path.resolve(__dirname, '../yarn.lock')));
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/package.json')));
-      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/yarn.lock')));
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../script/spec-runner.js')));
       return hasher.digest('hex');
     })(),

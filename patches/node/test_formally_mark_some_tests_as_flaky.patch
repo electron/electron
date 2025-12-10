@@ -7,7 +7,7 @@ Instead of disabling the tests, flag them as flaky so they still run
 but don't cause CI failures on flakes.
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index 67c0c04d2365e59db111258d008f8c73173e3e96..a4204e7580e7823399f6057d57c09cba56b5ff78 100644
+index bf040bf2ee9c727542e347f3467e04a29bfd1b63..9dcd28bc499aa2b1ba313ab9e921d6835140cc92 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
 @@ -5,6 +5,16 @@ prefix parallel
@@ -25,10 +25,10 @@ index 67c0c04d2365e59db111258d008f8c73173e3e96..a4204e7580e7823399f6057d57c09cba
 +test-cluster-shared-handle-bind-privileged-port: PASS, FLAKY
 +test-debugger-random-port-with-inspect-port: PASS, FLAKY
  # https://github.com/nodejs/node/issues/52273
- test-net-write-fully-async-hex-string: PASS, FLAKY
- # https://github.com/nodejs/node/issues/52273
+ test-shadow-realm-gc: SKIP
+ test-shadow-realm-gc-module: SKIP
 diff --git a/test/sequential/sequential.status b/test/sequential/sequential.status
-index 4ae3b6c5fd2eb633ae78bed1824046d862d7579b..d291954d4451b63aeb2bf46232e8705150eb9e79 100644
+index 627e61911d15cad151bfdf5af83c6ada93e62ba8..01e820390ecc039c7ae104a94e88c36c209eed36 100644
 --- a/test/sequential/sequential.status
 +++ b/test/sequential/sequential.status
 @@ -7,6 +7,18 @@ prefix sequential

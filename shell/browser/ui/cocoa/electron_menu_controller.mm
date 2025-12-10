@@ -186,8 +186,8 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   model_ = nullptr;
 }
 
-- (void)setCloseCallback:(base::OnceClosure)callback {
-  closeCallback = std::move(callback);
+- (void)setPopupCloseCallback:(base::OnceClosure)callback {
+  popupCloseCallback = std::move(callback);
 }
 
 - (void)populateWithModel:(electron::ElectronMenuModel*)model {
@@ -221,9 +221,9 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     isMenuOpen_ = NO;
     if (model_)
       model_->MenuWillClose();
-    if (!closeCallback.is_null()) {
-      content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
-                                                   std::move(closeCallback));
+    if (!popupCloseCallback.is_null()) {
+      content::GetUIThreadTaskRunner({})->PostTask(
+          FROM_HERE, std::move(popupCloseCallback));
     }
   }
 }
@@ -468,6 +468,12 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   if (!represented)
     return;
 
+  if (![represented
+          isKindOfClass:[WeakPtrToElectronMenuModelAsNSObject class]]) {
+    NSLog(@"representedObject is not a WeakPtrToElectronMenuModelAsNSObject");
+    return;
+  }
+
   electron::ElectronMenuModel* model =
       [WeakPtrToElectronMenuModelAsNSObject getFrom:represented];
   if (!model)
@@ -557,16 +563,29 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 }
 
 - (void)menuDidClose:(NSMenu*)menu {
-  if (isMenuOpen_) {
-    isMenuOpen_ = NO;
-    if (model_)
-      model_->MenuWillClose();
-    // Post async task so that itemSelected runs before the close callback
-    // deletes the controller from the map which deallocates it
-    if (!closeCallback.is_null()) {
-      content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
-                                                   std::move(closeCallback));
-    }
+  // If the menu is already closed, do nothing.
+  if (!isMenuOpen_)
+    return;
+
+  bool has_close_cb = !popupCloseCallback.is_null();
+
+  // There are two scenarios where we should emit menu-did-close:
+  // 1. It's a popup and the top level menu is closed.
+  // 2. It's an application menu, and the current menu's supermenu
+  //    is the top-level menu.
+  if (menu != menu_) {
+    if (has_close_cb || menu.supermenu != menu_)
+      return;
+  }
+
+  isMenuOpen_ = NO;
+  if (model_)
+    model_->MenuWillClose();
+  // Post async task so that itemSelected runs before the close callback
+  // deletes the controller from the map which deallocates it.
+  if (has_close_cb) {
+    content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
+                                                 std::move(popupCloseCallback));
   }
 }
 

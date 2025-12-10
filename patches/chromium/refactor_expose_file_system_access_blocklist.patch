@@ -8,11 +8,11 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index dcbd14a2e6c8f39a68f0ce7ea9dbc17a0deef070..43c66151ae48983d6f36fdec3637cfdad8863a37 100644
+index 4a7e52896a4c794d28a81a679bc206993914b905..867317177336969219329243a813eba6ad67655f 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -84,11 +84,13 @@
- #include "chrome/browser/ui/browser_window/public/browser_window_interface_iterator.h"
+ #include "chrome/browser/ui/browser_window/public/browser_window_interface_iterator.h"  // nogncheck crbug.com/40147906
  #include "chrome/browser/ui/tabs/public/tab_features.h"
  #include "chrome/browser/ui/views/file_system_access/file_system_access_page_action_controller.h"
 +#if 0
@@ -246,7 +246,7 @@ index dcbd14a2e6c8f39a68f0ce7ea9dbc17a0deef070..43c66151ae48983d6f36fdec3637cfda
    auto* provider = web_app::WebAppProvider::GetForWebApps(
        Profile::FromBrowserContext(profile_));
    if (provider) {
-@@ -2818,7 +2630,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
+@@ -2813,7 +2625,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
    one_time_permissions_tracker_.Reset();
  }
  
@@ -255,7 +255,7 @@ index dcbd14a2e6c8f39a68f0ce7ea9dbc17a0deef070..43c66151ae48983d6f36fdec3637cfda
  void ChromeFileSystemAccessPermissionContext::OnWebAppInstalled(
      const webapps::AppId& app_id) {
    if (!base::FeatureList::IsEnabled(
-@@ -3176,11 +2988,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3171,11 +2983,7 @@ bool ChromeFileSystemAccessPermissionContext::
          HandleType handle_type,
          UserAction user_action,
          GrantType grant_type) {
@@ -268,7 +268,7 @@ index dcbd14a2e6c8f39a68f0ce7ea9dbc17a0deef070..43c66151ae48983d6f36fdec3637cfda
    if (!base::FeatureList::IsEnabled(
            features::kFileSystemAccessPersistentPermissions)) {
      return false;
-@@ -3231,6 +3039,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3226,6 +3034,7 @@ bool ChromeFileSystemAccessPermissionContext::
  
    return false;
  #endif  // BUILDFLAG(IS_ANDROID)

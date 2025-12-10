@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_CALLER_H_
 
 #include <array>
+#include <string_view>
 #include <utility>
 
 #include "base/containers/span.h"
@@ -20,17 +21,17 @@ namespace internal {
 
 v8::Local<v8::Value> CallMethodWithArgs(v8::Isolate* isolate,
                                         v8::Local<v8::Object> obj,
-                                        const char* method,
+                                        std::string_view method,
                                         base::span<v8::Local<v8::Value>> args);
 
 }  // namespace internal
 
 // obj.emit(name, args...);
 // The caller is responsible of allocating a HandleScope.
-template <typename StringType, typename... Args>
+template <typename... Args>
 v8::Local<v8::Value> EmitEvent(v8::Isolate* isolate,
                                v8::Local<v8::Object> obj,
-                               const StringType& name,
+                               const std::string_view name,
                                Args&&... args) {
   v8::EscapableHandleScope scope{isolate};
   std::array<v8::Local<v8::Value>, 1U + sizeof...(args)> converted_args = {
@@ -45,7 +46,7 @@ v8::Local<v8::Value> EmitEvent(v8::Isolate* isolate,
 template <typename... Args>
 v8::Local<v8::Value> CustomEmit(v8::Isolate* isolate,
                                 v8::Local<v8::Object> object,
-                                const char* custom_emit,
+                                const std::string_view custom_emit,
                                 Args&&... args) {
   v8::EscapableHandleScope scope{isolate};
   std::array<v8::Local<v8::Value>, sizeof...(args)> converted_args = {
@@ -58,7 +59,7 @@ v8::Local<v8::Value> CustomEmit(v8::Isolate* isolate,
 template <typename T, typename... Args>
 v8::Local<v8::Value> CallMethod(v8::Isolate* isolate,
                                 gin_helper::DeprecatedWrappable<T>* object,
-                                const char* method_name,
+                                const std::string_view method_name,
                                 Args&&... args) {
   v8::EscapableHandleScope scope(isolate);
   v8::Local<v8::Object> v8_object;
@@ -71,7 +72,7 @@ v8::Local<v8::Value> CallMethod(v8::Isolate* isolate,
 
 template <typename T, typename... Args>
 v8::Local<v8::Value> CallMethod(gin_helper::DeprecatedWrappable<T>* object,
-                                const char* method_name,
+                                const std::string_view method_name,
                                 Args&&... args) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   return CallMethod(isolate, object, method_name, std::forward<Args>(args)...);
@@ -80,7 +81,7 @@ v8::Local<v8::Value> CallMethod(gin_helper::DeprecatedWrappable<T>* object,
 template <typename T, typename... Args>
 v8::Local<v8::Value> CallMethod(v8::Isolate* isolate,
                                 gin::Wrappable<T>* object,
-                                const char* method_name,
+                                const std::string_view method_name,
                                 Args&&... args) {
   v8::EscapableHandleScope scope(isolate);
   v8::Local<v8::Object> v8_object;
@@ -93,7 +94,7 @@ v8::Local<v8::Value> CallMethod(v8::Isolate* isolate,
 
 template <typename T, typename... Args>
 v8::Local<v8::Value> CallMethod(gin::Wrappable<T>* object,
-                                const char* method_name,
+                                const std::string_view method_name,
                                 Args&&... args) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   return CallMethod(isolate, object, method_name, std::forward<Args>(args)...);
