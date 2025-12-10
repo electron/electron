@@ -19,7 +19,7 @@ https://chromium-review.googlesource.com/c/chromium/src/+/6936895
 as we depend on the removed functionality in this patch.
 
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 361523f87eb8f75a3d1bc39650ca04e6bd941471..23e55de019e9ba3f6e50e1b3701f66d84da54795 100644
+index 849da439a046aea133946572c79964858e4e7ba5..59200581b6e47a8c6c55d2197cd08ce001efdfcc 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -530,7 +530,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {

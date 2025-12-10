@@ -286,10 +286,6 @@ BrowserProcessImpl::component_updater() {
   return nullptr;
 }
 
-MediaFileSystemRegistry* BrowserProcessImpl::media_file_system_registry() {
-  return nullptr;
-}
-
 WebRtcLogUploader* BrowserProcessImpl::webrtc_log_uploader() {
   return nullptr;
 }

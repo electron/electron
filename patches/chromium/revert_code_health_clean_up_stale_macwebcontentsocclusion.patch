@@ -254,10 +254,10 @@ index 17d6d7d935f93afefa9123f56ef9c138c3070f93..8dfa7501a6a2998e107bf9b51f5e5c3d
  }
  
 diff --git a/content/common/features.cc b/content/common/features.cc
-index f6b38a04e64b02a3a4ea0c84155967c4602cbdc2..d8b9141ace8d008667b55e028e36bba438530627 100644
+index 74393f28b9e9c8201fe48ab81d6ad27567f52aba..a18b358039860ee7f2bda5a8b97cebc9100da791 100644
 --- a/content/common/features.cc
 +++ b/content/common/features.cc
-@@ -312,6 +312,14 @@ BASE_FEATURE(kInterestGroupUpdateIfOlderThan, base::FEATURE_ENABLED_BY_DEFAULT);
+@@ -348,6 +348,14 @@ BASE_FEATURE(kInterestGroupUpdateIfOlderThan, base::FEATURE_ENABLED_BY_DEFAULT);
  BASE_FEATURE(kIOSurfaceCapturer, base::FEATURE_ENABLED_BY_DEFAULT);
  #endif
  
@@ -273,10 +273,10 @@ index f6b38a04e64b02a3a4ea0c84155967c4602cbdc2..d8b9141ace8d008667b55e028e36bba4
  BASE_FEATURE(kKeepChildProcessAfterIPCReset, base::FEATURE_DISABLED_BY_DEFAULT);
  
 diff --git a/content/common/features.h b/content/common/features.h
-index 762c98a66c0565b6eb2f45de051206c5e3eaf44d..24a5302fc618c27adc7e0ddc0614faeb12f0ed52 100644
+index 804871b5c6f4d34b1583edd3c0b821936829f017..bbbd772bc57542aecdde6fbc094273c1f70e3c26 100644
 --- a/content/common/features.h
 +++ b/content/common/features.h
-@@ -112,6 +112,9 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(kInterestGroupUpdateIfOlderThan);
+@@ -134,6 +134,9 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(kInterestGroupUpdateIfOlderThan);
  #if BUILDFLAG(IS_MAC)
  CONTENT_EXPORT BASE_DECLARE_FEATURE(kIOSurfaceCapturer);
  #endif

@@ -8,10 +8,10 @@ where callsites that deal with multiple contexts need to distinguish
 the current isolate.
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 6fa11f89ea212eabd7fdc979d2d99138b1f3c88e..a35372743ce69d7cb04c54fcb75b49c0b6fe87c7 100644
+index a0a6c6815c553ca6a50c49f52ad45055a94fc221..53b8af297ff32de254b51cd534e08d59f6215952 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -389,6 +389,7 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -388,6 +388,7 @@ class CONTENT_EXPORT ContentRendererClient {
    // WillDestroyServiceWorkerContextOnWorkerThread() is called.
    virtual void WillEvaluateServiceWorkerOnWorkerThread(
        blink::WebServiceWorkerContextProxy* context_proxy,
@@ -52,10 +52,10 @@ index 609c83fb3e7c9b5e4e5d06071d46b5be835b5ecd..bc293d31e9c13089238a0efa8421e76b
  
  void RenderFrameImpl::DidChangeScrollOffset() {
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index b0857c9406947f36810279c2f9b1feb4fc44c5a7..6cdd1f12d49d484f7b0894d70914342e153710f0 100644
+index e4baa8ca63312e9f792108b6170cbd2a170c9a95..c64ef8c072d2e74b072223f57c4d3722cd44cdb5 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -606,7 +606,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -605,7 +605,8 @@ class CONTENT_EXPORT RenderFrameImpl
                                int world_id) override;
    void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
                                       int world_id) override;
@@ -89,10 +89,10 @@ index 37691ecee7a72b2ec47ff575239f628116cf136b..c67e3faf7440514e203e5b15a68fc345
  
  void ServiceWorkerContextClient::DidEvaluateScript(bool success) {
 diff --git a/content/renderer/service_worker/service_worker_context_client.h b/content/renderer/service_worker/service_worker_context_client.h
-index 1f5e24bc38d6ced52e4773236522e9520efc6f6d..a22ca5968fce5e6a0c436ec9b40f0e2f7c1482cf 100644
+index d03d1d06611e10cf55a29aee9a764f575eed436d..78684d30cfb71a215004992b1916194c1a46055b 100644
 --- a/content/renderer/service_worker/service_worker_context_client.h
 +++ b/content/renderer/service_worker/service_worker_context_client.h
-@@ -165,7 +165,8 @@ class ServiceWorkerContextClient
+@@ -164,7 +164,8 @@ class ServiceWorkerContextClient
    void WorkerContextStarted(
        blink::WebServiceWorkerContextProxy* proxy,
        scoped_refptr<base::SequencedTaskRunner> worker_task_runner) override;
@@ -181,10 +181,10 @@ index 91e234e7fa29e50545fdaed64adcf68498f14c2d..15d5685d726d0ddb9ac964475b899714
  
    // Geometry notifications ----------------------------------------------
 diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-index 898d7caac98727210ac5780b576526a71ec5a5aa..3fdd5b3c41fd8d5dc920bed710dc10741e7e7423 100644
+index 8bd06f4c155cc0ed8afaf89347f9fc9728bb1e41..85ae42670cc038e18e4a0ea05e3de25c116b7a79 100644
 --- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-@@ -109,11 +109,12 @@ void LocalWindowProxy::DisposeContext(Lifecycle next_status,
+@@ -108,11 +108,12 @@ void LocalWindowProxy::DisposeContext(Lifecycle next_status,
  
    ScriptState::Scope scope(script_state_);
    v8::Local<v8::Context> context = script_state_->GetContext();
@@ -245,7 +245,7 @@ index cbc59f17897d3c6c98886a7ef7d6db81b0e1117b..08ba59e55dfc1080d3b9ec73f72d1bc2
  
    // Returns true if we should allow register V8 extensions to be added.
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index e3d80c533d3c0703af7a1a9d60270641288b8a3e..840c42313723a9f3b121355aaffafa7ab60a028d 100644
+index 628d4a805dce6a780d53759fcf9229bd2f7e7029..3fa3a6405ad6db4274068ac3bb91e14ea19c65b6 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
 @@ -428,7 +428,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {

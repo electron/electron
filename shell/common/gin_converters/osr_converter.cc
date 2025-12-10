@@ -11,6 +11,7 @@
 #include <string>
 
 #include "base/containers/to_vector.h"
+#include "base/task/single_thread_task_runner.h"
 #if BUILDFLAG(IS_LINUX)
 #include "base/strings/string_number_conversions.h"
 #endif

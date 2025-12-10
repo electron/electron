@@ -21,8 +21,8 @@
 #include "base/timer/timer.h"
 #include "base/uuid.h"
 #include "base/values.h"
+#include "build/util/chromium_git_revision.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
-#include "components/embedder_support/user_agent_utils.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -142,7 +142,7 @@ double GetNextZoomLevel(double level, bool out) {
 GURL GetRemoteBaseURL() {
   return GURL(absl::StrFormat("%s%s/%s/", kChromeUIDevToolsRemoteFrontendBase,
                               kChromeUIDevToolsRemoteFrontendPath,
-                              embedder_support::GetChromiumGitRevision()));
+                              CHROMIUM_GIT_REVISION));
 }
 
 GURL GetDevToolsURL(bool can_dock) {

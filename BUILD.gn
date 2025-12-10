@@ -446,6 +446,7 @@ source_set("electron_lib") {
     "shell/services/node/public/mojom",
     "//base:base_static",
     "//base/allocator:buildflags",
+    "//build/util:chromium_git_revision",
     "//chrome:strings",
     "//chrome/app:command_ids",
     "//chrome/app/resources:platform_locale_settings",

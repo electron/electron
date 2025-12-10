@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 558ddaf4a329058c229b0ba23f6a84b3a7262d26..b97560e77c6066ad93dc9865a131a0823c5017e2 100644
+index 957bb5977fdc7488d8d5b7467fbeb1288fc842e9..eadf92465fcda1dcd490c7ba33a42400e42b1de2 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -9865,6 +9865,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -9845,6 +9845,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index 558ddaf4a329058c229b0ba23f6a84b3a7262d26..b97560e77c6066ad93dc9865a131a082
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 6487679d008db662772d4a1c21a9afb2857b775b..87144696ec3a7684bf532ca1946ab8a9bcd20cc9 100644
+index dc9e636c1a64efc1fbcea34caf793f649e0c0182..ec8c9c382d1689d8ac698482df4909cb03cde6c2 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5326,6 +5326,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -77,10 +77,10 @@ index 4c55f0abf8df5a3408f3f90d444ceff3c23ee1bc..72bdb5b5a4c2c21a7192b34bb293bd23
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index a0ccc5352495e75e1603fd3f90825eba85276a6a..3cf480086d77bddb3328aa02137e7bb66c2eb511 100644
+index 32398673f892e441645197e160fcd7199855810c..f84873ede89fd06a951e17d588f8f692893b7157 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -885,6 +885,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -873,6 +873,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -90,7 +90,7 @@ index a0ccc5352495e75e1603fd3f90825eba85276a6a..3cf480086d77bddb3328aa02137e7bb6
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 3ca58d5630486cd378f3109b1ca59a4563608187..9f8fe55d6c360e3a709f2e5f05baf02c9ca29101 100644
+index 9876271141182d6d0836449fde5010788298a4f0..8e8ee6284ad2ab6453b4c0137e61aea2765583c6 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -203,6 +203,7 @@ class NetworkService;
@@ -101,7 +101,7 @@ index 3ca58d5630486cd378f3109b1ca59a4563608187..9f8fe55d6c360e3a709f2e5f05baf02c
  }  // namespace network
  
  namespace sandbox {
-@@ -1462,6 +1463,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1449,6 +1450,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -232,7 +232,7 @@ index d92bab531c12c62a5321a23f4a0cb89691668127..c354a79c7c8dd047264df35b873e90c1
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 8d074a93c5da744691143c93eb43bd036d9d8e64..825d538add57641e9d71bc744c5d292961df44ce 100644
+index 96587060ba012823b8e2f61f22ebf3ee1efd3538..50ae67ac9153324b2e59dae324fc138a29cd9b63 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -2349,6 +2349,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
