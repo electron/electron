@@ -733,5 +733,80 @@ describe('webRequest module', () => {
       expect(reqHeaders['/websocket'].foo).to.equal('bar');
       expect(reqHeaders['/'].foo).to.equal('bar');
     });
+
+    it('authenticates a WebSocket via login event', async () => {
+      const authServer = http.createServer();
+      const wssAuth = new WebSocket.Server({ noServer: true });
+      const expected = 'Basic ' + Buffer.from('user:pass').toString('base64');
+
+      wssAuth.on('connection', ws => {
+        ws.send('Authenticated!');
+      });
+
+      authServer.on('upgrade', (req, socket, head) => {
+        const auth = req.headers.authorization || '';
+        if (auth !== expected) {
+          socket.write(
+            'HTTP/1.1 401 Unauthorized\r\n' +
+              'WWW-Authenticate: Basic realm="Test"\r\n' +
+              'Content-Length: 0\r\n' +
+              '\r\n'
+          );
+          socket.destroy();
+          return;
+        }
+
+        wssAuth.handleUpgrade(req, socket as Socket, head, ws => {
+          wssAuth.emit('connection', ws, req);
+        });
+      });
+
+      const { port } = await listen(authServer);
+      const ses = session.fromPartition(`WebRequestWSAuth-${Date.now()}`);
+
+      const contents = (webContents as typeof ElectronInternal.WebContents).create({
+        session: ses,
+        sandbox: true
+      });
+
+      defer(() => {
+        contents.destroy();
+        authServer.close();
+        wssAuth.close();
+      });
+
+      ses.webRequest.onBeforeRequest({ urls: ['ws://*/*'] }, (details, callback) => {
+        callback({});
+      });
+
+      contents.on('login', (event, details: any, _: any, callback: (u: string, p: string) => void) => {
+        if (details?.url?.startsWith(`ws://localhost:${port}`)) {
+          event.preventDefault();
+          callback('user', 'pass');
+        }
+      });
+
+      await contents.loadFile(path.join(fixturesPath, 'blank.html'));
+
+      const message = await contents.executeJavaScript(`new Promise((resolve, reject) => {
+        let attempts = 0;
+        function connect() {
+          attempts++;
+          const ws = new WebSocket('ws://localhost:${port}');
+          ws.onmessage = e => resolve(e.data);
+          ws.onerror = () => {
+            if (attempts < 3) {
+              setTimeout(connect, 50);
+            } else {
+              reject(new Error('WebSocket auth failed'));
+            }
+          };
+        }
+        connect();
+        setTimeout(() => reject(new Error('timeout')), 5000);
+      });`);
+
+      expect(message).to.equal('Authenticated!');
+    });
   });
 });
