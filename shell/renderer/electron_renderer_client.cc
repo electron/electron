@@ -6,11 +6,10 @@
 
 #include <algorithm>
 
-#include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/containers/contains.h"
-#include "base/debug/stack_trace.h"
 #include "content/public/renderer/render_frame.h"
+#include "electron/fuses.h"
 #include "net/http/http_request_headers.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -19,6 +18,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/v8_util.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/web_worker_observer.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
@@ -26,13 +26,6 @@
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 #include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"  // nogncheck
-
-#if BUILDFLAG(IS_LINUX) && (defined(ARCH_CPU_X86_64) || defined(ARCH_CPU_ARM64))
-#define ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX
-#include "components/crash/core/app/crashpad.h"  // nogncheck
-#include "content/public/common/content_switches.h"
-#include "v8/include/v8-wasm-trap-handler-posix.h"
-#endif
 
 namespace electron {
 
@@ -248,45 +241,13 @@ void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
 }
 
 void ElectronRendererClient::SetUpWebAssemblyTrapHandler() {
-// See CL:5372409 - copied from ShellContentRendererClient.
-#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
-  // Mac and Windows use the default implementation (where the default v8 trap
-  // handler gets set up).
-  ContentRendererClient::SetUpWebAssemblyTrapHandler();
-  return;
-#elif defined(ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX)
-  const bool crash_reporter_enabled =
-      crash_reporter::GetHandlerSocket(nullptr, nullptr);
-
-  if (crash_reporter_enabled) {
-    // If either --enable-crash-reporter or --enable-crash-reporter-for-testing
-    // is enabled it should take care of signal handling for us, use the default
-    // implementation which doesn't register an additional handler.
-    ContentRendererClient::SetUpWebAssemblyTrapHandler();
-    return;
+#if ((BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)) && \
+     defined(ARCH_CPU_X86_64)) ||                                       \
+    ((BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC)) && defined(ARCH_CPU_ARM64))
+  if (electron::fuses::IsWasmTrapHandlersEnabled()) {
+    electron::SetUpWebAssemblyTrapHandler();
   }
-
-  const bool use_v8_default_handler =
-      base::CommandLine::ForCurrentProcess()->HasSwitch(
-          ::switches::kDisableInProcessStackTraces);
-
-  if (use_v8_default_handler) {
-    // There is no signal handler yet, but it's okay if v8 registers one.
-    v8::V8::EnableWebAssemblyTrapHandler(/*use_v8_signal_handler=*/true);
-    return;
-  }
-
-  if (base::debug::SetStackDumpFirstChanceCallback(
-          v8::TryHandleWebAssemblyTrapPosix)) {
-    // Crashpad and Breakpad are disabled, but the in-process stack dump
-    // handlers are enabled, so set the callback on the stack dump handlers.
-    v8::V8::EnableWebAssemblyTrapHandler(/*use_v8_signal_handler=*/false);
-    return;
-  }
-
-  // As the registration of the callback failed, we don't enable trap
-  // handlers.
-#endif  // defined(ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX)
+#endif
 }
 
 node::Environment* ElectronRendererClient::GetEnvironment(
