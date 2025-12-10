@@ -429,19 +429,39 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
       if (accelerator.IsCmdDown())
         modifier_mask |= NSEventModifierFlagCommand;
       unichar character;
-      if (accelerator.shifted_char) {
+      NSString* keyEquivalent = nil;
+      
+      // Handle special keys that should display as plain text on macOS
+      // instead of using Unicode symbols which can be ambiguous
+      switch (accelerator.key_code()) {
+        case ui::VKEY_PRIOR:  // Page Up
+          keyEquivalent = @"Page Up";
+          break;
+        case ui::VKEY_NEXT:   // Page Down
+          keyEquivalent = @"Page Down";
+          break;
+        default:
+          break;
+      }
+      
+      if (keyEquivalent) {
+        item.keyEquivalent = keyEquivalent;
+        item.keyEquivalentModifierMask = modifier_mask;
+      } else if (accelerator.shifted_char) {
         // When a shifted char is explicitly specified, for example Ctrl+Plus,
         // use the shifted char directly.
         character = static_cast<unichar>(*accelerator.shifted_char);
+        item.keyEquivalent = [NSString stringWithFormat:@"%C", character];
+        item.keyEquivalentModifierMask = modifier_mask;
       } else {
         // Otherwise use the unshifted combinations, for example Ctrl+Shift+=.
         if (accelerator.IsShiftDown())
           modifier_mask |= NSEventModifierFlagShift;
         ui::MacKeyCodeForWindowsKeyCode(accelerator.key_code(), modifier_mask,
                                         nullptr, &character);
+        item.keyEquivalent = [NSString stringWithFormat:@"%C", character];
+        item.keyEquivalentModifierMask = modifier_mask;
       }
-      item.keyEquivalent = [NSString stringWithFormat:@"%C", character];
-      item.keyEquivalentModifierMask = modifier_mask;
     }
 
     [(id)item
