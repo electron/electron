@@ -45,10 +45,10 @@ index e189d584f05f2ce6354c03a9b19f56985df8a15e..41b430e8f2416be098494f5c49fb97ca
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index 95b22057b76a68093dd23b58f8703fe839d21fe6..05cee080f45317cbc598723f98fabc7e7d338e45 100644
+index cd83a4575b84a8b53e42cfcabaf1fd8ed7dd22a6..4d13b9b7e35d09e6dd4e4f70ce0f2c39ea46ee6a 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -9136,6 +9136,26 @@
+@@ -9135,6 +9135,26 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -312,7 +312,7 @@ index 18f283e625101318ee14b50e6e765dfd1c9a1a44..44a3a55974c9e4b9e715574075f25661
  
    auto DrawAsSinglePath = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 8e4e1fa3b6adc132f16cc626a1e5006adef3cbf1..2cefd1ce86d735d592647db34bccd820dd61fd99 100644
+index d5ea0a6f9b3a95126331e4451e8ef2a4079437e1..31b757998cda3642506a0131aa77d7239f4aaf95 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -214,6 +214,10 @@
