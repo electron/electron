@@ -429,23 +429,14 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
       if (accelerator.IsCmdDown())
         modifier_mask |= NSEventModifierFlagCommand;
       unichar character;
-      NSString* keyEquivalent = nil;
-      
-      // Handle special keys that should display as plain text on macOS
-      // instead of using Unicode symbols which can be ambiguous
-      switch (accelerator.key_code()) {
-        case ui::VKEY_PRIOR:  // Page Up
-          keyEquivalent = @"Page Up";
-          break;
-        case ui::VKEY_NEXT:   // Page Down
-          keyEquivalent = @"Page Down";
-          break;
-        default:
-          break;
-      }
-      
-      if (keyEquivalent) {
-        item.keyEquivalent = keyEquivalent;
+
+      if (accelerator.key_code() == ui::VKEY_PRIOR) {
+        character = NSPageUpFunctionKey;
+        item.keyEquivalent = [NSString stringWithFormat:@"%C", character];
+        item.keyEquivalentModifierMask = modifier_mask;
+      } else if (accelerator.key_code() == ui::VKEY_NEXT) {
+        character = NSPageDownFunctionKey;
+        item.keyEquivalent = [NSString stringWithFormat:@"%C", character];
         item.keyEquivalentModifierMask = modifier_mask;
       } else if (accelerator.shifted_char) {
         // When a shifted char is explicitly specified, for example Ctrl+Plus,
