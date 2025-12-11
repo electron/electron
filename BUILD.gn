@@ -321,9 +321,23 @@ grit("resources") {
     "grit/electron_resources.h",
     "electron_resources.pak",
   ]
+  if (translate_genders) {
+    outputs += [
+      "electron_resources_MASCULINE.pak",
+      "electron_resources_FEMININE.pak",
+      "electron_resources_NEUTER.pak",
+    ]
+  }
 
   foreach(locale, all_chrome_locales) {
     outputs += [ "electron_strings_$locale.pak" ]
+    if (translate_genders) {
+      outputs += [
+        "electron_strings_${locale}_MASCULINE.pak",
+        "electron_strings_${locale}_FEMININE.pak",
+        "electron_strings_${locale}_NEUTER.pak",
+      ]
+    }
   }
 
   # Mojo manifest overlays are generated.
@@ -331,6 +345,9 @@ grit("resources") {
     "-E",
     "target_gen_dir=" + rebase_path(target_gen_dir, root_build_dir),
   ]
+  if (translate_genders) {
+    grit_flags += [ "--translate-genders" ]
+  }
 
   deps = [ ":copy_shell_devtools_discovery_page" ]
 
