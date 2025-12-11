@@ -144,10 +144,10 @@ index eb74282adaba24ebd667f0ab3fc34dbe4cd8b527..7b91eb27489cece38eca719986255c5e
  
  }  // namespace crypto::apple
 diff --git a/crypto/apple/keychain_secitem.mm b/crypto/apple/keychain_secitem.mm
-index d2b9526f9a0bfa9d12a594c35c71499810cb6bb0..aef0eb3508fc37e3a0e9e1c27a71e1aa1f568231 100644
+index a8d50dd27db52526b0635c2b97f076df1994a6aa..e45f0d1079c8acfae55cf873e66ab3d9a10ad8ee 100644
 --- a/crypto/apple/keychain_secitem.mm
 +++ b/crypto/apple/keychain_secitem.mm
-@@ -161,7 +161,8 @@
+@@ -138,7 +138,8 @@
  
  base::expected<std::vector<uint8_t>, OSStatus>
  KeychainSecItem::FindGenericPassword(std::string_view service_name,
@@ -157,7 +157,7 @@ index d2b9526f9a0bfa9d12a594c35c71499810cb6bb0..aef0eb3508fc37e3a0e9e1c27a71e1aa
    base::apple::ScopedCFTypeRef<CFDictionaryRef> query =
        MakeGenericPasswordQuery(service_name, account_name);
  
-@@ -203,4 +204,13 @@
+@@ -165,4 +166,13 @@
    return base::ToVector(base::apple::CFDataToSpan(password_data));
  }
  

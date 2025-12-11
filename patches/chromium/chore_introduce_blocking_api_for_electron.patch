@@ -7,7 +7,7 @@ This patch comes after Chromium removed the ScopedAllowIO API in favor
 of explicitly adding ScopedAllowBlocking calls as friends.
 
 diff --git a/base/threading/thread_restrictions.h b/base/threading/thread_restrictions.h
-index 32b7e2e678a898e315ce6ca7a46d56bfe6d73483..80407069a5a2707f91284a24f708c377d1db0d44 100644
+index 089384b9f83b648792aaa49e0c19bfe2e84f5817..4e2193337290d794464c49585b085edb4785093f 100644
 --- a/base/threading/thread_restrictions.h
 +++ b/base/threading/thread_restrictions.h
 @@ -133,6 +133,7 @@ class KeyStorageLinux;
@@ -18,7 +18,7 @@ index 32b7e2e678a898e315ce6ca7a46d56bfe6d73483..80407069a5a2707f91284a24f708c377
  class Profile;
  class ProfileImpl;
  class ScopedAllowBlockingForProfile;
-@@ -280,6 +281,9 @@ class BackendImpl;
+@@ -279,6 +280,9 @@ class BackendImpl;
  class InFlightIO;
  bool CleanupDirectorySync(const base::FilePath&);
  }  // namespace disk_cache
@@ -28,7 +28,7 @@ index 32b7e2e678a898e315ce6ca7a46d56bfe6d73483..80407069a5a2707f91284a24f708c377
  namespace enterprise_connectors {
  class LinuxKeyRotationCommand;
  }  // namespace enterprise_connectors
-@@ -577,6 +581,7 @@ class BASE_EXPORT ScopedAllowBlocking {
+@@ -576,6 +580,7 @@ class BASE_EXPORT ScopedAllowBlocking {
    friend class ::DesktopNotificationBalloon;
    friend class ::FirefoxProfileLock;
    friend class ::GaiaConfig;
@@ -36,7 +36,7 @@ index 32b7e2e678a898e315ce6ca7a46d56bfe6d73483..80407069a5a2707f91284a24f708c377
    friend class ::ProfileImpl;
    friend class ::ScopedAllowBlockingForProfile;
    friend class ::StartupTabProviderImpl;
-@@ -619,6 +624,7 @@ class BASE_EXPORT ScopedAllowBlocking {
+@@ -618,6 +623,7 @@ class BASE_EXPORT ScopedAllowBlocking {
    friend class cronet::CronetPrefsManager;
    friend class crypto::ScopedAllowBlockingForNSS;  // http://crbug.com/59847
    friend class drive::FakeDriveService;

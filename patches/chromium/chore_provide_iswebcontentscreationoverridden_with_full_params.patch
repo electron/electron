@@ -80,7 +80,7 @@ index 39fa45f0a0f9076bd7ac0be6f455dd540a276512..3d0381d463eed73470b28085830f2a23
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 6608fbd987e33b3ee3a6ceb584365b75b1449f40..ec82e1e18bcf441cbe26a8289b6ded0be2c57579 100644
+index c833a1971fcfea8151d411e62a2f1c04dc145a5a..059c0d7315a07a6db30089bbb183427a6abeaa8e 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -2374,7 +2374,8 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -159,7 +159,7 @@ index 3bbd4e568ba99245622a96f0801d2b6cd203025f..1e0b7d16b33daed980961dd49c667a3b
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index 36baad877619ad506e07ff385a250c60e9c3f94a..6b5f5352be13e583f996cc131fbdd36f57f96041 100644
+index b6304b02706cc2522a5b7bbeba974812bdfdaab7..030560f0ebca1e8bc99b590812252a4423760b2b 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -216,15 +216,14 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
@@ -223,7 +223,7 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 000301b133995e87eefddebb83cda6c3beac5a62..4bfee95e569095e9fca5987765a2be4d85a59265 100644
+index f791952d5c33ba617d93600b84a42e2b6dc2b7c5..ec2814dc6d2e86d1508d3bd9889491c362c2130b 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5262,8 +5262,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
