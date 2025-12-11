@@ -7,24 +7,12 @@ Subject: feat: filter out non-shareable windows in the current application in
 This patch ensures that windows protected via win.setContentProtection(true) do not appear in full display captures via desktopCapturer.  This patch could be upstreamed but as the check is limited to in-process windows it doesn't make a lot of sense for Chromium itself.  This patch currently has a limitation that it only function for windows created / protected BEFORE the stream is started.  There is theoretical future work we can do via polling / observers to automatically update the SCContentFilter when new windows are made but for now this will solve 99+% of the problem and folks can re-order their logic a bit to get it working for their use cases.
 
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index 3b000c90af0d687c629481c6461bc0594a2b7b8d..bd4a9fe4699a3bd776d3eca8315c4509ff8cf0b2 100644
+index 3b000c90af0d687c629481c6461bc0594a2b7b8d..97e4aa3f8c6361fb9501bc3763f1860e63a4b188 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-@@ -122,7 +122,7 @@ bool IsPresenterOverlayLargeActive(CFDictionaryRef attachment) {
- // array containing the SCWindow objects corresponding to the provided IDs.
- // Otherwise, returns an empty array if no matching windows are found.
- API_AVAILABLE(macos(12.3))
--NSArray<SCWindow*>* ConvertWindowIDsToSCWindows(
-+NSMutableArray<SCWindow*>* ConvertWindowIDsToSCWindows(
-     SCShareableContent* content,
-     const std::vector<content::NativeWindowId>& excluded_window_ids) {
-   NSMutableArray<SCWindow*>* excluded_sc_windows =
-@@ -308,8 +308,32 @@ void OnShareableContentCreated(SCShareableContent* content) {
-                   pip_screen_capture_coordinator_proxy_->WindowsToExclude(
-                       source_);
+@@ -310,6 +310,31 @@ void OnShareableContentCreated(SCShareableContent* content) {
              }
--            NSArray<SCWindow*>* excluded_windows =
-+            NSMutableArray<SCWindow*>* excluded_windows =
+             NSArray<SCWindow*>* excluded_windows =
                  ConvertWindowIDsToSCWindows(content, excluded_window_ids);
 +            NSArray<NSWindow*>* non_sharing_nswindows = [[[NSApplication
 +                sharedApplication] windows]
@@ -48,7 +36,8 @@ index 3b000c90af0d687c629481c6461bc0594a2b7b8d..bd4a9fe4699a3bd776d3eca8315c4509
 +                      return false;
 +                    }]];
 +            // Combine excluded windows from PiP and non-shareable windows.
-+            [excluded_windows addObjectsFromArray:non_sharing_scwindows];
++            excluded_windows = [excluded_windows
++                arrayByAddingObjectsFromArray:non_sharing_scwindows];
 +
              filter = [[SCContentFilter alloc] initWithDisplay:display
                                               excludingWindows:excluded_windows];
