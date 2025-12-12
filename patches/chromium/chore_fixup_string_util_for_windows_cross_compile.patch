@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <kleinschmidtorama@gmail.com>
+Date: Thu, 11 Dec 2025 16:09:01 -0500
+Subject: chore: fixup string_util for Windows cross compile
+
+See if this fixes undeclared identifier errors
+
+diff --git a/base/allocator/partition_allocator/src/partition_alloc/partition_alloc_base/strings/string_util.cc b/base/allocator/partition_allocator/src/partition_alloc/partition_alloc_base/strings/string_util.cc
+index 9c4ff7f7f832fdaa115d82e71f64d548880831d9..aee23d29e3f86e6624f798831c99e3a7fa363485 100644
+--- a/base/allocator/partition_allocator/src/partition_alloc/partition_alloc_base/strings/string_util.cc
++++ b/base/allocator/partition_allocator/src/partition_alloc/partition_alloc_base/strings/string_util.cc
+@@ -11,10 +11,10 @@
+ namespace partition_alloc::internal::base::strings {
+ 
+ const char* FindLastOf(const char* text, const char* characters) {
+-  size_t length = strlen(text);
++  size_t length = std::strlen(text);
+   const char* ptr = PA_UNSAFE_TODO(text + length - 1);
+   while (ptr >= text) {
+-    if (PA_UNSAFE_TODO(strchr(characters, *ptr))) {
++    if (PA_UNSAFE_TODO(std::strchr(characters, *ptr))) {
+       return ptr;
+     }
+     PA_UNSAFE_TODO(--ptr);
+@@ -23,10 +23,10 @@ const char* FindLastOf(const char* text, const char* characters) {
+ }
+ 
+ const char* FindLastNotOf(const char* text, const char* characters) {
+-  size_t length = strlen(text);
++  size_t length = std::strlen(text);
+   const char* ptr = PA_UNSAFE_TODO(text + length - 1);
+   while (ptr >= text) {
+-    if (!PA_UNSAFE_TODO(strchr(characters, *ptr))) {
++    if (!PA_UNSAFE_TODO(std::strchr(characters, *ptr))) {
+       return ptr;
+     }
+     PA_UNSAFE_TODO(--ptr);
