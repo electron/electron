@@ -7,6 +7,7 @@
 
 #include "base/memory/raw_ptr.h"
 #include "ui/base/metadata/metadata_header_macros.h"
+#include "ui/gfx/geometry/insets.h"
 #include "ui/views/window/non_client_view.h"
 
 namespace views {
@@ -36,6 +37,10 @@ class FramelessView : public views::FrameView {
   // Tells the NonClientView to invalidate caption buttons
   // and forces a re-layout and re-paint.
   virtual void InvalidateCaptionButtons() {}
+
+  // Any insets from the (transparent) widget bounds to the logical/opaque
+  // bounds of the view, used for CSD and resize targets on some platforms.
+  virtual gfx::Insets RestoredFrameBorderInsets() const;
 
   NativeWindowViews* window() const { return window_; }
   views::Widget* frame() const { return frame_; }

@@ -142,13 +142,6 @@ void ClientFrameViewLinux::Init(NativeWindowViews* window,
   UpdateThemeValues();
 }
 
-gfx::Insets ClientFrameViewLinux::RestoredMirroredFrameBorderInsets() const {
-  auto border = RestoredFrameBorderInsets();
-  return base::i18n::IsRTL() ? gfx::Insets::TLBR(border.top(), border.right(),
-                                                 border.bottom(), border.left())
-                             : border;
-}
-
 gfx::Insets ClientFrameViewLinux::RestoredFrameBorderInsets() const {
   gfx::Insets insets = GetFrameProvider()->GetFrameThicknessDip();
   const gfx::Insets input = GetInputInsets();
@@ -163,7 +156,9 @@ gfx::Insets ClientFrameViewLinux::RestoredFrameBorderInsets() const {
   merged.set_bottom(expand_if_visible(insets.bottom(), input.bottom()));
   merged.set_right(expand_if_visible(insets.right(), input.right()));
 
-  return merged;
+  return base::i18n::IsRTL() ? gfx::Insets::TLBR(merged.top(), merged.right(),
+                                                 merged.bottom(), merged.left())
+                             : merged;
 }
 
 gfx::Insets ClientFrameViewLinux::GetInputInsets() const {
@@ -174,7 +169,7 @@ gfx::Insets ClientFrameViewLinux::GetInputInsets() const {
 
 gfx::Rect ClientFrameViewLinux::GetWindowContentBounds() const {
   gfx::Rect content_bounds = bounds();
-  content_bounds.Inset(RestoredMirroredFrameBorderInsets());
+  content_bounds.Inset(RestoredFrameBorderInsets());
   return content_bounds;
 }
 
@@ -208,13 +203,13 @@ void ClientFrameViewLinux::OnWindowButtonOrderingChange() {
 }
 
 int ClientFrameViewLinux::ResizingBorderHitTest(const gfx::Point& point) {
-  return ResizingBorderHitTestImpl(point, RestoredMirroredFrameBorderInsets());
+  return ResizingBorderHitTestImpl(point, RestoredFrameBorderInsets());
 }
 
 gfx::Rect ClientFrameViewLinux::GetBoundsForClientView() const {
   gfx::Rect client_bounds = bounds();
   if (!frame_->IsFullscreen()) {
-    client_bounds.Inset(RestoredMirroredFrameBorderInsets());
+    client_bounds.Inset(RestoredFrameBorderInsets());
     client_bounds.Inset(
         gfx::Insets::TLBR(GetTitlebarBounds().height(), 0, 0, 0));
   }
@@ -474,7 +469,7 @@ gfx::Rect ClientFrameViewLinux::GetTitlebarBounds() const {
       std::max(font_height, theme_values_.titlebar_min_height) +
       GetTitlebarContentInsets().height();
 
-  gfx::Insets decoration_insets = RestoredMirroredFrameBorderInsets();
+  gfx::Insets decoration_insets = RestoredFrameBorderInsets();
 
   // We add the inset height here, so the .Inset() that follows won't reduce it
   // to be too small.
@@ -495,7 +490,7 @@ gfx::Rect ClientFrameViewLinux::GetTitlebarContentBounds() const {
 }
 
 gfx::Size ClientFrameViewLinux::SizeWithDecorations(gfx::Size size) const {
-  gfx::Insets decoration_insets = RestoredMirroredFrameBorderInsets();
+  gfx::Insets decoration_insets = RestoredFrameBorderInsets();
 
   size.Enlarge(0, GetTitlebarBounds().height());
   size.Enlarge(decoration_insets.width(), decoration_insets.height());

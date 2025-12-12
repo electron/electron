@@ -42,9 +42,9 @@ class ClientFrameViewLinux : public FramelessView,
 
   void Init(NativeWindowViews* window, views::Widget* frame) override;
 
-  // These are here for ElectronDesktopWindowTreeHostLinux to use.
-  gfx::Insets RestoredMirroredFrameBorderInsets() const;
-  gfx::Insets RestoredFrameBorderInsets() const;
+  // FramelessView:
+  gfx::Insets RestoredFrameBorderInsets() const override;
+
   gfx::Insets GetInputInsets() const;
   gfx::Rect GetWindowContentBounds() const;
   SkRRect GetRoundedWindowContentBounds() const;
