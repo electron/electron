@@ -1,12 +1,12 @@
 import { expect } from 'chai';
-import { GitProcess, IGitExecutionOptions, IGitResult } from 'dugite';
 import * as sinon from 'sinon';
 
+import { SpawnSyncReturns } from 'node:child_process';
 import * as path from 'node:path';
 
 import * as notes from '../script/release/notes/notes';
 
-/* Fake a Dugite GitProcess that only returns the specific
+/* Fake a git spawnSync that only returns the specific
    commits that we want to test */
 
 class Commit {
@@ -43,10 +43,10 @@ class GitFake {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  exec (args: string[], path: string, options?: IGitExecutionOptions | undefined): Promise<IGitResult> {
+  exec (command: string, args: string[], options?: any): SpawnSyncReturns<string> {
     let stdout = '';
     const stderr = '';
-    const exitCode = 0;
+    const status = 0;
 
     if (args.length === 3 && args[0] === 'merge-base') {
       // expected form: `git merge-base branchName1 branchName2`
@@ -78,10 +78,10 @@ class GitFake {
       // git branch --all --contains ${ref} --sort version:refname
       stdout = args[3];
     } else {
-      console.error('unhandled GitProcess.exec():', args);
+      console.error('unhandled git spawnSync():', args);
     }
 
-    return Promise.resolve({ exitCode, stdout, stderr });
+    return { status, stdout, stderr, pid: 0, output: [null, stdout, stderr], signal: null };
   }
 }
 
@@ -118,8 +118,14 @@ describe('release notes', () => {
   });
 
   beforeEach(() => {
-    const wrapper = (args: string[], path: string, options?: IGitExecutionOptions | undefined) => gitFake.exec(args, path, options);
-    sandbox.replace(GitProcess, 'exec', wrapper);
+    const wrapper = (command: unknown, args: unknown, options?: unknown) => {
+      if (command === 'git' && Array.isArray(args)) {
+        return gitFake.exec(command as string, args as string[], options);
+      }
+      // Default behavior for non-git commands
+      return { status: 0, stdout: '', stderr: '', pid: 0, output: [null, '', ''], signal: null };
+    };
+    sandbox.stub(require('node:child_process'), 'spawnSync').callsFake(wrapper);
 
     gitFake.setBranch(oldBranch, [...sharedHistory, oldFix]);
   });
