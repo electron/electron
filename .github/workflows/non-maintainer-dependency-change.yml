@@ -7,6 +7,8 @@ on:
       - 'spec/yarn.lock'
       - '.github/workflows/**'
       - '.github/actions/**'
+      - '.yarn/**'
+      - '.yarnrc.yml'
 
 permissions: {}
 
