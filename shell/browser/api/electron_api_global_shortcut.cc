@@ -52,7 +52,7 @@ namespace electron::api {
 gin::DeprecatedWrapperInfo GlobalShortcut::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
-GlobalShortcut::GlobalShortcut() {}
+GlobalShortcut::GlobalShortcut() = default;
 
 GlobalShortcut::~GlobalShortcut() {
   UnregisterAll();
