@@ -11,7 +11,7 @@ ensure it has minimum contrast required to be accessible.
 This should be upstreamed to Chromium if possible.
 
 diff --git a/ui/views/window/frame_caption_button.cc b/ui/views/window/frame_caption_button.cc
-index f70d810e5c316a0dfee0b12a0972679f5f56b22b..5a5b2b3e1a70c7365a4d6deb90c183f8392c8c9f 100644
+index 48afb323cc473d5f0795020526d2c6b020e73524..b4cfbebf59d8f967e8a2b50045898b3238d86fb7 100644
 --- a/ui/views/window/frame_caption_button.cc
 +++ b/ui/views/window/frame_caption_button.cc
 @@ -108,7 +108,7 @@ FrameCaptionButton::FrameCaptionButton(PressedCallback callback,

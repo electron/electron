@@ -44,10 +44,10 @@ index 83c47152aae8652f7ffdb2fe9e79a737056854e5..ad876ab93a0a9765d018c9e5cfda1791
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    url::Origin resolved_origin = url::Origin::Resolve(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index 8a98512164870e85b004cb6452dd697d2854b12c..de1020240f52fc43c02d4ad78127ad0ad36d6265 100644
+index 53725f4aa7b3f2048ae2f4957df738b240c8ce9f..7015542b622f0ceb3ce8209faa5edcc23852bdb2 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
-@@ -2329,6 +2329,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
+@@ -2331,6 +2331,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
  scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      Document* owner_document) {
    scoped_refptr<SecurityOrigin> origin;
@@ -58,7 +58,7 @@ index 8a98512164870e85b004cb6452dd697d2854b12c..de1020240f52fc43c02d4ad78127ad0a
    // Whether the origin is newly created within this call, instead of copied
    // from an existing document's origin or from `origin_to_commit_`. If this is
    // true, we won't try to compare the nonce of this origin (if it's opaque) to
-@@ -2365,6 +2369,9 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+@@ -2367,6 +2371,9 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      // non-renderer only origin bits will be the same, which will be asserted at
      // the end of this function.
      origin = origin_to_commit_;

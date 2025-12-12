@@ -35,10 +35,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index bd20a3ead53ff862d3eac85a8313f28338db29e0..9c93c52fbfec3e85ed06847d28409f5bf4bfe55b 100644
+index 4617ca88ccacdc2b0889eef9ff3a28fd914eb22e..df74e765ef4c39a0cf187504ca411f5812c5c8d8 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1076,6 +1076,7 @@ component("base") {
+@@ -1073,6 +1073,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -547,7 +547,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index f69cd6100f2ac5ccb6f185e0d0bf186073ed5953..29a40923a55287b608c2ffae63a1dbbc2a7e7c1d 100644
+index 3094700368d25688be9e0fdfcd08f3f3345e7df9..eba89abb54098e14a00fbbf35eba9581d29b8062 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -34,6 +34,7 @@
@@ -558,7 +558,7 @@ index f69cd6100f2ac5ccb6f185e0d0bf186073ed5953..29a40923a55287b608c2ffae63a1dbbc
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2090,15 +2091,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2089,15 +2090,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -581,7 +581,7 @@ index f69cd6100f2ac5ccb6f185e0d0bf186073ed5953..29a40923a55287b608c2ffae63a1dbbc
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index c0a4466595dc5a7a345ebf87a820ef64a9eff895..10f58b8711d3f6e50655bd8ec41992f97eddea89 100644
+index 8ac2508c0fc0102a7011870313b95f80f02b54ad..01b30acf7d98ed925a8285d94837894c916f7651 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -342,6 +342,7 @@ source_set("browser") {
@@ -714,10 +714,10 @@ index f57ce1a0430df7692be55685e79121ed604daf2a..3fbc26fb179a64a2f1eab027a05b1624
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index c6f5d884808f5a55a08edd23f6f30bd1cb8a42ea..82826e3306712402d6951fdee710553b6dff987c 100644
+index ee387002e8dbb54ddeb1f61f1973560cc91bfb42..5a46859e916fd3510b7add5a6af7cea1cf4b4827 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -328,6 +328,7 @@ target(link_target_type, "renderer") {
+@@ -323,6 +323,7 @@ target(link_target_type, "renderer") {
      "//ui/strings:auto_image_annotation_strings_grit",
      "//url",
      "//v8",
@@ -796,7 +796,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index b4c06d82c010355f46fd5b16f69a4b4040961c6f..9c2eb16c9c5343a37a7d89afe46c24ade92f6dc3 100644
+index 47462e3912051b2b428ecc63fb69b178293abf8f..e8c54bad69b38a341372d4d06c87004d6467ba14 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -701,6 +701,7 @@ static_library("test_support") {
@@ -1395,10 +1395,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 613943b1ee6faf5c57fbc7b6c0130cf87a7ff413..3904d55d7504c3e62de36c8040d52c11951b6bab 100644
+index 0813930230f263520478e6fa0c7a3339e63cae52..576f4a5356e82abe5ef7f3d82f75aed3ddd033c7 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -443,6 +443,7 @@ component("core") {
+@@ -445,6 +445,7 @@ component("core") {
      "//ui/gfx/geometry",
      "//ui/gfx/geometry:geometry_skia",
      "//ui/strings",
