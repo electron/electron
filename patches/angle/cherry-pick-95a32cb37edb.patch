@@ -1,7 +1,7 @@
-From 95a32cb37edbb90eac0b83727b38fedbbb32307b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Geoff Lang <geofflang@chromium.org>
-Date: Fri, 05 Dec 2025 18:31:06 -0500
-Subject: [PATCH] Metal: Don't use pixelsDepthPitch to size buffers.
+Date: Fri, 5 Dec 2025 18:31:06 -0500
+Subject: Metal: Don't use pixelsDepthPitch to size buffers.
 
 pixelsDepthPitch is based on GL_UNPACK_IMAGE_HEIGHT which can be smaller
 than the image height.
@@ -11,13 +11,12 @@ Change-Id: Idb07fb861a74e36576c0fed4a31e04fe58d1bd1d
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7232774
 Reviewed-by: Kenneth Russell <kbr@chromium.org>
 Commit-Queue: Kenneth Russell <kbr@chromium.org>
----
 
 diff --git a/src/libANGLE/renderer/metal/TextureMtl.mm b/src/libANGLE/renderer/metal/TextureMtl.mm
-index 5a1fc90..9301862 100644
+index 5a1fc9091c3af273c0bb4764fb98c09aadce9e58..9301862a49a4cd42db567aa427cfb631d668fe88 100644
 --- a/src/libANGLE/renderer/metal/TextureMtl.mm
 +++ b/src/libANGLE/renderer/metal/TextureMtl.mm
-@@ -2347,9 +2347,9 @@
+@@ -2347,9 +2347,9 @@ uint32_t height(GLuint glLevel) const
              {
                  // Current command buffer implementation does not support 64-bit offsets.
                  ANGLE_CHECK_GL_MATH(contextMtl, offset <= std::numeric_limits<uint32_t>::max());
@@ -29,7 +28,7 @@ index 5a1fc90..9301862 100644
  
                  ASSERT(pixelsAngleFormat.pixelBytes == 4 && offset % 4 == 0);
                  ANGLE_TRY(SaturateDepth(contextMtl, sourceBuffer, stagingBuffer,
-@@ -2360,11 +2360,13 @@
+@@ -2360,11 +2360,13 @@ uint32_t height(GLuint glLevel) const
                  offset       = 0;
              }
  
@@ -45,7 +44,7 @@ index 5a1fc90..9301862 100644
                  imageFormat.isPVRTC() ? MTLBlitOptionRowLinearPVRTC : MTLBlitOptionNone);
          }
 diff --git a/src/tests/gl_tests/PackUnpackTest.cpp b/src/tests/gl_tests/PackUnpackTest.cpp
-index e0664e7..b34816b 100644
+index e0664e75414ca117a48c4f0ba528d558f8ae3643..b34816ba724f1db718ea6a96512915259e063e72 100644
 --- a/src/tests/gl_tests/PackUnpackTest.cpp
 +++ b/src/tests/gl_tests/PackUnpackTest.cpp
 @@ -8,6 +8,7 @@
@@ -56,7 +55,7 @@ index e0664e7..b34816b 100644
  
  using namespace angle;
  
-@@ -236,6 +237,32 @@
+@@ -236,6 +237,32 @@ TEST_P(PackUnpackTest, PackUnpackSnormOverflow)
      compareBeforeAfter(mSNormProgram, 16384.0f, -16384.0f, 1.0f, -1.0f);
  }
  
