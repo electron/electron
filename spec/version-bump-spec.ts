@@ -1,6 +1,7 @@
 import { expect } from 'chai';
-import { GitProcess, IGitExecutionOptions, IGitResult } from 'dugite';
 import * as sinon from 'sinon';
+
+import { SpawnSyncReturns } from 'node:child_process';
 
 import { ifdescribe } from './lib/spec-helpers';
 import { nextVersion } from '../script/release/version-bumper';
@@ -33,10 +34,10 @@ class GitFake {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  exec (args: string[], path: string, options?: IGitExecutionOptions | undefined): Promise<IGitResult> {
+  exec (command: string, args: string[], options?: any): SpawnSyncReturns<string> {
     let stdout = '';
     const stderr = '';
-    const exitCode = 0;
+    const status = 0;
 
     // handle for promoting from current master HEAD
     let branch = 'stable';
@@ -48,7 +49,7 @@ class GitFake {
     if (!this.branches[branch]) this.setBranch(branch);
 
     stdout = this.branches[branch].join('\n');
-    return Promise.resolve({ exitCode, stdout, stderr });
+    return { status, stdout, stderr, pid: 0, output: [null, stdout, stderr], signal: null };
   }
 }
 
@@ -163,8 +164,14 @@ describe('version-bumper', () => {
     const gitFake = new GitFake();
 
     beforeEach(() => {
-      const wrapper = (args: string[], path: string, options?: IGitExecutionOptions | undefined) => gitFake.exec(args, path, options);
-      sandbox.replace(GitProcess, 'exec', wrapper);
+      const wrapper = (command: unknown, args: unknown, options?: unknown) => {
+        if (command === 'git' && Array.isArray(args)) {
+          return gitFake.exec(command as string, args as string[], options);
+        }
+        // Default behavior for non-git commands
+        return { status: 0, stdout: '', stderr: '', pid: 0, output: [null, '', ''], signal: null };
+      };
+      sandbox.stub(require('node:child_process'), 'spawnSync').callsFake(wrapper);
     });
 
     afterEach(() => {
