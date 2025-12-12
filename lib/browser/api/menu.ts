@@ -165,6 +165,9 @@ Menu.prototype.insert = function (pos, item) {
   if (item.type === 'palette' || item.type === 'header') {
     this.setCustomType(pos, item.type);
   }
+  if (process.platform === 'darwin' && item.alternate) {
+    this.setAlternate(pos, item.alternate);
+  }
 
   // Make menu accessible to items.
   item.overrideReadOnlyProperty('menu', this);
