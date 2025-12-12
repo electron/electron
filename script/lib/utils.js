@@ -1,6 +1,6 @@
 const chalk = require('chalk');
-const { GitProcess } = require('dugite');
 
+const childProcess = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -61,13 +61,16 @@ function getAbsoluteElectronExec () {
   return path.resolve(SRC_DIR, getElectronExec());
 }
 
-async function handleGitCall (args, gitDir) {
-  const details = await GitProcess.exec(args, gitDir);
-  if (details.exitCode === 0) {
-    return details.stdout.replace(/^\*|\s+|\s+$/, '');
+function handleGitCall (args, gitDir) {
+  const result = childProcess.spawnSync('git', args, {
+    cwd: gitDir,
+    encoding: 'utf8',
+    stdio: ['inherit', 'pipe', 'pipe']
+  });
+  if (result.status === 0) {
+    return result.stdout.replace(/^\*|\s+|\s+$/, '');
   } else {
-    const error = GitProcess.parseError(details.stderr);
-    console.log(`${fail} couldn't parse git process call: `, error);
+    console.log(`${fail} couldn't parse git process call: `, result.stderr);
     process.exit(1);
   }
 }
