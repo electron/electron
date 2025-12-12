@@ -1,5 +1,6 @@
 [
   { "patch_dir": "src/electron/patches/chromium", "repo": "src" },
+  { "patch_dir": "src/electron/patches/angle", "repo": "src/third_party/angle" },
   { "patch_dir": "src/electron/patches/boringssl", "repo": "src/third_party/boringssl/src" },
   { "patch_dir": "src/electron/patches/devtools_frontend", "repo": "src/third_party/devtools-frontend/src" },
   { "patch_dir": "src/electron/patches/ffmpeg", "repo": "src/third_party/ffmpeg" },
