@@ -35,7 +35,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index f7affce0e4861b9871c0898d80e2eb166e391cfa..23902427dc464bedc8437e70a9bbd52cff3aaabd 100644
+index 029857b1a771013260074e110fa261ceb64d1284..0277682db1535b435b9c5695b6b19be8bef8ac34 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1083,6 +1083,7 @@ component("base") {
@@ -796,7 +796,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 6c26d7c83657e0cfca78db2cabb9e5e9cbda35f9..420654d590fd681e3bf725d678c753693c0bde99 100644
+index 29d8340f1eec73e671fff7f24ce577b64d46d1c4..c11e584ec2ab1b1ba2cd523da19fee90bad67ff6 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -701,6 +701,7 @@ static_library("test_support") {
@@ -816,7 +816,7 @@ index 6c26d7c83657e0cfca78db2cabb9e5e9cbda35f9..420654d590fd681e3bf725d678c75369
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2062,6 +2065,7 @@ test("content_browsertests") {
+@@ -2063,6 +2066,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index 6c26d7c83657e0cfca78db2cabb9e5e9cbda35f9..420654d590fd681e3bf725d678c75369
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3404,6 +3408,7 @@ test("content_unittests") {
+@@ -3405,6 +3409,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1395,7 +1395,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index c98d2bc9bf3aaf774caa086533277ebc4c8719da..e09c7c786bd78b982e171bba77eb533ee25996ee 100644
+index c8b968f8072d161177a0edcdb3120d5d36d39ad6..37325894f105f4290f13979a0140d98fede9da05 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -445,6 +445,7 @@ component("core") {
@@ -1804,10 +1804,10 @@ index 01eb13e944e3d45c99e230ac8a2959a2a80adc9f..e5477816adbb5beab65f68ff4d543d6f
    // Query the display's refresh rate.
    display.set_display_frequency(screen.maximumFramesPerSecond);
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index f23cf9d02aa7a7fefb0bcd55d363e5c86de80f26..4968d2cd8f2e2b553120d0ad7225207c42b6bcec 100644
+index 78b2da99ed2bdc96e69545ebb4363e2aacb25470..e2390eaa170c18f11c058d0fc9a15d05927b5041 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -279,6 +279,8 @@ component("gfx") {
+@@ -277,6 +277,8 @@ component("gfx") {
        "CoreGraphics.framework",
        "CoreText.framework",
      ]

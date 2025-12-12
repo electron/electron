@@ -15,10 +15,10 @@ Note that we also need to manually update embedder's
 `api::WebContents::IsFullscreenForTabOrPending` value.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 6856b56072ce2f082d4f728cf03009e052cb3dd4..3b1a8194aaa3b5ab60c5a38e9318a82b62970073 100644
+index 9a387d1586e9d542e997f4053e53c4d5c5e819d7..e39854f36e747698e835980de672347248fcff47 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -8977,6 +8977,17 @@ void RenderFrameHostImpl::EnterFullscreen(
+@@ -8987,6 +8987,17 @@ void RenderFrameHostImpl::EnterFullscreen(
      }
    }
  
@@ -90,7 +90,7 @@ index 4d3c7334431e83c776f96a84282c9de4cdb1c23f..0fcff501116c9ee3eeff2e0b61bd00f7
    // inactive when sites request fullscreen via capability delegation, consume
    // transient activation from a gesture made before another window was focused,
 diff --git a/third_party/blink/renderer/core/fullscreen/fullscreen.cc b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
-index b55057a42d43fe20e0f91a8e128baea6693b1278..77f4901c4e6ed63d2373a22dba61dc28620baac5 100644
+index 6298158d9b007fb33ccc6551d3caad0e596d8f59..f0c4093742c1ade422b73f0d7d335311522506fe 100644
 --- a/third_party/blink/renderer/core/fullscreen/fullscreen.cc
 +++ b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
 @@ -105,7 +105,6 @@ void FullscreenElementChanged(Document& document,
