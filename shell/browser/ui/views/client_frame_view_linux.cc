@@ -68,16 +68,16 @@ ClientFrameViewLinux::ClientFrameViewLinux()
           ui::LinuxUiTheme::GetForProfile(nullptr)->CreateNavButtonProvider()),
       nav_buttons_{
           NavButton{ui::NavButtonProvider::FrameButtonDisplayType::kClose,
-                    views::FrameButton::kClose, &views::Widget::Close,
+                    views::FrameButton::kClose, &NativeWindowViews::Close,
                     IDS_APP_ACCNAME_CLOSE, HTCLOSE},
           NavButton{ui::NavButtonProvider::FrameButtonDisplayType::kMaximize,
-                    views::FrameButton::kMaximize, &views::Widget::Maximize,
+                    views::FrameButton::kMaximize, &NativeWindowViews::Maximize,
                     IDS_APP_ACCNAME_MAXIMIZE, HTMAXBUTTON},
           NavButton{ui::NavButtonProvider::FrameButtonDisplayType::kRestore,
-                    views::FrameButton::kMaximize, &views::Widget::Restore,
+                    views::FrameButton::kMaximize, &NativeWindowViews::Restore,
                     IDS_APP_ACCNAME_RESTORE, HTMAXBUTTON},
           NavButton{ui::NavButtonProvider::FrameButtonDisplayType::kMinimize,
-                    views::FrameButton::kMinimize, &views::Widget::Minimize,
+                    views::FrameButton::kMinimize, &NativeWindowViews::Minimize,
                     IDS_APP_ACCNAME_MINIMIZE, HTMINBUTTON},
       },
       trailing_frame_buttons_{views::FrameButton::kMinimize,
@@ -131,22 +131,13 @@ void ClientFrameViewLinux::Init(NativeWindowViews* window,
   UpdateWindowTitle();
 
   for (auto& button : nav_buttons_) {
-    // Unretained() is safe because the buttons are added as children to, and
-    // thus owned by, this view. Thus, the buttons themselves will be destroyed
-    // when this view is destroyed, and the frame's life must never outlive the
-    // view.
+    // Unretained() is safe because the window will outlive the frame and
+    // buttons.
     button.button->SetCallback(
-        base::BindRepeating(button.callback, base::Unretained(frame)));
+        base::BindRepeating(button.callback, base::Unretained(window)));
   }
 
   UpdateThemeValues();
-}
-
-gfx::Insets ClientFrameViewLinux::RestoredMirroredFrameBorderInsets() const {
-  auto border = RestoredFrameBorderInsets();
-  return base::i18n::IsRTL() ? gfx::Insets::TLBR(border.top(), border.right(),
-                                                 border.bottom(), border.left())
-                             : border;
 }
 
 gfx::Insets ClientFrameViewLinux::RestoredFrameBorderInsets() const {
@@ -163,7 +154,9 @@ gfx::Insets ClientFrameViewLinux::RestoredFrameBorderInsets() const {
   merged.set_bottom(expand_if_visible(insets.bottom(), input.bottom()));
   merged.set_right(expand_if_visible(insets.right(), input.right()));
 
-  return merged;
+  return base::i18n::IsRTL() ? gfx::Insets::TLBR(merged.top(), merged.right(),
+                                                 merged.bottom(), merged.left())
+                             : merged;
 }
 
 gfx::Insets ClientFrameViewLinux::GetInputInsets() const {
@@ -174,7 +167,7 @@ gfx::Insets ClientFrameViewLinux::GetInputInsets() const {
 
 gfx::Rect ClientFrameViewLinux::GetWindowContentBounds() const {
   gfx::Rect content_bounds = bounds();
-  content_bounds.Inset(RestoredMirroredFrameBorderInsets());
+  content_bounds.Inset(RestoredFrameBorderInsets());
   return content_bounds;
 }
 
@@ -208,13 +201,13 @@ void ClientFrameViewLinux::OnWindowButtonOrderingChange() {
 }
 
 int ClientFrameViewLinux::ResizingBorderHitTest(const gfx::Point& point) {
-  return ResizingBorderHitTestImpl(point, RestoredMirroredFrameBorderInsets());
+  return ResizingBorderHitTestImpl(point, RestoredFrameBorderInsets());
 }
 
 gfx::Rect ClientFrameViewLinux::GetBoundsForClientView() const {
   gfx::Rect client_bounds = bounds();
   if (!frame_->IsFullscreen()) {
-    client_bounds.Inset(RestoredMirroredFrameBorderInsets());
+    client_bounds.Inset(RestoredFrameBorderInsets());
     client_bounds.Inset(
         gfx::Insets::TLBR(GetTitlebarBounds().height(), 0, 0, 0));
   }
@@ -474,7 +467,7 @@ gfx::Rect ClientFrameViewLinux::GetTitlebarBounds() const {
       std::max(font_height, theme_values_.titlebar_min_height) +
       GetTitlebarContentInsets().height();
 
-  gfx::Insets decoration_insets = RestoredMirroredFrameBorderInsets();
+  gfx::Insets decoration_insets = RestoredFrameBorderInsets();
 
   // We add the inset height here, so the .Inset() that follows won't reduce it
   // to be too small.
@@ -495,7 +488,7 @@ gfx::Rect ClientFrameViewLinux::GetTitlebarContentBounds() const {
 }
 
 gfx::Size ClientFrameViewLinux::SizeWithDecorations(gfx::Size size) const {
-  gfx::Insets decoration_insets = RestoredMirroredFrameBorderInsets();
+  gfx::Insets decoration_insets = RestoredFrameBorderInsets();
 
   size.Enlarge(0, GetTitlebarBounds().height());
   size.Enlarge(decoration_insets.width(), decoration_insets.height());

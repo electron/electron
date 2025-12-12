@@ -12,6 +12,7 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
 #include "base/scoped_observation.h"
+#include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/frameless_view.h"
 #include "third_party/skia/include/core/SkRRect.h"
 #include "ui/base/metadata/metadata_header_macros.h"
@@ -42,9 +43,9 @@ class ClientFrameViewLinux : public FramelessView,
 
   void Init(NativeWindowViews* window, views::Widget* frame) override;
 
-  // These are here for ElectronDesktopWindowTreeHostLinux to use.
-  gfx::Insets RestoredMirroredFrameBorderInsets() const;
-  gfx::Insets RestoredFrameBorderInsets() const;
+  // FramelessView:
+  gfx::Insets RestoredFrameBorderInsets() const override;
+
   gfx::Insets GetInputInsets() const;
   gfx::Rect GetWindowContentBounds() const;
   SkRRect GetRoundedWindowContentBounds() const;
@@ -92,7 +93,7 @@ class ClientFrameViewLinux : public FramelessView,
   struct NavButton {
     ui::NavButtonProvider::FrameButtonDisplayType type;
     views::FrameButton frame_button;
-    void (views::Widget::*callback)();
+    void (NativeWindowViews::*callback)();
     int accessibility_id;
     int hit_test_id;
     raw_ptr<views::ImageButton> button = {};
