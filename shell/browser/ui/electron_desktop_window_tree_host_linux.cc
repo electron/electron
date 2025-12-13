@@ -71,8 +71,6 @@ gfx::Insets ElectronDesktopWindowTreeHostLinux::CalculateInsetsInDIP(
     return {};
 
   gfx::Insets insets = view->RestoredFrameBorderInsets();
-  if (base::i18n::IsRTL())
-    insets.set_left_right(insets.right(), insets.left());
   return insets;
 }
 

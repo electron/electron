@@ -434,8 +434,6 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (window)
     window->AddPreTargetHandler(this);
 
-  WindowBoundsToContentBounds(gfx::Rect(size));
-
 #if BUILDFLAG(IS_LINUX)
   // We need to set bounds again after widget init for two reasons:
   // 1. For CSD windows, user-specified bounds need  to be inflated by frame
@@ -1496,7 +1494,7 @@ gfx::Insets NativeWindowViews::GetRestoredFrameBorderInsets() const {
   if (!frame_view)
     return gfx::Insets();
 
-  if (auto* frameless = static_cast<FramelessView*>(frame_view)) {
+  if (auto* frameless = views::AsViewClass<FramelessView>(frame_view)) {
     return frameless->RestoredFrameBorderInsets();
   }
 
