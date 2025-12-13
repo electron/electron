@@ -28,7 +28,7 @@ The patch should be removed in favor of either:
 Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 9a27995928c8ec5f4580162c9c85085cdab10218..25d33ba582c27c07053f0e7c50fb6de63d48d194 100644
+index 66c6ae2e93af9b86d0796a2e42a657250d1214f3..68824cb9e4eb7d958eaaa04e4016b6d92662ce5f 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
 @@ -11499,6 +11499,11 @@ url::Origin NavigationRequest::GetOriginForURLLoaderFactoryUnchecked() {
@@ -44,7 +44,7 @@ index 9a27995928c8ec5f4580162c9c85085cdab10218..25d33ba582c27c07053f0e7c50fb6de6
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    url::Origin resolved_origin = url::Origin::Resolve(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index 53725f4aa7b3f2048ae2f4957df738b240c8ce9f..7015542b622f0ceb3ce8209faa5edcc23852bdb2 100644
+index e1ef9b4e88d7711affe123cf3cbba3e4dba01dd5..0884a49cccd25f1476b99a63870c05757ca8444e 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
 @@ -2331,6 +2331,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
