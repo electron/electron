@@ -66,6 +66,7 @@ class URLLoaderNetworkObserver
       mojo::PendingRemote<network::mojom::ClientCertificateResponder>
           client_cert_responder) override {}
   void OnLocalNetworkAccessPermissionRequired(
+      network::mojom::TransportType transport_type,
       OnLocalNetworkAccessPermissionRequiredCallback callback) override {}
   void OnUrlLoaderConnectedToPrivateNetwork(
       const GURL& request_url,
