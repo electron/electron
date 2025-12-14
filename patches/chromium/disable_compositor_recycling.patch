@@ -6,7 +6,7 @@ Subject: fix: disabling compositor recycling
 Compositor recycling is useful for Chrome because there can be many tabs and spinning up a compositor for each one would be costly. In practice, Chrome uses the parent compositor code path of browser_compositor_view_mac.mm; the NSView of each tab is detached when it's hidden and attached when it's shown. For Electron, there is no parent compositor, so we're forced into the "own compositor" code path, which seems to be non-optimal and pretty ruthless in terms of the release of resources. Electron has no real concept of multiple tabs per window, so it should be okay to disable this ruthless recycling altogether in Electron.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 6d0ad4ed5e8a48a19dbea3d729d7d54a1c7c0133..f16da50b848db9af6f8701b04b0170eaab12c5ae 100644
+index 8aadadc0c270be5f48d76563d3ec66f6c84cf94e..2c158d227d4fb7c118b9e38ff2c06ffa4c974960 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -559,7 +559,11 @@
@@ -19,6 +19,6 @@ index 6d0ad4ed5e8a48a19dbea3d729d7d54a1c7c0133..f16da50b848db9af6f8701b04b0170ea
 +  // prevent unnecessary compositor recycling.
 +  const bool unattached = ![GetInProcessNSView() window];
 +  browser_compositor_->SetRenderWidgetHostIsHidden(unattached);
- }
  
- void RenderWidgetHostViewMac::SetSize(const gfx::Size& size) {
+   // Headless mode forces focus change propagation inside Focus(), since there
+   // is no NSWindow to deliver the normal focus change notifications. As a

@@ -75,8 +75,11 @@ class ElectronPermissionManager::PendingRequest {
       const auto permission = blink::PermissionDescriptorToPermissionType(
           permissions_[permission_id]);
       if (permission == blink::PermissionType::MIDI_SYSEX) {
+        // TODO: remove `GetUnsafeValue()` once `GrantSendMidiSysExMessage`
+        // accepts `ChildProcessId`
         content::ChildProcessSecurityPolicy::GetInstance()
-            ->GrantSendMidiSysExMessage(render_frame_host_id_.child_id);
+            ->GrantSendMidiSysExMessage(
+                render_frame_host_id_.child_id.GetUnsafeValue());
       } else if (permission == blink::PermissionType::GEOLOCATION) {
         ElectronBrowserMainParts::Get()
             ->GetGeolocationControl()

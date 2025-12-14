@@ -577,7 +577,7 @@ index 824d6d8a9242302c2ab0c0c517d0cc329e607100..d3b25c90c90fe860990789aa96c872b4
    // Indication that the job is getting canceled.
    bool canceling_job_ = false;
 diff --git a/chrome/browser/printing/printer_query.cc b/chrome/browser/printing/printer_query.cc
-index 20bbbeddd18ef26b68defcdbd4a7c62706c43d0b..7b0071c169556a080ecbf5e8a6a3b878675f6bf7 100644
+index c31c873db21ef06b6d0f19c789c9a097f3cfeb2b..94a05c657a895cadc98324f7fef133c3d206fbd9 100644
 --- a/chrome/browser/printing/printer_query.cc
 +++ b/chrome/browser/printing/printer_query.cc
 @@ -356,17 +356,19 @@ void PrinterQuery::UpdatePrintSettings(base::Value::Dict new_settings,
@@ -923,10 +923,10 @@ index 2f34f45aaf89e6f4600be1d2b8444c636b0cc83f..5bfd45c5efbf300a36e016af80e18fb9
    virtual mojom::ResultCode OnError();
  
 diff --git a/printing/printing_context_linux.cc b/printing/printing_context_linux.cc
-index e83735211e30a77ef1bc82b6a252da02a18626fc..b0c8fd3c5e3c5b3d2d64bee9df513e1b4829809c 100644
+index 7b759edf47b0fffa814b9095bc7f17e043bc9413..f445dff331f15c4458a0b313c27a5c7a590afa08 100644
 --- a/printing/printing_context_linux.cc
 +++ b/printing/printing_context_linux.cc
-@@ -54,9 +54,8 @@ void PrintingContextLinux::AskUserForSettings(int max_pages,
+@@ -66,9 +66,8 @@ void PrintingContextLinux::AskUserForSettings(int max_pages,
                                                bool is_scripted,
                                                PrintSettingsCallback callback) {
    if (!print_dialog_) {

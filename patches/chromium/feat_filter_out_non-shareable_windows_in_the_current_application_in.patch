@@ -7,29 +7,38 @@ Subject: feat: filter out non-shareable windows in the current application in
 This patch ensures that windows protected via win.setContentProtection(true) do not appear in full display captures via desktopCapturer.  This patch could be upstreamed but as the check is limited to in-process windows it doesn't make a lot of sense for Chromium itself.  This patch currently has a limitation that it only function for windows created / protected BEFORE the stream is started.  There is theoretical future work we can do via polling / observers to automatically update the SCContentFilter when new windows are made but for now this will solve 99+% of the problem and folks can re-order their logic a bit to get it working for their use cases.
 
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index db54df43b6126a9ddabee8cabed7a3a2c22f77ca..5e7f34178a549dc1e894262d0091b5b98c9ba48b 100644
+index 3b000c90af0d687c629481c6461bc0594a2b7b8d..97e4aa3f8c6361fb9501bc3763f1860e63a4b188 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-@@ -307,8 +307,21 @@ void OnShareableContentCreated(SCShareableContent* content) {
-               source_.id == webrtc::kFullDesktopScreenId) {
-             NSArray<SCWindow*>* excluded_windows = GetExcludedWindows(
-                 content, pip_screen_capture_coordinator_proxy_.get());
-+            NSArray<NSWindow*>* exclude_ns_windows = [[[NSApplication sharedApplication] windows] filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSWindow* win, NSDictionary *bindings) {
-+              return [win sharingType] == NSWindowSharingNone;
-+            }]];
-+            NSArray<SCWindow*>* exclude_windows = [[content windows] filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(SCWindow* win, NSDictionary *bindings) {
-+              for (NSWindow* excluded : exclude_ns_windows) {
-+                if ((CGWindowID)[excluded windowNumber] == [win windowID]) return true;
-+              }
-+              return false;
-+            }]];
+@@ -310,6 +310,31 @@ void OnShareableContentCreated(SCShareableContent* content) {
+             }
+             NSArray<SCWindow*>* excluded_windows =
+                 ConvertWindowIDsToSCWindows(content, excluded_window_ids);
++            NSArray<NSWindow*>* non_sharing_nswindows = [[[NSApplication
++                sharedApplication] windows]
++                filteredArrayUsingPredicate:[NSPredicate
++                                                predicateWithBlock:^BOOL(
++                                                    NSWindow* win,
++                                                    NSDictionary* bindings) {
++                                                  return [win sharingType] ==
++                                                         NSWindowSharingNone;
++                                                }]];
++            NSArray<SCWindow*>* non_sharing_scwindows = [[content windows]
++                filteredArrayUsingPredicate:
++                    [NSPredicate predicateWithBlock:^BOOL(
++                                     SCWindow* win, NSDictionary* bindings) {
++                      for (NSWindow* excluded : non_sharing_nswindows) {
++                        if ((CGWindowID)[excluded windowNumber] ==
++                            [win windowID]) {
++                          return true;
++                        }
++                      }
++                      return false;
++                    }]];
 +            // Combine excluded windows from PiP and non-shareable windows.
-+            NSMutableArray<SCWindow*>* combined_excluded_windows = [excluded_windows mutableCopy];
-+            [combined_excluded_windows addObjectsFromArray:exclude_windows];
++            excluded_windows = [excluded_windows
++                arrayByAddingObjectsFromArray:non_sharing_scwindows];
 +
              filter = [[SCContentFilter alloc] initWithDisplay:display
--                                             excludingWindows:excluded_windows];
-+                                             excludingWindows:combined_excluded_windows];
+                                              excludingWindows:excluded_windows];
              stream_config_content_size_ =
-                 gfx::Size(display.width, display.height);
-             break;

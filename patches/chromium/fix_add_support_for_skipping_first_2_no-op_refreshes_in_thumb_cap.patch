@@ -14,10 +14,10 @@ This really isn't ideal at all, we need to refactor desktopCapturer (read comple
 to use StartUpdating and handle the events instead of using the "get the list once" method.
 
 diff --git a/chrome/browser/media/webrtc/desktop_media_list.h b/chrome/browser/media/webrtc/desktop_media_list.h
-index fcfe5845be6afd98b5472faf45d9f6f784b90b1b..0cc20c145bd5f7c3ce70160d81643fcb2daaf9cb 100644
+index e5b431798693705bc74f55c80bfa9e559d1b29ba..1caf0cb65f741683bb3b78706e878d684f539fb7 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list.h
-@@ -149,6 +149,8 @@ class DesktopMediaList {
+@@ -152,6 +152,8 @@ class DesktopMediaList {
    // source lists that need to be displayed independently from when the
    // DesktopMediaList gains focus.
    virtual void ShowDelegatedList() = 0;
