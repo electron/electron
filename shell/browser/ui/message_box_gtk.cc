@@ -44,7 +44,7 @@ base::flat_map<int, GtkWidget*>& GetDialogsMap() {
 
 gtk::GtkUiPlatform* GetGtkUiPlatform() {
   auto* linux_ui = ui::LinuxUi::instance();
-  auto* gtk_ui = static_cast<ui::GtkUi*>(linux_ui);
+  auto* gtk_ui = static_cast<gtk::GtkUi*>(linux_ui);
   gtk::GtkUiPlatform* platform = gtk_ui->GetPlatform();
   DCHECK(platform);
   return platform;
@@ -212,7 +212,7 @@ class GtkMessageBox : private NativeWindowObserver {
   RAW_PTR_EXCLUSION GtkWidget* dialog_;
   MessageBoxCallback callback_;
   std::vector<ScopedGSignal> signals_;
-  raw_ptr<ui::GtkUiPlatform> platform_;
+  raw_ptr<gtk::GtkUiPlatform> platform_;
 };
 
 void GtkMessageBox::OnResponseDialog(GtkWidget* widget, int response) {
