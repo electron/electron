@@ -104,10 +104,18 @@ index f3ea156c7ea1f215476976bcea2438d04c59a63f..146d44491158c4b6d3f33d61a6f242e8
        wants_result
            ? mojom::blink::WantResultOption::kWantResultDateAndRegExpAllowed
 diff --git a/third_party/blink/renderer/core/frame/pausable_script_executor.cc b/third_party/blink/renderer/core/frame/pausable_script_executor.cc
-index 2b83e5d674d54bff121153c22d17d560114b70d6..6b428f8dd0c7717577d98469d7a4c97cfbbd8951 100644
+index 2b83e5d674d54bff121153c22d17d560114b70d6..77f1c2eafc02a0852da77774604ddb045aca18e0 100644
 --- a/third_party/blink/renderer/core/frame/pausable_script_executor.cc
 +++ b/third_party/blink/renderer/core/frame/pausable_script_executor.cc
-@@ -243,7 +243,7 @@ void PausableScriptExecutor::CreateAndRun(
+@@ -10,6 +10,7 @@
+ 
+ #include "base/compiler_specific.h"
+ #include "base/functional/callback.h"
++#include "base/functional/callback_helpers.h"
+ #include "base/logging.h"
+ #include "base/numerics/safe_conversions.h"
+ #include "third_party/blink/public/mojom/frame/user_activation_notification_type.mojom-blink.h"
+@@ -243,7 +244,7 @@ void PausableScriptExecutor::CreateAndRun(
            script_state, mojom::blink::UserActivationOption::kDoNotActivate,
            mojom::blink::LoadEventBlockingOption::kDoNotBlock,
            want_result_option, mojom::blink::PromiseResultOption::kDoNotWait,
@@ -116,7 +124,7 @@ index 2b83e5d674d54bff121153c22d17d560114b70d6..6b428f8dd0c7717577d98469d7a4c97c
            MakeGarbageCollected<V8FunctionExecutor>(isolate, function, receiver,
                                                     argc, argv));
    executor->Run();
-@@ -258,10 +258,11 @@ void PausableScriptExecutor::CreateAndRun(
+@@ -258,10 +259,11 @@ void PausableScriptExecutor::CreateAndRun(
      mojom::blink::LoadEventBlockingOption blocking_option,
      mojom::blink::WantResultOption want_result_option,
      mojom::blink::PromiseResultOption promise_result_option,
@@ -130,7 +138,7 @@ index 2b83e5d674d54bff121153c22d17d560114b70d6..6b428f8dd0c7717577d98469d7a4c97c
        MakeGarbageCollected<WebScriptExecutor>(std::move(sources),
                                                execute_script_policy));
    switch (evaluation_timing) {
-@@ -283,6 +284,14 @@ void PausableScriptExecutor::ContextDestroyed() {
+@@ -283,6 +285,14 @@ void PausableScriptExecutor::ContextDestroyed() {
      ScriptState::Scope script_scope(script_state_);
      std::move(callback_).Run({}, {});
    }
@@ -145,7 +153,7 @@ index 2b83e5d674d54bff121153c22d17d560114b70d6..6b428f8dd0c7717577d98469d7a4c97c
    Dispose();
  }
  
-@@ -293,10 +302,12 @@ PausableScriptExecutor::PausableScriptExecutor(
+@@ -293,10 +303,12 @@ PausableScriptExecutor::PausableScriptExecutor(
      mojom::blink::WantResultOption want_result_option,
      mojom::blink::PromiseResultOption promise_result_option,
      WebScriptExecutionCallback callback,
@@ -158,7 +166,7 @@ index 2b83e5d674d54bff121153c22d17d560114b70d6..6b428f8dd0c7717577d98469d7a4c97c
        user_activation_option_(user_activation_option),
        blocking_option_(blocking_option),
        want_result_option_(want_result_option),
-@@ -420,6 +431,13 @@ void PausableScriptExecutor::HandleResults(
+@@ -420,6 +432,13 @@ void PausableScriptExecutor::HandleResults(
      std::move(callback_).Run(std::move(value), start_time_);
    }
  
