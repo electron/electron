@@ -85,6 +85,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   void BindHostReceiverForRenderer(
       content::RenderProcessHost* render_process_host,
       mojo::GenericPendingReceiver receiver) override;
+  void BindUtilityHostReceiver(mojo::GenericPendingReceiver receiver) override;
   void ExposeInterfacesToRenderer(
       service_manager::BinderRegistry* registry,
       blink::AssociatedInterfaceRegistry* associated_registry,

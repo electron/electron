@@ -11,6 +11,7 @@
 #include "base/no_destructor.h"
 #include "base/process/process.h"
 #include "base/strings/utf_string_conversions.h"
+#include "content/public/utility/utility_thread.h"
 #include "electron/mas.h"
 #include "net/base/network_change_notifier.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
@@ -77,6 +78,21 @@ void URLLoaderBundle::SetURLLoaderFactory(
 
 scoped_refptr<network::SharedURLLoaderFactory>
 URLLoaderBundle::GetSharedURLLoaderFactory() {
+  if (host_resolver_ && host_resolver_.is_connected() && factory_) {
+    return factory_;
+  } else {
+    host_resolver_.reset();
+    factory_.reset();
+  }
+  LOG(INFO) << "network service disconnected, we will create a new factory";
+  content::UtilityThread::Get()->BindHostReceiver(
+      host_resolver_.BindNewPipeAndPassReceiver());
+
+  mojo::PendingRemote<network::mojom::URLLoaderFactory> factory_remote;
+  content::UtilityThread::Get()->BindHostReceiver(
+      factory_remote.InitWithNewPipeAndPassReceiver());
+  factory_ = base::MakeRefCounted<network::WrapperSharedURLLoaderFactory>(
+      std::move(factory_remote));
   return factory_;
 }
 
