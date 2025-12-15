@@ -1597,6 +1597,33 @@ void ElectronBrowserClient::BindHostReceiverForRenderer(
 #endif
 }
 
+void ElectronBrowserClient::BindHostReceiverForUtility(
+    mojo::GenericPendingReceiver receiver) {
+  if (auto r = receiver.As<network::mojom::URLLoaderFactory>()) {
+    LOG(INFO) << "utility process bind network::mojom::URLLoaderFactory";
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> url_loader_factory;
+    network::mojom::URLLoaderFactoryParamsPtr loader_params =
+        network::mojom::URLLoaderFactoryParams::New();
+    loader_params->process_id = base::kNullProcessId;
+    loader_params->is_orb_enabled = false;
+    loader_params->is_trusted = true;
+
+    network::mojom::NetworkContext* network_context =
+        g_browser_process->system_network_context_manager()->GetContext();
+    network_context->CreateURLLoaderFactory(std::move(r),
+                                            std::move(loader_params));
+    return;
+  }
+
+  if (auto r = receiver.As<network::mojom::HostResolver>()) {
+    LOG(INFO) << "utility process network::mojom::HostResolver";
+    network::mojom::NetworkContext* network_context =
+        g_browser_process->system_network_context_manager()->GetContext();
+    network_context->CreateHostResolver({}, std::move(r));
+    return;
+  }
+}
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 namespace {
 void BindMimeHandlerService(
