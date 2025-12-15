@@ -22,6 +22,9 @@ struct NodeServiceParams {
 
 interface NodeServiceClient {
   OnV8FatalError(string location, string report);
+  GetURLLoaderFactoryForProcess(int32 pid,
+                                pending_receiver<network.mojom.URLLoaderFactory> factory_receiver,
+                                pending_receiver<network.mojom.HostResolver> host_resolver);
 };
 
 [ServiceSandbox=sandbox.mojom.Sandbox.kNoSandbox]
