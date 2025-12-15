@@ -12,7 +12,6 @@
 #include "base/process/process.h"
 #include "base/process/process_handle.h"
 #include "base/strings/utf_string_conversions.h"
-#include "content/public/utility/utility_thread.h"
 #include "electron/mas.h"
 #include "net/base/network_change_notifier.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
@@ -90,15 +89,18 @@ network::mojom::HostResolver* URLLoaderBundle::GetHostResolver() {
 }
 
 void URLLoaderBundle::EnsureFactoryAndResolver() {
-   if (host_resolver_ && host_resolver_.is_connected() && factory_) {
+  if (host_resolver_ && host_resolver_.is_connected() && factory_) {
     return;
   } else {
     host_resolver_.reset();
     factory_.reset();
   }
+  if (!GetRemote().is_bound() || !GetRemote().is_connected()) {
+    return;
+  }
   LOG(INFO) << "network service disconnected, we will create a new factory";
   mojo::PendingRemote<network::mojom::URLLoaderFactory> factory_remote;
-  g_client_remote->GetURLLoaderFactoryForProcess(
+  GetRemote()->GetURLLoaderFactoryForProcess(
       base::Process::Current().Pid(),
       factory_remote.InitWithNewPipeAndPassReceiver(),
       host_resolver_.BindNewPipeAndPassReceiver());
