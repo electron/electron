@@ -79,8 +79,19 @@ void URLLoaderBundle::SetURLLoaderFactory(
 
 scoped_refptr<network::SharedURLLoaderFactory>
 URLLoaderBundle::GetSharedURLLoaderFactory() {
-  if (host_resolver_ && host_resolver_.is_connected() && factory_) {
-    return factory_;
+  EnsureFactoryAndResolver();
+  return factory_;
+}
+
+network::mojom::HostResolver* URLLoaderBundle::GetHostResolver() {
+  DCHECK(host_resolver_);
+  EnsureFactoryAndResolver();
+  return host_resolver_.get();
+}
+
+void URLLoaderBundle::EnsureFactoryAndResolver() {
+   if (host_resolver_ && host_resolver_.is_connected() && factory_) {
+    return;
   } else {
     host_resolver_.reset();
     factory_.reset();
@@ -93,12 +104,6 @@ URLLoaderBundle::GetSharedURLLoaderFactory() {
       host_resolver_.BindNewPipeAndPassReceiver());
   factory_ = base::MakeRefCounted<network::WrapperSharedURLLoaderFactory>(
       std::move(factory_remote));
-  return factory_;
-}
-
-network::mojom::HostResolver* URLLoaderBundle::GetHostResolver() {
-  DCHECK(host_resolver_);
-  return host_resolver_.get();
 }
 
 bool URLLoaderBundle::ShouldUseNetworkObserverfromURLLoaderFactory() const {
