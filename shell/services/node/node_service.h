@@ -47,6 +47,8 @@ class URLLoaderBundle {
   bool ShouldUseNetworkObserverfromURLLoaderFactory() const;
 
  private:
+  void EnsureFactoryAndResolver();
+
   scoped_refptr<network::SharedURLLoaderFactory> factory_;
   mojo::Remote<network::mojom::HostResolver> host_resolver_;
   bool should_use_network_observer_from_url_loader_factory_ = false;
