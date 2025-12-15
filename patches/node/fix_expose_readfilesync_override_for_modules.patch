@@ -20,10 +20,10 @@ index 39803ae466fc81a6b2ff6e12093cdf2082790a9f..29ce687a03ccc8e45881f70d34e009e0
    V(performance_entry_callback, v8::Function)                                  \
    V(prepare_stack_trace_callback, v8::Function)                                \
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index 9eec93f52f0d0b2e45ae04ff357b4ced0770782f..eea4ba313d8dbcf7b88b79f5a3e9ba2eb39d7c3e 100644
+index 9eec93f52f0d0b2e45ae04ff357b4ced0770782f..6b1a9e257b0ce52820838f88c44ec546068fe419 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
-@@ -23,6 +23,7 @@ namespace modules {
+@@ -23,12 +23,14 @@ namespace modules {
  using v8::Array;
  using v8::Context;
  using v8::External;
@@ -31,7 +31,14 @@ index 9eec93f52f0d0b2e45ae04ff357b4ced0770782f..eea4ba313d8dbcf7b88b79f5a3e9ba2e
  using v8::FunctionCallbackInfo;
  using v8::HandleScope;
  using v8::Integer;
-@@ -94,6 +95,7 @@ Local<Array> BindingData::PackageConfig::Serialize(Realm* realm) const {
+ using v8::Isolate;
+ using v8::Local;
+ using v8::LocalVector;
++using v8::MaybeLocal;
+ using v8::Name;
+ using v8::NewStringType;
+ using v8::Null;
+@@ -94,6 +96,7 @@ Local<Array> BindingData::PackageConfig::Serialize(Realm* realm) const {
  
  const BindingData::PackageConfig* BindingData::GetPackageJSON(
      Realm* realm, std::string_view path, ErrorContext* error_context) {
@@ -39,28 +46,40 @@ index 9eec93f52f0d0b2e45ae04ff357b4ced0770782f..eea4ba313d8dbcf7b88b79f5a3e9ba2e
    auto binding_data = realm->GetBindingData<BindingData>();
  
    auto cache_entry = binding_data->package_configs_.find(path.data());
-@@ -103,8 +105,36 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
+@@ -103,8 +106,48 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
  
    PackageConfig package_config{};
    package_config.file_path = path;
 +
 +  Local<Function> modules_read_file_sync = realm->modules_read_file_sync();
 +
-+  int read_err;
++  int read_err = -1;
    // No need to exclude BOM since simdjson will skip it.
 -  if (ReadFileSync(&package_config.raw_json, path.data()) < 0) {
 +  if (modules_read_file_sync.IsEmpty()) {
 +    read_err = ReadFileSync(&package_config.raw_json, path.data());
-+  } else {
++  } else if (realm->env()->can_call_into_js()) {
++    v8::TryCatch try_catch(isolate);
 +    Local<Value> args[] = {
 +        v8::String::NewFromUtf8(isolate, path.data()).ToLocalChecked(),
 +    };
-+    Local<Value> result = modules_read_file_sync->Call(
++    MaybeLocal<Value> maybe_result = modules_read_file_sync->Call(
 +        realm->context(),
 +        Undefined(isolate),
 +        arraysize(args),
-+        args).ToLocalChecked();
++        args);
 +
++    if (maybe_result.IsEmpty()) {
++      CHECK(try_catch.HasCaught());
++    }
++
++    if (try_catch.HasCaught()) {
++      if (!try_catch.HasTerminated())
++        try_catch.ReThrow();
++      return nullptr;
++    }
++
++    Local<Value> result = maybe_result.ToLocalChecked();
 +    if (result->IsUndefined()) {
 +      // Fallback
 +      read_err = ReadFileSync(&package_config.raw_json, path.data());
@@ -77,7 +96,7 @@ index 9eec93f52f0d0b2e45ae04ff357b4ced0770782f..eea4ba313d8dbcf7b88b79f5a3e9ba2e
      return nullptr;
    }
    simdjson::ondemand::document document;
-@@ -242,6 +272,12 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
+@@ -242,6 +285,12 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
    return &cached.first->second;
  }
  
@@ -90,7 +109,7 @@ index 9eec93f52f0d0b2e45ae04ff357b4ced0770782f..eea4ba313d8dbcf7b88b79f5a3e9ba2e
  void BindingData::ReadPackageJSON(const FunctionCallbackInfo<Value>& args) {
    CHECK_GE(args.Length(), 1);  // path, [is_esm, base, specifier]
    CHECK(args[0]->IsString());  // path
-@@ -635,6 +671,8 @@ void SaveCompileCacheEntry(const FunctionCallbackInfo<Value>& args) {
+@@ -635,6 +684,8 @@ void SaveCompileCacheEntry(const FunctionCallbackInfo<Value>& args) {
  void BindingData::CreatePerIsolateProperties(IsolateData* isolate_data,
                                               Local<ObjectTemplate> target) {
    Isolate* isolate = isolate_data->isolate();
@@ -99,7 +118,7 @@ index 9eec93f52f0d0b2e45ae04ff357b4ced0770782f..eea4ba313d8dbcf7b88b79f5a3e9ba2e
    SetMethod(isolate, target, "readPackageJSON", ReadPackageJSON);
    SetMethod(isolate,
              target,
-@@ -694,6 +732,8 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
+@@ -694,6 +745,8 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
  
  void BindingData::RegisterExternalReferences(
      ExternalReferenceRegistry* registry) {

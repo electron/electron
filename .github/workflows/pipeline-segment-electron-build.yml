@@ -95,7 +95,7 @@ jobs:
       run: |
         mkdir src
     - name: Checkout Electron
-      uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       with:
         path: src/electron
         fetch-depth: 0
@@ -119,7 +119,7 @@ jobs:
       run: df -h
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'macos' }}
-      uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
+      uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f
       with:
         node-version: 22.21.x
         cache: yarn
@@ -163,7 +163,7 @@ jobs:
       if: ${{ inputs.target-platform == 'linux' }}
       uses: ./src/electron/.github/actions/restore-cache-aks
     - name: Checkout Electron
-      uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       with:
         path: src/electron
         fetch-depth: 0

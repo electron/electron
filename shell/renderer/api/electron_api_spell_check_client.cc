@@ -90,12 +90,13 @@ SpellCheckClient::~SpellCheckClient() {
 }
 
 void SpellCheckClient::RequestCheckingOfText(
-    const blink::WebString& textToCheck,
-    std::unique_ptr<blink::WebTextCheckingCompletion> completionCallback) {
-  std::u16string text(textToCheck.Utf16());
+    const blink::WebString& text_to_check,
+    ShouldForceRefreshTextCheckService /* should_force_refresh */,
+    std::unique_ptr<blink::WebTextCheckingCompletion> completion_callback) {
+  std::u16string text(text_to_check.Utf16());
   // Ignore invalid requests.
   if (text.empty() || !HasWordCharacters(text, 0)) {
-    completionCallback->DidCancelCheckingText();
+    completion_callback->DidCancelCheckingText();
     return;
   }
 
@@ -105,7 +106,7 @@ void SpellCheckClient::RequestCheckingOfText(
   }
 
   pending_request_param_ =
-      std::make_unique<SpellcheckRequest>(text, std::move(completionCallback));
+      std::make_unique<SpellcheckRequest>(text, std::move(completion_callback));
 
   base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(&SpellCheckClient::SpellCheckText,

@@ -143,6 +143,7 @@ class OffScreenRenderWidgetHostView
   void ShowWithVisibility(content::PageVisibilityState page_visibility) final;
   void Destroy() override;
   void UpdateTooltipUnderCursor(const std::u16string&) override {}
+  void OnUnconfirmedTapConvertedToTap() override {}
   input::CursorManager* GetCursorManager() override;
   void CopyFromSurface(
       const gfx::Rect& src_rect,

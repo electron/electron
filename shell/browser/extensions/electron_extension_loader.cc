@@ -53,14 +53,14 @@ std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
     base::DeletePathRecursively(metadata_dir);
   }
 
-  std::string load_error;
+  std::u16string load_error;
   scoped_refptr<Extension> extension = file_util::LoadExtension(
       extension_dir, extensions::mojom::ManifestLocation::kCommandLine,
       load_flags, &load_error);
   if (!extension.get()) {
     std::string err = "Loading extension at " +
                       base::UTF16ToUTF8(extension_dir.LossyDisplayName()) +
-                      " failed with: " + load_error;
+                      " failed with: " + base::UTF16ToUTF8(load_error);
     return std::make_pair(nullptr, err);
   }
 

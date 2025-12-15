@@ -2878,16 +2878,26 @@ describe('chromium features', () => {
     });
   });
 
-  // This is intentionally disabled on arm macs: https://chromium-review.googlesource.com/c/chromium/src/+/4143761
-  ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64')('webgl', () => {
-    it('can be gotten as context in canvas', async () => {
-      const w = new BrowserWindow({ show: false });
+  describe('webgl', () => {
+    it('can be gotten as context in canvas', async function () {
+      const w = new BrowserWindow({
+        show: false
+      });
       w.loadURL('about:blank');
       await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
-      const canWebglContextBeCreated = await w.webContents.executeJavaScript(`
-        document.createElement('canvas').getContext('webgl') != null;
-      `);
-      expect(canWebglContextBeCreated).to.be.true();
+      const isFallbackAdapter = await w.webContents.executeJavaScript(`
+        navigator.gpu?.requestAdapter().then(adapter => (adapter?.info?.isFallbackAdapter || !adapter?.info), true)`
+      );
+
+      if (isFallbackAdapter) {
+        console.log('Skipping webgl test on fallback adapter');
+        this.skip();
+      } else {
+        const canWebglContextBeCreated = await w.webContents.executeJavaScript(`
+          document.createElement('canvas').getContext('webgl') != null;
+        `);
+        expect(canWebglContextBeCreated).to.be.true();
+      }
     });
   });
 

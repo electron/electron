@@ -114,6 +114,43 @@ struct Converter<electron::NativeWindowMac::VisualEffectState> {
 
 namespace electron {
 
+class NativeAppWindowFrameViewMacClient
+    : public views::NativeFrameViewMacClient {
+ public:
+  NativeAppWindowFrameViewMacClient(views::Widget* frame,
+                                    NativeWindowMac* window)
+      : frame_(frame), native_app_window_(window) {}
+
+  NativeAppWindowFrameViewMacClient(const NativeAppWindowFrameViewMacClient&) =
+      delete;
+  NativeAppWindowFrameViewMacClient& operator=(
+      const NativeAppWindowFrameViewMacClient&) = delete;
+
+  ~NativeAppWindowFrameViewMacClient() override = default;
+
+  std::optional<int> NonClientHitTest(const gfx::Point& point) override {
+    if (frame_->IsFullscreen()) {
+      return HTCLIENT;
+    }
+
+    // Check for possible draggable region in the client area for the frameless
+    // window.
+    int contents_hit_test = native_app_window_->NonClientHitTest(point);
+    if (contents_hit_test != HTNOWHERE)
+      return contents_hit_test;
+
+    return HTCLIENT;
+  }
+
+ private:
+  const raw_ptr<views::Widget> frame_;
+  // Weak. Owned by extensions::AppWindow (which manages our Widget via its
+  // WebContents).
+  const raw_ptr<NativeWindowMac, DanglingUntriaged> native_app_window_;
+};
+
+NativeWindowMac::~NativeWindowMac() = default;
+
 NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
                                  NativeWindow* parent)
     : NativeWindow(options, parent), root_view_(new RootViewMac(this)) {
@@ -318,8 +355,6 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   UpdateWindowOriginalFrame();
   original_level_ = [window_ level];
 }
-
-NativeWindowMac::~NativeWindowMac() = default;
 
 void NativeWindowMac::SetContentView(views::View* view) {
   views::View* root_view = GetContentsView();
@@ -1682,41 +1717,6 @@ void NativeWindowMac::Cleanup() {
   display::Screen::Get()->RemoveObserver(this);
   [window_ cleanup];
 }
-
-class NativeAppWindowFrameViewMacClient
-    : public views::NativeFrameViewMacClient {
- public:
-  NativeAppWindowFrameViewMacClient(views::Widget* frame,
-                                    NativeWindowMac* window)
-      : frame_(frame), native_app_window_(window) {}
-
-  NativeAppWindowFrameViewMacClient(const NativeAppWindowFrameViewMacClient&) =
-      delete;
-  NativeAppWindowFrameViewMacClient& operator=(
-      const NativeAppWindowFrameViewMacClient&) = delete;
-
-  ~NativeAppWindowFrameViewMacClient() override = default;
-
-  std::optional<int> NonClientHitTest(const gfx::Point& point) override {
-    if (frame_->IsFullscreen()) {
-      return HTCLIENT;
-    }
-
-    // Check for possible draggable region in the client area for the frameless
-    // window.
-    int contents_hit_test = native_app_window_->NonClientHitTest(point);
-    if (contents_hit_test != HTNOWHERE)
-      return contents_hit_test;
-
-    return HTCLIENT;
-  }
-
- private:
-  const raw_ptr<views::Widget> frame_;
-  // Weak. Owned by extensions::AppWindow (which manages our Widget via its
-  // WebContents).
-  const raw_ptr<NativeWindowMac, DanglingUntriaged> native_app_window_;
-};
 
 std::unique_ptr<views::FrameView> NativeWindowMac::CreateFrameView(
     views::Widget* widget) {
