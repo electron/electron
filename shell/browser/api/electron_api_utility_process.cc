@@ -70,7 +70,8 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     base::EnvironmentMap env_map,
     base::FilePath current_working_directory,
     bool use_plugin_helper,
-    bool create_network_observer) {
+    bool create_network_observer)
+    : create_network_observer_(create_network_observer) {
 #if BUILDFLAG(IS_WIN)
   base::win::ScopedHandle stdout_write(nullptr);
   base::win::ScopedHandle stderr_write(nullptr);
@@ -424,6 +425,29 @@ bool UtilityProcessWrapper::Accept(mojo::Message* mojo_message) {
 void UtilityProcessWrapper::OnV8FatalError(const std::string& location,
                                            const std::string& report) {
   EmitWithoutEvent("error", "FatalError", location, report);
+}
+
+void UtilityProcessWrapper::GetURLLoaderFactoryForProcess(
+    int32_t pid,
+    ::mojo::PendingReceiver<::network::mojom::URLLoaderFactory>
+        factory_receiver,
+    ::mojo::PendingReceiver<::network::mojom::HostResolver> host_resolver) {
+  DCHECK_EQ(pid, pid_);
+  network::mojom::URLLoaderFactoryParamsPtr loader_params =
+      network::mojom::URLLoaderFactoryParams::New();
+  loader_params->process_id = base::kNullProcessId;
+  loader_params->is_orb_enabled = false;
+  loader_params->is_trusted = true;
+  if (create_network_observer_) {
+    url_loader_network_observer_.emplace();
+    loader_params->url_loader_network_observer =
+        url_loader_network_observer_->Bind();
+  }
+  network::mojom::NetworkContext* network_context =
+      g_browser_process->system_network_context_manager()->GetContext();
+  network_context->CreateURLLoaderFactory(std::move(factory_receiver),
+                                          std::move(loader_params));
+  network_context->CreateHostResolver({}, std::move(host_resolver));
 }
 
 // static

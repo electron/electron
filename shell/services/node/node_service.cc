@@ -10,6 +10,7 @@
 #include "base/command_line.h"
 #include "base/no_destructor.h"
 #include "base/process/process.h"
+#include "base/process/process_handle.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/utility/utility_thread.h"
 #include "electron/mas.h"
@@ -85,12 +86,11 @@ URLLoaderBundle::GetSharedURLLoaderFactory() {
     factory_.reset();
   }
   LOG(INFO) << "network service disconnected, we will create a new factory";
-  content::UtilityThread::Get()->BindHostReceiver(
-      host_resolver_.BindNewPipeAndPassReceiver());
-
   mojo::PendingRemote<network::mojom::URLLoaderFactory> factory_remote;
-  content::UtilityThread::Get()->BindHostReceiver(
-      factory_remote.InitWithNewPipeAndPassReceiver());
+  g_client_remote->GetURLLoaderFactoryForProcess(
+      base::Process::Current().Pid(),
+      factory_remote.InitWithNewPipeAndPassReceiver(),
+      host_resolver_.BindNewPipeAndPassReceiver());
   factory_ = base::MakeRefCounted<network::WrapperSharedURLLoaderFactory>(
       std::move(factory_remote));
   return factory_;

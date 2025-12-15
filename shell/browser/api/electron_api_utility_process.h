@@ -15,7 +15,10 @@
 #include "base/process/process_handle.h"
 #include "content/public/browser/service_process_host.h"
 #include "mojo/public/cpp/bindings/message.h"
+#include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
+#include "services/network/public/mojom/host_resolver.mojom.h"
+#include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/net/url_loader_network_observer.h"
 #include "shell/common/gin_helper/pinnable.h"
@@ -89,6 +92,14 @@ class UtilityProcessWrapper final
   void OnV8FatalError(const std::string& location,
                       const std::string& report) override;
 
+  // node::mojom::NodeServiceClient
+  void GetURLLoaderFactoryForProcess(
+      int32_t pid,
+      ::mojo::PendingReceiver<::network::mojom::URLLoaderFactory>
+          factory_receiver,
+      ::mojo::PendingReceiver<::network::mojom::HostResolver> host_resolver)
+      override;
+
   // content::ServiceProcessHost::Observer
   void OnServiceProcessTerminatedNormally(
       const content::ServiceProcessInfo& info) override;
@@ -110,6 +121,7 @@ class UtilityProcessWrapper final
   bool connector_closed_ = false;
   bool terminated_ = false;
   bool killed_ = false;
+  bool create_network_observer_ = false;
   std::unique_ptr<mojo::Connector> connector_;
   blink::MessagePortDescriptor host_port_;
   mojo::Receiver<node::mojom::NodeServiceClient> receiver_{this};
