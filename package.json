@@ -25,7 +25,6 @@
     "buffer": "^6.0.3",
     "chalk": "^4.1.0",
     "check-for-leaks": "^1.2.1",
-    "dugite": "^2.7.1",
     "eslint": "^8.57.1",
     "eslint-config-standard": "^17.1.0",
     "eslint-plugin-import": "^2.32.0",
@@ -148,9 +147,6 @@
   ],
   "dependenciesMeta": {
     "abstract-socket": {
-      "built": true
-    },
-    "dugite": {
       "built": true
     }
   }

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { Octokit } from '@octokit/rest';
-import { GitProcess } from 'dugite';
 
+import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve as _resolve } from 'node:path';
 
@@ -105,8 +105,12 @@ class Pool {
  **/
 
 const runGit = async (dir: string, args: string[]) => {
-  const response = await GitProcess.exec(args, dir);
-  if (response.exitCode !== 0) {
+  const response = spawnSync('git', args, {
+    cwd: dir,
+    encoding: 'utf8',
+    stdio: ['inherit', 'pipe', 'pipe']
+  });
+  if (response.status !== 0) {
     throw new Error(response.stderr.trim());
   }
   return response.stdout.trim();
