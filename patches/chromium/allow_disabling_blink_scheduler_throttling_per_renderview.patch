@@ -116,10 +116,10 @@ index 932658273154ef2e022358e493a8e7c00c86e732..57bbfb5cde62c9496c351c861880a189
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 5bd8542ff4cee8ec717b9cad68bc74a1833b017b..a6c5b130bd102fb7121c83cad162d7bafe79430d 100644
+index cb2d169fccaa107a0ed32a6cbb253e77b14d9eff..4e01b4ebcdad4375aa565e9d262617fd1a2015cc 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -2507,6 +2507,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
+@@ -2497,6 +2497,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
    TRACE_EVENT2("navigation", "WebViewImpl::SetPageLifecycleStateInternal",
                 "old_state", old_state, "new_state", new_state);
  
@@ -130,7 +130,7 @@ index 5bd8542ff4cee8ec717b9cad68bc74a1833b017b..a6c5b130bd102fb7121c83cad162d7ba
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -4096,10 +4100,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -4084,10 +4088,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -155,7 +155,7 @@ index 5bd8542ff4cee8ec717b9cad68bc74a1833b017b..a6c5b130bd102fb7121c83cad162d7ba
    // Do not throttle if the page should be painting.
    bool is_visible =
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index e6cb751e2b6656ad249501c60468c8299708bfd8..bfceed497bd90b3697ea05886b78d51ba4984d16 100644
+index 3e3c1783f8dfdbfdaacb1dfc34e4babb13ad7427..68c3a7a7324165cd140fb7dd5bd1d69f08537987 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -445,6 +445,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
@@ -166,7 +166,7 @@ index e6cb751e2b6656ad249501c60468c8299708bfd8..bfceed497bd90b3697ea05886b78d51b
    void SetVisibilityState(mojom::blink::PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    mojom::blink::PageVisibilityState GetVisibilityState() override;
-@@ -942,6 +943,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -940,6 +941,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    // If true, we send IPC messages when |preferred_size_| changes.
    bool send_preferred_size_changes_ = false;
  

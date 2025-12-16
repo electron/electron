@@ -2634,27 +2634,28 @@ describe('chromium features', () => {
       slashes: true
     });
 
-    it('successfully loads a PDF file', async () => {
+    it('successfully loads a PDF resource', async () => {
       const w = new BrowserWindow({ show: false });
-
-      w.loadURL(pdfSource);
-      await once(w.webContents, 'did-finish-load');
+      await w.loadURL(pdfSource);
+      expect(w.getURL()).to.equal(pdfSource);
     });
 
-    it('opens when loading a pdf resource as top level navigation', async () => {
+    it('successfully loads a PDF resource in a iframe', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadURL(pdfSource);
-      const [, contents] = await once(app, 'web-contents-created') as [any, WebContents];
-      await once(contents, 'did-navigate');
-      expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
-    });
 
-    it('opens when loading a pdf resource in a iframe', async () => {
-      const w = new BrowserWindow({ show: false });
-      w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'pdf-in-iframe.html'));
-      const [, contents] = await once(app, 'web-contents-created') as [any, WebContents];
-      await once(contents, 'did-navigate');
-      expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
+      const readyFrames = new Set<Electron.WebFrameMain['frameToken']>();
+      w.webContents.on('frame-created', (_, { frame }) => {
+        frame!.on('dom-ready', () => {
+          readyFrames.add(frame!.frameToken);
+        });
+      });
+
+      await w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'pdf-in-iframe.html'));
+
+      const frames = w.webContents.mainFrame.frames;
+      expect(frames.length).to.equal(1);
+      expect(frames[0].url).to.equal(pdfSource);
+      expect(readyFrames).to.contain(frames[0].frameToken);
     });
   });
 

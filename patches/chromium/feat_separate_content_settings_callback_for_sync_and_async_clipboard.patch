@@ -119,10 +119,10 @@ index 36410ff29d9c82e59f93fbb82968064bd330dfde..6c3f994e0b184f78bd9442002bb4dfae
    virtual void PassiveInsecureContentFound(const WebURL&) {}
  
 diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-index f2fb09422d49c66c6ef7991277cfd6479896c035..fe2fc66b2d203dd0c832e5bf6cc4c950c33cdfec 100644
+index 80c15ef5381aa08c0c6ce3f51534bb04af64775d..9a9024ba766226848974e5518ccbffa79ee55e65 100644
 --- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 +++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-@@ -116,7 +116,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
+@@ -123,7 +123,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
      return true;
    }
    return frame.GetContentSettingsClient() &&
@@ -131,7 +131,7 @@ index f2fb09422d49c66c6ef7991277cfd6479896c035..fe2fc66b2d203dd0c832e5bf6cc4c950
  }
  
  bool ClipboardCommands::CanWriteClipboard(LocalFrame& frame,
-@@ -305,7 +305,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
+@@ -312,7 +312,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
      return true;
    }
    return frame->GetContentSettingsClient() &&
