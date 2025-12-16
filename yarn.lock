@@ -4410,16 +4410,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dugite@npm:^2.7.1":
-  version: 2.7.1
-  resolution: "dugite@npm:2.7.1"
-  dependencies:
-    progress: "npm:^2.0.3"
-    tar: "npm:^6.1.11"
-  checksum: 10c0/8b7992b91abc2473e43a4900c5b100f5a4b98785b9955275c72b1a621152b5df9ff794cda50daced5ee452f4dc95b313ce9c30af5dc9e302241ef9f661a593df
-  languageName: node
-  linkType: hard
-
 "dunder-proto@npm:^1.0.0, dunder-proto@npm:^1.0.1":
   version: 1.0.1
   resolution: "dunder-proto@npm:1.0.1"
@@ -4552,7 +4542,6 @@ __metadata:
     buffer: "npm:^6.0.3"
     chalk: "npm:^4.1.0"
     check-for-leaks: "npm:^1.2.1"
-    dugite: "npm:^2.7.1"
     eslint: "npm:^8.57.1"
     eslint-config-standard: "npm:^17.1.0"
     eslint-plugin-import: "npm:^2.32.0"
@@ -4588,8 +4577,6 @@ __metadata:
     wrapper-webpack-plugin: "npm:^2.2.0"
   dependenciesMeta:
     abstract-socket:
-      built: true
-    dugite:
       built: true
   languageName: unknown
   linkType: soft
