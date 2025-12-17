@@ -50,7 +50,7 @@ jobs:
     container: ${{ fromJSON(inputs.test-container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       with:
         path: src/electron
         fetch-depth: 0
@@ -106,7 +106,7 @@ jobs:
     container: ${{ fromJSON(inputs.test-container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
       with:
         path: src/electron
         fetch-depth: 0
@@ -138,10 +138,16 @@ jobs:
         unzip -:o dist.zip
     - name: Setup Linux for Headless Testing
       run: sh -e /etc/init.d/xvfb start
+    - name: Add Clang problem matcher
+      shell: bash
+      run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Run Nan Tests
       run: |
         cd src
         node electron/script/nan-spec-runner.js
+    - name: Remove Clang problem matcher
+      shell: bash
+      run: echo "::remove-matcher owner=clang::"
     - name: Wait for active SSH sessions
       shell: bash
       if: always() && !cancelled()

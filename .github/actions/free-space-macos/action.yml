@@ -64,15 +64,26 @@ runs:
         sudo rm -rf /Applications/Xcode_16.1.app
         sudo rm -rf /Applications/Xcode_16.2.app
         sudo rm -rf /Applications/Xcode_16.3.app
+        sudo rm -rf /Applications/Xcode_26*
         sudo rm -rf /Applications/Google Chrome.app
         sudo rm -rf /Applications/Google Chrome for Testing.app
-        sudo rm -rf	/Applications/Firefox.app
+        sudo rm -rf /Applications/Firefox.app
+        sudo rm -rf /Applications/Microsoft Edge.app
         sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
         sudo rm -rf ~/project/src/third_party/angle/third_party/VK-GL-CTS
         sudo rm -rf /Users/runner/Library/Android
         sudo rm -rf $JAVA_HOME_11_arm64
         sudo rm -rf $JAVA_HOME_17_arm64
         sudo rm -rf $JAVA_HOME_21_arm64
+        sudo rm -rf $JAVA_HOME_25_arm64
+        sudo rm -rf /Users/runner/.dotnet/
+        sudo rm -rf /Users/runner/.rustup
+
+        # remove homebrew packages we don't need
+        if command -v brew &> /dev/null; then
+          brew uninstall -f --zap aws-sam-cli session-manager-plugin gcc gcc@13 gcc@14 llvm@18 gradle maven ant azure-cli
+          brew autoremove
+        fi
 
         # lipo off some huge binaries arm64 versions to save space
         strip_universal_deep $(xcode-select -p)/../SharedFrameworks

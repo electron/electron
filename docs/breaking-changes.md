@@ -22,6 +22,14 @@ Developers had to manually calculate the correct size using `screen.getPrimaryDi
 to the primary display's scale factor (preserving the old behavior). Starting from Electron 42, the default will change to a constant value of `1.0`
 for more consistent output sizes.
 
+## Planned Breaking API Changes (41.0)
+
+### Behavior Changed: PDFs no longer create a separate WebContents
+
+Previously, PDF resources created a separate guest [WebContents](https://www.electronjs.org/docs/latest/api/web-contents) for rendering. Now, PDFs are rendered within the same WebContents instead. If you have code to detect PDF resources, use the [frame tree](https://www.electronjs.org/docs/latest/api/web-frame-main) instead of WebContents.
+
+Under the hood, Chromium [enabled](https://chromium-review.googlesource.com/c/chromium/src/+/7239572) a feature that changes PDFs to use out-of-process iframes (OOPIFs) instead of the `MimeHandlerViewGuest` extension.
+
 ## Planned Breaking API Changes (40.0)
 
 ### Deprecated: `clipboard` API access from renderer processes

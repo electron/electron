@@ -133,12 +133,7 @@ async function main () {
 
   const DISABLED_TESTS = new Set([
     'nannew-test.js',
-    'buffer-test.js',
-    // These two are incompatible with crrev.com/c/4733273
-    // They are disabled upstream starting in "Node.js 24" (note: the incompatible change above
-    // landed in V8 v13.7), so we can remove them from this list once we upgrade Node.js to 24.
-    'weak-test.js',
-    'weak2-test.js'
+    'buffer-test.js'
   ]);
   const testsToRun = fs.readdirSync(path.resolve(NAN_DIR, 'test', 'js'))
     .filter(test => !DISABLED_TESTS.has(test))

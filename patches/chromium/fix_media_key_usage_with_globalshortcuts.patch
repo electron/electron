@@ -76,7 +76,7 @@ index 16b11c6115cc5504dbd15d58c4b9786633e90e96..7c0a2308d437a2d9cec433c6ab0fd6a9
    if (IsShortcutHandlingSuspended()) {
      return;
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
-index 701808699796b0ef1a87d4d12f79fb6cf580c617..bf6e38410cedd6dd6d339b6f2f456124770bbd96 100644
+index 57e35eb71c3f30341ced923af815e6bb78c26da6..96d2e93306c1aaf963744d52451f31e159c7c8b5 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
 @@ -8,6 +8,7 @@
@@ -85,9 +85,9 @@ index 701808699796b0ef1a87d4d12f79fb6cf580c617..bf6e38410cedd6dd6d339b6f2f456124
  #include "base/memory/raw_ptr.h"
 +#include "content/public/browser/media_keys_listener_manager.h"
  #include "ui/base/accelerators/command.h"
+ #include "ui/gfx/native_ui_types.h"
  
- namespace ui {
-@@ -38,6 +39,9 @@ class GlobalAcceleratorListener {
+@@ -42,6 +43,9 @@ class GlobalAcceleratorListener {
    // The instance may be nullptr.
    static GlobalAcceleratorListener* GetInstance();
  

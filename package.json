@@ -1,5 +1,5 @@
 {
-  "name": "electron",
+  "name": "@electron-ci/dev-root",
   "version": "0.0.0-development",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
@@ -9,7 +9,7 @@
     "@electron/asar": "^4.0.1",
     "@electron/docs-parser": "^2.0.0",
     "@electron/fiddle-core": "^1.3.4",
-    "@electron/github-app-auth": "^2.2.1",
+    "@electron/github-app-auth": "^3.2.0",
     "@electron/lint-roller": "^3.1.2",
     "@electron/typescript-definitions": "^9.1.5",
     "@octokit/rest": "^20.1.2",
@@ -25,7 +25,6 @@
     "buffer": "^6.0.3",
     "chalk": "^4.1.0",
     "check-for-leaks": "^1.2.1",
-    "dugite": "^2.7.1",
     "eslint": "^8.57.1",
     "eslint-config-standard": "^17.1.0",
     "eslint-plugin-import": "^2.32.0",
@@ -140,16 +139,14 @@
     "abstract-socket": "github:deepak1556/node-abstractsocket#928cc591decd12aff7dad96449da8afc29832c19",
     "minimist@npm:~0.0.1": "0.2.4"
   },
-  "packageManager": "yarn@4.11.0",
+  "packageManager": "yarn@4.12.0",
   "workspaces": [
+    ".github/workflows",
     "spec",
     "spec/fixtures/native-addon/*"
   ],
   "dependenciesMeta": {
     "abstract-socket": {
-      "built": true
-    },
-    "dugite": {
       "built": true
     }
   }

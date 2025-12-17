@@ -17,6 +17,7 @@
 #include "media/base/media_switches.h"
 #include "net/base/features.h"
 #include "printing/buildflags/buildflags.h"
+#include "sandbox/policy/features.h"
 #include "services/network/public/cpp/features.h"
 #include "third_party/blink/public/common/features.h"
 #include "ui/accessibility/ax_features.mojom-features.h"
@@ -70,6 +71,14 @@ void InitializeFeatureList() {
   // can work without this feature.
   enable_features += std::string(",") +
                      views::features::kEnableTransparentHwndEnlargement.name;
+
+  // See https://chromium-review.googlesource.com/c/chromium/src/+/7204292
+  // This feature causes the following sandbox failure on Windows:
+  // sandbox\policy\win\sandbox_win.cc:777 Sandbox cannot access executable
+  // electron.exe. Check filesystem permissions are valid.
+  // See https://bit.ly/31yqMJR.: Access is denied. (0x5)
+  disable_features +=
+      std::string(",") + sandbox::policy::features::kNetworkServiceSandbox.name;
 #endif
 
 #if BUILDFLAG(IS_MAC)

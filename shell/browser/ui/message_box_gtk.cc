@@ -42,12 +42,21 @@ base::flat_map<int, GtkWidget*>& GetDialogsMap() {
   return *dialogs;
 }
 
+gtk::GtkUiPlatform* GetGtkUiPlatform() {
+  auto* linux_ui = ui::LinuxUi::instance();
+  auto* gtk_ui = static_cast<gtk::GtkUi*>(linux_ui);
+  gtk::GtkUiPlatform* platform = gtk_ui->GetPlatform();
+  DCHECK(platform);
+  return platform;
+}
+
 class GtkMessageBox : private NativeWindowObserver {
  public:
   explicit GtkMessageBox(const MessageBoxSettings& settings)
       : id_(settings.id),
         cancel_id_(settings.cancel_id),
-        parent_(static_cast<NativeWindow*>(settings.parent_window)) {
+        parent_(static_cast<NativeWindow*>(settings.parent_window)),
+        platform_(GetGtkUiPlatform()) {
     // Create dialog.
     dialog_ =
         gtk_message_dialog_new(nullptr,                         // parent
@@ -109,7 +118,8 @@ class GtkMessageBox : private NativeWindowObserver {
     if (parent_) {
       parent_->AddObserver(this);
       static_cast<NativeWindowViews*>(parent_)->SetEnabled(false);
-      gtk::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow());
+      gtk::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow(),
+                                  platform_);
       gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
     }
   }
@@ -160,7 +170,7 @@ class GtkMessageBox : private NativeWindowObserver {
 
   void Show() {
     gtk_widget_show(dialog_);
-    gtk::GtkUi::GetPlatform()->ShowGtkWindow(GTK_WINDOW(dialog_));
+    platform_->ShowGtkWindow(GTK_WINDOW(dialog_));
   }
 
   int RunSynchronous() {
@@ -202,6 +212,7 @@ class GtkMessageBox : private NativeWindowObserver {
   RAW_PTR_EXCLUSION GtkWidget* dialog_;
   MessageBoxCallback callback_;
   std::vector<ScopedGSignal> signals_;
+  raw_ptr<gtk::GtkUiPlatform> platform_;
 };
 
 void GtkMessageBox::OnResponseDialog(GtkWidget* widget, int response) {
