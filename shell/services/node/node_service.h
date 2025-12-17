@@ -47,8 +47,6 @@ class URLLoaderBundle {
   bool ShouldUseNetworkObserverfromURLLoaderFactory() const;
 
  private:
-  void EnsureFactoryAndResolver();
-
   scoped_refptr<network::SharedURLLoaderFactory> factory_;
   mojo::Remote<network::mojom::HostResolver> host_resolver_;
   bool should_use_network_observer_from_url_loader_factory_ = false;
@@ -67,6 +65,8 @@ class NodeService : public node::mojom::NodeService {
   void Initialize(node::mojom::NodeServiceParamsPtr params,
                   mojo::PendingRemote<node::mojom::NodeServiceClient>
                       client_pending_remote) override;
+  void SetURLLoaderFactory(
+      node::mojom::URLLoaderFactoryParamsPtr params) override;
 
  private:
   // This needs to be initialized first so that it can be destroyed last

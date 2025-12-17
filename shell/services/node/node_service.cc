@@ -10,7 +10,6 @@
 #include "base/command_line.h"
 #include "base/no_destructor.h"
 #include "base/process/process.h"
-#include "base/process/process_handle.h"
 #include "base/strings/utf_string_conversions.h"
 #include "electron/mas.h"
 #include "net/base/network_change_notifier.h"
@@ -78,34 +77,12 @@ void URLLoaderBundle::SetURLLoaderFactory(
 
 scoped_refptr<network::SharedURLLoaderFactory>
 URLLoaderBundle::GetSharedURLLoaderFactory() {
-  EnsureFactoryAndResolver();
   return factory_;
 }
 
 network::mojom::HostResolver* URLLoaderBundle::GetHostResolver() {
   DCHECK(host_resolver_);
-  EnsureFactoryAndResolver();
   return host_resolver_.get();
-}
-
-void URLLoaderBundle::EnsureFactoryAndResolver() {
-  if (host_resolver_ && host_resolver_.is_connected() && factory_) {
-    return;
-  } else {
-    host_resolver_.reset();
-    factory_.reset();
-  }
-  if (!GetRemote().is_bound() || !GetRemote().is_connected()) {
-    return;
-  }
-  LOG(INFO) << "network service disconnected, we will create a new factory";
-  mojo::PendingRemote<network::mojom::URLLoaderFactory> factory_remote;
-  GetRemote()->GetURLLoaderFactoryForProcess(
-      base::Process::Current().Pid(),
-      factory_remote.InitWithNewPipeAndPassReceiver(),
-      host_resolver_.BindNewPipeAndPassReceiver());
-  factory_ = base::MakeRefCounted<network::WrapperSharedURLLoaderFactory>(
-      std::move(factory_remote));
 }
 
 bool URLLoaderBundle::ShouldUseNetworkObserverfromURLLoaderFactory() const {
@@ -220,4 +197,11 @@ void NodeService::Initialize(
   node_bindings_->StartPolling();
 }
 
+void NodeService::SetURLLoaderFactory(
+    node::mojom::URLLoaderFactoryParamsPtr params) {
+  URLLoaderBundle::GetInstance()->SetURLLoaderFactory(
+      std::move(params->url_loader_factory),
+      mojo::Remote(std::move(params->host_resolver)),
+      params->use_network_observer_from_url_loader_factory);
+}
 }  // namespace electron

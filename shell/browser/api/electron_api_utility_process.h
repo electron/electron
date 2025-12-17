@@ -15,10 +15,7 @@
 #include "base/process/process_handle.h"
 #include "content/public/browser/service_process_host.h"
 #include "mojo/public/cpp/bindings/message.h"
-#include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
-#include "services/network/public/mojom/host_resolver.mojom.h"
-#include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/net/url_loader_network_observer.h"
 #include "shell/common/gin_helper/pinnable.h"
@@ -92,14 +89,6 @@ class UtilityProcessWrapper final
   void OnV8FatalError(const std::string& location,
                       const std::string& report) override;
 
-  // node::mojom::NodeServiceClient
-  void GetURLLoaderFactoryForProcess(
-      int32_t pid,
-      ::mojo::PendingReceiver<::network::mojom::URLLoaderFactory>
-          factory_receiver,
-      ::mojo::PendingReceiver<::network::mojom::HostResolver> host_resolver)
-      override;
-
   // content::ServiceProcessHost::Observer
   void OnServiceProcessTerminatedNormally(
       const content::ServiceProcessInfo& info) override;
@@ -108,6 +97,7 @@ class UtilityProcessWrapper final
 
   void OnServiceProcessDisconnected(uint32_t exit_code,
                                     const std::string& description);
+  void OnNetworkServiceProcessGoneHandler(bool crash);
 
   base::ProcessId pid_ = base::kNullProcessId;
 #if BUILDFLAG(IS_WIN)
@@ -128,6 +118,7 @@ class UtilityProcessWrapper final
   mojo::Remote<node::mojom::NodeService> node_service_remote_;
   std::optional<electron::URLLoaderNetworkObserver>
       url_loader_network_observer_;
+  base::CallbackListSubscription subscription_;
   base::WeakPtrFactory<UtilityProcessWrapper> weak_factory_{this};
 };
 
