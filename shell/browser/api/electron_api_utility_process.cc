@@ -14,6 +14,7 @@
 #include "base/process/launch.h"
 #include "base/process/process.h"
 #include "chrome/browser/browser_process.h"
+#include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/child_process_host.h"
 #include "content/public/browser/service_process_host.h"
 #include "content/public/common/result_codes.h"
