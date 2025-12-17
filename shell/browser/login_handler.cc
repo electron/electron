@@ -42,6 +42,23 @@ LoginHandler::LoginHandler(
                      response_headers, first_auth_attempt));
 }
 
+LoginHandler::LoginHandler(
+    const net::AuthChallengeInfo& auth_info,
+    content::WebContents* web_contents,
+    base::ProcessId process_id,
+    const GURL& url,
+    scoped_refptr<net::HttpResponseHeaders> response_headers,
+    content::LoginDelegate::LoginAuthRequiredCallback auth_required_callback)
+    : LoginHandler(auth_info,
+                   web_contents,
+                   /*is_request_for_primary_main_frame=*/false,
+                   /*is_request_for_navigation=*/false,
+                   process_id,
+                   url,
+                   std::move(response_headers),
+                   /*first_auth_attempt=*/false,
+                   std::move(auth_required_callback)) {}
+
 void LoginHandler::EmitEvent(
     net::AuthChallengeInfo auth_info,
     content::WebContents* web_contents,
