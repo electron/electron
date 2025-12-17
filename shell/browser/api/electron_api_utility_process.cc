@@ -238,9 +238,10 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   node_service_remote_->Initialize(std::move(params),
                                    receiver_.BindNewPipeAndPassRemote());
 
-  subscription_ = content::RegisterNetworkServiceProcessGoneHandler(
-      base::BindRepeating(&UtilityProcessWrapper::SetURLLoaderFactoryForProcess,
-                          weak_factory_.GetWeakPtr()));
+  subscription_ =
+      content::RegisterNetworkServiceProcessGoneHandler(base::BindRepeating(
+          &UtilityProcessWrapper::OnNetworkServiceProcessGoneHandler,
+          weak_factory_.GetWeakPtr()));
 }
 
 UtilityProcessWrapper::~UtilityProcessWrapper() {
