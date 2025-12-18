@@ -754,6 +754,12 @@ WebContents::WebContents(v8::Isolate* isolate,
   script_executor_ = std::make_unique<extensions::ScriptExecutor>(web_contents);
 #endif
 
+  // In Chrome, draggable regions are only supported in the main frame.
+  // However, we need to support draggable regions on other local
+  // frames/windows, so extend support beyond the main frame by enabling
+  // it for all WebContents.
+  web_contents->SetSupportsDraggableRegions(true);
+
   session_ = Session::FromOrCreate(isolate, GetBrowserContext());
 
   SetUserAgent(GetBrowserContext()->GetUserAgent());
@@ -1020,6 +1026,12 @@ void WebContents::InitWithWebContents(
     bool is_guest) {
   browser_context_ = browser_context;
   web_contents->SetDelegate(this);
+
+  // In Chrome, draggable regions are only supported in the main frame.
+  // However, we need to support draggable regions on other local
+  // frames/windows, so extend support beyond the main frame by enabling
+  // it for all WebContents.
+  web_contents->SetSupportsDraggableRegions(true);
 
 #if BUILDFLAG(ENABLE_PRINTING)
   PrintViewManagerElectron::CreateForWebContents(web_contents.get());
@@ -1777,8 +1789,6 @@ void WebContents::RenderFrameCreated(
     auto details = gin_helper::Dictionary::CreateEmpty(isolate);
     details.SetGetter("frame", render_frame_host);
     Emit("frame-created", details);
-    content::WebContents::FromRenderFrameHost(render_frame_host)
-        ->SetSupportsDraggableRegions(true);
   }
 }
 
