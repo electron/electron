@@ -8,7 +8,6 @@
 #include "base/memory/raw_ptr.h"
 #include "components/remote_cocoa/app_shim/native_widget_mac_nswindow.h"
 #include "shell/browser/ui/cocoa/event_dispatching_window.h"
-#include "shell/browser/ui/cocoa/history_swiper.h"
 #include "ui/views/widget/native_widget_mac.h"
 
 namespace electron {
@@ -49,9 +48,6 @@ class ElectronNativeWindowObserver;
 - (NSRect)originalContentRectForFrameRect:(NSRect)frameRect;
 - (BOOL)toggleFullScreenMode:(id)sender;
 - (void)disableHeadlessMode;
-
-// Swipe navigation handling
-- (BOOL)handleSwipeScrollEvent:(NSEvent*)event;
 @end
 
 #endif  // ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_NS_WINDOW_H_

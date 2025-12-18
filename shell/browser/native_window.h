@@ -77,8 +77,6 @@ class NativeWindow : public base::SupportsUserData,
 
   virtual void SetContentView(views::View* view) = 0;
 
-  virtual void SetWebContents(content::WebContents* web_contents) {}
-
   virtual void Close() = 0;
   virtual void CloseImmediately() = 0;
   virtual bool IsClosed() const;
@@ -329,6 +327,9 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowMoved();
   void NotifyWindowSwipe(const std::string& direction);
   void NotifyWindowRotateGesture(float rotation);
+  void NotifyWindowSwipeGesture(const std::string& direction,
+                                const std::string& phase,
+                                float progress);
   void NotifyWindowSheetBegin();
   void NotifyWindowSheetEnd();
   virtual void NotifyWindowEnterFullScreen();

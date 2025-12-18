@@ -24,13 +24,11 @@
 @class ElectronPreviewItem;
 @class ElectronTouchBar;
 @class WindowButtonsProxy;
-@class HistorySwiper;
 
 namespace electron {
 
 class RootViewMac;
 class NativeAppWindowFrameViewMacClient;
-class SwipeInputEventObserver;
 
 class NativeWindowMac : public NativeWindow,
                         public ui::NativeThemeObserver,
@@ -42,7 +40,6 @@ class NativeWindowMac : public NativeWindow,
   // NativeWindow:
   void OnTitleChanged() override;
   void SetContentView(views::View* view) override;
-  void SetWebContents(content::WebContents* web_contents) override;
   void Close() override;
   void CloseImmediately() override;
   void Focus(bool focus) override;
@@ -173,9 +170,7 @@ class NativeWindowMac : public NativeWindow,
   void NotifyWindowDidFailToEnterFullScreen();
   void NotifyWindowWillLeaveFullScreen();
 
-  // Cleanup observers when window is getting closed. Note that the destructor
-  // can be called much later after window gets closed, so we should not do
-  // cleanup in destructor.
+  // Cleanup observers when window is getting closed.
   void Cleanup();
 
   void SetBorderless(bool borderless);
@@ -211,19 +206,10 @@ class NativeWindowMac : public NativeWindow,
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
   bool always_simple_fullscreen() const { return always_simple_fullscreen_; }
 
-  // Swipe navigation.
+  // Two-finger swipe gesture events.
   void SetSwipeToNavigate(bool enabled);
   bool IsSwipeToNavigateEnabled() const { return swipe_to_navigate_enabled_; }
-  HistorySwiper* history_swiper() const { return history_swiper_; }
 
-  // We need to save the result of windowWillUseStandardFrame:defaultFrame
-  // because macOS calls it with what it refers to as the "best fit" frame for a
-  // zoom. This means that even if an aspect ratio is set, macOS might adjust it
-  // to better fit the screen.
-  //
-  // Thus, we can't just calculate the maximized aspect ratio'd sizing from
-  // the current visible screen and compare that to the current window's frame
-  // to determine whether a window is maximized.
   NSRect default_frame_for_zoom() const { return default_frame_for_zoom_; }
   void set_default_frame_for_zoom(NSRect frame) {
     default_frame_for_zoom_ = frame;
@@ -268,34 +254,22 @@ class NativeWindowMac : public NativeWindow,
   bool zoom_to_page_width_ = false;
   std::optional<gfx::Point> traffic_light_position_;
 
-  // Trying to close an NSWindow during a fullscreen transition will cause the
-  // window to lock up. Use this to track if CloseWindow was called during a
-  // fullscreen transition, to defer the -[NSWindow close] call until the
-  // transition is complete.
   bool has_deferred_window_close_ = false;
 
-  // If true, the window is either visible, or wants to be visible but is
-  // currently hidden due to having a hidden parent.
   bool wants_to_be_visible_ = false;
 
-  NSInteger attention_request_id_ = 0;  // identifier from requestUserAttention
+  NSInteger attention_request_id_ = 0;
 
-  // The presentation options before entering kiosk mode.
   NSApplicationPresentationOptions kiosk_options_;
 
-  // The "visualEffectState" option.
   VisualEffectState visual_effect_state_ = VisualEffectState::kFollowWindow;
 
-  // The visibility mode of window button controls when explicitly set through
-  // setWindowButtonVisibility().
   std::optional<bool> window_button_visibility_;
 
-  // Controls the position and visibility of window buttons.
   WindowButtonsProxy* __strong buttons_proxy_;
 
   std::unique_ptr<SkRegion> draggable_region_;
 
-  // Maximizable window state; necessary for persistence through redraws.
   bool maximizable_ = true;
 
   bool user_set_bounds_maximized_ = false;
@@ -313,19 +287,14 @@ class NativeWindowMac : public NativeWindow,
 
   std::string vibrancy_type_;
 
-  // A views::NativeViewHost wrapping the vibrant view. Owned by the root view.
   raw_ptr<views::NativeViewHost> vibrant_native_view_host_ = nullptr;
 
-  // The presentation options before entering simple fullscreen mode.
   NSApplicationPresentationOptions simple_fullscreen_options_;
 
-  // Client that provides app-specific frame behaviors to NativeFrameViewMac.
   std::unique_ptr<NativeAppWindowFrameViewMacClient> frame_view_client_;
-  raw_ptr<content::WebContents> web_contents_ = nullptr;
 
+  // Whether swipe gesture events are enabled.
   bool swipe_to_navigate_enabled_ = false;
-  std::unique_ptr<SwipeInputEventObserver> input_event_observer_;
-  HistorySwiper* __strong history_swiper_;
 };
 
 }  // namespace electron

@@ -128,11 +128,11 @@
   tab button to your window's tab bar and allows your `app` and window to
   receive the `new-window-for-tab` event.
 * `swipeToNavigate` boolean (optional) _macOS_ - Enable two-finger horizontal
-  swipe gestures for navigation (back/forward), similar to Safari and Chrome.
-  When enabled, users can swipe left to go back and swipe right to go forward
-  in the navigation history. A visual indicator arrow appears during the
-  gesture. Requires "Swipe between pages" to be enabled in System Preferences >
-  Trackpad > More Gestures. Default is `false`.
+  swipe gesture events. When enabled, the window emits `swipe-gesture` events
+  with direction (`left`/`right`), phase (`began`/`changed`/`ended`/`cancelled`),
+  and progress (0.0-1.0). Developers can use these events to implement custom
+  navigation UI or other swipe-triggered actions. Requires "Swipe between pages"
+  to be enabled in System Preferences > Trackpad > More Gestures. Default is `false`.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
