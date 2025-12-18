@@ -22,6 +22,11 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"
+#include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/render_widget_host.h"
+#include "content/public/browser/render_widget_host_view.h"
+#include "content/public/browser/web_contents.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/ui/cocoa/electron_native_widget_mac.h"
@@ -30,15 +35,19 @@
 #include "shell/browser/ui/cocoa/electron_ns_window_delegate.h"
 #include "shell/browser/ui/cocoa/electron_preview_item.h"
 #include "shell/browser/ui/cocoa/electron_touch_bar.h"
+#include "shell/browser/ui/cocoa/history_swiper.h"
 #include "shell/browser/ui/cocoa/root_view_mac.h"
 #include "shell/browser/ui/cocoa/window_buttons_proxy.h"
-#include "shell/browser/ui/drag_util.h"
 #include "shell/browser/window_list.h"
+#include "shell/common/api/electron_api_native_image.h"
+#include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "skia/ext/skia_utils_mac.h"
+#include "third_party/blink/public/common/input/web_gesture_event.h"
+#include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
 #include "ui/base/hit_test.h"
 #include "ui/display/screen.h"
@@ -147,6 +156,63 @@ class NativeAppWindowFrameViewMacClient
   // Weak. Owned by extensions::AppWindow (which manages our Widget via its
   // WebContents).
   const raw_ptr<NativeWindowMac, DanglingUntriaged> native_app_window_;
+};
+
+class SwipeInputEventObserver
+    : public content::RenderWidgetHost::InputEventObserver,
+      public content::WebContentsObserver {
+ public:
+  SwipeInputEventObserver(content::WebContents* web_contents,
+                          HistorySwiper* history_swiper)
+      : content::WebContentsObserver(web_contents),
+        history_swiper_(history_swiper) {
+    if (web_contents)
+      ObserveRenderWidgetHost(web_contents->GetRenderWidgetHostView());
+  }
+
+  ~SwipeInputEventObserver() override {
+    if (render_widget_host_)
+      render_widget_host_->RemoveInputEventObserver(this);
+  }
+
+  void ObserveRenderWidgetHost(content::RenderWidgetHostView* view) {
+    content::RenderWidgetHost* new_host =
+        view ? view->GetRenderWidgetHost() : nullptr;
+    if (render_widget_host_ == new_host)
+      return;
+
+    if (render_widget_host_)
+      render_widget_host_->RemoveInputEventObserver(this);
+
+    render_widget_host_ = new_host;
+    if (render_widget_host_)
+      render_widget_host_->AddInputEventObserver(this);
+  }
+
+  // content::WebContentsObserver:
+  void RenderFrameHostChanged(content::RenderFrameHost* old_host,
+                              content::RenderFrameHost* new_host) override {
+    if (new_host)
+      ObserveRenderWidgetHost(new_host->GetView());
+  }
+
+  void OnInputEventAck(const content::RenderWidgetHost& host,
+                       blink::mojom::InputEventResultSource source,
+                       blink::mojom::InputEventResultState state,
+                       const blink::WebInputEvent& event) override {
+    if (event.GetType() == blink::WebInputEvent::Type::kGestureScrollUpdate ||
+        event.GetType() == blink::WebInputEvent::Type::kGestureScrollBegin) {
+      const blink::WebGestureEvent& gesture_event =
+          static_cast<const blink::WebGestureEvent&>(event);
+      BOOL consumed = (state == blink::mojom::InputEventResultState::kConsumed);
+      [history_swiper_ rendererHandledGestureScrollEvent:gesture_event
+                                                consumed:consumed];
+    }
+  }
+
+ private:
+  HistorySwiper* __strong history_swiper_;
+  raw_ptr<content::RenderWidgetHost> render_widget_host_ = nullptr;
 };
 
 NativeWindowMac::~NativeWindowMac() = default;
@@ -354,6 +420,12 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
 
   UpdateWindowOriginalFrame();
   original_level_ = [window_ level];
+
+  // Initialize swipe navigation.
+  bool swipe_to_navigate = false;
+  if (options.Get(options::kSwipeToNavigate, &swipe_to_navigate)) {
+    SetSwipeToNavigate(swipe_to_navigate);
+  }
 }
 
 void NativeWindowMac::SetContentView(views::View* view) {
@@ -1879,6 +1951,37 @@ std::unique_ptr<NativeWindow> NativeWindow::Create(
     const gin_helper::Dictionary& options,
     NativeWindow* parent) {
   return std::make_unique<NativeWindowMac>(options, parent);
+}
+
+void NativeWindowMac::SetSwipeToNavigate(bool enabled) {
+  if (swipe_to_navigate_enabled_ == enabled)
+    return;
+
+  swipe_to_navigate_enabled_ = enabled;
+  if (swipe_to_navigate_enabled_) {
+    if (!history_swiper_) {
+      history_swiper_ =
+          [[HistorySwiper alloc] initWithDelegate:window_delegate_];
+    }
+    if (web_contents_)
+      input_event_observer_ = std::make_unique<SwipeInputEventObserver>(
+          web_contents_, history_swiper_);
+  } else {
+    input_event_observer_.reset();
+    history_swiper_ = nil;
+  }
+}
+
+void NativeWindowMac::SetWebContents(content::WebContents* web_contents) {
+  web_contents_ = web_contents;
+  if (swipe_to_navigate_enabled_ && history_swiper_) {
+    if (web_contents) {
+      input_event_observer_ = std::make_unique<SwipeInputEventObserver>(
+          web_contents, history_swiper_);
+    } else {
+      input_event_observer_.reset();
+    }
+  }
 }
 
 }  // namespace electron

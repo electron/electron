@@ -10,6 +10,7 @@
 #include "shell/browser/native_window_mac.h"
 #include "shell/browser/ui/cocoa/electron_preview_item.h"
 #include "shell/browser/ui/cocoa/electron_touch_bar.h"
+#include "shell/browser/ui/cocoa/history_overlay_controller.h"
 #include "shell/browser/ui/cocoa/root_view_mac.h"
 #include "ui/base/cocoa/window_size_constants.h"
 
@@ -41,7 +42,7 @@ MouseDownImpl g_nsnextstepframe_mousedown;
 }  // namespace
 
 // This class is never instantiated, it's just a container for our swizzled
-// mouseDown method.
+// methods.
 @interface SwizzledMethodsClass : NSView
 @end
 
@@ -115,7 +116,14 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 
 }  // namespace
 
-@implementation ElectronNSWindow
+@implementation ElectronNSWindow {
+  // Swipe navigation state
+  NSSize _cumulativeScrollDelta;
+  BOOL _inSwipeGesture;
+  BOOL _potentialSwipeGesture;
+  HistoryOverlayController* __strong _historyOverlay;
+  id __strong _scrollEventMonitor;
+}
 
 @synthesize acceptsFirstMouse;
 @synthesize enableLargerThanScreen;
@@ -154,15 +162,55 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
       }
     }
 #else
-    NSView* view = [[self contentView] superview];
-    SwizzleSwipeWithEvent(view, @selector(swiz_nsview_swipeWithEvent:));
+    NSView* frameView = [[self contentView] superview];
+    SwizzleSwipeWithEvent(frameView, @selector(swiz_nsview_swipeWithEvent:));
 #endif  // IS_MAS_BUILD
     shell_ = shell;
+    _inSwipeGesture = NO;
+    _potentialSwipeGesture = NO;
+    _cumulativeScrollDelta = NSZeroSize;
+
+    // Set up scroll event monitor for swipe navigation
+    [self setupScrollEventMonitor];
   }
   return self;
 }
 
+- (void)setupScrollEventMonitor {
+  __weak ElectronNSWindow* weakSelf = self;
+
+  _scrollEventMonitor = [NSEvent
+      addLocalMonitorForEventsMatchingMask:NSEventMaskScrollWheel
+                                   handler:^NSEvent*(NSEvent* event) {
+                                     ElectronNSWindow* strongSelf = weakSelf;
+                                     if (!strongSelf)
+                                       return event;
+
+                                     // Only handle events for this window
+                                     if (event.window != strongSelf)
+                                       return event;
+
+                                     // Check if swipe navigation is enabled
+                                     if (!strongSelf->shell_ ||
+                                         !strongSelf->shell_
+                                              ->IsSwipeToNavigateEnabled())
+                                       return event;
+
+                                     // Try to handle as swipe
+                                     if ([strongSelf
+                                             handleSwipeScrollEvent:event]) {
+                                       return nil;  // Consume the event
+                                     }
+                                     return event;
+                                   }];
+}
+
 - (void)cleanup {
+  if (_scrollEventMonitor) {
+    [NSEvent removeMonitor:_scrollEventMonitor];
+    _scrollEventMonitor = nil;
+  }
+  [self dismissHistoryOverlay];
   shell_ = nullptr;
 }
 
@@ -186,7 +234,195 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     return nil;
 }
 
-// NSWindow overrides.
+#pragma mark - Swipe Navigation
+
+- (BOOL)canNavigateBack {
+  if (!shell_)
+    return NO;
+  id delegate = [self delegate];
+  if ([delegate respondsToSelector:@selector(canNavigateInDirection:
+                                                           onWindow:)]) {
+    return [delegate canNavigateInDirection:electron::history_swiper::kBackwards
+                                   onWindow:self];
+  }
+  return NO;
+}
+
+- (BOOL)canNavigateForward {
+  if (!shell_)
+    return NO;
+  id delegate = [self delegate];
+  if ([delegate respondsToSelector:@selector(canNavigateInDirection:
+                                                           onWindow:)]) {
+    return [delegate canNavigateInDirection:electron::history_swiper::kForwards
+                                   onWindow:self];
+  }
+  return NO;
+}
+
+- (void)navigateBack {
+  id delegate = [self delegate];
+  if ([delegate respondsToSelector:@selector(navigateInDirection:onWindow:)]) {
+    [delegate navigateInDirection:electron::history_swiper::kBackwards
+                         onWindow:self];
+  }
+}
+
+- (void)navigateForward {
+  id delegate = [self delegate];
+  if ([delegate respondsToSelector:@selector(navigateInDirection:onWindow:)]) {
+    [delegate navigateInDirection:electron::history_swiper::kForwards
+                         onWindow:self];
+  }
+}
+
+- (void)showHistoryOverlayForDirection:(BOOL)isForward {
+  [self dismissHistoryOverlay];
+  _historyOverlay = [[HistoryOverlayController alloc]
+      initForMode:isForward ? electron::kHistoryOverlayModeForward
+                            : electron::kHistoryOverlayModeBack];
+  [_historyOverlay showPanelForView:[[self contentView] superview]];
+}
+
+- (void)dismissHistoryOverlay {
+  if (_historyOverlay) {
+    [_historyOverlay dismiss];
+    _historyOverlay = nil;
+  }
+}
+
+- (BOOL)handleSwipeScrollEvent:(NSEvent*)event {
+  // Only handle events with proper gesture phases
+  NSEventPhase phase = event.phase;
+  NSEventPhase momentumPhase = event.momentumPhase;
+
+  // Reset state on new gesture
+  if (phase == NSEventPhaseBegan) {
+    _cumulativeScrollDelta = NSZeroSize;
+    _potentialSwipeGesture = NO;
+    _inSwipeGesture = NO;
+    return NO;
+  }
+
+  // Ignore momentum phase and non-gesture events
+  if (momentumPhase != NSEventPhaseNone || phase == NSEventPhaseNone) {
+    return NO;
+  }
+
+  // If already in a tracked swipe gesture, let it handle
+  if (_inSwipeGesture) {
+    return NO;
+  }
+
+  // Check if swipe tracking from scroll events is enabled in System Prefs
+  if (!NSEvent.swipeTrackingFromScrollEventsEnabled) {
+    return NO;
+  }
+
+  // Accumulate scroll deltas
+  _cumulativeScrollDelta.width += event.scrollingDeltaX;
+  _cumulativeScrollDelta.height += event.scrollingDeltaY;
+
+  // Wait for enough scroll data to determine direction
+  CGFloat absWidth = fabs(_cumulativeScrollDelta.width);
+  CGFloat absHeight = fabs(_cumulativeScrollDelta.height);
+
+  // Need minimum movement to start considering
+  CGFloat totalMovement = absWidth + absHeight;
+  if (totalMovement < 5) {
+    return NO;
+  }
+
+  // If vertical movement dominates, this is not a swipe
+  if (absHeight > absWidth * 0.5) {
+    _potentialSwipeGesture = NO;
+    return NO;
+  }
+
+  // Horizontal movement dominates - potential swipe
+  _potentialSwipeGesture = YES;
+
+  // Need enough horizontal movement to trigger
+  if (absWidth < 30) {
+    return NO;
+  }
+
+  // Determine direction - positive deltaX means scrolling content right,
+  // which in natural scrolling means swiping left (go back)
+  BOOL goBack = _cumulativeScrollDelta.width > 0;
+  if (event.directionInvertedFromDevice) {
+    goBack = !goBack;
+  }
+
+  // Check if navigation is possible in that direction
+  BOOL canNavigate =
+      goBack ? [self canNavigateBack] : [self canNavigateForward];
+  if (!canNavigate) {
+    return NO;
+  }
+
+  // Start the swipe tracking
+  [self initiateSwipeTrackingWithEvent:event isBack:goBack];
+  return YES;
+}
+
+- (void)initiateSwipeTrackingWithEvent:(NSEvent*)event isBack:(BOOL)isBack {
+  _inSwipeGesture = YES;
+
+  __block HistoryOverlayController* overlay = [[HistoryOverlayController alloc]
+      initForMode:isBack ? electron::kHistoryOverlayModeBack
+                         : electron::kHistoryOverlayModeForward];
+
+  __weak ElectronNSWindow* weakSelf = self;
+  __block BOOL didNavigate = NO;
+
+  [event trackSwipeEventWithOptions:NSEventSwipeTrackingLockDirection
+           dampenAmountThresholdMin:-1
+                                max:1
+                       usingHandler:^(CGFloat gestureAmount, NSEventPhase phase,
+                                      BOOL isComplete, BOOL* stop) {
+                         ElectronNSWindow* strongSelf = weakSelf;
+                         if (!strongSelf) {
+                           *stop = YES;
+                           return;
+                         }
+
+                         if (phase == NSEventPhaseBegan) {
+                           [overlay showPanelForView:[[strongSelf contentView]
+                                                         superview]];
+                           return;
+                         }
+
+                         // gestureAmount goes from 0 to +/-1
+                         // Progress should be absolute value, scaled
+                         CGFloat progress = fabs(gestureAmount);
+                         BOOL finished = progress >= 0.3;
+                         CGFloat displayProgress = fmin(progress / 0.3, 1.0);
+                         [overlay setProgress:displayProgress
+                                     finished:finished];
+
+                         if (phase == NSEventPhaseEnded && finished &&
+                             !didNavigate) {
+                           didNavigate = YES;
+                           if (isBack) {
+                             [strongSelf navigateBack];
+                           } else {
+                             [strongSelf navigateForward];
+                           }
+                         }
+
+                         if (phase == NSEventPhaseEnded ||
+                             phase == NSEventPhaseCancelled || isComplete) {
+                           [overlay dismiss];
+                           overlay = nil;
+                           strongSelf->_inSwipeGesture = NO;
+                           strongSelf->_potentialSwipeGesture = NO;
+                           strongSelf->_cumulativeScrollDelta = NSZeroSize;
+                         }
+                       }];
+}
+
+#pragma mark - NSWindow overrides
 
 - (void)sendEvent:(NSEvent*)event {
   // Draggable regions only respond to left-click dragging, but the system will

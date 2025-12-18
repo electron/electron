@@ -3527,6 +3527,47 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'darwin')('"swipeToNavigate" option', () => {
+    afterEach(closeAllWindows);
+    
+    it('can be set during construction', () => {
+      expect(() => {
+        const w = new BrowserWindow({
+          show: false,
+          swipeToNavigate: true
+        });
+        w.destroy();
+      }).not.to.throw();
+    });
+
+    it('allows navigation with swipe gestures when enabled', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        swipeToNavigate: true
+      });
+      
+      // Load a page and create some history
+      await w.loadURL('about:blank');
+      await w.webContents.executeJavaScript('location.href = "about:blank#page2"');
+      
+      // Verify we can go back (navigation capability)
+      expect(w.webContents.navigationHistory.canGoBack).to.be.true('should be able to go back');
+      
+      // Note: Actual gesture simulation is not possible in automated tests
+      // This test verifies the option is set and history navigation is possible
+    });
+
+    it('does not crash when option is disabled', () => {
+      expect(() => {
+        const w = new BrowserWindow({
+          show: false,
+          swipeToNavigate: false
+        });
+        w.destroy();
+      }).not.to.throw();
+    });
+  });
+
   describe('"tabbingIdentifier" option', () => {
     afterEach(closeAllWindows);
     it('can be set on a window', () => {

@@ -81,6 +81,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
 
   // Associate with BrowserWindow.
   web_contents->SetOwnerWindow(window());
+  window()->SetWebContents(web_contents->web_contents());
 
   InitWithArgs(args);
 
@@ -112,6 +113,7 @@ void BrowserWindow::BeforeUnloadDialogCancelled() {
 }
 
 void BrowserWindow::WebContentsDestroyed() {
+  window()->SetWebContents(nullptr);
   api_web_contents_ = nullptr;
   CloseImmediately();
 }

@@ -8,16 +8,26 @@
 
 #include "base/mac/mac_util.h"
 #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
+#include "content/public/browser/navigation_controller.h"
+#include "content/public/browser/web_contents.h"
+#include "shell/browser/api/electron_api_browser_window.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window_mac.h"
 #include "shell/browser/ui/cocoa/electron_preview_item.h"
 #include "shell/browser/ui/cocoa/electron_touch_bar.h"
+#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "ui/gfx/geometry/resize_utils.h"
 #include "ui/gfx/mac/coordinate_conversion.h"
 #include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 #include "ui/views/widget/native_widget_mac.h"
 
 using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
+using electron::api::BrowserWindow;
+using electron::api::WebContents;
 
 @implementation ElectronNSWindowDelegate
 
@@ -440,6 +450,92 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 - (id<QLPreviewItem>)previewPanel:(QLPreviewPanel*)panel
                previewItemAtIndex:(NSInteger)index {
   return shell_->preview_item();
+}
+
+#pragma mark - HistorySwiperDelegate
+
+- (BOOL)shouldAllowHistorySwiping {
+  return shell_->IsSwipeToNavigateEnabled();
+}
+
+- (NSView*)viewThatWantsHistoryOverlay {
+  return
+      [[shell_->GetNativeWindow().GetNativeNSWindow() contentView] superview];
+}
+
+- (BOOL)canNavigateInDirection:
+            (electron::history_swiper::NavigationDirection)direction
+                      onWindow:(NSWindow*)window {
+  auto* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  auto bw_handle = BrowserWindow::From(isolate, shell_);
+  if (bw_handle.IsEmpty() || bw_handle->IsNull() || !bw_handle->IsObject())
+    return NO;
+
+  auto context = isolate->GetCurrentContext();
+  v8::Local<v8::Value> web_contents_handle;
+  if (!bw_handle.As<v8::Object>()
+           ->Get(context, gin::StringToV8(isolate, "webContents"))
+           .ToLocal(&web_contents_handle)) {
+    return NO;
+  }
+
+  WebContents* web_contents_wrapper = nullptr;
+  if (!gin::Converter<WebContents*>::FromV8(isolate, web_contents_handle,
+                                            &web_contents_wrapper) ||
+      !web_contents_wrapper)
+    return NO;
+
+  auto* web_contents = web_contents_wrapper->web_contents();
+  if (!web_contents)
+    return NO;
+
+  if (direction == electron::history_swiper::NavigationDirection::kBackwards) {
+    return web_contents->GetController().CanGoBack();
+  } else {
+    return web_contents->GetController().CanGoForward();
+  }
+}
+
+- (void)navigateInDirection:
+            (electron::history_swiper::NavigationDirection)direction
+                   onWindow:(NSWindow*)window {
+  auto* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  auto bw_handle = BrowserWindow::From(isolate, shell_);
+  if (bw_handle.IsEmpty() || bw_handle->IsNull() || !bw_handle->IsObject())
+    return;
+
+  auto context = isolate->GetCurrentContext();
+  v8::Local<v8::Value> web_contents_handle;
+  if (!bw_handle.As<v8::Object>()
+           ->Get(context, gin::StringToV8(isolate, "webContents"))
+           .ToLocal(&web_contents_handle)) {
+    return;
+  }
+
+  WebContents* web_contents_wrapper = nullptr;
+  if (!gin::Converter<WebContents*>::FromV8(isolate, web_contents_handle,
+                                            &web_contents_wrapper) ||
+      !web_contents_wrapper)
+    return;
+
+  auto* web_contents = web_contents_wrapper->web_contents();
+  if (!web_contents)
+    return;
+
+  if (direction == electron::history_swiper::NavigationDirection::kBackwards &&
+      web_contents->GetController().CanGoBack()) {
+    web_contents->GetController().GoBack();
+  } else if (direction ==
+                 electron::history_swiper::NavigationDirection::kForwards &&
+             web_contents->GetController().CanGoForward()) {
+    web_contents->GetController().GoForward();
+  }
+}
+
+- (void)backwardsSwipeNavigationLikely {
+  // TODO(codebytere): Implement back navigation likely signal if possible.
 }
 
 @end

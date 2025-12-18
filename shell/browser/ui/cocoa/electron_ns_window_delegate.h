@@ -12,12 +12,16 @@
 #include "base/memory/raw_ptr.h"
 #include "components/remote_cocoa/app_shim/views_nswindow_delegate.h"
 
+#include "shell/browser/ui/cocoa/history_swiper.h"
+
 namespace electron {
 class NativeWindowMac;
 }
 
 @interface ElectronNSWindowDelegate
-    : ViewsNSWindowDelegate <NSTouchBarDelegate, QLPreviewPanelDataSource> {
+    : ViewsNSWindowDelegate <NSTouchBarDelegate,
+                             QLPreviewPanelDataSource,
+                             HistorySwiperDelegate> {
  @private
   raw_ptr<electron::NativeWindowMac> shell_;
   bool is_zooming_;

@@ -24,11 +24,13 @@
 @class ElectronPreviewItem;
 @class ElectronTouchBar;
 @class WindowButtonsProxy;
+@class HistorySwiper;
 
 namespace electron {
 
 class RootViewMac;
 class NativeAppWindowFrameViewMacClient;
+class SwipeInputEventObserver;
 
 class NativeWindowMac : public NativeWindow,
                         public ui::NativeThemeObserver,
@@ -40,6 +42,7 @@ class NativeWindowMac : public NativeWindow,
   // NativeWindow:
   void OnTitleChanged() override;
   void SetContentView(views::View* view) override;
+  void SetWebContents(content::WebContents* web_contents) override;
   void Close() override;
   void CloseImmediately() override;
   void Focus(bool focus) override;
@@ -208,6 +211,11 @@ class NativeWindowMac : public NativeWindow,
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
   bool always_simple_fullscreen() const { return always_simple_fullscreen_; }
 
+  // Swipe navigation.
+  void SetSwipeToNavigate(bool enabled);
+  bool IsSwipeToNavigateEnabled() const { return swipe_to_navigate_enabled_; }
+  HistorySwiper* history_swiper() const { return history_swiper_; }
+
   // We need to save the result of windowWillUseStandardFrame:defaultFrame
   // because macOS calls it with what it refers to as the "best fit" frame for a
   // zoom. This means that even if an aspect ratio is set, macOS might adjust it
@@ -313,6 +321,11 @@ class NativeWindowMac : public NativeWindow,
 
   // Client that provides app-specific frame behaviors to NativeFrameViewMac.
   std::unique_ptr<NativeAppWindowFrameViewMacClient> frame_view_client_;
+  raw_ptr<content::WebContents> web_contents_ = nullptr;
+
+  bool swipe_to_navigate_enabled_ = false;
+  std::unique_ptr<SwipeInputEventObserver> input_event_observer_;
+  HistorySwiper* __strong history_swiper_;
 };
 
 }  // namespace electron

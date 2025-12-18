@@ -224,6 +224,8 @@ inline constexpr std::string_view kEnableDeprecatedPaste =
 
 inline constexpr std::string_view kModal = "modal";
 
+inline constexpr std::string_view kSwipeToNavigate = "swipeToNavigate";
+
 }  // namespace options
 
 // Following are actually command line switches, should be moved to other files.
