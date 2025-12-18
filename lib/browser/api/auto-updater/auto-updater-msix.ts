@@ -140,6 +140,7 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
       // Make a HEAD request to follow redirects and get the final URL
       const response = await net.fetch(url, {
         method: 'HEAD',
+        headers: this.updateHeaders ? new Headers(this.updateHeaders) : undefined,
         redirect: 'follow' // Follow redirects to get the final URL
       });
 
@@ -219,9 +220,14 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
       return { ok: true, available: false };
     }
 
-    // If currentRelease is older than current version, no update available
+    // If currentRelease is older than current version, check allowAnyVersion
     if (versionComparison < 0) {
-      return { ok: true, available: false };
+      // If allowAnyVersion is true, allow downgrades
+      if (this.allowAnyVersion) {
+        // Continue to find the release entry for downgrade
+      } else {
+        return { ok: true, available: false };
+      }
     }
 
     // currentRelease is newer, find the release entry
@@ -383,6 +389,8 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
       if (!msixUrlInfo.available) {
         this.emit('update-not-available');
       } else {
+        this.updateAvailable = true;
+        this.emit('update-available');
         await msixUpdate.updateMsix(msixUrlInfo.updateUrl, {
           deferRegistration: true,
           developerMode: false,
@@ -391,7 +399,6 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
           forceUpdateFromAnyVersion: this.allowAnyVersion
         } as UpdateMsixOptions);
 
-        this.updateAvailable = true;
         this.emit('update-downloaded', {}, msixUrlInfo.releaseNotes, msixUrlInfo.releaseName, msixUrlInfo.releaseDate, msixUrlInfo.updateUrl, () => {
           this.quitAndInstall();
         });
