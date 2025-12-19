@@ -17,6 +17,7 @@
 #include "base/memory/raw_ptr.h"
 #include "base/notreached.h"
 #include "base/sequence_checker.h"
+#include "content/public/browser/global_request_id.h"
 #include "gin/object_template_builder.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
@@ -375,6 +376,13 @@ void SimpleURLLoaderWrapper::Start() {
 
   loader_->SetAllowHttpErrorResults(true);
   loader_->SetURLLoaderFactoryOptions(request_options_);
+  // Set a non-zero request ID so that the request can use the
+  // TrustedHeaderClient code path for webRequest header modifications.
+  // See proxying_url_loader_factory.cc for details.
+  if (electron::IsBrowserProcess()) {
+    loader_->SetRequestID(
+        content::GlobalRequestID::MakeBrowserInitiated().request_id);
+  }
   loader_->SetOnResponseStartedCallback(base::BindOnce(
       &SimpleURLLoaderWrapper::OnResponseStarted, weak_factory_.GetWeakPtr()));
   loader_->SetOnRedirectCallback(base::BindRepeating(
