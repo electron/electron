@@ -172,6 +172,11 @@ using browser-specific remote debugging protocols, similar to the [Puppeteer][] 
 Node.js API but geared towards end-to-end testing. Playwright has experimental Electron
 support via Electron's support for the [Chrome DevTools Protocol][] (CDP).
 
+:::warning Version notice
+This tutorial was originally written using `@playwright/test@1.52.0`.
+If you are using a newer version (for example `1.57.0` or later), some APIs or behaviors may differ.
+:::
+
 ### Install dependencies
 
 You can install Playwright through your preferred Node.js package manager. It comes with its
@@ -181,11 +186,6 @@ own [test runner][playwright-intro], which is built for end-to-end testing:
 npm install --save-dev @playwright/test
 ```
 
-:::caution Dependencies
-This tutorial was written with `@playwright/test@1.52.0`. Check out
-[Playwright's releases][playwright-releases] page to learn about
-changes that might affect the code below.
-:::
 
 ### Write your tests
 
