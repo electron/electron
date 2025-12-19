@@ -41,7 +41,7 @@ MouseDownImpl g_nsnextstepframe_mousedown;
 }  // namespace
 
 // This class is never instantiated, it's just a container for our swizzled
-// methods.
+// mouseDown method.
 @interface SwizzledMethodsClass : NSView
 @end
 
@@ -135,6 +135,13 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
                                  backing:NSBackingStoreBuffered
                                    defer:NO])) {
 #if IS_MAS_BUILD()
+    // The first time we create a frameless window, we swizzle the
+    // implementation of -[NSNextStepFrame mouseDown:], replacing it with our
+    // own.
+    // This is only necessary on MAS where we can't directly refer to
+    // NSNextStepFrame or NSThemeFrame, as they are private APIs.
+    // See components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm for
+    // the non-MAS-compatible way of doing this.
     if (styleMask & NSWindowStyleMaskTitled) {
       if (!g_nsthemeframe_mousedown) {
         NSView* theme_frame = [[self contentView] superview];
@@ -183,7 +190,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
                                      // enabled
                                      if (!strongSelf->shell_ ||
                                          !strongSelf->shell_
-                                              ->IsSwipeToNavigateEnabled())
+                                              ->IsSwipeGestureEnabled())
                                        return event;
 
                                      // Try to handle as swipe gesture
@@ -224,7 +231,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     return nil;
 }
 
-#pragma mark - Two-finger Swipe Gesture (Event-based)
+// Two-finger Swipe Gesture (Event-based)
 
 - (BOOL)handleSwipeScrollEvent:(NSEvent*)event {
   NSEventPhase phase = event.phase;
@@ -333,9 +340,13 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
                        }];
 }
 
-#pragma mark - NSWindow overrides
+// NSWindow overrides.
 
 - (void)sendEvent:(NSEvent*)event {
+  // Draggable regions only respond to left-click dragging, but the system will
+  // still suppress right-clicks in a draggable region. Temporarily disabling
+  // draggable regions allows the underlying views to respond to right-click
+  // to potentially bring up a frame context menu.
   BOOL shouldDisableDraggable =
       (event.type == NSEventTypeRightMouseDown ||
        (event.type == NSEventTypeLeftMouseDown &&
@@ -365,11 +376,19 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
+  // Resizing is disabled.
   if (electron::ScopedDisableResize::IsResizeDisabled())
     return [self frame];
 
   NSRect result = [super constrainFrameRect:frameRect toScreen:screen];
+  // Enable the window to be larger than screen.
   if ([self enableLargerThanScreen]) {
+    // If we have a frame, ensure that we only position the window
+    // somewhere where the user can move or resize it (and not
+    // behind the menu bar, for instance)
+    //
+    // If there's no frame, put the window wherever the developer
+    // wanted it to go
     if (shell_ && shell_->has_frame()) {
       result.size = frameRect.size;
     } else {
@@ -381,6 +400,8 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (void)setFrame:(NSRect)windowFrame display:(BOOL)displayViews {
+  // constrainFrameRect is not called on hidden windows so disable adjusting
+  // the frame directly when resize is disabled
   if (!electron::ScopedDisableResize::IsResizeDisabled())
     [super setFrame:windowFrame display:displayViews];
 }
@@ -396,6 +417,13 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   if (![attribute isEqualToString:@"AXChildren"])
     return [super accessibilityAttributeValue:attribute];
 
+  // We want to remove the window title (also known as
+  // NSAccessibilityReparentingCellProxy), which VoiceOver already sees.
+  // * when VoiceOver is disabled, this causes Cmd+C to be used for TTS but
+  //   still leaves the buttons available in the accessibility tree.
+  // * when VoiceOver is enabled, the full accessibility tree is used.
+  // Without removing the title and with VO disabled, the TTS would always read
+  // the window title instead of using Cmd+C to get the selected text.
   NSPredicate* predicate =
       [NSPredicate predicateWithFormat:@"(self.className != %@)",
                                        @"NSAccessibilityReparentingCellProxy"];
@@ -424,6 +452,9 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (BOOL)validateUserInterfaceItem:(id<NSValidatedUserInterfaceItem>)item {
+  // By default "Close Window" is always disabled when window has no title, to
+  // support closing a window without title we need to manually do menu item
+  // validation. This code path is used by the "roundedCorners" option.
   if ([item action] == @selector(performClose:))
     return shell_ && shell_->IsClosable();
   return [super validateUserInterfaceItem:item];
@@ -431,6 +462,9 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 
 - (void)disableHeadlessMode {
   if (shell_) {
+    // We initialize the window in headless mode to allow painting before it is
+    // shown, but we don't want the headless behavior of allowing the window to
+    // be placed unconstrained.
     self.isHeadless = false;
     if (shell_->widget())
       shell_->widget()->DisableHeadlessMode();
@@ -462,6 +496,9 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
       electron::NativeWindowMac::TitleBarStyle::kCustomButtonsOnHover) {
     [[self delegate] windowShouldClose:self];
   } else if (!([self styleMask] & NSWindowStyleMaskTitled)) {
+    // performClose does not work for windows without title, so we have to
+    // emulate its behavior. This code path is used by "simpleFullscreen" and
+    // "roundedCorners" options.
     if ([[self delegate] respondsToSelector:@selector(windowShouldClose:)]) {
       if (![[self delegate] windowShouldClose:self])
         return;
@@ -471,6 +508,8 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     }
     [self close];
   } else if (shell_->is_modal() && shell_->parent() && shell_->IsVisible()) {
+    // We don't want to actually call [window close] here since
+    // we've already called endSheet on the modal sheet.
     return;
   } else {
     [super performClose:sender];
@@ -484,10 +523,19 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   bool is_simple_fs = shell_->IsSimpleFullScreen();
   bool always_simple_fs = shell_->always_simple_fullscreen();
 
+  // If we're in simple fullscreen mode and trying to exit it
+  // we need to ensure we exit it properly to prevent a crash
+  // with NSWindowStyleMaskTitled mode.
   if (is_simple_fs || always_simple_fs) {
     shell_->SetSimpleFullScreen(!is_simple_fs);
   } else {
     if (shell_->IsVisible()) {
+      // Until 10.13, AppKit would obey a call to -toggleFullScreen: made inside
+      // windowDidEnterFullScreen & windowDidExitFullScreen. Starting in 10.13,
+      // it behaves as though the transition is still in progress and just emits
+      // "not in a fullscreen state" when trying to exit fullscreen in the same
+      // runloop that entered it. To handle this, invoke -toggleFullScreen:
+      // asynchronously.
       [super performSelector:@selector(toggleFullScreen:)
                   withObject:nil
                   afterDelay:0];
@@ -495,6 +543,8 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
       [super toggleFullScreen:sender];
     }
 
+    // Exiting fullscreen causes Cocoa to redraw the NSWindow, which resets
+    // the enabled state for NSWindowZoomButton. We need to persist it.
     bool maximizable = shell_->IsMaximizable();
     shell_->SetMaximizable(maximizable);
   }

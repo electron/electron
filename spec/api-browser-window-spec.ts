@@ -3527,14 +3527,14 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  ifdescribe(process.platform === 'darwin')('"swipeToNavigate" option', () => {
+  ifdescribe(process.platform === 'darwin')('"swipeGesture" option', () => {
     afterEach(closeAllWindows);
 
     it('can be set during construction', () => {
       expect(() => {
         const w = new BrowserWindow({
           show: false,
-          swipeToNavigate: true
+          swipeGesture: true
         });
         w.destroy();
       }).not.to.throw();
@@ -3543,7 +3543,7 @@ describe('BrowserWindow module', () => {
     it('emits swipe-gesture event with direction, phase, and progress', async () => {
       const w = new BrowserWindow({
         show: false,
-        swipeToNavigate: true
+        swipeGesture: true
       });
 
       // Note: Actual gesture simulation is not possible in automated tests
@@ -3564,7 +3564,7 @@ describe('BrowserWindow module', () => {
       expect(() => {
         const w = new BrowserWindow({
           show: false,
-          swipeToNavigate: false
+          swipeGesture: false
         });
         w.destroy();
       }).not.to.throw();

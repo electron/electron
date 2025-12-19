@@ -224,7 +224,7 @@ inline constexpr std::string_view kEnableDeprecatedPaste =
 
 inline constexpr std::string_view kModal = "modal";
 
-inline constexpr std::string_view kSwipeToNavigate = "swipeToNavigate";
+inline constexpr std::string_view kSwipeGesture = "swipeGesture";
 
 }  // namespace options
 

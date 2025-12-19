@@ -33,6 +33,7 @@
 #include "shell/browser/ui/cocoa/electron_touch_bar.h"
 #include "shell/browser/ui/cocoa/root_view_mac.h"
 #include "shell/browser/ui/cocoa/window_buttons_proxy.h"
+#include "shell/browser/ui/drag_util.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/electron_constants.h"
@@ -357,10 +358,10 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   UpdateWindowOriginalFrame();
   original_level_ = [window_ level];
 
-  // Initialize swipe navigation.
-  bool swipe_to_navigate = false;
-  if (options.Get(options::kSwipeToNavigate, &swipe_to_navigate)) {
-    SetSwipeToNavigate(swipe_to_navigate);
+  // Initialize swipe gesture events.
+  bool swipe_gesture = false;
+  if (options.Get(options::kSwipeGesture, &swipe_gesture)) {
+    SetSwipeGesture(swipe_gesture);
   }
 }
 
@@ -1889,8 +1890,8 @@ std::unique_ptr<NativeWindow> NativeWindow::Create(
   return std::make_unique<NativeWindowMac>(options, parent);
 }
 
-void NativeWindowMac::SetSwipeToNavigate(bool enabled) {
-  swipe_to_navigate_enabled_ = enabled;
+void NativeWindowMac::SetSwipeGesture(bool enabled) {
+  swipe_gesture_enabled_ = enabled;
 }
 
 }  // namespace electron

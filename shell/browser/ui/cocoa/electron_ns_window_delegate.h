@@ -26,10 +26,13 @@ class NativeWindowMac;
 
   bool is_borderless_;
 
-  // Whether the window is currently minimized.
+  // Whether the window is currently minimized. Used to work
+  // around a macOS bug with child window minimization.
   bool is_minimized_;
 
   // Only valid during a live resize.
+  // Used to keep track of whether a resize is happening horizontally or
+  // vertically, even if physically the user is resizing in both directions.
   std::optional<bool> resizingHorizontally_;
 }
 - (id)initWithShell:(electron::NativeWindowMac*)shell;
