@@ -271,6 +271,10 @@ Returns `Buffer` - A [Buffer][buffer] that contains the image's `JPEG` encoded d
 Returns `Buffer` - A [Buffer][buffer] that contains a copy of the image's raw bitmap pixel
 data.
 
+The bitmap data is returned in BGRA format with premultiplied alpha values. The color
+space is normalized to sRGB to ensure consistent pixel values across different source
+images, regardless of their original color space (e.g., Display P3 on macOS).
+
 #### `image.toDataURL([options])`
 
 <!--
