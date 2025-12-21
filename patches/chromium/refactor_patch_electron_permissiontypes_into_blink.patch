@@ -6,15 +6,15 @@ Subject: refactor: patch electron PermissionTypes into blink
 6387077: [PermissionOptions] Generalize PermissionRequestDescription | https://chromium-review.googlesource.com/c/chromium/src/+/6387077
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index d6bab225f22d0c32ce4361a1a879c62faf9cee81..9daf5987e434783bd62cb935f74d5190f8e644e3 100644
+index d6bab225f22d0c32ce4361a1a879c62faf9cee81..142c4be5f2efbc0d8e19aa29a848ea948bfba3cd 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -554,8 +554,18 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -553,9 +553,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+       return ContentSettingsType::LOCAL_NETWORK;
      case PermissionType::LOOPBACK_NETWORK:
        return ContentSettingsType::LOOPBACK_NETWORK;
-     case PermissionType::GEOLOCATION_APPROXIMATE:
+-    case PermissionType::GEOLOCATION_APPROXIMATE:
 -    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:    case PermissionType::NUM:
-+
 +    // Permissions added by Electron
 +    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
 +    case PermissionType::ELECTRON_FULLSCREEN:
@@ -30,16 +30,16 @@ index d6bab225f22d0c32ce4361a1a879c62faf9cee81..9daf5987e434783bd62cb935f74d5190
  
    return ContentSettingsType::DEFAULT;
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 1b99c0e3bd89fb909bc18537dc70c0e04f4149c7..1767bdd1436eebf31f28da8f0aa16691adecb308 100644
+index 1b99c0e3bd89fb909bc18537dc70c0e04f4149c7..9aa94047dbd6067109988766584b915f40283b2c 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
-@@ -98,8 +98,16 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+@@ -97,9 +97,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+     case PermissionType::LOCAL_NETWORK_ACCESS:
      case PermissionType::LOCAL_NETWORK:
      case PermissionType::LOOPBACK_NETWORK:
-     case PermissionType::GEOLOCATION_APPROXIMATE:
+-    case PermissionType::GEOLOCATION_APPROXIMATE:
 -    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:      return std::nullopt;
 -  }
-+
 +    // Permissions added by Electron
 +    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
 +    case PermissionType::FILE_SYSTEM:
@@ -53,14 +53,16 @@ index 1b99c0e3bd89fb909bc18537dc70c0e04f4149c7..1767bdd1436eebf31f28da8f0aa16691
  
  #if !BUILDFLAG(IS_ANDROID)
 diff --git a/content/browser/permissions/permission_descriptor_util.cc b/content/browser/permissions/permission_descriptor_util.cc
-index 260951e60f5d805a044afe94cad6fca86bb7e365..ee802242b76e41c98a50a845918058840481f946 100644
+index 260951e60f5d805a044afe94cad6fca86bb7e365..f8e74586db1aef323d78f7ef6b5b31d26c1861b5 100644
 --- a/content/browser/permissions/permission_descriptor_util.cc
 +++ b/content/browser/permissions/permission_descriptor_util.cc
-@@ -183,10 +183,28 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
-     case blink::PermissionType::GEOLOCATION_APPROXIMATE:
+@@ -180,13 +180,27 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
+     case blink::PermissionType::LOOPBACK_NETWORK:
        return CreatePermissionDescriptor(
-           blink::mojom::PermissionName::GEOLOCATION_APPROXIMATE);
-+
+           blink::mojom::PermissionName::LOOPBACK_NETWORK);
+-    case blink::PermissionType::GEOLOCATION_APPROXIMATE:
+-      return CreatePermissionDescriptor(
+-          blink::mojom::PermissionName::GEOLOCATION_APPROXIMATE);
 +    // Permissions added by Electron
      case blink::PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
        return CreatePermissionDescriptor(

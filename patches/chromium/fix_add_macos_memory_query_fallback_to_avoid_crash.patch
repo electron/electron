@@ -12,7 +12,7 @@ While this "hot-swapping" behavior isn't supported, many enterprise update scrip
 This patch should be removed after the new implementation has been present since the beginning of a stable release. The new implementation was released with Electron 37.0.0, but this fallback was not added until after 37.2.2. That means 38.0.0 would be the first safe release to remove this fallback, giving developers a 1-major-version buffer to safely transition implementations.
 
 diff --git a/base/system/sys_info_apple.mm b/base/system/sys_info_apple.mm
-index 7410cd2e187180808cbb86c53a538cd7a80c0eeb..06d8e0a9bbf8530ca83e0049f283fc46118733a0 100644
+index 7410cd2e187180808cbb86c53a538cd7a80c0eeb..1f884118c8ecefe11f010cb13daed6094ee56ceb 100644
 --- a/base/system/sys_info_apple.mm
 +++ b/base/system/sys_info_apple.mm
 @@ -6,11 +6,31 @@
@@ -39,7 +39,7 @@ index 7410cd2e187180808cbb86c53a538cd7a80c0eeb..06d8e0a9bbf8530ca83e0049f283fc46
 +    NOTREACHED();
 +  }
 +  DCHECK_EQ(HOST_BASIC_INFO_COUNT, count);
-+  return ByteSize::FromUnsigned(hostinfo.max_mem);
++  return ByteSize::FromDeprecatedByteCount(ByteCount::FromUnsigned(hostinfo.max_mem));
 +}
 +
 +}
