@@ -313,7 +313,7 @@ index 18f283e625101318ee14b50e6e765dfd1c9a1a44..44a3a55974c9e4b9e715574075f25661
  
    auto DrawAsSinglePath = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 8aaade03eac15d32281e5369d5113a1086efd0ab..37a4646c7bedf4155df0419ba70a482a4e440914 100644
+index 8486ccac8d61eac15c644110bff81f1945dbea5d..7bf3f65e8a9ebef506b30851848d57a756ff64d7 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -214,6 +214,10 @@
