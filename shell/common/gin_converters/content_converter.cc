@@ -229,6 +229,12 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "web-app-installation");
     case blink::PermissionType::LOCAL_NETWORK_ACCESS:
       return StringToV8(isolate, "local-network-access");
+    case blink::PermissionType::LOCAL_NETWORK:
+      return StringToV8(isolate, "local-network");
+    case blink::PermissionType::LOOPBACK_NETWORK:
+      return StringToV8(isolate, "loopback-network");
+    case blink::PermissionType::GEOLOCATION_APPROXIMATE:
+      return StringToV8(isolate, "geolocation-approximate");
 
     // Permissions added by Electron
     case blink::PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
