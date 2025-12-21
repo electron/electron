@@ -88,12 +88,15 @@ index 260951e60f5d805a044afe94cad6fca86bb7e365..ee802242b76e41c98a50a84591805884
    NOTREACHED();
  }
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
-index 9297e5667ef794fad52d76d878d2d50aefad3d11..08dffaae27a6f5e07b71a1aec5d4f8dbdd33c6e9 100644
+index 9297e5667ef794fad52d76d878d2d50aefad3d11..99241994175249437141fcf6f49918f8f073e907 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
-@@ -111,8 +111,20 @@ std::string GetPermissionString(PermissionType permission) {
-     case PermissionType::GEOLOCATION_APPROXIMATE:
-       return "GeolocationApproximate";
+@@ -108,11 +108,21 @@ std::string GetPermissionString(PermissionType permission) {
+       return "LocalNetwork";
+     case PermissionType::LOOPBACK_NETWORK:
+       return "LoopbackNetwork";
+-    case PermissionType::GEOLOCATION_APPROXIMATE:
+-      return "GeolocationApproximate";
      case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
 -      return "DeprecatedSyncClipboardRead";    case PermissionType::NUM:
 -      NOTREACHED();
@@ -114,7 +117,7 @@ index 9297e5667ef794fad52d76d878d2d50aefad3d11..08dffaae27a6f5e07b71a1aec5d4f8db
    }
    NOTREACHED();
  }
-@@ -192,7 +204,15 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
+@@ -192,7 +202,15 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
      case PermissionType::NOTIFICATIONS:
      case PermissionType::KEYBOARD_LOCK:
      case PermissionType::POINTER_LOCK:
@@ -130,7 +133,7 @@ index 9297e5667ef794fad52d76d878d2d50aefad3d11..08dffaae27a6f5e07b71a1aec5d4f8db
        return std::nullopt;
  
      case PermissionType::NUM:
-@@ -368,6 +388,21 @@ std::optional<PermissionType> PermissionDescriptorInfoToPermissionType(
+@@ -368,6 +386,21 @@ std::optional<PermissionType> PermissionDescriptorInfoToPermissionType(
        return PermissionType::WEB_PRINTING;
      case PermissionName::SMART_CARD:
        return PermissionType::SMART_CARD;
