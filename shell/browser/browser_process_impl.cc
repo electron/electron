@@ -140,7 +140,7 @@ void BrowserProcessImpl::PreCreateThreads() {
   // chrome-extension:// URLs are safe to request anywhere, but may only
   // commit (including in iframes) in extension processes.
   content::ChildProcessSecurityPolicy::GetInstance()
-      ->RegisterWebSafeIsolatedScheme(extensions::kExtensionScheme, true);
+      ->RegisterWebSafeIsolatedScheme(extensions::kExtensionScheme);
   // Must be created before the IOThread.
   // Once IOThread class is no longer needed,
   // this can be created on first use.
