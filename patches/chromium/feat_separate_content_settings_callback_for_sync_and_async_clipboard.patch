@@ -20,57 +20,68 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 766ad28c66348f79164d8690faffb936bf659884..7b1131679ef84ca575629f46ad98483eeb4d8d9e 100644
+index cdba817db9814c59a39ec058d05a842fa6b55f69..d6bab225f22d0c32ce4361a1a879c62faf9cee81 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -538,6 +538,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
-       return ContentSettingsType::WEB_APP_INSTALLATION;
-     case PermissionType::LOCAL_NETWORK_ACCESS:
-       return ContentSettingsType::LOCAL_NETWORK_ACCESS;
-+    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
-     case PermissionType::NUM:
+@@ -553,7 +553,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+       return ContentSettingsType::LOCAL_NETWORK;
+     case PermissionType::LOOPBACK_NETWORK:
+       return ContentSettingsType::LOOPBACK_NETWORK;
+-    case PermissionType::NUM:
++    case PermissionType::GEOLOCATION_APPROXIMATE:
++    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:    case PermissionType::NUM:
        break;
    }
+ 
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 40cb6f6c4f6fe68d1351a19c4da03538d3dfd3d1..b2a8eea4c802b7fbe2a098c8fae8d640e2d0b169 100644
+index b47be001075cfd1ef963cac3e877704c64bc62f4..1b99c0e3bd89fb909bc18537dc70c0e04f4149c7 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
-@@ -94,6 +94,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
-     case PermissionType::AUTOMATIC_FULLSCREEN:
-     case PermissionType::WEB_APP_INSTALLATION:
+@@ -97,7 +97,8 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
      case PermissionType::LOCAL_NETWORK_ACCESS:
-+    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
-       return std::nullopt;
+     case PermissionType::LOCAL_NETWORK:
+     case PermissionType::LOOPBACK_NETWORK:
+-      return std::nullopt;
++    case PermissionType::GEOLOCATION_APPROXIMATE:
++    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:      return std::nullopt;
    }
  }
+ 
 diff --git a/content/browser/permissions/permission_descriptor_util.cc b/content/browser/permissions/permission_descriptor_util.cc
-index 6c36ada80f6f225b84a8f3832405128f8ba83224..714d582d1060873765b24770b18eddcbbdcf5506 100644
+index 17ff5e9376c44ef0dba7d2f95c50e1af5230b140..260951e60f5d805a044afe94cad6fca86bb7e365 100644
 --- a/content/browser/permissions/permission_descriptor_util.cc
 +++ b/content/browser/permissions/permission_descriptor_util.cc
-@@ -171,6 +171,9 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
-     case blink::PermissionType::LOCAL_NETWORK_ACCESS:
+@@ -180,7 +180,12 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
+     case blink::PermissionType::LOOPBACK_NETWORK:
        return CreatePermissionDescriptor(
-           blink::mojom::PermissionName::LOCAL_NETWORK_ACCESS);
+           blink::mojom::PermissionName::LOOPBACK_NETWORK);
+-    case blink::PermissionType::NUM:
++    case blink::PermissionType::GEOLOCATION_APPROXIMATE:
++      return CreatePermissionDescriptor(
++          blink::mojom::PermissionName::GEOLOCATION_APPROXIMATE);
 +    case blink::PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
 +      return CreatePermissionDescriptor(
-+          blink::mojom::PermissionName::DEPRECATED_SYNC_CLIPBOARD_READ);
-     case blink::PermissionType::NUM:
++          blink::mojom::PermissionName::DEPRECATED_SYNC_CLIPBOARD_READ);    case blink::PermissionType::NUM:
        NOTREACHED();
    }
+   NOTREACHED();
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
-index 4dd8b8d4498cbe00b5739f620037ebe6915b6033..2d7d9e96522208835a867e0be12df4da56141ab1 100644
+index 47e020ed0e706dee01fbee90a2af2fe6c521cd9b..9297e5667ef794fad52d76d878d2d50aefad3d11 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
-@@ -102,6 +102,8 @@ std::string GetPermissionString(PermissionType permission) {
-       return "WebAppInstallation";
-     case PermissionType::LOCAL_NETWORK_ACCESS:
-       return "LocalNetworkAccess";
+@@ -108,7 +108,10 @@ std::string GetPermissionString(PermissionType permission) {
+       return "LocalNetwork";
+     case PermissionType::LOOPBACK_NETWORK:
+       return "LoopbackNetwork";
+-    case PermissionType::NUM:
++    case PermissionType::GEOLOCATION_APPROXIMATE:
++      return "GeolocationApproximate";
 +    case PermissionType::DEPRECATED_SYNC_CLIPBOARD_READ:
-+      return "DeprecatedSyncClipboardRead";
-     case PermissionType::NUM:
++      return "DeprecatedSyncClipboardRead";    case PermissionType::NUM:
        NOTREACHED();
    }
-@@ -176,6 +178,7 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
+   NOTREACHED();
+@@ -189,6 +192,7 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
      case PermissionType::NOTIFICATIONS:
      case PermissionType::KEYBOARD_LOCK:
      case PermissionType::POINTER_LOCK:
@@ -79,31 +90,31 @@ index 4dd8b8d4498cbe00b5739f620037ebe6915b6033..2d7d9e96522208835a867e0be12df4da
  
      case PermissionType::NUM:
 diff --git a/third_party/blink/public/common/permissions/permission_utils.h b/third_party/blink/public/common/permissions/permission_utils.h
-index 5c82a641538802bc459782ea422a1186045b054a..c286d87043ec4cb2e51ec9d82d08e4c84f5a270c 100644
+index 638d0ee4fb368d28465322d34dbfca645ecd162d..38c20e7f0c597815ce5ee3333f12183ac1e18c62 100644
 --- a/third_party/blink/public/common/permissions/permission_utils.h
 +++ b/third_party/blink/public/common/permissions/permission_utils.h
-@@ -65,6 +65,7 @@ enum class PermissionType {
-   HAND_TRACKING = 41,
-   WEB_APP_INSTALLATION = 42,
-   LOCAL_NETWORK_ACCESS = 43,
-+  DEPRECATED_SYNC_CLIPBOARD_READ = 44,
- 
+@@ -69,7 +69,7 @@ enum class PermissionType {
+   LOCAL_NETWORK = 44,
+   LOOPBACK_NETWORK = 45,
+   GEOLOCATION_APPROXIMATE = 46,
+-
++  DEPRECATED_SYNC_CLIPBOARD_READ = 47,
    // Always keep this at the end.
    NUM,
+   MIN_VALUE = MIDI_SYSEX,
 diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
-index da2bcae965ddc183b5794bc8c44aec4f1754f1d2..2b24e692042a352e931278ead6a06e057f73eda6 100644
+index f3e787a35976d86cc4e7307745822634df659941..81c4f0bdc89f972464d13f06c7907e5aabff4043 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
-@@ -43,7 +43,8 @@ enum PermissionName {
-   AR,
-   HAND_TRACKING,
+@@ -47,7 +47,7 @@ enum PermissionName {
    WEB_PRINTING,
--  SMART_CARD
-+  SMART_CARD,
-+  DEPRECATED_SYNC_CLIPBOARD_READ
- };
+   SMART_CARD,
+   GEOLOCATION_APPROXIMATE,
+-};
++  DEPRECATED_SYNC_CLIPBOARD_READ};
  
  struct MidiPermissionDescriptor {
+   bool sysex;
 diff --git a/third_party/blink/public/platform/web_content_settings_client.h b/third_party/blink/public/platform/web_content_settings_client.h
 index 36410ff29d9c82e59f93fbb82968064bd330dfde..6c3f994e0b184f78bd9442002bb4dfae66e50518 100644
 --- a/third_party/blink/public/platform/web_content_settings_client.h
@@ -119,7 +130,7 @@ index 36410ff29d9c82e59f93fbb82968064bd330dfde..6c3f994e0b184f78bd9442002bb4dfae
    virtual void PassiveInsecureContentFound(const WebURL&) {}
  
 diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-index 80c15ef5381aa08c0c6ce3f51534bb04af64775d..9a9024ba766226848974e5518ccbffa79ee55e65 100644
+index a5ac9d4a417ac8e75e761c40841f41ab9057c761..292bd1f9de78828e739dae24a45a1dd3d6585240 100644
 --- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 +++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 @@ -123,7 +123,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
@@ -141,10 +152,10 @@ index 80c15ef5381aa08c0c6ce3f51534bb04af64775d..9a9024ba766226848974e5518ccbffa7
  
  bool ClipboardCommands::ExecuteCopy(LocalFrame& frame,
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index 691726eb23434005adc559534fc0aeede937cc92..a980ed6afb84eceef9c9b594b325e8e3783821ec 100644
+index 68dd920466d3b018c3036d556948ef5dc789cc22..d88327a36321bc9370f7f3761487c6fc31b7f109 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-@@ -145,6 +145,8 @@ String PermissionNameToString(PermissionName name) {
+@@ -151,6 +151,8 @@ String PermissionNameToString(PermissionName name) {
        return "web-printing";
      case PermissionName::SMART_CARD:
        return "smart-card";
