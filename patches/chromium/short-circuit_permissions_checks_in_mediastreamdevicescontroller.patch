@@ -15,7 +15,7 @@ short-circuit all the permissions checks in MSDC for now to allow us to
 unduplicate this code.
 
 diff --git a/components/webrtc/media_stream_devices_controller.cc b/components/webrtc/media_stream_devices_controller.cc
-index 90134f0470e29c28479eac9f0afef1ef9455d20f..71ca1171daddf4f851e20428f13c1f9da7a5ca8f 100644
+index 401cd9ced6114a2b8267270ea5be321b24df641e..6c6df24ff3c47204440f699343b52185c65b95a7 100644
 --- a/components/webrtc/media_stream_devices_controller.cc
 +++ b/components/webrtc/media_stream_devices_controller.cc
 @@ -57,7 +57,8 @@ bool PermissionIsRequested(blink::PermissionType permission,

@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 3deb4b529e36ea9e28bc67de49edeeb23b679079..fac1e7bd7c8b715abc1141b7b9e7781ad909942b 100644
+index e8a525444092a20624616b280b99f9b218180410..c2c43e67cf671bbf2282fb5728860b5f469d2b28 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -31,7 +31,7 @@ index 3deb4b529e36ea9e28bc67de49edeeb23b679079..fac1e7bd7c8b715abc1141b7b9e7781a
  #include "chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker.h"
  #include "chrome/browser/picture_in_picture/picture_in_picture_window.h"
  #include "media/base/media_switches.h"
-@@ -67,6 +70,7 @@ constexpr double kMaxWindowSizeRatio = 0.8;
+@@ -71,6 +74,7 @@ constexpr double kMaxWindowSizeRatio = 0.8;
  // `kMaxWindowSizeRatio`.
  constexpr double kMaxSiteRequestedWindowSizeRatio = 0.25;
  
@@ -39,7 +39,7 @@ index 3deb4b529e36ea9e28bc67de49edeeb23b679079..fac1e7bd7c8b715abc1141b7b9e7781a
  // Returns true if a document picture-in-picture window should be focused upon
  // opening it.
  bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
-@@ -83,6 +87,7 @@ bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
+@@ -87,6 +91,7 @@ bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
    // AutoPictureInPictureTabHelper.
    return !auto_picture_in_picture_tab_helper->IsInAutoPictureInPicture();
  }
@@ -47,7 +47,7 @@ index 3deb4b529e36ea9e28bc67de49edeeb23b679079..fac1e7bd7c8b715abc1141b7b9e7781a
  
  // Returns the maximum area in pixels that the site can request a
  // picture-in-picture window to be.
-@@ -216,7 +221,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
+@@ -220,7 +225,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
      return false;
    }
  
@@ -56,7 +56,7 @@ index 3deb4b529e36ea9e28bc67de49edeeb23b679079..fac1e7bd7c8b715abc1141b7b9e7781a
    // The user manually closed the pip window, so let the tab helper know in case
    // the auto-pip permission dialog was visible.
    if (auto* tab_helper = AutoPictureInPictureTabHelper::FromWebContents(
-@@ -567,7 +572,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
+@@ -572,7 +577,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
  
  // static
  void PictureInPictureWindowManager::SetWindowParams(NavigateParams& params) {
@@ -65,7 +65,7 @@ index 3deb4b529e36ea9e28bc67de49edeeb23b679079..fac1e7bd7c8b715abc1141b7b9e7781a
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
    params.window_action =
-@@ -668,6 +673,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -673,6 +678,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -73,7 +73,7 @@ index 3deb4b529e36ea9e28bc67de49edeeb23b679079..fac1e7bd7c8b715abc1141b7b9e7781a
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -706,6 +712,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -711,6 +717,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;

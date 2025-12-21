@@ -51,10 +51,10 @@ index c8d6592a2d73bb132c7bdaa6532086da10a4512a..99479aed4911e134914db226094933c3
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index b4f1a82dc4294313c4439cb132ae05ea8cd19a99..6a6ede73a913615fdefd5d21c2c7dd46f296010a 100644
+index 4df91cea76224362565bb968852d05c1a4f865f9..b9b7426d6234ab4b269c154feedadf16943212f8 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -633,8 +633,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
+@@ -646,8 +646,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
    // OnShowWithPageVisibility will not call NotifyHostAndDelegateOnWasShown,
    // which updates `visibility_`, unless the host is hidden. Make sure no update
    // is needed.
@@ -116,10 +116,10 @@ index 932658273154ef2e022358e493a8e7c00c86e732..57bbfb5cde62c9496c351c861880a189
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index cb2d169fccaa107a0ed32a6cbb253e77b14d9eff..4e01b4ebcdad4375aa565e9d262617fd1a2015cc 100644
+index 32c9c2773d076e08bd7e4bf9f6b4723de746f79d..26dedfbeb8fa650271fbea7ae46c7e075d29da54 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -2497,6 +2497,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
+@@ -2498,6 +2498,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
    TRACE_EVENT2("navigation", "WebViewImpl::SetPageLifecycleStateInternal",
                 "old_state", old_state, "new_state", new_state);
  
@@ -130,7 +130,7 @@ index cb2d169fccaa107a0ed32a6cbb253e77b14d9eff..4e01b4ebcdad4375aa565e9d262617fd
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -4084,10 +4088,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -4116,10 +4120,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
