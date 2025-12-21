@@ -92,9 +92,9 @@ describe('window.postMessage', () => {
     w.loadURL(`file://${fixturesPath}/pages/window-open-postMessage-driver.html`);
     const [, message] = await once(ipcMain, 'complete');
     expect(message.data).to.equal('testing');
-    expect(message.origin).to.equal('file://');
+    expect(message.origin).to.equal('null');
     expect(message.sourceEqualsOpener).to.equal(true);
-    expect(message.eventOrigin).to.equal('file://');
+    expect(message.eventOrigin).to.equal('null');
   });
 });
 
@@ -1936,7 +1936,7 @@ describe('chromium features', () => {
       `);
 
       expect(sourceIsChild).to.be.true();
-      expect(origin).to.equal('file://');
+      expect(origin).to.equal('null');
     });
 
     it('supports windows opened from a <webview>', async () => {
