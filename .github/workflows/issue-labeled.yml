@@ -75,7 +75,7 @@ jobs:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
       - name: Create comment
         if: ${{ steps.check-for-comment.outputs.SHOULD_COMMENT }}
-        uses: actions-cool/issues-helper@3809910bc12872edc9b8132f122069ac16cd16ee # v3.7.3
+        uses: actions-cool/issues-helper@d1d51fccf39469b5458203b1369060db0ff0c0db # v3.7.4
         with:
           actions: 'create-comment'
           token: ${{ steps.generate-token.outputs.token }}

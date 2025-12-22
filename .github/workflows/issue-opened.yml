@@ -146,7 +146,7 @@ jobs:
             }
       - name: Create unsupported major comment
         if: ${{ steps.add-labels.outputs.unsupportedMajor }}
-        uses: actions-cool/issues-helper@3809910bc12872edc9b8132f122069ac16cd16ee # v3.7.3
+        uses: actions-cool/issues-helper@d1d51fccf39469b5458203b1369060db0ff0c0db # v3.7.4
         with:
           actions: 'create-comment'
           token: ${{ steps.generate-token.outputs.token }}
