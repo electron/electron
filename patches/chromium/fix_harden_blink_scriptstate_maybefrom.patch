@@ -56,7 +56,7 @@ index cecf528475cb832ed1876381878eade582bc83d6..71308b2d963c2d083328aad6be356dc5
  
  enum EmbedderDataTag : uint16_t {
 diff --git a/third_party/blink/renderer/platform/bindings/script_state.cc b/third_party/blink/renderer/platform/bindings/script_state.cc
-index 8b6522c9299bef5ab766795b64a1ba30bc382a12..a714aeb8a62886bedb3820b33b49b1ebdb9c7cc0 100644
+index 8b6522c9299bef5ab766795b64a1ba30bc382a12..4615dc04a3814a096898a36c7bbeb30f960a8b4d 100644
 --- a/third_party/blink/renderer/platform/bindings/script_state.cc
 +++ b/third_party/blink/renderer/platform/bindings/script_state.cc
 @@ -14,6 +14,12 @@ namespace blink {
@@ -95,7 +95,7 @@ index 8b6522c9299bef5ab766795b64a1ba30bc382a12..a714aeb8a62886bedb3820b33b49b1eb
  
    // Cut the reference from ScriptState to V8 context.
 diff --git a/third_party/blink/renderer/platform/bindings/script_state.h b/third_party/blink/renderer/platform/bindings/script_state.h
-index 5ccdf26cead17031d510589b74288cbe79692779..bf3023d5305c05c5d92953b5bf5f655f964e5c28 100644
+index 5ccdf26cead17031d510589b74288cbe79692779..54ede003ebe0a46e624c9d67f7272b8898bbc83e 100644
 --- a/third_party/blink/renderer/platform/bindings/script_state.h
 +++ b/third_party/blink/renderer/platform/bindings/script_state.h
 @@ -6,6 +6,7 @@
