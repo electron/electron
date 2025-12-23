@@ -144,7 +144,7 @@ export default class BrowserView {
 
     if (this.#autoVerticalProportion) {
       newViewBounds.height = newBounds.height / this.#autoVerticalProportion.height;
-      newViewBounds.y = newBounds.y / this.#autoVerticalProportion.top;
+      newViewBounds.y = newBounds.height / this.#autoVerticalProportion.top;
     }
 
     if (this.#autoHorizontalProportion || this.#autoVerticalProportion) {
