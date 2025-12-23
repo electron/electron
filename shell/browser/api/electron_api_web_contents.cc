@@ -754,10 +754,8 @@ WebContents::WebContents(v8::Isolate* isolate,
   script_executor_ = std::make_unique<extensions::ScriptExecutor>(web_contents);
 #endif
 
-  // In Chrome, draggable regions are only supported in the main frame.
-  // However, we need to support draggable regions on other local
-  // frames/windows, so extend support beyond the main frame by enabling
-  // it for all WebContents.
+  // TODO: This works for main frames, but does not work for child frames.
+  // See: https://github.com/electron/electron/issues/49256
   web_contents->SetSupportsDraggableRegions(true);
 
   session_ = Session::FromOrCreate(isolate, GetBrowserContext());
@@ -1027,10 +1025,8 @@ void WebContents::InitWithWebContents(
   browser_context_ = browser_context;
   web_contents->SetDelegate(this);
 
-  // In Chrome, draggable regions are only supported in the main frame.
-  // However, we need to support draggable regions on other local
-  // frames/windows, so extend support beyond the main frame by enabling
-  // it for all WebContents.
+  // TODO: This works for main frames, but does not work for child frames.
+  // See: https://github.com/electron/electron/issues/49256
   web_contents->SetSupportsDraggableRegions(true);
 
 #if BUILDFLAG(ENABLE_PRINTING)
