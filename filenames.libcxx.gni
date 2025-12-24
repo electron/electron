@@ -1278,6 +1278,7 @@ libcxx_headers = [
   "//third_party/libc++/src/include/__random/uniform_real_distribution.h",
   "//third_party/libc++/src/include/__random/weibull_distribution.h",
   "//third_party/libc++/src/include/__ranges/access.h",
+  "//third_party/libc++/src/include/__ranges/adjacent_transform_view.h",
   "//third_party/libc++/src/include/__ranges/adjacent_view.h",
   "//third_party/libc++/src/include/__ranges/all.h",
   "//third_party/libc++/src/include/__ranges/as_rvalue_view.h",
