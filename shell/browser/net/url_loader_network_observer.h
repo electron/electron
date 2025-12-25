@@ -67,6 +67,7 @@ class URLLoaderNetworkObserver
           client_cert_responder) override {}
   void OnLocalNetworkAccessPermissionRequired(
       network::mojom::TransportType transport_type,
+      network::mojom::IPAddressSpace ip_address_space,
       OnLocalNetworkAccessPermissionRequiredCallback callback) override {}
   void OnUrlLoaderConnectedToPrivateNetwork(
       const GURL& request_url,

@@ -16,7 +16,7 @@ remove this patch once gin::Wrappable can be managed by V8 Oilpan
 via https://github.com/electron/electron/issues/47922
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 05c899258143a958471f361b87324f7500d594c9..1943413560f23c212d98fa1b368204c6e062bab2 100644
+index 64edf6fe78d2478cb9e12e8767a09e2b6c7c6ad2..7c640559dc7a09730f0053be8798d10bc8ac1a1c 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
 @@ -35,6 +35,8 @@ v8::ArrayBuffer::Allocator* g_array_buffer_allocator = nullptr;

@@ -10,7 +10,7 @@ Subject: chore: "grandfather in" Electron Views and Delegates
 6448510: Lock further access to View::set_owned_by_client(). | https://chromium-review.googlesource.com/c/chromium/src/+/6448510
 
 diff --git a/ui/views/view.h b/ui/views/view.h
-index 73ec09054efdd600b8e630b4bbe7870d7f4b87f1..7934ffa8aa25b6cb39c6af114afd38d84d8288ba 100644
+index 07449516b6e97d971a78acb3d21e9fd2c35f6d54..48b636ddb72f956265a97847cc1d3e137a2cd1cd 100644
 --- a/ui/views/view.h
 +++ b/ui/views/view.h
 @@ -77,6 +77,19 @@ class ArcNotificationContentView;
