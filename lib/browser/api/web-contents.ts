@@ -8,6 +8,7 @@ import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 import { app, session, webFrameMain, dialog } from 'electron/main';
 import type { BrowserWindowConstructorOptions, MessageBoxOptions, NavigationEntry } from 'electron/main';
 
+import { EventEmitter } from 'events';
 import * as path from 'path';
 import * as url from 'url';
 
@@ -117,6 +118,8 @@ const isValidCustomPageSize = (width: number, height: number) => {
 const binding = process._linkedBinding('electron_browser_web_contents');
 const printing = process._linkedBinding('electron_browser_printing');
 const { WebContents } = binding as { WebContents: { prototype: Electron.WebContents } };
+
+Object.setPrototypeOf(WebContents.prototype, EventEmitter.prototype);
 
 WebContents.prototype.postMessage = function (...args) {
   return this.mainFrame.postMessage(...args);
