@@ -13,6 +13,7 @@
 #include <variant>
 #include <vector>
 
+#include "base/callback_list.h"
 #include "base/files/file_path.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/media_stream_request.h"
@@ -184,6 +185,8 @@ class ElectronBrowserContext : public content::BrowserContext {
   // Initialize pref registry.
   void InitPrefs();
 
+  void OnNetworkServiceProcessGone(bool crashed);
+
   scoped_refptr<ValueMapPrefStore> in_memory_pref_store_;
   std::unique_ptr<CookieChangeNotifier> cookie_change_notifier_;
   std::unique_ptr<PrefService> prefs_;
@@ -214,6 +217,9 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   // In-memory cache that holds objects that have been granted permissions.
   DevicePermissionMap granted_devices_;
+  base::CallbackListSubscription subscription_;
+
+  base::WeakPtrFactory<ElectronBrowserContext> weak_ptr_factory_{this};
 };
 
 }  // namespace electron
