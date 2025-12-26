@@ -15,6 +15,10 @@
 #include "shell/common/node_includes.h"
 #include "ui/native_theme/native_theme.h"
 
+#if BUILDFLAG(IS_LINUX)
+#include "ui/linux/linux_ui.h"
+#endif
+
 namespace electron::api {
 
 gin::DeprecatedWrapperInfo NativeTheme::kWrapperInfo = {
@@ -47,6 +51,14 @@ void NativeTheme::OnNativeThemeUpdatedOnUI() {
     should_use_dark_colors_for_system_integrated_ui_ =
         std::make_optional<bool>(system_dark_mode_enabled);
   }
+#elif BUILDFLAG(IS_LINUX)
+  // Query the dark mode preference directly from LinuxUiTheme
+  // This works around Chromium 142+ issue where preferred_color_scheme()
+  // returns inverted values at runtime on Linux/Wayland (issue #48736)
+  if (const auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr)) {
+    should_use_dark_colors_linux_ =
+        std::make_optional<bool>(linux_ui_theme->PreferDarkTheme());
+  }
 #endif
   Emit("updated");
 }
@@ -78,6 +90,14 @@ bool NativeTheme::ShouldUseDarkColors() {
     return false;
   if (theme_source == ui::NativeTheme::ThemeSource::kForcedDark)
     return true;
+#if BUILDFLAG(IS_LINUX)
+  // Use the cached Linux theme value queried from LinuxUiTheme
+  // This works around Chromium 142+ issue where preferred_color_scheme()
+  // returns inverted values at runtime on Linux/Wayland (issue #48736)
+  if (should_use_dark_colors_linux_.has_value()) {
+    return should_use_dark_colors_linux_.value();
+  }
+#endif
   return ui_theme_->preferred_color_scheme() ==
          ui::NativeTheme::PreferredColorScheme::kDark;
 }

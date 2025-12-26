@@ -13,6 +13,8 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "base/win/registry.h"
+#elif BUILDFLAG(IS_LINUX)
+#include "ui/linux/linux_ui.h"
 #endif
 
 namespace gin_helper {
@@ -64,6 +66,10 @@ class NativeTheme final : public gin_helper::DeprecatedWrappable<NativeTheme>,
  private:
 #if BUILDFLAG(IS_WIN)
   base::win::RegKey hkcu_themes_regkey_;
+#elif BUILDFLAG(IS_LINUX)
+  // Cache the Linux dark mode state to work around Chromium 142+
+  // issues where preferred_color_scheme() returns inverted values at runtime
+  std::optional<bool> should_use_dark_colors_linux_ = std::nullopt;
 #endif
   std::optional<bool> should_use_dark_colors_for_system_integrated_ui_ =
       std::nullopt;
