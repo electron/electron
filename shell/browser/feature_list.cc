@@ -62,7 +62,11 @@ void InitializeFeatureList() {
       // See https://chromium-review.googlesource.com/c/chromium/src/+/6910012
       // Needed until we rework some of our logic and checks to enable this
       // properly.
-      std::string(",") + network::features::kLocalNetworkAccessChecks.name;
+      std::string(",") + network::features::kLocalNetworkAccessChecks.name +
+      // See https://github.com/electron/electron/issues/27581
+      // Needed until PulseAudio stream naming logic is rewritten
+      // to support changing pa_context names with audio service out of process.
+      std::string(",") + features::kAudioServiceOutOfProcess.name;
 
 #if BUILDFLAG(IS_WIN)
   // Refs https://issues.chromium.org/issues/401996981

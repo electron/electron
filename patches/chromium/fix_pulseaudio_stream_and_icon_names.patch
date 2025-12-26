@@ -1,0 +1,100 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Damglador <vse.stopchanskyi@gmail.com>
+Date: Fri, 26 Dec 2025 21:26:43 +0100
+Subject: fix: pulseaudio stream and icon names
+
+Use platform_util::GetXdgAppId() with fallback to argv0 as PA_PROP_APPLICATION_ICON_NAME.
+Use electron::GetPossiblyOverriddenApplicationName() for input pa_context name.
+Disable AudioServiceOutOfProcess to make the above possible,
+and make the old code, that changed output stream names, work.
+
+This replaces hard-codded kBrowserDisplayName that was used for PA_PROP_APPLICATION_ICON_NAME,
+and PRODUCT_STRING that was used for pa_context names (now it's just a fallback).
+
+This is done to make audio streams recognizable in tools like qpwgrapth and general audio managers,
+instead of having 20 "Chromium" outputs and "Chromium input" inputs, that are actually coming from
+completely different applications.
+
+diff --git a/media/audio/pulse/pulse_util.cc b/media/audio/pulse/pulse_util.cc
+index a08e42a..20695ba 100644
+--- a/media/audio/pulse/pulse_util.cc
++++ b/media/audio/pulse/pulse_util.cc
+@@ -8,8 +8,10 @@
+ #include <string.h>
+ 
+ #include <memory>
++#include <string>
+ #include <type_traits>
+ 
++#include "base/command_line.h"
+ #include "base/files/file_path.h"
+ #include "base/logging.h"
+ #include "base/memory/ptr_util.h"
+@@ -20,6 +22,8 @@
+ #include "build/branding_buildflags.h"
+ #include "media/audio/audio_device_description.h"
+ #include "media/base/audio_timestamp_helper.h"
++#include "electron/shell/common/platform_util.h"
++#include "electron/shell/common/application_info.h"
+ 
+ #if defined(DLOPEN_PULSEAUDIO)
+ #include "media/audio/pulse/pulse_stubs.h"
+@@ -36,10 +40,8 @@ namespace pulse {
+ namespace {
+ 
+ #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+-constexpr char kBrowserDisplayName[] = "google-chrome";
+ #define PRODUCT_STRING "Google Chrome"
+ #else
+-constexpr char kBrowserDisplayName[] = "chromium-browser";
+ #define PRODUCT_STRING "Chromium"
+ #endif
+ 
+@@ -236,7 +238,8 @@ bool InitPulse(pa_threaded_mainloop** mainloop, pa_context** context) {
+ 
+   pa_mainloop_api* pa_mainloop_api = pa_threaded_mainloop_get_api(pa_mainloop);
+   pa_context* pa_context =
+-      pa_context_new(pa_mainloop_api, PRODUCT_STRING " input");
++      pa_context_new(pa_mainloop_api,
++                     electron::GetPossiblyOverriddenApplicationName().c_str());
+   if (!pa_context) {
+     pa_threaded_mainloop_free(pa_mainloop);
+     return false;
+@@ -464,10 +467,18 @@ bool CreateInputStream(pa_threaded_mainloop* mainloop,
+   // Create a new recording stream and
+   // tells PulseAudio what the stream icon should be.
+   ScopedPropertyList property_list;
+-  pa_proplist_sets(property_list.get(), PA_PROP_APPLICATION_ICON_NAME,
+-                   kBrowserDisplayName);
+-  *stream = pa_stream_new_with_proplist(context, "RecordStream",
+-                                        &sample_specifications, map,
++  const std::string app_id = platform_util::GetXdgAppId();
++  const std::string cmd_name =
++    base::CommandLine::ForCurrentProcess()->GetProgram().BaseName().value();
++  pa_proplist_sets(property_list.get(),
++                   PA_PROP_APPLICATION_ICON_NAME,
++                   app_id.empty() ?
++                   cmd_name.c_str()
++                   : app_id.c_str());
++  *stream = pa_stream_new_with_proplist(context,
++                                        "RecordStream",
++                                        &sample_specifications,
++                                        map,
+                                         property_list.get());
+   RETURN_ON_FAILURE(*stream, "failed to create PA recording stream");
+ 
+@@ -574,8 +585,13 @@ bool CreateOutputStream(raw_ptr<pa_threaded_mainloop>* mainloop,
+   // Open playback stream and
+   // tell PulseAudio what the stream icon should be.
+   ScopedPropertyList property_list;
++  const std::string app_id = platform_util::GetXdgAppId();
++  const std::string cmd_name =
++    base::CommandLine::ForCurrentProcess()->GetProgram().BaseName().value();
+   pa_proplist_sets(property_list.get(), PA_PROP_APPLICATION_ICON_NAME,
+-                   kBrowserDisplayName);
++                   app_id.empty() ?
++                   cmd_name.c_str()
++                   : app_id.c_str());
+   *stream = pa_stream_new_with_proplist(
+       *context, "Playback", &sample_specifications, map, property_list.get());
+   RETURN_ON_FAILURE(*stream, "failed to create PA playback stream");
