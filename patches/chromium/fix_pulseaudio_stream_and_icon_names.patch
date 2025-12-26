@@ -1,0 +1,124 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Damglador <vse.stopchanskyi@gmail.com>
+Date: Fri, 26 Dec 2025 21:26:43 +0100
+Subject: fix: pulseaudio stream and icon names
+
+Use platform_util::GetXdgAppId() with fallback to argv0 as PA_PROP_APPLICATION_ICON_NAME.
+Use electron::GetPossiblyOverriddenApplicationName()
+to set environment variable "app_name" in audio_service.cc,
+to use it in pulse_util.cc for setting input/output pa_context name.
+
+This replaces hard-codded kBrowserDisplayName that was used for PA_PROP_APPLICATION_ICON_NAME,
+and PRODUCT_STRING that was used for pa_context names.
+
+This is done to make audio streams recognizable in tools like qpwgrapth and general audio managers,
+instead of having 20 "Chromium" outputs and "Chromium input" inputs, that are actually coming from
+completely different applications.
+
+This patch can be removed when upstream starts using AudioManager::SetGlobalAppName()
+for all pa_context names (and when actually works with AudioServiceOutOfProcess). 
+
+diff --git a/media/audio/pulse/pulse_util.cc b/media/audio/pulse/pulse_util.cc
+index a08e42a..580a1a6 100644
+--- a/media/audio/pulse/pulse_util.cc
++++ b/media/audio/pulse/pulse_util.cc
+@@ -10,6 +10,7 @@
+ #include <memory>
+ #include <type_traits>
+ 
++#include "base/command_line.h"
+ #include "base/files/file_path.h"
+ #include "base/logging.h"
+ #include "base/memory/ptr_util.h"
+@@ -20,6 +21,7 @@
+ #include "build/branding_buildflags.h"
+ #include "media/audio/audio_device_description.h"
+ #include "media/base/audio_timestamp_helper.h"
++#include "electron/shell/common/platform_util.h"
+ 
+ #if defined(DLOPEN_PULSEAUDIO)
+ #include "media/audio/pulse/pulse_stubs.h"
+@@ -36,10 +38,8 @@ namespace pulse {
+ namespace {
+ 
+ #if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+-constexpr char kBrowserDisplayName[] = "google-chrome";
+ #define PRODUCT_STRING "Google Chrome"
+ #else
+-constexpr char kBrowserDisplayName[] = "chromium-browser";
+ #define PRODUCT_STRING "Chromium"
+ #endif
+ 
+@@ -236,7 +236,7 @@ bool InitPulse(pa_threaded_mainloop** mainloop, pa_context** context) {
+ 
+   pa_mainloop_api* pa_mainloop_api = pa_threaded_mainloop_get_api(pa_mainloop);
+   pa_context* pa_context =
+-      pa_context_new(pa_mainloop_api, PRODUCT_STRING " input");
++      pa_context_new(pa_mainloop_api, getenv("app_name"));
+   if (!pa_context) {
+     pa_threaded_mainloop_free(pa_mainloop);
+     return false;
+@@ -464,8 +464,14 @@ bool CreateInputStream(pa_threaded_mainloop* mainloop,
+   // Create a new recording stream and
+   // tells PulseAudio what the stream icon should be.
+   ScopedPropertyList property_list;
+-  pa_proplist_sets(property_list.get(), PA_PROP_APPLICATION_ICON_NAME,
+-                   kBrowserDisplayName);
++  const std::string app_id = platform_util::GetXdgAppId();
++  const std::string cmd_name =
++    base::CommandLine::ForCurrentProcess()->GetProgram().BaseName().value();
++  pa_proplist_sets(property_list.get(),
++                   PA_PROP_APPLICATION_ICON_NAME,
++                   app_id.empty() ?
++                   cmd_name.c_str()
++                   : app_id.c_str());
+   *stream = pa_stream_new_with_proplist(context, "RecordStream",
+                                         &sample_specifications, map,
+                                         property_list.get());
+@@ -526,7 +532,7 @@ bool CreateOutputStream(raw_ptr<pa_threaded_mainloop>* mainloop,
+ 
+   pa_mainloop_api* pa_mainloop_api = pa_threaded_mainloop_get_api(*mainloop);
+   *context = pa_context_new(
+-      pa_mainloop_api, app_name.empty() ? PRODUCT_STRING : app_name.c_str());
++      pa_mainloop_api, getenv("app_name"));
+   RETURN_ON_FAILURE(*context, "Failed to create PulseAudio context.");
+ 
+   // A state callback must be set before calling pa_threaded_mainloop_lock() or
+@@ -574,8 +580,13 @@ bool CreateOutputStream(raw_ptr<pa_threaded_mainloop>* mainloop,
+   // Open playback stream and
+   // tell PulseAudio what the stream icon should be.
+   ScopedPropertyList property_list;
++  const std::string app_id = platform_util::GetXdgAppId();
++  const std::string cmd_name =
++    base::CommandLine::ForCurrentProcess()->GetProgram().BaseName().value();
+   pa_proplist_sets(property_list.get(), PA_PROP_APPLICATION_ICON_NAME,
+-                   kBrowserDisplayName);
++                   app_id.empty() ?
++                   cmd_name.c_str()
++                   : app_id.c_str());
+   *stream = pa_stream_new_with_proplist(
+       *context, "Playback", &sample_specifications, map, property_list.get());
+   RETURN_ON_FAILURE(*stream, "failed to create PA playback stream");
+diff --git a/content/browser/audio/audio_service.cc b/content/browser/audio/audio_service.cc
+index 608b5e3..c9f48bd 100644
+--- a/content/browser/audio/audio_service.cc
++++ b/content/browser/audio/audio_service.cc
+@@ -29,6 +29,7 @@
+ #include "services/audio/public/mojom/audio_service.mojom.h"
+ #include "services/audio/service.h"
+ #include "services/audio/service_factory.h"
++#include "electron/shell/common/application_info.h"
+ 
+ #if BUILDFLAG(ENABLE_PASSTHROUGH_AUDIO_CODECS)
+ #include "ui/display/util/edid_parser.h"
+@@ -115,6 +116,10 @@ void LaunchAudioServiceOutOfProcess(
+     mojo::PendingReceiver<audio::mojom::AudioService> receiver,
+     uint32_t codec_bitmask) {
+   std::vector<std::string> switches;
++#if BUILDFLAG(IS_LINUX)
++  // Set app_name variable for pulse_util to grab and set pa_context name
++  setenv("app_name", electron::GetPossiblyOverriddenApplicationName().c_str(), 1);
++#endif
+ #if BUILDFLAG(IS_MAC)
+   // On Mac, the audio service requires a CFRunLoop provided by a
+   // UI MessageLoop type, to run AVFoundation and CoreAudio code.
