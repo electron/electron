@@ -1017,6 +1017,11 @@ base::FilePath ElectronBrowserClient::GetDefaultDownloadDirectory() {
   base::FilePath download_path;
   if (base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &download_path))
     return download_path;
+
+  base::FilePath home_path;
+  if (base::PathService::Get(base::DIR_HOME, &home_path))
+    return home_path;
+
   return {};
 }
 
