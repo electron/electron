@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>LoAF Test</title>
+</head>
+<body>
+  <h1>Long Animation Frame Test</h1>
+  <button id="block">Click to block</button>
+  <script>
+    // Blocking function that causes a long animation frame
+    function block(duration) {
+      const target = performance.now() + duration;
+      while (performance.now() < target) {
+        // Busy wait
+      }
+    }
+
+    // Set up the PerformanceObserver to capture LoAF entries
+    window.loafEntries = [];
+    const observer = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        window.loafEntries.push(entry.toJSON());
+      }
+    });
+    observer.observe({ type: 'long-animation-frame', buffered: true });
+
+    // Event handler that triggers a long animation frame
+    document.getElementById('block').addEventListener('click', () => {
+      block(200); // Block for 200ms (> 50ms threshold for LoAF)
+    });
+
+    // Also trigger on keydown for testing
+    window.addEventListener('keydown', () => {
+      block(200);
+    });
+  </script>
+</body>
+</html>

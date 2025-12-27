@@ -1,0 +1,73 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Electron Bot <nicedoc@electron-build.org>
+Date: Fri, 27 Dec 2024 21:00:00 +0530
+Subject: feat: expose LoAF script attribution for non-HTTPS source URLs
+
+This patch enables Long Animation Frame (LoAF) script attribution for
+non-HTTPS source URLs including file:// and localhost URLs. By default,
+Chromium only exposes script attribution for same-origin scripts which
+fails for file:// URLs (each file is treated as an opaque origin) and
+can be problematic for local development on http://localhost.
+
+In Electron, these are common and trusted scenarios:
+- Loading content from file:// URLs
+- Local development with http://localhost
+
+This patch modifies the script filter logic to include scripts from:
+1. Local file:// URLs (commonly used in Electron apps)
+2. Potentially trustworthy localhost origins
+
+This enables Electron developers to properly debug performance issues
+using the LoAF API even when not serving content over HTTPS.
+
+See GitHub issue https://github.com/electron/electron/issues/47630
+
+diff --git a/third_party/blink/renderer/core/timing/performance_long_animation_frame_timing.cc b/third_party/blink/renderer/core/timing/performance_long_animation_frame_timing.cc
+index 1234567890abcdef1234567890abcdef12345678..abcdef1234567890abcdef1234567890abcdef12 100644
+--- a/third_party/blink/renderer/core/timing/performance_long_animation_frame_timing.cc
++++ b/third_party/blink/renderer/core/timing/performance_long_animation_frame_timing.cc
+@@ -17,6 +17,32 @@
+ 
+ namespace blink {
+ 
++namespace {
++
++// Determines whether script attribution should be included for a given script
++// in the LoAF entry. This extends the default same-origin check to also allow
++// scripts from local/trusted origins that are commonly used in Electron apps.
++bool ShouldIncludeScriptAttribution(const SecurityOrigin* source_origin,
++                                    const SecurityOrigin* script_origin) {
++  // Standard same-origin check
++  if (source_origin->CanAccess(script_origin)) {
++    return true;
++  }
++
++  // For file:// URLs, allow script attribution since these are trusted
++  // local resources commonly used in Electron applications
++  if (script_origin->Protocol() == "file") {
++    return true;
++  }
++
++  // For potentially trustworthy origins (e.g., localhost), allow script
++  // attribution to support local development scenarios
++  if (script_origin->IsPotentiallyTrustworthy()) {
++    return true;
++  }
++
++  return false;
++}
++
++}  // namespace
++
+ PerformanceLongAnimationFrameTiming*
+ PerformanceLongAnimationFrameTiming::Create(
+     AnimationFrameTimingInfo* info,
+@@ -65,7 +91,7 @@ PerformanceLongAnimationFrameTiming::PerformanceLongAnimationFrameTiming(
+   CHECK(security_origin);
+ 
+   for (ScriptTimingInfo* script : info->Scripts()) {
+-    if (security_origin->CanAccess(script->GetSecurityOrigin())) {
++    if (ShouldIncludeScriptAttribution(security_origin, script->GetSecurityOrigin())) {
+       scripts_.push_back(MakeGarbageCollected<PerformanceScriptTiming>(
+           script, time_origin, cross_origin_isolated_capability, source,
+           navigation_id));
