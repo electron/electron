@@ -10,6 +10,10 @@ import * as path from 'node:path';
 import { ifdescribe } from './lib/spec-helpers';
 
 describe('safeStorage module', () => {
+  before(async () => {
+    if (!safeStorage.isEncryptionAvailable()) { await once(safeStorage, 'ready-to-use'); }
+  });
+
   it('safeStorage before and after app is ready', async () => {
     const appPath = path.join(__dirname, 'fixtures', 'crash-cases', 'safe-storage');
     const appProcess = cp.spawn(process.execPath, [appPath]);
@@ -28,7 +32,7 @@ describe('safeStorage module', () => {
 });
 
 describe('safeStorage module', () => {
-  before(() => {
+  before(async () => {
     if (process.platform === 'linux') {
       safeStorage.setUsePlainTextEncryption(true);
     }
@@ -101,18 +105,31 @@ describe('safeStorage module', () => {
       const encryptAppPath = path.join(fixturesPath, 'api', 'safe-storage', 'encrypt-app');
       const encryptAppProcess = cp.spawn(process.execPath, [encryptAppPath]);
       let stdout: string = '';
-      encryptAppProcess.stderr.on('data', data => { stdout += data; });
-      encryptAppProcess.stderr.on('data', data => { stdout += data; });
+      encryptAppProcess.stderr.on('data', data => {
+        console.log(`stderr: ${data}`);
+        stdout += data;
+      });
+      encryptAppProcess.stderr.on('data', data => {
+        console.log(`stderr: ${data}`);
+        stdout += data;
+      });
 
       try {
         await once(encryptAppProcess, 'exit');
 
         const appPath = path.join(fixturesPath, 'api', 'safe-storage', 'decrypt-app');
+        console.log('Relaunching app to decrypt string...');
         const relaunchedAppProcess = cp.spawn(process.execPath, [appPath]);
 
         let output = '';
-        relaunchedAppProcess.stdout.on('data', data => { output += data; });
-        relaunchedAppProcess.stderr.on('data', data => { output += data; });
+        relaunchedAppProcess.stdout.on('data', data => {
+          console.log(`stdout: ${data}`);
+          output += data;
+        });
+        relaunchedAppProcess.stderr.on('data', data => {
+          output += data;
+          console.log(`stderr: ${data}`);
+        });
 
         const [code] = await once(relaunchedAppProcess, 'exit');
 
