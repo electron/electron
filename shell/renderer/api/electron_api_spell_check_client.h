@@ -15,6 +15,7 @@
 #include "components/spellcheck/renderer/spellcheck_worditerator.h"
 #include "third_party/blink/public/platform/web_spell_check_panel_host_client.h"
 #include "third_party/blink/public/web/web_text_check_client.h"
+#include "ui/gfx/range/range.h"
 #include "v8/include/v8-context.h"
 #include "v8/include/v8-forward.h"
 #include "v8/include/v8-local-handle.h"
@@ -43,6 +44,7 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   // blink::WebTextCheckClient:
   void RequestCheckingOfText(
       const blink::WebString& text_to_check,
+      const std::vector<gfx::Range>& spelling_markers,
       ShouldForceRefreshTextCheckService should_force_refresh,
       std::unique_ptr<blink::WebTextCheckingCompletion> completion_callback)
       override;

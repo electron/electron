@@ -577,7 +577,7 @@ index 824d6d8a9242302c2ab0c0c517d0cc329e607100..d3b25c90c90fe860990789aa96c872b4
    // Indication that the job is getting canceled.
    bool canceling_job_ = false;
 diff --git a/chrome/browser/printing/printer_query.cc b/chrome/browser/printing/printer_query.cc
-index 20bbbeddd18ef26b68defcdbd4a7c62706c43d0b..7b0071c169556a080ecbf5e8a6a3b878675f6bf7 100644
+index c31c873db21ef06b6d0f19c789c9a097f3cfeb2b..94a05c657a895cadc98324f7fef133c3d206fbd9 100644
 --- a/chrome/browser/printing/printer_query.cc
 +++ b/chrome/browser/printing/printer_query.cc
 @@ -356,17 +356,19 @@ void PrinterQuery::UpdatePrintSettings(base::Value::Dict new_settings,
@@ -666,7 +666,7 @@ index ac2f719be566020d9f41364560c12e6d6d0fe3d8..16d758a6936f66148a196761cfb875f6
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 31dfa8c3c28b9eb184b6e84f4b10c57efec0765e..5990bda676df813dd318d9119a70aec0d8bb1832 100644
+index 6be0daa9a4f710270c9e11e2b5edd4027c779e0d..536ea348aa9f7407f9941aa0f15ff860ea202577 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -54,6 +54,7 @@
@@ -923,10 +923,10 @@ index 2f34f45aaf89e6f4600be1d2b8444c636b0cc83f..5bfd45c5efbf300a36e016af80e18fb9
    virtual mojom::ResultCode OnError();
  
 diff --git a/printing/printing_context_linux.cc b/printing/printing_context_linux.cc
-index e83735211e30a77ef1bc82b6a252da02a18626fc..b0c8fd3c5e3c5b3d2d64bee9df513e1b4829809c 100644
+index 590e7508503d73fd698f8d2432bc98642be8f548..77a6679eab534fa0c06d5cd5ab9acbc861501c70 100644
 --- a/printing/printing_context_linux.cc
 +++ b/printing/printing_context_linux.cc
-@@ -54,9 +54,8 @@ void PrintingContextLinux::AskUserForSettings(int max_pages,
+@@ -65,9 +65,8 @@ void PrintingContextLinux::AskUserForSettings(int max_pages,
                                                bool is_scripted,
                                                PrintSettingsCallback callback) {
    if (!print_dialog_) {

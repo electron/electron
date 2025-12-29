@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include "base/mac/mac_util.h"
+#include "base/task/single_thread_task_runner.h"
 #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_mac.h"

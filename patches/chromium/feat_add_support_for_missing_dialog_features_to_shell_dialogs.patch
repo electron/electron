@@ -16,10 +16,10 @@ It also:
 This may be partially upstreamed to Chromium in the future.
 
 diff --git a/ui/gtk/select_file_dialog_linux_gtk.cc b/ui/gtk/select_file_dialog_linux_gtk.cc
-index bf903ea436f5d0c8599f7a122828fc163a192247..e1c5c8e9241d29668d0c7dae12a46a5ded900fac 100644
+index f27859cf68331a415904b986e972c87b31f3a99a..e53e6200efcac4c6b8f8e6964e38fa1b36839b35 100644
 --- a/ui/gtk/select_file_dialog_linux_gtk.cc
 +++ b/ui/gtk/select_file_dialog_linux_gtk.cc
-@@ -262,8 +262,12 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(
+@@ -263,8 +263,12 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(
      case SELECT_EXISTING_FOLDER:
        dialog = CreateSelectFolderDialog(type, title_string, default_path,
                                          owning_window);
@@ -34,7 +34,7 @@ index bf903ea436f5d0c8599f7a122828fc163a192247..e1c5c8e9241d29668d0c7dae12a46a5d
        break;
      case SELECT_OPEN_FILE:
        dialog = CreateFileOpenDialog(title_string, default_path, owning_window);
-@@ -410,9 +414,11 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
+@@ -411,9 +415,11 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
      const std::string& title,
      const base::FilePath& default_path,
      gfx::NativeWindow parent) {
@@ -44,10 +44,10 @@ index bf903ea436f5d0c8599f7a122828fc163a192247..e1c5c8e9241d29668d0c7dae12a46a5d
        title.c_str(), nullptr, GTK_FILE_CHOOSER_ACTION_OPEN, GetCancelLabel(),
 -      GTK_RESPONSE_CANCEL, GetOpenLabel(), GTK_RESPONSE_ACCEPT);
 +      GTK_RESPONSE_CANCEL, accept_button_label, GTK_RESPONSE_ACCEPT);
-   SetGtkTransientForAura(dialog, parent);
+   SetGtkTransientForAura(dialog, parent, platform_);
    AddFilters(GTK_FILE_CHOOSER(dialog));
  
-@@ -428,6 +434,7 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
+@@ -429,6 +435,7 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
      GtkFileChooserSetCurrentFolder(GTK_FILE_CHOOSER(dialog),
                                     *last_opened_path());
    }
@@ -55,7 +55,7 @@ index bf903ea436f5d0c8599f7a122828fc163a192247..e1c5c8e9241d29668d0c7dae12a46a5d
    return dialog;
  }
  
-@@ -443,11 +450,15 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
+@@ -444,11 +451,15 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
              ? l10n_util::GetStringUTF8(IDS_SELECT_UPLOAD_FOLDER_DIALOG_TITLE)
              : l10n_util::GetStringUTF8(IDS_SELECT_FOLDER_DIALOG_TITLE);
    }
@@ -76,7 +76,7 @@ index bf903ea436f5d0c8599f7a122828fc163a192247..e1c5c8e9241d29668d0c7dae12a46a5d
  
    GtkWidget* dialog = GtkFileChooserDialogNew(
        title_string.c_str(), nullptr, GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
-@@ -469,7 +480,8 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
+@@ -470,7 +481,8 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
    gtk_file_filter_add_mime_type(only_folders, "inode/directory");
    gtk_file_filter_add_mime_type(only_folders, "text/directory");
    gtk_file_chooser_add_filter(chooser, only_folders);
@@ -86,7 +86,7 @@ index bf903ea436f5d0c8599f7a122828fc163a192247..e1c5c8e9241d29668d0c7dae12a46a5d
    return dialog;
  }
  
-@@ -506,10 +518,11 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
+@@ -507,10 +519,11 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
    std::string title_string =
        !title.empty() ? title
                       : l10n_util::GetStringUTF8(IDS_SAVE_AS_DIALOG_TITLE);
@@ -98,9 +98,9 @@ index bf903ea436f5d0c8599f7a122828fc163a192247..e1c5c8e9241d29668d0c7dae12a46a5d
 -      GetCancelLabel(), GTK_RESPONSE_CANCEL, GetSaveLabel(),
 +      GetCancelLabel(), GTK_RESPONSE_CANCEL, accept_button_label,
        GTK_RESPONSE_ACCEPT);
-   SetGtkTransientForAura(dialog, parent);
+   SetGtkTransientForAura(dialog, parent, platform_);
  
-@@ -535,9 +548,10 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
+@@ -536,9 +549,10 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
    gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), FALSE);
    // Overwrite confirmation is always enabled in GTK4.
    if (!GtkCheckVersion(4)) {
@@ -113,7 +113,7 @@ index bf903ea436f5d0c8599f7a122828fc163a192247..e1c5c8e9241d29668d0c7dae12a46a5d
    return dialog;
  }
  
-@@ -592,15 +606,29 @@ void SelectFileDialogLinuxGtk::OnSelectSingleFolderDialogResponse(
+@@ -593,15 +607,29 @@ void SelectFileDialogLinuxGtk::OnSelectSingleFolderDialogResponse(
  void SelectFileDialogLinuxGtk::OnSelectMultiFileDialogResponse(
      GtkWidget* dialog,
      int response_id) {
@@ -146,7 +146,7 @@ index bf903ea436f5d0c8599f7a122828fc163a192247..e1c5c8e9241d29668d0c7dae12a46a5d
      FileNotSelected(dialog);
      return;
 diff --git a/ui/gtk/select_file_dialog_linux_gtk.h b/ui/gtk/select_file_dialog_linux_gtk.h
-index 213eaa5ec6d657a659726cb38103e8bd671fe907..f497447c598198bf690758b1d1c5c6fe4112627f 100644
+index 454854b6571d7b000e1acaf94e529d5fde962c6f..8f7e1a633e9223b5dd3fb94787bf22185ea1c656 100644
 --- a/ui/gtk/select_file_dialog_linux_gtk.h
 +++ b/ui/gtk/select_file_dialog_linux_gtk.h
 @@ -108,6 +108,12 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
@@ -262,12 +262,12 @@ index 61683d0eddb04c494ca5e650e7d556b44968ec49..5492456a9138b250e97a5479838bb443
  
  }  // namespace ui
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index 6430ef980736b18133a0a7834c2cbe431a41fd12..f866fb717e6770c4eb6139fea835accdf571d551 100644
+index c66b8da5d3ce640c1a1bdfdaec66bba3b4878d3e..bf57b000175b93908ed44b31726dc1941d9bf5a9 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-@@ -21,9 +21,11 @@
- #include "components/dbus/thread_linux/dbus_thread_linux.h"
+@@ -22,9 +22,11 @@
  #include "components/dbus/xdg/portal.h"
+ #include "components/dbus/xdg/portal_constants.h"
  #include "components/dbus/xdg/request.h"
 +#include "components/dbus/xdg/systemd.h"
  #include "dbus/message.h"
@@ -277,58 +277,13 @@ index 6430ef980736b18133a0a7834c2cbe431a41fd12..f866fb717e6770c4eb6139fea835accd
  #include "ui/aura/window_tree_host.h"
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/native_ui_types.h"
-@@ -95,7 +97,7 @@ void OnGetPropertyReply(dbus::Response* response) {
-                                : ServiceAvailability::kNotAvailable;
- }
- 
--void OnServiceStarted(bool service_started) {
-+[[maybe_unused]] void OnServiceStarted(bool service_started) {
-   if (!service_started) {
-     g_service_availability = ServiceAvailability::kNotAvailable;
-     return;
-@@ -113,6 +115,11 @@ void OnServiceStarted(bool service_started) {
-                      base::BindOnce(&OnGetPropertyReply));
- }
- 
-+void OnSystemdUnitStarted(dbus_xdg::internal::SystemdUnitStatus) {
-+  file_dialog::StartPortalAvailabilityTestInBackground();
-+}
-+
-+
- std::vector<uint8_t> PathToByteArray(const base::FilePath& path) {
-   std::vector<uint8_t> bytes(path.value().begin(), path.value().end());
-   // Null-terminate the array.
-@@ -163,18 +170,21 @@ void SelectFileDialogLinuxPortal::StartAvailabilityTestInBackground() {
- 
-   GetMainTaskRunner() = base::SequencedTaskRunner::GetCurrentDefault();
- 
--  dbus_xdg::RequestXdgDesktopPortal(
-+  dbus_xdg::internal::SetSystemdScopeUnitNameForXdgPortal(
-       dbus_thread_linux::GetSharedSessionBus().get(),
--      base::BindOnce(&OnServiceStarted));
-+      base::BindOnce(&OnSystemdUnitStarted));
- }
- 
- // static
- bool SelectFileDialogLinuxPortal::IsPortalAvailable() {
-+#if 0
-   if (g_service_availability == ServiceAvailability::kInProgress) {
-     LOG(WARNING) << "Portal availability checked before test was complete";
-   }
- 
-   return g_service_availability == ServiceAvailability::kAvailable;
-+#endif
-+  return file_dialog::IsPortalAvailable();
- }
- 
- void SelectFileDialogLinuxPortal::ListenerDestroyed() {
-@@ -378,11 +388,14 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -349,11 +351,14 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
      const PortalFilterSet& filter_set) {
    dbus_xdg::Dictionary dict;
  
 +  std::string accept_label = button_label().empty() ? "" : button_label();
 +
-   switch (type_) {
+   switch (type()) {
      case SelectFileDialog::SELECT_UPLOAD_FOLDER:
 -      dict[kFileChooserOptionAcceptLabel] =
 -          dbus_utils::Variant::Wrap<"s">(l10n_util::GetStringUTF8(
@@ -340,7 +295,7 @@ index 6430ef980736b18133a0a7834c2cbe431a41fd12..f866fb717e6770c4eb6139fea835accd
        [[fallthrough]];
      case SelectFileDialog::SELECT_FOLDER:
      case SelectFileDialog::Type::SELECT_EXISTING_FOLDER:
-@@ -395,6 +408,11 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -366,6 +371,11 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
        break;
    }
  
