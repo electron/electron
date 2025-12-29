@@ -1,23 +1,34 @@
-const cp = require('node:child_process');
-
+const { spawn } = require('node:child_process');
 const utils = require('./lib/utils');
 
 const electronPath = utils.getAbsoluteElectronExec();
 
-const child = cp.spawn(electronPath, process.argv.slice(2), { stdio: 'inherit' });
-let childClosed = false;
-child.on('close', (code) => {
-  childClosed = true;
-  process.exit(code);
+let child;
+
+try {
+  child = spawn(electronPath, process.argv.slice(2), {
+    stdio: 'inherit',
+  });
+} catch (err) {
+  console.error('Failed to start Electron:', err);
+  process.exit(1);
+}
+
+// child exit handling
+child.once('exit', (code, signal) => {
+  if (signal) {
+    process.kill(process.pid, signal);
+  } else {
+    process.exit(code ?? 0);
+  }
 });
 
-const handleTerminationSignal = (signal) =>
+// forward signals
+['SIGINT', 'SIGTERM', 'SIGUSR2'].forEach((signal) => {
   process.on(signal, () => {
-    if (!childClosed) {
+    if (!child.killed) {
       child.kill(signal);
     }
   });
+});
 
-handleTerminationSignal('SIGINT');
-handleTerminationSignal('SIGTERM');
-handleTerminationSignal('SIGUSR2');
