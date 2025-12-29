@@ -327,6 +327,9 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowMoved();
   void NotifyWindowSwipe(const std::string& direction);
   void NotifyWindowRotateGesture(float rotation);
+  void NotifyWindowSwipeGesture(const std::string& direction,
+                                const std::string& phase,
+                                float progress);
   void NotifyWindowSheetBegin();
   void NotifyWindowSheetEnd();
   virtual void NotifyWindowEnterFullScreen();
