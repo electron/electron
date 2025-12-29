@@ -255,3 +255,37 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     }
   });
 });
+
+ifit(process.platform === 'darwin')('returns high resolution window icons on macOS', async function () {
+  const w = new BrowserWindow({
+    width: 200,
+    height: 200,
+    show: true,
+    title: 'desktop-capturer-test-window'
+  });
+
+  await w.loadURL('about:blank');
+
+  // Allow macOS window server to register the window
+  await setTimeout(300);
+
+  try {
+    const sources = await desktopCapturer.getSources({
+      types: ['window'],
+      fetchWindowIcons: true
+    });
+
+    const testSource = sources.find(
+      s => s.name === 'desktop-capturer-test-window'
+    );
+
+    expect(testSource).to.not.equal(undefined);
+    expect(testSource!.appIcon.isEmpty()).to.equal(false);
+
+    const { width, height } = testSource!.appIcon.getSize();
+    expect(width).to.equal(128);
+    expect(height).to.equal(128);
+  } finally {
+    w.destroy();
+  }
+});
