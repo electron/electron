@@ -60,7 +60,7 @@ at once, consider the [Chrome Tracing](https://www.chromium.org/developers/how-t
 ## Checklist: Performance recommendations
 
 Chances are that your app could be a little leaner, faster, and generally less
-resource-hungry if you attempt these steps.
+resource-hungry if you avoid the following common pitfalls.
 
 1. [Carelessly including modules](#1-carelessly-including-modules)
 2. [Loading and running code too soon](#2-loading-and-running-code-too-soon)
