@@ -26,7 +26,7 @@ First, we will import the required modules from `electron`. These modules help
 control our application lifecycle and create a native browser window.
 
 ```js
-const { app, BrowserWindow, shell } = require('electron')
+const { app, BrowserWindow, shell, dialog } = require('electron')
 
 const path = require('node:path')
 ```
@@ -68,53 +68,53 @@ This code will be different in Windows and Linux compared to MacOS. This is due 
 
 #### Windows and Linux code:
 
-```js @ts-type={mainWindow:Electron.BrowserWindow} @ts-type={createWindow:()=>void}
+```js
+// Check if we're the primary instance
 const gotTheLock = app.requestSingleInstanceLock()
 
 if (!gotTheLock) {
   app.quit()
 } else {
+  // Handle second-instance events (app already running)
   app.on('second-instance', (event, commandLine, workingDirectory) => {
     // Someone tried to run a second instance, we should focus our window.
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore()
       mainWindow.focus()
     }
-    // the commandLine is array of strings in which last element is deep link url
+    // The last element in commandLine array is the deep link URL
     dialog.showErrorBox('Welcome Back', `You arrived from: ${commandLine.pop()}`)
   })
 
-  // Create mainWindow, load the rest of the app, etc...
+  // Create window and handle initial deep link (app was closed)
   app.whenReady().then(() => {
     createWindow()
+    
+    // On Windows/Linux, check for deep link in initial launch arguments
+    // This handles the case when the app is launched via a deep link
+    if (process.platform !== 'darwin') {
+      const deepLink = process.argv.find(arg => arg.startsWith('electron-fiddle://'))
+      if (deepLink) {
+        dialog.showErrorBox('Initial Launch', `You arrived from: ${deepLink}`)
+      }
+    }
   })
 }
 ```
 
 #### MacOS code:
 
-```js @ts-type={createWindow:()=>void}
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
-  createWindow()
-})
-
-// Handle the protocol. In this case, we choose to show an Error Box.
+```js
+// Handle deep links on macOS - MUST be registered synchronously!
+// Async registration may miss the initial deep link event
 app.on('open-url', (event, url) => {
+  event.preventDefault()
   dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`)
 })
-```
 
-Finally, we will add some additional code to handle when someone closes our application.
-
-```js
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
+// Only create window after setting up the protocol handler
+app.whenReady().then(() => {
+  createWindow()
 })
 ```
 
@@ -189,6 +189,18 @@ example:
 ```shell
 npx electron-packager . --protocol=electron-fiddle --protocol-name="Electron Fiddle"
 ```
+## Troubleshooting
+
+### App doesn't respond to deep links on first launch
+- **Windows/Linux**: Ensure you're checking `process.argv` for the deep link URL when the app starts
+- **macOS**: Make sure the `open-url` event listener is registered synchronously, not in an async function
+
+### Protocol handling only works in packaged app
+On macOS and Linux, protocol handling requires a packaged application. It won't work when running from the command line during development.
+
+### Related Issues
+For more information, see:
+- [How to get protocol URL argument when Windows app opens for the first time?](https://github.com/electron/electron/issues/33032)
 
 ## Conclusion
 
