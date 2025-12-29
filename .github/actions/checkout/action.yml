@@ -1,5 +1,5 @@
 name: 'Checkout'
-description: 'Checks out Electron and stores it in the AKS Cache'
+description: 'Checks out Electron and stores it in the AKS Cache v1'
 inputs:
   generate-sas-token:
     description: 'Whether to generate and persist a SAS token for the item in the cache'
@@ -108,6 +108,9 @@ runs:
       if [ "$TARGET_OS" != "" ]; then
         echo "target_os=['$TARGET_OS']" >> ./.gclient
       fi
+      echo "gclient contents are:"
+      cat ./.gclient
+      
 
       ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 e d gclient sync --with_branch_heads --with_tags -vv
       if [[ "${{ inputs.is-release }}" != "true" ]]; then
