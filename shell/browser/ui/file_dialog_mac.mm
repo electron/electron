@@ -135,8 +135,31 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
           [content_types_set addObject:utt];
         }
       } else {
-        if (UTType* utt = [UTType typeWithFilenameExtension:@(ext.c_str())])
-          [content_types_set addObject:utt];
+        NSString* ext_ns = @(ext.c_str());
+        // Get the primary UTType for this extension
+        UTType* primary_type = [UTType typeWithFilenameExtension:ext_ns];
+        if (primary_type) {
+          [content_types_set addObject:primary_type];
+        }
+        
+        // For custom macOS packages (LSTypeIsPackage = true), we need to also
+        // include all UTTypes that use this extension. This handles cases
+        // like .rtf/.rtfd files created by Text Edit which are registered as
+        // packages but might not be matched by the primary UTType alone.
+        // The issue is that setAllowedContentTypes only matches files whose
+        // content type exactly matches one of the allowed types. For packages,
+        // we need to include all UTTypes that use this extension, not just
+        // the primary one.
+        NSArray<UTType*>* all_types = [UTType typesWithTag:ext_ns
+                                                       tagClass:UTTagClassFilenameExtension
+                                                  conformingToType:nil];
+        if (all_types && [all_types count] > 0) {
+          for (UTType* type in all_types) {
+            // Add all types that use this extension to ensure packages are included.
+            // NSMutableOrderedSet will automatically prevent duplicates.
+            [content_types_set addObject:type];
+          }
+        }
       }
     }
 
