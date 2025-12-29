@@ -202,10 +202,10 @@ index 19cda703154dab9397827ab6ea66c2ca446c644d..dd5943c511886f4e39b2e7f10e67e60f
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 7bcec7aaf69ce271cd74f050c6e2990d2475ad12..49e5bfb8f6e9f7a3651c370152aceca9ed4728d9 100644
+index 50c13b5cfbaa137e6440e880ed97401bae4b1abd..6ade5129ce7b6f67d291877201f5344936fb64b1 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
-@@ -1671,6 +1671,8 @@ component("platform") {
+@@ -1668,6 +1668,8 @@ component("platform") {
      "widget/widget_base.h",
      "widget/widget_base_client.h",
      "windows_keyboard_codes.h",
@@ -313,7 +313,7 @@ index 18f283e625101318ee14b50e6e765dfd1c9a1a44..44a3a55974c9e4b9e715574075f25661
  
    auto DrawAsSinglePath = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 229941e9f8363ff2baa015bb8d346e24524f09de..e6b08825c5917b7d35ebc6001a83be21e33b2e8c 100644
+index 70181be69c795bc8d49f0ffeee8b8099c20c9013..fb717b6e0dbd52e7441cc41eb479d7d67aeeb3bd 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -214,6 +214,10 @@
