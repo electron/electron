@@ -1,0 +1,688 @@
+From 7369bddb2b510ffd4feb52b8d32e853bfa6695e0 Mon Sep 17 00:00:00 2001
+From: Peter McNeeley <petermcneeley@google.com>
+Date: Mon, 01 Dec 2025 09:10:36 -0800
+Subject: [PATCH] [tint] Polyfill unary negation and abs for amd mesa frontend
+
+Bug: 448294721
+Change-Id: Ibca22bac11a7289538cefcd70169640d323b297c
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/276774
+Reviewed-by: James Price <jrprice@google.com>
+Commit-Queue: Peter McNeeley <petermcneeley@google.com>
+---
+
+diff --git a/src/dawn/native/Toggles.cpp b/src/dawn/native/Toggles.cpp
+index 8cca76d..f231360 100644
+--- a/src/dawn/native/Toggles.cpp
++++ b/src/dawn/native/Toggles.cpp
+@@ -387,6 +387,13 @@
+      {"metal_polyfill_unpack_2x16_unorm",
+       "Polyfill unpack2x16unorm for MSL due to CTS failures on Mac M3+ devices.",
+       "https://crbug.com/449576833", ToggleStage::Device}},
++    {Toggle::VulkanPolyfillF32Negation,
++     {"spirv_polyfill_f32_negation",
++      "Polyfill f32 negation with bit manipulation in SPIR-V writer.",
++      "https://crbug.com/448294721", ToggleStage::Device}},
++    {Toggle::VulkanPolyfillF32Abs,
++     {"spirv_polyfill_f32_abs", "Polyfill f32 abs with bit manipulation in SPIR-V writer.",
++      "https://crbug.com/448294721", ToggleStage::Device}},
+     {Toggle::MetalFillEmptyOcclusionQueriesWithZero,
+      {"metal_fill_empty_occlusion_queries_with_zero",
+       "Apple GPUs leave stale results in the visibility result buffer instead of writing zero if "
+diff --git a/src/dawn/native/Toggles.h b/src/dawn/native/Toggles.h
+index 13bf92b..423f918 100644
+--- a/src/dawn/native/Toggles.h
++++ b/src/dawn/native/Toggles.h
+@@ -104,6 +104,8 @@
+     MetalKeepMultisubresourceDepthStencilTexturesInitialized,
+     MetalPolyfillUnpack2x16snorm,
+     MetalPolyfillUnpack2x16unorm,
++    VulkanPolyfillF32Negation,
++    VulkanPolyfillF32Abs,
+     MetalFillEmptyOcclusionQueriesWithZero,
+     UseBlitForBufferToDepthTextureCopy,
+     UseBlitForBufferToStencilTextureCopy,
+diff --git a/src/dawn/native/vulkan/PhysicalDeviceVk.cpp b/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
+index 45271df..64ebd41 100644
+--- a/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
++++ b/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
+@@ -998,6 +998,17 @@
+         deviceToggles->Default(Toggle::VulkanPolyfillSwitchWithIf, true);
+     }
+ 
++    // AMD mesa front end optimizer bug for unary negation and abs.
++    // Fixed in 25.3 - See crbug.com/448294721
++    if (IsAmdMesa()) {
++        const gpu_info::DriverVersion kGoodMesaDriver = {25, 3, 0, 0};
++        const bool badDriver = GetDriverVersion() < kGoodMesaDriver;
++        if (badDriver) {
++            deviceToggles->Default(Toggle::VulkanPolyfillF32Abs, true);
++            deviceToggles->Default(Toggle::VulkanPolyfillF32Negation, true);
++        }
++    }
++
+     if (IsAndroidARM()) {
+         // dawn:1550: Resolving multiple color targets in a single pass fails on ARM GPUs. To
+         // work around the issue, passes that resolve to multiple color targets will instead be
+@@ -1285,6 +1296,13 @@
+     return false;
+ }
+ 
++bool PhysicalDevice::IsAmdMesa() const {
++    if (mDeviceInfo.HasExt(DeviceExt::DriverProperties)) {
++        return mDeviceInfo.driverProperties.driverID == VK_DRIVER_ID_MESA_RADV_KHR;
++    }
++    return false;
++}
++
+ bool PhysicalDevice::IsSwiftshader() const {
+     return gpu_info::IsGoogleSwiftshader(GetVendorId(), GetDeviceId());
+ }
+diff --git a/src/dawn/native/vulkan/PhysicalDeviceVk.h b/src/dawn/native/vulkan/PhysicalDeviceVk.h
+index 622e2b9..1926898 100644
+--- a/src/dawn/native/vulkan/PhysicalDeviceVk.h
++++ b/src/dawn/native/vulkan/PhysicalDeviceVk.h
+@@ -67,6 +67,7 @@
+     bool IsAndroidImgTec() const;
+     bool IsPixel10() const;
+     bool IsIntelMesa() const;
++    bool IsAmdMesa() const;
+     bool IsAndroidHuawei() const;
+     bool IsSwiftshader() const;
+ 
+diff --git a/src/dawn/native/vulkan/ShaderModuleVk.cpp b/src/dawn/native/vulkan/ShaderModuleVk.cpp
+index 3fb8c9f..6923bcc 100644
+--- a/src/dawn/native/vulkan/ShaderModuleVk.cpp
++++ b/src/dawn/native/vulkan/ShaderModuleVk.cpp
+@@ -212,9 +212,10 @@
+     req.tintOptions.bindings = std::move(bindings);
+     req.tintOptions.resource_binding = std::move(resourceBindingConfig);
+ 
+-    req.tintOptions.disable_robustness = !GetDevice()->IsRobustnessEnabled();
+-    req.tintOptions.disable_workgroup_init =
+-        GetDevice()->IsToggleEnabled(Toggle::DisableWorkgroupInit);
++    req.tintOptions.workarounds.polyfill_unary_f32_negation =
++        GetDevice()->IsToggleEnabled(Toggle::VulkanPolyfillF32Negation);
++    req.tintOptions.workarounds.polyfill_f32_abs =
++        GetDevice()->IsToggleEnabled(Toggle::VulkanPolyfillF32Abs);
+     req.tintOptions.disable_polyfill_integer_div_mod =
+         GetDevice()->IsToggleEnabled(Toggle::DisablePolyfillsOnIntegerDivisonAndModulo);
+ 
+diff --git a/src/tint/lang/spirv/writer/common/options.h b/src/tint/lang/spirv/writer/common/options.h
+index 1701c9e..9177e3a 100644
+--- a/src/tint/lang/spirv/writer/common/options.h
++++ b/src/tint/lang/spirv/writer/common/options.h
+@@ -91,6 +91,12 @@
+         /// Set to `true` to always pass matrices to user functions by pointer instead of by value.
+         bool pass_matrix_by_pointer = false;
+ 
++        /// Set to `true` to generate polyfill for f32 negation.
++        bool polyfill_unary_f32_negation = false;
++
++        /// Set to `true` to generate polyfill for f32 abs.
++        bool polyfill_f32_abs = false;
++
+         TINT_REFLECT(Workarounds,
+                      polyfill_case_switch,
+                      scalarize_max_min_clamp,
+@@ -98,7 +104,9 @@
+                      polyfill_pack_unpack_4x8_norm,
+                      subgroup_shuffle_clamped,
+                      polyfill_subgroup_broadcast_f16,
+-                     pass_matrix_by_pointer);
++                     pass_matrix_by_pointer,
++                     polyfill_unary_f32_negation,
++                     polyfill_f32_abs);
+     };
+ 
+     /// Any options which are controlled by the presence/absence of a vulkan extension.
+diff --git a/src/tint/lang/spirv/writer/raise/BUILD.bazel b/src/tint/lang/spirv/writer/raise/BUILD.bazel
+index e261f98..f0b9437 100644
+--- a/src/tint/lang/spirv/writer/raise/BUILD.bazel
++++ b/src/tint/lang/spirv/writer/raise/BUILD.bazel
+@@ -52,6 +52,7 @@
+     "resource_binding.cc",
+     "resource_table.cc",
+     "shader_io.cc",
++    "unary_polyfill.cc",
+     "var_for_dynamic_index.cc",
+   ],
+   hdrs = [
+@@ -68,6 +69,7 @@
+     "resource_binding.h",
+     "resource_table.h",
+     "shader_io.h",
++    "unary_polyfill.h",
+     "var_for_dynamic_index.h",
+   ],
+   deps = [
+@@ -122,6 +124,7 @@
+     "pass_matrix_by_pointer_test.cc",
+     "remove_unreachable_in_loop_continuing_test.cc",
+     "shader_io_test.cc",
++    "unary_polyfill_test.cc",
+     "var_for_dynamic_index_test.cc",
+   ],
+   deps = [
+diff --git a/src/tint/lang/spirv/writer/raise/BUILD.cmake b/src/tint/lang/spirv/writer/raise/BUILD.cmake
+index 0311bd6..8e7e51d 100644
+--- a/src/tint/lang/spirv/writer/raise/BUILD.cmake
++++ b/src/tint/lang/spirv/writer/raise/BUILD.cmake
+@@ -67,6 +67,8 @@
+   lang/spirv/writer/raise/resource_table.h
+   lang/spirv/writer/raise/shader_io.cc
+   lang/spirv/writer/raise/shader_io.h
++  lang/spirv/writer/raise/unary_polyfill.cc
++  lang/spirv/writer/raise/unary_polyfill.h
+   lang/spirv/writer/raise/var_for_dynamic_index.cc
+   lang/spirv/writer/raise/var_for_dynamic_index.h
+ )
+@@ -130,6 +132,7 @@
+   lang/spirv/writer/raise/pass_matrix_by_pointer_test.cc
+   lang/spirv/writer/raise/remove_unreachable_in_loop_continuing_test.cc
+   lang/spirv/writer/raise/shader_io_test.cc
++  lang/spirv/writer/raise/unary_polyfill_test.cc
+   lang/spirv/writer/raise/var_for_dynamic_index_test.cc
+ )
+ 
+diff --git a/src/tint/lang/spirv/writer/raise/BUILD.gn b/src/tint/lang/spirv/writer/raise/BUILD.gn
+index 91a8501..cd5756d 100644
+--- a/src/tint/lang/spirv/writer/raise/BUILD.gn
++++ b/src/tint/lang/spirv/writer/raise/BUILD.gn
+@@ -71,6 +71,8 @@
+       "resource_table.h",
+       "shader_io.cc",
+       "shader_io.h",
++      "unary_polyfill.cc",
++      "unary_polyfill.h",
+       "var_for_dynamic_index.cc",
+       "var_for_dynamic_index.h",
+     ]
+@@ -123,6 +125,7 @@
+         "pass_matrix_by_pointer_test.cc",
+         "remove_unreachable_in_loop_continuing_test.cc",
+         "shader_io_test.cc",
++        "unary_polyfill_test.cc",
+         "var_for_dynamic_index_test.cc",
+       ]
+       deps = [
+diff --git a/src/tint/lang/spirv/writer/raise/raise.cc b/src/tint/lang/spirv/writer/raise/raise.cc
+index aba5733..92a1d2b 100644
+--- a/src/tint/lang/spirv/writer/raise/raise.cc
++++ b/src/tint/lang/spirv/writer/raise/raise.cc
+@@ -66,6 +66,7 @@
+ #include "src/tint/lang/spirv/writer/raise/resource_binding.h"
+ #include "src/tint/lang/spirv/writer/raise/resource_table.h"
+ #include "src/tint/lang/spirv/writer/raise/shader_io.h"
++#include "src/tint/lang/spirv/writer/raise/unary_polyfill.h"
+ #include "src/tint/lang/spirv/writer/raise/var_for_dynamic_index.h"
+ 
+ namespace tint::spirv::writer {
+@@ -230,6 +231,14 @@
+         .signed_negation = true, .signed_arithmetic = true, .signed_shiftleft = true};
+     RUN_TRANSFORM(core::ir::transform::SignedIntegerPolyfill, module, signed_integer_cfg);
+ 
++    // AMD mesa front end optimizer bug for unary negation and abs.
++    // Fixed in 25.3 - See crbug.com/448294721
++    raise::UnaryPolyfillConfig unary_polyfill_cfg = {
++        .polyfill_f32_negation = options.workarounds.polyfill_unary_f32_negation,
++        .polyfill_f32_abs = options.workarounds.polyfill_f32_abs};
++
++    RUN_TRANSFORM(raise::UnaryPolyfill, module, unary_polyfill_cfg);
++
+     // kAllowAnyInputAttachmentIndexType required after ExpandImplicitSplats
+     RUN_TRANSFORM(raise::HandleMatrixArithmetic, module);
+     RUN_TRANSFORM(raise::MergeReturn, module);
+diff --git a/src/tint/lang/spirv/writer/raise/unary_polyfill.cc b/src/tint/lang/spirv/writer/raise/unary_polyfill.cc
+new file mode 100644
+index 0000000..75c4bcd
+--- /dev/null
++++ b/src/tint/lang/spirv/writer/raise/unary_polyfill.cc
+@@ -0,0 +1,124 @@
++// Copyright 2025 The Dawn & Tint Authors
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++// 1. Redistributions of source code must retain the above copyright notice, this
++//    list of conditions and the following disclaimer.
++//
++// 2. Redistributions in binary form must reproduce the above copyright notice,
++//    this list of conditions and the following disclaimer in the documentation
++//    and/or other materials provided with the distribution.
++//
++// 3. Neither the name of the copyright holder nor the names of its
++//    contributors may be used to endorse or promote products derived from
++//    this software without specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++#include "src/tint/lang/spirv/writer/raise/unary_polyfill.h"
++
++#include "src/tint/lang/core/ir/builder.h"
++#include "src/tint/lang/core/ir/module.h"
++#include "src/tint/lang/core/ir/validator.h"
++#include "src/tint/utils/result.h"
++
++using namespace tint::core::fluent_types;     // NOLINT
++using namespace tint::core::number_suffixes;  // NOLINT
++
++namespace tint::spirv::writer::raise {
++
++namespace {
++
++struct State {
++    core::ir::Module& ir;
++    UnaryPolyfillConfig config;
++    core::ir::Builder b{ir};
++    core::type::Manager& ty{ir.Types()};
++
++    void Process() {
++        Vector<core::ir::Unary*, 4> unary_worklist;
++        Vector<core::ir::CoreBuiltinCall*, 4> builtin_worklist;
++        for (auto* inst : ir.Instructions()) {
++            if (auto* unary = inst->As<core::ir::Unary>()) {
++                if (config.polyfill_f32_negation && unary->Op() == core::UnaryOp::kNegation &&
++                    unary->Result()->Type()->DeepestElement()->Is<core::type::F32>()) {
++                    unary_worklist.Push(unary);
++                }
++            } else if (auto* builtin = inst->As<core::ir::CoreBuiltinCall>()) {
++                if (config.polyfill_f32_abs && builtin->Func() == core::BuiltinFn::kAbs &&
++                    builtin->Result()->Type()->DeepestElement()->Is<core::type::F32>()) {
++                    builtin_worklist.Push(builtin);
++                }
++            }
++        }
++
++        for (auto* unary : unary_worklist) {
++            PolyfillF32Negation(unary);
++        }
++        for (auto* builtin : builtin_worklist) {
++            PolyfillF32Abs(builtin);
++        }
++    }
++
++    void PolyfillF32Negation(core::ir::Unary* unary) {
++        auto* val = unary->Val();
++        auto* type = val->Type();
++
++        // AMD mesa front end optimizer bug for unary negation and abs.
++        // Fixed in 25.3 - See crbug.com/448294721
++        // Note we use bitcast as a hammer to avoid the optimizer seeing through other possible
++        // workarounds.
++        b.InsertBefore(unary, [&] {
++            auto* uint_ty = ty.MatchWidth(ty.u32(), type);
++            auto* u32_val = b.Bitcast(uint_ty, val);
++            auto* mask = b.MatchWidth(0x80000000_u, uint_ty);
++            auto* xor_res = b.Xor(uint_ty, u32_val, mask);
++            b.BitcastWithResult(unary->DetachResult(), xor_res->Result());
++        });
++        unary->Destroy();
++    }
++
++    void PolyfillF32Abs(core::ir::CoreBuiltinCall* builtin) {
++        auto* val = builtin->Args()[0];
++        auto* type = val->Type();
++
++        // AMD mesa front end optimizer bug for unary negation and abs.
++        // Fixed in 25.3 - See crbug.com/448294721
++        // Note we use bitcast as a hammer to avoid the optimizer seeing through other possible
++        // workarounds.
++        b.InsertBefore(builtin, [&] {
++            auto* uint_ty = ty.MatchWidth(ty.u32(), type);
++            auto* u32_val = b.Bitcast(uint_ty, val);
++            auto* mask = b.MatchWidth(0x7FFFFFFF_u, uint_ty);
++            auto* and_res = b.And(uint_ty, u32_val, mask);
++            b.BitcastWithResult(builtin->DetachResult(), and_res->Result());
++        });
++        builtin->Destroy();
++    }
++};
++
++}  // namespace
++
++Result<SuccessType> UnaryPolyfill(core::ir::Module& module, const UnaryPolyfillConfig& config) {
++    auto result =
++        ValidateAndDumpIfNeeded(module, "spirv.UnaryPolyfill", kPolyfillUnaryCapabilities);
++    if (result != Success) {
++        return result.Failure();
++    }
++
++    State{module, config}.Process();
++
++    return Success;
++}
++
++}  // namespace tint::spirv::writer::raise
+diff --git a/src/tint/lang/spirv/writer/raise/unary_polyfill.h b/src/tint/lang/spirv/writer/raise/unary_polyfill.h
+new file mode 100644
+index 0000000..36bf2f6
+--- /dev/null
++++ b/src/tint/lang/spirv/writer/raise/unary_polyfill.h
+@@ -0,0 +1,65 @@
++// Copyright 2025 The Dawn & Tint Authors
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++// 1. Redistributions of source code must retain the above copyright notice, this
++//    list of conditions and the following disclaimer.
++//
++// 2. Redistributions in binary form must reproduce the above copyright notice,
++//    this list of conditions and the following disclaimer in the documentation
++//    and/or other materials provided with the distribution.
++//
++// 3. Neither the name of the copyright holder nor the names of its
++//    contributors may be used to endorse or promote products derived from
++//    this software without specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++#ifndef SRC_TINT_LANG_SPIRV_WRITER_RAISE_UNARY_POLYFILL_H_
++#define SRC_TINT_LANG_SPIRV_WRITER_RAISE_UNARY_POLYFILL_H_
++
++#include "src/tint/lang/core/ir/validator.h"
++#include "src/tint/utils/result.h"
++
++// Forward declarations.
++namespace tint::core::ir {
++class Module;
++}  // namespace tint::core::ir
++
++namespace tint::spirv::writer::raise {
++
++// The capabilities that the transform can support.
++const core::ir::Capabilities kPolyfillUnaryCapabilities{
++    core::ir::Capability::kAllowDuplicateBindings,
++    core::ir::Capability::kAllowAnyInputAttachmentIndexType,
++    core::ir::Capability::kAllowNonCoreTypes,
++    core::ir::Capability::kAllow8BitIntegers,
++};
++
++/// Configuration for the UnaryPolyfill transform.
++struct UnaryPolyfillConfig {
++    /// If true, polyfill f32 negation with bit manipulation.
++    bool polyfill_f32_negation = false;
++    /// If true, polyfill f32 abs with sign() * x.
++    bool polyfill_f32_abs = false;
++};
++
++/// UnaryPolyfill is a transform that replaces unary instructions with polyfills.
++/// @param module the module to transform
++/// @param config the configuration used in the polyfill function
++/// @returns success or failure
++Result<SuccessType> UnaryPolyfill(core::ir::Module& module, const UnaryPolyfillConfig& config);
++
++}  // namespace tint::spirv::writer::raise
++
++#endif  // SRC_TINT_LANG_SPIRV_WRITER_RAISE_UNARY_POLYFILL_H_
+diff --git a/src/tint/lang/spirv/writer/raise/unary_polyfill_test.cc b/src/tint/lang/spirv/writer/raise/unary_polyfill_test.cc
+new file mode 100644
+index 0000000..648c5bf
+--- /dev/null
++++ b/src/tint/lang/spirv/writer/raise/unary_polyfill_test.cc
+@@ -0,0 +1,247 @@
++// Copyright 2025 The Dawn & Tint Authors
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++// 1. Redistributions of source code must retain the above copyright notice, this
++//    list of conditions and the following disclaimer.
++//
++// 2. Redistributions in binary form must reproduce the above copyright notice,
++//    this list of conditions and the following disclaimer in the documentation
++//    and/or other materials provided with the distribution.
++//
++// 3. Neither the name of the copyright holder nor the names of its
++//    contributors may be used to endorse or promote products derived from
++//    this software without specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++#include "src/tint/lang/spirv/writer/raise/unary_polyfill.h"
++
++#include "src/tint/lang/core/ir/transform/helper_test.h"
++
++namespace tint::spirv::writer::raise {
++namespace {
++
++using namespace tint::core::fluent_types;     // NOLINT
++using namespace tint::core::number_suffixes;  // NOLINT
++
++using SpirvWriter_UnaryPolyfillTest = core::ir::transform::TransformTest;
++
++TEST_F(SpirvWriter_UnaryPolyfillTest, Negation_Scalar) {
++    auto* arg = b.FunctionParam("arg", ty.f32());
++    auto* func = b.Function("foo", ty.f32());
++    func->SetParams({arg});
++
++    b.Append(func->Block(), [&] {
++        auto* result = b.Negation(arg);
++        b.Return(func, result);
++    });
++
++    auto* src = R"(
++%foo = func(%arg:f32):f32 {
++  $B1: {
++    %3:f32 = negation %arg
++    ret %3
++  }
++}
++)";
++    EXPECT_EQ(src, str());
++
++    auto* expect = R"(
++%foo = func(%arg:f32):f32 {
++  $B1: {
++    %3:u32 = bitcast %arg
++    %4:u32 = xor %3, 2147483648u
++    %5:f32 = bitcast %4
++    ret %5
++  }
++}
++)";
++
++    UnaryPolyfillConfig config;
++    config.polyfill_f32_negation = true;
++    Run(UnaryPolyfill, config);
++
++    EXPECT_EQ(expect, str());
++}
++
++TEST_F(SpirvWriter_UnaryPolyfillTest, Negation_Vector) {
++    auto* arg = b.FunctionParam("arg", ty.vec4<f32>());
++    auto* func = b.Function("foo", ty.vec4<f32>());
++    func->SetParams({arg});
++
++    b.Append(func->Block(), [&] {
++        auto* result = b.Negation(arg);
++        b.Return(func, result);
++    });
++
++    auto* src = R"(
++%foo = func(%arg:vec4<f32>):vec4<f32> {
++  $B1: {
++    %3:vec4<f32> = negation %arg
++    ret %3
++  }
++}
++)";
++    EXPECT_EQ(src, str());
++
++    auto* expect = R"(
++%foo = func(%arg:vec4<f32>):vec4<f32> {
++  $B1: {
++    %3:vec4<u32> = bitcast %arg
++    %4:vec4<u32> = xor %3, vec4<u32>(2147483648u)
++    %5:vec4<f32> = bitcast %4
++    ret %5
++  }
++}
++)";
++
++    UnaryPolyfillConfig config;
++    config.polyfill_f32_negation = true;
++    Run(UnaryPolyfill, config);
++
++    EXPECT_EQ(expect, str());
++}
++
++TEST_F(SpirvWriter_UnaryPolyfillTest, Abs_Scalar) {
++    auto* arg = b.FunctionParam("arg", ty.f32());
++    auto* func = b.Function("foo", ty.f32());
++    func->SetParams({arg});
++
++    b.Append(func->Block(), [&] {
++        auto* result = b.Call(ty.f32(), core::BuiltinFn::kAbs, arg);
++        b.Return(func, result);
++    });
++
++    auto* src = R"(
++%foo = func(%arg:f32):f32 {
++  $B1: {
++    %3:f32 = abs %arg
++    ret %3
++  }
++}
++)";
++    EXPECT_EQ(src, str());
++
++    auto* expect = R"(
++%foo = func(%arg:f32):f32 {
++  $B1: {
++    %3:u32 = bitcast %arg
++    %4:u32 = and %3, 2147483647u
++    %5:f32 = bitcast %4
++    ret %5
++  }
++}
++)";
++
++    UnaryPolyfillConfig config;
++    config.polyfill_f32_abs = true;
++    Run(UnaryPolyfill, config);
++
++    EXPECT_EQ(expect, str());
++}
++
++TEST_F(SpirvWriter_UnaryPolyfillTest, Abs_Vector) {
++    auto* arg = b.FunctionParam("arg", ty.vec4<f32>());
++    auto* func = b.Function("foo", ty.vec4<f32>());
++    func->SetParams({arg});
++
++    b.Append(func->Block(), [&] {
++        auto* result = b.Call(ty.vec4<f32>(), core::BuiltinFn::kAbs, arg);
++        b.Return(func, result);
++    });
++
++    auto* src = R"(
++%foo = func(%arg:vec4<f32>):vec4<f32> {
++  $B1: {
++    %3:vec4<f32> = abs %arg
++    ret %3
++  }
++}
++)";
++    EXPECT_EQ(src, str());
++
++    auto* expect = R"(
++%foo = func(%arg:vec4<f32>):vec4<f32> {
++  $B1: {
++    %3:vec4<u32> = bitcast %arg
++    %4:vec4<u32> = and %3, vec4<u32>(2147483647u)
++    %5:vec4<f32> = bitcast %4
++    ret %5
++  }
++}
++)";
++
++    UnaryPolyfillConfig config;
++    config.polyfill_f32_abs = true;
++    Run(UnaryPolyfill, config);
++
++    EXPECT_EQ(expect, str());
++}
++
++TEST_F(SpirvWriter_UnaryPolyfillTest, Negation_NoPolyfill) {
++    auto* arg = b.FunctionParam("arg", ty.f32());
++    auto* func = b.Function("foo", ty.f32());
++    func->SetParams({arg});
++
++    b.Append(func->Block(), [&] {
++        auto* result = b.Negation(arg);
++        b.Return(func, result);
++    });
++
++    auto* src = R"(
++%foo = func(%arg:f32):f32 {
++  $B1: {
++    %3:f32 = negation %arg
++    ret %3
++  }
++}
++)";
++    EXPECT_EQ(src, str());
++
++    UnaryPolyfillConfig config;
++    config.polyfill_f32_negation = false;
++    Run(UnaryPolyfill, config);
++
++    EXPECT_EQ(src, str());
++}
++
++TEST_F(SpirvWriter_UnaryPolyfillTest, Abs_NoPolyfill) {
++    auto* arg = b.FunctionParam("arg", ty.f32());
++    auto* func = b.Function("foo", ty.f32());
++    func->SetParams({arg});
++
++    b.Append(func->Block(), [&] {
++        auto* result = b.Call(ty.f32(), core::BuiltinFn::kAbs, arg);
++        b.Return(func, result);
++    });
++
++    auto* src = R"(
++%foo = func(%arg:f32):f32 {
++  $B1: {
++    %3:f32 = abs %arg
++    ret %3
++  }
++}
++)";
++    EXPECT_EQ(src, str());
++
++    UnaryPolyfillConfig config;
++    config.polyfill_f32_abs = false;
++    Run(UnaryPolyfill, config);
++
++    EXPECT_EQ(src, str());
++}
++
++}  // namespace
++}  // namespace tint::spirv::writer::raise
