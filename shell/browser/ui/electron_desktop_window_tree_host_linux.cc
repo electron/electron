@@ -25,6 +25,7 @@
 #include "ui/gfx/geometry/skia_conversions.h"
 #include "ui/linux/linux_ui.h"
 #include "ui/ozone/public/ozone_platform.h"
+#include "ui/platform_window/extensions/wayland_extension.h"
 #include "ui/platform_window/platform_window.h"
 #include "ui/platform_window/platform_window_init_properties.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host.h"
@@ -56,6 +57,35 @@ bool ElectronDesktopWindowTreeHostLinux::IsShowingFrame() const {
   return !native_window_view_->IsFullscreen() &&
          !native_window_view_->IsMaximized() &&
          !native_window_view_->IsMinimized();
+}
+
+bool ElectronDesktopWindowTreeHostLinux::SupportsMouseLock() {
+  auto* wayland_extension = ui::GetWaylandToplevelExtension(*platform_window());
+  if (!wayland_extension) {
+    return false;
+  }
+
+  return wayland_extension->SupportsPointerLock();
+}
+
+void ElectronDesktopWindowTreeHostLinux::LockMouse(aura::Window* window) {
+  DesktopWindowTreeHostLinux::LockMouse(window);
+
+  if (SupportsMouseLock()) {
+    auto* wayland_extension =
+        ui::GetWaylandToplevelExtension(*platform_window());
+    wayland_extension->LockPointer(true /*enabled*/);
+  }
+}
+
+void ElectronDesktopWindowTreeHostLinux::UnlockMouse(aura::Window* window) {
+  DesktopWindowTreeHostLinux::UnlockMouse(window);
+
+  if (SupportsMouseLock()) {
+    auto* wayland_extension =
+        ui::GetWaylandToplevelExtension(*platform_window());
+    wayland_extension->LockPointer(false /*enabled*/);
+  }
 }
 
 gfx::Insets ElectronDesktopWindowTreeHostLinux::CalculateInsetsInDIP(

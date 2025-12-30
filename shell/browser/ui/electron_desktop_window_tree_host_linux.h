@@ -44,6 +44,9 @@ class ElectronDesktopWindowTreeHostLinux
  protected:
   // views::DesktopWindowTreeHostLinuxImpl:
   void OnWidgetInitDone() override;
+  bool SupportsMouseLock() override;
+  void LockMouse(aura::Window* window) override;
+  void UnlockMouse(aura::Window* window) override;
 
   // ui::PlatformWindowDelegate
   gfx::Insets CalculateInsetsInDIP(
