@@ -54,7 +54,7 @@ void ExtensionActionAPI::Shutdown() {}
 // ExtensionActionFunction
 //
 
-ExtensionActionFunction::ExtensionActionFunction() {}
+ExtensionActionFunction::ExtensionActionFunction() = default;
 
 ExtensionFunction::ResponseAction ExtensionActionFunction::Run() {
   return RunExtensionAction();
