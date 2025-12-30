@@ -1,20 +1,19 @@
-From 7369bddb2b510ffd4feb52b8d32e853bfa6695e0 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Peter McNeeley <petermcneeley@google.com>
-Date: Mon, 01 Dec 2025 09:10:36 -0800
-Subject: [PATCH] [tint] Polyfill unary negation and abs for amd mesa frontend
+Date: Mon, 1 Dec 2025 09:10:36 -0800
+Subject: [tint] Polyfill unary negation and abs for amd mesa frontend
 
 Bug: 448294721
 Change-Id: Ibca22bac11a7289538cefcd70169640d323b297c
 Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/276774
 Reviewed-by: James Price <jrprice@google.com>
 Commit-Queue: Peter McNeeley <petermcneeley@google.com>
----
 
 diff --git a/src/dawn/native/Toggles.cpp b/src/dawn/native/Toggles.cpp
-index 8cca76d..f231360 100644
+index af7da98587f0087d5f06e09735c3c5686a2b4d09..a24a390a536d0e1faeb59a9ca5918869031b054f 100644
 --- a/src/dawn/native/Toggles.cpp
 +++ b/src/dawn/native/Toggles.cpp
-@@ -387,6 +387,13 @@
+@@ -387,6 +387,13 @@ static constexpr ToggleEnumAndInfoList kToggleNameAndInfoList = {{
       {"metal_polyfill_unpack_2x16_unorm",
        "Polyfill unpack2x16unorm for MSL due to CTS failures on Mac M3+ devices.",
        "https://crbug.com/449576833", ToggleStage::Device}},
@@ -29,10 +28,10 @@ index 8cca76d..f231360 100644
       {"metal_fill_empty_occlusion_queries_with_zero",
        "Apple GPUs leave stale results in the visibility result buffer instead of writing zero if "
 diff --git a/src/dawn/native/Toggles.h b/src/dawn/native/Toggles.h
-index 13bf92b..423f918 100644
+index d663bbbcb643191c72955eeefd07f3afc46a4c63..1aad42450658567eab7b89ceb20f11e3a2f6b50d 100644
 --- a/src/dawn/native/Toggles.h
 +++ b/src/dawn/native/Toggles.h
-@@ -104,6 +104,8 @@
+@@ -104,6 +104,8 @@ enum class Toggle {
      MetalKeepMultisubresourceDepthStencilTexturesInitialized,
      MetalPolyfillUnpack2x16snorm,
      MetalPolyfillUnpack2x16unorm,
@@ -42,10 +41,10 @@ index 13bf92b..423f918 100644
      UseBlitForBufferToDepthTextureCopy,
      UseBlitForBufferToStencilTextureCopy,
 diff --git a/src/dawn/native/vulkan/PhysicalDeviceVk.cpp b/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
-index 45271df..64ebd41 100644
+index 45271dfbfb247acc492f050a02b6fcc771516482..64ebd4151e2b5729ce944892a91298ccb027c643 100644
 --- a/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
 +++ b/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
-@@ -998,6 +998,17 @@
+@@ -998,6 +998,17 @@ void PhysicalDevice::SetupBackendDeviceToggles(dawn::platform::Platform* platfor
          deviceToggles->Default(Toggle::VulkanPolyfillSwitchWithIf, true);
      }
  
@@ -63,7 +62,7 @@ index 45271df..64ebd41 100644
      if (IsAndroidARM()) {
          // dawn:1550: Resolving multiple color targets in a single pass fails on ARM GPUs. To
          // work around the issue, passes that resolve to multiple color targets will instead be
-@@ -1285,6 +1296,13 @@
+@@ -1285,6 +1296,13 @@ bool PhysicalDevice::IsIntelMesa() const {
      return false;
  }
  
@@ -78,10 +77,10 @@ index 45271df..64ebd41 100644
      return gpu_info::IsGoogleSwiftshader(GetVendorId(), GetDeviceId());
  }
 diff --git a/src/dawn/native/vulkan/PhysicalDeviceVk.h b/src/dawn/native/vulkan/PhysicalDeviceVk.h
-index 622e2b9..1926898 100644
+index 622e2b9fb942b5e53c632303ae08c5df9cc6c5fa..1926898038ddacb6b5fe4f075b0bc7b0e4b57e69 100644
 --- a/src/dawn/native/vulkan/PhysicalDeviceVk.h
 +++ b/src/dawn/native/vulkan/PhysicalDeviceVk.h
-@@ -67,6 +67,7 @@
+@@ -67,6 +67,7 @@ class PhysicalDevice : public PhysicalDeviceBase {
      bool IsAndroidImgTec() const;
      bool IsPixel10() const;
      bool IsIntelMesa() const;
@@ -90,72 +89,158 @@ index 622e2b9..1926898 100644
      bool IsSwiftshader() const;
  
 diff --git a/src/dawn/native/vulkan/ShaderModuleVk.cpp b/src/dawn/native/vulkan/ShaderModuleVk.cpp
-index 3fb8c9f..6923bcc 100644
+index d9ee0aedf640eac129601c0926980c83e9ca8ab7..ca6e06b73b64df2e53f789df898ff57982f4bd95 100644
 --- a/src/dawn/native/vulkan/ShaderModuleVk.cpp
 +++ b/src/dawn/native/vulkan/ShaderModuleVk.cpp
-@@ -212,9 +212,10 @@
-     req.tintOptions.bindings = std::move(bindings);
-     req.tintOptions.resource_binding = std::move(resourceBindingConfig);
- 
--    req.tintOptions.disable_robustness = !GetDevice()->IsRobustnessEnabled();
--    req.tintOptions.disable_workgroup_init =
--        GetDevice()->IsToggleEnabled(Toggle::DisableWorkgroupInit);
+@@ -214,6 +214,33 @@ ResultOrError<ShaderModule::ModuleAndSpirv> ShaderModule::GetHandleAndSpirv(
+     };
+     req.tintOptions.disable_workgroup_init =
+         GetDevice()->IsToggleEnabled(Toggle::DisableWorkgroupInit);
++    req.tintOptions.bindings = std::move(bindings);
++    req.tintOptions.resource_binding = std::move(resourceBindingConfig);
++
 +    req.tintOptions.workarounds.polyfill_unary_f32_negation =
 +        GetDevice()->IsToggleEnabled(Toggle::VulkanPolyfillF32Negation);
 +    req.tintOptions.workarounds.polyfill_f32_abs =
 +        GetDevice()->IsToggleEnabled(Toggle::VulkanPolyfillF32Abs);
-     req.tintOptions.disable_polyfill_integer_div_mod =
-         GetDevice()->IsToggleEnabled(Toggle::DisablePolyfillsOnIntegerDivisonAndModulo);
- 
++    req.tintOptions.disable_polyfill_integer_div_mod =
++        GetDevice()->IsToggleEnabled(Toggle::DisablePolyfillsOnIntegerDivisonAndModulo);
++
++    req.tintOptions.emit_vertex_point_size = emitPointSize;
++    req.tintOptions.apply_pixel_center_polyfill = isSampled;
++
++    req.tintOptions.spirv_version = GetDevice()->IsToggleEnabled(Toggle::UseSpirv14)
++                                        ? tint::spirv::writer::SpvVersion::kSpv14
++                                        : tint::spirv::writer::SpvVersion::kSpv13;
++    req.tintOptions.enable_integer_range_analysis =
++        GetDevice()->IsToggleEnabled(Toggle::EnableIntegerRangeAnalysisInRobustness);
++
++    req.tintOptions.extensions.use_vulkan_memory_model =
++        GetDevice()->IsToggleEnabled(Toggle::UseVulkanMemoryModel);
++    // Currently we can disable index clamping on all runtime-sized arrays in Tint robustness
++    // transform as unsized arrays can only be declared on storage address space.
++    req.tintOptions.extensions.disable_runtime_sized_array_index_clamping =
++        GetDevice()->IsToggleEnabled(Toggle::VulkanUseBufferRobustAccess2);
++    req.tintOptions.extensions.disable_image_robustness =
++        GetDevice()->IsToggleEnabled(Toggle::VulkanUseImageRobustAccess2);
+     // The only possible alternative for the vulkan demote to helper extension is
+     // "OpTerminateInvocation" which remains unimplemented in dawn/tint.
+     req.tintOptions.use_demote_to_helper_invocation_extensions =
 diff --git a/src/tint/lang/spirv/writer/common/options.h b/src/tint/lang/spirv/writer/common/options.h
-index 1701c9e..9177e3a 100644
+index 6ba437ea529ff59a1f0761c2b111433184159948..98cdb20516d517ecff06c1e32d7e93bb4c2e06a5 100644
 --- a/src/tint/lang/spirv/writer/common/options.h
 +++ b/src/tint/lang/spirv/writer/common/options.h
-@@ -91,6 +91,12 @@
-         /// Set to `true` to always pass matrices to user functions by pointer instead of by value.
-         bool pass_matrix_by_pointer = false;
+@@ -65,6 +65,89 @@ struct Options {
+         TINT_REFLECT(RangeOffsets, min, max);
+     };
  
++    /// The set of options which control workarounds for driver issues in the SPIR-V generator.
++    struct Workarounds {
++        /// Set to `true` to generate a polyfill for switch statements using if/else statements.
++        bool polyfill_case_switch = false;
++
++        /// Set to `true` to scalarize max min and clamp builtins.
++        bool scalarize_max_min_clamp = false;
++
++        /// Set to `true` if handles should be transformed by direct variable access.
++        bool dva_transform_handle = false;
++
++        /// Set to `true` to generate polyfill for `pack4x8snorm`, `pack4x8unorm`, `unpack4x8snorm`
++        /// and `unpack4x8unorm` builtins
++        bool polyfill_pack_unpack_4x8_norm = false;
++
++        /// Set to `true` to generate a polyfill clamp of `id` param of subgroupShuffle to within
++        /// the spec max subgroup size.
++        bool subgroup_shuffle_clamped = false;
++
++        /// Set to `true` to generate polyfill for `subgroupBroadcast(f16)`
++        bool polyfill_subgroup_broadcast_f16 = false;
++
++        /// Set to `true` to always pass matrices to user functions by pointer instead of by value.
++        bool pass_matrix_by_pointer = false;
++
 +        /// Set to `true` to generate polyfill for f32 negation.
 +        bool polyfill_unary_f32_negation = false;
 +
 +        /// Set to `true` to generate polyfill for f32 abs.
 +        bool polyfill_f32_abs = false;
 +
-         TINT_REFLECT(Workarounds,
-                      polyfill_case_switch,
-                      scalarize_max_min_clamp,
-@@ -98,7 +104,9 @@
-                      polyfill_pack_unpack_4x8_norm,
-                      subgroup_shuffle_clamped,
-                      polyfill_subgroup_broadcast_f16,
--                     pass_matrix_by_pointer);
++        TINT_REFLECT(Workarounds,
++                     polyfill_case_switch,
++                     scalarize_max_min_clamp,
++                     dva_transform_handle,
++                     polyfill_pack_unpack_4x8_norm,
++                     subgroup_shuffle_clamped,
++                     polyfill_subgroup_broadcast_f16,
 +                     pass_matrix_by_pointer,
 +                     polyfill_unary_f32_negation,
 +                     polyfill_f32_abs);
-     };
++    };
++
++    /// Any options which are controlled by the presence/absence of a vulkan extension.
++    struct Extensions {
++        /// Set to `true` to allow for the usage of the demote to helper extension.
++        bool use_demote_to_helper_invocation = false;
++
++        /// Set to `true` to use the StorageInputOutput16 capability for shader IO that uses f16
++        /// types.
++        bool use_storage_input_output_16 = true;
++
++        /// Set to `true` to initialize workgroup memory with OpConstantNull when
++        /// VK_KHR_zero_initialize_workgroup_memory is enabled.
++        bool use_zero_initialize_workgroup_memory = false;
++
++        /// Set to `true` if the Vulkan Memory Model should be used
++        bool use_vulkan_memory_model = false;
++
++        /// Set to `true` to skip robustness transform on textures.
++        bool disable_image_robustness = false;
++
++        /// Set to `true` to disable index clamping on the runtime-sized arrays in robustness
++        /// transform.
++        bool disable_runtime_sized_array_index_clamping = false;
++
++        /// Set to `true` to generate polyfill for `dot4I8Packed` and `dot4U8Packed` builtins
++        bool dot_4x8_packed = false;
++
++        /// Set to `true` to decompose uniform buffers into array<vec4u, ...>.
++        bool decompose_uniform_buffers = true;
++
++        TINT_REFLECT(Extensions,
++                     use_demote_to_helper_invocation,
++                     use_storage_input_output_16,
++                     use_zero_initialize_workgroup_memory,
++                     use_vulkan_memory_model,
++                     disable_image_robustness,
++                     disable_runtime_sized_array_index_clamping,
++                     dot_4x8_packed,
++                     decompose_uniform_buffers);
++    };
++
+     /// The entry point name to generate
+     std::string entry_point_name;
  
-     /// Any options which are controlled by the presence/absence of a vulkan extension.
 diff --git a/src/tint/lang/spirv/writer/raise/BUILD.bazel b/src/tint/lang/spirv/writer/raise/BUILD.bazel
-index e261f98..f0b9437 100644
+index 80e7efae1b2989a888d233c2fbb1da522a612f64..9a3783a561774bf7a50b08ac80146e4a0f567435 100644
 --- a/src/tint/lang/spirv/writer/raise/BUILD.bazel
 +++ b/src/tint/lang/spirv/writer/raise/BUILD.bazel
-@@ -52,6 +52,7 @@
+@@ -51,6 +51,7 @@ cc_library(
+     "remove_unreachable_in_loop_continuing.cc",
      "resource_binding.cc",
-     "resource_table.cc",
      "shader_io.cc",
 +    "unary_polyfill.cc",
      "var_for_dynamic_index.cc",
    ],
    hdrs = [
-@@ -68,6 +69,7 @@
+@@ -66,6 +67,7 @@ cc_library(
+     "remove_unreachable_in_loop_continuing.h",
      "resource_binding.h",
-     "resource_table.h",
      "shader_io.h",
 +    "unary_polyfill.h",
      "var_for_dynamic_index.h",
    ],
    deps = [
-@@ -122,6 +124,7 @@
+@@ -120,6 +122,7 @@ cc_library(
      "pass_matrix_by_pointer_test.cc",
      "remove_unreachable_in_loop_continuing_test.cc",
      "shader_io_test.cc",
@@ -164,11 +249,11 @@ index e261f98..f0b9437 100644
    ],
    deps = [
 diff --git a/src/tint/lang/spirv/writer/raise/BUILD.cmake b/src/tint/lang/spirv/writer/raise/BUILD.cmake
-index 0311bd6..8e7e51d 100644
+index 8150d9e98e1f2c64921bfa6f600f25eff945c351..32cf5191adb8a325b6de21c9c663836de5b0d25c 100644
 --- a/src/tint/lang/spirv/writer/raise/BUILD.cmake
 +++ b/src/tint/lang/spirv/writer/raise/BUILD.cmake
-@@ -67,6 +67,8 @@
-   lang/spirv/writer/raise/resource_table.h
+@@ -65,6 +65,8 @@ tint_add_target(tint_lang_spirv_writer_raise lib
+   lang/spirv/writer/raise/resource_binding.h
    lang/spirv/writer/raise/shader_io.cc
    lang/spirv/writer/raise/shader_io.h
 +  lang/spirv/writer/raise/unary_polyfill.cc
@@ -176,7 +261,7 @@ index 0311bd6..8e7e51d 100644
    lang/spirv/writer/raise/var_for_dynamic_index.cc
    lang/spirv/writer/raise/var_for_dynamic_index.h
  )
-@@ -130,6 +132,7 @@
+@@ -128,6 +130,7 @@ tint_add_target(tint_lang_spirv_writer_raise_test test
    lang/spirv/writer/raise/pass_matrix_by_pointer_test.cc
    lang/spirv/writer/raise/remove_unreachable_in_loop_continuing_test.cc
    lang/spirv/writer/raise/shader_io_test.cc
@@ -185,11 +270,11 @@ index 0311bd6..8e7e51d 100644
  )
  
 diff --git a/src/tint/lang/spirv/writer/raise/BUILD.gn b/src/tint/lang/spirv/writer/raise/BUILD.gn
-index 91a8501..cd5756d 100644
+index c4c229bb6d0f2600737804837d8c54d701db3b25..380df74a71c51f929901b3eb50615489ce6a57bd 100644
 --- a/src/tint/lang/spirv/writer/raise/BUILD.gn
 +++ b/src/tint/lang/spirv/writer/raise/BUILD.gn
-@@ -71,6 +71,8 @@
-       "resource_table.h",
+@@ -69,6 +69,8 @@ if (tint_build_spv_writer) {
+       "resource_binding.h",
        "shader_io.cc",
        "shader_io.h",
 +      "unary_polyfill.cc",
@@ -197,7 +282,7 @@ index 91a8501..cd5756d 100644
        "var_for_dynamic_index.cc",
        "var_for_dynamic_index.h",
      ]
-@@ -123,6 +125,7 @@
+@@ -121,6 +123,7 @@ if (tint_build_unittests) {
          "pass_matrix_by_pointer_test.cc",
          "remove_unreachable_in_loop_continuing_test.cc",
          "shader_io_test.cc",
@@ -206,18 +291,18 @@ index 91a8501..cd5756d 100644
        ]
        deps = [
 diff --git a/src/tint/lang/spirv/writer/raise/raise.cc b/src/tint/lang/spirv/writer/raise/raise.cc
-index aba5733..92a1d2b 100644
+index 04582992b63428dbaa2d170cdacf5bd23aaef58d..1c22fe7aed70e4fc5b7dacd07f4f9711911ac87f 100644
 --- a/src/tint/lang/spirv/writer/raise/raise.cc
 +++ b/src/tint/lang/spirv/writer/raise/raise.cc
-@@ -66,6 +66,7 @@
+@@ -65,6 +65,7 @@
+ #include "src/tint/lang/spirv/writer/raise/remove_unreachable_in_loop_continuing.h"
  #include "src/tint/lang/spirv/writer/raise/resource_binding.h"
- #include "src/tint/lang/spirv/writer/raise/resource_table.h"
  #include "src/tint/lang/spirv/writer/raise/shader_io.h"
 +#include "src/tint/lang/spirv/writer/raise/unary_polyfill.h"
  #include "src/tint/lang/spirv/writer/raise/var_for_dynamic_index.h"
  
  namespace tint::spirv::writer {
-@@ -230,6 +231,14 @@
+@@ -222,6 +223,14 @@ Result<SuccessType> Raise(core::ir::Module& module, const Options& options) {
          .signed_negation = true, .signed_arithmetic = true, .signed_shiftleft = true};
      RUN_TRANSFORM(core::ir::transform::SignedIntegerPolyfill, module, signed_integer_cfg);
  
@@ -234,7 +319,7 @@ index aba5733..92a1d2b 100644
      RUN_TRANSFORM(raise::MergeReturn, module);
 diff --git a/src/tint/lang/spirv/writer/raise/unary_polyfill.cc b/src/tint/lang/spirv/writer/raise/unary_polyfill.cc
 new file mode 100644
-index 0000000..75c4bcd
+index 0000000000000000000000000000000000000000..75c4bcd98132e7feb3345d0fed551b8092f1d8ce
 --- /dev/null
 +++ b/src/tint/lang/spirv/writer/raise/unary_polyfill.cc
 @@ -0,0 +1,124 @@
@@ -364,7 +449,7 @@ index 0000000..75c4bcd
 +}  // namespace tint::spirv::writer::raise
 diff --git a/src/tint/lang/spirv/writer/raise/unary_polyfill.h b/src/tint/lang/spirv/writer/raise/unary_polyfill.h
 new file mode 100644
-index 0000000..36bf2f6
+index 0000000000000000000000000000000000000000..36bf2f6cccab6e5b0688f25198ddde95f90c9dd1
 --- /dev/null
 +++ b/src/tint/lang/spirv/writer/raise/unary_polyfill.h
 @@ -0,0 +1,65 @@
@@ -435,7 +520,7 @@ index 0000000..36bf2f6
 +#endif  // SRC_TINT_LANG_SPIRV_WRITER_RAISE_UNARY_POLYFILL_H_
 diff --git a/src/tint/lang/spirv/writer/raise/unary_polyfill_test.cc b/src/tint/lang/spirv/writer/raise/unary_polyfill_test.cc
 new file mode 100644
-index 0000000..648c5bf
+index 0000000000000000000000000000000000000000..648c5bf6ef57ccc9d6f60ffd1190e383f5b3d605
 --- /dev/null
 +++ b/src/tint/lang/spirv/writer/raise/unary_polyfill_test.cc
 @@ -0,0 +1,247 @@
