@@ -20,10 +20,10 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 23b38aa1733f6eabda0ab76b5f63f13e76958a6f..2f68573b8fa30a4d63f0b2fa8ff4a8e502436f2f 100644
+index 766ad28c66348f79164d8690faffb936bf659884..7b1131679ef84ca575629f46ad98483eeb4d8d9e 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -537,6 +537,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -538,6 +538,7 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::WEB_APP_INSTALLATION;
      case PermissionType::LOCAL_NETWORK_ACCESS:
        return ContentSettingsType::LOCAL_NETWORK_ACCESS;
@@ -32,10 +32,10 @@ index 23b38aa1733f6eabda0ab76b5f63f13e76958a6f..2f68573b8fa30a4d63f0b2fa8ff4a8e5
        break;
    }
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index eeacd30992233f44f8972f242f37637cb240dc06..e56096991dfbffa3a16aa3aca602b59fbd48a4d5 100644
+index 1ecf08300207bf8fbaab7d0d69fbad9c789b1144..b5444310e66715e58743850d3ca20cca5d84e4fa 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
-@@ -94,6 +94,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+@@ -93,6 +93,7 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
      case PermissionType::AUTOMATIC_FULLSCREEN:
      case PermissionType::WEB_APP_INSTALLATION:
      case PermissionType::LOCAL_NETWORK_ACCESS:
@@ -119,7 +119,7 @@ index 36410ff29d9c82e59f93fbb82968064bd330dfde..6c3f994e0b184f78bd9442002bb4dfae
    virtual void PassiveInsecureContentFound(const WebURL&) {}
  
 diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-index f2fb09422d49c66c6ef7991277cfd6479896c035..fe2fc66b2d203dd0c832e5bf6cc4c950c33cdfec 100644
+index c6e1fcc6b39db770022d33d984d46a401bff0743..9b9cd107259339b1f48b20d81a933d38944e004e 100644
 --- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 +++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 @@ -116,7 +116,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,

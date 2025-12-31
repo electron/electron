@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 558ddaf4a329058c229b0ba23f6a84b3a7262d26..b97560e77c6066ad93dc9865a131a0823c5017e2 100644
+index a2f54729cbfb4b11b960ea470ed9b9a774a4a75e..6f9982bc93444f1d417be59ab85eb48db54a19ab 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -9865,6 +9865,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -9863,6 +9863,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index 558ddaf4a329058c229b0ba23f6a84b3a7262d26..b97560e77c6066ad93dc9865a131a082
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 6487679d008db662772d4a1c21a9afb2857b775b..87144696ec3a7684bf532ca1946ab8a9bcd20cc9 100644
+index dc9e636c1a64efc1fbcea34caf793f649e0c0182..ec8c9c382d1689d8ac698482df4909cb03cde6c2 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5326,6 +5326,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -77,7 +77,7 @@ index 4c55f0abf8df5a3408f3f90d444ceff3c23ee1bc..72bdb5b5a4c2c21a7192b34bb293bd23
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index a0ccc5352495e75e1603fd3f90825eba85276a6a..3cf480086d77bddb3328aa02137e7bb66c2eb511 100644
+index a8ea6bddeba52ae56e988123479f641371e43267..70d457e79bd07d691e4a827f333120737de76f14 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -885,6 +885,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -90,7 +90,7 @@ index a0ccc5352495e75e1603fd3f90825eba85276a6a..3cf480086d77bddb3328aa02137e7bb6
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 3ca58d5630486cd378f3109b1ca59a4563608187..9f8fe55d6c360e3a709f2e5f05baf02c9ca29101 100644
+index 298cf367684135e2a86c3fc1fe580f009905ccfe..30ffe14569312d0a0ae570a444724db7a7805103 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -203,6 +203,7 @@ class NetworkService;
