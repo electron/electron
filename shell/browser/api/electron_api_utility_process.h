@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 
+#include "base/callback_list.h"
 #include "base/containers/id_map.h"
 #include "base/environment.h"
 #include "base/memory/weak_ptr.h"

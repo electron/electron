@@ -10,7 +10,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { collectStreamBody, collectStreamBodyBuffer, getResponse, kOneKiloByte, kOneMegaByte, randomBuffer, randomString, respondNTimes, respondOnce } from './lib/net-helpers';
-import { listen, defer } from './lib/spec-helpers';
+import { listen, defer, getNetworkServicePid, restartNetworkService } from './lib/spec-helpers';
 
 const utilityFixturePath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process', 'api-net-spec.js');
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -1686,6 +1686,29 @@ describe('net module', () => {
           }, { priorityName, urgency, priorityIncremental });
         }
       }
+    });
+
+    describe('net.fetch after network service restart', () => {
+      test('can fetch http urls', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          response.end('test');
+        });
+        const resp = await net.fetch(serverUrl);
+        expect(resp.ok).to.be.true();
+        expect(await resp.text()).to.equal('test');
+
+        const pid1 = getNetworkServicePid();
+        expect(pid1).to.not.be.null();
+
+        await restartNetworkService();
+
+        const pid2 = getNetworkServicePid();
+        expect(pid2).to.not.be.null();
+        expect(pid2).to.not.equal(pid1);
+
+        const resp2 = await net.fetch(serverUrl);
+        expect(await resp2.text()).to.equal('test');
+      });
     });
   }
 });
