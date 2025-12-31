@@ -1,0 +1,73 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Tue, 9 Dec 2025 15:16:44 +0100
+Subject: [maglev][arm64] Ensure we zero-extend in Int32Multiply
+
+Fixed: 466786677
+Change-Id: Ie75222393743a8beeb99f9382dc6d345b8f62604
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7241729
+Auto-Submit: Victor Gomes <victorgomes@chromium.org>
+Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Victor Gomes <victorgomes@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#104206}
+
+diff --git a/src/maglev/arm64/maglev-ir-arm64.cc b/src/maglev/arm64/maglev-ir-arm64.cc
+index d76c6d126101ca5707c546c64ee4b16b1f487a97..049cb752e739091bca89a2edcd9273a2f70fc978 100644
+--- a/src/maglev/arm64/maglev-ir-arm64.cc
++++ b/src/maglev/arm64/maglev-ir-arm64.cc
+@@ -323,7 +323,7 @@ void Int32Multiply::GenerateCode(MaglevAssembler* masm,
+   __ Smull(out, left, right);
+ 
+   // Making sure that the 32-bit output is zero-extended.
+-  __ Move(out.W(), out.W());
++  __ Mov(out.W(), out.W());
+ }
+ 
+ void Int32MultiplyOverflownBits::SetValueLocationConstraints() {
+@@ -468,7 +468,7 @@ void Int32MultiplyWithOverflow::GenerateCode(MaglevAssembler* masm,
+ 
+   // Making sure that the 32-bit output is zero-extended (and moving it to the
+   // right register if {out_alias_input} is true).
+-  __ Move(out, res.W());
++  __ Mov(out, res.W());
+ }
+ 
+ void Int32DivideWithOverflow::SetValueLocationConstraints() {
+@@ -536,7 +536,7 @@ void Int32DivideWithOverflow::GenerateCode(MaglevAssembler* masm,
+   __ CompareAndBranch(temp, Immediate(0), ne,
+                       __ GetDeoptLabel(this, DeoptimizeReason::kNotInt32));
+ 
+-  __ Move(out, res);
++  __ Mov(out, res);
+ }
+ 
+ void Int32ModulusWithOverflow::SetValueLocationConstraints() {
+diff --git a/test/mjsunit/maglev/regress-466786677.js b/test/mjsunit/maglev/regress-466786677.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..5b58f1104c09d1a2eb9702af063fa42d50655ed8
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-466786677.js
+@@ -0,0 +1,22 @@
++// Copyright 2025 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++function trigger(cond) {
++  let o = {};
++  let mul = (cond ? 1 : 0x80000000) | 0;
++  print(mul);
++  let idx = (mul * 2) | 0;
++  print(idx);
++  o[0] = 1.1;
++  if (cond) o[1] = 2.2;
++  return o[idx];
++}
++
++%PrepareFunctionForOptimization(trigger);
++trigger(true);
++trigger(false);
++%OptimizeMaglevOnNextCall(trigger);
++trigger(false);
