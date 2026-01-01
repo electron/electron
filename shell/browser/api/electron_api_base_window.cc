@@ -116,13 +116,6 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
   window_->AddObserver(this);
 
   SetContentView(View::Create(isolate));
-
-#if defined(TOOLKIT_VIEWS)
-  v8::Local<v8::Value> icon;
-  if (options.Get(options::kIcon, &icon)) {
-    SetIconImpl(isolate, icon, NativeImage::OnConvertError::kWarn);
-  }
-#endif
 }
 
 BaseWindow::BaseWindow(gin::Arguments* args,
@@ -131,6 +124,13 @@ BaseWindow::BaseWindow(gin::Arguments* args,
   InitWithArgs(args);
   // Init window after everything has been setup.
   window()->InitFromOptions(options);
+
+#if defined(TOOLKIT_VIEWS)
+  v8::Local<v8::Value> icon;
+  if (options.Get(options::kIcon, &icon)) {
+    SetIconImpl(isolate, icon, NativeImage::OnConvertError::kWarn);
+  }
+#endif
 }
 
 BaseWindow::~BaseWindow() {
