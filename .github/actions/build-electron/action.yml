@@ -1,30 +1,30 @@
-name: 'Build Electron'
-description: 'Builds Electron & Friends'
+name: "Build Electron"
+description: "Builds Electron & Friends"
 inputs:
   target-arch:
-    description: 'Target arch'
+    description: "Target arch"
     required: true
   target-platform:
-    description: 'Target platform, should be linux, win, macos'
+    description: "Target platform, should be linux, win, macos"
     required: true
   artifact-platform:
-    description: 'Artifact platform, should be linux, win, darwin or mas'
+    description: "Artifact platform, should be linux, win, darwin or mas"
     required: true
   step-suffix:
-    description: 'Suffix for build steps'
+    description: "Suffix for build steps"
     required: false
-    default: ''
+    default: ""
   is-release:
-    description: 'Is release build'
+    description: "Is release build"
     required: true
   generate-symbols:
-    description: 'Generate symbols'
+    description: "Generate symbols"
     required: true
   upload-to-storage:
-    description: 'Upload to storage'
+    description: "Upload to storage"
     required: true
   is-asan:
-    description: 'The ASan Linux build'
+    description: "The ASan Linux build"
     required: false
 runs:
   using: "composite"
@@ -48,6 +48,7 @@ runs:
       if: ${{ inputs.target-platform != 'win' }}
       shell: bash
       run: |
+        exit 1 # Only interested in testing windows builds
         rm -rf "src/out/Default/Electron Framework.framework"
         rm -rf src/out/Default/Electron*.app
 

@@ -1,0 +1,18 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Calvin Watford <cwatford@makenotion.com>
+Date: Fri, 2 Jan 2026 14:39:56 -0800
+Subject: debug: lld-link /verbose
+
+
+diff --git a/build/config/win/BUILD.gn b/build/config/win/BUILD.gn
+index 4e4ab177d4f2168418d58219183c9857a7316eb9..b347af18c1f6da918ef335e182072d61fdd13b45 100644
+--- a/build/config/win/BUILD.gn
++++ b/build/config/win/BUILD.gn
+@@ -159,6 +159,7 @@ config("compiler") {
+ 
+     # Don't look for libpaths in %LIB%, similar to /X in cflags above.
+     ldflags += [ "/lldignoreenv" ]
++    ldflags += [ "/verbose" ]  # CI-only: verbose lld-link output for debugging.
+   }
+ 
+   # Some binaries create PDBs larger than 4 GiB. Increasing the PDB page size
