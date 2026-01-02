@@ -11,7 +11,7 @@
 #include "ui/views/window/non_client_view.h"
 
 #if BUILDFLAG(IS_LINUX)
-#include "shell/browser/ui/views/linux_csd_layout.h"
+#include "shell/browser/ui/views/linux_frame_layout.h"
 #endif
 
 namespace views {
@@ -47,7 +47,7 @@ class FramelessView : public views::FrameView {
   virtual gfx::Insets RestoredFrameBorderInsets() const;
 
 #if BUILDFLAG(IS_LINUX)
-  virtual LinuxCSDLayout* GetLinuxCSDLayout() const;
+  virtual LinuxFrameLayout* GetLinuxFrameLayout() const;
 #endif
 
   NativeWindowViews* window() const { return window_; }

@@ -13,7 +13,7 @@
 #include "base/memory/raw_ptr_exclusion.h"
 #include "base/scoped_observation.h"
 #include "shell/browser/ui/views/frameless_view.h"
-#include "shell/browser/ui/views/linux_csd_layout.h"
+#include "shell/browser/ui/views/linux_frame_layout.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/base/ui_base_types.h"
 #include "ui/linux/linux_ui.h"
@@ -43,7 +43,7 @@ class ClientFrameViewLinux : public FramelessView,
 
   // FramelessView:
   gfx::Insets RestoredFrameBorderInsets() const override;
-  LinuxCSDLayout* GetLinuxCSDLayout() const override;
+  LinuxFrameLayout* GetLinuxFrameLayout() const override;
 
  protected:
   // ui::NativeThemeObserver:
@@ -114,7 +114,7 @@ class ClientFrameViewLinux : public FramelessView,
   gfx::Insets GetTitlebarContentInsets() const;
   gfx::Rect GetTitlebarContentBounds() const;
 
-  std::unique_ptr<LinuxCSDLayout> csd_layout_;
+  std::unique_ptr<LinuxFrameLayout> linux_frame_layout_;
 
   raw_ptr<ui::NativeTheme> theme_;
   ThemeValues theme_values_;

@@ -123,7 +123,7 @@ gfx::Size FramelessView::GetMaximumSize() const {
 }
 
 #if BUILDFLAG(IS_LINUX)
-LinuxCSDLayout* FramelessView::GetLinuxCSDLayout() const {
+LinuxFrameLayout* FramelessView::GetLinuxFrameLayout() const {
   return nullptr;
 }
 #endif

@@ -65,7 +65,7 @@
 #include "shell/browser/linux/x11_util.h"
 #include "shell/browser/ui/electron_desktop_window_tree_host_linux.h"
 #include "shell/browser/ui/views/client_frame_view_linux.h"
-#include "shell/browser/ui/views/linux_csd_layout.h"
+#include "shell/browser/ui/views/linux_frame_layout.h"
 #include "shell/browser/ui/views/native_frame_view.h"
 #include "shell/browser/ui/views/opaque_frame_view.h"
 #include "shell/common/platform_util.h"
@@ -1278,14 +1278,14 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
 }
 
 void NativeWindowViews::SetHasShadow(bool has_shadow) {
+  has_shadow_ = has_shadow;
   wm::SetShadowElevation(GetNativeWindow(),
                          has_shadow ? wm::kShadowElevationInactiveWindow
                                     : wm::kShadowElevationNone);
 }
 
 bool NativeWindowViews::HasShadow() const {
-  return GetNativeWindow()->GetProperty(wm::kShadowElevationKey) !=
-         wm::kShadowElevationNone;
+  return has_shadow_;
 }
 
 void NativeWindowViews::SetOpacity(const double opacity) {
@@ -1921,7 +1921,7 @@ std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
 }
 
 #if BUILDFLAG(IS_LINUX)
-LinuxCSDLayout* NativeWindowViews::GetLinuxCSDLayout() {
+LinuxFrameLayout* NativeWindowViews::GetLinuxFrameLayout() {
   // Windows with real frames (server-side decorations) do not have a CSD
   // layout.
   if (has_frame() && !has_client_frame())
@@ -1929,7 +1929,7 @@ LinuxCSDLayout* NativeWindowViews::GetLinuxCSDLayout() {
 
   auto* view =
       static_cast<FramelessView*>(widget()->non_client_view()->frame_view());
-  return view ? view->GetLinuxCSDLayout() : nullptr;
+  return view ? view->GetLinuxFrameLayout() : nullptr;
 }
 #endif
 

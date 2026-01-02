@@ -11,7 +11,7 @@
 #include "cc/paint/paint_flags.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/frameless_view.h"
-#include "shell/browser/ui/views/linux_csd_layout.h"
+#include "shell/browser/ui/views/linux_frame_layout.h"
 #include "ui/base/hit_test.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
@@ -112,7 +112,7 @@ ClientFrameViewLinux::~ClientFrameViewLinux() {
 void ClientFrameViewLinux::Init(NativeWindowViews* window,
                                 views::Widget* frame) {
   FramelessView::Init(window, frame);
-  csd_layout_ = std::make_unique<LinuxCSDLayout>(window);
+  linux_frame_layout_ = std::make_unique<LinuxCSDFrameLayout>(window);
 
   // Unretained() is safe because the subscription is saved into an instance
   // member and thus will be cancelled upon the instance's destruction.
@@ -135,11 +135,11 @@ void ClientFrameViewLinux::Init(NativeWindowViews* window,
 }
 
 gfx::Insets ClientFrameViewLinux::RestoredFrameBorderInsets() const {
-  return csd_layout_->RestoredFrameBorderInsets();
+  return linux_frame_layout_->RestoredFrameBorderInsets();
 }
 
-LinuxCSDLayout* ClientFrameViewLinux::GetLinuxCSDLayout() const {
-  return csd_layout_.get();
+LinuxFrameLayout* ClientFrameViewLinux::GetLinuxFrameLayout() const {
+  return linux_frame_layout_.get();
 }
 
 void ClientFrameViewLinux::OnNativeThemeUpdated(
@@ -242,8 +242,8 @@ void ClientFrameViewLinux::Layout(PassKey) {
 }
 
 void ClientFrameViewLinux::OnPaint(gfx::Canvas* canvas) {
-  csd_layout_->PaintWindowFrame(canvas, GetLocalBounds(), GetTitlebarBounds(),
-                                ShouldPaintAsActive());
+  linux_frame_layout_->PaintWindowFrame(
+      canvas, GetLocalBounds(), GetTitlebarBounds(), ShouldPaintAsActive());
 }
 
 void ClientFrameViewLinux::PaintAsActiveChanged() {
@@ -274,7 +274,7 @@ void ClientFrameViewLinux::UpdateThemeValues() {
   }
 
   theme_values_.window_border_radius =
-      csd_layout_->GetFrameProvider()->GetTopCornerRadiusDip();
+      linux_frame_layout_->GetFrameProvider()->GetTopCornerRadiusDip();
 
   gtk::GtkStyleContextGet(headerbar_context, "min-height",
                           &theme_values_.titlebar_min_height, nullptr);

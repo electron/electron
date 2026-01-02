@@ -60,6 +60,13 @@ OpaqueFrameView::~OpaqueFrameView() = default;
 
 void OpaqueFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
   FramelessView::Init(window, frame);
+  linux_frame_layout_ = LinuxFrameLayout::Create(window, true);
+
+  // Unretained() is safe because the subscription is saved into an instance
+  // member and thus will be cancelled upon the instance's destruction.
+  paint_as_active_changed_subscription_ =
+      frame->RegisterPaintAsActiveChangedCallback(base::BindRepeating(
+          &OpaqueFrameView::PaintAsActiveChanged, base::Unretained(this)));
 
   if (!window->IsWindowControlsOverlayEnabled())
     return;
@@ -88,16 +95,12 @@ void OpaqueFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
       base::BindRepeating(&views::Widget::CloseWithReason,
                           base::Unretained(frame),
                           views::Widget::ClosedReason::kCloseButtonClicked));
-
-  // Unretained() is safe because the subscription is saved into an instance
-  // member and thus will be cancelled upon the instance's destruction.
-  paint_as_active_changed_subscription_ =
-      frame->RegisterPaintAsActiveChangedCallback(base::BindRepeating(
-          &OpaqueFrameView::PaintAsActiveChanged, base::Unretained(this)));
 }
 
 int OpaqueFrameView::ResizingBorderHitTest(const gfx::Point& point) {
-  return FramelessView::ResizingBorderHitTest(point);
+  auto insets = RestoredFrameBorderInsets();
+  return ResizingBorderHitTestImpl(
+      point, insets.IsEmpty() ? linux_frame_layout_->GetInputInsets() : insets);
 }
 
 void OpaqueFrameView::InvalidateCaptionButtons() {
@@ -108,40 +111,28 @@ void OpaqueFrameView::InvalidateCaptionButtons() {
 }
 
 gfx::Rect OpaqueFrameView::GetBoundsForClientView() const {
-  if (window()->IsWindowControlsOverlayEnabled()) {
-    auto border_thickness = FrameBorderInsets(false);
-    int top_height = border_thickness.top();
-    return gfx::Rect(
-        border_thickness.left(), top_height,
-        std::max(0, width() - border_thickness.width()),
-        std::max(0, height() - top_height - border_thickness.bottom()));
+  gfx::Rect client_bounds = bounds();
+  if (!frame_->IsFullscreen()) {
+    client_bounds.Inset(FrameBorderInsets(false));
   }
-
-  return FramelessView::GetBoundsForClientView();
+  return client_bounds;
 }
 
 gfx::Rect OpaqueFrameView::GetWindowBoundsForClientBounds(
     const gfx::Rect& client_bounds) const {
-  if (window()->IsWindowControlsOverlayEnabled()) {
-    int top_height = NonClientTopHeight(false);
-    auto border_insets = FrameBorderInsets(false);
-    return gfx::Rect(
-        std::max(0, client_bounds.x() - border_insets.left()),
-        std::max(0, client_bounds.y() - top_height),
-        client_bounds.width() + border_insets.width(),
-        client_bounds.height() + top_height + border_insets.bottom());
-  }
-
-  return FramelessView::GetWindowBoundsForClientBounds(client_bounds);
+  gfx::Insets insets = bounds().InsetsFrom(GetBoundsForClientView());
+  return gfx::Rect(std::max(0, client_bounds.x() - insets.left()),
+                   std::max(0, client_bounds.y() - insets.top()),
+                   client_bounds.width() + insets.width(),
+                   client_bounds.height() + insets.height());
 }
 
 int OpaqueFrameView::NonClientHitTest(const gfx::Point& point) {
-  if (window()->IsWindowControlsOverlayEnabled()) {
-    // Ensure support for resizing frameless window with border drag.
-    int frame_component = ResizingBorderHitTest(point);
-    if (frame_component != HTNOWHERE)
-      return frame_component;
+  int frame_component = ResizingBorderHitTest(point);
+  if (frame_component != HTNOWHERE)
+    return frame_component;
 
+  if (window()->IsWindowControlsOverlayEnabled()) {
     if (HitTestCaptionButton(close_button_, point))
       return HTCLOSE;
     if (HitTestCaptionButton(restore_button_, point))
@@ -205,21 +196,32 @@ void OpaqueFrameView::Layout(PassKey) {
 }
 
 void OpaqueFrameView::OnPaint(gfx::Canvas* canvas) {
-  if (!window()->IsWindowControlsOverlayEnabled())
+  if (frame()->IsFullscreen())
     return;
 
-  if (frame()->IsFullscreen())
+  // Titlebar height must be at least the frame border insets to avoid
+  // a negative height calculation in the GTK frame provider. We add 1 to
+  // ensure it's always positive even when insets are 0.
+  int top_area_height = RestoredFrameBorderInsets().top() + 1;
+
+  linux_frame_layout_->PaintWindowFrame(
+      canvas, GetLocalBounds(), gfx::Rect(0, 0, width(), top_area_height),
+      ShouldPaintAsActive());
+
+  if (!window()->IsWindowControlsOverlayEnabled())
     return;
 
   UpdateFrameCaptionButtons();
 }
 
 void OpaqueFrameView::PaintAsActiveChanged() {
-  if (!window()->IsWindowControlsOverlayEnabled())
-    return;
+  if (window()->IsWindowControlsOverlayEnabled()) {
+    UpdateCaptionButtonPlaceholderContainerBackground();
+    UpdateFrameCaptionButtons();
+  }
 
-  UpdateCaptionButtonPlaceholderContainerBackground();
-  UpdateFrameCaptionButtons();
+  InvalidateLayout();
+  SchedulePaint();
 }
 
 void OpaqueFrameView::UpdateFrameCaptionButtons() {
@@ -317,8 +319,9 @@ views::Button* OpaqueFrameView::CreateButton(
 }
 
 gfx::Insets OpaqueFrameView::FrameBorderInsets(bool restored) const {
-  return !restored && IsFrameCondensed() ? gfx::Insets()
-                                         : RestoredFrameBorderInsets();
+  return !restored && IsFrameCondensed()
+             ? gfx::Insets()
+             : linux_frame_layout_->RestoredFrameBorderInsets();
 }
 
 int OpaqueFrameView::FrameTopBorderThickness(bool restored) const {
@@ -340,11 +343,11 @@ bool OpaqueFrameView::IsFrameCondensed() const {
 }
 
 gfx::Insets OpaqueFrameView::RestoredFrameBorderInsets() const {
-  return {};
+  return linux_frame_layout_->RestoredFrameBorderInsets();
 }
 
-LinuxCSDLayout* OpaqueFrameView::GetLinuxCSDLayout() const {
-  return nullptr;
+LinuxFrameLayout* OpaqueFrameView::GetLinuxFrameLayout() const {
+  return linux_frame_layout_.get();
 }
 
 gfx::Insets OpaqueFrameView::RestoredFrameEdgeInsets() const {
@@ -380,10 +383,9 @@ int OpaqueFrameView::DefaultCaptionButtonY(bool restored) const {
   // Maximized buttons start at window top, since the window has no border. This
   // offset is for the image (the actual clickable bounds extend all the way to
   // the top to take Fitts' Law into account).
-  const bool start_at_top_of_frame = !restored && IsFrameCondensed();
-  return start_at_top_of_frame
-             ? FrameBorderInsets(false).top()
-             : OpaqueBrowserFrameViewLayout::kFrameShadowThickness;
+  // For restored windows, position after the CSD frame border insets (shadow
+  // area).
+  return FrameBorderInsets(restored).top();
 }
 
 gfx::Insets OpaqueFrameView::FrameEdgeInsets(bool restored) const {
@@ -481,7 +483,7 @@ void OpaqueFrameView::SetBoundsForButton(views::FrameButton button_id,
             button->GetClassName());
   const int caption_button_center_size =
       button_width - 2 * views::kCaptionButtonInkDropDefaultCornerRadius;
-  const int height = GetTopAreaHeight() - FrameEdgeInsets(false).top();
+  const int height = GetTopAreaHeight() - FrameBorderInsets(false).top();
   const int corner_radius =
       std::clamp((height - caption_button_center_size) / 2, 0,
                  views::kCaptionButtonInkDropDefaultCornerRadius);

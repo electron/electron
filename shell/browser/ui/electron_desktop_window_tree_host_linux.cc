@@ -16,7 +16,7 @@
 #include "shell/browser/linux/x11_util.h"
 #include "shell/browser/native_window_features.h"
 #include "shell/browser/native_window_views.h"
-#include "shell/browser/ui/views/linux_csd_layout.h"
+#include "shell/browser/ui/views/linux_frame_layout.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/aura/window_delegate.h"
 #include "ui/base/hit_test.h"
@@ -66,7 +66,7 @@ gfx::Insets ElectronDesktopWindowTreeHostLinux::CalculateInsetsInDIP(
     return gfx::Insets();
   }
 
-  auto* const layout = native_window_view_->GetLinuxCSDLayout();
+  auto* const layout = native_window_view_->GetLinuxFrameLayout();
   if (!layout)
     return {};
 
@@ -98,7 +98,7 @@ void ElectronDesktopWindowTreeHostLinux::OnWindowStateChanged(
 
 void ElectronDesktopWindowTreeHostLinux::OnWindowTiledStateChanged(
     ui::WindowTiledEdges new_tiled_edges) {
-  if (auto* layout = native_window_view_->GetLinuxCSDLayout()) {
+  if (auto* layout = native_window_view_->GetLinuxFrameLayout()) {
     // GNOME on Ubuntu reports all edges as tiled
     // even if the window is only half-tiled so do not trust individual edge
     // values.
@@ -161,7 +161,7 @@ void ElectronDesktopWindowTreeHostLinux::OnDeviceScaleFactorChanged() {
 
 void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
   if (base::FeatureList::IsEnabled(features::kWaylandWindowDecorations)) {
-    auto* const layout = native_window_view_->GetLinuxCSDLayout();
+    auto* const layout = native_window_view_->GetLinuxFrameLayout();
     if (!layout)
       return;
 
