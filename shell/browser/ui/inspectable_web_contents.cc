@@ -957,6 +957,30 @@ bool InspectableWebContents::HandleKeyboardEvent(
   return !delegate || delegate->HandleKeyboardEvent(source, event);
 }
 
+bool InspectableWebContents::DidAddMessageToConsole(
+    content::WebContents* source,
+    blink::mojom::ConsoleMessageLevel log_level,
+    const std::u16string& message,
+    int32_t line_no,
+    const std::u16string& source_id) {
+  // Suppress Chromium's default logging of DevTools frontend console messages
+  // into native logs for the managed DevTools WebContents. Can be overridden by
+  // enabling verbose logging.
+  if (source == managed_devtools_web_contents_.get()) {
+    if (VLOG_IS_ON(1)) {
+      // Match Chromium's `content::LogConsoleMessage()` output format, but emit
+      // it as a verbose log.
+      logging::LogMessage("CONSOLE", line_no, logging::LOGGING_VERBOSE).stream()
+          << "\"" << message << "\", source: " << source_id << " (" << line_no
+          << ")";
+    }
+
+    return true;  // Suppress the default logging.
+  }
+
+  return false;  // Allow the default logging.
+}
+
 void InspectableWebContents::CloseContents(content::WebContents* source) {
   // This is where the devtools closes itself (by clicking the x button).
   CloseDevTools();
