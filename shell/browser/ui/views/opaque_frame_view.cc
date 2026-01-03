@@ -343,6 +343,10 @@ gfx::Insets OpaqueFrameView::RestoredFrameBorderInsets() const {
   return {};
 }
 
+LinuxCSDLayout* OpaqueFrameView::GetLinuxCSDLayout() const {
+  return nullptr;
+}
+
 gfx::Insets OpaqueFrameView::RestoredFrameEdgeInsets() const {
   return gfx::Insets::TLBR(kTopFrameEdgeThickness, kSideFrameEdgeThickness,
                            kSideFrameEdgeThickness, kSideFrameEdgeThickness);

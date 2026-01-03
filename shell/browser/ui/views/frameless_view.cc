@@ -122,6 +122,12 @@ gfx::Size FramelessView::GetMaximumSize() const {
   return size.IsEmpty() ? gfx::Size(INT_MAX, INT_MAX) : size;
 }
 
+#if BUILDFLAG(IS_LINUX)
+LinuxCSDLayout* FramelessView::GetLinuxCSDLayout() const {
+  return nullptr;
+}
+#endif
+
 BEGIN_METADATA(FramelessView)
 END_METADATA
 

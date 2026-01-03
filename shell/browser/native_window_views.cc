@@ -65,6 +65,7 @@
 #include "shell/browser/linux/x11_util.h"
 #include "shell/browser/ui/electron_desktop_window_tree_host_linux.h"
 #include "shell/browser/ui/views/client_frame_view_linux.h"
+#include "shell/browser/ui/views/linux_csd_layout.h"
 #include "shell/browser/ui/views/native_frame_view.h"
 #include "shell/browser/ui/views/opaque_frame_view.h"
 #include "shell/common/platform_util.h"
@@ -1920,15 +1921,15 @@ std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
 }
 
 #if BUILDFLAG(IS_LINUX)
-electron::ClientFrameViewLinux* NativeWindowViews::GetClientFrameViewLinux() {
-  // Check to make sure this window's non-client frame view is a
-  // ClientFrameViewLinux.  If either has_frame() or has_client_frame()
-  // are false, it will be an OpaqueFrameView or NativeFrameView instead.
-  // See NativeWindowViews::CreateFrameView.
-  if (!has_frame() || !has_client_frame())
+LinuxCSDLayout* NativeWindowViews::GetLinuxCSDLayout() {
+  // Windows with real frames (server-side decorations) do not have a CSD
+  // layout.
+  if (has_frame() && !has_client_frame())
     return {};
-  return static_cast<ClientFrameViewLinux*>(
-      widget()->non_client_view()->frame_view());
+
+  auto* view =
+      static_cast<FramelessView*>(widget()->non_client_view()->frame_view());
+  return view ? view->GetLinuxCSDLayout() : nullptr;
 }
 #endif
 

@@ -19,7 +19,6 @@
 
 namespace electron {
 
-class ClientFrameViewLinux;
 class NativeWindowViews;
 
 class ElectronDesktopWindowTreeHostLinux

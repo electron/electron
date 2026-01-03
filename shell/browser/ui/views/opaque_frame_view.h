@@ -10,6 +10,7 @@
 #include "base/memory/raw_ptr.h"
 #include "chrome/browser/ui/view_ids.h"
 #include "shell/browser/ui/views/frameless_view.h"
+#include "shell/browser/ui/views/linux_csd_layout.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/linux/window_button_order_observer.h"
 #include "ui/views/controls/button/button.h"
@@ -40,6 +41,7 @@ class OpaqueFrameView : public FramelessView {
   int ResizingBorderHitTest(const gfx::Point& point) override;
   void InvalidateCaptionButtons() override;
   gfx::Insets RestoredFrameBorderInsets() const override;
+  LinuxCSDLayout* GetLinuxCSDLayout() const override;
 
   // views::FrameView:
   gfx::Rect GetBoundsForClientView() const override;

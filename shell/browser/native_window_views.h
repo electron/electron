@@ -35,6 +35,7 @@ namespace electron {
 #if BUILDFLAG(IS_LINUX)
 class ClientFrameViewLinux;
 class GlobalMenuBarX11;
+class LinuxCSDLayout;
 #endif
 
 #if BUILDFLAG(IS_OZONE_X11)
@@ -198,9 +199,7 @@ class NativeWindowViews : public NativeWindow,
   SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
 
 #if BUILDFLAG(IS_LINUX)
-  // returns the ClientFrameViewLinux iff that is our FrameView type,
-  // nullptr otherwise.
-  ClientFrameViewLinux* GetClientFrameViewLinux();
+  LinuxCSDLayout* GetLinuxCSDLayout();
 #endif
 
  private:
