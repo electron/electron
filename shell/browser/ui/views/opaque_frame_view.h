@@ -39,6 +39,7 @@ class OpaqueFrameView : public FramelessView {
   void Init(NativeWindowViews* window, views::Widget* frame) override;
   int ResizingBorderHitTest(const gfx::Point& point) override;
   void InvalidateCaptionButtons() override;
+  gfx::Insets RestoredFrameBorderInsets() const override;
 
   // views::FrameView:
   gfx::Rect GetBoundsForClientView() const override;
@@ -98,11 +99,6 @@ class OpaqueFrameView : public FramelessView {
   // window is maximized. If true, the top frame is just the height of a tab,
   // rather than having extra vertical space above the tabs.
   bool IsFrameCondensed() const;
-
-  // The insets from the native window edge to the client view when the window
-  // is restored.  This goes all the way to the web contents on the left, right,
-  // and bottom edges.
-  gfx::Insets RestoredFrameBorderInsets() const;
 
   // The insets from the native window edge to the flat portion of the
   // window border.  That is, this function returns the "3D portion" of the
