@@ -262,19 +262,12 @@ void ClientFrameViewLinux::UpdateWindowTitle() {
 void ClientFrameViewLinux::SizeConstraintsChanged() {
   InvalidateLayout();
 }
-
-gfx::Size ClientFrameViewLinux::CalculatePreferredSize(
-    const views::SizeBounds& available_size) const {
-  return SizeWithDecorations(
-      FramelessView::CalculatePreferredSize(available_size));
-}
-
 gfx::Size ClientFrameViewLinux::GetMinimumSize() const {
-  return SizeWithDecorations(FramelessView::GetMinimumSize());
+  return window_->GetMinimumSize();
 }
 
 gfx::Size ClientFrameViewLinux::GetMaximumSize() const {
-  return SizeWithDecorations(FramelessView::GetMaximumSize());
+  return window_->GetMaximumSize();
 }
 
 void ClientFrameViewLinux::Layout(PassKey) {
@@ -488,15 +481,6 @@ gfx::Rect ClientFrameViewLinux::GetTitlebarContentBounds() const {
   titlebar.Inset(GetTitlebarContentInsets());
   return titlebar;
 }
-
-gfx::Size ClientFrameViewLinux::SizeWithDecorations(gfx::Size size) const {
-  gfx::Insets decoration_insets = RestoredFrameBorderInsets();
-
-  size.Enlarge(0, GetTitlebarBounds().height());
-  size.Enlarge(decoration_insets.width(), decoration_insets.height());
-  return size;
-}
-
 views::View* ClientFrameViewLinux::TargetForRect(views::View* root,
                                                  const gfx::Rect& rect) {
   return views::FrameView::TargetForRect(root, rect);

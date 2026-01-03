@@ -74,8 +74,6 @@ class ClientFrameViewLinux : public FramelessView,
   void SizeConstraintsChanged() override;
 
   // Overridden from View:
-  gfx::Size CalculatePreferredSize(
-      const views::SizeBounds& available_size) const override;
   gfx::Size GetMinimumSize() const override;
   gfx::Size GetMaximumSize() const override;
   void Layout(PassKey) override;
@@ -126,8 +124,6 @@ class ClientFrameViewLinux : public FramelessView,
   gfx::Rect GetTitlebarBounds() const;
   gfx::Insets GetTitlebarContentInsets() const;
   gfx::Rect GetTitlebarContentBounds() const;
-
-  gfx::Size SizeWithDecorations(gfx::Size size) const;
 
   raw_ptr<ui::NativeTheme> theme_;
   ThemeValues theme_values_;
