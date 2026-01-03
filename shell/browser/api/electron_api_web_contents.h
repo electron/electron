@@ -432,7 +432,8 @@ class WebContents final : public ExclusiveAccessContext,
 
   // content::RenderWidgetHost::InputEventObserver:
   void OnInputEvent(const content::RenderWidgetHost& rfh,
-                    const blink::WebInputEvent& event) override;
+                    const blink::WebInputEvent& event,
+                    input::InputEventSource source) override;
 
   // content::JavaScriptDialogManager:
   void RunJavaScriptDialog(content::WebContents* web_contents,
