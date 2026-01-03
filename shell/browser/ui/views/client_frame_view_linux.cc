@@ -262,13 +262,6 @@ void ClientFrameViewLinux::UpdateWindowTitle() {
 void ClientFrameViewLinux::SizeConstraintsChanged() {
   InvalidateLayout();
 }
-gfx::Size ClientFrameViewLinux::GetMinimumSize() const {
-  return window_->GetMinimumSize();
-}
-
-gfx::Size ClientFrameViewLinux::GetMaximumSize() const {
-  return window_->GetMaximumSize();
-}
 
 void ClientFrameViewLinux::Layout(PassKey) {
   LayoutSuperclass<FramelessView>(this);
