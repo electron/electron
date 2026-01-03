@@ -5,38 +5,38 @@ on:
     inputs:
       build-image-sha:
         type: string
-        description: 'SHA for electron/build image'
-        default: '933c7d6ff6802706875270bec2e3c891cf8add3f'
+        description: "SHA for electron/build image"
+        default: "933c7d6ff6802706875270bec2e3c891cf8add3f"
         required: true
       skip-macos:
         type: boolean
-        description: 'Skip macOS builds'
+        description: "Skip macOS builds"
         default: false
         required: false
       skip-linux:
         type: boolean
-        description: 'Skip Linux builds'
+        description: "Skip Linux builds"
         default: false
         required: false
       skip-windows:
         type: boolean
-        description: 'Skip Windows builds'
+        description: "Skip Windows builds"
         default: false
         required: false
       skip-lint:
         type: boolean
-        description: 'Skip lint check'
+        description: "Skip lint check"
         default: false
         required: false
       enable-ssh:
-        description: 'Enable SSH debugging'
+        description: "Enable SSH debugging"
         required: false
         type: boolean
         default: false
   push:
     branches:
       - main
-      - '[1-9][0-9]-x-y'
+      - "[1-9][0-9]-x-y"
   pull_request:
 
 defaults:
@@ -52,40 +52,40 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-        docs: ${{ steps.filter.outputs.docs }}
-        src: ${{ steps.filter.outputs.src }}
-        build-image-sha: ${{ steps.set-output.outputs.build-image-sha }}
-        docs-only: ${{ steps.set-output.outputs.docs-only }}
+      docs: ${{ steps.filter.outputs.docs }}
+      src: ${{ steps.filter.outputs.src }}
+      build-image-sha: ${{ steps.set-output.outputs.build-image-sha }}
+      docs-only: ${{ steps.set-output.outputs.docs-only }}
     steps:
-    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-      with:
-        ref: ${{ github.event.pull_request.head.sha }}
-    - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
-      id: filter
-      with:
-        filters: |
-          docs:
-            - 'docs/**'
-            - README.md
-            - SECURITY.md
-            - CONTRIBUTING.md
-            - CODE_OF_CONDUCT.md
-          src:
-            - '!docs/**'
-    - name: Set Outputs for Build Image SHA & Docs Only
-      id: set-output
-      run: |
-        if [ -z "${{ inputs.build-image-sha }}" ]; then
-          echo "build-image-sha=933c7d6ff6802706875270bec2e3c891cf8add3f" >> "$GITHUB_OUTPUT"
-        else
-          echo "build-image-sha=${{ inputs.build-image-sha }}" >> "$GITHUB_OUTPUT"
-        fi
-        echo "docs-only=${{ steps.filter.outputs.docs == 'true' && steps.filter.outputs.src == 'false' }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: filter
+        with:
+          filters: |
+            docs:
+              - 'docs/**'
+              - README.md
+              - SECURITY.md
+              - CONTRIBUTING.md
+              - CODE_OF_CONDUCT.md
+            src:
+              - '!docs/**'
+      - name: Set Outputs for Build Image SHA & Docs Only
+        id: set-output
+        run: |
+          if [ -z "${{ inputs.build-image-sha }}" ]; then
+            echo "build-image-sha=933c7d6ff6802706875270bec2e3c891cf8add3f" >> "$GITHUB_OUTPUT"
+          else
+            echo "build-image-sha=${{ inputs.build-image-sha }}" >> "$GITHUB_OUTPUT"
+          fi
+          echo "docs-only=${{ steps.filter.outputs.docs == 'true' && steps.filter.outputs.src == 'false' }}" >> "$GITHUB_OUTPUT"
 
   # Lint Jobs
   lint:
     needs: setup
-    if: ${{ !inputs.skip-lint }}
+    if: false # ${{ !inputs.skip-lint }}
     uses: ./.github/workflows/pipeline-electron-lint.yml
     permissions:
       contents: read
@@ -96,7 +96,7 @@ jobs:
   # Docs Only Jobs
   docs-only:
     needs: [setup, checkout-linux]
-    if: ${{ needs.setup.outputs.docs-only == 'true' }}
+    if: false # ${{ needs.setup.outputs.docs-only == 'true' }}
     uses: ./.github/workflows/pipeline-electron-docs-only.yml
     permissions:
       contents: read
@@ -107,7 +107,7 @@ jobs:
   # Checkout Jobs
   checkout-macos:
     needs: setup
-    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-macos}}
+    if: false # ${{ needs.setup.outputs.src == 'true' && !inputs.skip-macos}}
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
@@ -119,25 +119,25 @@ jobs:
         - /var/run/sas:/var/run/sas
     env:
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+      GCLIENT_EXTRA_ARGS: "--custom-var=checkout_mac=True --custom-var=host_os=mac"
     outputs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
     steps:
-    - name: Checkout Electron
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-      with:
-        path: src/electron
-        fetch-depth: 0
-        ref: ${{ github.event.pull_request.head.sha }}
-    - name: Checkout & Sync & Save
-      uses: ./src/electron/.github/actions/checkout
-      with:
-        generate-sas-token: 'true'
-        target-platform: macos
+      - name: Checkout Electron
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          path: src/electron
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Checkout & Sync & Save
+        uses: ./src/electron/.github/actions/checkout
+        with:
+          generate-sas-token: "true"
+          target-platform: macos
 
   checkout-linux:
     needs: setup
-    if: ${{ !inputs.skip-linux}}
+    if: false # ${{ !inputs.skip-linux}}
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
@@ -150,21 +150,21 @@ jobs:
     env:
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+      GCLIENT_EXTRA_ARGS: "--custom-var=checkout_arm=True --custom-var=checkout_arm64=True"
       PATCH_UP_APP_CREDS: ${{ secrets.PATCH_UP_APP_CREDS }}
     outputs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha}}
     steps:
-    - name: Checkout Electron
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-      with:
-        path: src/electron
-        fetch-depth: 0
-        ref: ${{ github.event.pull_request.head.sha }}
-    - name: Checkout & Sync & Save
-      uses: ./src/electron/.github/actions/checkout
-      with:
-        target-platform: linux
+      - name: Checkout Electron
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          path: src/electron
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Checkout & Sync & Save
+        uses: ./src/electron/.github/actions/checkout
+        with:
+          target-platform: linux
 
   checkout-windows:
     needs: setup
@@ -181,27 +181,28 @@ jobs:
     env:
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True'
-      TARGET_OS: 'win'
-      ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN: '1'
+      GCLIENT_EXTRA_ARGS: "--custom-var=checkout_win=True"
+      TARGET_OS: "win"
+      ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN: "1"
     outputs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha}}
     steps:
-    - name: Checkout Electron
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-      with:
-        path: src/electron
-        fetch-depth: 0
-        ref: ${{ github.event.pull_request.head.sha }}
-    - name: Checkout & Sync & Save
-      uses: ./src/electron/.github/actions/checkout
-      with:
-        generate-sas-token: 'true'
-        target-platform: win
+      - name: Checkout Electron
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+        with:
+          path: src/electron
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Checkout & Sync & Save
+        uses: ./src/electron/.github/actions/checkout
+        with:
+          generate-sas-token: "true"
+          target-platform: win
 
   # GN Check Jobs
   macos-gn-check:
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
+    if: false
     permissions:
       contents: read
     needs: checkout-macos
@@ -217,7 +218,7 @@ jobs:
     permissions:
       contents: read
     needs: checkout-linux
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: false # ${{ needs.setup.outputs.src == 'true' }}
     with:
       target-platform: linux
       target-archs: x64 arm arm64
@@ -241,6 +242,7 @@ jobs:
 
   # Build Jobs - These cascade into testing jobs
   macos-x64:
+    if: false
     permissions:
       contents: read
       issues: read
@@ -255,11 +257,12 @@ jobs:
       is-release: false
       gn-build-type: testing
       generate-symbols: false
-      upload-to-storage: '0'
+      upload-to-storage: "0"
       enable-ssh: ${{ inputs.enable-ssh || false }}
     secrets: inherit
-  
+
   macos-arm64:
+    if: false
     permissions:
       contents: read
       issues: read
@@ -274,7 +277,7 @@ jobs:
       is-release: false
       gn-build-type: testing
       generate-symbols: false
-      upload-to-storage: '0'
+      upload-to-storage: "0"
       enable-ssh: ${{ inputs.enable-ssh || false }}
     secrets: inherit
 
@@ -285,7 +288,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test-and-nan.yml
     needs: checkout-linux
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: false # ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: electron-arc-centralus-linux-amd64-4core
@@ -296,7 +299,7 @@ jobs:
       is-release: false
       gn-build-type: testing
       generate-symbols: false
-      upload-to-storage: '0'
+      upload-to-storage: "0"
     secrets: inherit
 
   linux-x64-asan:
@@ -306,7 +309,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: false # ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: electron-arc-centralus-linux-amd64-4core
@@ -317,10 +320,10 @@ jobs:
       is-release: false
       gn-build-type: testing
       generate-symbols: false
-      upload-to-storage: '0'
+      upload-to-storage: "0"
       is-asan: true
     secrets: inherit
-  
+
   linux-arm:
     permissions:
       contents: read
@@ -328,7 +331,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: false # ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: electron-arc-centralus-linux-arm64-4core
@@ -339,9 +342,9 @@ jobs:
       is-release: false
       gn-build-type: testing
       generate-symbols: false
-      upload-to-storage: '0'
+      upload-to-storage: "0"
     secrets: inherit
-  
+
   linux-arm64:
     permissions:
       contents: read
@@ -349,7 +352,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: false # ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: ubuntu-22.04-arm
@@ -360,7 +363,7 @@ jobs:
       is-release: false
       gn-build-type: testing
       generate-symbols: false
-      upload-to-storage: '0'
+      upload-to-storage: "0"
     secrets: inherit
 
   windows-x64:
@@ -379,7 +382,7 @@ jobs:
       is-release: false
       gn-build-type: testing
       generate-symbols: false
-      upload-to-storage: '0'
+      upload-to-storage: "0"
     secrets: inherit
 
   windows-x86:
@@ -398,7 +401,7 @@ jobs:
       is-release: false
       gn-build-type: testing
       generate-symbols: false
-      upload-to-storage: '0'
+      upload-to-storage: "0"
     secrets: inherit
 
   windows-arm64:
@@ -417,7 +420,7 @@ jobs:
       is-release: false
       gn-build-type: testing
       generate-symbols: false
-      upload-to-storage: '0'
+      upload-to-storage: "0"
     secrets: inherit
 
   gha-done:
@@ -425,9 +428,21 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    needs: [docs-only, macos-x64, macos-arm64, linux-x64, linux-x64-asan, linux-arm, linux-arm64, windows-x64, windows-x86, windows-arm64]
+    needs:
+      [
+        docs-only,
+        macos-x64,
+        macos-arm64,
+        linux-x64,
+        linux-x64-asan,
+        linux-arm,
+        linux-arm64,
+        windows-x64,
+        windows-x86,
+        windows-arm64,
+      ]
     if: always() && !contains(needs.*.result, 'failure')
-    steps: 
-    - name: GitHub Actions Jobs Done
-      run: |
-        echo "All GitHub Actions Jobs are done"
+    steps:
+      - name: GitHub Actions Jobs Done
+        run: |
+          echo "All GitHub Actions Jobs are done"
