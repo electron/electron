@@ -112,11 +112,11 @@ gfx::Size FramelessView::CalculatePreferredSize(
 }
 
 gfx::Size FramelessView::GetMinimumSize() const {
-  return window_->GetContentMinimumSize();
+  return window_->GetMinimumSize();
 }
 
 gfx::Size FramelessView::GetMaximumSize() const {
-  gfx::Size size = window_->GetContentMaximumSize();
+  gfx::Size size = window_->GetMaximumSize();
   // Electron public APIs returns (0, 0) when maximum size is not set, but it
   // would break internal window APIs like HWNDMessageHandler::SetAspectRatio.
   return size.IsEmpty() ? gfx::Size(INT_MAX, INT_MAX) : size;
