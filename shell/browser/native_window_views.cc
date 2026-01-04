@@ -263,6 +263,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   gfx::Rect bounds{0, 0, width, height};
   widget_size_ = bounds.size();
 
+  has_shadow_ = options.ValueOrDefault(options::kHasShadow, true);
+
   widget()->AddObserver(this);
 
   using InitParams = views::Widget::InitParams;

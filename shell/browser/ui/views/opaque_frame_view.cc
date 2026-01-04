@@ -60,7 +60,7 @@ OpaqueFrameView::~OpaqueFrameView() = default;
 
 void OpaqueFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
   FramelessView::Init(window, frame);
-  linux_frame_layout_ = LinuxFrameLayout::Create(window, true);
+  linux_frame_layout_ = LinuxFrameLayout::Create(window, window->HasShadow());
 
   // Unretained() is safe because the subscription is saved into an instance
   // member and thus will be cancelled upon the instance's destruction.
