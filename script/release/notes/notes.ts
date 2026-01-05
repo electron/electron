@@ -108,7 +108,8 @@ const runGit = async (dir: string, args: string[]) => {
   const response = spawnSync('git', args, {
     cwd: dir,
     encoding: 'utf8',
-    stdio: ['inherit', 'pipe', 'pipe']
+    stdio: ['inherit', 'pipe', 'pipe'],
+    maxBuffer: 100 * 1024 * 1024 // 100MB buffer to handle large git outputs
   });
   if (response.status !== 0) {
     throw new Error(response.stderr.trim());
