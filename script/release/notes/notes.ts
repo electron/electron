@@ -105,12 +105,17 @@ class Pool {
  **/
 
 const runGit = async (dir: string, args: string[]) => {
+  console.log(`Running git ${args.join(' ')} in ${dir}`);
   const response = spawnSync('git', args, {
     cwd: dir,
     encoding: 'utf8',
     stdio: ['inherit', 'pipe', 'pipe']
   });
   if (response.status !== 0) {
+    console.error(`Git command failed: git ${args.join(' ')}`);
+    console.error('STDERR was ' + response.stderr.trim());
+    console.error('STDOUT was ' + response.stdout.trim());
+    console.log('Response status:', response.status);
     throw new Error(response.stderr.trim());
   }
   return response.stdout.trim();
