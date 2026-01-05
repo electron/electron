@@ -1,0 +1,93 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Niklas Wenzel <dev@nikwen.de>
+Date: Tue, 2 Dec 2025 17:53:11 -0800
+Subject: viz: Create IsBufferQueueSupportedAndEnabled()
+
+Manual backport of crrev.com/c/7210913
+
+Bug: 457463689
+Change-Id: I31bbaa6b5d79697c6bb5e1fc6738f6ea5a937b4f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7210913
+Reviewed-by: Michael Tang <tangm@microsoft.com>
+Commit-Queue: David Sanders <dsanders11@ucsbalum.com>
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1553190}
+
+diff --git a/components/viz/service/display/output_surface.cc b/components/viz/service/display/output_surface.cc
+index ff795eb057ac64f40aa842fec8e053d12f57f538..71287614c627d39f8d019889498205ab3eff2a69 100644
+--- a/components/viz/service/display/output_surface.cc
++++ b/components/viz/service/display/output_surface.cc
+@@ -21,6 +21,16 @@
+ 
+ namespace viz {
+ 
++namespace {
++
++#if BUILDFLAG(IS_WIN)
++// Use BufferQueue for the primary plane instead of a DXGI swap chain or DComp
++// surface.
++BASE_FEATURE(kBufferQueue, base::FEATURE_DISABLED_BY_DEFAULT);
++#endif
++
++}  // namespace
++
+ OutputSurface::Capabilities::Capabilities() = default;
+ OutputSurface::Capabilities::~Capabilities() = default;
+ OutputSurface::Capabilities::Capabilities(const Capabilities& capabilities) =
+@@ -94,6 +104,12 @@ bool IsDelegatedCompositingSupportedAndEnabled(
+   // Ensure we check the feature flag iff the feature is supported.
+   return features::IsDelegatedCompositingEnabled();
+ }
++
++bool IsBufferQueueSupportedAndEnabled(
++    OutputSurface::DCSupportLevel support_level) {
++  return support_level >= OutputSurface::DCSupportLevel::kDCompDynamicTexture &&
++         base::FeatureList::IsEnabled(kBufferQueue);
++}
+ #endif
+ 
+ }  // namespace viz
+diff --git a/components/viz/service/display/output_surface.h b/components/viz/service/display/output_surface.h
+index 25306ab6e18a266efdc329e4ddd81f5303033f4c..589f4c10dad9c807c9e3ce7baba63795b629435b 100644
+--- a/components/viz/service/display/output_surface.h
++++ b/components/viz/service/display/output_surface.h
+@@ -307,6 +307,9 @@ class VIZ_SERVICE_EXPORT OutputSurface {
+ // `features::IsDelegatedCompositingEnabled()`.
+ bool IsDelegatedCompositingSupportedAndEnabled(
+     OutputSurface::DCSupportLevel support_level);
++
++bool IsBufferQueueSupportedAndEnabled(
++    OutputSurface::DCSupportLevel support_level);
+ #endif
+ 
+ }  // namespace viz
+diff --git a/components/viz/service/display/skia_renderer.cc b/components/viz/service/display/skia_renderer.cc
+index f94826fe8d7c3f407695fa3161f6ae9cd949f99f..610490f50b2e355382f2610c556b8a0683023b06 100644
+--- a/components/viz/service/display/skia_renderer.cc
++++ b/components/viz/service/display/skia_renderer.cc
+@@ -120,12 +120,6 @@ namespace {
+ BASE_FEATURE(kDumpWithoutCrashingOnMissingRenderPassBacking,
+              base::FEATURE_ENABLED_BY_DEFAULT);
+ 
+-#if BUILDFLAG(IS_WIN)
+-// Use BufferQueue for the primary plane instead of a DXGI swap chain or DComp
+-// surface.
+-BASE_FEATURE(kBufferQueue, base::FEATURE_DISABLED_BY_DEFAULT);
+-#endif
+-
+ // Smallest unit that impacts anti-aliasing output. We use this to determine
+ // when an exterior edge (with AA) has been clipped (no AA). The specific value
+ // was chosen to match that used by gl_renderer.
+@@ -991,10 +985,8 @@ SkiaRenderer::SkiaRenderer(const RendererSettings* settings,
+ 
+   // It's possible to use BufferQueue with DComp textures, so we can optionally
+   // enable it behind a feature flag.
+-  const bool want_buffer_queue =
+-      output_surface_->capabilities().dc_support_level >=
+-          OutputSurface::DCSupportLevel::kDCompDynamicTexture &&
+-      base::FeatureList::IsEnabled(kBufferQueue);
++  const bool want_buffer_queue = IsBufferQueueSupportedAndEnabled(
++      output_surface_->capabilities().dc_support_level);
+ #else
+   const bool want_buffer_queue = true;
+ #endif
