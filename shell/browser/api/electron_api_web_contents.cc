@@ -3887,7 +3887,8 @@ void WebContents::PDFReadyToPrint() {
 }
 
 void WebContents::OnInputEvent(const content::RenderWidgetHost& rfh,
-                               const blink::WebInputEvent& event) {
+                               const blink::WebInputEvent& event,
+                               input::InputEventSource source) {
   Emit("input-event", event);
 }
 
