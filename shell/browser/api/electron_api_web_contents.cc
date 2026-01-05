@@ -754,6 +754,10 @@ WebContents::WebContents(v8::Isolate* isolate,
   script_executor_ = std::make_unique<extensions::ScriptExecutor>(web_contents);
 #endif
 
+  // TODO: This works for main frames, but does not work for child frames.
+  // See: https://github.com/electron/electron/issues/49256
+  web_contents->SetSupportsDraggableRegions(true);
+
   session_ = Session::CreateFrom(isolate, GetBrowserContext());
 
   SetUserAgent(GetBrowserContext()->GetUserAgent());
@@ -1020,6 +1024,10 @@ void WebContents::InitWithWebContents(
     bool is_guest) {
   browser_context_ = browser_context;
   web_contents->SetDelegate(this);
+
+  // TODO: This works for main frames, but does not work for child frames.
+  // See: https://github.com/electron/electron/issues/49256
+  web_contents->SetSupportsDraggableRegions(true);
 
 #if BUILDFLAG(ENABLE_PRINTING)
   PrintViewManagerElectron::CreateForWebContents(web_contents.get());
@@ -1777,8 +1785,6 @@ void WebContents::RenderFrameCreated(
     auto details = gin_helper::Dictionary::CreateEmpty(isolate);
     details.SetGetter("frame", render_frame_host);
     Emit("frame-created", details);
-    content::WebContents::FromRenderFrameHost(render_frame_host)
-        ->SetSupportsDraggableRegions(true);
   }
 }
 
