@@ -262,7 +262,7 @@ index fb3fdfca483ff5041ee98095af3f6ac2640adbaf..ada19d78ec1337b0c49a1597c877886f
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index 63be7d4b9c4ffd1a830896dea9b7f9c58d868b03..1db331bdfff07de61240df894fd8fddd25b2a453 100644
+index e81fd079644b78a785879dc51d1ec55aa01b4015..774269a818bcf1aa10a26bbb04d20997f615128f 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
 @@ -9,6 +9,7 @@
@@ -273,15 +273,15 @@ index 63be7d4b9c4ffd1a830896dea9b7f9c58d868b03..1db331bdfff07de61240df894fd8fddd
  #include "base/functional/bind.h"
  #include "base/functional/callback_helpers.h"
  #include "base/memory/weak_ptr.h"
-@@ -40,6 +41,7 @@
- #include "third_party/blink/public/mojom/loader/code_cache.mojom-data-view.h"
+@@ -42,6 +43,7 @@
+ #include "third_party/perfetto/include/perfetto/tracing/track_event_args.h"
  #include "url/gurl.h"
  #include "url/origin.h"
 +#include "url/url_util.h"
  
  using blink::mojom::CacheStorageError;
  
-@@ -54,6 +56,11 @@ enum class Operation {
+@@ -56,6 +58,11 @@ enum class Operation {
    kWrite,
  };
  
@@ -293,7 +293,7 @@ index 63be7d4b9c4ffd1a830896dea9b7f9c58d868b03..1db331bdfff07de61240df894fd8fddd
  bool CheckSecurityForAccessingCodeCacheData(const GURL& resource_url,
                                              int render_process_id,
                                              Operation operation) {
-@@ -65,42 +72,56 @@ bool CheckSecurityForAccessingCodeCacheData(const GURL& resource_url,
+@@ -67,42 +74,56 @@ bool CheckSecurityForAccessingCodeCacheData(const GURL& resource_url,
        ChildProcessSecurityPolicyImpl::GetInstance()->GetProcessLock(
            render_process_id);
  
@@ -373,7 +373,7 @@ index 63be7d4b9c4ffd1a830896dea9b7f9c58d868b03..1db331bdfff07de61240df894fd8fddd
    }
  
    if (operation == Operation::kWrite) {
-@@ -178,6 +199,7 @@ std::optional<GURL> GetOriginLock(int render_process_id) {
+@@ -180,6 +201,7 @@ std::optional<GURL> GetOriginLock(int render_process_id) {
        process_lock.MatchesScheme(url::kHttpsScheme) ||
        process_lock.MatchesScheme(content::kChromeUIScheme) ||
        process_lock.MatchesScheme(content::kChromeUIUntrustedScheme) ||
@@ -415,7 +415,7 @@ index 33e2ff42e4d9da442d522b959a4a21c2f7032b6b..a0d81212327fc17e1f4704e78803c1d7
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index 0aca7cc1565e2d6faf47bc1d001362a3629d39aa..50b15e06956c47e94ccd801fb3ee91aeb77ae15c 100644
+index 1d681820a5b19e12e2ae0332fa62fc70261a346b..dcea7cdea748c7c60266abe36c96256ffd32eb89 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
 @@ -131,6 +131,9 @@ struct SchemeRegistry {
@@ -428,7 +428,7 @@ index 0aca7cc1565e2d6faf47bc1d001362a3629d39aa..50b15e06956c47e94ccd801fb3ee91ae
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -667,6 +670,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+@@ -666,6 +669,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
    return GetSchemeRegistry().empty_document_schemes;
  }
  
