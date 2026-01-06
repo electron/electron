@@ -219,14 +219,42 @@ describe('WebContentsView', () => {
       return docVisState === state;
     }
 
-    it('is initially hidden', async () => {
-      const v = new WebContentsView();
-      await v.webContents.loadURL('data:text/html,<script>initialVisibility = document.visibilityState</script>');
-      expect(await v.webContents.executeJavaScript('initialVisibility')).to.equal('hidden');
+    it('is initially visible', async () => {
+      const view = new WebContentsView();
+      await view.webContents.loadURL('about:blank');
+      const visibility = await view.webContents.executeJavaScript(
+        'document.visibilityState'
+      );
+      expect(visibility).to.equal('visible');
+    });
+
+    it('is visible when paintWhenInitiallyHidden set to true', async () => {
+      const view = new WebContentsView({ paintWhenInitiallyHidden: true });
+      await view.webContents.loadURL('about:blank');
+      const visibility = await view.webContents.executeJavaScript(
+        'document.visibilityState'
+      );
+      expect(visibility).to.equal('visible');
+    });
+
+    it('is hidden when paintWhenInitiallyHidden set to false', async () => {
+      const view = new WebContentsView({ paintWhenInitiallyHidden: false });
+      await view.webContents.loadURL('about:blank');
+      const visibility = await view.webContents.executeJavaScript(
+        'document.visibilityState'
+      );
+      expect(visibility).to.equal('hidden');
+    });
+
+    it('emits ready-to-show even if not yet attached to a window when paintWhenInitiallyHidden is true', async () => {
+      const v = new WebContentsView({ paintWhenInitiallyHidden: true });
+      const readyToShow = once(v.webContents, 'ready-to-show');
+      v.webContents.loadURL('data:text/html,<body>Test</body>');
+      await readyToShow;
     });
 
     it('becomes visible when attached', async () => {
-      const v = new WebContentsView();
+      const v = new WebContentsView({ paintWhenInitiallyHidden: false });
       await v.webContents.loadURL('about:blank');
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('hidden');
       const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", resolve))');
@@ -244,7 +272,7 @@ describe('WebContentsView', () => {
 
     it('is initially visible if load happens after attach', async () => {
       const w = new BaseWindow();
-      const v = new WebContentsView();
+      const v = new WebContentsView({ paintWhenInitiallyHidden: false });
       w.contentView = v;
       await v.webContents.loadURL('data:text/html,<script>initialVisibility = document.visibilityState</script>');
       expect(await v.webContents.executeJavaScript('initialVisibility')).to.equal('visible');
@@ -266,25 +294,9 @@ describe('WebContentsView', () => {
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('hidden');
     });
 
-    it('becomes visible when parent window is shown', async () => {
-      const w = new BaseWindow({ show: false });
-      const v = new WebContentsView();
-      w.setContentView(v);
-      await v.webContents.loadURL('about:blank');
-      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('hidden');
-      const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", resolve))');
-      // We have to wait until the listener above is fully registered before hiding the window.
-      // On Windows, the executeJavaScript and the visibilitychange can happen out of order
-      // without this.
-      await v.webContents.executeJavaScript('0');
-      w.show();
-      await p;
-      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
-    });
-
     it('does not change when view is moved between two visible windows', async () => {
       const w = new BaseWindow();
-      const v = new WebContentsView();
+      const v = new WebContentsView({ paintWhenInitiallyHidden: false });
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
       await expect(waitUntil(async () => await haveVisibilityState(v, 'visible'))).to.eventually.be.fulfilled();

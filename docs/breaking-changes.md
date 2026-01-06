@@ -24,6 +24,14 @@ for more consistent output sizes.
 
 ## Planned Breaking API Changes (41.0)
 
+### Behavior Changed: WebContentsView Default Rendering State
+
+Previously, the underlying [WebContents](./api/web-contents.md) of a [WebContentsView](./api/web-contents-view.md) would default to a hidden renderer state if the view was not yet attached or shown. It now **defaults to a shown** renderer state, aligning it with the long-standing behavior of [BrowserWindow](./api/browser-window.md).
+
+This ensures the `ready-to-show` event fires automatically and `document.visibilityState` is `visible` by default during initial load, allowing the renderer to paint frames even if the view is not yet shown or attached.
+
+To restore the previous behavior: Pass `paintWhenInitiallyHidden: false` in the `WebContentsView` constructor options.
+
 ### Behavior Changed: PDFs no longer create a separate WebContents
 
 Previously, PDF resources created a separate guest [WebContents](https://www.electronjs.org/docs/latest/api/web-contents) for rendering. Now, PDFs are rendered within the same WebContents instead. If you have code to detect PDF resources, use the [frame tree](https://www.electronjs.org/docs/latest/api/web-frame-main) instead of WebContents.

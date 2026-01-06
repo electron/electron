@@ -55,7 +55,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
       const baseWindow = new BaseWindow({
         ...options
       });
-      const wcv = new WebContentsView({ webPreferences: { ...(options.webPreferences ?? {}), nodeIntegration: true, contextIsolation: false } });
+      const wcv = new WebContentsView({ paintWhenInitiallyHidden: false, webPreferences: { ...(options.webPreferences ?? {}), nodeIntegration: true, contextIsolation: false } });
       baseWindow.contentView = wcv;
       w = Object.assign(baseWindow, { webContents: wcv.webContents });
       if (options.show && process.platform === 'darwin') {
