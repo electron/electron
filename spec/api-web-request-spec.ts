@@ -1,4 +1,4 @@
-import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
+import { ipcMain, net, protocol, session, WebContents, webContents } from 'electron/main';
 
 import { expect } from 'chai';
 import * as WebSocket from 'ws';
@@ -454,6 +454,35 @@ describe('webRequest module', () => {
         slashes: true
       }));
       expect(onSendHeadersCalled).to.be.true();
+    });
+
+    it('can inject Proxy-Authorization header for net module requests', async () => {
+      // Proxy-Authorization is normally rejected by Chromium's network service
+      // for security reasons. However, for Electron's trusted net module,
+      // webRequest.onBeforeSendHeaders should be able to inject it via the
+      // TrustedHeaderClient code path.
+      const proxyAuthValue = 'Basic test-credentials';
+      let receivedProxyAuth: string | undefined;
+
+      const server = http.createServer((req, res) => {
+        receivedProxyAuth = req.headers['proxy-authorization'];
+        res.end('ok');
+      });
+      const { url: serverUrl } = await listen(server);
+
+      try {
+        ses.webRequest.onBeforeSendHeaders((details, callback) => {
+          const requestHeaders = details.requestHeaders;
+          requestHeaders['Proxy-Authorization'] = proxyAuthValue;
+          callback({ requestHeaders });
+        });
+
+        const response = await net.fetch(serverUrl, { bypassCustomProtocolHandlers: true });
+        expect(response.ok).to.be.true();
+        expect(receivedProxyAuth).to.equal(proxyAuthValue);
+      } finally {
+        server.close();
+      }
     });
   });
 
