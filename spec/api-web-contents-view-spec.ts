@@ -220,9 +220,14 @@ describe('WebContentsView', () => {
     }
 
     it('is initially hidden', async () => {
-      const v = new WebContentsView();
-      await v.webContents.loadURL('data:text/html,<script>initialVisibility = document.visibilityState</script>');
-      expect(await v.webContents.executeJavaScript('initialVisibility')).to.equal('hidden');
+      const view = new WebContentsView();
+
+      await view.webContents.loadURL('about:blank');
+
+      const visibility = await view.webContents.executeJavaScript(
+        'document.visibilityState'
+      );
+      expect(visibility).to.equal('hidden');
     });
 
     it('becomes visible when attached', async () => {
@@ -250,36 +255,29 @@ describe('WebContentsView', () => {
       expect(await v.webContents.executeJavaScript('initialVisibility')).to.equal('visible');
     });
 
-    it('becomes hidden when parent window is hidden', async () => {
-      const w = new BaseWindow();
-      const v = new WebContentsView();
-      w.setContentView(v);
-      await v.webContents.loadURL('about:blank');
-      await expect(waitUntil(async () => await haveVisibilityState(v, 'visible'))).to.eventually.be.fulfilled();
-      const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", resolve))');
-      // We have to wait until the listener above is fully registered before hiding the window.
-      // On Windows, the executeJavaScript and the visibilitychange can happen out of order
-      // without this.
-      await v.webContents.executeJavaScript('0');
-      w.hide();
-      await p;
-      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('hidden');
-    });
+    it('respects the paintWhenInitiallyHidden option', async () => {
+      const v1 = new WebContentsView({
+        paintWhenInitiallyHidden: false
+      });
 
-    it('becomes visible when parent window is shown', async () => {
-      const w = new BaseWindow({ show: false });
-      const v = new WebContentsView();
-      w.setContentView(v);
-      await v.webContents.loadURL('about:blank');
-      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('hidden');
-      const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", resolve))');
-      // We have to wait until the listener above is fully registered before hiding the window.
-      // On Windows, the executeJavaScript and the visibilitychange can happen out of order
-      // without this.
-      await v.webContents.executeJavaScript('0');
-      w.show();
-      await p;
-      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
+      const readyToShowPromise = once(v1.webContents, 'ready-to-show');
+      v1.webContents.loadURL('about:blank');
+      await readyToShowPromise;
+      const state1 = await v1.webContents.executeJavaScript('document.visibilityState');
+      expect(state1).to.equal('hidden');
+
+      const v2 = new WebContentsView({
+        paintWhenInitiallyHidden: false
+      });
+
+      v2.webContents.loadURL('about:blank');
+      const w = new BaseWindow({ show: true });
+      w.setContentView(v2);
+      const state2 = await v2.webContents.executeJavaScript('document.visibilityState');
+      expect(state2).to.equal('visible');
+
+      w.destroy();
+      v1.webContents.destroy();
     });
 
     it('does not change when view is moved between two visible windows', async () => {
