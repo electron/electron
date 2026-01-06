@@ -90,7 +90,7 @@ describe('BrowserView module', () => {
       w.show();
       w.setBounds(display.bounds);
       w.setBackgroundColor(WINDOW_BACKGROUND_COLOR);
-      await w.loadURL('about:blank');
+      await w.loadURL('data:text/html,<style>body{background:transparent;}</style>');
 
       view = new BrowserView();
       view.setBounds(display.bounds);
@@ -109,7 +109,7 @@ describe('BrowserView module', () => {
       w.show();
       w.setBounds(display.bounds);
       w.setBackgroundColor(WINDOW_BACKGROUND_COLOR);
-      await w.loadURL('about:blank');
+      await w.loadURL('data:text/html,<style>body{background:transparent;}</style>');
 
       view = new BrowserView();
       view.setBounds(display.bounds);
