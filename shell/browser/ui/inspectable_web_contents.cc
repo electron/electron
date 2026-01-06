@@ -968,10 +968,10 @@ bool InspectableWebContents::DidAddMessageToConsole(
   // into native logs for the managed DevTools WebContents. Can be overridden by
   // enabling verbose logging.
   if (source == managed_devtools_web_contents_.get()) {
-    // In testing builds, let logging through.
-    if (DCHECK_IS_ON()) {
-      return false;
-    }
+#if DCHECK_IS_ON()
+    // In debug/testing builds, let logging through.
+    return false;
+#endif
 
     if (VLOG_IS_ON(1)) {
       // Match Chromium's `content::LogConsoleMessage()` output format, but emit
