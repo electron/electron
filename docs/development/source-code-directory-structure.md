@@ -30,7 +30,7 @@ Project Root
     ├── electron
     ├── third_party
     │   ├── nan
-    │   ├── node
+    │   ├── electron_node
     │   └── ...other third party deps
     └── ...other folders
 ```
