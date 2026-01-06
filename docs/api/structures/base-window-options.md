@@ -102,9 +102,9 @@
 * `trafficLightPosition` [Point](point.md) (optional) _macOS_ -
   Set a custom position for the traffic light buttons in frameless windows.
 * `roundedCorners` boolean (optional) _macOS_ _Windows_ - Whether frameless window
-  should have rounded corners. Default is `true`. Setting this property
-  to `false` will prevent the window from being fullscreenable on macOS.
-  On Windows versions older than Windows 11 Build 22000 this property has no effect, and frameless windows will not have rounded corners.
+  should have rounded corners. Default is `true`. On Windows versions older than
+  Windows 11 Build 22000 this property has no effect, and frameless windows will
+  not have rounded corners.
 * `thickFrame` boolean (optional) _Windows_ - Use `WS_THICKFRAME` style for
   frameless windows on Windows, which adds the standard window frame. Setting it
   to `false` will remove window shadow and window animations, and disable window
