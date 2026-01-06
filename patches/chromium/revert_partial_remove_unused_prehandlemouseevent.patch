@@ -54,7 +54,7 @@ index a7309941d904b9ab32ff101dfd26be7e09fed1ac..d8c715ade23f078aa2efacc59a97f0f4
      if (mouse_event_callback.Run(mouse_event)) {
        return;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d9b20ad086f4b921a04cd3d120d225fb80455905..5b6be42aeb82432833946e1d94881834dc636892 100644
+index 4752d7bca8e4f4e28bb7074f401ac8ee2ee311b9..6545ec2edfec6d2712f49abecafc3027b6045c3d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4453,6 +4453,12 @@ void WebContentsImpl::RenderWidgetWasResized(

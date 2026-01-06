@@ -7,7 +7,6 @@
 #include "base/base64.h"
 #include "base/command_line.h"
 #include "base/numerics/byte_conversions.h"
-#include "components/viz/common/resources/shared_image_format_utils.h"
 #include "content/browser/compositor/image_transport_factory.h"  // nogncheck
 #include "gpu/command_buffer/client/context_support.h"
 #include "gpu/ipc/client/client_shared_image_interface.h"
@@ -703,8 +702,8 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
   media::VideoPixelFormat pixel_format = shared_texture.pixel_format;
   gfx::ColorSpace color_space = shared_texture.color_space;
 
-  auto buffer_format = media::VideoPixelFormatToGfxBufferFormat(pixel_format);
-  if (!buffer_format.has_value()) {
+  auto si_format = media::VideoPixelFormatToSharedImageFormat(pixel_format);
+  if (!si_format.has_value()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
         "Invalid shared texture buffer format");
     return v8::Null(isolate);
@@ -723,10 +722,8 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
       gpu::SHARED_IMAGE_USAGE_RASTER_READ |
       gpu::SHARED_IMAGE_USAGE_DISPLAY_READ;
 #endif
-
-  auto si_format = viz::GetSharedImageFormat(buffer_format.value());
   auto si =
-      sii->CreateSharedImage({si_format, coded_size, color_space,
+      sii->CreateSharedImage({si_format.value(), coded_size, color_space,
                               shared_image_usage, "SharedTextureVideoFrame"},
                              std::move(gmb_handle));
 

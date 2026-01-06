@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 6a9d90fdc5e6df4726810143c27f683bbbbc183f..71e8c539d5d633277237141b4e42460ae1dca8da 100644
+index 7ddb32ba04bc878f368931c14fb3ade0dd2e074d..5fb241ff924fb8662eac549640a35b94cba2dd81 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -47,7 +47,7 @@
@@ -62,20 +62,7 @@ index 6a9d90fdc5e6df4726810143c27f683bbbbc183f..71e8c539d5d633277237141b4e42460a
    if (!IsTabFullscreen()) {
      // Activate any popup windows created while content fullscreen, after exit.
      popunder_preventer_.reset();
-@@ -555,20 +556,19 @@ void FullscreenController::EnterFullscreenModeInternal(
-   // Do not enter fullscreen mode if disallowed by pref. This prevents the user
-   // from manually entering fullscreen mode and also disables kiosk mode on
-   // desktop platforms.
--  if (!exclusive_access_manager()
--           ->context()
--           ->GetProfile()
--           ->GetPrefs()
--           ->GetBoolean(prefs::kFullscreenAllowed)) {
-+  auto* profile = exclusive_access_manager()->context()->GetProfile();
-+  if (!profile || !profile->GetPrefs()->GetBoolean(prefs::kFullscreenAllowed))
-     return;
--  }
- #endif
+@@ -564,9 +565,12 @@ void FullscreenController::EnterFullscreenModeInternal(
    fullscreen_parameters_ = fullscreen_tab_params;
    started_fullscreen_transition_ = true;
    toggled_into_fullscreen_ = true;
@@ -88,7 +75,7 @@ index 6a9d90fdc5e6df4726810143c27f683bbbbc183f..71e8c539d5d633277237141b4e42460a
    if (option == FullscreenInternalOption::kTab) {
      origin = GetRequestingOrigin();
      tab_fullscreen_ = true;
-@@ -606,6 +606,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -604,6 +608,7 @@ void FullscreenController::EnterFullscreenModeInternal(
        origin = url::Origin::Create(extension_url_.value());
      }
    }
@@ -96,7 +83,7 @@ index 6a9d90fdc5e6df4726810143c27f683bbbbc183f..71e8c539d5d633277237141b4e42460a
  
    fullscreen_start_time_ = base::TimeTicks::Now();
    if (option == FullscreenInternalOption::kBrowser) {
-@@ -627,6 +628,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -625,6 +630,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
      return;
    }
  
@@ -104,7 +91,7 @@ index 6a9d90fdc5e6df4726810143c27f683bbbbc183f..71e8c539d5d633277237141b4e42460a
    // `fullscreen_start_time_` is null if a fullscreen tab moves to a new window.
    if (fullscreen_start_time_ && exclusive_access_tab()) {
      ukm::SourceId source_id =
-@@ -638,19 +640,20 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -636,19 +642,20 @@ void FullscreenController::ExitFullscreenModeInternal() {
          .Record(ukm::UkmRecorder::Get());
      fullscreen_start_time_.reset();
    }
