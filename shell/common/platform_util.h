@@ -67,7 +67,7 @@ std::optional<std::string> GetDesktopName();
 
 // The XDG application ID must match the name of the desktop entry file without
 // the .desktop extension.
-std::string GetXdgAppId();
+std::optional<std::string> GetXdgAppId();
 #endif
 
 }  // namespace platform_util

@@ -143,11 +143,9 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
 
   // Send the desktop name to identify the application
   // The desktop-entry is the part before the .desktop
-  std::string desktop_id = platform_util::GetXdgAppId();
-  if (!desktop_id.empty()) {
+  if (const std::optional<std::string> name = platform_util::GetXdgAppId()) {
     GetLibNotifyLoader().notify_notification_set_hint(
-        notification_, "desktop-entry",
-        g_variant_new_string(desktop_id.c_str()));
+        notification_, "desktop-entry", g_variant_new_string(name->c_str()));
   }
 
   GetLibNotifyLoader().notify_notification_set_hint(
