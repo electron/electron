@@ -155,7 +155,8 @@ v8::Local<v8::Function> WebContentsView::GetConstructor(v8::Isolate* isolate) {
 // static
 gin_helper::WrappableBase* WebContentsView::New(gin::Arguments* const args) {
   v8::Isolate* const isolate = args->isolate();
-  gin_helper::Dictionary web_preferences = gin_helper::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary web_preferences =
+      gin_helper::Dictionary::CreateEmpty(isolate);
   v8::Local<v8::Value> existing_web_contents_value;
   {
     v8::Local<v8::Value> options_value;
@@ -175,7 +176,8 @@ gin_helper::WrappableBase* WebContentsView::New(gin::Arguments* const args) {
       }
 
       bool paint_when_initially_hidden;
-      if(options.Get(options::kPaintWhenInitiallyHidden, &paint_when_initially_hidden)){
+      if (options.Get(options::kPaintWhenInitiallyHidden,
+                      &paint_when_initially_hidden)) {
         web_preferences.Set(options::kShow, paint_when_initially_hidden);
       }
 
