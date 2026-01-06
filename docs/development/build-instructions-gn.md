@@ -57,14 +57,15 @@ Once the build is done compiling, you can test it by running `e start` (or by lo
 
 Some quick tips on building once your checkout is set up:
 
-* Within the project, Chromium code is synced to `${root}/src/` while Electron's code (i.e. code in
+* **Directory structure:** Within the project, Chromium code is synced to `${root}/src/` while Electron's code (i.e. code in
   https://github.com/electron/electron) lives in `${root}/src/electron/`. Note that both directories
   have their own git repositories.
-* Whenever you check out a new branch, make sure to `e sync` before `e build` to sync dependencies
+* **Updating your checkout:** Run git commands such as `git checkout <branch>` and `git pull` from `${root}/src/electron`.
+  Whenever you update your commit `HEAD`, make sure to `e sync` before `e build` to sync dependencies
   such as Chromium and Node.js. This is especially relevant because the Chromium version in
   [`DEPS`](https://github.com/electron/electron/blob/main/DEPS) changes frequently.
-* When making changes to code in `${root}/src/electron/` in a local branch, you only need to re-run `e build`.
-* When contributing changes in `${root}/src/` outside of `${root}/src/electron/`, you need to do so
+* **Rebuilding:** When making changes to code in `${root}/src/electron/` in a local branch, you only need to re-run `e build`.
+* **Adding patches:** When contributing changes in `${root}/src/` outside of `${root}/src/electron/`, you need to do so
   via Electron's [patch system](./patches.md). The `e patches` command can export all relevant patches to
   `${root}/src/electron/patches/` once your code change is ready.
 
