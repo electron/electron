@@ -13,6 +13,7 @@ import { createGitHubTokenStrategy } from '../github-token';
 import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from '../types';
 
 const rootPackageJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../../package.json'), 'utf-8'));
+rootPackageJson.name = 'electron';
 
 if (!process.env.ELECTRON_NPM_OTP) {
   console.error('Please set ELECTRON_NPM_OTP');
