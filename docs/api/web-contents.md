@@ -1875,7 +1875,7 @@ with native view, which developers have very limited control of. With the
 `setDevToolsWebContents` method, developers can use any `WebContents` to show
 the DevTools in it, such as [`BrowserWindow`](./browser-window.md) or [`WebContentsView`](./web-contents-view.md).
 
-Note that closing the DevToools does not destroy the `devToolsWebContents`, it
+Note that closing the DevTools does not destroy the `devToolsWebContents`, it
 is the caller's responsibility to destroy `devToolsWebContents` manually.
 
 An example of showing DevTools in a `BrowserWindow`:
