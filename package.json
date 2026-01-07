@@ -65,7 +65,7 @@
     "generate-version-json": "node script/generate-version-json.js",
     "lint": "node ./script/lint.js && npm run lint:docs",
     "lint:js": "node ./script/lint.js --js",
-    "lint:clang-format": "python3 script/run-clang-format.py -r -c shell/ || (echo \"\\nCode not formatted correctly.\" && exit 1)",
+    "lint:clang-format": "node script/python.js script/run-clang-format.py -r -c shell/ || (echo \"\\nCode not formatted correctly.\" && exit 1)",
     "lint:clang-tidy": "ts-node ./script/run-clang-tidy.ts",
     "lint:cpp": "node ./script/lint.js --cc",
     "lint:objc": "node ./script/lint.js --objc",
@@ -83,7 +83,7 @@
     "gn-typescript-definitions": "npm run create-typescript-definitions && node script/cp.mjs electron.d.ts",
     "pre-flight": "pre-flight",
     "gn-check": "node ./script/gn-check.js",
-    "gn-format": "python3 script/run-gn-format.py",
+    "gn-format": "node script/python.js script/run-gn-format.py",
     "precommit": "lint-staged",
     "preinstall": "node -e 'process.exit(0)'",
     "pretest": "npm run create-typescript-definitions",
@@ -108,7 +108,7 @@
       "ts-node script/gen-filenames.ts"
     ],
     "*.{cc,mm,c,h}": [
-      "python3 script/run-clang-format.py -r -c --fix"
+      "node script/python.js script/run-clang-format.py -r -c --fix"
     ],
     "*.md": [
       "npm run lint:docs"
