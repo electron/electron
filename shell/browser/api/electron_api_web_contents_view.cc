@@ -202,10 +202,6 @@ gin_helper::WrappableBase* WebContentsView::New(gin::Arguments* const args) {
     web_preferences.SetHidden("webContents", existing_web_contents_value);
   }
 
-  if (!web_preferences.Has(options::kShow)) {
-    web_preferences.Set(options::kShow, false);
-  }
-
   auto web_contents =
       WebContents::CreateFromWebPreferences(isolate, web_preferences);
 
