@@ -56,7 +56,7 @@ const getCustomOptions = () => {
   return customOptions;
 };
 
-async function main () {
+async function main() {
   // Optionally validate that all disabled specs still exist.
   if (args.validateDisabled) {
     const missing = [];
@@ -79,7 +79,7 @@ async function main () {
 
   const options = args.default ? defaultOptions : getCustomOptions();
 
-  const testChild = cp.spawn('python3', options, {
+  const testChild = cp.spawn(utils.getPythonBinaryName(), options, {
     env: {
       ...process.env,
       ELECTRON_RUN_AS_NODE: 'true',

@@ -2,7 +2,7 @@ const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { ELECTRON_DIR, getOutDir } = require('./utils');
+const { ELECTRON_DIR, getOutDir, getPythonBinaryName } = require('./utils');
 
 // Print the value of electron_version set in gn config.
 module.exports.getElectronVersion = () => {
@@ -20,7 +20,7 @@ module.exports.getElectronVersion = () => {
     // valid case and error will be ignored.
   }
   // Get the version from git tag if it is not defined in gn args.
-  const output = spawnSync('python', [path.join(ELECTRON_DIR, 'script', 'get-git-version.py')]);
+  const output = spawnSync(getPythonBinaryName(), [path.join(ELECTRON_DIR, 'script', 'get-git-version.py')]);
   if (output.status !== 0) {
     throw new Error(`Failed to get git tag, script quit with ${output.status}: ${output.stdout}`);
   }

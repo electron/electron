@@ -8,7 +8,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { chunkFilenames, findMatchingFiles } = require('./lib/utils');
+const { chunkFilenames, findMatchingFiles, getPythonBinaryName } = require('./lib/utils');
 
 const ELECTRON_ROOT = path.normalize(path.dirname(__dirname));
 const SOURCE_ROOT = path.resolve(ELECTRON_ROOT, '..');
@@ -53,7 +53,7 @@ const CPPLINT_FILTERS = [
   '-whitespace/tab'
 ];
 
-function spawnAndCheckExitCode (cmd, args, opts) {
+function spawnAndCheckExitCode(cmd, args, opts) {
   opts = { stdio: 'inherit', shell: IS_WINDOWS, ...opts };
   const { error, status, signal } = childProcess.spawnSync(cmd, args, opts);
   if (error) {
@@ -72,7 +72,7 @@ function spawnAndCheckExitCode (cmd, args, opts) {
   }
 }
 
-async function runEslint (eslint, filenames, { fix, verbose }) {
+async function runEslint(eslint, filenames, { fix, verbose }) {
   const formatter = await eslint.loadFormatter();
   let successCount = 0;
   const results = await eslint.lintFiles(filenames);
@@ -90,7 +90,7 @@ async function runEslint (eslint, filenames, { fix, verbose }) {
   return successCount === filenames.length;
 }
 
-function cpplint (args) {
+function cpplint(args) {
   args.unshift(`--root=${SOURCE_ROOT}`);
   const cmd = IS_WINDOWS ? 'cpplint.bat' : 'cpplint.py';
   const result = childProcess.spawnSync(cmd, args, { encoding: 'utf8', shell: true });
@@ -108,7 +108,7 @@ function cpplint (args) {
   }
 }
 
-function isObjCHeader (filename) {
+function isObjCHeader(filename) {
   return /\/(mac|cocoa)\//.test(filename);
 }
 
@@ -122,7 +122,7 @@ const LINTERS = [{
     };
     const clangFormatFlags = opts.fix ? ['--fix'] : [];
     for (const chunk of chunkFilenames(filenames)) {
-      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', ...clangFormatFlags, ...chunk], { env });
+      spawnAndCheckExitCode(getPythonBinaryName(), ['script/run-clang-format.py', ...clangFormatFlags, ...chunk], { env });
       cpplint([`--filter=${CPPLINT_FILTERS.join(',')}`, ...chunk]);
     }
   }
@@ -135,7 +135,7 @@ const LINTERS = [{
       CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools')
     };
     const clangFormatFlags = opts.fix ? ['--fix'] : [];
-    spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...clangFormatFlags, ...filenames], { env });
+    spawnAndCheckExitCode(getPythonBinaryName(), ['script/run-clang-format.py', '-r', ...clangFormatFlags, ...filenames], { env });
     const filter = [...CPPLINT_FILTERS, '-readability/braces'];
     cpplint(['--extensions=mm,h', `--filter=${filter.join(',')}`, ...filenames]);
   }
@@ -394,7 +394,7 @@ const LINTERS = [{
   }
 }];
 
-function parseCommandLine () {
+function parseCommandLine() {
   let help;
   const langs = ['cpp', 'objc', 'javascript', 'python', 'gn', 'patches', 'markdown'];
   const langRoots = langs.map(lang => lang + '-roots');
@@ -413,7 +413,7 @@ function parseCommandLine () {
   return opts;
 }
 
-function populateLinterWithArgs (linter, opts) {
+function populateLinterWithArgs(linter, opts) {
   const extraRoots = opts[`${linter.key}-roots`];
   if (extraRoots) {
     linter.roots.push(...extraRoots.split(','));
@@ -429,7 +429,7 @@ function populateLinterWithArgs (linter, opts) {
   }
 }
 
-async function findChangedFiles (top) {
+async function findChangedFiles(top) {
   const result = childProcess.spawnSync('git', ['diff', '--name-only', '--cached'], {
     cwd: top,
     encoding: 'utf8',
@@ -444,7 +444,7 @@ async function findChangedFiles (top) {
   return new Set(absolutePaths);
 }
 
-async function findFiles (args, linter) {
+async function findFiles(args, linter) {
   let filenames = [];
   let includelist = null;
 
@@ -486,7 +486,7 @@ async function findFiles (args, linter) {
   return filenames.map(x => path.relative(ELECTRON_ROOT, x));
 }
 
-async function main () {
+async function main() {
   const opts = parseCommandLine();
 
   // no mode specified? run 'em all

@@ -12,7 +12,7 @@ const SRC_DIR = path.resolve(ELECTRON_DIR, '..');
 const pass = chalk.green('✓');
 const fail = chalk.red('✗');
 
-function getElectronExec () {
+function getElectronExec() {
   const OUT_DIR = getOutDir();
   switch (process.platform) {
     case 'darwin':
@@ -26,7 +26,7 @@ function getElectronExec () {
   }
 }
 
-function getOutDir (options = {}) {
+function getOutDir(options = {}) {
   const shouldLog = options.shouldLog || false;
   const presetDirs = ['Testing', 'Release', 'Default', 'Debug'];
 
@@ -57,11 +57,11 @@ function getOutDir (options = {}) {
   throw new Error(`No valid out directory found; use one of ${presetDirs.join(',')} or set process.env.ELECTRON_OUT_DIR`);
 }
 
-function getAbsoluteElectronExec () {
+function getAbsoluteElectronExec() {
   return path.resolve(SRC_DIR, getElectronExec());
 }
 
-function handleGitCall (args, gitDir) {
+function handleGitCall(args, gitDir) {
   const result = childProcess.spawnSync('git', args, {
     cwd: gitDir,
     encoding: 'utf8',
@@ -75,7 +75,7 @@ function handleGitCall (args, gitDir) {
   }
 }
 
-async function getCurrentBranch (gitDir) {
+async function getCurrentBranch(gitDir) {
   const RELEASE_BRANCH_PATTERN = /^\d+-x-y$/;
   const MAIN_BRANCH_PATTERN = /^main$/;
   const ORIGIN_MAIN_BRANCH_PATTERN = /^origin\/main$/;
@@ -100,7 +100,7 @@ async function getCurrentBranch (gitDir) {
   return branch.trim();
 }
 
-function chunkFilenames (filenames, offset = 0) {
+function chunkFilenames(filenames, offset = 0) {
   // Windows has a max command line length of 2047 characters, so we can't
   // provide too many filenames without going over that. To work around that,
   // chunk up a list of filenames such that it won't go over that limit when
@@ -132,7 +132,7 @@ function chunkFilenames (filenames, offset = 0) {
  * @param {(filename: string) => boolean} test
  * @returns {Promise<string[]>}
 */
-async function findMatchingFiles (top, test) {
+async function findMatchingFiles(top, test) {
   return fs.promises.readdir(top, { encoding: 'utf8', recursive: true })
     .then(files => {
       return files
@@ -142,6 +142,26 @@ async function findMatchingFiles (top, test) {
     });
 }
 
+let cachedPythonBinary = null;
+function getPythonBinaryName() {
+  if (cachedPythonBinary) return cachedPythonBinary;
+
+  const binary = process.platform === 'win32' ? 'python' : 'python3';
+  try {
+    childProcess.execSync(`${binary} --version`, { stdio: 'ignore' });
+    cachedPythonBinary = binary;
+  } catch {
+    const fallback = binary === 'python' ? 'python3' : 'python';
+    try {
+      childProcess.execSync(`${fallback} --version`, { stdio: 'ignore' });
+      cachedPythonBinary = fallback;
+    } catch {
+      cachedPythonBinary = binary;
+    }
+  }
+  return cachedPythonBinary;
+}
+
 module.exports = {
   chunkFilenames,
   findMatchingFiles,
@@ -149,6 +169,7 @@ module.exports = {
   getElectronExec,
   getOutDir,
   getAbsoluteElectronExec,
+  getPythonBinaryName,
   handleGitCall,
   ELECTRON_DIR,
   SRC_DIR
