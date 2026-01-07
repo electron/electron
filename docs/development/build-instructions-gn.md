@@ -20,7 +20,7 @@ Most of the [manual setup](#manual-setup-advanced) instructions can be replaced 
 
 > [!TIP]
 > Build Tools also gives you access to [remote execution and caching of build actions](./reclient.md),
-which will dramatically improve build times.
+> which will dramatically improve build times.
 
 Electron Build Tools can be installed globally from npm:
 
