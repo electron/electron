@@ -130,13 +130,13 @@ gin_helper::Handle<NativeImage> NativeImage::CreateMenuSymbol(
     float aspect_ratio =
         static_cast<float>(size.width()) / static_cast<float>(size.height());
 
-    int new_width = 14;
-    int new_height = static_cast<int>(14 / aspect_ratio);
+    int new_width = 15;
+    int new_height = static_cast<int>(15 / aspect_ratio);
 
     // prevent tall symbols from exceeding menu item height (e.g. chevron.right)
     if (new_height >= 16) {
-      new_height = 14;
-      new_width = static_cast<int>(14 * aspect_ratio);
+      new_height = 15;
+      new_width = static_cast<int>(15 * aspect_ratio);
     }
 
     gin_helper::Handle<NativeImage> sized = handle->Resize(
