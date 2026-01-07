@@ -2,10 +2,8 @@
   "main": "index.js",
   "types": "electron.d.ts",
   "bin": {
-    "electron": "cli.js"
-  },
-  "scripts": {
-    "postinstall": "node install.js"
+    "electron": "cli.js",
+    "install-electron": "install.js"
   },
   "dependencies": {
     "@electron/get": "^2.0.0",
