@@ -5,14 +5,14 @@ const path = require('path');
 const pathFile = path.join(__dirname, 'path.txt');
 
 function downloadElectron () {
-  console.log('Electron binary not found, downloading...');
+  console.log('Downloading Electron binary...');
   const result = spawnSync(process.execPath, [path.join(__dirname, 'install.js')], {
     stdio: 'inherit',
     env: { ...process.env, ELECTRON_SKIP_BINARY_DOWNLOAD: '' }
   });
   if (result.status !== 0) {
     throw new Error(
-      'Failed to download Electron binary. Please run "npx install-electron --no" manually.'
+      'Electron failed to install correctly. Please delete `node_modules/electron` and run "npx install-electron --no" manually.'
     );
   }
 }
@@ -38,7 +38,13 @@ function getElectronPath () {
     }
     return fullPath;
   } else {
-    downloadElectron();
+    try {
+      downloadElectron();
+    } catch {
+      throw new Error(
+        'Electron failed to install correctly. Please delete `node_modules/electron` and run "npx install-electron --no" manually.'
+      );
+    }
     executablePath = fs.readFileSync(pathFile, 'utf-8');
     return path.join(__dirname, 'dist', executablePath);
   }
