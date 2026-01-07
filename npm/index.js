@@ -7,8 +7,7 @@ const pathFile = path.join(__dirname, 'path.txt');
 function downloadElectron () {
   console.log('Downloading Electron binary...');
   const result = spawnSync(process.execPath, [path.join(__dirname, 'install.js')], {
-    stdio: 'inherit',
-    env: { ...process.env, ELECTRON_SKIP_BINARY_DOWNLOAD: '' }
+    stdio: 'inherit'
   });
   if (result.status !== 0) {
     throw new Error(
