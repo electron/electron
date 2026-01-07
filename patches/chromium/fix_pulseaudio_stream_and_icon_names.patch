@@ -19,7 +19,7 @@ This patch can be removed when upstream starts using AudioManager::SetGlobalAppN
 for all pa_context names (and when actually works with AudioServiceOutOfProcess). 
 
 diff --git a/media/audio/pulse/pulse_util.cc b/media/audio/pulse/pulse_util.cc
-index a08e42a..580a1a6 100644
+index a08e42a..78915db 100644
 --- a/media/audio/pulse/pulse_util.cc
 +++ b/media/audio/pulse/pulse_util.cc
 @@ -10,6 +10,7 @@
@@ -58,24 +58,20 @@ index a08e42a..580a1a6 100644
    if (!pa_context) {
      pa_threaded_mainloop_free(pa_mainloop);
      return false;
-@@ -464,8 +464,14 @@ bool CreateInputStream(pa_threaded_mainloop* mainloop,
+@@ -464,8 +464,11 @@ bool CreateInputStream(pa_threaded_mainloop* mainloop,
    // Create a new recording stream and
    // tells PulseAudio what the stream icon should be.
    ScopedPropertyList property_list;
--  pa_proplist_sets(property_list.get(), PA_PROP_APPLICATION_ICON_NAME,
--                   kBrowserDisplayName);
-+  const std::string app_id = platform_util::GetXdgAppId();
 +  const std::string cmd_name =
 +    base::CommandLine::ForCurrentProcess()->GetProgram().BaseName().value();
-+  pa_proplist_sets(property_list.get(),
-+                   PA_PROP_APPLICATION_ICON_NAME,
-+                   app_id.empty() ?
-+                   cmd_name.c_str()
-+                   : app_id.c_str());
++  const std::string app_id = platform_util::GetXdgAppId().value_or(cmd_name);
+   pa_proplist_sets(property_list.get(), PA_PROP_APPLICATION_ICON_NAME,
+-                   kBrowserDisplayName);
++                   app_id.c_str());
    *stream = pa_stream_new_with_proplist(context, "RecordStream",
                                          &sample_specifications, map,
                                          property_list.get());
-@@ -526,7 +532,7 @@ bool CreateOutputStream(raw_ptr<pa_threaded_mainloop>* mainloop,
+@@ -526,7 +529,7 @@ bool CreateOutputStream(raw_ptr<pa_threaded_mainloop>* mainloop,
  
    pa_mainloop_api* pa_mainloop_api = pa_threaded_mainloop_get_api(*mainloop);
    *context = pa_context_new(
@@ -84,18 +80,16 @@ index a08e42a..580a1a6 100644
    RETURN_ON_FAILURE(*context, "Failed to create PulseAudio context.");
  
    // A state callback must be set before calling pa_threaded_mainloop_lock() or
-@@ -574,8 +580,13 @@ bool CreateOutputStream(raw_ptr<pa_threaded_mainloop>* mainloop,
+@@ -574,8 +577,11 @@ bool CreateOutputStream(raw_ptr<pa_threaded_mainloop>* mainloop,
    // Open playback stream and
    // tell PulseAudio what the stream icon should be.
    ScopedPropertyList property_list;
-+  const std::string app_id = platform_util::GetXdgAppId();
 +  const std::string cmd_name =
 +    base::CommandLine::ForCurrentProcess()->GetProgram().BaseName().value();
++  const std::string app_id = platform_util::GetXdgAppId().value_or(cmd_name);
    pa_proplist_sets(property_list.get(), PA_PROP_APPLICATION_ICON_NAME,
 -                   kBrowserDisplayName);
-+                   app_id.empty() ?
-+                   cmd_name.c_str()
-+                   : app_id.c_str());
++                   app_id.c_str());
    *stream = pa_stream_new_with_proplist(
        *context, "Playback", &sample_specifications, map, property_list.get());
    RETURN_ON_FAILURE(*stream, "failed to create PA playback stream");
