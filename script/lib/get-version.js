@@ -20,7 +20,7 @@ module.exports.getElectronVersion = () => {
     // valid case and error will be ignored.
   }
   // Get the version from git tag if it is not defined in gn args.
-  const output = spawnSync('python3', [path.join(ELECTRON_DIR, 'script', 'get-git-version.py')]);
+  const output = spawnSync('python', [path.join(ELECTRON_DIR, 'script', 'get-git-version.py')]);
   if (output.status !== 0) {
     throw new Error(`Failed to get git tag, script quit with ${output.status}: ${output.stdout}`);
   }
