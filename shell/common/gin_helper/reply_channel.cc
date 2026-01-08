@@ -45,12 +45,16 @@ ReplyChannel::~ReplyChannel() {
 void ReplyChannel::SendError(v8::Isolate* isolate,
                              InvokeCallback callback,
                              std::string_view const errmsg) {
+  if (!callback)
+    return;
+
   // If we're shutting down, we don't need to send an event
+  if (!isolate->IsExecutionTerminating())
+    return;
+
   v8::HandleScope scope{isolate};
-  if (!isolate->IsExecutionTerminating()) {
-    SendReply(isolate, std::move(callback),
-              gin::DataObjectBuilder(isolate).Set("error", errmsg).Build());
-  }
+  SendReply(isolate, std::move(callback),
+            gin::DataObjectBuilder(isolate).Set("error", errmsg).Build());
 }
 
 // static
@@ -70,7 +74,7 @@ bool ReplyChannel::SendReply(v8::Isolate* isolate,
 
 bool ReplyChannel::SendReplyImpl(v8::Isolate* isolate,
                                  v8::Local<v8::Value> arg) {
-  return callback_ && SendReply(isolate, std::move(callback_), std::move(arg));
+  return SendReply(isolate, std::move(callback_), std::move(arg));
 }
 
 gin::DeprecatedWrapperInfo ReplyChannel::kWrapperInfo = {

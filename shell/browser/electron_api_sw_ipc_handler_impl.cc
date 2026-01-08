@@ -159,11 +159,9 @@ gin_helper::internal::Event* ElectronApiSWIPCHandlerImpl::MakeIPCEvent(
     bool internal,
     electron::mojom::ElectronApiIPC::InvokeCallback callback) {
   if (!session) {
-    if (callback) {
-      // We must always invoke the callback if present.
-      gin_helper::internal::ReplyChannel::SendError(
-          isolate, std::move(callback), "Session does not exist");
-    }
+    // We must always invoke the callback if present.
+    gin_helper::internal::ReplyChannel::SendError(isolate, std::move(callback),
+                                                  "Session does not exist");
     return {};
   }
 
