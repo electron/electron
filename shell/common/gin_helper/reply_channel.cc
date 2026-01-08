@@ -37,7 +37,8 @@ ReplyChannel::ReplyChannel(InvokeCallback callback)
 
 ReplyChannel::~ReplyChannel() {
   if (callback_)
-    SendError("reply was never sent");
+    SendError(electron::JavascriptEnvironment::GetIsolate(),
+              std::move(callback_), "reply was never sent");
 }
 
 // static
@@ -50,12 +51,6 @@ void ReplyChannel::SendError(v8::Isolate* isolate,
     SendReply(isolate, std::move(callback),
               gin::DataObjectBuilder(isolate).Set("error", errmsg).Build());
   }
-}
-
-void ReplyChannel::SendError(const std::string& msg) {
-  if (callback_)
-    SendError(electron::JavascriptEnvironment::GetIsolate(),
-              std::move(callback_), msg);
 }
 
 // static

@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_REPLY_CHANNEL_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_REPLY_CHANNEL_H_
 
+#include <string_view>
+
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_helper/wrappable.h"
 
@@ -38,7 +40,6 @@ class ReplyChannel : public gin_helper::DeprecatedWrappable<ReplyChannel> {
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
-  void SendError(const std::string& msg);
   static void SendError(v8::Isolate* isolate,
                         InvokeCallback callback,
                         std::string_view errmsg);
