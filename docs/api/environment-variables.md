@@ -186,3 +186,14 @@ the one downloaded by `npm install`. Usage:
 ```sh
 export ELECTRON_OVERRIDE_DIST_PATH=/Users/username/projects/electron/out/Testing
 ```
+
+### `ELECTRON_SKIP_BINARY_DOWNLOAD`
+
+If you want to install your project's dependencies but don't need to use Electron functionality,
+you can set the `ELECTRON_SKIP_BINARY_DOWNLOAD` environment variable to prevent the binary from being
+downloaded. For instance, this feature can be useful in continuous integration environments when
+running unit tests that mock out the `electron` module.
+
+```sh
+ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm install
+```
