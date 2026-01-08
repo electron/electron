@@ -547,7 +547,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 3094700368d25688be9e0fdfcd08f3f3345e7df9..eba89abb54098e14a00fbbf35eba9581d29b8062 100644
+index e11f8c537f193c776b735ff62a7d0b9c92984c0e..580a2b96bae1c2701b9ff146004ad250176bc330 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -34,6 +34,7 @@
@@ -558,7 +558,7 @@ index 3094700368d25688be9e0fdfcd08f3f3345e7df9..eba89abb54098e14a00fbbf35eba9581
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2089,15 +2090,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2100,15 +2101,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -581,7 +581,7 @@ index 3094700368d25688be9e0fdfcd08f3f3345e7df9..eba89abb54098e14a00fbbf35eba9581
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 8ac2508c0fc0102a7011870313b95f80f02b54ad..01b30acf7d98ed925a8285d94837894c916f7651 100644
+index e1a23a7d1090390e2ab418b62cf4d820e25ebc2d..8d3c63e9c4da3fa0a804a62891c8da608a572165 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -342,6 +342,7 @@ source_set("browser") {
@@ -796,7 +796,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 47462e3912051b2b428ecc63fb69b178293abf8f..e8c54bad69b38a341372d4d06c87004d6467ba14 100644
+index 2bab0bd80ffb72e3a25af8b9eab84cf55764e221..ab3bcecccb126e12c9a000eaea4ce21d59157c4f 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -701,6 +701,7 @@ static_library("test_support") {
@@ -816,7 +816,7 @@ index 47462e3912051b2b428ecc63fb69b178293abf8f..e8c54bad69b38a341372d4d06c87004d
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2063,6 +2066,7 @@ test("content_browsertests") {
+@@ -2064,6 +2067,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -824,7 +824,7 @@ index 47462e3912051b2b428ecc63fb69b178293abf8f..e8c54bad69b38a341372d4d06c87004d
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3403,6 +3407,7 @@ test("content_unittests") {
+@@ -3404,6 +3408,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
