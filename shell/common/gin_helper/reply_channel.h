@@ -49,11 +49,11 @@ class ReplyChannel : public gin_helper::DeprecatedWrappable<ReplyChannel> {
   explicit ReplyChannel(InvokeCallback callback);
   ~ReplyChannel() override;
 
-  static bool SendReply(v8::Isolate* isolate,
-                        InvokeCallback callback,
-                        v8::Local<v8::Value> arg);
+  static bool SendReplyImpl(v8::Isolate* isolate,
+                            InvokeCallback callback,
+                            v8::Local<v8::Value> arg);
 
-  bool SendReplyImpl(v8::Isolate* isolate, v8::Local<v8::Value> arg);
+  bool SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg);
 
   InvokeCallback callback_;
 };

@@ -25,7 +25,7 @@ gin::ObjectTemplateBuilder ReplyChannel::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return gin_helper::DeprecatedWrappable<
              ReplyChannel>::GetObjectTemplateBuilder(isolate)
-      .SetMethod("sendReply", &ReplyChannel::SendReplyImpl);
+      .SetMethod("sendReply", &ReplyChannel::SendReply);
 }
 
 const char* ReplyChannel::GetTypeName() {
@@ -53,14 +53,14 @@ void ReplyChannel::SendError(v8::Isolate* isolate,
     return;
 
   v8::HandleScope scope{isolate};
-  SendReply(isolate, std::move(callback),
-            gin::DataObjectBuilder(isolate).Set("error", errmsg).Build());
+  SendReplyImpl(isolate, std::move(callback),
+                gin::DataObjectBuilder(isolate).Set("error", errmsg).Build());
 }
 
 // static
-bool ReplyChannel::SendReply(v8::Isolate* isolate,
-                             InvokeCallback callback,
-                             v8::Local<v8::Value> arg) {
+bool ReplyChannel::SendReplyImpl(v8::Isolate* isolate,
+                                 InvokeCallback callback,
+                                 v8::Local<v8::Value> arg) {
   if (!callback)
     return false;
 
@@ -72,9 +72,8 @@ bool ReplyChannel::SendReply(v8::Isolate* isolate,
   return true;
 }
 
-bool ReplyChannel::SendReplyImpl(v8::Isolate* isolate,
-                                 v8::Local<v8::Value> arg) {
-  return SendReply(isolate, std::move(callback_), std::move(arg));
+bool ReplyChannel::SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg) {
+  return SendReplyImpl(isolate, std::move(callback_), std::move(arg));
 }
 
 gin::DeprecatedWrapperInfo ReplyChannel::kWrapperInfo = {
