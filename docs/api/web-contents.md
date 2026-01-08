@@ -75,6 +75,7 @@ function createWindow () {
   view.webContents.loadURL('https://github.com')
 }
 ```
+
 Note that even for apps that use the `ready-to-show` event, it is still recommended to set a `backgroundColor` to make the app feel more native and prevent a white flash during the initial window creation.
 
 Some examples of valid `backgroundColor` values include:
@@ -90,6 +91,7 @@ win.setBackgroundColor('rgb(255, 145, 145)')
 win.setBackgroundColor('#ff00a3')
 win.setBackgroundColor('blueviolet')
 ```
+
 For more information about these color types, see the valid options in [win.setBackgroundColor](base-window.md#winsetbackgroundcolorbackgroundcolor).
 
 ## Navigation Events
