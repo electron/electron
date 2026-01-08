@@ -142,8 +142,8 @@ gin_helper::internal::Event* ElectronApiIPCHandlerImpl::MakeIPCEvent(
   if (!session) {
     if (callback) {
       // We must always invoke the callback if present.
-      gin_helper::internal::ReplyChannel::Create(isolate, std::move(callback))
-          ->SendError("Session does not exist");
+      gin_helper::internal::ReplyChannel::SendError(
+          isolate, std::move(callback), "Session does not exist");
     }
     return {};
   }
@@ -152,8 +152,8 @@ gin_helper::internal::Event* ElectronApiIPCHandlerImpl::MakeIPCEvent(
   if (!api_web_contents) {
     if (callback) {
       // We must always invoke the callback if present.
-      gin_helper::internal::ReplyChannel::Create(isolate, std::move(callback))
-          ->SendError("WebContents does not exist");
+      gin_helper::internal::ReplyChannel::SendError(
+          isolate, std::move(callback), "WebContents does not exist");
     }
     return {};
   }
@@ -162,8 +162,8 @@ gin_helper::internal::Event* ElectronApiIPCHandlerImpl::MakeIPCEvent(
   if (!api_web_contents->GetWrapper(isolate).ToLocal(&wrapper)) {
     if (callback) {
       // We must always invoke the callback if present.
-      gin_helper::internal::ReplyChannel::Create(isolate, std::move(callback))
-          ->SendError("WebContents was destroyed");
+      gin_helper::internal::ReplyChannel::SendError(
+          isolate, std::move(callback), "WebContents was destroyed");
     }
     return {};
   }
