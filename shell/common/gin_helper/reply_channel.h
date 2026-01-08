@@ -39,12 +39,18 @@ class ReplyChannel : public gin_helper::DeprecatedWrappable<ReplyChannel> {
   const char* GetTypeName() override;
 
   void SendError(const std::string& msg);
+  static void SendError(v8::Isolate* isolate,
+                        InvokeCallback callback,
+                        std::string_view errmsg);
+  static bool SendReply(v8::Isolate* isolate,
+                        InvokeCallback callback,
+                        v8::Local<v8::Value> arg);
 
  private:
   explicit ReplyChannel(InvokeCallback callback);
   ~ReplyChannel() override;
 
-  bool SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg);
+  bool SendReplyImpl(v8::Isolate* isolate, v8::Local<v8::Value> arg);
 
   InvokeCallback callback_;
 };
