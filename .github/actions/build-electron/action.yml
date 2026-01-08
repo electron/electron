@@ -63,7 +63,7 @@ runs:
         if [ "${{ inputs.is-release }}" = "true" ]; then
           NINJA_SUMMARIZE_BUILD=1 e build --target electron:release_build
         else
-          NINJA_SUMMARIZE_BUILD=1 e build --target electron:testing_build
+          NINJA_SUMMARIZE_BUILD=1 e build -d keeprsp --target electron:testing_build
         fi
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
