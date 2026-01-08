@@ -80,10 +80,10 @@ index 39fa45f0a0f9076bd7ac0be6f455dd540a276512..3d0381d463eed73470b28085830f2a23
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index ecd4903de3c23da98bc4b4093fc53b302deb258e..618fc929b5aa8bd5b25c7e76c9fe527be7d48ec9 100644
+index 6b21299c7a2393e4bf730dfb241b324855ff7a9e..6c4ad32adcd509b73708097bd3b97a564de32e1d 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2388,7 +2388,8 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2387,7 +2387,8 @@ bool Browser::IsWebContentsCreationOverridden(
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
      const std::string& frame_name,
@@ -93,7 +93,7 @@ index ecd4903de3c23da98bc4b4093fc53b302deb258e..618fc929b5aa8bd5b25c7e76c9fe527b
    if (HasActorTask(profile(), opener)) {
      // If an ExecutionEngine is acting on the opener, prevent it from creating a
      // new WebContents. We'll instead force the navigation to happen in the same
-@@ -2401,7 +2402,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2400,7 +2401,7 @@ bool Browser::IsWebContentsCreationOverridden(
    return (window_container_type ==
                content::mojom::WindowContainerType::BACKGROUND &&
            ShouldCreateBackgroundContents(source_site_instance, opener_url,
@@ -103,10 +103,10 @@ index ecd4903de3c23da98bc4b4093fc53b302deb258e..618fc929b5aa8bd5b25c7e76c9fe527b
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 909e309279620a3aaaaf2d83eb860ad3a379065a..66faade7c3852076c587ca151025472475c45321 100644
+index 18e99c6f7e73d69204b0da11f33cb06b482eb01f..216cf7f3bec72a25c8ceba34488b0e939b125be7 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -943,8 +943,7 @@ class Browser : public TabStripModelObserver,
+@@ -941,8 +941,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -223,10 +223,10 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index e5e9a1a747f91cb8cdce5b2810713365b321bc9c..cee8f84216beb24f3fe38e8e33d310d839d1b2b8 100644
+index 5ca1d538253fd5d0decbeaa572ae8cf36678ad78..a91722d82e5a323e920e47f059d8eaeaa859548e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5285,8 +5285,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5289,8 +5289,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    if (delegate_ &&
        delegate_->IsWebContentsCreationOverridden(
            opener, source_site_instance, params.window_container_type,

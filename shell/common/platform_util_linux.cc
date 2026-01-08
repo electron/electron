@@ -413,18 +413,16 @@ std::optional<std::string> GetDesktopName() {
   return base::Environment::Create()->GetVar("CHROME_DESKTOP");
 }
 
-std::string GetXdgAppId() {
-  if (std::optional<std::string> desktop_file_name = GetDesktopName()) {
-    constexpr std::string_view kDesktopExtension = ".desktop";
-    if (base::EndsWith(*desktop_file_name, kDesktopExtension,
-                       base::CompareCase::INSENSITIVE_ASCII)) {
-      desktop_file_name->resize(desktop_file_name->size() -
-                                kDesktopExtension.size());
-    }
-    return *desktop_file_name;
-  }
+std::optional<std::string> GetXdgAppId() {
+  auto name = GetDesktopName();
+  if (!name)
+    return {};
 
-  return "";
+  // remove '.desktop' file suffix, if present
+  if (std::string_view suffix = ".desktop"; name->ends_with(suffix))
+    name->resize(std::size(*name) - std::size(suffix));
+
+  return *name;
 }
 
 }  // namespace platform_util

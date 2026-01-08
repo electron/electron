@@ -61,13 +61,16 @@ bool SetLoginItemEnabled(const std::string& type,
 #endif
 
 #if BUILDFLAG(IS_LINUX)
-// Returns a desktop name if available.
-// Unlike libgtkui, does *not* use "chromium-browser.desktop" as a fallback.
+// Returns a desktop name (e.g. 'myapp.desktop') if available.
+// Unlike libgtkui, this does *not* use "chromium-browser.desktop" as a
+// fallback.
+// https://specifications.freedesktop.org/desktop-entry/latest/file-naming.html
 std::optional<std::string> GetDesktopName();
 
-// The XDG application ID must match the name of the desktop entry file without
-// the .desktop extension.
-std::string GetXdgAppId();
+// Returns the app id (e.g. 'myapp') if available.
+// This is equivalent to the basename of `GetDesktopName()`.
+// https://developer.gnome.org/documentation/tutorials/application-id.html
+std::optional<std::string> GetXdgAppId();
 #endif
 
 }  // namespace platform_util
