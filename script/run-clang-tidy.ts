@@ -117,8 +117,9 @@ async function runClangTidy (
   jobs: number = 1
 ): Promise<boolean> {
   const cmd = path.resolve(LLVM_BIN, 'clang-tidy');
-  const args = [`-p=${outDir}`, '--use-color'];
+  const args = [`-p=${outDir}`];
 
+  if (!process.env.CI) args.push('--use-color');
   if (checks) args.push(`--checks=${checks}`);
 
   // Remove any files that aren't in the compilation database to prevent
