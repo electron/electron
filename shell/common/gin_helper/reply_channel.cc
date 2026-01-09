@@ -48,8 +48,9 @@ void ReplyChannel::SendError(v8::Isolate* isolate,
   if (!callback)
     return;
 
-  // If we're shutting down, we don't need to send an event
-  if (isolate->IsExecutionTerminating())
+  // If there's no current context, it means we're shutting down,
+  // so we don't need to send an event.
+  if (isolate->GetCurrentContext().IsEmpty())
     return;
 
   v8::HandleScope scope{isolate};
