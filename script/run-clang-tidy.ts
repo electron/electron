@@ -114,12 +114,14 @@ async function runClangTidy (
   outDir: string,
   filenames: string[],
   checks: string = '',
-  jobs: number = 1
+  jobs: number = 1,
+  fix: boolean = false
 ): Promise<boolean> {
   const cmd = path.resolve(LLVM_BIN, 'clang-tidy');
   const args = [`-p=${outDir}`];
 
   if (!process.env.CI) args.push('--use-color');
+  if (fix) args.push('--fix');
   if (checks) args.push(`--checks=${checks}`);
 
   // Remove any files that aren't in the compilation database to prevent
@@ -210,7 +212,7 @@ function parseCommandLine () {
     if (!arg || arg.startsWith('-')) {
       console.log(
         'Usage: script/run-clang-tidy.ts [-h|--help] [--jobs|-j] ' +
-          '[--checks] --out-dir OUTDIR [file1 file2]'
+          '[--fix] [--checks] --out-dir OUTDIR [file1 file2]'
       );
       process.exit(0);
     }
@@ -219,7 +221,7 @@ function parseCommandLine () {
   };
 
   const opts = minimist(process.argv.slice(2), {
-    boolean: ['help'],
+    boolean: ['fix', 'help'],
     string: ['checks', 'out-dir'],
     default: { jobs: 1 },
     alias: { help: 'h', jobs: 'j' },
@@ -287,7 +289,7 @@ async function main (): Promise<boolean> {
     );
   }
 
-  return runClangTidy(outDir, filenames, opts.checks, opts.jobs);
+  return runClangTidy(outDir, filenames, opts.checks, opts.jobs, opts.fix);
 }
 
 if (require.main === module) {
