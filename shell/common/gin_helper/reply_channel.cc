@@ -49,7 +49,7 @@ void ReplyChannel::SendError(v8::Isolate* isolate,
     return;
 
   // If we're shutting down, we don't need to send an event
-  if (!isolate->IsExecutionTerminating())
+  if (isolate->IsExecutionTerminating())
     return;
 
   v8::HandleScope scope{isolate};
