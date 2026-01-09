@@ -4,32 +4,22 @@
 
 #include "shell/common/gin_helper/reply_channel.h"
 
-#include "base/debug/stack_trace.h"
 #include "gin/data_object_builder.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_helper/handle.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace gin_helper::internal {
 
 // static
 using InvokeCallback = electron::mojom::ElectronApiIPC::InvokeCallback;
-gin_helper::Handle<ReplyChannel> ReplyChannel::Create(v8::Isolate* isolate,
-                                                      InvokeCallback callback) {
-  return gin_helper::CreateHandle(isolate,
-                                  new ReplyChannel(std::move(callback)));
-}
-
-gin::ObjectTemplateBuilder ReplyChannel::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return gin_helper::DeprecatedWrappable<
-             ReplyChannel>::GetObjectTemplateBuilder(isolate)
-      .SetMethod("sendReply", &ReplyChannel::SendReply);
-}
-
-const char* ReplyChannel::GetTypeName() {
-  return "ReplyChannel";
+ReplyChannel* ReplyChannel::Create(v8::Isolate* isolate,
+                                   InvokeCallback callback) {
+  return cppgc::MakeGarbageCollected<ReplyChannel>(
+      isolate->GetCppHeap()->GetAllocationHandle(), std::move(callback));
 }
 
 ReplyChannel::ReplyChannel(InvokeCallback callback)
@@ -77,7 +67,24 @@ bool ReplyChannel::SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg) {
   return SendReplyImpl(isolate, std::move(callback_), std::move(arg));
 }
 
-gin::DeprecatedWrapperInfo ReplyChannel::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+// Wrappable
+
+const gin::WrapperInfo ReplyChannel::kWrapperInfo = {
+    {gin::kEmbedderNativeGin},
+    gin::kElectronReplyChannel};
+
+const gin::WrapperInfo* ReplyChannel::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* ReplyChannel::GetHumanReadableName() const {
+  return "Electron / ReplyChannel";
+}
+
+gin::ObjectTemplateBuilder ReplyChannel::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin::Wrappable<ReplyChannel>::GetObjectTemplateBuilder(isolate)
+      .SetMethod("sendReply", &ReplyChannel::SendReply);
+}
 
 }  // namespace gin_helper::internal
