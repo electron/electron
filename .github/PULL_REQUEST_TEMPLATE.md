@@ -10,7 +10,7 @@ Contributors guide: https://github.com/electron/electron/blob/main/CONTRIBUTING.
 #### Checklist
 <!-- Remove items that do not apply. For completed items, change [ ] to [x]. -->
 
-- [ ] PR description included and stakeholders cc'd
+- [ ] PR description included
 - [ ] `npm test` passes
 - [ ] tests are [changed or added](https://github.com/electron/electron/blob/main/docs/development/testing.md)
 - [ ] relevant API documentation, tutorials, and examples are updated and follow the [documentation style guide](https://github.com/electron/electron/blob/main/docs/development/style-guide.md)
