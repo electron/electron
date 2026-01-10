@@ -133,5 +133,18 @@ describe('View', () => {
       parent.setBounds({ x: 50, y: 60, width: 500, height: 600 });
       expect(child.getBounds()).to.deep.equal({ x: 10, y: 15, width: 25, height: 30 });
     });
+
+    it('can set bounds with animation', (done) => {
+      const v = new View();
+      v.setBounds({ x: 0, y: 0, width: 100, height: 100 }, {
+        animate: {
+          duration: 300
+        }
+      });
+      setTimeout(() => {
+        expect(v.getBounds()).to.deep.equal({ x: 0, y: 0, width: 100, height: 100 });
+        done();
+      }, 350);
+    });
   });
 });
