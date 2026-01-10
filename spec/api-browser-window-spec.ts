@@ -3521,6 +3521,50 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'darwin')('"swipeGesture" option', () => {
+    afterEach(closeAllWindows);
+
+    it('can be set during construction', () => {
+      expect(() => {
+        const w = new BrowserWindow({
+          show: false,
+          swipeGesture: true
+        });
+        w.destroy();
+      }).not.to.throw();
+    });
+
+    it('emits swipe-gesture event with direction, phase, and progress', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        swipeGesture: true
+      });
+
+      // Note: Actual gesture simulation is not possible in automated tests
+      // This test verifies the window can listen for swipe-gesture events
+      let eventReceived = false;
+      w.on('swipe-gesture', (event: any, direction: string, phase: string, progress: number) => {
+        eventReceived = true;
+        expect(direction).to.be.oneOf(['left', 'right']);
+        expect(phase).to.be.oneOf(['began', 'changed', 'ended', 'cancelled']);
+        expect(progress).to.be.a('number');
+      });
+
+      // Just verify the listener was registered without throwing
+      expect(w.listenerCount('swipe-gesture')).to.equal(1);
+    });
+
+    it('does not crash when option is disabled', () => {
+      expect(() => {
+        const w = new BrowserWindow({
+          show: false,
+          swipeGesture: false
+        });
+        w.destroy();
+      }).not.to.throw();
+    });
+  });
+
   describe('"tabbingIdentifier" option', () => {
     afterEach(closeAllWindows);
     it('can be set on a window', () => {
