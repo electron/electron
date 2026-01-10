@@ -8,7 +8,7 @@ respond to the first mouse click in their window, which is desirable for some
 kinds of utility windows. Similarly for `disableAutoHideCursor`.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index f47f40986dc605ec1dbfa811d94851dcfa6912b1..3094700368d25688be9e0fdfcd08f3f3345e7df9 100644
+index 4b9bdb8e9e9ca116703461fa0917673acec144cf..e11f8c537f193c776b735ff62a7d0b9c92984c0e 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -167,6 +167,15 @@ void ExtractUnderlines(NSAttributedString* string,
@@ -38,7 +38,7 @@ index f47f40986dc605ec1dbfa811d94851dcfa6912b1..3094700368d25688be9e0fdfcd08f3f3
    // Enable "click-through" if mouse clicks are accepted in inactive windows.
    return
        [self acceptsMouseEventsOption] > AcceptMouseEvents::kWhenInActiveWindow;
-@@ -933,6 +946,8 @@ - (BOOL)shouldIgnoreMouseEvent:(NSEvent*)theEvent {
+@@ -944,6 +957,8 @@ - (BOOL)shouldIgnoreMouseEvent:(NSEvent*)theEvent {
    // its parent view.
    BOOL hitSelf = NO;
    while (view) {
@@ -47,7 +47,7 @@ index f47f40986dc605ec1dbfa811d94851dcfa6912b1..3094700368d25688be9e0fdfcd08f3f3
      if (view == self)
        hitSelf = YES;
      if ([view isKindOfClass:[self class]] && ![view isEqual:self] &&
-@@ -1267,6 +1282,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
+@@ -1278,6 +1293,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
                                eventType == NSEventTypeKeyDown &&
                                !(modifierFlags & NSEventModifierFlagCommand);
  

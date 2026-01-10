@@ -39,10 +39,10 @@ index bc1bfa1ac381ec94121a264d9dcbae9e02ab5a81..c6fc03ae158b3ce87fd684d765a3f1b0
    // event before sending it to the renderer. See enum for details on return
    // value.
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index a7309941d904b9ab32ff101dfd26be7e09fed1ac..d8c715ade23f078aa2efacc59a97f0f4a8b62312 100644
+index 1c239a617aa3714b0a0d054056403c1e67186baa..72e52e5c1c3c2fd90e73e434283d92697b4030d8 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -1589,6 +1589,10 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(
+@@ -1595,6 +1595,10 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(
    CHECK_GE(mouse_event.GetType(), WebInputEvent::Type::kMouseTypeFirst);
    CHECK_LE(mouse_event.GetType(), WebInputEvent::Type::kMouseTypeLast);
  
