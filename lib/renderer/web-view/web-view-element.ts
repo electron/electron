@@ -62,6 +62,8 @@ const defineWebViewElement = (hooks: WebViewImplHooks) => {
       }
     }
 
+    connectedMoveCallback () {} // Prevents disconnectedCallback() / connectedCallback() to run on DOM move.
+
     attributeChangedCallback (name: string, oldValue: any, newValue: any) {
       const internal = internals.get(this);
       if (internal) {
