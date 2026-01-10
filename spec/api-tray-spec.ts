@@ -45,6 +45,32 @@ describe('tray module', () => {
     it('is an instance of Tray', () => {
       expect(tray).to.be.an.instanceOf(Tray);
     });
+
+    ifdescribe(process.platform === 'darwin')('with layered images', () => {
+      afterEach(() => {
+        if (tray && !tray.isDestroyed()) {
+          tray.destroy();
+        }
+      });
+
+      it('accepts layered image object in constructor', () => {
+        const templateImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo_Template.png'));
+        const colorImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+        expect(() => {
+          tray = new Tray({ layers: [templateImage, colorImage] });
+        }).to.not.throw();
+        expect(tray).to.be.an.instanceOf(Tray);
+      });
+
+      it('accepts layers from paths in constructor', () => {
+        const templatePath = path.join(__dirname, 'fixtures', 'assets', 'logo_Template.png');
+        const colorPath = path.join(__dirname, 'fixtures', 'assets', 'logo.png');
+        expect(() => {
+          tray = new Tray({ layers: [templatePath, colorPath] });
+        }).to.not.throw();
+        expect(tray).to.be.an.instanceOf(Tray);
+      });
+    });
   });
 
   ifdescribe(process.platform === 'darwin')('tray get/set ignoreDoubleClickEvents', () => {
@@ -148,6 +174,32 @@ describe('tray module', () => {
     it('accepts empty image', () => {
       tray.setImage(nativeImage.createEmpty());
     });
+
+    ifdescribe(process.platform === 'darwin')('with layered images', () => {
+      it('accepts layered image object', () => {
+        const templateImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo_Template.png'));
+        const colorImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+        expect(() => {
+          tray.setImage({ layers: [templateImage, colorImage] });
+        }).to.not.throw();
+      });
+
+      it('accepts layers from paths', () => {
+        const templatePath = path.join(__dirname, 'fixtures', 'assets', 'logo_Template.png');
+        const colorPath = path.join(__dirname, 'fixtures', 'assets', 'logo.png');
+        expect(() => {
+          tray.setImage({ layers: [templatePath, colorPath] });
+        }).to.not.throw();
+      });
+
+      it('handles mixed NativeImage and path layers', () => {
+        const templateImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo_Template.png'));
+        const colorPath = path.join(__dirname, 'fixtures', 'assets', 'logo.png');
+        expect(() => {
+          tray.setImage({ layers: [templateImage, colorPath] });
+        }).to.not.throw();
+      });
+    });
   });
 
   describe('tray.setPressedImage(image)', () => {
@@ -160,6 +212,24 @@ describe('tray module', () => {
 
     it('accepts empty image', () => {
       tray.setPressedImage(nativeImage.createEmpty());
+    });
+
+    ifdescribe(process.platform === 'darwin')('with layered images', () => {
+      it('accepts layered image object', () => {
+        const templateImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo_Template.png'));
+        const colorImage = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+        expect(() => {
+          tray.setPressedImage({ layers: [templateImage, colorImage] });
+        }).to.not.throw();
+      });
+
+      it('accepts layers from paths', () => {
+        const templatePath = path.join(__dirname, 'fixtures', 'assets', 'logo_Template.png');
+        const colorPath = path.join(__dirname, 'fixtures', 'assets', 'logo.png');
+        expect(() => {
+          tray.setPressedImage({ layers: [templatePath, colorPath] });
+        }).to.not.throw();
+      });
     });
   });
 
