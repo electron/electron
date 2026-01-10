@@ -56,11 +56,6 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 }
 
 - (void)applicationWillFinishLaunching:(NSNotification*)notify {
-  // Don't add the "Enter Full Screen" menu item automatically.
-  [[NSUserDefaults standardUserDefaults]
-      setBool:NO
-       forKey:@"NSFullScreenMenuItemEverywhere"];
-
   [[[NSWorkspace sharedWorkspace] notificationCenter]
       addObserver:self
          selector:@selector(willPowerOff:)

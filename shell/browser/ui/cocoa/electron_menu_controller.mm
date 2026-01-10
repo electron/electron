@@ -557,6 +557,14 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 
 - (void)menuWillOpen:(NSMenu*)menu {
   isMenuOpen_ = YES;
+
+  // macOS automatically injects a duplicate "Toggle Full Screen" menu item
+  // when we set menu.delegate on submenus. Remove hidden duplicates.
+  for (NSMenuItem* item in menu.itemArray) {
+    if (item.isHidden && item.action == @selector(toggleFullScreenMode:))
+      [menu removeItem:item];
+  }
+
   [self refreshMenuTree:menu];
   if (model_)
     model_->MenuWillShow();
