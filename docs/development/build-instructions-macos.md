@@ -6,7 +6,7 @@ Follow the guidelines below for building **Electron itself** on macOS, for the p
 
 ## Prerequisites
 
-* macOS >= 11.6.0
+* macOS >= 12
 * [Xcode](https://developer.apple.com/technologies/tools/). The exact version
   needed depends on what branch you are building, but the latest version of
   Xcode is generally a good bet for building `main`.
