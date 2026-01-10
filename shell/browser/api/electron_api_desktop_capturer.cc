@@ -14,7 +14,6 @@
 #include "chrome/browser/media/webrtc/desktop_capturer_wrapper.h"
 #include "chrome/browser/media/webrtc/desktop_media_list.h"
 #include "chrome/browser/media/webrtc/thumbnail_capturer_mac.h"
-#include "chrome/browser/media/webrtc/window_icon_util.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_capture.h"
 #include "gin/object_template_builder.h"
@@ -44,7 +43,10 @@
 
 #if BUILDFLAG(IS_MAC)
 #include "base/strings/string_number_conversions.h"
+#include "shell/browser/ui/window_icon_utils.h"  // fixes low-resolution app icon issue
 #include "ui/base/cocoa/permissions_utils.h"
+#else
+#include "chrome/browser/media/webrtc/window_icon_util.h"
 #endif
 
 namespace {
