@@ -59,6 +59,7 @@ const startServer = async () => {
   function waitForCrash (): Promise<CrashInfo> {
     return new Promise(resolve => {
       emitter.once('crash', (crash) => {
+        console.log('crash fired', crash);
         resolve(crash);
       });
     });
@@ -69,6 +70,7 @@ const startServer = async () => {
     const fields = {} as Record<string, any>;
     const files = {} as Record<string, Buffer>;
     busboy.on('file', (fieldname, file) => {
+      console.log('Receiving file for :', fieldname);
       const chunks = [] as Array<Buffer>;
       file.on('data', (chunk) => {
         chunks.push(chunk);
@@ -81,10 +83,12 @@ const startServer = async () => {
       fields[fieldname] = val;
     });
     busboy.on('finish', () => {
+      console.log('On finish');
       // breakpad id must be 16 hex digits.
       const reportId = Math.random().toString(16).split('.')[1].padStart(16, '0');
       res.end(reportId, async () => {
         req.socket.destroy();
+        console.log('Emmitting crash:', fields);
         emitter.emit('crash', { ...fields, ...files });
       });
     });
@@ -138,10 +142,15 @@ function waitForNewFileInDir (dir: string): Promise<string[]> {
 ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashReporter module', function () {
   describe('should send minidump', () => {
     it('when renderer crashes', async () => {
+      console.log('starting server for renderer crash test');
       const { port, waitForCrash } = await startServer();
+      console.log('Done starting server for renderer crash test');
       runCrashApp('renderer', port);
+      console.log('Waiting for renderer crash');
       const crash = await waitForCrash();
+      console.log('Renderer crash received');
       checkCrash('renderer', crash);
+      console.log('Renderer crash checked');
       expect(crash.mainProcessSpecific).to.be.undefined();
     });
 

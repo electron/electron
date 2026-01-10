@@ -9,7 +9,11 @@ elif [ "`uname`" == "Darwin" ]; then
     BUILD_TYPE="mas"
   fi
 elif [ "`uname`" == "Linux" ]; then
-  BUILD_TYPE="linux"
+  if [ "$ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN" == "1" ]; then
+    BUILD_TYPE="win"
+  else
+    BUILD_TYPE="linux"
+  fi
 else
   echo "Unsupported platform"
   exit 1
@@ -48,10 +52,7 @@ cp_if_exist() {
 move_src_dirs_if_exist() {
   mkdir src_artifacts
 
-  dirs=("src/out/Default/gen/node_headers" \
-    "src/out/Default/overlapped-checker" \
-    "src/out/Default/ffmpeg" \
-    "src/out/Default/hunspell_dictionaries" \
+  dirs=("src/out/Default" \
     "src/third_party/electron_node" \
     "src/third_party/nan" \
     "src/cross-arch-snapshots" \
@@ -60,7 +61,6 @@ move_src_dirs_if_exist() {
     "src/buildtools/third_party/libc++abi" \
     "src/third_party/libc++" \
     "src/third_party/libc++abi" \
-    "src/out/Default/obj/buildtools/third_party" \
     "src/v8/tools/builtins-pgo")
 
   # Only do this for linux build type, this folder
