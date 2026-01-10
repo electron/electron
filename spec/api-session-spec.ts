@@ -214,7 +214,7 @@ describe('session module', () => {
 
       expect(setEventCookie.name).to.equal(name);
       expect(setEventCookie.value).to.equal(value);
-      expect(setEventCause).to.equal('explicit');
+      expect(setEventCause).to.equal('inserted');
       expect(setEventRemoved).to.equal(false);
 
       expect(removeEventCookie.name).to.equal(name);

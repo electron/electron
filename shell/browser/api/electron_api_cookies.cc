@@ -80,6 +80,9 @@ struct Converter<net::CookieChangeCause> {
                                    const net::CookieChangeCause& val) {
     switch (val) {
       case net::CookieChangeCause::INSERTED:
+        return gin::StringToV8(isolate, "inserted");
+      case net::CookieChangeCause::INSERTED_NO_CHANGE_OVERWRITE:
+        return gin::StringToV8(isolate, "inserted-no-change-overwrite");
       case net::CookieChangeCause::EXPLICIT:
         return gin::StringToV8(isolate, "explicit");
       case net::CookieChangeCause::OVERWRITE:
@@ -437,8 +440,11 @@ void Cookies::OnCookieChanged(const net::CookieChangeInfo& change) {
   v8::HandleScope scope(isolate);
   Emit("changed", gin::ConvertToV8(isolate, change.cookie),
        gin::ConvertToV8(isolate, change.cause),
-       gin::ConvertToV8(isolate,
-                        change.cause != net::CookieChangeCause::INSERTED));
+       gin::ConvertToV8(
+           isolate,
+           change.cause != net::CookieChangeCause::INSERTED &&
+               change.cause !=
+                   net::CookieChangeCause::INSERTED_NO_CHANGE_OVERWRITE));
 }
 
 // static
