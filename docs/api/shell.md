@@ -29,6 +29,14 @@ Show the given file in a file manager. If possible, select the file.
 
 ### `shell.openPath(path)`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/20682
+    breaking-changes-header: api-changed-shellopenitem-is-now-shellopenpath
+```
+-->
+
 * `path` string
 
 Returns `Promise<string>` - Resolves with a string containing the error message corresponding to the failure if a failure occurred, otherwise "".
@@ -36,6 +44,18 @@ Returns `Promise<string>` - Resolves with a string containing the error message 
 Open the given file in the desktop's default manner.
 
 ### `shell.openExternal(url[, options])`
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/4508
+    description: "Added `activate` option."
+  - pr-url: https://github.com/electron/electron/pull/15065
+    description: "Added `workingDirectory` option."
+  - pr-url: https://github.com/electron/electron/pull/37139
+    description: "Added `logUsage` option."
+```
+-->
 
 * `url` string - Max 2081 characters on Windows.
 * `options` Object (optional)
@@ -49,6 +69,14 @@ Returns `Promise<void>`
 Open the given external protocol URL in the desktop's default manner. (For example, mailto: URLs in the user's default mail agent).
 
 ### `shell.trashItem(path)`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/25114
+    breaking-changes-header: deprecated-shellmoveitemtotrash
+```
+-->
 
 * `path` string - path to the item to be moved to the trash.
 
