@@ -2880,6 +2880,17 @@ void WebContents::DisableDeviceEmulation() {
 }
 
 void WebContents::ToggleDevTools() {
+  if (type_ == Type::kRemote) {
+    // DevTools are webContents of Type::kRemote
+    for (auto contents : GetWebContentsList()) {
+      if (contents->GetDevToolsWebContents() == web_contents()) {
+        contents->ToggleDevTools();
+        return;
+      }
+    }
+    return;
+  }
+
   if (IsDevToolsOpened())
     CloseDevTools();
   else
