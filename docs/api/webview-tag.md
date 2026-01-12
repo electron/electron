@@ -586,8 +586,9 @@ Stops any `findInPage` request for the `webview` with the provided `action`.
     * `vertical` number (optional) - The vertical dpi.
   * `header` string (optional) - string to be printed as page header.
   * `footer` string (optional) - string to be printed as page footer.
-  * `pageSize` string | Size (optional) - Specify page size of the printed document. Can be `A3`,
-  `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height` in microns.
+  * `pageSize` string | Size (optional) - Specify page size of the printed document. Can be `A0`, `A1`, `A2`, `A3`,
+  `A4`, `A5`, `A6`, `Legal`, `Letter`, `Tabloid`, `SYSTEM_DEFAULT`, or an Object containing `height` and `width` in microns.
+  When set to `SYSTEM_DEFAULT`, the printer will use its native default page size from the driver settings.
 
 Returns `Promise<void>`
 
