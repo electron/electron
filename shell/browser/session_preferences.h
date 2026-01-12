@@ -30,6 +30,11 @@ class SessionPreferences : public base::SupportsUserData::Data {
 
   bool HasServiceWorkerPreloadScript();
 
+  void SetEnableBlinkFeatures(const std::string& features);
+  void SetDisableBlinkFeatures(const std::string& features);
+  const std::optional<std::string>& GetEnableBlinkFeatures() const;
+  const std::optional<std::string>& GetDisableBlinkFeatures() const;
+
  private:
   SessionPreferences();
 
@@ -37,6 +42,8 @@ class SessionPreferences : public base::SupportsUserData::Data {
   static int kLocatorKey;
 
   std::vector<PreloadScript> preload_scripts_;
+  std::optional<std::string> enable_blink_features_;
+  std::optional<std::string> disable_blink_features_;
 };
 
 }  // namespace electron

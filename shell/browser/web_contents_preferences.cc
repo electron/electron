@@ -222,12 +222,22 @@ void WebContentsPreferences::SetFromDictionary(
   web_preferences.Get("ignoreMenuShortcuts", &ignore_menu_shortcuts_);
   std::string enable_blink_features;
   if (web_preferences.Get(options::kEnableBlinkFeatures,
-                          &enable_blink_features))
+                          &enable_blink_features)) {
     enable_blink_features_ = enable_blink_features;
+    if (auto* session_prefs = SessionPreferences::FromBrowserContext(
+            web_contents_->GetBrowserContext())) {
+      session_prefs->SetEnableBlinkFeatures(enable_blink_features);
+    }
+  }
   std::string disable_blink_features;
   if (web_preferences.Get(options::kDisableBlinkFeatures,
-                          &disable_blink_features))
+                          &disable_blink_features)) {
     disable_blink_features_ = disable_blink_features;
+    if (auto* session_prefs = SessionPreferences::FromBrowserContext(
+            web_contents_->GetBrowserContext())) {
+      session_prefs->SetDisableBlinkFeatures(disable_blink_features);
+    }
+  }
 
   base::FilePath::StringType preload_path;
   if (web_preferences.Get(options::kPreloadScript, &preload_path)) {
