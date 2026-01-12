@@ -428,10 +428,21 @@ void BrowserProcessImpl::CreateOSCryptAsync() {
       providers;
 
 #if BUILDFLAG(IS_WIN)
-  // On Windows, use DPAPI key provider for cookie encryption.
-  providers.emplace_back(
+  // The DPAPI key provider requires OSCrypt::Init to have already been called
+  // to initialize the key storage. This happens in
+  // ChromeBrowserMainPartsWin::PreCreateMainMessageLoop.
+  providers.emplace_back(std::make_pair(
       /*precedence=*/10u,
-      std::make_unique<os_crypt_async::DPAPIKeyProvider>(local_state()));
+      std::make_unique<os_crypt_async::DPAPIKeyProvider>(local_state())));
+
+  providers.emplace_back(std::make_pair(
+      // Note: 15 is chosen to be higher than the 10 precedence above for
+      // DPAPI. This ensures that when the the provider is enabled for
+      // encryption, the App-Bound encryption key is used and not the DPAPI
+      // one.
+      /*precedence=*/15u,
+      std::make_unique<os_crypt_async::AppBoundEncryptionProviderWin>(
+          local_state())));
 #endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_LINUX)
@@ -440,16 +451,29 @@ void BrowserProcessImpl::CreateOSCryptAsync() {
   base::CommandLine* cmd_line = base::CommandLine::ForCurrentProcess();
   const auto password_store =
       cmd_line->GetSwitchValueASCII(password_manager::kPasswordStore);
-
+  if (password_store != "basic") {
+    if (base::FeatureList::IsEnabled(features::kDbusSecretPortal)) {
+      // Use a higher priority than the FreedesktopSecretKeyProvider.
+      providers.emplace_back(
+          /*precedence=*/15u,
+          std::make_unique<os_crypt_async::SecretPortalKeyProvider>(
+              local_state(),
+              base::FeatureList::IsEnabled(
+                  features::kSecretPortalKeyProviderUseForEncryption)));
+    }
+  }
   providers.emplace_back(
       /*precedence=*/10u,
       std::make_unique<os_crypt_async::FreedesktopSecretKeyProvider>(
-          password_store, "Electron", nullptr));
+          password_store, l10n_util::GetStringUTF8(IDS_PRODUCT_NAME), nullptr));
+#endif  // BUILDFLAG(IS_LINUX)
 
-  // PosixKeyProvider as fallback with lower precedence.
+#if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
+  // On other POSIX systems, this is the only key provider. On Linux, it is used
+  // as a fallback.
   providers.emplace_back(
       /*precedence=*/5u, std::make_unique<os_crypt_async::PosixKeyProvider>());
-#endif  // BUILDFLAG(IS_LINUX)
+#endif  // BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC) && !BUILDFLAG(IS_LINUX)
 
 #if BUILDFLAG(IS_MAC)
   // On macOS, use KeychainKeyProvider for cookie encryption.
