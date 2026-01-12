@@ -3196,16 +3196,24 @@ void WebContents::Print(gin::Arguments* const args) {
   if (options.Get("mediaSize", &media_size)) {
     settings.Set(printing::kSettingMediaSize, std::move(media_size));
   } else {
-    // Default to A4 paper size (210mm x 297mm)
-    settings.Set(printing::kSettingMediaSize,
-                 base::Value::Dict()
-                     .Set(printing::kSettingMediaSizeHeightMicrons, 297000)
-                     .Set(printing::kSettingMediaSizeWidthMicrons, 210000)
-                     .Set(printing::kSettingsImageableAreaLeftMicrons, 0)
-                     .Set(printing::kSettingsImageableAreaTopMicrons, 297000)
-                     .Set(printing::kSettingsImageableAreaRightMicrons, 210000)
-                     .Set(printing::kSettingsImageableAreaBottomMicrons, 0)
-                     .Set(printing::kSettingMediaSizeIsDefault, true));
+    // Check if user explicitly wants to use system defaults
+    const auto use_system_default =
+        options.ValueOrDefault("useSystemDefaultMediaSize", false);
+
+    if (!use_system_default) {
+      // Default to A4 paper size (210mm x 297mm)
+      settings.Set(printing::kSettingMediaSize,
+                   base::Value::Dict()
+                       .Set(printing::kSettingMediaSizeHeightMicrons, 297000)
+                       .Set(printing::kSettingMediaSizeWidthMicrons, 210000)
+                       .Set(printing::kSettingsImageableAreaLeftMicrons, 0)
+                       .Set(printing::kSettingsImageableAreaTopMicrons, 297000)
+                       .Set(printing::kSettingsImageableAreaRightMicrons, 210000)
+                       .Set(printing::kSettingsImageableAreaBottomMicrons, 0)
+                       .Set(printing::kSettingMediaSizeIsDefault, true));
+    }
+    // If use_system_default is true, we intentionally don't set mediaSize,
+    // allowing the printer to use its native driver defaults.
   }
 
   // Set custom dots per inch (dpi)
