@@ -1,19 +1,19 @@
 # BaseWindowConstructorOptions Object
 
-* `width` Integer (optional) - Window's width in pixels. Default is `800`.
-* `height` Integer (optional) - Window's height in pixels. Default is `600`.
-* `x` Integer (optional) - (**required** if y is used) Window's left offset from screen.
+* `width` Integer (optional) - The window's width in pixels. Default is `800`.
+* `height` Integer (optional) - The window's height in pixels. Default is `600`.
+* `x` Integer (optional) - (**required** if y is used) The window's left offset from screen.
   Default is to center the window.
-* `y` Integer (optional) - (**required** if x is used) Window's top offset from screen.
+* `y` Integer (optional) - (**required** if x is used) The window's top offset from screen.
   Default is to center the window.
 * `useContentSize` boolean (optional) - The `width` and `height` would be used as web
   page's size, which means the actual window's size will include window
   frame's size and be slightly larger. Default is `false`.
-* `center` boolean (optional) - Show window in the center of the screen. Default is `false`.
+* `center` boolean (optional) - Show the window in the center of the screen. Default is `false`.
 * `minWidth` Integer (optional) - Window's minimum width. Default is `0`.
 * `minHeight` Integer (optional) - Window's minimum height. Default is `0`.
-* `maxWidth` Integer (optional) - Window's maximum width. Default is no limit.
-* `maxHeight` Integer (optional) - Window's maximum height. Default is no limit.
+* `maxWidth` Integer (optional) - Window's maximum width. Default is unlimited.
+* `maxHeight` Integer (optional) - Window's maximum height. Default is unlimited.
 * `resizable` boolean (optional) - Whether window is resizable. Default is `true`.
 * `movable` boolean (optional) _macOS_ _Windows_ - Whether window is
   movable. This is not implemented on Linux. Default is `true`.
@@ -26,7 +26,7 @@
 * `focusable` boolean (optional) - Whether the window can be focused. Default is
   `true`. On Windows setting `focusable: false` also implies setting
   `skipTaskbar: true`. On Linux setting `focusable: false` makes the window
-  stop interacting with wm, so the window will always stay on top in all
+  stop interacting with the window manager (wm), so the window will always stay on top in all
   workspaces.
 * `alwaysOnTop` boolean (optional) - Whether the window should always stay on top of
   other windows. Default is `false`.
@@ -42,7 +42,8 @@
   Default is `false`.
 * `hiddenInMissionControl` boolean (optional) _macOS_ - Whether window should be hidden when the user toggles into mission control.
 * `kiosk` boolean (optional) - Whether the window is in kiosk mode. Default is `false`.
-* `title` string (optional) - Default window title. Default is `"Electron"`. If the HTML tag `<title>` is defined in the HTML file loaded by `loadURL()`, this property will be ignored.
+* `title` string (optional) - Default window title. Default is `"Electron"`.
+* If the HTML tag `<title>` is defined in the HTML file loaded by `loadURL()`, this property will be ignored.
 * `icon` ([NativeImage](../native-image.md) | string) (optional) - The window icon. On Windows it is
   recommended to use `ICO` icons to get best visual effects, you can also
   leave it undefined so the executable's icon will be used.
