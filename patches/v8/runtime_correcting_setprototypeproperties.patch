@@ -1,0 +1,148 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Raphael Herouart <rherouart@chromium.org>
+Date: Tue, 18 Nov 2025 11:00:26 +0000
+Subject: [runtime] Correcting SetPrototypeProperties:
+
+ - Off by One Error in code generation
+ - Attributes should be preserved when setting properties
+ - SmallVector Memory Leak
+
+Bug: 429332174
+Change-Id: I8a669a98f44777ad54ea7e7bb06fc4f8c552c865
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7160576
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Raphael Herouart <rherouart@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#103784}
+
+diff --git a/src/interpreter/bytecode-generator.cc b/src/interpreter/bytecode-generator.cc
+index bf874d94ec34056d499fea9cbd034f959d506b58..63400abcc7ca0bd5369d566dd37e2ae93d7c3efe 100644
+--- a/src/interpreter/bytecode-generator.cc
++++ b/src/interpreter/bytecode-generator.cc
+@@ -2307,8 +2307,8 @@ void BytecodeGenerator::VisitDeclarations(Declaration::List* declarations) {
+ 
+ bool BytecodeGenerator::IsPrototypeAssignment(
+     Statement* stmt, Variable** var, HoleCheckMode* hole_check_mode,
+-    base::SmallVector<std::pair<const AstRawString*, Expression*>,
+-                      kInitialPropertyCount>& properties,
++    SmallZoneVector<std::pair<const AstRawString*, Expression*>,
++                    kInitialPropertyCount>& properties,
+     std::unordered_set<const AstRawString*>& duplicates) {
+   // The expression Statement is an assignment
+   // ========================================
+@@ -2405,8 +2405,8 @@ bool BytecodeGenerator::IsPrototypeAssignment(
+ }
+ 
+ void BytecodeGenerator::VisitConsecutivePrototypeAssignments(
+-    const base::SmallVector<std::pair<const AstRawString*, Expression*>,
+-                            kInitialPropertyCount>& properties,
++    const SmallZoneVector<std::pair<const AstRawString*, Expression*>,
++                          kInitialPropertyCount>& properties,
+     Variable* var, HoleCheckMode hole_check_mode) {
+   // Create a boiler plate object in the constant pool to be merged into the
+   // proto
+@@ -2444,9 +2444,9 @@ void BytecodeGenerator::VisitStatements(
+       HoleCheckMode hole_check_mode;
+ 
+       int proto_assign_idx = stmt_idx;
+-      base::SmallVector<std::pair<const AstRawString*, Expression*>,
+-                        kInitialPropertyCount>
+-          properties;
++      SmallZoneVector<std::pair<const AstRawString*, Expression*>,
++                      kInitialPropertyCount>
++          properties(zone());
+       std::unordered_set<const AstRawString*> duplicates;
+       while (proto_assign_idx < statements->length() &&
+              IsPrototypeAssignment(statements->at(proto_assign_idx), &var,
+@@ -2457,10 +2457,10 @@ void BytecodeGenerator::VisitStatements(
+       if (proto_assign_idx - stmt_idx > 1) {
+         DCHECK_EQ((size_t)(proto_assign_idx - stmt_idx), properties.size());
+         VisitConsecutivePrototypeAssignments(properties, var, hole_check_mode);
+-        stmt_idx = proto_assign_idx;  // the outer loop should now ignore these
+-                                      // statements
++        stmt_idx = proto_assign_idx - 1;  // the outer loop should now ignore
++                                          // these statements
+         DCHECK(!builder()->RemainderOfBlockIsDead());
+-        if (stmt_idx == statements->length()) break;
++        continue;
+       }
+     }
+ 
+diff --git a/src/interpreter/bytecode-generator.h b/src/interpreter/bytecode-generator.h
+index 41c5cda1ca6dd4017b329e41bad8af3bcc4ee242..5dd136a01848aaf4a182dd31aa05a6ebe845fae8 100644
+--- a/src/interpreter/bytecode-generator.h
++++ b/src/interpreter/bytecode-generator.h
+@@ -73,13 +73,13 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
+ 
+   bool IsPrototypeAssignment(
+       Statement* stmt, Variable** var, HoleCheckMode* hole_check_mode,
+-      base::SmallVector<std::pair<const AstRawString*, Expression*>,
+-                        kInitialPropertyCount>& properties,
++      SmallZoneVector<std::pair<const AstRawString*, Expression*>,
++                      kInitialPropertyCount>& properties,
+       std::unordered_set<const AstRawString*>& duplicate);
+ 
+   void VisitConsecutivePrototypeAssignments(
+-      const base::SmallVector<std::pair<const AstRawString*, Expression*>,
+-                              kInitialPropertyCount>& properties,
++      const SmallZoneVector<std::pair<const AstRawString*, Expression*>,
++                            kInitialPropertyCount>& properties,
+       Variable* var, HoleCheckMode hole_check_mode);
+   // Visiting function for declarations list and statements are overridden.
+   void VisitModuleDeclarations(Declaration::List* declarations);
+diff --git a/src/interpreter/prototype-assignment-sequence-builder.h b/src/interpreter/prototype-assignment-sequence-builder.h
+index 880ed4dcec8399e9b52e6d1924b8773bff1db063..0c29f4f4bf0843877b2bd568866d8e290d4f3b51 100644
+--- a/src/interpreter/prototype-assignment-sequence-builder.h
++++ b/src/interpreter/prototype-assignment-sequence-builder.h
+@@ -16,8 +16,8 @@ class ProtoAssignmentSeqBuilder final : public ZoneObject {
+   static constexpr int kInitialPropertyCount = 64;
+ 
+   explicit ProtoAssignmentSeqBuilder(
+-      const base::SmallVector<std::pair<const AstRawString*, Expression*>,
+-                              kInitialPropertyCount>& properties)
++      const SmallZoneVector<std::pair<const AstRawString*, Expression*>,
++                            kInitialPropertyCount>& properties)
+       : properties_(std::move(properties)) {}
+ 
+   ~ProtoAssignmentSeqBuilder() = default;
+@@ -54,8 +54,8 @@ class ProtoAssignmentSeqBuilder final : public ZoneObject {
+                                                   Handle<Script> script);
+ 
+  private:
+-  base::SmallVector<std::pair<const AstRawString*, Expression*>,
+-                    kInitialPropertyCount>
++  SmallZoneVector<std::pair<const AstRawString*, Expression*>,
++                  kInitialPropertyCount>
+       properties_;
+   IndirectHandle<ObjectBoilerplateDescription> boilerplate_description_;
+ };
+diff --git a/src/runtime/runtime-literals.cc b/src/runtime/runtime-literals.cc
+index ded3b466625c99da6f27936ae4e5e0c879baec1b..961b9ee5b7d329bb018300fe2f18bea60e1cd883 100644
+--- a/src/runtime/runtime-literals.cc
++++ b/src/runtime/runtime-literals.cc
+@@ -730,6 +730,13 @@ RUNTIME_FUNCTION(Runtime_SetPrototypeProperties) {
+                                             feedback_cell_array, current_slot));
+   }
+ 
++  if (IsSpecialReceiverMap(js_proto->map())) {
++    RETURN_RESULT_OR_FAILURE(
++        isolate, SetPrototypePropertiesSlow(isolate, context, obj,
++                                            object_boilerplate_description,
++                                            feedback_cell_array, current_slot));
++  }
++
+   bool is_default_func_prototype =
+       IsDefaultFunctionPrototype(js_proto, isolate);
+ 
+@@ -782,7 +789,11 @@ RUNTIME_FUNCTION(Runtime_SetPrototypeProperties) {
+       value = InstantiateIfSharedFunctionInfo(
+           context, isolate, value, feedback_cell_array, current_slot);
+       DirectHandle<String> name = Cast<String>(key);
+-      JSObject::SetOwnPropertyIgnoreAttributes(js_proto, name, value, NONE)
++      Maybe<PropertyAttributes> maybe = JSReceiver::GetPropertyAttributes(&it);
++      PropertyAttributes attr = maybe.ToChecked();
++      if (attr == ABSENT) attr = NONE;
++
++      JSObject::SetOwnPropertyIgnoreAttributes(js_proto, name, value, attr)
+           .Check();
+ 
+       result = value;
