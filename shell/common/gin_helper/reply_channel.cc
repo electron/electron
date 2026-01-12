@@ -50,10 +50,10 @@ void ReplyChannel::SendError(v8::Isolate* isolate,
 
   // If there's no current context, it means we're shutting down,
   // so we don't need to send an event.
+  v8::HandleScope scope{isolate};
   if (isolate->GetCurrentContext().IsEmpty())
     return;
 
-  v8::HandleScope scope{isolate};
   SendReplyImpl(isolate, std::move(callback),
                 gin::DataObjectBuilder(isolate).Set("error", errmsg).Build());
 }
