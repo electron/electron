@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 53523724fbc83b3aa0a665bc4755a758b15f35ed..f9f49954ce842e0a1e022be442a507ad15c2eb1d 100644
+index c1901c54ef5a66afe6b429c153630a2c663ec88e..d1606201c87ea316e417df2ff5eb1fe769c80237 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -169,6 +169,11 @@
@@ -160,10 +160,10 @@ index 53523724fbc83b3aa0a665bc4755a758b15f35ed..f9f49954ce842e0a1e022be442a507ad
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 2872aeef978e1970ca9a3742d968587c106dd707..998436d1c0c00fa26ca8f24e4cdd544fd8a557bb 100644
+index f08d4e8883b04939f43318f76ae88cda8d124f1e..f89abe7cc46edbf79e800d128d5492c063d52761 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -119,6 +119,7 @@ class SimpleUrlPatternMatcher;
+@@ -118,6 +118,7 @@ class SimpleUrlPatternMatcher;
  }
  
  namespace network {
@@ -171,7 +171,7 @@ index 2872aeef978e1970ca9a3742d968587c106dd707..998436d1c0c00fa26ca8f24e4cdd544f
  class CookieManager;
  class HostResolver;
  class MdnsResponderManager;
-@@ -248,6 +249,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -247,6 +248,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CreateURLLoaderFactory(
        mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
        mojom::URLLoaderFactoryParamsPtr params) override;
@@ -180,7 +180,7 @@ index 2872aeef978e1970ca9a3742d968587c106dd707..998436d1c0c00fa26ca8f24e4cdd544f
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -961,6 +964,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -960,6 +963,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
@@ -190,7 +190,7 @@ index 2872aeef978e1970ca9a3742d968587c106dd707..998436d1c0c00fa26ca8f24e4cdd544f
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 457a8d1a2f231354aa901ac15791bf52d1c3c4ef..5f35d2bb79b6ed1c3dc98db6a4441d7cdde74938 100644
+index 501ecc1b7531779a1b7227b8374effbb6191a88a..b689b7ca1998e0855ccba9da747e5c0b39a9893d 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -310,6 +310,17 @@ struct SocketBrokerRemotes {
@@ -211,7 +211,7 @@ index 457a8d1a2f231354aa901ac15791bf52d1c3c4ef..5f35d2bb79b6ed1c3dc98db6a4441d7c
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // The user agent string.
-@@ -961,6 +972,9 @@ interface NetworkContext {
+@@ -958,6 +969,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

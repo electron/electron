@@ -80,10 +80,10 @@ index 39fa45f0a0f9076bd7ac0be6f455dd540a276512..3d0381d463eed73470b28085830f2a23
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 6b21299c7a2393e4bf730dfb241b324855ff7a9e..6c4ad32adcd509b73708097bd3b97a564de32e1d 100644
+index 8d8c63242dc131a9d43c26292b60c09c7367555a..7624504ca5c205b62f4481261e47a9de91d1f0e6 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2387,7 +2387,8 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2386,7 +2386,8 @@ bool Browser::IsWebContentsCreationOverridden(
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
      const std::string& frame_name,
@@ -93,7 +93,7 @@ index 6b21299c7a2393e4bf730dfb241b324855ff7a9e..6c4ad32adcd509b73708097bd3b97a56
    if (HasActorTask(profile(), opener)) {
      // If an ExecutionEngine is acting on the opener, prevent it from creating a
      // new WebContents. We'll instead force the navigation to happen in the same
-@@ -2400,7 +2401,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2399,7 +2400,7 @@ bool Browser::IsWebContentsCreationOverridden(
    return (window_container_type ==
                content::mojom::WindowContainerType::BACKGROUND &&
            ShouldCreateBackgroundContents(source_site_instance, opener_url,
@@ -195,10 +195,10 @@ index c6d4d6aa57edf3a89ae0b1df0bb919fb183e772c..a0ae9f1dfaf4e69e14dc0af52f849e83
    bool DidAddMessageToConsole(content::WebContents* source,
                                blink::mojom::ConsoleMessageLevel log_level,
 diff --git a/components/offline_pages/content/background_loader/background_loader_contents.cc b/components/offline_pages/content/background_loader/background_loader_contents.cc
-index 14f2758f2d71d4d4ba77e4fcb9be40bb878526e0..536db4f8fe9771b60f0359df5c680b298c89cad4 100644
+index 12b38ddee62e3af915083830703a4c2e8e249f00..bf4e8dcbdecd46712c48107cfee554b7bb1e0277 100644
 --- a/components/offline_pages/content/background_loader/background_loader_contents.cc
 +++ b/components/offline_pages/content/background_loader/background_loader_contents.cc
-@@ -86,8 +86,7 @@ bool BackgroundLoaderContents::IsWebContentsCreationOverridden(
+@@ -85,8 +85,7 @@ bool BackgroundLoaderContents::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -223,10 +223,10 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 5ca1d538253fd5d0decbeaa572ae8cf36678ad78..a91722d82e5a323e920e47f059d8eaeaa859548e 100644
+index cce31b48b7d254347914ed30b1feef3646b26a6f..0cf6d5f9664c954d412c7da4e627b101df735dfa 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5289,8 +5289,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5288,8 +5288,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    if (delegate_ &&
        delegate_->IsWebContentsCreationOverridden(
            opener, source_site_instance, params.window_container_type,
@@ -237,10 +237,10 @@ index 5ca1d538253fd5d0decbeaa572ae8cf36678ad78..a91722d82e5a323e920e47f059d8eaea
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 90099a32b5a22edf0fe23915e76f8b391d8036cc..4083a3de23b451fa41cf20d8ebd5f7e9e2b5327a 100644
+index f8f3996cbd00c06bec2962a54488b2d8f1666530..fde24980f7eefd2696a9094bdb97787909955ae9 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
-@@ -161,8 +161,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
+@@ -160,8 +160,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
      SiteInstance* source_site_instance,
      mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
