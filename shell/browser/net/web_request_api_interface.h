@@ -27,6 +27,23 @@ class WebRequestAPI {
                               const std::set<std::string>& set_headers,
                               int error_code)>;
 
+  // AuthRequiredResponse indicates how an OnAuthRequired call is handled.
+  enum class AuthRequiredResponse {
+    // No credentials were provided.
+    AUTH_REQUIRED_RESPONSE_NO_ACTION,
+    // AuthCredentials is filled in with a username and password, which should
+    // be used in a response to the provided auth challenge.
+    AUTH_REQUIRED_RESPONSE_SET_AUTH,
+    // The request should be canceled.
+    AUTH_REQUIRED_RESPONSE_CANCEL_AUTH,
+    // The action will be decided asynchronously. |callback| will be invoked
+    // when the decision is made, and one of the other AuthRequiredResponse
+    // values will be passed in with the same semantics as described above.
+    AUTH_REQUIRED_RESPONSE_IO_PENDING,
+  };
+
+  using AuthCallback = base::OnceCallback<void(AuthRequiredResponse)>;
+
   virtual bool HasListener() const = 0;
   virtual int OnBeforeRequest(extensions::WebRequestInfo* info,
                               const network::ResourceRequest& request,
@@ -36,6 +53,11 @@ class WebRequestAPI {
                                   const network::ResourceRequest& request,
                                   BeforeSendHeadersCallback callback,
                                   net::HttpRequestHeaders* headers) = 0;
+  virtual AuthRequiredResponse OnAuthRequired(
+      const extensions::WebRequestInfo* info,
+      const net::AuthChallengeInfo& auth_info,
+      AuthCallback callback,
+      net::AuthCredentials* credentials) = 0;
   virtual int OnHeadersReceived(
       extensions::WebRequestInfo* info,
       const network::ResourceRequest& request,
