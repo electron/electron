@@ -154,11 +154,31 @@ jobs:
         DEPSHASH=v1-src-cache-$(cat src/electron/.depshash)
         echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
         echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
+    - name: Check Windows Defender Exclusions
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: powershell
+      run: |
+        echo "current dir $pwd"
+        Get-MpPreference
+        $exclusions = Get-MpPreference | Select-Object -ExpandProperty ExclusionPath
+        echo "Got exclusions: $exclusions"      
+        if ($exclusions -notcontains $pwd) {
+          Write-Error "Windows Defender Exclusion for $pwd is not set. Please set it to avoid performance issues."
+          Set-MpPreference -ExclusionPath $pwd
+          $exclusions = Get-MpPreference | Select-Object -ExpandProperty ExclusionPath
+          echo "Got exclusions after setting: $exclusions"
+          if ($exclusions -notcontains $pwd) {
+            Write-Error "Failed to set Windows Defender Exclusion for $pwd. Exiting."
+            exit 1
+          }      
+        } else {
+          Write-Host "Windows Defender Exclusion for $pwd is set."
+        }
     - name: Restore src cache via AZCopy
       if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/restore-cache-azcopy
       with:
-        target-platform: ${{ inputs.target-platform }}
+        target-platform: ${{ inputs.target-platform }}        
     - name: Restore src cache via AKS
       if: ${{ inputs.target-platform == 'linux' }}
       uses: ./src/electron/.github/actions/restore-cache-aks
