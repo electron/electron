@@ -13,6 +13,7 @@
 
 #include "base/base64.h"
 #include "base/containers/span.h"
+#include "base/dcheck_is_on.h"
 #include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram.h"
 #include "base/strings/pattern.h"
@@ -967,6 +968,11 @@ bool InspectableWebContents::DidAddMessageToConsole(
   // into native logs for the managed DevTools WebContents. Can be overridden by
   // enabling verbose logging.
   if (source == managed_devtools_web_contents_.get()) {
+    // In testing builds, let logging through.
+    if (DCHECK_IS_ON()) {
+      return false;
+    }
+
     if (VLOG_IS_ON(1)) {
       // Match Chromium's `content::LogConsoleMessage()` output format, but emit
       // it as a verbose log.
