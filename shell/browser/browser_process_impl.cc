@@ -15,6 +15,7 @@
 #include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_switches.h"
+#include "components/activity_reporter/activity_reporter.h"
 #include "components/os_crypt/async/browser/key_provider.h"
 #include "components/os_crypt/async/browser/os_crypt_async.h"
 #include "components/os_crypt/sync/os_crypt.h"
@@ -64,6 +65,9 @@
 
 BrowserProcessImpl::BrowserProcessImpl() {
   g_browser_process = this;
+
+  device_parental_controls_ =
+      std::make_unique<supervised_user::DeviceParentalControlsNoOpImpl>();
 }
 
 BrowserProcessImpl::~BrowserProcessImpl() {
@@ -268,8 +272,9 @@ BrowserProcessImpl::background_printing_manager() {
   return nullptr;
 }
 
-supervised_user::DeviceParentalControls& device_parental_controls() {
-  return std::make_unique<supervised_user::DeviceParentalControlsNoOpImpl>();
+supervised_user::DeviceParentalControls&
+BrowserProcessImpl::device_parental_controls() {
+  return *device_parental_controls_;
 }
 
 activity_reporter::ActivityReporter* BrowserProcessImpl::activity_reporter() {
