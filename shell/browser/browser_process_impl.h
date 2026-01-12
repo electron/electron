@@ -102,6 +102,8 @@ class BrowserProcessImpl : public BrowserProcess {
   printing::PrintPreviewDialogController* print_preview_dialog_controller()
       override;
   printing::BackgroundPrintingManager* background_printing_manager() override;
+  activity_reporter::ActivityReporter* BrowserProcessImpl::activity_reporter()
+      override;
   IntranetRedirectDetector* intranet_redirect_detector() override;
   DownloadStatusUpdater* download_status_updater() override;
   DownloadRequestLimiter* download_request_limiter() override;
@@ -162,6 +164,8 @@ class BrowserProcessImpl : public BrowserProcess {
   std::unique_ptr<
       network::NetworkQualityTracker::RTTAndThroughputEstimatesObserver>
       network_quality_observer_;
+
+  std::unique_ptr<activity_reporter::ActivityReporter> activity_reporter_;
 
   std::unique_ptr<os_crypt_async::OSCryptAsync> os_crypt_async_;
 };
