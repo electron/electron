@@ -164,8 +164,6 @@ class BrowserProcessImpl : public BrowserProcess {
   std::unique_ptr<
       network::NetworkQualityTracker::RTTAndThroughputEstimatesObserver>
       network_quality_observer_;
-
-  std::unique_ptr<activity_reporter::ActivityReporter> activity_reporter_;
   std::unique_ptr<supervised_user::DeviceParentalControls>
       device_parental_controls_;
 
