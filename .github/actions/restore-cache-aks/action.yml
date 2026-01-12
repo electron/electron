@@ -47,3 +47,6 @@ runs:
 
       echo "Wiping Electron Directory"
       rm -rf src/electron
+
+      mkdir src_cache
+      cp $cache_path src_cache

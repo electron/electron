@@ -220,8 +220,15 @@ runs:
       with:
         name: generated_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./generated_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
+    - name: Upload Src cache ${{ inputs.step-suffix }}
+      if: ${{ inputs.target-arch == 'x64' && inputs.target-platform == 'win' }}
+      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+      with:
+        name: src_cache_${{ env.ARTIFACT_KEY }}
+        path: ./src_cache
     - name: Upload Src Artifacts ${{ inputs.step-suffix }}
       uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
       with:
         name: src_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./src_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
+
