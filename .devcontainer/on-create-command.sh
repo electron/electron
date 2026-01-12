@@ -2,6 +2,8 @@
 
 set -eo pipefail
 
+e auto-update disable
+
 buildtools=$HOME/.electron_build_tools
 gclient_root=/workspaces/gclient
 buildtools_configs=/workspaces/buildtools-configs
@@ -13,6 +15,33 @@ mkdir -p $buildtools_configs
 mkdir -p $gclient_root/.git-cache
 rm -f $buildtools/configs
 ln -s $buildtools_configs $buildtools/configs
+
+# Set the git cookie from chromium.googlesource.com.
+if [[ -z "$CHROMIUM_GIT_COOKIE" ]]; then
+  echo "CHROMIUM_GIT_COOKIE is not set - cannot authenticate."
+  exit 1
+fi
+
+eval 'set +o history' 2>/dev/null || setopt HIST_IGNORE_SPACE 2>/dev/null
+touch ~/.gitcookies
+chmod 0600 ~/.gitcookies
+
+git config --global http.cookiefile ~/.gitcookies
+
+tr , \\t <<__END__ >>~/.gitcookies
+$CHROMIUM_GIT_COOKIE
+__END__
+eval 'set -o history' 2>/dev/null || unsetopt HIST_IGNORE_SPACE 2>/dev/null
+
+RESPONSE=$(curl -s -b ~/.gitcookies https://chromium-review.googlesource.com/a/accounts/self)
+if [[ $RESPONSE == ")]}'"* ]]; then
+  EMAIL=$(echo "$RESPONSE" | tail -c +5 | jq -r '.email // "No email found"')
+  echo "Cookie authentication successful - authenticated as: $EMAIL"
+else
+  echo "Cookie authentication failed - ensure CHROMIUM_GIT_COOKIE is set correctly"
+  echo $RESPONSE
+  exit 1
+fi
 
 # Write the gclient config if it does not already exist
 if [ ! -f $gclient_root/.gclient ]; then
