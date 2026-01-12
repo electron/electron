@@ -100,7 +100,7 @@ index d0e17dc98c8eda0987df373e73a7a8d1a7a71ce6..0c0df7a7002af34094122c93c169e1f6
 +const CSSValue* ElectronCornerSmoothing::ParseSingleValue(
 +    CSSParserTokenStream& stream,
 +    const CSSParserContext& context,
-+    const CSSParserLocalContext&) const {
++    CSSParserLocalContext&) const {
 +  // Try to parse `system-ui` keyword first.
 +  if (auto* ident =
 +          css_parsing_utils::ConsumeIdent<CSSValueID::kSystemUi>(stream)) {
