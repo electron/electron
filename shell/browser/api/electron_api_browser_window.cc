@@ -280,6 +280,7 @@ v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
 }
 
 void BrowserWindow::OnWindowShow() {
+  web_contents()->WasShown();
   BaseWindow::OnWindowShow();
 }
 
