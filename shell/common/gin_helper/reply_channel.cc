@@ -37,30 +37,44 @@ ReplyChannel::ReplyChannel(InvokeCallback callback)
 
 ReplyChannel::~ReplyChannel() {
   if (callback_)
-    SendError("reply was never sent");
+    SendError(electron::JavascriptEnvironment::GetIsolate(),
+              std::move(callback_), "reply was never sent");
 }
 
-void ReplyChannel::SendError(const std::string& msg) {
-  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-  // If there's no current context, it means we're shutting down, so we
-  // don't need to send an event.
-  v8::HandleScope scope(isolate);
-  if (!isolate->GetCurrentContext().IsEmpty()) {
-    auto message = gin::DataObjectBuilder(isolate).Set("error", msg).Build();
-    SendReply(isolate, message);
-  }
+// static
+void ReplyChannel::SendError(v8::Isolate* isolate,
+                             InvokeCallback callback,
+                             std::string_view const errmsg) {
+  if (!callback)
+    return;
+
+  // If there's no current context, it means we're shutting down,
+  // so we don't need to send an event.
+  v8::HandleScope scope{isolate};
+  if (isolate->GetCurrentContext().IsEmpty())
+    return;
+
+  SendReplyImpl(isolate, std::move(callback),
+                gin::DataObjectBuilder(isolate).Set("error", errmsg).Build());
+}
+
+// static
+bool ReplyChannel::SendReplyImpl(v8::Isolate* isolate,
+                                 InvokeCallback callback,
+                                 v8::Local<v8::Value> arg) {
+  if (!callback)
+    return false;
+
+  blink::CloneableMessage msg;
+  if (!gin::ConvertFromV8(isolate, arg, &msg))
+    return false;
+
+  std::move(callback).Run(std::move(msg));
+  return true;
 }
 
 bool ReplyChannel::SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg) {
-  if (!callback_)
-    return false;
-  blink::CloneableMessage message;
-  if (!gin::ConvertFromV8(isolate, arg, &message)) {
-    return false;
-  }
-
-  std::move(callback_).Run(std::move(message));
-  return true;
+  return SendReplyImpl(isolate, std::move(callback_), std::move(arg));
 }
 
 gin::DeprecatedWrapperInfo ReplyChannel::kWrapperInfo = {
