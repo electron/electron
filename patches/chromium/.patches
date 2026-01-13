@@ -146,3 +146,4 @@ viz_fix_visual_artifacts_while_resizing_window_with_dcomp.patch
 fix_os_crypt_async_cookie_encryption.patch
 graphite_handle_out_of_order_recording_errors.patch
 cherry-pick-e045399a1ecb.patch
+move_wayland_pointer_lock_overrides_to_common_code.patch
