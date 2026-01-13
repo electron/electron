@@ -1,0 +1,263 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Fri, 21 Nov 2025 11:52:15 +0100
+Subject: Reduce stack memory consumption in BytecodeGenerator
+
+Using a SmallVector with 64 stack-allocated entries is not great
+for functions that can be used in deep recursions, so this patch
+replaces that with a ZoneVector.
+By allocating any backing store only when it's actually needed,
+and presizing that initial backing store when that happens, this
+should have similar performance while using a lot less stack space,
+allowing us to compile more deeply nested expressions.
+
+For the highly artificial example of a function full of nested
+empty blocks `function f() {{{{{...}}}}}`, this increases the max
+nesting level from around 670 to around 2600. With more aggressive
+inlining in official builds, it can have similar effects on patterns
+that don't even call `VisitStatements()` recursively.
+
+Bug: 429332174
+Change-Id: Id11e15ba0fd9bc39efa68bf83e1181fe0e7274a7
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7180480
+Reviewed-by: Raphael Herouart <rherouart@chromium.org>
+Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#103870}
+
+diff --git a/src/interpreter/bytecode-generator.cc b/src/interpreter/bytecode-generator.cc
+index 63400abcc7ca0bd5369d566dd37e2ae93d7c3efe..a1cf142edc4c0224731ebab988bcbf9272acd57e 100644
+--- a/src/interpreter/bytecode-generator.cc
++++ b/src/interpreter/bytecode-generator.cc
+@@ -2306,10 +2306,7 @@ void BytecodeGenerator::VisitDeclarations(Declaration::List* declarations) {
+ // The subsequent ones must be about the same <var> to return true.
+ 
+ bool BytecodeGenerator::IsPrototypeAssignment(
+-    Statement* stmt, Variable** var, HoleCheckMode* hole_check_mode,
+-    SmallZoneVector<std::pair<const AstRawString*, Expression*>,
+-                    kInitialPropertyCount>& properties,
+-    std::unordered_set<const AstRawString*>& duplicates) {
++    Statement* stmt, std::unique_ptr<PrototypeAssignments>* assignments) {
+   // The expression Statement is an assignment
+   // ========================================
+   ExpressionStatement* expr_stmt = stmt->AsExpressionStatement();
+@@ -2381,41 +2378,46 @@ bool BytecodeGenerator::IsPrototypeAssignment(
+     return false;
+   }
+ 
+-  if (!duplicates.insert(prop_str).second) {
+-    return false;
+-  }
+-
+-  if (*var == nullptr) {
+-    // This is the first proto assignment in the sequence
+-    *var = tmp_var;
+-    *hole_check_mode = proto_prop->obj()->AsVariableProxy()->hole_check_mode();
+-  } else if (*var != tmp_var) {
+-    // This prototype assignment is about another var
+-    return false;
++  if (!*assignments) {
++    // This is the first prototype assignment in the sequence.
++    *assignments = std::make_unique<PrototypeAssignments>(
++        tmp_var, proto_prop->obj()->AsVariableProxy()->hole_check_mode(),
++        ZoneVector<PrototypeAssignment>(zone()));
++    (*assignments)->properties.reserve(8);
++    (*assignments)->duplicates.insert(prop_str);
++  } else {
++    if (!(*assignments)->duplicates.insert(prop_str).second) return false;
++    if ((*assignments)->var != tmp_var) {
++      // This prototype assignment is about another var.
++      return false;
++    }
++    DCHECK_EQ((*assignments)->hole_check_mode,
++              proto_prop->obj()->AsVariableProxy()->hole_check_mode());
+   }
+ 
+-  // Success
+-  properties.push_back(std::make_pair(
+-      prop_str,
+-      value));  // This will be reused as part of an ObjectLiteral
++  // Success!
++  (*assignments)
++      ->properties.push_back(std::make_pair(
++          prop_str,
++          value));  // This will be reused as part of an ObjectLiteral.
+ 
+-  DCHECK_EQ(*hole_check_mode,
+-            proto_prop->obj()->AsVariableProxy()->hole_check_mode());
+   return true;
+ }
+ 
+ void BytecodeGenerator::VisitConsecutivePrototypeAssignments(
+-    const SmallZoneVector<std::pair<const AstRawString*, Expression*>,
+-                          kInitialPropertyCount>& properties,
+-    Variable* var, HoleCheckMode hole_check_mode) {
++    std::unique_ptr<PrototypeAssignments> assignments) {
+   // Create a boiler plate object in the constant pool to be merged into the
+-  // proto
++  // proto.
+   size_t entry = builder()->AllocateDeferredConstantPoolEntry();
+-  proto_assign_seq_.push_back(std::make_pair(
+-      zone()->New<ProtoAssignmentSeqBuilder>(properties), entry));
++  proto_assign_seq_.push_back(
++      std::make_pair(zone()->New<ProtoAssignmentSeqBuilder>(
++                         std::move(assignments->properties)),
++                     entry));
++  const ZoneVector<PrototypeAssignment>* props =
++      proto_assign_seq_.back().first->properties();
+ 
+   int first_idx = -1;
+-  for (auto& p : properties) {
++  for (auto& p : *props) {
+     auto func = p.second->AsFunctionLiteral();
+     if (func) {
+       int idx = GetNewClosureSlot(func);
+@@ -2426,13 +2428,13 @@ void BytecodeGenerator::VisitConsecutivePrototypeAssignments(
+     }
+   }
+ 
+-  // We need it to be valid, even if unused
++  // We need {first_idx} to be valid, even if it's unused.
+   if (first_idx == -1) {
+     first_idx = 0;
+   }
+-  // Load the variable whose prototype is to be set into the Accumulator
+-  BuildVariableLoad(var, hole_check_mode);
+-  // Merge in-place proto-def boilerplate object into Accumulator
++  // Load the variable whose prototype is to be set into the Accumulator.
++  BuildVariableLoad(assignments->var, assignments->hole_check_mode);
++  // Merge in-place proto-def boilerplate object into the Accumulator.
+   builder()->SetPrototypeProperties(entry, first_idx);
+ }
+ 
+@@ -2440,25 +2442,23 @@ void BytecodeGenerator::VisitStatements(
+     const ZonePtrList<Statement>* statements, int start) {
+   for (int stmt_idx = start; stmt_idx < statements->length(); stmt_idx++) {
+     if (v8_flags.proto_assign_seq_opt) {
+-      Variable* var = nullptr;
+-      HoleCheckMode hole_check_mode;
+-
+       int proto_assign_idx = stmt_idx;
+-      SmallZoneVector<std::pair<const AstRawString*, Expression*>,
+-                      kInitialPropertyCount>
+-          properties(zone());
+-      std::unordered_set<const AstRawString*> duplicates;
++      // {VisitStatements} can be used for deep recursions, so this is a
++      // stack-friendly design: statically we only need one {unique_ptr}, and
++      // the actual storage is heap-allocated when it is needed.
++      std::unique_ptr<PrototypeAssignments> assignments;
+       while (proto_assign_idx < statements->length() &&
+-             IsPrototypeAssignment(statements->at(proto_assign_idx), &var,
+-                                   &hole_check_mode, properties, duplicates)) {
++             IsPrototypeAssignment(statements->at(proto_assign_idx),
++                                   &assignments)) {
+         ++proto_assign_idx;
+       }
+ 
+       if (proto_assign_idx - stmt_idx > 1) {
+-        DCHECK_EQ((size_t)(proto_assign_idx - stmt_idx), properties.size());
+-        VisitConsecutivePrototypeAssignments(properties, var, hole_check_mode);
+-        stmt_idx = proto_assign_idx - 1;  // the outer loop should now ignore
+-                                          // these statements
++        DCHECK_EQ(static_cast<size_t>(proto_assign_idx - stmt_idx),
++                  assignments->properties.size());
++        VisitConsecutivePrototypeAssignments(std::move(assignments));
++        stmt_idx = proto_assign_idx - 1;  // The outer loop should now ignore
++                                          // these statements.
+         DCHECK(!builder()->RemainderOfBlockIsDead());
+         continue;
+       }
+diff --git a/src/interpreter/bytecode-generator.h b/src/interpreter/bytecode-generator.h
+index 5dd136a01848aaf4a182dd31aa05a6ebe845fae8..b2e4cf6d40c3cd66042f5f52533b4883ff159418 100644
+--- a/src/interpreter/bytecode-generator.h
++++ b/src/interpreter/bytecode-generator.h
+@@ -30,6 +30,13 @@ class LoopBuilder;
+ class BlockCoverageBuilder;
+ class BytecodeJumpTable;
+ 
++struct PrototypeAssignments {
++  Variable* var;
++  HoleCheckMode hole_check_mode;
++  ZoneVector<PrototypeAssignment> properties;
++  std::unordered_set<const AstRawString*> duplicates;
++};
++
+ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
+  public:
+   enum TypeHint : uint8_t {
+@@ -69,18 +76,12 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
+ #define DECLARE_VISIT(type) void Visit##type(type* node);
+   AST_NODE_LIST(DECLARE_VISIT)
+ #undef DECLARE_VISIT
+-  static constexpr int kInitialPropertyCount = 64;
+ 
+   bool IsPrototypeAssignment(
+-      Statement* stmt, Variable** var, HoleCheckMode* hole_check_mode,
+-      SmallZoneVector<std::pair<const AstRawString*, Expression*>,
+-                      kInitialPropertyCount>& properties,
+-      std::unordered_set<const AstRawString*>& duplicate);
+-
+-  void VisitConsecutivePrototypeAssignments(
+-      const SmallZoneVector<std::pair<const AstRawString*, Expression*>,
+-                            kInitialPropertyCount>& properties,
+-      Variable* var, HoleCheckMode hole_check_mode);
++      Statement* stmt, std::unique_ptr<PrototypeAssignments>* assignments);
++  V8_NOINLINE void VisitConsecutivePrototypeAssignments(
++      std::unique_ptr<PrototypeAssignments> assignments);
++
+   // Visiting function for declarations list and statements are overridden.
+   void VisitModuleDeclarations(Declaration::List* declarations);
+   void VisitGlobalDeclarations(Declaration::List* declarations);
+diff --git a/src/interpreter/prototype-assignment-sequence-builder.cc b/src/interpreter/prototype-assignment-sequence-builder.cc
+index a7c05b6e8555fde41ba6a81523437fd03b16c3e6..fb427c825c2753d3e12f557279a5230985a1ec44 100644
+--- a/src/interpreter/prototype-assignment-sequence-builder.cc
++++ b/src/interpreter/prototype-assignment-sequence-builder.cc
+@@ -25,7 +25,7 @@ void ProtoAssignmentSeqBuilder::BuildBoilerplateDescription(
+ 
+   int position = 0;
+   for (size_t i = 0; i < properties_.size(); i++) {
+-    auto pair = properties_.at(i);
++    PrototypeAssignment pair = properties_.at(i);
+     const AstRawString* key_str = pair.first;
+ 
+     DirectHandle<Object> key = Cast<Object>(key_str->string());
+diff --git a/src/interpreter/prototype-assignment-sequence-builder.h b/src/interpreter/prototype-assignment-sequence-builder.h
+index 0c29f4f4bf0843877b2bd568866d8e290d4f3b51..6583022aa43a30df707325e6b7a14891f97a4ef1 100644
+--- a/src/interpreter/prototype-assignment-sequence-builder.h
++++ b/src/interpreter/prototype-assignment-sequence-builder.h
+@@ -7,17 +7,17 @@
+ 
+ #include "src/ast/ast.h"
+ #include "src/objects/literal-objects.h"
++#include "src/zone/zone-containers.h"
+ 
+ namespace v8 {
+ namespace internal {
+ 
++using PrototypeAssignment = std::pair<const AstRawString*, Expression*>;
++
+ class ProtoAssignmentSeqBuilder final : public ZoneObject {
+  public:
+-  static constexpr int kInitialPropertyCount = 64;
+-
+   explicit ProtoAssignmentSeqBuilder(
+-      const SmallZoneVector<std::pair<const AstRawString*, Expression*>,
+-                            kInitialPropertyCount>& properties)
++      ZoneVector<PrototypeAssignment>&& properties)
+       : properties_(std::move(properties)) {}
+ 
+   ~ProtoAssignmentSeqBuilder() = default;
+@@ -53,10 +53,10 @@ class ProtoAssignmentSeqBuilder final : public ZoneObject {
+                                                   IsolateT* isolate,
+                                                   Handle<Script> script);
+ 
++  const ZoneVector<PrototypeAssignment>* properties() { return &properties_; }
++
+  private:
+-  SmallZoneVector<std::pair<const AstRawString*, Expression*>,
+-                  kInitialPropertyCount>
+-      properties_;
++  ZoneVector<PrototypeAssignment> properties_;
+   IndirectHandle<ObjectBoilerplateDescription> boilerplate_description_;
+ };
+ 

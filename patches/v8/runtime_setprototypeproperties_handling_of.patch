@@ -1,0 +1,153 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Raphael Herouart <rherouart@chromium.org>
+Date: Tue, 21 Oct 2025 14:49:06 +0000
+Subject: [runtime] SetPrototypeProperties handling of
+ Hole/Undefined/Non-Object Values
+
+Bug: 451750214
+Change-Id: Ida29afe0b92ed4a6acff97214005ed3589093294
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7062734
+Commit-Queue: Raphael Herouart <rherouart@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#103261}
+
+diff --git a/src/interpreter/bytecode-generator.cc b/src/interpreter/bytecode-generator.cc
+index 6d444622bacbb71c4754bc055da5cae39ed213b7..bf874d94ec34056d499fea9cbd034f959d506b58 100644
+--- a/src/interpreter/bytecode-generator.cc
++++ b/src/interpreter/bytecode-generator.cc
+@@ -2306,7 +2306,7 @@ void BytecodeGenerator::VisitDeclarations(Declaration::List* declarations) {
+ // The subsequent ones must be about the same <var> to return true.
+ 
+ bool BytecodeGenerator::IsPrototypeAssignment(
+-    Statement* stmt, Variable** var,
++    Statement* stmt, Variable** var, HoleCheckMode* hole_check_mode,
+     base::SmallVector<std::pair<const AstRawString*, Expression*>,
+                       kInitialPropertyCount>& properties,
+     std::unordered_set<const AstRawString*>& duplicates) {
+@@ -2388,6 +2388,7 @@ bool BytecodeGenerator::IsPrototypeAssignment(
+   if (*var == nullptr) {
+     // This is the first proto assignment in the sequence
+     *var = tmp_var;
++    *hole_check_mode = proto_prop->obj()->AsVariableProxy()->hole_check_mode();
+   } else if (*var != tmp_var) {
+     // This prototype assignment is about another var
+     return false;
+@@ -2398,13 +2399,15 @@ bool BytecodeGenerator::IsPrototypeAssignment(
+       prop_str,
+       value));  // This will be reused as part of an ObjectLiteral
+ 
++  DCHECK_EQ(*hole_check_mode,
++            proto_prop->obj()->AsVariableProxy()->hole_check_mode());
+   return true;
+ }
+ 
+ void BytecodeGenerator::VisitConsecutivePrototypeAssignments(
+     const base::SmallVector<std::pair<const AstRawString*, Expression*>,
+                             kInitialPropertyCount>& properties,
+-    Variable* var) {
++    Variable* var, HoleCheckMode hole_check_mode) {
+   // Create a boiler plate object in the constant pool to be merged into the
+   // proto
+   size_t entry = builder()->AllocateDeferredConstantPoolEntry();
+@@ -2428,7 +2431,7 @@ void BytecodeGenerator::VisitConsecutivePrototypeAssignments(
+     first_idx = 0;
+   }
+   // Load the variable whose prototype is to be set into the Accumulator
+-  BuildVariableLoad(var, HoleCheckMode::kElided);
++  BuildVariableLoad(var, hole_check_mode);
+   // Merge in-place proto-def boilerplate object into Accumulator
+   builder()->SetPrototypeProperties(entry, first_idx);
+ }
+@@ -2438,6 +2441,8 @@ void BytecodeGenerator::VisitStatements(
+   for (int stmt_idx = start; stmt_idx < statements->length(); stmt_idx++) {
+     if (v8_flags.proto_assign_seq_opt) {
+       Variable* var = nullptr;
++      HoleCheckMode hole_check_mode;
++
+       int proto_assign_idx = stmt_idx;
+       base::SmallVector<std::pair<const AstRawString*, Expression*>,
+                         kInitialPropertyCount>
+@@ -2445,13 +2450,13 @@ void BytecodeGenerator::VisitStatements(
+       std::unordered_set<const AstRawString*> duplicates;
+       while (proto_assign_idx < statements->length() &&
+              IsPrototypeAssignment(statements->at(proto_assign_idx), &var,
+-                                   properties, duplicates)) {
++                                   &hole_check_mode, properties, duplicates)) {
+         ++proto_assign_idx;
+       }
+ 
+       if (proto_assign_idx - stmt_idx > 1) {
+         DCHECK_EQ((size_t)(proto_assign_idx - stmt_idx), properties.size());
+-        VisitConsecutivePrototypeAssignments(properties, var);
++        VisitConsecutivePrototypeAssignments(properties, var, hole_check_mode);
+         stmt_idx = proto_assign_idx;  // the outer loop should now ignore these
+                                       // statements
+         DCHECK(!builder()->RemainderOfBlockIsDead());
+diff --git a/src/interpreter/bytecode-generator.h b/src/interpreter/bytecode-generator.h
+index b6421819c353febe283069852645a6b85e4c855a..41c5cda1ca6dd4017b329e41bad8af3bcc4ee242 100644
+--- a/src/interpreter/bytecode-generator.h
++++ b/src/interpreter/bytecode-generator.h
+@@ -72,7 +72,7 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
+   static constexpr int kInitialPropertyCount = 64;
+ 
+   bool IsPrototypeAssignment(
+-      Statement* stmt, Variable** var,
++      Statement* stmt, Variable** var, HoleCheckMode* hole_check_mode,
+       base::SmallVector<std::pair<const AstRawString*, Expression*>,
+                         kInitialPropertyCount>& properties,
+       std::unordered_set<const AstRawString*>& duplicate);
+@@ -80,7 +80,7 @@ class BytecodeGenerator final : public AstVisitor<BytecodeGenerator> {
+   void VisitConsecutivePrototypeAssignments(
+       const base::SmallVector<std::pair<const AstRawString*, Expression*>,
+                               kInitialPropertyCount>& properties,
+-      Variable* var);
++      Variable* var, HoleCheckMode hole_check_mode);
+   // Visiting function for declarations list and statements are overridden.
+   void VisitModuleDeclarations(Declaration::List* declarations);
+   void VisitGlobalDeclarations(Declaration::List* declarations);
+diff --git a/src/runtime/runtime-literals.cc b/src/runtime/runtime-literals.cc
+index 83074253314c438eed3006332c63c6bf7dfe4421..ded3b466625c99da6f27936ae4e5e0c879baec1b 100644
+--- a/src/runtime/runtime-literals.cc
++++ b/src/runtime/runtime-literals.cc
+@@ -613,7 +613,7 @@ static DirectHandle<Object> InstantiateIfSharedFunctionInfo(
+ }
+ 
+ static MaybeDirectHandle<Object> SetPrototypePropertiesSlow(
+-    Isolate* isolate, DirectHandle<Context> context, DirectHandle<JSObject> obj,
++    Isolate* isolate, DirectHandle<Context> context, DirectHandle<JSAny> obj,
+     Handle<ObjectBoilerplateDescription> object_boilerplate_description,
+     DirectHandle<ClosureFeedbackCellArray> feedback_cell_array,
+     int& current_slot, int start_index = 0) {
+@@ -684,7 +684,7 @@ RUNTIME_FUNCTION(Runtime_SetPrototypeProperties) {
+   HandleScope scope(isolate);
+   DCHECK_EQ(4, args.length());
+   DirectHandle<Context> context(isolate->context(), isolate);
+-  DirectHandle<JSObject> obj = args.at<JSObject>(0);  // acc JS Object
++  DirectHandle<JSAny> obj = args.at<JSAny>(0);  // acc JS Object
+   Handle<ObjectBoilerplateDescription> object_boilerplate_description =
+       args.at<ObjectBoilerplateDescription>(1);
+   DirectHandle<ClosureFeedbackCellArray> feedback_cell_array =
+diff --git a/test/unittests/interpreter/bytecode_expectations/SetPrototypePropertiesOptimization.golden b/test/unittests/interpreter/bytecode_expectations/SetPrototypePropertiesOptimization.golden
+index 84ebbb755f8a5432c2e8da3d26ceb648bee2cf2d..bb9d697caec6e79810fa757abec4b71ad4cf3f2f 100644
+--- a/test/unittests/interpreter/bytecode_expectations/SetPrototypePropertiesOptimization.golden
++++ b/test/unittests/interpreter/bytecode_expectations/SetPrototypePropertiesOptimization.golden
+@@ -50,15 +50,17 @@ snippet: "
+ "
+ frame size: 0
+ parameter count: 1
+-bytecode array length: 7
++bytecode array length: 9
+ bytecodes: [
+                 B(LdaImmutableCurrentContextSlot), U8(2),
+-  /*  109 E> */ B(SetPrototypeProperties), U8(0), U8(0),
++  /*  109 E> */ B(ThrowReferenceErrorIfHole), U8(1),
++                B(SetPrototypeProperties), U8(0), U8(0),
+                 B(LdaUndefined),
+   /*  245 S> */ B(Return),
+ ]
+ constant pool: [
+   OBJECT_BOILERPLATE_DESCRIPTION_TYPE,
++  INTERNALIZED_ONE_BYTE_STRING_TYPE ["MyClass"],
+ ]
+ handlers: [
+ ]
