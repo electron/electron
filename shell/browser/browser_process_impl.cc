@@ -12,27 +12,11 @@
 #include "base/files/file_path.h"
 #include "base/notimplemented.h"
 #include "base/path_service.h"
-#include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/os_crypt/async/browser/key_provider.h"
 #include "components/os_crypt/async/browser/os_crypt_async.h"
 #include "components/os_crypt/sync/os_crypt.h"
-#include "components/password_manager/core/browser/password_manager_switches.h"
-
-#if BUILDFLAG(IS_WIN)
-#include "components/os_crypt/async/browser/dpapi_key_provider.h"
-#endif
-
-#if BUILDFLAG(IS_LINUX)
-#include "components/os_crypt/async/browser/freedesktop_secret_key_provider.h"
-#include "components/os_crypt/async/browser/posix_key_provider.h"
-#endif
-
-#if BUILDFLAG(IS_MAC)
-#include "components/os_crypt/async/browser/keychain_key_provider.h"
-#endif
-
 #include "components/prefs/in_memory_pref_store.h"
 #include "components/prefs/json_pref_store.h"
 #include "components/prefs/overlay_user_pref_store.h"
@@ -422,45 +406,15 @@ void BrowserProcessImpl::CreateNetworkQualityObserver() {
 }
 
 void BrowserProcessImpl::CreateOSCryptAsync() {
-  // Initialize OSCryptAsync with platform-specific key providers.
-  // See https://chromium-review.googlesource.com/c/chromium/src/+/6996667
-  std::vector<std::pair<size_t, std::unique_ptr<os_crypt_async::KeyProvider>>>
-      providers;
+  // source: https://chromium-review.googlesource.com/c/chromium/src/+/4455776
 
-#if BUILDFLAG(IS_WIN)
-  // On Windows, use DPAPI key provider for cookie encryption.
-  providers.emplace_back(
-      /*precedence=*/10u,
-      std::make_unique<os_crypt_async::DPAPIKeyProvider>(local_state()));
-#endif  // BUILDFLAG(IS_WIN)
-
-#if BUILDFLAG(IS_LINUX)
-  // On Linux, use FreedesktopSecretKeyProvider (for GNOME Keyring, KWallet,
-  // etc.) with PosixKeyProvider as fallback.
-  base::CommandLine* cmd_line = base::CommandLine::ForCurrentProcess();
-  const auto password_store =
-      cmd_line->GetSwitchValueASCII(password_manager::kPasswordStore);
-
-  providers.emplace_back(
-      /*precedence=*/10u,
-      std::make_unique<os_crypt_async::FreedesktopSecretKeyProvider>(
-          password_store, "Electron", nullptr));
-
-  // PosixKeyProvider as fallback with lower precedence.
-  providers.emplace_back(
-      /*precedence=*/5u, std::make_unique<os_crypt_async::PosixKeyProvider>());
-#endif  // BUILDFLAG(IS_LINUX)
-
-#if BUILDFLAG(IS_MAC)
-  // On macOS, use KeychainKeyProvider for cookie encryption.
-  // This is enabled by default in Chrome via features::kUseKeychainKeyProvider.
-  providers.emplace_back(
-      /*precedence=*/10u,
-      std::make_unique<os_crypt_async::KeychainKeyProvider>());
-#endif  // BUILDFLAG(IS_MAC)
-
-  os_crypt_async_ =
-      std::make_unique<os_crypt_async::OSCryptAsync>(std::move(providers));
+  // For now, initialize OSCryptAsync with no providers. This delegates all
+  // encryption operations to OSCrypt.
+  // TODO(crbug.com/1373092): Add providers behind features, as support for them
+  // is added.
+  os_crypt_async_ = std::make_unique<os_crypt_async::OSCryptAsync>(
+      std::vector<
+          std::pair<size_t, std::unique_ptr<os_crypt_async::KeyProvider>>>());
 
   // Trigger async initialization of OSCrypt key providers.
   os_crypt_async_->GetInstance(base::DoNothing());
