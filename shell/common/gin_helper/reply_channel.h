@@ -7,6 +7,8 @@
 
 #include <string_view>
 
+#include "base/memory/raw_ptr.h"
+#include "gin/per_isolate_data.h"
 #include "gin/wrappable.h"
 #include "shell/common/api/api.mojom.h"
 
@@ -28,7 +30,8 @@ namespace gin_helper::internal {
 // This object wraps the InvokeCallback so that if it gets GC'd by V8, we can
 // still call the callback and send an error. Not doing so causes a Mojo DCHECK,
 // since Mojo requires callbacks to be called before they are destroyed.
-class ReplyChannel : public gin::Wrappable<ReplyChannel> {
+class ReplyChannel : public gin::Wrappable<ReplyChannel>,
+                     public gin::PerIsolateData::DisposeObserver {
  public:
   using InvokeCallback = electron::mojom::ElectronApiIPC::InvokeCallback;
 
@@ -36,7 +39,7 @@ class ReplyChannel : public gin::Wrappable<ReplyChannel> {
 
   // Constructor is public only to satisfy cppgc::MakeGarbageCollected.
   // Callers should use Create() instead.
-  explicit ReplyChannel(InvokeCallback callback);
+  explicit ReplyChannel(v8::Isolate* isolate, InvokeCallback callback);
   ~ReplyChannel() override;
 
   // disable copy
@@ -50,6 +53,11 @@ class ReplyChannel : public gin::Wrappable<ReplyChannel> {
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
 
+  // gin::PerIsolateData::DisposeObserver
+  void OnBeforeDispose(v8::Isolate* isolate) override {}
+  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
+  void OnDisposed() override;
+
   // Invokes `callback` (if it's non-null) with `errmsg` as an arg.
   static void SendError(v8::Isolate* isolate,
                         InvokeCallback callback,
@@ -62,7 +70,13 @@ class ReplyChannel : public gin::Wrappable<ReplyChannel> {
 
   bool SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg);
 
+  void EnsureReplySent(v8::Isolate* isolate);
+
+  raw_ptr<v8::Isolate> const isolate_;
+
   InvokeCallback callback_;
+
+  raw_ptr<gin::PerIsolateData> per_isolate_data_ = nullptr;
 };
 
 }  // namespace gin_helper::internal

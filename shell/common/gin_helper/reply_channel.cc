@@ -19,16 +19,49 @@ using InvokeCallback = electron::mojom::ElectronApiIPC::InvokeCallback;
 ReplyChannel* ReplyChannel::Create(v8::Isolate* isolate,
                                    InvokeCallback callback) {
   return cppgc::MakeGarbageCollected<ReplyChannel>(
-      isolate->GetCppHeap()->GetAllocationHandle(), std::move(callback));
+      isolate->GetCppHeap()->GetAllocationHandle(), isolate,
+      std::move(callback));
 }
 
-ReplyChannel::ReplyChannel(InvokeCallback callback)
-    : callback_(std::move(callback)) {}
+ReplyChannel::ReplyChannel(v8::Isolate* isolate, InvokeCallback callback)
+    : isolate_{isolate},
+      callback_{std::move(callback)},
+      per_isolate_data_{gin::PerIsolateData::From(isolate)} {
+  per_isolate_data_->AddDisposeObserver(this);
+}
 
 ReplyChannel::~ReplyChannel() {
-  if (callback_)
-    SendError(electron::JavascriptEnvironment::GetIsolate(),
-              std::move(callback_), "reply was never sent");
+  EnsureReplySent(isolate_);
+}
+
+// Wrappable
+
+const gin::WrapperInfo ReplyChannel::kWrapperInfo = {
+    {gin::kEmbedderNativeGin},
+    gin::kElectronReplyChannel};
+
+const gin::WrapperInfo* ReplyChannel::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* ReplyChannel::GetHumanReadableName() const {
+  return "Electron / ReplyChannel";
+}
+
+gin::ObjectTemplateBuilder ReplyChannel::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin::Wrappable<ReplyChannel>::GetObjectTemplateBuilder(isolate)
+      .SetMethod("sendReply", &ReplyChannel::SendReply);
+}
+
+// gin::PerIsolateData::DisposeObserver
+
+void ReplyChannel::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
+  EnsureReplySent(isolate);
+}
+
+void ReplyChannel::OnDisposed() {
+  per_isolate_data_ = nullptr;
 }
 
 // static
@@ -67,24 +100,16 @@ bool ReplyChannel::SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg) {
   return SendReplyImpl(isolate, std::move(callback_), std::move(arg));
 }
 
-// Wrappable
+void ReplyChannel::EnsureReplySent(v8::Isolate* const isolate) {
+  if (callback_) {
+    DCHECK(isolate);
+    SendError(isolate, std::move(callback_), "reply was never sent");
+  }
 
-const gin::WrapperInfo ReplyChannel::kWrapperInfo = {
-    {gin::kEmbedderNativeGin},
-    gin::kElectronReplyChannel};
-
-const gin::WrapperInfo* ReplyChannel::wrapper_info() const {
-  return &kWrapperInfo;
-}
-
-const char* ReplyChannel::GetHumanReadableName() const {
-  return "Electron / ReplyChannel";
-}
-
-gin::ObjectTemplateBuilder ReplyChannel::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return gin::Wrappable<ReplyChannel>::GetObjectTemplateBuilder(isolate)
-      .SetMethod("sendReply", &ReplyChannel::SendReply);
+  if (per_isolate_data_) {
+    per_isolate_data_->RemoveDisposeObserver(this);
+    per_isolate_data_ = nullptr;
+  }
 }
 
 }  // namespace gin_helper::internal
