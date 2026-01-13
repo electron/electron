@@ -183,6 +183,7 @@
 #include "components/printing/browser/print_manager_utils.h"
 #include "components/printing/browser/print_to_pdf/pdf_print_result.h"
 #include "components/printing/browser/print_to_pdf/pdf_print_utils.h"
+#include "printing/backend/print_backend.h"
 #include "printing/mojom/print.mojom.h"  // nogncheck
 #include "printing/page_range.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
@@ -2991,6 +2992,49 @@ bool WebContents::IsCurrentlyAudible() {
 #if BUILDFLAG(ENABLE_PRINTING)
 namespace {
 
+// Helper function to create media size dictionary from paper dimensions
+base::Value::Dict CreateMediaSizeDict(const gfx::Size& paper_size_um) {
+  return base::Value::Dict()
+      .Set(printing::kSettingMediaSizeWidthMicrons, paper_size_um.width())
+      .Set(printing::kSettingMediaSizeHeightMicrons, paper_size_um.height())
+      .Set(printing::kSettingsImageableAreaLeftMicrons, 0)
+      .Set(printing::kSettingsImageableAreaTopMicrons, paper_size_um.height())
+      .Set(printing::kSettingsImageableAreaRightMicrons, paper_size_um.width())
+      .Set(printing::kSettingsImageableAreaBottomMicrons, 0)
+      .Set(printing::kSettingMediaSizeIsDefault, true);
+}
+
+// Helper function to query printer's default paper size
+std::optional<gfx::Size> GetPrinterDefaultPaperSize(
+    const std::string& printer_name) {
+  if (printer_name.empty()) {
+    return std::nullopt;
+  }
+
+  scoped_refptr<printing::PrintBackend> print_backend =
+      printing::PrintBackend::CreateInstance(
+          g_browser_process->GetApplicationLocale());
+
+  if (!print_backend) {
+    return std::nullopt;
+  }
+
+  printing::PrinterSemanticCapsAndDefaults caps;
+  if (!print_backend->GetPrinterSemanticCapsAndDefaults(printer_name, &caps)) {
+    return std::nullopt;
+  }
+
+  if (caps.default_paper.has_value()) {
+    return caps.default_paper.value().size_um;
+  }
+
+  if (!caps.papers.empty()) {
+    return caps.papers[0].size_um;
+  }
+
+  return std::nullopt;
+}
+
 void OnGetDeviceNameToUse(base::WeakPtr<content::WebContents> web_contents,
                           base::Value::Dict print_settings,
                           printing::CompletionCallback print_callback,
@@ -3196,24 +3240,22 @@ void WebContents::Print(gin::Arguments* const args) {
   if (options.Get("mediaSize", &media_size)) {
     settings.Set(printing::kSettingMediaSize, std::move(media_size));
   } else {
-    // Check if user explicitly wants to use system defaults
     const auto use_system_default =
         options.ValueOrDefault("useSystemDefaultMediaSize", false);
 
-    if (!use_system_default) {
+    if (use_system_default) {
+      // Query printer for default paper size
+      std::string printer_name = base::UTF16ToUTF8(device_name);
+      auto paper_size = GetPrinterDefaultPaperSize(printer_name);
+      
+      // Use printer's default or fallback to A4 (210mm x 297mm)
+      gfx::Size size_um = paper_size.value_or(gfx::Size(210000, 297000));
+      settings.Set(printing::kSettingMediaSize, CreateMediaSizeDict(size_um));
+    } else {
       // Default to A4 paper size (210mm x 297mm)
       settings.Set(printing::kSettingMediaSize,
-                   base::Value::Dict()
-                       .Set(printing::kSettingMediaSizeHeightMicrons, 297000)
-                       .Set(printing::kSettingMediaSizeWidthMicrons, 210000)
-                       .Set(printing::kSettingsImageableAreaLeftMicrons, 0)
-                       .Set(printing::kSettingsImageableAreaTopMicrons, 297000)
-                       .Set(printing::kSettingsImageableAreaRightMicrons, 210000)
-                       .Set(printing::kSettingsImageableAreaBottomMicrons, 0)
-                       .Set(printing::kSettingMediaSizeIsDefault, true));
+                   CreateMediaSizeDict(gfx::Size(210000, 297000)));
     }
-    // If use_system_default is true, we intentionally don't set mediaSize,
-    // allowing the printer to use its native driver defaults.
   }
 
   // Set custom dots per inch (dpi)
