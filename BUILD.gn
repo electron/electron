@@ -464,6 +464,8 @@ source_set("electron_lib") {
     "//components/os_crypt/async/browser",
     "//components/os_crypt/async/browser:key_provider_interface",
     "//components/os_crypt/sync",
+    "//components/password_manager/core/browser:password_switches",
+    "//components/password_manager/core/common:features",
     "//components/pref_registry",
     "//components/prefs",
     "//components/security_state/content",
@@ -594,6 +596,7 @@ source_set("electron_lib") {
     use_libcxx_modules = false
 
     deps += [
+      "//components/os_crypt/async/browser:keychain_key_provider",
       "//components/os_crypt/common:keychain_password_mac",
       "//components/remote_cocoa/app_shim",
       "//components/remote_cocoa/browser",
@@ -656,6 +659,8 @@ source_set("electron_lib") {
       ":libnotify_loader",
       "//build/config/linux/gtk",
       "//components/crash/content/browser",
+      "//components/os_crypt/async/browser:freedesktop_secret_key_provider",
+      "//components/os_crypt/async/browser:posix_key_provider",
       "//dbus",
       "//device/bluetooth",
       "//third_party/crashpad/crashpad/client",
@@ -696,6 +701,7 @@ source_set("electron_lib") {
     deps += [
       "//components/app_launch_prefetch",
       "//components/crash/core/app:crash_export_thunks",
+      "//components/os_crypt/async/browser:dpapi_key_provider",
       "//third_party/libxml:xml_writer",
       "//ui/wm",
       "//ui/wm/public",
