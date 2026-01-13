@@ -28,6 +28,11 @@
 #include "components/os_crypt/async/browser/freedesktop_secret_key_provider.h"
 #include "components/os_crypt/async/browser/posix_key_provider.h"
 #endif
+
+#if BUILDFLAG(IS_MAC)
+#include "components/os_crypt/async/browser/keychain_key_provider.h"
+#endif
+
 #include "components/prefs/in_memory_pref_store.h"
 #include "components/prefs/json_pref_store.h"
 #include "components/prefs/overlay_user_pref_store.h"
@@ -449,6 +454,14 @@ void BrowserProcessImpl::CreateOSCryptAsync() {
   providers.emplace_back(
       /*precedence=*/5u, std::make_unique<os_crypt_async::PosixKeyProvider>());
 #endif  // BUILDFLAG(IS_LINUX)
+
+#if BUILDFLAG(IS_MAC)
+  // On macOS, use KeychainKeyProvider for cookie encryption.
+  // This is enabled by default in Chrome via features::kUseKeychainKeyProvider.
+  providers.emplace_back(
+      /*precedence=*/10u,
+      std::make_unique<os_crypt_async::KeychainKeyProvider>());
+#endif  // BUILDFLAG(IS_MAC)
 
   os_crypt_async_ =
       std::make_unique<os_crypt_async::OSCryptAsync>(std::move(providers));
