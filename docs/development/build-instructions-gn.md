@@ -6,30 +6,73 @@ Follow the guidelines below for building **Electron itself**, for the purposes o
 
 ## Platform prerequisites
 
-Check the build prerequisites for your platform before proceeding
+Check the build prerequisites for your platform before proceeding:
 
 * [macOS](build-instructions-macos.md#prerequisites)
 * [Linux](build-instructions-linux.md#prerequisites)
 * [Windows](build-instructions-windows.md#prerequisites)
 
-## Build Tools
+## Using `@electron/build-tools` (recommended)
 
-[Electron's Build Tools](https://github.com/electron/build-tools) automate much of the setup for compiling Electron from source with different configurations and build targets. If you wish to set up the environment manually, the instructions are listed below.
+[Electron Build Tools](https://github.com/electron/build-tools) automate much of the setup for compiling Electron from source with different configurations and build targets. Most of the [manual setup](#manual-setup) instructions can be replaced by simpler Build Tools commands.
+
+Electron Build Tools can be installed globally from npm:
+
+```sh
+npm install -g @electron/build-tools
+```
+
+Once installed, the `e` command should be globally available in your command line. The `e init`
+command bootstraps a local checkout of Electron:
+
+```sh
+# The 'Hello, World!' of build-tools: get and build `main`
+# Choose the directory where Electron's source and build files will reside.
+# You can specify any path you like; this command defaults to `$PWD/electron`.
+# If you're going to use multiple branches, you may want something like:
+# `--root=~/electron/branch` (e.g. `~/electron-gn/main`)
+e init --root=~/electron --bootstrap testing
+```
+
+The `--bootstrap` flag also runs `e sync` (synchronizes source code branches from
+[`DEPS`](https://github.com/electron/electron/blob/main/DEPS)) and `e build` (compiles Electron).
+
+Once the build is done compiling, you can test it by running `e start` (or by loading it into
+[Electron Fiddle](http://electronjs.org/fiddle)).
+
+Some quick tips on building once your checkout is set up:
+
+* Within the checkout, Chromium code is synced to `/src/` while `electron/electron`
+  repository code lives in `/src/electron/`.
+* Whenever you check out a new branch, make sure to `e sync` before `e build`. This is especially
+  relevant because the Chromium version in [`DEPS`](https://github.com/electron/electron/blob/main/DEPS)
+  changes frequently.
+* When making changes to code in `/src/electron/` in a local branch, you only need to re-run `e build`.
+* When contributing changes in `/src/` outside of `/src/electron/`, you need to do so via Electron's
+[patch system](./patches.md). The `e patches` command can export all relevant patches to
+`/src/electron/patches/` once your code change is ready.
+
+> [!TIP]
+
+> Detailed documentation for all available `e` commands can be found in the
+> repository's [README.md](https://github.com/electron/build-tools/blob/main/README.md).
+
+## Manual setup
 
 Electron uses [GN](https://gn.googlesource.com/gn) for project generation and
-[ninja](https://ninja-build.org/) for building. Project configurations can
-be found in the `.gn` and `.gni` files.
+[siso](https://chromium.googlesource.com/build/+/refs/heads/main/siso/README.md) for building.
+Project configurations can be found in the `.gn` and `.gni` files in the `electron/electron` repo.
 
-## GN Files
+### GN files
 
 The following `gn` files contain the main rules for building Electron:
 
-* `BUILD.gn` defines how Electron itself is built and
-  includes the default configurations for linking with Chromium.
-* `build/args/{testing,release,all}.gn` contain the default build arguments for
-  building Electron.
+* [`BUILD.gn`](https://github.com/electron/electron/blob/main/BUILD.gn) defines how Electron itself
+  is built and includes the default configurations for linking with Chromium.
+* [`build/args/{testing,release,all}.gn`](https://github.com/electron/electron/tree/main/build/args)
+  contain the default build arguments for building Electron.
 
-## GN prerequisites
+### GN prerequisites
 
 You'll need to install [`depot_tools`][depot-tools], the toolset
 used for fetching Chromium and its dependencies.
@@ -56,7 +99,7 @@ $ mkdir -p "${GIT_CACHE_PATH}"
 # This will use about 16G.
 ```
 
-## Getting the code
+### Getting the code
 
 ```sh
 $ mkdir electron && cd electron
@@ -68,7 +111,7 @@ $ gclient sync --with_branch_heads --with_tags
 > Instead of `https://github.com/electron/electron`, you can use your own fork
 > here (something like `https://github.com/<username>/electron`).
 
-### A note on pulling/pushing
+#### A note on pulling/pushing
 
 If you intend to `git pull` or `git push` from the official `electron`
 repository in the future, you now need to update the respective folder's
@@ -96,7 +139,7 @@ $ git pull
 $ gclient sync -f
 ```
 
-## Building
+### Building
 
 **Set the environment variable for chromium build tools**
 
@@ -189,7 +232,7 @@ $ ./out/Testing/electron.exe
 $ ./out/Testing/electron
 ```
 
-### Packaging
+#### Packaging
 
 To package the electron build as a distributable zip file:
 
@@ -197,7 +240,7 @@ To package the electron build as a distributable zip file:
 $ ninja -C out/Release electron:electron_dist_zip
 ```
 
-### Cross-compiling
+#### Cross-compiling
 
 To compile for a platform that isn't the same as the one you're building on,
 set the `target_cpu` and `target_os` GN arguments. For example, to compile an
@@ -223,7 +266,7 @@ and [`target_cpu`][target_cpu values].
 [target_os values]: https://gn.googlesource.com/gn/+/main/docs/reference.md#built_in-predefined-variables-target_os_the-desired-operating-system-for-the-build-possible-values
 [target_cpu values]: https://gn.googlesource.com/gn/+/main/docs/reference.md#built_in-predefined-variables-target_cpu_the-desired-cpu-architecture-for-the-build-possible-values
 
-#### Windows on Arm (experimental)
+#### Windows on Arm
 
 To cross-compile for Windows on Arm, [follow Chromium's guide](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/docs/windows_build_instructions.md#Visual-Studio) to get the necessary dependencies, SDK and libraries, then build with `ELECTRON_BUILDING_WOA=1` in your environment before running `gclient sync`.
 
@@ -241,7 +284,7 @@ gclient sync -f --with_branch_heads --with_tags
 
 Next, run `gn gen` as above with `target_cpu="arm64"`.
 
-## Tests
+### Tests
 
 To run the tests, you'll first need to build the test modules against the
 same version of Node.js that was built as part of the build process. To
@@ -262,7 +305,7 @@ $ npm run test -- \
   --enable-logging -g 'BrowserWindow module'
 ```
 
-## Sharing the git cache between multiple machines
+### Sharing the git cache between multiple machines
 
 It is possible to share the gclient git cache with other machines by exporting it as
 SMB share on linux, but only one process/machine can be using the cache at a
