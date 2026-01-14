@@ -14,55 +14,17 @@
 
 namespace gin_helper::internal {
 
-// static
-using InvokeCallback = electron::mojom::ElectronApiIPC::InvokeCallback;
-ReplyChannel* ReplyChannel::Create(v8::Isolate* isolate,
-                                   InvokeCallback callback) {
-  return cppgc::MakeGarbageCollected<ReplyChannel>(
-      isolate->GetCppHeap()->GetAllocationHandle(), isolate,
-      std::move(callback));
-}
-
-ReplyChannel::ReplyChannel(v8::Isolate* isolate, InvokeCallback callback)
-    : isolate_{isolate},
-      callback_{std::move(callback)},
-      per_isolate_data_{gin::PerIsolateData::From(isolate)} {
-  per_isolate_data_->AddDisposeObserver(this);
-}
-
-ReplyChannel::~ReplyChannel() {
-  EnsureReplySent(isolate_);
-}
-
-// Wrappable
-
 const gin::WrapperInfo ReplyChannel::kWrapperInfo = {
     {gin::kEmbedderNativeGin},
     gin::kElectronReplyChannel};
 
-const gin::WrapperInfo* ReplyChannel::wrapper_info() const {
-  return &kWrapperInfo;
+ReplyChannel::ReplyChannel(v8::Isolate* isolate, InvokeCallback callback)
+    : callback_{std::move(callback)} {
+  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
+  data->AddDisposeObserver(this);
 }
 
-const char* ReplyChannel::GetHumanReadableName() const {
-  return "Electron / ReplyChannel";
-}
-
-gin::ObjectTemplateBuilder ReplyChannel::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return gin::Wrappable<ReplyChannel>::GetObjectTemplateBuilder(isolate)
-      .SetMethod("sendReply", &ReplyChannel::SendReply);
-}
-
-// gin::PerIsolateData::DisposeObserver
-
-void ReplyChannel::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
-  EnsureReplySent(isolate);
-}
-
-void ReplyChannel::OnDisposed() {
-  per_isolate_data_ = nullptr;
-}
+ReplyChannel::~ReplyChannel() = default;
 
 // static
 void ReplyChannel::SendError(v8::Isolate* isolate,
@@ -96,19 +58,50 @@ bool ReplyChannel::SendReplyImpl(v8::Isolate* isolate,
   return true;
 }
 
+// static
+ReplyChannel* ReplyChannel::Create(v8::Isolate* isolate,
+                                   InvokeCallback callback) {
+  return cppgc::MakeGarbageCollected<ReplyChannel>(
+      isolate->GetCppHeap()->GetAllocationHandle(), isolate,
+      std::move(callback));
+}
+
+const gin::WrapperInfo* ReplyChannel::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* ReplyChannel::GetHumanReadableName() const {
+  return "Electron / ReplyChannel";
+}
+
+gin::ObjectTemplateBuilder ReplyChannel::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin::Wrappable<ReplyChannel>::GetObjectTemplateBuilder(isolate)
+      .SetMethod("sendReply", &ReplyChannel::SendReply);
+}
+
 bool ReplyChannel::SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg) {
   return SendReplyImpl(isolate, std::move(callback_), std::move(arg));
 }
 
-void ReplyChannel::EnsureReplySent(v8::Isolate* const isolate) {
+void ReplyChannel::EnsureReplySent() {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
+  data->RemoveDisposeObserver(this);
   if (callback_) {
     DCHECK(isolate);
-    SendError(isolate, std::move(callback_), "reply was never sent");
+    // Create a task since we cannot allocate on V8 heap during GC
+    // which is needed by ReplyChannel::SendError implementation.
+    base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
+        FROM_HERE,
+        base::BindOnce(&ReplyChannel::SendError, isolate, std::move(callback_),
+                       "reply was never sent"));
   }
+}
 
-  if (per_isolate_data_) {
-    per_isolate_data_->RemoveDisposeObserver(this);
-    per_isolate_data_ = nullptr;
+void ReplyChannel::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
+  if (callback_) {
+    SendError(isolate, std::move(callback_), "reply was never sent");
   }
 }
 

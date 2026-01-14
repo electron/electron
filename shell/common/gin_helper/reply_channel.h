@@ -11,6 +11,7 @@
 #include "gin/per_isolate_data.h"
 #include "gin/wrappable.h"
 #include "shell/common/api/api.mojom.h"
+#include "v8/include/cppgc/prefinalizer.h"
 
 namespace gin_helper {
 template <typename T>
@@ -32,6 +33,8 @@ namespace gin_helper::internal {
 // since Mojo requires callbacks to be called before they are destroyed.
 class ReplyChannel : public gin::Wrappable<ReplyChannel>,
                      public gin::PerIsolateData::DisposeObserver {
+  CPPGC_USING_PRE_FINALIZER(ReplyChannel, EnsureReplySent);
+
  public:
   using InvokeCallback = electron::mojom::ElectronApiIPC::InvokeCallback;
 
@@ -56,12 +59,14 @@ class ReplyChannel : public gin::Wrappable<ReplyChannel>,
   // gin::PerIsolateData::DisposeObserver
   void OnBeforeDispose(v8::Isolate* isolate) override {}
   void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
-  void OnDisposed() override;
+  void OnDisposed() override {}
 
   // Invokes `callback` (if it's non-null) with `errmsg` as an arg.
   static void SendError(v8::Isolate* isolate,
                         InvokeCallback callback,
                         std::string_view errmsg);
+
+  void EnsureReplySent();
 
  private:
   static bool SendReplyImpl(v8::Isolate* isolate,
@@ -70,13 +75,7 @@ class ReplyChannel : public gin::Wrappable<ReplyChannel>,
 
   bool SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg);
 
-  void EnsureReplySent(v8::Isolate* isolate);
-
-  raw_ptr<v8::Isolate> const isolate_;
-
   InvokeCallback callback_;
-
-  raw_ptr<gin::PerIsolateData> per_isolate_data_ = nullptr;
 };
 
 }  // namespace gin_helper::internal
