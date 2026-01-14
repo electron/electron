@@ -64,22 +64,15 @@ index c284163fba86ec820af1996571fbd3d092d41d34..5f1921d15bc1d3a68c35990f85e36a0e
    }
  }
 diff --git a/lib/internal/modules/esm/loader.js b/lib/internal/modules/esm/loader.js
-index abfe88c272dcc4aa1e95948bf754f55e1df74ddf..d8e8e6ec291f9eab039e2d31a3566f645bdc0d9c 100644
+index abfe88c272dcc4aa1e95948bf754f55e1df74ddf..7a29cd391fdf050ebda50c5b2f263d27001ced74 100644
 --- a/lib/internal/modules/esm/loader.js
 +++ b/lib/internal/modules/esm/loader.js
-@@ -437,7 +437,15 @@ class ModuleLoader {
+@@ -437,7 +437,7 @@ class ModuleLoader {
      assert(wrap instanceof ModuleWrap, `Translator used for require(${url}) should not be async`);
  
      const cjsModule = wrap[imported_cjs_symbol];
-+<<<<<<< HEAD
+-    if (cjsModule) {
 +    if (cjsModule && translatorKey !== 'electron') {
-+||||||| constructed fake ancestor
-     if (cjsModule) {
-+      assert(translatorKey === 'commonjs-sync');
-+=======
-+    if (cjsModule && translatorKey !== 'electron') {
-+      assert(translatorKey === 'commonjs-sync');
-+>>>>>>> fix: expose the built-in electron module via the ESM loader
        // Check if the ESM initiating import CJS is being required by the same CJS module.
        if (cjsModule?.[kIsExecuting]) {
          const parentFilename = urlToFilename(parentURL);
