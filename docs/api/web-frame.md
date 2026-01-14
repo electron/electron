@@ -197,7 +197,7 @@ dispatch errors of isolated worlds to foreign worlds.
 * `info` Object
   * `securityOrigin` string (optional) - Security origin for the isolated world.
   * `csp` string (optional) - Content Security Policy for the isolated world.
-  * `name` string (optional) - Name for isolated world. Useful in devtools.
+  * `name` string (optional) - Name for isolated world. Useful in DevTools.
 
 Set the security origin, content security policy and name of the isolated world.
 
