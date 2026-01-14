@@ -19,10 +19,7 @@ const gin::WrapperInfo ReplyChannel::kWrapperInfo = {
     gin::kElectronReplyChannel};
 
 ReplyChannel::ReplyChannel(v8::Isolate* isolate, InvokeCallback callback)
-    : callback_{std::move(callback)} {
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  data->AddDisposeObserver(this);
-}
+    : callback_{std::move(callback)} {}
 
 ReplyChannel::~ReplyChannel() = default;
 
@@ -86,8 +83,6 @@ bool ReplyChannel::SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg) {
 
 void ReplyChannel::EnsureReplySent() {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  data->RemoveDisposeObserver(this);
   if (callback_) {
     DCHECK(isolate);
     // Create a task since we cannot allocate on V8 heap during GC
@@ -96,12 +91,6 @@ void ReplyChannel::EnsureReplySent() {
         FROM_HERE,
         base::BindOnce(&ReplyChannel::SendError, isolate, std::move(callback_),
                        "reply was never sent"));
-  }
-}
-
-void ReplyChannel::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
-  if (callback_) {
-    SendError(isolate, std::move(callback_), "reply was never sent");
   }
 }
 

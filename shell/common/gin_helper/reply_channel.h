@@ -7,8 +7,6 @@
 
 #include <string_view>
 
-#include "base/memory/raw_ptr.h"
-#include "gin/per_isolate_data.h"
 #include "gin/wrappable.h"
 #include "shell/common/api/api.mojom.h"
 #include "v8/include/cppgc/prefinalizer.h"
@@ -31,8 +29,7 @@ namespace gin_helper::internal {
 // This object wraps the InvokeCallback so that if it gets GC'd by V8, we can
 // still call the callback and send an error. Not doing so causes a Mojo DCHECK,
 // since Mojo requires callbacks to be called before they are destroyed.
-class ReplyChannel : public gin::Wrappable<ReplyChannel>,
-                     public gin::PerIsolateData::DisposeObserver {
+class ReplyChannel : public gin::Wrappable<ReplyChannel> {
   CPPGC_USING_PRE_FINALIZER(ReplyChannel, EnsureReplySent);
 
  public:
@@ -55,11 +52,6 @@ class ReplyChannel : public gin::Wrappable<ReplyChannel>,
   const char* GetHumanReadableName() const override;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-
-  // gin::PerIsolateData::DisposeObserver
-  void OnBeforeDispose(v8::Isolate* isolate) override {}
-  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
-  void OnDisposed() override {}
 
   // Invokes `callback` (if it's non-null) with `errmsg` as an arg.
   static void SendError(v8::Isolate* isolate,
