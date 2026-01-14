@@ -11,7 +11,7 @@ node-gyp will use the result of `process.config` that reflects the environment
 in which the binary got built.
 
 diff --git a/common.gypi b/common.gypi
-index a3f7415dba63828bec94ac8503420f14e3fea14c..c08f65b0448806c613b27eb91f9dd512adab938c 100644
+index 76a03b9a5458f4afc0ab5768c8a2e90633749fe9..bdadbdaa607b2f668749fc484271de8d126bbd17 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -128,6 +128,7 @@

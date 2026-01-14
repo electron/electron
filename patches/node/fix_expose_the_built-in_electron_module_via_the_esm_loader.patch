@@ -6,7 +6,7 @@ Subject: fix: expose the built-in electron module via the ESM loader
 This allows usage of `import { app } from 'electron'` and `import('electron')` natively in the browser + non-sandboxed renderer
 
 diff --git a/lib/internal/modules/esm/get_format.js b/lib/internal/modules/esm/get_format.js
-index 01584983c16a2ab6eec2fbb01208504f2771148b..6afbbca6c95103f3ecad29485581c94735bac0d3 100644
+index 48ccb97a6244eab4bcfbee92feb9829ca32ad0c5..043d094540845228556b0f9837f48fbaddedfb47 100644
 --- a/lib/internal/modules/esm/get_format.js
 +++ b/lib/internal/modules/esm/get_format.js
 @@ -26,6 +26,7 @@ const protocolHandlers = {
@@ -64,18 +64,25 @@ index c284163fba86ec820af1996571fbd3d092d41d34..5f1921d15bc1d3a68c35990f85e36a0e
    }
  }
 diff --git a/lib/internal/modules/esm/loader.js b/lib/internal/modules/esm/loader.js
-index d536d8215c93abd4b9e1faa125257fe120242e92..20bc3b3b15a01251964e741e16500d5d1fb5994e 100644
+index abfe88c272dcc4aa1e95948bf754f55e1df74ddf..d8e8e6ec291f9eab039e2d31a3566f645bdc0d9c 100644
 --- a/lib/internal/modules/esm/loader.js
 +++ b/lib/internal/modules/esm/loader.js
-@@ -499,7 +499,7 @@ class ModuleLoader {
-     }
+@@ -437,7 +437,15 @@ class ModuleLoader {
+     assert(wrap instanceof ModuleWrap, `Translator used for require(${url}) should not be async`);
  
      const cjsModule = wrap[imported_cjs_symbol];
--    if (cjsModule) {
++<<<<<<< HEAD
 +    if (cjsModule && translatorKey !== 'electron') {
-       assert(translatorKey === 'commonjs-sync');
++||||||| constructed fake ancestor
+     if (cjsModule) {
++      assert(translatorKey === 'commonjs-sync');
++=======
++    if (cjsModule && translatorKey !== 'electron') {
++      assert(translatorKey === 'commonjs-sync');
++>>>>>>> fix: expose the built-in electron module via the ESM loader
        // Check if the ESM initiating import CJS is being required by the same CJS module.
        if (cjsModule?.[kIsExecuting]) {
+         const parentFilename = urlToFilename(parentURL);
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
 index c27ee4c6612c6a7ea0b6355f03563e8724fd0e40..5f03cf14e948d449d303b22ab6710b5508fb83b2 100644
 --- a/lib/internal/modules/esm/resolve.js
@@ -103,10 +110,10 @@ index c27ee4c6612c6a7ea0b6355f03563e8724fd0e40..5f03cf14e948d449d303b22ab6710b55
  
    const packageConfig = packageJsonReader.read(packageJSONPath, { __proto__: null, specifier, base, isESM: true });
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 446349113e13bce042734010fd98af053c8cf31e..52b8b5d9255f782af96aa859dec4ffa6ca82c9d0 100644
+index 1716328c7a98996a8933dbaa00a1c6c3156fb2ff..30f887663bbbd9913eff35f0e6e5b8291adda120 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -220,7 +220,9 @@ function createCJSModuleWrap(url, translateContext, parentURL, loadCJS = loadCJS
+@@ -223,7 +223,9 @@ function createCJSModuleWrap(url, translateContext, parentURL, loadCJS = loadCJS
    const { exportNames, module } = cjsPreparseModuleExports(filename, source, sourceFormat);
    cjsCache.set(url, module);
  
@@ -117,7 +124,7 @@ index 446349113e13bce042734010fd98af053c8cf31e..52b8b5d9255f782af96aa859dec4ffa6
    if (!exportNames.has('default')) {
      ArrayPrototypePush(wrapperNames, 'default');
    }
-@@ -322,6 +324,10 @@ translators.set('require-commonjs', (url, translateContext, parentURL) => {
+@@ -325,6 +327,10 @@ translators.set('require-commonjs', (url, translateContext, parentURL) => {
    return createCJSModuleWrap(url, translateContext, parentURL);
  });
  

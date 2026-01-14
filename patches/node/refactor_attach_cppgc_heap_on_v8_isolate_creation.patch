@@ -89,7 +89,7 @@ index fb2af584a4ae777022c9ef8c20ada1edcbbbefdc..fe6300a5d5d2d6602a84cbd33736c213
  #endif  // defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
  
 diff --git a/src/env.cc b/src/env.cc
-index 53f0bf7fc1e5c85fa9a5a323e998f04310f4f75e..a78817467518245c4a190e870e0eb30658eafcdb 100644
+index fdabe48dd7776c59298f7d972286d0d2ed062752..b5cf58cc953590493beb52abf249e33e486ffc46 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -611,7 +611,7 @@ IsolateData::~IsolateData() {}
@@ -102,7 +102,7 @@ index 53f0bf7fc1e5c85fa9a5a323e998f04310f4f75e..a78817467518245c4a190e870e0eb306
        isolate, object, wrappable);
  }
 diff --git a/src/node.h b/src/node.h
-index 9c624e4ef26c1b06a6c4bca7def245935189ce07..486d941cf0c5c4588604f3808807717aaed2f018 100644
+index 19c34a430d095c06ccf5a988db91311d420a485a..5a6004ca4dfd15a813f3fcc7687958432e4fd5a0 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -78,6 +78,7 @@
@@ -113,7 +113,7 @@ index 9c624e4ef26c1b06a6c4bca7def245935189ce07..486d941cf0c5c4588604f3808807717a
  
  #include "v8-platform.h"  // NOLINT(build/include_order)
  #include "node_version.h"  // NODE_MODULE_VERSION
-@@ -604,7 +605,8 @@ NODE_EXTERN v8::Isolate* NewIsolate(
+@@ -603,7 +604,8 @@ NODE_EXTERN v8::Isolate* NewIsolate(
      struct uv_loop_s* event_loop,
      MultiIsolatePlatform* platform,
      const EmbedderSnapshotData* snapshot_data = nullptr,
@@ -123,7 +123,7 @@ index 9c624e4ef26c1b06a6c4bca7def245935189ce07..486d941cf0c5c4588604f3808807717a
  NODE_EXTERN v8::Isolate* NewIsolate(
      std::shared_ptr<ArrayBufferAllocator> allocator,
      struct uv_loop_s* event_loop,
-@@ -1625,9 +1627,10 @@ void RegisterSignalHandler(int signal,
+@@ -1624,9 +1626,10 @@ void RegisterSignalHandler(int signal,
  // work with only Node.js versions with v8::Object::Wrap() should use that
  // instead.
  NODE_DEPRECATED("Use v8::Object::Wrap()",

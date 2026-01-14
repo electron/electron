@@ -211,7 +211,7 @@ index 97c43afb487b58c0c77bd59b4a6b6d7a13690053..5dfbd564d5bbd22ebf3b529a07b73e85
    return isolate_;
  }
 diff --git a/src/env.h b/src/env.h
-index d34aec43630b3cf53004d8180446d7136b59ceac..b30314d7773742e2332ff47f84bc326151563690 100644
+index 84a650885a79bc5c49efdc26f62ec8db48de775c..ba442937bf0d7831c9a84b5a57211e9f90c81705 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -111,6 +111,19 @@ class ModuleWrap;
@@ -434,26 +434,3 @@ index ef659f1c39f7ee958879bf395377bc99911fc346..225b1465b7c97d972a38968faf6d6850
    auto ab = ArrayBuffer::New(isolate, std::move(bs));
    v8::Local<Uint8Array> u8 = v8::Uint8Array::New(ab, 0, 1);
  
-diff --git a/test/parallel/test-process-env-allowed-flags-are-documented.js b/test/parallel/test-process-env-allowed-flags-are-documented.js
-index 07e38748b07ddd32a6e3caa3c34183387e1cae18..f09bf0940dad2068f0aa5dce783dd422773d4bbb 100644
---- a/test/parallel/test-process-env-allowed-flags-are-documented.js
-+++ b/test/parallel/test-process-env-allowed-flags-are-documented.js
-@@ -49,6 +49,8 @@ if (!hasOpenSSL3) {
-   documented.delete('--openssl-shared-config');
- }
- 
-+const isV8Sandboxed = process.config.variables.v8_enable_sandbox;
-+
- // Filter out options that are conditionally present.
- const conditionalOpts = [
-   {
-@@ -74,6 +76,9 @@ const conditionalOpts = [
-   }, {
-     include: process.features.inspector,
-     filter: (opt) => opt.startsWith('--inspect') || opt === '--debug-port'
-+  }, {
-+    include: !isV8Sandboxed,
-+    filter: (opt) => ['--secure-heap', '--secure-heap-min'].includes(opt)
-   },
- ];
- documented.forEach((opt) => {
