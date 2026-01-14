@@ -1276,7 +1276,16 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
     DeleteObject((HBRUSH)previous_brush);
   InvalidateRect(GetAcceleratedWidget(), nullptr, 1);
 #endif
-  widget()->GetCompositor()->SetBackgroundColor(background_color);
+  SkColor compositor_color = background_color;
+#if BUILDFLAG(IS_LINUX)
+  // Widget background needs to stay transparent for CSD shadow regions.
+  LinuxFrameLayout* frame_layout = GetLinuxFrameLayout();
+  const bool uses_csd =
+      frame_layout && frame_layout->SupportsClientFrameShadow();
+  if (transparent() || uses_csd)
+    compositor_color = SK_ColorTRANSPARENT;
+#endif
+  widget()->GetCompositor()->SetBackgroundColor(compositor_color);
 }
 
 void NativeWindowViews::SetHasShadow(bool has_shadow) {
