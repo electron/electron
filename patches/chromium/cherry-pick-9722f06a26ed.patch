@@ -1,0 +1,135 @@
+From 9722f06a26ed9376ee395a4de8c472268d88a4fb Mon Sep 17 00:00:00 2001
+From: Kelvin Jiang <kelvinjiang@chromium.org>
+Date: Mon, 05 Jan 2026 15:20:51 -0800
+Subject: [PATCH] [M142][Extensions] Do not apply DNR rules for Webview requests
+
+Extensions should not be able to apply DNR rules to requests originating
+from WebViews.
+
+(cherry picked from commit 28628907f24e27fff20d26471482f377047db3c8)
+
+Bug: 463155954
+Change-Id: I50bcf9d32480407cfa76bb0bfe6cab67351c43ec
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7354432
+Reviewed-by: Devlin Cronin <rdevlin.cronin@chromium.org>
+Commit-Queue: Kelvin Jiang <kelvinjiang@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1563452}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7397946
+Auto-Submit: Kelvin Jiang <kelvinjiang@chromium.org>
+Reviewed-by: Emilia Paz <emiliapaz@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7444@{#4339}
+Cr-Branched-From: 29907d3c18078029695f458b42fb8e6fda3e493d-refs/heads/main@{#1522585}
+---
+
+diff --git a/chrome/browser/apps/guest_view/web_view_browsertest.cc b/chrome/browser/apps/guest_view/web_view_browsertest.cc
+index 014d996..b22fb5c2 100644
+--- a/chrome/browser/apps/guest_view/web_view_browsertest.cc
++++ b/chrome/browser/apps/guest_view/web_view_browsertest.cc
+@@ -130,6 +130,8 @@
+ #include "extensions/browser/api/declarative/rules_registry.h"
+ #include "extensions/browser/api/declarative/rules_registry_service.h"
+ #include "extensions/browser/api/declarative/test_rules_registry.h"
++#include "extensions/browser/api/declarative_net_request/action_tracker.h"
++#include "extensions/browser/api/declarative_net_request/rules_monitor_service.h"
+ #include "extensions/browser/api/declarative_webrequest/webrequest_constants.h"
+ #include "extensions/browser/api/extensions_api_client.h"
+ #include "extensions/browser/app_window/native_app_window.h"
+@@ -5802,6 +5804,40 @@
+                          testing::Bool(),
+                          ChromeSignInWebViewTest::DescribeParams);
+ 
++// Check that rules from the DeclarativeNetRequest API are not matched for
++// requests originating from WebViews.
++IN_PROC_BROWSER_TEST_P(ChromeSignInWebViewTest,
++                       DeclarativeNetRequestRulesNotMatched) {
++  SKIP_FOR_MPARCH();  // TODO(crbug.com/40202416): Enable test for MPArch.
++
++  // Load an extension that blocks all main frame requests into
++  // accounts.google.com which is loaded inside the WebView in
++  // chrome://chrome-signin.
++  const auto* extension = LoadExtension(test_data_dir_.AppendASCII(
++      "api_test/declarative_net_request/block_chrome_signin"));
++
++  // Navigate to a WebUI page that contains a WebView which loads
++  // accounts.google.com.
++  const GURL signin_url{"chrome://chrome-signin/?reason=5"};
++  ASSERT_TRUE(ui_test_utils::NavigateToURL(browser(), signin_url));
++  WaitForWebViewInDom();
++
++  // Check that no rules were matched from the extension. Note that the test
++  // would not complete if the accounts.google.com request from the WebView is
++  // blocked.
++  extensions::declarative_net_request::RulesMonitorService*
++      rules_monitor_service =
++          extensions::declarative_net_request::RulesMonitorService::Get(
++              browser()->profile());
++  ASSERT_TRUE(rules_monitor_service);
++  extensions::declarative_net_request::ActionTracker& action_tracker =
++      rules_monitor_service->action_tracker();
++
++  EXPECT_TRUE(action_tracker
++                  .GetMatchedRules(*extension, std::nullopt, base::Time::Min())
++                  .empty());
++}
++
+ #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
+ // This verifies the fix for http://crbug.com/667708.
+ IN_PROC_BROWSER_TEST_P(ChromeSignInWebViewTest,
+diff --git a/chrome/test/data/extensions/api_test/declarative_net_request/block_chrome_signin/manifest.json b/chrome/test/data/extensions/api_test/declarative_net_request/block_chrome_signin/manifest.json
+new file mode 100644
+index 0000000..86a7614
+--- /dev/null
++++ b/chrome/test/data/extensions/api_test/declarative_net_request/block_chrome_signin/manifest.json
+@@ -0,0 +1,16 @@
++{
++  "name": "Block Chrome signin page extension",
++  "declarative_net_request": {
++    "rule_resources": [{
++      "id": "1",
++      "path": "rules.json",
++      "enabled": true
++    }]
++  },
++  "manifest_version": 3,
++  "permissions": [
++    "declarativeNetRequest",
++    "declarativeNetRequestFeedback"
++  ],
++  "version": "1.0"
++}
+diff --git a/chrome/test/data/extensions/api_test/declarative_net_request/block_chrome_signin/rules.json b/chrome/test/data/extensions/api_test/declarative_net_request/block_chrome_signin/rules.json
+new file mode 100644
+index 0000000..7416518
+--- /dev/null
++++ b/chrome/test/data/extensions/api_test/declarative_net_request/block_chrome_signin/rules.json
+@@ -0,0 +1,13 @@
++[
++  {
++    "id": 1,
++    "priority": 999,
++    "action": {
++      "type": "block"
++    },
++    "condition": {
++      "urlFilter": "accounts.google.com",
++      "resourceTypes" : ["main_frame"]
++    }
++  }
++]
+diff --git a/extensions/browser/api/declarative_net_request/ruleset_manager.cc b/extensions/browser/api/declarative_net_request/ruleset_manager.cc
+index cdf8ae2..0529340 100644
+--- a/extensions/browser/api/declarative_net_request/ruleset_manager.cc
++++ b/extensions/browser/api/declarative_net_request/ruleset_manager.cc
+@@ -509,6 +509,12 @@
+     return false;
+   }
+ 
++  // Declarative Net Request rules should not be matched against requests
++  // originating from WebViews.
++  if (request.is_web_view) {
++    return false;
++  }
++
+   return true;
+ }
+ 
