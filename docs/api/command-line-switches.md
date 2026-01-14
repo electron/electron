@@ -313,7 +313,7 @@ By default inspector websocket url is available in stderr and under /json/list e
 
 ### `--experimental-network-inspection`
 
-Enable support for devtools network inspector events, for visibility into requests made by the nodejs `http` and `https` modules.
+Enable support for DevTools network inspector events, for visibility into requests made by the nodejs `http` and `https` modules.
 
 ### `--no-deprecation`
 

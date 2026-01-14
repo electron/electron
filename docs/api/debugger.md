@@ -44,7 +44,7 @@ Returns:
 * `reason` string - Reason for detaching debugger.
 
 Emitted when the debugging session is terminated. This happens either when
-`webContents` is closed or devtools is invoked for the attached `webContents`.
+`webContents` is closed or DevTools is invoked for the attached `webContents`.
 
 #### Event: 'message'
 
