@@ -10,10 +10,10 @@ on Windows.  We should refactor our code so that this patch isn't
 necessary.
 
 diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
-index 14c435521cd5c648de4339411e0ee50d51c8fccc..1adf43e188873679637c9de32bc52368c1797207 100644
+index d06e9d928188d7c301303f260a14f8fd22c80e95..5a9fe035813644e461b6de488c897a401fd030a5 100644
 --- a/testing/variations/fieldtrial_testing_config.json
 +++ b/testing/variations/fieldtrial_testing_config.json
-@@ -25805,6 +25805,21 @@
+@@ -25718,6 +25718,21 @@
              ]
          }
      ],

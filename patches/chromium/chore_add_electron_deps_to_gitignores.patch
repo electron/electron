@@ -18,7 +18,7 @@ index 4c61af331b8276969b7df1b81e1076f8b8e932dd..413dc63ffc065e5f52db11b548eb8d71
  /google_apis/gcm/gcm.xml
  /googleurl
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index b5761637e4b91efb38b5c1d4be9f59b271d4f0db..010c4f7bfe4ea8c82eff4924c83668c271b834fd 100644
+index 0b3cc63da588d371a6416f8158ad79014c6364c3..a33362e439d5d9cb4f3f0ff4ec77d14f3bda9387 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
 @@ -45,7 +45,9 @@

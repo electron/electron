@@ -39,7 +39,7 @@ index 2cff43e9fc4374ae48d87dd048a295a00e5575e4..9cb5baccaa083a8030d4d0d57dc00040
    // event before sending it to the renderer. See enum for details on return
    // value.
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index c7719a7bb973624f7932d7f9614ba71a98a8a0ed..b0184201376fe4b13c9e87fa8d957a465eedf6c8 100644
+index 4402ca1334d097932bc13d506866fc1f3236888c..6a1d47a8dd8b19ffb561fb4e31a78816cba2ab63 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -1593,6 +1593,10 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(
@@ -54,10 +54,10 @@ index c7719a7bb973624f7932d7f9614ba71a98a8a0ed..b0184201376fe4b13c9e87fa8d957a46
      if (mouse_event_callback.Run(mouse_event)) {
        return;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 9bdbb9c52fff9e9dcbeac54861c73a1b213c36de..cb7dcefd02f7b26767acb1da4e0e64d466a18000 100644
+index 4b53598831c3deb05068c45f72aeb4f5dedf46be..b88d3f77183e7f057e35f9ba70c053e601e1f8d8 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4480,6 +4480,12 @@ void WebContentsImpl::RenderWidgetWasResized(
+@@ -4479,6 +4479,12 @@ void WebContentsImpl::RenderWidgetWasResized(
                               width_changed);
  }
  
@@ -83,10 +83,10 @@ index 4845fcd9286daabcf8cbf404439ab54a6c631193..383d6884871b0d2fed35891cce00a844
                             const gfx::PointF& client_pt);
    void PreHandleDragExit();
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 4083a3de23b451fa41cf20d8ebd5f7e9e2b5327a..52c09b87d6f844e2bd617301162b2cd3f738dc62 100644
+index fde24980f7eefd2696a9094bdb97787909955ae9..fccd564720c8d9ba33dd99600f88fd704f618d50 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
-@@ -127,6 +127,12 @@ bool WebContentsDelegate::HandleContextMenu(RenderFrameHost& render_frame_host,
+@@ -126,6 +126,12 @@ bool WebContentsDelegate::HandleContextMenu(RenderFrameHost& render_frame_host,
    return false;
  }
  

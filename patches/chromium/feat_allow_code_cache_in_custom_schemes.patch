@@ -143,7 +143,7 @@ index a01f0d96ef33ce9460a851b072b7ceed5227dee3..f7e39b28cc0ba2251123925c01083a79
  
      // JavaScript from chrome and chrome-untrusted pages. The resource URLs are
 diff --git a/content/browser/code_cache/generated_code_cache_browsertest.cc b/content/browser/code_cache/generated_code_cache_browsertest.cc
-index fb3fdfca483ff5041ee98095af3f6ac2640adbaf..ada19d78ec1337b0c49a1597c877886f69f84f13 100644
+index 68a3095a49caf472c83b93b5cef66e5549a2d7cc..aa371ba5576f9fbaf5558e39704f7eb87ec7511e 100644
 --- a/content/browser/code_cache/generated_code_cache_browsertest.cc
 +++ b/content/browser/code_cache/generated_code_cache_browsertest.cc
 @@ -16,17 +16,22 @@
@@ -262,7 +262,7 @@ index fb3fdfca483ff5041ee98095af3f6ac2640adbaf..ada19d78ec1337b0c49a1597c877886f
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index e81fd079644b78a785879dc51d1ec55aa01b4015..774269a818bcf1aa10a26bbb04d20997f615128f 100644
+index ffc684ad1e2dfbf148bb01b4d185a44619a2dceb..cf1d94f43238fc3166ca0488b72c929be07e3c52 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
 @@ -9,6 +9,7 @@
@@ -415,7 +415,7 @@ index 33e2ff42e4d9da442d522b959a4a21c2f7032b6b..a0d81212327fc17e1f4704e78803c1d7
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index 1d681820a5b19e12e2ae0332fa62fc70261a346b..dcea7cdea748c7c60266abe36c96256ffd32eb89 100644
+index 15664804ca612b77c9fe0fee58825ca9a6f25f6d..9c1fc2004ac915dfa63ff45fbc1cded2bbfad208 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
 @@ -131,6 +131,9 @@ struct SchemeRegistry {
@@ -445,7 +445,7 @@ index 1d681820a5b19e12e2ae0332fa62fc70261a346b..dcea7cdea748c7c60266abe36c96256f
                                  std::string_view handler) {
    DoAddSchemeWithHandler(
 diff --git a/url/url_util.h b/url/url_util.h
-index 501baa71f6ec135827b505c2eca78c7e9ac0b8d3..10bf2c6e27dca530906ef7acb7ac43fa5c731d22 100644
+index 1f9304c7ea5488a1c50891e3dabfa3a61af97b7b..f965c1dbd47781748d3091209d140a128ca7192f 100644
 --- a/url/url_util.h
 +++ b/url/url_util.h
 @@ -115,6 +115,15 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCSPBypassingSchemes();
