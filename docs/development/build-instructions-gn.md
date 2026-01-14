@@ -20,7 +20,7 @@ Most of the [manual setup](#manual-setup-advanced) instructions can be replaced 
 
 > [!TIP]
 > Build Tools also gives you access to [remote execution and caching of build actions](./reclient.md),
-which will dramatically improve subsequent build times.
+which will dramatically improve build times.
 
 Electron Build Tools can be installed globally from npm:
 
@@ -72,7 +72,7 @@ Some quick tips on building once your checkout is set up:
 > [!IMPORTANT]
 > Unless you're applying upstream patches, you should treat `${root}/src/` as a read-only folder and
 > spend most of your development time in `${root}/src/electron/`. You should not need to make any
-> git changes to `${root}/src/`.
+> changes or run `git` commands in `${root}/src/`.
 
 > [!TIP]
 > Detailed documentation for all available `e` commands can be found in the
