@@ -44,10 +44,24 @@ have to worry about wiring them all together.
 You can install Electron Forge's CLI in your project's `devDependencies` and import your
 existing project with a handy conversion script.
 
-```sh npm2yarn
+<Tabs>
+  <TabItem value="npm" label="npm">
+
+```sh
 npm install --save-dev @electron-forge/cli
 npx electron-forge import
 ```
+
+  </TabItem>
+  <TabItem value="yarn" label="Yarn">
+
+```sh
+yarn add --dev @electron-forge/cli
+yarn electron-forge import
+```
+
+  </TabItem>
+</Tabs>
 
 Once the conversion script is done, Forge should have added a few scripts
 to your `package.json` file.
