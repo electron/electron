@@ -17,10 +17,10 @@ Revert "Reland "Port net::CookieCryptoDelegate to os_crypt async""
 This reverts commit f01b115c7e21a09cc762f65bf7fd9c6ea9d9d0f8.
 
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 8d77c2f7e66b1fe70f073be010b7f686c041d6da..47b5709a6f6ac76055f769ba10e2b0ea40672dbf 100644
+index 563bfe0bd5d2fef7a6525ec69d9e8bd11ac55150..56ac425920e17f0130d9102392d438ec0ac54a00 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -742,6 +742,8 @@ static_library("browser") {
+@@ -747,6 +747,8 @@ static_library("browser") {
      "net/chrome_report_sender.h",
      "net/convert_explicitly_allowed_network_ports_pref.cc",
      "net/convert_explicitly_allowed_network_ports_pref.h",
@@ -192,10 +192,10 @@ index b862afe7663111a6cbd342d33723942770bb0490..9dc46cedb109cea63bf71aa43fc7a2b6
  #include "services/network/public/mojom/network_context.mojom.h"
  #include "testing/gtest/include/gtest/gtest.h"
 diff --git a/chrome/browser/net/system_network_context_manager.cc b/chrome/browser/net/system_network_context_manager.cc
-index 96bd9009a1d49af1d5b12b3e10058ac4c48c46c6..94f096f461d92d6db56c25f36fdc642cd4ab5049 100644
+index 63c1941becda2f3c33b31d060f7b817425e72ed9..6638517850731606cf832261e1920e630ad9a2ee 100644
 --- a/chrome/browser/net/system_network_context_manager.cc
 +++ b/chrome/browser/net/system_network_context_manager.cc
-@@ -917,13 +917,8 @@ void SystemNetworkContextManager::DisableQuic() {
+@@ -915,13 +915,8 @@ void SystemNetworkContextManager::DisableQuic() {
  void SystemNetworkContextManager::
      AddCookieEncryptionManagerToNetworkContextParams(
          network::mojom::NetworkContextParams* network_context_params) {
@@ -209,20 +209,20 @@ index 96bd9009a1d49af1d5b12b3e10058ac4c48c46c6..94f096f461d92d6db56c25f36fdc642c
 +      cookie_encryption_provider_.BindNewRemote();
  }
  
- void SystemNetworkContextManager::
+ void SystemNetworkContextManager::AddSSLConfigToNetworkContextParams(
 diff --git a/chrome/browser/net/system_network_context_manager.h b/chrome/browser/net/system_network_context_manager.h
-index 9bd7bd9d4512c31b2f1b9219ed07ffa232336c3e..c1e4aae2e778fd2028f67f58d4904dbdaeb27603 100644
+index 3e2382418337c22625abfd8ee4f5b04f8dbb8059..600242238eeb41705ac74a24f8682d791cc4c84e 100644
 --- a/chrome/browser/net/system_network_context_manager.h
 +++ b/chrome/browser/net/system_network_context_manager.h
-@@ -15,6 +15,7 @@
+@@ -14,6 +14,7 @@
+ #include "base/memory/raw_ptr.h"
  #include "base/memory/scoped_refptr.h"
- #include "chrome/browser/enterprise/encryption/cache_encryption_provider_impl.h"
  #include "chrome/browser/net/cert_verifier_service_time_updater.h"
 +#include "chrome/browser/net/cookie_encryption_provider_impl.h"
  #include "chrome/browser/net/proxy_config_monitor.h"
  #include "chrome/browser/net/stub_resolver_config_reader.h"
  #include "chrome/browser/ssl/ssl_config_service_manager.h"
-@@ -24,7 +25,6 @@
+@@ -23,7 +24,6 @@
  #include "mojo/public/cpp/bindings/pending_receiver.h"
  #include "mojo/public/cpp/bindings/remote.h"
  #include "services/cert_verifier/public/mojom/cert_verifier_service_factory.mojom-forward.h"
@@ -230,15 +230,15 @@ index 9bd7bd9d4512c31b2f1b9219ed07ffa232336c3e..c1e4aae2e778fd2028f67f58d4904dbd
  #include "services/network/public/mojom/host_resolver.mojom-forward.h"
  #include "services/network/public/mojom/network_context.mojom.h"
  #include "services/network/public/mojom/network_service.mojom.h"
-@@ -308,7 +308,7 @@ class SystemNetworkContextManager {
+@@ -302,7 +302,7 @@ class SystemNetworkContextManager {
    GssapiLibraryLoadObserver gssapi_library_loader_observer_{this};
  #endif  // BUILDFLAG(IS_LINUX)
  
 -  std::unique_ptr<CookieEncryptionProviderImpl> cookie_encryption_provider_;
 +  CookieEncryptionProviderImpl cookie_encryption_provider_;
  
-   std::unique_ptr<enterprise_encryption::CacheEncryptionProviderImpl>
-       cache_encryption_provider_;
+   std::unique_ptr<CertVerifierServiceTimeUpdater> cert_verifier_time_updater_;
+ };
 diff --git a/components/cookie_config/BUILD.gn b/components/cookie_config/BUILD.gn
 index e348b0d1a59470c5cf153ae02e420b9dd6bd1892..a7a51003386fe7b62aaf5b7008c63acefd428942 100644
 --- a/components/cookie_config/BUILD.gn
@@ -578,25 +578,21 @@ index f0c79ccd63e102c4ef51535f476ceddc6c5156a9..c1e9430b3f5b67338f204ca5563a02c2
    if (local_state_) {
      local_state_->CommitPendingWrite();
 diff --git a/headless/lib/browser/headless_browser_impl.h b/headless/lib/browser/headless_browser_impl.h
-index 1d9ba1861de0065cb059710fab7b619c0df55216..69056c94a348566e2d080307c794e5dd28322dff 100644
+index 1d9ba1861de0065cb059710fab7b619c0df55216..e08bf0a94e8b06dea68a86560b903523e1d78a9a 100644
 --- a/headless/lib/browser/headless_browser_impl.h
 +++ b/headless/lib/browser/headless_browser_impl.h
-@@ -31,9 +31,11 @@ class PolicyService;
+@@ -31,10 +31,6 @@ class PolicyService;
  class PrefService;
  #endif
  
 -namespace os_crypt_async {
 -class OSCryptAsync;
 -}
-+#if BUILDFLAG(IS_MAC)
-+namespace device {
-+class GeolocationSystemPermissionManager;
-+}  // namespace device
-+#endif
- 
+-
  namespace ui {
  class Compositor;
-@@ -99,10 +101,6 @@ class HEADLESS_EXPORT HeadlessBrowserImpl : public HeadlessBrowser {
+ }
+@@ -99,10 +95,6 @@ class HEADLESS_EXPORT HeadlessBrowserImpl : public HeadlessBrowser {
  
    int exit_code() const { return exit_code_; }
  
@@ -607,7 +603,7 @@ index 1d9ba1861de0065cb059710fab7b619c0df55216..69056c94a348566e2d080307c794e5dd
  #if defined(HEADLESS_USE_PREFS)
    void CreatePrefService();
    PrefService* GetPrefs();
-@@ -121,8 +119,6 @@ class HEADLESS_EXPORT HeadlessBrowserImpl : public HeadlessBrowser {
+@@ -121,8 +113,6 @@ class HEADLESS_EXPORT HeadlessBrowserImpl : public HeadlessBrowser {
  
    int exit_code_ = 0;
  
@@ -731,10 +727,10 @@ index 91d74eaadd9f4d451e809b38a2f999b298068820..e45427ce90f909e609688ab59f4581b1
    mojo::PendingRemote<::network::mojom::NetworkContext> system_context_;
  };
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index c71bd4df2cbe19d256a64a910c904fa5a1990104..343753d0fbe77c81ac2723f3cf709fa42e28c9ad 100644
+index 0ea9555487f6e63de95053a6e1124369770a5d09..c38a2f62a67bd970bf2862c229cfc04427aa28b7 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -3269,12 +3269,7 @@ NetworkContext::MakeSessionCleanupCookieStore() const {
+@@ -3282,12 +3282,7 @@ NetworkContext::MakeSessionCleanupCookieStore() const {
        crypto_delegate = std::make_unique<CookieOSCryptAsyncDelegate>(
            std::move(params_->cookie_encryption_provider));
      } else {
@@ -771,10 +767,10 @@ index b48bdf27cd97142ceebc1f0b769b502bf037ce36..3b1424b6df37aa4a3cd341e8b89524e3
      "//ipc",
      "//net",
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 89053b1e1855306f946c0aa8dc0f7860f0be72c0..ab7ea3460287bb8833b40af10f61abb5d328564d 100644
+index fcb6654e449a5ba5bd083be4c912f4a496184dd4..84da0a0b8e697b7927a62dd6d484fd8bc75c66d7 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -576,9 +576,10 @@ struct NetworkContextParams {
+@@ -571,9 +571,10 @@ struct NetworkContextParams {
    bool acam_preflight_spec_conformant = true;
  
    // Sets the cookie encryption provider to be used by this network context if
