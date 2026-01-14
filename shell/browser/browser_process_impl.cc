@@ -64,9 +64,6 @@
 
 BrowserProcessImpl::BrowserProcessImpl() {
   g_browser_process = this;
-
-  device_parental_controls_ =
-      std::make_unique<supervised_user::DeviceParentalControlsNoOpImpl>();
 }
 
 BrowserProcessImpl::~BrowserProcessImpl() {
@@ -273,6 +270,9 @@ BrowserProcessImpl::background_printing_manager() {
 
 supervised_user::DeviceParentalControls&
 BrowserProcessImpl::device_parental_controls() {
+  if (!device_parental_controls_)
+    device_parental_controls_ =
+        std::make_unique<supervised_user::DeviceParentalControlsNoOpImpl>();
   return *device_parental_controls_;
 }
 
