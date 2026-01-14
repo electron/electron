@@ -3,10 +3,10 @@ import { net, session, ClientRequest, ClientRequestConstructorOptions, utilityPr
 import { expect } from 'chai';
 
 import { once } from 'node:events';
-import * as fs from 'node:fs';
-import * as http from 'node:http';
-import * as http2 from 'node:http2';
-import * as path from 'node:path';
+import fs from 'node:fs';
+import http from 'node:http';
+import http2 from 'node:http2';
+import path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { collectStreamBody, collectStreamBodyBuffer, getResponse, kOneKiloByte, kOneMegaByte, randomBuffer, randomString, respondNTimes, respondOnce } from './lib/net-helpers';

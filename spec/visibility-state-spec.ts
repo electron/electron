@@ -2,9 +2,9 @@ import { BaseWindow, BrowserWindow, BrowserWindowConstructorOptions, webContents
 
 import { expect } from 'chai';
 
-import * as cp from 'node:child_process';
+import cp from 'node:child_process';
 import { once } from 'node:events';
-import * as path from 'node:path';
+import path from 'node:path';
 
 import { ifdescribe, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';

@@ -1,6 +1,6 @@
-import * as cp from 'node:child_process';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+import cp from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const certificatePath = process.argv[2];
 const outPath = process.argv[3];

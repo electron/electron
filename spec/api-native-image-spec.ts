@@ -2,7 +2,7 @@ import { nativeImage } from 'electron/common';
 
 import { expect } from 'chai';
 
-import * as path from 'node:path';
+import path from 'node:path';
 
 import { ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
 import { expectDeprecationMessages } from './lib/warning-helpers';

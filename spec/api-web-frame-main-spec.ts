@@ -3,10 +3,10 @@ import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } 
 import { expect } from 'chai';
 
 import { once } from 'node:events';
-import * as http from 'node:http';
-import * as path from 'node:path';
+import http from 'node:http';
+import path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
-import * as url from 'node:url';
+import url from 'node:url';
 
 import { emittedNTimes } from './lib/events-helpers';
 import { defer, ifit, listen, waitUntil } from './lib/spec-helpers';

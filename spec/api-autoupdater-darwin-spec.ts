@@ -1,15 +1,15 @@
 import { autoUpdater, systemPreferences } from 'electron';
 
 import { expect } from 'chai';
-import * as express from 'express';
-import * as psList from 'ps-list';
-import * as uuid from 'uuid';
+import express from 'express';
+import psList from 'ps-list';
+import uuid from 'uuid';
 
-import * as cp from 'node:child_process';
-import * as fs from 'node:fs';
-import * as http from 'node:http';
+import cp from 'node:child_process';
+import fs from 'node:fs';
+import http from 'node:http';
 import { AddressInfo } from 'node:net';
-import * as path from 'node:path';
+import path from 'node:path';
 
 import { copyMacOSFixtureApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn } from './lib/codesign-helpers';
 import { withTempDirectory } from './lib/fs-helpers';

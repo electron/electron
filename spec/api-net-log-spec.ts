@@ -2,13 +2,13 @@ import { session, net } from 'electron/main';
 
 import { expect } from 'chai';
 
-import * as ChildProcess from 'node:child_process';
+import ChildProcess from 'node:child_process';
 import { once } from 'node:events';
-import * as fs from 'node:fs';
-import * as http from 'node:http';
+import fs from 'node:fs';
+import http from 'node:http';
 import { Socket } from 'node:net';
-import * as os from 'node:os';
-import * as path from 'node:path';
+import os from 'node:os';
+import path from 'node:path';
 
 import { ifit, listen } from './lib/spec-helpers';
 

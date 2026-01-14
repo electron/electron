@@ -2,7 +2,7 @@ import { net, session, BrowserWindow, ClientRequestConstructorOptions } from 'el
 
 import { expect } from 'chai';
 
-import * as dns from 'node:dns';
+import dns from 'node:dns';
 
 import { collectStreamBody, getResponse, respondNTimes, respondOnce } from './lib/net-helpers';
 

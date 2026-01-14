@@ -2,7 +2,7 @@ import ipcMain from '@electron/internal/browser/api/ipc-main';
 import * as ipcMainInternalUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 const transferTimeout = 1000;
 const sharedTextureNative = process._linkedBinding('electron_common_shared_texture');

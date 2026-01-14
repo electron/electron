@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 
 import { execSync, spawnSync } from 'node:child_process';
 import { join } from 'node:path';

@@ -3,9 +3,9 @@ import { BrowserWindow, ipcMain } from 'electron/main';
 import { expect } from 'chai';
 
 import { once } from 'node:events';
-import * as importedFs from 'node:fs';
-import * as path from 'node:path';
-import * as url from 'node:url';
+import importedFs from 'node:fs';
+import path from 'node:path';
+import url from 'node:url';
 import { Worker } from 'node:worker_threads';
 
 import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';

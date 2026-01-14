@@ -1,4 +1,4 @@
-import * as path from 'path';
+import path from 'node:path';
 
 const Module = require('module') as NodeJS.ModuleInternal;
 

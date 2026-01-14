@@ -3,7 +3,7 @@ import { Menu, Tray } from 'electron/main';
 
 import { expect } from 'chai';
 
-import * as path from 'node:path';
+import path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { ifdescribe, ifit } from './lib/spec-helpers';

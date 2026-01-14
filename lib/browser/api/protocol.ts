@@ -1,6 +1,6 @@
 import { ProtocolRequest, session } from 'electron/main';
 
-import { createReadStream } from 'fs';
+import { createReadStream } from 'node:fs';
 import { Readable } from 'stream';
 import { ReadableStream } from 'stream/web';
 

@@ -1,13 +1,13 @@
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 
-import * as auth from 'basic-auth';
+import auth from 'basic-auth';
 import { expect } from 'chai';
 
 import { once } from 'node:events';
-import * as http from 'node:http';
-import * as path from 'node:path';
+import http from 'node:http';
+import path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
-import * as url from 'node:url';
+import url from 'node:url';
 
 import { emittedUntil } from './lib/events-helpers';
 import { HexColors, ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';

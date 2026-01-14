@@ -3,7 +3,7 @@ import { BaseWindow } from 'electron';
 import { expect } from 'chai';
 
 import { randomUUID } from 'node:crypto';
-import * as path from 'node:path';
+import path from 'node:path';
 
 import { ifdescribe } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';

@@ -3,17 +3,17 @@ import { clipboard } from 'electron/common';
 import { BrowserWindow, WebContents, webFrameMain, session, ipcMain, app, protocol, webContents, dialog, MessageBoxOptions } from 'electron/main';
 
 import { expect } from 'chai';
-import * as ws from 'ws';
+import ws from 'ws';
 
-import * as ChildProcess from 'node:child_process';
+import ChildProcess from 'node:child_process';
 import { EventEmitter, once } from 'node:events';
-import * as fs from 'node:fs';
-import * as http from 'node:http';
-import * as https from 'node:https';
+import fs from 'node:fs';
+import http from 'node:http';
+import https from 'node:https';
 import { AddressInfo } from 'node:net';
-import * as path from 'node:path';
+import path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
-import * as url from 'node:url';
+import url from 'node:url';
 
 import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';

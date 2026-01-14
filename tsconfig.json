@@ -18,7 +18,8 @@
     "paths": {
       "@electron/internal/*": ["lib/*"],
       "@node/*": ["../third_party/electron_node/*"]
-    }
+    },
+    "esModuleInterop": true,
   },
   "exclude": [
     "electron.d.ts"

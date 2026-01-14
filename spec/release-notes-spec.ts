@@ -1,10 +1,10 @@
 import { expect } from 'chai';
-import * as sinon from 'sinon';
+import sinon from 'sinon';
 
 import { SpawnSyncReturns } from 'node:child_process';
-import * as path from 'node:path';
+import path from 'node:path';
 
-import * as notes from '../script/release/notes/notes';
+import notes from '../script/release/notes/notes';
 
 /* Fake a git spawnSync that only returns the specific
    commits that we want to test */

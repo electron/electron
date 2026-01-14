@@ -4,7 +4,7 @@ import type {
 } from 'electron/common';
 
 import { Readable, Writable } from 'stream';
-import * as url from 'url';
+import url from 'node:url';
 
 const {
   isValidHeaderName,

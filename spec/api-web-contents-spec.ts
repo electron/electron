@@ -2,15 +2,15 @@ import { BrowserWindow, ipcMain, webContents, session, app, BrowserView, WebCont
 
 import { assert, expect } from 'chai';
 
-import * as cp from 'node:child_process';
+import cp from 'node:child_process';
 import { once } from 'node:events';
-import * as fs from 'node:fs';
-import * as http from 'node:http';
+import fs from 'node:fs';
+import http from 'node:http';
 import { AddressInfo } from 'node:net';
-import * as os from 'node:os';
-import * as path from 'node:path';
+import os from 'node:os';
+import path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
-import * as url from 'node:url';
+import url from 'node:url';
 
 import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
 import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';

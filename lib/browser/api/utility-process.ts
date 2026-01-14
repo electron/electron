@@ -1,6 +1,6 @@
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 import { Socket } from 'net';
 import { Duplex, PassThrough } from 'stream';
 

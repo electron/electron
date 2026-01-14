@@ -3,7 +3,7 @@ import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-renderer-internal-utils';
 import { createPreloadProcessObject, executeSandboxedPreloadScripts } from '@electron/internal/sandboxed_renderer/preload';
 
-import * as events from 'events';
+import events from 'node:events';
 import { setImmediate, clearImmediate } from 'timers';
 
 declare const binding: {

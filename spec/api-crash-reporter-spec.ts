@@ -1,14 +1,14 @@
 import { app } from 'electron/main';
 
-import * as Busboy from 'busboy';
+import Busboy from 'busboy';
 import { expect } from 'chai';
-import * as uuid from 'uuid';
+import uuid from 'uuid';
 
-import * as childProcess from 'node:child_process';
+import childProcess from 'node:child_process';
 import { EventEmitter } from 'node:events';
-import * as fs from 'node:fs';
-import * as http from 'node:http';
-import * as path from 'node:path';
+import fs from 'node:fs';
+import http from 'node:http';
+import path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { ifdescribe, ifit, defer, startRemoteControlApp, repeatedly, listen } from './lib/spec-helpers';

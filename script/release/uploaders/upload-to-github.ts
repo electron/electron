@@ -1,6 +1,6 @@
 import { Octokit } from '@octokit/rest';
 
-import * as fs from 'node:fs';
+import fs from 'node:fs';
 
 import { createGitHubTokenStrategy } from '../github-token';
 import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from '../types';

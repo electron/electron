@@ -3,7 +3,7 @@ import { BaseWindow, BrowserWindow, ImageView } from 'electron/main';
 
 import { expect } from 'chai';
 
-import * as path from 'node:path';
+import path from 'node:path';
 
 import { closeAllWindows } from './lib/window-helpers';
 

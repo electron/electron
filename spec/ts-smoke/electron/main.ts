@@ -24,7 +24,7 @@ import {
 } from 'electron/main';
 
 import { clipboard, crashReporter, nativeImage, shell } from 'electron/common';
-import * as path from 'node:path';
+import path from 'node:path';
 
 // Quick start
 // https://github.com/electron/electron/blob/main/docs/tutorial/quick-start.md

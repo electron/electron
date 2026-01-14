@@ -3,8 +3,8 @@ import { BrowserWindow } from 'electron/main';
 import { expect } from 'chai';
 
 import { once } from 'node:events';
-import * as http from 'node:http';
-import * as path from 'node:path';
+import http from 'node:http';
+import path from 'node:path';
 
 import { emittedUntil } from './lib/events-helpers';
 import { listen } from './lib/spec-helpers';

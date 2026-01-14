@@ -1,12 +1,12 @@
 import { app, session, webFrameMain, BrowserWindow, ipcMain, WebContents, Extension, Session } from 'electron/main';
 
 import { expect } from 'chai';
-import * as WebSocket from 'ws';
+import WebSocket from 'ws';
 
 import { once } from 'node:events';
-import * as fs from 'node:fs/promises';
-import * as http from 'node:http';
-import * as path from 'node:path';
+import fs from 'node:fs/promises';
+import http from 'node:http';
+import path from 'node:path';
 
 import { emittedNTimes, emittedUntil } from './lib/events-helpers';
 import { ifit, listen, waitUntil } from './lib/spec-helpers';

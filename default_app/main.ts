@@ -1,9 +1,9 @@
-import * as electron from 'electron/main';
+import electron from 'electron/main';
 
-import * as fs from 'node:fs';
+import fs from 'node:fs';
 import { Module } from 'node:module';
-import * as path from 'node:path';
-import * as url from 'node:url';
+import path from 'node:path';
+import url from 'node:url';
 
 const { app, dialog } = electron;
 

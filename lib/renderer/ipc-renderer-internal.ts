@@ -1,6 +1,6 @@
 import { getIPCRenderer } from '@electron/internal/renderer/ipc-renderer-bindings';
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 
 const ipc = getIPCRenderer();
 const internal = true;

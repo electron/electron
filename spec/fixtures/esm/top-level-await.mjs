@@ -1,4 +1,4 @@
-import * as electron from 'electron';
+import electron from 'electron';
 
 // Cheeky delay
 await new Promise((resolve) => setTimeout(resolve, 500));

@@ -3,17 +3,17 @@ import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain, ne
 import { expect } from 'chai';
 import { v4 } from 'uuid';
 
-import * as ChildProcess from 'node:child_process';
+import ChildProcess from 'node:child_process';
 import { EventEmitter, once } from 'node:events';
-import * as fs from 'node:fs';
-import * as http from 'node:http';
-import * as path from 'node:path';
-import * as qs from 'node:querystring';
-import * as stream from 'node:stream';
-import * as streamConsumers from 'node:stream/consumers';
-import * as webStream from 'node:stream/web';
+import fs from 'node:fs';
+import http from 'node:http';
+import path from 'node:path';
+import qs from 'node:querystring';
+import stream from 'node:stream';
+import streamConsumers from 'node:stream/consumers';
+import webStream from 'node:stream/web';
 import { setTimeout } from 'node:timers/promises';
-import * as url from 'node:url';
+import url from 'node:url';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers';
 import { listen, defer, ifit } from './lib/spec-helpers';

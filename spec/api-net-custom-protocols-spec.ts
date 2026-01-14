@@ -2,8 +2,8 @@ import { net, protocol } from 'electron/main';
 
 import { expect } from 'chai';
 
-import * as path from 'node:path';
-import * as url from 'node:url';
+import path from 'node:path';
+import url from 'node:url';
 
 import { defer } from './lib/spec-helpers';
 

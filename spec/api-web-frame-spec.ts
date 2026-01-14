@@ -3,7 +3,7 @@ import { BrowserWindow, ipcMain, WebContents } from 'electron/main';
 import { expect } from 'chai';
 
 import { once } from 'node:events';
-import * as path from 'node:path';
+import path from 'node:path';
 
 import { defer } from './lib/spec-helpers';
 

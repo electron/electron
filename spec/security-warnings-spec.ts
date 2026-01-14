@@ -2,9 +2,9 @@ import { BrowserWindow, WebPreferences } from 'electron/main';
 
 import { expect } from 'chai';
 
-import * as fs from 'node:fs/promises';
-import * as http from 'node:http';
-import * as path from 'node:path';
+import fs from 'node:fs/promises';
+import http from 'node:http';
+import path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { emittedUntil } from './lib/events-helpers';

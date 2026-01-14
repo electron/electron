@@ -1,8 +1,8 @@
-import * as fs from 'original-fs';
+import fs from 'original-fs';
 
-import * as cp from 'node:child_process';
-import * as os from 'node:os';
-import * as path from 'node:path';
+import cp from 'node:child_process';
+import os from 'node:os';
+import path from 'node:path';
 
 export async function copyApp (targetDir: string): Promise<string> {
   // On macOS we can just copy the app bundle, easier too because of symlinks

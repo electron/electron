@@ -2,7 +2,7 @@
 
 import { BlobServiceClient } from '@azure/storage-blob';
 import { Octokit } from '@octokit/rest';
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 import got from 'got';
 import { gte } from 'semver';
 import { track as trackTemp } from 'temp';

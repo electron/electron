@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Octokit } from '@octokit/rest';
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 
 import { createGitHubTokenStrategy } from './github-token';
 import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from './types';

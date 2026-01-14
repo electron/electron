@@ -3,12 +3,12 @@ import { contextBridge } from 'electron/renderer';
 
 import { expect } from 'chai';
 
-import * as cp from 'node:child_process';
+import cp from 'node:child_process';
 import { once } from 'node:events';
-import * as fs from 'node:fs';
-import * as http from 'node:http';
-import * as os from 'node:os';
-import * as path from 'node:path';
+import fs from 'node:fs';
+import http from 'node:http';
+import os from 'node:os';
+import path from 'node:path';
 
 import { listen } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';

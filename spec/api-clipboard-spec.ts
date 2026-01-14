@@ -3,7 +3,7 @@ import { clipboard, nativeImage } from 'electron/common';
 import { expect } from 'chai';
 
 import { Buffer } from 'node:buffer';
-import * as path from 'node:path';
+import path from 'node:path';
 
 import { ifdescribe, ifit } from './lib/spec-helpers';
 

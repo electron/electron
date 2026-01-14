@@ -2,7 +2,7 @@ import { BrowserWindow } from 'electron';
 
 import { expect } from 'chai';
 
-import * as path from 'node:path';
+import path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { closeAllWindows } from './lib/window-helpers';

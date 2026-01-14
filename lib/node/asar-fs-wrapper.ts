@@ -1,10 +1,10 @@
-import { Buffer } from 'buffer';
-import { Dirent, constants } from 'fs';
-import * as path from 'path';
-import * as util from 'util';
+import { Buffer } from 'node:buffer';
+import { Dirent, constants } from 'node:fs';
+import path from 'node:path';
+import util from 'node:util';
 
-import type * as Crypto from 'crypto';
-import type * as os from 'os';
+import type * as Crypto from 'node:crypto';
+import type * as os from 'node:os';
 
 const asar = process._linkedBinding('electron_common_asar');
 

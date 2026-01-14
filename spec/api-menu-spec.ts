@@ -2,9 +2,9 @@ import { BrowserWindow, Menu, MenuItem } from 'electron/main';
 
 import { assert, expect } from 'chai';
 
-import * as cp from 'node:child_process';
+import cp from 'node:child_process';
 import { once } from 'node:events';
-import * as path from 'node:path';
+import path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { singleModifierCombinations } from './lib/accelerator-helpers';

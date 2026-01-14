@@ -3,7 +3,7 @@ import { BrowserView, BrowserWindow, screen, session, webContents } from 'electr
 import { expect } from 'chai';
 
 import { once } from 'node:events';
-import * as path from 'node:path';
+import path from 'node:path';
 
 import { ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
 import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers';

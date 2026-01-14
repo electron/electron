@@ -3,9 +3,9 @@ import { ipcMain, session, webContents as webContentsModule, WebContents } from 
 import { expect } from 'chai';
 
 import { once, on } from 'node:events';
-import * as fs from 'node:fs';
-import * as http from 'node:http';
-import * as path from 'node:path';
+import fs from 'node:fs';
+import http from 'node:http';
+import path from 'node:path';
 
 import { listen, waitUntil } from './lib/spec-helpers';
 

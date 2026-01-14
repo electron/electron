@@ -3,8 +3,8 @@ import { app } from 'electron/main';
 
 import { expect } from 'chai';
 
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 import { defer } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';

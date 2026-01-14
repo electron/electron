@@ -2,12 +2,12 @@ import { webContents } from 'electron/main';
 
 import { expect } from 'chai';
 
-import * as childProcess from 'node:child_process';
+import childProcess from 'node:child_process';
 import { once } from 'node:events';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+import fs from 'node:fs';
+import path from 'node:path';
 import { EventEmitter } from 'node:stream';
-import * as util from 'node:util';
+import util from 'node:util';
 
 import { copyMacOSFixtureApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn } from './lib/codesign-helpers';
 import { withTempDirectory } from './lib/fs-helpers';

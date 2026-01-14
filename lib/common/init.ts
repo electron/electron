@@ -1,5 +1,5 @@
 import timers = require('timers');
-import * as util from 'util';
+import util from 'node:util';
 
 import type * as stream from 'stream';
 

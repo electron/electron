@@ -1,6 +1,6 @@
 // Pre-initialization code for sandboxed renderers.
 
-import * as events from 'events';
+import events from 'node:events';
 
 declare const binding: {
   get: (name: string) => any;

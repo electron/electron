@@ -1,4 +1,4 @@
-import * as electron from 'electron';
+import electron from 'electron';
 
 try {
   electron.app.disableHardwareAcceleration();

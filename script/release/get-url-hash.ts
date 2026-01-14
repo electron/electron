@@ -1,6 +1,6 @@
 import got from 'got';
 
-import * as url from 'node:url';
+import url from 'node:url';
 
 const HASHER_FUNCTION_HOST = 'electron-hasher.azurewebsites.net';
 const HASHER_FUNCTION_ROUTE = '/api/hashRemoteAsset';

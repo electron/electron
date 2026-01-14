@@ -3,8 +3,8 @@ import { BrowserWindow, screen } from 'electron';
 import { expect, assert } from 'chai';
 
 import { once } from 'node:events';
-import * as http from 'node:http';
-import * as nodePath from 'node:path';
+import http from 'node:http';
+import nodePath from 'node:path';
 
 import { HexColors, ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
 import { ifit, listen } from './lib/spec-helpers';

@@ -4,9 +4,9 @@ import { expect } from 'chai';
 import { v4 } from 'uuid';
 
 import { on, once } from 'node:events';
-import * as fs from 'node:fs';
-import * as http from 'node:http';
-import * as path from 'node:path';
+import fs from 'node:fs';
+import http from 'node:http';
+import path from 'node:path';
 
 import { listen } from './lib/spec-helpers';
 

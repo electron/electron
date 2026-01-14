@@ -1,4 +1,4 @@
-import * as semver from 'semver';
+import semver from 'semver';
 
 import { spawnSync } from 'node:child_process';
 

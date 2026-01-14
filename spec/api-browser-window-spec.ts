@@ -2,17 +2,17 @@ import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersLi
 
 import { expect } from 'chai';
 
-import * as childProcess from 'node:child_process';
+import childProcess from 'node:child_process';
 import { once } from 'node:events';
-import * as fs from 'node:fs';
-import * as http from 'node:http';
+import fs from 'node:fs';
+import http from 'node:http';
 import { AddressInfo } from 'node:net';
-import * as os from 'node:os';
-import * as path from 'node:path';
-import * as qs from 'node:querystring';
+import os from 'node:os';
+import path from 'node:path';
+import qs from 'node:querystring';
 import { setTimeout as syncSetTimeout } from 'node:timers';
 import { setTimeout } from 'node:timers/promises';
-import * as nodeUrl from 'node:url';
+import nodeUrl from 'node:url';
 
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
 import { randomString } from './lib/net-helpers';

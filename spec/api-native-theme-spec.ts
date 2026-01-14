@@ -3,7 +3,7 @@ import { nativeTheme, BrowserWindow, ipcMain } from 'electron/main';
 import { expect } from 'chai';
 
 import { once } from 'node:events';
-import * as path from 'node:path';
+import path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { closeAllWindows } from './lib/window-helpers';

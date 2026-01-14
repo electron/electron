@@ -10,9 +10,9 @@ import { nativeImage } from 'electron/common';
 import { app } from 'electron/main';
 
 import { expect } from 'chai';
-import * as dbus from 'dbus-native';
+import dbus from 'dbus-native';
 
-import * as path from 'node:path';
+import path from 'node:path';
 import { promisify } from 'node:util';
 
 import { ifdescribe } from './lib/spec-helpers';

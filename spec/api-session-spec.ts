@@ -1,15 +1,15 @@
 import { app, session, BrowserWindow, net, ipcMain, Session, webFrameMain, WebFrameMain } from 'electron/main';
 
-import * as auth from 'basic-auth';
+import auth from 'basic-auth';
 import { expect } from 'chai';
-import * as send from 'send';
+import send from 'send';
 
-import * as ChildProcess from 'node:child_process';
+import ChildProcess from 'node:child_process';
 import { once } from 'node:events';
-import * as fs from 'node:fs';
-import * as http from 'node:http';
-import * as https from 'node:https';
-import * as path from 'node:path';
+import fs from 'node:fs';
+import http from 'node:http';
+import https from 'node:https';
+import path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { defer, ifit, listen } from './lib/spec-helpers';

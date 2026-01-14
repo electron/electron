@@ -1,16 +1,16 @@
 import { app, BrowserWindow, Menu, session, net as electronNet, WebContents, utilityProcess } from 'electron/main';
 
 import { assert, expect } from 'chai';
-import * as semver from 'semver';
+import semver from 'semver';
 import split = require('split')
 
-import * as cp from 'node:child_process';
+import cp from 'node:child_process';
 import { once } from 'node:events';
-import * as fs from 'node:fs';
-import * as http from 'node:http';
-import * as https from 'node:https';
-import * as net from 'node:net';
-import * as path from 'node:path';
+import fs from 'node:fs';
+import http from 'node:http';
+import https from 'node:https';
+import net from 'node:net';
+import path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 

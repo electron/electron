@@ -1,6 +1,6 @@
 import { Octokit } from '@octokit/rest';
 
-import * as assert from 'node:assert';
+import assert from 'node:assert';
 
 import { createGitHubTokenStrategy } from './github-token';
 import { ELECTRON_ORG, ELECTRON_REPO } from './types';

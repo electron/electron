@@ -2,7 +2,7 @@ import { BrowserWindow, session, desktopCapturer } from 'electron/main';
 
 import { expect } from 'chai';
 
-import * as http from 'node:http';
+import http from 'node:http';
 
 import { ifit, listen } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';

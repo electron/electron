@@ -3,11 +3,11 @@ import { BrowserWindow, MessageChannelMain, utilityProcess, app } from 'electron
 
 import { expect } from 'chai';
 
-import * as childProcess from 'node:child_process';
+import childProcess from 'node:child_process';
 import { once } from 'node:events';
-import * as fs from 'node:fs/promises';
-import * as os from 'node:os';
-import * as path from 'node:path';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { setImmediate } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 

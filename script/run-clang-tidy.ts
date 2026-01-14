@@ -1,13 +1,13 @@
-import * as minimist from 'minimist';
-import * as streamChain from 'stream-chain';
-import * as streamJson from 'stream-json';
+import minimist from 'minimist';
+import streamChain from 'stream-chain';
+import streamJson from 'stream-json';
 import { ignore as streamJsonIgnore } from 'stream-json/filters/Ignore';
 import { streamArray as streamJsonStreamArray } from 'stream-json/streamers/StreamArray';
 
-import * as childProcess from 'node:child_process';
-import * as fs from 'node:fs';
-import * as os from 'node:os';
-import * as path from 'node:path';
+import childProcess from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 import { chunkFilenames, findMatchingFiles } from './lib/utils';
 

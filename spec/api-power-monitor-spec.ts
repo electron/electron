@@ -7,7 +7,7 @@
 // See https://pypi.python.org/pypi/python-dbusmock for more information about
 // python-dbusmock.
 import { expect } from 'chai';
-import * as dbus from 'dbus-native';
+import dbus from 'dbus-native';
 
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';

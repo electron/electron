@@ -3,8 +3,8 @@ import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain, WebCont
 import { expect } from 'chai';
 
 import { EventEmitter, once } from 'node:events';
-import * as http from 'node:http';
-import * as path from 'node:path';
+import http from 'node:http';
+import path from 'node:path';
 
 import { defer, listen } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';

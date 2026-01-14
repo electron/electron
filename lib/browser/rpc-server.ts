@@ -5,8 +5,8 @@ import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 import { clipboard } from 'electron/common';
 import { webFrameMain } from 'electron/main';
 
-import * as fs from 'fs';
-import * as path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 // Implements window.close()
 ipcMainInternal.on(IPC_MESSAGES.BROWSER_WINDOW_CLOSE, function (event) {
