@@ -23,13 +23,32 @@ index 423f2c4d77bfc98bfbdab93c09aff8012c678cbd..fa0bcceb5697486930a9530732f9a9ab
      '308204bf020100300d06092a864886f70d0101010500048204a9308204a5020100028' +
      '2010100d3576092e62957364544e7e4233b7bdb293db2085122c479328546f9f0f712' +
 diff --git a/test/parallel/test-crypto-async-sign-verify.js b/test/parallel/test-crypto-async-sign-verify.js
-index 9876c4bb6ecd2e5b8879f153811cd0a0a22997aa..688ed342570741fdcc7876f375c56d3fc61c2ea1 100644
+index 9876c4bb6ecd2e5b8879f153811cd0a0a22997aa..2c4bf03452eb10fec52c38a361b6aad93169f08d 100644
 --- a/test/parallel/test-crypto-async-sign-verify.js
 +++ b/test/parallel/test-crypto-async-sign-verify.js
-@@ -113,6 +113,7 @@ test('dsa_public.pem', 'dsa_private.pem', 'sha256',
- // DSA w/ ieee-p1363 signature encoding
- test('dsa_public.pem', 'dsa_private.pem', 'sha256', false,
-      { dsaEncoding: 'ieee-p1363' });
+@@ -102,17 +102,17 @@ if (!process.features.openssl_is_boringssl) {
+   // ECDSA w/ ieee-p1363 signature encoding
+   test('ec_secp256k1_public.pem', 'ec_secp256k1_private.pem', 'sha384', false,
+        { dsaEncoding: 'ieee-p1363' });
+-}
+ 
+-// DSA w/ der signature encoding
+-test('dsa_public.pem', 'dsa_private.pem', 'sha256',
+-     false);
+-test('dsa_public.pem', 'dsa_private.pem', 'sha256',
+-     false, { dsaEncoding: 'der' });
++  // DSA w/ der signature encoding
++  test('dsa_public.pem', 'dsa_private.pem', 'sha256',
++      false);
++  test('dsa_public.pem', 'dsa_private.pem', 'sha256',
++      false, { dsaEncoding: 'der' });
+ 
+-// DSA w/ ieee-p1363 signature encoding
+-test('dsa_public.pem', 'dsa_private.pem', 'sha256', false,
+-     { dsaEncoding: 'ieee-p1363' });
++  // DSA w/ ieee-p1363 signature encoding
++  test('dsa_public.pem', 'dsa_private.pem', 'sha256', false,
++      { dsaEncoding: 'ieee-p1363' });
 +}
  
  // Test Parallel Execution w/ KeyObject is threadsafe in openssl3
@@ -369,9 +388,18 @@ index bd788ec4ed88289d35798b8af8c9490a68e081a2..1a5477ba928bce93320f8056db02e1a7
  function generateWrappingKeys() {
    return Promise.all(Object.keys(kWrappingData).map(async (name) => {
 diff --git a/test/parallel/test-x509-escaping.js b/test/parallel/test-x509-escaping.js
-index c8fc4abbb108a6d6849e8452d97d29187da2ebe6..e897dbbf8a69e454498f2793228e6f53ee7d54f5 100644
+index c8fc4abbb108a6d6849e8452d97d29187da2ebe6..825ba4c8dce775f401080a0522565bb7a087bcc3 100644
 --- a/test/parallel/test-x509-escaping.js
 +++ b/test/parallel/test-x509-escaping.js
+@@ -438,7 +438,7 @@ const { hasOpenSSL3 } = require('../common/crypto');
+   const cert = fixtures.readKey('incorrect_san_correct_subject-cert.pem');
+ 
+   // The hostname is the CN, but not a SAN entry.
+-  const servername = process.features.openssl_is_boringssl ? undefined : 'good.example.com';
++  const servername = 'good.example.com';
+   const certX509 = new X509Certificate(cert);
+   assert.strictEqual(certX509.subject, `CN=${servername}`);
+   assert.strictEqual(certX509.subjectAltName, 'DNS:evil.example.com');
 @@ -448,7 +448,7 @@ const { hasOpenSSL3 } = require('../common/crypto');
    assert.strictEqual(certX509.checkHost(servername, { subject: 'default' }),
                       undefined);
