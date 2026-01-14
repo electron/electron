@@ -22,98 +22,17 @@ index 423f2c4d77bfc98bfbdab93c09aff8012c678cbd..fa0bcceb5697486930a9530732f9a9ab
    const pkcs8 = Buffer.from(
      '308204bf020100300d06092a864886f70d0101010500048204a9308204a5020100028' +
      '2010100d3576092e62957364544e7e4233b7bdb293db2085122c479328546f9f0f712' +
-diff --git a/test/fixtures/webcrypto/supports-modern-algorithms.mjs b/test/fixtures/webcrypto/supports-modern-algorithms.mjs
-index 337ed577b143062d41e378cc1f820945e76cea08..76d5e805cbc0e756aef0013373baec31bd320f44 100644
---- a/test/fixtures/webcrypto/supports-modern-algorithms.mjs
-+++ b/test/fixtures/webcrypto/supports-modern-algorithms.mjs
-@@ -9,6 +9,7 @@ const shake256 = crypto.getHashes().includes('shake256');
- const chacha = crypto.getCiphers().includes('chacha20-poly1305');
- const ocb = hasOpenSSL(3);
- const kmac = hasOpenSSL(3);
-+const boringSSL = process.features.openssl_is_boringssl;
- 
- const { subtle } = globalThis.crypto;
- const X25519 = await subtle.generateKey('X25519', false, ['deriveBits', 'deriveKey']);
-@@ -108,9 +109,9 @@ export const vectors = {
-     [true, 'RSA-PSS'],
-     [true, 'RSASSA-PKCS1-v1_5'],
-     [true, 'X25519'],
--    [true, 'X448'],
-+    [!boringSSL, 'X448'],
-     [true, 'Ed25519'],
--    [true, 'Ed448'],
-+    [!boringSSL, 'Ed448'],
-     [true, 'ECDH'],
-     [true, 'ECDSA'],
-     [pqc, 'ML-DSA-44'],
 diff --git a/test/parallel/test-crypto-async-sign-verify.js b/test/parallel/test-crypto-async-sign-verify.js
-index d385926e9943052bbe1793d4b1e39846e1a69562..dbf7b04afa77f132aaa466c9ee02c5ffad0296bc 100644
+index 9876c4bb6ecd2e5b8879f153811cd0a0a22997aa..688ed342570741fdcc7876f375c56d3fc61c2ea1 100644
 --- a/test/parallel/test-crypto-async-sign-verify.js
 +++ b/test/parallel/test-crypto-async-sign-verify.js
-@@ -89,6 +89,7 @@ test('rsa_public.pem', 'rsa_private.pem', 'sha256', false,
- // ED25519
- test('ed25519_public.pem', 'ed25519_private.pem', undefined, true);
- // ED448
-+if (!process.features.openssl_is_boringssl) {
- test('ed448_public.pem', 'ed448_private.pem', undefined, true);
- 
- // ECDSA w/ der signature encoding
-@@ -110,6 +111,7 @@ test('dsa_public.pem', 'dsa_private.pem', 'sha256',
+@@ -113,6 +113,7 @@ test('dsa_public.pem', 'dsa_private.pem', 'sha256',
  // DSA w/ ieee-p1363 signature encoding
  test('dsa_public.pem', 'dsa_private.pem', 'sha256', false,
       { dsaEncoding: 'ieee-p1363' });
 +}
  
  // Test Parallel Execution w/ KeyObject is threadsafe in openssl3
- {
-@@ -150,7 +152,10 @@ MCowBQYDK2VuAyEA6pwGRbadNQAI/tYN8+/p/0/hbsdHfOEGr1ADiLVk/Gc=
-   const data = crypto.randomBytes(32);
-   const signature = crypto.randomBytes(16);
- 
--  const expected = hasOpenSSL3 ? /operation not supported for this keytype/ : /no default digest/;
-+  let expected = hasOpenSSL3 ? /operation not supported for this keytype/ : /no default digest/;
-+  if (hasOpenSSL3 || process.features.openssl_is_boringssl) {
-+    expected = /operation[\s_]not[\s_]supported[\s_]for[\s_]this[\s_]keytype/i;
-+  }
- 
-   crypto.verify(undefined, data, untrustedKey, signature, common.mustCall((err) => {
-     assert.ok(err);
-@@ -164,6 +169,6 @@ MCowBQYDK2VuAyEA6pwGRbadNQAI/tYN8+/p/0/hbsdHfOEGr1ADiLVk/Gc=
-   });
-   crypto.sign('sha512', 'message', privateKey, common.mustCall((err) => {
-     assert.ok(err);
--    assert.match(err.message, /digest too big for rsa key/);
-+    assert.match(err.message, /digest[\s_]too[\s_]big[\s_]for[\s_]rsa[\s_]key/i);
-   }));
- }
-diff --git a/test/parallel/test-crypto-certificate.js b/test/parallel/test-crypto-certificate.js
-index 4a5f1f149fe6c739f7f1d2ee17df6e61a942d621..b3287f428ce6b3fde11d449c601a57ff5e3843f9 100644
---- a/test/parallel/test-crypto-certificate.js
-+++ b/test/parallel/test-crypto-certificate.js
-@@ -40,8 +40,10 @@ function copyArrayBuffer(buf) {
- }
- 
- function checkMethods(certificate) {
--
-+  /* spkacValid has a md5 based signature which is not allowed in boringssl
-+  https://boringssl.googlesource.com/boringssl/+/33d7e32ce40c04e8f1b99c05964956fda187819f
-   assert.strictEqual(certificate.verifySpkac(spkacValid), true);
-+  */
-   assert.strictEqual(certificate.verifySpkac(spkacFail), false);
- 
-   assert.strictEqual(
-@@ -56,10 +58,12 @@ function checkMethods(certificate) {
-   );
-   assert.strictEqual(certificate.exportChallenge(spkacFail), '');
- 
-+  /* spkacValid has a md5 based signature which is not allowed in boringssl
-   const ab = copyArrayBuffer(spkacValid);
-   assert.strictEqual(certificate.verifySpkac(ab), true);
-   assert.strictEqual(certificate.verifySpkac(new Uint8Array(ab)), true);
-   assert.strictEqual(certificate.verifySpkac(new DataView(ab)), true);
-+  */
- }
- 
  {
 diff --git a/test/parallel/test-crypto-cipheriv-decipheriv.js b/test/parallel/test-crypto-cipheriv-decipheriv.js
 index 6742722f9e90914b4dc8c079426d10040d476f72..8801ddfe7023fd0f7d5657b86a9164d75765322e 100644
@@ -144,7 +63,7 @@ index 81a469c226c261564dee1e0b06b6571b18a41f1f..58b66045dba4201b7ebedd78b129420f
  
  const availableCurves = new Set(crypto.getCurves());
 diff --git a/test/parallel/test-crypto-dh-errors.js b/test/parallel/test-crypto-dh-errors.js
-index 0af4db0310750cea9350ecff7fc44404c6df6c83..b14b4bbf88b902b6de916b92e3d48335c01df911 100644
+index d7527d82617efccd931f0fc2f700ab876872c1e6..b14b4bbf88b902b6de916b92e3d48335c01df911 100644
 --- a/test/parallel/test-crypto-dh-errors.js
 +++ b/test/parallel/test-crypto-dh-errors.js
 @@ -27,7 +27,7 @@ assert.throws(() => crypto.createDiffieHellman('abcdef', 13.37), {
@@ -156,47 +75,11 @@ index 0af4db0310750cea9350ecff7fc44404c6df6c83..b14b4bbf88b902b6de916b92e3d48335
        name: 'Error',
        message: /modulus too small/,
      });
-@@ -35,7 +35,7 @@ for (const bits of [-1, 0, 1]) {
-     assert.throws(() => crypto.createDiffieHellman(bits), {
-       code: 'ERR_OSSL_BN_BITS_TOO_SMALL',
-       name: 'Error',
--      message: /bits too small/,
-+      message: /bits[\s_]too[\s_]small/i,
-     });
-   }
- }
 diff --git a/test/parallel/test-crypto-dh.js b/test/parallel/test-crypto-dh.js
-index d7ffbe5eca92734aa2380f482c7f9bfe7e2a36c7..b4e7002d862907d2af3b4f8e985700bd03300809 100644
+index 3c00a5fc73bb9f86f944df74f29d6b5225bc2f0e..b4e7002d862907d2af3b4f8e985700bd03300809 100644
 --- a/test/parallel/test-crypto-dh.js
 +++ b/test/parallel/test-crypto-dh.js
-@@ -60,18 +60,17 @@ const {
-   let wrongBlockLength;
-   if (hasOpenSSL3) {
-     wrongBlockLength = {
--      message: 'error:1C80006B:Provider routines::wrong final block length',
--      code: 'ERR_OSSL_WRONG_FINAL_BLOCK_LENGTH',
--      library: 'Provider routines',
--      reason: 'wrong final block length'
-+      message: /wrong[\s_]final[\s_]block[\s_]length/i,
-+      code: /ERR_OSSL_(EVP_)?WRONG_FINAL_BLOCK_LENGTH/,
-+      library: /Provider routines|Cipher functions/,
-+      reason: /wrong[\s_]final[\s_]block[\s_]length/i,
-     };
-   } else {
-     wrongBlockLength = {
--      message: 'error:0606506D:digital envelope' +
--        ' routines:EVP_DecryptFinal_ex:wrong final block length',
--      code: 'ERR_OSSL_EVP_WRONG_FINAL_BLOCK_LENGTH',
--      library: 'digital envelope routines',
--      reason: 'wrong final block length'
-+      message: /wrong[\s_]final[\s_]block[\s_]length/i,
-+      code: /ERR_OSSL_(EVP_)?WRONG_FINAL_BLOCK_LENGTH/,
-+      library: /digital envelope routines|Cipher functions/,
-+      reason: /wrong[\s_]final[\s_]block[\s_]length/i,
-     };
-   }
- 
-@@ -98,17 +97,23 @@ const {
+@@ -97,17 +97,23 @@ const {
        dh3.computeSecret('');
      }, { message: hasOpenSSL3 && !hasOpenSSL3WithNewErrorMessage ?
        'Unspecified validation error' :
@@ -244,19 +127,6 @@ index d22281abbd5c3cab3aaa3ac494301fa6b4a8a968..5f0c6a4aed2e868a1a1049212edf2187
  
  s.pipe(h).on('data', common.mustCall(function(c) {
    assert.strictEqual(c, expect);
-diff --git a/test/parallel/test-crypto-hash.js b/test/parallel/test-crypto-hash.js
-index 929dd36c669239804f2cfc5168bd3bf6e15855e6..8ebe599bbd21ad30e5041e0eab1e5898caf33e49 100644
---- a/test/parallel/test-crypto-hash.js
-+++ b/test/parallel/test-crypto-hash.js
-@@ -182,7 +182,7 @@ assert.throws(
- }
- 
- // Test XOF hash functions and the outputLength option.
--{
-+if (!process.features.openssl_is_boringssl) {
-   // Default outputLengths.
-   assert.strictEqual(crypto.createHash('shake128').digest('hex'),
-                      '7f9c2ba4e88f827d616045507605853e');
 diff --git a/test/parallel/test-crypto-oneshot-hash-xof.js b/test/parallel/test-crypto-oneshot-hash-xof.js
 index 75cb4800ff1bd51fedd7bc4e2d7e6af6f4f48346..b4363c31592763235116d970a5f45d4cf63de373 100644
 --- a/test/parallel/test-crypto-oneshot-hash-xof.js
@@ -272,51 +142,6 @@ index 75cb4800ff1bd51fedd7bc4e2d7e6af6f4f48346..b4363c31592763235116d970a5f45d4c
  // Test XOF hash functions and the outputLength option.
  {
    // Default outputLengths.
-diff --git a/test/parallel/test-crypto-padding.js b/test/parallel/test-crypto-padding.js
-index 48cd1ed4df61aaddeee8785cb90f83bdd9628187..d09e01712c617597833bb1320a32a967bcf1d318 100644
---- a/test/parallel/test-crypto-padding.js
-+++ b/test/parallel/test-crypto-padding.js
-@@ -84,14 +84,13 @@ assert.throws(function() {
-   // Input must have block length %.
-   enc(ODD_LENGTH_PLAIN, false);
- }, hasOpenSSL3 ? {
--  message: 'error:1C80006B:Provider routines::wrong final block length',
--  code: 'ERR_OSSL_WRONG_FINAL_BLOCK_LENGTH',
--  reason: 'wrong final block length',
-+  message: /wrong[\s_]final[\s_]block[\s_]length/i,
-+  code: /ERR_OSSL(_EVP)?_DATA_NOT_MULTIPLE_OF_BLOCK_LENGTH/,
-+  message: /wrong[\s_]final[\s_]block[\s_]length/i,
- } : {
--  message: 'error:0607F08A:digital envelope routines:EVP_EncryptFinal_ex:' +
--    'data not multiple of block length',
--  code: 'ERR_OSSL_EVP_DATA_NOT_MULTIPLE_OF_BLOCK_LENGTH',
--  reason: 'data not multiple of block length',
-+  message: /data[\s_]not[\s_]multiple[\s_]of[\s_]block[\s_]length/i,
-+  code: /ERR_OSSL(_EVP)?_DATA_NOT_MULTIPLE_OF_BLOCK_LENGTH/,
-+  reason: /data[\s_]not[\s_]multiple[\s_]of[\s_]block[\s_]length/i,
- }
- );
- 
-@@ -110,15 +109,10 @@ assert.strictEqual(dec(EVEN_LENGTH_ENCRYPTED, false).length, 48);
- assert.throws(function() {
-   // Must have at least 1 byte of padding (PKCS):
-   assert.strictEqual(dec(EVEN_LENGTH_ENCRYPTED_NOPAD, true), EVEN_LENGTH_PLAIN);
--}, hasOpenSSL3 ? {
--  message: 'error:1C800064:Provider routines::bad decrypt',
--  reason: 'bad decrypt',
--  code: 'ERR_OSSL_BAD_DECRYPT',
--} : {
--  message: 'error:06065064:digital envelope routines:EVP_DecryptFinal_ex:' +
--    'bad decrypt',
--  reason: 'bad decrypt',
--  code: 'ERR_OSSL_EVP_BAD_DECRYPT',
-+}, {
-+  message: /bad[\s_]decrypt/i,
-+  reason: /bad[\s_]decrypt/i,
-+  code: /ERR_OSSL(_EVP)?_BAD_DECRYPT/,
- });
- 
- // No-pad encrypted string should return the same:
 diff --git a/test/parallel/test-crypto-rsa-dsa.js b/test/parallel/test-crypto-rsa-dsa.js
 index 119bc3c2d20ea7d681f0b579f9d91ad46cdc3634..8d13b105fa426015a873c411ad1d7f64b3d9580e 100644
 --- a/test/parallel/test-crypto-rsa-dsa.js
@@ -428,23 +253,6 @@ index a66f0a94efd7c952c1d2320fbc7a39fe3a88a8a1..dc5846db0e3dcf8f7cb5f7efcdbc81c1
  
    for (const [file, length] of keys) {
      const privKey = fixtures.readKey(file);
-diff --git a/test/parallel/test-crypto-stream.js b/test/parallel/test-crypto-stream.js
-index 747af780469c22eb8e4c6c35424043e868f75c3d..ed0916b036a9af23d805007ebd609973ee954473 100644
---- a/test/parallel/test-crypto-stream.js
-+++ b/test/parallel/test-crypto-stream.js
-@@ -73,9 +73,9 @@ const cipher = crypto.createCipheriv('aes-128-cbc', key, iv);
- const decipher = crypto.createDecipheriv('aes-128-cbc', badkey, iv);
- 
- cipher.pipe(decipher)
--  .on('error', common.expectsError(hasOpenSSL3 ? {
--    message: /bad[\s_]decrypt/,
--    library: 'Provider routines',
-+  .on('error', common.expectsError((hasOpenSSL3 || process.features.openssl_is_boringssl) ? {
-+    message: /bad[\s_]decrypt/i,
-+    library: /Provider routines|Cipher functions/,
-     reason: /bad[\s_]decrypt/i,
-   } : {
-     message: /bad[\s_]decrypt/i,
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
 index 84111740cd9ef6425b747e24e984e66e46b0b2ef..b1621d310536fae3fdec91a6a9d275ec8fc99a98 100644
 --- a/test/parallel/test-crypto.js
@@ -502,29 +310,6 @@ index 84111740cd9ef6425b747e24e984e66e46b0b2ef..b1621d310536fae3fdec91a6a9d275ec
  // Make sure memory isn't released before being returned
  console.log(crypto.randomBytes(16));
  
-diff --git a/test/parallel/test-tls-alert-handling.js b/test/parallel/test-tls-alert-handling.js
-index 7bd42bbe721c4c9442410d524c5ca740078fc72c..de49dbdc2b75517f497af353a6b24b1beb11ed69 100644
---- a/test/parallel/test-tls-alert-handling.js
-+++ b/test/parallel/test-tls-alert-handling.js
-@@ -43,7 +43,8 @@ const errorHandler = common.mustCall((err) => {
- 
-   assert.strictEqual(err.code, expectedErrorCode);
-   assert.strictEqual(err.library, 'SSL routines');
--  if (!hasOpenSSL3) assert.strictEqual(err.function, 'ssl3_get_record');
-+  if (!hasOpenSSL3 && !process.features.openssl_is_boringssl)
-+    assert.strictEqual(err.function, 'ssl3_get_record');
-   assert.match(err.reason, expectedErrorReason);
-   errorReceived = true;
-   if (canCloseServer())
-@@ -105,7 +106,7 @@ function sendBADTLSRecord() {
-     }
-     assert.strictEqual(err.code, expectedErrorCode);
-     assert.strictEqual(err.library, 'SSL routines');
--    if (!hasOpenSSL3)
-+    if (!hasOpenSSL3 && !process.features.openssl_is_boringssl)
-       assert.strictEqual(err.function, 'ssl3_read_bytes');
-     assert.match(err.reason, expectedErrorReason);
-   }));
 diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
 index bd788ec4ed88289d35798b8af8c9490a68e081a2..1a5477ba928bce93320f8056db02e1a7b8ddcdf3 100644
 --- a/test/parallel/test-webcrypto-wrap-unwrap.js
@@ -584,7 +369,7 @@ index bd788ec4ed88289d35798b8af8c9490a68e081a2..1a5477ba928bce93320f8056db02e1a7
  function generateWrappingKeys() {
    return Promise.all(Object.keys(kWrappingData).map(async (name) => {
 diff --git a/test/parallel/test-x509-escaping.js b/test/parallel/test-x509-escaping.js
-index b507af88e1f7f3424b7b5d6d683a295b9d208e5e..825ba4c8dce775f401080a0522565bb7a087bcc3 100644
+index c8fc4abbb108a6d6849e8452d97d29187da2ebe6..e897dbbf8a69e454498f2793228e6f53ee7d54f5 100644
 --- a/test/parallel/test-x509-escaping.js
 +++ b/test/parallel/test-x509-escaping.js
 @@ -448,7 +448,7 @@ const { hasOpenSSL3 } = require('../common/crypto');
