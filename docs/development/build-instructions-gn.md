@@ -12,9 +12,15 @@ Check the build prerequisites for your platform before proceeding:
 * [Linux](build-instructions-linux.md#prerequisites)
 * [Windows](build-instructions-windows.md#prerequisites)
 
-## Using `@electron/build-tools` (recommended)
+## Setting up `@electron/build-tools` (recommended)
 
-[Electron Build Tools](https://github.com/electron/build-tools) automate much of the setup for compiling Electron from source with different configurations and build targets. Most of the [manual setup](#manual-setup) instructions can be replaced by simpler Build Tools commands.
+[Electron Build Tools](https://github.com/electron/build-tools) automate much of the setup for
+compiling Electron from source with different configurations and build targets.
+Most of the [manual setup](#manual-setup-advanced) instructions can be replaced by simpler Build Tools commands.
+
+> [!TIP]
+> Build Tools also gives you access to [remote execution and caching of build actions](./reclient.md),
+which will dramatically improve subsequent build times.
 
 Electron Build Tools can be installed globally from npm:
 
@@ -35,29 +41,53 @@ e init --root=~/electron --bootstrap testing
 ```
 
 The `--bootstrap` flag also runs `e sync` (synchronizes source code branches from
-[`DEPS`](https://github.com/electron/electron/blob/main/DEPS)) and `e build` (compiles Electron).
+[`DEPS`](https://github.com/electron/electron/blob/main/DEPS) using
+[`gclient`](https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/HEAD/README.gclient.md))
+and `e build` (compiles the Electron binary into the `${root}/src/out` folder).
+
+> [!IMPORTANT]
+>
+> Sometime after the initial `e sync` phase, you will be asked to run `e d rbe login` to auth into
+> remote build execution and proceed into the build. This may take about 20-30 minutes!
 
 Once the build is done compiling, you can test it by running `e start` (or by loading it into
 [Electron Fiddle](http://electronjs.org/fiddle)).
 
+### Navigating the project
+
 Some quick tips on building once your checkout is set up:
 
-* Within the checkout, Chromium code is synced to `/src/` while `electron/electron`
-  repository code lives in `/src/electron/`.
-* Whenever you check out a new branch, make sure to `e sync` before `e build`. This is especially
-  relevant because the Chromium version in [`DEPS`](https://github.com/electron/electron/blob/main/DEPS)
-  changes frequently.
-* When making changes to code in `/src/electron/` in a local branch, you only need to re-run `e build`.
-* When contributing changes in `/src/` outside of `/src/electron/`, you need to do so via Electron's
-[patch system](./patches.md). The `e patches` command can export all relevant patches to
-`/src/electron/patches/` once your code change is ready.
+* Within the project, Chromium code is synced to `${root}/src/` while Electron's code (i.e. code in
+  https://github.com/electron/electron) lives in `${root}/src/electron/`. Note that both directories
+  have their own git repositories.
+* Whenever you check out a new branch, make sure to `e sync` before `e build` to sync dependencies
+  such as Chromium and Node.js. This is especially relevant because the Chromium version in
+  [`DEPS`](https://github.com/electron/electron/blob/main/DEPS) changes frequently.
+* When making changes to code in `${root}/src/electron/` in a local branch, you only need to re-run `e build`.
+* When contributing changes in `${root}/src/` outside of `${root}/src/electron/`, you need to do so
+  via Electron's [patch system](./patches.md). The `e patches` command can export all relevant patches to
+  `${root}/src/electron/patches/` once your code change is ready.
+
+> [!IMPORTANT]
+> Unless you're applying upstream patches, you should treat `${root}/src/` as a read-only folder and
+> spend most of your development time in `${root}/src/electron/`. You should not need to make any
+> git changes to `${root}/src/`.
 
 > [!TIP]
-
 > Detailed documentation for all available `e` commands can be found in the
-> repository's [README.md](https://github.com/electron/build-tools/blob/main/README.md).
+> repository's [README.md](https://github.com/electron/build-tools/blob/main/README.md). You can
+> also run `e --help` to list all commands and use the `--help` flag on any command to get more
+> usage info.
 
-## Manual setup
+> [!TIP]
+> For more information on project structure, see the [Source Code Directory Structure](./source-code-directory-structure.md)
+> guide.
+
+<details>
+<!-- markdownlint-disable-next-line MD033 -->
+<summary><strong>Manual setup (advanced)</strong></summary>
+
+## Manual setup (advanced)
 
 Electron uses [GN](https://gn.googlesource.com/gn) for project generation and
 [siso](https://chromium.googlesource.com/build/+/refs/heads/main/siso/README.md) for building.
@@ -126,12 +156,13 @@ $ git branch --set-upstream-to=origin/main
 $ cd -
 ```
 
-:memo: `gclient` works by checking a file called `DEPS` inside the
-`src/electron` folder for dependencies (like Chromium or Node.js).
+> [!TIP]
+> `gclient` works by checking a file called `DEPS` inside the
+`${root}/src/electron` folder for dependencies (like Chromium or Node.js).
 Running `gclient sync -f` ensures that all dependencies required
 to build Electron match that file.
 
-So, in order to pull, you'd run the following commands:
+In order to pull, you'd run the following commands:
 
 ```sh
 $ cd src/electron
@@ -199,7 +230,7 @@ $ gn gen out/Release --args="import(\`"//electron/build/args/release.gn\`")"
 ```
 
 > [!NOTE]
-> This will generate a `out/Testing` or `out/Release` build directory under `src/` with the testing or release build depending upon the configuration passed above. You can replace `Testing|Release` with another names, but it should be a subdirectory of `out`.
+> This will generate a `out/Testing` or `out/Release` build directory under `${root}/src/` with the testing or release build depending upon the configuration passed above. You can replace `Testing|Release` with another names, but it should be a subdirectory of `out`.
 
 Also you shouldn't have to run `gn gen` again—if you want to change the build arguments, you can run `gn args out/Testing` to bring up an editor. To see the list of available build configuration options, run `gn args out/Testing --list`.
 
@@ -289,7 +320,7 @@ Next, run `gn gen` as above with `target_cpu="arm64"`.
 To run the tests, you'll first need to build the test modules against the
 same version of Node.js that was built as part of the build process. To
 generate build headers for the modules to compile against, run the following
-under `src/` directory.
+under `${root}/src/` directory.
 
 ```sh
 $ ninja -C out/Testing electron:node_headers
@@ -327,11 +358,14 @@ This can be set quickly in powershell (ran as administrator):
 New-ItemProperty -Path "HKLM:\System\CurrentControlSet\Services\Lanmanworkstation\Parameters" -Name DirectoryCacheLifetime -Value 0 -PropertyType DWORD -Force
 ```
 
+</details>
+
 ## Troubleshooting
 
-### gclient sync complains about rebase
+### `sync` complains about rebase
 
-If `gclient sync` is interrupted the git tree may be left in a bad state, leading to a cryptic message when running `gclient sync` in the future:
+If `e sync` (or `gclient sync`) is interrupted, the git tree may be left in a bad state, leading to
+a cryptic message when running `sync` in the future:
 
 ```plaintext
 2> Conflict while rebasing this branch.
@@ -339,17 +373,19 @@ If `gclient sync` is interrupted the git tree may be left in a bad state, leadin
 2> See man git-rebase for details.
 ```
 
-If there are no git conflicts or rebases in `src/electron`, you may need to abort a `git am` in `src`:
+If there are no git conflicts or rebases in `${root}/src/electron`, you may need to abort a `git am`
+in `${root}/src`:
 
 ```sh
 $ cd ../
 $ git am --abort
 $ cd electron
-$ gclient sync -f
+$ e sync -f
 ```
 
-This may also happen if you have checked out a branch (as opposed to having a detached head) in `electron/src/`
-or some other dependency’s repository. If that is the case, a `git checkout --detach HEAD` in the appropriate repository should do the trick.
+This may also happen if you have checked out a branch (as opposed to having a detached head) in `${root}/src/`
+or some other dependency’s repository. If that is the case, a `git checkout --detach HEAD` in the
+appropriate repository should do the trick.
 
 ### I'm being asked for a username/password for chromium-internal.googlesource.com
 
@@ -357,16 +393,6 @@ If you see a prompt for `Username for 'https://chrome-internal.googlesource.com'
 `DEPOT_TOOLS_WIN_TOOLCHAIN` with value `0`.  This tells `depot_tools` to use
 your locally installed version of Visual Studio (by default, `depot_tools` will
 try to download a Google-internal version that only Googlers have access to).
-
-### `e` Module not found
-
-If `e` is not recognized despite running `npm i -g @electron/build-tools`, ie:
-
-```sh
-Error: Cannot find module '/Users/<user>/.electron_build_tools/src/e'
-```
-
-We recommend installing Node through [nvm](https://github.com/nvm-sh/nvm). This allows for easier Node version management, and is often a fix for missing `e` modules.
 
 ### RBE authentication randomly fails with "Token not valid"
 
