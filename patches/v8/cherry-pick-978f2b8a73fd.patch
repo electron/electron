@@ -1,0 +1,339 @@
+From 978f2b8a73fdc1c6d17fa5966dee81393e2f1533 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Tue, 25 Nov 2025 17:37:52 +0100
+Subject: [PATCH] Fix class member initializer reparsing logic
+
+Intertwined static / public member initializers can mix up ids, so unmix them.
+
+Bug: 458914193
+Change-Id: If0708b56750a92e03eaa5530cfbff295c2acf630
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7203465
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#103958}
+---
+
+diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
+index c0438fe..b476498 100644
+--- a/src/ast/scopes.cc
++++ b/src/ast/scopes.cc
+@@ -1448,7 +1448,7 @@
+   // Functions which force eager compilation and class member initializer
+   // functions are not lazily compilable.
+   return !force_eager_compilation_ &&
+-         !IsClassMembersInitializerFunction(function_kind());
++         !IsClassInitializerFunction(function_kind());
+ }
+ 
+ int Scope::ContextChainLength(Scope* scope) const {
+diff --git a/src/ast/scopes.h b/src/ast/scopes.h
+index 4b0a708..2698b64 100644
+--- a/src/ast/scopes.h
++++ b/src/ast/scopes.h
+@@ -996,7 +996,7 @@
+ #endif  // V8_ENABLE_WEBASSEMBLY
+ 
+   bool should_ban_arguments() const {
+-    return IsClassMembersInitializerFunction(function_kind());
++    return IsClassInitializerFunction(function_kind());
+   }
+ 
+   void set_module_has_toplevel_await() {
+diff --git a/src/objects/call-site-info.cc b/src/objects/call-site-info.cc
+index eb9137c..f0a390c 100644
+--- a/src/objects/call-site-info.cc
++++ b/src/objects/call-site-info.cc
+@@ -467,7 +467,7 @@
+   DirectHandle<JSFunction> function(Cast<JSFunction>(info->function()),
+                                     isolate);
+   // Class members initializer function is not a method.
+-  if (IsClassMembersInitializerFunction(function->shared()->kind())) {
++  if (IsClassInitializerFunction(function->shared()->kind())) {
+     return isolate->factory()->null_value();
+   }
+ 
+diff --git a/src/objects/function-kind.h b/src/objects/function-kind.h
+index 9a1a64f..148109a 100644
+--- a/src/objects/function-kind.h
++++ b/src/objects/function-kind.h
+@@ -58,11 +58,13 @@
+   kConciseMethod,
+   kStaticConciseMethod,
+   kClassMembersInitializerFunction,
++  kClassMembersInitializerFunctionPrecededByStatic,
+   kClassStaticInitializerFunction,
++  kClassStaticInitializerFunctionPrecededByMember,
+   // END concise methods 2
+   kInvalid,
+ 
+-  kLastFunctionKind = kClassStaticInitializerFunction,
++  kLastFunctionKind = kClassStaticInitializerFunctionPrecededByMember,
+ };
+ 
+ constexpr int kFunctionKindBitSize = 5;
+@@ -105,8 +107,9 @@
+ inline bool IsConciseMethod(FunctionKind kind) {
+   return base::IsInRange(kind, FunctionKind::kAsyncConciseMethod,
+                          FunctionKind::kStaticAsyncConciseGeneratorMethod) ||
+-         base::IsInRange(kind, FunctionKind::kConciseGeneratorMethod,
+-                         FunctionKind::kClassStaticInitializerFunction);
++         base::IsInRange(
++             kind, FunctionKind::kConciseGeneratorMethod,
++             FunctionKind::kClassStaticInitializerFunctionPrecededByMember);
+ }
+ 
+ inline bool IsStrictFunctionWithoutPrototype(FunctionKind kind) {
+@@ -114,8 +117,9 @@
+                          FunctionKind::kAsyncArrowFunction) ||
+          base::IsInRange(kind, FunctionKind::kAsyncConciseMethod,
+                          FunctionKind::kStaticAsyncConciseGeneratorMethod) ||
+-         base::IsInRange(kind, FunctionKind::kConciseGeneratorMethod,
+-                         FunctionKind::kClassStaticInitializerFunction);
++         base::IsInRange(
++             kind, FunctionKind::kConciseGeneratorMethod,
++             FunctionKind::kClassStaticInitializerFunctionPrecededByMember);
+ }
+ 
+ inline bool IsGetterFunction(FunctionKind kind) {
+@@ -153,9 +157,22 @@
+                          FunctionKind::kDerivedConstructor);
+ }
+ 
+-inline bool IsClassMembersInitializerFunction(FunctionKind kind) {
+-  return base::IsInRange(kind, FunctionKind::kClassMembersInitializerFunction,
+-                         FunctionKind::kClassStaticInitializerFunction);
++inline bool IsClassInitializerFunction(FunctionKind kind) {
++  return base::IsInRange(
++      kind, FunctionKind::kClassMembersInitializerFunction,
++      FunctionKind::kClassStaticInitializerFunctionPrecededByMember);
++}
++
++inline bool IsClassInstanceInitializerFunction(FunctionKind kind) {
++  return base::IsInRange(
++      kind, FunctionKind::kClassMembersInitializerFunction,
++      FunctionKind::kClassMembersInitializerFunctionPrecededByStatic);
++}
++
++inline bool IsClassStaticInitializerFunction(FunctionKind kind) {
++  return base::IsInRange(
++      kind, FunctionKind::kClassStaticInitializerFunction,
++      FunctionKind::kClassStaticInitializerFunctionPrecededByMember);
+ }
+ 
+ inline bool IsConstructable(FunctionKind kind) {
+@@ -172,6 +189,7 @@
+     case FunctionKind::kStaticAsyncConciseMethod:
+     case FunctionKind::kStaticAsyncConciseGeneratorMethod:
+     case FunctionKind::kClassStaticInitializerFunction:
++    case FunctionKind::kClassStaticInitializerFunctionPrecededByMember:
+       return true;
+     default:
+       return false;
+@@ -217,6 +235,10 @@
+       return "ClassMembersInitializerFunction";
+     case FunctionKind::kClassStaticInitializerFunction:
+       return "ClassStaticInitializerFunction";
++    case FunctionKind::kClassMembersInitializerFunctionPrecededByStatic:
++      return "ClassMembersInitializerFunctionPrecededByStatic";
++    case FunctionKind::kClassStaticInitializerFunctionPrecededByMember:
++      return "ClassStaticInitializerFunctionPrecededByMember";
+     case FunctionKind::kDefaultBaseConstructor:
+       return "DefaultBaseConstructor";
+     case FunctionKind::kDefaultDerivedConstructor:
+diff --git a/src/objects/shared-function-info.cc b/src/objects/shared-function-info.cc
+index e8877a4..748cde9 100644
+--- a/src/objects/shared-function-info.cc
++++ b/src/objects/shared-function-info.cc
+@@ -344,8 +344,8 @@
+   }
+ #endif  // V8_ENABLE_WEBASSEMBLY
+   FunctionKind function_kind = shared->kind();
+-  if (IsClassMembersInitializerFunction(function_kind)) {
+-    return function_kind == FunctionKind::kClassMembersInitializerFunction
++  if (IsClassInitializerFunction(function_kind)) {
++    return IsClassInstanceInitializerFunction(function_kind)
+                ? isolate->factory()->instance_members_initializer_string()
+                : isolate->factory()->static_initializer_string();
+   }
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index dddf315..bf412c9 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -310,7 +310,10 @@
+ 
+   void SkipInfos(int delta) { info_id_ += delta; }
+ 
+-  void ResetInfoId() { info_id_ = 0; }
++  void ResetInfoId(int id = 0) {
++    DCHECK_LE(0, id);
++    info_id_ = id;
++  }
+ 
+   // The Zone where the parsing outputs are stored.
+   Zone* main_zone() const { return ast_value_factory()->single_parse_zone(); }
+@@ -628,8 +631,11 @@
+     DeclarationScope* EnsureStaticElementsScope(ParserBase* parser, int beg_pos,
+                                                 int info_id) {
+       if (!has_static_elements()) {
+-        static_elements_scope = parser->NewFunctionScope(
+-            FunctionKind::kClassStaticInitializerFunction);
++        FunctionKind kind =
++            has_instance_members()
++                ? FunctionKind::kClassStaticInitializerFunctionPrecededByMember
++                : FunctionKind::kClassStaticInitializerFunction;
++        static_elements_scope = parser->NewFunctionScope(kind);
+         static_elements_scope->SetLanguageMode(LanguageMode::kStrict);
+         static_elements_scope->set_start_position(beg_pos);
+         static_elements_function_id = info_id;
+@@ -643,8 +649,11 @@
+     DeclarationScope* EnsureInstanceMembersScope(ParserBase* parser,
+                                                  int beg_pos, int info_id) {
+       if (!has_instance_members()) {
+-        instance_members_scope = parser->NewFunctionScope(
+-            FunctionKind::kClassMembersInitializerFunction);
++        FunctionKind kind =
++            has_static_elements()
++                ? FunctionKind::kClassMembersInitializerFunctionPrecededByStatic
++                : FunctionKind::kClassMembersInitializerFunction;
++        instance_members_scope = parser->NewFunctionScope(kind);
+         instance_members_scope->SetLanguageMode(LanguageMode::kStrict);
+         instance_members_scope->set_start_position(beg_pos);
+         instance_members_function_id = info_id;
+diff --git a/src/parsing/parser.cc b/src/parsing/parser.cc
+index 1ee48a3..d6cd244 100644
+--- a/src/parsing/parser.cc
++++ b/src/parsing/parser.cc
+@@ -1063,7 +1063,7 @@
+ 
+   FunctionKind function_kind = flags().function_kind();
+   FunctionLiteral* result;
+-  if (V8_UNLIKELY(IsClassMembersInitializerFunction(function_kind))) {
++  if (V8_UNLIKELY(IsClassInitializerFunction(function_kind))) {
+     // Reparsing of class member initializer functions has to be handled
+     // specially because they require reparsing of the whole class body,
+     // function start/end positions correspond to the class literal body
+@@ -1118,9 +1118,7 @@
+   DCHECK(ast_value_factory());
+   fni_.PushEnclosingName(raw_name);
+ 
+-  ResetInfoId();
+-  DCHECK_LT(0, function_literal_id);
+-  SkipInfos(function_literal_id - 1);
++  ResetInfoId(function_literal_id - 1);
+ 
+   ScopedModification<Mode> mode_scope(&mode_, PARSE_EAGERLY);
+ 
+@@ -1256,10 +1254,6 @@
+   DCHECK_NOT_NULL(nearest_decl_scope);
+   FunctionState function_state(&function_state_, &scope_, nearest_decl_scope);
+ 
+-  // We will reindex the function literals later.
+-  ResetInfoId();
+-  SkipInfos(initializer_id - 1);
+-
+   // We preparse the class members that are not fields with initializers
+   // in order to collect the function literal ids.
+   ScopedModification<Mode> mode_scope(&mode_, PARSE_LAZILY);
+@@ -1304,9 +1298,43 @@
+     scope()->MarkReparsingForClassInitializer();
+ #endif
+ 
++    // Class members for instance and static fields can be intertwined. For
++    // example, in `class { a; static {}; b; static {} }` (where `a` and `b` are
++    // instance fields, and `static {}` are static initialization blocks), the
++    // initial parse might assign function literal IDs as follows:
++    //   - Instance members initializer (for `a` and `b`): ID 1
++    //   - Static members initializer (for `static {}` blocks): ID 2
++    //
++    // When we reparse a specific initializer (e.g., the static members
++    // initializer, ID 2), we must ensure that the scope for the "other" kind of
++    // initializer (e.g., the instance members initializer, ID 1) is
++    // pre-allocated if it lexically precedes the current one.
++    //
++    // If the instance scope (ID 1) is not pre-allocated:
++    // 1. The parser processes the first `static {}` block. It allocates the
++    //    static scope with the correct ID (ID 2), as that is the next available
++    //    ID after skipping.
++    // 2. The parser continues and encounters `b`. Since no instance scope
++    //    exists yet, it lazily allocates one.
++    // 3. This new instance scope takes the *next* available ID, which is ID 3.
++    //    However, ID 3 might not exist (overrunning the range) or might belong
++    //    to a subsequent function, causing a shift/mismatch.
++    //
++    // Pre-allocating the preceding scope (ID 1) ensures it exists before the
++    // parser encounters `b`, preventing the incorrect allocation of a new ID.
++
++    if (initializer_kind ==
++        FunctionKind::kClassMembersInitializerFunctionPrecededByStatic) {
++      class_info.EnsureStaticElementsScope(this, kNoSourcePosition, -1);
++    } else if (initializer_kind ==
++               FunctionKind::kClassStaticInitializerFunctionPrecededByMember) {
++      class_info.EnsureInstanceMembersScope(this, kNoSourcePosition, -1);
++    }
++    ResetInfoId(initializer_id - 1);
++
+     ParseClassLiteralBody(class_info, class_name, class_token_pos, Token::kEos);
+ 
+-    if (initializer_kind == FunctionKind::kClassMembersInitializerFunction) {
++    if (IsClassInstanceInitializerFunction(initializer_kind)) {
+       DCHECK_EQ(class_info.instance_members_function_id, initializer_id);
+       initializer = CreateInstanceMembersInitializer(class_name, &class_info);
+     } else {
+@@ -1318,7 +1346,7 @@
+ 
+   if (has_error()) return nullptr;
+ 
+-  DCHECK(IsClassMembersInitializerFunction(initializer_kind));
++  DCHECK(IsClassInitializerFunction(initializer_kind));
+ 
+   no_expression_scope.ValidateExpression();
+ 
+@@ -3348,7 +3376,7 @@
+ FunctionLiteral* Parser::CreateInitializerFunction(
+     const AstRawString* class_name, DeclarationScope* scope,
+     int function_literal_id, Statement* initializer_stmt) {
+-  DCHECK(IsClassMembersInitializerFunction(scope->function_kind()));
++  DCHECK(IsClassInitializerFunction(scope->function_kind()));
+   // function() { .. class fields initializer .. }
+   ScopedPtrList<Statement> statements(pointer_buffer());
+   statements.Add(initializer_stmt);
+diff --git a/src/tracing/code-data-source.cc b/src/tracing/code-data-source.cc
+index 7d4f0dd..177a8f8 100644
+--- a/src/tracing/code-data-source.cc
++++ b/src/tracing/code-data-source.cc
+@@ -108,8 +108,10 @@
+     case FunctionKind::kStaticConciseMethod:
+       return InternedV8JsFunction::KIND_STATIC_CONCISE_METHOD;
+     case FunctionKind::kClassMembersInitializerFunction:
++    case FunctionKind::kClassMembersInitializerFunctionPrecededByStatic:
+       return InternedV8JsFunction::KIND_CLASS_MEMBERS_INITIALIZER_FUNCTION;
+     case FunctionKind::kClassStaticInitializerFunction:
++    case FunctionKind::kClassStaticInitializerFunctionPrecededByMember:
+       return InternedV8JsFunction::KIND_CLASS_STATIC_INITIALIZER_FUNCTION;
+     case FunctionKind::kInvalid:
+       return InternedV8JsFunction::KIND_INVALID;
+diff --git a/test/unittests/objects/object-unittest.cc b/test/unittests/objects/object-unittest.cc
+index e3c7d92..18032ea 100644
+--- a/test/unittests/objects/object-unittest.cc
++++ b/test/unittests/objects/object-unittest.cc
+@@ -575,6 +575,9 @@
+     case FunctionKind::kAsyncConciseGeneratorMethod:
+     case FunctionKind::kStaticAsyncConciseGeneratorMethod:
+     case FunctionKind::kClassMembersInitializerFunction:
++    case FunctionKind::kClassMembersInitializerFunctionPrecededByStatic:
++    case FunctionKind::kClassStaticInitializerFunction:
++    case FunctionKind::kClassStaticInitializerFunctionPrecededByMember:
+       return true;
+     default:
+       return false;
+@@ -661,6 +664,9 @@
+     case FunctionKind::kConciseMethod:
+     case FunctionKind::kStaticConciseMethod:
+     case FunctionKind::kClassMembersInitializerFunction:
++    case FunctionKind::kClassMembersInitializerFunctionPrecededByStatic:
++    case FunctionKind::kClassStaticInitializerFunction:
++    case FunctionKind::kClassStaticInitializerFunctionPrecededByMember:
+       return false;
+     default:
+       return true;
