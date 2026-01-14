@@ -176,22 +176,23 @@ void OpaqueFrameView::Layout(PassKey) {
 
   // Reset all our data so that everything is invisible.
   TopAreaPadding top_area_padding = GetTopAreaPadding();
-  available_space_leading_x_ = top_area_padding.leading;
-  available_space_trailing_x_ = width() - top_area_padding.trailing;
+  gfx::Rect client_bounds = GetBoundsForClientView();
+  available_space_leading_x_ = client_bounds.x() + top_area_padding.leading;
+  available_space_trailing_x_ =
+      client_bounds.right() - top_area_padding.trailing;
   minimum_size_for_buttons_ =
-      available_space_leading_x_ + width() - available_space_trailing_x_;
+      (available_space_leading_x_ - client_bounds.x()) +
+      (client_bounds.right() - available_space_trailing_x_);
   placed_leading_button_ = false;
   placed_trailing_button_ = false;
 
   LayoutWindowControls();
 
   int height = NonClientTopHeight(false);
-  auto insets = FrameBorderInsets(false);
-  int container_x = placed_trailing_button_ ? available_space_trailing_x_ : 0;
+  int container_x =
+      placed_trailing_button_ ? available_space_trailing_x_ : client_bounds.x();
   caption_button_placeholder_container_->SetBounds(
-      container_x, insets.top(), minimum_size_for_buttons_ - insets.width(),
-      height - insets.top());
-
+      container_x, client_bounds.y(), minimum_size_for_buttons_, height);
   LayoutWindowControlsOverlay();
 }
 
@@ -286,7 +287,8 @@ void OpaqueFrameView::LayoutWindowControlsOverlay() {
             : caption_button_placeholder_container_->size().height() + 1;
   }
   int overlay_width = caption_button_placeholder_container_->size().width();
-  int bounding_rect_width = width() - overlay_width;
+  gfx::Rect client_bounds = GetBoundsForClientView();
+  int bounding_rect_width = client_bounds.width() - overlay_width;
   auto bounding_rect =
       GetMirroredRect(gfx::Rect(0, 0, bounding_rect_width, overlay_height));
 
@@ -334,8 +336,7 @@ int OpaqueFrameView::FrameTopBorderThickness(bool restored) const {
 OpaqueFrameView::TopAreaPadding OpaqueFrameView::GetTopAreaPadding(
     bool has_leading_buttons,
     bool has_trailing_buttons) const {
-  const auto padding = FrameBorderInsets(false);
-  return TopAreaPadding{padding.left(), padding.right()};
+  return {};
 }
 
 bool OpaqueFrameView::IsFrameCondensed() const {
@@ -383,9 +384,10 @@ int OpaqueFrameView::DefaultCaptionButtonY(bool restored) const {
   // Maximized buttons start at window top, since the window has no border. This
   // offset is for the image (the actual clickable bounds extend all the way to
   // the top to take Fitts' Law into account).
-  // For restored windows, position after the CSD frame border insets (shadow
-  // area).
-  return FrameBorderInsets(restored).top();
+  const bool start_at_top_of_frame = !restored && IsFrameCondensed();
+  return start_at_top_of_frame
+             ? 0
+             : OpaqueBrowserFrameViewLayout::kFrameShadowThickness;
 }
 
 gfx::Insets OpaqueFrameView::FrameEdgeInsets(bool restored) const {
@@ -468,7 +470,8 @@ void OpaqueFrameView::HideButton(views::FrameButton button_id) {
 void OpaqueFrameView::SetBoundsForButton(views::FrameButton button_id,
                                          views::Button* button,
                                          ButtonAlignment alignment) {
-  const int caption_y = CaptionButtonY(button_id, false);
+  gfx::Rect client_bounds = GetBoundsForClientView();
+  const int caption_y = CaptionButtonY(button_id, false) + client_bounds.y();
 
   // There should always be the same number of non-shadow pixels visible to the
   // side of the caption buttons.  In maximized mode we extend buttons to the
@@ -483,7 +486,7 @@ void OpaqueFrameView::SetBoundsForButton(views::FrameButton button_id,
             button->GetClassName());
   const int caption_button_center_size =
       button_width - 2 * views::kCaptionButtonInkDropDefaultCornerRadius;
-  const int height = GetTopAreaHeight() - FrameBorderInsets(false).top();
+  const int height = GetTopAreaHeight() - FrameEdgeInsets(false).top();
   const int corner_radius =
       std::clamp((height - caption_button_center_size) / 2, 0,
                  views::kCaptionButtonInkDropDefaultCornerRadius);
