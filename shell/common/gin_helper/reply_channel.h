@@ -7,8 +7,9 @@
 
 #include <string_view>
 
+#include "gin/wrappable.h"
 #include "shell/common/api/api.mojom.h"
-#include "shell/common/gin_helper/wrappable.h"
+#include "v8/include/cppgc/prefinalizer.h"
 
 namespace gin_helper {
 template <typename T>
@@ -28,27 +29,38 @@ namespace gin_helper::internal {
 // This object wraps the InvokeCallback so that if it gets GC'd by V8, we can
 // still call the callback and send an error. Not doing so causes a Mojo DCHECK,
 // since Mojo requires callbacks to be called before they are destroyed.
-class ReplyChannel : public gin_helper::DeprecatedWrappable<ReplyChannel> {
+class ReplyChannel : public gin::Wrappable<ReplyChannel> {
+  CPPGC_USING_PRE_FINALIZER(ReplyChannel, EnsureReplySent);
+
  public:
   using InvokeCallback = electron::mojom::ElectronApiIPC::InvokeCallback;
-  static gin_helper::Handle<ReplyChannel> Create(v8::Isolate* isolate,
-                                                 InvokeCallback callback);
+
+  static ReplyChannel* Create(v8::Isolate* isolate, InvokeCallback callback);
+
+  // Constructor is public only to satisfy cppgc::MakeGarbageCollected.
+  // Callers should use Create() instead.
+  explicit ReplyChannel(v8::Isolate* isolate, InvokeCallback callback);
+  ~ReplyChannel() override;
+
+  // disable copy
+  ReplyChannel(const ReplyChannel&) = delete;
+  ReplyChannel& operator=(const ReplyChannel&) = delete;
 
   // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  static const gin::WrapperInfo kWrapperInfo;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
 
   // Invokes `callback` (if it's non-null) with `errmsg` as an arg.
   static void SendError(v8::Isolate* isolate,
                         InvokeCallback callback,
                         std::string_view errmsg);
 
- private:
-  explicit ReplyChannel(InvokeCallback callback);
-  ~ReplyChannel() override;
+  void EnsureReplySent();
 
+ private:
   static bool SendReplyImpl(v8::Isolate* isolate,
                             InvokeCallback callback,
                             v8::Local<v8::Value> arg);
