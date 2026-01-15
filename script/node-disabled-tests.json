@@ -112,6 +112,7 @@
   "parallel/test-tls-passphrase",
   "parallel/test-tls-peer-certificate",
   "parallel/test-tls-pfx-authorizationerror",
+  "parallel/test-tls-psk-alpn-callback-exception-handling",
   "parallel/test-tls-psk-circuit",
   "parallel/test-tls-reduced-SECLEVEL-in-cipher",
   "parallel/test-tls-root-certificates",
