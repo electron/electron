@@ -585,9 +585,9 @@ Shows and gives focus to the window.
 #### `win.showInactive([options])`
 
 * `options` Object (optional)
-  * `bringToFront` boolean (optional) - Whether to bring the window to the
-    front of the window stack. Default is `true`. Set to `false` to show
-    the window at the back of the stack. _macOS_
+  * `bringToFront` boolean (optional) _macOS_ - Whether to bring the window
+    to the front of the window stack. Default is `true`. Set to `false` to
+    show the window at the back of the stack.
 
 Shows the window but doesn't focus on it.
 
