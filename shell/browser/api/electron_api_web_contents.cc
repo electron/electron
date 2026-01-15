@@ -3608,6 +3608,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
   view->CopyFromSurface(gfx::Rect(rect.origin(), view_size), bitmap_size,
+                        base::TimeDelta(),
                         base::BindOnce(&OnCapturePageDone, std::move(promise),
                                        std::move(capture_handle)));
   return handle;

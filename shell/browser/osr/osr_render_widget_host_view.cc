@@ -498,9 +498,10 @@ uint32_t OffScreenRenderWidgetHostView::GetCaptureSequenceNumber() const {
 void OffScreenRenderWidgetHostView::CopyFromSurface(
     const gfx::Rect& src_rect,
     const gfx::Size& output_size,
+    base::TimeDelta timeout,
     base::OnceCallback<void(const content::CopyFromSurfaceResult&)> callback) {
-  delegated_frame_host()->CopyFromCompositingSurface(src_rect, output_size,
-                                                     std::move(callback));
+  delegated_frame_host()->CopyFromCompositingSurface(
+      src_rect, output_size, base::TimeDelta(), std::move(callback));
 }
 
 display::ScreenInfo OffScreenRenderWidgetHostView::GetScreenInfo() const {

@@ -11,7 +11,7 @@ See https://chromium-review.googlesource.com/c/v8/v8/+/7141498
 This can be removed once we update to a V8 version that includes this change.
 
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index c26d1301d7b81a6c281d5465bfb29a5786b09dc2..2df7406dca572d11f933d9946f5f5ad9c0f8051f 100644
+index 84d17a46efe146c1794a43963c41a4461eacfca2..2c95ac99be70b0750372e9c858753bf519498e3d 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
 @@ -109,12 +109,12 @@ ModuleCacheKey ModuleCacheKey::From(Local<Context> context,
@@ -72,7 +72,7 @@ index c26d1301d7b81a6c281d5465bfb29a5786b09dc2..2df7406dca572d11f933d9946f5f5ad9
      DCHECK(dependent->resolve_cache_.contains(module_cache_key));
  
      Local<Value> module_i;
-@@ -1128,7 +1128,7 @@ MaybeLocal<Promise> ImportModuleDynamicallyWithPhase(
+@@ -1129,7 +1129,7 @@ MaybeLocal<Promise> ImportModuleDynamicallyWithPhase(
    // If the host-defined options are empty, get the referrer id symbol
    // from the realm global object.
    if (options->Length() == HostDefinedOptions::kLength) {
