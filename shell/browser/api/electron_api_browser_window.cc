@@ -279,10 +279,10 @@ v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, web_contents_);
 }
 void BrowserWindow::OnWindowShow() {
-+  if (web_contents() &&
-+      web_contents()->GetVisibility() != content::Visibility::VISIBLE) {
-+    web_contents()->WasShown();
-+  }
+ if (web_contents() &&
+      web_contents()->GetVisibility() != content::Visibility::VISIBLE) {
+    web_contents()->WasShown();
+    }
    BaseWindow::OnWindowShow();
 }
 
