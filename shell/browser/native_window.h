@@ -82,7 +82,7 @@ class NativeWindow : public views::WidgetDelegate {
   virtual void Focus(bool focus) = 0;
   virtual bool IsFocused() const = 0;
   virtual void Show() = 0;
-  virtual void ShowInactive() = 0;
+  virtual void ShowInactive(bool bring_to_front = true) = 0;
   virtual void Hide() = 0;
   virtual bool IsVisible() const = 0;
   virtual bool IsEnabled() const = 0;
