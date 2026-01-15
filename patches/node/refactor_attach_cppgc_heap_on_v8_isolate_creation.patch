@@ -18,10 +18,10 @@ This can be removed when Node.js upgrades to a version of V8 containing CLs
 from the above issue.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 6e7c0dbe31d0fef23288787df44e58c44bd47c5d..451796ffc4ec93b6e317dd49d92070c61aca04e5 100644
+index 5c8bc870dcf2e974036cf3bcb60fd288e59045d9..0f19cb09ea0963a9c505c51f89d1c7a939f2730b 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -336,6 +336,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
+@@ -331,6 +331,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
                      MultiIsolatePlatform* platform,
                      const SnapshotData* snapshot_data,
                      const IsolateSettings& settings) {
@@ -32,7 +32,7 @@ index 6e7c0dbe31d0fef23288787df44e58c44bd47c5d..451796ffc4ec93b6e317dd49d92070c6
    IsolateGroup group = GetOrCreateIsolateGroup();
    Isolate* isolate = Isolate::Allocate(group);
    if (isolate == nullptr) return nullptr;
-@@ -392,9 +396,12 @@ Isolate* NewIsolate(ArrayBufferAllocator* allocator,
+@@ -387,9 +391,12 @@ Isolate* NewIsolate(ArrayBufferAllocator* allocator,
                      uv_loop_t* event_loop,
                      MultiIsolatePlatform* platform,
                      const EmbedderSnapshotData* snapshot_data,

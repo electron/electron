@@ -6,10 +6,10 @@ Subject: Remove deprecated `GetIsolate`
 https://chromium-review.googlesource.com/c/v8/v8/+/6905244
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 451796ffc4ec93b6e317dd49d92070c61aca04e5..ea3e9374c30be92ba5668e33773ffbb2aef55b30 100644
+index 0f19cb09ea0963a9c505c51f89d1c7a939f2730b..cb1e4e6176e7385f8bc2bc9510761d3fc9c3182d 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -687,7 +687,7 @@ std::unique_ptr<MultiIsolatePlatform> MultiIsolatePlatform::Create(
+@@ -682,7 +682,7 @@ std::unique_ptr<MultiIsolatePlatform> MultiIsolatePlatform::Create(
  
  MaybeLocal<Object> GetPerContextExports(Local<Context> context,
                                          IsolateData* isolate_data) {
@@ -18,7 +18,7 @@ index 451796ffc4ec93b6e317dd49d92070c61aca04e5..ea3e9374c30be92ba5668e33773ffbb2
    EscapableHandleScope handle_scope(isolate);
  
    Local<Object> global = context->Global();
-@@ -733,7 +733,7 @@ void ProtoThrower(const FunctionCallbackInfo<Value>& info) {
+@@ -728,7 +728,7 @@ void ProtoThrower(const FunctionCallbackInfo<Value>& info) {
  // This runs at runtime, regardless of whether the context
  // is created from a snapshot.
  Maybe<void> InitializeContextRuntime(Local<Context> context) {
@@ -27,7 +27,7 @@ index 451796ffc4ec93b6e317dd49d92070c61aca04e5..ea3e9374c30be92ba5668e33773ffbb2
    HandleScope handle_scope(isolate);
  
    // When `IsCodeGenerationFromStringsAllowed` is true, V8 takes the fast path
-@@ -812,7 +812,7 @@ Maybe<void> InitializeContextRuntime(Local<Context> context) {
+@@ -807,7 +807,7 @@ Maybe<void> InitializeContextRuntime(Local<Context> context) {
  }
  
  Maybe<void> InitializeBaseContextForSnapshot(Local<Context> context) {
@@ -36,7 +36,7 @@ index 451796ffc4ec93b6e317dd49d92070c61aca04e5..ea3e9374c30be92ba5668e33773ffbb2
    HandleScope handle_scope(isolate);
  
    // Delete `Intl.v8BreakIterator`
-@@ -837,7 +837,7 @@ Maybe<void> InitializeBaseContextForSnapshot(Local<Context> context) {
+@@ -832,7 +832,7 @@ Maybe<void> InitializeBaseContextForSnapshot(Local<Context> context) {
  }
  
  Maybe<void> InitializeMainContextForSnapshot(Local<Context> context) {
@@ -45,7 +45,7 @@ index 451796ffc4ec93b6e317dd49d92070c61aca04e5..ea3e9374c30be92ba5668e33773ffbb2
    HandleScope handle_scope(isolate);
  
    // Initialize the default values.
-@@ -855,7 +855,7 @@ Maybe<void> InitializeMainContextForSnapshot(Local<Context> context) {
+@@ -850,7 +850,7 @@ Maybe<void> InitializeMainContextForSnapshot(Local<Context> context) {
  MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
                                              IsolateData* isolate_data) {
    CHECK(isolate_data);
@@ -54,7 +54,7 @@ index 451796ffc4ec93b6e317dd49d92070c61aca04e5..ea3e9374c30be92ba5668e33773ffbb2
    EscapableHandleScope scope(isolate);
    Context::Scope context_scope(context);
  
-@@ -879,7 +879,7 @@ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
+@@ -874,7 +874,7 @@ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
  MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
                                                 IsolateData* isolate_data) {
    CHECK(isolate_data);
@@ -63,7 +63,7 @@ index 451796ffc4ec93b6e317dd49d92070c61aca04e5..ea3e9374c30be92ba5668e33773ffbb2
    EscapableHandleScope scope(isolate);
    Context::Scope context_scope(context);
  
-@@ -905,7 +905,7 @@ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
+@@ -900,7 +900,7 @@ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
  Maybe<void> InitializePrimordials(Local<Context> context,
                                    IsolateData* isolate_data) {
    // Run per-context JS files.
@@ -502,10 +502,10 @@ index 6aad252eb5681bb9ab9890812602b43c418e7a7f..5f7ef8cc58f589ba30a44abaaaaaf151
    Local<Array> keys;
    if (!entries->GetOwnPropertyNames(context).ToLocal(&keys))
 diff --git a/src/node_errors.cc b/src/node_errors.cc
-index 15d78e3eca9693dc518ccb28fc7c02fa1372f34b..9286d20c19a1e06001ca4b60981291d320858064 100644
+index 55a0c986c5b6989ee9ce277bb6a9778abb2ad2ee..809d88f21e5572807e38132d40ee75870ab8de07 100644
 --- a/src/node_errors.cc
 +++ b/src/node_errors.cc
-@@ -633,7 +633,7 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
+@@ -631,7 +631,7 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
      v8::Local<v8::Context> context,
      v8::Local<v8::Value> source,
      bool is_code_like) {
@@ -514,7 +514,7 @@ index 15d78e3eca9693dc518ccb28fc7c02fa1372f34b..9286d20c19a1e06001ca4b60981291d3
  
    if (context->GetNumberOfEmbedderDataFields() <=
        ContextEmbedderIndex::kAllowCodeGenerationFromStrings) {
-@@ -1000,7 +1000,7 @@ const char* errno_string(int errorno) {
+@@ -1037,7 +1037,7 @@ const char* errno_string(int errorno) {
  }
  
  void PerIsolateMessageListener(Local<Message> message, Local<Value> error) {
@@ -523,7 +523,7 @@ index 15d78e3eca9693dc518ccb28fc7c02fa1372f34b..9286d20c19a1e06001ca4b60981291d3
    switch (message->ErrorLevel()) {
      case Isolate::MessageErrorLevel::kMessageWarning: {
        Environment* env = Environment::GetCurrent(isolate);
-@@ -1160,7 +1160,7 @@ void Initialize(Local<Object> target,
+@@ -1197,7 +1197,7 @@ void Initialize(Local<Object> target,
    SetMethod(
        context, target, "getErrorSourcePositions", GetErrorSourcePositions);
  
@@ -634,7 +634,7 @@ index 2a5fe9fe501d1fd9356eeb7d044a872fa5a55f38..39f6f142044c42904d234da20a266315
    env->AssignToContext(context, this, ContextInfo(""));
    // The environment can also purge empty wrappers in the check callback,
 diff --git a/src/node_report.cc b/src/node_report.cc
-index 139e2ae3f2de1f1e28876bdc5332f68ea392484e..d479ada5bf0776fac52cd43c952a7f418ebc0679 100644
+index ba2dd7e676bfdfe7da66a4a79db3c791a505c9a8..28e6cfac682e301b605c00c4ef2eaf01431f04e4 100644
 --- a/src/node_report.cc
 +++ b/src/node_report.cc
 @@ -400,7 +400,7 @@ static void PrintJavaScriptErrorProperties(JSONWriter* writer,

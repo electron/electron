@@ -7,7 +7,7 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 31007e599f0b717d586aa97b26c610047f402f0f..6e7c0dbe31d0fef23288787df44e58c44bd47c5d 100644
+index 53f05293bd94e159dfedf48735989e668acdd08e..5c8bc870dcf2e974036cf3bcb60fd288e59045d9 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -111,6 +111,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
@@ -24,8 +24,8 @@ index 31007e599f0b717d586aa97b26c610047f402f0f..6e7c0dbe31d0fef23288787df44e58c4
 +
  void* NodeArrayBufferAllocator::Allocate(size_t size) {
    void* ret;
-   if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers) {
-@@ -342,6 +350,12 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
+   COUNT_GENERIC_USAGE("NodeArrayBufferAllocator.Allocate.ZeroFilled");
+@@ -337,6 +345,12 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
      // but also otherwise just doesn't work, and the only real alternative
      // is disabling shared-readonly-heap mode altogether.
      static Isolate::CreateParams first_params = *params;
@@ -274,30 +274,6 @@ index 3c4f419aa29470b3280174b58680b9421b0340b5..3b24ad2a2316f89d98b067e2c13988f8
  }
  
  constexpr const char* EncodingName(const enum encoding encoding) {
-diff --git a/src/node_internals.h b/src/node_internals.h
-index 95ce3cf882296bf8eed5a11fe189857c3c88fd15..6612751d07803a1e9b8bf8196b5b8067644064ad 100644
---- a/src/node_internals.h
-+++ b/src/node_internals.h
-@@ -124,7 +124,9 @@ v8::MaybeLocal<v8::Object> InitializePrivateSymbols(
- 
- class NodeArrayBufferAllocator : public ArrayBufferAllocator {
-  public:
--  inline uint32_t* zero_fill_field() { return &zero_fill_field_; }
-+  NodeArrayBufferAllocator();
-+  ~NodeArrayBufferAllocator() override;
-+  inline uint32_t* zero_fill_field() { return zero_fill_field_; }
- 
-   void* Allocate(size_t size) override;  // Defined in src/node.cc
-   void* AllocateUninitialized(size_t size) override;
-@@ -142,7 +144,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
-   }
- 
-  private:
--  uint32_t zero_fill_field_ = 1;  // Boolean but exposed as uint32 to JS land.
-+  uint32_t* zero_fill_field_ = nullptr;  // Boolean but exposed as uint32 to JS land.
-   std::atomic<size_t> total_mem_usage_ {0};
- 
-   // Delegate to V8's allocator for compatibility with the V8 memory cage.
 diff --git a/src/node_serdes.cc b/src/node_serdes.cc
 index 00fcd4b6afccce47ff21c4447d9cd60f25c11835..5f96ee2051e5339456185efddb149c4d43093f31 100644
 --- a/src/node_serdes.cc
