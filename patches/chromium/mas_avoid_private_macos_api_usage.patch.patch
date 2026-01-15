@@ -581,7 +581,7 @@ index 712d59e1f7d9681c122e6d05a8b65bccbfacb492..de24209bbd3cd4a530c6f32990a0f93a
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 03081986976125138c04ec8591f9d7ee70e0692e..3dd66ff3e410524d16988612249a4f0793705176 100644
+index 1c268292e081f54f9c71ad71d8ff1a69c802036b..6702cd695aa1db5f58d6c6f0534f757f470783a4 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -344,6 +344,7 @@ source_set("browser") {
@@ -593,7 +593,7 @@ index 03081986976125138c04ec8591f9d7ee70e0692e..3dd66ff3e410524d16988612249a4f07
  
    public_deps = [
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index d2372570b472f9bfbed8b49b9a2e12ffbc1c5f62..8e6e69a12d47d7f73dada6e0b48b635b0d691d29 100644
+index 367834e678f44d6e71c4218d293e11c3569daf2b..c97fb8f0411b45c1a01e4fab8dc40cc3778d1d09 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -24,6 +24,7 @@
@@ -614,7 +614,7 @@ index d2372570b472f9bfbed8b49b9a2e12ffbc1c5f62..8e6e69a12d47d7f73dada6e0b48b635b
  @class RenderWidgetHostViewCocoa;
  
  namespace content {
-@@ -678,9 +681,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+@@ -679,9 +682,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
    // EnsureSurfaceSynchronizedForWebTest().
    uint32_t latest_capture_sequence_number_ = 0u;
  
@@ -627,7 +627,7 @@ index d2372570b472f9bfbed8b49b9a2e12ffbc1c5f62..8e6e69a12d47d7f73dada6e0b48b635b
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 0f7ae2664dd80c7b8d6d222278d9ed85e12f9047..6cd1d4cb2a61d1ec61aa7ecb8b30e8d6ceec954d 100644
+index 227613945d5d4afa485aabf34f1ecec6aacb04d4..492a3692cd2abec2ed3731e848d67094a1e5eedc 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -52,6 +52,7 @@
@@ -649,7 +649,7 @@ index 0f7ae2664dd80c7b8d6d222278d9ed85e12f9047..6cd1d4cb2a61d1ec61aa7ecb8b30e8d6
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1672,10 +1675,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1673,10 +1676,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -662,7 +662,7 @@ index 0f7ae2664dd80c7b8d6d222278d9ed85e12f9047..6cd1d4cb2a61d1ec61aa7ecb8b30e8d6
    return gfx::NativeViewAccessible([GetInProcessNSView() window]);
  }
  
-@@ -1727,9 +1732,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1728,9 +1733,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -674,7 +674,7 @@ index 0f7ae2664dd80c7b8d6d222278d9ed85e12f9047..6cd1d4cb2a61d1ec61aa7ecb8b30e8d6
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2232,20 +2239,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2233,20 +2240,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -796,7 +796,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 5fc507ac6997370466d03ed19675bc17a5ad35f9..c06d712fc15b04e81e8194995661df11c1161520 100644
+index 669d96a275ef693a3ce0eab7ddfb564e11daf2ee..3e5b7d6ca446fbfd60afa7fbd6b5284945730df8 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -701,6 +701,7 @@ static_library("test_support") {
@@ -824,7 +824,7 @@ index 5fc507ac6997370466d03ed19675bc17a5ad35f9..c06d712fc15b04e81e8194995661df11
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3405,6 +3409,7 @@ test("content_unittests") {
+@@ -3406,6 +3410,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
