@@ -48,7 +48,7 @@ index fe669d40c31a29334b047b9cfee3067f64ef0a7b..9e5de7bbe574add017cd12ee091304d0
  
  static CFunction fast_timing_safe_equal(CFunction::Make(FastTimingSafeEqual));
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index e39852c8e0392e0a9ae5d4ea58be115416e19233..c94b14741c827a81d69a6f036426a344e563ad72 100644
+index 357dc5f6d1c1c2d3756a94c1326b0502403e1eaf..f02325feea8bbae038c76254a071c77817ca7796 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -44,6 +44,14 @@
@@ -74,7 +74,7 @@ index e39852c8e0392e0a9ae5d4ea58be115416e19233..c94b14741c827a81d69a6f036426a344
  using v8::FunctionCallbackInfo;
  using v8::Global;
  using v8::HandleScope;
-@@ -584,19 +591,24 @@ void SlowCopy(const FunctionCallbackInfo<Value>& args) {
+@@ -583,19 +590,24 @@ void SlowCopy(const FunctionCallbackInfo<Value>& args) {
  
  // Assume caller has properly validated args.
  uint32_t FastCopy(Local<Value> receiver,
@@ -107,7 +107,7 @@ index e39852c8e0392e0a9ae5d4ea58be115416e19233..c94b14741c827a81d69a6f036426a344
    return to_copy;
  }
  
-@@ -865,19 +877,17 @@ void Compare(const FunctionCallbackInfo<Value> &args) {
+@@ -864,19 +876,17 @@ void Compare(const FunctionCallbackInfo<Value> &args) {
  }
  
  int32_t FastCompare(v8::Local<v8::Value>,
@@ -135,7 +135,7 @@ index e39852c8e0392e0a9ae5d4ea58be115416e19233..c94b14741c827a81d69a6f036426a344
  }
  
  static v8::CFunction fast_compare(v8::CFunction::Make(FastCompare));
-@@ -1149,14 +1159,13 @@ void SlowIndexOfNumber(const FunctionCallbackInfo<Value>& args) {
+@@ -1148,14 +1158,13 @@ void SlowIndexOfNumber(const FunctionCallbackInfo<Value>& args) {
  }
  
  int32_t FastIndexOfNumber(v8::Local<v8::Value>,
@@ -153,7 +153,7 @@ index e39852c8e0392e0a9ae5d4ea58be115416e19233..c94b14741c827a81d69a6f036426a344
  }
  
  static v8::CFunction fast_index_of_number(
-@@ -1496,21 +1505,31 @@ void SlowWriteString(const FunctionCallbackInfo<Value>& args) {
+@@ -1510,21 +1519,31 @@ void SlowWriteString(const FunctionCallbackInfo<Value>& args) {
  
  template <encoding encoding>
  uint32_t FastWriteString(Local<Value> receiver,

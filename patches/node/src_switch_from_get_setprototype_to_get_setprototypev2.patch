@@ -51,10 +51,10 @@ index 7b2efa49468c0bed2f5935552addd3ab37d0a50b..413db3ed9b88d7b7fb2ac6dd1153dade
    return GET_RETURN_STATUS(env);
  }
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index c94b14741c827a81d69a6f036426a344e563ad72..15129e4455fdc8792f21511a04d534ba3a4ebb5f 100644
+index f02325feea8bbae038c76254a071c77817ca7796..7ca0ce803d763213ba3680731ce1bc174736b9a1 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
-@@ -284,8 +284,9 @@ MaybeLocal<Uint8Array> New(Environment* env,
+@@ -283,8 +283,9 @@ MaybeLocal<Uint8Array> New(Environment* env,
                             size_t length) {
    CHECK(!env->buffer_prototype_object().IsEmpty());
    Local<Uint8Array> ui = Uint8Array::New(ab, byte_offset, length);
