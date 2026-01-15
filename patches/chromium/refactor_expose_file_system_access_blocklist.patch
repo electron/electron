@@ -8,7 +8,7 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index e6eec996fa48384e3c78d11e0b2ea5df4d61bd0f..b8ef416fb71c1e3523ff69c733e108c2b873d492 100644
+index c8fa1938134d1550ac7116d1690a7e0d4207e5b1..c342d0adfbb867ff6fbacb78aad4b96f097fedf3 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -83,11 +83,13 @@
@@ -220,7 +220,7 @@ index e6eec996fa48384e3c78d11e0b2ea5df4d61bd0f..b8ef416fb71c1e3523ff69c733e108c2
  
  // Checks if `path` should be blocked by the `rules`.
  // The BlockType of the nearest ancestor of a path to check is what
-@@ -1405,16 +1227,6 @@ struct ChromeFileSystemAccessPermissionContext::OriginState {
+@@ -1406,16 +1228,6 @@ struct ChromeFileSystemAccessPermissionContext::OriginState {
    std::unique_ptr<base::RetainingOneShotTimer> cleanup_timer;
  };
  
@@ -237,7 +237,7 @@ index e6eec996fa48384e3c78d11e0b2ea5df4d61bd0f..b8ef416fb71c1e3523ff69c733e108c2
  ChromeFileSystemAccessPermissionContext::
      ChromeFileSystemAccessPermissionContext(content::BrowserContext* context,
                                              const base::Clock* clock)
-@@ -1433,7 +1245,7 @@ ChromeFileSystemAccessPermissionContext::
+@@ -1434,7 +1246,7 @@ ChromeFileSystemAccessPermissionContext::
  #if BUILDFLAG(IS_ANDROID)
    one_time_permissions_tracker_.Observe(
        OneTimePermissionsTrackerFactory::GetForBrowserContext(context));
@@ -246,7 +246,7 @@ index e6eec996fa48384e3c78d11e0b2ea5df4d61bd0f..b8ef416fb71c1e3523ff69c733e108c2
    auto* provider = web_app::WebAppProvider::GetForWebApps(
        Profile::FromBrowserContext(profile_));
    if (provider) {
-@@ -2813,7 +2625,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
+@@ -2814,7 +2626,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
    one_time_permissions_tracker_.Reset();
  }
  
@@ -255,7 +255,7 @@ index e6eec996fa48384e3c78d11e0b2ea5df4d61bd0f..b8ef416fb71c1e3523ff69c733e108c2
  void ChromeFileSystemAccessPermissionContext::OnWebAppInstalled(
      const webapps::AppId& app_id) {
    if (!base::FeatureList::IsEnabled(
-@@ -3171,11 +2983,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3172,11 +2984,7 @@ bool ChromeFileSystemAccessPermissionContext::
          HandleType handle_type,
          UserAction user_action,
          GrantType grant_type) {
@@ -268,7 +268,7 @@ index e6eec996fa48384e3c78d11e0b2ea5df4d61bd0f..b8ef416fb71c1e3523ff69c733e108c2
    if (!base::FeatureList::IsEnabled(
            features::kFileSystemAccessPersistentPermissions)) {
      return false;
-@@ -3226,6 +3034,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3227,6 +3035,7 @@ bool ChromeFileSystemAccessPermissionContext::
  
    return false;
  #endif  // BUILDFLAG(IS_ANDROID)

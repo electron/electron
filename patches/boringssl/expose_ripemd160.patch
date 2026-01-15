@@ -22,7 +22,7 @@ index 17961ba6bd9de78b5b1b1008eb1f73babd49d0e7..6a870dce37df8f49106c24b183308a2c
      // hash function when given a signature OID. To avoid unintended lax parsing
      // of hash OIDs, this is no longer supported for lookup by OID or NID.
 diff --git a/crypto/fipsmodule/digest/digests.cc.inc b/crypto/fipsmodule/digest/digests.cc.inc
-index 3a3bfd3f0560fcd7b5fdbdf4cc29a56e0346b90a..a7335ca03b5b3b918c4321d890b45649679d772b 100644
+index a246a51103701e0ac8a0722324350a462f95bcc9..ddf0a90337d4e40de09bc345cf959dffdb161ecb 100644
 --- a/crypto/fipsmodule/digest/digests.cc.inc
 +++ b/crypto/fipsmodule/digest/digests.cc.inc
 @@ -18,6 +18,7 @@
@@ -33,7 +33,7 @@ index 3a3bfd3f0560fcd7b5fdbdf4cc29a56e0346b90a..a7335ca03b5b3b918c4321d890b45649
  
  #include "../../internal.h"
  #include "../bcm_interface.h"
-@@ -179,4 +180,27 @@ DEFINE_METHOD_FUNCTION(EVP_MD, EVP_sha512_256) {
+@@ -181,4 +182,27 @@ DEFINE_METHOD_FUNCTION(EVP_MD, EVP_sha512_256) {
    out->ctx_size = sizeof(SHA512_CTX);
  }
  

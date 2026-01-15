@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index a0053ddd1576a37312c4d8552a7be7610562100a..cfdc9df76570275735182d2b23adbd80687d0873 100644
+index c2b120971d6652c60289f13a1ef7344bc14760f2..e96ede02cb19aab1aa43bbbc9f48e201842312dd 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -9934,6 +9934,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -9924,6 +9924,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index a0053ddd1576a37312c4d8552a7be7610562100a..cfdc9df76570275735182d2b23adbd80
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 395ba8bf66a026230094ccfd0420af12071d72d7..af33820a8eca5122f67a0a026ee831fb61754533 100644
+index 97bd7047458f3ba5aefdf2a257332e620e744807..2ba679ac7064a53935fb90bf94a2d83c407c1ac2 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5352,6 +5352,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5351,6 +5351,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    create_params.initially_hidden = renderer_started_hidden;
    create_params.initial_popup_url = params.target_url;
  
@@ -35,7 +35,7 @@ index 395ba8bf66a026230094ccfd0420af12071d72d7..af33820a8eca5122f67a0a026ee831fb
    // Even though all codepaths leading here are in response to a renderer
    // trying to open a new window, if the new window ends up in a different
    // browsing instance, then the RenderViewHost, RenderWidgetHost,
-@@ -5404,6 +5408,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5403,6 +5407,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // Sets the newly created WebContents WindowOpenDisposition.
    new_contents_impl->original_window_open_disposition_ = params.disposition;
  
@@ -48,7 +48,7 @@ index 395ba8bf66a026230094ccfd0420af12071d72d7..af33820a8eca5122f67a0a026ee831fb
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -5445,12 +5455,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5444,12 +5454,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -77,7 +77,7 @@ index 4c55f0abf8df5a3408f3f90d444ceff3c23ee1bc..72bdb5b5a4c2c21a7192b34bb293bd23
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index e6bd8b311611556904cb29b089569cff24d75282..250ee1e7416ba51b054dcd9676cefd6da8f09324 100644
+index 7f6715e7add2535500ea650bcc39d601ab358093..0f7481ebb83eed5bbe40f7933883f0f57b9f464a 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -872,6 +872,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -90,7 +90,7 @@ index e6bd8b311611556904cb29b089569cff24d75282..250ee1e7416ba51b054dcd9676cefd6d
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 87455ddef07e28b40d6b8812ff44427167063339..d5fdf66cad6188bc57951a8c72c265cf91feb8a0 100644
+index 130dfcfa81f5dff35b2a368cc10d155b2dc0206f..4ad0e28385dd11d2b0987cbd597caf246cbbe9b7 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -204,6 +204,7 @@ class NetworkService;
@@ -232,7 +232,7 @@ index d92bab531c12c62a5321a23f4a0cb89691668127..c354a79c7c8dd047264df35b873e90c1
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 20056a5bd254f56a1f7bb6c6adf9afe63fc05358..0d9e887d5594bb852e7f19d9038d69b4a199dd1b 100644
+index 9253fb513782b7a3c785bfd5e50bc4fca382b201..8437ce75ff70a69ca381d422ef4e04d840568b8f 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -2335,6 +2335,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,

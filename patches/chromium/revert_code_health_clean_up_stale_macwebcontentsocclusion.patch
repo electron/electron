@@ -62,10 +62,10 @@ index a5570988c3721d9f6bd05c402a7658d3af6f2c2c..0a2dba6aa2d48bc39d2a55c8b4d66067
  
  // Alternative implementation of orderWindow:relativeTo:. Replaces
 diff --git a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
-index 17d6d7d935f93afefa9123f56ef9c138c3070f93..8dfa7501a6a2998e107bf9b51f5e5c3d52e880bf 100644
+index 8fa50db5b7aee7f8138d2b9be41d15e567059c36..c5bb7897b00ee5a6be6789096f9a55f7df64c385 100644
 --- a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
-@@ -16,6 +16,7 @@
+@@ -15,6 +15,7 @@
  #import "content/app_shim_remote_cocoa/web_drag_source_mac.h"
  #import "content/browser/web_contents/web_contents_view_mac.h"
  #import "content/browser/web_contents/web_drag_dest_mac.h"
@@ -73,7 +73,7 @@ index 17d6d7d935f93afefa9123f56ef9c138c3070f93..8dfa7501a6a2998e107bf9b51f5e5c3d
  #include "content/public/browser/content_browser_client.h"
  #include "content/public/common/content_client.h"
  #include "ui/base/clipboard/clipboard_constants.h"
-@@ -28,6 +29,7 @@
+@@ -27,6 +28,7 @@
  #include "ui/resources/grit/ui_resources.h"
  
  using content::DropData;
@@ -81,7 +81,7 @@ index 17d6d7d935f93afefa9123f56ef9c138c3070f93..8dfa7501a6a2998e107bf9b51f5e5c3d
  using remote_cocoa::mojom::DraggingInfo;
  using remote_cocoa::mojom::SelectionDirection;
  
-@@ -123,17 +125,20 @@ @implementation WebContentsViewCocoa {
+@@ -122,17 +124,20 @@ @implementation WebContentsViewCocoa {
    WebDragSource* __strong _dragSource;
    NSDragOperation _dragOperation;
  
@@ -108,7 +108,7 @@ index 17d6d7d935f93afefa9123f56ef9c138c3070f93..8dfa7501a6a2998e107bf9b51f5e5c3d
  }
  
  - (instancetype)initWithViewsHostableView:(ui::ViewsHostableView*)v {
-@@ -444,6 +449,7 @@ - (void)updateWebContentsVisibility:
+@@ -443,6 +448,7 @@ - (void)updateWebContentsVisibility:
      (remote_cocoa::mojom::Visibility)visibility {
    using remote_cocoa::mojom::Visibility;
  
@@ -116,7 +116,7 @@ index 17d6d7d935f93afefa9123f56ef9c138c3070f93..8dfa7501a6a2998e107bf9b51f5e5c3d
    if (!_host)
      return;
  
-@@ -489,6 +495,20 @@ - (void)updateWebContentsVisibility {
+@@ -488,6 +494,20 @@ - (void)updateWebContentsVisibility {
    [self updateWebContentsVisibility:visibility];
  }
  
@@ -137,7 +137,7 @@ index 17d6d7d935f93afefa9123f56ef9c138c3070f93..8dfa7501a6a2998e107bf9b51f5e5c3d
  - (void)resizeSubviewsWithOldSize:(NSSize)oldBoundsSize {
    // Subviews do not participate in auto layout unless the the size this view
    // changes. This allows RenderWidgetHostViewMac::SetBounds(..) to select a
-@@ -511,11 +531,39 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
+@@ -510,11 +530,39 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
  
    NSWindow* oldWindow = [self window];
  
@@ -181,7 +181,7 @@ index 17d6d7d935f93afefa9123f56ef9c138c3070f93..8dfa7501a6a2998e107bf9b51f5e5c3d
    }
  
    if (newWindow) {
-@@ -523,26 +571,66 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
+@@ -522,26 +570,66 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
                             selector:@selector(windowChangedOcclusionState:)
                                 name:NSWindowDidChangeOcclusionStateNotification
                               object:newWindow];
@@ -254,10 +254,10 @@ index 17d6d7d935f93afefa9123f56ef9c138c3070f93..8dfa7501a6a2998e107bf9b51f5e5c3d
  }
  
 diff --git a/content/common/features.cc b/content/common/features.cc
-index 53920788528b40b024907da2391cd0aca2ff86cd..1919c3d3b6e8bbde1e307c98167c1c5f26499c4c 100644
+index 7f3e8486099e43c7ed3b18cb3c6aa4e64ee676bc..945cd3a48c1df45a7f49424ce31eb61432e674f0 100644
 --- a/content/common/features.cc
 +++ b/content/common/features.cc
-@@ -352,6 +352,14 @@ BASE_FEATURE(kInterestGroupUpdateIfOlderThan, base::FEATURE_ENABLED_BY_DEFAULT);
+@@ -359,6 +359,14 @@ BASE_FEATURE(kInterestGroupUpdateIfOlderThan, base::FEATURE_ENABLED_BY_DEFAULT);
  BASE_FEATURE(kIOSurfaceCapturer, base::FEATURE_ENABLED_BY_DEFAULT);
  #endif
  
@@ -273,10 +273,10 @@ index 53920788528b40b024907da2391cd0aca2ff86cd..1919c3d3b6e8bbde1e307c98167c1c5f
  BASE_FEATURE(kKeepChildProcessAfterIPCReset, base::FEATURE_DISABLED_BY_DEFAULT);
  
 diff --git a/content/common/features.h b/content/common/features.h
-index 809192d586de597341bca2ea59d9e2e6f531d1c1..cfe0975a37f41b387f0992150d7b6814559a9a11 100644
+index 61c793e766747b1eac9a87a18fc6bfffb82ff110..12bbe8b94a880ec7060f8f115c92d96167342685 100644
 --- a/content/common/features.h
 +++ b/content/common/features.h
-@@ -135,6 +135,9 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(kInterestGroupUpdateIfOlderThan);
+@@ -138,6 +138,9 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(kInterestGroupUpdateIfOlderThan);
  #if BUILDFLAG(IS_MAC)
  CONTENT_EXPORT BASE_DECLARE_FEATURE(kIOSurfaceCapturer);
  #endif
