@@ -57,10 +57,10 @@ index 2239b085ac7fd87fe06aef1001551f8afe8e21e4..9ead3ab0755fe5c3500893325f0597e0
    gfx::Rect window_bounds_before_fullscreen_;
  
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index d2204fd2b737f7f3e146cb1be80c3be6bfce8cd4..9064b3d019aca6e8b77b10c3f0d0447b52f5245a 100644
+index a1185e4f63de04c56448257567533764476d6c3c..a79f6a28aae530dab3043fb30f8f0a9778f7230c 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -467,6 +467,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -466,6 +466,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    if (!is_tooltip) {
      tooltip_manager_ = std::make_unique<TooltipManagerMac>(GetNSWindowMojo());
    }
@@ -68,7 +68,7 @@ index d2204fd2b737f7f3e146cb1be80c3be6bfce8cd4..9064b3d019aca6e8b77b10c3f0d0447b
  
    if (params.workspace.length()) {
      std::string restoration_data;
-@@ -484,6 +485,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -483,6 +484,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
      window_params->modal_type = widget->widget_delegate()->GetModalType();
      window_params->is_translucent =
          params.opacity == Widget::InitParams::WindowOpacity::kTranslucent;
@@ -76,7 +76,7 @@ index d2204fd2b737f7f3e146cb1be80c3be6bfce8cd4..9064b3d019aca6e8b77b10c3f0d0447b
      window_params->is_tooltip = is_tooltip;
  
      // macOS likes to put shadows on most things. However, frameless windows
-@@ -665,9 +667,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -664,9 +666,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // case it will never become visible but we want its compositor to produce
    // frames for screenshooting and screencasting.
    UpdateCompositorProperties();

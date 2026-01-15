@@ -43,7 +43,7 @@ index 21d5ab99800c0830cc31ec4ebb24e3f05cd904d8..3f8f514519d6e4a0abe3690f5df35de8
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfXfaSupport);
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index 328abdd79d287225d0e6ec6becc455e169d6e5d0..10e5e702a43dbb70e13d00b48000e0b4cc974e7a 100644
+index d7150c5f576f141cac2755c32dfb8e763675ff7b..ace4033f0257e3da62e7ebaf1a98b177c9e1e49b 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
 @@ -248,10 +248,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
@@ -100,7 +100,7 @@ index bc0bad82ebcdceadc505e912ff27202b452fefab..6b77c57fccc4619a1df3b4ed661d2bdd
  
  ProfileSelection ProfileSelections::GetProfileSelection(
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index 13d39ca423abc89e70f277ac06a8b1b1212dbeea..a13a50fd89a5085870a0b6e3a30fd025ca0cf386 100644
+index b020b6c3c0bd9c481e8b8385df2aa3259fd15b45..619b63b0a0d604485b4bd88b90ff2f71710fb24b 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
 @@ -21,8 +21,10 @@
@@ -114,7 +114,7 @@ index 13d39ca423abc89e70f277ac06a8b1b1212dbeea..a13a50fd89a5085870a0b6e3a30fd025
  #include "chrome/browser/spellchecker/spellcheck_factory.h"
  #include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
  #include "components/language/core/browser/pref_names.h"
-@@ -67,7 +69,10 @@ SpellcheckService::SpellCheckerBinder& GetSpellCheckerBinderOverride() {
+@@ -68,7 +70,10 @@ SpellcheckService::SpellCheckerBinder& GetSpellCheckerBinderOverride() {
  // Only record spelling-configuration metrics for profiles in which the user
  // can configure spelling.
  bool RecordSpellingConfigurationMetrics(content::BrowserContext* context) {
