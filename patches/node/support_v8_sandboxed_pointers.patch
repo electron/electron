@@ -188,6 +188,89 @@ index f616223cfb0f6e10f7cf57ada9704316bde2797e..eb6dad44a49d997097c8fb5009eeb60a
    auto ab = ArrayBuffer::New(env->isolate(), std::move(backing));
    Local<Value> ret;
    if (!Buffer::New(env, ab, 0, ab->ByteLength()).ToLocal(&ret)) return {};
+diff --git a/src/node_buffer.cc b/src/node_buffer.cc
+index 357dc5f6d1c1c2d3756a94c1326b0502403e1eaf..ec323bb9cf5f127b18b99fba38f00007aef43047 100644
+--- a/src/node_buffer.cc
++++ b/src/node_buffer.cc
+@@ -78,6 +78,7 @@ using v8::SharedArrayBuffer;
+ using v8::String;
+ using v8::Uint32;
+ using v8::Uint8Array;
++using v8::Uint32Array;
+ using v8::Value;
+ 
+ namespace {
+@@ -1228,6 +1229,45 @@ void SetBufferPrototype(const FunctionCallbackInfo<Value>& args) {
+   realm->set_buffer_prototype_object(proto);
+ }
+ 
++void GetZeroFillToggle(const FunctionCallbackInfo<Value>& args) {
++  Environment* env = Environment::GetCurrent(args);
++  NodeArrayBufferAllocator* allocator = env->isolate_data()->node_allocator();
++  Local<ArrayBuffer> ab;
++  // It can be a nullptr when running inside an isolate where we
++  // do not own the ArrayBuffer allocator.
++  if (allocator == nullptr || env->isolate_data()->is_building_snapshot()) {
++    // Create a dummy Uint32Array - the JS land can only toggle the C++ land
++    // setting when the allocator uses our toggle. With this the toggle in JS
++    // land results in no-ops.
++    // When building a snapshot, just use a dummy toggle as well to avoid
++    // introducing the dynamic external reference. We'll re-initialize the
++    // toggle with a real one connected to the C++ allocator after snapshot
++    // deserialization.
++
++    ab = ArrayBuffer::New(env->isolate(), sizeof(uint32_t));
++  } else {
++    // TODO(joyeecheung): save ab->GetBackingStore()->Data() in the Node.js
++    // array buffer allocator and include it into the C++ toggle while the
++    // Environment is still alive.
++    uint32_t* zero_fill_field = allocator->zero_fill_field();
++    std::unique_ptr<BackingStore> backing =
++        ArrayBuffer::NewBackingStore(zero_fill_field,
++                                     sizeof(*zero_fill_field),
++                                     [](void*, size_t, void*) {},
++                                     nullptr);
++    ab = ArrayBuffer::New(env->isolate(), std::move(backing));
++  }
++
++  if (ab->SetPrivate(env->context(),
++                     env->untransferable_object_private_symbol(),
++                     True(env->isolate()))
++          .IsNothing()) {
++    return;
++  }
++
++  args.GetReturnValue().Set(Uint32Array::New(ab, 0, 1));
++}
++
+ static void Btoa(const FunctionCallbackInfo<Value>& args) {
+   CHECK_EQ(args.Length(), 1);
+   Environment* env = Environment::GetCurrent(args);
+@@ -1412,7 +1452,7 @@ inline size_t CheckNumberToSize(Local<Value> number) {
+   CHECK(value >= 0 && value < maxSize);
+   size_t size = static_cast<size_t>(value);
+ #ifdef V8_ENABLE_SANDBOX
+-  CHECK_LE(size, kMaxSafeBufferSizeForSandbox);
++  CHECK_LE(size, v8::internal::kMaxSafeBufferSizeForSandbox);
+ #endif
+   return size;
+ }
+@@ -1615,6 +1655,7 @@ void Initialize(Local<Object> target,
+                 "utf8WriteStatic",
+                 SlowWriteString<UTF8>,
+                 &fast_write_string_utf8);
++  SetMethod(context, target, "getZeroFillToggle", GetZeroFillToggle);
+ }
+ 
+ }  // anonymous namespace
+@@ -1663,6 +1704,7 @@ void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
+   registry->Register(StringWrite<HEX>);
+   registry->Register(StringWrite<UCS2>);
+   registry->Register(StringWrite<UTF8>);
++  registry->Register(GetZeroFillToggle);
+ 
+   registry->Register(CopyArrayBuffer);
+   registry->Register(CreateUnsafeArrayBuffer);
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
 index 6be3920632b25db450025ebab6a2636e4811cdbe..b49916d2b5fc5e58cf3fb67329430fd3df8fb813 100644
 --- a/src/node_i18n.cc
