@@ -582,7 +582,12 @@ Returns `boolean` - Whether the window is destroyed.
 
 Shows and gives focus to the window.
 
-#### `win.showInactive()`
+#### `win.showInactive([options])`
+
+* `options` Object (optional)
+  * `bringToFront` boolean (optional) - Whether to bring the window to the
+    front of the window stack. Default is `true`. Set to `false` to show
+    the window at the back of the stack. _macOS_
 
 Shows the window but doesn't focus on it.
 
