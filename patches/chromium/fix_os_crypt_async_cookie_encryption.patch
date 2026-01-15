@@ -17,10 +17,10 @@ Revert "Reland "Port net::CookieCryptoDelegate to os_crypt async""
 This reverts commit f01b115c7e21a09cc762f65bf7fd9c6ea9d9d0f8.
 
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 8d77c2f7e66b1fe70f073be010b7f686c041d6da..47b5709a6f6ac76055f769ba10e2b0ea40672dbf 100644
+index 64406ad9f27a98ce24ac6ece0add705a0eb1fe4e..d70277ec08aefab230a332beff2fc85c6b514a8a 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -742,6 +742,8 @@ static_library("browser") {
+@@ -732,6 +732,8 @@ static_library("browser") {
      "net/chrome_report_sender.h",
      "net/convert_explicitly_allowed_network_ports_pref.cc",
      "net/convert_explicitly_allowed_network_ports_pref.h",
@@ -731,10 +731,10 @@ index 91d74eaadd9f4d451e809b38a2f999b298068820..e45427ce90f909e609688ab59f4581b1
    mojo::PendingRemote<::network::mojom::NetworkContext> system_context_;
  };
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index c71bd4df2cbe19d256a64a910c904fa5a1990104..343753d0fbe77c81ac2723f3cf709fa42e28c9ad 100644
+index ff05425e150671a71abe74b01d9da0103698e8cf..d63d56e532f0e8e1f9e5e3d3906539a545af56e8 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -3269,12 +3269,7 @@ NetworkContext::MakeSessionCleanupCookieStore() const {
+@@ -3266,12 +3266,7 @@ NetworkContext::MakeSessionCleanupCookieStore() const {
        crypto_delegate = std::make_unique<CookieOSCryptAsyncDelegate>(
            std::move(params_->cookie_encryption_provider));
      } else {
@@ -771,10 +771,10 @@ index b48bdf27cd97142ceebc1f0b769b502bf037ce36..3b1424b6df37aa4a3cd341e8b89524e3
      "//ipc",
      "//net",
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 89053b1e1855306f946c0aa8dc0f7860f0be72c0..ab7ea3460287bb8833b40af10f61abb5d328564d 100644
+index efe7273d1fff01d6f368da60ba82a429746251ef..5db0eee84899192bd5bcf01ae6fe02ca49f3780b 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -576,9 +576,10 @@ struct NetworkContextParams {
+@@ -573,9 +573,10 @@ struct NetworkContextParams {
    bool acam_preflight_spec_conformant = true;
  
    // Sets the cookie encryption provider to be used by this network context if
