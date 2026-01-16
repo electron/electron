@@ -6872,7 +6872,7 @@ describe('BrowserWindow module', () => {
         hasShadow: false
       });
 
-      await backgroundWindow.loadURL('about:blank');
+      await backgroundWindow.loadURL('data:text/html,<html></html>');
 
       const foregroundWindow = new BrowserWindow({
         ...display.bounds,
@@ -6913,7 +6913,7 @@ describe('BrowserWindow module', () => {
         hasShadow: false
       });
 
-      await backgroundWindow.loadURL('about:blank');
+      await backgroundWindow.loadURL('data:text/html,<html></html>');
 
       const foregroundWindow = new BrowserWindow({
         ...display.bounds,
@@ -6966,7 +6966,7 @@ describe('BrowserWindow module', () => {
         backgroundColor: HexColors.BLUE
       });
 
-      w.loadURL('about:blank');
+      w.loadURL('data:text/html,<html></html>');
       await once(w, 'ready-to-show');
 
       const screenCapture = new ScreenCapture(display);
@@ -7044,7 +7044,7 @@ describe('BrowserWindow module', () => {
         const style = document.createElement('style');
         style.innerHTML = \`
         #titlebar {
-            
+
           background-color: red;
           height: 30px;
           width: 100%;
@@ -7056,11 +7056,11 @@ describe('BrowserWindow module', () => {
           z-index: 1000000000000;
         }
         \`;
-        
+
         const titleBar = document.createElement('title-bar');
         titleBar.id = 'titlebar';
         titleBar.textContent = 'test-titlebar';
-        
+
         document.body.append(style);
         document.body.append(titleBar);
       `);
