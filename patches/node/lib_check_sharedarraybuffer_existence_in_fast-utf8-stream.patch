@@ -13,20 +13,10 @@ for SharedArrayBuffer first.
 This should be upstreamed to Node.js
 
 diff --git a/lib/internal/streams/fast-utf8-stream.js b/lib/internal/streams/fast-utf8-stream.js
-index 3bfcc494d17b5cc4c9f494fab4aff4f0d68d2287..241a6b05e84f8e79b8c9b93abfda5562c2e35e9e 100644
+index 25f4771d052a2a2ef35eb910bfd75bd51bc891d9..3028d1a6538ec611d08566c565589c78dda1b6e1 100644
 --- a/lib/internal/streams/fast-utf8-stream.js
 +++ b/lib/internal/streams/fast-utf8-stream.js
-@@ -49,7 +49,8 @@ const {
- const BUSY_WRITE_TIMEOUT = 100;
- const kEmptyBuffer = Buffer.allocUnsafe(0);
- 
--const kNil = new Int32Array(new SharedArrayBuffer(4));
-+const haveSAB = typeof SharedArrayBuffer !== 'undefined';
-+const kNil = haveSAB ? new Int32Array(new SharedArrayBuffer(4)) : null;
- 
- function sleep(ms) {
-   // Also filters out NaN, non-number types, including empty strings, but allows bigints
-@@ -59,10 +60,14 @@ function sleep(ms) {
+@@ -60,10 +60,14 @@ function sleep(ms) {
        throw new ERR_INVALID_ARG_TYPE('ms', ['number', 'bigint'], ms);
      }
      throw new ERR_INVALID_ARG_VALUE.RangeError('ms', ms,

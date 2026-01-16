@@ -7,7 +7,7 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 31007e599f0b717d586aa97b26c610047f402f0f..6e7c0dbe31d0fef23288787df44e58c44bd47c5d 100644
+index 53f05293bd94e159dfedf48735989e668acdd08e..5c8bc870dcf2e974036cf3bcb60fd288e59045d9 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -111,6 +111,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
@@ -24,8 +24,8 @@ index 31007e599f0b717d586aa97b26c610047f402f0f..6e7c0dbe31d0fef23288787df44e58c4
 +
  void* NodeArrayBufferAllocator::Allocate(size_t size) {
    void* ret;
-   if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers) {
-@@ -342,6 +350,12 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
+   COUNT_GENERIC_USAGE("NodeArrayBufferAllocator.Allocate.ZeroFilled");
+@@ -337,6 +345,12 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
      // but also otherwise just doesn't work, and the only real alternative
      // is disabling shared-readonly-heap mode altogether.
      static Isolate::CreateParams first_params = *params;
@@ -211,7 +211,7 @@ index 97c43afb487b58c0c77bd59b4a6b6d7a13690053..5dfbd564d5bbd22ebf3b529a07b73e85
    return isolate_;
  }
 diff --git a/src/env.h b/src/env.h
-index d34aec43630b3cf53004d8180446d7136b59ceac..b30314d7773742e2332ff47f84bc326151563690 100644
+index 84a650885a79bc5c49efdc26f62ec8db48de775c..ba442937bf0d7831c9a84b5a57211e9f90c81705 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -111,6 +111,19 @@ class ModuleWrap;
@@ -274,30 +274,6 @@ index 3c4f419aa29470b3280174b58680b9421b0340b5..3b24ad2a2316f89d98b067e2c13988f8
  }
  
  constexpr const char* EncodingName(const enum encoding encoding) {
-diff --git a/src/node_internals.h b/src/node_internals.h
-index 95ce3cf882296bf8eed5a11fe189857c3c88fd15..6612751d07803a1e9b8bf8196b5b8067644064ad 100644
---- a/src/node_internals.h
-+++ b/src/node_internals.h
-@@ -124,7 +124,9 @@ v8::MaybeLocal<v8::Object> InitializePrivateSymbols(
- 
- class NodeArrayBufferAllocator : public ArrayBufferAllocator {
-  public:
--  inline uint32_t* zero_fill_field() { return &zero_fill_field_; }
-+  NodeArrayBufferAllocator();
-+  ~NodeArrayBufferAllocator() override;
-+  inline uint32_t* zero_fill_field() { return zero_fill_field_; }
- 
-   void* Allocate(size_t size) override;  // Defined in src/node.cc
-   void* AllocateUninitialized(size_t size) override;
-@@ -142,7 +144,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
-   }
- 
-  private:
--  uint32_t zero_fill_field_ = 1;  // Boolean but exposed as uint32 to JS land.
-+  uint32_t* zero_fill_field_ = nullptr;  // Boolean but exposed as uint32 to JS land.
-   std::atomic<size_t> total_mem_usage_ {0};
- 
-   // Delegate to V8's allocator for compatibility with the V8 memory cage.
 diff --git a/src/node_serdes.cc b/src/node_serdes.cc
 index 00fcd4b6afccce47ff21c4447d9cd60f25c11835..5f96ee2051e5339456185efddb149c4d43093f31 100644
 --- a/src/node_serdes.cc
@@ -434,26 +410,3 @@ index ef659f1c39f7ee958879bf395377bc99911fc346..225b1465b7c97d972a38968faf6d6850
    auto ab = ArrayBuffer::New(isolate, std::move(bs));
    v8::Local<Uint8Array> u8 = v8::Uint8Array::New(ab, 0, 1);
  
-diff --git a/test/parallel/test-process-env-allowed-flags-are-documented.js b/test/parallel/test-process-env-allowed-flags-are-documented.js
-index 07e38748b07ddd32a6e3caa3c34183387e1cae18..f09bf0940dad2068f0aa5dce783dd422773d4bbb 100644
---- a/test/parallel/test-process-env-allowed-flags-are-documented.js
-+++ b/test/parallel/test-process-env-allowed-flags-are-documented.js
-@@ -49,6 +49,8 @@ if (!hasOpenSSL3) {
-   documented.delete('--openssl-shared-config');
- }
- 
-+const isV8Sandboxed = process.config.variables.v8_enable_sandbox;
-+
- // Filter out options that are conditionally present.
- const conditionalOpts = [
-   {
-@@ -74,6 +76,9 @@ const conditionalOpts = [
-   }, {
-     include: process.features.inspector,
-     filter: (opt) => opt.startsWith('--inspect') || opt === '--debug-port'
-+  }, {
-+    include: !isV8Sandboxed,
-+    filter: (opt) => ['--secure-heap', '--secure-heap-min'].includes(opt)
-   },
- ];
- documented.forEach((opt) => {

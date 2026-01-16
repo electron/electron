@@ -9,10 +9,10 @@ conflict with Blink's in renderer and worker processes.
 We should try to upstream some version of this.
 
 diff --git a/doc/api/cli.md b/doc/api/cli.md
-index 38c66ec426205c07925e4d634e877a8cbb47b255..9b9a5455b9d597bb4009074c922d2c7c5aa975f1 100644
+index 667603438cc41701820d6aaa734d21ac35bcc8d1..6611face009797f9d540be4478df80d05888893a 100644
 --- a/doc/api/cli.md
 +++ b/doc/api/cli.md
-@@ -1770,6 +1770,14 @@ changes:
+@@ -1798,6 +1798,14 @@ changes:
  
  Disable using [syntax detection][] to determine module type.
  
@@ -27,7 +27,7 @@ index 38c66ec426205c07925e4d634e877a8cbb47b255..9b9a5455b9d597bb4009074c922d2c7c
  ### `--no-experimental-global-navigator`
  
  <!-- YAML
-@@ -3439,6 +3447,7 @@ one is included in the list below.
+@@ -3476,6 +3484,7 @@ one is included in the list below.
  * `--no-addons`
  * `--no-async-context-frame`
  * `--no-deprecation`
@@ -36,10 +36,10 @@ index 38c66ec426205c07925e4d634e877a8cbb47b255..9b9a5455b9d597bb4009074c922d2c7c
  * `--no-experimental-repl-await`
  * `--no-experimental-sqlite`
 diff --git a/doc/node.1 b/doc/node.1
-index dad692863f2cc6b6d4fad86915cd1700d52e8279..6d451ef912d1162a242b7952f94d2071d8238673 100644
+index 9a0f5beb5b995fb92b31514c166e1c76e18d8ca9..fab0b24b630e755658b58a7281df1dacc4b7f32a 100644
 --- a/doc/node.1
 +++ b/doc/node.1
-@@ -198,6 +198,9 @@ Enable transformation of TypeScript-only syntax into JavaScript code.
+@@ -201,6 +201,9 @@ Enable transformation of TypeScript-only syntax into JavaScript code.
  .It Fl -experimental-eventsource
  Enable experimental support for the EventSource Web API.
  .
@@ -50,7 +50,7 @@ index dad692863f2cc6b6d4fad86915cd1700d52e8279..6d451ef912d1162a242b7952f94d2071
  Disable experimental support for the WebSocket API.
  .
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index fd0a81f5216d8bcf662c7e8bb972ed789eda8645..72944995cf3cc30d8bc33bfef8c6690c652cdcf9 100644
+index 9a99ff6d44320c0e28f4a787d24ea98ae1c96196..8f5810267d1ba430bae02be141f087f2a5d3cf9f 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
 @@ -117,6 +117,7 @@ function prepareExecution(options) {
@@ -79,7 +79,7 @@ index fd0a81f5216d8bcf662c7e8bb972ed789eda8645..72944995cf3cc30d8bc33bfef8c6690c
  function setupWebsocket() {
    if (getOptionValue('--no-experimental-websocket')) {
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 03c1dde6de237e44539dccea3295cf4339260b1e..c53c40b36ec311f433c8a0cbb1c06287576e1453 100644
+index 342bffb00fd355f7f1c5d0d83133bd5561be91e1..41f268195c281689339e98ceb98e8034ecd28b63 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -545,7 +545,11 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
