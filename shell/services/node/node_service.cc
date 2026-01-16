@@ -197,4 +197,11 @@ void NodeService::Initialize(
   node_bindings_->StartPolling();
 }
 
+void NodeService::SetURLLoaderFactory(
+    node::mojom::URLLoaderFactoryParamsPtr params) {
+  URLLoaderBundle::GetInstance()->SetURLLoaderFactory(
+      std::move(params->url_loader_factory),
+      mojo::Remote(std::move(params->host_resolver)),
+      params->use_network_observer_from_url_loader_factory);
+}
 }  // namespace electron
