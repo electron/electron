@@ -3020,7 +3020,9 @@ std::optional<gfx::Size> GetPrinterDefaultPaperSize(
   }
 
   printing::PrinterSemanticCapsAndDefaults caps;
-  if (!print_backend->GetPrinterSemanticCapsAndDefaults(printer_name, &caps)) {
+  printing::mojom::ResultCode result =
+      print_backend->GetPrinterSemanticCapsAndDefaults(printer_name, &caps);
+  if (result != printing::mojom::ResultCode::kSuccess) {
     return std::nullopt;
   }
 
@@ -3237,25 +3239,26 @@ void WebContents::Print(gin::Arguments* const args) {
   settings.Set(printing::kSettingDuplexMode, static_cast<int>(duplex_mode));
 
   base::Value::Dict media_size;
-  if (options.Get("mediaSize", &media_size)) {
+  const auto use_system_default_media_size =
+      options.ValueOrDefault("useSystemDefaultMediaSize", false);
+
+  std::string printer_name = base::UTF16ToUTF8(device_name);
+
+  // When useSystemDefaultMediaSize is true, deviceName must be set to query
+  // the printer's default paper size from PrinterSemanticCapsAndDefaults.
+  if (use_system_default_media_size && !printer_name.empty()) {
+    // Query printer for default paper size
+    auto paper_size = GetPrinterDefaultPaperSize(printer_name);
+
+    // Use printer's default or fallback to A4 (210mm x 297mm)
+    gfx::Size size_um = paper_size.value_or(gfx::Size(210000, 297000));
+    settings.Set(printing::kSettingMediaSize, CreateMediaSizeDict(size_um));
+  } else if (options.Get("mediaSize", &media_size)) {
     settings.Set(printing::kSettingMediaSize, std::move(media_size));
   } else {
-    const auto use_system_default =
-        options.ValueOrDefault("useSystemDefaultMediaSize", false);
-
-    if (use_system_default) {
-      // Query printer for default paper size
-      std::string printer_name = base::UTF16ToUTF8(device_name);
-      auto paper_size = GetPrinterDefaultPaperSize(printer_name);
-      
-      // Use printer's default or fallback to A4 (210mm x 297mm)
-      gfx::Size size_um = paper_size.value_or(gfx::Size(210000, 297000));
-      settings.Set(printing::kSettingMediaSize, CreateMediaSizeDict(size_um));
-    } else {
-      // Default to A4 paper size (210mm x 297mm)
-      settings.Set(printing::kSettingMediaSize,
-                   CreateMediaSizeDict(gfx::Size(210000, 297000)));
-    }
+    // Default to A4 paper size (210mm x 297mm)
+    settings.Set(printing::kSettingMediaSize,
+                 CreateMediaSizeDict(gfx::Size(210000, 297000)));
   }
 
   // Set custom dots per inch (dpi)
