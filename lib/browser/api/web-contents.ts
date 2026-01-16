@@ -263,24 +263,26 @@ WebContents.prototype.print = function (options: ElectronInternal.WebContentsPri
     throw new TypeError('webContents.print(): Invalid print settings specified.');
   }
 
-  const { pageSize } = options;
-  if (typeof pageSize === 'string') {
-    if (pageSize === 'SYSTEM_DEFAULT') {
-      // Signal to C++ to skip setting any default media size
-      // This allows the printer to use its native driver defaults
-      options.useSystemDefaultMediaSize = true;
-    } else if (PDFPageSizes[pageSize]) {
-      const mediaSize = PDFPageSizes[pageSize];
-      options.mediaSize = {
-        ...mediaSize,
-        imageable_area_left_microns: 0,
-        imageable_area_bottom_microns: 0,
-        imageable_area_right_microns: mediaSize.width_microns,
-        imageable_area_top_microns: mediaSize.height_microns
-      };
-    } else {
-      throw new Error(`Unsupported pageSize: ${pageSize}`);
-    }
+  const { pageSize, useSystemDefaultMediaSize, deviceName } = options;
+
+  // When useSystemDefaultMediaSize is true, deviceName must be set to query
+  // the printer's default paper size from PrinterSemanticCapsAndDefaults.
+  if (useSystemDefaultMediaSize && !deviceName) {
+    console.warn(
+      'webContents.print(): useSystemDefaultMediaSize requires deviceName to be set. ' +
+        'Falling back to default page size.'
+    );
+  }
+
+  if (typeof pageSize === 'string' && PDFPageSizes[pageSize]) {
+    const mediaSize = PDFPageSizes[pageSize];
+    options.mediaSize = {
+      ...mediaSize,
+      imageable_area_left_microns: 0,
+      imageable_area_bottom_microns: 0,
+      imageable_area_right_microns: mediaSize.width_microns,
+      imageable_area_top_microns: mediaSize.height_microns
+    };
   } else if (typeof pageSize === 'object') {
     if (!pageSize.height || !pageSize.width) {
       throw new Error('height and width properties are required for pageSize');
