@@ -1,22 +1,36 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Draggable Page</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        app-region: drag;
 
-<head>
-  <meta charset="UTF-8">
-  <title>Draggable Page</title>
-  <style>
-    .draggable {
-      -webkit-app-region: drag;
-      height: 100vh;
-      width: 100vw;
-      margin: 0;
-      background-color: #f0f0f0;
-    }
-  </style>
-</head>
-
-<body>
-  <div class="draggable"></div>
-</body>
-
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      #no-drag {
+        width: 100px;
+        height: 100px;
+        background-color: orangered;
+        app-region: no-drag;
+      }
+    </style>
+  </head>
+  <body>
+    <script>
+      if (window.location.search.includes('no-drag')) {
+        const noDragDiv = document.createElement('div');
+        noDragDiv.id = 'no-drag';
+        document.body.appendChild(noDragDiv);
+      }
+    </script>
+  </body>
 </html>
