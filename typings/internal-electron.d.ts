@@ -302,7 +302,6 @@ declare namespace ElectronInternal {
 
   interface WebContentsPrintOptions extends Electron.WebContentsPrintOptions {
     mediaSize?: MediaSize;
-    useSystemDefaultMediaSize?: boolean;
   }
 
   type MediaSize = {

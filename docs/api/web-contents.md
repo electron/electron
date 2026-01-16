@@ -1747,9 +1747,12 @@ Returns `Promise<PrinterInfo[]>` - Resolves with a [`PrinterInfo[]`](structures/
   * `header` string (optional) - string to be printed as page header.
   * `footer` string (optional) - string to be printed as page footer.
   * `pageSize` string | Size (optional) - Specify page size of the printed document. Can be `A0`, `A1`, `A2`, `A3`,
-  `A4`, `A5`, `A6`, `Legal`, `Letter`, `Tabloid`, `SYSTEM_DEFAULT`, or an Object containing `height` and `width`.
-  When set to `SYSTEM_DEFAULT`, the printer will use its native default page size from the driver settings.
-  This is useful for thermal printers (which typically use 80mm width) and respects regional differences (US Letter vs A4).
+  `A4`, `A5`, `A6`, `Legal`, `Letter`, `Tabloid`, or an Object containing `height` and `width`.
+  * `useSystemDefaultMediaSize` boolean (optional) - Whether to use the system default media size. Defaults is `false`.
+    If `true`, the printer will use its native default page size from the driver settings and ignores the `pageSize` parameter.
+    `deviceName` must be set, otherwise the printer will use the default settings for printing.
+    This is useful for thermal printers and respects regional differences.
+    
 * `callback` Function (optional)
   * `success` boolean - Indicates success of the print call.
   * `failureReason` string - Error description called back if the print fails.
