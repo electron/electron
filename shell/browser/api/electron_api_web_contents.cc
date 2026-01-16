@@ -3239,14 +3239,14 @@ void WebContents::Print(gin::Arguments* const args) {
   settings.Set(printing::kSettingDuplexMode, static_cast<int>(duplex_mode));
 
   base::Value::Dict media_size;
-  const auto use_system_default_media_size =
-      options.ValueOrDefault("useSystemDefaultMediaSize", false);
+  const auto use_printer_default_page_size =
+      options.ValueOrDefault("usePrinterDefaultPageSize", false);
 
   std::string printer_name = base::UTF16ToUTF8(device_name);
 
-  // When useSystemDefaultMediaSize is true, deviceName must be set to query
+  // When usePrinterDefaultPageSize is true, deviceName must be set to query
   // the printer's default paper size from PrinterSemanticCapsAndDefaults.
-  if (use_system_default_media_size && !printer_name.empty()) {
+  if (use_printer_default_page_size && !printer_name.empty()) {
     // Query printer for default paper size
     auto paper_size = GetPrinterDefaultPaperSize(printer_name);
 
