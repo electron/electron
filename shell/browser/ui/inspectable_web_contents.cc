@@ -13,6 +13,7 @@
 
 #include "base/base64.h"
 #include "base/containers/span.h"
+#include "base/dcheck_is_on.h"
 #include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram.h"
 #include "base/strings/pattern.h"
@@ -955,6 +956,35 @@ bool InspectableWebContents::HandleKeyboardEvent(
     const input::NativeWebKeyboardEvent& event) {
   auto* delegate = web_contents_->GetDelegate();
   return !delegate || delegate->HandleKeyboardEvent(source, event);
+}
+
+bool InspectableWebContents::DidAddMessageToConsole(
+    content::WebContents* source,
+    blink::mojom::ConsoleMessageLevel log_level,
+    const std::u16string& message,
+    int32_t line_no,
+    const std::u16string& source_id) {
+  // Suppress Chromium's default logging of DevTools frontend console messages
+  // into native logs for the managed DevTools WebContents. Can be overridden by
+  // enabling verbose logging.
+  if (source == managed_devtools_web_contents_.get()) {
+#if DCHECK_IS_ON()
+    // In debug/testing builds, let logging through.
+    return false;
+#endif
+
+    if (VLOG_IS_ON(1)) {
+      // Match Chromium's `content::LogConsoleMessage()` output format, but emit
+      // it as a verbose log.
+      logging::LogMessage("CONSOLE", line_no, logging::LOGGING_VERBOSE).stream()
+          << "\"" << message << "\", source: " << source_id << " (" << line_no
+          << ")";
+    }
+
+    return true;  // Suppress the default logging.
+  }
+
+  return false;  // Allow the default logging.
 }
 
 void InspectableWebContents::CloseContents(content::WebContents* source) {
