@@ -189,7 +189,7 @@ index f616223cfb0f6e10f7cf57ada9704316bde2797e..eb6dad44a49d997097c8fb5009eeb60a
    Local<Value> ret;
    if (!Buffer::New(env, ab, 0, ab->ByteLength()).ToLocal(&ret)) return {};
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index 357dc5f6d1c1c2d3756a94c1326b0502403e1eaf..ec323bb9cf5f127b18b99fba38f00007aef43047 100644
+index 357dc5f6d1c1c2d3756a94c1326b0502403e1eaf..45c6b4cf19f7b336891dae3cd84d698507227d9e 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -78,6 +78,7 @@ using v8::SharedArrayBuffer;
@@ -255,6 +255,15 @@ index 357dc5f6d1c1c2d3756a94c1326b0502403e1eaf..ec323bb9cf5f127b18b99fba38f00007
  #endif
    return size;
  }
+@@ -1437,7 +1477,7 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
+     buf = ArrayBuffer::New(isolate, size);
+   } else {
+     std::unique_ptr<BackingStore> store =
+-        ArrayBuffer::NewBackingStoreForNodeLTS(isolate, size);
++        ArrayBuffer::NewBackingStore(isolate, size);
+     if (!store) {
+       return env->ThrowRangeError("Array buffer allocation failed");
+     }
 @@ -1615,6 +1655,7 @@ void Initialize(Local<Object> target,
                  "utf8WriteStatic",
                  SlowWriteString<UTF8>,
