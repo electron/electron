@@ -5576,6 +5576,25 @@ describe('BrowserWindow module', () => {
         await createTwo();
       });
 
+      it('frameless option respects used size', () => {
+        const parentWindow = new BrowserWindow();
+        const initialWidth = 600;
+        const initialHeight = 400;
+        const modalWindow = new BrowserWindow({
+          width: initialWidth,
+          height: initialHeight,
+          parent: parentWindow,
+          modal: true,
+          show: true,
+          frame: false
+        });
+        expectBoundsEqual(modalWindow.getSize(), [initialWidth, initialHeight]);
+        const newWidth = 700;
+        const newHeight = 500;
+        modalWindow.setSize(newWidth, newHeight);
+        expectBoundsEqual(modalWindow.getSize(), [newWidth, newHeight]);
+      });
+
       ifdescribe(process.platform !== 'darwin' && !isWayland)('disabling parent windows', () => {
         it('can disable and enable a window', () => {
           const w = new BrowserWindow({ show: false });
