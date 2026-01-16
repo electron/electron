@@ -305,6 +305,12 @@ void BaseWindow::OnWindowSwipe(const std::string& direction) {
   Emit("swipe", direction);
 }
 
+void BaseWindow::OnWindowSwipeGesture(const std::string& direction,
+                                      const std::string& phase,
+                                      float progress) {
+  Emit("swipe-gesture", direction, phase, progress);
+}
+
 void BaseWindow::OnWindowRotateGesture(float rotation) {
   Emit("rotate-gesture", rotation);
 }
