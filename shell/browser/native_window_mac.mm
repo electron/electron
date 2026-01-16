@@ -716,6 +716,16 @@ void NativeWindowMac::SetBounds(const gfx::Rect& bounds, bool animate) {
   NSScreen* screen = [[NSScreen screens] firstObject];
   cocoa_bounds.origin.y = NSHeight([screen frame]) - size.height() - bounds.y();
 
+  if (is_modal() && parent()) {
+    // Modal is shown via `[NSWindow beginSheet:completionHandler:]`, which
+    // instead of showing regular window shows sheet, which does not have
+    // title bar and AppKit removes the title bar height from the frame,
+    // if we want to preserve window frame size then treat given dimensions
+    // as content dimensions and add frame dimensions to it which
+    // will be removed by AppKit when showing the modal sheet.
+    cocoa_bounds = [window_ frameRectForContentRect:cocoa_bounds];
+  }
+
   [window_ setFrame:cocoa_bounds display:YES animate:animate];
   user_set_bounds_maximized_ = IsMaximized() ? true : false;
   UpdateWindowOriginalFrame();
