@@ -143,11 +143,12 @@ runs:
           echo "No changes to patches detected"
         fi
       fi
-  - name: Remove patch conflict problem matcher
+  - name: Remove patch conflict problem matchers
     shell: bash
     run: |
       echo "::remove-matcher owner=merge-conflict::"
       echo "::remove-matcher owner=patch-conflict::"
+      echo "::remove-matcher owner=patch-needs-update::"
   # delete all .git directories under src/ except for
   # third_party/angle/ and third_party/dawn/ because of build time generation of files
   # gen/angle/commit.h depends on third_party/angle/.git/HEAD
