@@ -2,7 +2,7 @@ import * as squirrelUpdate from '@electron/internal/browser/api/auto-updater/squ
 
 import { app } from 'electron/main';
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 
 class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
   updateAvailable: boolean = false;

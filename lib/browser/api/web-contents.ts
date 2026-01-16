@@ -8,8 +8,8 @@ import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 import { app, session, webFrameMain, dialog } from 'electron/main';
 import type { BrowserWindowConstructorOptions, MessageBoxOptions, NavigationEntry } from 'electron/main';
 
-import * as path from 'path';
-import * as url from 'url';
+import * as path from 'node:path';
+import * as url from 'node:url';
 
 // session is not used here, the purpose is to make sure session is initialized
 // before the webContents module.

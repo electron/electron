@@ -4,7 +4,7 @@ import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-util
 
 import { dialog, Menu } from 'electron/main';
 
-import * as fs from 'fs';
+import * as fs from 'node:fs';
 
 const convertToMenuTemplate = function (items: ContextMenuItem[], handler: (id: number) => void) {
   return items.map(function (item) {

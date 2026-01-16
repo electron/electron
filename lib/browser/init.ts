@@ -1,11 +1,11 @@
 import type * as defaultMenuModule from '@electron/internal/browser/default-menu';
 
-import { EventEmitter } from 'events';
-import * as fs from 'fs';
-import * as path from 'path';
+import { EventEmitter } from 'node:events';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
-import type * as url from 'url';
-import type * as v8 from 'v8';
+import type * as url from 'node:url';
+import type * as v8 from 'node:v8';
 
 const Module = require('module') as NodeJS.ModuleInternal;
 

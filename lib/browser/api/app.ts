@@ -1,7 +1,7 @@
 import { Menu } from 'electron/main';
 
-import { EventEmitter } from 'events';
-import * as fs from 'fs';
+import { EventEmitter } from 'node:events';
+import * as fs from 'node:fs';
 
 const bindings = process._linkedBinding('electron_browser_app');
 const commandLine = process._linkedBinding('electron_common_command_line');

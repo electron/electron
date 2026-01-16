@@ -1,6 +1,6 @@
 import { IpcMainInvokeEvent } from 'electron/main';
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 
 export class IpcMainImpl extends EventEmitter implements Electron.IpcMain {
   private _invokeHandlers: Map<string, (e: IpcMainInvokeEvent, ...args: any[]) => void> = new Map();

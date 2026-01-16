@@ -1,8 +1,8 @@
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 
-import { EventEmitter } from 'events';
-import { Socket } from 'net';
-import { Duplex, PassThrough } from 'stream';
+import { EventEmitter } from 'node:events';
+import { Socket } from 'node:net';
+import { Duplex, PassThrough } from 'node:stream';
 
 const { _fork } = process._linkedBinding('electron_browser_utility_process');
 

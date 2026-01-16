@@ -1,6 +1,6 @@
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 
 const { createPair } = process._linkedBinding('electron_browser_message_port');
 

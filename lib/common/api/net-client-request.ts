@@ -3,8 +3,8 @@ import type {
   UploadProgress
 } from 'electron/common';
 
-import { Readable, Writable } from 'stream';
-import * as url from 'url';
+import { Readable, Writable } from 'node:stream';
+import * as url from 'node:url';
 
 const {
   isValidHeaderName,

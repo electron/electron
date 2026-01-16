@@ -1,7 +1,7 @@
 import { ParentPort } from '@electron/internal/utility/parent-port';
 
-import { EventEmitter } from 'events';
-import { pathToFileURL } from 'url';
+import { EventEmitter } from 'node:events';
+import { pathToFileURL } from 'node:url';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
 

@@ -1,6 +1,6 @@
-import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
+import { spawn, ChildProcessWithoutNullStreams } from 'node:child_process';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 // i.e. my-app/app-0.1.13/
 const appFolder = path.dirname(process.execPath);

@@ -1,7 +1,7 @@
+import * as util from 'node:util';
 import timers = require('timers');
-import * as util from 'util';
 
-import type * as stream from 'stream';
+import type * as stream from 'node:stream';
 
 type AnyFn = (...args: any[]) => any
 

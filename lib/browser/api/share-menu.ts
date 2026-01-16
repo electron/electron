@@ -1,6 +1,6 @@
 import { BrowserWindow, Menu, SharingItem, PopupOptions } from 'electron/main';
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 
 class ShareMenu extends EventEmitter implements Electron.ShareMenu {
   private menu: Menu;

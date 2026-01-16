@@ -1,7 +1,7 @@
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 
 interface PreloadContext {
   loadedModules: Map<string, any>;
