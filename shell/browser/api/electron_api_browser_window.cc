@@ -280,16 +280,22 @@ v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
 }
 
 void BrowserWindow::OnWindowShow() {
+  if (!web_contents_shown_) {
+    web_contents()->WasShown();
+    web_contents_shown_ = true;
+  }
   BaseWindow::OnWindowShow();
 }
 
 void BrowserWindow::OnWindowHide() {
   web_contents()->WasOccluded();
+  web_contents_shown_ = false;
   BaseWindow::OnWindowHide();
 }
 
 void BrowserWindow::Show() {
   web_contents()->WasShown();
+  web_contents_shown_ = true;
   BaseWindow::Show();
 }
 
@@ -298,6 +304,7 @@ void BrowserWindow::ShowInactive() {
   if (IsModal())
     return;
   web_contents()->WasShown();
+  web_contents_shown_ = true;
   BaseWindow::ShowInactive();
 }
 
