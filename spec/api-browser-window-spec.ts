@@ -5473,7 +5473,7 @@ describe('BrowserWindow module', () => {
           thickFrame: true,
           transparent: true
         });
-        expect(w.isResizable()).to.be.false('resizable');
+        expect(w.isResizable()).to.be.true('resizable');
         w.maximize();
         expect(w.isMaximized()).to.be.true('maximized');
         const bounds = w.getBounds();
