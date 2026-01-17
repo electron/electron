@@ -923,10 +923,10 @@ index 2f34f45aaf89e6f4600be1d2b8444c636b0cc83f..5bfd45c5efbf300a36e016af80e18fb9
    virtual mojom::ResultCode OnError();
  
 diff --git a/printing/printing_context_linux.cc b/printing/printing_context_linux.cc
-index 590e7508503d73fd698f8d2432bc98642be8f548..77a6679eab534fa0c06d5cd5ab9acbc861501c70 100644
+index 5c555d8768e2a1d9e6ac86fc9392420a42f5193d..f547f7e6008635ff03c3b96911772c18790e89aa 100644
 --- a/printing/printing_context_linux.cc
 +++ b/printing/printing_context_linux.cc
-@@ -65,9 +65,8 @@ void PrintingContextLinux::AskUserForSettings(int max_pages,
+@@ -66,9 +66,8 @@ void PrintingContextLinux::AskUserForSettings(int max_pages,
                                                bool is_scripted,
                                                PrintSettingsCallback callback) {
    if (!print_dialog_) {

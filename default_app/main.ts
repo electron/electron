@@ -110,11 +110,9 @@ async function loadApplicationPackage (packagePath: string) {
       } else if (packageJson.name) {
         app.name = packageJson.name;
       }
-      if (packageJson.desktopName) {
-        app.setDesktopName(packageJson.desktopName);
-      } else {
-        app.setDesktopName(`${app.name}.desktop`);
-      }
+
+      app.setDesktopName(packageJson.desktopName || `${app.name}.desktop`);
+
       // Set v8 flags, deliberately lazy load so that apps that do not use this
       // feature do not pay the price
       if (packageJson.v8Flags) {

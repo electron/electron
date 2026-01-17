@@ -21,10 +21,10 @@ index 8c32005730153251e93516340e4baa500d777178..ff444dc689542a909ec5aada39816931
    ThreadIsolatedAllocator* GetThreadIsolatedAllocator() override;
  #endif
 diff --git a/gin/v8_platform.cc b/gin/v8_platform.cc
-index 684297bed11392efb9e40cf1ddb7a762a54924c9..8add8acca88d44e94f74e14a2eac5ed7f92c48b7 100644
+index 6a5d1eddb0d720cd8fbecfb2c4f9eb1bccb44de1..b3486e41b25e7b89b4b43d1ed0e56c019c4eab5d 100644
 --- a/gin/v8_platform.cc
 +++ b/gin/v8_platform.cc
-@@ -221,6 +221,10 @@ ThreadIsolatedAllocator* V8Platform::GetThreadIsolatedAllocator() {
+@@ -222,6 +222,10 @@ ThreadIsolatedAllocator* V8Platform::GetThreadIsolatedAllocator() {
  }
  #endif  // PA_BUILDFLAG(ENABLE_THREAD_ISOLATION)
  

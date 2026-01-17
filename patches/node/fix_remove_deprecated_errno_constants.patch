@@ -86,10 +86,10 @@ index fd28e0904d05e24e8eeb74fa36abd9727699a649..fea0426496978c0003fe1481afcf93fc
    NODE_DEFINE_CONSTANT(target, ETIMEDOUT);
  #endif
 diff --git a/src/node_errors.cc b/src/node_errors.cc
-index 552aa161636928fb646a97402988bc394ee987c1..15d78e3eca9693dc518ccb28fc7c02fa1372f34b 100644
+index d148127b89b632b339a63eb50370dfa0daca6308..55a0c986c5b6989ee9ce277bb6a9778abb2ad2ee 100644
 --- a/src/node_errors.cc
 +++ b/src/node_errors.cc
-@@ -862,10 +862,6 @@ const char* errno_string(int errorno) {
+@@ -899,10 +899,6 @@ const char* errno_string(int errorno) {
      ERRNO_CASE(ENOBUFS);
  #endif
  
@@ -100,7 +100,7 @@ index 552aa161636928fb646a97402988bc394ee987c1..15d78e3eca9693dc518ccb28fc7c02fa
  #ifdef ENODEV
      ERRNO_CASE(ENODEV);
  #endif
-@@ -904,14 +900,6 @@ const char* errno_string(int errorno) {
+@@ -941,14 +937,6 @@ const char* errno_string(int errorno) {
      ERRNO_CASE(ENOSPC);
  #endif
  
@@ -115,7 +115,7 @@ index 552aa161636928fb646a97402988bc394ee987c1..15d78e3eca9693dc518ccb28fc7c02fa
  #ifdef ENOSYS
      ERRNO_CASE(ENOSYS);
  #endif
-@@ -994,10 +982,6 @@ const char* errno_string(int errorno) {
+@@ -1031,10 +1019,6 @@ const char* errno_string(int errorno) {
      ERRNO_CASE(ESTALE);
  #endif
  

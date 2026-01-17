@@ -34,10 +34,10 @@ index dd4cee346f16df703d414bf206bbe6c9f4b1f796..5565f5a9259bd7da0722080bf01b3415
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 5df58d4a7af133e54b499cfb27d7206740e0ad25..6588b13542d2257e41a5e6dbb1b3d5eff9c16157 100644
+index cb62bc567fbe0777e6dfe78bbf78b55e77bf4ffa..2c1f83b9ff19da0d983b2b3252f1694482f686f7 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4733,10 +4733,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4741,10 +4741,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
      observer.DidInstallConditionalFeatures(context, world_id);
  }
  
@@ -52,7 +52,7 @@ index 5df58d4a7af133e54b499cfb27d7206740e0ad25..6588b13542d2257e41a5e6dbb1b3d5ef
  
  void RenderFrameImpl::DidChangeScrollOffset() {
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index aac388b2b34798a574acdc8a3585166136a58fb7..065c90bfdce2ddd02efd7605faea86d514808bd4 100644
+index fdbd5e66f73170cdc70009b183cd07f70db7dbd5..c82975148cc5afa3bfa023a43d7b69691cebf36f 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
 @@ -608,7 +608,8 @@ class CONTENT_EXPORT RenderFrameImpl
@@ -89,10 +89,10 @@ index 37691ecee7a72b2ec47ff575239f628116cf136b..c67e3faf7440514e203e5b15a68fc345
  
  void ServiceWorkerContextClient::DidEvaluateScript(bool success) {
 diff --git a/content/renderer/service_worker/service_worker_context_client.h b/content/renderer/service_worker/service_worker_context_client.h
-index d03d1d06611e10cf55a29aee9a764f575eed436d..78684d30cfb71a215004992b1916194c1a46055b 100644
+index 8482d7fab12634e6b9a8d5f9bab6c7e428bb99ee..4f131fbfc9350352bce4430f92b9f2cf9ab266bd 100644
 --- a/content/renderer/service_worker/service_worker_context_client.h
 +++ b/content/renderer/service_worker/service_worker_context_client.h
-@@ -164,7 +164,8 @@ class ServiceWorkerContextClient
+@@ -163,7 +163,8 @@ class ServiceWorkerContextClient
    void WorkerContextStarted(
        blink::WebServiceWorkerContextProxy* proxy,
        scoped_refptr<base::SequencedTaskRunner> worker_task_runner) override;
@@ -103,10 +103,10 @@ index d03d1d06611e10cf55a29aee9a764f575eed436d..78684d30cfb71a215004992b1916194c
    void WillInitializeWorkerContext() override;
    void WillDestroyWorkerContext(v8::Local<v8::Context> context) override;
 diff --git a/extensions/renderer/dispatcher.cc b/extensions/renderer/dispatcher.cc
-index 7b5398b4199ce6df9e1c9624771a5444d7f07eb3..77f896aa6a53bf7d277b963fba54d623eed8068b 100644
+index 39166de2b27c44a4502a89a3b175eebbec8ee0e9..33ae3f465865aecfcb7d3b0244d57ad2838cea12 100644
 --- a/extensions/renderer/dispatcher.cc
 +++ b/extensions/renderer/dispatcher.cc
-@@ -615,6 +615,7 @@ void Dispatcher::DidInitializeServiceWorkerContextOnWorkerThread(
+@@ -614,6 +614,7 @@ void Dispatcher::DidInitializeServiceWorkerContextOnWorkerThread(
  
  void Dispatcher::WillEvaluateServiceWorkerOnWorkerThread(
      blink::WebServiceWorkerContextProxy* context_proxy,

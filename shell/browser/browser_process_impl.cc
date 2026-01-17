@@ -27,6 +27,7 @@
 #include "components/proxy_config/pref_proxy_config_tracker_impl.h"
 #include "components/proxy_config/proxy_config_dictionary.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
+#include "components/supervised_user/core/browser/device_parental_controls_noop_impl.h"  // nogncheck
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/network_quality_observer_factory.h"
 #include "content/public/browser/network_service_instance.h"
@@ -248,6 +249,18 @@ BrowserProcessImpl::print_preview_dialog_controller() {
 
 printing::BackgroundPrintingManager*
 BrowserProcessImpl::background_printing_manager() {
+  return nullptr;
+}
+
+supervised_user::DeviceParentalControls&
+BrowserProcessImpl::device_parental_controls() {
+  if (!device_parental_controls_)
+    device_parental_controls_ =
+        std::make_unique<supervised_user::DeviceParentalControlsNoOpImpl>();
+  return *device_parental_controls_;
+}
+
+activity_reporter::ActivityReporter* BrowserProcessImpl::activity_reporter() {
   return nullptr;
 }
 

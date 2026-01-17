@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index e1c2da6969a1ce937d397735e844930f3234bba7..0bed152014949c22b6c610198df39a2522890279 100644
+index 461819ce0fa732048e4365c40a86ef55d984c35f..fa55c980a9c4f373723a867fd41276d67b0b9413 100644
 --- a/deps/ncrypto/ncrypto.cc
 +++ b/deps/ncrypto/ncrypto.cc
 @@ -11,6 +11,7 @@
@@ -151,7 +151,7 @@ index d005bf0ffb93445fa6611a1beb1b465764271ede..01770687bd191c61af02e76d7de24bba
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 6482bd58bb6a95cfa4074ea9535e1443aea66bb5..20d3c1d9d17fde18fc09b6ee219137831eb08a45 100644
+index 03c0c6f42d84efaeba0cc3b997cd29f77648b00d..f3631d538a38dc3a93a47707ea8dab0462fa2140 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -143,7 +143,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
@@ -163,7 +163,7 @@ index 6482bd58bb6a95cfa4074ea9535e1443aea66bb5..20d3c1d9d17fde18fc09b6ee21913783
        X509* ca = sk_X509_value(extra_certs, i);
  
        // NOTE: Increments reference count on `ca`
-@@ -1831,11 +1831,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
+@@ -1832,11 +1832,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
    // If the user specified "auto" for dhparams, the JavaScript layer will pass
    // true to this function instead of the original string. Any other string
    // value will be interpreted as custom DH parameters below.
@@ -177,7 +177,7 @@ index 6482bd58bb6a95cfa4074ea9535e1443aea66bb5..20d3c1d9d17fde18fc09b6ee21913783
    DHPointer dh;
    {
      BIOPointer bio(LoadBIO(env, args[0]));
-@@ -2061,7 +2062,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
+@@ -2062,7 +2063,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
    }
  
    // Add CA certs too
@@ -276,7 +276,7 @@ index 205e248e0f20f019e189a6c69d3c011a616b3939..12b0d804c6f1d4998b85160b0aac8eb7
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
 diff --git a/src/env.h b/src/env.h
-index f3a2d221f4bb52987e1bdacdadf19aacfcf65ec3..d34aec43630b3cf53004d8180446d7136b59ceac 100644
+index ed2253f1fc3cf8d59e73e4f2478dfb0d4227aacd..84a650885a79bc5c49efdc26f62ec8db48de775c 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -52,7 +52,7 @@
@@ -288,7 +288,7 @@ index f3a2d221f4bb52987e1bdacdadf19aacfcf65ec3..d34aec43630b3cf53004d8180446d713
  #include <openssl/evp.h>
  #endif
  
-@@ -1058,7 +1058,7 @@ class Environment final : public MemoryRetainer {
+@@ -1059,7 +1059,7 @@ class Environment final : public MemoryRetainer {
      kExitInfoFieldCount
    };
  
@@ -311,7 +311,7 @@ index d9c533f100d25aeab1fe8589932a8ddead431258..2acab8786a8a752b17961445edeb872c
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.h b/src/node_options.h
-index 3a1503a035e12b5dce75c77c327607c857a8a367..941ae4f15c42fb8016d03c786973fd4709ac1a0d 100644
+index 1f15c6cc6a9ae192b1b394c437393e744b5b1153..638e49ccf48d9b9c60189af9255ce7cef9184723 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@

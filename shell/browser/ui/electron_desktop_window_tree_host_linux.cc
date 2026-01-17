@@ -25,6 +25,7 @@
 #include "ui/gfx/geometry/skia_conversions.h"
 #include "ui/linux/linux_ui.h"
 #include "ui/ozone/public/ozone_platform.h"
+#include "ui/platform_window/extensions/wayland_extension.h"
 #include "ui/platform_window/platform_window.h"
 #include "ui/platform_window/platform_window_init_properties.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host.h"
@@ -57,6 +58,24 @@ bool ElectronDesktopWindowTreeHostLinux::IsShowingFrame(
   return window_state != ui::PlatformWindowState::kFullScreen &&
          window_state != ui::PlatformWindowState::kMaximized &&
          window_state != ui::PlatformWindowState::kMinimized;
+}
+
+void ElectronDesktopWindowTreeHostLinux::SetWindowIcons(
+    const gfx::ImageSkia& window_icon,
+    const gfx::ImageSkia& app_icon) {
+  DesktopWindowTreeHostLinux::SetWindowIcons(window_icon, app_icon);
+
+  if (ui::GetWaylandToplevelExtension(*platform_window()))
+    saved_window_icon_ = window_icon;
+}
+
+void ElectronDesktopWindowTreeHostLinux::Show(
+    ui::mojom::WindowShowState show_state,
+    const gfx::Rect& restore_bounds) {
+  DesktopWindowTreeHostLinux::Show(show_state, restore_bounds);
+
+  if (!saved_window_icon_.isNull())
+    DesktopWindowTreeHostLinux::SetWindowIcons(saved_window_icon_, {});
 }
 
 gfx::Insets ElectronDesktopWindowTreeHostLinux::CalculateInsetsInDIP(

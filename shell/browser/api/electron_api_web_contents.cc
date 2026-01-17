@@ -760,6 +760,10 @@ WebContents::WebContents(v8::Isolate* isolate,
   script_executor_ = std::make_unique<extensions::ScriptExecutor>(web_contents);
 #endif
 
+  // TODO: This works for main frames, but does not work for child frames.
+  // See: https://github.com/electron/electron/issues/49256
+  web_contents->SetSupportsDraggableRegions(true);
+
   session_ = Session::FromOrCreate(isolate, GetBrowserContext());
 
   SetUserAgent(GetBrowserContext()->GetUserAgent());
@@ -1027,6 +1031,10 @@ void WebContents::InitWithWebContents(
   browser_context_ = browser_context;
   web_contents->SetDelegate(this);
 
+  // TODO: This works for main frames, but does not work for child frames.
+  // See: https://github.com/electron/electron/issues/49256
+  web_contents->SetSupportsDraggableRegions(true);
+
 #if BUILDFLAG(ENABLE_PRINTING)
   PrintViewManagerElectron::CreateForWebContents(web_contents.get());
   printing::CreateCompositeClientIfNeeded(web_contents.get(), GetUserAgent());
@@ -1043,6 +1051,9 @@ void WebContents::InitWithWebContents(
 }
 
 WebContents::~WebContents() {
+  if (inspectable_web_contents_)
+    inspectable_web_contents_->GetView()->SetDelegate(nullptr);
+
   if (owner_window_) {
     owner_window_->RemoveBackgroundThrottlingSource(this);
   }
@@ -1056,8 +1067,6 @@ WebContents::~WebContents() {
     WebContentsDestroyed();
     return;
   }
-
-  inspectable_web_contents_->GetView()->SetDelegate(nullptr);
 
   // This event is only for internal use, which is emitted when WebContents is
   // being destroyed.
@@ -1783,8 +1792,6 @@ void WebContents::RenderFrameCreated(
     auto details = gin_helper::Dictionary::CreateEmpty(isolate);
     details.SetGetter("frame", render_frame_host);
     Emit("frame-created", details);
-    content::WebContents::FromRenderFrameHost(render_frame_host)
-        ->SetSupportsDraggableRegions(true);
   }
 }
 
@@ -2196,8 +2203,8 @@ void WebContents::DevToolsOpened() {
   // Inherit owner window in devtools when it doesn't have one.
   auto* devtools = inspectable_web_contents_->GetDevToolsWebContents();
   bool has_window = devtools->GetUserData(NativeWindowRelay::UserDataKey());
-  if (owner_window_ && !has_window) {
-    DCHECK(!owner_window_.WasInvalidated());
+  if (owner_window() && !has_window) {
+    CHECK(!owner_window_.WasInvalidated());
     DCHECK_EQ(handle->owner_window(), nullptr);
     handle->SetOwnerWindow(devtools, owner_window());
   }
@@ -3881,7 +3888,8 @@ void WebContents::PDFReadyToPrint() {
 }
 
 void WebContents::OnInputEvent(const content::RenderWidgetHost& rfh,
-                               const blink::WebInputEvent& event) {
+                               const blink::WebInputEvent& event,
+                               input::InputEventSource source) {
   Emit("input-event", event);
 }
 

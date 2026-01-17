@@ -204,7 +204,7 @@ index 81c4f0bdc89f972464d13f06c7907e5aabff4043..cfeb183f2c3bdf75d90f5ad19bc7254e
    bool sysex;
  };
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index d88327a36321bc9370f7f3761487c6fc31b7f109..84080a87638fca1a82c9cfea7a2c53ede47a6d29 100644
+index ca46a15c03d72da4a301aff6fc18c173eaa7e6c8..7a52f09c49fbf8343b33f8c07057c5de894f6f28 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
 @@ -151,8 +151,22 @@ String PermissionNameToString(PermissionName name) {

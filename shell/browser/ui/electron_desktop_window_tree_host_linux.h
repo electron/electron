@@ -11,6 +11,7 @@
 
 #include "base/memory/raw_ptr.h"
 #include "base/scoped_observation.h"
+#include "ui/gfx/image/image_skia.h"
 #include "ui/linux/device_scale_factor_observer.h"
 #include "ui/linux/linux_ui.h"
 #include "ui/native_theme/native_theme_observer.h"
@@ -44,6 +45,10 @@ class ElectronDesktopWindowTreeHostLinux
  protected:
   // views::DesktopWindowTreeHostLinuxImpl:
   void OnWidgetInitDone() override;
+  void SetWindowIcons(const gfx::ImageSkia& window_icon,
+                      const gfx::ImageSkia& app_icon) override;
+  void Show(ui::mojom::WindowShowState show_state,
+            const gfx::Rect& restore_bounds) override;
 
   // ui::PlatformWindowDelegate
   gfx::Insets CalculateInsetsInDIP(
@@ -70,6 +75,8 @@ class ElectronDesktopWindowTreeHostLinux
   void UpdateWindowState(ui::PlatformWindowState new_state);
 
   bool IsShowingFrame(ui::PlatformWindowState window_state) const;
+
+  gfx::ImageSkia saved_window_icon_;
 
   raw_ptr<NativeWindowViews> native_window_view_;  // weak ref
 
