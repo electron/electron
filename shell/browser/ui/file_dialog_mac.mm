@@ -137,6 +137,10 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
       } else {
         if (UTType* utt = [UTType typeWithFilenameExtension:@(ext.c_str())])
           [content_types_set addObject:utt];
+        if (UTType* utt = [UTType typeWithFilenameExtension:@(ext.c_str())
+                                           conformingToType:[UTType typeWithIdentifier:@"com.apple.package"]]) {
+          [content_types_set addObject:utt];
+        }
       }
     }
 
