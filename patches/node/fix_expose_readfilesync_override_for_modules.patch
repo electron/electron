@@ -8,10 +8,10 @@ an API override to replace the native `ReadFileSync` in the `modules`
 binding.
 
 diff --git a/src/env_properties.h b/src/env_properties.h
-index 39803ae466fc81a6b2ff6e12093cdf2082790a9f..29ce687a03ccc8e45881f70d34e009e028aa4074 100644
+index bb874fec74c73b5de0ef6d1e2a872ebceefb11ce..6fafe2a8029c535fa98276e2d73f04ee603a7805 100644
 --- a/src/env_properties.h
 +++ b/src/env_properties.h
-@@ -490,6 +490,7 @@
+@@ -491,6 +491,7 @@
    V(maybe_cache_generated_source_map, v8::Function)                            \
    V(messaging_deserialize_create_object, v8::Function)                         \
    V(message_port, v8::Object)                                                  \
@@ -20,7 +20,7 @@ index 39803ae466fc81a6b2ff6e12093cdf2082790a9f..29ce687a03ccc8e45881f70d34e009e0
    V(performance_entry_callback, v8::Function)                                  \
    V(prepare_stack_trace_callback, v8::Function)                                \
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index 9eec93f52f0d0b2e45ae04ff357b4ced0770782f..6b1a9e257b0ce52820838f88c44ec546068fe419 100644
+index fa0aa90cf4d6a9fae3cde0b0bb743b88b47c07bb..d3907c3d063c7757cdd7ef99ed09bea1eb58a3fd 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -23,12 +23,14 @@ namespace modules {

@@ -7,7 +7,7 @@ Subject: build: ensure native module compilation fails if not using a new
 This should not be upstreamed, it is a quality-of-life patch for downstream module builders.
 
 diff --git a/common.gypi b/common.gypi
-index 088e7ebbfe07d273691c86c7ab2dce00fcb475c8..a3f7415dba63828bec94ac8503420f14e3fea14c 100644
+index 8280cff0d93d42a95875b78de84221aa1bcae092..76a03b9a5458f4afc0ab5768c8a2e90633749fe9 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -89,6 +89,8 @@
@@ -54,7 +54,7 @@ index e063f9131d4d547d231811dafea03c8c52b611e6..a5c764d9e7fb0ffa219202015ec67ed6
    o['variables']['v8_enable_javascript_promise_hooks'] = 1
    o['variables']['v8_enable_lite_mode'] = 1 if options.v8_lite_mode else 0
 diff --git a/src/node.h b/src/node.h
-index 27f5bb1571920c963e05644a5fc5858aa4b88288..9c624e4ef26c1b06a6c4bca7def245935189ce07 100644
+index be22ad370217a13aef2479d478a6373feaf6f208..19c34a430d095c06ccf5a988db91311d420a485a 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -22,6 +22,12 @@

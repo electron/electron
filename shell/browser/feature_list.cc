@@ -62,7 +62,13 @@ void InitializeFeatureList() {
       // See https://chromium-review.googlesource.com/c/chromium/src/+/6910012
       // Needed until we rework some of our logic and checks to enable this
       // properly.
-      std::string(",") + network::features::kLocalNetworkAccessChecks.name;
+      std::string(",") + network::features::kLocalNetworkAccessChecks.name +
+      // See 4803165: Enable suppressing input event dispatch while
+      // paint-holding. Needed to prevent spurious input event handling
+      // failures.
+      // TODO(codebytere): Figure out how to properly wait for paint-hold.
+      std::string(",") +
+      blink::features::kDropInputEventsWhilePaintHolding.name;
 
 #if BUILDFLAG(IS_WIN)
   // Refs https://issues.chromium.org/issues/401996981

@@ -147,7 +147,8 @@ base::flat_map<int32_t, uint32_t> MonitorAtomIdToDisplayId() {
 std::unique_ptr<ThumbnailCapturer> MakeWindowCapturer() {
 #if BUILDFLAG(IS_MAC)
   if (ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kWindow)) {
-    return CreateThumbnailCapturerMac(DesktopMediaList::Type::kWindow);
+    return CreateThumbnailCapturerMac(DesktopMediaList::Type::kWindow,
+                                      /*web_contents=*/nullptr);
   }
 #endif  // BUILDFLAG(IS_MAC)
 
@@ -162,7 +163,8 @@ std::unique_ptr<ThumbnailCapturer> MakeWindowCapturer() {
 std::unique_ptr<ThumbnailCapturer> MakeScreenCapturer() {
 #if BUILDFLAG(IS_MAC)
   if (ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kScreen)) {
-    return CreateThumbnailCapturerMac(DesktopMediaList::Type::kScreen);
+    return CreateThumbnailCapturerMac(DesktopMediaList::Type::kScreen,
+                                      /*web_contents=*/nullptr);
   }
 #endif  // BUILDFLAG(IS_MAC)
 

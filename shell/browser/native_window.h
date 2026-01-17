@@ -106,9 +106,9 @@ class NativeWindow : public base::SupportsUserData,
   void SetPosition(const gfx::Point& position, bool animate = false);
   [[nodiscard]] gfx::Point GetPosition() const;
 
-  virtual void SetContentSize(const gfx::Size& size, bool animate = false);
+  void SetContentSize(const gfx::Size& size, bool animate = false);
   virtual gfx::Size GetContentSize() const;
-  virtual void SetContentBounds(const gfx::Rect& bounds, bool animate = false);
+  void SetContentBounds(const gfx::Rect& bounds, bool animate = false);
   virtual gfx::Rect GetContentBounds() const;
   virtual bool IsNormal() const;
   virtual gfx::Rect GetNormalBounds() const = 0;

@@ -299,7 +299,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   params.wm_class_name = base::ToLowerASCII(name);
   params.wm_class_class = name;
   // Set Wayland application ID.
-  params.wayland_app_id = platform_util::GetXdgAppId();
+  if (auto const app_id = platform_util::GetXdgAppId()) {
+    params.wayland_app_id = *app_id;
+  }
 
   auto* native_widget = new views::DesktopNativeWidgetAura(widget());
   params.native_widget = native_widget;
