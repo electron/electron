@@ -102,7 +102,7 @@ the response.
     cookie and will not be retained between sessions.
   * `sameSite` string (optional) - The [Same Site](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#SameSite_cookies) policy to apply to this cookie.  Can be `unspecified`, `no_restriction`, `lax` or `strict`.  Default is `lax`.
 
-Returns `Promise<void>` - A promise which resolves when the cookie has been set
+Returns `Promise<void>` - A promise which resolves when the cookie has been set.
 
 Sets a cookie with `details`.
 
@@ -111,16 +111,16 @@ Sets a cookie with `details`.
 * `url` string - The URL associated with the cookie.
 * `name` string - The name of cookie to remove.
 
-Returns `Promise<void>` - A promise which resolves when the cookie has been removed
+Returns `Promise<void>` - A promise which resolves when the cookie has been removed.
 
-Removes the cookies matching `url` and `name`
+Removes the cookies matching `url` and `name`.
 
 #### `cookies.flushStore()`
 
-Returns `Promise<void>` - A promise which resolves when the cookie store has been flushed
+Returns `Promise<void>` - A promise which resolves when the cookie store has been flushed.
 
-Writes any unwritten cookies data to disk
+Writes any unwritten cookies data to disk.
 
-Cookies written by any method will not be written to disk immediately, but will be written every 30 seconds or 512 operations
+Cookies written by any method will not be written to disk immediately, but will be written every 30 seconds or 512 operations.
 
 Calling this method can cause the cookie to be written to disk immediately.

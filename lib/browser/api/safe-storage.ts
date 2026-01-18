@@ -1,3 +1,7 @@
-const safeStorage = process._linkedBinding('electron_browser_safe_storage');
+import { EventEmitter } from 'events';
 
-module.exports = safeStorage;
+const { safeStorage } = process._linkedBinding('electron_browser_safe_storage');
+
+Object.setPrototypeOf(safeStorage, EventEmitter.prototype);
+
+export default safeStorage;

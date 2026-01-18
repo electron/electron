@@ -143,4 +143,3 @@ chore_disable_protocol_handler_dcheck.patch
 fix_check_for_file_existence_before_setting_mtime.patch
 fix_linux_tray_id.patch
 expose_gtk_ui_platform_field.patch
-fix_os_crypt_async_cookie_encryption.patch
