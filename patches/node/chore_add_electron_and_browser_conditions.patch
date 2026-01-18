@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Antigravity Agent <agent@antigravity.com>
+Date: Mon, 19 Jan 2026 00:00:00 +0000
+Subject: chore: add electron and browser conditions to ESM loader
+
+This ensures that 'exports' fields in package.json using 'browser' or 'electron' conditions are respected in the renderer process.
+
+diff --git a/lib/internal/modules/esm/utils.js b/lib/internal/modules/esm/utils.js
+index 0000000000000000000000000000000000000000..0000000000000000000000000000000000000000 100644
+--- a/lib/internal/modules/esm/utils.js
++++ b/lib/internal/modules/esm/utils.js
+@@ -19,6 +19,12 @@ function initializeDefaultConditions() {
+ 
+   const conditions = ['node', 'import'];
+ 
++  if (process.type === 'renderer') {
++    ArrayPrototypePush(conditions, 'electron', 'browser');
++  } else if (process.type === 'browser' || process.type === 'utility') {
++    ArrayPrototypePush(conditions, 'electron');
++  }
++
+   if (!noAddons) {
+     ArrayPrototypePush(conditions, 'node-addons');
+   }
