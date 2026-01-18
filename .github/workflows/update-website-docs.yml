@@ -1,0 +1,39 @@
+name: Update Website Docs
+
+on:
+  release:
+    types: [published]
+
+permissions: {}
+
+jobs:
+  update-website-docs:
+    name: Update Website Docs
+    runs-on: ubuntu-latest
+    environment: website-docs-updater
+    permissions:
+      contents: read
+      id-token: write # needed for secret-service-action
+    steps:
+      - name: Get GitHub App token
+        id: secret-service
+        uses: electron/secret-service-action@3476425e8b30555aac15b1b7096938e254b0e155 # v1.0.0
+      - name: Check if this release is the latest
+        id: check-if-latest-release
+        env:
+          GH_REPO: electron/electron
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LATEST_RELEASE_TAG="$(gh release view --json tagName --jq '.tagName')"
+          if [ "$LATEST_RELEASE_TAG" = "${GITHUB_REF#refs/tags/}" ]; then
+            echo "isLatestRelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "isLatestRelease=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Trigger website docs update
+        if: ${{ steps.check-if-latest-release.outputs.isLatestRelease }}
+        env:
+          GH_REPO: electron/website
+          GH_TOKEN: ${{ fromJSON(steps.secret-service.outputs.secrets).WEBSITE_DOCS_UPDATER_APP_TOKEN }}
+        run: |
+          gh workflow run update-docs.yml -f sha=$GITHUB_SHA
