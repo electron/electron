@@ -1037,6 +1037,9 @@ void WebContents::InitWithWebContents(
 }
 
 WebContents::~WebContents() {
+  if (inspectable_web_contents_)
+    inspectable_web_contents_->GetView()->SetDelegate(nullptr);
+
   if (owner_window_) {
     owner_window_->RemoveBackgroundThrottlingSource(this);
   }
@@ -1050,8 +1053,6 @@ WebContents::~WebContents() {
     WebContentsDestroyed();
     return;
   }
-
-  inspectable_web_contents_->GetView()->SetDelegate(nullptr);
 
   // This event is only for internal use, which is emitted when WebContents is
   // being destroyed.
@@ -2189,8 +2190,8 @@ void WebContents::DevToolsOpened() {
   // Inherit owner window in devtools when it doesn't have one.
   auto* devtools = inspectable_web_contents_->GetDevToolsWebContents();
   bool has_window = devtools->GetUserData(NativeWindowRelay::UserDataKey());
-  if (owner_window_ && !has_window) {
-    DCHECK(!owner_window_.WasInvalidated());
+  if (owner_window() && !has_window) {
+    CHECK(!owner_window_.WasInvalidated());
     DCHECK_EQ(handle->owner_window(), nullptr);
     handle->SetOwnerWindow(devtools, owner_window());
   }
