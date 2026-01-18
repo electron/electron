@@ -263,7 +263,17 @@ WebContents.prototype.print = function (options: ElectronInternal.WebContentsPri
     throw new TypeError('webContents.print(): Invalid print settings specified.');
   }
 
-  const { pageSize } = options;
+  const { pageSize, usePrinterDefaultPageSize, deviceName } = options;
+
+  // When usePrinterDefaultPageSize is true, deviceName must be set to query
+  // the printer's default paper size from PrinterSemanticCapsAndDefaults.
+  if (usePrinterDefaultPageSize && !deviceName) {
+    console.warn(
+      'webContents.print(): usePrinterDefaultPageSize requires deviceName to be set. ' +
+        'Falling back to default page size.'
+    );
+  }
+
   if (typeof pageSize === 'string' && PDFPageSizes[pageSize]) {
     const mediaSize = PDFPageSizes[pageSize];
     options.mediaSize = {
@@ -295,8 +305,6 @@ WebContents.prototype.print = function (options: ElectronInternal.WebContentsPri
       imageable_area_right_microns: width,
       imageable_area_top_microns: height
     };
-  } else if (pageSize !== undefined) {
-    throw new Error(`Unsupported pageSize: ${pageSize}`);
   }
 
   if (this._print) {
