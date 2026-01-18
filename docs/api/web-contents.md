@@ -2364,7 +2364,8 @@ A [`NavigationHistory`](navigation-history.md) used by this webContents.
 
 #### `contents.hostWebContents` _Readonly_
 
-A [`WebContents`](web-contents.md) instance that might own this `WebContents`.
+A `WebContents | null` property that represents a [`WebContents`](web-contents.md)
+instance that might own this `WebContents`.
 
 #### `contents.devToolsWebContents` _Readonly_
 
