@@ -16,6 +16,18 @@ Subject: mas: avoid private macOS API usage
   * NSNextStepFrame
   * NSThemeFrame
   * NSTextInputReplacementRangeAttributeName
+  * _toolbarView
+  * _menuImpl
+  * _removeFromGroups:
+  * _isConsideredOpenForPersistentState
+  * _boundsIfOpen
+  * _resizeDirectionForMouseLocation:
+  * NSAppendToKillRing
+  * kCFBundleNumericVersionKey
+  * __NSNewKillRingSequence
+  * __NSInitializeKillRing
+  * NSYankFromKillRing
+  * NSSetKillRingToYankedState
 * NSAccessibilityRemoteUIElement is unnecessary for Electron's use-case. We use it
 for progressive web apps (where the AXTree is in the browser process, but macOS
 needs to think it's coming from the PWA process). I think it can just be chopped
@@ -80,6 +92,40 @@ index 4bf9a3c27e05c6635b2beb8e880b5b43dbed61b5..f328fbb49c45991f44a9c75325491d08
 +#endif
  
  }  // namespace base
+diff --git a/base/mac/info_plist_data.mm b/base/mac/info_plist_data.mm
+index 419a051968c58ae5a761708e4d942e8975c70852..a77032dd43f5fcbe29c54b622b34607fba09d350 100644
+--- a/base/mac/info_plist_data.mm
++++ b/base/mac/info_plist_data.mm
+@@ -11,15 +11,19 @@
+ #include "base/apple/bundle_locations.h"
+ #include "base/apple/foundation_util.h"
+ #include "base/containers/span.h"
++#include "electron/mas.h"
+ 
++#if !IS_MAS_BUILD()
+ extern "C" {
+ // Key used within CoreFoundation for loaded Info plists
+ extern const CFStringRef _kCFBundleNumericVersionKey;
+ }
++#endif
+ 
+ namespace base::mac {
+ 
+ std::vector<uint8_t> OuterBundleCachedInfoPlistData() {
++#if !IS_MAS_BUILD()
+   // NSBundle's info dictionary is used to ensure that any changes to Info.plist
+   // on disk due to pending updates do not result in a version of the data being
+   // used that doesn't match the code signature of the running app.
+@@ -43,6 +47,9 @@
+                      error:nullptr];
+   base::span<const uint8_t> span = apple::NSDataToSpan(data);
+   return {span.begin(), span.end()};
++#else
++  return {};
++#endif
+ }
+ 
+ }  // namespace base::mac
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
 index b63d58da9837ba4d1e4aff8f24f2cd977c5ed02d..8387fd7d2bcf8951b6cc024829c16d970799190c 100644
 --- a/base/process/launch_mac.cc
@@ -230,6 +276,25 @@ index ba813851fde2660c21f99248a124161d2ac2ca07..c34f920e4a592b6798f5307c726bc34e
      "//mojo/public/cpp/bindings",
      "//net",
      "//ui/accelerated_widget_mac",
+diff --git a/components/remote_cocoa/app_shim/NSToolbar+Private.mm b/components/remote_cocoa/app_shim/NSToolbar+Private.mm
+index 5c6f4c37205de6d7cfb91c837ad4586473cf2fdb..551dc7a0e71711eee9d5176a33b345b8b8b276fb 100644
+--- a/components/remote_cocoa/app_shim/NSToolbar+Private.mm
++++ b/components/remote_cocoa/app_shim/NSToolbar+Private.mm
+@@ -4,6 +4,9 @@
+ 
+ #import "components/remote_cocoa/app_shim/NSToolbar+Private.h"
+ 
++#include "electron/mas.h"
++
++#if !IS_MAS_BUILD()
+ // Access the private view that backs the toolbar.
+ // TODO(http://crbug.com/40261565): Remove when FB12010731 is fixed in AppKit.
+ @interface NSToolbar (ToolbarView)
+@@ -18,3 +21,4 @@ - (NSView *)privateToolbarView {
+                                                            : nil;
+ }
+ @end
++#endif
 diff --git a/components/remote_cocoa/app_shim/application_bridge.mm b/components/remote_cocoa/app_shim/application_bridge.mm
 index d5afd4be1ef4ac3fd1cfa7c09c667bc87b9a6b3a..4f005f2fe24ecfe1962fc64782fb7187161cbd7a 100644
 --- a/components/remote_cocoa/app_shim/application_bridge.mm
@@ -320,6 +385,62 @@ index f7200edbe6059ac6d7ade0672852b52da7642a71..0cc5da96411b46eb39d0c01dfec59cb5
  }
  
  @end
+diff --git a/components/remote_cocoa/app_shim/menu_controller_cocoa_delegate_impl.mm b/components/remote_cocoa/app_shim/menu_controller_cocoa_delegate_impl.mm
+index 5dd3ae5dff160834524c013594f76f59ad7e2fdd..356d677b9e6addeeb60af6b4e2d63125bc4f51c4 100644
+--- a/components/remote_cocoa/app_shim/menu_controller_cocoa_delegate_impl.mm
++++ b/components/remote_cocoa/app_shim/menu_controller_cocoa_delegate_impl.mm
+@@ -8,6 +8,7 @@
+ #include "base/apple/foundation_util.h"
+ #include "base/logging.h"
+ #import "base/message_loop/message_pump_apple.h"
++#import "electron/mas.h"
+ #import "skia/ext/skia_utils_mac.h"
+ #import "ui/base/cocoa/cocoa_base_utils.h"
+ #include "ui/base/interaction/element_tracker_mac.h"
+@@ -111,6 +112,7 @@ - (void)highlightItemAtIndex:(NSInteger)index;
+ 
+ @interface NSMenu (Impl)
+ 
++#if !IS_MAS_BUILD()
+ // Returns the impl. (If called on macOS 14 this would return a subclass of
+ // NSCocoaMenuImpl, but private API use is not needed on macOS 14.)
+ - (id<CrNSCarbonMenuImpl>)_menuImpl;
+@@ -119,6 +121,7 @@ @interface NSMenu (Impl)
+ // on both Carbon and Cocoa impls, but always (incorrectly) returns a zero
+ // origin with the Cocoa impl. Therefore, do not use with macOS 14 or later.
+ - (CGRect)_boundsIfOpen;
++#endif
+ 
+ @end
+ 
+@@ -239,6 +242,7 @@ - (void)controllerWillAddMenu:(NSMenu*)menu fromModel:(ui::MenuModel*)model {
+       }
+       menuShown = true;
+ 
++#if !IS_MAS_BUILD()
+       if (alertedIndex.has_value()) {
+         const auto index = base::checked_cast<NSInteger>(alertedIndex.value());
+         if (@available(macOS 14.0, *)) {
+@@ -247,6 +251,7 @@ - (void)controllerWillAddMenu:(NSMenu*)menu fromModel:(ui::MenuModel*)model {
+           [strongMenu._menuImpl highlightItemAtIndex:index];
+         }
+       }
++#endif
+ 
+       if (@available(macOS 14.0, *)) {
+         for (auto [elementId, index] : elementIds) {
+@@ -267,7 +272,11 @@ - (void)controllerWillAddMenu:(NSMenu*)menu fromModel:(ui::MenuModel*)model {
+             dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_MSEC),
+             dispatch_get_main_queue(), ^{
+               gfx::Rect bounds =
++#if !IS_MAS_BUILD()
+                   gfx::ScreenRectFromNSRect(strongMenu._boundsIfOpen);
++#else
++                  gfx::ScreenRectFromNSRect(NSMakeRect(0, 0, 0, 0));
++#endif
+               for (auto [elementId, index] : elementIds) {
+                 ui::ElementTrackerMac::GetInstance()->NotifyMenuItemShown(
+                     strongMenu, elementId, bounds);
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.mm
 index 3a815ebf505bd95fa7f6b61ba433d98fbfe20225..149de0175c2ec0e41e3ba40caad7019ca87386d6 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.mm
@@ -384,7 +505,7 @@ index 020050de162705651b4eb8378880cd4eb017d46c..2d3554861a570271d6f9b9a2c8b1de53
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index a474e70cf3c10405b6f94f129f5a7312bb81fd73..9463bd647a4d47ff3241579255966f5e4409941a 100644
+index a474e70cf3c10405b6f94f129f5a7312bb81fd73..00f6719bd80c8fdf31f910af3b93b5c6b192912c 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -21,6 +21,7 @@
@@ -395,7 +516,7 @@ index a474e70cf3c10405b6f94f129f5a7312bb81fd73..9463bd647a4d47ff3241579255966f5e
  #include "ui/accessibility/platform/ax_platform_node.h"
  #import "ui/base/cocoa/user_interface_item_command_handler.h"
  #import "ui/base/cocoa/window_size_constants.h"
-@@ -108,14 +109,18 @@ void OrderChildWindow(NSWindow* child_window,
+@@ -108,20 +109,24 @@ void OrderChildWindow(NSWindow* child_window,
  
  }  // namespace
  
@@ -410,11 +531,27 @@ index a474e70cf3c10405b6f94f129f5a7312bb81fd73..9463bd647a4d47ff3241579255966f5e
  @interface NSWindow (Private)
 +#if !IS_MAS_BUILD()
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle;
-+#endif
- - (BOOL)hasKeyAppearance;
+-- (BOOL)hasKeyAppearance;
  - (long long)_resizeDirectionForMouseLocation:(CGPoint)location;
  - (BOOL)_isConsideredOpenForPersistentState;
-@@ -165,6 +170,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
+ - (void)_zoomToScreenEdge:(NSUInteger)edge;
+ - (void)_removeFromGroups:(NSWindow*)window;
+ - (BOOL)_isNonactivatingPanel;
++#endif
++- (BOOL)hasKeyAppearance;
+ @end
+ 
+ struct NSEdgeAndCornerThicknesses {
+@@ -158,13 +163,17 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event;
+ @implementation NSView (CRFrameViewAdditions)
+ // If a mouseDown: falls through to the frame view, turn it into a window drag.
+ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
++#if !IS_MAS_BUILD()
+   if ([self.window _resizeDirectionForMouseLocation:event.locationInWindow] !=
+       -1)
+     return;
++#endif
+   [self.window performWindowDragWithEvent:event];
  }
  @end
  
@@ -423,7 +560,7 @@ index a474e70cf3c10405b6f94f129f5a7312bb81fd73..9463bd647a4d47ff3241579255966f5e
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (self.window.isMovable)
-@@ -192,6 +199,8 @@ - (BOOL)usesCustomDrawing {
+@@ -192,6 +201,8 @@ - (BOOL)usesCustomDrawing {
  }
  @end
  
@@ -432,7 +569,23 @@ index a474e70cf3c10405b6f94f129f5a7312bb81fd73..9463bd647a4d47ff3241579255966f5e
  @implementation NativeWidgetMacNSWindow {
   @private
    CommandDispatcher* __strong _commandDispatcher;
-@@ -393,6 +402,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -241,6 +252,7 @@ - (instancetype)initWithContentRect:(NSRect)contentRect
+ // bubbles and the find bar, but these should not be movable.
+ // Instead, let's push this up to the parent window which should be
+ // the browser.
++#if !IS_MAS_BUILD()
+ - (void)_zoomToScreenEdge:(NSUInteger)edge {
+   if (self.parentWindow) {
+     [self.parentWindow _zoomToScreenEdge:edge];
+@@ -248,6 +260,7 @@ - (void)_zoomToScreenEdge:(NSUInteger)edge {
+     [super _zoomToScreenEdge:edge];
+   }
+ }
++#endif
+ 
+ // This override helps diagnose lifetime issues in crash stacktraces by
+ // inserting a symbol on NativeWidgetMacNSWindow and should be kept even if it
+@@ -393,6 +406,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -441,7 +594,7 @@ index a474e70cf3c10405b6f94f129f5a7312bb81fd73..9463bd647a4d47ff3241579255966f5e
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -404,6 +415,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -404,6 +419,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
@@ -450,6 +603,65 @@ index a474e70cf3c10405b6f94f129f5a7312bb81fd73..9463bd647a4d47ff3241579255966f5e
  - (BOOL)_isTitleHidden {
    bool shouldShowWindowTitle = YES;
    if (_bridge)
+@@ -428,12 +445,14 @@ - (BOOL)_usesCustomDrawing {
+ // if it were valid to set that style for windows, setting the window style
+ // recalculates and re-caches a bunch of stuff, so a surgical override is the
+ // cleanest approach.
++#if !IS_MAS_BUILD()
+ - (BOOL)_isNonactivatingPanel {
+   if (_activationIndependence) {
+     return YES;
+   }
+   return [super _isNonactivatingPanel];
+ }
++#endif
+ 
+ + (void)_getExteriorResizeEdgeThicknesses:
+             (NSEdgeAndCornerThicknesses*)outThicknesses
+@@ -687,9 +706,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
+ }
+ 
+ - (void)saveRestorableState {
++#if !IS_MAS_BUILD()
+   if (!_bridge || ![self _isConsideredOpenForPersistentState]) {
+     return;
+   }
++#endif
+ 
+   // Certain conditions, such as in the Speedometer 3 benchmark, can trigger a
+   // rapid succession of calls to saveRestorableState. If there's no pending
+@@ -756,6 +777,7 @@ - (void)reallySaveRestorableState {
+ // affects its restorable state changes.
+ - (void)invalidateRestorableState {
+   [super invalidateRestorableState];
++#if !IS_MAS_BUILD()
+   if ([self _isConsideredOpenForPersistentState]) {
+     if (_willUpdateRestorableState)
+       return;
+@@ -768,6 +790,7 @@ - (void)invalidateRestorableState {
+     _willUpdateRestorableState = NO;
+     [NSObject cancelPreviousPerformRequestsWithTarget:self];
+   }
++#endif
+ }
+ 
+ // On newer SDKs, _canMiniaturize respects NSWindowStyleMaskMiniaturizable in
+@@ -932,6 +955,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+   // Since _removeFromGroups: is not documented it could go away in newer
+   // versions of macOS. If the selector does not exist, DumpWithoutCrashing() so
+   // we hear about the change.
++#if !IS_MAS_BUILD()
+   if (![NSWindow instancesRespondToSelector:@selector(_removeFromGroups:)]) {
+     base::debug::DumpWithoutCrashing();
+     return;
+@@ -949,6 +973,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+       [currentWindow _removeFromGroups:child];
+     }
+   }
++#endif
+ }
+ 
+ - (NSWindow*)rootWindow {
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 index 32c5dbcc5941f81c4ac03af97d1376dd1cf808a4..361523f87eb8f75a3d1bc39650ca04e6bd941471 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
@@ -1426,6 +1638,76 @@ index 4f04476e9175bae9e89eb9ea4316bffe49a9eb91..e77615c7b26518f4930ac1b004b41317
  } else {
    blink_core_sources_editing += [ "kill_ring_none.cc" ]
  }
+diff --git a/third_party/blink/renderer/core/editing/kill_ring_mac.mm b/third_party/blink/renderer/core/editing/kill_ring_mac.mm
+index 94afefcee81b87c05bf9b1199d90d3d4b5ea84a6..3e3aaea0ec6c8fad0d90a931d269af3af01ab73a 100644
+--- a/third_party/blink/renderer/core/editing/kill_ring_mac.mm
++++ b/third_party/blink/renderer/core/editing/kill_ring_mac.mm
+@@ -25,8 +25,11 @@
+ 
+ #import "third_party/blink/renderer/core/editing/kill_ring.h"
+ 
++#include "electron/mas.h"
++
+ namespace blink {
+ 
++#if !IS_MAS_BUILD()
+ extern "C" {
+ 
+ // Kill ring calls. Would be better to use NSKillRing.h, but that's not
+@@ -39,7 +42,9 @@
+ void _NSNewKillRingSequence();
+ void _NSSetKillRingToYankedState();
+ }
++#endif  // !IS_MAS_BUILD()
+ 
++#if !IS_MAS_BUILD()
+ static void InitializeKillRingIfNeeded() {
+   static bool initialized_kill_ring = false;
+   if (!initialized_kill_ring) {
+@@ -47,30 +52,43 @@ static void InitializeKillRingIfNeeded() {
+     _NSInitializeKillRing();
+   }
+ }
++#endif  // !IS_MAS_BUILD()
+ 
+ void KillRing::Append(const String& string) {
++#if !IS_MAS_BUILD()
+   InitializeKillRingIfNeeded();
+   _NSAppendToKillRing(string);
++#endif  // !IS_MAS_BUILD()
+ }
+ 
+ void KillRing::Prepend(const String& string) {
++#if !IS_MAS_BUILD()
+   InitializeKillRingIfNeeded();
+   _NSPrependToKillRing(string);
++#endif  // !IS_MAS_BUILD()
+ }
+ 
+ String KillRing::Yank() {
++#if !IS_MAS_BUILD()
+   InitializeKillRingIfNeeded();
+   return _NSYankFromKillRing();
++#else
++  return String();
++#endif  // !IS_MAS_BUILD()
+ }
+ 
+ void KillRing::StartNewSequence() {
++#if !IS_MAS_BUILD()
+   InitializeKillRingIfNeeded();
+   _NSNewKillRingSequence();
++#endif  // !IS_MAS_BUILD()
+ }
+ 
+ void KillRing::SetToYankedState() {
++#if !IS_MAS_BUILD()
+   InitializeKillRingIfNeeded();
+   _NSSetKillRingToYankedState();
++#endif  // !IS_MAS_BUILD()
+ }
+ 
+ }  // namespace blink
 diff --git a/ui/accelerated_widget_mac/BUILD.gn b/ui/accelerated_widget_mac/BUILD.gn
 index 0f8a6f75b7f01029adc2f5fd23559bacce19cf72..cf66c2f4f02a8e21cc83c3b7389fc5156bcd93ba 100644
 --- a/ui/accelerated_widget_mac/BUILD.gn
