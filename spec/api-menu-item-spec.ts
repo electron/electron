@@ -43,6 +43,40 @@ describe('MenuItems', () => {
       expect(item).to.have.property('role').that.is.a('string');
       expect(item).to.have.property('icon');
     });
+
+    ifdescribe(process.platform === 'darwin')('should have macOS-specific properties', () => {
+      it('should have alternate property', () => {
+        const item = new MenuItem({
+          label: 'Close',
+          alternate: true
+        });
+
+        expect(item).to.have.property('alternate').that.is.a('boolean').and.is.true('item is alternate');
+      });
+
+      it('should default alternate to false', () => {
+        const item = new MenuItem({
+          label: 'Close'
+        });
+
+        expect(item).to.have.property('alternate').that.is.a('boolean').and.is.false('item is not alternate');
+      });
+
+      it('should apply alternate property to menu', () => {
+        const menu = Menu.buildFromTemplate([{
+          label: 'Close',
+          accelerator: 'CmdOrControl+W',
+          alternate: false
+        }, {
+          label: 'Close All',
+          accelerator: 'Alt+CmdOrControl+W',
+          alternate: true
+        }]);
+
+        expect(menu.items[0]).to.have.property('alternate').that.is.false('first item is not alternate');
+        expect(menu.items[1]).to.have.property('alternate').that.is.true('second item is alternate');
+      });
+    });
   });
 
   describe('MenuItem.click', () => {
