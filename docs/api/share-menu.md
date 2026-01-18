@@ -9,6 +9,13 @@ For including the share menu as a submenu of other menus, please use the
 
 ## Class: ShareMenu
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/25629
+```
+-->
+
 > Create share menu on macOS.
 
 Process: [Main](../glossary.md#main-process)
