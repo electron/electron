@@ -353,8 +353,29 @@ describe('nativeImage module', () => {
       expect(image.isEmpty()).to.be.false();
     });
 
+    ifit(process.platform === 'darwin')('returns a valid named symbol with options on darwin', function () {
+      const image = nativeImage.createFromNamedImage('atom', undefined, {
+        weight: 'ultralight',
+        scale: 'small',
+        pointSize: 24
+      });
+      expect(image.isEmpty()).to.be.false();
+    });
+
     ifit(process.platform === 'darwin')('returns allows an HSL shift for a valid image on darwin', function () {
       const image = nativeImage.createFromNamedImage('NSActionTemplate', [0.5, 0.2, 0.8]);
+      expect(image.isEmpty()).to.be.false();
+    });
+  });
+
+  describe('createMenuSymbol(name)', () => {
+    it('returns empty for invalid options', () => {
+      const image = nativeImage.createMenuSymbol('totally_not_real');
+      expect(image.isEmpty()).to.be.true();
+    });
+
+    ifit(process.platform === 'darwin')('returns a valid image on darwin', function () {
+      const image = nativeImage.createMenuSymbol('atom');
       expect(image.isEmpty()).to.be.false();
     });
   });
