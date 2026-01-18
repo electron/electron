@@ -233,6 +233,16 @@ void BaseWindow::OnWindowFocus() {
   EmitEventSoon("focus");
 }
 
+void BaseWindow::OnWindowIsKeyChanged(bool is_key) {
+#if BUILDFLAG(IS_MAC)
+  if (is_key) {
+    Emit("become-key");
+  } else {
+    Emit("resign-key");
+  }
+#endif
+}
+
 void BaseWindow::OnWindowShow() {
   Emit("show");
 }
