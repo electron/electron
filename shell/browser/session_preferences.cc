@@ -39,4 +39,26 @@ bool SessionPreferences::HasServiceWorkerPreloadScript() {
   return it != preloads.end();
 }
 
+void SessionPreferences::SetEnableBlinkFeatures(const std::string& features) {
+  if (!features.empty()) {
+    enable_blink_features_ = features;
+  }
+}
+
+void SessionPreferences::SetDisableBlinkFeatures(const std::string& features) {
+  if (!features.empty()) {
+    disable_blink_features_ = features;
+  }
+}
+
+const std::optional<std::string>& SessionPreferences::GetEnableBlinkFeatures()
+    const {
+  return enable_blink_features_;
+}
+
+const std::optional<std::string>& SessionPreferences::GetDisableBlinkFeatures()
+    const {
+  return disable_blink_features_;
+}
+
 }  // namespace electron

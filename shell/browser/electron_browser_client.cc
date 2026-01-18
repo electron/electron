@@ -612,8 +612,25 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       auto* browser_context = render_process_host->GetBrowserContext();
       auto* session_prefs =
           SessionPreferences::FromBrowserContext(browser_context);
-      if (session_prefs->HasServiceWorkerPreloadScript()) {
-        command_line->AppendSwitch(switches::kServiceWorkerPreload);
+      if (session_prefs) {
+        if (session_prefs->HasServiceWorkerPreloadScript()) {
+          command_line->AppendSwitch(switches::kServiceWorkerPreload);
+        }
+
+        if (!web_contents) {
+          const auto& enable_features =
+              session_prefs->GetEnableBlinkFeatures();
+          if (enable_features) {
+            command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures,
+                                            *enable_features);
+          }
+          const auto& disable_features =
+              session_prefs->GetDisableBlinkFeatures();
+          if (disable_features) {
+            command_line->AppendSwitchASCII(::switches::kDisableBlinkFeatures,
+                                            *disable_features);
+          }
+        }
       }
     }
   }
