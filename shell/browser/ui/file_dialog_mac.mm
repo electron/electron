@@ -135,8 +135,27 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
           [content_types_set addObject:utt];
         }
       } else {
-        if (UTType* utt = [UTType typeWithFilenameExtension:@(ext.c_str())])
-          [content_types_set addObject:utt];
+        NSString* ext_ns = @(ext.c_str());
+
+        // Custom macOS packages (like .rtfd, .pages, .logicx) register their
+        // own UTTypes that differ from the "primary" type you get from
+        // typeWithFilenameExtension:. We need to grab all registered types
+        // for this extension so package-based documents actually show up.
+        NSArray<UTType*>* all_types =
+            [UTType typesWithTag:ext_ns
+                        tagClass:UTTagClassFilenameExtension
+               conformingToType:nil];
+
+        if ([all_types count] > 0) {
+          for (UTType* type in all_types) {
+            [content_types_set addObject:type];
+          }
+        } else {
+          // Fallback for extensions with no registered types
+          if (UTType* utt = [UTType typeWithFilenameExtension:ext_ns]) {
+            [content_types_set addObject:utt];
+          }
+        }
       }
     }
 
