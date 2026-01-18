@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/barrier_closure.h"
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/map_util.h"
@@ -979,11 +980,15 @@ v8::Local<v8::Promise> Session::ClearHostResolverCache(gin::Arguments* args) {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  browser_context_->GetDefaultStoragePartition()
-      ->GetNetworkContext()
-      ->ClearHostCache(nullptr,
-                       base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
-                                      std::move(promise)));
+  auto* network_context =
+      browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
+
+  base::RepeatingClosure barrier = base::BarrierClosure(
+      2, base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
+                        std::move(promise)));
+
+  network_context->ClearHostCache(nullptr, barrier);
+  network_context->CloseAllConnections(barrier);
 
   return handle;
 }
