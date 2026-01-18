@@ -8,8 +8,10 @@
 #include "base/files/file_util.h"
 #include "base/functional/bind.h"
 #include "base/functional/callback.h"
+#include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
+#include "chrome/common/chrome_paths.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/file_dialog.h"
@@ -28,6 +30,26 @@ DialogSettings::DialogSettings(const DialogSettings&) = default;
 DialogSettings::~DialogSettings() = default;
 
 namespace {
+
+// Get a sensible default directory for file dialogs when no default path is
+// provided. Tries Downloads folder first, then falls back to Home directory.
+base::FilePath GetSmartDefaultPath() {
+  base::FilePath path;
+
+  // Try Downloads directory first
+  if (base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &path) &&
+      base::DirectoryExists(path)) {
+    return path;
+  }
+
+  // Fall back to Home directory
+  if (base::PathService::Get(base::DIR_HOME, &path)) {
+    return path;
+  }
+
+  // If all else fails, return empty path (will use system default)
+  return base::FilePath();
+}
 
 ui::SelectFileDialog::Type GetDialogType(int properties) {
   if (properties & OPEN_DIALOG_OPEN_DIRECTORY)
@@ -81,9 +103,16 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     ui::SelectFileDialog::FileTypeInfo file_info =
         GetFilterInfo(settings.filters);
     ApplySettings(settings);
+
+    // Use smart default path if no default_path was provided
+    base::FilePath default_path = settings.default_path;
+    if (default_path.empty()) {
+      default_path = GetSmartDefaultPath();
+    }
+
     dialog_->SelectFile(
         ui::SelectFileDialog::SELECT_SAVEAS_FILE,
-        base::UTF8ToUTF16(settings.title), settings.default_path,
+        base::UTF8ToUTF16(settings.title), default_path,
         &file_info /* file_types */, 0 /* file_type_index */,
         base::FilePath::StringType() /* default_extension */,
         settings.parent_window ? settings.parent_window->GetNativeWindow()
