@@ -249,6 +249,23 @@ and `WiX MSI` installers. Instructions for Azure Trusted Signing can be found
 The Electron Builder documentation for Azure Trusted Signing can be found
 [here][builder-trusted-signing].
 
+### Signing from macOS/Linux
+
+To sign Windows apps from macOS or Linux, you can use [jsign](https://github.com/ebourg/jsign), a Java-based tool that is platform-independent. `jsign` supports standard PFX certificates as well as cloud-based signing solutions like Azure Trusted Signing.
+
+Most Electron build tools allow you to customize the signing executable. For example, you can configure Electron Forge or Electron Packager to use a script that invokes `jsign` instead of `signtool.exe`.
+
+#### Example: Signing with jsign and Azure Trusted Signing
+
+```bash
+jsign --storetype AZUREKEYVAULT \
+      --keystore-mode ARM \
+      --storepass <access-token> \
+      --alias <certificate-name> \
+      --tsaurl http://timestamp.digicert.com \
+      path/to/app.exe
+```
+
 ### Signing Windows Store applications
 
 See the [Windows Store Guide][].
