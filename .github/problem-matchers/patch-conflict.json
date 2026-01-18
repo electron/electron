@@ -19,6 +19,16 @@
           "line": 3
         }
       ]
+    },
+    {
+      "owner": "patch-needs-update",
+      "pattern": [
+        {
+          "regexp": "^((patches\/.*): needs update)$",
+          "message": 1,
+          "file": 2
+        }
+      ]
     }
   ]
 }
