@@ -162,6 +162,11 @@ RendererClientBase::RendererClientBase() {
       ParseSchemesCLISwitch(command_line, switches::kSecureSchemes);
   for (const std::string& scheme : secure_schemes_list)
     url::AddSecureScheme(scheme.data());
+  // Parse --websocket-schemes=scheme1,scheme2
+  std::vector<std::string> websocket_schemes_list =
+      ParseSchemesCLISwitch(command_line, switches::kWebSocketSchemes);
+  for (const std::string& scheme : websocket_schemes_list)
+    url::AddWebSocketScheme(scheme.c_str());
   // We rely on the unique process host id which is notified to the
   // renderer process via command line switch from the content layer,
   // if this switch is removed from the content layer for some reason,

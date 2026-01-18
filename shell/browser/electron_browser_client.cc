@@ -1325,7 +1325,7 @@ void ElectronBrowserClient::CreateWebSocket(
       web_request, std::move(factory), url, site_for_cookies, user_agent,
       std::move(handshake_client), true, frame->GetProcess()->GetDeprecatedID(),
       frame->GetRoutingID(), frame->GetLastCommittedOrigin(), browser_context,
-      &next_id_);
+      ProtocolRegistry::FromBrowserContext(browser_context), &next_id_);
 }
 
 void ElectronBrowserClient::WillCreateURLLoaderFactory(

@@ -27,6 +27,8 @@
 
 namespace electron {
 
+class ProtocolRegistry;
+
 // A ProxyingWebSocket proxies a WebSocket connection and dispatches
 // WebRequest API events.
 //
@@ -48,6 +50,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
       int process_id,
       int render_frame_id,
       content::BrowserContext* browser_context,
+      ProtocolRegistry* protocol_registry,
       uint64_t* request_id_generator);
   ~ProxyingWebSocket() override;
 
@@ -97,6 +100,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
       int render_frame_id,
       const url::Origin& origin,
       content::BrowserContext* browser_context,
+      ProtocolRegistry* protocol_registry,
       uint64_t* request_id_generator);
 
  private:
@@ -159,6 +163,11 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   mojo::ScopedDataPipeProducerHandle writable_;
 
   extensions::WebRequestInfo info_;
+
+  const raw_ptr<ProtocolRegistry> protocol_registry_;
+  bool protocol_handler_checked_ = false;
+
+  void OnProtocolResponse(gin::Arguments* args);
 
   base::WeakPtrFactory<ProxyingWebSocket> weak_factory_{this};
 };

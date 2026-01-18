@@ -12,6 +12,12 @@
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "net/base/ip_endpoint.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
+#include "shell/browser/api/electron_api_protocol.h"
+#include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/javascript_environment.h"
+#include "shell/browser/protocol_registry.h"
+#include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 
 namespace electron {
@@ -26,6 +32,7 @@ ProxyingWebSocket::ProxyingWebSocket(
     int process_id,
     int render_frame_id,
     content::BrowserContext* browser_context,
+    ProtocolRegistry* protocol_registry,
     uint64_t* request_id_generator)
     : web_request_{web_request},
       request_(request),
@@ -34,6 +41,7 @@ ProxyingWebSocket::ProxyingWebSocket(
       request_headers_(request.headers),
       response_(network::mojom::URLResponseHead::New()),
       has_extra_headers_(has_extra_headers),
+      protocol_registry_(protocol_registry),
       info_(extensions::WebRequestInfoInitParams(
           ++(*request_id_generator),
           process_id,
@@ -233,6 +241,7 @@ void ProxyingWebSocket::StartProxying(
     int render_frame_id,
     const url::Origin& origin,
     content::BrowserContext* browser_context,
+    ProtocolRegistry* protocol_registry,
     uint64_t* request_id_generator) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   network::ResourceRequest request;
@@ -246,14 +255,15 @@ void ProxyingWebSocket::StartProxying(
   auto* proxy = new ProxyingWebSocket(
       web_request, std::move(factory), request, std::move(handshake_client),
       has_extra_headers, process_id, render_frame_id, browser_context,
-      request_id_generator);
+      protocol_registry, request_id_generator);
   proxy->Start();
 }
 
 void ProxyingWebSocket::OnBeforeRequestComplete(int error_code) {
   DCHECK(receiver_as_header_client_.is_bound() ||
          !receiver_as_handshake_client_.is_bound());
-  DCHECK(info_.url.SchemeIsWSOrWSS());
+  DCHECK(info_.url.SchemeIsWSOrWSS() ||
+         base::Contains(api::GetWebSocketSchemes(), info_.url.scheme()));
   if (error_code != net::OK) {
     OnError(error_code);
     return;
@@ -310,6 +320,31 @@ void ProxyingWebSocket::ContinueToStartRequest(int error_code) {
     return;
   }
 
+  if (redirect_url_.is_empty() && !protocol_handler_checked_) {
+    auto* handler = protocol_registry_->FindIntercepted(info_.url.scheme());
+    if (!handler)
+      handler = protocol_registry_->FindRegistered(info_.url.scheme());
+
+    if (handler) {
+      protocol_handler_checked_ = true;
+      v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+      v8::HandleScope scope(isolate);
+
+      auto* session_cell = api::Session::FromBrowserContext(browser_context_);
+      if (session_cell && session_cell->Get()) {
+        auto* session = session_cell->Get();
+        v8::Local<v8::Context> context =
+            session->GetWrapper()->GetCreationContext().ToLocalChecked();
+        v8::Context::Scope context_scope(context);
+
+        handler->second.Run(
+            request_, base::BindOnce(&ProxyingWebSocket::OnProtocolResponse,
+                                     weak_factory_.GetWeakPtr()));
+        return;
+      }
+    }
+  }
+
   base::flat_set<std::string> used_header_names;
   std::vector<network::mojom::HttpHeaderPtr> additional_headers;
   for (net::HttpRequestHeaders::Iterator it(request_headers_); it.GetNext();) {
@@ -345,6 +380,19 @@ void ProxyingWebSocket::ContinueToStartRequest(int error_code) {
                      base::Unretained(this)));
   forwarding_handshake_client_.set_disconnect_handler(base::BindOnce(
       &ProxyingWebSocket::OnMojoConnectionError, base::Unretained(this)));
+}
+
+void ProxyingWebSocket::OnProtocolResponse(gin::Arguments* args) {
+  v8::Local<v8::Value> response;
+  if (args->GetNext(&response)) {
+    if (response->IsString()) {
+      redirect_url_ = GURL(gin::V8ToString(args->isolate(), response));
+    } else if (response->IsObject()) {
+      gin::Dictionary dict(args->isolate(), response.As<v8::Object>());
+      dict.Get("url", &redirect_url_);
+    }
+  }
+  ContinueToStartRequest(net::OK);
 }
 
 void ProxyingWebSocket::OnHeadersReceivedComplete(int error_code) {

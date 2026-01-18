@@ -30,6 +30,7 @@ class ProtocolRegistry;
 namespace api {
 
 std::vector<std::string>& GetStandardSchemes();
+std::vector<std::string>& GetWebSocketSchemes();
 std::vector<std::string>& GetCodeCacheSchemes();
 
 void AddServiceWorkerScheme(const std::string& scheme);

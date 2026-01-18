@@ -55,7 +55,8 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'no-fetch', privileges: { corsEnabled: true } },
   { scheme: 'stream', privileges: { standard: true, stream: true } },
   { scheme: 'foo', privileges: { standard: true } },
-  { scheme: 'bar', privileges: { standard: true } }
+  { scheme: 'bar', privileges: { standard: true } },
+  { scheme: 'ws-custom', privileges: { standard: true, secure: true, webSocket: true } }
 ]);
 
 app.whenReady().then(async () => {
@@ -115,7 +116,7 @@ app.whenReady().then(async () => {
   // 2. `defer()`-ed methods run, in reverse order,
   // 3. regular `afterEach` hooks run.
   const { runCleanupFunctions } = require('./lib/spec-helpers');
-  mocha.suite.on('suite', function attach (suite) {
+  mocha.suite.on('suite', function attach(suite) {
     suite.afterEach('cleanup', runCleanupFunctions);
     suite.on('suite', attach);
   });

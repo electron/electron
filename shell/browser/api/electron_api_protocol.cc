@@ -38,6 +38,7 @@ struct SchemeOptions {
   bool corsEnabled = false;
   bool stream = false;
   bool codeCache = false;
+  bool webSocket = false;
 };
 
 struct CustomScheme {
@@ -70,6 +71,7 @@ struct Converter<CustomScheme> {
       opt.Get("corsEnabled", &(out->options.corsEnabled));
       opt.Get("stream", &(out->options.stream));
       opt.Get("codeCache", &(out->options.codeCache));
+      opt.Get("webSocket", &(out->options.webSocket));
     }
     return true;
   }
@@ -82,8 +84,13 @@ namespace electron::api {
 gin::DeprecatedWrapperInfo Protocol::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 std::vector<std::string>& GetStandardSchemes() {
-  static base::NoDestructor<std::vector<std::string>> g_standard_schemes;
-  return *g_standard_schemes;
+  static base::NoDestructor<std::vector<std::string>> schemes;
+  return *schemes;
+}
+
+std::vector<std::string>& GetWebSocketSchemes() {
+  static base::NoDestructor<std::vector<std::string>> schemes;
+  return *schemes;
 }
 
 std::vector<std::string>& GetCodeCacheSchemes() {
@@ -124,7 +131,7 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
   }
 
   std::vector<std::string> secure_schemes, cspbypassing_schemes, fetch_schemes,
-      service_worker_schemes, cors_schemes;
+      service_worker_schemes, cors_schemes, websocket_schemes;
   for (const auto& custom_scheme : custom_schemes) {
     // Register scheme to privileged list (https, wss, data, chrome-extension)
     if (custom_scheme.options.standard) {
@@ -160,6 +167,11 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
       GetCodeCacheSchemes().push_back(custom_scheme.scheme);
       url::AddCodeCacheScheme(custom_scheme.scheme.c_str());
     }
+    if (custom_scheme.options.webSocket) {
+      websocket_schemes.push_back(custom_scheme.scheme);
+      GetWebSocketSchemes().push_back(custom_scheme.scheme);
+      url::AddWebSocketScheme(custom_scheme.scheme.c_str());
+    }
   }
 
   const auto AppendSchemesToCmdLine = [](const std::string_view switch_name,
@@ -179,6 +191,8 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
   AppendSchemesToCmdLine(electron::switches::kFetchSchemes, fetch_schemes);
   AppendSchemesToCmdLine(electron::switches::kServiceWorkerSchemes,
                          service_worker_schemes);
+  AppendSchemesToCmdLine(electron::switches::kWebSocketSchemes,
+                         websocket_schemes);
   AppendSchemesToCmdLine(electron::switches::kStandardSchemes,
                          GetStandardSchemes());
   AppendSchemesToCmdLine(electron::switches::kStreamingSchemes,
