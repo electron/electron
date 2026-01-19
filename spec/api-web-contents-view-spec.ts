@@ -406,9 +406,9 @@ describe('WebContentsView', () => {
       const v = new WebContentsView();
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
-      v.webContents.openDevTools({ mode: 'detach' });
-      await once(v.webContents, 'devtools-opened');
-      v.webContents.devToolsWebContents!.focus();
+      const devToolsFocused = once(v.webContents, 'devtools-focused');
+      v.webContents.openDevTools({ mode: 'right' });
+      await devToolsFocused;
       expect(v.webContents.isFocused()).to.be.false();
       await v.webContents.loadURL('data:text/html,<body>test</body>');
       expect(v.webContents.isFocused()).to.be.true();
@@ -424,9 +424,9 @@ describe('WebContentsView', () => {
       });
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
-      v.webContents.openDevTools({ mode: 'detach' });
-      await once(v.webContents, 'devtools-opened');
-      v.webContents.devToolsWebContents!.focus();
+      const devToolsFocused = once(v.webContents, 'devtools-focused');
+      v.webContents.openDevTools({ mode: 'right' });
+      await devToolsFocused;
       expect(v.webContents.isFocused()).to.be.false();
       await v.webContents.loadURL('data:text/html,<body>test</body>');
       expect(v.webContents.isFocused()).to.be.false();
