@@ -1,0 +1,13 @@
+diff --git a/modules/desktop_capture/win/window_capture_utils.cc b/modules/desktop_capture/win/window_capture_utils.cc
+index 4badded..6c3f09a 100644
+--- a/modules/desktop_capture/win/window_capture_utils.cc
++++ b/modules/desktop_capture/win/window_capture_utils.cc
+@@ -52,7 +52,7 @@ BOOL CALLBACK GetWindowListHandler(HWND hwnd, LPARAM param) {
+   // namely owned window if they don't have the app window style set
+   HWND owner = GetWindow(hwnd, GW_OWNER);
+   LONG exstyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+-  if (owner && !(exstyle & WS_EX_APPWINDOW)) {
++  if (owner && !(exstyle & WS_EX_APPWINDOW) && !IsWindowOwnedByCurrentProcess(hwnd)) {
+     return TRUE;
+   }
+ 
