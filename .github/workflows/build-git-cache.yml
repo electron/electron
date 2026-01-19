@@ -14,7 +14,7 @@ jobs:
     permissions:
       contents: read
     container:
-      image: ghcr.io/electron/build:bc2f48b2415a670de18d13605b1cf0eb5fdbaae1
+      image: ghcr.io/electron/build:a82b87d7a4f5ff0cab61405f8151ac4cf4942aeb
       options: --user root
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
@@ -37,7 +37,7 @@ jobs:
     permissions:
       contents: read
     container:
-      image: ghcr.io/electron/build:bc2f48b2415a670de18d13605b1cf0eb5fdbaae1
+      image: ghcr.io/electron/build:a82b87d7a4f5ff0cab61405f8151ac4cf4942aeb
       options: --user root --device /dev/fuse --cap-add SYS_ADMIN
       volumes:
         - /mnt/win-cache:/mnt/win-cache
@@ -63,7 +63,7 @@ jobs:
     # This job updates the same git cache as linux, so it needs to run after the linux one.
     needs: build-git-cache-linux
     container:
-      image: ghcr.io/electron/build:bc2f48b2415a670de18d13605b1cf0eb5fdbaae1
+      image: ghcr.io/electron/build:a82b87d7a4f5ff0cab61405f8151ac4cf4942aeb
       options: --user root
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
