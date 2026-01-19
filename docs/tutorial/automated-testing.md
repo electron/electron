@@ -14,6 +14,10 @@ From [ChromeDriver - WebDriver for Chrome][chrome-driver]:
 > implements WebDriver's wire protocol for Chromium. It is being developed by
 > members of the Chromium and WebDriver teams.
 
+:::caution
+Creating a WebDriver session will confuse argument parsers like `yargs` running in strict mode, as ChromeDriver adds additional arguments (e.g. `--test-type=webdriver`) to the Electron process at launch. You may need to configure your parser to ignore these arguments.
+:::
+
 There are a few ways that you can set up testing using WebDriver.
 
 ### With WebdriverIO
