@@ -67,7 +67,14 @@ Returns `Promise<Buffer>` -  An array of bytes representing the encrypted string
 
 * `encrypted` Buffer
 
-Returns `Promise<string>` - the decrypted string.
+Returns `Promise<Object>` - Resolve with an object containing the following:
+
+* `shouldReEncrypt` boolean - whether data that has just been returned from the decrypt operation should be
+  re-encrypted, as the key has been rotated or a new  key is available that provides a different security level.
+* `isTemporarilyUnavailable` boolean - whether decryption failed because the key was temporarily unavailable. The
+  failure could be because the key provider temporarily was unable to provide a key, but might be able to provide the key at a later time, e.g. the keychain is temporarily unlocked, or encryption services are
+  temporarily unavailable for another reason.
+* `result` string - the decrypted string.
 
 ### `safeStorage.setUsePlainTextEncryption(usePlainText)`
 

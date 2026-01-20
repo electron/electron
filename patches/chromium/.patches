@@ -146,3 +146,4 @@ fix_os_crypt_async_cookie_encryption.patch
 patch_osr_control_screen_info.patch
 loaf_add_feature_to_enable_sourceurl_for_all_protocols.patch
 cherry-pick-e045399a1ecb.patch
+refactor_allow_customizing_config_in_freedesktopsecretkeyprovider.patch

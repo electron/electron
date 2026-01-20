@@ -132,36 +132,41 @@ describe('safeStorage module', () => {
 
     it('valid input should correctly decrypt string', async () => {
       const encrypted = await safeStorage.asyncEncryptString('plaintext');
-      const decrypted = await safeStorage.asyncDecryptString(encrypted);
-      expect(decrypted).to.equal('plaintext');
+      const decryptResult = await safeStorage.asyncDecryptString(encrypted);
+      expect(decryptResult).to.have.property('result');
+      expect(decryptResult).to.have.property('shouldReEncrypt');
+      expect(decryptResult).to.have.property('isTemporarilyUnavailable');
+      expect(decryptResult.result).to.equal('plaintext');
+      expect(decryptResult.shouldReEncrypt).to.be.a('boolean');
+      expect(decryptResult.isTemporarilyUnavailable).to.be.a('boolean');
     });
 
     it('UTF-16 characters can be decrypted', async () => {
       const plaintext = '€ - utf symbol';
       const encrypted = await safeStorage.asyncEncryptString(plaintext);
-      const decrypted = await safeStorage.asyncDecryptString(encrypted);
-      expect(decrypted).to.equal(plaintext);
+      const decryptResult = await safeStorage.asyncDecryptString(encrypted);
+      expect(decryptResult.result).to.equal(plaintext);
     });
 
     it('empty string can be decrypted', async () => {
       const plaintext = '';
       const encrypted = await safeStorage.asyncEncryptString(plaintext);
-      const decrypted = await safeStorage.asyncDecryptString(encrypted);
-      expect(decrypted).to.equal(plaintext);
+      const decryptResult = await safeStorage.asyncDecryptString(encrypted);
+      expect(decryptResult.result).to.equal(plaintext);
     });
 
     it('long strings can be decrypted', async () => {
       const plaintext = 'a'.repeat(10000);
       const encrypted = await safeStorage.asyncEncryptString(plaintext);
-      const decrypted = await safeStorage.asyncDecryptString(encrypted);
-      expect(decrypted).to.equal(plaintext);
+      const decryptResult = await safeStorage.asyncDecryptString(encrypted);
+      expect(decryptResult.result).to.equal(plaintext);
     });
 
     it('special characters can be decrypted', async () => {
       const plaintext = '!@#$%^&*()_+-=[]{}|;:\'",.<>?/\\`~\n\t\r';
       const encrypted = await safeStorage.asyncEncryptString(plaintext);
-      const decrypted = await safeStorage.asyncDecryptString(encrypted);
-      expect(decrypted).to.equal(plaintext);
+      const decryptResult = await safeStorage.asyncDecryptString(encrypted);
+      expect(decryptResult.result).to.equal(plaintext);
     });
 
     it('unencrypted input should reject', async () => {
@@ -177,8 +182,8 @@ describe('safeStorage module', () => {
     it('can decrypt data encrypted with sync method', async () => {
       const plaintext = 'sync-to-async test';
       const encrypted = safeStorage.encryptString(plaintext);
-      const decrypted = await safeStorage.asyncDecryptString(encrypted);
-      expect(decrypted).to.equal(plaintext);
+      const decryptResult = await safeStorage.asyncDecryptString(encrypted);
+      expect(decryptResult.result).to.equal(plaintext);
     });
   });
 
@@ -197,7 +202,8 @@ describe('safeStorage module', () => {
       const encryptedBuffers = await Promise.all(encryptPromises);
 
       const decryptPromises = encryptedBuffers.map(buf => safeStorage.asyncDecryptString(buf));
-      const decryptedTexts = await Promise.all(decryptPromises);
+      const decryptResults = await Promise.all(decryptPromises);
+      const decryptedTexts = decryptResults.map(result => result.result);
 
       expect(decryptedTexts).to.deep.equal(plaintexts);
     });
