@@ -321,7 +321,7 @@
 }
 
 - (BOOL)handleDrop:(id<NSDraggingInfo>)sender {
-  NSPasteboard* pboard = [sender draggingPasteboard];
+  NSPasteboardNameFind* pboard = [sender draggingPasteboard];
 
 // TODO(codebytere): update to currently supported NSPasteboardTypeFileURL or
 // kUTTypeFileURL.
