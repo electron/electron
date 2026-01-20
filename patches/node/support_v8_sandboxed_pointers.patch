@@ -6,75 +6,6 @@ Subject: support V8 sandboxed pointers
 This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
-diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 53f05293bd94e159dfedf48735989e668acdd08e..5c8bc870dcf2e974036cf3bcb60fd288e59045d9 100644
---- a/src/api/environment.cc
-+++ b/src/api/environment.cc
-@@ -111,6 +111,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
-   return result;
- }
- 
-+NodeArrayBufferAllocator::NodeArrayBufferAllocator() {
-+  zero_fill_field_ = static_cast<uint32_t*>(allocator_->Allocate(sizeof(*zero_fill_field_)));
-+}
-+
-+NodeArrayBufferAllocator::~NodeArrayBufferAllocator() {
-+  allocator_->Free(zero_fill_field_, sizeof(*zero_fill_field_));
-+}
-+
- void* NodeArrayBufferAllocator::Allocate(size_t size) {
-   void* ret;
-   COUNT_GENERIC_USAGE("NodeArrayBufferAllocator.Allocate.ZeroFilled");
-@@ -337,6 +345,12 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
-     // but also otherwise just doesn't work, and the only real alternative
-     // is disabling shared-readonly-heap mode altogether.
-     static Isolate::CreateParams first_params = *params;
-+    // Clear allocator pointers to prevent use-after-free during static
-+    // destruction. The static first_params can outlive V8's internal
-+    // allocator systems, causing crashes when its destructor tries to
-+    // free resources after V8 has shut down.
-+    first_params.array_buffer_allocator = nullptr;
-+    first_params.array_buffer_allocator_shared.reset();
-     params->snapshot_blob = first_params.snapshot_blob;
-     params->external_references = first_params.external_references;
-   }
-diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index 46a7d1396dc1a175ae99f4e403721f1730fdd320..bbb0abb3b9563074d350578e0f5a8fa211046b17 100644
---- a/src/crypto/crypto_dh.cc
-+++ b/src/crypto/crypto_dh.cc
-@@ -61,17 +61,22 @@ MaybeLocal<Value> DataPointerToBuffer(Environment* env, DataPointer&& data) {
-     bool secure;
-   };
- #ifdef V8_ENABLE_SANDBOX
--  auto backing = ArrayBuffer::NewBackingStore(
--      env->isolate(),
--      data.size(),
--      BackingStoreInitializationMode::kUninitialized,
--      BackingStoreOnFailureMode::kReturnNull);
--  if (!backing) {
--    THROW_ERR_MEMORY_ALLOCATION_FAILED(env);
--    return MaybeLocal<Value>();
--  }
-+  std::unique_ptr<v8::BackingStore> backing;
-   if (data.size() > 0) {
--    memcpy(backing->Data(), data.get(), data.size());
-+    std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
-+    void* v8_data = allocator->Allocate(data.size());
-+    CHECK(v8_data);
-+    memcpy(v8_data, data.get(), data.size());
-+    backing = ArrayBuffer::NewBackingStore(
-+        v8_data,
-+        data.size(),
-+        [](void* data, size_t length, void*) {
-+          std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
-+          allocator->Free(data, length);
-+        }, nullptr);
-+  } else {
-+    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
-+    backing = v8::ArrayBuffer::NewBackingStore(env->isolate(), data.size());
-   }
- #else
-   auto backing = ArrayBuffer::NewBackingStore(
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
 index 12b0d804c6f1d4998b85160b0aac8eb7a3b5576b..27bd93769233dc65a064710db4095d9cdc3a8b1a 100644
 --- a/src/crypto/crypto_util.cc
@@ -189,110 +120,11 @@ index b30297eac08ad9587642b723f91d7e3b954294d4..4c5427596d1c90d3a413cdd9ff4f1151
  #else
    auto backing = ArrayBuffer::NewBackingStore(
        mem->data,
-diff --git a/src/env-inl.h b/src/env-inl.h
-index 97c43afb487b58c0c77bd59b4a6b6d7a13690053..5dfbd564d5bbd22ebf3b529a07b73e85cbe51986 100644
---- a/src/env-inl.h
-+++ b/src/env-inl.h
-@@ -44,6 +44,16 @@
- 
- namespace node {
- 
-+NoArrayBufferZeroFillScope::NoArrayBufferZeroFillScope(
-+    IsolateData* isolate_data)
-+    : node_allocator_(isolate_data->node_allocator()) {
-+  if (node_allocator_ != nullptr) node_allocator_->zero_fill_field()[0] = 0;
-+}
-+
-+NoArrayBufferZeroFillScope::~NoArrayBufferZeroFillScope() {
-+  if (node_allocator_ != nullptr) node_allocator_->zero_fill_field()[0] = 1;
-+}
-+
- inline v8::Isolate* IsolateData::isolate() const {
-   return isolate_;
- }
-diff --git a/src/env.h b/src/env.h
-index 84a650885a79bc5c49efdc26f62ec8db48de775c..ba442937bf0d7831c9a84b5a57211e9f90c81705 100644
---- a/src/env.h
-+++ b/src/env.h
-@@ -111,6 +111,19 @@ class ModuleWrap;
- class Environment;
- class Realm;
- 
-+// Disables zero-filling for ArrayBuffer allocations in this scope. This is
-+// similar to how we implement Buffer.allocUnsafe() in JS land.
-+class NoArrayBufferZeroFillScope {
-+ public:
-+  inline explicit NoArrayBufferZeroFillScope(IsolateData* isolate_data);
-+  inline ~NoArrayBufferZeroFillScope();
-+
-+ private:
-+  NodeArrayBufferAllocator* node_allocator_;
-+
-+  friend class Environment;
-+};
-+
- struct IsolateDataSerializeInfo {
-   std::vector<SnapshotIndex> primitive_values;
-   std::vector<PropInfo> template_values;
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index 49df0b4284748effb27b05ecd69f05699dd8be75..eb104ab80fd2052d1523cb2f2ecdb6d23ac3be98 100644
+index 49df0b4284748effb27b05ecd69f05699dd8be75..77da37881bb351249c45e405289193c10d083e0c 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
-@@ -81,6 +81,7 @@ using v8::SharedArrayBuffer;
- using v8::String;
- using v8::Uint32;
- using v8::Uint8Array;
-+using v8::Uint32Array;
- using v8::Value;
- 
- namespace {
-@@ -1243,6 +1244,45 @@ void SetBufferPrototype(const FunctionCallbackInfo<Value>& args) {
-   realm->set_buffer_prototype_object(proto);
- }
- 
-+void GetZeroFillToggle(const FunctionCallbackInfo<Value>& args) {
-+  Environment* env = Environment::GetCurrent(args);
-+  NodeArrayBufferAllocator* allocator = env->isolate_data()->node_allocator();
-+  Local<ArrayBuffer> ab;
-+  // It can be a nullptr when running inside an isolate where we
-+  // do not own the ArrayBuffer allocator.
-+  if (allocator == nullptr || env->isolate_data()->is_building_snapshot()) {
-+    // Create a dummy Uint32Array - the JS land can only toggle the C++ land
-+    // setting when the allocator uses our toggle. With this the toggle in JS
-+    // land results in no-ops.
-+    // When building a snapshot, just use a dummy toggle as well to avoid
-+    // introducing the dynamic external reference. We'll re-initialize the
-+    // toggle with a real one connected to the C++ allocator after snapshot
-+    // deserialization.
-+
-+    ab = ArrayBuffer::New(env->isolate(), sizeof(uint32_t));
-+  } else {
-+    // TODO(joyeecheung): save ab->GetBackingStore()->Data() in the Node.js
-+    // array buffer allocator and include it into the C++ toggle while the
-+    // Environment is still alive.
-+    uint32_t* zero_fill_field = allocator->zero_fill_field();
-+    std::unique_ptr<BackingStore> backing =
-+        ArrayBuffer::NewBackingStore(zero_fill_field,
-+                                     sizeof(*zero_fill_field),
-+                                     [](void*, size_t, void*) {},
-+                                     nullptr);
-+    ab = ArrayBuffer::New(env->isolate(), std::move(backing));
-+  }
-+
-+  if (ab->SetPrivate(env->context(),
-+                     env->untransferable_object_private_symbol(),
-+                     True(env->isolate()))
-+          .IsNothing()) {
-+    return;
-+  }
-+
-+  args.GetReturnValue().Set(Uint32Array::New(ab, 0, 1));
-+}
-+
- static void Btoa(const FunctionCallbackInfo<Value>& args) {
-   CHECK_EQ(args.Length(), 1);
-   Environment* env = Environment::GetCurrent(args);
-@@ -1420,7 +1460,7 @@ inline size_t CheckNumberToSize(Local<Value> number) {
+@@ -1420,7 +1420,7 @@ inline size_t CheckNumberToSize(Local<Value> number) {
    CHECK(value >= 0 && value < maxSize);
    size_t size = static_cast<size_t>(value);
  #ifdef V8_ENABLE_SANDBOX
@@ -301,22 +133,6 @@ index 49df0b4284748effb27b05ecd69f05699dd8be75..eb104ab80fd2052d1523cb2f2ecdb6d2
  #endif
    return size;
  }
-@@ -1638,6 +1678,7 @@ void Initialize(Local<Object> target,
-                 "utf8WriteStatic",
-                 SlowWriteString<UTF8>,
-                 &fast_write_string_utf8);
-+  SetMethod(context, target, "getZeroFillToggle", GetZeroFillToggle);
- }
- 
- }  // anonymous namespace
-@@ -1686,6 +1727,7 @@ void RegisterExternalReferences(ExternalReferenceRegistry* registry) {
-   registry->Register(StringWrite<HEX>);
-   registry->Register(StringWrite<UCS2>);
-   registry->Register(StringWrite<UTF8>);
-+  registry->Register(GetZeroFillToggle);
- 
-   registry->Register(CopyArrayBuffer);
-   registry->Register(CreateUnsafeArrayBuffer);
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
 index 3c4f419aa29470b3280174b58680b9421b0340b5..3b24ad2a2316f89d98b067e2c13988f87a9a00d2 100644
 --- a/src/node_i18n.cc
@@ -357,28 +173,6 @@ index 3c4f419aa29470b3280174b58680b9421b0340b5..3b24ad2a2316f89d98b067e2c13988f8
  }
  
  constexpr const char* EncodingName(const enum encoding encoding) {
-diff --git a/src/node_internals.h b/src/node_internals.h
-index 61a58b6ccfb26efefd6d3b61a1c8741f9550ae8d..29d1ecc2b209c9c3c2e956263ba2d57fb688b34c 100644
---- a/src/node_internals.h
-+++ b/src/node_internals.h
-@@ -124,6 +124,9 @@ v8::MaybeLocal<v8::Object> InitializePrivateSymbols(
- 
- class NodeArrayBufferAllocator : public ArrayBufferAllocator {
-  public:
-+  NodeArrayBufferAllocator();
-+  ~NodeArrayBufferAllocator() override;
-+  inline uint32_t* zero_fill_field() { return zero_fill_field_; }
-   void* Allocate(size_t size) override;  // Defined in src/node.cc
-   void* AllocateUninitialized(size_t size) override;
-   void Free(void* data, size_t size) override;
-@@ -140,6 +143,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
-   }
- 
-  private:
-+  uint32_t* zero_fill_field_ = nullptr;  // Boolean but exposed as uint32 to JS land.
-   std::atomic<size_t> total_mem_usage_ {0};
- 
-   // Delegate to V8's allocator for compatibility with the V8 memory cage.
 diff --git a/src/node_serdes.cc b/src/node_serdes.cc
 index 00fcd4b6afccce47ff21c4447d9cd60f25c11835..5f96ee2051e5339456185efddb149c4d43093f31 100644
 --- a/src/node_serdes.cc

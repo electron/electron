@@ -6,10 +6,10 @@ Subject: Remove deprecated `GetIsolate`
 https://chromium-review.googlesource.com/c/v8/v8/+/6905244
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 0f19cb09ea0963a9c505c51f89d1c7a939f2730b..cb1e4e6176e7385f8bc2bc9510761d3fc9c3182d 100644
+index d753ad6c6b49b26b86920124f7ac90c1e052638e..cfc9b3157d08d62f43e2e5bb01229fe663f3ca61 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -682,7 +682,7 @@ std::unique_ptr<MultiIsolatePlatform> MultiIsolatePlatform::Create(
+@@ -668,7 +668,7 @@ std::unique_ptr<MultiIsolatePlatform> MultiIsolatePlatform::Create(
  
  MaybeLocal<Object> GetPerContextExports(Local<Context> context,
                                          IsolateData* isolate_data) {
@@ -18,7 +18,7 @@ index 0f19cb09ea0963a9c505c51f89d1c7a939f2730b..cb1e4e6176e7385f8bc2bc9510761d3f
    EscapableHandleScope handle_scope(isolate);
  
    Local<Object> global = context->Global();
-@@ -728,7 +728,7 @@ void ProtoThrower(const FunctionCallbackInfo<Value>& info) {
+@@ -714,7 +714,7 @@ void ProtoThrower(const FunctionCallbackInfo<Value>& info) {
  // This runs at runtime, regardless of whether the context
  // is created from a snapshot.
  Maybe<void> InitializeContextRuntime(Local<Context> context) {
@@ -27,7 +27,7 @@ index 0f19cb09ea0963a9c505c51f89d1c7a939f2730b..cb1e4e6176e7385f8bc2bc9510761d3f
    HandleScope handle_scope(isolate);
  
    // When `IsCodeGenerationFromStringsAllowed` is true, V8 takes the fast path
-@@ -807,7 +807,7 @@ Maybe<void> InitializeContextRuntime(Local<Context> context) {
+@@ -793,7 +793,7 @@ Maybe<void> InitializeContextRuntime(Local<Context> context) {
  }
  
  Maybe<void> InitializeBaseContextForSnapshot(Local<Context> context) {
@@ -36,7 +36,7 @@ index 0f19cb09ea0963a9c505c51f89d1c7a939f2730b..cb1e4e6176e7385f8bc2bc9510761d3f
    HandleScope handle_scope(isolate);
  
    // Delete `Intl.v8BreakIterator`
-@@ -832,7 +832,7 @@ Maybe<void> InitializeBaseContextForSnapshot(Local<Context> context) {
+@@ -818,7 +818,7 @@ Maybe<void> InitializeBaseContextForSnapshot(Local<Context> context) {
  }
  
  Maybe<void> InitializeMainContextForSnapshot(Local<Context> context) {
@@ -45,7 +45,7 @@ index 0f19cb09ea0963a9c505c51f89d1c7a939f2730b..cb1e4e6176e7385f8bc2bc9510761d3f
    HandleScope handle_scope(isolate);
  
    // Initialize the default values.
-@@ -850,7 +850,7 @@ Maybe<void> InitializeMainContextForSnapshot(Local<Context> context) {
+@@ -836,7 +836,7 @@ Maybe<void> InitializeMainContextForSnapshot(Local<Context> context) {
  MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
                                              IsolateData* isolate_data) {
    CHECK(isolate_data);
@@ -54,7 +54,7 @@ index 0f19cb09ea0963a9c505c51f89d1c7a939f2730b..cb1e4e6176e7385f8bc2bc9510761d3f
    EscapableHandleScope scope(isolate);
    Context::Scope context_scope(context);
  
-@@ -874,7 +874,7 @@ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
+@@ -860,7 +860,7 @@ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
  MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
                                                 IsolateData* isolate_data) {
    CHECK(isolate_data);
@@ -63,7 +63,7 @@ index 0f19cb09ea0963a9c505c51f89d1c7a939f2730b..cb1e4e6176e7385f8bc2bc9510761d3f
    EscapableHandleScope scope(isolate);
    Context::Scope context_scope(context);
  
-@@ -900,7 +900,7 @@ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
+@@ -886,7 +886,7 @@ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
  Maybe<void> InitializePrimordials(Local<Context> context,
                                    IsolateData* isolate_data) {
    // Run per-context JS files.
