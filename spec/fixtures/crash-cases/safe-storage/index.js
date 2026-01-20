@@ -2,8 +2,6 @@ const { app, safeStorage } = require('electron');
 
 const { expect } = require('chai');
 
-const { once } = require('node:events');
-
 (async () => {
   if (!app.isReady()) {
     expect(safeStorage.isEncryptionAvailable()).to.equal(false);
@@ -13,9 +11,6 @@ const { once } = require('node:events');
   }
 
   await app.whenReady();
-  if (!safeStorage.isEncryptionAvailable()) {
-    await once(safeStorage, 'ready-to-use');
-  }
 
   if (safeStorage.isEncryptionAvailable()) {
     const plaintext = 'plaintext';

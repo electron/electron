@@ -6,11 +6,13 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SAFE_STORAGE_H_
 
 #include <string>
+#include <vector>
 
 #include "build/build_config.h"
 #include "components/os_crypt/async/common/encryptor.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable.h"
 
 namespace v8 {
@@ -61,12 +63,20 @@ class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage>,
 
   bool IsEncryptionAvailable();
 
+  bool IsAsyncEncryptionAvailable();
+
   void SetUsePasswordV10(bool use);
 
   v8::Local<v8::Value> EncryptString(v8::Isolate* isolate,
                                      const std::string& plaintext);
 
   std::string DecryptString(v8::Isolate* isolate, v8::Local<v8::Value> buffer);
+
+  v8::Local<v8::Promise> AsyncEncryptString(v8::Isolate* isolate,
+                                            const std::string& plaintext);
+
+  v8::Local<v8::Promise> AsyncDecryptString(v8::Isolate* isolate,
+                                            v8::Local<v8::Value> buffer);
 
 #if BUILDFLAG(IS_LINUX)
   std::string GetSelectedLinuxBackend();
@@ -77,6 +87,32 @@ class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage>,
   bool is_available_ = false;
 
   std::optional<os_crypt_async::Encryptor> encryptor_;
+
+  // Pending encrypt operations waiting for encryptor to be ready.
+  struct PendingEncrypt {
+    PendingEncrypt(gin_helper::Promise<v8::Local<v8::Value>> promise,
+                   std::string plaintext);
+    ~PendingEncrypt();
+    PendingEncrypt(PendingEncrypt&&);
+    PendingEncrypt& operator=(PendingEncrypt&&);
+
+    gin_helper::Promise<v8::Local<v8::Value>> promise;
+    std::string plaintext;
+  };
+  std::vector<PendingEncrypt> pending_encrypts_;
+
+  // Pending decrypt operations waiting for encryptor to be ready.
+  struct PendingDecrypt {
+    PendingDecrypt(gin_helper::Promise<std::string> promise,
+                   std::string ciphertext);
+    ~PendingDecrypt();
+    PendingDecrypt(PendingDecrypt&&);
+    PendingDecrypt& operator=(PendingDecrypt&&);
+
+    gin_helper::Promise<std::string> promise;
+    std::string ciphertext;
+  };
+  std::vector<PendingDecrypt> pending_decrypts_;
 };
 
 }  // namespace electron::api

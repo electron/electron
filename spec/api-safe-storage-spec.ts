@@ -1,6 +1,8 @@
 import { safeStorage } from 'electron/main';
 
+import * as chai from 'chai';
 import { expect } from 'chai';
+import * as chaiAsPromised from 'chai-as-promised';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -9,12 +11,10 @@ import * as path from 'node:path';
 
 import { ifdescribe } from './lib/spec-helpers';
 
-describe('safeStorage module', () => {
-  before(async () => {
-    if (!safeStorage.isEncryptionAvailable()) {
-      await once(safeStorage, 'ready-to-use');
-    }
+chai.use(chaiAsPromised);
 
+describe('safeStorage module', () => {
+  before(() => {
     if (process.platform === 'linux') {
       safeStorage.setUsePlainTextEncryption(true);
     }
@@ -80,6 +80,129 @@ describe('safeStorage module', () => {
     });
   });
 
+  describe('SafeStorage.isAsyncEncryptionAvailable()', () => {
+    it('should return true when async encryption is available', () => {
+      expect(safeStorage.isAsyncEncryptionAvailable()).to.equal(true);
+    });
+  });
+
+  describe('SafeStorage.asyncEncryptString()', () => {
+    it('should return a promise', () => {
+      const result = safeStorage.asyncEncryptString('plaintext');
+      expect(result).to.be.a('promise');
+    });
+
+    it('valid input should correctly encrypt string', async () => {
+      const plaintext = 'plaintext';
+      const encrypted = await safeStorage.asyncEncryptString(plaintext);
+      expect(Buffer.isBuffer(encrypted)).to.equal(true);
+    });
+
+    it('UTF-16 characters can be encrypted', async () => {
+      const plaintext = '€ - utf symbol';
+      const encrypted = await safeStorage.asyncEncryptString(plaintext);
+      expect(Buffer.isBuffer(encrypted)).to.equal(true);
+    });
+
+    it('empty string can be encrypted', async () => {
+      const plaintext = '';
+      const encrypted = await safeStorage.asyncEncryptString(plaintext);
+      expect(Buffer.isBuffer(encrypted)).to.equal(true);
+    });
+
+    it('long strings can be encrypted', async () => {
+      const plaintext = 'a'.repeat(10000);
+      const encrypted = await safeStorage.asyncEncryptString(plaintext);
+      expect(Buffer.isBuffer(encrypted)).to.equal(true);
+    });
+
+    it('special characters can be encrypted', async () => {
+      const plaintext = '!@#$%^&*()_+-=[]{}|;:\'",.<>?/\\`~\n\t\r';
+      const encrypted = await safeStorage.asyncEncryptString(plaintext);
+      expect(Buffer.isBuffer(encrypted)).to.equal(true);
+    });
+  });
+
+  describe('SafeStorage.asyncDecryptString()', () => {
+    it('should return a promise', () => {
+      const encrypted = safeStorage.encryptString('plaintext');
+      const result = safeStorage.asyncDecryptString(encrypted);
+      expect(result).to.be.a('promise');
+    });
+
+    it('valid input should correctly decrypt string', async () => {
+      const encrypted = await safeStorage.asyncEncryptString('plaintext');
+      const decrypted = await safeStorage.asyncDecryptString(encrypted);
+      expect(decrypted).to.equal('plaintext');
+    });
+
+    it('UTF-16 characters can be decrypted', async () => {
+      const plaintext = '€ - utf symbol';
+      const encrypted = await safeStorage.asyncEncryptString(plaintext);
+      const decrypted = await safeStorage.asyncDecryptString(encrypted);
+      expect(decrypted).to.equal(plaintext);
+    });
+
+    it('empty string can be decrypted', async () => {
+      const plaintext = '';
+      const encrypted = await safeStorage.asyncEncryptString(plaintext);
+      const decrypted = await safeStorage.asyncDecryptString(encrypted);
+      expect(decrypted).to.equal(plaintext);
+    });
+
+    it('long strings can be decrypted', async () => {
+      const plaintext = 'a'.repeat(10000);
+      const encrypted = await safeStorage.asyncEncryptString(plaintext);
+      const decrypted = await safeStorage.asyncDecryptString(encrypted);
+      expect(decrypted).to.equal(plaintext);
+    });
+
+    it('special characters can be decrypted', async () => {
+      const plaintext = '!@#$%^&*()_+-=[]{}|;:\'",.<>?/\\`~\n\t\r';
+      const encrypted = await safeStorage.asyncEncryptString(plaintext);
+      const decrypted = await safeStorage.asyncDecryptString(encrypted);
+      expect(decrypted).to.equal(plaintext);
+    });
+
+    it('unencrypted input should reject', async () => {
+      const plaintextBuffer = Buffer.from('I am unencoded!', 'utf-8');
+      await expect(safeStorage.asyncDecryptString(plaintextBuffer)).to.be.rejectedWith(Error);
+    });
+
+    it('non-buffer input should reject', async () => {
+      const notABuffer = {} as any;
+      await expect(safeStorage.asyncDecryptString(notABuffer)).to.be.rejectedWith(Error);
+    });
+
+    it('can decrypt data encrypted with sync method', async () => {
+      const plaintext = 'sync-to-async test';
+      const encrypted = safeStorage.encryptString(plaintext);
+      const decrypted = await safeStorage.asyncDecryptString(encrypted);
+      expect(decrypted).to.equal(plaintext);
+    });
+  });
+
+  describe('SafeStorage sync and async interoperability', () => {
+    it('sync decrypt can handle async encrypted data', async () => {
+      const plaintext = 'async-to-sync test';
+      const encrypted = await safeStorage.asyncEncryptString(plaintext);
+      const decrypted = safeStorage.decryptString(encrypted);
+      expect(decrypted).to.equal(plaintext);
+    });
+
+    it('multiple concurrent async operations work correctly', async () => {
+      const plaintexts = ['text1', 'text2', 'text3', 'text4', 'text5'];
+
+      const encryptPromises = plaintexts.map(pt => safeStorage.asyncEncryptString(pt));
+      const encryptedBuffers = await Promise.all(encryptPromises);
+
+      const decryptPromises = encryptedBuffers.map(buf => safeStorage.asyncDecryptString(buf));
+      const decryptedTexts = await Promise.all(decryptPromises);
+
+      expect(decryptedTexts).to.deep.equal(plaintexts);
+    });
+  });
+
   describe('safeStorage persists encryption key across app relaunch', () => {
     it('can decrypt after closing and reopening app', async () => {
       const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -87,31 +210,18 @@ describe('safeStorage module', () => {
       const encryptAppPath = path.join(fixturesPath, 'api', 'safe-storage', 'encrypt-app');
       const encryptAppProcess = cp.spawn(process.execPath, [encryptAppPath]);
       let stdout: string = '';
-      encryptAppProcess.stderr.on('data', data => {
-        console.log(`stderr: ${data}`);
-        stdout += data;
-      });
-      encryptAppProcess.stderr.on('data', data => {
-        console.log(`stderr: ${data}`);
-        stdout += data;
-      });
+      encryptAppProcess.stderr.on('data', data => { stdout += data; });
+      encryptAppProcess.stderr.on('data', data => { stdout += data; });
 
       try {
         await once(encryptAppProcess, 'exit');
 
         const appPath = path.join(fixturesPath, 'api', 'safe-storage', 'decrypt-app');
-        console.log('Relaunching app to decrypt string...');
         const relaunchedAppProcess = cp.spawn(process.execPath, [appPath]);
 
         let output = '';
-        relaunchedAppProcess.stdout.on('data', data => {
-          console.log(`stdout: ${data}`);
-          output += data;
-        });
-        relaunchedAppProcess.stderr.on('data', data => {
-          output += data;
-          console.log(`stderr: ${data}`);
-        });
+        relaunchedAppProcess.stdout.on('data', data => { output += data; });
+        relaunchedAppProcess.stderr.on('data', data => { output += data; });
 
         const [code] = await once(relaunchedAppProcess, 'exit');
 
