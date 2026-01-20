@@ -260,6 +260,8 @@ void WebContentsPreferences::SetFromDictionary(
   web_preferences.Get(options::kSpellcheck, &spellcheck_);
 #endif
 
+  web_preferences.Get(options::kZoomFactor, &zoom_factor_);
+
   SaveLastPreferences();
 }
 
