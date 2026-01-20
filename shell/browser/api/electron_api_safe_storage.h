@@ -12,6 +12,7 @@
 #include "components/os_crypt/async/common/encryptor.h"
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable.h"
 
@@ -103,13 +104,13 @@ class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage>,
 
   // Pending decrypt operations waiting for encryptor to be ready.
   struct PendingDecrypt {
-    PendingDecrypt(gin_helper::Promise<std::string> promise,
+    PendingDecrypt(gin_helper::Promise<gin_helper::Dictionary> promise,
                    std::string ciphertext);
     ~PendingDecrypt();
     PendingDecrypt(PendingDecrypt&&);
     PendingDecrypt& operator=(PendingDecrypt&&);
 
-    gin_helper::Promise<std::string> promise;
+    gin_helper::Promise<gin_helper::Dictionary> promise;
     std::string ciphertext;
   };
   std::vector<PendingDecrypt> pending_decrypts_;

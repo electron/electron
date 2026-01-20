@@ -16,7 +16,6 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/base_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
-#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -43,7 +42,7 @@ SafeStorage::PendingEncrypt& SafeStorage::PendingEncrypt::operator=(
     PendingEncrypt&&) = default;
 
 SafeStorage::PendingDecrypt::PendingDecrypt(
-    gin_helper::Promise<std::string> promise,
+    gin_helper::Promise<gin_helper::Dictionary> promise,
     std::string ciphertext)
     : promise(std::move(promise)), ciphertext(std::move(ciphertext)) {}
 SafeStorage::PendingDecrypt::~PendingDecrypt() = default;
@@ -113,9 +112,19 @@ void SafeStorage::OnOsCryptReady(os_crypt_async::Encryptor encryptor) {
 
   for (auto& pending : pending_decrypts_) {
     std::string plaintext;
-    bool decrypted = encryptor_->DecryptString(pending.ciphertext, &plaintext);
+    os_crypt_async::Encryptor::DecryptFlags flags;
+    bool decrypted =
+        encryptor_->DecryptString(pending.ciphertext, &plaintext, &flags);
     if (decrypted) {
-      pending.promise.Resolve(plaintext);
+      v8::Isolate* isolate = pending.promise.isolate();
+      v8::HandleScope handle_scope(isolate);
+      auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
+
+      dict.Set("shouldReEncrypt", flags.should_reencrypt);
+      dict.Set("isTemporarilyUnavailable", flags.temporarily_unavailable);
+      dict.Set("result", plaintext);
+
+      pending.promise.Resolve(dict);
     } else {
       pending.promise.RejectWithErrorMessage(
           "Error while decrypting the ciphertext provided to "
@@ -134,7 +143,7 @@ bool SafeStorage::IsEncryptionAvailable() {
     return false;
 #if BUILDFLAG(IS_LINUX)
   return OSCrypt::IsEncryptionAvailable() ||
-         (use_password_v10 &&
+         (use_password_v10_ &&
           static_cast<BrowserProcessImpl*>(g_browser_process)
                   ->linux_storage_backend() == "basic_text");
 #else
@@ -278,7 +287,7 @@ v8::Local<v8::Promise> SafeStorage::AsyncEncryptString(
 v8::Local<v8::Promise> SafeStorage::AsyncDecryptString(
     v8::Isolate* isolate,
     v8::Local<v8::Value> buffer) {
-  gin_helper::Promise<std::string> promise(isolate);
+  gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (!electron::Browser::Get()->is_ready()) {
@@ -298,7 +307,11 @@ v8::Local<v8::Promise> SafeStorage::AsyncDecryptString(
   std::string ciphertext(data, size);
 
   if (ciphertext.empty()) {
-    promise.Resolve("");
+    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
+    dict.Set("shouldReEncrypt", false);
+    dict.Set("isTemporarilyUnavailable", false);
+    dict.Set("result", "");
+    promise.Resolve(dict);
     return handle;
   }
 
@@ -313,9 +326,14 @@ v8::Local<v8::Promise> SafeStorage::AsyncDecryptString(
 
   if (is_available_) {
     std::string plaintext;
-    bool decrypted = encryptor_->DecryptString(ciphertext, &plaintext);
+    os_crypt_async::Encryptor::DecryptFlags flags;
+    bool decrypted = encryptor_->DecryptString(ciphertext, &plaintext, &flags);
     if (decrypted) {
-      promise.Resolve(plaintext);
+      auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
+      dict.Set("shouldReEncrypt", flags.should_reencrypt);
+      dict.Set("isTemporarilyUnavailable", flags.temporarily_unavailable);
+      dict.Set("result", plaintext);
+      promise.Resolve(dict);
     } else {
       promise.RejectWithErrorMessage(
           "Error while decrypting the ciphertext provided to "

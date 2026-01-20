@@ -54,6 +54,7 @@
 #include "components/os_crypt/async/browser/secret_portal_key_provider.h"
 #include "components/password_manager/core/browser/password_manager_switches.h"  // nogncheck
 #include "shell/common/application_info.h"
+
 #endif
 
 #if BUILDFLAG(IS_WIN)
@@ -475,10 +476,20 @@ void BrowserProcessImpl::CreateOSCryptAsync() {
                   features::kSecretPortalKeyProviderUseForEncryption)));
     }
   }
+
+  auto freedesktop_config =
+      os_crypt_async::FreedesktopSecretKeyProvider::GetDefaultConfig();
+
+  const std::string app_name = electron::GetApplicationName();
+  freedesktop_config.app_name = app_name;
+  freedesktop_config.kwallet_folder = app_name + " Keys";
+  freedesktop_config.key_name = app_name + " Safe Storage";
+
   providers.emplace_back(
       /*precedence=*/10u,
       std::make_unique<os_crypt_async::FreedesktopSecretKeyProvider>(
-          password_store, electron::GetApplicationName(), nullptr));
+          password_store, electron::GetApplicationName(), freedesktop_config,
+          nullptr));
 #endif  // BUILDFLAG(IS_LINUX)
 
 #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
