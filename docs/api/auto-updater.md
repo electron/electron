@@ -162,14 +162,7 @@ Returns `string` - The current update feed URL.
 
 ### `autoUpdater.getPackageInfo()` _Windows_
 
-Returns `Object` - Information about the current MSIX package. This method is only available when running in an MSIX package context.
-
-* `id` string - The full package ID (e.g., `Electron.Dev.MSIX_1.0.0.0_x64__rdjwn13tdj8dy`)
-* `familyName` string - The package family name (e.g., `Electron.Dev.MSIX_rdjwn13tdj8dy`)
-* `version` string - The package version (e.g., `1.0.0.0`)
-* `developmentMode` boolean - Whether the package is running in development mode
-* `signatureKind` string - The signature kind: `'developer'`, `'enterprise'`, `'none'`, `'store'`, or `'system'`
-* `appInstallerUri` string (optional) - The App Installer URI if available
+Returns [`PackageInfo | undefined`](structures/package-info.md) - Information about the current MSIX package, or `undefined` if not running in an MSIX package context (e.g., when using Squirrel).
 
 ### `autoUpdater.checkForUpdates()`
 
