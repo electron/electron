@@ -9,6 +9,7 @@
 #include "base/functional/bind.h"
 #include "base/run_loop.h"
 #include "components/os_crypt/async/browser/os_crypt_async.h"
+#include "components/os_crypt/sync/os_crypt.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_process_impl.h"
@@ -32,6 +33,24 @@ namespace electron::api {
 gin::DeprecatedWrapperInfo SafeStorage::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
+SafeStorage::PendingEncrypt::PendingEncrypt(
+    gin_helper::Promise<v8::Local<v8::Value>> promise,
+    std::string plaintext)
+    : promise(std::move(promise)), plaintext(std::move(plaintext)) {}
+SafeStorage::PendingEncrypt::~PendingEncrypt() = default;
+SafeStorage::PendingEncrypt::PendingEncrypt(PendingEncrypt&&) = default;
+SafeStorage::PendingEncrypt& SafeStorage::PendingEncrypt::operator=(
+    PendingEncrypt&&) = default;
+
+SafeStorage::PendingDecrypt::PendingDecrypt(
+    gin_helper::Promise<std::string> promise,
+    std::string ciphertext)
+    : promise(std::move(promise)), ciphertext(std::move(ciphertext)) {}
+SafeStorage::PendingDecrypt::~PendingDecrypt() = default;
+SafeStorage::PendingDecrypt::PendingDecrypt(PendingDecrypt&&) = default;
+SafeStorage::PendingDecrypt& SafeStorage::PendingDecrypt::operator=(
+    PendingDecrypt&&) = default;
+
 gin_helper::Handle<SafeStorage> SafeStorage::Create(v8::Isolate* isolate) {
   return gin_helper::CreateHandle(isolate, new SafeStorage(isolate));
 }
@@ -53,9 +72,13 @@ gin::ObjectTemplateBuilder SafeStorage::GetObjectTemplateBuilder(
   return gin_helper::DeprecatedWrappable<SafeStorage>::GetObjectTemplateBuilder(
              isolate)
       .SetMethod("isEncryptionAvailable", &SafeStorage::IsEncryptionAvailable)
+      .SetMethod("isAsyncEncryptionAvailable",
+                 &SafeStorage::IsAsyncEncryptionAvailable)
       .SetMethod("setUsePlainTextEncryption", &SafeStorage::SetUsePasswordV10)
       .SetMethod("encryptString", &SafeStorage::EncryptString)
       .SetMethod("decryptString", &SafeStorage::DecryptString)
+      .SetMethod("asyncEncryptString", &SafeStorage::AsyncEncryptString)
+      .SetMethod("asyncDecryptString", &SafeStorage::AsyncDecryptString)
 #if BUILDFLAG(IS_LINUX)
       .SetMethod("getSelectedStorageBackend",
                  &SafeStorage::GetSelectedLinuxBackend)
@@ -72,7 +95,34 @@ void SafeStorage::OnFinishLaunching(base::Value::Dict launch_info) {
 void SafeStorage::OnOsCryptReady(os_crypt_async::Encryptor encryptor) {
   encryptor_ = std::move(encryptor);
   is_available_ = true;
-  Emit("ready-to-use");
+
+  for (auto& pending : pending_encrypts_) {
+    std::string ciphertext;
+    bool encrypted = encryptor_->EncryptString(pending.plaintext, &ciphertext);
+    if (encrypted) {
+      pending.promise.Resolve(
+          electron::Buffer::Copy(pending.promise.isolate(), ciphertext)
+              .ToLocalChecked());
+    } else {
+      pending.promise.RejectWithErrorMessage(
+          "Error while encrypting the text provided to "
+          "safeStorage.asyncEncryptString.");
+    }
+  }
+  pending_encrypts_.clear();
+
+  for (auto& pending : pending_decrypts_) {
+    std::string plaintext;
+    bool decrypted = encryptor_->DecryptString(pending.ciphertext, &plaintext);
+    if (decrypted) {
+      pending.promise.Resolve(plaintext);
+    } else {
+      pending.promise.RejectWithErrorMessage(
+          "Error while decrypting the ciphertext provided to "
+          "safeStorage.asyncDecryptString.");
+    }
+  }
+  pending_decrypts_.clear();
 }
 
 const char* SafeStorage::GetTypeName() {
@@ -80,6 +130,19 @@ const char* SafeStorage::GetTypeName() {
 }
 
 bool SafeStorage::IsEncryptionAvailable() {
+  if (!electron::Browser::Get()->is_ready())
+    return false;
+#if BUILDFLAG(IS_LINUX)
+  return OSCrypt::IsEncryptionAvailable() ||
+         (use_password_v10 &&
+          static_cast<BrowserProcessImpl*>(g_browser_process)
+                  ->linux_storage_backend() == "basic_text");
+#else
+  return OSCrypt::IsEncryptionAvailable();
+#endif
+}
+
+bool SafeStorage::IsAsyncEncryptionAvailable() {
   if (!electron::Browser::Get()->is_ready())
     return false;
 #if BUILDFLAG(IS_LINUX)
@@ -120,7 +183,7 @@ v8::Local<v8::Value> SafeStorage::EncryptString(v8::Isolate* isolate,
   }
 
   std::string ciphertext;
-  bool encrypted = encryptor_->EncryptString(plaintext, &ciphertext);
+  bool encrypted = OSCrypt::EncryptString(plaintext, &ciphertext);
 
   if (!encrypted) {
     gin_helper::ErrorThrower(isolate).ThrowError(
@@ -172,7 +235,7 @@ std::string SafeStorage::DecryptString(v8::Isolate* isolate,
   }
 
   std::string plaintext;
-  bool decrypted = encryptor_->DecryptString(ciphertext, &plaintext);
+  bool decrypted = OSCrypt::DecryptString(ciphertext, &plaintext);
   if (!decrypted) {
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Error while decrypting the ciphertext provided to "
@@ -180,6 +243,89 @@ std::string SafeStorage::DecryptString(v8::Isolate* isolate,
     return "";
   }
   return plaintext;
+}
+
+v8::Local<v8::Promise> SafeStorage::AsyncEncryptString(
+    v8::Isolate* isolate,
+    const std::string& plaintext) {
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  if (!electron::Browser::Get()->is_ready()) {
+    promise.RejectWithErrorMessage(
+        "safeStorage cannot be used before app is ready");
+    return handle;
+  }
+
+  if (is_available_) {
+    std::string ciphertext;
+    bool encrypted = encryptor_->EncryptString(plaintext, &ciphertext);
+    if (encrypted) {
+      promise.Resolve(
+          electron::Buffer::Copy(isolate, ciphertext).ToLocalChecked());
+    } else {
+      promise.RejectWithErrorMessage(
+          "Error while encrypting the text provided to "
+          "safeStorage.asyncEncryptString.");
+    }
+    return handle;
+  }
+
+  pending_encrypts_.push_back({std::move(promise), plaintext});
+  return handle;
+}
+
+v8::Local<v8::Promise> SafeStorage::AsyncDecryptString(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> buffer) {
+  gin_helper::Promise<std::string> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  if (!electron::Browser::Get()->is_ready()) {
+    promise.RejectWithErrorMessage(
+        "safeStorage cannot be used before app is ready");
+    return handle;
+  }
+
+  if (!node::Buffer::HasInstance(buffer)) {
+    promise.RejectWithErrorMessage(
+        "Expected the first argument of asyncDecryptString() to be a buffer");
+    return handle;
+  }
+
+  const char* data = node::Buffer::Data(buffer);
+  auto size = node::Buffer::Length(buffer);
+  std::string ciphertext(data, size);
+
+  if (ciphertext.empty()) {
+    promise.Resolve("");
+    return handle;
+  }
+
+  if (ciphertext.find(kEncryptionVersionPrefixV10) != 0 &&
+      ciphertext.find(kEncryptionVersionPrefixV11) != 0) {
+    promise.RejectWithErrorMessage(
+        "Error while decrypting the ciphertext provided to "
+        "safeStorage.asyncDecryptString. "
+        "Ciphertext does not appear to be encrypted.");
+    return handle;
+  }
+
+  if (is_available_) {
+    std::string plaintext;
+    bool decrypted = encryptor_->DecryptString(ciphertext, &plaintext);
+    if (decrypted) {
+      promise.Resolve(plaintext);
+    } else {
+      promise.RejectWithErrorMessage(
+          "Error while decrypting the ciphertext provided to "
+          "safeStorage.asyncDecryptString.");
+    }
+    return handle;
+  }
+
+  pending_decrypts_.push_back({std::move(promise), std::move(ciphertext)});
+  return handle;
 }
 
 }  // namespace electron::api

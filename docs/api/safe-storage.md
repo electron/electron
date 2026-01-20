@@ -26,10 +26,6 @@ The same is true for Linux, if a password management tool is available.
 
 The `safeStorage` module emits the following events:
 
-### Event: 'ready-to-use'
-
-Emitted when the safeStorage module is ready to use.
-
 ## Methods
 
 The `safeStorage` module has the following methods:
@@ -41,6 +37,10 @@ Returns `boolean` - Whether encryption is available.
 On Linux, returns true if the app has emitted the `ready` event and the secret key is available.
 On MacOS, returns true if Keychain is available.
 On Windows, returns true once the app has emitted the `ready` event.
+
+### `safeStorage.isAsyncEncryptionAvailable()`
+
+Returns `Promise<Boolean>` - Whether encryption is available for asynchronous safeStorage operations.
 
 ### `safeStorage.encryptString(plainText)`
 
@@ -57,7 +57,17 @@ This function will throw an error if encryption fails.
 Returns `string` - the decrypted string. Decrypts the encrypted buffer
 obtained  with `safeStorage.encryptString` back into a string.
 
-This function will throw an error if decryption fails.
+### `safeStorage.asyncEncryptString(plainText)`
+
+* `plainText` string
+
+Returns `Promise<Buffer>` -  An array of bytes representing the encrypted string.
+
+### `safeStorage.asyncDecryptString(encrypted)`
+
+* `encrypted` Buffer
+
+Returns `Promise<string>` - the decrypted string.
 
 ### `safeStorage.setUsePlainTextEncryption(usePlainText)`
 
