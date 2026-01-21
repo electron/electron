@@ -86,6 +86,10 @@ Rejects if there was an error while deleting the requested item.
 This moves a path to the OS-specific trash location (Trash on macOS, Recycle
 Bin on Windows, and a desktop-environment-specific location on Linux).
 
+The path must use the default path separator for the platform (backslash on
+Windows). Use `path.resolve()` from the `node:path` module to ensure correct
+handling on all filesystems.
+
 ### `shell.beep()`
 
 Play the beep sound.
