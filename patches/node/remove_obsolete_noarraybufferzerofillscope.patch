@@ -1,0 +1,653 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Robo <hop2deep@gmail.com>
+Date: Wed, 21 Jan 2026 09:53:15 +0000
+Subject: remove obsolete NoArrayBufferZeroFillScope
+
+Replace the scope in favor of the V8 api added in
+https://chromium-review.googlesource.com/c/v8/v8/+/5679067
+
+Ports changes from
+1) https://github.com/nodejs/node/commit/869ea331f3a8215229290e2e6038956874c382a6
+2) https://github.com/nodejs/node/commit/ef9dc0857a73610f5de5dc9f37afd0a927c4c17f
+3) partially from https://github.com/nodejs/node/commit/e0a71517fef4ca83f2d40d2d1600022bc82a7f9f
+
+This is needed to remove dependency on the zero_fill_field_
+that is exposed to JS
+Refs https://github.com/nodejs/node/commit/3cdb1cd437f63dd256ae2ab3b7e9016257326cb4
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index 8a12475857135bd3e904610b7eb887c397c8e73c..3702672f4e2c3b1bff9f9f5c66ca251af447826a 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -107,11 +107,7 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
+ }
+ 
+ void* NodeArrayBufferAllocator::Allocate(size_t size) {
+-  void* ret;
+-  if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
+-    ret = allocator_->Allocate(size);
+-  else
+-    ret = allocator_->AllocateUninitialized(size);
++  void* ret = allocator_->Allocate(size);
+   if (ret != nullptr) [[likely]] {
+     total_mem_usage_.fetch_add(size, std::memory_order_relaxed);
+   }
+diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
+index c00d3616e08b00b1e0a3a29b2dbb5278e1e14fcc..8939c5e5085d00b098f66074b9ee033f5be55d08 100644
+--- a/src/crypto/crypto_cipher.cc
++++ b/src/crypto/crypto_cipher.cc
+@@ -20,6 +20,7 @@ using ncrypto::SSLPointer;
+ using v8::Array;
+ using v8::ArrayBuffer;
+ using v8::BackingStore;
++using v8::BackingStoreInitializationMode;
+ using v8::Context;
+ using v8::FunctionCallbackInfo;
+ using v8::FunctionTemplate;
+@@ -774,10 +775,10 @@ CipherBase::UpdateResult CipherBase::Update(
+     return kErrorState;
+   }
+ 
+-  {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env()->isolate_data());
+-    *out = ArrayBuffer::NewBackingStore(env()->isolate(), buf_len);
+-  }
++  *out = ArrayBuffer::NewBackingStore(
++      env()->isolate(),
++      buf_len,
++      BackingStoreInitializationMode::kUninitialized);
+ 
+   buffer = {
+       .data = reinterpret_cast<const unsigned char*>(data),
+@@ -852,11 +853,10 @@ bool CipherBase::Final(std::unique_ptr<BackingStore>* out) {
+ 
+   const int mode = ctx_.getMode();
+ 
+-  {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env()->isolate_data());
+-    *out = ArrayBuffer::NewBackingStore(
+-        env()->isolate(), static_cast<size_t>(ctx_.getBlockSize()));
+-  }
++  *out = ArrayBuffer::NewBackingStore(
++      env()->isolate(),
++      static_cast<size_t>(ctx_.getBlockSize()),
++      BackingStoreInitializationMode::kUninitialized);
+ 
+   if (kind_ == kDecipher &&
+       Cipher::FromCtx(ctx_).isSupportedAuthenticatedMode()) {
+@@ -972,10 +972,10 @@ bool PublicKeyCipher::Cipher(
+     return false;
+   }
+ 
+-  {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    *out = ArrayBuffer::NewBackingStore(env->isolate(), out_len);
+-  }
++  *out = ArrayBuffer::NewBackingStore(
++      env->isolate(),
++      out_len,
++      BackingStoreInitializationMode::kUninitialized);
+ 
+   if (EVP_PKEY_cipher(
+           ctx.get(),
+diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
+index b81b9005365272217c77e2b9289bd9f877c0e77c..185b1d8fe657b5db64dc92497ca742d69f7a2764 100644
+--- a/src/crypto/crypto_common.cc
++++ b/src/crypto/crypto_common.cc
+@@ -37,6 +37,7 @@ using ncrypto::X509Pointer;
+ using ncrypto::X509View;
+ using v8::ArrayBuffer;
+ using v8::BackingStore;
++using v8::BackingStoreInitializationMode;
+ using v8::Context;
+ using v8::EscapableHandleScope;
+ using v8::Integer;
+@@ -307,11 +308,10 @@ MaybeLocal<Object> ECPointToBuffer(Environment* env,
+     return MaybeLocal<Object>();
+   }
+ 
+-  std::unique_ptr<BackingStore> bs;
+-  {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    bs = ArrayBuffer::NewBackingStore(env->isolate(), len);
+-  }
++  std::unique_ptr<BackingStore> bs = ArrayBuffer::NewBackingStore(
++      env->isolate(),
++      len,
++      BackingStoreInitializationMode::kUninitialized);
+ 
+   len = EC_POINT_point2oct(group,
+                            point,
+diff --git a/src/crypto/crypto_ec.cc b/src/crypto/crypto_ec.cc
+index 2a3107dbbf5c0dfe70c2e105338d186e5620ddbf..f36c84a77313bd57d0a7a902d1a2529636ca1422 100644
+--- a/src/crypto/crypto_ec.cc
++++ b/src/crypto/crypto_ec.cc
+@@ -29,6 +29,7 @@ using ncrypto::MarkPopErrorOnReturn;
+ using v8::Array;
+ using v8::ArrayBuffer;
+ using v8::BackingStore;
++using v8::BackingStoreInitializationMode;
+ using v8::Context;
+ using v8::FunctionCallbackInfo;
+ using v8::FunctionTemplate;
+@@ -201,14 +202,10 @@ void ECDH::ComputeSecret(const FunctionCallbackInfo<Value>& args) {
+     return;
+   }
+ 
+-  std::unique_ptr<BackingStore> bs;
+-  {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    // NOTE: field_size is in bits
+-    int field_size = EC_GROUP_get_degree(ecdh->group_);
+-    size_t out_len = (field_size + 7) / 8;
+-    bs = ArrayBuffer::NewBackingStore(env->isolate(), out_len);
+-  }
++  int field_size = EC_GROUP_get_degree(ecdh->group_);
++  size_t out_len = (field_size + 7) / 8;
++  auto bs = ArrayBuffer::NewBackingStore(
++      env->isolate(), out_len, BackingStoreInitializationMode::kUninitialized);
+ 
+   if (!ECDH_compute_key(
+           bs->Data(), bs->ByteLength(), pub, ecdh->key_.get(), nullptr))
+@@ -257,12 +254,10 @@ void ECDH::GetPrivateKey(const FunctionCallbackInfo<Value>& args) {
+     return THROW_ERR_CRYPTO_OPERATION_FAILED(env,
+         "Failed to get ECDH private key");
+ 
+-  std::unique_ptr<BackingStore> bs;
+-  {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    bs = ArrayBuffer::NewBackingStore(env->isolate(),
+-                                      BignumPointer::GetByteCount(b));
+-  }
++  auto bs = ArrayBuffer::NewBackingStore(
++      env->isolate(),
++      BignumPointer::GetByteCount(b),
++      BackingStoreInitializationMode::kUninitialized);
+   CHECK_EQ(bs->ByteLength(),
+            BignumPointer::EncodePaddedInto(
+                b, static_cast<unsigned char*>(bs->Data()), bs->ByteLength()));
+diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
+index 1f2fccce6ed8f14525557644e0bdd130eedf3337..1099a8f89bb53083f01942ee14fff453d8cdc0af 100644
+--- a/src/crypto/crypto_rsa.cc
++++ b/src/crypto/crypto_rsa.cc
+@@ -20,6 +20,7 @@ using ncrypto::EVPKeyPointer;
+ using ncrypto::RSAPointer;
+ using v8::ArrayBuffer;
+ using v8::BackingStore;
++using v8::BackingStoreInitializationMode;
+ using v8::FunctionCallbackInfo;
+ using v8::Int32;
+ using v8::JustVoid;
+@@ -535,12 +536,10 @@ Maybe<void> GetRsaKeyDetail(Environment* env,
+     return Nothing<void>();
+   }
+ 
+-  std::unique_ptr<BackingStore> public_exponent;
+-  {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    public_exponent = ArrayBuffer::NewBackingStore(
+-        env->isolate(), BignumPointer::GetByteCount(e));
+-  }
++  auto public_exponent = ArrayBuffer::NewBackingStore(
++      env->isolate(),
++      BignumPointer::GetByteCount(e),
++      BackingStoreInitializationMode::kUninitialized);
+   CHECK_EQ(BignumPointer::EncodePaddedInto(
+                e,
+                static_cast<unsigned char*>(public_exponent->Data()),
+diff --git a/src/crypto/crypto_sig.cc b/src/crypto/crypto_sig.cc
+index 2f6e683e3497d4315259773d09443e5215bff28f..c33e93c34ef32c18e6de6bc03698ed6b851b4aa3 100644
+--- a/src/crypto/crypto_sig.cc
++++ b/src/crypto/crypto_sig.cc
+@@ -21,6 +21,7 @@ using ncrypto::EVPKeyPointer;
+ using ncrypto::EVPMDCtxPointer;
+ using v8::ArrayBuffer;
+ using v8::BackingStore;
++using v8::BackingStoreInitializationMode;
+ using v8::Boolean;
+ using v8::FunctionCallbackInfo;
+ using v8::FunctionTemplate;
+@@ -92,11 +93,8 @@ std::unique_ptr<BackingStore> Node_SignFinal(Environment* env,
+     return nullptr;
+ 
+   size_t sig_len = pkey.size();
+-  std::unique_ptr<BackingStore> sig;
+-  {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    sig = ArrayBuffer::NewBackingStore(env->isolate(), sig_len);
+-  }
++  auto sig = ArrayBuffer::NewBackingStore(
++      env->isolate(), sig_len, BackingStoreInitializationMode::kUninitialized);
+   EVPKeyCtxPointer pkctx = pkey.newCtx();
+   if (pkctx && EVP_PKEY_sign_init(pkctx.get()) > 0 &&
+       ApplyRSAOptions(pkey, pkctx.get(), padding, pss_salt_len) &&
+@@ -168,11 +166,9 @@ std::unique_ptr<BackingStore> ConvertSignatureToP1363(
+   if (n == kNoDsaSignature)
+     return std::move(signature);
+ 
+-  std::unique_ptr<BackingStore> buf;
+-  {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    buf = ArrayBuffer::NewBackingStore(env->isolate(), 2 * n);
+-  }
++  auto buf = ArrayBuffer::NewBackingStore(
++      env->isolate(), 2 * n, BackingStoreInitializationMode::kUninitialized);
++
+   if (!ExtractP1363(static_cast<unsigned char*>(signature->Data()),
+                     static_cast<unsigned char*>(buf->Data()),
+                     signature->ByteLength(), n))
+diff --git a/src/crypto/crypto_tls.cc b/src/crypto/crypto_tls.cc
+index a80685790bd29102d99929ff81f866e0aee370f1..24336b86f6f25533a7b668e9f9806a5635e3a398 100644
+--- a/src/crypto/crypto_tls.cc
++++ b/src/crypto/crypto_tls.cc
+@@ -46,6 +46,7 @@ using v8::Array;
+ using v8::ArrayBuffer;
+ using v8::ArrayBufferView;
+ using v8::BackingStore;
++using v8::BackingStoreInitializationMode;
+ using v8::Boolean;
+ using v8::Context;
+ using v8::DontDelete;
+@@ -1087,10 +1088,10 @@ int TLSWrap::DoWrite(WriteWrap* w,
+   // and copying it when it could just be used.
+ 
+   if (nonempty_count != 1) {
+-    {
+-      NoArrayBufferZeroFillScope no_zero_fill_scope(env()->isolate_data());
+-      bs = ArrayBuffer::NewBackingStore(env()->isolate(), length);
+-    }
++    bs = ArrayBuffer::NewBackingStore(
++        env()->isolate(),
++        length,
++        BackingStoreInitializationMode::kUninitialized);
+     size_t offset = 0;
+     for (i = 0; i < count; i++) {
+       memcpy(static_cast<char*>(bs->Data()) + offset,
+@@ -1107,8 +1108,10 @@ int TLSWrap::DoWrite(WriteWrap* w,
+     written = SSL_write(ssl_.get(), buf->base, buf->len);
+ 
+     if (written == -1) {
+-      NoArrayBufferZeroFillScope no_zero_fill_scope(env()->isolate_data());
+-      bs = ArrayBuffer::NewBackingStore(env()->isolate(), length);
++      bs = ArrayBuffer::NewBackingStore(
++          env()->isolate(),
++          length,
++          BackingStoreInitializationMode::kUninitialized);
+       memcpy(bs->Data(), buf->base, buf->len);
+     }
+   }
+@@ -1746,11 +1749,8 @@ void TLSWrap::GetFinished(const FunctionCallbackInfo<Value>& args) {
+   if (len == 0)
+     return;
+ 
+-  std::unique_ptr<BackingStore> bs;
+-  {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    bs = ArrayBuffer::NewBackingStore(env->isolate(), len);
+-  }
++  auto bs = ArrayBuffer::NewBackingStore(
++      env->isolate(), len, BackingStoreInitializationMode::kUninitialized);
+ 
+   CHECK_EQ(bs->ByteLength(),
+            SSL_get_finished(w->ssl_.get(), bs->Data(), bs->ByteLength()));
+@@ -1777,11 +1777,8 @@ void TLSWrap::GetPeerFinished(const FunctionCallbackInfo<Value>& args) {
+   if (len == 0)
+     return;
+ 
+-  std::unique_ptr<BackingStore> bs;
+-  {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    bs = ArrayBuffer::NewBackingStore(env->isolate(), len);
+-  }
++  auto bs = ArrayBuffer::NewBackingStore(
++      env->isolate(), len, BackingStoreInitializationMode::kUninitialized);
+ 
+   CHECK_EQ(bs->ByteLength(),
+            SSL_get_peer_finished(w->ssl_.get(), bs->Data(), bs->ByteLength()));
+@@ -1806,11 +1803,8 @@ void TLSWrap::GetSession(const FunctionCallbackInfo<Value>& args) {
+   if (slen <= 0)
+     return;  // Invalid or malformed session.
+ 
+-  std::unique_ptr<BackingStore> bs;
+-  {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    bs = ArrayBuffer::NewBackingStore(env->isolate(), slen);
+-  }
++  auto bs = ArrayBuffer::NewBackingStore(
++      env->isolate(), slen, BackingStoreInitializationMode::kUninitialized);
+ 
+   unsigned char* p = static_cast<unsigned char*>(bs->Data());
+   CHECK_LT(0, i2d_SSL_SESSION(sess, &p));
+@@ -1993,11 +1987,8 @@ void TLSWrap::ExportKeyingMaterial(const FunctionCallbackInfo<Value>& args) {
+   uint32_t olen = args[0].As<Uint32>()->Value();
+   Utf8Value label(env->isolate(), args[1]);
+ 
+-  std::unique_ptr<BackingStore> bs;
+-  {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    bs = ArrayBuffer::NewBackingStore(env->isolate(), olen);
+-  }
++  auto bs = ArrayBuffer::NewBackingStore(
++      env->isolate(), olen, BackingStoreInitializationMode::kUninitialized);
+ 
+   ByteSource context;
+   bool use_context = !args[2]->IsUndefined();
+diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
+index fd29d17de195017970856ce30d7a9c5785b0b8ee..7fe3d09851d4476fa3f77ea0a0b49e8af13fae4f 100644
+--- a/src/crypto/crypto_x509.cc
++++ b/src/crypto/crypto_x509.cc
+@@ -28,6 +28,7 @@ using v8::Array;
+ using v8::ArrayBuffer;
+ using v8::ArrayBufferView;
+ using v8::BackingStore;
++using v8::BackingStoreInitializationMode;
+ using v8::Boolean;
+ using v8::Context;
+ using v8::Date;
+@@ -683,11 +684,8 @@ MaybeLocal<Object> GetPubKey(Environment* env, OSSL3_CONST RSA* rsa) {
+   int size = i2d_RSA_PUBKEY(rsa, nullptr);
+   CHECK_GE(size, 0);
+ 
+-  std::unique_ptr<BackingStore> bs;
+-  {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    bs = ArrayBuffer::NewBackingStore(env->isolate(), size);
+-  }
++  auto bs = ArrayBuffer::NewBackingStore(
++      env->isolate(), size, BackingStoreInitializationMode::kUninitialized);
+ 
+   unsigned char* serialized = reinterpret_cast<unsigned char*>(bs->Data());
+   CHECK_GE(i2d_RSA_PUBKEY(rsa, &serialized), 0);
+diff --git a/src/encoding_binding.cc b/src/encoding_binding.cc
+index 5ace688bb7ffc86eedf5aff11ab0ab487ad9440e..31058543a164bb45ba989e8c433994e0857a98b9 100644
+--- a/src/encoding_binding.cc
++++ b/src/encoding_binding.cc
+@@ -15,6 +15,7 @@ namespace encoding_binding {
+ 
+ using v8::ArrayBuffer;
+ using v8::BackingStore;
++using v8::BackingStoreInitializationMode;
+ using v8::Context;
+ using v8::FunctionCallbackInfo;
+ using v8::Isolate;
+@@ -123,9 +124,8 @@ void BindingData::EncodeUtf8String(const FunctionCallbackInfo<Value>& args) {
+ 
+   Local<ArrayBuffer> ab;
+   {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    std::unique_ptr<BackingStore> bs =
+-        ArrayBuffer::NewBackingStore(isolate, length);
++    std::unique_ptr<BackingStore> bs = ArrayBuffer::NewBackingStore(
++        isolate, length, BackingStoreInitializationMode::kUninitialized);
+ 
+     CHECK(bs);
+ 
+diff --git a/src/env-inl.h b/src/env-inl.h
+index 98e1e1e75bae94038bba0049447ab48b0acfb8cc..fe395bf89f9c1e5bb2dabc8fceda7b9b2b877415 100644
+--- a/src/env-inl.h
++++ b/src/env-inl.h
+@@ -44,16 +44,6 @@
+ 
+ namespace node {
+ 
+-NoArrayBufferZeroFillScope::NoArrayBufferZeroFillScope(
+-    IsolateData* isolate_data)
+-    : node_allocator_(isolate_data->node_allocator()) {
+-  if (node_allocator_ != nullptr) node_allocator_->zero_fill_field()[0] = 0;
+-}
+-
+-NoArrayBufferZeroFillScope::~NoArrayBufferZeroFillScope() {
+-  if (node_allocator_ != nullptr) node_allocator_->zero_fill_field()[0] = 1;
+-}
+-
+ inline v8::Isolate* IsolateData::isolate() const {
+   return isolate_;
+ }
+diff --git a/src/env.cc b/src/env.cc
+index 161d577e0ea6a251c83ba1903b1ec9a582a5317c..52713421465c23c959afac1955168294b2048341 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -39,6 +39,9 @@ namespace node {
+ 
+ using errors::TryCatchScope;
+ using v8::Array;
++using v8::ArrayBuffer;
++using v8::BackingStore;
++using v8::BackingStoreInitializationMode;
+ using v8::Boolean;
+ using v8::Context;
+ using v8::CppHeap;
+@@ -724,9 +727,10 @@ void Environment::add_refs(int64_t diff) {
+ }
+ 
+ uv_buf_t Environment::allocate_managed_buffer(const size_t suggested_size) {
+-  NoArrayBufferZeroFillScope no_zero_fill_scope(isolate_data());
+-  std::unique_ptr<v8::BackingStore> bs =
+-      v8::ArrayBuffer::NewBackingStore(isolate(), suggested_size);
++  std::unique_ptr<BackingStore> bs = ArrayBuffer::NewBackingStore(
++      isolate(),
++      suggested_size,
++      BackingStoreInitializationMode::kUninitialized);
+   uv_buf_t buf = uv_buf_init(static_cast<char*>(bs->Data()), bs->ByteLength());
+   released_allocated_buffers_.emplace(buf.base, std::move(bs));
+   return buf;
+diff --git a/src/env.h b/src/env.h
+index c346e3a9c827993036438685d758a734f9ce8c05..28c8df87c8e2f06e2ed8c554260bfdedb860bb4a 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -114,19 +114,6 @@ class ModuleWrap;
+ class Environment;
+ class Realm;
+ 
+-// Disables zero-filling for ArrayBuffer allocations in this scope. This is
+-// similar to how we implement Buffer.allocUnsafe() in JS land.
+-class NoArrayBufferZeroFillScope {
+- public:
+-  inline explicit NoArrayBufferZeroFillScope(IsolateData* isolate_data);
+-  inline ~NoArrayBufferZeroFillScope();
+-
+- private:
+-  NodeArrayBufferAllocator* node_allocator_;
+-
+-  friend class Environment;
+-};
+-
+ struct IsolateDataSerializeInfo {
+   std::vector<SnapshotIndex> primitive_values;
+   std::vector<PropInfo> template_values;
+diff --git a/src/node_buffer.cc b/src/node_buffer.cc
+index e844fe6cb33acefd075516e675075421ad5c3cff..06c84eb6ec097e3cb39502116135a7802aed13ce 100644
+--- a/src/node_buffer.cc
++++ b/src/node_buffer.cc
+@@ -66,6 +66,7 @@ namespace Buffer {
+ using v8::ArrayBuffer;
+ using v8::ArrayBufferView;
+ using v8::BackingStore;
++using v8::BackingStoreInitializationMode;
+ using v8::Context;
+ using v8::EscapableHandleScope;
+ using v8::FunctionCallbackInfo;
+@@ -376,9 +377,8 @@ MaybeLocal<Object> New(Environment* env, size_t length) {
+ 
+   Local<ArrayBuffer> ab;
+   {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    std::unique_ptr<BackingStore> bs =
+-        ArrayBuffer::NewBackingStore(isolate, length);
++    std::unique_ptr<BackingStore> bs = ArrayBuffer::NewBackingStore(
++        isolate, length, BackingStoreInitializationMode::kUninitialized);
+ 
+     CHECK(bs);
+ 
+@@ -417,18 +417,14 @@ MaybeLocal<Object> Copy(Environment* env, const char* data, size_t length) {
+     return Local<Object>();
+   }
+ 
+-  Local<ArrayBuffer> ab;
+-  {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    std::unique_ptr<BackingStore> bs =
+-        ArrayBuffer::NewBackingStore(isolate, length);
++  std::unique_ptr<BackingStore> bs = ArrayBuffer::NewBackingStore(
++      isolate, length, BackingStoreInitializationMode::kUninitialized);
+ 
+-    CHECK(bs);
++  CHECK(bs);
+ 
+-    memcpy(bs->Data(), data, length);
++  memcpy(bs->Data(), data, length);
+ 
+-    ab = ArrayBuffer::New(isolate, std::move(bs));
+-  }
++  Local<ArrayBuffer> ab = ArrayBuffer::New(isolate, std::move(bs));
+ 
+   MaybeLocal<Object> obj =
+       New(env, ab, 0, ab->ByteLength())
+@@ -1440,14 +1436,16 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
+ 
+   Local<ArrayBuffer> buf;
+ 
+-  NodeArrayBufferAllocator* allocator = env->isolate_data()->node_allocator();
+   // 0-length, or zero-fill flag is set, or building snapshot
+   if (size == 0 || per_process::cli_options->zero_fill_all_buffers ||
+-      allocator == nullptr) {
++      env->isolate_data()->is_building_snapshot()) {
+     buf = ArrayBuffer::New(isolate, size);
+   } else {
+-    std::unique_ptr<BackingStore> store =
+-        ArrayBuffer::NewBackingStore(isolate, size);
++    std::unique_ptr<BackingStore> store = ArrayBuffer::NewBackingStore(
++        isolate,
++        size,
++        BackingStoreInitializationMode::kUninitialized,
++        v8::BackingStoreOnFailureMode::kReturnNull);
+     if (!store) {
+       return env->ThrowRangeError("Array buffer allocation failed");
+     }
+diff --git a/src/node_http2.cc b/src/node_http2.cc
+index 8237c9b7d325dd925ae8798d7795fcd94eeb13d0..a22cf6c4e33e5cf2d3168ce03dc35af8a9584af7 100644
+--- a/src/node_http2.cc
++++ b/src/node_http2.cc
+@@ -27,6 +27,7 @@ using v8::Array;
+ using v8::ArrayBuffer;
+ using v8::ArrayBufferView;
+ using v8::BackingStore;
++using v8::BackingStoreInitializationMode;
+ using v8::Boolean;
+ using v8::Context;
+ using v8::EscapableHandleScope;
+@@ -298,11 +299,10 @@ Local<Value> Http2Settings::Pack(
+     size_t count,
+     const nghttp2_settings_entry* entries) {
+   EscapableHandleScope scope(env->isolate());
+-  std::unique_ptr<BackingStore> bs;
+-  {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    bs = ArrayBuffer::NewBackingStore(env->isolate(), count * 6);
+-  }
++  std::unique_ptr<BackingStore> bs = ArrayBuffer::NewBackingStore(
++      env->isolate(),
++      count * 6,
++      BackingStoreInitializationMode::kUninitialized);
+   if (nghttp2_pack_settings_payload(static_cast<uint8_t*>(bs->Data()),
+                                     bs->ByteLength(),
+                                     entries,
+@@ -468,13 +468,11 @@ Origins::Origins(
+     return;
+   }
+ 
+-  {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    bs_ = ArrayBuffer::NewBackingStore(env->isolate(),
+-                                       alignof(nghttp2_origin_entry) - 1 +
+-                                       count_ * sizeof(nghttp2_origin_entry) +
+-                                       origin_string_len);
+-  }
++  bs_ = ArrayBuffer::NewBackingStore(
++      env->isolate(),
++      alignof(nghttp2_origin_entry) - 1 +
++          count_ * sizeof(nghttp2_origin_entry) + origin_string_len,
++      BackingStoreInitializationMode::kUninitialized);
+ 
+   // Make sure the start address is aligned appropriately for an nghttp2_nv*.
+   char* start = nbytes::AlignUp(static_cast<char*>(bs_->Data()),
+@@ -2120,12 +2118,10 @@ void Http2Session::OnStreamRead(ssize_t nread, const uv_buf_t& buf_) {
+     // happen, we concatenate the data we received with the already-stored
+     // pending input data, slicing off the already processed part.
+     size_t pending_len = stream_buf_.len - stream_buf_offset_;
+-    std::unique_ptr<BackingStore> new_bs;
+-    {
+-      NoArrayBufferZeroFillScope no_zero_fill_scope(env()->isolate_data());
+-      new_bs = ArrayBuffer::NewBackingStore(env()->isolate(),
+-                                            pending_len + nread);
+-    }
++    std::unique_ptr<BackingStore> new_bs = ArrayBuffer::NewBackingStore(
++        env()->isolate(),
++        pending_len + nread,
++        BackingStoreInitializationMode::kUninitialized);
+     memcpy(static_cast<char*>(new_bs->Data()),
+            stream_buf_.base + stream_buf_offset_,
+            pending_len);
+diff --git a/src/node_internals.h b/src/node_internals.h
+index 12ea72b61b0a5e194207bb369dfed4b8667107cb..18844e18a32d6b07e62481138fa2342765643484 100644
+--- a/src/node_internals.h
++++ b/src/node_internals.h
+@@ -121,8 +121,6 @@ v8::MaybeLocal<v8::Object> InitializePrivateSymbols(
+ 
+ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
+  public:
+-  inline uint32_t* zero_fill_field() { return &zero_fill_field_; }
+-
+   void* Allocate(size_t size) override;  // Defined in src/node.cc
+   void* AllocateUninitialized(size_t size) override;
+   void Free(void* data, size_t size) override;
+@@ -139,7 +137,6 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
+   }
+ 
+  private:
+-  uint32_t zero_fill_field_ = 1;  // Boolean but exposed as uint32 to JS land.
+   std::atomic<size_t> total_mem_usage_ {0};
+ 
+   // Delegate to V8's allocator for compatibility with the V8 memory cage.
+diff --git a/src/stream_base.cc b/src/stream_base.cc
+index fc81108120f0066f2d5dabedc74e22cb6c84d8e4..0bf2642599ee91e2d2aa20d6d066c80b3026ecc5 100644
+--- a/src/stream_base.cc
++++ b/src/stream_base.cc
+@@ -19,6 +19,7 @@ namespace node {
+ using v8::Array;
+ using v8::ArrayBuffer;
+ using v8::BackingStore;
++using v8::BackingStoreInitializationMode;
+ using v8::ConstructorBehavior;
+ using v8::Context;
+ using v8::DontDelete;
+@@ -243,8 +244,8 @@ int StreamBase::Writev(const FunctionCallbackInfo<Value>& args) {
+ 
+   std::unique_ptr<BackingStore> bs;
+   if (storage_size > 0) {
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    bs = ArrayBuffer::NewBackingStore(isolate, storage_size);
++    bs = ArrayBuffer::NewBackingStore(
++        isolate, storage_size, BackingStoreInitializationMode::kUninitialized);
+   }
+ 
+   offset = 0;
+@@ -398,14 +399,14 @@ int StreamBase::WriteString(const FunctionCallbackInfo<Value>& args) {
+ 
+   if (try_write) {
+     // Copy partial data
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    bs = ArrayBuffer::NewBackingStore(isolate, buf.len);
++    bs = ArrayBuffer::NewBackingStore(
++        isolate, buf.len, BackingStoreInitializationMode::kUninitialized);
+     memcpy(bs->Data(), buf.base, buf.len);
+     data_size = buf.len;
+   } else {
+     // Write it
+-    NoArrayBufferZeroFillScope no_zero_fill_scope(env->isolate_data());
+-    bs = ArrayBuffer::NewBackingStore(isolate, storage_size);
++    bs = ArrayBuffer::NewBackingStore(
++        isolate, storage_size, BackingStoreInitializationMode::kUninitialized);
+     data_size = StringBytes::Write(isolate,
+                                    static_cast<char*>(bs->Data()),
+                                    storage_size,
