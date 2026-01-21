@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 4 Nov 2025 21:20:26 +0100
+Subject: test: correct conditional secure heap flags test
+
+PR-URL: https://github.com/nodejs/node/pull/60385
+Reviewed-By: Colin Ihrig <cjihrig@gmail.com>
+Reviewed-By: Luigi Pinca <luigipinca@gmail.com>
+(cherry picked from commit 53c4a39fec941e04150554fdd3e654b48f2e1b31)
+
+diff --git a/test/parallel/test-process-env-allowed-flags-are-documented.js b/test/parallel/test-process-env-allowed-flags-are-documented.js
+index afd43cfffe638f4f084f1c36949068e7239eadc3..c70e073bab888c349e8f5c691f5679a3796c896c 100644
+--- a/test/parallel/test-process-env-allowed-flags-are-documented.js
++++ b/test/parallel/test-process-env-allowed-flags-are-documented.js
+@@ -49,6 +49,8 @@ if (!hasOpenSSL3) {
+   documented.delete('--openssl-shared-config');
+ }
+ 
++const isV8Sandboxed = process.config.variables.v8_enable_sandbox;
++
+ // Filter out options that are conditionally present.
+ const conditionalOpts = [
+   {
+@@ -74,6 +76,9 @@ const conditionalOpts = [
+   }, {
+     include: process.features.inspector,
+     filter: (opt) => opt.startsWith('--inspect') || opt === '--debug-port'
++  }, {
++    include: !isV8Sandboxed,
++    filter: (opt) => ['--secure-heap', '--secure-heap-min'].includes(opt)
+   },
+ ];
+ documented.forEach((opt) => {
