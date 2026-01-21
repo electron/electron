@@ -10,10 +10,10 @@ Reviewed-By: Moshe Atlow <moshe@atlow.co.il>
 Reviewed-By: James M Snell <jasnell@gmail.com>
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 82f53bba29613de212f64be440ca20d7c630fddf..0a358735c331767e8eb563a80e9aaccfb544c27b 100644
+index 33827edce63c9fe08b52aea59571391a83853443..79327877b0f34cbafb3efcc21617027d4011f806 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -886,7 +886,7 @@ Maybe<void> InitializePrimordials(Local<Context> context,
+@@ -878,7 +878,7 @@ Maybe<void> InitializePrimordials(Local<Context> context,
    CHECK(!exports->Has(context, primordials_string).FromJust());
  
    Local<Object> primordials = Object::New(isolate);
@@ -51,10 +51,10 @@ index 7b2efa49468c0bed2f5935552addd3ab37d0a50b..413db3ed9b88d7b7fb2ac6dd1153dade
    return GET_RETURN_STATUS(env);
  }
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index fc7ccd647585fe3b96648ccd83ef49d93c9c4438..aeacdcd13422aeb0fa4b1e234851d7b52f5de116 100644
+index 8a5b6b57321c2843a965a7e51b2ebed991a1e424..e844fe6cb33acefd075516e675075421ad5c3cff 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
-@@ -284,8 +284,9 @@ MaybeLocal<Uint8Array> New(Environment* env,
+@@ -283,8 +283,9 @@ MaybeLocal<Uint8Array> New(Environment* env,
                             size_t length) {
    CHECK(!env->buffer_prototype_object().IsEmpty());
    Local<Uint8Array> ui = Uint8Array::New(ab, byte_offset, length);
