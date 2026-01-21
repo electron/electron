@@ -9,7 +9,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/containers/contains.h"
 #include "base/files/file.h"
 #include "base/process/process.h"
 #include "base/process/process_handle.h"
@@ -92,7 +91,7 @@ void ElectronBindings::EnvironmentDestroyed(node::Environment* env) {
 
 void ElectronBindings::ActivateUVLoop(v8::Isolate* isolate) {
   node::Environment* env = node::Environment::GetCurrent(isolate);
-  if (base::Contains(pending_next_ticks_, env))
+  if (std::ranges::contains(pending_next_ticks_, env))
     return;
 
   pending_next_ticks_.push_back(env);
