@@ -172,6 +172,16 @@ describe('shell module', () => {
       expect(fs.existsSync(tmpShortcut)).to.be.true();
     });
 
+    it('writes the shortcut with omitted operation (defaults to create)', () => {
+      expect(shell.writeShortcutLink(tmpShortcut, shortcutOptions)).to.be.true();
+      expect(fs.existsSync(tmpShortcut)).to.be.true();
+      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(shortcutOptions);
+
+      const newOptions = { ...shortcutOptions, description: 'new description' };
+      expect(shell.writeShortcutLink(tmpShortcut, newOptions)).to.be.true();
+      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(newOptions);
+    });
+
     it('correctly sets the fields', () => {
       expect(shell.writeShortcutLink(tmpShortcut, shortcutOptions)).to.be.true();
       expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(shortcutOptions);
