@@ -406,6 +406,8 @@ bool PlatformTrashItem(const base::FilePath& full_path, std::string* error) {
 
 void Beep() {
   auto* display = gdk_display_get_default();
+  if (!display)
+    return;
   gdk_display_beep(display);
 }
 
