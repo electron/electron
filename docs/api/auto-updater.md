@@ -121,9 +121,9 @@ The `autoUpdater` object has the following methods:
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/5879
-    description: "Added `headers` option."
+    description: "Added `headers` as a second parameter."
   - pr-url: https://github.com/electron/electron/pull/11925
-    description: "Added `serverType` option."
+    description: "Changed API to accept a single `options` argument (contains `url`, `headers`, and `serverType` properties)."
 ```
 -->
 
