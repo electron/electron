@@ -1,7 +1,10 @@
-From dba49550b12d2aa83e8f40b17bd79c5f7999b64c Mon Sep 17 00:00:00 2001
-From: Olivier Flückiger <olivf@chromium.org>
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Olivier=20Fl=C3=BCckiger?= <olivf@chromium.org>
 Date: Mon, 12 Jan 2026 15:41:30 +0100
-Subject: [PATCH] Merged: [map] Fix publishing of integrity-level transitions
+Subject: Merged: [map] Fix publishing of integrity-level transitions
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 Integrity level transition target maps should not be published to the
 map tree before they are fully initialized. Otherwise concurrent access
@@ -22,13 +25,12 @@ Auto-Submit: Olivier Flückiger <olivf@chromium.org>
 Cr-Commit-Position: refs/branch-heads/14.4@{#40}
 Cr-Branched-From: 80acc26727d5a34e77dabeebe7c9213ec1bd4768-refs/heads/14.4.258@{#1}
 Cr-Branched-From: ce7e597e90f6df3fa4b6df224bc613b80c635450-refs/heads/main@{#104020}
----
 
 diff --git a/src/objects/map.cc b/src/objects/map.cc
-index 1428c1c..c316181 100644
+index 1428c1c5cc3a6809c99400b5eb1e800087d721b8..c316181c7e3ad8ad21177f1e1b7e2420d4a5f7f3 100644
 --- a/src/objects/map.cc
 +++ b/src/objects/map.cc
-@@ -646,20 +646,25 @@
+@@ -646,20 +646,25 @@ Map::FieldCounts Map::GetFieldCounts() const {
  }
  
  void Map::DeprecateTransitionTree(Isolate* isolate) {
@@ -57,7 +59,7 @@ index 1428c1c..c316181 100644
    set_is_deprecated(true);
    if (v8_flags.log_maps) {
      LOG(isolate, MapEvent("Deprecate", direct_handle(*this, isolate), {}));
-@@ -1574,6 +1579,22 @@
+@@ -1574,6 +1579,22 @@ Handle<Map> Map::CopyReplaceDescriptors(
      DirectHandle<DescriptorArray> descriptors, TransitionFlag flag,
      MaybeDirectHandle<Name> maybe_name, const char* reason,
      TransitionKindFlag transition_kind) {
@@ -80,7 +82,7 @@ index 1428c1c..c316181 100644
    DCHECK(descriptors->IsSortedNoDuplicates());
  
    Handle<Map> result = CopyDropDescriptors(isolate, map);
-@@ -1585,15 +1606,16 @@
+@@ -1585,15 +1606,16 @@ Handle<Map> Map::CopyReplaceDescriptors(
      result->set_may_have_interesting_properties(true);
    }
  
@@ -98,7 +100,7 @@ index 1428c1c..c316181 100644
        is_connected = true;
      } else if ((transition_kind == PROTOTYPE_TRANSITION &&
                  v8_flags.move_prototype_transitions_first) ||
-@@ -1611,6 +1633,10 @@
+@@ -1611,6 +1633,10 @@ Handle<Map> Map::CopyReplaceDescriptors(
        result->InitializeDescriptors(isolate, *descriptors);
      }
    }
@@ -109,7 +111,7 @@ index 1428c1c..c316181 100644
    if (v8_flags.log_maps && !is_connected) {
      LOG(isolate,
          MapEvent("ReplaceDescriptors", map, result, reason,
-@@ -1866,68 +1892,70 @@
+@@ -1866,68 +1892,70 @@ Handle<Map> Map::CopyForPreventExtensions(
        DescriptorArray::CopyUpToAddAttributes(
            isolate, direct_handle(map->instance_descriptors(isolate), isolate),
            num_descriptors, attrs_to_add);
@@ -240,10 +242,10 @@ index 1428c1c..c316181 100644
  
  namespace {
 diff --git a/src/objects/map.h b/src/objects/map.h
-index 37ce48e..3b50cc4 100644
+index 37ce48e7f4340687e19c895888da41b71409e12b..3b50cc46d10f5b8052f5659abca8baf17b77febe 100644
 --- a/src/objects/map.h
 +++ b/src/objects/map.h
-@@ -1070,6 +1070,14 @@
+@@ -1070,6 +1070,14 @@ class Map : public TorqueGeneratedMap<Map, HeapObject> {
    static Handle<Map> CopyAddDescriptor(Isolate* isolate, DirectHandle<Map> map,
                                         Descriptor* descriptor,
                                         TransitionFlag flag);
@@ -258,7 +260,7 @@ index 37ce48e..3b50cc4 100644
    static Handle<Map> CopyReplaceDescriptors(
        Isolate* isolate, DirectHandle<Map> map,
        DirectHandle<DescriptorArray> descriptors, TransitionFlag flag,
-@@ -1084,6 +1092,7 @@
+@@ -1084,6 +1092,7 @@ class Map : public TorqueGeneratedMap<Map, HeapObject> {
                                      PropertyNormalizationMode mode);
  
    void DeprecateTransitionTree(Isolate* isolate);
