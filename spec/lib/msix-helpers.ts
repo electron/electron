@@ -6,6 +6,21 @@ import * as path from 'node:path';
 
 const fixturesPath = path.resolve(__dirname, '..', 'fixtures', 'api', 'autoupdater', 'msix');
 const manifestFixturePath = path.resolve(fixturesPath, 'ElectronDevAppxManifest.xml');
+const installCertScriptPath = path.resolve(fixturesPath, 'install_test_cert.ps1');
+
+// Install the signing certificate for MSIX test packages to the Trusted People store
+// This is required to install self-signed MSIX packages
+export async function installMsixCertificate (): Promise<void> {
+  const result = cp.spawnSync('powershell', [
+    '-NoProfile',
+    '-ExecutionPolicy', 'Bypass',
+    '-File', installCertScriptPath
+  ]);
+
+  if (result.status !== 0) {
+    throw new Error(`Failed to install MSIX certificate: ${result.stderr.toString() || result.stdout.toString()}`);
+  }
+}
 
 // Check if we should run MSIX tests
 export const shouldRunMsixTests =

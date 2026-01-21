@@ -9,6 +9,7 @@ import {
   getMainJsFixturePath,
   getMsixFixturePath,
   getMsixPackageVersion,
+  installMsixCertificate,
   installMsixPackage,
   registerExecutableWithIdentity,
   shouldRunMsixTests,
@@ -28,6 +29,8 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
   this.timeout(120000);
 
   before(async function () {
+    await installMsixCertificate();
+
     const electronExec = getElectronExecutable();
     await registerExecutableWithIdentity(electronExec);
   });
