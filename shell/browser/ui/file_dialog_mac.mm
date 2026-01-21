@@ -11,7 +11,6 @@
 
 #import <Cocoa/Cocoa.h>
 #import <CoreServices/CoreServices.h>
-#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 #include "base/apple/foundation_util.h"
 #include "base/apple/scoped_cftyperef.h"
@@ -30,7 +29,7 @@
 @interface PopUpButtonHandler : NSObject
 
 @property(nonatomic, weak) NSSavePanel* savePanel;
-@property(nonatomic, strong) NSArray* contentTypesList;
+@property(nonatomic, strong) NSArray* fileTypesList;
 
 - (instancetype)initWithPanel:(NSSavePanel*)panel
                  andTypesList:(NSArray*)typesList;
@@ -41,14 +40,14 @@
 @implementation PopUpButtonHandler
 
 @synthesize savePanel;
-@synthesize contentTypesList;
+@synthesize fileTypesList;
 
 - (instancetype)initWithPanel:(NSSavePanel*)panel
                  andTypesList:(NSArray*)typesList {
   self = [super init];
   if (self) {
     [self setSavePanel:panel];
-    [self setContentTypesList:typesList];
+    [self setFileTypesList:typesList];
   }
   return self;
 }
@@ -56,19 +55,17 @@
 - (void)selectFormat:(id)sender {
   NSPopUpButton* button = (NSPopUpButton*)sender;
   NSInteger selectedItemIndex = [button indexOfSelectedItem];
-  NSArray* list = [self contentTypesList];
-  NSArray* content_types = [list objectAtIndex:selectedItemIndex];
+  NSArray* list = [self fileTypesList];
+  NSArray* fileTypes = [list objectAtIndex:selectedItemIndex];
 
-  __block BOOL allowAllFiles = NO;
-  [content_types
-      enumerateObjectsUsingBlock:^(UTType* type, NSUInteger idx, BOOL* stop) {
-        if ([[type preferredFilenameExtension] isEqual:@"*"]) {
-          allowAllFiles = YES;
-          *stop = YES;
-        }
-      }];
-
-  [[self savePanel] setAllowedContentTypes:allowAllFiles ? @[] : content_types];
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+  // If we meet a '*' file extension, we allow all file types.
+  if ([fileTypes count] == 0 || [fileTypes containsObject:@"*"])
+    [[self savePanel] setAllowedFileTypes:nil];
+  else
+    [[self savePanel] setAllowedFileTypes:fileTypes];
+#pragma clang diagnostic pop
 }
 
 @end
@@ -105,7 +102,7 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
 
   // Create array to keep file types and their name.
   for (const Filter& filter : filters) {
-    NSMutableOrderedSet* content_types_set =
+    NSMutableOrderedSet* file_type_set =
         [NSMutableOrderedSet orderedSetWithCapacity:filters.size()];
     [filter_names addObject:@(filter.first.c_str())];
 
@@ -119,46 +116,30 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
         ext.erase(0, pos + 1);
       }
 
-      if (ext == "*") {
-        [content_types_set addObject:[UTType typeWithFilenameExtension:@"*"]];
-        break;
-      } else if (ext == "app") {
-        // This handles a bug on macOS where the "app" extension by default
-        // maps to "com.apple.application-file", which is for an Application
-        // file (older single-file carbon based apps), and not modern
-        // Application Bundles (multi file packages as you'd see for all modern
-        // applications).
-        UTType* superType =
-            [UTType typeWithIdentifier:@"com.apple.application-bundle"];
-        if (UTType* utt = [UTType typeWithFilenameExtension:@"app"
-                                           conformingToType:superType]) {
-          [content_types_set addObject:utt];
-        }
-      } else {
-        if (UTType* utt = [UTType typeWithFilenameExtension:@(ext.c_str())])
-          [content_types_set addObject:utt];
-      }
+      [file_type_set addObject:@(ext.c_str())];
     }
 
-    [file_types_list addObject:content_types_set];
+    [file_types_list addObject:[file_type_set array]];
   }
 
-  NSArray* content_types = [file_types_list objectAtIndex:0];
+  // Passing empty array to setAllowedFileTypes will cause exception.
+  NSArray* file_types = nil;
+  NSUInteger count = [file_types_list count];
+  if (count > 0) {
+    file_types = [[file_types_list objectAtIndex:0] allObjects];
+    // If we meet a '*' file extension, we allow all the file types and no
+    // need to set the specified file types.
+    if ([file_types count] == 0 || [file_types containsObject:@"*"])
+      file_types = nil;
+  }
 
-  __block BOOL allowAllFiles = NO;
-  [content_types
-      enumerateObjectsUsingBlock:^(UTType* type, NSUInteger idx, BOOL* stop) {
-        if ([[type preferredFilenameExtension] isEqual:@"*"]) {
-          allowAllFiles = YES;
-          *stop = YES;
-        }
-      }];
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+  [dialog setAllowedFileTypes:file_types];
+#pragma clang diagnostic pop
 
-  [dialog setAllowedContentTypes:allowAllFiles ? @[] : content_types];
-
-  // Don't add file format picker.
-  if ([file_types_list count] <= 1)
-    return;
+  if (count <= 1)
+    return;  // don't add file format picker
 
   // Add file format picker.
   ElectronAccessoryView* accessoryView = [[ElectronAccessoryView alloc]
