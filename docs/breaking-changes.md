@@ -2677,6 +2677,18 @@ Replace with: https://atom.io/download/electron
 
 The following list includes the breaking API changes made in Electron 2.0.
 
+### `autoUpdater`
+
+```js
+// Deprecated
+autoUpdater.setFeedURL(url, headers)
+// Replace with
+autoUpdater.setFeedURL({
+  url,
+  headers
+})
+```
+
 ### `BrowserWindow`
 
 ```js
