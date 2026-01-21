@@ -3004,9 +3004,14 @@ base::Value::Dict CreateMediaSizeDict(const gfx::Size& paper_size_um) {
       .Set(printing::kSettingMediaSizeIsDefault, true);
 }
 
-// Helper function to query printer's default paper size
 std::optional<gfx::Size> GetPrinterDefaultPaperSize(
     const std::string& printer_name) {
+#if BUILDFLAG(IS_WIN)
+  // Blocking is needed here because Windows printer drivers are oftentimes
+  // not thread-safe and have to be accessed on the UI thread.
+  ScopedAllowBlockingForElectron allow_blocking;
+#endif
+
   if (printer_name.empty()) {
     return std::nullopt;
   }
@@ -3041,7 +3046,8 @@ void OnGetDeviceNameToUse(base::WeakPtr<content::WebContents> web_contents,
                           base::Value::Dict print_settings,
                           printing::CompletionCallback print_callback,
                           // <error, device_name>
-                          std::pair<std::string, std::u16string> info) {
+                          std::pair<std::string, std::u16string> info,
+                          bool use_printer_default_page_size) {
   // The content::WebContents might be already deleted at this point, and the
   // PrintViewManagerElectron class does not do null check.
   if (!web_contents) {
@@ -3056,8 +3062,19 @@ void OnGetDeviceNameToUse(base::WeakPtr<content::WebContents> web_contents,
     return;
   }
 
+
   // Use user-passed deviceName, otherwise default printer.
   print_settings.Set(printing::kSettingDeviceName, info.second);
+
+  if (use_printer_default_page_size && !info.second.empty()) {
+    std::string printer_name = base::UTF16ToUTF8(info.second);
+    std::optional<gfx::Size> paper_size =
+        GetPrinterDefaultPaperSize(printer_name);
+    // Use printer's default or fallback to A4 (210mm x 297mm)
+    gfx::Size size_um = paper_size.value_or(gfx::Size(210000, 297000));
+    print_settings.Set(printing::kSettingMediaSize, CreateMediaSizeDict(size_um));
+  }
+
   if (!print_settings.FindInt(printing::kSettingDpiHorizontal)) {
     gfx::Size dpi = GetDefaultPrinterDPI(info.second);
     print_settings.Set(printing::kSettingDpiHorizontal, dpi.width());
@@ -3242,37 +3259,29 @@ void WebContents::Print(gin::Arguments* const args) {
   const auto use_printer_default_page_size =
       options.ValueOrDefault("usePrinterDefaultPageSize", false);
 
-  std::string printer_name = base::UTF16ToUTF8(device_name);
-
-  // When usePrinterDefaultPageSize is true, deviceName must be set to query
-  // the printer's default paper size from PrinterSemanticCapsAndDefaults.
-  if (use_printer_default_page_size && !printer_name.empty()) {
-    // Query printer for default paper size
-    auto paper_size = GetPrinterDefaultPaperSize(printer_name);
-
-    // Use printer's default or fallback to A4 (210mm x 297mm)
-    gfx::Size size_um = paper_size.value_or(gfx::Size(210000, 297000));
-    settings.Set(printing::kSettingMediaSize, CreateMediaSizeDict(size_um));
-  } else if (options.Get("mediaSize", &media_size)) {
-    settings.Set(printing::kSettingMediaSize, std::move(media_size));
-  } else {
-    // Default to A4 paper size (210mm x 297mm)
-    settings.Set(printing::kSettingMediaSize,
-                 CreateMediaSizeDict(gfx::Size(210000, 297000)));
+  if (!use_printer_default_page_size) {
+    if (options.Get("mediaSize", &media_size)) {
+      settings.Set(printing::kSettingMediaSize, std::move(media_size));
+    } else {
+      // Default to A4 paper size (210mm x 297mm)
+      settings.Set(printing::kSettingMediaSize,
+                   CreateMediaSizeDict(gfx::Size(210000, 297000)));
+    }
   }
 
-  // Set custom dots per inch (dpi)
-  if (gin_helper::Dictionary dpi; options.Get("dpi", &dpi)) {
-    settings.Set(printing::kSettingDpiHorizontal,
-                 dpi.ValueOrDefault("horizontal", 72));
-    settings.Set(printing::kSettingDpiVertical,
-                 dpi.ValueOrDefault("vertical", 72));
-  }
+    // Set custom dots per inch (dpi)
+    if (gin_helper::Dictionary dpi; options.Get("dpi", &dpi)) {
+      settings.Set(printing::kSettingDpiHorizontal,
+                   dpi.ValueOrDefault("horizontal", 72));
+      settings.Set(printing::kSettingDpiVertical,
+                   dpi.ValueOrDefault("vertical", 72));
+    }
 
   print_task_runner_->PostTaskAndReplyWithResult(
       FROM_HERE, base::BindOnce(&GetDeviceNameToUse, device_name),
       base::BindOnce(&OnGetDeviceNameToUse, web_contents()->GetWeakPtr(),
-                     std::move(settings), std::move(callback)));
+                     std::move(settings), std::move(callback),
+                     use_printer_default_page_size));
 }
 
 // Partially duplicated and modified from
