@@ -263,16 +263,7 @@ WebContents.prototype.print = function (options: ElectronInternal.WebContentsPri
     throw new TypeError('webContents.print(): Invalid print settings specified.');
   }
 
-  const { pageSize, usePrinterDefaultPageSize, deviceName } = options;
-
-  // When usePrinterDefaultPageSize is true, deviceName must be set to query
-  // the printer's default paper size from PrinterSemanticCapsAndDefaults.
-  if (usePrinterDefaultPageSize && !deviceName) {
-    console.warn(
-      'webContents.print(): usePrinterDefaultPageSize requires deviceName to be set. ' +
-        'Falling back to default page size.'
-    );
-  }
+  const { pageSize } = options;
 
   if (typeof pageSize === 'string' && PDFPageSizes[pageSize]) {
     const mediaSize = PDFPageSizes[pageSize];
