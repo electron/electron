@@ -174,3 +174,6 @@ cherry-pick-fccaeb9e0967.patch
 cherry-pick-d141d62357df.patch
 cherry-pick-c75f63de7188.patch
 cherry-pick-7687618.patch
+graphite_handle_out_of_order_recording_errors.patch
+cherry-pick-e045399a1ecb.patch
+patch_osr_control_screen_info.patch
