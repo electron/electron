@@ -14,10 +14,11 @@
 #include "mojo/public/cpp/system/data_pipe.h"
 #include "mojo/public/cpp/system/simple_watcher.h"
 #include "net/base/net_errors.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/key_weak_map.h"
 #include "shell/common/node_util.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 #include "shell/common/node_includes.h"
 
@@ -143,8 +144,9 @@ class DataPipeReader {
 
 }  // namespace
 
-gin::DeprecatedWrapperInfo DataPipeHolder::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+const gin::WrapperInfo DataPipeHolder::kWrapperInfo = {
+    {gin::kEmbedderNativeGin},
+    gin::kElectronDataPipeHolder};
 
 DataPipeHolder::DataPipeHolder(const network::DataElement& element)
     : id_(base::NumberToString(++g_next_id)) {
@@ -166,29 +168,37 @@ v8::Local<v8::Promise> DataPipeHolder::ReadAll(v8::Isolate* isolate) {
   return handle;
 }
 
-const char* DataPipeHolder::GetTypeName() {
-  return "DataPipeHolder";
+const gin::WrapperInfo* DataPipeHolder::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* DataPipeHolder::GetHumanReadableName() const {
+  return "Electron / DataPipeHolder";
 }
 
 // static
-gin_helper::Handle<DataPipeHolder> DataPipeHolder::Create(
-    v8::Isolate* isolate,
-    const network::DataElement& element) {
-  auto handle = gin_helper::CreateHandle(isolate, new DataPipeHolder(element));
-  AllDataPipeHolders().Set(isolate, handle->id(),
-                           handle->GetWrapper(isolate).ToLocalChecked());
-  return handle;
-}
-
-// static
-gin_helper::Handle<DataPipeHolder> DataPipeHolder::From(v8::Isolate* isolate,
-                                                        const std::string& id) {
-  v8::MaybeLocal<v8::Object> object = AllDataPipeHolders().Get(isolate, id);
-  if (!object.IsEmpty()) {
-    gin_helper::Handle<DataPipeHolder> handle;
-    if (gin::ConvertFromV8(isolate, object.ToLocalChecked(), &handle))
-      return handle;
+DataPipeHolder* DataPipeHolder::Create(v8::Isolate* isolate,
+                                       const network::DataElement& element) {
+  auto* holder = cppgc::MakeGarbageCollected<DataPipeHolder>(
+      isolate->GetCppHeap()->GetAllocationHandle(), element);
+  v8::Local<v8::Object> wrapper;
+  if (holder->GetWrapper(isolate).ToLocal(&wrapper)) {
+    AllDataPipeHolders().Set(isolate, holder->id(), wrapper);
   }
+  return holder;
+}
+
+// static
+DataPipeHolder* DataPipeHolder::From(v8::Isolate* isolate,
+                                     const std::string& id) {
+  if (v8::MaybeLocal<v8::Object> obj = AllDataPipeHolders().Get(isolate, id);
+      !obj.IsEmpty()) {
+    if (DataPipeHolder* holder = nullptr;
+        gin::ConvertFromV8(isolate, obj.ToLocalChecked(), &holder)) {
+      return holder;
+    }
+  }
+
   return {};
 }
 

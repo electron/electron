@@ -33,6 +33,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/v8_util.h"
@@ -538,7 +539,7 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
         // TODO(zcbenz): After the NetworkService refactor, the old blobUUID API
         // becomes unnecessarily complex, we should deprecate the getBlobData
         // API and return the DataPipeHolder wrapper directly.
-        auto holder = electron::api::DataPipeHolder::Create(isolate, element);
+        auto* holder = electron::api::DataPipeHolder::Create(isolate, element);
         upload_data.Set("blobUUID", holder->id());
         // The lifetime of data pipe is bound to the uploadData object.
         upload_data.Set("dataPipe", holder);
