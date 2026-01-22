@@ -7,20 +7,34 @@ Process: [Main](../glossary.md#main-process)
 This module adds extra protection to data being stored on disk by using OS-provided cryptography systems. Current
 security semantics for each platform are outlined below.
 
+## Platform-Specific Key Providers
+
+### Synchronous API
+
 * **macOS**: Encryption keys are stored for your app in [Keychain Access](https://support.apple.com/en-ca/guide/keychain-access/kyca1083/mac) in a way that prevents
 other applications from loading them without user override. Therefore, content is protected from other users and other apps running in the same userspace.
-* **Windows**: Encryption keys are generated via [DPAPI](https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata).
-As per the Windows documentation: "Typically, only a user with the same logon credential as the user who encrypted the data can typically
-decrypt the data". Therefore, content is protected from other users on the same machine, but not from other apps running in the
+* **Windows**: Encryption keys are generated via [DPAPI](https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata). As per the Windows documentation: "Typically, only a user with the same logon credential as the user who encrypted the data can typically decrypt the data". Therefore, content is protected from other users on the same machine, but not from other apps running in the
 same userspace.
 * **Linux**: Encryption keys are generated and stored in a secret store that varies depending on your window manager and system setup. Options currently supported are `kwallet`, `kwallet5`, `kwallet6` and `gnome-libsecret`, but more may be available in future versions of Electron. As such, the
 security semantics of content protected via the `safeStorage` API vary between window managers and secret stores.
-  * Note that not all Linux setups have an available secret store. If no secret store is available, items stored in using the `safeStorage` API will be unprotected
-as they are encrypted via hardcoded plaintext password. You can detect when this happens when `safeStorage.getSelectedStorageBackend()` returns `basic_text`.
+  * Note that not all Linux setups have an available secret store. If no secret store is available, items stored in using the `safeStorage` API will be unprotected as they are encrypted via hardcoded plaintext password. You can detect when this happens when `safeStorage.getSelectedStorageBackend()` returns `basic_text`.
 
-Note that on Mac, access to the system Keychain is required and
+Note that on macOS, access to the system Keychain is required and
 these calls can block the current thread to collect user input.
 The same is true for Linux, if a password management tool is available.
+
+### Asynchronous API
+
+The asynchronous API uses Chromium's [`OSCryptAsync`](https://source.chromium.org/chromium/chromium/src/+/main:components/os_crypt/async/) implementation with pluggable key providers that vary by platform:
+
+* **macOS**: Encryption keys are stored and retrieved from [Keychain Access](https://support.apple.com/en-ca/guide/keychain-access/kyca1083/mac) via [`KeychainKeyProvider`](https://source.chromium.org/chromium/chromium/src/+/main:components/os_crypt/async/browser/keychain_key_provider.h). This provides the same security model as the synchronous API, protecting content from other users and other apps running in the same userspace.
+* **Windows**: Encryption keys are protected via [DPAPI](https://learn.microsoft.com/en-us/windows/win32/api/dpapi/nf-dpapi-cryptprotectdata) using [`DPAPIKeyProvider`](https://source.chromium.org/chromium/chromium/src/+/main:components/os_crypt/async/browser/dpapi_key_provider.h). This provides the same security model as the synchronous API, protecting content from other users on the same machine but not from other apps running in the same userspace.
+* **Linux**: Multiple key providers may be available depending on the desktop environment:
+  * [`SecretPortalKeyProvider`](https://source.chromium.org/chromium/chromium/src/+/main:components/os_crypt/async/browser/secret_portal_key_provider.h): Uses the `org.freedesktop.portal.Secret` D-Bus interface to retrieve application-specific secrets. This is the preferred provider for sandboxed environments like Flatpak.
+  * [`FreedesktopSecretKeyProvider`](https://source.chromium.org/chromium/chromium/src/+/main:components/os_crypt/async/browser/freedesktop_secret_key_provider.h): Uses the freedesktop.org Secret Service API (e.g., `gnome-libsecret`) for key storage.
+  * `PosixKeyProvider`: A fallback provider for environments without a secret service available.
+
+Unlike the synchronous API, these operations are non-blocking and support additional features like key rotation (indicated by `shouldReEncrypt`) and temporary unavailability handling (indicated by `isTemporarilyUnavailable`).
 
 ## Events
 
