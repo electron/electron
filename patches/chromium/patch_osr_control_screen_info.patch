@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: reito <reito@chromium.org>
+Date: Wed, 29 Oct 2025 00:50:03 +0800
+Subject: patch: osr control screen info
+
+We need to override GetNewScreenInfosForUpdate to ensure the screen info
+is updated correctly, instead of overriding GetScreenInfo which seems not
+working.
+
+diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
+index c05fac0b5fc2166daaa94d407dd9a652e6144c80..9fa69b342d5efe5b2f2b39b522c543cc62c7175b 100644
+--- a/content/browser/renderer_host/render_widget_host_view_base.h
++++ b/content/browser/renderer_host/render_widget_host_view_base.h
+@@ -678,7 +678,7 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+ 
+   // Generates the most current set of ScreenInfos from the current set of
+   // displays in the system for use in UpdateScreenInfo.
+-  display::ScreenInfos GetNewScreenInfosForUpdate();
++  virtual display::ScreenInfos GetNewScreenInfosForUpdate();
+ 
+   // Called when display properties that need to be synchronized with the
+   // renderer process changes. This method is called before notifying
