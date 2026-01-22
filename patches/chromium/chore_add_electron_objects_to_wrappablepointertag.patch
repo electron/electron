@@ -27,5 +27,5 @@ index 573bcb2e56068a2ade6d8ab28964b077487874fd..a21a0ebda93b16f592977768bfe1c717
 +  kElectronWebRequest,                  // electron::api::WebRequest
 +  kLastPointerTag = kElectronWebRequest,
  };
-
+ 
  static_assert(kLastPointerTag <
