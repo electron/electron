@@ -51,7 +51,12 @@ Returns:
 * `event` Event
 * `cookie` [Cookie](structures/cookie.md) - The cookie that was changed.
 * `cause` string - The cause of the change with one of the following values:
-  * `explicit` - The cookie was changed directly by a consumer's action.
+  * `inserted` -  The cookie was inserted.
+  * `inserted-no-change-overwrite` - The newly inserted cookie overwrote a cookie but
+    did not result in any change. For example, inserting an identical cookie will produce this cause.
+  * `inserted-no-value-change-overwrite` - The newly inserted cookie overwrote a cookie but
+    did not result in any value change, but it's web observable (e.g. updates the expiry).
+  * `explicit` - The cookie was deleted directly by a consumer's action.
   * `overwrite` - The cookie was automatically removed due to an insert
     operation that overwrote it.
   * `expired` - The cookie was automatically removed as it expired.
