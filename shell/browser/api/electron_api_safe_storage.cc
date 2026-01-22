@@ -115,7 +115,8 @@ void SafeStorage::OnOsCryptReady(os_crypt_async::Encryptor encryptor) {
     os_crypt_async::Encryptor::DecryptFlags flags;
     bool decrypted =
         encryptor_->DecryptString(pending.ciphertext, &plaintext, &flags);
-    if (decrypted) {
+
+    if (decrypted || flags.temporarily_unavailable) {
       v8::Isolate* isolate = pending.promise.isolate();
       v8::HandleScope handle_scope(isolate);
       auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
