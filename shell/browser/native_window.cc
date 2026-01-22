@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 
-#include "base/containers/contains.h"
 #include "base/memory/ptr_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
@@ -692,7 +691,7 @@ int NativeWindow::NonClientHitTest(const gfx::Point& point) {
 
 void NativeWindow::AddDraggableRegionProvider(
     DraggableRegionProvider* provider) {
-  if (!base::Contains(draggable_region_providers_, provider)) {
+  if (!std::ranges::contains(draggable_region_providers_, provider)) {
     draggable_region_providers_.push_back(provider);
   }
 }

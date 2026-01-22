@@ -17,10 +17,10 @@ Revert "Reland "Port net::CookieCryptoDelegate to os_crypt async""
 This reverts commit f01b115c7e21a09cc762f65bf7fd9c6ea9d9d0f8.
 
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index af9875ea3afd99e76a1129a76496ec6aef390b44..296aae791288b9d13689b3979204a1d9d18c88d9 100644
+index 587b492f828ccb3179f34102a99326c09dfb3306..7364814ecb4fd49e44db869b37655d5b4ea09306 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -739,6 +739,8 @@ static_library("browser") {
+@@ -737,6 +737,8 @@ static_library("browser") {
      "net/chrome_report_sender.h",
      "net/convert_explicitly_allowed_network_ports_pref.cc",
      "net/convert_explicitly_allowed_network_ports_pref.h",
@@ -192,7 +192,7 @@ index b862afe7663111a6cbd342d33723942770bb0490..9dc46cedb109cea63bf71aa43fc7a2b6
  #include "services/network/public/mojom/network_context.mojom.h"
  #include "testing/gtest/include/gtest/gtest.h"
 diff --git a/chrome/browser/net/system_network_context_manager.cc b/chrome/browser/net/system_network_context_manager.cc
-index 2fc099db479ac4bd8bd28292e30c24090d50f498..06f49761d2a4fcc236ecaaf611e69361b664d711 100644
+index 2c6ab9af9f5eebaf68e4b78834b5ce7fdd31d000..04262d11bbf7cbf0d8ece06448df9606922f239b 100644
 --- a/chrome/browser/net/system_network_context_manager.cc
 +++ b/chrome/browser/net/system_network_context_manager.cc
 @@ -917,13 +917,8 @@ void SystemNetworkContextManager::DisableQuic() {
@@ -209,20 +209,20 @@ index 2fc099db479ac4bd8bd28292e30c24090d50f498..06f49761d2a4fcc236ecaaf611e69361
 +      cookie_encryption_provider_.BindNewRemote();
  }
  
- void SystemNetworkContextManager::
+ void SystemNetworkContextManager::AddSSLConfigToNetworkContextParams(
 diff --git a/chrome/browser/net/system_network_context_manager.h b/chrome/browser/net/system_network_context_manager.h
-index c8bfb5752a1ffe42c9392522195c4385341376ce..4a2e9db46d3aedc18ff68e61d590bbc5e4c1d2b7 100644
+index 611833bce86135d792670a2cbfbfc661bcedf8dd..6d39b73f77d294ec21aa2d9c328e7f1fa9aad47d 100644
 --- a/chrome/browser/net/system_network_context_manager.h
 +++ b/chrome/browser/net/system_network_context_manager.h
-@@ -15,6 +15,7 @@
+@@ -14,6 +14,7 @@
+ #include "base/memory/raw_ptr.h"
  #include "base/memory/scoped_refptr.h"
- #include "chrome/browser/enterprise/encryption/cache_encryption_provider_impl.h"
  #include "chrome/browser/net/cert_verifier_service_time_updater.h"
 +#include "chrome/browser/net/cookie_encryption_provider_impl.h"
  #include "chrome/browser/net/proxy_config_monitor.h"
  #include "chrome/browser/net/stub_resolver_config_reader.h"
  #include "chrome/browser/ssl/ssl_config_service_manager.h"
-@@ -24,7 +25,6 @@
+@@ -23,7 +24,6 @@
  #include "mojo/public/cpp/bindings/pending_receiver.h"
  #include "mojo/public/cpp/bindings/remote.h"
  #include "services/cert_verifier/public/mojom/cert_verifier_service_factory.mojom-forward.h"
@@ -230,15 +230,15 @@ index c8bfb5752a1ffe42c9392522195c4385341376ce..4a2e9db46d3aedc18ff68e61d590bbc5
  #include "services/network/public/mojom/host_resolver.mojom-forward.h"
  #include "services/network/public/mojom/network_context.mojom.h"
  #include "services/network/public/mojom/network_service.mojom.h"
-@@ -309,7 +309,7 @@ class SystemNetworkContextManager {
+@@ -303,7 +303,7 @@ class SystemNetworkContextManager {
    GssapiLibraryLoadObserver gssapi_library_loader_observer_{this};
  #endif  // BUILDFLAG(IS_LINUX)
  
 -  std::unique_ptr<CookieEncryptionProviderImpl> cookie_encryption_provider_;
 +  CookieEncryptionProviderImpl cookie_encryption_provider_;
  
-   std::unique_ptr<enterprise_encryption::CacheEncryptionProviderImpl>
-       cache_encryption_provider_;
+   std::unique_ptr<CertVerifierServiceTimeUpdater> cert_verifier_time_updater_;
+ };
 diff --git a/components/cookie_config/BUILD.gn b/components/cookie_config/BUILD.gn
 index e348b0d1a59470c5cf153ae02e420b9dd6bd1892..a7a51003386fe7b62aaf5b7008c63acefd428942 100644
 --- a/components/cookie_config/BUILD.gn
