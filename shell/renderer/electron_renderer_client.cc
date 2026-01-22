@@ -8,7 +8,6 @@
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
-#include "base/containers/contains.h"
 #include "base/debug/stack_trace.h"
 #include "content/public/renderer/render_frame.h"
 #include "net/http/http_request_headers.h"
@@ -298,8 +297,8 @@ node::Environment* ElectronRendererClient::GetEnvironment(
       GetContext(render_frame->GetWebFrame(), v8::Isolate::GetCurrent());
   node::Environment* env = node::Environment::GetCurrent(context);
 
-  return base::Contains(environments_, env,
-                        [](auto const& item) { return item.get(); })
+  return std::ranges::contains(environments_, env,
+                               [](auto const& item) { return item.get(); })
              ? env
              : nullptr;
 }
