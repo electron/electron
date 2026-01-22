@@ -90,7 +90,7 @@ index e723573b371b489d4908c8dc8a3399d96031f983..bb68dde106578c73c514bd2a809fcaca
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index 506d6de5d48eadd34df1e9f35398a8756fe0d005..69da68b83140f1059a59bc860ec5e0ff32449fbd 100644
+index 506d6de5d48eadd34df1e9f35398a8756fe0d005..f56613267b5ecf08e5b5535144bc95791e1c6a4c 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 @@ -12893,5 +12893,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
@@ -100,7 +100,7 @@ index 506d6de5d48eadd34df1e9f35398a8756fe0d005..69da68b83140f1059a59bc860ec5e0ff
 +const CSSValue* ElectronCornerSmoothing::ParseSingleValue(
 +    CSSParserTokenStream& stream,
 +    const CSSParserContext& context,
-+    CSSParserLocalContext&) const {
++    CSSParserLocalContext& local_context) const {
 +  // Try to parse `system-ui` keyword first.
 +  if (auto* ident =
 +          css_parsing_utils::ConsumeIdent<CSSValueID::kSystemUi>(stream)) {
@@ -108,7 +108,7 @@ index 506d6de5d48eadd34df1e9f35398a8756fe0d005..69da68b83140f1059a59bc860ec5e0ff
 +  }
 +  // Try to parse as percent.
 +  return css_parsing_utils::ConsumePercent(
-+      stream, context, CSSPrimitiveValue::ValueRange::kNonNegative);
++      stream, context, local_context, CSSPrimitiveValue::ValueRange::kNonNegative);
 +}
 +
 +const CSSValue* ElectronCornerSmoothing::CSSValueFromComputedStyleInternal(
