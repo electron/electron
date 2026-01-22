@@ -12,6 +12,16 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (42.0)
+
+### Behavior Changed: Offscreen rendering will use `1.0` as default device scale factor.
+
+Previously, OSR used the primary display's device scale factor for rendering, which made the output frame size vary across users.
+Developers had to manually calculate the correct size using `screen.getPrimaryDisplay().scaleFactor`. We now provide an optional property
+`webPreferences.offscreen.deviceScaleFactor` to specify a custom value when creating an OSR window. At first, if the property is not set, it defaults
+to the primary display's scale factor (preserving the old behavior). Starting from Electron 42, the default will change to a constant value of `1.0`
+for more consistent output sizes.
+
 ## Planned Breaking API Changes (41.0)
 
 ### Behavior Changed: PDFs no longer create a separate WebContents
