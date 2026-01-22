@@ -150,6 +150,7 @@ void WebContentsPreferences::Clear() {
   v8_cache_options_ = blink::mojom::V8CacheOptions::kDefault;
   deprecated_paste_enabled_ = false;
   focus_on_navigation_ = true;
+  zoom_factor_ = std::nullopt;
 
 #if BUILDFLAG(IS_MAC)
   scroll_bounce_ = false;
@@ -260,7 +261,9 @@ void WebContentsPreferences::SetFromDictionary(
   web_preferences.Get(options::kSpellcheck, &spellcheck_);
 #endif
 
-  web_preferences.Get(options::kZoomFactor, &zoom_factor_);
+  double zoom_factor;
+  if (web_preferences.Get(options::kZoomFactor, &zoom_factor))
+    zoom_factor_ = zoom_factor;
 
   SaveLastPreferences();
 }

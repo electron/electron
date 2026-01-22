@@ -937,8 +937,8 @@ void WebContents::InitZoomController(content::WebContents* web_contents,
     zoom_controller_->SetDefaultZoomFactor(zoom_factor);
   } else {
     auto* prefs = WebContentsPreferences::From(web_contents);
-    if (prefs) {
-      zoom_controller_->SetDefaultZoomFactor(prefs->GetZoomFactorValue());
+    if (prefs && prefs->GetZoomFactor().has_value()) {
+      zoom_controller_->SetDefaultZoomFactor(prefs->GetZoomFactor().value());
     }
   }
 
