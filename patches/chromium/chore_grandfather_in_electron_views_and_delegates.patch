@@ -49,7 +49,7 @@ index b7d13fff1f53e2ce3e53d2d5e97a442627962cd8..295249a582c77b70abf78313439b0100
      // These existing cases are "grandfathered in", but there shouldn't be more.
      // See comments atop class.
 diff --git a/ui/views/widget/widget_delegate.h b/ui/views/widget/widget_delegate.h
-index d12858dfb35e009892fc7656dfe0823bff3f3b26..bfbcd7dad7689fb612d328ca6e66eca5e6b48107 100644
+index 8060008a22ed6aabb1821cf725caec500d80425c..f5685b0275793219f84bd1891195a29dab6fcb4a 100644
 --- a/ui/views/widget/widget_delegate.h
 +++ b/ui/views/widget/widget_delegate.h
 @@ -168,6 +168,12 @@ namespace crostini {

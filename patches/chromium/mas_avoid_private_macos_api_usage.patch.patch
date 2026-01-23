@@ -47,10 +47,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index d97f936a5c26dcf6b39c8ed50630f183d5083d5d..0719808270ddce00c8dd324eff72675278ae7aa7 100644
+index d68e37353cb4c5037b080f9a23dc252bbba2db4a..7b101305f8986cb5d1e8c0ac60f48ddc6fccf8eb 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1082,6 +1082,7 @@ component("base") {
+@@ -1081,6 +1081,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -505,7 +505,7 @@ index 020050de162705651b4eb8378880cd4eb017d46c..2d3554861a570271d6f9b9a2c8b1de53
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index a474e70cf3c10405b6f94f129f5a7312bb81fd73..00f6719bd80c8fdf31f910af3b93b5c6b192912c 100644
+index 3c7bfe98848cbb3a309737b84ff1c8d683a83ec7..84036a1c4635e7b5bca5ebe1ea5e303bd07b2ea0 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -21,6 +21,7 @@
@@ -646,7 +646,7 @@ index a474e70cf3c10405b6f94f129f5a7312bb81fd73..00f6719bd80c8fdf31f910af3b93b5c6
  }
  
  // On newer SDKs, _canMiniaturize respects NSWindowStyleMaskMiniaturizable in
-@@ -932,6 +955,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -944,6 +967,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
    // Since _removeFromGroups: is not documented it could go away in newer
    // versions of macOS. If the selector does not exist, DumpWithoutCrashing() so
    // we hear about the change.
@@ -654,7 +654,7 @@ index a474e70cf3c10405b6f94f129f5a7312bb81fd73..00f6719bd80c8fdf31f910af3b93b5c6
    if (![NSWindow instancesRespondToSelector:@selector(_removeFromGroups:)]) {
      base::debug::DumpWithoutCrashing();
      return;
-@@ -949,6 +973,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -961,6 +985,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
        [currentWindow _removeFromGroups:child];
      }
    }
@@ -688,7 +688,7 @@ index 414874d84338ff12e707d52bc82483957d74d8ef..849da439a046aea133946572c7996485
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 42eb89bca0a2ea0785d21b6a72e5ece3d5859c21..b3499d99f684b0463c07656633447b7c7dcdd7bb 100644
+index 3c60e4e519f36a098704d744e3659ad0b8083157..123118d66734295f7b00e807aa0437ac76ab3f57 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -389,6 +389,7 @@ viz_component("service") {
@@ -793,7 +793,7 @@ index 712d59e1f7d9681c122e6d05a8b65bccbfacb492..de24209bbd3cd4a530c6f32990a0f93a
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 93ee33b10227da37b9404865df15eae16de2f9a9..5bb4a91572634a5ec296b0ec704b331cec319540 100644
+index 58c529557527b8e3914a235a82d2d475e71d6315..23ae9220812480274d0347009d38343fc005ea6f 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -344,6 +344,7 @@ source_set("browser") {
@@ -926,10 +926,10 @@ index 605f250c1f94e4b12a6790bd9fb4623d1f1a9d45..d5cf3b48e1b35527ec69b49e375710cc
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index dc4ac3b6aa8d57ea8dd5357d3865c4d418942f87..5aaa899b8c92b473d3c6cf5d24da34ed74285ec1 100644
+index 8445214b66242eb53b2546a16078cc3d26cbdb99..8751ca6aba9caecec4d65f0059fb1b632c74ec61 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -325,6 +325,7 @@ target(link_target_type, "renderer") {
+@@ -324,6 +324,7 @@ target(link_target_type, "renderer") {
      "//ui/strings:auto_image_annotation_strings_grit",
      "//url",
      "//v8",
@@ -1008,10 +1008,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 9e0752536c531454b08cd0473958dbda4c3338cc..ed15bfd6bbfca8ed420115e42d3b0988aed15d65 100644
+index bb457cce37fa5eba33948a25d697882d44b9d81c..53511f295e7b4cef4b4a841b9293fb164f72f780 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -701,6 +701,7 @@ static_library("test_support") {
+@@ -702,6 +702,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -1019,7 +1019,7 @@ index 9e0752536c531454b08cd0473958dbda4c3338cc..ed15bfd6bbfca8ed420115e42d3b0988
    ]
  
    data_deps = [
-@@ -1176,6 +1177,8 @@ static_library("browsertest_support") {
+@@ -1177,6 +1178,8 @@ static_library("browsertest_support") {
    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
    # enable the diagnostic by removing this line.
    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -1028,7 +1028,7 @@ index 9e0752536c531454b08cd0473958dbda4c3338cc..ed15bfd6bbfca8ed420115e42d3b0988
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2063,6 +2066,7 @@ test("content_browsertests") {
+@@ -2066,6 +2069,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1036,7 +1036,7 @@ index 9e0752536c531454b08cd0473958dbda4c3338cc..ed15bfd6bbfca8ed420115e42d3b0988
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3406,6 +3410,7 @@ test("content_unittests") {
+@@ -3410,6 +3414,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1161,10 +1161,10 @@ index 9388ffac4f70746b04e533b51faf4f2d55ab3358..98f45dc973159b5823d8a0433dfd4bc6
  
    if (is_ios) {
 diff --git a/media/audio/apple/audio_low_latency_input.cc b/media/audio/apple/audio_low_latency_input.cc
-index 686c7e9b126260720424cd72d91a3f27002c5af8..e181ff1b909d928a3aa3a913a267d01f0fd647ec 100644
+index 1caead59d7cf767f14e4c4d26054511016a38bc3..8154e0447cc5f6c80d9f9af9c1e65f515b557102 100644
 --- a/media/audio/apple/audio_low_latency_input.cc
 +++ b/media/audio/apple/audio_low_latency_input.cc
-@@ -29,6 +29,7 @@
+@@ -30,6 +30,7 @@
  #include "base/strings/sys_string_conversions.h"
  #include "base/time/time.h"
  #include "base/trace_event/trace_event.h"
@@ -1172,7 +1172,7 @@ index 686c7e9b126260720424cd72d91a3f27002c5af8..e181ff1b909d928a3aa3a913a267d01f
  #include "media/audio/apple/audio_manager_apple.h"
  #include "media/audio/apple/scoped_audio_unit.h"
  #include "media/base/audio_bus.h"
-@@ -42,19 +43,23 @@
+@@ -43,19 +44,23 @@
  
  namespace {
  extern "C" {

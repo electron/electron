@@ -17,10 +17,10 @@ Revert "Reland "Port net::CookieCryptoDelegate to os_crypt async""
 This reverts commit f01b115c7e21a09cc762f65bf7fd9c6ea9d9d0f8.
 
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 587b492f828ccb3179f34102a99326c09dfb3306..7364814ecb4fd49e44db869b37655d5b4ea09306 100644
+index 464b75de67b41f3a947af2cb885e1aada0f5869d..0272712c00c1e59d79d83e4b610482c79addd52e 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -737,6 +737,8 @@ static_library("browser") {
+@@ -740,6 +740,8 @@ static_library("browser") {
      "net/chrome_report_sender.h",
      "net/convert_explicitly_allowed_network_ports_pref.cc",
      "net/convert_explicitly_allowed_network_ports_pref.h",
@@ -192,10 +192,10 @@ index b862afe7663111a6cbd342d33723942770bb0490..9dc46cedb109cea63bf71aa43fc7a2b6
  #include "services/network/public/mojom/network_context.mojom.h"
  #include "testing/gtest/include/gtest/gtest.h"
 diff --git a/chrome/browser/net/system_network_context_manager.cc b/chrome/browser/net/system_network_context_manager.cc
-index 2c6ab9af9f5eebaf68e4b78834b5ce7fdd31d000..04262d11bbf7cbf0d8ece06448df9606922f239b 100644
+index 0f49109d35e6af1416f402baaa1aed64311f0ace..cd669a8deae1687877a75a05fa9c4c7b52720246 100644
 --- a/chrome/browser/net/system_network_context_manager.cc
 +++ b/chrome/browser/net/system_network_context_manager.cc
-@@ -917,13 +917,8 @@ void SystemNetworkContextManager::DisableQuic() {
+@@ -919,13 +919,8 @@ void SystemNetworkContextManager::DisableQuic() {
  void SystemNetworkContextManager::
      AddCookieEncryptionManagerToNetworkContextParams(
          network::mojom::NetworkContextParams* network_context_params) {
