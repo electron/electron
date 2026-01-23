@@ -222,6 +222,9 @@ inline constexpr std::string_view kSpellcheck = "spellcheck";
 inline constexpr std::string_view kEnableDeprecatedPaste =
     "enableDeprecatedPaste";
 
+// Whether to focus the webContents on navigation.
+inline constexpr std::string_view kFocusOnNavigation = "focusOnNavigation";
+
 inline constexpr std::string_view kModal = "modal";
 
 }  // namespace options
