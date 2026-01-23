@@ -267,9 +267,13 @@ Returns `Buffer` - A [Buffer][buffer] that contains the image's `JPEG` encoded d
 
 * `options` Object (optional)
   * `scaleFactor` Number (optional) - Defaults to 1.0.
+  * `colorSpace` string (optional) - The target color space for the bitmap data.
+    Can be `srgb`, `display-p3`, or `source`. Defaults to `srgb`.
 
 Returns `Buffer` - A [Buffer][buffer] that contains a copy of the image's raw bitmap pixel
-data.
+data in BGRA format with premultiplied alpha values. The color space is normalized to sRGB
+by default to ensure consistent pixel values across different source images, regardless of
+their original color space (e.g., Display P3 on macOS).
 
 #### `image.toDataURL([options])`
 
