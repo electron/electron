@@ -401,7 +401,7 @@ describe('WebContentsView', () => {
 
   describe('focusOnNavigation webPreference', () => {
     it('focuses the webContents on navigation by default', async () => {
-      const w = new BaseWindow({ show: true });
+      const w = new BrowserWindow();
       await once(w, 'focus');
       const v = new WebContentsView();
       w.setContentView(v);
@@ -415,7 +415,7 @@ describe('WebContentsView', () => {
     });
 
     it('does not focus the webContents on navigation when focusOnNavigation is false', async () => {
-      const w = new BaseWindow({ show: true });
+      const w = new BrowserWindow();
       await once(w, 'focus');
       const v = new WebContentsView({
         webPreferences: {
