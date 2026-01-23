@@ -7,6 +7,8 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/flat_map.h"
+#include "base/containers/map_util.h"
 #include "base/memory/weak_ptr.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
@@ -15,7 +17,6 @@
 #include "mojo/public/cpp/system/simple_watcher.h"
 #include "net/base/net_errors.h"
 #include "shell/common/gin_helper/promise.h"
-#include "shell/common/key_weak_map.h"
 #include "shell/common/node_util.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
@@ -30,9 +31,11 @@ namespace {
 int g_next_id = 0;
 
 // Map that manages all the DataPipeHolder objects.
-KeyWeakMap<std::string>& AllDataPipeHolders() {
-  static base::NoDestructor<KeyWeakMap<std::string>> weak_map;
-  return *weak_map.get();
+[[nodiscard]] auto& AllDataPipeHolders() {
+  static base::NoDestructor<
+      base::flat_map<std::string, cppgc::WeakPersistent<DataPipeHolder>>>
+      weak_map;
+  return *weak_map;
 }
 
 // Utility class to read from data pipe.
@@ -181,25 +184,15 @@ DataPipeHolder* DataPipeHolder::Create(v8::Isolate* isolate,
                                        const network::DataElement& element) {
   auto* holder = cppgc::MakeGarbageCollected<DataPipeHolder>(
       isolate->GetCppHeap()->GetAllocationHandle(), element);
-  v8::Local<v8::Object> wrapper;
-  if (holder->GetWrapper(isolate).ToLocal(&wrapper)) {
-    AllDataPipeHolders().Set(isolate, holder->id(), wrapper);
-  }
+  AllDataPipeHolders().insert_or_assign(holder->id(), holder);
   return holder;
 }
 
 // static
 DataPipeHolder* DataPipeHolder::From(v8::Isolate* isolate,
-                                     const std::string& id) {
-  if (v8::MaybeLocal<v8::Object> obj = AllDataPipeHolders().Get(isolate, id);
-      !obj.IsEmpty()) {
-    if (DataPipeHolder* holder = nullptr;
-        gin::ConvertFromV8(isolate, obj.ToLocalChecked(), &holder)) {
-      return holder;
-    }
-  }
-
-  return {};
+                                     const std::string_view id) {
+  auto* found = base::FindOrNull(AllDataPipeHolders(), id);
+  return found ? found->Get() : nullptr;
 }
 
 }  // namespace electron::api

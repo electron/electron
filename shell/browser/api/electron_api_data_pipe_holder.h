@@ -24,7 +24,7 @@ class DataPipeHolder final : public gin::Wrappable<DataPipeHolder> {
 
   static DataPipeHolder* Create(v8::Isolate* isolate,
                                 const network::DataElement& element);
-  static DataPipeHolder* From(v8::Isolate* isolate, const std::string& id);
+  static DataPipeHolder* From(v8::Isolate* isolate, std::string_view id);
 
   // Make public for cppgc::MakeGarbageCollected.
   explicit DataPipeHolder(const network::DataElement& element);
