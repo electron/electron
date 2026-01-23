@@ -398,4 +398,38 @@ describe('WebContentsView', () => {
       v.setBorderRadius(100);
     });
   });
+
+  describe('focusOnNavigation webPreference', () => {
+    it('focuses the webContents on navigation by default', async () => {
+      const w = new BaseWindow({ show: true });
+      await once(w, 'focus');
+      const v = new WebContentsView();
+      w.setContentView(v);
+      await v.webContents.loadURL('about:blank');
+      v.webContents.openDevTools({ mode: 'detach' });
+      await once(v.webContents, 'devtools-opened');
+      v.webContents.devToolsWebContents!.focus();
+      expect(v.webContents.isFocused()).to.be.false();
+      await v.webContents.loadURL('data:text/html,<body>test</body>');
+      expect(v.webContents.isFocused()).to.be.true();
+    });
+
+    it('does not focus the webContents on navigation when focusOnNavigation is false', async () => {
+      const w = new BaseWindow({ show: true });
+      await once(w, 'focus');
+      const v = new WebContentsView({
+        webPreferences: {
+          focusOnNavigation: false
+        }
+      });
+      w.setContentView(v);
+      await v.webContents.loadURL('about:blank');
+      v.webContents.openDevTools({ mode: 'detach' });
+      await once(v.webContents, 'devtools-opened');
+      v.webContents.devToolsWebContents!.focus();
+      expect(v.webContents.isFocused()).to.be.false();
+      await v.webContents.loadURL('data:text/html,<body>test</body>');
+      expect(v.webContents.isFocused()).to.be.false();
+    });
+  });
 });
