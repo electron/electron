@@ -4,7 +4,7 @@ Date: Wed, 28 Jun 2023 21:11:40 +0900
 Subject: fix: harden blink::ScriptState::MaybeFrom
 
 NOTE: since https://chromium-review.googlesource.com/c/chromium/src/+/6973697
-the patch is only needed for 32-bit builds.
+the patch is only needed for 32-bit builds or builds where the V8 sandbox is disabled.
 
 This is needed as side effect of https://chromium-review.googlesource.com/c/chromium/src/+/4609446
 which now gets blink::ExecutionContext from blink::ScriptState
@@ -56,18 +56,18 @@ index cecf528475cb832ed1876381878eade582bc83d6..71308b2d963c2d083328aad6be356dc5
  
  enum EmbedderDataTag : uint16_t {
 diff --git a/third_party/blink/renderer/platform/bindings/script_state.cc b/third_party/blink/renderer/platform/bindings/script_state.cc
-index 8b6522c9299bef5ab766795b64a1ba30bc382a12..a714aeb8a62886bedb3820b33b49b1ebdb9c7cc0 100644
+index 8b6522c9299bef5ab766795b64a1ba30bc382a12..4615dc04a3814a096898a36c7bbeb30f960a8b4d 100644
 --- a/third_party/blink/renderer/platform/bindings/script_state.cc
 +++ b/third_party/blink/renderer/platform/bindings/script_state.cc
 @@ -14,6 +14,12 @@ namespace blink {
  
  ScriptState::CreateCallback ScriptState::s_create_callback_ = nullptr;
  
-+#if defined(ARCH_CPU_32_BITS)
++#if !defined(V8_ENABLE_SANDBOX)
 +int const ScriptState::kScriptStateTag = 0x6e6f64;
 +void* const ScriptState::kScriptStateTagPtr = const_cast<void*>(
 +    static_cast<const void*>(&ScriptState::kScriptStateTag));
-+#endif  // defined(ARCH_CPU_32_BITS)
++#endif  // !defined(V8_ENABLE_SANDBOX)
 +
  // static
  void ScriptState::SetCreateCallback(CreateCallback create_callback) {
@@ -76,10 +76,10 @@ index 8b6522c9299bef5ab766795b64a1ba30bc382a12..a714aeb8a62886bedb3820b33b49b1eb
    context_.SetWeak(this, &OnV8ContextCollectedCallback);
    context->SetAlignedPointerInEmbedderData(kV8ContextPerContextDataIndex, this,
                                             gin::kBlinkScriptState);
-+#if defined(ARCH_CPU_32_BITS)
++#if !defined(V8_ENABLE_SANDBOX)
 +  context->SetAlignedPointerInEmbedderData(
 +      kV8ContextPerContextDataTagIndex, ScriptState::kScriptStateTagPtr, v8::kEmbedderDataTypeTagDefault);
-+#endif  // defined(ARCH_CPU_32_BITS)
++#endif  // !defined(V8_ENABLE_SANDBOX)
    RendererResourceCoordinator::Get()->OnScriptStateCreated(this,
                                                             execution_context);
  }
@@ -87,15 +87,15 @@ index 8b6522c9299bef5ab766795b64a1ba30bc382a12..a714aeb8a62886bedb3820b33b49b1eb
    // Cut the reference from V8 context to ScriptState.
    GetContext()->SetAlignedPointerInEmbedderData(
        kV8ContextPerContextDataIndex, nullptr, gin::kBlinkScriptState);
-+#if defined(ARCH_CPU_32_BITS)
++#if !defined(V8_ENABLE_SANDBOX)
 +  GetContext()->SetAlignedPointerInEmbedderData(
 +      kV8ContextPerContextDataTagIndex, nullptr, v8::kEmbedderDataTypeTagDefault);
-+#endif  // defined(ARCH_CPU_32_BITS)
++#endif  // !defined(V8_ENABLE_SANDBOX)
    reference_from_v8_context_.Clear();
  
    // Cut the reference from ScriptState to V8 context.
 diff --git a/third_party/blink/renderer/platform/bindings/script_state.h b/third_party/blink/renderer/platform/bindings/script_state.h
-index 5ccdf26cead17031d510589b74288cbe79692779..bf3023d5305c05c5d92953b5bf5f655f964e5c28 100644
+index 5ccdf26cead17031d510589b74288cbe79692779..54ede003ebe0a46e624c9d67f7272b8898bbc83e 100644
 --- a/third_party/blink/renderer/platform/bindings/script_state.h
 +++ b/third_party/blink/renderer/platform/bindings/script_state.h
 @@ -6,6 +6,7 @@
@@ -110,7 +110,7 @@ index 5ccdf26cead17031d510589b74288cbe79692779..bf3023d5305c05c5d92953b5bf5f655f
          kV8ContextPerContextDataIndex) {
        return nullptr;
      }
-+#if defined(ARCH_CPU_32_BITS)
++#if !defined(V8_ENABLE_SANDBOX)
 +    if (context->GetNumberOfEmbedderDataFields() <=
 +        kV8ContextPerContextDataTagIndex ||
 +        context->GetAlignedPointerFromEmbedderData(
@@ -119,7 +119,7 @@ index 5ccdf26cead17031d510589b74288cbe79692779..bf3023d5305c05c5d92953b5bf5f655f
 +        ScriptState::kScriptStateTagPtr) {
 +      return nullptr;
 +    }
-+#endif   // defined(ARCH_CPU_32_BITS)
++#endif   // !defined(V8_ENABLE_SANDBOX)
      ScriptState* script_state =
          static_cast<ScriptState*>(context->GetAlignedPointerFromEmbedderData(
              isolate, kV8ContextPerContextDataIndex, gin::kBlinkScriptState));
@@ -127,13 +127,13 @@ index 5ccdf26cead17031d510589b74288cbe79692779..bf3023d5305c05c5d92953b5bf5f655f
        static_cast<int>(gin::kPerContextDataStartIndex) +
        static_cast<int>(gin::kEmbedderBlink);
  
-+#if defined(ARCH_CPU_32_BITS)
++#if !defined(V8_ENABLE_SANDBOX)
 +  static void* const kScriptStateTagPtr;
 +  static int const kScriptStateTag;
 +  static constexpr int kV8ContextPerContextDataTagIndex =
 +      static_cast<int>(gin::kPerContextDataStartIndex) +
 +      static_cast<int>(gin::kEmbedderBlinkTag);
-+#endif  // defined(ARCH_CPU_32_BITS)
++#endif  // !defined(V8_ENABLE_SANDBOX)
 +
    // For accessing information about the last script compilation via
    // internals.idl.
