@@ -1,0 +1,13 @@
+{
+  "name": "asar-pdf-download-test",
+  "version": "1.0.0",
+  "description": "Test application for ASAR PDF download handler",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "electron . --test-mode"
+  },
+  "devDependencies": {
+    "electron": "^latest"
+  }
+}

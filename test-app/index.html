@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ASAR PDF Download Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a9e;
+        }
+        .log {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+        .info {
+            color: blue;
+        }
+    </style>
+</head>
+<body>
+    <h1>ASAR PDF Download Handler Test</h1>
+    <p>This test application verifies that the ASAR PDF download handler works correctly.</p>
+
+    <div class="test-section">
+        <h3>Test 1: ASAR PDF Download</h3>
+        <p>This should trigger our custom handler, show a save dialog, and save the PDF.</p>
+        <button onclick="testAsarPdfDownload()">Download PDF from Mock ASAR</button>
+        <button onclick="testAsarPdfDownloadProgrammatic()">Programmatic ASAR PDF Download</button>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 2: Regular PDF Download (Control)</h3>
+        <p>This should use the default download behavior (not intercepted by our handler).</p>
+        <button onclick="testRegularPdfDownload()">Download Regular PDF</button>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 3: Non-PDF ASAR Download</h3>
+        <p>This should not be intercepted by our handler (not a PDF file).</p>
+        <button onclick="testAsarNonPdfDownload()">Download Non-PDF from ASAR</button>
+    </div>
+
+    <div class="test-section">
+        <h3>Test 4: Edge Cases</h3>
+        <p>Test various edge cases and error conditions.</p>
+        <button onclick="testNonExistentAsarPdf()">Non-existent ASAR PDF</button>
+        <button onclick="testMalformedAsarUrl()">Malformed ASAR URL</button>
+    </div>
+
+    <div class="test-section">
+        <h3>Console Log</h3>
+        <div id="log" class="log"></div>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        let mockPdfPath = '';
+
+        // Initialize mock PDF path
+        ipcRenderer.invoke('get-mock-pdf-path').then(path => {
+            mockPdfPath = path;
+            log(`Mock PDF created at: ${path}`, 'info');
+        });
+
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            logElement.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        // Test 1: ASAR PDF Download (Link Click)
+        function testAsarPdfDownload() {
+            log('Testing ASAR PDF download via link click...', 'info');
+            
+            if (!mockPdfPath) {
+                log('Mock PDF path not ready yet', 'error');
+                return;
+            }
+
+            // Create a download link and click it
+            const link = document.createElement('a');
+            link.href = `file://${mockPdfPath.replace(/\\/g, '/')}`;
+            link.download = 'test-asar-download.pdf';
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            
+            log(`Created download link: ${link.href}`, 'info');
+            link.click();
+            
+            document.body.removeChild(link);
+            log('Link clicked - should trigger will-download event', 'info');
+        }
+
+        // Test 1b: ASAR PDF Download (Programmatic)
+        function testAsarPdfDownloadProgrammatic() {
+            log('Testing ASAR PDF download via programmatic trigger...', 'info');
+            
+            if (!mockPdfPath) {
+                log('Mock PDF path not ready yet', 'error');
+                return;
+            }
+
+            const url = `file://${mockPdfPath.replace(/\\/g, '/')}`;
+            log(`Triggering programmatic download: ${url}`, 'info');
+            
+            ipcRenderer.invoke('trigger-download', url, 'programmatic-test.pdf')
+                .then(() => {
+                    log('Programmatic download triggered', 'success');
+                })
+                .catch(error => {
+                    log(`Programmatic download error: ${error.message}`, 'error');
+                });
+        }
+
+        // Test 2: Regular PDF Download
+        function testRegularPdfDownload() {
+            log('Testing regular PDF download (should not be intercepted)...', 'info');
+            
+            // Create a data URL with PDF content
+            const pdfDataUrl = 'data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2JqCjIgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9LaWRzIFszIDAgUl0KL0NvdW50IDEKPD4KZW5kb2JqCjMgMCBvYmoKPDwKL1R5cGUgL1BhZ2UKL1BhcmVudCAyIDAgUgovTWVkaWFCb3ggWzAgMCA2MTIgNzkyXQovQ29udGVudHMgNCAwIFIKPj4KZW5kb2JqCjQgMCBvYmoKPDwKL0xlbmd0aCA0NAo+PgpzdHJlYW0KQlQKL0YxIDEyIFRmCjcyIDcyMCBUZAooUmVndWxhciBQREYpIFRqCkVUCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDUKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAowMDAwMDAwMjA2IDAwMDAwIG4gCnRyYWlsZXIKPDwKL1NpemUgNQovUm9vdCAxIDAgUgo+PgpzdGFydHhyZWYKMjk5CiUlRU9G';
+            
+            const link = document.createElement('a');
+            link.href = pdfDataUrl;
+            link.download = 'regular-test.pdf';
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            
+            log(`Created regular PDF download link`, 'info');
+            link.click();
+            
+            document.body.removeChild(link);
+            log('Regular PDF link clicked - should use default download', 'info');
+        }
+
+        // Test 3: Non-PDF ASAR Download
+        function testAsarNonPdfDownload() {
+            log('Testing non-PDF ASAR download (should not be intercepted)...', 'info');
+            
+            if (!mockPdfPath) {
+                log('Mock PDF path not ready yet', 'error');
+                return;
+            }
+
+            // Change extension to .txt to test non-PDF handling
+            const txtUrl = mockPdfPath.replace('.pdf', '.txt').replace(/\\/g, '/');
+            
+            const link = document.createElement('a');
+            link.href = `file://${txtUrl}`;
+            link.download = 'test-asar-text.txt';
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            
+            log(`Created non-PDF ASAR download link: ${link.href}`, 'info');
+            link.click();
+            
+            document.body.removeChild(link);
+            log('Non-PDF ASAR link clicked - should use default download', 'info');
+        }
+
+        // Test 4a: Non-existent ASAR PDF
+        function testNonExistentAsarPdf() {
+            log('Testing non-existent ASAR PDF (should show error)...', 'info');
+            
+            const nonExistentUrl = 'file:///fake/path/app.asar/docs/nonexistent.pdf';
+            
+            const link = document.createElement('a');
+            link.href = nonExistentUrl;
+            link.download = 'nonexistent.pdf';
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            
+            log(`Created non-existent ASAR PDF link: ${link.href}`, 'info');
+            link.click();
+            
+            document.body.removeChild(link);
+            log('Non-existent ASAR PDF link clicked - should show error dialog', 'info');
+        }
+
+        // Test 4b: Malformed ASAR URL
+        function testMalformedAsarUrl() {
+            log('Testing malformed ASAR URL (should not be intercepted)...', 'info');
+            
+            const malformedUrl = 'file:///not-an-asar-path/document.pdf';
+            
+            const link = document.createElement('a');
+            link.href = malformedUrl;
+            link.download = 'malformed.pdf';
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            
+            log(`Created malformed URL link: ${link.href}`, 'info');
+            link.click();
+            
+            document.body.removeChild(link);
+            log('Malformed URL link clicked - should use default download', 'info');
+        }
+
+        // Listen for console messages from main process
+        window.addEventListener('DOMContentLoaded', () => {
+            log('ASAR PDF Download Test Application loaded', 'success');
+            log('Click the test buttons to verify the handler functionality', 'info');
+            log('Expected behavior:', 'info');
+            log('- ASAR PDF downloads should show Save As dialog', 'info');
+            log('- Regular downloads should work normally', 'info');
+            log('- Non-PDF ASAR downloads should work normally', 'info');
+            log('- Error cases should show error dialogs', 'info');
+        });
+
+        // Monitor for download events
+        let downloadCount = 0;
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            if (args[0] && args[0].includes('will-download')) {
+                downloadCount++;
+                log(`Download event #${downloadCount}: ${args.join(' ')}`, 'success');
+            }
+        };
+    </script>
+</body>
+</html>
