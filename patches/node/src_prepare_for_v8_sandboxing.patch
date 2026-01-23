@@ -1,0 +1,276 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: James M Snell <jasnell@gmail.com>
+Date: Sun, 18 May 2025 10:46:30 -0700
+Subject: src: prepare for v8 sandboxing
+
+PR-URL: https://github.com/nodejs/node/pull/58376
+Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
+Reviewed-By: Chengzhong Wu <legendecas@gmail.com>
+
+diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
+index f23cedf4f2449d8edc9a8de1b70332e75d693cdd..5ac2b1a83688fe99b13c37bf375ca6e22497dc18 100644
+--- a/src/crypto/crypto_dh.cc
++++ b/src/crypto/crypto_dh.cc
+@@ -22,6 +22,8 @@ using ncrypto::DHPointer;
+ using ncrypto::EVPKeyCtxPointer;
+ using ncrypto::EVPKeyPointer;
+ using v8::ArrayBuffer;
++using v8::BackingStoreInitializationMode;
++using v8::BackingStoreOnFailureMode;
+ using v8::ConstructorBehavior;
+ using v8::Context;
+ using v8::DontDelete;
+@@ -55,12 +57,27 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
+ 
+ namespace {
+ MaybeLocal<Value> DataPointerToBuffer(Environment* env, DataPointer&& data) {
++#ifdef V8_ENABLE_SANDBOX
++  auto backing = ArrayBuffer::NewBackingStore(
++      env->isolate(),
++      data.size(),
++      BackingStoreInitializationMode::kUninitialized,
++      BackingStoreOnFailureMode::kReturnNull);
++  if (!backing) {
++    THROW_ERR_MEMORY_ALLOCATION_FAILED(env);
++    return MaybeLocal<Value>();
++  }
++  if (data.size() > 0) {
++    memcpy(backing->Data(), data.get(), data.size());
++  }
++#else
+   auto backing = ArrayBuffer::NewBackingStore(
+       data.get(),
+       data.size(),
+       [](void* data, size_t len, void* ptr) { DataPointer free_me(data, len); },
+       nullptr);
+   data.release();
++#endif  // V8_ENABLE_SANDBOX
+ 
+   auto ab = ArrayBuffer::New(env->isolate(), std::move(backing));
+   return Buffer::New(env, ab, 0, ab->ByteLength()).FromMaybe(Local<Value>());
+diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
+index eab18ab9888e2f7c0757fefab80505d8c99dc742..7ecf810ea0f4106c7c44593dae1b0a3cf0673380 100644
+--- a/src/crypto/crypto_util.cc
++++ b/src/crypto/crypto_util.cc
+@@ -37,6 +37,8 @@ using ncrypto::SSLCtxPointer;
+ using ncrypto::SSLPointer;
+ using v8::ArrayBuffer;
+ using v8::BackingStore;
++using v8::BackingStoreInitializationMode;
++using v8::BackingStoreOnFailureMode;
+ using v8::BigInt;
+ using v8::Context;
+ using v8::Exception;
+@@ -359,34 +361,29 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
+   return *this;
+ }
+ 
+-std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(Environment* env) {
++std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(
++    Environment* env) {
+   // It's ok for allocated_data_ to be nullptr but
+   // only if size_ is zero.
+   CHECK_IMPLIES(size_ > 0, allocated_data_ != nullptr);
+-#if defined(V8_ENABLE_SANDBOX)
+-  // When V8 sandboxed pointers are enabled, we have to copy into the memory
+-  // cage. We still want to ensure we erase the data on free though, so
+-  // provide a custom deleter that calls OPENSSL_cleanse.
+-  if (!size())
+-    return ArrayBuffer::NewBackingStore(env->isolate(), 0);
+-  std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
+-  void* v8_data = allocator->Allocate(size());
+-  CHECK(v8_data);
+-  memcpy(v8_data, allocated_data_, size());
+-  OPENSSL_clear_free(allocated_data_, size());
++#ifdef V8_ENABLE_SANDBOX
++  // If the v8 sandbox is enabled, then all array buffers must be allocated
++  // via the isolate. External buffers are not allowed. So, instead of wrapping
++  // the allocated data we'll copy it instead.
++
++  // TODO(@jasnell): It would be nice to use an abstracted utility to do this
++  // branch instead of duplicating the V8_ENABLE_SANDBOX check each time.
+   std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
+-      v8_data,
++      env->isolate(),
+       size(),
+-      [](void* data, size_t length, void*) {
+-        OPENSSL_cleanse(data, length);
+-        std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
+-        allocator->Free(data, length);
+-      }, nullptr);
+-  CHECK(ptr);
+-  allocated_data_ = nullptr;
+-  data_ = nullptr;
+-  size_ = 0;
+-  return ptr;
++      BackingStoreInitializationMode::kUninitialized,
++      BackingStoreOnFailureMode::kReturnNull);
++  if (!ptr) {
++    THROW_ERR_MEMORY_ALLOCATION_FAILED(env);
++    return nullptr;
++  }
++  memcpy(ptr->Data(), allocated_data_, size());
++  OPENSSL_clear_free(allocated_data_, size_);
+ #else
+   std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
+       allocated_data_,
+@@ -394,12 +391,12 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(Environment* env
+       [](void* data, size_t length, void* deleter_data) {
+         OPENSSL_clear_free(deleter_data, length);
+       }, allocated_data_);
++#endif  // V8_ENABLE_SANDBOX
+   CHECK(ptr);
+   allocated_data_ = nullptr;
+   data_ = nullptr;
+   size_ = 0;
+   return ptr;
+-#endif  // defined(V8_ENABLE_SANDBOX)
+ }
+ 
+ Local<ArrayBuffer> ByteSource::ToArrayBuffer(Environment* env) {
+@@ -711,8 +708,19 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+ }
+ #else
+ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+-  CHECK(args[0]->IsUint32());
+   Environment* env = Environment::GetCurrent(args);
++#ifdef V8_ENABLE_SANDBOX
++  // The v8 sandbox is enabled, so we cannot use the secure heap because
++  // the sandbox requires that all array buffers be allocated via the isolate.
++  // That is fundamentally incompatible with the secure heap which allocates
++  // in openssl's secure heap area. Instead we'll just throw an error here.
++  //
++  // That said, we really shouldn't get here in the first place since the
++  // option to enable the secure heap is only available when the sandbox
++  // is disabled.
++  UNREACHABLE();
++#else
++  CHECK(args[0]->IsUint32());
+   uint32_t len = args[0].As<Uint32>()->Value();
+   void* data = OPENSSL_malloc(len);
+   if (data == nullptr) {
+@@ -730,6 +738,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+           data);
+   Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
+   args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
++#endif  // V8_ENABLE_SANDBOX
+ }
+ #endif  // defined(V8_ENABLE_SANDBOX)
+ 
+diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
+index 0a1a3c694f3f544ada62235ade6a03a9deadfede..0ac2379c0899f1080dd325d492496555c5e1c6af 100644
+--- a/src/crypto/crypto_x509.cc
++++ b/src/crypto/crypto_x509.cc
+@@ -29,6 +29,7 @@ using v8::ArrayBuffer;
+ using v8::ArrayBufferView;
+ using v8::BackingStore;
+ using v8::BackingStoreInitializationMode;
++using v8::BackingStoreOnFailureMode;
+ using v8::Boolean;
+ using v8::Context;
+ using v8::Date;
+@@ -168,18 +169,20 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, const BIOPointer& bio) {
+ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
+   if (bio == nullptr || !*bio) return {};
+   BUF_MEM* mem = *bio;
+-#if defined(V8_ENABLE_SANDBOX)
+-  std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
+-  void* v8_data = allocator->Allocate(mem->length);
+-  CHECK(v8_data);
+-  memcpy(v8_data, mem->data, mem->length);
+-  std::unique_ptr<v8::BackingStore> backing = ArrayBuffer::NewBackingStore(
+-      v8_data,
++#ifdef V8_ENABLE_SANDBOX
++  // If the v8 sandbox is enabled, then all array buffers must be allocated
++  // via the isolate. External buffers are not allowed. So, instead of wrapping
++  // the BIOPointer we'll copy it instead.
++  auto backing = ArrayBuffer::NewBackingStore(
++      env->isolate(),
+       mem->length,
+-      [](void* data, size_t length, void*) {
+-        std::unique_ptr<ArrayBuffer::Allocator> allocator(ArrayBuffer::Allocator::NewDefaultAllocator());
+-        allocator->Free(data, length);
+-      }, nullptr);
++      BackingStoreInitializationMode::kUninitialized,
++      BackingStoreOnFailureMode::kReturnNull);
++  if (!backing) {
++    THROW_ERR_MEMORY_ALLOCATION_FAILED(env);
++    return MaybeLocal<Value>();
++  }
++  memcpy(backing->Data(), mem->data, mem->length);
+ #else
+   auto backing = ArrayBuffer::NewBackingStore(
+       mem->data,
+@@ -188,8 +191,7 @@ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
+         BIOPointer free_me(static_cast<BIO*>(data));
+       },
+       bio->release());
+-#endif
+-
++#endif  // V8_ENABLE_SANDBOX
+   auto ab = ArrayBuffer::New(env->isolate(), std::move(backing));
+   Local<Value> ret;
+   if (!Buffer::New(env, ab, 0, ab->ByteLength()).ToLocal(&ret)) return {};
+diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
+index 7b2efa49468c0bed2f5935552addd3ab37d0a50b..97eb62047b6692d63deacf2e7346e85351337e85 100644
+--- a/src/js_native_api_v8.cc
++++ b/src/js_native_api_v8.cc
+@@ -114,7 +114,7 @@ napi_status NewExternalString(napi_env env,
+   CHECK_NEW_STRING_ARGS(env, str, length, result);
+ 
+   napi_status status;
+-#if defined(V8_ENABLE_SANDBOX)
++#ifdef V8_ENABLE_SANDBOX
+   status = create_api(env, str, length, result);
+   if (status == napi_ok) {
+     if (copied != nullptr) {
+diff --git a/src/node_api.cc b/src/node_api.cc
+index 2769997f0ede0e921fcb8826942609e497e5f9cb..d9b17780f6143f1c3f8488a20144376963e43fbc 100644
+--- a/src/node_api.cc
++++ b/src/node_api.cc
+@@ -1056,7 +1056,7 @@ napi_create_external_buffer(napi_env env,
+   NAPI_PREAMBLE(env);
+   CHECK_ARG(env, result);
+ 
+-#if defined(V8_ENABLE_SANDBOX)
++#ifdef V8_ENABLE_SANDBOX
+   return napi_set_last_error(env, napi_no_external_buffers_allowed);
+ #else
+   v8::Isolate* isolate = env->isolate;
+diff --git a/src/node_options.cc b/src/node_options.cc
+index b067685822dc056e446e1a9402a5a6cba86cc722..cf70816d3ebacee1aaec6d465e6ebdc5f1dec5c3 100644
+--- a/src/node_options.cc
++++ b/src/node_options.cc
+@@ -83,6 +83,8 @@ void PerProcessOptions::CheckOptions(std::vector<std::string>* errors,
+   }
+ 
+   // Any value less than 2 disables use of the secure heap.
++#ifndef V8_ENABLE_SANDBOX
++  // The secure heap is not supported when V8_ENABLE_SANDBOX is enabled.
+   if (secure_heap >= 2) {
+     if ((secure_heap & (secure_heap - 1)) != 0)
+       errors->push_back("--secure-heap must be a power of 2");
+@@ -95,6 +97,7 @@ void PerProcessOptions::CheckOptions(std::vector<std::string>* errors,
+     if ((secure_heap_min & (secure_heap_min - 1)) != 0)
+       errors->push_back("--secure-heap-min must be a power of 2");
+   }
++#endif  // V8_ENABLE_SANDBOX
+ #endif  // HAVE_OPENSSL
+ 
+   if (use_largepages != "off" &&
+@@ -1243,6 +1246,7 @@ PerProcessOptionsParser::PerProcessOptionsParser(
+             "force FIPS crypto (cannot be disabled)",
+             &PerProcessOptions::force_fips_crypto,
+             kAllowedInEnvvar);
++#ifndef V8_ENABLE_SANDBOX
+   AddOption("--secure-heap",
+             "total size of the OpenSSL secure heap",
+             &PerProcessOptions::secure_heap,
+@@ -1251,6 +1255,7 @@ PerProcessOptionsParser::PerProcessOptionsParser(
+             "minimum allocation size from the OpenSSL secure heap",
+             &PerProcessOptions::secure_heap_min,
+             kAllowedInEnvvar);
++#endif  // V8_ENABLE_SANDBOX
+ #endif  // HAVE_OPENSSL
+ #if OPENSSL_VERSION_MAJOR >= 3
+   AddOption("--openssl-legacy-provider",
