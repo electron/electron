@@ -111,11 +111,20 @@ bool WriteShortcutLink(const base::FilePath& shortcut_path,
                        gin_helper::Arguments* args) {
   base::win::ShortcutOperation operation =
       base::win::ShortcutOperation::kCreateAlways;
-  args->GetNext(&operation);
-  auto options = gin::Dictionary::CreateEmpty(args->isolate());
-  if (!args->GetNext(&options)) {
-    args->ThrowError();
-    return false;
+  gin::Dictionary options = gin::Dictionary::CreateEmpty(args->isolate());
+
+  v8::Local<v8::Value> peek = args->PeekNext();
+  if (peek->IsObject()) {
+    if (!args->GetNext(&options)) {
+      args->ThrowError();
+      return false;
+    }
+  } else {
+    args->GetNext(&operation);
+    if (!args->GetNext(&options)) {
+      args->ThrowError();
+      return false;
+    }
   }
 
   base::win::ShortcutProperties properties;
