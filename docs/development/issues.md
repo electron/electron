@@ -6,65 +6,60 @@
 * [Triaging a Bug Report](#triaging-a-bug-report)
 * [Resolving a Bug Report](#resolving-a-bug-report)
 
-## How to Contribute to Issues
+## How to contribute to addressing issues
 
-For any issue, there are fundamentally three ways an individual can
-contribute:
+### Asking for general help
 
-1. By opening the issue for discussion: If you believe that you have found
-   a new bug in Electron, you should report it by creating a new issue in
-   the [`electron/electron` issue tracker](https://github.com/electron/electron/issues).
-2. By helping to triage the issue: You can do this either by providing
-   assistive details (a reproducible test case that demonstrates a bug) or by
-   providing suggestions to address the issue.
-3. By helping to resolve the issue: This can be done by demonstrating
-   that the issue is not a bug or is fixed; but more often, by opening
-   a pull request that changes the source in `electron/electron` in a
-   concrete and reviewable manner.
+### Reporting a bug
 
-## Asking for General Help
+### Handling a bug report
 
-[The Electron website](https://www.electronjs.org/community) has a
-list of resources for getting programming help, reporting security issues,
-contributing, and more. Please use the issue tracker for bugs only!
+### Fixing a reported issue
 
-## Submitting a Bug Report
+There are three main ways anyone can contribute to resolving issues:
 
-To submit a bug report:
+**Opening an issue for discussion:**
+If you believe you have found a new bug in Electron, please report it by creating a new issue in the [electron/electron issue tracker](https://github.com/electron/electron/issues).
 
-When opening a new issue in the [`electron/electron` issue tracker](https://github.com/electron/electron/issues/new/choose), users
-will be presented with a template that should be filled in.
+You can also help prioritize issues by providing supporting information, such as a reproducible test case that demonstrates the problem, or by suggesting possible solutions.
 
-If you believe that you have found a bug in Electron, please fill out the template
-to the best of your ability.
+**Helping to resolve an issue:**
+This can be done by showing that the issue is not actually a bug or has already been fixed; however, most commonly it involves creating a pull request that introduces specific, reviewable changes to the [electron/electron](https://github.com/electron/electron) source code.
 
-The two most important pieces of information needed to evaluate the report are
-a description of the bug and a simple test case to recreate it. It is easier to fix
-a bug if it can be reproduced.
+---
 
-See [How to create a Minimal, Complete, and Verifiable example](https://stackoverflow.com/help/mcve).
+## Asking for general help
 
-## Triaging a Bug Report
+The Electron website provides a list of resources for getting programming help, reporting security issues, contributing to development, and more.
+Please use the issue tracker **only** for reporting bugs.
 
-It's common for open issues to involve discussion. Some contributors may
-have differing opinions, including whether the behavior is a bug or feature.
-This discussion is part of the process and should be kept focused, helpful,
-and professional.
+---
 
-Terse responses that provide neither additional context nor supporting detail
-are not helpful or professional. To many, such responses are annoying and
-unfriendly.
+## Reporting a bug
 
-Contributors are encouraged to solve issues collaboratively and help one
-another make progress. If you encounter an issue that you feel is invalid, or
-which contains incorrect information, explain _why_ you feel that way with
-additional supporting context, and be willing to be convinced that you may
-be wrong. By doing so, we can often reach the correct outcome faster.
+To report a bug:
 
-## Resolving a Bug Report
+When creating a new issue in the [electron/electron issue tracker](https://github.com/electron/electron/issues), you will be presented with a template that must be filled out.
 
-Most issues are resolved by opening a pull request. The process for opening and
-reviewing a pull request is similar to that of opening and triaging issues, but
-carries with it a necessary review and approval workflow that ensures that the
-proposed changes meet the minimal quality and functional guidelines of the
-Electron project.
+If you believe you have discovered a bug in Electron, please complete the template and include as much relevant information as possible.
+
+The two most important pieces of information for evaluating a bug report are a clear description of the problem and a simple test case that reproduces it. Bugs are much easier to fix when they can be reproduced.
+
+See:
+[How to create a minimal, complete, and verifiable example](https://stackoverflow.com/help/minimal-reproducible-example).
+
+---
+
+## Handling a bug report
+
+Discussion on open issues is normal. Contributors may have differing opinions, including whether certain behavior is a bug or an intended feature. These discussions are part of the process and should remain focused, constructive, and professional.
+
+Short responses that lack context or supporting details are generally not helpful or professional. Many people find such replies frustrating or unfriendly.
+
+Contributors are encouraged to work together and help each other move forward. If you encounter an issue that you believe is incorrect or contains inaccurate information, explain why you think so and provide supporting evidence. Be open to being corrected as well — this often helps reach the correct outcome more quickly.
+
+---
+
+## Fixing a reported issue
+
+Most issues are resolved by creating a pull request. The process of creating and reviewing a pull request is similar to filing and triaging issues, but it includes the necessary review and approval workflow to ensure that proposed changes meet the Electron project’s minimum quality and functionality requirements.
