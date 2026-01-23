@@ -23,6 +23,7 @@ index 573bcb2e56068a2ade6d8ab28964b077487874fd..41759b87e1aec4ec125560b9a52828fb
 +  kElectronMenu,                        // electron::api::Menu
 +  kElectronNetLog,                      // electron::api::NetLog
 +  kElectronPowerSaveBlocker,            // electron::api::PowerSaveBlocker
++  kElectronPowerMonitor,                // electron::api::PowerMonitor
 +  kElectronReplyChannel,                // gin_helper::internal::ReplyChannel
 +  kElectronScreen,                      // electron::api::Screen
 +  kElectronSession,                     // electron::api::Session
