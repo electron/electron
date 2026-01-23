@@ -12,7 +12,7 @@ import * as https from 'node:https';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { defer, ifit, listen } from './lib/spec-helpers';
+import { defer, ifit, listen, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('session module', () => {
@@ -846,6 +846,110 @@ describe('session module', () => {
       });
       const w = new BrowserWindow({ show: false });
       w.loadURL(url);
+    });
+  });
+
+  describe('ses.getBlobData() (gc)', () => {
+    const scheme = 'cors-blob';
+    const protocol = session.defaultSession.protocol;
+    const v8Util = process._linkedBinding('electron_common_v8_util');
+
+    const waitForBlobDataRejection = (uuid: string) => waitUntil(async () => {
+      const attempt = session.defaultSession.getBlobData(uuid)
+        .then(() => false)
+        .catch(error => String(error).includes('Could not get blob data handle'));
+      const deadline = setTimeout(1000).then(() => false);
+      const rejected = await Promise.race([attempt, deadline]);
+      return rejected;
+    });
+
+    const waitForGarbageCollection = (weak: WeakRef<object>) => waitUntil(() => {
+      v8Util.requestGarbageCollectionForTesting();
+      v8Util.runUntilIdle();
+      return weak.deref() === undefined;
+    });
+
+    const makeContent = (url: string, postData: string) => `<html>
+                       <script>
+                       let fd = new FormData();
+                       fd.append('file', new Blob(['${postData}'], {type:'application/json'}));
+                       fetch('${url}', {method:'POST', body: fd });
+                       </script>
+                       </html>`;
+
+    const registerPostHandler = (
+      scheme: string,
+      content: string,
+      onDataPipe: (dataPipe: unknown) => void
+    ) => new Promise<{ uuid: string }>((resolve, reject) => {
+      protocol.registerStringProtocol(scheme, (request, callback) => {
+        try {
+          if (request.method === 'GET') {
+            callback({ data: content, mimeType: 'text/html' });
+          } else if (request.method === 'POST') {
+            const uploadData = request.uploadData as any;
+            const uuid: string = uploadData[1].blobUUID;
+            const dataPipe = uploadData[1].dataPipe;
+            expect(dataPipe).to.be.ok();
+            onDataPipe(dataPipe);
+            resolve({ uuid });
+            callback('');
+          }
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+
+    afterEach(closeAllWindows);
+
+    it('keeps blob data alive while wrapper is referenced', async () => {
+      const url = `${scheme}://gc-alive-${Date.now()}`;
+      const postData = 'payload';
+      const content = makeContent(url, postData);
+
+      let heldDataPipe: unknown = null;
+      const postInfo = registerPostHandler(scheme, content, dataPipe => {
+        heldDataPipe = dataPipe;
+      });
+      try {
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL(url);
+
+        const { uuid } = await postInfo;
+        v8Util.requestGarbageCollectionForTesting();
+
+        const result = await session.defaultSession.getBlobData(uuid);
+        expect(result.toString()).to.equal(postData);
+        expect(heldDataPipe).to.be.ok();
+      } finally {
+        await protocol.unregisterProtocol(scheme);
+      }
+    });
+
+    it('rejects after wrapper is collected', async () => {
+      const url = `${scheme}://gc-released-${Date.now()}`;
+      const postData = 'payload';
+      const content = makeContent(url, postData);
+
+      let heldDataPipe: unknown = null;
+      const postInfo = registerPostHandler(scheme, content, dataPipe => {
+        heldDataPipe = dataPipe;
+      });
+      try {
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL(url);
+
+        const { uuid } = await postInfo;
+        expect(heldDataPipe).to.be.ok();
+        const weak = new WeakRef(heldDataPipe as object);
+        heldDataPipe = null;
+
+        await waitForGarbageCollection(weak);
+        await waitForBlobDataRejection(uuid);
+      } finally {
+        await protocol.unregisterProtocol(scheme);
+      }
     });
   });
 

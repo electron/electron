@@ -1044,15 +1044,13 @@ bool Session::IsPersistent() {
 
 v8::Local<v8::Promise> Session::GetBlobData(v8::Isolate* isolate,
                                             const std::string& uuid) {
-  gin_helper::Handle<DataPipeHolder> holder =
-      DataPipeHolder::From(isolate, uuid);
-  if (holder.IsEmpty()) {
-    gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
-    promise.RejectWithErrorMessage("Could not get blob data handle");
-    return promise.GetHandle();
+  if (DataPipeHolder* holder = DataPipeHolder::From(isolate, uuid)) {
+    return holder->ReadAll(isolate);
   }
 
-  return holder->ReadAll(isolate);
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+  promise.RejectWithErrorMessage("Could not get blob data handle");
+  return promise.GetHandle();
 }
 
 void Session::DownloadURL(const GURL& url, gin::Arguments* args) {
