@@ -47,6 +47,7 @@ permissions: {}
 
 jobs:
   setup:
+    if: github.repository == 'electron/electron'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -426,7 +427,7 @@ jobs:
     permissions:
       contents: read
     needs: [docs-only, macos-x64, macos-arm64, linux-x64, linux-x64-asan, linux-arm, linux-arm64, windows-x64, windows-x86, windows-arm64]
-    if: always() && !contains(needs.*.result, 'failure')
+    if: always() && github.repository == 'electron/electron' && !contains(needs.*.result, 'failure')
     steps: 
     - name: GitHub Actions Jobs Done
       run: |
