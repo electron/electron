@@ -31,16 +31,45 @@ jobs:
           else
             echo "Not a release branch: $BRANCH_NAME"
           fi
+      - name: Determine Unsupported Major Version
+        id: determine-unsupported-major
+        if: ${{ steps.check-major-version.outputs.MAJOR }}
+        env:
+          MAJOR: ${{ steps.check-major-version.outputs.MAJOR }}
+        run: |
+          # Fetch the release schedule
+          SCHEDULE=$(curl -s https://releases.electronjs.org/schedule.json)
+
+          # Get the stableDate for the current major version
+          STABLE_DATE=$(echo "$SCHEDULE" | jq -r --arg major "${MAJOR}.0.0" '.[] | select(.version == $major) | .stableDate')
+
+          if [[ -z "$STABLE_DATE" || "$STABLE_DATE" == "null" ]]; then
+            echo "Could not find stableDate for version $MAJOR"
+            exit 1
+          fi
+
+          # Find the oldest version where eolDate >= stableDate of the new major
+          # This gives us the oldest supported version when the new major goes stable
+          UNSUPPORTED_MAJOR=$(echo "$SCHEDULE" | jq -r --arg stableDate "$STABLE_DATE" '
+            [.[] | select(.eolDate != null and .eolDate >= $stableDate)] | sort_by(.version | split(".")[0] | tonumber) | first | .version | split(".")[0]
+          ')
+
+          if [[ -z "$UNSUPPORTED_MAJOR" || "$UNSUPPORTED_MAJOR" == "null" ]]; then
+            echo "Could not determine oldest supported version"
+            exit 1
+          fi
+
+          echo "SCHEDULE=$SCHEDULE" >> "$GITHUB_OUTPUT"
+          echo "UNSUPPORTED_MAJOR=$UNSUPPORTED_MAJOR" >> "$GITHUB_OUTPUT"
       - name: New Release Branch Tasks
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: electron/electron
           MAJOR: ${{ steps.check-major-version.outputs.MAJOR }}
-          NUM_SUPPORTED_VERSIONS: 3
+          UNSUPPORTED_MAJOR: ${{ steps.determine-unsupported-major.outputs.UNSUPPORTED_MAJOR }}
         run: |
           PREVIOUS_MAJOR=$((MAJOR - 1))
-          UNSUPPORTED_MAJOR=$((MAJOR - NUM_SUPPORTED_VERSIONS - 1))
 
           # Create new labels
           gh label create $MAJOR-x-y --color 8d9ee8 || true
@@ -77,11 +106,35 @@ jobs:
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         id: generate-project-metadata
+        env:
+          MAJOR: ${{ steps.check-major-version.outputs.MAJOR }}
+          UNSUPPORTED_MAJOR: ${{ steps.determine-unsupported-major.outputs.UNSUPPORTED_MAJOR }}
+          SCHEDULE: ${{ steps.determine-unsupported-major.outputs.SCHEDULE }}
         with:
           script: |
-            const major = ${{ steps.check-major-version.outputs.MAJOR }}
+            const schedule = JSON.parse(process.env.SCHEDULE)
+
+            const major = parseInt(process.env.MAJOR)
             const nextMajor = major + 1
             const prevMajor = major - 1
+
+            const { betaDate, stableDate } = schedule.find(v => v.version === `${major}.0.0`)
+
+            const betaPrepWeek = new Date(betaDate)
+            betaPrepWeek.setDate(betaPrepWeek.getDate() - 8)
+            const betaPrepWeekEnd = new Date(betaPrepWeek)
+            betaPrepWeekEnd.setDate(betaPrepWeekEnd.getDate() + 4)
+
+            const stablePrepWeek = new Date(stableDate)
+            stablePrepWeek.setDate(stablePrepWeek.getDate() - 8)
+            const stablePrepWeekEnd = new Date(stablePrepWeek)
+            stablePrepWeekEnd.setDate(stablePrepWeekEnd.getDate() + 4)
+
+            const stableWeek = new Date(stableDate)
+            stableWeek.setDate(stableWeek.getDate() - 1)
+
+            const nextAlphaDate = new Date(stableDate)
+            nextAlphaDate.setDate(nextAlphaDate.getDate() + 2)
 
             core.setOutput("major", major)
             core.setOutput("next-major", nextMajor)
@@ -91,6 +144,15 @@ jobs:
                 major,
                 "next-major": nextMajor,
                 "prev-major": prevMajor,
+                "ending-support-major": parseInt(process.env.UNSUPPORTED_MAJOR),
+                "beta-date": betaDate,
+                "beta-prep-week": betaPrepWeek.toISOString().split('T')[0],
+                "beta-prep-week-end": betaPrepWeekEnd.toISOString().split('T')[0],
+                "stable-week": stableWeek.toISOString().split('T')[0],
+                "stable-prep-week": stablePrepWeek.toISOString().split('T')[0],
+                "stable-prep-week-end": stablePrepWeekEnd.toISOString().split('T')[0],
+                "stable-date": stableDate,
+                "next-alpha-date": nextAlphaDate.toISOString().split('T')[0],
             }))
       - name: Create Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
