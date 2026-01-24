@@ -48,7 +48,8 @@ class NativeWindowViews : public NativeWindow,
                           private views::WidgetObserver,
                           private ui::EventHandler {
  public:
-  NativeWindowViews(const gin_helper::Dictionary& options,
+  NativeWindowViews(int32_t base_window_id,
+                    const gin_helper::Dictionary& options,
                     NativeWindow* parent);
   ~NativeWindowViews() override;
 
