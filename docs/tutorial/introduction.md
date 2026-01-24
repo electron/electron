@@ -1,76 +1,172 @@
----
-title: 'Introduction'
-description: 'Welcome to the Electron documentation! If this is your first time developing an Electron app, read through this Getting Started section to get familiar with the basics. Otherwise, feel free to explore our guides and API documentation!'
-slug: /latest/
-hide_title: false
----
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rechner</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; touch-action: none; }
+        body { background: #000; font-family: -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
 
-# What is Electron?
+        /* RECHNER */
+        #calc { width: 100%; max-width: 350px; padding: 20px; }
+        #screen { width: 100%; height: 100px; color: white; text-align: right; font-size: 60px; padding: 10px; display: flex; align-items: flex-end; justify-content: flex-end; overflow: hidden; }
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        button { height: 70px; border-radius: 50%; border: none; font-size: 26px; cursor: pointer; color: white; background: #333; }
+        .op { background: #ff9f0a; }
+        .spec { background: #a5a5a5; color: black; }
+        button:active { filter: brightness(1.5); }
 
-Electron is a framework for building desktop applications using JavaScript,
-HTML, and CSS. By embedding [Chromium][chromium] and [Node.js][node] into its
-binary, Electron allows you to maintain one JavaScript codebase and create
-cross-platform apps that work on Windows, macOS, and Linux — no native development
-experience required.
+        /* GAME */
+        #game-box { display: none; width: 100vw; height: 100vh; background: #050510; position: fixed; top:0; left:0; }
+        canvas { width: 100%; height: 100%; display: block; }
+        
+        #back-btn { position: absolute; top: 25px; left: 20px; width: 45px; height: 45px; background: rgba(255,255,255,0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center; color: white; font-size: 24px; z-index: 100; border: 1px solid rgba(255,255,255,0.2); }
+        #ui { position: absolute; top: 30px; width: 100%; text-align: center; color: #00ffcc; font-family: monospace; font-size: 22px; pointer-events: none; }
+        
+        /* GAME OVER SCREEN */
+        #game-over { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; background: rgba(0,0,0,0.8); padding: 30px; border-radius: 20px; border: 2px solid #ff0066; z-index: 200; }
+        .btn-restart { background: #ff0066; color: white; border: none; padding: 15px 30px; border-radius: 10px; font-size: 20px; margin-top: 15px; cursor: pointer; }
 
-## Getting started
+        .controls { position: absolute; bottom: 40px; width: 100%; display: flex; justify-content: center; gap: 40px; }
+        .btn-game { width: 85px; height: 85px; background: rgba(0, 255, 204, 0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 30px; color: #00ffcc; border: 2px solid #00ffcc; }
+    </style>
+</head>
+<body>
 
-We recommend you to start with the [tutorial][], which guides you through the
-process of developing an Electron app and distributing it to users.
-The [examples][] and [API documentation][] are also good places to browse around
-and discover new things.
+    <div id="calc">
+        <div id="screen">0</div>
+        <div class="grid">
+            <button class="spec" onclick="clr()">C</button><button class="spec" onclick="add('(')">(</button><button class="spec" onclick="add(')')">)</button><button class="op" onclick="add('/')">÷</button>
+            <button class="num" onclick="add('7')">7</button><button class="num" onclick="add('8')">8</button><button class="num" onclick="add('9')">9</button><button class="op" onclick="add('*')">×</button>
+            <button class="num" onclick="add('4')">4</button><button class="num" onclick="add('5')">5</button><button class="num" onclick="add('6')">6</button><button class="op" onclick="add('-')">-</button>
+            <button class="num" onclick="add('1')">1</button><button class="num" onclick="add('2')">2</button><button class="num" onclick="add('3')">3</button><button class="op" onclick="add('+')">+</button>
+            <button class="num" style="grid-column: span 2; width: 155px; border-radius: 40px;" onclick="add('0')">0</button><button class="num" onclick="add('.')">,</button><button class="op" onclick="check()">=</button>
+        </div>
+    </div>
 
-## Running examples with Electron Fiddle
+    <div id="game-box">
+        <div id="back-btn" onclick="exitGame()">✕</div>
+        <div id="ui">DISTANZ: <span id="score">0</span>m</div>
+        
+        <div id="game-over">
+            <h1>CRASH!</h1>
+            <p id="final-score">Score: 0</p>
+            <button class="btn-restart" onclick="resetGame()">Nochmal</button>
+        </div>
 
-[Electron Fiddle][fiddle] is a sandbox app written with Electron and supported by
-Electron's maintainers. We highly recommend installing it as a learning tool to
-experiment with Electron's APIs or to prototype features during development.
+        <canvas id="raceCanvas"></canvas>
+        <div class="controls">
+            <div class="btn-game" id="lBtn">◀</div>
+            <div class="btn-game" id="rBtn">▶</div>
+        </div>
+    </div>
 
-Fiddle also integrates nicely with our documentation. When browsing through examples
-in our tutorials, you'll frequently see an "Open in Electron Fiddle" button underneath
-a code block. If you have Fiddle installed, this button will open a
-`fiddle.electronjs.org` link that will automatically load the example into Fiddle,
-no copy-pasting required.
+    <script>
+        let expr = "";
+        const scr = document.getElementById("screen");
+        let gameActive = false;
+        let isGameOver = false;
+        let animationId;
+        let objects = [];
+        let score = 0;
+        let speed = 4;
+        let kartX = 0;
 
-```fiddle docs/fiddles/quick-start
-```
+        function add(v) { if(expr === "0") expr = ""; expr += v; scr.innerText = expr.replace(/\*/g,'×').replace(/\//g,'÷') || "0"; }
+        function clr() { expr = ""; scr.innerText = "0"; }
+        
+        function check() {
+            if (expr === "76") { startGame(); return; }
+            try { scr.innerText = eval(expr) || "0"; expr = scr.innerText; } catch { scr.innerText = "Error"; expr = ""; }
+        }
 
-## What is in the docs?
+        function startGame() {
+            document.getElementById("calc").style.display="none"; 
+            document.getElementById("game-box").style.display="block"; 
+            resetGame();
+        }
 
-All the official documentation is available from the sidebar. These
-are the different categories and what you can expect on each one:
+        function exitGame() {
+            gameActive = false;
+            cancelAnimationFrame(animationId);
+            document.getElementById("game-box").style.display="none"; 
+            document.getElementById("calc").style.display="block"; 
+            clr();
+        }
 
-- **Tutorial**: An end-to-end guide on how to create and publish your first Electron
-  application.
-- **Processes in Electron**: In-depth reference on Electron processes and how to work with them.
-- **Best Practices**: Important checklists to keep in mind when developing an Electron app.
-- **Examples**: Quick references to add features to your Electron app.
-- **Development**: Miscellaneous development guides.
-- **Distribution**: Learn how to distribute your app to end users.
-- **Testing And Debugging**: How to debug JavaScript, write tests, and other tools used
-  to create quality Electron applications.
-- **References**: Useful links to better understand how the Electron project works
-  and is organized.
-- **Contributing**: Compiling Electron and making contributions can be daunting.
-  We try to make it easier in this section.
+        function resetGame() {
+            gameActive = true;
+            isGameOver = false;
+            document.getElementById("game-over").style.display = "none";
+            objects = [];
+            score = 0;
+            speed = 4;
+            const canvas = document.getElementById("raceCanvas");
+            kartX = canvas.width / 2;
+            if(!animationId) startRace();
+        }
 
-## Getting help
+        function startRace() {
+            const canvas = document.getElementById("raceCanvas");
+            const ctx = canvas.getContext("2d");
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
 
-Are you getting stuck anywhere? Here are a few links to places to look:
+            let moveL = false, moveR = false;
+            document.getElementById("lBtn").onpointerdown = (e) => { e.preventDefault(); moveL = true; };
+            document.getElementById("lBtn").onpointerup = () => moveL = false;
+            document.getElementById("rBtn").onpointerdown = (e) => { e.preventDefault(); moveR = true; };
+            document.getElementById("rBtn").onpointerup = () => moveR = false;
 
-- If you need help with developing your app, our [community Discord server][discord]
-  is a great place to get advice from other Electron app developers.
-- If you suspect you're running into a bug with the `electron` package, please check
-  the [GitHub issue tracker][issue-tracker] to see if any existing issues match your
-  problem. If not, feel free to fill out our bug report template and submit a new issue.
+            function draw() {
+                if (!gameActive) return;
 
-<!-- Links -->
+                ctx.fillStyle = "#050510"; ctx.fillRect(0,0, canvas.width, canvas.height);
+                
+                // Straße
+                ctx.fillStyle = "#1a1a2e";
+                ctx.beginPath();
+                ctx.moveTo(canvas.width*0.45, canvas.height*0.5);
+                ctx.lineTo(canvas.width*0.55, canvas.height*0.5);
+                ctx.lineTo(canvas.width * 1.2, canvas.height);
+                ctx.lineTo(-canvas.width * 0.2, canvas.height);
+                ctx.fill();
 
-[tutorial]: tutorial-1-prerequisites.md
-[api documentation]: ../api/app.md
-[chromium]: https://www.chromium.org/
-[discord]: https://discord.gg/electronjs
-[examples]: examples.md
-[fiddle]: https://www.electronjs.org/fiddle
-[issue-tracker]: https://github.com/electron/electron/issues
-[node]: https://nodejs.org/
+                if(!isGameOver) {
+                    if(moveL && kartX > 40) kartX -= 6;
+                    if(moveR && kartX < canvas.width - 40) kartX += 6;
+                    score += 0.1;
+                    if(Math.random() < 0.03) objects.push({ x: canvas.width/2 + (Math.random()-0.5)*50, y: canvas.height*0.5, s: 2 });
+                }
+
+                // Spieler
+                ctx.fillStyle = "#ff0066";
+                ctx.fillRect(kartX - 25, canvas.height - 140, 50, 80);
+
+                for(let i = objects.length - 1; i >= 0; i--) {
+                    let o = objects[i];
+                    if(!isGameOver) {
+                        o.y += speed; o.s += 0.8;
+                        o.x += (o.x - canvas.width/2) * 0.07;
+                    }
+
+                    ctx.fillStyle = "#00ffcc";
+                    ctx.fillRect(o.x - o.s/2, o.y, o.s, o.s);
+
+                    if(!isGameOver && o.y > canvas.height - 160 && o.y < canvas.height - 60 && Math.abs(o.x - kartX) < (o.s/2 + 25)) {
+                        isGameOver = true;
+                        document.getElementById("game-over").style.display = "block";
+                        document.getElementById("final-score").innerText = "Score: " + Math.floor(score);
+                    }
+                    if(o.y > canvas.height) objects.splice(i, 1);
+                }
+
+                document.getElementById("score").innerText = Math.floor(score);
+                animationId = requestAnimationFrame(draw);
+            }
+            draw();
+        }
+    </script>
+</body>
+</html>
