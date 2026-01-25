@@ -6,10 +6,10 @@ Subject: refactor: patch electron PermissionTypes into blink
 6387077: [PermissionOptions] Generalize PermissionRequestDescription | https://chromium-review.googlesource.com/c/chromium/src/+/6387077
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index d6bab225f22d0c32ce4361a1a879c62faf9cee81..142c4be5f2efbc0d8e19aa29a848ea948bfba3cd 100644
+index 951682514323db7325496201f82716516e3e87f9..2d2358e1438013ba79963a692b45030692cefdca 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -553,9 +553,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -554,9 +554,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::LOCAL_NETWORK;
      case PermissionType::LOOPBACK_NETWORK:
        return ContentSettingsType::LOOPBACK_NETWORK;
@@ -182,7 +182,7 @@ index 38c20e7f0c597815ce5ee3333f12183ac1e18c62..7bce804a8ed1c8a2f2ac18524c6317db
    MIN_VALUE = MIDI_SYSEX,
  };
 diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
-index 81c4f0bdc89f972464d13f06c7907e5aabff4043..cfeb183f2c3bdf75d90f5ad19bc7254edc9d4d31 100644
+index cd200c6aadb304e440df65532a9ef86f0aef4fa7..88448c95da18953402b6de44676edfb19f657c05 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
 @@ -47,8 +47,16 @@ enum PermissionName {

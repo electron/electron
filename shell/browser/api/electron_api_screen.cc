@@ -9,12 +9,10 @@
 
 #include "base/functional/bind.h"
 #include "shell/browser/browser.h"
-#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/native_window_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "ui/display/display.h"
@@ -23,6 +21,8 @@
 #include "ui/gfx/geometry/point_conversions.h"
 #include "ui/gfx/geometry/point_f.h"
 #include "ui/gfx/geometry/vector2d_conversions.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "ui/display/win/screen_win.h"
@@ -38,7 +38,8 @@
 
 namespace electron::api {
 
-gin::DeprecatedWrapperInfo Screen::kWrapperInfo = {gin::kEmbedderNativeGin};
+const gin::WrapperInfo Screen::kWrapperInfo = {{gin::kEmbedderNativeGin},
+                                               gin::kElectronScreen};
 
 namespace {
 
@@ -71,13 +72,15 @@ void DelayEmitWithMetrics(Screen* screen,
 
 }  // namespace
 
-Screen::Screen(v8::Isolate* isolate, display::Screen* screen)
-    : screen_(screen) {
+Screen::Screen(display::Screen* screen) : screen_{screen} {
   screen_->AddObserver(this);
 }
 
 Screen::~Screen() {
-  screen_->RemoveObserver(this);
+  // Use `display::Screen::Get()` here, not our cached `screen_`:
+  // during shutdown, it can get torn down before us.
+  if (auto* screen = display::Screen::Get())
+    screen->RemoveObserver(this);
 }
 
 gfx::Point Screen::GetCursorScreenPoint(v8::Isolate* isolate) {
@@ -172,22 +175,21 @@ gfx::Point Screen::DIPToScreenPoint(const gfx::Point& point_dip) {
 }
 
 // static
-v8::Local<v8::Value> Screen::Create(gin_helper::ErrorThrower error_thrower) {
+Screen* Screen::Create(gin_helper::ErrorThrower error_thrower) {
   if (!Browser::Get()->is_ready()) {
     error_thrower.ThrowError(
         "The 'screen' module can't be used before the app 'ready' event");
-    return v8::Null(error_thrower.isolate());
+    return {};
   }
 
   display::Screen* screen = display::Screen::Get();
   if (!screen) {
     error_thrower.ThrowError("Failed to get screen information");
-    return v8::Null(error_thrower.isolate());
+    return {};
   }
 
-  return gin_helper::CreateHandle(error_thrower.isolate(),
-                                  new Screen(error_thrower.isolate(), screen))
-      .ToV8();
+  return cppgc::MakeGarbageCollected<Screen>(
+      error_thrower.isolate()->GetCppHeap()->GetAllocationHandle(), screen);
 }
 
 gin::ObjectTemplateBuilder Screen::GetObjectTemplateBuilder(
@@ -209,8 +211,12 @@ gin::ObjectTemplateBuilder Screen::GetObjectTemplateBuilder(
       .SetMethod("getDisplayMatching", &Screen::GetDisplayMatching);
 }
 
-const char* Screen::GetTypeName() {
-  return "Screen";
+const gin::WrapperInfo* Screen::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* Screen::GetHumanReadableName() const {
+  return "Electron / Screen";
 }
 
 }  // namespace electron::api

@@ -1610,6 +1610,35 @@ describe('webContents module', () => {
         await expect(blurPromise).to.eventually.be.fulfilled();
       });
     });
+
+    describe('focusOnNavigation webPreference', () => {
+      afterEach(closeAllWindows);
+
+      it('focuses the webContents on navigation by default', async () => {
+        const w = new BrowserWindow({ show: true });
+        await once(w, 'focus');
+        await w.loadURL('about:blank');
+        await moveFocusToDevTools(w);
+        expect(w.webContents.isFocused()).to.be.false();
+        await w.loadURL('data:text/html,<body>test</body>');
+        expect(w.webContents.isFocused()).to.be.true();
+      });
+
+      it('does not focus the webContents on navigation when focusOnNavigation is false', async () => {
+        const w = new BrowserWindow({
+          show: true,
+          webPreferences: {
+            focusOnNavigation: false
+          }
+        });
+        await once(w, 'focus');
+        await w.loadURL('about:blank');
+        await moveFocusToDevTools(w);
+        expect(w.webContents.isFocused()).to.be.false();
+        await w.loadURL('data:text/html,<body>test</body>');
+        expect(w.webContents.isFocused()).to.be.false();
+      });
+    });
   });
 
   describe('getOSProcessId()', () => {

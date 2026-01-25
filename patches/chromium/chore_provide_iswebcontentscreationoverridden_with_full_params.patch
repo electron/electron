@@ -385,7 +385,7 @@ index 756d4192271d6a65cfe8e1511737c565b543cb1f..5688f6f745056565c3c01947f741c4d1
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index b598e3b8aeac0abf8efaa36be91b37f6f1c1e052..807fcb52e723bfcc190d76dd3c819af89887d830 100644
+index f45f822c20bfdc46cb0904ae01fa22ca1e024642..55660b44fb2e53d16c434bba40ffd031de20c021 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
 @@ -208,8 +208,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {

@@ -20,7 +20,7 @@ making three primary changes to Blink:
     * Controls whether the CSS rule is available.
 
 diff --git a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
-index 82fd11ba5dd4987f50a413b7f0600e71ddc195f9..0b16b81ddeee1e35bb1da1752a9952e8a8650473 100644
+index 2dd22ede8da0ad21251d0df6622a85513651510c..fea4d717fbad2419741d48c5a285909026654b57 100644
 --- a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 +++ b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 @@ -50,7 +50,7 @@ enum CSSSampleId {
@@ -46,10 +46,10 @@ index e189d584f05f2ce6354c03a9b19f56985df8a15e..41b430e8f2416be098494f5c49fb97ca
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index d98fecdf3bfd4085789c6076c61f1e6c15cc00bb..2818fad9bade98d41d0370318aca4785d159b4c8 100644
+index a4959f7b3f428cd3e3d51ed020ec576e3a92d0c1..b2bd0b07803e457c2aaee8c382dc01045315febf 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -9222,6 +9222,26 @@
+@@ -9223,6 +9223,26 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -77,7 +77,7 @@ index d98fecdf3bfd4085789c6076c61f1e6c15cc00bb..2818fad9bade98d41d0370318aca4785
      {
        name: "-internal-visited-color",
 diff --git a/third_party/blink/renderer/core/css/css_property_equality.cc b/third_party/blink/renderer/core/css/css_property_equality.cc
-index 358ab7ffc4af7f55a1ee0e0dba0b68296efe3836..d93152fef81184db7e560154a7f140c3c7bc5e30 100644
+index e723573b371b489d4908c8dc8a3399d96031f983..bb68dde106578c73c514bd2a809fcaca0f92fc34 100644
 --- a/third_party/blink/renderer/core/css/css_property_equality.cc
 +++ b/third_party/blink/renderer/core/css/css_property_equality.cc
 @@ -402,6 +402,8 @@ bool CSSPropertyEquality::PropertiesEqual(const PropertyHandle& property,
@@ -90,17 +90,17 @@ index 358ab7ffc4af7f55a1ee0e0dba0b68296efe3836..d93152fef81184db7e560154a7f140c3
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index c64a0bd87335675e1757b14232477db82d42c08b..364b53d64bf3baa77abaa2baa59b1be84dc8147c 100644
+index 506d6de5d48eadd34df1e9f35398a8756fe0d005..f56613267b5ecf08e5b5535144bc95791e1c6a4c 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -12590,5 +12590,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -12893,5 +12893,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
 +const CSSValue* ElectronCornerSmoothing::ParseSingleValue(
 +    CSSParserTokenStream& stream,
 +    const CSSParserContext& context,
-+    CSSParserLocalContext&) const {
++    CSSParserLocalContext& local_context) const {
 +  // Try to parse `system-ui` keyword first.
 +  if (auto* ident =
 +          css_parsing_utils::ConsumeIdent<CSSValueID::kSystemUi>(stream)) {
@@ -108,7 +108,7 @@ index c64a0bd87335675e1757b14232477db82d42c08b..364b53d64bf3baa77abaa2baa59b1be8
 +  }
 +  // Try to parse as percent.
 +  return css_parsing_utils::ConsumePercent(
-+      stream, context, CSSPrimitiveValue::ValueRange::kNonNegative);
++      stream, context, local_context, CSSPrimitiveValue::ValueRange::kNonNegative);
 +}
 +
 +const CSSValue* ElectronCornerSmoothing::CSSValueFromComputedStyleInternal(
@@ -131,10 +131,10 @@ index c64a0bd87335675e1757b14232477db82d42c08b..364b53d64bf3baa77abaa2baa59b1be8
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index d1ec024d45aee048a363c1cef2bd42ba44f3fda5..f89f4e6b703a4e817d555519b2682ffc4d4aef53 100644
+index 292812c9e36fed429edf72335069ac3c0bbd780f..13a500d99cec9fb733de41d3071611630c3b09e0 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-@@ -4167,6 +4167,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
+@@ -4172,6 +4172,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
    return PositionTryFallback(scoped_name, tactic_list);
  }
  
@@ -151,10 +151,10 @@ index d1ec024d45aee048a363c1cef2bd42ba44f3fda5..f89f4e6b703a4e817d555519b2682ffc
                                                const CSSValue& value) {
    const auto& list = To<CSSValueList>(value);
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-index 4a2738ca16223f4b790cac564b733ee732913a96..76c183682ad5b7974644f18afb0e418e2a614082 100644
+index beca76bbbe2d31fde75652a73f5bf2dcfaf17731..bc42166596fdab9f0143b851b27ecfcdf6b716b8 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-@@ -456,6 +456,7 @@ class StyleBuilderConverter {
+@@ -457,6 +457,7 @@ class StyleBuilderConverter {
        StyleResolverState&,
        const CSSValue&,
        bool allow_any_keyword_in_position_area = false);
@@ -202,10 +202,10 @@ index 19cda703154dab9397827ab6ea66c2ca446c644d..dd5943c511886f4e39b2e7f10e67e60f
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index d0a36746a94ee1839b696f7d0bb25effdea69dc9..9995b67c88ed79d6f359870e0c423e19b8341c04 100644
+index e2256766d7a01aee814ba0281b40921b2e261aa9..d55807d00042027fc91faa4479db4043d4ba4add 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
-@@ -1666,6 +1666,8 @@ component("platform") {
+@@ -1669,6 +1669,8 @@ component("platform") {
      "widget/widget_base.h",
      "widget/widget_base_client.h",
      "windows_keyboard_codes.h",
@@ -313,7 +313,7 @@ index 18f283e625101318ee14b50e6e765dfd1c9a1a44..44a3a55974c9e4b9e715574075f25661
  
    auto DrawAsSinglePath = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 875b7c1b2724cbf3841fa50d751798751191d9b7..c5497a3a257e7fc8c3e8d2d638bf9c82209a7ebf 100644
+index 04fcf32ece5fca888f381baf8c818fd4c888391d..17f24e8f71d59a811c69f4692cbe66a9d9974874 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -214,6 +214,10 @@

@@ -65,7 +65,6 @@ feat_expose_raw_response_headers_from_urlloader.patch
 process_singleton.patch
 add_ui_scopedcliboardwriter_writeunsaferawdata.patch
 feat_add_data_parameter_to_processsingleton.patch
-load_v8_snapshot_in_browser_process.patch
 fix_adapt_exclusive_access_for_electron_needs.patch
 fix_aspect_ratio_with_max_size.patch
 port_autofill_colors_to_the_color_pipeline.patch
@@ -144,3 +143,4 @@ fix_check_for_file_existence_before_setting_mtime.patch
 fix_linux_tray_id.patch
 expose_gtk_ui_platform_field.patch
 fix_os_crypt_async_cookie_encryption.patch
+patch_osr_control_screen_info.patch

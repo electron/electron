@@ -94,6 +94,7 @@
     The actual output pixel format and color space of the texture should refer to [`OffscreenSharedTexture`](../structures/offscreen-shared-texture.md) object in the `paint` event.
     * `argb` - The requested output texture format is 8-bit unorm RGBA, with SRGB SDR color space.
     * `rgbaf16` - The requested output texture format is 16-bit float RGBA, with scRGB HDR color space.
+  * `deviceScaleFactor` number (optional) _Experimental_ - The device scale factor of the offscreen rendering output. If not set, will use primary display's scale factor as default.
 * `contextIsolation` boolean (optional) - Whether to run Electron APIs and
   the specified `preload` script in a separate JavaScript context. Defaults
   to `true`. The context that the `preload` script runs in will only have
@@ -156,6 +157,8 @@
   `WebContents` when the preferred size changes. Default is `false`.
 * `transparent` boolean (optional) - Whether to enable background transparency for the guest page. Default is `true`. **Note:** The guest page's text and background colors are derived from the [color scheme](https://developer.mozilla.org/en-US/docs/Web/CSS/color-scheme) of its root element. When transparency is enabled, the text color will still change accordingly but the background will remain transparent.
 * `enableDeprecatedPaste` boolean (optional) _Deprecated_ - Whether to enable the `paste` [execCommand](https://developer.mozilla.org/en-US/docs/Web/API/Document/execCommand). Default is `false`.
+* `focusOnNavigation` boolean (optional) - Whether to focus the WebContents
+  when navigating. Default is `true`.
 
 [chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
 [runtime-enabled-features]: https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/platform/runtime_enabled_features.json5
