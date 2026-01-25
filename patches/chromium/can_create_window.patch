@@ -170,7 +170,7 @@ index 6a72c7925222ed8a11830b68718d7973629a6d2c..a6f0447b6ede476162f555d951f346b0
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index f0103098d2f4d1915d8c8f3481fe077ae562edbb..0cf949b4953864dfc11d814cc3945bfe4938675b 100644
+index f0103098d2f4d1915d8c8f3481fe077ae562edbb..79cc9552a5504b7fce8f8bf31b1cb2833b8cf1ef 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -6826,6 +6826,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
@@ -178,7 +178,7 @@ index f0103098d2f4d1915d8c8f3481fe077ae562edbb..0cf949b4953864dfc11d814cc3945bfe
            GetWebFrame()->IsAdScriptInStack());
  
 +  params->raw_features = features.raw_features.Utf8(
-+      blink::Utf8ConversionMode::kStrictReplacingErrors);
++      WebString::UTF8ConversionMode::kStrictReplacingErrorsWithFFFD);
 +  params->body = GetRequestBodyForWebURLRequest(request);
 +
    // We preserve this information before sending the message since |params| is
@@ -211,23 +211,15 @@ index 790f004d2a3a9ae5a3588fda097732a5daac0c75..83fcc9418b89b669863e730f2049a1d8
                         bool opener_suppressed,
                         bool* no_javascript_access) override;
 diff --git a/third_party/blink/public/web/web_window_features.h b/third_party/blink/public/web/web_window_features.h
-index d92bab531c12c62a5321a23f4a0cb89691668127..c354a79c7c8dd047264df35b873e90c15fa364a2 100644
+index d92bab531c12c62a5321a23f4a0cb89691668127..2060e04795ba8e7a923fd0fe3485b8c553ca4421 100644
 --- a/third_party/blink/public/web/web_window_features.h
 +++ b/third_party/blink/public/web/web_window_features.h
-@@ -35,6 +35,7 @@
- #include <vector>
- 
- #include "third_party/blink/public/platform/web_string.h"
-+#include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
- 
- namespace blink {
- 
-@@ -70,6 +71,8 @@ struct WebWindowFeatures {
+@@ -70,6 +70,8 @@ struct WebWindowFeatures {
    // TODO(apaseltiner): Investigate moving this field to a non-public struct
    // since it is only needed within //third_party/blink.
    std::optional<std::vector<WebString>> attribution_srcs;
 +
-+  String raw_features;
++  WebString raw_features;
  };
  
  }  // namespace blink
