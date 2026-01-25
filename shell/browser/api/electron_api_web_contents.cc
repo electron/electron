@@ -544,6 +544,28 @@ constexpr std::string_view CursorTypeToString(
   }
 }
 
+// Refs
+// https://source.chromium.org/chromium/chromium/src/+/main:components/page_content_annotations/content/page_context_fetcher.cc;l=206-223;drc=376a51732fd3b17b83451ceb93eea7ad07204798
+std::string_view CopyFromSurfaceErrorToString(
+    content::CopyFromSurfaceError error) {
+  switch (error) {
+    case content::CopyFromSurfaceError::kUnknown:
+      return "Unknown";
+    case content::CopyFromSurfaceError::kNotImplemented:
+      return "Not implemented";
+    case content::CopyFromSurfaceError::kFrameGone:
+      return "Frame Gone";
+    case content::CopyFromSurfaceError::kTimeout:
+      return "Timeout";
+    case content::CopyFromSurfaceError::kEmbeddingTokenChanged:
+      return "EmbeddingTokenChanged";
+    case content::CopyFromSurfaceError::kVizSentEmptyBitmap:
+      return "VizSentEmptyBitmap";
+    case content::CopyFromSurfaceError::kUnknownVizError:
+      return "UnknownVizError";
+  }
+}
+
 base::IDMap<WebContents*>& GetAllWebContents() {
   static base::NoDestructor<base::IDMap<WebContents*>> s_all_web_contents;
   return *s_all_web_contents;
@@ -561,7 +583,8 @@ void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
   }
 
   if (!result.has_value()) {
-    promise.RejectWithErrorMessage(result.error());
+    promise.RejectWithErrorMessage(
+        CopyFromSurfaceErrorToString(result.error()));
     capture_handle.RunAndReset();
     return;
   }
@@ -826,6 +849,8 @@ WebContents::WebContents(v8::Isolate* isolate,
                              &offscreen_use_shared_texture_);
       use_offscreen_dict.Get(options::kSharedTexturePixelFormat,
                              &offscreen_shared_texture_pixel_format_);
+      use_offscreen_dict.Get(options::kDeviceScaleFactor,
+                             &offscreen_device_scale_factor_);
     }
   }
 
@@ -864,6 +889,7 @@ WebContents::WebContents(v8::Isolate* isolate,
       auto* view = new OffScreenWebContentsView(
           false, offscreen_use_shared_texture_,
           offscreen_shared_texture_pixel_format_,
+          offscreen_device_scale_factor_,
           base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
       params.view = view;
       params.delegate_view = view;
@@ -885,7 +911,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     content::WebContents::CreateParams params(session->browser_context());
     auto* view = new OffScreenWebContentsView(
         transparent, offscreen_use_shared_texture_,
-        offscreen_shared_texture_pixel_format_,
+        offscreen_shared_texture_pixel_format_, offscreen_device_scale_factor_,
         base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
     params.view = view;
     params.delegate_view = view;
@@ -1249,6 +1275,7 @@ void WebContents::MaybeOverrideCreateParamsForNewWindow(
       auto* view = new OffScreenWebContentsView(
           false, offscreen_use_shared_texture_,
           offscreen_shared_texture_pixel_format_,
+          offscreen_device_scale_factor_,
           base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
       create_params->view = view;
       create_params->delegate_view = view;
@@ -2070,6 +2097,10 @@ void WebContents::ReadyToCommitNavigation(
     return;
   // Only focus for top-level contents.
   if (type_ != Type::kBrowserWindow)
+    return;
+  // Don't focus if focusOnNavigation is disabled.
+  auto* prefs = WebContentsPreferences::From(web_contents());
+  if (prefs && !prefs->ShouldFocusOnNavigation())
     return;
   web_contents()->SetInitialFocus();
 }
@@ -3609,6 +3640,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
   view->CopyFromSurface(gfx::Rect(rect.origin(), view_size), bitmap_size,
+                        base::TimeDelta(),
                         base::BindOnce(&OnCapturePageDone, std::move(promise),
                                        std::move(capture_handle)));
   return handle;

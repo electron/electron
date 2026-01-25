@@ -20,10 +20,10 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index cdba817db9814c59a39ec058d05a842fa6b55f69..d6bab225f22d0c32ce4361a1a879c62faf9cee81 100644
+index b8b5151bae179da02725a37c0942cb26aaddb042..951682514323db7325496201f82716516e3e87f9 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -553,7 +553,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -554,7 +554,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::LOCAL_NETWORK;
      case PermissionType::LOOPBACK_NETWORK:
        return ContentSettingsType::LOOPBACK_NETWORK;
@@ -103,7 +103,7 @@ index 638d0ee4fb368d28465322d34dbfca645ecd162d..38c20e7f0c597815ce5ee3333f12183a
    NUM,
    MIN_VALUE = MIDI_SYSEX,
 diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
-index f3e787a35976d86cc4e7307745822634df659941..81c4f0bdc89f972464d13f06c7907e5aabff4043 100644
+index 10ef656b019f46d389de074e5aad292af1728eac..cd200c6aadb304e440df65532a9ef86f0aef4fa7 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
 @@ -47,7 +47,7 @@ enum PermissionName {
