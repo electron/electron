@@ -8,7 +8,6 @@
 #include <array>
 #include <map>
 #include <memory>
-#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -233,8 +232,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 
   // Public getters of NativeWindow.
   v8::Local<v8::Value> GetContentView() const;
-  v8::Local<v8::Value> GetParentWindow() const;
-  std::vector<v8::Local<v8::Object>> GetChildWindows() const;
+  BaseWindow* GetParentWindow() const;
+  std::vector<BaseWindow*> GetChildWindows() const;
   bool IsModal() const;
 
   // Extra APIs added in JS.
@@ -270,9 +269,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
  private:
   // Helpers.
 
-  // Remove this window from parent window's |child_windows_|.
-  void RemoveFromParentChildWindows();
-
   template <typename... Args>
   void EmitEventSoon(std::string_view eventName) {
     content::GetUIThreadTaskRunner({})->PostTask(
@@ -289,7 +285,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   v8::Global<v8::Value> content_view_;
   v8::Global<v8::Value> menu_;
   v8::Global<v8::Value> parent_window_;
-  KeyWeakMap<int> child_windows_;
 
   std::unique_ptr<NativeWindow> window_;
 
