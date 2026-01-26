@@ -187,10 +187,10 @@ index d9c14f91747bde0e76056d7f2f2ada166e67f994..53be16879777a3b9bef58ead5f7e420c
  
    UtilityProcessHost::Start(std::move(utility_options),
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index c2a13c3776dbe7609aeeebd87c0187a510f339e2..2b635c27741e8202d439ab03bc0f517dd00568a2 100644
+index 1f848cd121b2ecef4892bb2563c593124337e7cf..5fa25d07cddca53177e82e5cba1cc834a40994d0 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
-@@ -240,13 +240,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
+@@ -241,13 +241,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
  }
  #endif  // BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
  
@@ -207,7 +207,7 @@ index c2a13c3776dbe7609aeeebd87c0187a510f339e2..2b635c27741e8202d439ab03bc0f517d
  
  #if BUILDFLAG(USE_ZYGOTE)
  UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
-@@ -256,6 +256,36 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
+@@ -257,6 +257,36 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -244,7 +244,7 @@ index c2a13c3776dbe7609aeeebd87c0187a510f339e2..2b635c27741e8202d439ab03bc0f517d
  UtilityProcessHost::Options&
  UtilityProcessHost::Options::WithBoundReceiverOnChildProcessForTesting(
      mojo::GenericPendingReceiver receiver) {
-@@ -519,9 +549,26 @@ bool UtilityProcessHost::StartProcess() {
+@@ -531,9 +561,26 @@ bool UtilityProcessHost::StartProcess() {
    }
  #endif  // BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE) && !BUILDFLAG(IS_WIN)
  
