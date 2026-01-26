@@ -35,11 +35,11 @@ index f0495805b90386588abaec45ff39c33753efe6f5..b14a585aba0d75f59a980bc6c045ea4d
  
    Microsoft::WRL::ComPtr<ID3D11Texture2D> d3d11_texture;
  
-diff --git a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-index 18db1791d2ea8ca975b19c1dd6b6716222714b82..7befad5fa30d037227c1955544f19fbb5756f83d 100644
---- a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-+++ b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-@@ -209,6 +209,23 @@ bool FrameResources::Initialize(VideoPixelFormat format,
+diff --git a/media/video/renderable_mappable_shared_image_video_frame_pool.cc b/media/video/renderable_mappable_shared_image_video_frame_pool.cc
+index 36ed797edc58a6cf094a0b720bf949b3f6379890..950b839a67fc190f9c0d73bcc102b547178216bb 100644
+--- a/media/video/renderable_mappable_shared_image_video_frame_pool.cc
++++ b/media/video/renderable_mappable_shared_image_video_frame_pool.cc
+@@ -211,6 +211,23 @@ bool FrameResources::Initialize(VideoPixelFormat format,
    const gfx::Size coded_size =
        GetCodedSizeForVideoPixelFormat(format, visible_size_);
  
