@@ -16,9 +16,11 @@
 
 #include "base/files/file_util.h"
 #include "base/i18n/case_conversion.h"
+#include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/registry.h"
+#include "chrome/common/chrome_paths.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/win/dialog_thread.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -33,6 +35,25 @@ DialogSettings::~DialogSettings() = default;
 
 namespace {
 
+// Get a sensible default directory for file dialogs when no default path is
+// provided. Tries Downloads folder first, then falls back to Home directory.
+base::FilePath GetSmartDefaultPath() {
+  base::FilePath path;
+
+  // Try Downloads directory first
+  if (base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &path) &&
+      base::DirectoryExists(path)) {
+    return path;
+  }
+
+  // Fall back to Home directory
+  if (base::PathService::Get(base::DIR_HOME, &path)) {
+    return path;
+  }
+
+  // If all else fails, return empty path (will use system default)
+  return base::FilePath();
+}
 // Distinguish directories from regular files.
 bool IsDirectory(const base::FilePath& path) {
   base::File::Info file_info;
@@ -106,8 +127,14 @@ static HRESULT ShowFileDialog(IFileDialog* dialog,
 static void ApplySettings(IFileDialog* dialog, const DialogSettings& settings) {
   std::wstring file_part;
 
-  if (!IsDirectory(settings.default_path))
-    file_part = settings.default_path.BaseName().value();
+  // Use smart default path if no default_path was provided
+  base::FilePath default_path = settings.default_path;
+  if (default_path.empty()) {
+    default_path = GetSmartDefaultPath();
+  }
+
+  if (!IsDirectory(default_path))
+    file_part = default_path.BaseName().value();
 
   dialog->SetFileName(file_part.c_str());
 
@@ -149,8 +176,8 @@ static void ApplySettings(IFileDialog* dialog, const DialogSettings& settings) {
     }
   }
 
-  if (settings.default_path.IsAbsolute()) {
-    SetDefaultFolder(dialog, settings.default_path);
+  if (default_path.IsAbsolute()) {
+    SetDefaultFolder(dialog, default_path);
   }
 }
 
