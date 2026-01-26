@@ -47,10 +47,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index d68e37353cb4c5037b080f9a23dc252bbba2db4a..7b101305f8986cb5d1e8c0ac60f48ddc6fccf8eb 100644
+index 59246cb4505517b23017db2b3e6ec50915d13355..354e9472124da942d831d79aefe6d0af5c62fca1 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1081,6 +1081,7 @@ component("base") {
+@@ -1080,6 +1080,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -265,10 +265,10 @@ index 2d155f49248a24b5551cb93e010ac1a0c0f94261..23aa391aaf380f87310fb295277809f8
    } else if (is_win) {
      sources += [ "os_crypt_win.cc" ]
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index ba813851fde2660c21f99248a124161d2ac2ca07..c34f920e4a592b6798f5307c726bc34ebedf3f88 100644
+index 32001b02032379d6338e59a1cf5ce5619c4e1acb..f3827c60ee95b38acae103b2f3f4a94764610c3d 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
-@@ -77,6 +77,7 @@ component("app_shim") {
+@@ -79,6 +79,7 @@ component("app_shim") {
      "//components/crash/core/common",
      "//components/remote_cocoa/common:mojo",
      "//components/system_media_controls",
@@ -477,18 +477,18 @@ index 3a815ebf505bd95fa7f6b61ba433d98fbfe20225..149de0175c2ec0e41e3ba40caad7019c
 +
  @end
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-index 020050de162705651b4eb8378880cd4eb017d46c..2d3554861a570271d6f9b9a2c8b1de53860b9fd2 100644
+index 889c0849910afa8f5be8bd8f55692bb482335383..ff2a4bc790b0fa2dec9702d82a0221855833cb65 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-@@ -9,6 +9,7 @@
- 
+@@ -10,6 +10,7 @@
  #include "base/apple/foundation_util.h"
+ #import "components/remote_cocoa/app_shim/native_widget_mac_nswindow_headless.h"
  #include "components/remote_cocoa/app_shim/remote_cocoa_app_shim_export.h"
 +#include "electron/mas.h"
  #import "ui/base/cocoa/command_dispatcher.h"
  
  namespace remote_cocoa {
-@@ -17,6 +18,7 @@ class NativeWidgetNSWindowBridge;
+@@ -18,6 +19,7 @@ class NativeWidgetNSWindowBridge;
  
  @protocol WindowTouchBarDelegate;
  
@@ -496,7 +496,7 @@ index 020050de162705651b4eb8378880cd4eb017d46c..2d3554861a570271d6f9b9a2c8b1de53
  // Weak lets Chrome launch even if a future macOS doesn't have the below classes
  WEAK_IMPORT_ATTRIBUTE
  @interface NSNextStepFrame : NSView
-@@ -33,6 +35,7 @@ REMOTE_COCOA_APP_SHIM_EXPORT
+@@ -34,6 +36,7 @@ REMOTE_COCOA_APP_SHIM_EXPORT
  REMOTE_COCOA_APP_SHIM_EXPORT
  @interface NativeWidgetMacNSWindowTitledFrame : NSThemeFrame
  @end
@@ -505,87 +505,10 @@ index 020050de162705651b4eb8378880cd4eb017d46c..2d3554861a570271d6f9b9a2c8b1de53
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 3c7bfe98848cbb3a309737b84ff1c8d683a83ec7..84036a1c4635e7b5bca5ebe1ea5e303bd07b2ea0 100644
+index 20fbdb2d4ac747aa174c5d8e19fd9f1ea48314a9..7507eb2b9e44fe352861ef74151c3baace5abc84 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-@@ -21,6 +21,7 @@
- #import "components/remote_cocoa/app_shim/views_nswindow_delegate.h"
- #import "components/remote_cocoa/app_shim/window_touch_bar_delegate.h"
- #include "components/remote_cocoa/common/native_widget_ns_window_host.mojom.h"
-+#include "electron/mas.h"
- #include "ui/accessibility/platform/ax_platform_node.h"
- #import "ui/base/cocoa/user_interface_item_command_handler.h"
- #import "ui/base/cocoa/window_size_constants.h"
-@@ -108,20 +109,24 @@ void OrderChildWindow(NSWindow* child_window,
- 
- }  // namespace
- 
-+#if !IS_MAS_BUILD()
- @interface NSNextStepFrame (Private)
- - (instancetype)initWithFrame:(NSRect)frame
-                     styleMask:(NSUInteger)styleMask
-                         owner:(id)owner;
- @end
-+#endif
- 
- @interface NSWindow (Private)
-+#if !IS_MAS_BUILD()
- + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle;
--- (BOOL)hasKeyAppearance;
- - (long long)_resizeDirectionForMouseLocation:(CGPoint)location;
- - (BOOL)_isConsideredOpenForPersistentState;
- - (void)_zoomToScreenEdge:(NSUInteger)edge;
- - (void)_removeFromGroups:(NSWindow*)window;
- - (BOOL)_isNonactivatingPanel;
-+#endif
-+- (BOOL)hasKeyAppearance;
- @end
- 
- struct NSEdgeAndCornerThicknesses {
-@@ -158,13 +163,17 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event;
- @implementation NSView (CRFrameViewAdditions)
- // If a mouseDown: falls through to the frame view, turn it into a window drag.
- - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
-+#if !IS_MAS_BUILD()
-   if ([self.window _resizeDirectionForMouseLocation:event.locationInWindow] !=
-       -1)
-     return;
-+#endif
-   [self.window performWindowDragWithEvent:event];
- }
- @end
- 
-+#if !IS_MAS_BUILD()
-+
- @implementation NativeWidgetMacNSWindowTitledFrame
- - (void)mouseDown:(NSEvent*)event {
-   if (self.window.isMovable)
-@@ -192,6 +201,8 @@ - (BOOL)usesCustomDrawing {
- }
- @end
- 
-+#endif  // MAS_BUILD
-+
- @implementation NativeWidgetMacNSWindow {
-  @private
-   CommandDispatcher* __strong _commandDispatcher;
-@@ -241,6 +252,7 @@ - (instancetype)initWithContentRect:(NSRect)contentRect
- // bubbles and the find bar, but these should not be movable.
- // Instead, let's push this up to the parent window which should be
- // the browser.
-+#if !IS_MAS_BUILD()
- - (void)_zoomToScreenEdge:(NSUInteger)edge {
-   if (self.parentWindow) {
-     [self.parentWindow _zoomToScreenEdge:edge];
-@@ -248,6 +260,7 @@ - (void)_zoomToScreenEdge:(NSUInteger)edge {
-     [super _zoomToScreenEdge:edge];
-   }
- }
-+#endif
- 
- // This override helps diagnose lifetime issues in crash stacktraces by
- // inserting a symbol on NativeWidgetMacNSWindow and should be kept even if it
-@@ -393,6 +406,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -401,6 +401,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -594,74 +517,15 @@ index 3c7bfe98848cbb3a309737b84ff1c8d683a83ec7..84036a1c4635e7b5bca5ebe1ea5e303b
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -404,6 +419,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -412,6 +414,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
 +#endif
 +
- - (BOOL)_isTitleHidden {
-   bool shouldShowWindowTitle = YES;
-   if (_bridge)
-@@ -428,12 +445,14 @@ - (BOOL)_usesCustomDrawing {
- // if it were valid to set that style for windows, setting the window style
- // recalculates and re-caches a bunch of stuff, so a surgical override is the
- // cleanest approach.
-+#if !IS_MAS_BUILD()
- - (BOOL)_isNonactivatingPanel {
-   if (_activationIndependence) {
-     return YES;
-   }
-   return [super _isNonactivatingPanel];
- }
-+#endif
- 
- + (void)_getExteriorResizeEdgeThicknesses:
-             (NSEdgeAndCornerThicknesses*)outThicknesses
-@@ -687,9 +706,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
- }
- 
- - (void)saveRestorableState {
-+#if !IS_MAS_BUILD()
-   if (!_bridge || ![self _isConsideredOpenForPersistentState]) {
-     return;
-   }
-+#endif
- 
-   // Certain conditions, such as in the Speedometer 3 benchmark, can trigger a
-   // rapid succession of calls to saveRestorableState. If there's no pending
-@@ -756,6 +777,7 @@ - (void)reallySaveRestorableState {
- // affects its restorable state changes.
- - (void)invalidateRestorableState {
-   [super invalidateRestorableState];
-+#if !IS_MAS_BUILD()
-   if ([self _isConsideredOpenForPersistentState]) {
-     if (_willUpdateRestorableState)
-       return;
-@@ -768,6 +790,7 @@ - (void)invalidateRestorableState {
-     _willUpdateRestorableState = NO;
-     [NSObject cancelPreviousPerformRequestsWithTarget:self];
-   }
-+#endif
- }
- 
- // On newer SDKs, _canMiniaturize respects NSWindowStyleMaskMiniaturizable in
-@@ -944,6 +967,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
-   // Since _removeFromGroups: is not documented it could go away in newer
-   // versions of macOS. If the selector does not exist, DumpWithoutCrashing() so
-   // we hear about the change.
-+#if !IS_MAS_BUILD()
-   if (![NSWindow instancesRespondToSelector:@selector(_removeFromGroups:)]) {
-     base::debug::DumpWithoutCrashing();
-     return;
-@@ -961,6 +985,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
-       [currentWindow _removeFromGroups:child];
-     }
-   }
-+#endif
- }
- 
- - (NSWindow*)rootWindow {
+ - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
+   if (self.isHeadless || self.parentWindow) {
+     // AppKit's default implementation moves child windows down to avoid
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 index 414874d84338ff12e707d52bc82483957d74d8ef..849da439a046aea133946572c79964858e4e7ba5 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
@@ -793,7 +657,7 @@ index 712d59e1f7d9681c122e6d05a8b65bccbfacb492..de24209bbd3cd4a530c6f32990a0f93a
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 58c529557527b8e3914a235a82d2d475e71d6315..23ae9220812480274d0347009d38343fc005ea6f 100644
+index 66aa3109bb48489d5ed8f4be6537f0975b8ddecd..e174c4207149125467a75d755912c073ea84f303 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -344,6 +344,7 @@ source_set("browser") {
@@ -1008,7 +872,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index bb457cce37fa5eba33948a25d697882d44b9d81c..53511f295e7b4cef4b4a841b9293fb164f72f780 100644
+index 3370c6407201c8577f4dad430558cf4bc2fc633a..dc02c51c0d2a800edf05708d73da2c6ea812668f 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -702,6 +702,7 @@ static_library("test_support") {
@@ -1036,7 +900,7 @@ index bb457cce37fa5eba33948a25d697882d44b9d81c..53511f295e7b4cef4b4a841b9293fb16
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3410,6 +3414,7 @@ test("content_unittests") {
+@@ -3411,6 +3415,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1890,7 +1754,7 @@ index 423fa6c7d4c9e1a17f0df2a7b1357c3424070f8e..b7e9a3ae2b5e004c670b20dff12e9bf8
    return false;
  }
 diff --git a/ui/accessibility/platform/inspect/ax_transform_mac.mm b/ui/accessibility/platform/inspect/ax_transform_mac.mm
-index 6846060ef9622d8fc8d1d6c8da16e2f1b785e6bd..05c22db87e882b246bd7034e027cf1495376b6c6 100644
+index ef031ba14e4c649f6f3a5718ac521e6b424d64cb..38e528450196b4dbd5fa6a25b96baa10980fe73c 100644
 --- a/ui/accessibility/platform/inspect/ax_transform_mac.mm
 +++ b/ui/accessibility/platform/inspect/ax_transform_mac.mm
 @@ -11,6 +11,7 @@
