@@ -23,7 +23,7 @@ The `Menu` class has the following static methods:
 
 #### `Menu.setApplicationMenu(menu)`
 
-- `menu` Menu | null
+- `menu` [Menu](menu.md) | null
 
 Sets `menu` as the application menu on macOS. On Windows and Linux, the
 `menu` will be set as each window's top menu.
@@ -45,7 +45,7 @@ this has the additional effect of removing the menu bar from the window.
 
 #### `Menu.getApplicationMenu()`
 
-Returns `Menu | null` - The application menu, if set, or `null`, if not set.
+Returns [`Menu`](menu.md) | null - The application menu, if set, or `null`, if not set.
 
 > [!NOTE]
 > The returned `Menu` instance doesn't support dynamic addition or
@@ -65,9 +65,9 @@ for more information on macOS' native actions.
 
 #### `Menu.buildFromTemplate(template)`
 
-- `template` (MenuItemConstructorOptions | MenuItem)[]
+- `template` (MenuItemConstructorOptions | [MenuItem](menu-item.md))[]
 
-Returns `Menu`
+Returns [`Menu`](menu.md)
 
 Generally, the `template` is an array of `options` for constructing a
 [MenuItem](menu-item.md). The usage can be referenced above.
@@ -118,7 +118,7 @@ Appends the `menuItem` to the menu.
 
 - `id` string
 
-Returns `MenuItem | null` the item with the specified `id`
+Returns [`MenuItem`](menu-item.md) | null the item with the specified `id`
 
 #### `menu.insert(pos, menuItem)`
 
