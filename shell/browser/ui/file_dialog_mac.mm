@@ -17,7 +17,9 @@
 #include "base/files/file_util.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/path_service.h"
 #include "content/public/browser/browser_task_traits.h"
+#include "chrome/common/chrome_paths.h"
 #include "content/public/browser/browser_thread.h"
 #include "electron/mas.h"
 #include "shell/browser/native_window.h"
@@ -95,6 +97,26 @@ DialogSettings::DialogSettings(const DialogSettings&) = default;
 DialogSettings::~DialogSettings() = default;
 
 namespace {
+
+// Get a sensible default directory for file dialogs when no default path is
+// provided. Tries Downloads folder first, then falls back to Home directory.
+base::FilePath GetSmartDefaultPath() {
+  base::FilePath path;
+
+  // Try Downloads directory first
+  if (base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &path) &&
+      base::DirectoryExists(path)) {
+    return path;
+  }
+
+  // Fall back to Home directory
+  if (base::PathService::Get(base::DIR_HOME, &path)) {
+    return path;
+  }
+
+  // If all else fails, return empty path (will use system default)
+  return base::FilePath();
+}
 
 void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   NSMutableArray* file_types_list = [NSMutableArray array];
@@ -186,16 +208,22 @@ void SetupDialog(NSSavePanel* dialog, const DialogSettings& settings) {
 
   [dialog setShowsTagField:settings.shows_tag_field];
 
+  // Use smart default path if no default_path was provided
+  base::FilePath default_path = settings.default_path;
+  if (default_path.empty()) {
+    default_path = GetSmartDefaultPath();
+  }
+
   NSString* default_dir = nil;
   NSString* default_filename = nil;
-  if (!settings.default_path.empty()) {
+  if (!default_path.empty()) {
     electron::ScopedAllowBlockingForElectron allow_blocking;
-    if (base::DirectoryExists(settings.default_path)) {
-      default_dir = base::SysUTF8ToNSString(settings.default_path.value());
+    if (base::DirectoryExists(default_path)) {
+      default_dir = base::SysUTF8ToNSString(default_path.value());
     } else {
-      if (settings.default_path.IsAbsolute()) {
+      if (default_path.IsAbsolute()) {
         default_dir =
-            base::SysUTF8ToNSString(settings.default_path.DirName().value());
+            base::SysUTF8ToNSString(default_path.DirName().value());
       }
 
       default_filename =
