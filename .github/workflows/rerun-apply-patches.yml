@@ -1,0 +1,69 @@
+name: Rerun PR Apply Patches
+
+on:
+  push:
+    branches:
+      - main
+      - '[1-9][0-9]-x-y'
+    paths:
+      - 'DEPS'
+      - 'patches/**'
+
+permissions: {}
+
+jobs:
+  rerun-apply-patches:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+      pull-requests: read
+    steps:
+      - name: Find PRs and Rerun Apply Patches
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+
+          # Find all open PRs targeting this branch
+          PRS=$(gh pr list --base "$BRANCH" --state open --limit 250 --json number)
+
+          echo "$PRS" | jq -c '.[]' | while read -r pr; do
+            PR_NUMBER=$(echo "$pr" | jq -r '.number')
+            echo "Processing PR #${PR_NUMBER}"
+
+            # Find the apply-patches job check for this PR
+            CHECK=$(gh pr checks "$PR_NUMBER" --json link,name,state,workflow --jq '[.[] | select(.workflow == "Build" and .name == "apply-patches")] | first')
+
+            if [ -z "$CHECK" ] || [ "$CHECK" = "null" ]; then
+              echo "  No apply-patches job found for PR #${PR_NUMBER}"
+              continue
+            fi
+
+            STATE=$(echo "$CHECK" | jq -r '.state')
+            if [ "$STATE" = "SKIPPED" ]; then
+              echo "  apply-patches job was skipped for PR #${PR_NUMBER} (no patches)"
+              continue
+            fi
+
+            LINK=$(echo "$CHECK" | jq -r '.link')
+
+            # Extract the run ID from the link (format: .../runs/RUN_ID/job/JOB_ID)
+            RUN_ID=$(echo "$LINK" | grep -oE 'runs/[0-9]+' | cut -d'/' -f2)
+
+            if [ -z "$RUN_ID" ]; then
+              echo "  Could not extract run ID from link: ${LINK}"
+              continue
+            fi
+
+            # Get the job database ID for the apply-patches job
+            JOB_ID=$(gh run view "$RUN_ID" --json jobs --jq '.jobs[] | select(.name == "apply-patches") | .databaseId')
+
+            if [ -z "$JOB_ID" ]; then
+              echo "  Could not find apply-patches job ID for run: ${RUN_ID}"
+              continue
+            fi
+
+            gh run rerun "$RUN_ID" --job "$JOB_ID"
+          done
