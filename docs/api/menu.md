@@ -45,7 +45,7 @@ this has the additional effect of removing the menu bar from the window.
 
 #### `Menu.getApplicationMenu()`
 
-Returns [`Menu`](menu.md) | null - The application menu, if set, or `null`, if not set.
+Returns `Menu | null` - The application menu, if set, or `null`, if not set.
 
 > [!NOTE]
 > The returned `Menu` instance doesn't support dynamic addition or
@@ -118,7 +118,7 @@ Appends the `menuItem` to the menu.
 
 - `id` string
 
-Returns [`MenuItem`](menu-item.md) | null the item with the specified `id`
+Returns `MenuItem | null` the item with the specified `id`
 
 #### `menu.insert(pos, menuItem)`
 
