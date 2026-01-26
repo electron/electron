@@ -13,6 +13,7 @@ permissions: {}
 
 jobs:
   macos-disk-cleanup:
+    if: github.repository == 'electron/electron'
     strategy:
       fail-fast: false
       matrix:

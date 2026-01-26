@@ -21,6 +21,7 @@ permissions: {}
 
 jobs:
   checkout-linux:
+    if: github.repository == 'electron/electron'
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
