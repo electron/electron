@@ -23,7 +23,7 @@ index 8077ed85e45e56d6cccb691223216c1f6a94b5ee..dd4cee346f16df703d414bf206bbe6c9
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 79cc9552a5504b7fce8f8bf31b1cb2833b8cf1ef..9bcc65dd9017980e7846378dd0b6311f72d0909b 100644
+index 3a299919640543a33410857588ab0b2bbc3a3fe8..c568a4e51ff46286051a5a1d6f32604ee441d96a 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -4755,6 +4755,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
@@ -123,10 +123,10 @@ index c828e48b93ac7e57343c178650293cba853c6cba..ca3b04c157275bcddf4bdd237004b5c6
                                  int32_t world_id) override;
  
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index 8b348b886bf912838903efcc007a560b6d3c20c1..1235c9d51d09b715296d8ae8072d3c99622e1bfd 100644
+index 015104ff7758fce48aede1d0410738ebb8114c1a..0ffa248cc6de740049788437b7c830be36063711 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
-@@ -426,6 +426,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
+@@ -428,6 +428,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
  
    void DidCreateScriptContext(v8::Local<v8::Context>,
                                int32_t world_id) override {}

@@ -17,10 +17,10 @@ Revert "Reland "Port net::CookieCryptoDelegate to os_crypt async""
 This reverts commit f01b115c7e21a09cc762f65bf7fd9c6ea9d9d0f8.
 
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 464b75de67b41f3a947af2cb885e1aada0f5869d..0272712c00c1e59d79d83e4b610482c79addd52e 100644
+index 38648f53a4f8022a09ba10c2ef7cc317ffbfff7d..db9857697733ad7aabc9bd34a1d58fe9939513d5 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -740,6 +740,8 @@ static_library("browser") {
+@@ -731,6 +731,8 @@ static_library("browser") {
      "net/chrome_report_sender.h",
      "net/convert_explicitly_allowed_network_ports_pref.cc",
      "net/convert_explicitly_allowed_network_ports_pref.h",
@@ -731,10 +731,10 @@ index 91d74eaadd9f4d451e809b38a2f999b298068820..e45427ce90f909e609688ab59f4581b1
    mojo::PendingRemote<::network::mojom::NetworkContext> system_context_;
  };
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 53cee001783f11a6364e66e4845c95eb27113285..24263b12793249fe823d62e62e7751ce9cdb6aa2 100644
+index bab02e340c36f2f41713740850cde3e3d889f067..d0c2ee48c0158de2018a30290c7a04816496335b 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -3252,12 +3252,7 @@ NetworkContext::MakeSessionCleanupCookieStore() const {
+@@ -3272,12 +3272,7 @@ NetworkContext::MakeSessionCleanupCookieStore() const {
        crypto_delegate = std::make_unique<CookieOSCryptAsyncDelegate>(
            std::move(params_->cookie_encryption_provider));
      } else {
