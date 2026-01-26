@@ -14,7 +14,6 @@
 #include <gdk/gdk.h>
 
 #include "base/cancelable_callback.h"
-#include "base/containers/contains.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/files/scoped_file.h"
@@ -160,7 +159,7 @@ class ShowItemHelper {
       if (!reader.PopArrayOfStrings(&names)) {
         LOG(ERROR) << "Failed to read " << kMethodListActivatableNames
                    << " response";
-      } else if (base::Contains(names, kFreedesktopFileManagerName)) {
+      } else if (std::ranges::contains(names, kFreedesktopFileManagerName)) {
         is_activatable = true;
       }
     }

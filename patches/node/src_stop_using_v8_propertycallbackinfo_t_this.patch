@@ -1,0 +1,157 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <isheludko@gmail.com>
+Date: Sun, 7 Dec 2025 21:25:15 +0100
+Subject: src: stop using `v8::PropertyCallbackInfo<T>::This()`
+
+Refs: https://github.com/nodejs/node/issues/60616
+
+diff --git a/src/module_wrap.cc b/src/module_wrap.cc
+index 2c95ac99be70b0750372e9c858753bf519498e3d..5ab30502fd232196739ca2b450e35cc995f02d74 100644
+--- a/src/module_wrap.cc
++++ b/src/module_wrap.cc
+@@ -1000,7 +1000,7 @@ void ModuleWrap::HasAsyncGraph(Local<Name> property,
+   Isolate* isolate = args.GetIsolate();
+   Environment* env = Environment::GetCurrent(isolate);
+   ModuleWrap* obj;
+-  ASSIGN_OR_RETURN_UNWRAP(&obj, args.This());
++  ASSIGN_OR_RETURN_UNWRAP(&obj, args.HolderV2());
+ 
+   Local<Module> module = obj->module_.Get(isolate);
+   if (module->GetStatus() < Module::kInstantiated) {
+diff --git a/src/node_contextify.cc b/src/node_contextify.cc
+index e66d4fcb0c064f96cdb819c783027d864fe88d12..619980b36db457ef7e476eacd446e3bf2a9a71d2 100644
+--- a/src/node_contextify.cc
++++ b/src/node_contextify.cc
+@@ -460,7 +460,7 @@ ContextifyContext* ContextifyContext::Get(const PropertyCallbackInfo<T>& args) {
+   // args.GetIsolate()->GetCurrentContext() and take the pointer at
+   // ContextEmbedderIndex::kContextifyContext, as V8 is supposed to
+   // push the creation context before invoking these callbacks.
+-  return Get(args.This());
++  return Get(args.HolderV2());
+ }
+ 
+ ContextifyContext* ContextifyContext::Get(Local<Object> object) {
+@@ -593,10 +593,21 @@ Intercepted ContextifyContext::PropertySetterCallback(
+     return Intercepted::kNo;
+   }
+ 
++  // V8 comment: As long as the context is not detached the contextual accesses
++  // are the same as regular accesses to `context->Global()`s data property.
++  // The only difference is that after detaching `args.Holder()` will
++  // become a new identity and will no longer be equal to `context->Global()`.
++  // TODO(Node.js): revise the code below as the "contextual"-ness of the
++  // store is not actually relevant here. Also, new variable declaration is
++  // reported by V8 via PropertyDefinerCallback.
++  bool is_declared = is_declared_on_global_proxy || is_declared_on_sandbox;
++
++/*
+   // true for x = 5
+   // false for this.x = 5
+   // false for Object.defineProperty(this, 'foo', ...)
+   // false for vmResult.x = 5 where vmResult = vm.runInContext();
++
+   bool is_contextual_store = ctx->global_proxy() != args.This();
+ 
+   // Indicator to not return before setting (undeclared) function declarations
+@@ -613,7 +624,7 @@ Intercepted ContextifyContext::PropertySetterCallback(
+       !is_function) {
+     return Intercepted::kNo;
+   }
+-
++*/
+   if (!is_declared && property->IsSymbol()) {
+     return Intercepted::kNo;
+   }
+diff --git a/src/node_modules.cc b/src/node_modules.cc
+index b5425122b54d91673e184ccfe88dd3a0ca2ff634..d1db60e59ac0f1f3e3bfceecc81c81cd038bac66 100644
+--- a/src/node_modules.cc
++++ b/src/node_modules.cc
+@@ -645,7 +645,7 @@ static void PathHelpersLazyGetter(Local<v8::Name> name,
+   // When this getter is invoked in a vm context, the `Realm::GetCurrent(info)`
+   // returns a nullptr and retrieve the creation context via `this` object and
+   // get the creation Realm.
+-  Local<Value> receiver_val = info.This();
++  Local<Value> receiver_val = info.HolderV2();
+   if (!receiver_val->IsObject()) {
+     THROW_ERR_INVALID_INVOCATION(isolate);
+     return;
+diff --git a/src/node_util.cc b/src/node_util.cc
+index 2e4d98a8a66a18248ed292895671709abca155ad..0306e0b5d85269a7381356b53d34b7cc73f963d4 100644
+--- a/src/node_util.cc
++++ b/src/node_util.cc
+@@ -370,7 +370,7 @@ static void DefineLazyPropertiesGetter(
+   // When this getter is invoked in a vm context, the `Realm::GetCurrent(info)`
+   // returns a nullptr and retrieve the creation context via `this` object and
+   // get the creation Realm.
+-  Local<Value> receiver_val = info.This();
++  Local<Value> receiver_val = info.HolderV2();
+   if (!receiver_val->IsObject()) {
+     THROW_ERR_INVALID_INVOCATION(isolate);
+     return;
+diff --git a/src/node_webstorage.cc b/src/node_webstorage.cc
+index 5819d9bca845e0eed6d4d93564469d8f3c36200b..f4139f25f22b0744b0819ea4570f23254c80ec13 100644
+--- a/src/node_webstorage.cc
++++ b/src/node_webstorage.cc
+@@ -531,7 +531,7 @@ template <typename T>
+ static bool ShouldIntercept(Local<Name> property,
+                             const PropertyCallbackInfo<T>& info) {
+   Environment* env = Environment::GetCurrent(info);
+-  Local<Value> proto = info.This()->GetPrototypeV2();
++  Local<Value> proto = info.HolderV2()->GetPrototypeV2();
+ 
+   if (proto->IsObject()) {
+     bool has_prop;
+@@ -555,7 +555,7 @@ static Intercepted StorageGetter(Local<Name> property,
+   }
+ 
+   Storage* storage;
+-  ASSIGN_OR_RETURN_UNWRAP(&storage, info.This(), Intercepted::kNo);
++  ASSIGN_OR_RETURN_UNWRAP(&storage, info.HolderV2(), Intercepted::kNo);
+   Local<Value> result;
+ 
+   if (storage->Load(property).ToLocal(&result) && !result->IsNull()) {
+@@ -569,7 +569,7 @@ static Intercepted StorageSetter(Local<Name> property,
+                                  Local<Value> value,
+                                  const PropertyCallbackInfo<void>& info) {
+   Storage* storage;
+-  ASSIGN_OR_RETURN_UNWRAP(&storage, info.This(), Intercepted::kNo);
++  ASSIGN_OR_RETURN_UNWRAP(&storage, info.HolderV2(), Intercepted::kNo);
+ 
+   if (storage->Store(property, value).IsNothing()) {
+     info.GetReturnValue().SetFalse();
+@@ -585,7 +585,7 @@ static Intercepted StorageQuery(Local<Name> property,
+   }
+ 
+   Storage* storage;
+-  ASSIGN_OR_RETURN_UNWRAP(&storage, info.This(), Intercepted::kNo);
++  ASSIGN_OR_RETURN_UNWRAP(&storage, info.HolderV2(), Intercepted::kNo);
+   Local<Value> result;
+   if (!storage->Load(property).ToLocal(&result) || result->IsNull()) {
+     return Intercepted::kNo;
+@@ -598,7 +598,7 @@ static Intercepted StorageQuery(Local<Name> property,
+ static Intercepted StorageDeleter(Local<Name> property,
+                                   const PropertyCallbackInfo<Boolean>& info) {
+   Storage* storage;
+-  ASSIGN_OR_RETURN_UNWRAP(&storage, info.This(), Intercepted::kNo);
++  ASSIGN_OR_RETURN_UNWRAP(&storage, info.HolderV2(), Intercepted::kNo);
+ 
+   info.GetReturnValue().Set(storage->Remove(property).IsJust());
+ 
+@@ -607,7 +607,7 @@ static Intercepted StorageDeleter(Local<Name> property,
+ 
+ static void StorageEnumerator(const PropertyCallbackInfo<Array>& info) {
+   Storage* storage;
+-  ASSIGN_OR_RETURN_UNWRAP(&storage, info.This());
++  ASSIGN_OR_RETURN_UNWRAP(&storage, info.HolderV2());
+   Local<Array> result;
+   if (!storage->Enumerate().ToLocal(&result)) {
+     return;
+@@ -619,7 +619,7 @@ static Intercepted StorageDefiner(Local<Name> property,
+                                   const PropertyDescriptor& desc,
+                                   const PropertyCallbackInfo<void>& info) {
+   Storage* storage;
+-  ASSIGN_OR_RETURN_UNWRAP(&storage, info.This(), Intercepted::kNo);
++  ASSIGN_OR_RETURN_UNWRAP(&storage, info.HolderV2(), Intercepted::kNo);
+ 
+   if (desc.has_value()) {
+     return StorageSetter(property, desc.value(), info);

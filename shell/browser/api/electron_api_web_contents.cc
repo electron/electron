@@ -544,6 +544,28 @@ constexpr std::string_view CursorTypeToString(
   }
 }
 
+// Refs
+// https://source.chromium.org/chromium/chromium/src/+/main:components/page_content_annotations/content/page_context_fetcher.cc;l=206-223;drc=376a51732fd3b17b83451ceb93eea7ad07204798
+std::string_view CopyFromSurfaceErrorToString(
+    content::CopyFromSurfaceError error) {
+  switch (error) {
+    case content::CopyFromSurfaceError::kUnknown:
+      return "Unknown";
+    case content::CopyFromSurfaceError::kNotImplemented:
+      return "Not implemented";
+    case content::CopyFromSurfaceError::kFrameGone:
+      return "Frame Gone";
+    case content::CopyFromSurfaceError::kTimeout:
+      return "Timeout";
+    case content::CopyFromSurfaceError::kEmbeddingTokenChanged:
+      return "EmbeddingTokenChanged";
+    case content::CopyFromSurfaceError::kVizSentEmptyBitmap:
+      return "VizSentEmptyBitmap";
+    case content::CopyFromSurfaceError::kUnknownVizError:
+      return "UnknownVizError";
+  }
+}
+
 base::IDMap<WebContents*>& GetAllWebContents() {
   static base::NoDestructor<base::IDMap<WebContents*>> s_all_web_contents;
   return *s_all_web_contents;
@@ -561,7 +583,8 @@ void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
   }
 
   if (!result.has_value()) {
-    promise.RejectWithErrorMessage(result.error());
+    promise.RejectWithErrorMessage(
+        CopyFromSurfaceErrorToString(result.error()));
     capture_handle.RunAndReset();
     return;
   }

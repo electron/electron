@@ -47,10 +47,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 9b83881f61c52789ff377911f65a5e7440988aea..b09e6f2b64e63a45b28b11d5a83582b6b0184f36 100644
+index d97f936a5c26dcf6b39c8ed50630f183d5083d5d..0719808270ddce00c8dd324eff72675278ae7aa7 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1083,6 +1083,7 @@ component("base") {
+@@ -1082,6 +1082,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -793,7 +793,7 @@ index 712d59e1f7d9681c122e6d05a8b65bccbfacb492..de24209bbd3cd4a530c6f32990a0f93a
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 1c268292e081f54f9c71ad71d8ff1a69c802036b..6702cd695aa1db5f58d6c6f0534f757f470783a4 100644
+index 93ee33b10227da37b9404865df15eae16de2f9a9..5bb4a91572634a5ec296b0ec704b331cec319540 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -344,6 +344,7 @@ source_set("browser") {
@@ -839,7 +839,7 @@ index 367834e678f44d6e71c4218d293e11c3569daf2b..c97fb8f0411b45c1a01e4fab8dc40cc3
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 227613945d5d4afa485aabf34f1ecec6aacb04d4..492a3692cd2abec2ed3731e848d67094a1e5eedc 100644
+index d93c66c9997dbaa912195d1d99a021486fd81e14..082c24657917671fbee8f755786285af66640a92 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -52,6 +52,7 @@
@@ -886,7 +886,7 @@ index 227613945d5d4afa485aabf34f1ecec6aacb04d4..492a3692cd2abec2ed3731e848d67094
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2233,20 +2240,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2255,20 +2262,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -914,7 +914,7 @@ index 227613945d5d4afa485aabf34f1ecec6aacb04d4..492a3692cd2abec2ed3731e848d67094
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 1df402ca32ab9774f9b130e9ab699557eff9aaef..b2af61152fb65b08e28642e3daab18fedff1e191 100644
+index 605f250c1f94e4b12a6790bd9fb4623d1f1a9d45..d5cf3b48e1b35527ec69b49e375710cc5f12cf9d 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -270,6 +270,7 @@ source_set("common") {
@@ -926,10 +926,10 @@ index 1df402ca32ab9774f9b130e9ab699557eff9aaef..b2af61152fb65b08e28642e3daab18fe
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index ee387002e8dbb54ddeb1f61f1973560cc91bfb42..5a46859e916fd3510b7add5a6af7cea1cf4b4827 100644
+index dc4ac3b6aa8d57ea8dd5357d3865c4d418942f87..5aaa899b8c92b473d3c6cf5d24da34ed74285ec1 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -323,6 +323,7 @@ target(link_target_type, "renderer") {
+@@ -325,6 +325,7 @@ target(link_target_type, "renderer") {
      "//ui/strings:auto_image_annotation_strings_grit",
      "//url",
      "//v8",
@@ -1008,7 +1008,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 669d96a275ef693a3ce0eab7ddfb564e11daf2ee..3e5b7d6ca446fbfd60afa7fbd6b5284945730df8 100644
+index 9e0752536c531454b08cd0473958dbda4c3338cc..ed15bfd6bbfca8ed420115e42d3b0988aed15d65 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -701,6 +701,7 @@ static_library("test_support") {
@@ -1607,10 +1607,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 4dabfb153a0ef874b22ac958c39114fc78fbf009..40a0e30239ec74e9dfc5c3b16c81f580097dac38 100644
+index c8135570f00e9bd737bd775478ea5a8642507d7a..44265e4f5a7c3bcafe26e6ee1db83bbd048e6ebf 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -438,6 +438,7 @@ component("core") {
+@@ -439,6 +439,7 @@ component("core") {
      "//ui/gfx/geometry",
      "//ui/gfx/geometry:geometry_skia",
      "//ui/strings",

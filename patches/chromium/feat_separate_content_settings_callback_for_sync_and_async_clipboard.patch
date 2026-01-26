@@ -103,7 +103,7 @@ index 638d0ee4fb368d28465322d34dbfca645ecd162d..38c20e7f0c597815ce5ee3333f12183a
    NUM,
    MIN_VALUE = MIDI_SYSEX,
 diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
-index f3e787a35976d86cc4e7307745822634df659941..81c4f0bdc89f972464d13f06c7907e5aabff4043 100644
+index 10ef656b019f46d389de074e5aad292af1728eac..cd200c6aadb304e440df65532a9ef86f0aef4fa7 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
 @@ -47,7 +47,7 @@ enum PermissionName {

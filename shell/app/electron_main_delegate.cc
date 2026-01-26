@@ -502,6 +502,15 @@ bool ElectronMainDelegate::ShouldInitializeMojo(InvokedIn invoked_in) {
   return ShouldCreateFeatureList(invoked_in);
 }
 
+bool ElectronMainDelegate::ShouldLoadV8Snapshot(
+    const std::string& process_type) {
+  // The gpu does not need v8
+  if (process_type == ::switches::kGpuProcess) {
+    return false;
+  }
+  return true;
+}
+
 bool ElectronMainDelegate::ShouldLockSchemeRegistry() {
   return false;
 }
