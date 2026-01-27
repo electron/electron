@@ -98,23 +98,17 @@ DialogSettings::~DialogSettings() = default;
 
 namespace {
 
-// Get a sensible default directory for file dialogs when no default path is
-// provided. Tries Downloads folder first, then falls back to Home directory.
-base::FilePath GetSmartDefaultPath() {
+// Returns a default directory for file dialogs when no default path is provided.
+base::FilePath GetDefaultPath() {
   base::FilePath path;
 
-  // Try Downloads directory first
   if (base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &path) &&
-      base::DirectoryExists(path)) {
+      base::DirectoryExists(path))
     return path;
-  }
 
-  // Fall back to Home directory
-  if (base::PathService::Get(base::DIR_HOME, &path)) {
+  if (base::PathService::Get(base::DIR_HOME, &path))
     return path;
-  }
 
-  // If all else fails, return empty path (will use system default)
   return base::FilePath();
 }
 
@@ -208,11 +202,8 @@ void SetupDialog(NSSavePanel* dialog, const DialogSettings& settings) {
 
   [dialog setShowsTagField:settings.shows_tag_field];
 
-  // Use smart default path if no default_path was provided
-  base::FilePath default_path = settings.default_path;
-  if (default_path.empty()) {
-    default_path = GetSmartDefaultPath();
-  }
+  base::FilePath default_path = settings.default_path.empty() ? GetDefaultPath() :
+      settings.default_path;
 
   NSString* default_dir = nil;
   NSString* default_filename = nil;
