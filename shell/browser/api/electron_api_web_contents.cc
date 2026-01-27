@@ -3633,7 +3633,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
     // By default, the requested bitmap size is the view size in screen
     // coordinates.  However, if there's more pixel detail available on the
     // current system, increase the requested bitmap size to capture it all.
-    gfx::Size bitmap_size = view_size;
+    bitmap_size = view_size;
     const gfx::NativeView native_view = view->GetNativeView();
     const float scale = display::Screen::Get()
                             ->GetDisplayNearestView(native_view)
