@@ -6,10 +6,10 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 7651e982578b5546393086fa87e6d410ca617027..5a71b4e88c22517c5ad296213b3bfefde06115cb 100644
+index 93fe27d2e7cf5cf78d30685e50f25715ddefd66e..b092a09cada3f289cb13ed4352b6da8cb7ff154a 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -845,6 +845,10 @@ void RenderWidgetHostImpl::WasHidden() {
+@@ -846,6 +846,10 @@ void RenderWidgetHostImpl::WasHidden() {
      return;
    }
  
@@ -21,12 +21,12 @@ index 7651e982578b5546393086fa87e6d410ca617027..5a71b4e88c22517c5ad296213b3bfefd
    // Prompts should remain open and functional across tab switches.
    if (!delegate_ || !delegate_->IsWaitingForPointerLockPrompt(this)) {
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 614390e29fa84af4c141102d86f3ebdb7293b813..0bb31ec2e957301e55c81225683ec9982ba63039 100644
+index bffb574713aaefb61c7204b5d859f1d7c77b2192..889c9f3549fdc71171c830e17595bee6f21eb9e8 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -1036,6 +1036,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
-     return synthetic_gesture_controller_.get();
-   }
+@@ -1039,6 +1039,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+ 
+   base::TimeDelta GetHungRendererDelayForTesting();
  
 +  // Electron: Prevents the widget from getting hidden.
 +  bool disable_hidden_ = false;

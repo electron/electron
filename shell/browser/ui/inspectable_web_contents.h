@@ -195,6 +195,7 @@ class InspectableWebContents
                         const std::string& request) override {}
   void RegisterAidaClientEvent(DispatchCallback callback,
                                const std::string& request) override {}
+  void SetChromeFlag(const std::string& flag_name, bool value) override {}
   void DispatchHttpRequest(
       DispatchCallback callback,
       const DevToolsDispatchHttpRequestParams& params) override {}
