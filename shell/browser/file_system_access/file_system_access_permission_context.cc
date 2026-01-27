@@ -36,6 +36,7 @@
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "third_party/blink/public/common/features_generated.h"
 #include "third_party/blink/public/mojom/file_system_access/file_system_access_manager.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/origin.h"
@@ -427,6 +428,28 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
     grants.emplace(new_path.path, grant_impl);
   }
 
+  // Downgrades the in-memory read permission grant for the `path` if it exist
+  // in `grants`. This is different from
+  // ChromeFileSystemAccessPermissionContext::RevokeGrant in that this method
+  // does not reset the persisted permission state.
+  static void DowngradeReadGrantInMemory(
+      std::map<base::FilePath, PermissionGrantImpl*>& grants,
+      const content::PathInfo& path) {
+    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+
+    auto entry_it = std::ranges::find_if(grants, [&path](const auto& entry) {
+      return entry.first == path.path;
+    });
+    if (entry_it == grants.end()) {
+      return;
+    }
+
+    DCHECK_EQ(entry_it->second->GetActivePermissionStatus(),
+              PermissionStatus::GRANTED);
+    auto* const grant_impl = entry_it->second;
+    grant_impl->SetStatus(PermissionStatus::DENIED);
+  }
+
  protected:
   ~PermissionGrantImpl() override {
     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -479,6 +502,10 @@ struct FileSystemAccessPermissionContext::OriginState {
   // PermissionGrantDestroyed().
   std::map<base::FilePath, PermissionGrantImpl*> read_grants;
   std::map<base::FilePath, PermissionGrantImpl*> write_grants;
+
+  // Stores paths whose read grants have been downgraded to ASK after a
+  // remove() call and are eligible for restoration.
+  std::set<base::FilePath> downgraded_read_paths;
 };
 
 FileSystemAccessPermissionContext::FileSystemAccessPermissionContext(
@@ -937,15 +964,68 @@ void FileSystemAccessPermissionContext::NotifyEntryMoved(
     PermissionGrantImpl::UpdateGrantPath(it->second.read_grants, old_path,
                                          new_path);
   }
+
+  if (base::FeatureList::IsEnabled(
+          blink::features::kFileSystemAccessRevokeReadOnRemove)) {
+    MaybeRestoreReadPermission(origin, new_path.path);
+  }
 }
 
 void FileSystemAccessPermissionContext::NotifyEntryModified(
     const url::Origin& origin,
-    const content::PathInfo& path) {}
+    const content::PathInfo& path) {
+  CHECK(base::FeatureList::IsEnabled(
+      blink::features::kFileSystemAccessRevokeReadOnRemove));
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+
+  MaybeRestoreReadPermission(origin, path.path);
+}
+
+void FileSystemAccessPermissionContext::MaybeRestoreReadPermission(
+    const url::Origin& origin,
+    const base::FilePath& path) {
+  auto it = active_permissions_map_.find(origin);
+  if (it == active_permissions_map_.end()) {
+    return;
+  }
+  OriginState& origin_state = it->second;
+
+  // Return early if the path was not previously downgraded.
+  if (origin_state.downgraded_read_paths.find(path) ==
+      origin_state.downgraded_read_paths.end()) {
+    return;
+  }
+
+  origin_state.downgraded_read_paths.erase(path);
+
+  // Set the grant's status back to GRANTED if it was previously downgraded.
+  auto grant_it = origin_state.read_grants.find(path);
+  // Exclude the case where the path does not exist in the read_grants map.
+  if (grant_it != origin_state.read_grants.end())
+    grant_it->second->SetStatus(PermissionStatus::GRANTED);
+}
 
 void FileSystemAccessPermissionContext::NotifyEntryRemoved(
     const url::Origin& origin,
-    const content::PathInfo& path) {}
+    const content::PathInfo& path) {
+  CHECK(base::FeatureList::IsEnabled(
+      blink::features::kFileSystemAccessRevokeReadOnRemove));
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+
+  if (AncestorHasActivePermission(origin, path.path, GrantType::kRead)) {
+    // If `path` has an active read grant inherited from its ancestor, don't
+    // downgrade its permission, as it will still get ancestor grant by default.
+    return;
+  }
+
+  auto it = active_permissions_map_.find(origin);
+  if (it != active_permissions_map_.end()) {
+    PermissionGrantImpl::DowngradeReadGrantInMemory(it->second.read_grants,
+                                                    path);
+    // Marks the path as downgraded so that it can be restored later.
+    it->second.downgraded_read_paths.insert(path.path);
+  }
+}
 
 void FileSystemAccessPermissionContext::OnFileCreatedFromShowSaveFilePicker(
     const GURL& file_picker_binding_context,
