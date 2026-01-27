@@ -80,10 +80,10 @@ index 39fa45f0a0f9076bd7ac0be6f455dd540a276512..3d0381d463eed73470b28085830f2a23
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index ee409fe81815c1777d44bc0e3de323f40e3825a4..58b6783f6339e3a163e6f598a217240f788b5c16 100644
+index 73bfa0d51d6840704076c51acb86335fde94a196..b76f3754ee0b56649100baf62e8625b6cf1e46da 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2355,7 +2355,8 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2344,7 +2344,8 @@ bool Browser::IsWebContentsCreationOverridden(
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
      const std::string& frame_name,
@@ -93,7 +93,7 @@ index ee409fe81815c1777d44bc0e3de323f40e3825a4..58b6783f6339e3a163e6f598a217240f
    if (HasActorTask(profile(), opener)) {
      // If an ExecutionEngine is acting on the opener, prevent it from creating a
      // new WebContents. We'll instead force the navigation to happen in the same
-@@ -2368,7 +2369,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2357,7 +2358,7 @@ bool Browser::IsWebContentsCreationOverridden(
    return (window_container_type ==
                content::mojom::WindowContainerType::BACKGROUND &&
            ShouldCreateBackgroundContents(source_site_instance, opener_url,
@@ -103,10 +103,10 @@ index ee409fe81815c1777d44bc0e3de323f40e3825a4..58b6783f6339e3a163e6f598a217240f
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 3bbf1f6bfcc654ee750862153e37fe2836b4514c..d8859df2113171bf7f2e86dce653e2d258961de3 100644
+index ac383addcb49de7af7b515f6ee56f3a577a2520f..ff2724382d1e45a63fc65b45ea9c1331d6514dd5 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -936,8 +936,7 @@ class Browser : public TabStripModelObserver,
+@@ -931,8 +931,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

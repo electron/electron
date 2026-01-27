@@ -33,7 +33,7 @@ index 0ab8187b0db8ae6db46d81738f653a2bc4c566f6..de3d55e85c22317f7f9375eb94d0d5d4
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 132b9b3a0a3508fcb25cbca7a3e4164128d2ca3c..bab02e340c36f2f41713740850cde3e3d889f067 100644
+index 42c7711ec6b4928b056f6f960f4aa572c58ed548..41c86ec8406a769eb8ea0922eb74e9fa603e3ed8 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -1879,6 +1879,13 @@ void NetworkContext::SetNetworkConditions(
@@ -63,10 +63,10 @@ index 36b0d44c840dfd506b56284352e82421594a7f0f..6fc6600d84318a37c9637c8d526da65e
    void SetEnableReferrers(bool enable_referrers) override;
  #if BUILDFLAG(IS_CT_SUPPORTED)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 160d18eba4101efab2dae444d09947f650079003..b78bde54c454a986ae8b2ed68bf0cf5a3d10568f 100644
+index a07b6430f810a4b6ff1e3d527bb20cf675d993d1..769ba60886c6e10e8b4fea333c2f89c1163a783f 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -1268,6 +1268,9 @@ interface NetworkContext {
+@@ -1276,6 +1276,9 @@ interface NetworkContext {
    SetNetworkConditions(mojo_base.mojom.UnguessableToken throttling_profile_id,
                         array<MatchedNetworkConditions> conditions);
  

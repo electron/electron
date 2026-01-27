@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 93cd11cc04697b09fbdd9801e44aef4bfa2d4ae1..132b9b3a0a3508fcb25cbca7a3e4164128d2ca3c 100644
+index f2c25d2b38f00eefe975497b7f6bda766f04755a..42c7711ec6b4928b056f6f960f4aa572c58ed548 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -170,6 +170,11 @@
@@ -190,10 +190,10 @@ index 496b8bccd3d84e642e2c59602e9591d3a763ad81..36b0d44c840dfd506b56284352e82421
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 2e1694ccdade6cd5c0ddb849aef3932a856651e2..160d18eba4101efab2dae444d09947f650079003 100644
+index ff13d77e072ff2f2efd01fadc4016ede8284d353..a07b6430f810a4b6ff1e3d527bb20cf675d993d1 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -310,6 +310,17 @@ struct SocketBrokerRemotes {
+@@ -312,6 +312,17 @@ struct SocketBrokerRemotes {
    pending_remote<SocketBroker> server;
  };
  
@@ -211,7 +211,7 @@ index 2e1694ccdade6cd5c0ddb849aef3932a856651e2..160d18eba4101efab2dae444d09947f6
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // The user agent string.
-@@ -954,6 +965,9 @@ interface NetworkContext {
+@@ -962,6 +973,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

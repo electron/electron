@@ -527,7 +527,7 @@ index 20fbdb2d4ac747aa174c5d8e19fd9f1ea48314a9..7507eb2b9e44fe352861ef74151c3baa
    if (self.isHeadless || self.parentWindow) {
      // AppKit's default implementation moves child windows down to avoid
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 414874d84338ff12e707d52bc82483957d74d8ef..849da439a046aea133946572c79964858e4e7ba5 100644
+index c6cfdc7b778f2027280d8624a0d48f385365f758..7f9eab99da6300b89a7118added90f8999428a2c 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -538,7 +538,7 @@ index 414874d84338ff12e707d52bc82483957d74d8ef..849da439a046aea133946572c7996485
  #include "mojo/public/cpp/bindings/self_owned_receiver.h"
  #include "net/cert/x509_util_apple.h"
  #include "ui/accelerated_widget_mac/window_resize_helper_mac.h"
-@@ -731,10 +732,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -732,10 +733,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -552,10 +552,10 @@ index 414874d84338ff12e707d52bc82483957d74d8ef..849da439a046aea133946572c7996485
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 3c60e4e519f36a098704d744e3659ad0b8083157..123118d66734295f7b00e807aa0437ac76ab3f57 100644
+index d787f62c8914bf4dc4287666a273582ff0069f83..4b69667a75429c367b1e1f98e31cc1ccdb0553d9 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -389,6 +389,7 @@ viz_component("service") {
+@@ -391,6 +391,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mojo_mac.h",
        ]
      }
@@ -563,7 +563,7 @@ index 3c60e4e519f36a098704d744e3659ad0b8083157..123118d66734295f7b00e807aa0437ac
    }
  
    if (is_ios) {
-@@ -714,6 +715,7 @@ viz_source_set("unit_tests") {
+@@ -717,6 +718,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -872,7 +872,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 3370c6407201c8577f4dad430558cf4bc2fc633a..dc02c51c0d2a800edf05708d73da2c6ea812668f 100644
+index 3d237d2a227d9b90fc734e2290a1d31dbde04aba..a462b05daee8b32de1e504faccbe4bf7f22b8ade 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -702,6 +702,7 @@ static_library("test_support") {
@@ -900,7 +900,7 @@ index 3370c6407201c8577f4dad430558cf4bc2fc633a..dc02c51c0d2a800edf05708d73da2c6e
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3411,6 +3415,7 @@ test("content_unittests") {
+@@ -3412,6 +3416,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1782,7 +1782,7 @@ index ef031ba14e4c649f6f3a5718ac521e6b424d64cb..38e528450196b4dbd5fa6a25b96baa10
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index fb8d813511df674326803084a8083da34e754308..a17afdfeb2c5fc29e13d299c41ddb1c9796fe16a 100644
+index 7d1c33b93adebfb9d93464399af2df84418d74f4..0b9789fad27bd46acecda88ccf3b13e58c39232c 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -355,6 +355,13 @@ component("base") {
@@ -1903,7 +1903,7 @@ index 93e90c4eba9bc9b93d68e834eb6baabeb2d0ecf0..1b90f41d05f847a94adf2f4da827b1d0
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 8a11735dd897617e374dfd03a9a0521473515b39..193ef1558cb937ad2e28f7cd8ae87e6345f97910 100644
+index 1b3ed08902ddb5a4400345c4b0d204ca82df2c5e..6db9f06dbaf357cf83ac7b6ff9acc2f20149d09c 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -138,6 +138,12 @@ component("display") {
@@ -1950,10 +1950,10 @@ index bfffd0444b0711b201cedaddfd3edaa7b5d9220a..8cdae9f250d407d0c2d34ba7c0891b84
    // Query the display's refresh rate.
    display.set_display_frequency(screen.maximumFramesPerSecond);
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 04e2be450e4499ed08f0b61650e929b2ee46e73a..af4cbcecbbfb2050a390a979543e4ba5bffbdafa 100644
+index 8db4f9770541cbd49830fba2770adb03c5db3b2e..7fcbd3fc20a1b116587bf6507cd43ca6f0164b22 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -278,6 +278,8 @@ component("gfx") {
+@@ -280,6 +280,8 @@ component("gfx") {
        "CoreGraphics.framework",
        "CoreText.framework",
      ]
