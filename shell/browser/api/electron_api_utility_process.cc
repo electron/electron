@@ -263,6 +263,13 @@ void UtilityProcessWrapper::HandleTermination(uint64_t exit_code) {
     return;
   terminated_ = true;
 
+#if BUILDFLAG(IS_WIN)
+  // Utility process exit codes are DWORDs, but they can be delivered as signed
+  // integers. Normalize to the 32-bit unsigned value to avoid sign-extension
+  // when widened to 64-bit for JS consumers.
+  exit_code = static_cast<uint32_t>(exit_code);
+ #endif
+
   if (pid_ != base::kNullProcessId)
     GetAllUtilityProcessWrappers().Remove(pid_);
 
