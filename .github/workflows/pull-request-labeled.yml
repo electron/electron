@@ -71,6 +71,7 @@ jobs:
       - name: Close the pull request
         env:
           GITHUB_TOKEN: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
+          GH_REPO: electron/electron
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           gh pr close "$PR_NUMBER"
