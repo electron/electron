@@ -30,6 +30,7 @@
 #include "components/proxy_config/pref_proxy_config_tracker_impl.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"  // nogncheck
+#include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cors_origin_pattern_setter.h"
 #include "content/public/browser/host_zoom_map.h"
@@ -406,6 +407,10 @@ ElectronBrowserContext::ElectronBrowserContext(
     extension_system->FinishInitialization();
   }
 #endif
+
+  subscription_ = content::RegisterNetworkServiceProcessGoneHandler(
+      base::BindRepeating(&ElectronBrowserContext::OnNetworkServiceProcessGone,
+                          weak_ptr_factory_.GetWeakPtr()));
 }
 
 ElectronBrowserContext::~ElectronBrowserContext() {
@@ -894,6 +899,12 @@ ElectronBrowserContext* ElectronBrowserContext::FromPath(
         new ElectronBrowserContext{std::cref(path), false, std::move(options)});
   }
   return context.get();
+}
+
+void ElectronBrowserContext::OnNetworkServiceProcessGone(bool crashed) {
+  if (url_loader_factory_) {
+    url_loader_factory_.reset();
+  }
 }
 
 }  // namespace electron
