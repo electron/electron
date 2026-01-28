@@ -71,6 +71,50 @@ index 97c43afb487b58c0c77bd59b4a6b6d7a13690053..23a4d7b651935a4029249fb2f1dd3ed4
  }
  
  inline Environment* Environment::GetCurrent(
+diff --git a/src/histogram.cc b/src/histogram.cc
+index 836a51b0e5aa4b1910604537c8b380038c27a7db..c4634e42fd2e5a27b0139a9b1716bc04875be469 100644
+--- a/src/histogram.cc
++++ b/src/histogram.cc
+@@ -136,7 +136,8 @@ HistogramBase::HistogramBase(
+   MakeWeak();
+   wrap->SetAlignedPointerInInternalField(
+       HistogramImpl::InternalFields::kImplField,
+-      static_cast<HistogramImpl*>(this));
++      static_cast<HistogramImpl*>(this),
++      v8::kEmbedderDataTypeTagDefault);
+ }
+ 
+ HistogramBase::HistogramBase(
+@@ -148,7 +149,8 @@ HistogramBase::HistogramBase(
+   MakeWeak();
+   wrap->SetAlignedPointerInInternalField(
+       HistogramImpl::InternalFields::kImplField,
+-      static_cast<HistogramImpl*>(this));
++      static_cast<HistogramImpl*>(this),
++      v8::kEmbedderDataTypeTagDefault);
+ }
+ 
+ void HistogramBase::MemoryInfo(MemoryTracker* tracker) const {
+@@ -362,7 +364,8 @@ IntervalHistogram::IntervalHistogram(
+   MakeWeak();
+   wrap->SetAlignedPointerInInternalField(
+       HistogramImpl::InternalFields::kImplField,
+-      static_cast<HistogramImpl*>(this));
++      static_cast<HistogramImpl*>(this),
++      v8::kEmbedderDataTypeTagDefault);
+   uv_timer_init(env->event_loop(), &timer_);
+ }
+ 
+@@ -601,7 +604,8 @@ HistogramImpl* HistogramImpl::FromJSObject(Local<Value> value) {
+   auto obj = value.As<Object>();
+   DCHECK_GE(obj->InternalFieldCount(), HistogramImpl::kInternalFieldCount);
+   return static_cast<HistogramImpl*>(
+-      obj->GetAlignedPointerFromInternalField(HistogramImpl::kImplField));
++      obj->GetAlignedPointerFromInternalField(HistogramImpl::kImplField,
++                                              v8::kEmbedderDataTypeTagDefault));
+ }
+ 
+ std::unique_ptr<worker::TransferData>
 diff --git a/src/js_udp_wrap.cc b/src/js_udp_wrap.cc
 index 51e4f8c45ffd38fcf925ab8d283b3b88f2a35832..0c30c8b4609e4870c0ccfc5e9e465248c20763b8 100644
 --- a/src/js_udp_wrap.cc
