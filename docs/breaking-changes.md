@@ -24,6 +24,35 @@ for more consistent output sizes.
 
 ## Planned Breaking API Changes (41.0)
 
+### Behavior Changed: `electron` no longer downloads itself via `postinstall` script
+
+Previously, the `electron` npm package would download the Electron binary from the repository's
+GitHub Releases in the package's `postinstall` script.
+
+With recent supply chain security attacks against the npm ecosystem with `postinstall` scripts as a
+common attack vector, Electron will now download itself dynamically the first time that its main
+`bin` script is run (e.g. via `npx electron`). With this change, you can now use Electron with the
+npm `--ignore-scripts` flag. See [RFC #22](https://github.com/electron/rfcs/pull/22) for more context.
+
+```sh
+# won't install binary to `node_modules/electron`
+npm install electron --save-dev --ignore-scripts
+
+# will download the binary on demand before starting electron process
+npx electron .
+
+# subsequent runs will used the binary downloaded from the first run
+npx electron .
+```
+
+If you need to download the Electron binary on-demand, you can now call the `install-electron` script,
+which contains the exact same code from the former `postinstall` script.
+
+```sh
+npm install electron --save-dev --ignore-scripts
+npx install-electron --no
+```
+
 ### Behavior Changed: PDFs no longer create a separate WebContents
 
 Previously, PDF resources created a separate guest [WebContents](https://www.electronjs.org/docs/latest/api/web-contents) for rendering. Now, PDFs are rendered within the same WebContents instead. If you have code to detect PDF resources, use the [frame tree](https://www.electronjs.org/docs/latest/api/web-frame-main) instead of WebContents.
