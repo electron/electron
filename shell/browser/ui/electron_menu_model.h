@@ -96,6 +96,8 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   bool ShouldRegisterAcceleratorAt(size_t index) const;
   bool WorksWhenHiddenAt(size_t index) const;
 #if BUILDFLAG(IS_MAC)
+  void SetAlternate(size_t index, bool alternate);
+  bool IsAlternateAt(size_t index) const;
   // Return the SharingItem of menu item.
   bool GetSharingItemAt(size_t index, SharingItem* item) const;
   // Set/Get the SharingItem of this menu.
@@ -122,6 +124,7 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
 
 #if BUILDFLAG(IS_MAC)
   std::optional<SharingItem> sharing_item_;
+  base::flat_map<int, bool> alternates_;  // command id -> alternate
 #endif
 
   base::flat_map<int, std::u16string> toolTips_;   // command id -> tooltip
