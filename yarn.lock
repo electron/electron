@@ -1990,16 +1990,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/split@npm:^1.0.5":
-  version: 1.0.5
-  resolution: "@types/split@npm:1.0.5"
-  dependencies:
-    "@types/node": "npm:*"
-    "@types/through": "npm:*"
-  checksum: 10c0/eb187a3b07e5064928e49bffd5c45ad1f1109135fee52344bb7623cdb55e2ebb16bd6ca009a30a0a6e2b262f7ebb7bf18030ff873819e80fafd4cbb51dba1a74
-  languageName: node
-  linkType: hard
-
 "@types/stream-chain@npm:*":
   version: 2.0.0
   resolution: "@types/stream-chain@npm:2.0.0"
@@ -2039,15 +2029,6 @@ __metadata:
   version: 0.2.2
   resolution: "@types/text-table@npm:0.2.2"
   checksum: 10c0/83e7a78f8434b8c0f536249c39028624a3ef2c37e0d4acfe839c0cf1a53fda5bb2aa56403455c5c0cc92009d5fcebb24c195f93ea8aced6701577ad5d738c19a
-  languageName: node
-  linkType: hard
-
-"@types/through@npm:*":
-  version: 0.0.33
-  resolution: "@types/through@npm:0.0.33"
-  dependencies:
-    "@types/node": "npm:*"
-  checksum: 10c0/6a8edd7f40cd7e197318e86310a40e568cddd380609dde59b30d5cc6c5f8276ddc698905eac4b3b429eb39f2e8ee326bc20dc6e95a2cdc41c4d3fc9a1ebd4929
   languageName: node
   linkType: hard
 
@@ -4543,7 +4524,6 @@ __metadata:
     "@types/mocha": "npm:^7.0.2"
     "@types/send": "npm:^0.14.5"
     "@types/sinon": "npm:^9.0.4"
-    "@types/split": "npm:^1.0.5"
     "@types/uuid": "npm:^3.4.6"
     "@types/w3c-web-serial": "npm:^1.0.7"
     "@types/ws": "npm:^7.2.0"
@@ -4566,7 +4546,6 @@ __metadata:
     q: "npm:^1.5.1"
     send: "npm:^0.19.0"
     sinon: "npm:^9.0.1"
-    split: "npm:^1.0.1"
     uuid: "npm:^3.3.3"
     winreg: "npm:1.2.4"
     ws: "npm:^7.5.10"
