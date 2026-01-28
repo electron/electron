@@ -48,8 +48,7 @@ jobs:
       name: ai-pr label added
       if: github.event.label.name == 'ai-pr'
       runs-on: ubuntu-latest
-      permissions:
-        pull-requests: write
+      permissions: {}
       steps:
       - name: Generate GitHub App token
         uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
