@@ -25,7 +25,7 @@ const MenuItem = function (this: any, options: any) {
 
   this.overrideReadOnlyProperty('type', roles.getDefaultType(this.role));
   this.overrideReadOnlyProperty('role');
-  this.overrideReadOnlyProperty('accelerator');
+  this.overrideReadOnlyProperty('accelerator', roles.getDefaultAccelerator(this.role));
   this.overrideReadOnlyProperty('icon');
   this.overrideReadOnlyProperty('submenu');
 
