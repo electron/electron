@@ -426,6 +426,36 @@ namespace {
 // Global toggle for disabling draggable regions checks.
 bool g_disable_draggable_regions = false;
 
+// Constants we use for printing.
+constexpr char kFrom[] = "from";
+constexpr char kTo[] = "to";
+constexpr char kUseDefaultPrinterPageSize[] = "usePrinterDefaultPageSize";
+constexpr char kSilent[] = "silent";
+constexpr char kHeader[] = "header";
+constexpr char kFooter[] = "footer";
+constexpr char kPageRanges[] = "pageRanges";
+constexpr char kMediaSize[] = "mediaSize";
+constexpr char kDpi[] = "dpi";
+constexpr char kMarginType[] = "marginType";
+constexpr char kMargins[] = "margins";
+
+// Constants we use for printToPDF options.
+constexpr char kLandscape[] = "landscape";
+constexpr char kDisplayHeaderFooter[] = "displayHeaderFooter";
+constexpr char kPrintBackground[] = "printBackground";
+constexpr char kScale[] = "scale";
+constexpr char kPaperWidth[] = "paperWidth";
+constexpr char kPaperHeight[] = "paperHeight";
+constexpr char kMarginTop[] = "marginTop";
+constexpr char kMarginBottom[] = "marginBottom";
+constexpr char kMarginLeft[] = "marginLeft";
+constexpr char kMarginRight[] = "marginRight";
+constexpr char kHeaderTemplate[] = "headerTemplate";
+constexpr char kFooterTemplate[] = "footerTemplate";
+constexpr char kPreferCSSPageSize[] = "preferCSSPageSize";
+constexpr char kGenerateTaggedPDF[] = "generateTaggedPDF";
+constexpr char kGenerateDocumentOutline[] = "generateDocumentOutline";
+
 constexpr std::string_view CursorTypeToString(
     ui::mojom::CursorType cursor_type) {
   switch (cursor_type) {
@@ -3050,6 +3080,28 @@ void OnGetDeviceNameToUse(base::WeakPtr<content::WebContents> web_contents,
     print_settings.Set(printing::kSettingDpiVertical, dpi.height());
   }
 
+  auto make_media_size = [](int height_microns, int width_microns) {
+    return base::Value::Dict()
+        .Set(printing::kSettingMediaSizeHeightMicrons, height_microns)
+        .Set(printing::kSettingMediaSizeWidthMicrons, width_microns)
+        .Set(printing::kSettingsImageableAreaLeftMicrons, 0)
+        .Set(printing::kSettingsImageableAreaTopMicrons, height_microns)
+        .Set(printing::kSettingsImageableAreaRightMicrons, width_microns)
+        .Set(printing::kSettingsImageableAreaBottomMicrons, 0)
+        .Set(printing::kSettingMediaSizeIsDefault, true);
+  };
+
+  const bool use_default_size =
+      print_settings.FindBool(kUseDefaultPrinterPageSize).value_or(false);
+  std::optional<gfx::Size> paper_size;
+  if (use_default_size)
+    paper_size = GetPrinterDefaultPaperSize(base::UTF16ToUTF8(info.second));
+
+  print_settings.Set(
+      printing::kSettingMediaSize,
+      paper_size ? make_media_size(paper_size->height(), paper_size->width())
+                 : make_media_size(297000, 210000));
+
   content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents.get());
   if (!rfh)
     return;
@@ -3119,30 +3171,32 @@ void WebContents::Print(gin::Arguments* const args) {
   }
 
   // Set optional silent printing.
-  settings.Set("silent", options.ValueOrDefault("silent", false));
+  settings.Set(kSilent, options.ValueOrDefault(kSilent, false));
 
-  settings.Set(printing::kSettingShouldPrintBackgrounds,
-               options.ValueOrDefault("printBackground", false));
+  settings.Set(
+      printing::kSettingShouldPrintBackgrounds,
+      options.ValueOrDefault(printing::kSettingShouldPrintBackgrounds, false));
 
   // Set custom margin settings
   auto margins = gin_helper::Dictionary::CreateEmpty(isolate);
-  if (options.Get("margins", &margins)) {
+  if (options.Get(kMargins, &margins)) {
     printing::mojom::MarginType margin_type =
         printing::mojom::MarginType::kDefaultMargins;
-    margins.Get("marginType", &margin_type);
+    margins.Get(kMarginType, &margin_type);
     settings.Set(printing::kSettingMarginsType, static_cast<int>(margin_type));
 
     if (margin_type == printing::mojom::MarginType::kCustomMargins) {
-      settings.Set(printing::kSettingMarginsCustom,
-                   base::Value::Dict{}
-                       .Set(printing::kSettingMarginTop,
-                            margins.ValueOrDefault("top", 0))
-                       .Set(printing::kSettingMarginBottom,
-                            margins.ValueOrDefault("bottom", 0))
-                       .Set(printing::kSettingMarginLeft,
-                            margins.ValueOrDefault("left", 0))
-                       .Set(printing::kSettingMarginRight,
-                            margins.ValueOrDefault("right", 0)));
+      settings.Set(
+          printing::kSettingMarginsCustom,
+          base::Value::Dict{}
+              .Set(printing::kSettingMarginTop,
+                   margins.ValueOrDefault(printing::kSettingMarginTop, 0))
+              .Set(printing::kSettingMarginBottom,
+                   margins.ValueOrDefault(printing::kSettingMarginBottom, 0))
+              .Set(printing::kSettingMarginLeft,
+                   margins.ValueOrDefault(printing::kSettingMarginLeft, 0))
+              .Set(printing::kSettingMarginRight,
+                   margins.ValueOrDefault(printing::kSettingMarginRight, 0)));
     }
   } else {
     settings.Set(
@@ -3151,37 +3205,42 @@ void WebContents::Print(gin::Arguments* const args) {
   }
 
   // Set whether to print color or greyscale
-  settings.Set(printing::kSettingColor,
-               static_cast<int>(options.ValueOrDefault("color", true)
-                                    ? printing::mojom::ColorModel::kColor
-                                    : printing::mojom::ColorModel::kGray));
+  settings.Set(
+      printing::kSettingColor,
+      static_cast<int>(options.ValueOrDefault(printing::kSettingColor, true)
+                           ? printing::mojom::ColorModel::kColor
+                           : printing::mojom::ColorModel::kGray));
 
   // Is the orientation landscape or portrait.
   settings.Set(printing::kSettingLandscape,
-               options.ValueOrDefault("landscape", false));
+               options.ValueOrDefault(printing::kSettingLandscape, false));
 
   // We set the default to the system's default printer and only update
   // if at the Chromium level if the user overrides.
   // Printer device name as opened by the OS.
   const auto device_name =
-      options.ValueOrDefault("deviceName", std::u16string{});
+      options.ValueOrDefault(printing::kSettingDeviceName, std::u16string{});
 
   settings.Set(printing::kSettingScaleFactor,
-               options.ValueOrDefault("scaleFactor", 100));
+               options.ValueOrDefault(printing::kSettingScaleFactor, 100));
 
   settings.Set(printing::kSettingPagesPerSheet,
-               options.ValueOrDefault("pagesPerSheet", 1));
+               options.ValueOrDefault(printing::kSettingPagesPerSheet, 1));
 
   // True if the user wants to print with collate.
   settings.Set(printing::kSettingCollate,
-               options.ValueOrDefault("collate", true));
+               options.ValueOrDefault(printing::kSettingCollate, true));
+
+  // True if the user wants to print using the printer's default page size.
+  settings.Set(kUseDefaultPrinterPageSize,
+               options.ValueOrDefault(kUseDefaultPrinterPageSize, false));
 
   // The number of individual copies to print
-  settings.Set(printing::kSettingCopies, options.ValueOrDefault("copies", 1));
-
+  settings.Set(printing::kSettingCopies,
+               options.ValueOrDefault(printing::kSettingCopies, 1));
   // Strings to be printed as headers and footers if requested by the user.
-  const auto header = options.ValueOrDefault("header", std::string{});
-  const auto footer = options.ValueOrDefault("footer", std::string{});
+  const auto header = options.ValueOrDefault(kHeader, std::string{});
+  const auto footer = options.ValueOrDefault(kFooter, std::string{});
 
   if (!(header.empty() && footer.empty())) {
     settings.Set(printing::kSettingHeaderFooterEnabled, true);
@@ -3201,11 +3260,11 @@ void WebContents::Print(gin::Arguments* const args) {
 
   // Set custom page ranges to print
   std::vector<gin_helper::Dictionary> page_ranges;
-  if (options.Get("pageRanges", &page_ranges)) {
+  if (options.Get(kPageRanges, &page_ranges)) {
     base::Value::List page_range_list;
     for (auto& range : page_ranges) {
       int from, to;
-      if (range.Get("from", &from) && range.Get("to", &to)) {
+      if (range.Get(kFrom, &from) && range.Get(kTo, &to)) {
         base::Value::Dict range_dict;
         // Chromium uses 1-based page ranges, so increment each by 1.
         range_dict.Set(printing::kSettingPageRangeFrom, from + 1);
@@ -3221,31 +3280,22 @@ void WebContents::Print(gin::Arguments* const args) {
 
   // Duplex type user wants to use.
   const auto duplex_mode = options.ValueOrDefault(
-      "duplexMode", printing::mojom::DuplexMode::kSimplex);
+      printing::kSettingDuplexMode, printing::mojom::DuplexMode::kSimplex);
   settings.Set(printing::kSettingDuplexMode, static_cast<int>(duplex_mode));
 
+  // Set custom media size if passed. If none is passed, the media size
+  // will be set in OnGetDeviceNameToUse based on the printer's default
+  // settings where applicable.
   base::Value::Dict media_size;
-  if (options.Get("mediaSize", &media_size)) {
+  if (options.Get(kMediaSize, &media_size))
     settings.Set(printing::kSettingMediaSize, std::move(media_size));
-  } else {
-    // Default to A4 paper size (210mm x 297mm)
-    settings.Set(printing::kSettingMediaSize,
-                 base::Value::Dict()
-                     .Set(printing::kSettingMediaSizeHeightMicrons, 297000)
-                     .Set(printing::kSettingMediaSizeWidthMicrons, 210000)
-                     .Set(printing::kSettingsImageableAreaLeftMicrons, 0)
-                     .Set(printing::kSettingsImageableAreaTopMicrons, 297000)
-                     .Set(printing::kSettingsImageableAreaRightMicrons, 210000)
-                     .Set(printing::kSettingsImageableAreaBottomMicrons, 0)
-                     .Set(printing::kSettingMediaSizeIsDefault, true));
-  }
 
   // Set custom dots per inch (dpi)
-  if (gin_helper::Dictionary dpi; options.Get("dpi", &dpi)) {
+  if (gin_helper::Dictionary dpi; options.Get(kDpi, &dpi)) {
     settings.Set(printing::kSettingDpiHorizontal,
-                 dpi.ValueOrDefault("horizontal", 72));
+                 dpi.ValueOrDefault(printing::kSettingDpiHorizontal, 72));
     settings.Set(printing::kSettingDpiVertical,
-                 dpi.ValueOrDefault("vertical", 72));
+                 dpi.ValueOrDefault(printing::kSettingDpiVertical, 72));
   }
 
   print_task_runner_->PostTaskAndReplyWithResult(
@@ -3263,24 +3313,24 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
 
   // This allows us to track headless printing calls.
   auto unique_id = settings.GetDict().FindInt(printing::kPreviewRequestID);
-  auto landscape = settings.GetDict().FindBool("landscape");
+  auto landscape = settings.GetDict().FindBool(kLandscape);
   auto display_header_footer =
-      settings.GetDict().FindBool("displayHeaderFooter");
-  auto print_background = settings.GetDict().FindBool("printBackground");
-  auto scale = settings.GetDict().FindDouble("scale");
-  auto paper_width = settings.GetDict().FindDouble("paperWidth");
-  auto paper_height = settings.GetDict().FindDouble("paperHeight");
-  auto margin_top = settings.GetDict().FindDouble("marginTop");
-  auto margin_bottom = settings.GetDict().FindDouble("marginBottom");
-  auto margin_left = settings.GetDict().FindDouble("marginLeft");
-  auto margin_right = settings.GetDict().FindDouble("marginRight");
-  auto page_ranges = *settings.GetDict().FindString("pageRanges");
-  auto header_template = *settings.GetDict().FindString("headerTemplate");
-  auto footer_template = *settings.GetDict().FindString("footerTemplate");
-  auto prefer_css_page_size = settings.GetDict().FindBool("preferCSSPageSize");
-  auto generate_tagged_pdf = settings.GetDict().FindBool("generateTaggedPDF");
+      settings.GetDict().FindBool(kDisplayHeaderFooter);
+  auto print_background = settings.GetDict().FindBool(kPrintBackground);
+  auto scale = settings.GetDict().FindDouble(kScale);
+  auto paper_width = settings.GetDict().FindDouble(kPaperWidth);
+  auto paper_height = settings.GetDict().FindDouble(kPaperHeight);
+  auto margin_top = settings.GetDict().FindDouble(kMarginTop);
+  auto margin_bottom = settings.GetDict().FindDouble(kMarginBottom);
+  auto margin_left = settings.GetDict().FindDouble(kMarginLeft);
+  auto margin_right = settings.GetDict().FindDouble(kMarginRight);
+  auto page_ranges = *settings.GetDict().FindString(kPageRanges);
+  auto header_template = *settings.GetDict().FindString(kHeaderTemplate);
+  auto footer_template = *settings.GetDict().FindString(kFooterTemplate);
+  auto prefer_css_page_size = settings.GetDict().FindBool(kPreferCSSPageSize);
+  auto generate_tagged_pdf = settings.GetDict().FindBool(kGenerateTaggedPDF);
   auto generate_document_outline =
-      settings.GetDict().FindBool("generateDocumentOutline");
+      settings.GetDict().FindBool(kGenerateDocumentOutline);
 
   content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents());
   absl::variant<printing::mojom::PrintPagesParamsPtr, std::string>
