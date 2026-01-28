@@ -70,7 +70,7 @@ jobs:
             We welcome the use of AI tools, as long as the PR meets our quality standards and has been clearly built and tested. If you believe your PR was closed in error, we welcome you to resubmit. However, please read our [CONTRIBUTING.md](http://contributing.md/) carefully before reopening. Thanks for your contribution.
       - name: Close the pull request
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           gh pr close "$PR_NUMBER"
