@@ -7,7 +7,9 @@
 #include <fcntl.h>
 
 #include <stdio.h>
+#include <memory>
 #include <optional>
+#include <queue>
 #include <string>
 #include <vector>
 
@@ -27,8 +29,13 @@
 #include "base/run_loop.h"
 #include "base/strings/escape.h"
 #include "base/strings/string_util.h"
+#include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
+#include "base/types/expected.h"
 #include "components/dbus/thread_linux/dbus_thread_linux.h"
+#include "components/dbus/utils/call_method.h"
+#include "components/dbus/utils/check_for_service_and_start.h"
+#include "components/dbus/xdg/request.h"
 #include "content/public/browser/browser_thread.h"
 #include "dbus/bus.h"
 #include "dbus/message.h"
@@ -45,9 +52,6 @@ void OpenFolder(const base::FilePath& full_path);
 
 namespace {
 
-const char kMethodListActivatableNames[] = "ListActivatableNames";
-const char kMethodNameHasOwner[] = "NameHasOwner";
-
 const char kFreedesktopFileManagerName[] = "org.freedesktop.FileManager1";
 const char kFreedesktopFileManagerPath[] = "/org/freedesktop/FileManager1";
 
@@ -58,6 +62,7 @@ const char kFreedesktopPortalPath[] = "/org/freedesktop/portal/desktop";
 const char kFreedesktopPortalOpenURI[] = "org.freedesktop.portal.OpenURI";
 
 const char kMethodOpenDirectory[] = "OpenDirectory";
+const char kActivationTokenKey[] = "activation_token";
 
 class ShowItemHelper {
  public:
@@ -72,179 +77,216 @@ class ShowItemHelper {
   ShowItemHelper& operator=(const ShowItemHelper&) = delete;
 
   void ShowItemInFolder(const base::FilePath& full_path) {
-    if (!bus_)
+    if (!bus_) {
       bus_ = dbus_thread_linux::GetSharedSessionBus();
-
-    if (!dbus_proxy_) {
-      dbus_proxy_ = bus_->GetObjectProxy(DBUS_SERVICE_DBUS,
-                                         dbus::ObjectPath(DBUS_PATH_DBUS));
     }
 
-    if (prefer_filemanager_interface_.has_value()) {
-      if (prefer_filemanager_interface_.value()) {
-        ShowItemUsingFileManager(full_path);
-      } else {
-        ShowItemUsingFreedesktopPortal(full_path);
-      }
-    } else {
-      CheckFileManagerRunning(full_path);
+    if (api_type_.has_value()) {
+      ShowItemInFolderOnApiTypeSet(full_path);
+      return;
+    }
+
+    bool api_availability_check_in_progress = !pending_requests_.empty();
+    pending_requests_.push(full_path);
+    if (!api_availability_check_in_progress) {
+      // Initiate check to determine if portal or the FileManager API should
+      // be used. The portal API is always preferred if available.
+      dbus_utils::CheckForServiceAndStart(
+          bus_.get(), kFreedesktopPortalName,
+          base::BindOnce(&ShowItemHelper::CheckPortalRunningResponse,
+                         // Unretained is safe, the ShowItemHelper instance is
+                         // never destroyed.
+                         base::Unretained(this)));
     }
   }
 
  private:
-  void CheckFileManagerRunning(const base::FilePath& full_path) {
-    dbus::MethodCall method_call(DBUS_INTERFACE_DBUS, kMethodNameHasOwner);
-    dbus::MessageWriter writer(&method_call);
-    writer.AppendString(kFreedesktopFileManagerName);
+  enum class ApiType { kNone, kPortal, kFileManager };
 
-    dbus_proxy_->CallMethod(
-        &method_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT,
-        base::BindOnce(&ShowItemHelper::CheckFileManagerRunningResponse,
-                       base::Unretained(this), full_path));
+  void ShowItemInFolderOnApiTypeSet(const base::FilePath& full_path) {
+    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+    CHECK(api_type_.has_value());
+    switch (*api_type_) {
+      case ApiType::kPortal:
+        ShowItemUsingPortal(full_path);
+        break;
+      case ApiType::kFileManager:
+        ShowItemUsingFileManager(full_path);
+        break;
+      case ApiType::kNone:
+        OpenParentFolderFallback(full_path);
+        break;
+    }
   }
 
-  void CheckFileManagerRunningResponse(const base::FilePath& full_path,
-                                       dbus::Response* response) {
-    if (prefer_filemanager_interface_.has_value()) {
-      ShowItemInFolder(full_path);
+  void ProcessPendingRequests() {
+    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+    if (!bus_) {
       return;
     }
 
-    bool is_running = false;
-
-    if (!response) {
-      LOG(ERROR) << "Failed to call " << kMethodNameHasOwner;
-    } else {
-      dbus::MessageReader reader(response);
-      bool owned = false;
-
-      if (!reader.PopBool(&owned)) {
-        LOG(ERROR) << "Failed to read " << kMethodNameHasOwner << " response";
-      } else if (owned) {
-        is_running = true;
-      }
-    }
-
-    if (is_running) {
-      prefer_filemanager_interface_ = true;
-      ShowItemInFolder(full_path);
-    } else {
-      CheckFileManagerActivatable(full_path);
+    CHECK(!pending_requests_.empty());
+    while (!pending_requests_.empty()) {
+      ShowItemInFolderOnApiTypeSet(pending_requests_.front());
+      pending_requests_.pop();
     }
   }
 
-  void CheckFileManagerActivatable(const base::FilePath& full_path) {
-    dbus::MethodCall method_call(DBUS_INTERFACE_DBUS,
-                                 kMethodListActivatableNames);
-    dbus_proxy_->CallMethod(
-        &method_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT,
-        base::BindOnce(&ShowItemHelper::CheckFileManagerActivatableResponse,
+  void CheckPortalRunningResponse(std::optional<bool> is_running) {
+    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+    if (is_running.value_or(false)) {
+      api_type_ = ApiType::kPortal;
+      ProcessPendingRequests();
+    } else {
+      // Portal is unavailable.
+      // Check if FileManager is available.
+      dbus_utils::CheckForServiceAndStart(
+          bus_.get(), kFreedesktopFileManagerName,
+          base::BindOnce(&ShowItemHelper::CheckFileManagerRunningResponse,
+                         // Unretained is safe, the ShowItemHelper instance is
+                         // never destroyed.
+                         base::Unretained(this)));
+    }
+  }
+
+  void CheckFileManagerRunningResponse(std::optional<bool> is_running) {
+    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+    if (is_running.value_or(false)) {
+      api_type_ = ApiType::kFileManager;
+    } else {
+      // Neither portal nor FileManager is available.
+      api_type_ = ApiType::kNone;
+    }
+    ProcessPendingRequests();
+  }
+
+  void ShowItemUsingPortal(const base::FilePath& full_path) {
+    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+    CHECK(api_type_.has_value());
+    CHECK_EQ(*api_type_, ApiType::kPortal);
+    base::ThreadPool::PostTaskAndReplyWithResult(
+        FROM_HERE, {base::MayBlock()},
+        base::BindOnce(
+            [](const base::FilePath& full_path) {
+              base::ScopedFD fd(HANDLE_EINTR(
+                  open(full_path.value().c_str(), O_RDONLY | O_CLOEXEC)));
+              return fd;
+            },
+            full_path),
+        base::BindOnce(&ShowItemHelper::ShowItemUsingPortalFdOpened,
+                       // Unretained is safe, the ShowItemHelper instance is
+                       // never destroyed.
                        base::Unretained(this), full_path));
   }
 
-  void CheckFileManagerActivatableResponse(const base::FilePath& full_path,
-                                           dbus::Response* response) {
-    if (prefer_filemanager_interface_.has_value()) {
-      ShowItemInFolder(full_path);
+  void ShowItemUsingPortalFdOpened(const base::FilePath& full_path,
+                                   base::ScopedFD fd) {
+    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+    if (!bus_) {
+      return;
+    }
+    if (!fd.is_valid()) {
+      // At least open the parent folder, as long as we're not in the unit
+      // tests.
+      OpenParentFolderFallback(full_path);
+      return;
+    }
+    base::nix::CreateXdgActivationToken(base::BindOnce(
+        &ShowItemHelper::ShowItemUsingPortalWithToken,
+        // Unretained is safe, the ShowItemHelper instance is never destroyed.
+        base::Unretained(this), full_path, std::move(fd)));
+  }
+
+  void ShowItemUsingPortalWithToken(const base::FilePath& full_path,
+                                    base::ScopedFD fd,
+                                    std::string activation_token) {
+    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+    if (!bus_) {
       return;
     }
 
-    bool is_activatable = false;
-
-    if (!response) {
-      LOG(ERROR) << "Failed to call " << kMethodListActivatableNames;
-    } else {
-      dbus::MessageReader reader(response);
-      std::vector<std::string> names;
-      if (!reader.PopArrayOfStrings(&names)) {
-        LOG(ERROR) << "Failed to read " << kMethodListActivatableNames
-                   << " response";
-      } else if (std::ranges::contains(names, kFreedesktopFileManagerName)) {
-        is_activatable = true;
-      }
-    }
-
-    prefer_filemanager_interface_ = is_activatable;
-    ShowItemInFolder(full_path);
-  }
-
-  void ShowItemUsingFreedesktopPortal(const base::FilePath& full_path) {
-    if (!object_proxy_) {
-      object_proxy_ = bus_->GetObjectProxy(
+    if (!portal_object_proxy_) {
+      portal_object_proxy_ = bus_->GetObjectProxy(
           kFreedesktopPortalName, dbus::ObjectPath(kFreedesktopPortalPath));
     }
 
-    base::ScopedFD fd(
-        HANDLE_EINTR(open(full_path.value().c_str(), O_RDONLY | O_CLOEXEC)));
-    if (!fd.is_valid()) {
-      LOG(ERROR) << "Failed to open " << full_path << " for URI portal";
+    dbus_xdg::Dictionary options;
+    options[kActivationTokenKey] =
+        dbus_utils::Variant::Wrap<"s">(activation_token);
+    // In the rare occasion that another request comes in before the response is
+    // received, we will end up overwriting this request object with the new one
+    // and the response from the first request will not be handled in that case.
+    // This should be acceptable as it means the two requests were received too
+    // close to each other from the user and the first one was handled on a best
+    // effort basis.
+    portal_open_directory_request_ = std::make_unique<dbus_xdg::Request>(
+        bus_, portal_object_proxy_, kFreedesktopPortalOpenURI,
+        kMethodOpenDirectory, std::move(options),
+        base::BindOnce(&ShowItemHelper::ShowItemUsingPortalResponse,
+                       // Unretained is safe, the ShowItemHelper instance is
+                       // never destroyed.
+                       base::Unretained(this), full_path),
+        std::string(), std::move(fd));
+  }
 
-      // If the call fails, at least open the parent folder.
-      platform_util::OpenFolder(full_path.DirName());
-
-      return;
+  void ShowItemUsingPortalResponse(
+      const base::FilePath& full_path,
+      base::expected<dbus_xdg::Dictionary, dbus_xdg::ResponseError> results) {
+    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+    portal_open_directory_request_.reset();
+    if (!results.has_value()) {
+      OpenParentFolderFallback(full_path);
     }
-
-    dbus::MethodCall open_directory_call(kFreedesktopPortalOpenURI,
-                                         kMethodOpenDirectory);
-    dbus::MessageWriter writer(&open_directory_call);
-
-    writer.AppendString("");
-
-    // Note that AppendFileDescriptor() duplicates the fd, so we shouldn't
-    // release ownership of it here.
-    writer.AppendFileDescriptor(fd.get());
-
-    dbus::MessageWriter options_writer(nullptr);
-    writer.OpenArray("{sv}", &options_writer);
-    writer.CloseContainer(&options_writer);
-
-    ShowItemUsingBusCall(&open_directory_call, full_path);
   }
 
   void ShowItemUsingFileManager(const base::FilePath& full_path) {
-    if (!object_proxy_) {
-      object_proxy_ =
+    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+    if (!bus_) {
+      return;
+    }
+    CHECK(api_type_.has_value());
+    CHECK_EQ(*api_type_, ApiType::kFileManager);
+    if (!file_manager_object_proxy_) {
+      file_manager_object_proxy_ =
           bus_->GetObjectProxy(kFreedesktopFileManagerName,
                                dbus::ObjectPath(kFreedesktopFileManagerPath));
     }
 
-    dbus::MethodCall show_items_call(kFreedesktopFileManagerName,
-                                     kMethodShowItems);
-    dbus::MessageWriter writer(&show_items_call);
-
-    writer.AppendArrayOfStrings(
-        {"file://" + base::EscapePath(
-                         full_path.value())});  // List of file(s) to highlight.
-    writer.AppendString({});                    // startup-id
-
-    ShowItemUsingBusCall(&show_items_call, full_path);
+    std::vector<std::string> file_to_highlight{"file://" + full_path.value()};
+    dbus_utils::CallMethod<"ass", "">(
+        file_manager_object_proxy_, kFreedesktopFileManagerName,
+        kMethodShowItems,
+        base::BindOnce(&ShowItemHelper::ShowItemUsingFileManagerResponse,
+                       // Unretained is safe, the ShowItemHelper instance is
+                       // never destroyed.
+                       base::Unretained(this), full_path),
+        std::move(file_to_highlight), /*startup-id=*/"");
   }
 
-  void ShowItemUsingBusCall(dbus::MethodCall* call,
-                            const base::FilePath& full_path) {
-    object_proxy_->CallMethod(
-        call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT,
-        base::BindOnce(&ShowItemHelper::ShowItemInFolderResponse,
-                       base::Unretained(this), full_path, call->GetMember()));
+  void ShowItemUsingFileManagerResponse(
+      const base::FilePath& full_path,
+      dbus_utils::CallMethodResultSig<""> response) {
+    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+    if (!response.has_value()) {
+      // If the bus call fails, at least open the parent folder.
+      OpenParentFolderFallback(full_path);
+    }
   }
 
-  void ShowItemInFolderResponse(const base::FilePath& full_path,
-                                const std::string& method,
-                                dbus::Response* response) {
-    if (response)
-      return;
-
-    LOG(ERROR) << "Error calling " << method;
-    // If the bus call fails, at least open the parent folder.
+  void OpenParentFolderFallback(const base::FilePath& full_path) {
     platform_util::OpenFolder(full_path.DirName());
   }
 
   scoped_refptr<dbus::Bus> bus_;
-  raw_ptr<dbus::ObjectProxy> dbus_proxy_ = nullptr;
-  raw_ptr<dbus::ObjectProxy> object_proxy_ = nullptr;
 
-  std::optional<bool> prefer_filemanager_interface_;
+  std::optional<ApiType> api_type_;
+  // The proxy objects are owned by `bus_`.
+  raw_ptr<dbus::ObjectProxy> portal_object_proxy_ = nullptr;
+  raw_ptr<dbus::ObjectProxy> file_manager_object_proxy_ = nullptr;
+  std::unique_ptr<dbus_xdg::Request> portal_open_directory_request_;
+
+  // Requests that are queued until the API availability is determined.
+  std::queue<base::FilePath> pending_requests_;
 };
 
 // Descriptions pulled from https://linux.die.net/man/1/xdg-open
