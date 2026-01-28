@@ -236,9 +236,9 @@ void BaseWindow::OnWindowFocus() {
 void BaseWindow::OnWindowIsKeyChanged(bool is_key) {
 #if BUILDFLAG(IS_MAC)
   if (is_key) {
-    Emit("become-key");
+    Emit("did-become-key");
   } else {
-    Emit("resign-key");
+    Emit("did-resign-key");
   }
 #endif
 }
