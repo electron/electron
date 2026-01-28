@@ -15,8 +15,9 @@ jobs:
   rerun-apply-patches:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       actions: write
+      checks: read
+      contents: read
       pull-requests: read
     steps:
       - name: Find PRs and Rerun Apply Patches
@@ -33,11 +34,11 @@ jobs:
             PR_NUMBER=$(echo "$pr" | jq -r '.number')
             echo "Processing PR #${PR_NUMBER}"
 
-            # Find the apply-patches job check for this PR
-            CHECK=$(gh pr checks "$PR_NUMBER" --json link,name,state,workflow --jq '[.[] | select(.workflow == "Build" and .name == "apply-patches")] | first')
+            # Find the Apply Patches workflow check for this PR
+            CHECK=$(gh pr checks "$PR_NUMBER" --json link,name,state,workflow --jq '[.[] | select(.workflow == "Apply Patches" and .name == "apply-patches")] | first')
 
             if [ -z "$CHECK" ] || [ "$CHECK" = "null" ]; then
-              echo "  No apply-patches job found for PR #${PR_NUMBER}"
+              echo "  No Apply Patches workflow found for PR #${PR_NUMBER}"
               continue
             fi
 
@@ -57,13 +58,14 @@ jobs:
               continue
             fi
 
-            # Get the job database ID for the apply-patches job
-            JOB_ID=$(gh run view "$RUN_ID" --json jobs --jq '.jobs[] | select(.name == "apply-patches") | .databaseId')
+            # Check if the workflow is currently in progress
+            RUN_STATUS=$(gh run view "$RUN_ID" --json status --jq '.status')
 
-            if [ -z "$JOB_ID" ]; then
-              echo "  Could not find apply-patches job ID for run: ${RUN_ID}"
-              continue
+            if [ "$RUN_STATUS" = "in_progress" ] || [ "$RUN_STATUS" = "queued" ] || [ "$RUN_STATUS" = "waiting" ]; then
+              echo "  Workflow run ${RUN_ID} is ${RUN_STATUS}, cancelling..."
+              gh run cancel "$RUN_ID" --force
+              gh run watch "$RUN_ID"
             fi
 
-            gh run rerun "$RUN_ID" --job "$JOB_ID"
+            gh run rerun "$RUN_ID"
           done
