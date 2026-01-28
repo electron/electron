@@ -389,11 +389,16 @@ void BaseWindow::Show() {
   window_->Show();
 }
 
-void BaseWindow::ShowInactive() {
+void BaseWindow::ShowInactive(gin::Arguments* args) {
   // This method doesn't make sense for modal window.
   if (IsModal())
     return;
-  window_->ShowInactive();
+  gin_helper::Dictionary options;
+  bool bring_to_front = true;
+  if (args->GetNext(&options)) {
+    options.Get("bringToFront", &bring_to_front);
+  }
+  window_->ShowInactive(bring_to_front);
 }
 
 void BaseWindow::Hide() {

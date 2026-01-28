@@ -60,7 +60,7 @@ class NativeWindowViews : public NativeWindow,
   void Focus(bool focus) override;
   bool IsFocused() const override;
   void Show() override;
-  void ShowInactive() override;
+  void ShowInactive(bool bring_to_front = true) override;
   void Hide() override;
   bool IsVisible() const override;
   bool IsEnabled() const override;
