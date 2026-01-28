@@ -107,6 +107,7 @@
   "parallel/test-tls-multi-key",
   "parallel/test-tls-multi-pfx",
   "parallel/test-tls-no-cert-required",
+  "parallel/test-tls-no-sslv23.js",
   "parallel/test-tls-options-boolean-check",
   "parallel/test-tls-passphrase",
   "parallel/test-tls-peer-certificate",
