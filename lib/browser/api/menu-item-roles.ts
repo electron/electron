@@ -353,6 +353,7 @@ export function shouldOverrideCheckStatus (role: RoleId) {
 
 export function getDefaultAccelerator (role: RoleId) {
   if (hasRole(role)) return roleList[role].accelerator;
+  return undefined;
 }
 
 export function shouldRegisterAccelerator (role: RoleId) {
