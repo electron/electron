@@ -12,6 +12,7 @@
     "@electron/github-app-auth": "^3.2.0",
     "@electron/lint-roller": "^3.1.2",
     "@electron/typescript-definitions": "^9.1.5",
+    "@hurdlegroup/robotjs": "^0.12.3",
     "@octokit/rest": "^20.1.2",
     "@primer/octicons": "^10.0.0",
     "@types/minimist": "^1.2.5",
