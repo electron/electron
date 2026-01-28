@@ -188,7 +188,7 @@ Returns:
 
 Emitted when the window gains focus.
 
-#### Event: 'become-key' _macOS_
+#### Event: 'did-become-key' _macOS_
 
 Returns:
 
@@ -199,7 +199,7 @@ Emitted when the window becomes the key window. On macOS, this is distinct from
 useful for floating panels, overlays, or Spotlight-like interfaces using
 `NSPanel`.
 
-#### Event: 'resign-key' _macOS_
+#### Event: 'did-resign-key' _macOS_
 
 Returns:
 
