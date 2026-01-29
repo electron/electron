@@ -43,6 +43,10 @@ struct NotificationOptions {
   std::u16string toast_xml;
 
   NotificationOptions();
+  NotificationOptions(const NotificationOptions&);
+  NotificationOptions& operator=(const NotificationOptions&);
+  NotificationOptions(NotificationOptions&&);
+  NotificationOptions& operator=(NotificationOptions&&);
   ~NotificationOptions();
 };
 
