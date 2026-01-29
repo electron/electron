@@ -53,10 +53,11 @@ void ElectronDesktopWindowTreeHostLinux::OnWidgetInitDone() {
   UpdateFrameHints();
 }
 
-bool ElectronDesktopWindowTreeHostLinux::IsShowingFrame() const {
-  return !native_window_view_->IsFullscreen() &&
-         !native_window_view_->IsMaximized() &&
-         !native_window_view_->IsMinimized();
+bool ElectronDesktopWindowTreeHostLinux::IsShowingFrame(
+    ui::PlatformWindowState window_state) const {
+  return window_state != ui::PlatformWindowState::kFullScreen &&
+         window_state != ui::PlatformWindowState::kMaximized &&
+         window_state != ui::PlatformWindowState::kMinimized;
 }
 
 void ElectronDesktopWindowTreeHostLinux::SetWindowIcons(
@@ -80,7 +81,7 @@ void ElectronDesktopWindowTreeHostLinux::Show(
 gfx::Insets ElectronDesktopWindowTreeHostLinux::CalculateInsetsInDIP(
     ui::PlatformWindowState window_state) const {
   // If we are not showing frame, the insets should be zero.
-  if (!IsShowingFrame()) {
+  if (!IsShowingFrame(window_state)) {
     return gfx::Insets();
   }
 
@@ -88,9 +89,7 @@ gfx::Insets ElectronDesktopWindowTreeHostLinux::CalculateInsetsInDIP(
   if (!view)
     return {};
 
-  gfx::Insets insets = view->RestoredMirroredFrameBorderInsets();
-  if (base::i18n::IsRTL())
-    insets.set_left_right(insets.right(), insets.left());
+  gfx::Insets insets = view->RestoredFrameBorderInsets();
   return insets;
 }
 
@@ -207,7 +206,7 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
     if (ui::OzonePlatform::GetInstance()->IsWindowCompositingSupported()) {
       // Set the opaque region.
       std::vector<gfx::Rect> opaque_region;
-      if (IsShowingFrame()) {
+      if (IsShowingFrame(window_state)) {
         // The opaque region is a list of rectangles that contain only fully
         // opaque pixels of the window.  We need to convert the clipping
         // rounded-rect into this format.
