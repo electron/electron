@@ -22,6 +22,7 @@
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/mac_util.h"
+#include "shell/common/node_util.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/image/image_skia.h"
@@ -153,6 +154,8 @@ gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
     gin::Arguments* args,
     std::string name) {
   @autoreleasepool {
+    static bool deprecated_warning_issued = false;
+
     std::vector<double> hsl_shift;
 
     float pointSize = 30.0;
@@ -164,6 +167,14 @@ gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
       if (opts->IsArray()) {
         // Treat an array as a HSL shift.
         gin::ConvertFromV8(args->isolate(), opts, &hsl_shift);
+
+        if (!deprecated_warning_issued) {
+          deprecated_warning_issued = true;
+          util::EmitDeprecationWarning(
+              isolate_,
+              "createFromNamedImage(name, hslShift) is deprecated, use "
+              "createFromNamedImage(name, { hslShift }) instead.");
+        }
       } else {
         gin_helper::Dictionary options(args->isolate(), opts.As<v8::Object>());
         options.Get("hslShift", &hsl_shift);
