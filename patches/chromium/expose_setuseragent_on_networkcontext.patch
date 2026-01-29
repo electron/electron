@@ -33,7 +33,7 @@ index 0ab8187b0db8ae6db46d81738f653a2bc4c566f6..de3d55e85c22317f7f9375eb94d0d5d4
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 42c7711ec6b4928b056f6f960f4aa572c58ed548..41c86ec8406a769eb8ea0922eb74e9fa603e3ed8 100644
+index 8bd75a62638f31a4dbd3982ab76f2e186f8b7d40..ca0c2e9559bb8937bdd3a4bbfef5da8f4a078e4a 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -1879,6 +1879,13 @@ void NetworkContext::SetNetworkConditions(
@@ -51,7 +51,7 @@ index 42c7711ec6b4928b056f6f960f4aa572c58ed548..41c86ec8406a769eb8ea0922eb74e9fa
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 36b0d44c840dfd506b56284352e82421594a7f0f..6fc6600d84318a37c9637c8d526da65eccb63ea9 100644
+index 9e4b17f327daaf7b2f8600f58cac2e824ba65dfa..2baf15c95b8fc87a41a435d646a73f1b42f84ee8 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -321,6 +321,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
@@ -63,10 +63,10 @@ index 36b0d44c840dfd506b56284352e82421594a7f0f..6fc6600d84318a37c9637c8d526da65e
    void SetEnableReferrers(bool enable_referrers) override;
  #if BUILDFLAG(IS_CT_SUPPORTED)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index a07b6430f810a4b6ff1e3d527bb20cf675d993d1..769ba60886c6e10e8b4fea333c2f89c1163a783f 100644
+index 47a04678a9481948377b2e47bec055c8c9579536..40dfc5b67f670f04f2a65ca12d0e16e593fb7492 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -1276,6 +1276,9 @@ interface NetworkContext {
+@@ -1277,6 +1277,9 @@ interface NetworkContext {
    SetNetworkConditions(mojo_base.mojom.UnguessableToken throttling_profile_id,
                         array<MatchedNetworkConditions> conditions);
  

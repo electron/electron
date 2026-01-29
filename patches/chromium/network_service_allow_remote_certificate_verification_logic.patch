@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index f2c25d2b38f00eefe975497b7f6bda766f04755a..42c7711ec6b4928b056f6f960f4aa572c58ed548 100644
+index 2ee44d1a9aa91e014417647999be20b62de671b2..8bd75a62638f31a4dbd3982ab76f2e186f8b7d40 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -170,6 +170,11 @@
@@ -160,7 +160,7 @@ index f2c25d2b38f00eefe975497b7f6bda766f04755a..42c7711ec6b4928b056f6f960f4aa572
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 496b8bccd3d84e642e2c59602e9591d3a763ad81..36b0d44c840dfd506b56284352e82421594a7f0f 100644
+index d05b9b425b0592db0d67fc2acf00e16a063bfaf1..9e4b17f327daaf7b2f8600f58cac2e824ba65dfa 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -118,6 +118,7 @@ class SimpleUrlPatternMatcher;
@@ -190,10 +190,10 @@ index 496b8bccd3d84e642e2c59602e9591d3a763ad81..36b0d44c840dfd506b56284352e82421
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index ff13d77e072ff2f2efd01fadc4016ede8284d353..a07b6430f810a4b6ff1e3d527bb20cf675d993d1 100644
+index e6b30527340338137b6c8ed1908dc6a67803f4cd..47a04678a9481948377b2e47bec055c8c9579536 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -312,6 +312,17 @@ struct SocketBrokerRemotes {
+@@ -313,6 +313,17 @@ struct SocketBrokerRemotes {
    pending_remote<SocketBroker> server;
  };
  
@@ -211,7 +211,7 @@ index ff13d77e072ff2f2efd01fadc4016ede8284d353..a07b6430f810a4b6ff1e3d527bb20cf6
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // The user agent string.
-@@ -962,6 +973,9 @@ interface NetworkContext {
+@@ -963,6 +974,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

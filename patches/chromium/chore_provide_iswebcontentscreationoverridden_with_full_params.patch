@@ -223,7 +223,7 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 1043761d6824a7384b869de1391a3a70f4bbfbc6..0b50da52412ee551927f80e5f30692f229372ccd 100644
+index 0739d233e6d3c83abbcb6b318f2e0f65fe916110..1656e0952ef70fc6e960094c3b6fa11a8514cb58 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5289,8 +5289,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -399,7 +399,7 @@ index f45f822c20bfdc46cb0904ae01fa22ca1e024642..55660b44fb2e53d16c434bba40ffd031
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index 10df3d6c6133d912cc187c082ab61785ce9367a0..e5aa38fa3f966e81772c2312e814ae7c3380294e 100644
+index 20555af0857f1e8ea8227d71245fb95c5e95679a..a6df69bc877046214bf693ceff3c60036e8767ed 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
 @@ -489,8 +489,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(

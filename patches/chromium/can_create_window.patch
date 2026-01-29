@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 96d240dc8087c174b8135cacce5ff740f828eb1a..ca2b07b611b6f142cb959f8b6ad6c82799edb8aa 100644
+index 26fb824490e61c6bbbe8e0523d8aef88d629ffa4..3ada6e115b37d169cfbc1bf7858c86efd086c152 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -9992,6 +9992,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,7 +21,7 @@ index 96d240dc8087c174b8135cacce5ff740f828eb1a..ca2b07b611b6f142cb959f8b6ad6c827
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 22f7330f4766cf65f60eee5e8086034d8206086f..20277eff346c5f24770c694b49fd38026c6ac333 100644
+index e7b66c6e7935b7a262f7664092e53b7898797fd3..67be8e49864776bc40f68f0f3357cbc235e29d1a 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5353,6 +5353,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -62,10 +62,10 @@ index 22f7330f4766cf65f60eee5e8086034d8206086f..20277eff346c5f24770c694b49fd3802
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 4c55f0abf8df5a3408f3f90d444ceff3c23ee1bc..72bdb5b5a4c2c21a7192b34bb293bd23bafaf50c 100644
+index 1b6c346d476ab78af1efe2a3d63daa113677a09b..7dacc1a4973fd5f6481792b18191a7139e3c7d6b 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -648,6 +648,10 @@ struct CreateNewWindowParams {
+@@ -651,6 +651,10 @@ struct CreateNewWindowParams {
    pending_associated_remote<blink.mojom.Widget> widget;
    pending_associated_receiver<blink.mojom.FrameWidgetHost> frame_widget_host;
    pending_associated_remote<blink.mojom.FrameWidget> frame_widget;
@@ -77,7 +77,7 @@ index 4c55f0abf8df5a3408f3f90d444ceff3c23ee1bc..72bdb5b5a4c2c21a7192b34bb293bd23
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 0cee81d6299db458d3727fbedaa15fdf51ad4039..a6af0617061e9443957a255add18b3016a63dd1b 100644
+index f70828996cc98524c123221527ea3ab9186ce2fd..3be9d7cce433e568f252579e0f5d58427ff03785 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -868,6 +868,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -90,7 +90,7 @@ index 0cee81d6299db458d3727fbedaa15fdf51ad4039..a6af0617061e9443957a255add18b301
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 903c87ffe71024ff1df4e9c7733cbddfcd2d5a5d..cc2560ab08c7217320f85c6ca24818c4d07e117c 100644
+index 015c8b14572d030b9e922594e32ae069e96de1cb..5c73e99cbed154677e9a8911baef79d76cf6556a 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -205,6 +205,7 @@ class NetworkService;
@@ -170,12 +170,12 @@ index 6a72c7925222ed8a11830b68718d7973629a6d2c..a6f0447b6ede476162f555d951f346b0
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 4747ce2b92690e3a10fee0b883db9a9fec35e6c8..3a299919640543a33410857588ab0b2bbc3a3fe8 100644
+index d837ffbb8abfb5ad98c0c44cb0fc25f24b530c95..831ede0911298a965a5070fbbfc9091d49371eb8 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6826,6 +6826,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
-           request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
-           GetWebFrame()->IsAdScriptInStack());
+@@ -6819,6 +6819,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+   params->started_by_ad =
+       GetWebFrame()->IsAdFrame() || GetWebFrame()->IsAdScriptInStack();
  
 +  params->raw_features = features.raw_features.Utf8(
 +      WebString::UTF8ConversionMode::kStrictReplacingErrorsWithFFFD);

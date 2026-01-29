@@ -39,10 +39,10 @@ index 2cff43e9fc4374ae48d87dd048a295a00e5575e4..9cb5baccaa083a8030d4d0d57dc00040
    // event before sending it to the renderer. See enum for details on return
    // value.
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 2c84ee991d8457bf7fa0a56a01a2de242b7ce93c..ae92f6749ac634dcf211fc5381d82d5acfe6d484 100644
+index e5fcc7acc4823f3b9396c431815d9d97a986f86b..95b4370872f1529c14110f314609c314bc317198 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -1593,6 +1593,10 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(
+@@ -1598,6 +1598,10 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(
    CHECK_GE(mouse_event.GetType(), WebInputEvent::Type::kMouseTypeFirst);
    CHECK_LE(mouse_event.GetType(), WebInputEvent::Type::kMouseTypeLast);
  
@@ -54,7 +54,7 @@ index 2c84ee991d8457bf7fa0a56a01a2de242b7ce93c..ae92f6749ac634dcf211fc5381d82d5a
      if (mouse_event_callback.Run(mouse_event)) {
        return;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index cffe213fee2ae7ebf44f7e862b001ffe94913902..a04c07855074584d222945bb99a5a19a4a5f3183 100644
+index 7899b355c98a8c66da8b7fcc4891a7dcdedd8503..871bc04ee4413963cda90a072cd61e0607a24583 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4463,6 +4463,12 @@ void WebContentsImpl::RenderWidgetWasResized(

@@ -47,7 +47,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 59246cb4505517b23017db2b3e6ec50915d13355..354e9472124da942d831d79aefe6d0af5c62fca1 100644
+index aaba93f3af194f3c07c8f5883eb23001ffd08650..3867bbaf8775bd77686e0866e73439b958482d0e 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1080,6 +1080,7 @@ component("base") {
@@ -657,7 +657,7 @@ index 712d59e1f7d9681c122e6d05a8b65bccbfacb492..de24209bbd3cd4a530c6f32990a0f93a
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 66aa3109bb48489d5ed8f4be6537f0975b8ddecd..e174c4207149125467a75d755912c073ea84f303 100644
+index 4eedeebd3893380a33dd2d0abbca1a910bc47e27..ce5c404afd9fd2c5b3cd04243f6da0b2a6af82ac 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -344,6 +344,7 @@ source_set("browser") {
@@ -778,10 +778,10 @@ index d93c66c9997dbaa912195d1d99a021486fd81e14..082c24657917671fbee8f755786285af
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 605f250c1f94e4b12a6790bd9fb4623d1f1a9d45..d5cf3b48e1b35527ec69b49e375710cc5f12cf9d 100644
+index 340e068b3881747cd2da60578ef03f63bb0e9db7..eff086b50d4dc394f3d481fc7ca7ea107ee7b50b 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -270,6 +270,7 @@ source_set("common") {
+@@ -267,6 +267,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -872,7 +872,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 3d237d2a227d9b90fc734e2290a1d31dbde04aba..a462b05daee8b32de1e504faccbe4bf7f22b8ade 100644
+index 1e41227ca3156bb9cc7b74a2fa790bfebef9b166..8a4e786491ad94ba78f7f8e113e14fdf9ef81d94 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -702,6 +702,7 @@ static_library("test_support") {
@@ -1013,7 +1013,7 @@ index 8b7a675d95ad36cbb9528bc5bc7ef05e5124e5a3..ed6a9a326b82b177059317dc4bc54b10
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 9388ffac4f70746b04e533b51faf4f2d55ab3358..98f45dc973159b5823d8a0433dfd4bc634874b1e 100644
+index 0d5c59a4946b3d3dd992cb15162fc8ed2bc17a99..8eb798f03771d2dbdaebb0ef5f781ef4fc0336e8 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -203,6 +203,7 @@ source_set("audio") {

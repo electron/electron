@@ -34,10 +34,10 @@ index dd4cee346f16df703d414bf206bbe6c9f4b1f796..5565f5a9259bd7da0722080bf01b3415
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index c568a4e51ff46286051a5a1d6f32604ee441d96a..7388de07fb371ecb8a3f6218bb2e236c486d6eb2 100644
+index 172b9c2a042a9aa179bc4a82c7ffd62ddcb431a6..798b6b1c53ebbd34b8c5b1eea4d7744f0119908d 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4761,10 +4761,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4760,10 +4760,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
      observer.DidInstallConditionalFeatures(context, world_id);
  }
  
@@ -115,7 +115,7 @@ index 095ba031a645e9972e831d60880bcae98d7b5cd5..ef7b9416f6c2afcecb987b59c17cc076
      int64_t service_worker_version_id,
      const GURL& service_worker_scope,
 diff --git a/extensions/renderer/dispatcher.h b/extensions/renderer/dispatcher.h
-index 47dc3b6319971e284aa1130719e1d12a208c84a1..6d88787cbacc954f54b9c899995141134ba17f95 100644
+index f5786a8e321d08b9e1cd008f797d5a4bcac791db..9e71d645ac1cb5c52a102f9f4ab539715b30d546 100644
 --- a/extensions/renderer/dispatcher.h
 +++ b/extensions/renderer/dispatcher.h
 @@ -151,6 +151,7 @@ class Dispatcher : public content::RenderThreadObserver,
@@ -127,10 +127,10 @@ index 47dc3b6319971e284aa1130719e1d12a208c84a1..6d88787cbacc954f54b9c89999514113
        int64_t service_worker_version_id,
        const GURL& service_worker_scope,
 diff --git a/extensions/renderer/extension_frame_helper.cc b/extensions/renderer/extension_frame_helper.cc
-index 215e8d48e44c7f78d0378fec3aa056295708d803..7a1182dadeabce6091dbd0d1753a8d5ed5b4f4ed 100644
+index 89515878024756de8263622e054e50a9ad284232..f1e94fd2583d18641ab91d9d598ad94a4fd607e0 100644
 --- a/extensions/renderer/extension_frame_helper.cc
 +++ b/extensions/renderer/extension_frame_helper.cc
-@@ -439,6 +439,7 @@ void ExtensionFrameHelper::DidCreateScriptContext(
+@@ -450,6 +450,7 @@ void ExtensionFrameHelper::DidCreateScriptContext(
  }
  
  void ExtensionFrameHelper::WillReleaseScriptContext(
@@ -139,10 +139,10 @@ index 215e8d48e44c7f78d0378fec3aa056295708d803..7a1182dadeabce6091dbd0d1753a8d5e
      int32_t world_id) {
    extension_dispatcher_->WillReleaseScriptContext(
 diff --git a/extensions/renderer/extension_frame_helper.h b/extensions/renderer/extension_frame_helper.h
-index 629da0211997be82fb2ca158f2b76b1596645c48..2ef7bd9e4ff6745f7672876a2c9519bc87cefa7e 100644
+index 6a54b76669f497fae7d8808c7fd873dc833db1cb..eee92c9b2cf71df397d377f72dd87eff9fc35c32 100644
 --- a/extensions/renderer/extension_frame_helper.h
 +++ b/extensions/renderer/extension_frame_helper.h
-@@ -188,7 +188,8 @@ class ExtensionFrameHelper
+@@ -197,7 +197,8 @@ class ExtensionFrameHelper
        blink::WebDocumentLoader* document_loader) override;
    void DidCreateScriptContext(v8::Local<v8::Context>,
                                int32_t world_id) override;

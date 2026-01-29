@@ -17,10 +17,10 @@ Revert "Reland "Port net::CookieCryptoDelegate to os_crypt async""
 This reverts commit f01b115c7e21a09cc762f65bf7fd9c6ea9d9d0f8.
 
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index a5fc97e9d9ec2fcc40453c173019ac9c4a26b012..e41dc47245ca025cce1f82137f9e607f3e0bdabb 100644
+index 1469c17a2edfba64dc1c89ff694b8b8b82d7b6c4..f27beef06fed9d063c3ae1d120fb40f7507dc4bd 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -730,6 +730,8 @@ static_library("browser") {
+@@ -716,6 +716,8 @@ static_library("browser") {
      "net/chrome_report_sender.h",
      "net/convert_explicitly_allowed_network_ports_pref.cc",
      "net/convert_explicitly_allowed_network_ports_pref.h",
@@ -192,7 +192,7 @@ index b862afe7663111a6cbd342d33723942770bb0490..9dc46cedb109cea63bf71aa43fc7a2b6
  #include "services/network/public/mojom/network_context.mojom.h"
  #include "testing/gtest/include/gtest/gtest.h"
 diff --git a/chrome/browser/net/system_network_context_manager.cc b/chrome/browser/net/system_network_context_manager.cc
-index 0f49109d35e6af1416f402baaa1aed64311f0ace..cd669a8deae1687877a75a05fa9c4c7b52720246 100644
+index 223c7a55b1db65430d22dcff9898845ccaca68a0..9f7347a39c1a0a982632fc6a6b04240b0a3b9510 100644
 --- a/chrome/browser/net/system_network_context_manager.cc
 +++ b/chrome/browser/net/system_network_context_manager.cc
 @@ -919,13 +919,8 @@ void SystemNetworkContextManager::DisableQuic() {
@@ -731,7 +731,7 @@ index 91d74eaadd9f4d451e809b38a2f999b298068820..e45427ce90f909e609688ab59f4581b1
    mojo::PendingRemote<::network::mojom::NetworkContext> system_context_;
  };
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 41c86ec8406a769eb8ea0922eb74e9fa603e3ed8..51562dd5a3720fc9d75b2f5f8c17c198179b0daf 100644
+index ca0c2e9559bb8937bdd3a4bbfef5da8f4a078e4a..6ad88f16f3b0ed68fd5f088b05618ef82b7bda1f 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -3274,12 +3274,7 @@ NetworkContext::MakeSessionCleanupCookieStore() const {
@@ -749,7 +749,7 @@ index 41c86ec8406a769eb8ea0922eb74e9fa603e3ed8..51562dd5a3720fc9d75b2f5f8c17c198
    }
  
 diff --git a/services/network/public/cpp/BUILD.gn b/services/network/public/cpp/BUILD.gn
-index b1c7b1b24feb65a97a0a3e076f8c529e52dcdea8..fbde99e116390833a16dedc543f4dc4d356e4c2e 100644
+index ddf152eb7aa3a29a5eda253e1a34bd546a753934..2120652c636c0a831aa6cd04e0f3ed1a16907a3b 100644
 --- a/services/network/public/cpp/BUILD.gn
 +++ b/services/network/public/cpp/BUILD.gn
 @@ -69,8 +69,6 @@ component("cpp") {
@@ -771,10 +771,10 @@ index b1c7b1b24feb65a97a0a3e076f8c529e52dcdea8..fbde99e116390833a16dedc543f4dc4d
      "//ipc",
      "//net",
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 769ba60886c6e10e8b4fea333c2f89c1163a783f..2911c52f92411ec0962bac40102aea8cde363fc1 100644
+index 40dfc5b67f670f04f2a65ca12d0e16e593fb7492..41bae43663841f790431ffe24884f888b91ef5d6 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -575,9 +575,10 @@ struct NetworkContextParams {
+@@ -576,9 +576,10 @@ struct NetworkContextParams {
    bool acam_preflight_spec_conformant = true;
  
    // Sets the cookie encryption provider to be used by this network context if

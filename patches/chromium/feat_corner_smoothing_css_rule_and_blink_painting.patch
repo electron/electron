@@ -202,7 +202,7 @@ index 19cda703154dab9397827ab6ea66c2ca446c644d..dd5943c511886f4e39b2e7f10e67e60f
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 17b533ba0503c2ab8b1b7ea5e2e4676301426625..1b9351e34ec26e0cdc4f58344a53a0232d44cc0d 100644
+index e59319bcba662c11d0b29b10250689c1dfdd4de0..1653d9a8ffcaf376d216063ff2eba382da7c6eb3 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
 @@ -1670,6 +1670,8 @@ component("platform") {
@@ -313,7 +313,7 @@ index 18f283e625101318ee14b50e6e765dfd1c9a1a44..44a3a55974c9e4b9e715574075f25661
  
    auto DrawAsSinglePath = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 18719931844af1444dd769f8cd2d049238508bce..2aa127f5342067f35b5463b8668aa0e110e75757 100644
+index 013d4e7999fbfd96a8611191c06b2214cb8b5bfc..7def2db371f2a54a15daadf99f0f730ca0a2522a 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -214,6 +214,10 @@
