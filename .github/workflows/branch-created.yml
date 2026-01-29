@@ -61,40 +61,6 @@ jobs:
 
           echo "SCHEDULE=$SCHEDULE" >> "$GITHUB_OUTPUT"
           echo "UNSUPPORTED_MAJOR=$UNSUPPORTED_MAJOR" >> "$GITHUB_OUTPUT"
-      - name: New Release Branch Tasks
-        if: ${{ steps.check-major-version.outputs.MAJOR }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: electron/electron
-          MAJOR: ${{ steps.check-major-version.outputs.MAJOR }}
-          UNSUPPORTED_MAJOR: ${{ steps.determine-unsupported-major.outputs.UNSUPPORTED_MAJOR }}
-        run: |
-          PREVIOUS_MAJOR=$((MAJOR - 1))
-
-          # Create new labels
-          gh label create $MAJOR-x-y --color 8d9ee8 || true
-          gh label create target/$MAJOR-x-y --color ad244f --description "PR should also be added to the \"${MAJOR}-x-y\" branch." || true
-          gh label create merged/$MAJOR-x-y --color 61a3c6 --description "PR was merged to the \"${MAJOR}-x-y\" branch." || true
-          gh label create in-flight/$MAJOR-x-y --color db69a6 || true
-          gh label create needs-manual-bp/$MAJOR-x-y --color 8b5dba || true
-
-          # Change color of old labels
-          gh label edit $UNSUPPORTED_MAJOR-x-y --color ededed || true
-          gh label edit target/$UNSUPPORTED_MAJOR-x-y --color ededed || true
-          gh label edit merged/$UNSUPPORTED_MAJOR-x-y --color ededed || true
-          gh label edit in-flight/$UNSUPPORTED_MAJOR-x-y --color ededed || true
-          gh label edit needs-manual-bp/$UNSUPPORTED_MAJOR-x-y --color ededed || true
-
-          # Add the new target label to any PRs which:
-          #   * target the previous major
-          #   * are in-flight for the previous major
-          #   * need manual backport for the previous major
-          for PREVIOUS_MAJOR_LABEL in target/$PREVIOUS_MAJOR-x-y in-flight/$PREVIOUS_MAJOR-x-y needs-manual-bp/$PREVIOUS_MAJOR-x-y; do
-            PULL_REQUESTS=$(gh pr list --label $PREVIOUS_MAJOR_LABEL --jq .[].number --json number --limit 500)
-            if [[ $PULL_REQUESTS ]]; then
-              echo $PULL_REQUESTS | xargs -n 1 gh pr edit --add-label target/$MAJOR-x-y || true
-            fi
-          done
       - name: Generate GitHub App token
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
@@ -167,24 +133,10 @@ jobs:
           #        and write permission for repo "Contents" to link
           # link-to-repository: electron/electron
           template-view: ${{ steps.generate-project-metadata.outputs.template-view }}
-          title: ${{ steps.generate-project-metadata.outputs.major }}-x-y
+          title: dsanders11-${{ steps.generate-project-metadata.outputs.major }}-x-y
           token: ${{ steps.generate-token.outputs.token }}
       - name: Dump Release Project Board Contents
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         run: gh project item-list ${{ steps.create-release-board.outputs.number }} --owner electron --format json | jq
         env:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
-      - name: Find Previous Release Project Board
-        if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: dsanders11/project-actions/find-project@2134fe7cc71c58b7ae259c82a8e63c6058255678 # v1.7.0
-        id: find-prev-release-board
-        with:
-          fail-if-project-not-found: false
-          title: ${{ steps.generate-project-metadata.outputs.prev-prev-major }}-x-y
-          token: ${{ steps.generate-token.outputs.token }}
-      - name: Close Previous Release Project Board
-        if: ${{ steps.find-prev-release-board.outputs.number }}
-        uses: dsanders11/project-actions/close-project@2134fe7cc71c58b7ae259c82a8e63c6058255678 # v1.7.0
-        with:
-          project-number: ${{ steps.find-prev-release-board.outputs.number }}
-          token: ${{ steps.generate-token.outputs.token }}
