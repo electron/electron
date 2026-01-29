@@ -38,6 +38,24 @@ const MenuItem = function (this: any, options: any) {
   this.overrideProperty('acceleratorWorksWhenHidden', true);
   this.overrideProperty('registerAccelerator', roles.shouldRegisterAccelerator(this.role));
 
+  if (process.platform === 'darwin') {
+    let badgeValue = options.badge;
+    Object.defineProperty(this, 'badge', {
+      get: () => badgeValue,
+      set: (newValue) => {
+        badgeValue = newValue;
+        // Update native badge if this item is already in a menu
+        if (this.menu) {
+          const index = this.menu.getIndexOfCommandId(this.commandId);
+          if (index !== -1 && badgeValue) {
+            this.menu.setBadge(index, badgeValue);
+          }
+        }
+      },
+      enumerable: true
+    });
+  }
+
   if (!MenuItem.types.includes(this.type)) {
     throw new Error(`Unknown menu item type: ${this.type}`);
   }

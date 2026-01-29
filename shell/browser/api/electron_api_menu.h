@@ -12,6 +12,8 @@
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/common/gin_helper/constructible.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/self_keep_alive.h"
 #include "ui/base/mojom/menu_source_type.mojom-forward.h"
 #include "v8/include/cppgc/member.h"
 
@@ -125,6 +127,9 @@ class Menu : public gin::Wrappable<Menu>,
   void SetToolTip(int index, const std::u16string& toolTip);
   void SetRole(int index, const std::u16string& role);
   void SetCustomType(int index, const std::u16string& customType);
+#if BUILDFLAG(IS_MAC)
+  void SetBadge(int index, const gin_helper::Dictionary& badge);
+#endif
   void Clear();
   int GetIndexOfCommandId(int command_id) const;
   int GetItemCount() const;

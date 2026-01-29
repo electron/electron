@@ -117,6 +117,30 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   return result;
 }
 
+// Convert a Badge to an NSMenuItemBadge.
+NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
+    API_AVAILABLE(macos(14.0)) {
+  NSString* badgeType = base::SysUTF16ToNSString(badge.type);
+
+  if ([badgeType isEqualToString:@"alerts"]) {
+    if (badge.count.has_value())
+      return [NSMenuItemBadge alertsWithCount:badge.count.value()];
+  } else if ([badgeType isEqualToString:@"updates"]) {
+    if (badge.count.has_value())
+      return [NSMenuItemBadge updatesWithCount:badge.count.value()];
+  } else if ([badgeType isEqualToString:@"new-items"]) {
+    if (badge.count.has_value())
+      return [NSMenuItemBadge newItemsWithCount:badge.count.value()];
+  } else if ([badgeType isEqualToString:@"none"]) {
+    if (badge.content.has_value()) {
+      NSString* content = base::SysUTF8ToNSString(badge.content.value());
+      return [[NSMenuItemBadge alloc] initWithString:content];
+    }
+  }
+
+  return nil;
+}
+
 }  // namespace
 
 // This class stores a base::WeakPtr<electron::ElectronMenuModel> as an
@@ -341,20 +365,27 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   electron::ElectronMenuModel::ItemType type = model->GetTypeAt(index);
   std::u16string customType = model->GetCustomTypeAt(index);
 
-  // The sectionHeaderWithTitle menu item is only available in macOS 14.0+.
   if (@available(macOS 14, *)) {
     if (customType == u"header") {
       item = [NSMenuItem sectionHeaderWithTitle:label];
     }
   }
 
-  // If the menu item has an icon, set it.
   ui::ImageModel icon = model->GetIconAt(index);
   if (icon.IsImage())
     item.image = icon.GetImage().ToNSImage();
 
   std::u16string toolTip = model->GetToolTipAt(index);
   item.toolTip = base::SysUTF16ToNSString(toolTip);
+
+  if (@available(macOS 14, *)) {
+    electron::ElectronMenuModel::Badge badge;
+    if (model->GetBadgeAt(index, &badge)) {
+      NSMenuItemBadge* nsBadge = CreateBadge(badge);
+      if (nsBadge)
+        item.badge = nsBadge;
+    }
+  }
 
   if (role == u"services") {
     std::u16string title = u"Services";
@@ -516,6 +547,15 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     item.image = icon.GetImage().ToNSImage();
   } else {
     item.image = nil;
+  }
+
+  if (@available(macOS 14, *)) {
+    electron::ElectronMenuModel::Badge badge;
+    if (model->GetBadgeAt(index, &badge)) {
+      item.badge = CreateBadge(badge);
+    } else {
+      item.badge = nil;
+    }
   }
 }
 
