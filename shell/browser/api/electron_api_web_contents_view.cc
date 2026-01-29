@@ -128,7 +128,7 @@ gin_helper::Handle<WebContentsView> WebContentsView::Create(
     const gin_helper::Dictionary& web_preferences) {
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::Local<v8::Value> arg = gin::DataObjectBuilder(isolate)
-                                 .Set("webPreferences", web_preferences)
+                                 .Set(options::kWebPreferences, web_preferences)
                                  .Build();
   v8::Local<v8::Object> web_contents_view_obj;
   if (GetConstructor(isolate)
@@ -166,7 +166,7 @@ gin_helper::WrappableBase* WebContentsView::New(gin::Arguments* const args) {
         return nullptr;
       }
       v8::Local<v8::Value> web_preferences_value;
-      if (options.Get("webPreferences", &web_preferences_value)) {
+      if (options.Get(options::kWebPreferences, &web_preferences_value)) {
         if (!gin::ConvertFromV8(isolate, web_preferences_value,
                                 &web_preferences)) {
           args->ThrowTypeError("options.webPreferences must be an object");
