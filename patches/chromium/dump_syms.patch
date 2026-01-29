@@ -5,7 +5,7 @@ Subject: dump_syms.patch
 
 dylib currently fails to resolve Squirrel.framework on OSX, we need to fix
 this but it is not a blocker for releasing Electron.  This patch removes
-tthe hard fail on dylib resolve failure from dump_syms
+the hard fail on dylib resolve failure from dump_syms
 
 diff --git a/components/crash/content/tools/generate_breakpad_symbols.py b/components/crash/content/tools/generate_breakpad_symbols.py
 index fb1ef0cfd6a78920e5e2831e94330bf8d213107d..cafcf442f79e89da9993536dce808f01221ca8f7 100755
