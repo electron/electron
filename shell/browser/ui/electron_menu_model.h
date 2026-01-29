@@ -88,8 +88,9 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   std::u16string GetCustomTypeAt(size_t index);
   void SetRole(size_t index, const std::u16string& role);
   std::u16string GetRoleAt(size_t index);
-  void SetSecondaryLabel(size_t index, const std::u16string& sublabel);
+  std::u16string GetLabelAt(size_t index) const override;
   std::u16string GetSecondaryLabelAt(size_t index) const override;
+  ui::ImageModel GetIconAt(size_t index) const override;
   bool GetAcceleratorAtWithParams(size_t index,
                                   bool use_default_accelerator,
                                   ui::Accelerator* accelerator) const;
@@ -124,9 +125,8 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   std::optional<SharingItem> sharing_item_;
 #endif
 
-  base::flat_map<int, std::u16string> toolTips_;   // command id -> tooltip
-  base::flat_map<int, std::u16string> roles_;      // command id -> role
-  base::flat_map<int, std::u16string> sublabels_;  // command id -> sublabel
+  base::flat_map<int, std::u16string> toolTips_;  // command id -> tooltip
+  base::flat_map<int, std::u16string> roles_;     // command id -> role
   base::flat_map<int, std::u16string>
       customTypes_;  // command id -> custom type
   base::ObserverList<Observer> observers_;
