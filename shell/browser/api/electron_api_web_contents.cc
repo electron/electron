@@ -68,6 +68,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/visibility.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/child_process_id.h"
 #include "content/public/common/referrer_type_converters.h"
 #include "content/public/common/result_codes.h"
 #include "content/public/common/webplugininfo.h"
@@ -642,13 +643,14 @@ std::string RegisterFileSystem(content::WebContents* web_contents,
       content::ChildProcessSecurityPolicy::GetInstance();
   content::RenderViewHost* render_view_host = web_contents->GetRenderViewHost();
   int renderer_id = render_view_host->GetProcess()->GetDeprecatedID();
+  content::ChildProcessId process_id = render_view_host->GetProcess()->GetID();
   policy->GrantReadFileSystem(renderer_id, file_system.id());
   policy->GrantWriteFileSystem(renderer_id, file_system.id());
   policy->GrantCreateFileForFileSystem(renderer_id, file_system.id());
   policy->GrantDeleteFromFileSystem(renderer_id, file_system.id());
 
-  if (!policy->CanReadFile(renderer_id, path))
-    policy->GrantReadFile(renderer_id, path);
+  if (!policy->CanReadFile(process_id, path))
+    policy->GrantReadFile(process_id, path);
 
   return file_system.id();
 }

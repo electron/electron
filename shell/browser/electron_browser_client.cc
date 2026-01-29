@@ -67,6 +67,7 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/is_potentially_trustworthy.h"
 #include "services/network/public/cpp/network_switches.h"
+#include "services/network/public/cpp/originating_process.h"
 #include "services/network/public/cpp/resource_request_body.h"
 #include "services/network/public/cpp/self_deleting_url_loader_factory.h"
 #include "services/network/public/cpp/url_loader_factory_builder.h"
@@ -1430,11 +1431,12 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
     bool is_for_isolated_world,
     bool is_for_service_worker,
     network::mojom::URLLoaderFactoryParams* factory_params) {
-  if (factory_params->top_frame_id) {
+  if (factory_params->top_frame_id &&
+      !factory_params->process_id.is_browser()) {
     // Bypass CORB and CORS when web security is disabled.
     auto* rfh = content::RenderFrameHost::FromFrameToken(
         content::GlobalRenderFrameHostToken(
-            factory_params->process_id,
+            factory_params->process_id.renderer_process().value(),
             blink::LocalFrameToken(factory_params->top_frame_id.value())));
     auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
     auto* prefs = WebContentsPreferences::From(web_contents);
