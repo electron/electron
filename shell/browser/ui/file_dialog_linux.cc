@@ -15,6 +15,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/file_dialog.h"
+#include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -30,20 +31,6 @@ DialogSettings::DialogSettings(const DialogSettings&) = default;
 DialogSettings::~DialogSettings() = default;
 
 namespace {
-
-// Returns a default directory for file dialogs when no default path is provided.
-base::FilePath GetDefaultPath() {
-  base::FilePath path;
-
-  if (base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &path) &&
-      base::DirectoryExists(path))
-    return path;
-
-  if (base::PathService::Get(base::DIR_HOME, &path))
-    return path;
-
-  return base::FilePath();
-}
 
 ui::SelectFileDialog::Type GetDialogType(int properties) {
   if (properties & OPEN_DIALOG_OPEN_DIRECTORY)
@@ -98,8 +85,9 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
         GetFilterInfo(settings.filters);
     ApplySettings(settings);
 
-    base::FilePath default_path = settings.default_path.empty() ? GetDefaultPath() :
-        settings.default_path;
+    base::FilePath default_path = settings.default_path.empty()
+                                      ? electron::GetDefaultPath()
+                                      : settings.default_path;
 
     dialog_->SelectFile(ui::SelectFileDialog::SELECT_SAVEAS_FILE,
                         base::UTF8ToUTF16(settings.title), default_path,
@@ -129,8 +117,9 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
         GetFilterInfo(settings.filters);
     ApplySettings(settings);
 
-    base::FilePath default_path = settings.default_path.empty() ? GetDefaultPath() :
-        settings.default_path;
+    base::FilePath default_path = settings.default_path.empty()
+                                      ? electron::GetDefaultPath()
+                                      : settings.default_path;
 
     dialog_->SelectFile(
         GetDialogType(settings.properties), base::UTF8ToUTF16(settings.title),

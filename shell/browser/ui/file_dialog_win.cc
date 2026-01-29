@@ -23,6 +23,7 @@
 #include "chrome/common/chrome_paths.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/win/dialog_thread.h"
+#include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
@@ -34,20 +35,6 @@ DialogSettings::DialogSettings(const DialogSettings&) = default;
 DialogSettings::~DialogSettings() = default;
 
 namespace {
-
-// Returns a default directory for file dialogs when no default path is provided.
-base::FilePath GetDefaultPath() {
-  base::FilePath path;
-
-  if (base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &path) &&
-      base::DirectoryExists(path))
-    return path;
-
-  if (base::PathService::Get(base::DIR_HOME, &path))
-    return path;
-
-  return base::FilePath();
-}
 
 // Distinguish directories from regular files.
 bool IsDirectory(const base::FilePath& path) {
@@ -122,8 +109,9 @@ static HRESULT ShowFileDialog(IFileDialog* dialog,
 static void ApplySettings(IFileDialog* dialog, const DialogSettings& settings) {
   std::wstring file_part;
 
-  base::FilePath default_path = settings.default_path.empty() ? GetDefaultPath() :
-      settings.default_path;
+  base::FilePath default_path = settings.default_path.empty()
+                                    ? electron::GetDefaultPath()
+                                    : settings.default_path;
 
   if (!IsDirectory(default_path))
     file_part = default_path.BaseName().value();

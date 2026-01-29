@@ -23,6 +23,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "electron/mas.h"
 #include "shell/browser/native_window.h"
+#include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
@@ -97,20 +98,6 @@ DialogSettings::DialogSettings(const DialogSettings&) = default;
 DialogSettings::~DialogSettings() = default;
 
 namespace {
-
-// Returns a default directory for file dialogs when no default path is provided.
-base::FilePath GetDefaultPath() {
-  base::FilePath path;
-
-  if (base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &path) &&
-      base::DirectoryExists(path))
-    return path;
-
-  if (base::PathService::Get(base::DIR_HOME, &path))
-    return path;
-
-  return base::FilePath();
-}
 
 void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   NSMutableArray* file_types_list = [NSMutableArray array];
@@ -202,8 +189,9 @@ void SetupDialog(NSSavePanel* dialog, const DialogSettings& settings) {
 
   [dialog setShowsTagField:settings.shows_tag_field];
 
-  base::FilePath default_path = settings.default_path.empty() ? GetDefaultPath() :
-      settings.default_path;
+  base::FilePath default_path = settings.default_path.empty()
+                                    ? electron::GetDefaultPath()
+                                    : settings.default_path;
 
   NSString* default_dir = nil;
   NSString* default_filename = nil;
