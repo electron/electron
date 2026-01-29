@@ -114,7 +114,14 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 }
 
 - (NSMenu*)applicationDockMenu:(NSApplication*)sender {
-  return menu_controller_ ? menu_controller_.menu : nil;
+  if (!menu_controller_)
+    return nil;
+
+  // Manually refresh menu state since menuWillOpen: is not called
+  // by macOS for dock menus for some reason before they are displayed.
+  NSMenu* menu = menu_controller_.menu;
+  [menu_controller_ refreshMenuTree:menu];
+  return menu;
 }
 
 - (BOOL)application:(NSApplication*)sender openFile:(NSString*)filename {
