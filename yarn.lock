@@ -442,7 +442,7 @@ __metadata:
     "@electron/docs-parser": "npm:^2.0.0"
     "@electron/fiddle-core": "npm:^1.3.4"
     "@electron/github-app-auth": "npm:^3.2.0"
-    "@electron/lint-roller": "npm:^3.1.2"
+    "@electron/lint-roller": "npm:^3.2.0"
     "@electron/typescript-definitions": "npm:^9.1.5"
     "@octokit/rest": "npm:^20.1.2"
     "@primer/octicons": "npm:^10.0.0"
@@ -656,9 +656,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@electron/lint-roller@npm:^3.1.2":
-  version: 3.1.2
-  resolution: "@electron/lint-roller@npm:3.1.2"
+"@electron/lint-roller@npm:^3.2.0":
+  version: 3.2.0
+  resolution: "@electron/lint-roller@npm:3.2.0"
   dependencies:
     "@dsanders11/vscode-markdown-languageservice": "npm:^0.3.0"
     ajv: "npm:^8.16.0"
@@ -683,7 +683,7 @@ __metadata:
     lint-roller-markdown-links: dist/bin/lint-markdown-links.js
     lint-roller-markdown-standard: dist/bin/lint-markdown-standard.js
     lint-roller-markdown-ts-check: dist/bin/lint-markdown-ts-check.js
-  checksum: 10c0/e98a65d44b99accf44e33d7dfb1e8d85a75580a7efa7b4a570b0f8e7274aad3eb60fc6d285b5d1d78ecd093e902820222cfdf3e193eec65a8a3536d4c75bb060
+  checksum: 10c0/5331163518f41c1ea8ac302891d808891b5570f657587194717e3a8214c0d99e04949cf500ff138b02b77a373e317c3e77042b19c7fbda186d5c970b6b81df80
   languageName: node
   linkType: hard
 
