@@ -240,7 +240,7 @@ later point, it could make sense to check if the eligibility criteria have chang
 
 #### Using `jsign` for Azure Trusted Signing
 
-For developers on Linux or macOS, `jsign` can be used to sign Windows apps via Azure Trusted Signing. Example usage:
+For developers on Linux or macOS, [`jsign`](https://ebourg.github.io/jsign/) can be used to sign Windows apps via Azure Trusted Signing. Example usage:
 
 ```bash
 jsign --storetype TRUSTEDSIGNING \
