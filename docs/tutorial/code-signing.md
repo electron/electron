@@ -238,6 +238,20 @@ with 3+ years of verifiable business history and to individual developers in the
 Microsoft is looking to make the program more widely available. If you're reading this at a
 later point, it could make sense to check if the eligibility criteria have changed.
 
+#### Using `jsign` for Azure Trusted Signing
+
+For developers on Linux or macOS, `jsign` can be used to sign Windows apps via Azure Trusted Signing. Example usage:
+
+```bash
+jsign --storetype TRUSTEDSIGNING \
+      --keystore https://eus.codesigning.azure.net/ \
+      --storepass $AZURE_ACCESS_TOKEN \
+      --alias trusted-sign-acct/AppName \
+      --tsaurl http://timestamp.acs.microsoft.com/ \
+      --tsmode RFC3161 \
+      --replace <file>
+```
+
 #### Using Electron Forge
 
 Electron Forge is the recommended way to sign your app as well as your `Squirrel.Windows`
