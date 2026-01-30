@@ -706,6 +706,13 @@ source_set("electron_lib") {
       "//sandbox/win:sandbox",
       "//third_party/crashpad/crashpad/handler",
     ]
+
+    # Use the pre-generated C++/WinRT headers from //third_party/nearby instead
+    # of the SDK's cppwinrt headers, which may be incomplete. This is needed for
+    # the MSIX auto-updater which uses Windows.ApplicationModel APIs.
+    include_dirs += [
+      "//third_party/nearby/src/internal/platform/implementation/windows/generated",
+    ]
   }
 
   if (enable_plugins) {
