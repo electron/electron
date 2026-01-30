@@ -10,7 +10,7 @@ to understand the source code better.
 ## Project structure
 
 Electron is a complex project containing multiple upstream dependencies, which are tracked in source
-control via the [`DEPS`](https://github.com/electron/electron/blob/main/DEPS) file. When
+control via the [`DEPS`](../../DEPS) file. When
 [initializing a local Electron checkout](./build-instructions-gn.md), Electron's source code is just one
 of many nested folders within the project root.
 
