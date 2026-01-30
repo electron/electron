@@ -145,7 +145,7 @@ Returns `string` - The current update feed URL.
 
 ### `autoUpdater.getPackageInfo()` _Windows_
 
-Returns [`PackageInfo | undefined`](structures/package-info.md) - Information about the current MSIX package, or `undefined` if not running in an MSIX package context (e.g., when using Squirrel).
+Returns [`MSIXPackageInfo | undefined`](structures/msix-package-info.md) - Information about the current MSIX package, or `undefined` if not running in an MSIX package context (e.g., when using Squirrel).
 
 ### `autoUpdater.checkForUpdates()`
 
