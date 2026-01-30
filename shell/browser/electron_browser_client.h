@@ -120,6 +120,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 #if BUILDFLAG(IS_MAC)
   device::GeolocationSystemPermissionManager*
   GetGeolocationSystemPermissionManager() override;
+
+  base::MachPortsForRendezvous GetMachPortsForChildRendezvous() override;
 #endif
 
   content::PlatformNotificationService* GetPlatformNotificationService();

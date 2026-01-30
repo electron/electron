@@ -136,7 +136,9 @@
 #elif BUILDFLAG(IS_WIN)
 #include "net/ssl/client_cert_store_win.h"
 #elif BUILDFLAG(IS_MAC)
+#include "base/apple/mach_port_rendezvous.h"
 #include "net/ssl/client_cert_store_mac.h"
+#include "shell/browser/mac/samply_profiler_service.h"
 #elif defined(USE_OPENSSL)
 #include "net/ssl/client_cert_store.h"
 #endif
@@ -1806,6 +1808,28 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
 device::GeolocationSystemPermissionManager*
 ElectronBrowserClient::GetGeolocationSystemPermissionManager() {
   return device::GeolocationSystemPermissionManager::GetInstance();
+}
+
+base::MachPortsForRendezvous
+ElectronBrowserClient::GetMachPortsForChildRendezvous() {
+  VLOG(1) << "GetMachPortsForChildRendezvous() called, PID=" << getpid();
+  base::MachPortsForRendezvous ports;
+  auto* profiler = SamplyProfilerService::GetInstance();
+  VLOG(1) << "GetMachPortsForChildRendezvous: profiler="
+          << (profiler ? "yes" : "null");
+  if (profiler) {
+    mach_port_t port = profiler->GetProfilerPort();
+    VLOG(1) << "GetMachPortsForChildRendezvous: profiler port=" << port;
+    if (port != MACH_PORT_NULL) {
+      ports.emplace(kMachPortKeyProfiler,
+                    base::MachRendezvousPort(port, MACH_MSG_TYPE_COPY_SEND));
+      VLOG(1) << "GetMachPortsForChildRendezvous: Added profiler port to "
+                 "rendezvous";
+    }
+  }
+  VLOG(1) << "GetMachPortsForChildRendezvous: returning " << ports.size()
+          << " ports";
+  return ports;
 }
 #endif
 

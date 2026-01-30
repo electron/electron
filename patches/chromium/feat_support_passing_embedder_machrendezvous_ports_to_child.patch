@@ -1,0 +1,196 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Sat, 31 Jan 2026 01:33:22 +0900
+Subject: feat: support passing embedder machrendezvous ports to child
+
+Used for samply profiler integration
+
+diff --git a/base/apple/mach_port_rendezvous_mac.cc b/base/apple/mach_port_rendezvous_mac.cc
+index a267d6efd2270f3d17e6c2e4ab10f26f77fd7bdf..94778ab1fe3f8f50e3e17f279fb7b0259ca19c9e 100644
+--- a/base/apple/mach_port_rendezvous_mac.cc
++++ b/base/apple/mach_port_rendezvous_mac.cc
+@@ -121,6 +121,8 @@ void MachPortRendezvousServerMac::RegisterPortsForPid(
+   lock_.AssertAcquired();
+   DCHECK_LT(ports.size(), internal::kMaximumRendezvousPorts);
+   DCHECK(!ports.empty());
++  VLOG(1) << "MachPortRendezvousServerMac::RegisterPortsForPid: pid=" << pid
++          << ", num_ports=" << ports.size();
+ 
+   ClientData& client = ClientDataForPid(pid);
+   CHECK(client.ports.empty());
+@@ -149,9 +151,16 @@ MachPortRendezvousServerMac::ClientData::~ClientData() {
+ MachPortRendezvousServerMac::MachPortRendezvousServerMac() {
+   std::string bootstrap_name =
+       StringPrintf(kBootstrapNameFormat, apple::BaseBundleID(), getpid());
++  VLOG(1) << "MachPortRendezvousServerMac: Registering bootstrap service: "
++          << bootstrap_name;
+   kern_return_t kr = bootstrap_check_in(
+       bootstrap_port, bootstrap_name.c_str(),
+       apple::ScopedMachReceiveRight::Receiver(server_port_).get());
++  if (kr == KERN_SUCCESS) {
++    VLOG(1) << "MachPortRendezvousServerMac: bootstrap_check_in succeeded";
++  } else {
++    LOG(ERROR) << "MachPortRendezvousServerMac: bootstrap_check_in FAILED: " << kr;
++  }
+   BOOTSTRAP_CHECK(kr == KERN_SUCCESS, kr)
+       << "bootstrap_check_in " << bootstrap_name;
+   dispatch_source_ = std::make_unique<apple::DispatchSource>(
+@@ -159,6 +168,7 @@ MachPortRendezvousServerMac::MachPortRendezvousServerMac() {
+         HandleRequest();
+       });
+   dispatch_source_->Resume();
++  VLOG(1) << "MachPortRendezvousServerMac: Server ready, PID=" << getpid();
+ }
+ 
+ MachPortRendezvousServerMac::~MachPortRendezvousServerMac() = default;
+@@ -245,6 +255,8 @@ bool MachPortRendezvousClientMac::AcquirePorts() {
+ 
+   apple::ScopedMachSendRight server_port;
+   std::string bootstrap_name = GetBootstrapName();
++  VLOG(1) << "MachPortRendezvousClientMac::AcquirePorts: PID=" << getpid()
++          << ", PPID=" << getppid() << ", looking up: " << bootstrap_name;
+   kern_return_t kr = bootstrap_look_up(
+       bootstrap_port, const_cast<char*>(bootstrap_name.c_str()),
+       apple::ScopedMachSendRight::Receiver(server_port).get());
+@@ -252,6 +264,7 @@ bool MachPortRendezvousClientMac::AcquirePorts() {
+     BOOTSTRAP_LOG(ERROR, kr) << "bootstrap_look_up " << bootstrap_name;
+     return false;
+   }
++  VLOG(1) << "MachPortRendezvousClientMac::AcquirePorts: lookup succeeded";
+ 
+   mach_msg_id_t message_id = internal::kMachRendezvousMsgIdRequest;
+   size_t additional_data_size = 0;
+diff --git a/base/process/launch.h b/base/process/launch.h
+index 59eac5dc8c61b5c2df58d467149d4f3a9936611d..8b3622a57894d58eb193fdb6e4376578275df93a 100644
+--- a/base/process/launch.h
++++ b/base/process/launch.h
+@@ -40,6 +40,7 @@
+ #endif
+ 
+ #if BUILDFLAG(IS_MAC)
++#include "base/apple/scoped_mach_port.h"
+ #include "base/mac/process_requirement.h"
+ #endif
+ 
+diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
+index 8387fd7d2bcf8951b6cc024829c16d970799190c..c4681b8f9d4020039ef7907ffc8e8c1bf2882478 100644
+--- a/base/process/launch_mac.cc
++++ b/base/process/launch_mac.cc
+@@ -81,6 +81,7 @@ int posix_spawnattr_set_csm_np(const posix_spawnattr_t*, uint32_t)
+ #include "base/memory/raw_ptr.h"
+ #include "base/posix/eintr_wrapper.h"
+ #include "base/process/environment_internal.h"
++#include "base/synchronization/lock.h"
+ #include "base/threading/scoped_blocking_call.h"
+ #include "base/threading/thread_restrictions.h"
+ #include "base/trace_event/trace_event.h"
+@@ -377,13 +378,12 @@ Process LaunchProcess(const std::vector<std::string>& argv,
+   int rv;
+   pid_t pid;
+   {
++#if !BUILDFLAG(IS_IOS_TVOS)
+     const bool has_mach_ports_for_rendezvous =
+-#if BUILDFLAG(IS_IOS_TVOS)
+-        false
++        !options.mach_ports_for_rendezvous.empty();
+ #else
+-        !options.mach_ports_for_rendezvous.empty()
++    const bool has_mach_ports_for_rendezvous = false;
+ #endif  // BUILDFLAG(IS_IOS_TVOS)
+-        ;
+ 
+ #if BUILDFLAG(IS_IOS)
+     // This code is only used for the iOS simulator to launch tests. We do not
+diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
+index cf9d9bfe7af12e16520354ebd1f7bc4050c57ec7..e91b1e69eec5a194f24287a61a77290b887503c1 100644
+--- a/content/browser/child_process_launcher_helper_mac.cc
++++ b/content/browser/child_process_launcher_helper_mac.cc
+@@ -20,6 +20,7 @@
+ #include "content/grit/content_resources.h"
+ #include "content/public/browser/child_process_launcher_utils.h"
+ #include "content/public/browser/content_browser_client.h"
++#include "content/public/common/content_client.h"
+ #include "content/public/common/content_paths.h"
+ #include "content/public/common/content_switches.h"
+ #include "content/public/common/result_codes.h"
+@@ -106,6 +107,25 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+   options->mach_ports_for_rendezvous.insert(std::make_pair(
+       'mojo', base::MachRendezvousPort(endpoint.TakeMachReceiveRight())));
+ 
++  VLOG(1) << "BeforeLaunchOnLauncherThread: PID=" << getpid()
++          << ", launching child process";
++
++  // Add any embedder-provided ports (e.g., for profiling)
++  base::MachPortsForRendezvous embedder_ports =
++      GetContentClient()->browser()->GetMachPortsForChildRendezvous();
++  VLOG(1) << "BeforeLaunchOnLauncherThread: Got " << embedder_ports.size()
++          << " embedder ports";
++  for (auto& port : embedder_ports) {
++    VLOG(1) << "BeforeLaunchOnLauncherThread: Adding embedder port key='"
++            << static_cast<char>(port.first >> 24)
++            << static_cast<char>((port.first >> 16) & 0xff)
++            << static_cast<char>((port.first >> 8) & 0xff)
++            << static_cast<char>(port.first & 0xff) << "'";
++    options->mach_ports_for_rendezvous.insert(std::move(port));
++  }
++  VLOG(1) << "BeforeLaunchOnLauncherThread: Total rendezvous ports: "
++          << options->mach_ports_for_rendezvous.size();
++
+   options->environment = delegate_->GetEnvironment();
+   options->clear_environment = !delegate_->ShouldInheritEnvironment();
+   options->current_directory = delegate_->GetCurrentDirectory();
+diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
+index b1e25f142beae77768128bb4467a3485c888a7ad..32d4b2a6817ba01d6d41f334400d0c0922ea0f79 100644
+--- a/content/public/browser/content_browser_client.cc
++++ b/content/public/browser/content_browser_client.cc
+@@ -23,6 +23,10 @@
+ #include "base/values.h"
+ #include "build/build_config.h"
+ #include "build/buildflag.h"
++
++#if BUILDFLAG(IS_MAC)
++#include "base/apple/mach_port_rendezvous.h"
++#endif
+ #include "components/language_detection/content/browser/content_language_detection_driver.h"
+ #include "components/language_detection/content/common/language_detection.mojom.h"
+ #include "components/language_detection/core/browser/language_detection_model_provider.h"
+@@ -1748,6 +1752,11 @@ std::string ContentBrowserClient::GetChildProcessSuffix(int child_flags) {
+   NOTIMPLEMENTED();
+   return std::string();
+ }
++
++base::MachPortsForRendezvous
++ContentBrowserClient::GetMachPortsForChildRendezvous() {
++  return {};
++}
+ #endif
+ 
+ bool ContentBrowserClient::AreIsolatedWebAppsEnabled(
+diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
+index 185e0c86bc02a80121af3c213aa496ca62565c31..24fea64674476c182309697466d650b814a5d439 100644
+--- a/content/public/browser/content_browser_client.h
++++ b/content/public/browser/content_browser_client.h
+@@ -103,6 +103,10 @@
+ #include "base/posix/global_descriptors.h"
+ #endif
+ 
++#if BUILDFLAG(IS_MAC)
++#include "base/apple/mach_port_rendezvous.h"
++#endif
++
+ #if BUILDFLAG(IS_POSIX) || BUILDFLAG(IS_FUCHSIA)
+ #include "content/public/browser/posix_file_descriptor_info.h"
+ #endif
+@@ -3032,6 +3036,12 @@ class CONTENT_EXPORT ContentBrowserClient {
+   // bundle should be placed next to the known //content Mac helpers in the
+   // framework bundle.
+   virtual std::string GetChildProcessSuffix(int child_flags);
++
++  // Returns Mach ports that should be passed to child processes via
++  // MachPortRendezvous. This allows the embedder to provide ports for
++  // services like profiling. The ports are copied (not moved) so the
++  // embedder retains ownership.
++  virtual base::MachPortsForRendezvous GetMachPortsForChildRendezvous();
+ #endif  // BUILDFLAG(IS_MAC)
+ 
+   // Checks if Isolated Web Apps are enabled, e.g. by feature flag

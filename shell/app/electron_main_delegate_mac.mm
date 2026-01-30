@@ -71,11 +71,17 @@ void ElectronMainDelegate::OverrideChildProcessPath() {
 void ElectronMainDelegate::SetUpBundleOverrides() {
   @autoreleasepool {
     NSBundle* bundle = MainApplicationBundle();
+    VLOG(1) << "SetUpBundleOverrides: bundle path="
+            << (bundle ? base::SysNSStringToUTF8([bundle bundlePath]) : "nil");
     std::string base_bundle_id =
         base::SysNSStringToUTF8([bundle bundleIdentifier]);
+    VLOG(1) << "SetUpBundleOverrides: bundle id from Info.plist="
+            << (base_bundle_id.empty() ? "(empty)" : base_bundle_id);
     NSString* team_id = [bundle objectForInfoDictionaryKey:@"ElectronTeamID"];
     if (team_id)
       base_bundle_id = base::SysNSStringToUTF8(team_id) + "." + base_bundle_id;
+    VLOG(1) << "SetUpBundleOverrides: Setting BaseBundleID to: "
+            << base_bundle_id;
     base::apple::SetBaseBundleIDOverride(base_bundle_id);
   }
 }

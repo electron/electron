@@ -102,6 +102,7 @@
 
 #if BUILDFLAG(IS_MAC)
 #include "components/os_crypt/common/keychain_password_mac.h"
+#include "shell/browser/mac/samply_profiler_service.h"
 #include "shell/browser/ui/cocoa/views_delegate_mac.h"
 #else
 #include "shell/browser/ui/views/electron_views_delegate.h"
@@ -284,6 +285,12 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 }
 
 int ElectronBrowserMainParts::PreCreateThreads() {
+#if BUILDFLAG(IS_MAC)
+  // Initialize samply profiling very early so child processes can connect.
+  // This must be before any child processes are spawned.
+  SamplyProfilerService::Initialize();
+#endif
+
   if (!views::LayoutProvider::Get()) {
     layout_provider_ = std::make_unique<views::LayoutProvider>();
   }
@@ -552,6 +559,8 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
 void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 #if BUILDFLAG(IS_MAC)
   FreeAppDelegate();
+  // Shutdown samply profiling and save the profile.
+  SamplyProfilerService::Shutdown();
 #endif
 
   // Shutdown the DownloadManager before destroying Node to prevent
