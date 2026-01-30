@@ -587,6 +587,7 @@ filenames = {
     "shell/common/electron_command_line.cc",
     "shell/common/electron_command_line.h",
     "shell/common/electron_constants.h",
+    "shell/common/electron_paths.cc",
     "shell/common/electron_paths.h",
     "shell/common/gin_converters/accelerator_converter.cc",
     "shell/common/gin_converters/accelerator_converter.h",
