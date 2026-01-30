@@ -41,7 +41,7 @@ based on how your app is packaged:
   [electron-winstaller][installer-lib] or [Electron Forge's Squirrel.Windows maker][electron-forge-lib]),
   the module uses Squirrel.Windows for updates.
 
-You don't need to configure which updater to use—Electron automatically detects the packaging
+You don't need to configure which updater to use; Electron automatically detects the packaging
 format and uses the appropriate one.
 
 #### Squirrel.Windows
@@ -111,7 +111,7 @@ Returns:
 
 Emitted when an update has been downloaded.
 
-On Windows only `releaseName` is available.
+With Squirrel.Windows only `releaseName` is available.
 
 > [!NOTE]
 > It is not strictly necessary to handle this event. A successfully
