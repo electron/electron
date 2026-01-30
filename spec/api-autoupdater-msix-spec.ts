@@ -173,6 +173,7 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
       expect(initialVersion).to.equal('1.0.0.0');
 
       const fixedPubDate = '2011-11-11T11:11:11.000Z';
+      const expectedDateStr = new Date(fixedPubDate).toDateString();
 
       server.get('/update-check', (req, res) => {
         res.json({
@@ -196,7 +197,7 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
         expect(launchResult.out).to.include('Update downloaded');
         expect(launchResult.out).to.include('Release Name: 2.0.0');
         expect(launchResult.out).to.include('Release Notes: Test release notes');
-        expect(launchResult.out).to.include('Release Date: Fri Nov 11 2011 03:11:11');
+        expect(launchResult.out).to.include(`Release Date: ${expectedDateStr}`);
         expect(launchResult.out).to.include(`Update URL: http://localhost:${port}/update.msix`);
       });
 
@@ -210,6 +211,7 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
       expect(initialVersion).to.equal('1.0.0.0');
 
       const fixedPubDate = '2011-11-11T11:11:11.000Z';
+      const expectedDateStr = new Date(fixedPubDate).toDateString();
 
       server.get('/update-check', (req, res) => {
         res.json({
@@ -253,7 +255,7 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
         expect(launchResult.out).to.include('Update downloaded');
         expect(launchResult.out).to.include('Release Name: 2.0.0');
         expect(launchResult.out).to.include('Release Notes: Test release notes for static format');
-        expect(launchResult.out).to.include('Release Date: Fri Nov 11 2011 03:11:11');
+        expect(launchResult.out).to.include(`Release Date: ${expectedDateStr}`);
         expect(launchResult.out).to.include(`Update URL: http://localhost:${port}/update-v2.msix`);
       });
 
@@ -298,6 +300,7 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
       expect(initialVersion).to.equal('2.0.0.0');
 
       const fixedPubDate = '2010-10-10T10:10:10.000Z';
+      const expectedDateStr = new Date(fixedPubDate).toDateString();
 
       server.get('/update-check', (req, res) => {
         res.json({
@@ -322,7 +325,7 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
         expect(launchResult.out).to.include('Update downloaded');
         expect(launchResult.out).to.include('Release Name: 1.0.0');
         expect(launchResult.out).to.include('Release Notes: Initial release');
-        expect(launchResult.out).to.include('Release Date: Sun Oct 10 2010 03:10:10');
+        expect(launchResult.out).to.include(`Release Date: ${expectedDateStr}`);
         expect(launchResult.out).to.include(`Update URL: http://localhost:${port}/update-v1.msix`);
       });
 
