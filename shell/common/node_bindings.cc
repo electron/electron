@@ -68,6 +68,7 @@
   V(electron_browser_in_app_purchase)     \
   V(electron_browser_menu)                \
   V(electron_browser_message_port)        \
+  V(electron_browser_msix_updater)        \
   V(electron_browser_native_theme)        \
   V(electron_browser_notification)        \
   V(electron_browser_power_monitor)       \

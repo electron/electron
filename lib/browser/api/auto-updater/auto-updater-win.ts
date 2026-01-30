@@ -20,6 +20,11 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
     return this.updateURL ?? '';
   }
 
+  getPackageInfo () {
+    // Squirrel-based Windows apps don't have MSIX package information
+    return undefined;
+  }
+
   setFeedURL (options: { url: string } | string) {
     let updateURL: string;
     if (typeof options === 'object') {
