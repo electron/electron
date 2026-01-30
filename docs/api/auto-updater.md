@@ -35,7 +35,7 @@ update process. Apps that need to disable ATS can add the
 On Windows, the `autoUpdater` module automatically selects the appropriate update mechanism
 based on how your app is packaged:
 
-* **MSIX packages**: If your app is running as an MSIX package (created with [electron-windows-msix][msix-lib] and detected via `process.windowsStore`),
+* **MSIX packages**: If your app is running as an MSIX package (created with [electron-windows-msix][msix-lib] and detected via [`process.windowsStore`](process.md#processwindowsstore-readonly)),
   the module uses the MSIX updater, which supports direct MSIX file links and JSON update feeds.
 * **Squirrel.Windows**: For apps installed via traditional installers (created with
   [electron-winstaller][installer-lib] or [Electron Forge's Squirrel.Windows maker][electron-forge-lib]),
