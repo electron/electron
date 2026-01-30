@@ -379,6 +379,12 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
       return this.emitError(new Error('MSIX updates are not supported'));
     }
 
+    // If appInstallerUri is set, Windows App Installer manages updates automatically
+    // Prevent updates here to avoid conflicts
+    if (packageInfo.appInstallerUri) {
+      return this.emitError(new Error('Auto-updates are managed by Windows App Installer. Updates are not allowed when installed via Application Manifest.'));
+    }
+
     this.emit('checking-for-update');
     try {
       const msixUrlInfo = await this.getUpdateInfo(url);
