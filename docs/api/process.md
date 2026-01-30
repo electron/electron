@@ -128,8 +128,8 @@ A `string` representing Electron's version string.
 
 ### `process.windowsStore` _Readonly_
 
-A `boolean`. If the app is running as a Windows Store app (appx), this property is `true`,
-for otherwise it is `undefined`.
+A `boolean`. If the app is running as an MSIX package (including AppX for Windows Store),
+this property is `true`, otherwise it is `undefined`.
 
 ### `process.contextId` _Readonly_
 
