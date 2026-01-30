@@ -70,7 +70,6 @@ not be able to pin your app properly in task bar.
 When your app is packaged as an MSIX, the `autoUpdater` module provides additional
 functionality:
 
-* Use `autoUpdater.getPackageInfo()` to retrieve information about the current package
 * Use the `allowAnyVersion` option in `setFeedURL()` to allow updates to older versions (downgrades)
 * Support for direct MSIX file links or JSON update feeds (similar to Squirrel.Mac format)
 
@@ -142,10 +141,6 @@ Sets the `url` and initialize the auto updater.
 ### `autoUpdater.getFeedURL()`
 
 Returns `string` - The current update feed URL.
-
-### `autoUpdater.getPackageInfo()` _Windows_
-
-Returns [`MSIXPackageInfo | undefined`](structures/msix-package-info.md) - Information about the current MSIX package, or `undefined` if not running in an MSIX package context (e.g., when using Squirrel).
 
 ### `autoUpdater.checkForUpdates()`
 
