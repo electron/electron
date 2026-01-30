@@ -77,7 +77,7 @@ export async function unregisterExecutableWithIdentity (): Promise<void> {
 
 // Get path to MSIX fixture package
 export function getMsixFixturePath (version: 'v1' | 'v2'): string {
-  const filename = version === 'v1' ? 'HelloMSIX_V1.msix' : 'HelloMSIX_V2.msix';
+  const filename = `HelloMSIX_${version}.msix`;
   return path.resolve(fixturesPath, filename);
 }
 
@@ -93,13 +93,24 @@ export async function installMsixPackage (msixPath: string): Promise<void> {
   }
 }
 
-// Uninstall MSIX package by family name
+// Uninstall MSIX package by  name
 export async function uninstallMsixPackage (name: string): Promise<void> {
   const result = cp.spawnSync('powershell', ['-NoProfile', '-Command', `Get-AppxPackage ${name} | Remove-AppxPackage`]);
   // Don't throw if package doesn't exist
   if (result.status !== 0) {
     throw new Error(`Failed to uninstall MSIX package: ${result.stderr.toString() || result.stdout.toString()}`);
   }
+}
+
+// Get version of installed MSIX package by name
+export async function getMsixPackageVersion (name: string): Promise<string | null> {
+  const psCommand = `(Get-AppxPackage -Name '${name}').Version`;
+  const result = cp.spawnSync('powershell', ['-NoProfile', '-Command', psCommand]);
+  if (result.status !== 0) {
+    return null;
+  }
+  const version = result.stdout.toString().trim();
+  return version || null;
 }
 
 export function spawn (cmd: string, args: string[], opts: any = {}): Promise<{ code: number, out: string }> {
