@@ -831,12 +831,12 @@ describe('BrowserView module', () => {
           height: 100
         }, {
           outputSize: {
-            width: 1500,
+            width: 300,
             height: 150
           }
         });
 
-        expect(image.getSize()).to.deep.equal({ width: 1500, height: 150 });
+        expect(image.getSize()).to.deep.equal({ width: 300, height: 150 });
       });
 
       it('returns image with requested size when both dimensions of `outputSize` are bigger than both dimensions of the captured area', async () => {

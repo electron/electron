@@ -2469,11 +2469,11 @@ describe('BrowserWindow module', () => {
         }, {
           outputSize: {
             width: 150,
-            height: 1500
+            height: 300
           }
         });
 
-        expect(image.getSize()).to.deep.equal({ width: 150, height: 1500 });
+        expect(image.getSize()).to.deep.equal({ width: 150, height: 300 });
       });
 
       it('returns image with requested size when both dimensions of `outputSize` are bigger than both dimensions of the captured area', async () => {
