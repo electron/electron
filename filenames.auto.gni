@@ -118,7 +118,6 @@ auto_filenames = {
     "docs/api/structures/notification-response.md",
     "docs/api/structures/offscreen-shared-texture.md",
     "docs/api/structures/open-external-permission-request.md",
-    "docs/api/structures/package-info.md",
     "docs/api/structures/payment-discount.md",
     "docs/api/structures/permission-request.md",
     "docs/api/structures/point.md",
