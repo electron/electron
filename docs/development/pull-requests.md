@@ -185,7 +185,7 @@ $ git push origin my-branch
 ### Step 9: Opening the Pull Request
 
 From within GitHub, opening a new pull request will present you with a template
-that should be filled out. It can be found [here](https://github.com/electron/electron/blob/main/.github/PULL_REQUEST_TEMPLATE.md).
+that should be filled out. It can be found [here](../../.github/PULL_REQUEST_TEMPLATE.md).
 
 If you do not adequately complete this template, your PR may be delayed in being merged as maintainers
 seek more information or clarify ambiguities.
@@ -218,8 +218,7 @@ seem unfamiliar, refer to this
 
 #### Approval and Request Changes Workflow
 
-All pull requests require approval from a
-[Code Owner](https://github.com/electron/electron/blob/main/.github/CODEOWNERS)
+All pull requests require approval from a [Code Owner](../../.github/CODEOWNERS)
 of the area you modified in order to land. Whenever a maintainer reviews a pull
 request they may request changes. These may be small, such as fixing a typo, or
 may involve substantive changes. Such requests are intended to be helpful, but
