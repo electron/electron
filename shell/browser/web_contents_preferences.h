@@ -78,6 +78,7 @@ class WebContentsPreferences
   bool ShouldDisablePopups() const { return disable_popups_; }
   bool IsWebSecurityEnabled() const { return web_security_; }
   std::optional<base::FilePath> GetPreloadPath() const { return preload_path_; }
+  bool ShouldFocusOnNavigation() const { return focus_on_navigation_; }
   bool IsSandboxed() const;
 
  private:
@@ -134,6 +135,7 @@ class WebContentsPreferences
   std::optional<base::FilePath> preload_path_;
   blink::mojom::V8CacheOptions v8_cache_options_;
   bool deprecated_paste_enabled_ = false;
+  bool focus_on_navigation_;
 
 #if BUILDFLAG(IS_MAC)
   bool scroll_bounce_;
