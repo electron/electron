@@ -22,6 +22,19 @@ Developers had to manually calculate the correct size using `screen.getPrimaryDi
 to the primary display's scale factor (preserving the old behavior). Starting from Electron 42, the default will change to a constant value of `1.0`
 for more consistent output sizes.
 
+### Deprecated: Passing only an array `hslShift` to `nativeImage.createFromNamedImage()`
+
+Passing only an array `hslShift` to `nativeImage.createFromNamedImage()` is deprecated. You should now pass an options object with an `hslShift` property instead:
+
+```js
+// Deprecated
+nativeImage.createFromNamedImage(imageName, [0, 1, -1])
+// Replace with
+nativeImage.createFromNamedImage(imageName, {
+  hslShift: [0, 1, -1]
+})
+```
+
 ## Planned Breaking API Changes (41.0)
 
 ### Behavior Changed: PDFs no longer create a separate WebContents
