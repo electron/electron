@@ -19,12 +19,31 @@
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/mac/coordinate_conversion.h"
 
+// A transparent container view that doesn't intercept mouse events.
+// This allows the status bar button to receive all mouse events while
+// we overlay custom image layers on top of its placeholder image.
+// Without this, the image views would intercept clicks and prevent
+// the button from receiving events.
+@interface TransparentLayerContainer : NSView
+@end
+
+@implementation TransparentLayerContainer
+- (NSView*)hitTest:(NSPoint)point {
+  // Always return nil so mouse events pass through to views below
+  return nil;
+}
+@end
+
 @interface StatusItemView : NSView {
   raw_ptr<electron::TrayIconCocoa> trayIcon_;  // weak
   ElectronMenuController* menuController_;     // weak
   BOOL ignoreDoubleClickEvents_;
   NSStatusItem* __strong statusItem_;
   NSTrackingArea* __strong trackingArea_;
+  NSView* __strong layerContainer_;
+  NSView* __strong alternateLayerContainer_;
+  BOOL menuIsOpen_;
+  NSMenu* __weak currentMenu_;
 }
 
 @end  // @interface StatusItemView
@@ -32,6 +51,7 @@
 @implementation StatusItemView
 
 - (void)dealloc {
+  [[NSNotificationCenter defaultCenter] removeObserver:self];
   trayIcon_ = nil;
   menuController_ = nil;
 }
@@ -40,6 +60,10 @@
   trayIcon_ = icon;
   menuController_ = nil;
   ignoreDoubleClickEvents_ = NO;
+  layerContainer_ = nil;
+  alternateLayerContainer_ = nil;
+  menuIsOpen_ = NO;
+  currentMenu_ = nil;
 
   if ((self = [super initWithFrame:CGRectZero])) {
     [self registerForDraggedTypes:@[
@@ -51,26 +75,71 @@
     ]];
 
     // Create the status item.
-    NSStatusItem* item = [[NSStatusBar systemStatusBar]
+    statusItem_ = [[NSStatusBar systemStatusBar]
         statusItemWithLength:NSVariableStatusItemLength];
-    statusItem_ = item;
-    [[statusItem_ button] addSubview:self];
 
-    // We need to set the target and action on the button, otherwise
-    // VoiceOver doesn't know where to send the select action.
-    [[statusItem_ button] setTarget:self];
-    [[statusItem_ button] setAction:@selector(mouseDown:)];
+    // Install ourselves as a subview of the button.
+    NSStatusBarButton* btn = [statusItem_ button];
+    self.translatesAutoresizingMaskIntoConstraints = YES;
+    self.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+    [btn addSubview:self];
+
+    // Set target and action for VoiceOver support.
+    [btn setTarget:self];
+    [btn setAction:@selector(mouseDown:)];
     [self updateDimensions];
   }
   return self;
 }
 
+// Synchronizes this view's frame with the status bar button's bounds and
+// requests a layout pass. Call this after any change that might affect the
+// button's size (e.g., setting images, changing title, changing image
+// position).
 - (void)updateDimensions {
-  [self setFrame:[statusItem_ button].frame];
+  [self setFrame:[statusItem_ button].bounds];
+  [self setNeedsLayout:YES];
 }
 
 - (void)setAutosaveName:(NSString*)name {
   statusItem_.autosaveName = name;
+}
+
+// Helper method to register menu notifications for tracking menu open/close
+// state. This enables proper layer visibility toggling when menus are
+// displayed.
+- (void)registerMenuNotifications:(NSMenu*)menu {
+  if (!menu)
+    return;
+
+  [[NSNotificationCenter defaultCenter]
+      addObserver:self
+         selector:@selector(menuDidBeginTracking:)
+             name:NSMenuDidBeginTrackingNotification
+           object:menu];
+
+  [[NSNotificationCenter defaultCenter]
+      addObserver:self
+         selector:@selector(menuDidEndTracking:)
+             name:NSMenuDidEndTrackingNotification
+           object:menu];
+}
+
+// Helper method to unregister menu notifications for a specific menu.
+// Call this before replacing a menu to prevent observer leaks.
+- (void)unregisterMenuNotifications:(NSMenu*)menu {
+  if (!menu)
+    return;
+
+  [[NSNotificationCenter defaultCenter]
+      removeObserver:self
+                name:NSMenuDidBeginTrackingNotification
+              object:menu];
+
+  [[NSNotificationCenter defaultCenter]
+      removeObserver:self
+                name:NSMenuDidEndTrackingNotification
+              object:menu];
 }
 
 - (void)updateTrackingAreas {
@@ -102,12 +171,173 @@
   statusItem_ = nil;
 }
 
+// Removes and clears the normal (non-pressed) layer container.
+// Call this before setting a new image or updating layers.
+- (void)clearLayerContainer {
+  [layerContainer_ removeFromSuperview];
+  layerContainer_ = nil;
+}
+
+// Removes and clears the alternate (pressed) layer container.
+// Call this before setting a new pressed image or updating pressed layers.
+- (void)clearAlternateLayerContainer {
+  [alternateLayerContainer_ removeFromSuperview];
+  alternateLayerContainer_ = nil;
+}
+
 - (void)setImage:(NSImage*)image {
+  [self clearLayerContainer];
   [[statusItem_ button] setImage:image];
   [self updateDimensions];
 }
 
+// Calculates the maximum size needed to contain all layers.
+// Used to determine the placeholder image size for the status bar button.
+- (NSSize)maxSizeForLayers:(NSArray<NSImage*>*)layers {
+  NSSize maxSize = NSZeroSize;
+  for (NSImage* layer in layers) {
+    maxSize.width = MAX(maxSize.width, layer.size.width);
+    maxSize.height = MAX(maxSize.height, layer.size.height);
+  }
+  return maxSize;
+}
+
+// Creates a configured NSImageView for displaying a single layer image.
+// The image view is centered, non-scaling, and non-interactive.
+- (NSImageView*)createLayerImageView:(NSImage*)image {
+  NSImageView* imageView = [[NSImageView alloc] initWithFrame:NSZeroRect];
+  imageView.image = image;
+  imageView.imageScaling = NSImageScaleNone;
+  imageView.imageAlignment = NSImageAlignCenter;
+  imageView.imageFrameStyle = NSImageFrameNone;
+  imageView.editable = NO;
+  imageView.animates = NO;
+
+  return imageView;
+}
+
+// Creates a container view with all layer images stacked on top of each other.
+// The container uses TransparentLayerContainer to pass mouse events through.
+// Returns nil if layers is empty.
+- (NSView*)createLayerContainerWithImages:(NSArray<NSImage*>*)layers
+                                   hidden:(BOOL)hidden {
+  if (layers.count == 0)
+    return nil;
+
+  // Use transparent container that doesn't intercept mouse events
+  NSView* container =
+      [[TransparentLayerContainer alloc] initWithFrame:NSZeroRect];
+  container.hidden = hidden;
+
+  for (NSImage* layer in layers) {
+    NSImageView* imageView = [self createLayerImageView:layer];
+    [container addSubview:imageView];
+  }
+
+  return container;
+}
+
+// Sets layered images for the normal (non-pressed) tray icon state.
+// Multiple images are stacked on top of each other (index 0 = bottom layer).
+// Creates a transparent placeholder on the button to reserve space, then
+// overlays the actual images in a container that passes mouse events through.
+- (void)setLayeredImages:(NSArray<NSImage*>*)layers {
+  [self clearLayerContainer];
+
+  if (layers.count == 0) {
+    [[statusItem_ button] setImage:nil];
+    [self updateDimensions];
+    return;
+  }
+
+  NSSize maxSize = [self maxSizeForLayers:layers];
+  if (maxSize.width <= 0 || maxSize.height <= 0) {
+    return;
+  }
+
+  // Create a transparent placeholder so the button reserves space.
+  [[statusItem_ button] setImage:[[NSImage alloc] initWithSize:maxSize]];
+
+  // Hide normal layers if menu is currently open and we have alternate layers.
+  NSStatusBarButton* btn = [statusItem_ button];
+  BOOL hasAlternateImage = [btn alternateImage] != nil;
+  BOOL shouldHide = menuIsOpen_ && hasAlternateImage;
+  layerContainer_ = [self createLayerContainerWithImages:layers
+                                                  hidden:shouldHide];
+  [self addSubview:layerContainer_];
+  [self updateDimensions];
+}
+
+// Sets layered images for the alternate (pressed/menu-open) tray icon state.
+// Multiple images are stacked on top of each other (index 0 = bottom layer).
+// This is shown when the button is pressed or when a menu is open.
+- (void)setAlternateLayeredImages:(NSArray<NSImage*>*)layers {
+  [self clearAlternateLayerContainer];
+
+  if (layers.count == 0) {
+    [[statusItem_ button] setAlternateImage:nil];
+    [[statusItem_ button] setButtonType:NSButtonTypeMomentaryPushIn];
+    [self updateDimensions];
+    return;
+  }
+
+  NSSize maxSize = [self maxSizeForLayers:layers];
+  if (maxSize.width <= 0 || maxSize.height <= 0) {
+    return;
+  }
+
+  // Create a transparent placeholder for alternate image.
+  [[statusItem_ button]
+      setAlternateImage:[[NSImage alloc] initWithSize:maxSize]];
+  [[statusItem_ button] setButtonType:NSButtonTypeMomentaryChange];
+
+  // Show alternate layers if menu is currently open.
+  BOOL shouldShow = menuIsOpen_;
+  alternateLayerContainer_ = [self createLayerContainerWithImages:layers
+                                                           hidden:!shouldShow];
+  [self addSubview:alternateLayerContainer_];
+  [self updateDimensions];
+}
+
+- (void)layout {
+  [super layout];
+
+  NSStatusBarButton* btn = [statusItem_ button];
+
+  // Get the exact rect where the button draws images using its cell.
+  NSRect imageRect = NSZeroRect;
+  if ([btn respondsToSelector:@selector(cell)]) {
+    NSCell* cell = [btn cell];
+    if ([cell respondsToSelector:@selector(imageRectForBounds:)]) {
+      imageRect = [cell imageRectForBounds:btn.bounds];
+    }
+  }
+
+  if (NSIsEmptyRect(imageRect)) {
+    imageRect = self.bounds;  // fallback
+  }
+
+  // Position containers to match where the button draws images.
+  if (layerContainer_) {
+    layerContainer_.frame = imageRect;
+    // Each imageView fills its container; imageAlignment centers the image.
+    for (NSView* subview in layerContainer_.subviews) {
+      subview.frame = layerContainer_.bounds;
+    }
+  }
+
+  if (alternateLayerContainer_) {
+    alternateLayerContainer_.frame = imageRect;
+    // Each imageView fills its container; imageAlignment centers the image.
+    for (NSView* subview in alternateLayerContainer_.subviews) {
+      subview.frame = alternateLayerContainer_.bounds;
+    }
+  }
+}
+
 - (void)setAlternateImage:(NSImage*)image {
+  [self clearAlternateLayerContainer];
+
   [[statusItem_ button] setAlternateImage:image];
 
   // We need to change the button type here because the default button type for
@@ -173,9 +403,46 @@
   return [statusItem_ button].title;
 }
 
+// Updates the visibility of normal and alternate layer containers based on
+// the current menu state and button highlight state. This ensures the correct
+// layers are shown when the button is pressed or when a menu is open.
+- (void)updateLayerVisibility {
+  NSStatusBarButton* btn = [statusItem_ button];
+  BOOL hasAlternateImage = [btn alternateImage] != nil;
+
+  // Show alternate layers when menu is open OR button is highlighted (pressed)
+  BOOL showAlternate = menuIsOpen_ || [[btn cell] isHighlighted];
+
+  alternateLayerContainer_.hidden = !showAlternate;
+  // Only hide normal layers if we have alternate layers to show
+  layerContainer_.hidden = showAlternate && hasAlternateImage;
+
+  // Ensure layout updates to reflect visibility changes
+  [self setNeedsLayout:YES];
+}
+
 - (void)setMenuController:(ElectronMenuController*)menu {
   menuController_ = menu;
-  [statusItem_ setMenu:[menuController_ menu]];
+  NSMenu* nsMenu = [menuController_ menu];
+
+  // Unregister from previous menu to prevent observer leaks.
+  [self unregisterMenuNotifications:currentMenu_];
+
+  // Register for new menu notifications.
+  [self registerMenuNotifications:nsMenu];
+  currentMenu_ = nsMenu;
+
+  [statusItem_ setMenu:nsMenu];
+}
+
+- (void)menuDidBeginTracking:(NSNotification*)notification {
+  menuIsOpen_ = YES;
+  [self updateLayerVisibility];
+}
+
+- (void)menuDidEndTracking:(NSNotification*)notification {
+  menuIsOpen_ = NO;
+  [self updateLayerVisibility];
 }
 
 - (void)handleClickNotifications:(NSEvent*)event {
@@ -227,13 +494,17 @@
   if (menuController_ && [[menuController_ menu] numberOfItems] > 0) {
     [self handleClickNotifications:event];
     [super mouseDown:event];
+    // Note: menu notifications handle layer visibility for menu case
   } else {
+    // No menu - manually highlight button and update layer visibility
     [[statusItem_ button] highlight:YES];
+    [self updateLayerVisibility];
   }
 }
 
 - (void)mouseUp:(NSEvent*)event {
   [[statusItem_ button] highlight:NO];
+  [self updateLayerVisibility];
 
   trayIcon_->NotifyMouseUp(
       gfx::ScreenPointFromNSPoint([event locationInWindow]),
@@ -252,7 +523,12 @@
         [[ElectronMenuController alloc] initWithModel:menu_model
                                 useDefaultAccelerator:NO];
     // Hacky way to mimic design of ordinary tray menu.
-    [statusItem_ setMenu:[menuController menu]];
+    NSMenu* tempMenu = [menuController menu];
+
+    // Register for temporary menu notifications.
+    [self registerMenuNotifications:tempMenu];
+
+    [statusItem_ setMenu:tempMenu];
     base::WeakPtr<electron::TrayIconCocoa> weak_tray_icon =
         trayIcon_->GetWeakPtr();
     [[statusItem_ button] performClick:self];
@@ -262,7 +538,15 @@
     // lifetime.
     if (!weak_tray_icon)
       return;
-    [statusItem_ setMenu:[menuController_ menu]];
+
+    // Clean up temporary menu notifications and restore original menu.
+    [self unregisterMenuNotifications:tempMenu];
+
+    NSMenu* originalMenu = [menuController_ menu];
+    [self registerMenuNotifications:originalMenu];
+    currentMenu_ = originalMenu;
+
+    [statusItem_ setMenu:originalMenu];
     return;
   }
 
@@ -356,6 +640,24 @@
 
 namespace electron {
 
+namespace {
+
+// Helper to convert std::vector<gfx::Image> to NSMutableArray<NSImage*>.
+// Filters out any images that fail to convert to NSImage.
+NSMutableArray<NSImage*>* ConvertImagesToNSArray(
+    const std::vector<gfx::Image>& layers) {
+  NSMutableArray<NSImage*>* nsLayers = [NSMutableArray array];
+  for (const auto& img : layers) {
+    NSImage* nsImg = img.AsNSImage();
+    if (nsImg) {
+      [nsLayers addObject:nsImg];
+    }
+  }
+  return nsLayers;
+}
+
+}  // namespace
+
 TrayIconCocoa::TrayIconCocoa() {
   status_item_view_ = [[StatusItemView alloc] initWithIcon:this];
 }
@@ -370,6 +672,15 @@ void TrayIconCocoa::SetImage(const gfx::Image& image) {
 
 void TrayIconCocoa::SetPressedImage(const gfx::Image& image) {
   [status_item_view_ setAlternateImage:image.AsNSImage()];
+}
+
+void TrayIconCocoa::SetAlternateLayeredImages(
+    const std::vector<gfx::Image>& layers) {
+  [status_item_view_ setAlternateLayeredImages:ConvertImagesToNSArray(layers)];
+}
+
+void TrayIconCocoa::SetLayeredImages(const std::vector<gfx::Image>& layers) {
+  [status_item_view_ setLayeredImages:ConvertImagesToNSArray(layers)];
 }
 
 void TrayIconCocoa::SetToolTip(const std::string& tool_tip) {
