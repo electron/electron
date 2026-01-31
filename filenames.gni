@@ -279,8 +279,6 @@ filenames = {
     "shell/browser/api/electron_api_in_app_purchase.h",
     "shell/browser/api/electron_api_menu.cc",
     "shell/browser/api/electron_api_menu.h",
-    "shell/browser/api/electron_api_msix_updater.cc",
-    "shell/browser/api/electron_api_msix_updater.h",
     "shell/browser/api/electron_api_native_theme.cc",
     "shell/browser/api/electron_api_native_theme.h",
     "shell/browser/api/electron_api_net_log.cc",
