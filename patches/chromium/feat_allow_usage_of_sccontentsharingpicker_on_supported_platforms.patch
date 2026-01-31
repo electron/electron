@@ -46,7 +46,7 @@ index e2771b7b281274cdcb601a5bc78a948ad592087b..48d116823a28213e50775f378e6ce04c
    // OnStop is called by StopAndDeAllocate.
    virtual void OnStop() = 0;
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index d864b712d47452d1941aeae870da91ec2dfc8691..478808f20945ac42dfbd49e160b61d313f401cd1 100644
+index 65b86acaaa87c053308444931ee32e34d9cbddfe..24e09d817563ceec7052c8e40bad774a2707c22e 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
 @@ -28,6 +28,61 @@
