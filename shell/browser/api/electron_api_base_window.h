@@ -85,6 +85,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowRotateGesture(float rotation) override;
   void OnWindowSheetBegin() override;
   void OnWindowSheetEnd() override;
+  void OnWindowIsKeyChanged(bool is_key) override;
   void OnWindowEnterFullScreen() override;
   void OnWindowLeaveFullScreen() override;
   void OnWindowEnterHtmlFullScreen() override;
