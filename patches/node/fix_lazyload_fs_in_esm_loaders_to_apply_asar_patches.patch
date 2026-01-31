@@ -50,7 +50,7 @@ index 5f03cf14e948d449d303b22ab6710b5508fb83b2..72cc9444ca93ef7a1526e23314693aea
      });
      const { search, hash } = resolved;
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 52b8b5d9255f782af96aa859dec4ffa6ca82c9d0..96869be3c48b84106a5fe2cb752fe979a211d96a 100644
+index 30f887663bbbd9913eff35f0e6e5b8291adda120..e4d5579565eea07013c8260fa3c4aa3b266a4b35 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -24,7 +24,7 @@ const {
@@ -62,7 +62,7 @@ index 52b8b5d9255f782af96aa859dec4ffa6ca82c9d0..96869be3c48b84106a5fe2cb752fe979
  const { dirname, extname } = require('path');
  const {
    assertBufferSource,
-@@ -362,7 +362,7 @@ translators.set('commonjs', function commonjsStrategy(url, translateContext, par
+@@ -365,7 +365,7 @@ translators.set('commonjs', function commonjsStrategy(url, translateContext, par
  
    try {
      // We still need to read the FS to detect the exports.

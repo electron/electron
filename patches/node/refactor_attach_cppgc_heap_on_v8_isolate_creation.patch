@@ -18,10 +18,10 @@ This can be removed when Node.js upgrades to a version of V8 containing CLs
 from the above issue.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 6e7c0dbe31d0fef23288787df44e58c44bd47c5d..451796ffc4ec93b6e317dd49d92070c61aca04e5 100644
+index 5c8bc870dcf2e974036cf3bcb60fd288e59045d9..0f19cb09ea0963a9c505c51f89d1c7a939f2730b 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -336,6 +336,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
+@@ -331,6 +331,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
                      MultiIsolatePlatform* platform,
                      const SnapshotData* snapshot_data,
                      const IsolateSettings& settings) {
@@ -32,7 +32,7 @@ index 6e7c0dbe31d0fef23288787df44e58c44bd47c5d..451796ffc4ec93b6e317dd49d92070c6
    IsolateGroup group = GetOrCreateIsolateGroup();
    Isolate* isolate = Isolate::Allocate(group);
    if (isolate == nullptr) return nullptr;
-@@ -392,9 +396,12 @@ Isolate* NewIsolate(ArrayBufferAllocator* allocator,
+@@ -387,9 +391,12 @@ Isolate* NewIsolate(ArrayBufferAllocator* allocator,
                      uv_loop_t* event_loop,
                      MultiIsolatePlatform* platform,
                      const EmbedderSnapshotData* snapshot_data,
@@ -89,7 +89,7 @@ index fb2af584a4ae777022c9ef8c20ada1edcbbbefdc..fe6300a5d5d2d6602a84cbd33736c213
  #endif  // defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
  
 diff --git a/src/env.cc b/src/env.cc
-index 53f0bf7fc1e5c85fa9a5a323e998f04310f4f75e..a78817467518245c4a190e870e0eb30658eafcdb 100644
+index fdabe48dd7776c59298f7d972286d0d2ed062752..b5cf58cc953590493beb52abf249e33e486ffc46 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -611,7 +611,7 @@ IsolateData::~IsolateData() {}
@@ -102,10 +102,10 @@ index 53f0bf7fc1e5c85fa9a5a323e998f04310f4f75e..a78817467518245c4a190e870e0eb306
        isolate, object, wrappable);
  }
 diff --git a/src/node.h b/src/node.h
-index 9c624e4ef26c1b06a6c4bca7def245935189ce07..84c121f13caa1472cef67113fbc7b7213e7af7e1 100644
+index 19c34a430d095c06ccf5a988db91311d420a485a..154fb15e6c8fe985e92378cc8471aa6a9d579b07 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -604,7 +604,8 @@ NODE_EXTERN v8::Isolate* NewIsolate(
+@@ -603,7 +603,8 @@ NODE_EXTERN v8::Isolate* NewIsolate(
      struct uv_loop_s* event_loop,
      MultiIsolatePlatform* platform,
      const EmbedderSnapshotData* snapshot_data = nullptr,
@@ -115,7 +115,7 @@ index 9c624e4ef26c1b06a6c4bca7def245935189ce07..84c121f13caa1472cef67113fbc7b721
  NODE_EXTERN v8::Isolate* NewIsolate(
      std::shared_ptr<ArrayBufferAllocator> allocator,
      struct uv_loop_s* event_loop,
-@@ -1625,9 +1626,10 @@ void RegisterSignalHandler(int signal,
+@@ -1624,9 +1625,10 @@ void RegisterSignalHandler(int signal,
  // work with only Node.js versions with v8::Object::Wrap() should use that
  // instead.
  NODE_DEPRECATED("Use v8::Object::Wrap()",
