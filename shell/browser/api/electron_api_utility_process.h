@@ -56,8 +56,12 @@ class UtilityProcessWrapper final
   ~UtilityProcessWrapper() override;
   static gin_helper::Handle<UtilityProcessWrapper> Create(gin::Arguments* args);
   static raw_ptr<UtilityProcessWrapper> FromProcessId(base::ProcessId pid);
+  // Called when Network Service restarts to refresh all utility processes
+  static void RefreshAllURLLoaderFactories();
 
   void Shutdown(uint64_t exit_code);
+  // Refresh the URLLoaderFactory after Network Service restart
+  void RefreshURLLoaderFactory();
 
   // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;

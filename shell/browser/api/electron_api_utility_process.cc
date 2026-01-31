@@ -426,6 +426,41 @@ void UtilityProcessWrapper::OnV8FatalError(const std::string& location,
   EmitWithoutEvent("error", "FatalError", location, report);
 }
 
+void UtilityProcessWrapper::RefreshURLLoaderFactory() {
+  if (!node_service_remote_.is_connected() || terminated_)
+    return;
+
+  mojo::PendingRemote<network::mojom::URLLoaderFactory> url_loader_factory;
+  network::mojom::URLLoaderFactoryParamsPtr loader_params =
+      network::mojom::URLLoaderFactoryParams::New();
+  loader_params->process_id = pid_;
+  loader_params->is_orb_enabled = false;
+  loader_params->is_trusted = true;
+  if (url_loader_network_observer_.has_value()) {
+    loader_params->url_loader_network_observer =
+        url_loader_network_observer_->Bind();
+  }
+  network::mojom::NetworkContext* network_context =
+      g_browser_process->system_network_context_manager()->GetContext();
+  network_context->CreateURLLoaderFactory(
+      url_loader_factory.InitWithNewPipeAndPassReceiver(),
+      std::move(loader_params));
+  mojo::PendingRemote<network::mojom::HostResolver> host_resolver;
+  network_context->CreateHostResolver(
+      {}, host_resolver.InitWithNewPipeAndPassReceiver());
+
+  node_service_remote_->UpdateURLLoaderFactory(std::move(url_loader_factory),
+                                               std::move(host_resolver));
+}
+
+// static
+void UtilityProcessWrapper::RefreshAllURLLoaderFactories() {
+  auto& all_wrappers = GetAllUtilityProcessWrappers();
+  for (auto it = all_wrappers.begin(); it != all_wrappers.end(); ++it) {
+    it->second->RefreshURLLoaderFactory();
+  }
+}
+
 // static
 raw_ptr<UtilityProcessWrapper> UtilityProcessWrapper::FromProcessId(
     base::ProcessId pid) {

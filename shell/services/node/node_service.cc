@@ -197,4 +197,16 @@ void NodeService::Initialize(
   node_bindings_->StartPolling();
 }
 
+void NodeService::UpdateURLLoaderFactory(
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> url_loader_factory,
+    mojo::PendingRemote<network::mojom::HostResolver> host_resolver) {
+  // Update the URL loader factory in URLLoaderBundle to recover from
+  // Network Service crashes.
+  URLLoaderBundle::GetInstance()->SetURLLoaderFactory(
+      std::move(url_loader_factory),
+      mojo::Remote<network::mojom::HostResolver>(std::move(host_resolver)),
+      URLLoaderBundle::GetInstance()
+          ->ShouldUseNetworkObserverfromURLLoaderFactory());
+}
+
 }  // namespace electron

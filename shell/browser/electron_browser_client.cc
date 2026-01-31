@@ -74,6 +74,7 @@
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_crash_reporter.h"
 #include "shell/browser/api/electron_api_protocol.h"
+#include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/badging/badge_manager.h"
@@ -1034,6 +1035,11 @@ void ElectronBrowserClient::OnNetworkServiceCreated(
 
   g_browser_process->system_network_context_manager()->OnNetworkServiceCreated(
       network_service);
+
+  // Refresh URLLoaderFactory for all utility processes when Network Service
+  // restarts. This ensures that fetch requests in utility processes recover
+  // after a Network Service crash.
+  api::UtilityProcessWrapper::RefreshAllURLLoaderFactories();
 }
 
 std::vector<base::FilePath>
