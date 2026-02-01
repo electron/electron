@@ -433,7 +433,10 @@ source_set("electron_msix_updater") {
   public_configs = [ ":electron_lib_config" ]
 
   if (is_win) {
-    cflags_cc = [ "/EHsc" ]  # Enable C++ exceptions for C++/WinRT
+    cflags_cc = [
+      "/EHsc",  # Enable C++ exceptions for C++/WinRT
+      "-Wno-c++98-compat-extra-semi",  #Suppress C++98 compatibility warnings
+    ]
 
     include_dirs = [ "//third_party/nearby/src/internal/platform/implementation/windows/generated" ]
   }
@@ -442,6 +445,8 @@ source_set("electron_msix_updater") {
     "//base",
     "//content/public/browser",
     "//gin",
+    "//third_party/electron_node/deps/simdjson",
+    "//third_party/electron_node/deps/uv",
     "//v8",
   ]
 }
