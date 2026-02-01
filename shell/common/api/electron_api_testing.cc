@@ -5,6 +5,7 @@
 #include "base/command_line.h"
 #include "base/dcheck_is_on.h"
 #include "base/logging.h"
+#include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_switches.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
@@ -41,6 +42,10 @@ std::string GetLoggingDestination() {
   return command_line->GetSwitchValueASCII(switches::kEnableLogging);
 }
 
+void SimulateNetworkServiceCrash(v8::Isolate* isolate) {
+  content::RestartNetworkService();
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -49,6 +54,7 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("log", &Log);
   dict.SetMethod("getLoggingDestination", &GetLoggingDestination);
+  dict.SetMethod("simulateNetworkServiceCrash", &SimulateNetworkServiceCrash);
 }
 
 }  // namespace

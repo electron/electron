@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 
+#include "base/callback_list.h"
 #include "base/containers/id_map.h"
 #include "base/environment.h"
 #include "base/memory/weak_ptr.h"
@@ -99,6 +100,10 @@ class UtilityProcessWrapper final
   void OnServiceProcessDisconnected(uint32_t exit_code,
                                     const std::string& description);
 
+  // Creates and sends a new URLLoaderFactory to the utility process.
+  // Called after Network Service restart to update the factory.
+  void CreateAndSendURLLoaderFactory(bool crashed);
+
   base::ProcessId pid_ = base::kNullProcessId;
 #if BUILDFLAG(IS_WIN)
   // Non-owning handles, these will be closed when the
@@ -117,6 +122,7 @@ class UtilityProcessWrapper final
   mojo::Remote<node::mojom::NodeService> node_service_remote_;
   std::optional<electron::URLLoaderNetworkObserver>
       url_loader_network_observer_;
+  base::CallbackListSubscription network_service_gone_subscription_;
   base::WeakPtrFactory<UtilityProcessWrapper> weak_factory_{this};
 };
 

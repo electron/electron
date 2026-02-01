@@ -68,13 +68,15 @@ URLLoaderBundle* URLLoaderBundle::GetInstance() {
 void URLLoaderBundle::SetURLLoaderFactory(
     mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_factory,
     mojo::Remote<network::mojom::HostResolver> host_resolver,
-    bool use_network_observer_from_url_loader_factory) {
+    std::optional<bool> use_network_observer_from_url_loader_factory) {
   factory_ = network::SharedURLLoaderFactory::Create(
       std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
           std::move(pending_factory)));
   host_resolver_ = std::move(host_resolver);
-  should_use_network_observer_from_url_loader_factory_ =
-      use_network_observer_from_url_loader_factory;
+  if (use_network_observer_from_url_loader_factory.has_value()) {
+    should_use_network_observer_from_url_loader_factory_ =
+        use_network_observer_from_url_loader_factory.value();
+  }
 }
 
 scoped_refptr<network::SharedURLLoaderFactory>
@@ -206,6 +208,13 @@ void NodeService::Initialize(
   // Run entry script.
   node_bindings_->PrepareEmbedThread();
   node_bindings_->StartPolling();
+}
+
+void NodeService::UpdateURLLoaderFactory(
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> url_loader_factory,
+    mojo::PendingRemote<network::mojom::HostResolver> host_resolver) {
+  URLLoaderBundle::GetInstance()->SetURLLoaderFactory(
+      std::move(url_loader_factory), mojo::Remote(std::move(host_resolver)));
 }
 
 }  // namespace electron

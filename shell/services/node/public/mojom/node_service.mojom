@@ -28,4 +28,9 @@ interface NodeServiceClient {
 interface NodeService {
   Initialize(NodeServiceParams params,
              pending_remote<NodeServiceClient> client_remote);
+
+  // Update the URLLoaderFactory and HostResolver after Network Service restart.
+  UpdateURLLoaderFactory(
+      pending_remote<network.mojom.URLLoaderFactory> url_loader_factory,
+      pending_remote<network.mojom.HostResolver> host_resolver);
 };

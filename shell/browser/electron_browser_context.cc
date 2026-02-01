@@ -30,6 +30,7 @@
 #include "components/proxy_config/pref_proxy_config_tracker_impl.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"  // nogncheck
+#include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cors_origin_pattern_setter.h"
 #include "content/public/browser/host_zoom_map.h"
@@ -407,10 +408,18 @@ ElectronBrowserContext::ElectronBrowserContext(
     extension_system->FinishInitialization();
   }
 #endif
+
+  // Subscribe to Network Service process gone notifications to reset the
+  // cached URLLoaderFactory when the Network Service crashes or restarts.
+  network_service_gone_subscription_ =
+      content::RegisterNetworkServiceProcessGoneHandler(base::BindRepeating(
+          &ElectronBrowserContext::OnNetworkServiceProcessGone,
+          weak_factory_.GetWeakPtr()));
 }
 
 ElectronBrowserContext::~ElectronBrowserContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+
   NotifyWillBeDestroyed();
 
   // Notify any keyed services of browser context destruction.
@@ -566,6 +575,12 @@ content::PreconnectManager* ElectronBrowserContext::GetPreconnectManager() {
         preconnect_manager_delegate_->GetWeakPtr(), this);
   }
   return preconnect_manager_.get();
+}
+
+void ElectronBrowserContext::OnNetworkServiceProcessGone(bool /* crashed */) {
+  // Clear the cached URLLoaderFactory so the next request creates a new one
+  // from the new NetworkContext.
+  url_loader_factory_.reset();
 }
 
 scoped_refptr<network::SharedURLLoaderFactory>

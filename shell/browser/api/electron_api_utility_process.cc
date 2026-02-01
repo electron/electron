@@ -14,6 +14,7 @@
 #include "base/process/launch.h"
 #include "base/process/process.h"
 #include "chrome/browser/browser_process.h"
+#include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/child_process_host.h"
 #include "content/public/browser/service_process_host.h"
 #include "content/public/common/result_codes.h"
@@ -223,6 +224,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     loader_params->url_loader_network_observer =
         url_loader_network_observer_->Bind();
   }
+
   network::mojom::NetworkContext* network_context =
       g_browser_process->system_network_context_manager()->GetContext();
   network_context->CreateURLLoaderFactory(
@@ -238,6 +240,12 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 
   node_service_remote_->Initialize(std::move(params),
                                    receiver_.BindNewPipeAndPassRemote());
+
+  // Subscribe to Network Service process gone notifications.
+  network_service_gone_subscription_ =
+      content::RegisterNetworkServiceProcessGoneHandler(base::BindRepeating(
+          &UtilityProcessWrapper::CreateAndSendURLLoaderFactory,
+          weak_factory_.GetWeakPtr()));
 }
 
 UtilityProcessWrapper::~UtilityProcessWrapper() {
@@ -427,6 +435,38 @@ bool UtilityProcessWrapper::Accept(mojo::Message* mojo_message) {
 void UtilityProcessWrapper::OnV8FatalError(const std::string& location,
                                            const std::string& report) {
   EmitWithoutEvent("error", "FatalError", location, report);
+}
+
+void UtilityProcessWrapper::CreateAndSendURLLoaderFactory(bool /* crashed */) {
+  if (!node_service_remote_.is_connected())
+    return;
+
+  auto* manager = g_browser_process->system_network_context_manager();
+  if (!manager)
+    return;
+
+  network::mojom::NetworkContext* network_context = manager->GetContext();
+
+  mojo::PendingRemote<network::mojom::URLLoaderFactory> url_loader_factory;
+  auto loader_params = network::mojom::URLLoaderFactoryParams::New();
+  // Use kBrowserProcessId to match the initial factory creation (where pid_
+  // was 0 before the process launched). This is required because non-browser
+  // process IDs require a request_initiator_origin_lock to be set.
+  loader_params->process_id = network::OriginatingProcess::browser();
+  loader_params->is_orb_enabled = false;
+  loader_params->is_trusted = true;
+
+  network_context->CreateURLLoaderFactory(
+      url_loader_factory.InitWithNewPipeAndPassReceiver(),
+      std::move(loader_params));
+
+  // Create host resolver from the same network context
+  mojo::PendingRemote<network::mojom::HostResolver> host_resolver;
+  network_context->CreateHostResolver(
+      {}, host_resolver.InitWithNewPipeAndPassReceiver());
+
+  node_service_remote_->UpdateURLLoaderFactory(std::move(url_loader_factory),
+                                               std::move(host_resolver));
 }
 
 // static
