@@ -442,6 +442,8 @@ source_set("electron_msix_updater") {
     "//base",
     "//content/public/browser",
     "//gin",
+    "//third_party/electron_node/deps/simdjson",
+    "//third_party/electron_node/deps/uv",
     "//v8",
   ]
 }
