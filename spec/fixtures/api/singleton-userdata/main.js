@@ -3,11 +3,13 @@ const { app } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 
-// non-existent user data folder should not break requestSingleInstanceLock()
-// ref: https://github.com/electron/electron/issues/33547
-const userDataFolder = path.join(app.getPath('home'), 'electron-test-singleton-userdata');
-fs.rmSync(userDataFolder, { force: true, recursive: true });
+const userDataFolder = path.join(app.getPath('temp'), 'electron-test-singleton-userdata');
 app.setPath('userData', userDataFolder);
 
+// non-existent user data folder should not break requestSingleInstanceLock()
+// ref: https://github.com/electron/electron/issues/33547
+fs.rmSync(userDataFolder, { recursive: true, force: true });
 const gotTheLock = app.requestSingleInstanceLock();
+fs.rmSync(userDataFolder, { recursive: true, force: true });
+
 app.exit(gotTheLock ? 0 : 1);
