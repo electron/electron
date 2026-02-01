@@ -3,7 +3,7 @@ const { app } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const userDataFolder = path.join(app.getPath('temp'), 'electron-test-singleton-userdata')
+const userDataFolder = path.join(app.getPath('temp'), 'electron-test-singleton-userdata');
 app.setPath('userData', userDataFolder);
 
 // non-existent user data folder should not break requestSingleInstanceLock()
