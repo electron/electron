@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Fri, 16 Jan 2026 15:28:27 -0500
+Subject: [graphite] Add InsertStatus::kOutOfOrderRecording
+
+Bug: b/458722690
+Change-Id: I1c3661b9c765f46f039f0044ae3557a0e7f619cf
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1143598
+Auto-Submit: Michael Ludwig <michaelludwig@google.com>
+Reviewed-by: Thomas Smith <thomsmit@google.com>
+Commit-Queue: Nicolette Prevost <nicolettep@google.com>
+Reviewed-by: Nicolette Prevost <nicolettep@google.com>
+
+diff --git a/include/gpu/graphite/GraphiteTypes.h b/include/gpu/graphite/GraphiteTypes.h
+index 448f0767c6f0ebee58a13a6c508a7bfbf9632ba3..6f56424fe38141e632f7cf1bb2e6a8298cd0db7f 100644
+--- a/include/gpu/graphite/GraphiteTypes.h
++++ b/include/gpu/graphite/GraphiteTypes.h
+@@ -52,7 +52,12 @@ public:
+         kAddCommandsFailed,
+         // Internal failure, shader pipeline compilation failed (driver issue, or disk corruption),
+         // state unrecoverable.
+-        kAsyncShaderCompilesFailed
++        kAsyncShaderCompilesFailed,
++        // The inserted Recording is out of order from what the Context expects (when
++        // `[Context|Recorder]Options::fRequireOrderedRecordings` is true), which can either
++        // represent a client synchronization error or an internal failure when a prior dependent
++        // Recording failed for some reason, no CB changes but state likely unrecoverable.
++        kOutOfOrderRecording,
+     };
+ 
+     constexpr InsertStatus() : fValue(kSuccess) {}
+diff --git a/relnotes/out_of_order_status.md b/relnotes/out_of_order_status.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..74f7c889338925d132a2d80cdba40d321807c614
+--- /dev/null
++++ b/relnotes/out_of_order_status.md
+@@ -0,0 +1,4 @@
++* Graphite's InsertStatus now has an additional kOutOfOrderRecording to differentiate this
++  unrecoverable error from programming errors that would lead to kInvalidRecording. Out of order
++  recordings can currently arise "naturally" if prior dependent recordings failed due to resource
++  creation or update errors from the GPU driver.
+diff --git a/src/gpu/graphite/QueueManager.cpp b/src/gpu/graphite/QueueManager.cpp
+index 2948e071390095f3a1a1d7fdb6c7878adeaf9c53..f5f97f23e4957b819f9d92e8f03f49cd6fad1ab3 100644
+--- a/src/gpu/graphite/QueueManager.cpp
++++ b/src/gpu/graphite/QueueManager.cpp
+@@ -122,7 +122,7 @@ InsertStatus QueueManager::addRecording(const InsertRecordingInfo& info, Context
+     if (recorderID != SK_InvalidGenID) {
+         uint32_t* recordingID = fLastAddedRecordingIDs.find(recorderID);
+         RETURN_FAIL_IF(recordingID && info.fRecording->priv().uniqueID() != *recordingID + 1,
+-                       InsertStatus::kInvalidRecording,
++                       InsertStatus::kOutOfOrderRecording,
+                        "Recordings are expected to be replayed in order");
+ 
+         // Note the new Recording ID.
