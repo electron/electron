@@ -33,13 +33,14 @@
 #include <windows.foundation.metadata.h>
 #include <windows.h>
 #include <windows.management.deployment.h>
-#include <winrt/base.h>
-#include <winrt/windows.applicationmodel.core.h>
-#include <winrt/windows.applicationmodel.h>
-#include <winrt/windows.foundation.collections.h>
-#include <winrt/windows.foundation.h>
-#include <winrt/windows.foundation.metadata.h>
-#include <winrt/windows.management.deployment.h>
+// Use pre-generated C++/WinRT headers from //third_party/nearby instead of the
+// SDK's cppwinrt headers, which are missing implementation files.
+#include "third_party/nearby/src/internal/platform/implementation/windows/generated/winrt/Windows.ApplicationModel.h"
+#include "third_party/nearby/src/internal/platform/implementation/windows/generated/winrt/Windows.Foundation.Collections.h"
+#include "third_party/nearby/src/internal/platform/implementation/windows/generated/winrt/Windows.Foundation.Metadata.h"
+#include "third_party/nearby/src/internal/platform/implementation/windows/generated/winrt/Windows.Foundation.h"
+#include "third_party/nearby/src/internal/platform/implementation/windows/generated/winrt/Windows.Management.Deployment.h"
+#include "third_party/nearby/src/internal/platform/implementation/windows/generated/winrt/base.h"
 
 #include "base/win/scoped_com_initializer.h"
 #endif
