@@ -165,6 +165,9 @@ class Browser : private WindowListObserver {
   // Set the handler which decides whether to shutdown.
   void SetShutdownHandler(base::RepeatingCallback<bool()> handler);
 
+  // Returns whether the application is active.
+  bool IsActive();
+
   // Hide the application.
   void Hide();
   bool IsHidden();

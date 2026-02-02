@@ -571,6 +571,10 @@ focus but may instead show a notification or flash the app icon (Wayland).
 
 You should seek to use the `steal` option as sparingly as possible.
 
+### `app.isActive()` _macOS_
+
+Returns `boolean` - `true` if the application is active, which means it is the foreground application. Will be `true` after calling `app.focus()` if it was successful.
+
 ### `app.hide()` _macOS_
 
 Hides all application windows without minimizing them.
