@@ -43,6 +43,7 @@
 #include "ui/base/resource/resource_scale_factor.h"
 #include "ui/base/webui/web_ui_util.h"
 #include "ui/gfx/codec/jpeg_codec.h"
+#include "ui/gfx/color_space.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/image/image_skia.h"
@@ -256,27 +257,16 @@ v8::Local<v8::Value> NativeImage::ToBitmap(gin::Arguments* args) {
   v8::Isolate* const isolate = args->isolate();
 
   float scale = 1.0f;
-  std::string color_space_name = "srgb";
+  gfx::ColorSpace color_space = gfx::ColorSpace::CreateSRGB();
   gin_helper::Dictionary options;
   if (args->GetNext(&options)) {
     options.Get("scaleFactor", &scale);
-    options.Get("colorSpace", &color_space_name);
+    options.Get("colorSpace", &color_space);
   }
 
   const auto src = image_.AsImageSkia().GetRepresentation(scale).GetBitmap();
-
-  sk_sp<SkColorSpace> dst_color_space;
-  if (color_space_name == "display-p3") {
-    dst_color_space =
-        SkColorSpace::MakeRGB(SkNamedTransferFn::kSRGB, SkNamedGamut::kDisplayP3);
-  } else if (color_space_name == "source") {
-    dst_color_space = src.refColorSpace();
-  } else {
-    dst_color_space = SkColorSpace::MakeSRGB();
-  }
-
-  const auto dst_info =
-      SkImageInfo::MakeN32Premul(src.dimensions(), std::move(dst_color_space));
+  const auto dst_info = SkImageInfo::MakeN32Premul(
+      src.dimensions(), color_space.ToSkColorSpace());
   const size_t dst_n_bytes = dst_info.computeMinByteSize();
   auto dst_buf = v8::ArrayBuffer::New(isolate, dst_n_bytes);
 
