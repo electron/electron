@@ -420,6 +420,37 @@ action("electron_generate_node_defines") {
   args = [ rebase_path(target_gen_dir) ] + rebase_path(inputs)
 }
 
+# MSIX updater needs to be in a separate source_set because it uses C++/WinRT
+# headers that require exceptions to be enabled.
+source_set("electron_msix_updater") {
+  sources = [
+    "shell/browser/api/electron_api_msix_updater.cc",
+    "shell/browser/api/electron_api_msix_updater.h",
+  ]
+
+  configs += [ "//third_party/electron_node:node_external_config" ]
+
+  public_configs = [ ":electron_lib_config" ]
+
+  if (is_win) {
+    cflags_cc = [
+      "/EHsc",  # Enable C++ exceptions for C++/WinRT
+      "-Wno-c++98-compat-extra-semi",  #Suppress C++98 compatibility warnings
+    ]
+
+    include_dirs = [ "//third_party/nearby/src/internal/platform/implementation/windows/generated" ]
+  }
+
+  deps = [
+    "//base",
+    "//content/public/browser",
+    "//gin",
+    "//third_party/electron_node/deps/simdjson",
+    "//third_party/electron_node/deps/uv",
+    "//v8",
+  ]
+}
+
 source_set("electron_lib") {
   configs += [
     "//v8:external_startup_data",
@@ -435,6 +466,7 @@ source_set("electron_lib") {
     ":electron_fuses",
     ":electron_generate_node_defines",
     ":electron_js2c",
+    ":electron_msix_updater",
     ":electron_version_header",
     ":resources",
     "buildflags",
