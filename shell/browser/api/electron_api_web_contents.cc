@@ -2425,8 +2425,7 @@ void WebContents::LoadURL(const GURL& url,
   // Calling LoadURLWithParams() can trigger JS which destroys |this|.
   auto weak_this = GetWeakPtr();
 
-  params.transition_type = ui::PageTransitionFromInt(
-      ui::PAGE_TRANSITION_TYPED | ui::PAGE_TRANSITION_FROM_ADDRESS_BAR);
+  params.transition_type = ui::PageTransitionFromInt(ui::PAGE_TRANSITION_TYPED);
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
 
   // It's not safe to start a new navigation or otherwise discard the current
