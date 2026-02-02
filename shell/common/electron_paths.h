@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_COMMON_ELECTRON_PATHS_H_
 
 #include "base/base_paths.h"
+#include "base/files/file_path.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "base/base_paths_win.h"
@@ -46,6 +47,9 @@ enum {
 };
 
 static_assert(PATH_START < PATH_END, "invalid PATH boundaries");
+
+// Register the path provider with the base::PathService.
+void RegisterPathProvider();
 
 }  // namespace electron
 
