@@ -1285,6 +1285,8 @@ For `infoType` equal to `basic`:
 
 Using `basic` should be preferred if only basic information like `vendorId` or `deviceId` is needed.
 
+Promise is rejected if the GPU is completely disabled, i.e. no hardware and software implementations are available.
+
 ### `app.setBadgeCount([count])` _Linux_ _macOS_
 
 * `count` Integer (optional) - If a value is provided, set the badge to the provided value otherwise, on macOS, display a plain white dot (e.g. unknown number of notifications). On Linux, if a value is not provided the badge will not display.
