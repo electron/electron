@@ -159,6 +159,22 @@ Notification activated (com.github.Electron:notification:EAF7B87C-A113-43D7-8E76
 Notification replied to (com.github.Electron:notification:EAF7B87C-A113-43D7-8E76-F88EC9D73D44)
 ```
 
+### `ELECTRON_DEBUG_MSIX_UPDATER`
+
+Adds extra logs to MSIX updater operations on Windows to aid in debugging. Extra logging will be displayed when MSIX update operations are initiated, including package updates, package registration, and restart registration. This helps diagnose issues with MSIX package updates and deployments.
+
+Sample output:
+
+```sh
+UpdateMsix called with URI: https://example.com/app.msix
+DoUpdateMsix: Starting
+Calling AddPackageByUriAsync... URI: https://example.com/app.msix
+Update options - deferRegistration: true, developerMode: false, forceShutdown: false, forceTargetShutdown: false, forceUpdateFromAnyVersion: false
+Waiting for deployment...
+Deployment finished.
+MSIX Deployment completed.
+```
+
 ### `ELECTRON_LOG_ASAR_READS`
 
 When Electron reads from an ASAR file, log the read offset and file path to
