@@ -84,7 +84,7 @@ index 2648adb1cf38ab557b66ffd0e3034b26b04d76d6..98eab587f343f6ca472efc3d4e7b31b2
   private:
    const std::string service_interface_name_;
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index 5fa25d07cddca53177e82e5cba1cc834a40994d0..75f43420e80752be98af3f35f5a4b82aa8f3e8a8 100644
+index de1c1443812da9e6eb7c21222be414c545071d5b..101f5f44e66ee43797e7582c8c49402f4d9efef0 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
 @@ -635,7 +635,7 @@ void UtilityProcessHost::OnProcessCrashed(int exit_code) {

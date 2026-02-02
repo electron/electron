@@ -34,7 +34,7 @@ index dd4cee346f16df703d414bf206bbe6c9f4b1f796..5565f5a9259bd7da0722080bf01b3415
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 172b9c2a042a9aa179bc4a82c7ffd62ddcb431a6..798b6b1c53ebbd34b8c5b1eea4d7744f0119908d 100644
+index eea6cce416f5981f319851d426d2ba8b38a73d72..b82037d1fee4f61e0ead15319ce85782133675c0 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -4760,10 +4760,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
@@ -200,10 +200,10 @@ index 8bd06f4c155cc0ed8afaf89347f9fc9728bb1e41..85ae42670cc038e18e4a0ea05e3de25c
        ->ContextWillBeDestroyed(script_state_);
    if (next_status == Lifecycle::kV8MemoryIsForciblyPurged ||
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client.h b/third_party/blink/renderer/core/frame/local_frame_client.h
-index 98f9870b985bc6eb889d6e76c021d10fcbf5892a..dd4e9908f51e08bdc546d2248b70b4c78f4c2ebc 100644
+index ee43008b2bec7ea013cbbe7a782aa0a38e1acd02..2352aeaad71be960729e74305ed665583b15ed70 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client.h
 +++ b/third_party/blink/renderer/core/frame/local_frame_client.h
-@@ -310,7 +310,8 @@ class CORE_EXPORT LocalFrameClient : public FrameClient {
+@@ -313,7 +313,8 @@ class CORE_EXPORT LocalFrameClient : public FrameClient {
                                        int32_t world_id) = 0;
    virtual void DidInstallConditionalFeatures(v8::Local<v8::Context>,
                                               int32_t world_id) = 0;
@@ -214,10 +214,10 @@ index 98f9870b985bc6eb889d6e76c021d10fcbf5892a..dd4e9908f51e08bdc546d2248b70b4c7
    virtual bool AllowScriptExtensions() = 0;
  
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-index e7a528015ce97b357f9308f4b33b533a8ee9152d..4bc9b7ede3aa2af867146d9ec98b01359d00f638 100644
+index 6ab8ec1924a76f51d6e390d9457c596f9b0d8453..42f6281a44de055e964acbfbf20041ffa1fca592 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-@@ -308,10 +308,11 @@ void LocalFrameClientImpl::DidInstallConditionalFeatures(
+@@ -309,10 +309,11 @@ void LocalFrameClientImpl::DidInstallConditionalFeatures(
  }
  
  void LocalFrameClientImpl::WillReleaseScriptContext(
@@ -231,7 +231,7 @@ index e7a528015ce97b357f9308f4b33b533a8ee9152d..4bc9b7ede3aa2af867146d9ec98b0135
  }
  
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.h b/third_party/blink/renderer/core/frame/local_frame_client_impl.h
-index ca3b04c157275bcddf4bdd237004b5c60fc1853c..19d9c726e4e2ab2dc9ff2102c1087c312fd55183 100644
+index 54be144d5b24b369e12d551e6c15d2d85fa8b8c3..0ddb1e0730618bba73e54c2618930355fcf6dc19 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.h
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.h
 @@ -82,7 +82,8 @@ class CORE_EXPORT LocalFrameClientImpl final : public LocalFrameClient {
@@ -245,10 +245,10 @@ index ca3b04c157275bcddf4bdd237004b5c60fc1853c..19d9c726e4e2ab2dc9ff2102c1087c31
  
    // Returns true if we should allow register V8 extensions to be added.
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index 0ffa248cc6de740049788437b7c830be36063711..a96695e25d7290080fd74567a5e13e293d78d12e 100644
+index cb14cd270c69ee9ec20ea2e52a968d9dd721182e..7a3d983758896cbc58ff68adb33d1ebebf8a5404 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
-@@ -430,7 +430,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
+@@ -432,7 +432,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
                                int32_t world_id) override {}
    void DidInstallConditionalFeatures(v8::Local<v8::Context>,
                                       int32_t world_id) override {}

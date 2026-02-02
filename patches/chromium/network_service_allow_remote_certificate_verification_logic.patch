@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 2ee44d1a9aa91e014417647999be20b62de671b2..8bd75a62638f31a4dbd3982ab76f2e186f8b7d40 100644
+index 36771cf23bbf39af4fcc79576e93fc0c2ee1a8ab..02f70ce0f192562c11cdbc4d193302e700a302aa 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -170,6 +170,11 @@
@@ -160,7 +160,7 @@ index 2ee44d1a9aa91e014417647999be20b62de671b2..8bd75a62638f31a4dbd3982ab76f2e18
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index d05b9b425b0592db0d67fc2acf00e16a063bfaf1..9e4b17f327daaf7b2f8600f58cac2e824ba65dfa 100644
+index 98ec8269223714f54f48245bfc83f0c018dbf0b3..01a7a606dd6341df2c519776399f8f9875b557f7 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -118,6 +118,7 @@ class SimpleUrlPatternMatcher;
@@ -190,7 +190,7 @@ index d05b9b425b0592db0d67fc2acf00e16a063bfaf1..9e4b17f327daaf7b2f8600f58cac2e82
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index e6b30527340338137b6c8ed1908dc6a67803f4cd..47a04678a9481948377b2e47bec055c8c9579536 100644
+index 036b7177221e0c067dc6ef580dcbe7ed80845028..9599c3570b74fa03464beb9adeb1a0c237744640 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -313,6 +313,17 @@ struct SocketBrokerRemotes {
@@ -222,7 +222,7 @@ index e6b30527340338137b6c8ed1908dc6a67803f4cd..47a04678a9481948377b2e47bec055c8
    CreateURLLoaderFactory(
        pending_receiver<URLLoaderFactory> url_loader_factory,
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index 6c6385b0b8d6d74637653f49e876ac4838523af6..3724b2a7ae0ddc01a8512ea344171e6d0865c584 100644
+index 233a5c213e50ea5a39dff0543842602279a7c7c3..b228a3725b04b92037fc1c2ec601f04642d59fc3 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
 @@ -63,6 +63,8 @@ class TestNetworkContext : public mojom::NetworkContext {
