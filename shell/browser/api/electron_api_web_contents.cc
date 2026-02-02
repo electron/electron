@@ -3601,13 +3601,13 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
 
   bool stay_hidden = false;
   bool stay_awake = false;
-  gfx::Size bitmap_size;
+  gfx::Size output_size;
   if (args && args->Length() == 2) {
     gin_helper::Dictionary options;
     if (args->GetNext(&options)) {
       options.Get("stayHidden", &stay_hidden);
       options.Get("stayAwake", &stay_awake);
-      options.Get("outputSize", &bitmap_size);
+      options.Get("outputSize", &output_size);
     }
   }
 
@@ -3629,17 +3629,23 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
   // Capture full page if user doesn't specify a |rect|.
   const gfx::Size view_size =
       rect.IsEmpty() ? view->GetViewBounds().size() : rect.size();
-  if (bitmap_size.IsEmpty()) {
-    // By default, the requested bitmap size is the view size in screen
-    // coordinates.  However, if there's more pixel detail available on the
-    // current system, increase the requested bitmap size to capture it all.
-    bitmap_size = view_size;
-    const gfx::NativeView native_view = view->GetNativeView();
-    const float scale = display::Screen::Get()
-                            ->GetDisplayNearestView(native_view)
-                            .device_scale_factor();
-    if (scale > 1.0f)
-      bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
+
+  // By default, the requested bitmap size is the view size in screen
+  // coordinates.  However, if there's more pixel detail available on the
+  // current system, increase the requested bitmap size to capture it all.
+  gfx::Size bitmap_size = view_size;
+  const gfx::NativeView native_view = view->GetNativeView();
+  const float scale = display::Screen::Get()
+                          ->GetDisplayNearestView(native_view)
+                          .device_scale_factor();
+  if (scale > 1.0f)
+    bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
+
+  // If the user specified an output size, ensure we don't request a bitmap
+  // larger than the view size.
+  if (!output_size.IsEmpty() && output_size.width() <= bitmap_size.width() &&
+      output_size.height() <= bitmap_size.height()) {
+    bitmap_size = output_size;
   }
 
   view->CopyFromSurface(gfx::Rect(rect.origin(), view_size), bitmap_size,
