@@ -10,7 +10,7 @@ usage of BrowserList and Browser as we subclass related methods and use our
 WindowList.
 
 diff --git a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
-index 63d0b3426a29e75fc8f9bf841b02e30827ad9dd4..d51cf4c11c836a94c65f1d6de651ced84f9efefd 100644
+index 9b22efa07e43b60a8bd8bb6288792846709fae87..cf60a541720ffbcdaa5163d727a7761dcb30f131 100644
 --- a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 @@ -48,6 +48,7 @@
@@ -127,7 +127,7 @@ index 63d0b3426a29e75fc8f9bf841b02e30827ad9dd4..d51cf4c11c836a94c65f1d6de651ced8
    const std::string_view default_api_type =
        std::string_view(ui::AXApiType::Type(ui::AXApiType::kBlink));
    registry->RegisterStringPref(prefs::kShownAccessibilityApiType,
-                                std::string(default_api_type));
+                                default_api_type);
 +  registry->RegisterBooleanPref(prefs::kShowInternalAccessibilityTree, false);
 +#endif
  }
