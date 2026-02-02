@@ -12,7 +12,7 @@ Commit-Queue: Nicolette Prevost <nicolettep@google.com>
 Reviewed-by: Nicolette Prevost <nicolettep@google.com>
 
 diff --git a/include/gpu/graphite/GraphiteTypes.h b/include/gpu/graphite/GraphiteTypes.h
-index 448f0767c6f0ebee58a13a6c508a7bfbf9632ba3..6f56424fe38141e632f7cf1bb2e6a8298cd0db7f 100644
+index a638da8988b2e8963255537c36f98d0233c917e8..a8e40871531ce0c2a2b98a4c8ba1c44e9b374c2d 100644
 --- a/include/gpu/graphite/GraphiteTypes.h
 +++ b/include/gpu/graphite/GraphiteTypes.h
 @@ -52,7 +52,12 @@ public:

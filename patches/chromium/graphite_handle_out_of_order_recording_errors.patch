@@ -302,10 +302,10 @@ index 0de107a9d86ff8217a4c537598f198f313ecf9df..852343ab6804efed962b707b748ddf19
    }
  }
 diff --git a/tools/metrics/histograms/metadata/gpu/enums.xml b/tools/metrics/histograms/metadata/gpu/enums.xml
-index 659d7721751a10f24dd1cf21b2b67baee17dfd52..91439cd24cc51a8fd762d4d079c56495965c2087 100644
+index 58471a1d69c65cdf559f98ec2e11550bc16520d2..b62d8b78d34bfec491bcd5e6c65ff63eaedf00dd 100644
 --- a/tools/metrics/histograms/metadata/gpu/enums.xml
 +++ b/tools/metrics/histograms/metadata/gpu/enums.xml
-@@ -1112,6 +1112,19 @@ Called by update_gpu_driver_bug_workaround_entries.py.-->
+@@ -1104,6 +1104,19 @@ Called by update_gpu_driver_bug_workaround_entries.py.-->
    <int value="10" label="NoKillForGpuProgressInCrashDump"/>
  </enum>
  
@@ -326,10 +326,10 @@ index 659d7721751a10f24dd1cf21b2b67baee17dfd52..91439cd24cc51a8fd762d4d079c56495
    <int value="0" label="No"/>
    <int value="1" label="Yes"/>
 diff --git a/tools/metrics/histograms/metadata/gpu/histograms.xml b/tools/metrics/histograms/metadata/gpu/histograms.xml
-index 9524b4f806478ab8be823f9a18f187e8d8449650..df6916ee3d33cc9f0eb665b7506a9302d1cfeb0b 100644
+index ea8b129a2f4aba4d8afd9c3338f21574a12185dd..80bf969cbf66eac7f970b7c096da83c69424c38a 100644
 --- a/tools/metrics/histograms/metadata/gpu/histograms.xml
 +++ b/tools/metrics/histograms/metadata/gpu/histograms.xml
-@@ -1011,6 +1011,16 @@ chromium-metrics-reviews@google.com.
+@@ -1004,6 +1004,16 @@ chromium-metrics-reviews@google.com.
    </summary>
  </histogram>
  
