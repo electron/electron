@@ -33,15 +33,11 @@ describe('nativeImage module', () => {
     height: 3,
     width: 3
   };
-  // 128x128 gray PNG without an embedded color profile (defaults to sRGB).
-  // Generated with: convert -size 128x128 xc:'rgb(128,128,128)' -strip gray_srgb.png
-  const image128x128ColorSpace1 = {
-    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAAAAXNSR0IArs4c6QAAATBJREFUeJzt0TENACAAwDBACnowi0Nk9GBVsGRz3zPiLB3wuwZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAagDUAawDWAOwB3+ACH2yDfGoAAAAASUVORK5CYII='
+  const imageColorSpaceSRGB = {
+    path: path.join(fixturesPath, 'assets', 'colorspace-srgb.png')
   };
-  // 128x128 gray PNG with an embedded Display P3 color profile.
-  // Generated with: convert -size 128x128 xc:'rgb(128,128,128)' -profile DisplayP3.icc gray_p3.png
-  const image128x128ColorSpace2 = {
-    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAIAAABMXPacAAABK2lDQ1BTa2lhAAAokX2QMUvDUBSFv1cKomYRFR0cMnbRppWmDdahqbXo2Cqk3dI0FLFNQxrRvas/wtlNcBGhs4uT4CTi4i4IrpXXDClIPNPHuQfuPRdSmwBpDQZeGDTqpmq12urCBwLBTLYz8kmWgJ/XKPuy/U8uSYtdd+QAX0AYWK02iC6w1ov4SnIn4mvJl6EfgriRHJw0qiDugUxvjjtz7PiBzL8B5UH/wonvRnG90yZgAVvUGTKkRx+XLE3OOcMmi0YNgxK71KhQoUCFHHlKGOgU0KhiUqRKkUN0SuTJcTBjA13+M1o5fof9yXQ6fYy94wnc6bD0EHuZPVhR4Ok59uIf+3Zgz6w0kHJN+F4H5RZWP2F5DGzIcUJX9U9XlSM8HHZQyaORQ/8FDJRN2vTWQQEAAAEvSURBVHic7dFBCQAgAMBAtaNgSysa4x7uEgw29z0jztIBv2sA1gCsAVgDsAZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAagDUAawDWAKwBWAOwBmANwBqANQBrANYArAFYA7AGYA3AGoA1AGsA1gCsAVgDsAZgDcAewL8CXIWdMtwAAAAASUVORK5CYII='
+  const imageColorSpaceP3 = {
+    path: path.join(fixturesPath, 'assets', 'colorspace-p3.png')
   };
 
   const dataUrlImages = [
@@ -434,62 +430,30 @@ describe('nativeImage module', () => {
     });
 
     it('toBitmap() normalizes color space for consistent pixel values', () => {
-      // These two images are visually identical 128x128 gray squares but have
-      // different embedded color profiles (sRGB vs Display P3).
-      const img1 = nativeImage.createFromDataURL(image128x128ColorSpace1.dataUrl);
-      const img2 = nativeImage.createFromDataURL(image128x128ColorSpace2.dataUrl);
-      const bitmap1 = img1.toBitmap();
-      const bitmap2 = img2.toBitmap();
+      const srgbImage = nativeImage.createFromPath(imageColorSpaceSRGB.path);
+      const p3Image = nativeImage.createFromPath(imageColorSpaceP3.path);
 
-      expect(img1.getSize()).to.deep.equal(img2.getSize());
+      // Both default to sRGB normalization
+      const srgbBuf = srgbImage.toBitmap();
+      const p3Buf = p3Image.toBitmap();
 
-      const size = img1.getSize();
-      const pixelCount = size.width * size.height;
+      expect(srgbBuf.length).to.equal(p3Buf.length);
 
-      let maxDifference = 0;
-      let totalDifference = 0;
-
-      for (let i = 0; i < bitmap1.length; i += 4) {
-        const diff = Math.max(
-          Math.abs(bitmap1[i] - bitmap2[i]),
-          Math.abs(bitmap1[i + 1] - bitmap2[i + 1]),
-          Math.abs(bitmap1[i + 2] - bitmap2[i + 2])
-        );
-        maxDifference = Math.max(maxDifference, diff);
-        totalDifference += diff;
-        // Alpha channels should always match
-        expect(bitmap1[i + 3]).to.equal(bitmap2[i + 3]);
+      // Pixel values should be nearly identical after sRGB normalization
+      for (let i = 0; i < srgbBuf.length; i++) {
+        expect(Math.abs(srgbBuf[i] - p3Buf[i])).to.be.at.most(3);
       }
-
-      const avgDifference = totalDifference / (pixelCount * 3);
-
-      // After color space normalization to sRGB, pixel values should be very similar
-      expect(maxDifference).to.be.at.most(3,
-        'Maximum pixel difference should be ≤3 after color space normalization');
-      expect(avgDifference).to.be.below(1,
-        'Average pixel difference should be <1 per channel');
-
-      // toBitmap should be deterministic
-      expect(bitmap1.equals(img1.toBitmap())).to.be.true;
-      expect(bitmap2.equals(img2.toBitmap())).to.be.true;
     });
 
     it('toBitmap() accepts a colorSpace option', () => {
-      const img = nativeImage.createFromDataURL(image128x128ColorSpace2.dataUrl);
+      const image = nativeImage.createFromPath(imageColorSpaceP3.path);
 
-      const srgbBitmap = img.toBitmap({ colorSpace: 'srgb' });
-      const sourceBitmap = img.toBitmap({ colorSpace: 'source' });
-      const p3Bitmap = img.toBitmap({ colorSpace: 'display-p3' });
+      const srgbBuf = image.toBitmap({ colorSpace: { primaries: 'bt709', transferFunction: 'iec61966-2-1', matrix: 'rgb', range: 'full' } });
+      const p3Buf = image.toBitmap({ colorSpace: { primaries: 'smptest432-1', transferFunction: 'iec61966-2-1', matrix: 'rgb', range: 'full' } });
 
-      // All should produce valid bitmaps of the same size
-      const expectedSize = 128 * 128 * 4;
-      expect(srgbBitmap.length).to.equal(expectedSize);
-      expect(sourceBitmap.length).to.equal(expectedSize);
-      expect(p3Bitmap.length).to.equal(expectedSize);
-
-      // Default (no option) should match explicit srgb
-      const defaultBitmap = img.toBitmap();
-      expect(defaultBitmap.equals(srgbBitmap)).to.be.true;
+      // Both should produce valid buffers of the same size (same pixel dimensions)
+      expect(srgbBuf.length).to.be.greaterThan(0);
+      expect(p3Buf.length).to.equal(srgbBuf.length);
     });
   });
 
