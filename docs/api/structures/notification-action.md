@@ -1,5 +1,5 @@
 # NotificationAction Object
-
+.
 * `type` string - The type of action, can be `button`.
 * `text` string (optional) - The label for the given action.
 
