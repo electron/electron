@@ -13,6 +13,7 @@ fs.rmSync(userDataFolder, { recursive: true, force: true });
 app.setPath('userData', userDataFolder);
 const gotTheLock = app.requestSingleInstanceLock();
 
+app.releaseSingleInstanceLock();
 fs.rmSync(userDataFolder, { recursive: true, force: true });
 
 app.exit(gotTheLock ? 0 : 1);
