@@ -179,11 +179,11 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 - (void)dealloc {
   [menu_ setDelegate:nil];
 
+  model_ = nullptr;
+
   // Close the menu if it is still open. This could happen if a tab gets closed
   // while its context menu is still open.
   [self cancel];
-
-  model_ = nullptr;
 }
 
 - (void)setPopupCloseCallback:(base::OnceClosure)callback {
@@ -219,7 +219,7 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   if (isMenuOpen_) {
     [menu_ cancelTracking];
     isMenuOpen_ = NO;
-    if (model_)
+    if (model_ & model->CanEmitEvents())
       model_->MenuWillClose();
     if (!popupCloseCallback.is_null()) {
       content::GetUIThreadTaskRunner({})->PostTask(
