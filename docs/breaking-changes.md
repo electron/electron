@@ -30,6 +30,14 @@ Previously, PDF resources created a separate guest [WebContents](https://www.ele
 
 Under the hood, Chromium [enabled](https://chromium-review.googlesource.com/c/chromium/src/+/7239572) a feature that changes PDFs to use out-of-process iframes (OOPIFs) instead of the `MimeHandlerViewGuest` extension.
 
+### Behavior Changed: Updated Cookie Change Cause in the Cookie 'changed' Event
+
+We have updated the [cookie](https://www.electronjs.org/docs/latest/api/cookies#event-changed) change cause in the cookie 'changed' event.
+When a new cookie is set, the change cause is `inserted`.
+When a cookie is deleted, the change cause remains `explicit`.
+When the cookie being set is identical to an existing one (same name, domain, path, and value, with no actual changes), the change cause is `inserted-no-change-overwrite`.
+When the value of the cookie being set remains unchanged but some of its attributes are updated, such as the expiration attribute, the change cause will be `inserted-no-value-change-overwrite`.
+
 ## Planned Breaking API Changes (40.0)
 
 ### Deprecated: `clipboard` API access from renderer processes
