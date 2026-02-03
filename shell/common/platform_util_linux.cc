@@ -399,7 +399,8 @@ void OpenExternal(const GURL& url,
   }
 }
 
-bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
+// Returns 0 on success, -1 if process failed to launch, or the exit code.
+int MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
   auto env = base::Environment::Create();
 
   // find the trash method
@@ -428,16 +429,32 @@ bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
     argv = {"gio", "trash", filename};
   }
 
-  return XDGUtil(argv, base::FilePath(), true, /*focus_launched_process=*/false,
-                 platform_util::OpenCallback());
+  base::LaunchOptions options;
+  options.allow_new_privs = true;
+
+  base::Process process = base::LaunchProcess(argv, options);
+  if (!process.IsValid())
+    return -1;
+
+  base::ScopedAllowBaseSyncPrimitivesForTesting allow_sync;
+  int exit_code = -1;
+  if (!process.WaitForExit(&exit_code))
+    return -1;
+
+  return exit_code;
 }
 
 namespace internal {
 
 bool PlatformTrashItem(const base::FilePath& full_path, std::string* error) {
-  if (!MoveItemToTrash(full_path, false)) {
-    // TODO(nornagon): at least include the exit code?
-    *error = "Failed to move item to trash";
+  int exit_code = MoveItemToTrash(full_path, false);
+  if (exit_code != 0) {
+    if (exit_code == -1) {
+      *error = "Failed to launch trash process";
+    } else {
+      *error = "Failed to move item to trash (exit code " +
+               std::to_string(exit_code) + ")";
+    }
     return false;
   }
   return true;
