@@ -9,6 +9,7 @@ import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import { AddressInfo } from 'node:net';
+import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { copyMacOSFixtureApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn } from './lib/codesign-helpers';
@@ -64,6 +65,38 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
     } catch (err) {
       console.error(what);
       throw err;
+    }
+  };
+
+  // Squirrel stores update directories in ~/Library/Caches/com.github.Electron.ShipIt/
+  // as subdirectories named like update.XXXXXXX
+  const getSquirrelCacheDirectory = () => {
+    return path.join(os.homedir(), 'Library', 'Caches', 'com.github.Electron.ShipIt');
+  };
+
+  const getUpdateDirectoriesInCache = async () => {
+    const cacheDir = getSquirrelCacheDirectory();
+    try {
+      const entries = await fs.promises.readdir(cacheDir, { withFileTypes: true });
+      return entries
+        .filter(entry => entry.isDirectory() && entry.name.startsWith('update.'))
+        .map(entry => path.join(cacheDir, entry.name));
+    } catch {
+      return [];
+    }
+  };
+
+  const cleanSquirrelCache = async () => {
+    const cacheDir = getSquirrelCacheDirectory();
+    try {
+      const entries = await fs.promises.readdir(cacheDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory() && entry.name.startsWith('update.')) {
+          await fs.promises.rm(path.join(cacheDir, entry.name), { recursive: true, force: true });
+        }
+      }
+    } catch {
+      // Cache dir may not exist yet
     }
   };
 
@@ -336,6 +369,67 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
           expect(requests).to.have.lengthOf(5);
           expect(requests[4].url).to.equal('/update-check/updated/3.0.0');
           expect(requests[4].header('user-agent')).to.include('Electron/');
+        });
+      });
+    });
+
+    it('should clean up old staged update directories when a new update is downloaded', async () => {
+      // Clean up any existing update directories before the test
+      await cleanSquirrelCache();
+
+      await withUpdatableApp({
+        nextVersion: '2.0.0',
+        startFixture: 'update-stack',
+        endFixture: 'update-stack'
+      }, async (appPath, updateZipPath2) => {
+        await withUpdatableApp({
+          nextVersion: '3.0.0',
+          startFixture: 'update-stack',
+          endFixture: 'update-stack'
+        }, async (_, updateZipPath3) => {
+          let updateCount = 0;
+          let downloadCount = 0;
+          let directoriesDuringSecondDownload: string[] = [];
+
+          server.get('/update-file', async (req, res) => {
+            downloadCount++;
+            // When the second download request arrives, Squirrel has already
+            // called uniqueTemporaryDirectoryForUpdate which (with our patch)
+            // cleans up old directories before creating the new one.
+            // Without the patch, both directories would exist at this point.
+            if (downloadCount === 2) {
+              directoriesDuringSecondDownload = await getUpdateDirectoriesInCache();
+            }
+            res.download(updateCount > 1 ? updateZipPath3 : updateZipPath2);
+          });
+          server.get('/update-check', (req, res) => {
+            updateCount++;
+            res.json({
+              url: `http://localhost:${port}/update-file`,
+              name: 'My Release Name',
+              notes: 'Theses are some release notes innit',
+              pub_date: (new Date()).toString()
+            });
+          });
+          const relaunchPromise = new Promise<void>((resolve) => {
+            server.get('/update-check/updated/:version', (req, res) => {
+              res.status(204).send();
+              resolve();
+            });
+          });
+          const launchResult = await launchApp(appPath, [`http://localhost:${port}/update-check`]);
+          logOnError(launchResult, () => {
+            expect(launchResult).to.have.property('code', 0);
+            expect(launchResult.out).to.include('Update Downloaded');
+          });
+
+          await relaunchPromise;
+
+          // During the second download, the old staged update directory should
+          // have been cleaned up. With our patch, there should be exactly 1
+          // directory (the new one). Without the patch, there would be 2.
+          expect(directoriesDuringSecondDownload).to.have.lengthOf(1,
+            `Expected 1 update directory during second download but found ${directoriesDuringSecondDownload.length}: ${directoriesDuringSecondDownload.join(', ')}`);
         });
       });
     });
