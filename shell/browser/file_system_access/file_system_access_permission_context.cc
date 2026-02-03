@@ -400,31 +400,47 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
     }
   }
 
+  // Updates the in-memory permission grant for the `new_path` in the `grants`
+  // map using the same grant from the `old_path`, and removes the grant entry
+  // for the `old_path`.
+  // If `allow_overwrite` is true, this will replace any pre-existing grant at
+  // `new_path`.
   static void UpdateGrantPath(
       std::map<base::FilePath, PermissionGrantImpl*>& grants,
       const content::PathInfo& old_path,
-      const content::PathInfo& new_path) {
+      const content::PathInfo& new_path,
+      bool allow_overwrite) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-    auto entry_it =
+    auto old_path_it =
         std::ranges::find_if(grants, [&old_path](const auto& entry) {
           return entry.first == old_path.path;
         });
 
-    if (entry_it == grants.end()) {
-      // There must be an entry for an ancestor of this entry. Nothing to do
-      // here.
+    if (old_path_it == grants.end()) {
       return;
     }
 
-    DCHECK_EQ(entry_it->second->GetActivePermissionStatus(),
+    DCHECK_EQ(old_path_it->second->GetActivePermissionStatus(),
               PermissionStatus::GRANTED);
 
-    auto* const grant_impl = entry_it->second;
-    grant_impl->SetPath(new_path);
+    auto* const grant_to_move = old_path_it->second;
 
-    // Update the permission grant's key in the map of active permissions.
-    grants.erase(entry_it);
-    grants.emplace(new_path.path, grant_impl);
+    // See https://chromium-review.googlesource.com/4803165
+    if (allow_overwrite) {
+      auto new_path_it = grants.find(new_path.path);
+      if (new_path_it != grants.end() && new_path_it->second != grant_to_move) {
+        new_path_it->second->SetStatus(PermissionStatus::DENIED);
+      }
+    }
+
+    grant_to_move->SetPath(new_path);
+
+    grants.erase(old_path_it);
+    if (allow_overwrite) {
+      grants.insert_or_assign(new_path.path, grant_to_move);
+    } else {
+      grants.emplace(new_path.path, grant_to_move);
+    }
   }
 
  protected:
@@ -930,12 +946,17 @@ void FileSystemAccessPermissionContext::NotifyEntryMoved(
     return;
   }
 
+  // It's possible `new_path` already has existing persistent permission.
+  // See crbug.com/423663220.
+  bool allow_overwrite = base::FeatureList::IsEnabled(
+      features::kFileSystemAccessMoveWithOverwrite);
+
   auto it = active_permissions_map_.find(origin);
   if (it != active_permissions_map_.end()) {
     PermissionGrantImpl::UpdateGrantPath(it->second.write_grants, old_path,
-                                         new_path);
+                                         new_path, allow_overwrite);
     PermissionGrantImpl::UpdateGrantPath(it->second.read_grants, old_path,
-                                         new_path);
+                                         new_path, allow_overwrite);
   }
 }
 
