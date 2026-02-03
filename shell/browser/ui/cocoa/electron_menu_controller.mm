@@ -493,8 +493,6 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
                                              : NSControlStateValueOff;
 }
 
-// Recursively refreshes the menu tree starting from |menu|, applying the
-// model state to each menu item.
 - (void)refreshMenuTree:(NSMenu*)menu {
   for (NSMenuItem* item in menu.itemArray) {
     [self applyStateToMenuItem:item];
