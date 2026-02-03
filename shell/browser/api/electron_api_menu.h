@@ -61,6 +61,10 @@ class Menu : public gin::Wrappable<Menu>,
   ElectronMenuModel* model() const { return model_.get(); }
 
  protected:
+  // Remove this instance as an observer from the model. Called by derived
+  // class destructors to ensure observer is removed before platform-specific
+  // cleanup that may trigger model callbacks.
+  void RemoveModelObserver();
   // Returns a new callback which keeps references of the JS wrapper until the
   // passed |callback| is called.
   base::OnceClosure BindSelfToClosure(base::OnceClosure callback);
