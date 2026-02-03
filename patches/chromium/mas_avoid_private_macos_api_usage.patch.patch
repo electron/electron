@@ -12,6 +12,9 @@ Subject: mas: avoid private macOS API usage
   * _LSSetApplicationLaunchServicesServerConnectionStatus
   * AreDeviceAndUserJoinedToDomain
   * _CFIsObjC
+  * CGSSetWindowCaptureExcludeShape
+  * CGRegionCreateWithRect
+  * CTFontCopyVariationAxesInternal
   * AudioDeviceDuck
   * NSNextStepFrame
   * NSThemeFrame
@@ -663,7 +666,7 @@ index 3c7bfe98848cbb3a309737b84ff1c8d683a83ec7..84036a1c4635e7b5bca5ebe1ea5e303b
  
  - (NSWindow*)rootWindow {
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 414874d84338ff12e707d52bc82483957d74d8ef..849da439a046aea133946572c79964858e4e7ba5 100644
+index 414874d84338ff12e707d52bc82483957d74d8ef..b620a31aed5801160dc49d964df56410786e6f2e 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -674,7 +677,21 @@ index 414874d84338ff12e707d52bc82483957d74d8ef..849da439a046aea133946572c7996485
  #include "mojo/public/cpp/bindings/self_owned_receiver.h"
  #include "net/cert/x509_util_apple.h"
  #include "ui/accelerated_widget_mac/window_resize_helper_mac.h"
-@@ -731,10 +732,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -73,10 +74,13 @@
+ using CGRegionRef = CFTypeRef;
+ 
+ CG_EXTERN CGSConnectionID CGSMainConnectionID(void);
++
++#if !IS_MAS_BUILD()
+ CG_EXTERN CGError CGSSetWindowCaptureExcludeShape(CGSConnectionID cid,
+                                                   CGSWindowID wid,
+                                                   CGRegionRef region);
+ CG_EXTERN CGRegionRef CGRegionCreateWithRect(CGRect rect);
++#endif
+ 
+ namespace {
+ constexpr auto kUIPaintTimeout = base::Milliseconds(500);
+@@ -731,10 +735,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -687,6 +704,25 @@ index 414874d84338ff12e707d52bc82483957d74d8ef..849da439a046aea133946572c7996485
  
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
+@@ -1220,6 +1226,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+ }
+ 
+ void NativeWidgetNSWindowBridge::SetAllowScreenshots(bool allow) {
++#if !IS_MAS_BUILD()
+   CGSConnectionID connection_id = CGSMainConnectionID();
+   CGSWindowID window_id = ns_window().windowNumber;
+   CGRect frame = ns_window().frame;
+@@ -1229,6 +1236,10 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+     region.reset(CGRegionCreateWithRect(frame));
+   }
+   CGSSetWindowCaptureExcludeShape(connection_id, window_id, region.get());
++#else
++  [ns_window()
++        setSharingType:allow ? NSWindowSharingReadOnly : NSWindowSharingNone];
++#endif
+ }
+ 
+ void NativeWidgetNSWindowBridge::SetColorMode(
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
 index 3c60e4e519f36a098704d744e3659ad0b8083157..123118d66734295f7b00e807aa0437ac76ab3f57 100644
 --- a/components/viz/service/BUILD.gn
@@ -1708,6 +1744,46 @@ index 94afefcee81b87c05bf9b1199d90d3d4b5ea84a6..3e3aaea0ec6c8fad0d90a931d269af3a
  }
  
  }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm b/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
+index a4cc39ba2796d3108ff6674e60dcf5302c1da7d7..3aa68d45e2c17fe52b6c6cc5527af7dd42ad0c3a 100644
+--- a/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
++++ b/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
+@@ -37,6 +37,7 @@
+ #include "base/apple/bridging.h"
+ #include "base/apple/foundation_util.h"
+ #include "base/apple/scoped_cftyperef.h"
++#include "electron/mas.h"
+ #include "third_party/blink/renderer/platform/fonts/font_cache.h"
+ #include "third_party/blink/renderer/platform/fonts/font_selection_types.h"
+ #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+@@ -60,8 +61,10 @@
+ // We don't need localized variation axis name, so we can use
+ // `CTFontCopyVariationAxesInternal()` instead.
+ // Request for public API: FB13788219.
++#if !IS_MAS_BUILD()
+ extern "C" CFArrayRef CTFontCopyVariationAxesInternal(CTFontRef)
+     CT_AVAILABLE(macos(12.1));
++#endif
+ 
+ namespace blink {
+ 
+@@ -403,12 +406,16 @@ void ClampVariationValuesToFontAcceptableRange(
+   // we are enabling it only on MacOS 13+ because these are our benchmarking
+   // platforms.
+   NSArray* all_axes;
++#if !IS_MAS_BUILD()
+   if (@available(macOS 13.0, *)) {
+     all_axes =
+         CFToNSOwnershipCast(CTFontCopyVariationAxesInternal(ct_font.get()));
+   } else {
+     all_axes = CFToNSOwnershipCast(CTFontCopyVariationAxes(ct_font.get()));
+   }
++#else
++  all_axes = CFToNSOwnershipCast(CTFontCopyVariationAxes(ct_font.get()));
++#endif
+   if (!all_axes) {
+     return;
+   }
 diff --git a/ui/accelerated_widget_mac/BUILD.gn b/ui/accelerated_widget_mac/BUILD.gn
 index 0f8a6f75b7f01029adc2f5fd23559bacce19cf72..cf66c2f4f02a8e21cc83c3b7389fc5156bcd93ba 100644
 --- a/ui/accelerated_widget_mac/BUILD.gn
