@@ -835,7 +835,8 @@ describe('BrowserView module', () => {
             height: 150
           }
         });
-        expect(image.getSize().width).to.be.lessThan(1500);
+        const { scaleFactor } = screen.getPrimaryDisplay();
+        expect(image.getSize()).to.deep.equal({ width: 100 * scaleFactor, height: 100 * scaleFactor });
       });
 
       it('returns image with correct size when both dimensions of `outputSize` are bigger than both dimensions of the captured area', async () => {
@@ -864,8 +865,8 @@ describe('BrowserView module', () => {
             height: 1500
           }
         });
-        expect(image.getSize().width).to.be.lessThan(1500);
-        expect(image.getSize().height).to.be.lessThan(1500);
+        const { scaleFactor } = screen.getPrimaryDisplay();
+        expect(image.getSize()).to.deep.equal({ width: 100 * scaleFactor, height: 100 * scaleFactor });
       });
     });
 
