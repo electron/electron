@@ -54,7 +54,7 @@ class Cookies final : public gin_helper::DeprecatedWrappable<Cookies>,
 
   v8::Local<v8::Promise> Get(v8::Isolate*,
                              const gin_helper::Dictionary& filter);
-  v8::Local<v8::Promise> Set(v8::Isolate*, base::Value::Dict details);
+  v8::Local<v8::Promise> Set(v8::Isolate*, base::DictValue details);
   v8::Local<v8::Promise> Remove(v8::Isolate*,
                                 const GURL& url,
                                 const std::string& name);

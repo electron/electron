@@ -180,7 +180,7 @@ void Browser::WillFinishLaunching() {
   observers_.Notify(&BrowserObserver::OnWillFinishLaunching);
 }
 
-void Browser::DidFinishLaunching(base::Value::Dict launch_info) {
+void Browser::DidFinishLaunching(base::DictValue launch_info) {
   // Make sure the userData directory is created.
   ScopedAllowBlockingForElectron allow_blocking;
   base::FilePath user_data;

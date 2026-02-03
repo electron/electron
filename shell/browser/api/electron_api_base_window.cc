@@ -333,7 +333,7 @@ void BaseWindow::OnExecuteAppCommand(const std::string_view command_name) {
 }
 
 void BaseWindow::OnTouchBarItemResult(const std::string& item_id,
-                                      const base::Value::Dict& details) {
+                                      const base::DictValue& details) {
   Emit("-touch-bar-interaction", item_id, details);
 }
 

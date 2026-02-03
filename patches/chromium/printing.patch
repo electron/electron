@@ -68,7 +68,7 @@ index f91857eb0b6ad385721b8224100de26dfdd7dd8d..45e8766fcb8d46d8edc3bf8d21d3f826
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index aa79c324af2cec50019bca3bccff5d420fb30ffd..3bba39372750b3e3efd1c5a4747f41415ae3ede7 100644
+index aa79c324af2cec50019bca3bccff5d420fb30ffd..eb76ee91743236d05c3a70a54d5345a705b5d994 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -80,6 +80,20 @@ namespace printing {
@@ -153,7 +153,7 @@ index aa79c324af2cec50019bca3bccff5d420fb30ffd..3bba39372750b3e3efd1c5a4747f4141
  
 -bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh) {
 +bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh,
-+                                    base::Value::Dict settings,
++                                    base::DictValue settings,
 +                                    CompletionCallback callback)  {
    if (!StartPrintCommon(rfh)) {
      return false;
@@ -497,7 +497,7 @@ index aa79c324af2cec50019bca3bccff5d420fb30ffd..3bba39372750b3e3efd1c5a4747f4141
      scoped_refptr<base::RefCountedMemory> print_data,
      const gfx::Size& page_size,
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index cdd25ff24507cc49684454820c7d385b8c67259e..85b80282902b17aad49d4ffe40fddb1a0125d4ef 100644
+index cdd25ff24507cc49684454820c7d385b8c67259e..d4dc7e8e0cd604a6418f76e2e387985d847ce0be 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -46,6 +46,8 @@ namespace printing {
@@ -515,7 +515,7 @@ index cdd25ff24507cc49684454820c7d385b8c67259e..85b80282902b17aad49d4ffe40fddb1a
    // this function. Returns false if printing is impossible at the moment.
 -  virtual bool PrintNow(content::RenderFrameHost* rfh);
 +  virtual bool PrintNow(content::RenderFrameHost* rfh,
-+                        base::Value::Dict settings = {},
++                        base::DictValue settings = {},
 +                        CompletionCallback callback = {});
  
    // Like PrintNow(), but for the node under the context menu, instead of the
@@ -666,7 +666,7 @@ index ac2f719be566020d9f41364560c12e6d6d0fe3d8..16d758a6936f66148a196761cfb875f6
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 60b5e83a8bc1ed07970be4cdfdc19962698bd754..23db93ae0528d96b8be14bbbb64483cbdd9c46ec 100644
+index 60b5e83a8bc1ed07970be4cdfdc19962698bd754..1320f3b10b07b2cee90f39f406604176c7575796 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -54,6 +54,7 @@
@@ -690,7 +690,7 @@ index 60b5e83a8bc1ed07970be4cdfdc19962698bd754..23db93ae0528d96b8be14bbbb64483cb
  
 -  Print(web_frame, blink::WebNode(), PrintRequestType::kScripted);
 +  Print(web_frame, blink::WebNode(), PrintRequestType::kScripted,
-+        base::Value::Dict());
++        base::DictValue());
    if (!weak_this) {
      return;
    }
@@ -700,7 +700,7 @@ index 60b5e83a8bc1ed07970be4cdfdc19962698bd754..23db93ae0528d96b8be14bbbb64483cb
  
 -void PrintRenderFrameHelper::PrintRequestedPages() {
 -  PrintRequestedPagesInternal(/*already_notified_frame=*/false);
-+void PrintRenderFrameHelper::PrintRequestedPages(base::Value::Dict settings) {
++void PrintRenderFrameHelper::PrintRequestedPages(base::DictValue settings) {
 +  PrintRequestedPagesInternal(/*already_notified_frame=*/false,
 +                              std::move(settings));
  }
@@ -708,7 +708,7 @@ index 60b5e83a8bc1ed07970be4cdfdc19962698bd754..23db93ae0528d96b8be14bbbb64483cb
  void PrintRenderFrameHelper::PrintRequestedPagesInternal(
 -    bool already_notified_frame) {
 +    bool already_notified_frame,
-+    base::Value::Dict settings) {
++    base::DictValue settings) {
    ScopedIPC scoped_ipc(weak_ptr_factory_.GetWeakPtr());
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint) {
      return;
@@ -750,7 +750,7 @@ index 60b5e83a8bc1ed07970be4cdfdc19962698bd754..23db93ae0528d96b8be14bbbb64483cb
                                     const blink::WebNode& node,
 -                                   PrintRequestType print_request_type) {
 +                                   PrintRequestType print_request_type,
-+                                   base::Value::Dict settings) {
++                                   base::DictValue settings) {
    // If still not finished with earlier print request simply ignore.
    if (prep_frame_view_)
      return;
@@ -796,7 +796,7 @@ index 60b5e83a8bc1ed07970be4cdfdc19962698bd754..23db93ae0528d96b8be14bbbb64483cb
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
 -                                               const blink::WebNode& node) {
 +                                               const blink::WebNode& node,
-+                                               base::Value::Dict new_settings) {
++                                               base::DictValue new_settings) {
    // Reset to default values.
    ignore_css_margins_ = false;
  
@@ -844,7 +844,7 @@ index 60b5e83a8bc1ed07970be4cdfdc19962698bd754..23db93ae0528d96b8be14bbbb64483cb
  }
  
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index 8b4cea7d43fe16d7414e017b11ee1cda722e1a8d..eb7982ac4fcba9b40cbff83ebe71e42493c97fba 100644
+index 8b4cea7d43fe16d7414e017b11ee1cda722e1a8d..116939ffd857354ab1bfab472b292cfedd99dcba 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -258,7 +258,7 @@ class PrintRenderFrameHelper
@@ -852,7 +852,7 @@ index 8b4cea7d43fe16d7414e017b11ee1cda722e1a8d..eb7982ac4fcba9b40cbff83ebe71e424
  
    // printing::mojom::PrintRenderFrame:
 -  void PrintRequestedPages() override;
-+  void PrintRequestedPages(base::Value::Dict settings) override;
++  void PrintRequestedPages(base::DictValue settings) override;
    void PrintWithParams(mojom::PrintPagesParamsPtr params,
                         PrintWithParamsCallback callback) override;
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
@@ -862,7 +862,7 @@ index 8b4cea7d43fe16d7414e017b11ee1cda722e1a8d..eb7982ac4fcba9b40cbff83ebe71e424
               const blink::WebNode& node,
 -             PrintRequestType print_request_type);
 +             PrintRequestType print_request_type,
-+             base::Value::Dict settings = {});
++             base::DictValue settings = {});
  
    // Notification when printing is done - signal tear-down/free resources.
    void DidFinishPrinting(PrintingResult result);
@@ -872,7 +872,7 @@ index 8b4cea7d43fe16d7414e017b11ee1cda722e1a8d..eb7982ac4fcba9b40cbff83ebe71e424
    bool InitPrintSettings(blink::WebLocalFrame* frame,
 -                         const blink::WebNode& node);
 +                         const blink::WebNode& node,
-+                         base::Value::Dict new_settings);
++                         base::DictValue new_settings);
  
    // Calculate number of pages in source document.
    uint32_t CalculateNumberOfPages(blink::WebLocalFrame* frame,
@@ -882,7 +882,7 @@ index 8b4cea7d43fe16d7414e017b11ee1cda722e1a8d..eb7982ac4fcba9b40cbff83ebe71e424
    void SetupOnStopLoadingTimeout();
 -  void PrintRequestedPagesInternal(bool already_notified_frame);
 +  void PrintRequestedPagesInternal(bool already_notified_frame,
-+                                   base::Value::Dict settings);
++                                   base::DictValue settings);
  
    ScriptingThrottler scripting_throttler_;
  

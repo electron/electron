@@ -180,7 +180,7 @@ void Browser::ShowAboutPanel() {
   GtkAboutDialog* dialog = GTK_ABOUT_DIALOG(dialogWidget);
 
   const std::string* str;
-  const base::Value::List* list;
+  const base::ListValue* list;
 
   if ((str = opts.FindString("applicationName"))) {
     gtk_about_dialog_set_program_name(dialog, str->c_str());
@@ -233,7 +233,7 @@ void Browser::ShowAboutPanel() {
   gtk_widget_show_all(dialogWidget);
 }
 
-void Browser::SetAboutPanelOptions(base::Value::Dict options) {
+void Browser::SetAboutPanelOptions(base::DictValue options) {
   about_panel_options_ = std::move(options);
 }
 

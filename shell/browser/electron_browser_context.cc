@@ -357,7 +357,7 @@ void ElectronBrowserContext::DestroyAllContexts() {
 ElectronBrowserContext::ElectronBrowserContext(
     const PartitionOrPath partition_location,
     bool in_memory,
-    base::Value::Dict options)
+    base::DictValue options)
     : in_memory_pref_store_(new ValueMapPrefStore),
       storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
       protocol_registry_(base::WrapUnique(new ProtocolRegistry)),
@@ -482,7 +482,7 @@ void ElectronBrowserContext::InitPrefs() {
     std::string default_code = spellcheck::GetCorrespondingSpellCheckLanguage(
         base::i18n::GetConfiguredLocale());
     if (!default_code.empty()) {
-      base::Value::List language_codes;
+      base::ListValue language_codes;
       language_codes.Append(default_code);
       prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries,
                    base::Value(std::move(language_codes)));
@@ -871,7 +871,7 @@ bool ElectronBrowserContext::CheckDevicePermission(
 ElectronBrowserContext* ElectronBrowserContext::From(
     const std::string& partition,
     bool in_memory,
-    base::Value::Dict options) {
+    base::DictValue options) {
   auto& context = ContextMap()[PartitionKey(partition, in_memory)];
   if (!context) {
     context.reset(new ElectronBrowserContext{std::cref(partition), in_memory,
@@ -882,13 +882,13 @@ ElectronBrowserContext* ElectronBrowserContext::From(
 
 // static
 ElectronBrowserContext* ElectronBrowserContext::GetDefaultBrowserContext(
-    base::Value::Dict options) {
+    base::DictValue options) {
   return ElectronBrowserContext::From("", false, std::move(options));
 }
 
 ElectronBrowserContext* ElectronBrowserContext::FromPath(
     const base::FilePath& path,
-    base::Value::Dict options) {
+    base::DictValue options) {
   auto& context = ContextMap()[PartitionKey(path)];
   if (!context) {
     context.reset(

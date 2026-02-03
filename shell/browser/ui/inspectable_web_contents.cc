@@ -96,15 +96,15 @@ constexpr std::string_view kTitleFormat = "Developer Tools - %s";
 
 const size_t kMaxMessageChunkSize = IPC::mojom::kChannelMaximumMessageSize / 4;
 
-base::Value::Dict RectToDictionary(const gfx::Rect& bounds) {
-  return base::Value::Dict{}
+base::DictValue RectToDictionary(const gfx::Rect& bounds) {
+  return base::DictValue{}
       .Set("x", bounds.x())
       .Set("y", bounds.y())
       .Set("width", bounds.width())
       .Set("height", bounds.height());
 }
 
-gfx::Rect DictionaryToRect(const base::Value::Dict& dict) {
+gfx::Rect DictionaryToRect(const base::DictValue& dict) {
   return gfx::Rect{dict.FindInt("x").value_or(0), dict.FindInt("y").value_or(0),
                    dict.FindInt("width").value_or(800),
                    dict.FindInt("height").value_or(600)};
@@ -269,7 +269,7 @@ class InspectableWebContents::NetworkResourceLoader
           "statusCode", response_headers_ ? response_headers_->response_code()
                                           : net::HTTP_OK);
 
-      base::Value::Dict headers;
+      base::DictValue headers;
       size_t iterator = 0;
       std::string name;
       std::string value;
@@ -490,7 +490,7 @@ void InspectableWebContents::CallClientFunction(
   if (!GetDevToolsWebContents())
     return;
 
-  base::Value::List arguments;
+  base::ListValue arguments;
   if (!arg1.is_none()) {
     arguments.Append(std::move(arg1));
     if (!arg2.is_none()) {
@@ -550,7 +550,7 @@ void InspectableWebContents::LoadCompleted() {
     }
   } else {
     if (dock_state_.empty()) {
-      const base::Value::Dict& prefs =
+      const base::DictValue& prefs =
           pref_service_->GetDict(kDevToolsPreferences);
       const std::string* current_dock_state =
           prefs.FindString("currentDockState");
@@ -597,7 +597,7 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
   if (!registry)
     return;
 
-  base::Value::List results;
+  base::ListValue results;
   for (auto& extension : registry->enabled_extensions()) {
     auto devtools_page_url =
         extensions::chrome_manifest_urls::GetDevToolsPage(extension.get());
@@ -611,7 +611,7 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
         web_contents_->GetPrimaryMainFrame()->GetProcess()->GetDeprecatedID(),
         url::Origin::Create(extension->url()));
 
-    base::Value::Dict extension_info;
+    base::DictValue extension_info;
     extension_info.Set("startPage", devtools_page_url.spec());
     extension_info.Set("name", extension->name());
     extension_info.Set("exposeExperimentalAPIs",
@@ -864,7 +864,7 @@ void InspectableWebContents::GetSyncInformation(DispatchCallback callback) {
 }
 
 void InspectableWebContents::GetHostConfig(DispatchCallback callback) {
-  base::Value::Dict response_dict;
+  base::DictValue response_dict;
   base::Value response = base::Value(std::move(response_dict));
   std::move(callback).Run(&response);
 }
@@ -875,7 +875,7 @@ void InspectableWebContents::RegisterExtensionsAPI(const std::string& origin,
 }
 
 void InspectableWebContents::HandleMessageFromDevToolsFrontend(
-    base::Value::Dict message) {
+    base::DictValue message) {
   // TODO(alexeykuzmin): Should we expect it to exist?
   if (!embedder_message_dispatcher_) {
     return;
@@ -889,8 +889,8 @@ void InspectableWebContents::HandleMessageFromDevToolsFrontend(
     return;
   }
 
-  const base::Value::List no_params;
-  const base::Value::List& params_list =
+  const base::ListValue no_params;
+  const base::ListValue& params_list =
       params != nullptr && params->is_list() ? params->GetList() : no_params;
 
   const int id = message.FindInt(kFrontendHostId).value_or(0);
