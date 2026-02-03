@@ -10,6 +10,7 @@
 #include <string_view>
 #include <vector>
 
+#include "base/byte_size.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/sequence_checker.h"
@@ -105,6 +106,8 @@ class SimpleURLLoaderWrapper final
       mojo::PendingRemote<network::mojom::ClientCertificateResponder>
           client_cert_responder) override {}
   void OnLocalNetworkAccessPermissionRequired(
+      network::mojom::TransportType transport_type,
+      network::mojom::IPAddressSpace ip_address_space,
       OnLocalNetworkAccessPermissionRequiredCallback callback) override {}
   void OnClearSiteData(
       const GURL& url,
@@ -122,8 +125,8 @@ class SimpleURLLoaderWrapper final
       const std::optional<std::string>& with_lock,
       OnSharedStorageHeaderReceivedCallback callback) override;
   void OnDataUseUpdate(int32_t network_traffic_annotation_id_hash,
-                       int64_t recv_bytes,
-                       int64_t sent_bytes) override {}
+                       base::ByteSize recv_bytes,
+                       base::ByteSize sent_bytes) override {}
   void OnWebSocketConnectedToPrivateNetwork(
       const GURL& request_url,
       network::mojom::IPAddressSpace ip_address_space) override {}

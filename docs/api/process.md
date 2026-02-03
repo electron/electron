@@ -71,7 +71,7 @@ will disable the support for `asar` archives in Node's built-in modules.
 
 ### `process.noDeprecation`
 
-A `boolean` that controls whether or not deprecation warnings are printed to `stderr`.
+A `boolean` (optional) that controls whether or not deprecation warnings are printed to `stderr`.
 Setting this to `true` will silence deprecation warnings. This property is used
 instead of the `--no-deprecation` command line flag.
 
@@ -128,8 +128,8 @@ A `string` representing Electron's version string.
 
 ### `process.windowsStore` _Readonly_
 
-A `boolean`. If the app is running as a Windows Store app (appx), this property is `true`,
-for otherwise it is `undefined`.
+A `boolean`. If the app is running as an MSIX package (including AppX for Windows Store),
+this property is `true`, otherwise it is `undefined`.
 
 ### `process.contextId` _Readonly_
 

@@ -9,12 +9,10 @@
 
 #include "base/functional/bind.h"
 #include "shell/browser/browser.h"
-#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/native_window_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "ui/display/display.h"
@@ -23,6 +21,8 @@
 #include "ui/gfx/geometry/point_conversions.h"
 #include "ui/gfx/geometry/point_f.h"
 #include "ui/gfx/geometry/vector2d_conversions.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "ui/display/win/screen_win.h"
@@ -38,7 +38,8 @@
 
 namespace electron::api {
 
-gin::DeprecatedWrapperInfo Screen::kWrapperInfo = {gin::kEmbedderNativeGin};
+const gin::WrapperInfo Screen::kWrapperInfo = {{gin::kEmbedderNativeGin},
+                                               gin::kElectronScreen};
 
 namespace {
 
@@ -69,15 +70,27 @@ void DelayEmitWithMetrics(Screen* screen,
   screen->Emit(name, display, metrics);
 }
 
+// Calls the one-liner `display::Screen::Get()` to get ui's global screen.
+// NOTE: during shutdown, that screen can be destroyed before us. This means:
+// 1. Call this instead of keeping a possibly-dangling raw_ptr in api::Screen.
+// 2. Always check this function's return value for nullptr before use.
+[[nodiscard]] auto* GetDisplayScreen() {
+  return display::Screen::Get();
+}
+
+[[nodiscard]] auto GetFallbackDisplay() {
+  return display::Display::GetDefaultDisplay();
+}
 }  // namespace
 
-Screen::Screen(v8::Isolate* isolate, display::Screen* screen)
-    : screen_(screen) {
-  screen_->AddObserver(this);
+Screen::Screen() {
+  if (auto* screen = GetDisplayScreen())
+    screen->AddObserver(this);
 }
 
 Screen::~Screen() {
-  screen_->RemoveObserver(this);
+  if (auto* screen = GetDisplayScreen())
+    screen->RemoveObserver(this);
 }
 
 gfx::Point Screen::GetCursorScreenPoint(v8::Isolate* isolate) {
@@ -92,7 +105,33 @@ gfx::Point Screen::GetCursorScreenPoint(v8::Isolate* isolate) {
     return {};
   }
 #endif
-  return screen_->GetCursorScreenPoint();
+  auto* screen = GetDisplayScreen();
+  return screen ? screen->GetCursorScreenPoint() : gfx::Point{};
+}
+
+display::Display Screen::GetPrimaryDisplay() const {
+  const auto* screen = GetDisplayScreen();
+  return screen ? screen->GetPrimaryDisplay() : GetFallbackDisplay();
+}
+
+std::vector<display::Display> Screen::GetAllDisplays() const {
+  if (const auto* screen = GetDisplayScreen())
+    return screen->GetAllDisplays();
+
+  // Even though this is only reached during shutdown by Screen::Get() failing,
+  // display::Screen::GetAllDisplays() is guaranteed to return >= 1 display.
+  // For consistency with that API, let's return a nonempty vector here.
+  return {GetFallbackDisplay()};
+}
+
+display::Display Screen::GetDisplayNearestPoint(const gfx::Point& point) const {
+  const auto* screen = GetDisplayScreen();
+  return screen ? screen->GetDisplayNearestPoint(point) : GetFallbackDisplay();
+}
+
+display::Display Screen::GetDisplayMatching(const gfx::Rect& match_rect) const {
+  const auto* screen = GetDisplayScreen();
+  return screen ? screen->GetDisplayMatching(match_rect) : GetFallbackDisplay();
 }
 
 #if BUILDFLAG(IS_WIN)
@@ -172,22 +211,21 @@ gfx::Point Screen::DIPToScreenPoint(const gfx::Point& point_dip) {
 }
 
 // static
-v8::Local<v8::Value> Screen::Create(gin_helper::ErrorThrower error_thrower) {
+Screen* Screen::Create(gin_helper::ErrorThrower error_thrower) {
   if (!Browser::Get()->is_ready()) {
     error_thrower.ThrowError(
         "The 'screen' module can't be used before the app 'ready' event");
-    return v8::Null(error_thrower.isolate());
+    return {};
   }
 
-  display::Screen* screen = display::Screen::Get();
+  display::Screen* screen = GetDisplayScreen();
   if (!screen) {
     error_thrower.ThrowError("Failed to get screen information");
-    return v8::Null(error_thrower.isolate());
+    return {};
   }
 
-  return gin_helper::CreateHandle(error_thrower.isolate(),
-                                  new Screen(error_thrower.isolate(), screen))
-      .ToV8();
+  return cppgc::MakeGarbageCollected<Screen>(
+      error_thrower.isolate()->GetCppHeap()->GetAllocationHandle());
 }
 
 gin::ObjectTemplateBuilder Screen::GetObjectTemplateBuilder(
@@ -209,10 +247,13 @@ gin::ObjectTemplateBuilder Screen::GetObjectTemplateBuilder(
       .SetMethod("getDisplayMatching", &Screen::GetDisplayMatching);
 }
 
-const char* Screen::GetTypeName() {
-  return "Screen";
+const gin::WrapperInfo* Screen::wrapper_info() const {
+  return &kWrapperInfo;
 }
 
+const char* Screen::GetHumanReadableName() const {
+  return "Electron / Screen";
+}
 }  // namespace electron::api
 
 namespace {

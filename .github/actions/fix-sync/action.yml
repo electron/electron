@@ -37,6 +37,22 @@ runs:
         installation-dir: third_party/esbuild
         target-platform: ${{ inputs.target-platform }}
         package: infra/3pp/tools/esbuild/${platform}
+    - name: Fix rollup
+      if: ${{ inputs.target-platform != 'linux' }}
+      uses: ./src/electron/.github/actions/cipd-install
+      with:
+        cipd-root-prefix-path: src/third_party/devtools-frontend/src/
+        dependency: rollup_libs
+        deps-file: src/third_party/devtools-frontend/src/DEPS
+        installation-dir: third_party/rollup_libs
+        target-platform: ${{ inputs.target-platform }}
+        package: infra/3pp/tools/rollup_libs/${platform}
+    - name: Sync native rollup libs
+      if: ${{ inputs.target-platform != 'linux' }}
+      shell: bash
+      run : |
+        cd src/third_party/devtools-frontend/src
+        python3 scripts/deps/sync_rollup_libs.py
     - name: Fix rustc
       if: ${{ inputs.target-platform != 'linux' }}
       shell: bash

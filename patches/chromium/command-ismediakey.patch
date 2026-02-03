@@ -39,10 +39,10 @@ index e87c180342b967756efeb701c73207fcee8754f1..42e37564e585987d367921568f0f1d2b
            NOTREACHED();
        }
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc
-index a82a333a9740d4805d9a72223a2b569a700492bb..b12bde965e8d2d62072d64de27a08d7f6363922f 100644
+index 0e85d30f7015b48a92fe33cea2bb4ec0fe7e6b19..0c9978710079bbdbf55f89bf7966f3ad4c1c4845 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_ozone.cc
-@@ -129,7 +129,8 @@ bool GlobalAcceleratorListenerOzone::StartListeningForAccelerator(
+@@ -128,7 +128,8 @@ bool GlobalAcceleratorListenerOzone::StartListeningForAccelerator(
    const bool registered =
        platform_global_shortcut_listener_->RegisterAccelerator(
            accelerator.key_code(), accelerator.IsAltDown(),
@@ -52,7 +52,7 @@ index a82a333a9740d4805d9a72223a2b569a700492bb..b12bde965e8d2d62072d64de27a08d7f
    if (registered) {
      registered_hot_keys_.insert(accelerator);
    }
-@@ -144,14 +145,15 @@ void GlobalAcceleratorListenerOzone::StopListeningForAccelerator(
+@@ -143,14 +144,15 @@ void GlobalAcceleratorListenerOzone::StopListeningForAccelerator(
  
    platform_global_shortcut_listener_->UnregisterAccelerator(
        accelerator.key_code(), accelerator.IsAltDown(), accelerator.IsCtrlDown(),
@@ -70,7 +70,7 @@ index a82a333a9740d4805d9a72223a2b569a700492bb..b12bde965e8d2d62072d64de27a08d7f
    int modifiers = 0;
    if (is_alt_down) {
      modifiers |= ui::EF_ALT_DOWN;
-@@ -162,6 +164,9 @@ void GlobalAcceleratorListenerOzone::OnKeyPressed(ui::KeyboardCode key_code,
+@@ -161,6 +163,9 @@ void GlobalAcceleratorListenerOzone::OnKeyPressed(ui::KeyboardCode key_code,
    if (is_shift_down) {
      modifiers |= ui::EF_SHIFT_DOWN;
    }
@@ -159,10 +159,10 @@ index a955d19eedfe56ae3a115ce4c77fea016fd66d49..ad2557495a02cae03dd2b87df8659a6f
    }
  
 diff --git a/ui/base/x/x11_global_shortcut_listener.cc b/ui/base/x/x11_global_shortcut_listener.cc
-index 838b89cd8d2c1884ce253a42325faabe73ee3985..b47019cd02202b8f1ea29d45e6b1741e2a9a953e 100644
+index 8c9a137d5e50bb8de7b61986963d9e93d9d8f02a..b371d11c2339829979b498c58925e70abd872096 100644
 --- a/ui/base/x/x11_global_shortcut_listener.cc
 +++ b/ui/base/x/x11_global_shortcut_listener.cc
-@@ -34,11 +34,13 @@ constexpr auto kModifiersMasks = std::to_array<x11::ModMask>({
+@@ -33,11 +33,13 @@ constexpr auto kModifiersMasks = std::to_array<x11::ModMask>({
  
  x11::ModMask GetNativeModifiers(bool is_alt_down,
                                  bool is_ctrl_down,
@@ -178,7 +178,7 @@ index 838b89cd8d2c1884ce253a42325faabe73ee3985..b47019cd02202b8f1ea29d45e6b1741e
  }
  
  }  // namespace
-@@ -84,8 +86,9 @@ uint32_t XGlobalShortcutListener::DispatchEvent(const PlatformEvent& event) {
+@@ -83,8 +85,9 @@ uint32_t XGlobalShortcutListener::DispatchEvent(const PlatformEvent& event) {
  bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
                                                    bool is_alt_down,
                                                    bool is_ctrl_down,
@@ -190,7 +190,7 @@ index 838b89cd8d2c1884ce253a42325faabe73ee3985..b47019cd02202b8f1ea29d45e6b1741e
    auto keysym = XKeysymForWindowsKeyCode(key_code, false);
    auto keycode = connection_->KeysymToKeycode(keysym);
  
-@@ -110,7 +113,7 @@ bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
+@@ -109,7 +112,7 @@ bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
    }
  
    registered_combinations_.insert(
@@ -199,7 +199,7 @@ index 838b89cd8d2c1884ce253a42325faabe73ee3985..b47019cd02202b8f1ea29d45e6b1741e
  
    return true;
  }
-@@ -118,8 +121,9 @@ bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
+@@ -117,8 +120,9 @@ bool XGlobalShortcutListener::RegisterAccelerator(KeyboardCode key_code,
  void XGlobalShortcutListener::UnregisterAccelerator(KeyboardCode key_code,
                                                      bool is_alt_down,
                                                      bool is_ctrl_down,
@@ -211,7 +211,7 @@ index 838b89cd8d2c1884ce253a42325faabe73ee3985..b47019cd02202b8f1ea29d45e6b1741e
    auto keysym = XKeysymForWindowsKeyCode(key_code, false);
    auto keycode = connection_->KeysymToKeycode(keysym);
  
-@@ -127,7 +131,7 @@ void XGlobalShortcutListener::UnregisterAccelerator(KeyboardCode key_code,
+@@ -126,7 +130,7 @@ void XGlobalShortcutListener::UnregisterAccelerator(KeyboardCode key_code,
      connection_->UngrabKey({keycode, x_root_window_, modifiers | mask});
  
    registered_combinations_.erase(
@@ -220,14 +220,13 @@ index 838b89cd8d2c1884ce253a42325faabe73ee3985..b47019cd02202b8f1ea29d45e6b1741e
  }
  
  void XGlobalShortcutListener::OnKeyPressEvent(const KeyEvent& event) {
-@@ -137,14 +141,15 @@ void XGlobalShortcutListener::OnKeyPressEvent(const KeyEvent& event) {
+@@ -136,13 +140,14 @@ void XGlobalShortcutListener::OnKeyPressEvent(const KeyEvent& event) {
    const bool is_alt_down = event.flags() & EF_ALT_DOWN;
    const bool is_ctrl_down = event.flags() & EF_CONTROL_DOWN;
    const bool is_shift_down = event.flags() & EF_SHIFT_DOWN;
 +  const bool is_cmd_down = event.flags() & EF_COMMAND_DOWN;
  
-   if (!base::Contains(
-           registered_combinations_,
+   if (!registered_combinations_.contains(
 -          Accelerator(key_code, is_alt_down, is_ctrl_down, is_shift_down))) {
 +          Accelerator(key_code, is_alt_down, is_ctrl_down, is_shift_down, is_cmd_down))) {
      return;

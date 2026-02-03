@@ -15,7 +15,7 @@ short-circuit all the permissions checks in MSDC for now to allow us to
 unduplicate this code.
 
 diff --git a/components/webrtc/media_stream_devices_controller.cc b/components/webrtc/media_stream_devices_controller.cc
-index 90134f0470e29c28479eac9f0afef1ef9455d20f..71ca1171daddf4f851e20428f13c1f9da7a5ca8f 100644
+index 401cd9ced6114a2b8267270ea5be321b24df641e..6c6df24ff3c47204440f699343b52185c65b95a7 100644
 --- a/components/webrtc/media_stream_devices_controller.cc
 +++ b/components/webrtc/media_stream_devices_controller.cc
 @@ -57,7 +57,8 @@ bool PermissionIsRequested(blink::PermissionType permission,
@@ -94,10 +94,10 @@ index 90134f0470e29c28479eac9f0afef1ef9455d20f..71ca1171daddf4f851e20428f13c1f9d
  }
  
 diff --git a/components/webrtc/media_stream_devices_controller.h b/components/webrtc/media_stream_devices_controller.h
-index d74b927a0fd40f000285c7793897d595ccbc8421..3d6661a9f66497186e37107e61cbf61ebace8392 100644
+index 4b140399a35486a9e00f7d8324a54ff6d5449128..21341bd765c63d23b9f99eb0e3ad96168cbb5eed 100644
 --- a/components/webrtc/media_stream_devices_controller.h
 +++ b/components/webrtc/media_stream_devices_controller.h
-@@ -50,7 +50,8 @@ class MediaStreamDevicesController {
+@@ -49,7 +49,8 @@ class MediaStreamDevicesController {
    // synchronously or asynchronously returned via |callback|.
    static void RequestPermissions(const content::MediaStreamRequest& request,
                                   MediaStreamDeviceEnumerator* enumerator,

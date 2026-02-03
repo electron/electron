@@ -193,9 +193,10 @@ class NativeWindowClientView : public views::ClientView {
 
 }  // namespace
 
-NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
+NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
+                                     const gin_helper::Dictionary& options,
                                      NativeWindow* parent)
-    : NativeWindow(options, parent) {
+    : NativeWindow{base_window_id, options, parent} {
   if (std::string val; options.Get(options::kTitle, &val))
     SetTitle(val);
 
@@ -290,7 +291,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   params.wm_class_name = base::ToLowerASCII(name);
   params.wm_class_class = name;
   // Set Wayland application ID.
-  params.wayland_app_id = platform_util::GetXdgAppId();
+  if (auto const app_id = platform_util::GetXdgAppId()) {
+    params.wayland_app_id = *app_id;
+  }
 
   auto* native_widget = new views::DesktopNativeWidgetAura(widget());
   params.native_widget = native_widget;
@@ -1950,9 +1953,10 @@ void NativeWindowViews::MoveBehindTaskBarIfNeeded() {
 
 // static
 std::unique_ptr<NativeWindow> NativeWindow::Create(
+    const int32_t base_window_id,
     const gin_helper::Dictionary& options,
     NativeWindow* parent) {
-  return std::make_unique<NativeWindowViews>(options, parent);
+  return std::make_unique<NativeWindowViews>(base_window_id, options, parent);
 }
 
 }  // namespace electron

@@ -34,7 +34,9 @@ class NativeWindowMac : public NativeWindow,
                         public ui::NativeThemeObserver,
                         public display::DisplayObserver {
  public:
-  NativeWindowMac(const gin_helper::Dictionary& options, NativeWindow* parent);
+  NativeWindowMac(int32_t base_window_id,
+                  const gin_helper::Dictionary& options,
+                  NativeWindow* parent);
   ~NativeWindowMac() override;
 
   // NativeWindow:

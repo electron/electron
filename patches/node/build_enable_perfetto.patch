@@ -33,7 +33,7 @@ index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..a154559a56bf383d3c26af523c9bb07b
  
    // Non-alphabetic chars.
 diff --git a/lib/internal/http.js b/lib/internal/http.js
-index 9bf929f7f3360f13058d3f446c18a36cd15bea58..abf9a06d891488288bccd98c437746c1ce48bf83 100644
+index e664663348adc7bb31f7c9ec78481bbeb71401d9..62b659beb766b8256b214447af376f438278b058 100644
 --- a/lib/internal/http.js
 +++ b/lib/internal/http.js
 @@ -11,8 +11,8 @@ const {
@@ -64,7 +64,7 @@ index 9bf929f7f3360f13058d3f446c18a36cd15bea58..abf9a06d891488288bccd98c437746c1
  
  function ipToInt(ip) {
 diff --git a/node.gyp b/node.gyp
-index a598de39f13e7069e75484463fb096b771fa45fb..975f3897dd1ce1074626925b9fbf22f15632a0b1 100644
+index c3917f805464669c709bef83b9982ef95d0fbaa1..56e11cde31897260bf41db3f32f5c6d6fbd6d5bf 100644
 --- a/node.gyp
 +++ b/node.gyp
 @@ -176,7 +176,6 @@

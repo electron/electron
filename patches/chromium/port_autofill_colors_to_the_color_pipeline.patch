@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index e340ccdfb4c364774679c1b68df4b1340286d41a..72ebf04033e4ec67acb26780d4f252fc0b1d9917 100644
+index c811479d785a438230a6f16ee1949d2dd97bc7ac..59208ffdf3810239546be9682c9c7948810c84c4 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
-@@ -431,6 +431,10 @@
+@@ -440,6 +440,10 @@
    E_CPONLY(kColorRadioButtonForegroundUnchecked) \
    E_CPONLY(kColorRadioButtonForegroundDisabled) \
    E_CPONLY(kColorRadioButtonForegroundChecked) \
@@ -22,7 +22,7 @@ index e340ccdfb4c364774679c1b68df4b1340286d41a..72ebf04033e4ec67acb26780d4f252fc
    E_CPONLY(kColorSegmentedButtonBorder) \
    E_CPONLY(kColorSegmentedButtonFocus) \
    E_CPONLY(kColorSegmentedButtonForegroundChecked) \
-@@ -539,6 +543,7 @@
+@@ -548,6 +552,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \
@@ -61,7 +61,7 @@ index 8817142344cc9abed442f07b5cbe759b82901c06..edf6d4ca1bfce93f8dcbeb2585c9ec07
    CompleteDefaultWebNativeRendererColorIdsDefinition(
        mixer, dark_mode,
 diff --git a/ui/color/win/native_color_mixers_win.cc b/ui/color/win/native_color_mixers_win.cc
-index dadb94f18feccb570680fc74a899a957f8f7ce1b..dac1ab13e5bb91d5a0901b7988d4ee02a725837d 100644
+index 3a9c0fe7771d3c48b428ce15186abc489f87f511..8ed3e1ed471dfeba885c807888e145993fa23a1e 100644
 --- a/ui/color/win/native_color_mixers_win.cc
 +++ b/ui/color/win/native_color_mixers_win.cc
 @@ -145,6 +145,10 @@ void AddNativeUiColorMixer(ColorProvider* provider,

@@ -75,8 +75,11 @@ class ElectronPermissionManager::PendingRequest {
       const auto permission = blink::PermissionDescriptorToPermissionType(
           permissions_[permission_id]);
       if (permission == blink::PermissionType::MIDI_SYSEX) {
+        // TODO: remove `GetUnsafeValue()` once `GrantSendMidiSysExMessage`
+        // accepts `ChildProcessId`
         content::ChildProcessSecurityPolicy::GetInstance()
-            ->GrantSendMidiSysExMessage(render_frame_host_id_.child_id);
+            ->GrantSendMidiSysExMessage(
+                render_frame_host_id_.child_id.GetUnsafeValue());
       } else if (permission == blink::PermissionType::GEOLOCATION) {
         ElectronBrowserMainParts::Get()
             ->GetGeolocationControl()
@@ -233,9 +236,8 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
                 render_frame_host->GetProcess()->GetDeprecatedID());
       } else if (permission_type == blink::PermissionType::GEOLOCATION) {
         if (IsGeolocationDisabledViaCommandLine()) {
-          results.push_back(content::PermissionResult(
-              blink::mojom::PermissionStatus::DENIED,
-              content::PermissionStatusSource::UNSPECIFIED));
+          results.emplace_back(blink::mojom::PermissionStatus::DENIED,
+                               content::PermissionStatusSource::UNSPECIFIED);
           continue;
         } else {
           ElectronBrowserMainParts::Get()
@@ -243,9 +245,8 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
               ->UserDidOptIntoLocationServices();
         }
       }
-      results.push_back(content::PermissionResult(
-          blink::mojom::PermissionStatus::GRANTED,
-          content::PermissionStatusSource::UNSPECIFIED));
+      results.emplace_back(blink::mojom::PermissionStatus::GRANTED,
+                           content::PermissionStatusSource::UNSPECIFIED);
     }
     std::move(response_callback).Run(results);
     return;

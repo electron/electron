@@ -25,10 +25,10 @@ index 8be4ca70ff71cfc33cd812ec0cc9ae8155538532..f7985331838387232b27e557e4351134
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index a8afc92f4894f32774573920271f1eb7c47822c2..963ad79fb4b46e048a36e1b7e696f7e0d26ed151 100644
+index 72f8e7e8fd00f55f7e4338fe585f9da03d105cd4..8b57241f09889dabdc283b2b9cd804eaa4816e27 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
-@@ -544,7 +544,8 @@ bool IsIppColorModelColorful(mojom::ColorModel color_model) {
+@@ -543,7 +543,8 @@ bool IsIppColorModelColorful(mojom::ColorModel color_model) {
          !SetCollateInPrintSettings(settings_->collate()) ||
          !SetDuplexModeInPrintSettings(settings_->duplex_mode()) ||
          !SetOutputColor(static_cast<int>(settings_->color())) ||
@@ -38,7 +38,7 @@ index a8afc92f4894f32774573920271f1eb7c47822c2..963ad79fb4b46e048a36e1b7e696f7e0
        return OnError();
      }
    }
-@@ -697,6 +698,22 @@ bool IsIppColorModelColorful(mojom::ColorModel color_model) {
+@@ -696,6 +697,22 @@ bool IsIppColorModelColorful(mojom::ColorModel color_model) {
    return PMSetCopies(print_settings, copies, false) == noErr;
  }
  
@@ -113,18 +113,18 @@ index f8e903f21cee7041dea67b479c298baf9093d719..ed5d59f29992b0925efd89cb0ac4b33a
    } else {
      // No need to bother, we don't know how many pages are available.
 diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
-index 987b7a034621fd854148ffb1161749748c6f3fa4..525dadb85d23865b0d401e7feca60959b8596097 100644
+index bd4a853bdb365045075092301b66116f016708fd..9540053fd35e84e60096c91e5f65ec7b6930720e 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
 +++ b/ui/gtk/printing/print_dialog_gtk.cc
-@@ -20,6 +20,7 @@
- #include "base/logging.h"
+@@ -21,6 +21,7 @@
+ #include "base/memory/ptr_util.h"
  #include "base/memory/raw_ptr.h"
  #include "base/no_destructor.h"
 +#include "base/numerics/safe_conversions.h"
  #include "base/sequence_checker.h"
  #include "base/strings/string_number_conversions.h"
  #include "base/strings/utf_string_conversions.h"
-@@ -253,6 +254,22 @@ void PrintDialogGtk::UpdateSettings(
+@@ -268,6 +269,22 @@ void PrintDialogGtk::UpdateSettings(
  
    gtk_print_settings_set_n_copies(gtk_settings_, settings->copies());
    gtk_print_settings_set_collate(gtk_settings_, settings->collate());
