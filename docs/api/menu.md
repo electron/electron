@@ -123,7 +123,7 @@ Appends the `menuItem` to the menu.
 
 - `id` string
 
-Returns `MenuItem | null` the item with the specified `id`
+Returns [`MenuItem | null`](menu-item.md) - the item with the specified `id`
 
 #### `menu.insert(pos, menuItem)`
 
