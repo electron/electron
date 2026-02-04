@@ -249,44 +249,59 @@ void NotificationActivator::RegisterActivator() {
     return;
   g_registration_in_progress = true;
 
+  // For packaged (MSIX) apps, COM server registration is handled via the app
+  // manifest (com:Extension and desktop:ToastNotificationActivation), so we
+  // skip the registry and shortcut creation. We still need to call
+  // CoRegisterClassObject to handle activations at runtime.
+  //
+  // For unpackaged apps, we need to create the Start Menu shortcut with
+  // AUMID/CLSID properties and register the COM server in the registry.
+  bool is_packaged = IsRunningInDesktopBridge();
+
   // Perform all blocking filesystem / registry work off the UI thread.
   base::ThreadPool::PostTask(
       FROM_HERE, {base::MayBlock(), base::TaskPriority::BEST_EFFORT},
-      base::BindOnce([]() {
-        EnsureShortcut();
-        EnsureCLSIDRegistry();
-        content::GetUIThreadTaskRunner({})->PostTask(
-            FROM_HERE, base::BindOnce([]() {
-              g_registration_in_progress = false;
-              if (g_registered_)
-                return;
-              CLSID clsid;
-              if (FAILED(
-                      ::CLSIDFromString(GetAppToastActivatorCLSID(), &clsid))) {
-                LOG(ERROR) << "Invalid toast activator CLSID";
-                return;
-              }
-              if (!g_factory_instance)
-                g_factory_instance =
-                    new (std::nothrow) NotificationActivatorFactory();
-              if (!g_factory_instance)
-                return;
-              DWORD cookie = 0;
-              HRESULT hr = ::CoRegisterClassObject(
-                  clsid, static_cast<IClassFactory*>(g_factory_instance),
-                  CLSCTX_LOCAL_SERVER, REGCLS_MULTIPLEUSE | REGCLS_SUSPENDED,
-                  &cookie);
-              if (FAILED(hr))
-                return;
-              hr = ::CoResumeClassObjects();
-              if (FAILED(hr)) {
-                ::CoRevokeClassObject(cookie);
-                return;
-              }
-              g_cookie_ = cookie;
-              g_registered_ = true;
-            }));
-      }));
+      base::BindOnce(
+          [](bool is_packaged) {
+            // Skip shortcut and registry setup for packaged apps - these are
+            // declared in the app manifest instead.
+            if (!is_packaged) {
+              EnsureShortcut();
+              EnsureCLSIDRegistry();
+            }
+            content::GetUIThreadTaskRunner({})->PostTask(
+                FROM_HERE, base::BindOnce([]() {
+                  g_registration_in_progress = false;
+                  if (g_registered_)
+                    return;
+                  CLSID clsid;
+                  if (FAILED(::CLSIDFromString(GetAppToastActivatorCLSID(),
+                                               &clsid))) {
+                    LOG(ERROR) << "Invalid toast activator CLSID";
+                    return;
+                  }
+                  if (!g_factory_instance)
+                    g_factory_instance =
+                        new (std::nothrow) NotificationActivatorFactory();
+                  if (!g_factory_instance)
+                    return;
+                  DWORD cookie = 0;
+                  HRESULT hr = ::CoRegisterClassObject(
+                      clsid, static_cast<IClassFactory*>(g_factory_instance),
+                      CLSCTX_LOCAL_SERVER,
+                      REGCLS_MULTIPLEUSE | REGCLS_SUSPENDED, &cookie);
+                  if (FAILED(hr))
+                    return;
+                  hr = ::CoResumeClassObjects();
+                  if (FAILED(hr)) {
+                    ::CoRevokeClassObject(cookie);
+                    return;
+                  }
+                  g_cookie_ = cookie;
+                  g_registered_ = true;
+                }));
+          },
+          is_packaged));
 }
 
 // static
