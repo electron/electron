@@ -157,7 +157,7 @@ bool ShouldHandleAccessibilityRequestCallback(const std::string& path) {
 
 // Sets boolean values in `data` for each bit in `new_ax_mode` that differs from
 // that in `last_ax_mode`. Returns `true` if `data` was modified.
-void SetProcessModeBools(ui::AXMode ax_mode, base::Value::Dict& data) {
+void SetProcessModeBools(ui::AXMode ax_mode, base::DictValue& data) {
   data.Set(kNative, ax_mode.has_mode(ui::AXMode::kNativeAPIs));
   data.Set(kWeb, ax_mode.has_mode(ui::AXMode::kWebContents));
   data.Set(kText, ax_mode.has_mode(ui::AXMode::kInlineTextBoxes));
@@ -170,7 +170,7 @@ void SetProcessModeBools(ui::AXMode ax_mode, base::Value::Dict& data) {
 #if BUILDFLAG(IS_WIN)
 // Sets values in `data` for the platform node counts in `counts`.
 void SetNodeCounts(const ui::AXPlatformNodeWin::Counts& counts,
-                   base::Value::Dict& data) {
+                   base::DictValue& data) {
   data.Set("dormantCount", base::NumberToString(counts.dormant_nodes));
   data.Set("liveCount", base::NumberToString(counts.live_nodes));
   data.Set("ghostCount", base::NumberToString(counts.ghost_nodes));
@@ -533,7 +533,7 @@ void ElectronAccessibilityUIMessageHandler::OnVisibilityChanged(
 
 void ElectronAccessibilityUIMessageHandler::OnUpdateDisplayTimer() {
   // Collect the current state.
-  base::Value::Dict data;
+  base::DictValue data;
 
   SetProcessModeBools(
       content::BrowserAccessibilityState::GetInstance()->GetAccessibilityMode(),

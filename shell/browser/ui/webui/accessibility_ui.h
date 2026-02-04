@@ -50,7 +50,7 @@ class ElectronAccessibilityUIMessageHandler
   void OnUpdateDisplayTimer();
 
   // The last data for display sent to the UI by OnUpdateDisplayTimer.
-  base::Value::Dict last_data_;
+  base::DictValue last_data_;
 
   // A timer that runs while the UI is visible to call OnUpdateDisplayTimer.
   base::RepeatingTimer update_display_timer_;
