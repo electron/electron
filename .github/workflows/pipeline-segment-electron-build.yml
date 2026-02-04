@@ -78,12 +78,7 @@ env:
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
   SUDOWOODO_EXCHANGE_TOKEN: ${{ secrets.SUDOWOODO_EXCHANGE_TOKEN }}
-  GCLIENT_EXTRA_ARGS: |-
-    ${{ case(
-      inputs.target-platform == 'macos', '--custom-var=checkout_mac=True --custom-var=host_os=mac',
-      inputs.target-platform == 'win', '--custom-var=checkout_win=True',
-      '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    ) }}
+  GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || inputs.target-platform == 'win' && '--custom-var=checkout_win=True' || '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True' }}
   ELECTRON_OUT_DIR: Default
   ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
 
@@ -206,7 +201,7 @@ jobs:
       with:
         target-arch: ${{ inputs.target-arch }}
         target-platform: ${{ inputs.target-platform }}
-        artifact-platform: ${{ case(inputs.target-platform == 'macos', 'darwin', inputs.target-platform) }}
+        artifact-platform: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
         is-release: '${{ inputs.is-release }}'
         generate-symbols: '${{ inputs.generate-symbols }}'
         upload-to-storage: '${{ inputs.upload-to-storage }}'
