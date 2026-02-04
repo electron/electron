@@ -138,10 +138,9 @@ Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, h
         cb({ error: ERR_FAILED });
       } else {
         cb({
-          data: res.body ? Readable.fromWeb(res.body as ReadableStream<ArrayBufferView>) : null,
+          data: res.body ? Readable.fromWeb(res.body as ReadableStream<ArrayBufferView>) : undefined,
           headers: res.headers ? Object.fromEntries(res.headers) : {},
           statusCode: res.status,
-          statusText: res.statusText,
           mimeType: (res as any).__original_resp?._responseHead?.mimeType
         });
       }
