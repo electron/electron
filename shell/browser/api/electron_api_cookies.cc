@@ -231,7 +231,9 @@ const std::string InclusionStatusToString(net::CookieInclusionStatus status) {
             "The cookie contains no content or only whitespace."},
            {Reason::EXCLUDE_ANONYMOUS_CONTEXT,
             "The cookie is unpartitioned and being accessed from an anonymous "
-            "context."}});
+            "context."},
+           {Reason::EXCLUDE_INVALID_PATH,
+            "The cookie was set with an invalid Path attribute."}});
   static_assert(
       Reasons.size() ==
           net::CookieInclusionStatus::ExclusionReasonBitset::kValueCount,
