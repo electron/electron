@@ -1,4 +1,4 @@
-import { ProtocolRequest, session } from 'electron/main';
+import { ProtocolRequest, ProtocolResponse, session } from 'electron/main';
 
 import { createReadStream } from 'fs';
 import { Readable } from 'stream';
@@ -117,7 +117,7 @@ function validateResponse (res: Response) {
 
 Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, handler: (req: Request) => Response | Promise<Response>) {
   const register = isBuiltInScheme(scheme) ? this.interceptProtocol : this.registerProtocol;
-  const success = register.call(this, scheme, async (preq: ProtocolRequest, cb: any) => {
+  const success = register.call(this, scheme, async (preq: ProtocolRequest, cb: (pres: ProtocolResponse) => void) => {
     try {
       const body = convertToRequestBody(preq.uploadData);
       const headers = new Headers(preq.headers);
