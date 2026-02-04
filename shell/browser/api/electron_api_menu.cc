@@ -222,6 +222,16 @@ void Menu::SetCustomType(int index, const std::u16string& customType) {
   model_->SetCustomType(index, customType);
 }
 
+#if BUILDFLAG(IS_MAC)
+void Menu::SetAlternate(int index, bool alternate) {
+  model_->SetAlternate(index, alternate);
+}
+
+bool Menu::IsAlternateAt(int index) const {
+  return model_->IsAlternateAt(index);
+}
+#endif
+
 void Menu::Clear() {
   model_->Clear();
 }
@@ -284,35 +294,42 @@ void Menu::OnMenuWillShow() {
 // static
 void Menu::FillObjectTemplate(v8::Isolate* isolate,
                               v8::Local<v8::ObjectTemplate> templ) {
-  gin::ObjectTemplateBuilder(isolate, "Menu", templ)
-      .SetMethod("insertItem", &Menu::InsertItemAt)
-      .SetMethod("insertCheckItem", &Menu::InsertCheckItemAt)
-      .SetMethod("insertRadioItem", &Menu::InsertRadioItemAt)
-      .SetMethod("insertSeparator", &Menu::InsertSeparatorAt)
-      .SetMethod("insertSubMenu", &Menu::InsertSubMenuAt)
-      .SetMethod("setIcon", &Menu::SetIcon)
-      .SetMethod("setSublabel", &Menu::SetSublabel)
-      .SetMethod("setToolTip", &Menu::SetToolTip)
-      .SetMethod("setRole", &Menu::SetRole)
-      .SetMethod("setCustomType", &Menu::SetCustomType)
-      .SetMethod("clear", &Menu::Clear)
-      .SetMethod("getIndexOfCommandId", &Menu::GetIndexOfCommandId)
-      .SetMethod("getItemCount", &Menu::GetItemCount)
-      .SetMethod("getCommandIdAt", &Menu::GetCommandIdAt)
-      .SetMethod("getLabelAt", &Menu::GetLabelAt)
-      .SetMethod("getSublabelAt", &Menu::GetSublabelAt)
-      .SetMethod("getToolTipAt", &Menu::GetToolTipAt)
-      .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
-      .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
-      .SetMethod("worksWhenHiddenAt", &Menu::WorksWhenHiddenAt)
-      .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
-      .SetMethod("popupAt", &Menu::PopupAt)
-      .SetMethod("closePopupAt", &Menu::ClosePopupAt)
-      .SetMethod("_getAcceleratorTextAt", &Menu::GetAcceleratorTextAtForTesting)
+  auto builder =
+      gin::ObjectTemplateBuilder(isolate, "Menu", templ)
+          .SetMethod("insertItem", &Menu::InsertItemAt)
+          .SetMethod("insertCheckItem", &Menu::InsertCheckItemAt)
+          .SetMethod("insertRadioItem", &Menu::InsertRadioItemAt)
+          .SetMethod("insertSeparator", &Menu::InsertSeparatorAt)
+          .SetMethod("insertSubMenu", &Menu::InsertSubMenuAt)
+          .SetMethod("setIcon", &Menu::SetIcon)
+          .SetMethod("setSublabel", &Menu::SetSublabel)
+          .SetMethod("setToolTip", &Menu::SetToolTip)
+          .SetMethod("setRole", &Menu::SetRole)
+          .SetMethod("setCustomType", &Menu::SetCustomType)
 #if BUILDFLAG(IS_MAC)
-      .SetMethod("_getUserAcceleratorAt", &Menu::GetUserAcceleratorAt)
+          .SetMethod("setAlternate", &Menu::SetAlternate)
+          .SetMethod("isAlternateAt", &Menu::IsAlternateAt)
 #endif
-      .Build();
+          .SetMethod("clear", &Menu::Clear)
+          .SetMethod("getIndexOfCommandId", &Menu::GetIndexOfCommandId)
+          .SetMethod("getItemCount", &Menu::GetItemCount)
+          .SetMethod("getCommandIdAt", &Menu::GetCommandIdAt)
+          .SetMethod("getLabelAt", &Menu::GetLabelAt)
+          .SetMethod("getSublabelAt", &Menu::GetSublabelAt)
+          .SetMethod("getToolTipAt", &Menu::GetToolTipAt)
+          .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
+          .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
+          .SetMethod("worksWhenHiddenAt", &Menu::WorksWhenHiddenAt)
+          .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
+          .SetMethod("popupAt", &Menu::PopupAt)
+          .SetMethod("closePopupAt", &Menu::ClosePopupAt)
+          .SetMethod("_getAcceleratorTextAt",
+                     &Menu::GetAcceleratorTextAtForTesting)
+#if BUILDFLAG(IS_MAC)
+          .SetMethod("_getUserAcceleratorAt", &Menu::GetUserAcceleratorAt)
+#endif
+      ;
+  builder.Build();
 }
 
 const gin::WrapperInfo* Menu::wrapper_info() const {

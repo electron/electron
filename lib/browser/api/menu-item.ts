@@ -37,6 +37,7 @@ const MenuItem = function (this: any, options: any) {
   this.overrideProperty('checked', false);
   this.overrideProperty('acceleratorWorksWhenHidden', true);
   this.overrideProperty('registerAccelerator', roles.shouldRegisterAccelerator(this.role));
+  this.overrideProperty('alternate', false);
 
   if (!MenuItem.types.includes(this.type)) {
     throw new Error(`Unknown menu item type: ${this.type}`);

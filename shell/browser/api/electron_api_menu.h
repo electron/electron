@@ -124,6 +124,10 @@ class Menu : public gin::Wrappable<Menu>,
   void SetToolTip(int index, const std::u16string& toolTip);
   void SetRole(int index, const std::u16string& role);
   void SetCustomType(int index, const std::u16string& customType);
+#if BUILDFLAG(IS_MAC)
+  void SetAlternate(int index, bool alternate);
+  bool IsAlternateAt(int index) const;
+#endif
   void Clear();
   int GetIndexOfCommandId(int command_id) const;
   int GetItemCount() const;
