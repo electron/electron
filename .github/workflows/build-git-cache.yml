@@ -10,6 +10,7 @@ permissions: {}
 
 jobs:
   build-git-cache-linux:
+    if: github.repository == 'electron/electron'
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
@@ -23,7 +24,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         path: src/electron
         fetch-depth: 0
@@ -33,6 +34,7 @@ jobs:
         target-platform: linux
 
   build-git-cache-windows:
+    if: github.repository == 'electron/electron'
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
@@ -47,7 +49,7 @@ jobs:
       TARGET_OS: 'win'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         path: src/electron
         fetch-depth: 0
@@ -57,6 +59,7 @@ jobs:
         target-platform: win
 
   build-git-cache-macos:
+    if: github.repository == 'electron/electron'
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
@@ -72,7 +75,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         path: src/electron
         fetch-depth: 0

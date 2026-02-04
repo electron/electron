@@ -7,7 +7,6 @@
 
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "ui/display/display_observer.h"
@@ -43,22 +42,16 @@ class Screen final : public gin::Wrappable<Screen>,
   Screen& operator=(const Screen&) = delete;
 
   // Make public for cppgc::MakeGarbageCollected.
-  explicit Screen(display::Screen* screen);
+  Screen();
   ~Screen() override;
 
-  gfx::Point GetCursorScreenPoint(v8::Isolate* isolate);
-  display::Display GetPrimaryDisplay() const {
-    return screen_->GetPrimaryDisplay();
-  }
-  const std::vector<display::Display>& GetAllDisplays() const {
-    return screen_->GetAllDisplays();
-  }
-  display::Display GetDisplayNearestPoint(const gfx::Point& point) const {
-    return screen_->GetDisplayNearestPoint(point);
-  }
-  display::Display GetDisplayMatching(const gfx::Rect& match_rect) const {
-    return screen_->GetDisplayMatching(match_rect);
-  }
+  [[nodiscard]] gfx::Point GetCursorScreenPoint(v8::Isolate* isolate);
+  [[nodiscard]] display::Display GetPrimaryDisplay() const;
+  [[nodiscard]] std::vector<display::Display> GetAllDisplays() const;
+  [[nodiscard]] display::Display GetDisplayNearestPoint(
+      const gfx::Point& point) const;
+  [[nodiscard]] display::Display GetDisplayMatching(
+      const gfx::Rect& match_rect) const;
 
   gfx::PointF ScreenToDIPPoint(const gfx::PointF& point_px);
   gfx::Point DIPToScreenPoint(const gfx::Point& point_dip);
@@ -68,9 +61,6 @@ class Screen final : public gin::Wrappable<Screen>,
   void OnDisplaysRemoved(const display::Displays& removed_displays) override;
   void OnDisplayMetricsChanged(const display::Display& display,
                                uint32_t changed_metrics) override;
-
- private:
-  raw_ptr<display::Screen> screen_;
 };
 
 }  // namespace electron::api

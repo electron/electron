@@ -34,7 +34,12 @@ concurrency:
 
 env:
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
-  GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || (inputs.target-platform == 'linux' && '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True' || '--custom-var=checkout_win=True') }}
+  GCLIENT_EXTRA_ARGS: |-
+    ${{ case(
+      inputs.target-platform == 'macos', '--custom-var=checkout_mac=True --custom-var=host_os=mac',
+      inputs.target-platform == 'linux', '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True',
+      '--custom-var=checkout_win=True'
+    ) }}
   ELECTRON_OUT_DIR: Default
 
 jobs:
@@ -48,7 +53,7 @@ jobs:
     container: ${{ fromJSON(inputs.check-container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         path: src/electron
         fetch-depth: 0
@@ -115,7 +120,7 @@ jobs:
     - name: Add CHROMIUM_BUILDTOOLS_PATH to env
       run: echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
     - name: Checkout Electron
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         path: src/electron
         fetch-depth: 0

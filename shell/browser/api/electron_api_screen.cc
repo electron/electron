@@ -70,16 +70,26 @@ void DelayEmitWithMetrics(Screen* screen,
   screen->Emit(name, display, metrics);
 }
 
+// Calls the one-liner `display::Screen::Get()` to get ui's global screen.
+// NOTE: during shutdown, that screen can be destroyed before us. This means:
+// 1. Call this instead of keeping a possibly-dangling raw_ptr in api::Screen.
+// 2. Always check this function's return value for nullptr before use.
+[[nodiscard]] auto* GetDisplayScreen() {
+  return display::Screen::Get();
+}
+
+[[nodiscard]] auto GetFallbackDisplay() {
+  return display::Display::GetDefaultDisplay();
+}
 }  // namespace
 
-Screen::Screen(display::Screen* screen) : screen_{screen} {
-  screen_->AddObserver(this);
+Screen::Screen() {
+  if (auto* screen = GetDisplayScreen())
+    screen->AddObserver(this);
 }
 
 Screen::~Screen() {
-  // Use `display::Screen::Get()` here, not our cached `screen_`:
-  // during shutdown, it can get torn down before us.
-  if (auto* screen = display::Screen::Get())
+  if (auto* screen = GetDisplayScreen())
     screen->RemoveObserver(this);
 }
 
@@ -95,7 +105,33 @@ gfx::Point Screen::GetCursorScreenPoint(v8::Isolate* isolate) {
     return {};
   }
 #endif
-  return screen_->GetCursorScreenPoint();
+  auto* screen = GetDisplayScreen();
+  return screen ? screen->GetCursorScreenPoint() : gfx::Point{};
+}
+
+display::Display Screen::GetPrimaryDisplay() const {
+  const auto* screen = GetDisplayScreen();
+  return screen ? screen->GetPrimaryDisplay() : GetFallbackDisplay();
+}
+
+std::vector<display::Display> Screen::GetAllDisplays() const {
+  if (const auto* screen = GetDisplayScreen())
+    return screen->GetAllDisplays();
+
+  // Even though this is only reached during shutdown by Screen::Get() failing,
+  // display::Screen::GetAllDisplays() is guaranteed to return >= 1 display.
+  // For consistency with that API, let's return a nonempty vector here.
+  return {GetFallbackDisplay()};
+}
+
+display::Display Screen::GetDisplayNearestPoint(const gfx::Point& point) const {
+  const auto* screen = GetDisplayScreen();
+  return screen ? screen->GetDisplayNearestPoint(point) : GetFallbackDisplay();
+}
+
+display::Display Screen::GetDisplayMatching(const gfx::Rect& match_rect) const {
+  const auto* screen = GetDisplayScreen();
+  return screen ? screen->GetDisplayMatching(match_rect) : GetFallbackDisplay();
 }
 
 #if BUILDFLAG(IS_WIN)
@@ -182,14 +218,14 @@ Screen* Screen::Create(gin_helper::ErrorThrower error_thrower) {
     return {};
   }
 
-  display::Screen* screen = display::Screen::Get();
+  display::Screen* screen = GetDisplayScreen();
   if (!screen) {
     error_thrower.ThrowError("Failed to get screen information");
     return {};
   }
 
   return cppgc::MakeGarbageCollected<Screen>(
-      error_thrower.isolate()->GetCppHeap()->GetAllocationHandle(), screen);
+      error_thrower.isolate()->GetCppHeap()->GetAllocationHandle());
 }
 
 gin::ObjectTemplateBuilder Screen::GetObjectTemplateBuilder(
@@ -218,7 +254,6 @@ const gin::WrapperInfo* Screen::wrapper_info() const {
 const char* Screen::GetHumanReadableName() const {
   return "Electron / Screen";
 }
-
 }  // namespace electron::api
 
 namespace {

@@ -49,6 +49,10 @@
 #include "ui/views/widget/widget.h"
 #include "ui/views/widget/widget_delegate.h"
 
+#if BUILDFLAG(IS_WIN)
+#include "ui/accessibility/platform/ax_platform_node_win.h"
+#endif
+
 namespace {
 
 constexpr std::string_view kTargetsDataFile = "targets-data.json";
@@ -150,6 +154,28 @@ base::DictValue BuildTargetDescriptor(electron::NativeWindow* window) {
 bool ShouldHandleAccessibilityRequestCallback(const std::string& path) {
   return path == kTargetsDataFile;
 }
+
+// Sets boolean values in `data` for each bit in `new_ax_mode` that differs from
+// that in `last_ax_mode`. Returns `true` if `data` was modified.
+void SetProcessModeBools(ui::AXMode ax_mode, base::Value::Dict& data) {
+  data.Set(kNative, ax_mode.has_mode(ui::AXMode::kNativeAPIs));
+  data.Set(kWeb, ax_mode.has_mode(ui::AXMode::kWebContents));
+  data.Set(kText, ax_mode.has_mode(ui::AXMode::kInlineTextBoxes));
+  data.Set(kExtendedProperties,
+           ax_mode.has_mode(ui::AXMode::kExtendedProperties));
+  data.Set(kHTML, ax_mode.has_mode(ui::AXMode::kHTML));
+  data.Set(kScreenReader, ax_mode.has_mode(ui::AXMode::kScreenReader));
+}
+
+#if BUILDFLAG(IS_WIN)
+// Sets values in `data` for the platform node counts in `counts`.
+void SetNodeCounts(const ui::AXPlatformNodeWin::Counts& counts,
+                   base::Value::Dict& data) {
+  data.Set("dormantCount", base::NumberToString(counts.dormant_nodes));
+  data.Set("liveCount", base::NumberToString(counts.live_nodes));
+  data.Set("ghostCount", base::NumberToString(counts.ghost_nodes));
+}
+#endif
 
 void HandleAccessibilityRequestCallback(
     content::BrowserContext* current_context,
@@ -294,6 +320,10 @@ void HandleAccessibilityRequestCallback(
   }
   data.Set(kBrowsersField, std::move(window_list));
 
+#if BUILDFLAG(IS_WIN)
+  SetNodeCounts(ui::AXPlatformNodeWin::GetCounts(), data);
+#endif
+
   std::move(callback).Run(base::MakeRefCounted<base::RefCountedString>(
       base::WriteJson(data).value_or("")));
 }
@@ -381,8 +411,13 @@ ElectronAccessibilityUI::ElectronAccessibilityUI(content::WebUI* web_ui)
 
 ElectronAccessibilityUI::~ElectronAccessibilityUI() = default;
 
-ElectronAccessibilityUIMessageHandler::ElectronAccessibilityUIMessageHandler() =
-    default;
+ElectronAccessibilityUIMessageHandler::ElectronAccessibilityUIMessageHandler()
+    : update_display_timer_(
+          FROM_HERE,
+          base::Seconds(1),
+          base::BindRepeating(
+              &ElectronAccessibilityUIMessageHandler::OnUpdateDisplayTimer,
+              base::Unretained(this))) {}
 
 void ElectronAccessibilityUIMessageHandler::GetRequestTypeAndFilters(
     const base::DictValue& data,
@@ -472,6 +507,10 @@ void ElectronAccessibilityUIMessageHandler::RegisterMessages() {
       base::BindRepeating(
           &AccessibilityUIMessageHandler::RequestAccessibilityEvents,
           base::Unretained(this)));
+
+  auto* web_contents = web_ui()->GetWebContents();
+  Observe(web_contents);
+  OnVisibilityChanged(web_contents->GetVisibility());
 }
 
 // static
@@ -481,4 +520,46 @@ void ElectronAccessibilityUIMessageHandler::RegisterPrefs(
       std::string_view(ui::AXApiType::Type(ui::AXApiType::kBlink));
   registry->RegisterStringPref(prefs::kShownAccessibilityApiType,
                                std::string(default_api_type));
+}
+
+void ElectronAccessibilityUIMessageHandler::OnVisibilityChanged(
+    content::Visibility visibility) {
+  if (visibility == content::Visibility::HIDDEN) {
+    update_display_timer_.Stop();
+  } else {
+    update_display_timer_.Reset();
+  }
+}
+
+void ElectronAccessibilityUIMessageHandler::OnUpdateDisplayTimer() {
+  // Collect the current state.
+  base::Value::Dict data;
+
+  SetProcessModeBools(
+      content::BrowserAccessibilityState::GetInstance()->GetAccessibilityMode(),
+      data);
+
+#if BUILDFLAG(IS_WIN)
+  SetNodeCounts(ui::AXPlatformNodeWin::GetCounts(), data);
+#endif  // BUILDFLAG(IS_WIN)
+
+  // Compute the delta from the last transmission.
+  for (auto scan = data.begin(); scan != data.end();) {
+    const auto& [new_key, new_value] = *scan;
+    if (const auto* old_value = last_data_.Find(new_key);
+        !old_value || *old_value != new_value) {
+      // This is a new value; remember it for the future.
+      last_data_.Set(new_key, new_value.Clone());
+      ++scan;
+    } else {
+      // This is the same as the last value; forget about it.
+      scan = data.erase(scan);
+    }
+  }
+
+  // Transmit any new values to the UI.
+  if (!data.empty()) {
+    AllowJavascript();
+    FireWebUIListener("updateDisplay", data);
+  }
 }
