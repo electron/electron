@@ -51,7 +51,13 @@ namespace electron::api {
 
 MenuMac::MenuMac(gin::Arguments* args) : Menu{args} {}
 
-MenuMac::~MenuMac() = default;
+MenuMac::~MenuMac() {
+  // Must remove observer before destroying menu_controller_, which holds
+  // a weak reference to model_
+  if (model_) {
+    model_->RemoveObserver(this);
+  }
+}
 
 void MenuMac::PopupAt(BaseWindow* window,
                       std::optional<WebFrameMain*> frame,
