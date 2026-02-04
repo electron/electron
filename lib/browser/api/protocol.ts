@@ -115,9 +115,9 @@ function validateResponse (res: Response) {
   return true;
 }
 
-Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, handler: (req: Request) => Response | Promise<Response>) {
+Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, handler: (req: Request) => (Response | null) | Promise<Response | null>) {
   const register = isBuiltInScheme(scheme) ? this.interceptProtocol : this.registerProtocol;
-  const success = register.call(this, scheme, async (preq: ProtocolRequest, cb: (pres: ProtocolResponse) => void) => {
+  const success = register.call(this, scheme, async (preq: ProtocolRequest, cb: (pres: ProtocolResponse | null) => void) => {
     try {
       const body = convertToRequestBody(preq.uploadData);
       const headers = new Headers(preq.headers);
@@ -132,7 +132,9 @@ Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, h
         duplex: body instanceof ReadableStream ? 'half' : undefined
       } as any);
       const res = await handler(req);
-      if (!validateResponse(res)) {
+      if (res === null) {
+        return cb(null);
+      } else if (!validateResponse(res)) {
         return cb({ error: ERR_UNEXPECTED });
       } else if (res.type === 'error') {
         cb({ error: ERR_FAILED });
