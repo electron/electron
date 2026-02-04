@@ -849,6 +849,9 @@ Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window as `
 > [!NOTE]
 > On macOS, the y-coordinate value returned will be at minimum the [Tray](tray.md) height. For example, calling `win.setBounds({ x: 25, y: 20, width: 800, height: 600 })` with a tray height of 38 means that `win.getBounds()` will return `{ x: 25, y: 38, width: 800, height: 600 }`.
 
+> [!NOTE]
+> On Wayland, this method will return `{ x: 0, y: 0, ... }` as introspecting or programmatically changing the global window coordinates is prohibited.
+
 #### `win.getBackgroundColor()`
 
 Returns `string` - Gets the background color of the window in Hex (`#RRGGBB`) format.
@@ -1061,6 +1064,9 @@ Moves window to `x` and `y`.
 #### `win.getPosition()`
 
 Returns `Integer[]` - Contains the window's current position.
+
+> [!NOTE]
+> On Wayland, this method will return `[0, 0]` as introspecting or programmatically changing the global window coordinates is prohibited.
 
 #### `win.setTitle(title)`
 
