@@ -35,20 +35,20 @@ jobs:
             echo "Processing PR #${PR_NUMBER}"
 
             # Find the Apply Patches workflow check for this PR
-            CHECK=$(gh pr checks "$PR_NUMBER" --json link,name,state,workflow --jq '[.[] | select(.workflow == "Apply Patches" and .name == "apply-patches")] | first')
+            CHECK=$(gh pr view "$PR_NUMBER" --json statusCheckRollup --jq '[.statusCheckRollup[] | select(.workflowName == "Apply Patches" and .name == "apply-patches")] | first')
 
             if [ -z "$CHECK" ] || [ "$CHECK" = "null" ]; then
               echo "  No Apply Patches workflow found for PR #${PR_NUMBER}"
               continue
             fi
 
-            STATE=$(echo "$CHECK" | jq -r '.state')
-            if [ "$STATE" = "SKIPPED" ]; then
+            CONCLUSION=$(echo "$CHECK" | jq -r '.conclusion')
+            if [ "$CONCLUSION" = "SKIPPED" ]; then
               echo "  apply-patches job was skipped for PR #${PR_NUMBER} (no patches)"
               continue
             fi
 
-            LINK=$(echo "$CHECK" | jq -r '.link')
+            LINK=$(echo "$CHECK" | jq -r '.detailsUrl')
 
             # Extract the run ID from the link (format: .../runs/RUN_ID/job/JOB_ID)
             RUN_ID=$(echo "$LINK" | grep -oE 'runs/[0-9]+' | cut -d'/' -f2)
