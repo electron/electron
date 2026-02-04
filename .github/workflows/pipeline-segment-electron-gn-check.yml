@@ -34,12 +34,7 @@ concurrency:
 
 env:
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
-  GCLIENT_EXTRA_ARGS: |-
-    ${{ case(
-      inputs.target-platform == 'macos', '--custom-var=checkout_mac=True --custom-var=host_os=mac',
-      inputs.target-platform == 'linux', '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True',
-      '--custom-var=checkout_win=True'
-    ) }}
+  GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || (inputs.target-platform == 'linux' && '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True' || '--custom-var=checkout_win=True') }}
   ELECTRON_OUT_DIR: Default
 
 jobs:
