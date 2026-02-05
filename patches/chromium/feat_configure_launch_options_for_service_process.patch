@@ -193,7 +193,7 @@ index d9c14f91747bde0e76056d7f2f2ada166e67f994..09335acac17f526fb8d8e42e4b2d993b
  
    UtilityProcessHost::Start(std::move(utility_options),
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index c798b3394db7638e38613a016c2dbb0bfcf54d03..e90c8a9b2ac7d17fe7e5e814fd6eb3333f440bbe 100644
+index 1f848cd121b2ecef4892bb2563c593124337e7cf..8ad0b2ebbe0e4e2a1a60efec7c4d7b9f8277b82c 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
 @@ -241,13 +241,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
@@ -259,7 +259,7 @@ index c798b3394db7638e38613a016c2dbb0bfcf54d03..e90c8a9b2ac7d17fe7e5e814fd6eb333
  UtilityProcessHost::Options&
  UtilityProcessHost::Options::WithBoundReceiverOnChildProcessForTesting(
      mojo::GenericPendingReceiver receiver) {
-@@ -520,9 +559,30 @@ bool UtilityProcessHost::StartProcess() {
+@@ -531,9 +570,30 @@ bool UtilityProcessHost::StartProcess() {
    }
  #endif  // BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE) && !BUILDFLAG(IS_WIN)
  
@@ -292,7 +292,7 @@ index c798b3394db7638e38613a016c2dbb0bfcf54d03..e90c8a9b2ac7d17fe7e5e814fd6eb333
  #if BUILDFLAG(IS_WIN)
    if (!options_.preload_libraries_.empty()) {
 diff --git a/content/browser/service_host/utility_process_host.h b/content/browser/service_host/utility_process_host.h
-index 580fa663e729a43bef44a10de8983c4aecc312fb..c339f2b8504beee6ed2e5746a8e6b961a7aa9746 100644
+index dfdcb66d65f07f4543703396eb529a6ec02b3f4a..96c0cadf5caf5bf27f2a767c43f0f1da04298800 100644
 --- a/content/browser/service_host/utility_process_host.h
 +++ b/content/browser/service_host/utility_process_host.h
 @@ -30,6 +30,7 @@
@@ -303,7 +303,7 @@ index 580fa663e729a43bef44a10de8983c4aecc312fb..c339f2b8504beee6ed2e5746a8e6b961
  #endif  // BUILDFLAG(IS_WIN)
  
  namespace base {
-@@ -134,14 +135,36 @@ class CONTENT_EXPORT UtilityProcessHost final
+@@ -133,14 +134,36 @@ class CONTENT_EXPORT UtilityProcessHost final
          std::variant<base::FilePath, base::ScopedFD> file);
  #endif
  
@@ -343,7 +343,7 @@ index 580fa663e729a43bef44a10de8983c4aecc312fb..c339f2b8504beee6ed2e5746a8e6b961
      // Requests that the process bind a receiving pipe targeting the interface
      // named by `receiver`. Calls to this method generally end up in
      // `ChildThreadImpl::OnBindReceiver()` and the option is used for testing
-@@ -185,6 +208,32 @@ class CONTENT_EXPORT UtilityProcessHost final
+@@ -184,6 +207,32 @@ class CONTENT_EXPORT UtilityProcessHost final
      std::optional<raw_ptr<ZygoteCommunication>> zygote_for_testing_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -377,7 +377,7 @@ index 580fa663e729a43bef44a10de8983c4aecc312fb..c339f2b8504beee6ed2e5746a8e6b961
      // Whether or not to bind viz::mojom::Gpu to the utility process.
      bool allowed_gpu_;
 diff --git a/content/browser/service_host/utility_sandbox_delegate.cc b/content/browser/service_host/utility_sandbox_delegate.cc
-index ffa237864328e19868ed0d29590981e972cae9fb..3d1607f4c6e4becf416391f7b8c5a966340a86b5 100644
+index ada7034c8926c276ea1c7ebf8242c61b0a993c39..aec3de8bd0c18666b33147779cad68c6b41fe1fe 100644
 --- a/content/browser/service_host/utility_sandbox_delegate.cc
 +++ b/content/browser/service_host/utility_sandbox_delegate.cc
 @@ -39,17 +39,19 @@ UtilitySandboxedProcessLauncherDelegate::
