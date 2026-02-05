@@ -60,6 +60,7 @@ jobs:
       with:
         actions: 'create-comment'
         token: ${{ steps.generate-token.outputs.token }}
+        issue-number: ${{ github.event.pull_request.number }}
         body: |
           <!-- ai-pr -->
 
