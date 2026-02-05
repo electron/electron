@@ -93,15 +93,6 @@ ui::MouseWheelEvent UiMouseWheelEventFromWebMouseEvent(
           base::ClampFloor<int>(event.delta_y)};
 }
 
-// TODO(reito): Remove this function and use default 1.0f when Electron 42.
-float GetDefaultDeviceScaleFactorFromDisplayInfo() {
-  display::Display display =
-      display::Screen::Get()->GetDisplayNearestView(gfx::NativeView());
-
-  const float factor = display.device_scale_factor();
-  return factor > 0 ? factor : 1.0f;
-}
-
 }  // namespace
 
 class ElectronDelegatedFrameHostClient
@@ -192,10 +183,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   DCHECK(render_widget_host_);
   DCHECK(!render_widget_host_->GetView());
 
-  // TODO(reito): Remove this when Electron 42.
   if (cc::MathUtil::IsWithinEpsilon(offscreen_device_scale_factor_, 0.0f)) {
-    offscreen_device_scale_factor_ =
-        GetDefaultDeviceScaleFactorFromDisplayInfo();
+    offscreen_device_scale_factor_ = 1.0f;
   }
 
   delegated_frame_host_allocator_.GenerateId();
