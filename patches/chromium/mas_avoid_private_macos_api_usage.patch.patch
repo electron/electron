@@ -81,7 +81,7 @@ index 4bf9a3c27e05c6635b2beb8e880b5b43dbed61b5..f328fbb49c45991f44a9c75325491d08
  
  }  // namespace base
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index b63d58da9837ba4d1e4aff8f24f2cd977c5ed02d..8387fd7d2bcf8951b6cc024829c16d970799190c 100644
+index b63d58da9837ba4d1e4aff8f24f2cd977c5ed02d..49b4c0b69731386ef5a4b7dfb782aa8f4ae09cdd 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
 @@ -84,6 +84,10 @@ int posix_spawnattr_set_csm_np(const posix_spawnattr_t*, uint32_t)
@@ -135,15 +135,26 @@ index b63d58da9837ba4d1e4aff8f24f2cd977c5ed02d..8387fd7d2bcf8951b6cc024829c16d97
  }
  #endif
  
-@@ -301,7 +321,7 @@ Process LaunchProcess(const std::vector<std::string>& argv,
+@@ -301,16 +321,16 @@ Process LaunchProcess(const std::vector<std::string>& argv,
      file_actions.Inherit(STDERR_FILENO);
    }
  
 -#if BUILDFLAG(IS_MAC)
-+#if 0
++#if !IS_MAS_BUILD()
    if (options.disclaim_responsibility) {
      DPSXCHECK(responsibility_spawnattrs_setdisclaim(attr.get(), 1));
    }
++#endif
+ 
+   EnvironmentMap new_environment_map = options.environment;
++#if !IS_MAS_BUILD()
+   MachPortRendezvousServerMac::AddFeatureStateToEnvironment(
+       new_environment_map);
+-#else
+-  const EnvironmentMap& new_environment_map = options.environment;
+ #endif
+ 
+   std::vector<char*> argv_cstr;
 diff --git a/base/process/process_info_mac.mm b/base/process/process_info_mac.mm
 index e12c1d078147d956a1d9b1bc498c1b1d6fe7b974..233362259dc4e728ed37435e650417647b45a6af 100644
 --- a/base/process/process_info_mac.mm
