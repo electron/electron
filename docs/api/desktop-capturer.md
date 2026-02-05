@@ -80,6 +80,17 @@ The `desktopCapturer` module has the following methods:
 
 ### `desktopCapturer.getSources(options)`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/2963
+changes:
+  - pr-url: https://github.com/electron/electron/pull/16427
+    description: "This method now returns a Promise instead of using a callback function."
+    breaking-changes-header: api-changed-callback-based-versions-of-promisified-apis
+```
+-->
+
 * `options` Object
   * `types` string[] - An array of strings that lists the types of desktop sources
     to be captured, available types can be `screen` and `window`.
