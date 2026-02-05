@@ -1301,6 +1301,7 @@ double NativeWindowViews::GetOpacity() const {
 
 void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
 #if BUILDFLAG(IS_WIN)
+  ignore_mouse_events_ = ignore;
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
   if (ignore)
     ex_style |= (WS_EX_TRANSPARENT | WS_EX_LAYERED);

@@ -707,6 +707,20 @@ LRESULT CALLBACK NativeWindowViews::SubclassProc(HWND hwnd,
       }
       break;
     }
+    case WM_MOUSEMOVE: {
+      // When mouse events are forwarded to underlying windows and we are
+      // ignoring mouse events, suppress the synthetic WM_MOUSEMOVE messages
+      // to prevent cursor flickering. Chromium processes these messages and
+      // updates the cursor based on the web content, but since the window
+      // is transparent (WS_EX_TRANSPARENT), the underlying window's cursor
+      // should take precedence. By not processing these messages when
+      // forwarding, we prevent the race condition between Chromium's cursor
+      // updates and the underlying window's cursor.
+      if (window->forwarding_mouse_messages_ && window->ignore_mouse_events_) {
+        return 0;
+      }
+      break;
+    }
   }
 
   return DefSubclassProc(hwnd, msg, w_param, l_param);
