@@ -33,15 +33,13 @@
 #include <windows.foundation.metadata.h>
 #include <windows.h>
 #include <windows.management.deployment.h>
-#include <winrt/base.h>
-#include <winrt/windows.applicationmodel.core.h>
-#include <winrt/windows.applicationmodel.h>
-#include <winrt/windows.foundation.collections.h>
-#include <winrt/windows.foundation.h>
-#include <winrt/windows.foundation.metadata.h>
-#include <winrt/windows.management.deployment.h>
+#include <wrl/callback.h>
+#include <wrl/client.h>
 
+#include "base/task/bind_post_task.h"
+#include "base/win/core_winrt_util.h"
 #include "base/win/scoped_com_initializer.h"
+#include "base/win/scoped_hstring.h"
 #endif
 
 namespace electron {
@@ -54,6 +52,51 @@ const bool debug_msix_updater =
 namespace {
 
 #if BUILDFLAG(IS_WIN)
+
+// Type aliases for cleaner code
+using ABI::Windows::ApplicationModel::IAppInstallerInfo;
+using ABI::Windows::ApplicationModel::IPackage;
+using ABI::Windows::ApplicationModel::IPackage6;
+using ABI::Windows::ApplicationModel::IPackageId;
+using ABI::Windows::ApplicationModel::IPackageStatics;
+using ABI::Windows::ApplicationModel::PackageSignatureKind;
+using ABI::Windows::ApplicationModel::PackageSignatureKind_Developer;
+using ABI::Windows::ApplicationModel::PackageSignatureKind_Enterprise;
+using ABI::Windows::ApplicationModel::PackageSignatureKind_None;
+using ABI::Windows::ApplicationModel::PackageSignatureKind_Store;
+using ABI::Windows::ApplicationModel::PackageSignatureKind_System;
+using ABI::Windows::Foundation::AsyncStatus;
+using ABI::Windows::Foundation::IAsyncInfo;
+using ABI::Windows::Foundation::IUriRuntimeClass;
+using ABI::Windows::Foundation::IUriRuntimeClassFactory;
+using ABI::Windows::Foundation::Metadata::IApiInformationStatics;
+using ABI::Windows::Management::Deployment::DeploymentOptions;
+using ABI::Windows::Management::Deployment::
+    DeploymentOptions_ForceApplicationShutdown;
+using ABI::Windows::Management::Deployment::
+    DeploymentOptions_ForceTargetApplicationShutdown;
+using ABI::Windows::Management::Deployment::
+    DeploymentOptions_ForceUpdateFromAnyVersion;
+using ABI::Windows::Management::Deployment::DeploymentOptions_None;
+using ABI::Windows::Management::Deployment::IAddPackageOptions;
+using ABI::Windows::Management::Deployment::IDeploymentResult;
+using ABI::Windows::Management::Deployment::IPackageManager;
+using ABI::Windows::Management::Deployment::IPackageManager5;
+using ABI::Windows::Management::Deployment::IPackageManager9;
+using Microsoft::WRL::Callback;
+using Microsoft::WRL::ComPtr;
+
+// Type alias for deployment async operation
+// AddPackageByUriAsync returns IAsyncOperationWithProgress<DeploymentResult*,
+// DeploymentProgress>
+using DeploymentAsyncOp = ABI::Windows::Foundation::IAsyncOperationWithProgress<
+    ABI::Windows::Management::Deployment::DeploymentResult*,
+    ABI::Windows::Management::Deployment::DeploymentProgress>;
+using DeploymentCompletedHandler =
+    ABI::Windows::Foundation::IAsyncOperationWithProgressCompletedHandler<
+        ABI::Windows::Management::Deployment::DeploymentResult*,
+        ABI::Windows::Management::Deployment::DeploymentProgress>;
+
 // Helper function for debug logging
 void DebugLog(std::string_view log_msg) {
   if (electron::debug_msix_updater)
@@ -83,32 +126,256 @@ struct RegisterPackageOptions {
   bool force_update_from_any_version = false;
 };
 
+// Helper: Create PackageManager using RoActivateInstance
+HRESULT CreatePackageManager(ComPtr<IPackageManager>* package_manager) {
+  base::win::ScopedHString class_id = base::win::ScopedHString::Create(
+      RuntimeClass_Windows_Management_Deployment_PackageManager);
+  if (!class_id.is_valid()) {
+    return E_FAIL;
+  }
+
+  ComPtr<IInspectable> inspectable;
+  HRESULT hr = base::win::RoActivateInstance(class_id.get(), &inspectable);
+  if (FAILED(hr)) {
+    return hr;
+  }
+
+  return inspectable.As(package_manager);
+}
+
+// Helper: Create URI using IUriRuntimeClassFactory
+HRESULT CreateUri(const std::wstring& uri_string,
+                  ComPtr<IUriRuntimeClass>* uri) {
+  ComPtr<IUriRuntimeClassFactory> uri_factory;
+  HRESULT hr =
+      base::win::GetActivationFactory<IUriRuntimeClassFactory,
+                                      RuntimeClass_Windows_Foundation_Uri>(
+          &uri_factory);
+  if (FAILED(hr)) {
+    return hr;
+  }
+
+  base::win::ScopedHString uri_hstring =
+      base::win::ScopedHString::Create(uri_string);
+  if (!uri_hstring.is_valid()) {
+    return E_FAIL;
+  }
+
+  return uri_factory->CreateUri(uri_hstring.get(), uri->GetAddressOf());
+}
+
+// Helper: Create and configure AddPackageOptions
+HRESULT CreateAddPackageOptions(const UpdateMsixOptions& opts,
+                                ComPtr<IAddPackageOptions>* package_options) {
+  base::win::ScopedHString class_id = base::win::ScopedHString::Create(
+      RuntimeClass_Windows_Management_Deployment_AddPackageOptions);
+  if (!class_id.is_valid()) {
+    return E_FAIL;
+  }
+
+  ComPtr<IInspectable> inspectable;
+  HRESULT hr = base::win::RoActivateInstance(class_id.get(), &inspectable);
+  if (FAILED(hr)) {
+    return hr;
+  }
+
+  hr = inspectable.As(package_options);
+  if (FAILED(hr)) {
+    return hr;
+  }
+
+  // Configure options using ABI interface methods
+  (*package_options)
+      ->put_DeferRegistrationWhenPackagesAreInUse(opts.defer_registration);
+  (*package_options)->put_DeveloperMode(opts.developer_mode);
+  (*package_options)->put_ForceAppShutdown(opts.force_shutdown);
+  (*package_options)->put_ForceTargetAppShutdown(opts.force_target_shutdown);
+  (*package_options)
+      ->put_ForceUpdateFromAnyVersion(opts.force_update_from_any_version);
+
+  return S_OK;
+}
+
+// Helper: Check if API contract is present
+HRESULT CheckApiContractPresent(UINT16 version, boolean* is_present) {
+  ComPtr<IApiInformationStatics> api_info;
+  HRESULT hr = base::win::GetActivationFactory<
+      IApiInformationStatics,
+      RuntimeClass_Windows_Foundation_Metadata_ApiInformation>(&api_info);
+  if (FAILED(hr)) {
+    return hr;
+  }
+
+  base::win::ScopedHString contract_name = base::win::ScopedHString::Create(
+      L"Windows.Foundation.UniversalApiContract");
+  if (!contract_name.is_valid()) {
+    return E_FAIL;
+  }
+
+  return api_info->IsApiContractPresentByMajor(contract_name.get(), version,
+                                               is_present);
+}
+
+// Helper: Get current package using IPackageStatics
+HRESULT GetCurrentPackage(ComPtr<IPackage>* package) {
+  ComPtr<IPackageStatics> package_statics;
+  HRESULT hr = base::win::GetActivationFactory<
+      IPackageStatics, RuntimeClass_Windows_ApplicationModel_Package>(
+      &package_statics);
+  if (FAILED(hr)) {
+    return hr;
+  }
+
+  return package_statics->get_Current(package->GetAddressOf());
+}
+
+// Structure to hold callback data for async operations
+struct DeploymentCallbackData {
+  scoped_refptr<base::SingleThreadTaskRunner> reply_runner;
+  gin_helper::Promise<void> promise;
+  bool fire_and_forget;
+  ComPtr<DeploymentAsyncOp> async_op;  // Keep async_op alive
+};
+
+// Handler for deployment completion
+void OnDeploymentCompleted(std::unique_ptr<DeploymentCallbackData> data,
+                           DeploymentAsyncOp* async_op,
+                           AsyncStatus status) {
+  std::string error;
+
+  if (data->fire_and_forget) {
+    DebugLog(
+        "Deployment initiated. Force shutdown or target shutdown requested. "
+        "Good bye!");
+    // Don't wait for result in fire-and-forget mode
+    data->reply_runner->PostTask(
+        FROM_HERE,
+        base::BindOnce(
+            [](gin_helper::Promise<void> promise) { promise.Resolve(); },
+            std::move(data->promise)));
+    return;
+  }
+
+  if (status == AsyncStatus::AsyncStatus_Error) {
+    ComPtr<IDeploymentResult> result;
+    HRESULT hr = async_op->GetResults(&result);
+    if (SUCCEEDED(hr) && result) {
+      HSTRING error_text_hstring;
+      hr = result->get_ErrorText(&error_text_hstring);
+      if (SUCCEEDED(hr)) {
+        base::win::ScopedHString scoped_error(error_text_hstring);
+        error = scoped_error.GetAsUTF8();
+      }
+
+      ComPtr<IAsyncInfo> async_info;
+      hr = async_op->QueryInterface(IID_PPV_ARGS(&async_info));
+      if (SUCCEEDED(hr)) {
+        HRESULT error_code;
+        hr = async_info->get_ErrorCode(&error_code);
+        if (SUCCEEDED(hr)) {
+          error += " (" + std::to_string(static_cast<int>(error_code)) + ")";
+        }
+      }
+    }
+    if (error.empty()) {
+      error = "Deployment failed with unknown error";
+    }
+    {
+      std::ostringstream oss;
+      oss << "Deployment failed: " << error;
+      DebugLog(oss.str());
+    }
+  } else if (status == AsyncStatus::AsyncStatus_Canceled) {
+    DebugLog("Deployment canceled");
+    error = "Deployment canceled";
+  } else if (status == AsyncStatus::AsyncStatus_Completed) {
+    DebugLog("MSIX Deployment completed.");
+  } else {
+    error = "Deployment status unknown";
+    DebugLog("Deployment status unknown");
+  }
+
+  // Post result back to UI thread
+  data->reply_runner->PostTask(
+      FROM_HERE, base::BindOnce(
+                     [](gin_helper::Promise<void> promise, std::string error) {
+                       if (error.empty()) {
+                         promise.Resolve();
+                       } else {
+                         promise.RejectWithErrorMessage(error);
+                       }
+                     },
+                     std::move(data->promise), std::move(error)));
+}
+
 // Performs MSIX update on IO thread
 void DoUpdateMsix(const std::string& package_uri,
                   UpdateMsixOptions opts,
                   scoped_refptr<base::SingleThreadTaskRunner> reply_runner,
                   gin_helper::Promise<void> promise) {
   DebugLog("DoUpdateMsix: Starting");
-
-  using winrt::Windows::Foundation::AsyncStatus;
-  using winrt::Windows::Foundation::Uri;
-  using winrt::Windows::Management::Deployment::AddPackageOptions;
-  using winrt::Windows::Management::Deployment::DeploymentResult;
-  using winrt::Windows::Management::Deployment::PackageManager;
-
   std::string error;
-  std::wstring packageUriString =
-      std::wstring(package_uri.begin(), package_uri.end());
-  Uri uri{packageUriString};
-  PackageManager packageManager;
-  AddPackageOptions packageOptions;
 
-  // Use the pre-parsed options
-  packageOptions.DeferRegistrationWhenPackagesAreInUse(opts.defer_registration);
-  packageOptions.DeveloperMode(opts.developer_mode);
-  packageOptions.ForceAppShutdown(opts.force_shutdown);
-  packageOptions.ForceTargetAppShutdown(opts.force_target_shutdown);
-  packageOptions.ForceUpdateFromAnyVersion(opts.force_update_from_any_version);
+  // Create PackageManager
+  ComPtr<IPackageManager> package_manager;
+  HRESULT hr = CreatePackageManager(&package_manager);
+  if (FAILED(hr)) {
+    error = "Failed to create PackageManager";
+    reply_runner->PostTask(
+        FROM_HERE,
+        base::BindOnce(
+            [](gin_helper::Promise<void> promise, std::string error) {
+              promise.RejectWithErrorMessage(error);
+            },
+            std::move(promise), std::move(error)));
+    return;
+  }
+
+  // Get IPackageManager9 for AddPackageByUriAsync
+  ComPtr<IPackageManager9> package_manager9;
+  hr = package_manager.As(&package_manager9);
+  if (FAILED(hr)) {
+    error = "Failed to get IPackageManager9 interface";
+    reply_runner->PostTask(
+        FROM_HERE,
+        base::BindOnce(
+            [](gin_helper::Promise<void> promise, std::string error) {
+              promise.RejectWithErrorMessage(error);
+            },
+            std::move(promise), std::move(error)));
+    return;
+  }
+
+  // Create URI
+  std::wstring uri_wstring = base::UTF8ToWide(package_uri);
+  ComPtr<IUriRuntimeClass> uri;
+  hr = CreateUri(uri_wstring, &uri);
+  if (FAILED(hr)) {
+    error = "Failed to create URI";
+    reply_runner->PostTask(
+        FROM_HERE,
+        base::BindOnce(
+            [](gin_helper::Promise<void> promise, std::string error) {
+              promise.RejectWithErrorMessage(error);
+            },
+            std::move(promise), std::move(error)));
+    return;
+  }
+
+  // Create AddPackageOptions
+  ComPtr<IAddPackageOptions> package_options;
+  hr = CreateAddPackageOptions(opts, &package_options);
+  if (FAILED(hr)) {
+    error = "Failed to create AddPackageOptions";
+    reply_runner->PostTask(
+        FROM_HERE,
+        base::BindOnce(
+            [](gin_helper::Promise<void> promise, std::string error) {
+              promise.RejectWithErrorMessage(error);
+            },
+            std::move(promise), std::move(error)));
+    return;
+  }
 
   {
     std::ostringstream oss;
@@ -126,63 +393,54 @@ void DoUpdateMsix(const std::string& package_uri,
     DebugLog(oss.str());
   }
 
-  auto deploymentOperation =
-      packageManager.AddPackageByUriAsync(uri, packageOptions);
-
-  if (!deploymentOperation) {
-    DebugLog("Deployment operation is null");
+  // Start async operation
+  ComPtr<DeploymentAsyncOp> async_op;
+  hr = package_manager9->AddPackageByUriAsync(uri.Get(), package_options.Get(),
+                                              &async_op);
+  if (FAILED(hr) || !async_op) {
+    DebugLog("AddPackageByUriAsync failed or returned null");
     error =
         "Deployment is NULL. See "
         "http://go.microsoft.com/fwlink/?LinkId=235160 for diagnosing.";
-  } else {
-    if (!opts.force_shutdown && !opts.force_target_shutdown) {
-      DebugLog("Waiting for deployment...");
-      deploymentOperation.get();
-      DebugLog("Deployment finished.");
-
-      if (deploymentOperation.Status() == AsyncStatus::Error) {
-        auto deploymentResult{deploymentOperation.GetResults()};
-        std::string errorText = winrt::to_string(deploymentResult.ErrorText());
-        std::string errorCode =
-            std::to_string(static_cast<int>(deploymentOperation.ErrorCode()));
-        error = errorText + " (" + errorCode + ")";
-        {
-          std::ostringstream oss;
-          oss << "Deployment failed: " << error;
-          DebugLog(oss.str());
-        }
-      } else if (deploymentOperation.Status() == AsyncStatus::Canceled) {
-        DebugLog("Deployment canceled");
-        error = "Deployment canceled";
-      } else if (deploymentOperation.Status() == AsyncStatus::Completed) {
-        DebugLog("MSIX Deployment completed.");
-      } else {
-        error = "Deployment status unknown";
-        DebugLog("Deployment status unknown");
-      }
-    } else {
-      // At this point, we can not await the deployment because we require a
-      // shutdown of the app to continue, so we do a fire and forget. When the
-      // deployment process tries ot shutdown the app, the process waits for us
-      // to finish here. But to finish we need to shutdow.  That leads to a 30s
-      // dealock, till we forcefully get shutdown by the OS.
-      DebugLog(
-          "Deployment initiated. Force shutdown or target shutdown requested. "
-          "Good bye!");
-    }
+    reply_runner->PostTask(
+        FROM_HERE,
+        base::BindOnce(
+            [](gin_helper::Promise<void> promise, std::string error) {
+              promise.RejectWithErrorMessage(error);
+            },
+            std::move(promise), std::move(error)));
+    return;
   }
 
-  // Post result back
-  reply_runner->PostTask(
-      FROM_HERE, base::BindOnce(
-                     [](gin_helper::Promise<void> promise, std::string error) {
-                       if (error.empty()) {
-                         promise.Resolve();
-                       } else {
-                         promise.RejectWithErrorMessage(error);
-                       }
-                     },
-                     std::move(promise), error));
+  // Set up callback data
+  auto callback_data = std::make_unique<DeploymentCallbackData>();
+  callback_data->reply_runner = reply_runner;
+  callback_data->promise = std::move(promise);
+  callback_data->fire_and_forget =
+      opts.force_shutdown || opts.force_target_shutdown;
+  callback_data->async_op = async_op;  // Keep async_op alive
+
+  // Register completion handler
+  DeploymentCallbackData* raw_data = callback_data.get();
+  hr = async_op->put_Completed(
+      Callback<DeploymentCompletedHandler>([data = std::move(callback_data)](
+                                               DeploymentAsyncOp* op,
+                                               AsyncStatus status) mutable {
+        OnDeploymentCompleted(std::move(data), op, status);
+        return S_OK;
+      }).Get());
+
+  if (FAILED(hr)) {
+    DebugLog("Failed to register deployment completion handler");
+    raw_data->reply_runner->PostTask(
+        FROM_HERE,
+        base::BindOnce(
+            [](gin_helper::Promise<void> promise) {
+              promise.RejectWithErrorMessage(
+                  "Failed to register deployment completion handler");
+            },
+            std::move(raw_data->promise)));
+  }
 }
 
 // Performs package registration on IO thread
@@ -191,31 +449,67 @@ void DoRegisterPackage(const std::string& family_name,
                        scoped_refptr<base::SingleThreadTaskRunner> reply_runner,
                        gin_helper::Promise<void> promise) {
   DebugLog("DoRegisterPackage: Starting");
-
-  using winrt::Windows::Foundation::AsyncStatus;
-  using winrt::Windows::Foundation::Collections::IIterable;
-  using winrt::Windows::Management::Deployment::DeploymentOptions;
-  using winrt::Windows::Management::Deployment::PackageManager;
-
   std::string error;
-  auto familyNameH = winrt::to_hstring(family_name);
-  PackageManager packageManager;
-  DeploymentOptions deploymentOptions = DeploymentOptions::None;
 
-  // Use the pre-parsed options (no V8 access needed)
+  // Create PackageManager
+  ComPtr<IPackageManager> package_manager;
+  HRESULT hr = CreatePackageManager(&package_manager);
+  if (FAILED(hr)) {
+    error = "Failed to create PackageManager";
+    reply_runner->PostTask(
+        FROM_HERE,
+        base::BindOnce(
+            [](gin_helper::Promise<void> promise, std::string error) {
+              promise.RejectWithErrorMessage(error);
+            },
+            std::move(promise), std::move(error)));
+    return;
+  }
+
+  // Get IPackageManager5 for RegisterPackageByFamilyNameAsync
+  ComPtr<IPackageManager5> package_manager5;
+  hr = package_manager.As(&package_manager5);
+  if (FAILED(hr)) {
+    error = "Failed to get IPackageManager5 interface";
+    reply_runner->PostTask(
+        FROM_HERE,
+        base::BindOnce(
+            [](gin_helper::Promise<void> promise, std::string error) {
+              promise.RejectWithErrorMessage(error);
+            },
+            std::move(promise), std::move(error)));
+    return;
+  }
+
+  // Build DeploymentOptions flags
+  DeploymentOptions deployment_options = DeploymentOptions_None;
   if (opts.force_shutdown) {
-    deploymentOptions |= DeploymentOptions::ForceApplicationShutdown;
+    deployment_options = static_cast<DeploymentOptions>(
+        deployment_options | DeploymentOptions_ForceApplicationShutdown);
   }
   if (opts.force_target_shutdown) {
-    deploymentOptions |= DeploymentOptions::ForceTargetApplicationShutdown;
+    deployment_options = static_cast<DeploymentOptions>(
+        deployment_options | DeploymentOptions_ForceTargetApplicationShutdown);
   }
   if (opts.force_update_from_any_version) {
-    deploymentOptions |= DeploymentOptions::ForceUpdateFromAnyVersion;
+    deployment_options = static_cast<DeploymentOptions>(
+        deployment_options | DeploymentOptions_ForceUpdateFromAnyVersion);
   }
 
-  // Create empty collections for dependency and optional packages
-  IIterable<winrt::hstring> emptyDependencies{nullptr};
-  IIterable<winrt::hstring> emptyOptional{nullptr};
+  // Create HSTRING for family name
+  base::win::ScopedHString family_name_hstring =
+      base::win::ScopedHString::Create(family_name);
+  if (!family_name_hstring.is_valid()) {
+    error = "Failed to create family name string";
+    reply_runner->PostTask(
+        FROM_HERE,
+        base::BindOnce(
+            [](gin_helper::Promise<void> promise, std::string error) {
+              promise.RejectWithErrorMessage(error);
+            },
+            std::move(promise), std::move(error)));
+    return;
+  }
 
   {
     std::ostringstream oss;
@@ -232,63 +526,122 @@ void DoRegisterPackage(const std::string& family_name,
     DebugLog(oss.str());
   }
 
-  auto deploymentOperation = packageManager.RegisterPackageByFamilyNameAsync(
-      familyNameH, emptyDependencies, deploymentOptions, nullptr,
-      emptyOptional);
+  // RegisterPackageByFamilyNameAsync
+  ComPtr<DeploymentAsyncOp> async_op;
+  hr = package_manager5->RegisterPackageByFamilyNameAsync(
+      family_name_hstring.get(),
+      nullptr,                      // dependencyPackageFamilyNames
+      deployment_options, nullptr,  // appDataVolume
+      nullptr,                      // optionalPackageFamilyNames
+      &async_op);
 
-  if (!deploymentOperation) {
+  if (FAILED(hr) || !async_op) {
     error =
         "Deployment is NULL. See "
         "http://go.microsoft.com/fwlink/?LinkId=235160 for diagnosing.";
-  } else {
-    if (!opts.force_shutdown && !opts.force_target_shutdown) {
-      DebugLog("Waiting for registration...");
-      deploymentOperation.get();
-      DebugLog("Registration finished.");
-
-      if (deploymentOperation.Status() == AsyncStatus::Error) {
-        auto deploymentResult{deploymentOperation.GetResults()};
-        std::string errorText = winrt::to_string(deploymentResult.ErrorText());
-        std::string errorCode =
-            std::to_string(static_cast<int>(deploymentOperation.ErrorCode()));
-        error = errorText + " (" + errorCode + ")";
-        {
-          std::ostringstream oss;
-          oss << "Registration failed: " << error;
-          DebugLog(oss.str());
-        }
-      } else if (deploymentOperation.Status() == AsyncStatus::Canceled) {
-        DebugLog("Registration canceled");
-        error = "Registration canceled";
-      } else if (deploymentOperation.Status() == AsyncStatus::Completed) {
-        DebugLog("MSIX Registration completed.");
-      } else {
-        error = "Registration status unknown";
-        DebugLog("Registration status unknown");
-      }
-    } else {
-      // At this point, we can not await the registration because we require a
-      // shutdown of the app to continue, so we do a fire and forget. When the
-      // registration process tries ot shutdown the app, the process waits for
-      // us to finish here. But to finish we need to shutdown. That leads to a
-      // 30s dealock, till we forcefully get shutdown by the OS.
-      DebugLog(
-          "Registration initiated. Force shutdown or target shutdown "
-          "requested. Good bye!");
-    }
+    reply_runner->PostTask(
+        FROM_HERE,
+        base::BindOnce(
+            [](gin_helper::Promise<void> promise, std::string error) {
+              promise.RejectWithErrorMessage(error);
+            },
+            std::move(promise), std::move(error)));
+    return;
   }
 
-  // Post result back to UI thread
-  reply_runner->PostTask(
-      FROM_HERE, base::BindOnce(
-                     [](gin_helper::Promise<void> promise, std::string error) {
-                       if (error.empty()) {
-                         promise.Resolve();
-                       } else {
-                         promise.RejectWithErrorMessage(error);
-                       }
-                     },
-                     std::move(promise), error));
+  // Set up callback data
+  auto callback_data = std::make_unique<DeploymentCallbackData>();
+  callback_data->reply_runner = reply_runner;
+  callback_data->promise = std::move(promise);
+  callback_data->fire_and_forget =
+      opts.force_shutdown || opts.force_target_shutdown;
+  callback_data->async_op = async_op;  // Keep async_op alive
+
+  // Register completion handler
+  DeploymentCallbackData* raw_data = callback_data.get();
+  hr = async_op->put_Completed(
+      Callback<DeploymentCompletedHandler>([data = std::move(callback_data)](
+                                               DeploymentAsyncOp* op,
+                                               AsyncStatus status) mutable {
+        // Re-use OnDeploymentCompleted with "Registration" in logs
+        std::string error;
+        if (data->fire_and_forget) {
+          DebugLog(
+              "Registration initiated. Force shutdown or target shutdown "
+              "requested. Good bye!");
+          data->reply_runner->PostTask(
+              FROM_HERE,
+              base::BindOnce(
+                  [](gin_helper::Promise<void> promise) { promise.Resolve(); },
+                  std::move(data->promise)));
+          return S_OK;
+        }
+
+        if (status == AsyncStatus::AsyncStatus_Error) {
+          ComPtr<IDeploymentResult> result;
+          HRESULT hr = op->GetResults(&result);
+          if (SUCCEEDED(hr) && result) {
+            HSTRING error_text_hstring;
+            hr = result->get_ErrorText(&error_text_hstring);
+            if (SUCCEEDED(hr)) {
+              base::win::ScopedHString scoped_error(error_text_hstring);
+              error = scoped_error.GetAsUTF8();
+            }
+
+            ComPtr<IAsyncInfo> async_info;
+            hr = op->QueryInterface(IID_PPV_ARGS(&async_info));
+            if (SUCCEEDED(hr)) {
+              HRESULT error_code;
+              hr = async_info->get_ErrorCode(&error_code);
+              if (SUCCEEDED(hr)) {
+                error +=
+                    " (" + std::to_string(static_cast<int>(error_code)) + ")";
+              }
+            }
+          }
+          if (error.empty()) {
+            error = "Registration failed with unknown error";
+          }
+          {
+            std::ostringstream oss;
+            oss << "Registration failed: " << error;
+            DebugLog(oss.str());
+          }
+        } else if (status == AsyncStatus::AsyncStatus_Canceled) {
+          DebugLog("Registration canceled");
+          error = "Registration canceled";
+        } else if (status == AsyncStatus::AsyncStatus_Completed) {
+          DebugLog("MSIX Registration completed.");
+        } else {
+          error = "Registration status unknown";
+          DebugLog("Registration status unknown");
+        }
+
+        data->reply_runner->PostTask(
+            FROM_HERE,
+            base::BindOnce(
+                [](gin_helper::Promise<void> promise, std::string error) {
+                  if (error.empty()) {
+                    promise.Resolve();
+                  } else {
+                    promise.RejectWithErrorMessage(error);
+                  }
+                },
+                std::move(data->promise), std::move(error)));
+        return S_OK;
+      }).Get());
+
+  if (FAILED(hr)) {
+    DebugLog("Failed to register registration completion handler");
+    raw_data->reply_runner->PostTask(
+        FROM_HERE,
+        base::BindOnce(
+            [](gin_helper::Promise<void> promise) {
+              promise.RejectWithErrorMessage(
+                  "Failed to register registration completion handler");
+            },
+            std::move(raw_data->promise)));
+  }
 }
 #endif
 
@@ -389,8 +742,7 @@ bool RegisterRestartOnUpdate(const std::string& command_line) {
   const DWORD dwFlags = 1 | 2 | 8;  // 11
 
   if (!command_line.empty()) {
-    std::wstring commandLineW =
-        std::wstring(command_line.begin(), command_line.end());
+    std::wstring commandLineW = base::UTF8ToWide(command_line);
     commandLine = commandLineW.c_str();
   }
 
@@ -433,57 +785,96 @@ v8::Local<v8::Value> GetPackageInfo() {
   gin_helper::Dictionary result(isolate, v8::Object::New(isolate));
 
   // Check API contract version (Windows 10 version 1703 or later)
-  if (winrt::Windows::Foundation::Metadata::ApiInformation::
-          IsApiContractPresent(L"Windows.Foundation.UniversalApiContract", 7)) {
-    using winrt::Windows::ApplicationModel::Package;
-    using winrt::Windows::ApplicationModel::PackageSignatureKind;
-    Package package = Package::Current();
+  boolean is_present = FALSE;
+  HRESULT hr = CheckApiContractPresent(7, &is_present);
+  if (SUCCEEDED(hr) && is_present) {
+    ComPtr<IPackage> package;
+    hr = GetCurrentPackage(&package);
+    if (SUCCEEDED(hr) && package) {
+      // Get package ID
+      ComPtr<IPackageId> package_id;
+      hr = package->get_Id(&package_id);
+      if (SUCCEEDED(hr) && package_id) {
+        // Get FullName
+        HSTRING full_name;
+        hr = package_id->get_FullName(&full_name);
+        if (SUCCEEDED(hr)) {
+          base::win::ScopedHString scoped_name(full_name);
+          result.Set("id", scoped_name.GetAsUTF8());
+        }
 
-    // Get package ID and family name
-    std::string packageId = winrt::to_string(package.Id().FullName());
-    std::string familyName = winrt::to_string(package.Id().FamilyName());
+        // Get FamilyName
+        HSTRING family_name;
+        hr = package_id->get_FamilyName(&family_name);
+        if (SUCCEEDED(hr)) {
+          base::win::ScopedHString scoped_name(family_name);
+          result.Set("familyName", scoped_name.GetAsUTF8());
+        }
 
-    result.Set("id", packageId);
-    result.Set("familyName", familyName);
-    result.Set("developmentMode", package.IsDevelopmentMode());
+        // Get Version
+        ABI::Windows::ApplicationModel::PackageVersion pkg_version;
+        hr = package_id->get_Version(&pkg_version);
+        if (SUCCEEDED(hr)) {
+          std::string version = std::to_string(pkg_version.Major) + "." +
+                                std::to_string(pkg_version.Minor) + "." +
+                                std::to_string(pkg_version.Build) + "." +
+                                std::to_string(pkg_version.Revision);
+          result.Set("version", version);
+        }
+      }
 
-    // Get package version
-    auto packageVersion = package.Id().Version();
-    std::string version = std::to_string(packageVersion.Major) + "." +
-                          std::to_string(packageVersion.Minor) + "." +
-                          std::to_string(packageVersion.Build) + "." +
-                          std::to_string(packageVersion.Revision);
-    result.Set("version", version);
+      // Get IsDevelopmentMode
+      boolean is_dev_mode = FALSE;
+      hr = package->get_IsDevelopmentMode(&is_dev_mode);
+      result.Set("developmentMode", is_dev_mode != FALSE);
 
-    // Convert signature kind to string
-    std::string signatureKind;
-    switch (package.SignatureKind()) {
-      case PackageSignatureKind::Developer:
-        signatureKind = "developer";
-        break;
-      case PackageSignatureKind::Enterprise:
-        signatureKind = "enterprise";
-        break;
-      case PackageSignatureKind::None:
-        signatureKind = "none";
-        break;
-      case PackageSignatureKind::Store:
-        signatureKind = "store";
-        break;
-      case PackageSignatureKind::System:
-        signatureKind = "system";
-        break;
-      default:
-        signatureKind = "none";
-        break;
-    }
-    result.Set("signatureKind", signatureKind);
+      // Get SignatureKind
+      PackageSignatureKind sig_kind;
+      hr = package->get_SignatureKind(&sig_kind);
+      if (SUCCEEDED(hr)) {
+        std::string signature_kind;
+        switch (sig_kind) {
+          case PackageSignatureKind_Developer:
+            signature_kind = "developer";
+            break;
+          case PackageSignatureKind_Enterprise:
+            signature_kind = "enterprise";
+            break;
+          case PackageSignatureKind_None:
+            signature_kind = "none";
+            break;
+          case PackageSignatureKind_Store:
+            signature_kind = "store";
+            break;
+          case PackageSignatureKind_System:
+            signature_kind = "system";
+            break;
+          default:
+            signature_kind = "none";
+            break;
+        }
+        result.Set("signatureKind", signature_kind);
+      }
 
-    // Get app installer info if available
-    auto appInstallerInfo = package.GetAppInstallerInfo();
-    if (appInstallerInfo != nullptr) {
-      std::string uriStr = winrt::to_string(appInstallerInfo.Uri().ToString());
-      result.Set("appInstallerUri", uriStr);
+      // Get AppInstallerInfo (requires IPackage6 interface)
+      ComPtr<IPackage6> package6;
+      hr = package.As(&package6);
+      if (SUCCEEDED(hr) && package6) {
+        ComPtr<IAppInstallerInfo> app_installer_info;
+        hr = package6->GetAppInstallerInfo(&app_installer_info);
+        if (SUCCEEDED(hr) && app_installer_info) {
+          ComPtr<IUriRuntimeClass> uri;
+          hr = app_installer_info->get_Uri(&uri);
+          if (SUCCEEDED(hr) && uri) {
+            HSTRING uri_string;
+            hr = uri->get_AbsoluteUri(&uri_string);
+            if (SUCCEEDED(hr)) {
+              base::win::ScopedHString scoped_uri(uri_string);
+              result.Set("appInstallerUri", scoped_uri.GetAsUTF8());
+            }
+          }
+        }
+      }
     }
   } else {
     // Windows version doesn't meet minimum API requirements
