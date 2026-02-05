@@ -1793,6 +1793,7 @@ describe('app module', () => {
         ).to.eventually.be.fulfilled();
 
         w.close();
+        app.hide();
       });
     });
   });
