@@ -107,7 +107,7 @@ A `string` (optional) indicating the item's role, if set. Can be `undo`, `redo`,
 
 #### `menuItem.accelerator`
 
-An `Accelerator` (optional) indicating the item's accelerator, if set.
+An `Accelerator | null` indicating the item's accelerator, if set.
 
 #### `menuItem.userAccelerator` _Readonly_ _macOS_
 
