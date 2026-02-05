@@ -33,8 +33,7 @@
 #include <windows.foundation.metadata.h>
 #include <windows.h>
 #include <windows.management.deployment.h>
-#include <wrl/callback.h>
-#include <wrl/client.h>
+#include <wrl.h>
 
 #include "base/task/bind_post_task.h"
 #include "base/win/core_winrt_util.h"
@@ -56,6 +55,8 @@ namespace {
 // Type aliases for cleaner code
 using ABI::Windows::ApplicationModel::IAppInstallerInfo;
 using ABI::Windows::ApplicationModel::IPackage;
+using ABI::Windows::ApplicationModel::IPackage2;
+using ABI::Windows::ApplicationModel::IPackage4;
 using ABI::Windows::ApplicationModel::IPackage6;
 using ABI::Windows::ApplicationModel::IPackageId;
 using ABI::Windows::ApplicationModel::IPackageStatics;
@@ -256,7 +257,7 @@ void OnDeploymentCompleted(std::unique_ptr<DeploymentCallbackData> data,
     return;
   }
 
-  if (status == AsyncStatus::AsyncStatus_Error) {
+  if (status == AsyncStatus::Error) {
     ComPtr<IDeploymentResult> result;
     HRESULT hr = async_op->GetResults(&result);
     if (SUCCEEDED(hr) && result) {
@@ -285,10 +286,10 @@ void OnDeploymentCompleted(std::unique_ptr<DeploymentCallbackData> data,
       oss << "Deployment failed: " << error;
       DebugLog(oss.str());
     }
-  } else if (status == AsyncStatus::AsyncStatus_Canceled) {
+  } else if (status == AsyncStatus::Canceled) {
     DebugLog("Deployment canceled");
     error = "Deployment canceled";
-  } else if (status == AsyncStatus::AsyncStatus_Completed) {
+  } else if (status == AsyncStatus::Completed) {
     DebugLog("MSIX Deployment completed.");
   } else {
     error = "Deployment status unknown";
@@ -526,13 +527,14 @@ void DoRegisterPackage(const std::string& family_name,
     DebugLog(oss.str());
   }
 
-  // RegisterPackageByFamilyNameAsync
+  // RegisterPackageByFamilyNameAndOptionalPackagesAsync (ABI name)
   ComPtr<DeploymentAsyncOp> async_op;
-  hr = package_manager5->RegisterPackageByFamilyNameAsync(
+  hr = package_manager5->RegisterPackageByFamilyNameAndOptionalPackagesAsync(
       family_name_hstring.get(),
-      nullptr,                      // dependencyPackageFamilyNames
-      deployment_options, nullptr,  // appDataVolume
-      nullptr,                      // optionalPackageFamilyNames
+      nullptr,  // dependencyPackageFamilyNames
+      deployment_options,
+      nullptr,  // appDataVolume
+      nullptr,  // optionalPackageFamilyNames
       &async_op);
 
   if (FAILED(hr) || !async_op) {
@@ -577,7 +579,7 @@ void DoRegisterPackage(const std::string& family_name,
           return S_OK;
         }
 
-        if (status == AsyncStatus::AsyncStatus_Error) {
+        if (status == AsyncStatus::Error) {
           ComPtr<IDeploymentResult> result;
           HRESULT hr = op->GetResults(&result);
           if (SUCCEEDED(hr) && result) {
@@ -607,10 +609,10 @@ void DoRegisterPackage(const std::string& family_name,
             oss << "Registration failed: " << error;
             DebugLog(oss.str());
           }
-        } else if (status == AsyncStatus::AsyncStatus_Canceled) {
+        } else if (status == AsyncStatus::Canceled) {
           DebugLog("Registration canceled");
           error = "Registration canceled";
-        } else if (status == AsyncStatus::AsyncStatus_Completed) {
+        } else if (status == AsyncStatus::Completed) {
           DebugLog("MSIX Registration completed.");
         } else {
           error = "Registration status unknown";
@@ -823,37 +825,49 @@ v8::Local<v8::Value> GetPackageInfo() {
         }
       }
 
-      // Get IsDevelopmentMode
-      boolean is_dev_mode = FALSE;
-      hr = package->get_IsDevelopmentMode(&is_dev_mode);
-      result.Set("developmentMode", is_dev_mode != FALSE);
+      // Get IsDevelopmentMode (requires IPackage2 interface)
+      ComPtr<IPackage2> package2;
+      hr = package.As(&package2);
+      if (SUCCEEDED(hr) && package2) {
+        boolean is_dev_mode = FALSE;
+        hr = package2->get_IsDevelopmentMode(&is_dev_mode);
+        result.Set("developmentMode", is_dev_mode != FALSE);
+      } else {
+        result.Set("developmentMode", false);
+      }
 
-      // Get SignatureKind
-      PackageSignatureKind sig_kind;
-      hr = package->get_SignatureKind(&sig_kind);
-      if (SUCCEEDED(hr)) {
-        std::string signature_kind;
-        switch (sig_kind) {
-          case PackageSignatureKind_Developer:
-            signature_kind = "developer";
-            break;
-          case PackageSignatureKind_Enterprise:
-            signature_kind = "enterprise";
-            break;
-          case PackageSignatureKind_None:
-            signature_kind = "none";
-            break;
-          case PackageSignatureKind_Store:
-            signature_kind = "store";
-            break;
-          case PackageSignatureKind_System:
-            signature_kind = "system";
-            break;
-          default:
-            signature_kind = "none";
-            break;
+      // Get SignatureKind (requires IPackage4 interface)
+      ComPtr<IPackage4> package4;
+      hr = package.As(&package4);
+      if (SUCCEEDED(hr) && package4) {
+        PackageSignatureKind sig_kind;
+        hr = package4->get_SignatureKind(&sig_kind);
+        if (SUCCEEDED(hr)) {
+          std::string signature_kind;
+          switch (sig_kind) {
+            case PackageSignatureKind_Developer:
+              signature_kind = "developer";
+              break;
+            case PackageSignatureKind_Enterprise:
+              signature_kind = "enterprise";
+              break;
+            case PackageSignatureKind_None:
+              signature_kind = "none";
+              break;
+            case PackageSignatureKind_Store:
+              signature_kind = "store";
+              break;
+            case PackageSignatureKind_System:
+              signature_kind = "system";
+              break;
+            default:
+              signature_kind = "none";
+              break;
+          }
+          result.Set("signatureKind", signature_kind);
         }
-        result.Set("signatureKind", signature_kind);
+      } else {
+        result.Set("signatureKind", "none");
       }
 
       // Get AppInstallerInfo (requires IPackage6 interface)
