@@ -40,6 +40,7 @@
 #include "dbus/bus.h"
 #include "dbus/message.h"
 #include "dbus/object_proxy.h"
+#include "ui/gtk/gtk_compat.h"  // nogncheck
 
 
 #include "electron/electron_gtk_stubs.h"
