@@ -793,7 +793,15 @@ v8::Local<v8::Value> GetPackageInfo() {
     ComPtr<IPackage> package;
     hr = GetCurrentPackage(&package);
     if (SUCCEEDED(hr) && package) {
-      // Get package ID
+      // Query all needed package interface versions upfront
+      ComPtr<IPackage2> package2;
+      ComPtr<IPackage4> package4;
+      ComPtr<IPackage6> package6;
+      package.As(&package2);
+      package.As(&package4);
+      package.As(&package6);
+
+      // Get package ID (from base IPackage)
       ComPtr<IPackageId> package_id;
       hr = package->get_Id(&package_id);
       if (SUCCEEDED(hr) && package_id) {
@@ -825,10 +833,8 @@ v8::Local<v8::Value> GetPackageInfo() {
         }
       }
 
-      // Get IsDevelopmentMode (requires IPackage2 interface)
-      ComPtr<IPackage2> package2;
-      hr = package.As(&package2);
-      if (SUCCEEDED(hr) && package2) {
+      // Get IsDevelopmentMode (from IPackage2)
+      if (package2) {
         boolean is_dev_mode = FALSE;
         hr = package2->get_IsDevelopmentMode(&is_dev_mode);
         result.Set("developmentMode", is_dev_mode != FALSE);
@@ -836,10 +842,8 @@ v8::Local<v8::Value> GetPackageInfo() {
         result.Set("developmentMode", false);
       }
 
-      // Get SignatureKind (requires IPackage4 interface)
-      ComPtr<IPackage4> package4;
-      hr = package.As(&package4);
-      if (SUCCEEDED(hr) && package4) {
+      // Get SignatureKind (from IPackage4)
+      if (package4) {
         PackageSignatureKind sig_kind;
         hr = package4->get_SignatureKind(&sig_kind);
         if (SUCCEEDED(hr)) {
@@ -870,10 +874,8 @@ v8::Local<v8::Value> GetPackageInfo() {
         result.Set("signatureKind", "none");
       }
 
-      // Get AppInstallerInfo (requires IPackage6 interface)
-      ComPtr<IPackage6> package6;
-      hr = package.As(&package6);
-      if (SUCCEEDED(hr) && package6) {
+      // Get AppInstallerInfo (from IPackage6)
+      if (package6) {
         ComPtr<IAppInstallerInfo> app_installer_info;
         hr = package6->GetAppInstallerInfo(&app_installer_info);
         if (SUCCEEDED(hr) && app_installer_info) {
