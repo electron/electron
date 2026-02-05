@@ -1,4 +1,4 @@
-import { BrowserWindow } from 'electron/main';
+import { app, BrowserWindow } from 'electron/main';
 
 import { AssertionError } from 'chai';
 import { SuiteFunction, TestFunction } from 'mocha';
@@ -227,3 +227,18 @@ export async function listen (server: http.Server | https.Server | http2.Http2Se
   const protocol = (server instanceof http.Server) ? 'http' : 'https';
   return { port, hostname, url: url.format({ protocol, hostname, port }) };
 }
+
+export async function restartNetworkService () {
+  const binding = (process as any)._linkedBinding('electron_common_testing');
+  if (!binding) {
+    return;
+  }
+  await binding.restartNetworkService();
+  await setTimeout(300);
+}
+
+export function getNetworkServicePid () {
+  const metrics = app.getAppMetrics();
+  const networkProc = metrics.find((m: any) => m.serviceName === 'network.mojom.NetworkService');
+  return networkProc ? networkProc.pid : null;
+};

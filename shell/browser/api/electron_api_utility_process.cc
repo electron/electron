@@ -14,6 +14,7 @@
 #include "base/process/launch.h"
 #include "base/process/process.h"
 #include "chrome/browser/browser_process.h"
+#include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/child_process_host.h"
 #include "content/public/browser/service_process_host.h"
 #include "content/public/common/result_codes.h"
@@ -70,7 +71,8 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     base::EnvironmentMap env_map,
     base::FilePath current_working_directory,
     bool use_plugin_helper,
-    bool create_network_observer) {
+    bool create_network_observer)
+    : create_network_observer_(create_network_observer) {
 #if BUILDFLAG(IS_WIN)
   base::win::ScopedHandle stdout_write(nullptr);
   base::win::ScopedHandle stderr_write(nullptr);
@@ -235,6 +237,11 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 
   node_service_remote_->Initialize(std::move(params),
                                    receiver_.BindNewPipeAndPassRemote());
+
+  subscription_ =
+      content::RegisterNetworkServiceProcessGoneHandler(base::BindRepeating(
+          &UtilityProcessWrapper::OnNetworkServiceProcessGoneHandler,
+          weak_factory_.GetWeakPtr()));
 }
 
 UtilityProcessWrapper::~UtilityProcessWrapper() {
@@ -313,6 +320,35 @@ void UtilityProcessWrapper::OnServiceProcessCrashed(
     return;
 
   HandleTermination(info.exit_code());
+}
+
+void UtilityProcessWrapper::OnNetworkServiceProcessGoneHandler(bool crash) {
+  node::mojom::URLLoaderFactoryParamsPtr params =
+      node::mojom::URLLoaderFactoryParams::New();
+  mojo::PendingRemote<network::mojom::URLLoaderFactory> url_loader_factory;
+  network::mojom::URLLoaderFactoryParamsPtr loader_params =
+      network::mojom::URLLoaderFactoryParams::New();
+  loader_params->process_id = base::kNullProcessId;
+  loader_params->is_orb_enabled = false;
+  loader_params->is_trusted = true;
+  if (create_network_observer_) {
+    url_loader_network_observer_.emplace();
+    loader_params->url_loader_network_observer =
+        url_loader_network_observer_->Bind();
+  }
+  network::mojom::NetworkContext* network_context =
+      g_browser_process->system_network_context_manager()->GetContext();
+  network_context->CreateURLLoaderFactory(
+      url_loader_factory.InitWithNewPipeAndPassReceiver(),
+      std::move(loader_params));
+  params->url_loader_factory = std::move(url_loader_factory);
+  mojo::PendingRemote<network::mojom::HostResolver> host_resolver;
+  network_context->CreateHostResolver(
+      {}, host_resolver.InitWithNewPipeAndPassReceiver());
+  params->host_resolver = std::move(host_resolver);
+  params->use_network_observer_from_url_loader_factory =
+      create_network_observer_;
+  node_service_remote_->SetURLLoaderFactory(std::move(params));
 }
 
 void UtilityProcessWrapper::CloseConnectorPort() {
