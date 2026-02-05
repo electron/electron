@@ -106,7 +106,10 @@ bool ProcessSignatureIsSameWithCurrentApp(pid_t pid) {
   status = SecCodeCheckValidity(process_code.get(), kSecCSDefaultFlags,
                                 self_requirement.get());
   if (status != errSecSuccess && status != errSecCSReqFailed) {
-    OSSTATUS_LOG(ERROR, status) << "SecCodeCheckValidity";
+    // If the code is unsigned, don't log that (it's not an actual error).
+    if (status != errSecCSUnsigned) {
+      OSSTATUS_LOG(ERROR, status) << "SecCodeCheckValidity";
+    }
     return false;
   }
   return status == errSecSuccess;
