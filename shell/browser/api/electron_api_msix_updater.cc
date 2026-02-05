@@ -11,14 +11,9 @@
 #include "base/logging.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/single_thread_task_runner.h"
-#include "base/task/task_traits.h"
-#include "base/task/thread_pool.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
-#include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
-#include "shell/browser/native_window.h"
-#include "shell/browser/window_list.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
@@ -35,9 +30,7 @@
 #include <windows.management.deployment.h>
 #include <wrl.h>
 
-#include "base/task/bind_post_task.h"
 #include "base/win/core_winrt_util.h"
-#include "base/win/scoped_com_initializer.h"
 #include "base/win/scoped_hstring.h"
 #endif
 
@@ -128,6 +121,14 @@ struct RegisterPackageOptions {
 };
 
 // Helper: Create PackageManager using RoActivateInstance
+//
+// Note on COM interface versioning: In COM/WinRT, each interface version
+// (IPackageManager, IPackageManager5, IPackageManager9, etc.) is a separate
+// interface that must be queried independently. Unlike C++ inheritance,
+// IPackageManager9 does NOT inherit methods from IPackageManager5 or the base
+// IPackageManager. Each version only contains the methods that were newly
+// added in that version. To call methods from different versions, you must
+// QueryInterface (or ComPtr::As) for each specific interface version needed.
 HRESULT CreatePackageManager(ComPtr<IPackageManager>* package_manager) {
   base::win::ScopedHString class_id = base::win::ScopedHString::Create(
       RuntimeClass_Windows_Management_Deployment_PackageManager);
@@ -236,18 +237,22 @@ struct DeploymentCallbackData {
   gin_helper::Promise<void> promise;
   bool fire_and_forget;
   ComPtr<DeploymentAsyncOp> async_op;  // Keep async_op alive
+  std::string operation_name;  // "Deployment" or "Registration" for logs
 };
 
-// Handler for deployment completion
+// Handler for deployment/registration completion
 void OnDeploymentCompleted(std::unique_ptr<DeploymentCallbackData> data,
                            DeploymentAsyncOp* async_op,
                            AsyncStatus status) {
   std::string error;
+  const std::string& op_name = data->operation_name;
 
   if (data->fire_and_forget) {
-    DebugLog(
-        "Deployment initiated. Force shutdown or target shutdown requested. "
-        "Good bye!");
+    std::ostringstream oss;
+    oss << op_name
+        << " initiated. Force shutdown or target shutdown requested. "
+           "Good bye!";
+    DebugLog(oss.str());
     // Don't wait for result in fire-and-forget mode
     data->reply_runner->PostTask(
         FROM_HERE,
@@ -279,21 +284,27 @@ void OnDeploymentCompleted(std::unique_ptr<DeploymentCallbackData> data,
       }
     }
     if (error.empty()) {
-      error = "Deployment failed with unknown error";
+      error = op_name + " failed with unknown error";
     }
     {
       std::ostringstream oss;
-      oss << "Deployment failed: " << error;
+      oss << op_name << " failed: " << error;
       DebugLog(oss.str());
     }
   } else if (status == AsyncStatus::Canceled) {
-    DebugLog("Deployment canceled");
-    error = "Deployment canceled";
+    std::ostringstream oss;
+    oss << op_name << " canceled";
+    DebugLog(oss.str());
+    error = op_name + " canceled";
   } else if (status == AsyncStatus::Completed) {
-    DebugLog("MSIX Deployment completed.");
+    std::ostringstream oss;
+    oss << "MSIX " << op_name << " completed.";
+    DebugLog(oss.str());
   } else {
-    error = "Deployment status unknown";
-    DebugLog("Deployment status unknown");
+    error = op_name + " status unknown";
+    std::ostringstream oss;
+    oss << op_name << " status unknown";
+    DebugLog(oss.str());
   }
 
   // Post result back to UI thread
@@ -420,6 +431,7 @@ void DoUpdateMsix(const std::string& package_uri,
   callback_data->fire_and_forget =
       opts.force_shutdown || opts.force_target_shutdown;
   callback_data->async_op = async_op;  // Keep async_op alive
+  callback_data->operation_name = "Deployment";
 
   // Register completion handler
   DeploymentCallbackData* raw_data = callback_data.get();
@@ -432,15 +444,14 @@ void DoUpdateMsix(const std::string& package_uri,
       }).Get());
 
   if (FAILED(hr)) {
-    DebugLog("Failed to register deployment completion handler");
+    DebugLog("Failed to register completion handler");
     raw_data->reply_runner->PostTask(
-        FROM_HERE,
-        base::BindOnce(
-            [](gin_helper::Promise<void> promise) {
-              promise.RejectWithErrorMessage(
-                  "Failed to register deployment completion handler");
-            },
-            std::move(raw_data->promise)));
+        FROM_HERE, base::BindOnce(
+                       [](gin_helper::Promise<void> promise) {
+                         promise.RejectWithErrorMessage(
+                             "Failed to register completion handler");
+                       },
+                       std::move(raw_data->promise)));
   }
 }
 
@@ -558,6 +569,7 @@ void DoRegisterPackage(const std::string& family_name,
   callback_data->fire_and_forget =
       opts.force_shutdown || opts.force_target_shutdown;
   callback_data->async_op = async_op;  // Keep async_op alive
+  callback_data->operation_name = "Registration";
 
   // Register completion handler
   DeploymentCallbackData* raw_data = callback_data.get();
@@ -565,84 +577,19 @@ void DoRegisterPackage(const std::string& family_name,
       Callback<DeploymentCompletedHandler>([data = std::move(callback_data)](
                                                DeploymentAsyncOp* op,
                                                AsyncStatus status) mutable {
-        // Re-use OnDeploymentCompleted with "Registration" in logs
-        std::string error;
-        if (data->fire_and_forget) {
-          DebugLog(
-              "Registration initiated. Force shutdown or target shutdown "
-              "requested. Good bye!");
-          data->reply_runner->PostTask(
-              FROM_HERE,
-              base::BindOnce(
-                  [](gin_helper::Promise<void> promise) { promise.Resolve(); },
-                  std::move(data->promise)));
-          return S_OK;
-        }
-
-        if (status == AsyncStatus::Error) {
-          ComPtr<IDeploymentResult> result;
-          HRESULT hr = op->GetResults(&result);
-          if (SUCCEEDED(hr) && result) {
-            HSTRING error_text_hstring;
-            hr = result->get_ErrorText(&error_text_hstring);
-            if (SUCCEEDED(hr)) {
-              base::win::ScopedHString scoped_error(error_text_hstring);
-              error = scoped_error.GetAsUTF8();
-            }
-
-            ComPtr<IAsyncInfo> async_info;
-            hr = op->QueryInterface(IID_PPV_ARGS(&async_info));
-            if (SUCCEEDED(hr)) {
-              HRESULT error_code;
-              hr = async_info->get_ErrorCode(&error_code);
-              if (SUCCEEDED(hr)) {
-                error +=
-                    " (" + std::to_string(static_cast<int>(error_code)) + ")";
-              }
-            }
-          }
-          if (error.empty()) {
-            error = "Registration failed with unknown error";
-          }
-          {
-            std::ostringstream oss;
-            oss << "Registration failed: " << error;
-            DebugLog(oss.str());
-          }
-        } else if (status == AsyncStatus::Canceled) {
-          DebugLog("Registration canceled");
-          error = "Registration canceled";
-        } else if (status == AsyncStatus::Completed) {
-          DebugLog("MSIX Registration completed.");
-        } else {
-          error = "Registration status unknown";
-          DebugLog("Registration status unknown");
-        }
-
-        data->reply_runner->PostTask(
-            FROM_HERE,
-            base::BindOnce(
-                [](gin_helper::Promise<void> promise, std::string error) {
-                  if (error.empty()) {
-                    promise.Resolve();
-                  } else {
-                    promise.RejectWithErrorMessage(error);
-                  }
-                },
-                std::move(data->promise), std::move(error)));
+        OnDeploymentCompleted(std::move(data), op, status);
         return S_OK;
       }).Get());
 
   if (FAILED(hr)) {
-    DebugLog("Failed to register registration completion handler");
+    DebugLog("Failed to register completion handler");
     raw_data->reply_runner->PostTask(
-        FROM_HERE,
-        base::BindOnce(
-            [](gin_helper::Promise<void> promise) {
-              promise.RejectWithErrorMessage(
-                  "Failed to register registration completion handler");
-            },
-            std::move(raw_data->promise)));
+        FROM_HERE, base::BindOnce(
+                       [](gin_helper::Promise<void> promise) {
+                         promise.RejectWithErrorMessage(
+                             "Failed to register completion handler");
+                       },
+                       std::move(raw_data->promise)));
   }
 }
 #endif
@@ -658,6 +605,16 @@ v8::Local<v8::Promise> UpdateMsix(const std::string& package_uri,
   if (!HasPackageIdentity()) {
     DebugLog("UpdateMsix: The process has no package identity");
     promise.RejectWithErrorMessage("The process has no package identity.");
+    return handle;
+  }
+
+  // Check for required API contract (IPackageManager9 requires v10)
+  boolean is_api_present = FALSE;
+  if (FAILED(CheckApiContractPresent(10, &is_api_present)) || !is_api_present) {
+    DebugLog("UpdateMsix: Required Windows API contract not present");
+    promise.RejectWithErrorMessage(
+        "This Windows version does not support MSIX updates via this API. "
+        "Windows 10 version 2004 or later is required.");
     return handle;
   }
 
@@ -703,6 +660,16 @@ v8::Local<v8::Promise> RegisterPackage(const std::string& family_name,
     return handle;
   }
 
+  // Check for required API contract (IPackageManager5 requires v3)
+  boolean is_api_present = FALSE;
+  if (FAILED(CheckApiContractPresent(3, &is_api_present)) || !is_api_present) {
+    DebugLog("RegisterPackage: Required Windows API contract not present");
+    promise.RejectWithErrorMessage(
+        "This Windows version does not support package registration via this "
+        "API. Windows 10 version 1607 or later is required.");
+    return handle;
+  }
+
   // Parse options on UI thread (where V8 is available)
   RegisterPackageOptions opts;
   options.Get("forceShutdown", &opts.force_shutdown);
@@ -738,31 +705,30 @@ bool RegisterRestartOnUpdate(const std::string& command_line) {
     return false;
   }
 
-  const wchar_t* commandLine = nullptr;
   // Flags: RESTART_NO_CRASH | RESTART_NO_HANG | RESTART_NO_REBOOT
   // This means: only restart on updates (RESTART_NO_PATCH is NOT set)
   const DWORD dwFlags = 1 | 2 | 8;  // 11
 
+  // Convert command line to wide string (keep in scope for API call)
+  std::wstring command_line_wide;
+  const wchar_t* command_line_ptr = nullptr;
   if (!command_line.empty()) {
-    std::wstring commandLineW = base::UTF8ToWide(command_line);
-    commandLine = commandLineW.c_str();
+    command_line_wide = base::UTF8ToWide(command_line);
+    command_line_ptr = command_line_wide.c_str();
   }
 
-  HRESULT hr = RegisterApplicationRestart(commandLine, dwFlags);
+  HRESULT hr = RegisterApplicationRestart(command_line_ptr, dwFlags);
   if (FAILED(hr)) {
-    {
-      std::ostringstream oss;
-      oss << "RegisterApplicationRestart failed with error code: " << hr;
-      DebugLog(oss.str());
-    }
+    std::ostringstream oss;
+    oss << "RegisterApplicationRestart failed with error code: " << hr;
+    DebugLog(oss.str());
     return false;
   }
-  {
-    std::ostringstream oss;
-    oss << "RegisterApplicationRestart succeeded"
-        << (command_line.empty() ? "" : " with command line");
-    DebugLog(oss.str());
-  }
+
+  std::ostringstream oss;
+  oss << "RegisterApplicationRestart succeeded"
+      << (command_line.empty() ? "" : " with command line");
+  DebugLog(oss.str());
   return true;
 #else
   return false;
@@ -793,7 +759,14 @@ v8::Local<v8::Value> GetPackageInfo() {
     ComPtr<IPackage> package;
     hr = GetCurrentPackage(&package);
     if (SUCCEEDED(hr) && package) {
-      // Query all needed package interface versions upfront
+      // Query all needed package interface versions upfront.
+      // Note: Like IPackageManager, each IPackage version (IPackage2,
+      // IPackage4, IPackage6) is a separate COM interface. IPackage6 does NOT
+      // inherit methods from earlier versions. We must query each version
+      // separately to access its specific methods:
+      //   - IPackage2: get_IsDevelopmentMode
+      //   - IPackage4: get_SignatureKind
+      //   - IPackage6: GetAppInstallerInfo
       ComPtr<IPackage2> package2;
       ComPtr<IPackage4> package4;
       ComPtr<IPackage6> package6;
@@ -837,7 +810,7 @@ v8::Local<v8::Value> GetPackageInfo() {
       if (package2) {
         boolean is_dev_mode = FALSE;
         hr = package2->get_IsDevelopmentMode(&is_dev_mode);
-        result.Set("developmentMode", is_dev_mode != FALSE);
+        result.Set("developmentMode", SUCCEEDED(hr) && is_dev_mode != FALSE);
       } else {
         result.Set("developmentMode", false);
       }
@@ -869,6 +842,8 @@ v8::Local<v8::Value> GetPackageInfo() {
               break;
           }
           result.Set("signatureKind", signature_kind);
+        } else {
+          result.Set("signatureKind", "none");
         }
       } else {
         result.Set("signatureKind", "none");
