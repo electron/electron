@@ -157,7 +157,7 @@ ExtensionActionGetBadgeBackgroundColorFunction::RunExtensionAction() {
   LOG(INFO)
       << "chrome.action.getBadgeBackgroundColor is not supported in Electron";
 
-  base::Value::List list;
+  base::ListValue list;
   return RespondNow(WithArguments(std::move(list)));
 }
 
@@ -165,7 +165,7 @@ ExtensionFunction::ResponseAction
 ActionGetBadgeTextColorFunction::RunExtensionAction() {
   LOG(INFO) << "chrome.action.getBadgeTextColor is not supported in Electron";
 
-  base::Value::List list;
+  base::ListValue list;
   return RespondNow(WithArguments(std::move(list)));
 }
 
@@ -175,7 +175,7 @@ ActionGetUserSettingsFunction::~ActionGetUserSettingsFunction() = default;
 ExtensionFunction::ResponseAction ActionGetUserSettingsFunction::Run() {
   LOG(INFO) << "chrome.action.getUserSettings is not supported in Electron";
 
-  base::Value::Dict ui_settings;
+  base::DictValue ui_settings;
   return RespondNow(WithArguments(std::move(ui_settings)));
 }
 

@@ -381,7 +381,7 @@ describe('net module (session)', () => {
         url: 'https://electronjs.org',
         domain: 'wssss.iamabaddomain.fun',
         name: 'cookie1'
-      })).to.eventually.be.rejectedWith(/Failed to set cookie - The cookie was set with an invalid Domain attribute./);
+      })).to.eventually.be.rejectedWith(/The cookie was set with an invalid Domain attribute/);
     });
 
     it('should be able correctly filter out cookies that are session', async () => {

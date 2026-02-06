@@ -51,7 +51,7 @@ bool PrintRenderFrameHelperDelegate::OverridePrint(
     // instructs the PDF plugin to print. This is to make window.print() on a
     // PDF plugin document correctly print the PDF. See
     // https://crbug.com/448720.
-    base::Value::Dict message;
+    base::DictValue message;
     message.Set("type", "print");
     post_message_support->PostMessageFromValue(base::Value(std::move(message)));
     return true;

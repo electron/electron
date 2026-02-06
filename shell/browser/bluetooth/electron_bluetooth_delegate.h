@@ -95,7 +95,7 @@ class ElectronBluetoothDelegate : public content::BluetoothDelegate {
 
  private:
   void OnDevicePairPromptResponse(PairPromptCallback callback,
-                                  base::Value::Dict response);
+                                  base::DictValue response);
 
   base::WeakPtrFactory<ElectronBluetoothDelegate> weak_factory_{this};
 };

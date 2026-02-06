@@ -361,7 +361,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 }
 
 void WebContentsPreferences::SaveLastPreferences() {
-  base::Value::Dict dict;
+  base::DictValue dict;
   dict.Set(options::kNodeIntegration, node_integration_);
   dict.Set(options::kNodeIntegrationInSubFrames,
            node_integration_in_sub_frames_);

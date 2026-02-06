@@ -510,7 +510,7 @@ int ImportIntoCertStore(CertificateManagerModel* model, base::Value options) {
   net::ScopedCERTCertificateList imported_certs;
   int rv = -1;
 
-  if (const base::Value::Dict* dict = options.GetIfDict(); dict != nullptr) {
+  if (const base::DictValue* dict = options.GetIfDict(); dict != nullptr) {
     if (const std::string* str = dict->FindString("certificate"); str)
       cert_path = *str;
 
@@ -611,7 +611,7 @@ void App::OnWillFinishLaunching() {
   Emit("will-finish-launching");
 }
 
-void App::OnFinishLaunching(base::Value::Dict launch_info) {
+void App::OnFinishLaunching(base::DictValue launch_info) {
 #if BUILDFLAG(IS_LINUX)
   // Set the application name for audio streams shown in external
   // applications. Only affects pulseaudio currently.
@@ -662,8 +662,8 @@ void App::OnDidFailToContinueUserActivity(const std::string& type,
 
 void App::OnContinueUserActivity(bool* prevent_default,
                                  const std::string& type,
-                                 base::Value::Dict user_info,
-                                 base::Value::Dict details) {
+                                 base::DictValue user_info,
+                                 base::DictValue details) {
   if (Emit("continue-activity", type, base::Value(std::move(user_info)),
            base::Value(std::move(details)))) {
     *prevent_default = true;
@@ -671,13 +671,13 @@ void App::OnContinueUserActivity(bool* prevent_default,
 }
 
 void App::OnUserActivityWasContinued(const std::string& type,
-                                     base::Value::Dict user_info) {
+                                     base::DictValue user_info) {
   Emit("activity-was-continued", type, base::Value(std::move(user_info)));
 }
 
 void App::OnUpdateUserActivityState(bool* prevent_default,
                                     const std::string& type,
-                                    base::Value::Dict user_info) {
+                                    base::DictValue user_info) {
   if (Emit("update-activity-state", type, base::Value(std::move(user_info)))) {
     *prevent_default = true;
   }
@@ -1584,7 +1584,7 @@ v8::Local<v8::Promise> App::SetProxy(gin::Arguments* args) {
     return handle;
   }
 
-  base::Value::Dict proxy_config;
+  base::DictValue proxy_config;
   switch (proxy_mode) {
     case ProxyPrefs::MODE_DIRECT:
       proxy_config = ProxyConfigDictionary::CreateDirect();
