@@ -15,11 +15,14 @@
 #include "base/apple/foundation_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/bind_post_task.h"
+#include "base/values.h"
 #include "gin/arguments.h"
 #include "shell/common/gin_converters/image_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/mac_util.h"
+#include "shell/common/node_util.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/image/image_skia.h"
@@ -103,11 +106,119 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   return handle;
 }
 
+gin_helper::Handle<NativeImage> NativeImage::CreateMenuSymbol(
+    gin::Arguments* args,
+    std::string name) {
+  @autoreleasepool {
+    NSImage* image =
+        [NSImage imageWithSystemSymbolName:base::SysUTF8ToNSString(name)
+                  accessibilityDescription:nil];
+
+    NSImageSymbolConfiguration* symbol_config = [NSImageSymbolConfiguration
+        configurationWithPointSize:13.0
+                            weight:NSFontWeightSemibold
+                             scale:NSImageSymbolScaleSmall];
+
+    image = [image imageWithSymbolConfiguration:symbol_config];
+
+    NSData* png_data = bufferFromNSImage(image);
+
+    gin_helper::Handle<NativeImage> handle =
+        CreateFromPNG(args->isolate(), electron::util::as_byte_span(png_data));
+
+    gfx::Size size = handle->GetSize(1.0);
+
+    float aspect_ratio =
+        static_cast<float>(size.width()) / static_cast<float>(size.height());
+
+    int new_width = 15;
+    int new_height = static_cast<int>(15 / aspect_ratio);
+
+    // prevent tall symbols from exceeding menu item height (e.g. chevron.right)
+    if (new_height >= 16) {
+      new_height = 15;
+      new_width = static_cast<int>(15 * aspect_ratio);
+    }
+
+    gin_helper::Handle<NativeImage> sized = handle->Resize(
+        args,
+        base::Value::Dict().Set("width", new_width).Set("height", new_height));
+
+    sized->SetTemplateImage(true);
+
+    return sized;
+  }
+}
+
 gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
     gin::Arguments* args,
     std::string name) {
   @autoreleasepool {
+    static bool deprecated_warning_issued = false;
+
     std::vector<double> hsl_shift;
+
+    float pointSize = 30.0;
+    NSFontWeight weight = NSFontWeightRegular;
+    NSImageSymbolScale scale = NSImageSymbolScaleMedium;
+
+    v8::Local<v8::Value> opts;
+    if (args->GetNext(&opts)) {
+      if (opts->IsArray()) {
+        // Treat an array as a HSL shift.
+        gin::ConvertFromV8(args->isolate(), opts, &hsl_shift);
+
+        if (!deprecated_warning_issued) {
+          deprecated_warning_issued = true;
+          util::EmitDeprecationWarning(
+              isolate_,
+              "createFromNamedImage(name, hslShift) is deprecated, use "
+              "createFromNamedImage(name, { hslShift }) instead.");
+        }
+      } else {
+        gin_helper::Dictionary options(args->isolate(), opts.As<v8::Object>());
+        options.Get("hslShift", &hsl_shift);
+
+        options.Get("pointSize", &pointSize);
+
+        std::string weight_str;
+        options.Get("weight", &weight_str);
+
+        // We unfortunately have to map from string to NSFontWeight manually, as
+        // NSFontWeight maps to a double under the hood.
+        if (weight_str == "ultralight") {
+          weight = NSFontWeightUltraLight;
+        } else if (weight_str == "thin") {
+          weight = NSFontWeightThin;
+        } else if (weight_str == "light") {
+          weight = NSFontWeightLight;
+        } else if (weight_str == "regular") {
+          weight = NSFontWeightRegular;
+        } else if (weight_str == "medium") {
+          weight = NSFontWeightMedium;
+        } else if (weight_str == "semibold") {
+          weight = NSFontWeightSemibold;
+        } else if (weight_str == "bold") {
+          weight = NSFontWeightBold;
+        } else if (weight_str == "heavy") {
+          weight = NSFontWeightHeavy;
+        } else if (weight_str == "black") {
+          weight = NSFontWeightBlack;
+        }
+
+        std::string scale_str;
+        options.Get("scale", &scale_str);
+
+        // Similarly, map from string to NSImageSymbolScale.
+        if (scale_str == "small") {
+          scale = NSImageSymbolScaleSmall;
+        } else if (scale_str == "medium") {
+          scale = NSImageSymbolScaleMedium;
+        } else if (scale_str == "large") {
+          scale = NSImageSymbolScaleLarge;
+        }
+      }
+    }
 
     // The string representations of NSImageNames don't match the strings
     // themselves; they instead follow the following pattern:
@@ -127,6 +238,13 @@ gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
     if (!base::StartsWith(name, "NS") && !base::StartsWith(name, "NX")) {
       image = [NSImage imageWithSystemSymbolName:ns_name
                         accessibilityDescription:nil];
+
+      NSImageSymbolConfiguration* symbol_config =
+          [NSImageSymbolConfiguration configurationWithPointSize:pointSize
+                                                          weight:weight
+                                                           scale:scale];
+
+      image = [image imageWithSymbolConfiguration:symbol_config];
     } else {
       image = [NSImage imageNamed:ns_name];
     }
@@ -137,7 +255,7 @@ gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
 
     NSData* png_data = bufferFromNSImage(image);
 
-    if (args->GetNext(&hsl_shift) && hsl_shift.size() == 3) {
+    if (hsl_shift.size() == 3) {
       auto gfx_image = gfx::Image::CreateFrom1xPNGBytes(
           electron::util::as_byte_span(png_data));
       color_utils::HSL shift = {safeShift(hsl_shift[0], -1),
