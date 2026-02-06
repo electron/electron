@@ -42,7 +42,6 @@
 #include "dbus/object_proxy.h"
 #include "ui/gtk/gtk_compat.h"  // nogncheck
 
-
 #include "electron/electron_gtk_stubs.h"
 #include "shell/common/platform_util_internal.h"
 #include "url/gurl.h"
