@@ -46,10 +46,11 @@ console.log(text)
 // hello i am a bit of text!'
 ```
 
-### `clipboard.writeText(text[, type])`
+### `clipboard.writeText(text[, type][, privacy])`
 
 * `text` string
 * `type` string (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
+* `privacy` string (optional) - Can be `confidential`, `off-the-record`, or `none`. Default is `none`.
 
 Writes the `text` into the clipboard as plain text.
 
@@ -76,10 +77,11 @@ console.log(html)
 // <meta charset='utf-8'><b>Hi</b>
 ```
 
-### `clipboard.writeHTML(markup[, type])`
+### `clipboard.writeHTML(markup[, type][, privacy])`
 
 * `markup` string
 * `type` string (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
+* `privacy` string (optional) - Can be `confidential`, `off-the-record`, or `none`. Default is `none`.
 
 Writes `markup` to the clipboard.
 
@@ -95,10 +97,11 @@ clipboard.writeHTML('<b>Hi</b>')
 
 Returns [`NativeImage`](native-image.md) - The image content in the clipboard.
 
-### `clipboard.writeImage(image[, type])`
+### `clipboard.writeImage(image[, type][, privacy])`
 
 * `image` [NativeImage](native-image.md)
 * `type` string (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
+* `privacy` string (optional) - Can be `confidential`, `off-the-record`, or `none`. Default is `none`.
 
 Writes `image` to the clipboard.
 
@@ -118,10 +121,11 @@ console.log(rtf)
 // {\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard\nThis is some {\\b bold} text.\\par\n}
 ```
 
-### `clipboard.writeRTF(text[, type])`
+### `clipboard.writeRTF(text[, type][, privacy])`
 
 * `text` string
 * `type` string (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
+* `privacy` string (optional) - Can be `confidential`, `off-the-record`, or `none`. Default is `none`.
 
 Writes the `text` into the clipboard in RTF.
 
@@ -143,11 +147,12 @@ Returns an Object containing `title` and `url` keys representing the bookmark in
 the clipboard. The `title` and `url` values will be empty strings when the
 bookmark is unavailable.  The `title` value will always be empty on Windows.
 
-### `clipboard.writeBookmark(title, url[, type])` _macOS_ _Windows_
+### `clipboard.writeBookmark(title, url[, type][, privacy])` _macOS_ _Windows_
 
 * `title` string - Unused on Windows
 * `url` string
 * `type` string (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
+* `privacy` string (optional) - Can be `confidential`, `off-the-record`, or `none`. Default is `none`.
 
 Writes the `title` (macOS only) and `url` into the clipboard as a bookmark.
 
@@ -238,11 +243,12 @@ console.log(buffer.equals(ret))
 // true
 ```
 
-### `clipboard.writeBuffer(format, buffer[, type])` _Experimental_
+### `clipboard.writeBuffer(format, buffer[, type][, privacy])` _Experimental_
 
 * `format` string
 * `buffer` Buffer
 * `type` string (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
+* `privacy` string (optional) - Can be `confidential`, `off-the-record`, or `none`. Default is `none`.
 
 Writes the `buffer` into the clipboard as `format`.
 
@@ -253,7 +259,7 @@ const buffer = Buffer.from('writeBuffer', 'utf8')
 clipboard.writeBuffer('public/utf8-plain-text', buffer)
 ```
 
-### `clipboard.write(data[, type])`
+### `clipboard.write(data[, type][, privacy])`
 
 * `data` Object
   * `text` string (optional)
@@ -262,6 +268,7 @@ clipboard.writeBuffer('public/utf8-plain-text', buffer)
   * `rtf` string (optional)
   * `bookmark` string (optional) - The title of the URL at `text`.
 * `type` string (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
+* `privacy` string (optional) - Can be `confidential`, `off-the-record`, or `none`. Default is `none`.
 
 Writes `data` to the clipboard.
 

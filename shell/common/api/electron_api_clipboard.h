@@ -32,6 +32,12 @@ class Clipboard {
   Clipboard(const Clipboard&) = delete;
   Clipboard& operator=(const Clipboard&) = delete;
 
+  enum class PrivacyType {
+    kNone = 0,
+    kConfidential = 1,
+    kOffTheRecord = 2,
+  };
+
   static std::vector<std::u16string> AvailableFormats(gin::Arguments* args);
   static bool Has(const std::string& format_string, gin::Arguments* args);
   static void Clear(gin::Arguments* args);
