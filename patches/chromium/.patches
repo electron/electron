@@ -145,3 +145,4 @@ expose_gtk_ui_platform_field.patch
 fix_os_crypt_async_cookie_encryption.patch
 patch_osr_control_screen_info.patch
 graphite_handle_out_of_order_recording_errors.patch
+loaf_add_feature_to_enable_sourceurl_for_all_protocols.patch
