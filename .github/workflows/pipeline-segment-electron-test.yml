@@ -58,13 +58,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build-type: |-
-          ${{ case(
-            inputs.target-platform == 'macos', fromJSON('["darwin","mas"]'),
-            inputs.target-platform == 'win', fromJSON('["win"]'),
-            fromJSON('["linux"]')
-          ) }}
-        shard: ${{ case(inputs.target-platform == 'linux', fromJSON('[1, 2, 3]'), fromJSON('[1, 2]')) }}
+        build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
+        shard: ${{ inputs.target-platform == 'linux' && fromJSON('[1, 2, 3]') || fromJSON('[1, 2]') }}
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}

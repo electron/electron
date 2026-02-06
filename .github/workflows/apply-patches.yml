@@ -56,16 +56,16 @@ jobs:
         path: src/electron
         fetch-depth: 0
         persist-credentials: false
-        ref: ${{ github.event.pull_request.head.sha }}
-    - name: Rebase onto Base Branch
+        ref: ${{ github.event.pull_request.base.ref }}
+    - name: Merge PR HEAD
       working-directory: src/electron
       env:
-        BASE_REF: ${{ github.event.pull_request.base.ref }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
       run: |
         git config user.email "electron@github.com"
         git config user.name "Electron Bot"
-        git fetch origin ${BASE_REF}
-        git rebase origin/${BASE_REF}
+        git fetch origin refs/pull/${PR_NUMBER}/head
+        git merge --squash FETCH_HEAD
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
       with:

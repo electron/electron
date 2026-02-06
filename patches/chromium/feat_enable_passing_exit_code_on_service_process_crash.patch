@@ -84,10 +84,10 @@ index 2648adb1cf38ab557b66ffd0e3034b26b04d76d6..98eab587f343f6ca472efc3d4e7b31b2
   private:
    const std::string service_interface_name_;
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index de1c1443812da9e6eb7c21222be414c545071d5b..101f5f44e66ee43797e7582c8c49402f4d9efef0 100644
+index f00b3a784de14d564b6d02eeb72bc80711ac7395..e14f4b3b4cde8182431faee7c46d0bf901f98d9e 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
-@@ -635,7 +635,7 @@ void UtilityProcessHost::OnProcessCrashed(int exit_code) {
+@@ -648,7 +648,7 @@ void UtilityProcessHost::OnProcessCrashed(int exit_code) {
                 : Client::CrashType::kPreIpcInitialization;
    }
  #endif  // BUILDFLAG(IS_WIN)
@@ -97,7 +97,7 @@ index de1c1443812da9e6eb7c21222be414c545071d5b..101f5f44e66ee43797e7582c8c49402f
  
  std::optional<std::string> UtilityProcessHost::GetServiceName() {
 diff --git a/content/browser/service_host/utility_process_host.h b/content/browser/service_host/utility_process_host.h
-index d731211d727f6e96533a058106c13f339263712d..19e35a0684746d6f5703ac4237de4d8aeddbaa4e 100644
+index 96c0cadf5caf5bf27f2a767c43f0f1da04298800..5a16fe5c01ae7777064168e8883ec8ec0b82a873 100644
 --- a/content/browser/service_host/utility_process_host.h
 +++ b/content/browser/service_host/utility_process_host.h
 @@ -87,7 +87,7 @@ class CONTENT_EXPORT UtilityProcessHost final

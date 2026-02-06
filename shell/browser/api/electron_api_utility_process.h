@@ -72,7 +72,8 @@ class UtilityProcessWrapper final
                         base::EnvironmentMap env_map,
                         base::FilePath current_working_directory,
                         bool use_plugin_helper,
-                        bool create_network_observer);
+                        bool create_network_observer,
+                        bool disclaim_responsibility);
   void OnServiceProcessLaunch(const base::Process& process);
   void CloseConnectorPort();
 
