@@ -2175,7 +2175,7 @@ void WebContents::DidUpdateFaviconURL(
         iter->icon_url.is_valid())
       unique_urls.insert(iter->icon_url);
   }
-  // Deduplicate: only emit if favicon URLs actually changed
+  // Only emit if favicon URLs actually changed
   if (unique_urls == last_favicon_urls_)
     return;
   last_favicon_urls_ = unique_urls;
