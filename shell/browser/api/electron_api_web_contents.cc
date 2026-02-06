@@ -2065,6 +2065,10 @@ void WebContents::ReadyToCommitNavigation(
   // Only focus for top-level contents.
   if (type_ != Type::kBrowserWindow)
     return;
+  // Don't focus if focusOnNavigation is disabled.
+  auto* prefs = WebContentsPreferences::From(web_contents());
+  if (prefs && !prefs->ShouldFocusOnNavigation())
+    return;
   web_contents()->SetInitialFocus();
 }
 
