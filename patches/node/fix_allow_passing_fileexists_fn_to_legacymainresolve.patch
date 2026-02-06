@@ -53,10 +53,10 @@ index 72cc9444ca93ef7a1526e23314693aeaf5f173b0..79684dd7e8d1629b19be01ebf97e43e5
    const maybeMain = resolvedOption <= legacyMainResolveExtensionsIndexes.kResolvedByMainIndexNode ?
      packageConfig.main || './' : '';
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 00f369e9691e184f9e5f226ce4216bd5b1d353ae..d73dac2ee3f1cf1cac6845fae0f702c9fba8fcef 100644
+index 88fdca1eb85a49468e787d50f1cee6b8561841d6..7dfb7a486040e0188eb53ee7a65f91a99e713a3a 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -3623,13 +3623,25 @@ static void CpSyncCopyDir(const FunctionCallbackInfo<Value>& args) {
+@@ -3583,13 +3583,25 @@ static void CpSyncCopyDir(const FunctionCallbackInfo<Value>& args) {
  }
  
  BindingData::FilePathIsFileReturnType BindingData::FilePathIsFile(
@@ -83,7 +83,7 @@ index 00f369e9691e184f9e5f226ce4216bd5b1d353ae..d73dac2ee3f1cf1cac6845fae0f702c9
    uv_fs_t req;
  
    int rc = uv_fs_stat(env->event_loop(), &req, file_path.c_str(), nullptr);
-@@ -3687,6 +3699,11 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
+@@ -3647,6 +3659,11 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
    std::optional<std::string> initial_file_path;
    std::string file_path;
  
@@ -95,7 +95,7 @@ index 00f369e9691e184f9e5f226ce4216bd5b1d353ae..d73dac2ee3f1cf1cac6845fae0f702c9
    if (args.Length() >= 2 && args[1]->IsString()) {
      auto package_config_main = Utf8Value(isolate, args[1]).ToString();
  
-@@ -3707,7 +3724,7 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
+@@ -3667,7 +3684,7 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
        BufferValue buff_file_path(isolate, local_file_path);
        ToNamespacedPath(env, &buff_file_path);
  
@@ -104,7 +104,7 @@ index 00f369e9691e184f9e5f226ce4216bd5b1d353ae..d73dac2ee3f1cf1cac6845fae0f702c9
          case BindingData::FilePathIsFileReturnType::kIsFile:
            return args.GetReturnValue().Set(i);
          case BindingData::FilePathIsFileReturnType::kIsNotFile:
-@@ -3744,7 +3761,7 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
+@@ -3704,7 +3721,7 @@ void BindingData::LegacyMainResolve(const FunctionCallbackInfo<Value>& args) {
      BufferValue buff_file_path(isolate, local_file_path);
      ToNamespacedPath(env, &buff_file_path);
  
