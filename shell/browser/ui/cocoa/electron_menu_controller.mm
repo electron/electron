@@ -351,10 +351,10 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   // If the menu item has an icon, set it.
   ui::ImageModel icon = model->GetIconAt(index);
   if (icon.IsImage())
-    [item setImage:icon.GetImage().ToNSImage()];
+    item.image = icon.GetImage().ToNSImage();
 
   std::u16string toolTip = model->GetToolTipAt(index);
-  [item setToolTip:base::SysUTF16ToNSString(toolTip)];
+  item.toolTip = base::SysUTF16ToNSString(toolTip);
 
   if (role == u"services") {
     std::u16string title = u"Services";
@@ -491,6 +491,25 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   item.hidden = !model->IsVisibleAt(index);
   item.state = model->IsItemCheckedAt(index) ? NSControlStateValueOn
                                              : NSControlStateValueOff;
+  std::u16string label16 = model->GetLabelAt(index);
+  NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
+  item.title = label;
+
+  std::u16string rawSecondaryLabel = model->GetSecondaryLabelAt(index);
+  if (!rawSecondaryLabel.empty()) {
+    if (@available(macOS 14.4, *)) {
+      NSString* secondary_label =
+          l10n_util::FixUpWindowsStyleLabel(rawSecondaryLabel);
+      item.subtitle = secondary_label;
+    }
+  }
+
+  ui::ImageModel icon = model->GetIconAt(index);
+  if (icon.IsImage()) {
+    item.image = icon.GetImage().ToNSImage();
+  } else {
+    item.image = nil;
+  }
 }
 
 - (void)refreshMenuTree:(NSMenu*)menu {

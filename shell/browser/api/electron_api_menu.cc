@@ -103,6 +103,39 @@ bool Menu::IsCommandIdEnabled(int command_id) const {
   return InvokeBoolMethod(this, "_isCommandIdEnabled", command_id);
 }
 
+std::u16string Menu::GetLabelForCommandId(int command_id) const {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Value> val = gin_helper::CallMethod(
+      isolate, const_cast<Menu*>(this), "_getLabelForCommandId", command_id);
+  std::u16string label;
+  if (!gin::ConvertFromV8(isolate, val, &label))
+    label.clear();
+  return label;
+}
+
+std::u16string Menu::GetSecondaryLabelForCommandId(int command_id) const {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Value> val = gin_helper::CallMethod(
+      isolate, const_cast<Menu*>(this), "_getSecondaryLabelForCommandId", command_id);
+  std::u16string label;
+  if (!gin::ConvertFromV8(isolate, val, &label))
+    label.clear();
+  return label;
+}
+
+ui::ImageModel Menu::GetIconForCommandId(int command_id) const {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Value> val = gin_helper::CallMethod(
+      isolate, const_cast<Menu*>(this), "_getIconForCommandId", command_id);
+  gfx::Image icon;
+  if (!gin::ConvertFromV8(isolate, val, &icon))
+    icon = gfx::Image();
+  return ui::ImageModel::FromImage(icon);
+}
+
 bool Menu::IsCommandIdVisible(int command_id) const {
   return InvokeBoolMethod(this, "_isCommandIdVisible", command_id);
 }
@@ -206,10 +239,6 @@ void Menu::SetIcon(int index, const gfx::Image& image) {
   model_->SetIcon(index, ui::ImageModel::FromImage(image));
 }
 
-void Menu::SetSublabel(int index, const std::u16string& sublabel) {
-  model_->SetSecondaryLabel(index, sublabel);
-}
-
 void Menu::SetToolTip(int index, const std::u16string& toolTip) {
   model_->SetToolTip(index, toolTip);
 }
@@ -291,7 +320,6 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("insertSeparator", &Menu::InsertSeparatorAt)
       .SetMethod("insertSubMenu", &Menu::InsertSubMenuAt)
       .SetMethod("setIcon", &Menu::SetIcon)
-      .SetMethod("setSublabel", &Menu::SetSublabel)
       .SetMethod("setToolTip", &Menu::SetToolTip)
       .SetMethod("setRole", &Menu::SetRole)
       .SetMethod("setCustomType", &Menu::SetCustomType)

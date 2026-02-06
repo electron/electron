@@ -53,6 +53,18 @@ Menu.prototype._isCommandIdVisible = function (id) {
   return this.commandsMap[id]?.visible ?? false;
 };
 
+Menu.prototype._getLabelForCommandId = function (id) {
+  return this.commandsMap[id]?.label ?? '';
+};
+
+Menu.prototype._getSecondaryLabelForCommandId = function (id) {
+  return this.commandsMap[id]?.sublabel ?? '';
+};
+
+Menu.prototype._getIconForCommandId = function (id) {
+  return this.commandsMap[id]?.icon ?? null;
+}
+
 Menu.prototype._getAcceleratorForCommandId = function (id, useDefaultAccelerator) {
   const command = this.commandsMap[id];
   if (!command) return;
@@ -158,7 +170,6 @@ Menu.prototype.insert = function (pos, item) {
   insertItemByType.call(this, item, pos);
 
   // set item properties
-  if (item.sublabel) this.setSublabel(pos, item.sublabel);
   if (item.toolTip) this.setToolTip(pos, item.toolTip);
   if (item.icon) this.setIcon(pos, item.icon);
   if (item.role) this.setRole(pos, item.role);
