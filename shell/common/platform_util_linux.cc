@@ -452,7 +452,8 @@ void Beep() {
   // `gdk_display_beep` is actually stubbed out, and the function pointer the
   // stub uses may be nullptr. We need to initialize the stub here to ensure
   // that is not the case so that we can avoid a crash.
-  // TODO: move this elsewhere if / when we start using stubs for more functions.
+  // TODO: move this elsewhere if / when we start using stubs for more
+  // GDK functions than just `gdk_display_beep`.
   if (!electron::IsElectron_gdkInitialized()) {
     electron::InitializeElectron_gdk(gtk::GetLibGdk());
     CHECK(electron::IsElectron_gdkInitialized())
