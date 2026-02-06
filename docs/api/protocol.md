@@ -119,13 +119,13 @@ expect streaming responses.
 
 * `scheme` string - scheme to handle, for example `https` or `my-app`. This is
   the bit before the `:` in a URL.
-* `handler` Function\<[GlobalResponse](https://nodejs.org/api/globals.html#response) | Promise\<GlobalResponse\>\>
+* `handler` Function\<[GlobalResponse](https://nodejs.org/api/globals.html#response) | null | Promise\<GlobalResponse\> | null\>
   * `request` [GlobalRequest](https://nodejs.org/api/globals.html#request)
 
 Register a protocol handler for `scheme`. Requests made to URLs with this
 scheme will delegate to this handler to determine what response should be sent.
 
-Either a `Response` or a `Promise<Response>` can be returned.
+Either a `Response` or `null` can be returned (either optionally wrapped in a `Promise`). If `null` is returned, the original request is deferred back to the built-in handler.
 
 Example:
 
