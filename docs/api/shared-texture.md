@@ -21,7 +21,7 @@ Imports the shared texture from the given options.
 > [!NOTE]
 > This method is only available in the main process.
 
-Returns `SharedTextureImported` - The imported shared texture.
+Returns [`SharedTextureImported`](structures/shared-texture-imported.md) - The imported shared texture.
 
 ### `sharedTexture.sendSharedTexture(options, ...args)` _Experimental_
 
