@@ -1,0 +1,114 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: AbdAlRahman Gad <agad@igalia.com>
+Date: Wed, 15 Oct 2025 09:34:12 -0700
+Subject: Ozone/Wayland: Treat DND drop performed with NONE action as a
+ cancellation
+
+According to the Wayland protocol, a "drop performed" event can be
+followed with a `cancelled` event. This is the behavior of compositors
+like KWin.
+
+We were always treating "drop performed" as a completed drop. This
+change corrects the logic to pass `DragResult::kCancelled` in this
+scenario.
+
+Bug: 447037092
+Change-Id: I0f3805365355bb364e15a9ab6d5a6954698cce1f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7002773
+Reviewed-by: Nick Yamane <nickdiego@igalia.com>
+Reviewed-by: Max Ihlenfeldt <max@igalia.com>
+Commit-Queue: AbdAlRahman Gad <agad@igalia.com>
+Cr-Commit-Position: refs/heads/main@{#1530269}
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_data_device.h b/ui/ozone/platform/wayland/host/wayland_data_device.h
+index 128baea3fe9a03f9d76afa234d6c21e9a4583cf7..d9824490e402308e64b5f54cbf9b46646f6021e8 100644
+--- a/ui/ozone/platform/wayland/host/wayland_data_device.h
++++ b/ui/ozone/platform/wayland/host/wayland_data_device.h
+@@ -90,6 +90,8 @@ class WaylandDataDevice : public WaylandDataDeviceBase {
+   FRIEND_TEST_ALL_PREFIXES(WaylandDataDragControllerTest, StartDrag);
+   FRIEND_TEST_ALL_PREFIXES(WaylandDataDragControllerTest, ReceiveDrag);
+   FRIEND_TEST_ALL_PREFIXES(WaylandDataDragControllerTest, CancelIncomingDrag);
++  FRIEND_TEST_ALL_PREFIXES(WaylandDataDragControllerTest,
++                           DndDropPerformedWithNoneActionThenCancelled);
+   FRIEND_TEST_ALL_PREFIXES(WaylandDataDragControllerTest,
+                            DestroyWindowWhileFetchingForeignData);
+   FRIEND_TEST_ALL_PREFIXES(WaylandDataDragControllerTest,
+diff --git a/ui/ozone/platform/wayland/host/wayland_data_drag_controller.cc b/ui/ozone/platform/wayland/host/wayland_data_drag_controller.cc
+index 893bf03a8f4aa473faf3a1232ea1902d226d8ca6..b557e4654dbe2a5d6f94bf31466c78bf83744c32 100644
+--- a/ui/ozone/platform/wayland/host/wayland_data_drag_controller.cc
++++ b/ui/ozone/platform/wayland/host/wayland_data_drag_controller.cc
+@@ -573,7 +573,13 @@ void WaylandDataDragController::OnDataSourceDropPerformed(
+           << " origin=" << !!origin_window_
+           << " nested_dispatcher=" << !!nested_dispatcher_;
+ 
+-  HandleDragEnd(DragResult::kCompleted, timestamp);
++  // Treat a "drop performed" event with a `dnd_action` of NONE (0) as a
++  // cancellation (passing `kCancelled`). Per the protocol, `cancelled` event
++  // can be sent after "drop performed", that is what `KWin` does, for example.
++  // See crbug.com/447037092.
++  HandleDragEnd(data_source_->dnd_action() ? DragResult::kCompleted
++                                           : DragResult::kCancelled,
++                timestamp);
+ }
+ 
+ void WaylandDataDragController::OnDataSourceSend(WaylandDataSource* source,
+diff --git a/ui/ozone/platform/wayland/host/wayland_data_drag_controller_unittest.cc b/ui/ozone/platform/wayland/host/wayland_data_drag_controller_unittest.cc
+index c70a03d082f518b48dda58be893fc9181507e1ab..baf42205a786d42a341a6dc9265c8d929c6a7454 100644
+--- a/ui/ozone/platform/wayland/host/wayland_data_drag_controller_unittest.cc
++++ b/ui/ozone/platform/wayland/host/wayland_data_drag_controller_unittest.cc
+@@ -497,6 +497,36 @@ MATCHER_P(PointFNear, n, "") {
+   return arg.IsWithinDistance(n, 0.01f);
+ }
+ 
++// Tests that if the compositor sends wl_data_source.dnd_drop_performed with
++// DND_ACTION_NONE, the drag controller treats it as a cancelled operation by
++// calling OnDragLeave, and can still handle a subsequent
++// wl_data_source.cancelled event gracefully. Regression test for
++// https://crbug.com/447037092.
++TEST_P(WaylandDataDragControllerTest,
++       DndDropPerformedWithNoneActionThenCancelled) {
++  FocusAndPressLeftPointerButton(window_.get(), &delegate_);
++
++  // Post test task to be performed asynchronously once the dnd-related protocol
++  // objects are ready.
++  ScheduleTestTask(base::BindLambdaForTesting([&]() {
++    // Now the server can read the data and give it to our callback.
++    ReadAndCheckData(kMimeTypeUtf8PlainText, kSampleTextForDragAndDrop);
++
++    EXPECT_CALL(*drop_handler_, OnDragLeave()).Times(1);
++    SendDndDropPerformed();
++
++    // Emulate server sending an wl_data_source::cancelled event so the drag
++    // loop is finished.
++    EXPECT_CALL(*drop_handler_, OnDragLeave()).Times(0);
++    SendDndCancelled();
++  }));
++
++  RunMouseDragWithSampleData(window_.get(), DragDropTypes::DRAG_NONE);
++
++  // Ensure drag delegate it properly reset when the drag loop quits.
++  EXPECT_FALSE(data_device()->drag_delegate_);
++}
++
+ TEST_P(WaylandDataDragControllerTest, ReceiveDrag) {
+   const uint32_t surface_id = window_->root_surface()->get_surface_id();
+ 
+diff --git a/ui/ozone/platform/wayland/host/wayland_data_source.cc b/ui/ozone/platform/wayland/host/wayland_data_source.cc
+index 761f6a456456e11ad0e8c4dbe408c360de50f02d..f1b74febf52ecadef0da6574d50dfe3709ee48d7 100644
+--- a/ui/ozone/platform/wayland/host/wayland_data_source.cc
++++ b/ui/ozone/platform/wayland/host/wayland_data_source.cc
+@@ -30,12 +30,12 @@ DataSource<T>::DataSource(T* data_source,
+   DCHECK(delegate_);
+ 
+   Initialize();
+-  VLOG(1) << "DataSoure created:" << this;
++  VLOG(1) << "DataSource created:" << this;
+ }
+ 
+ template <typename T>
+ DataSource<T>::~DataSource() {
+-  VLOG(1) << "DataSoure deleted:" << this;
++  VLOG(1) << "DataSource deleted:" << this;
+ }
+ 
+ template <typename T>
