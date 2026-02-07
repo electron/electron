@@ -820,6 +820,8 @@ WebContents::WebContents(v8::Isolate* isolate,
                              &offscreen_use_shared_texture_);
       use_offscreen_dict.Get(options::kSharedTexturePixelFormat,
                              &offscreen_shared_texture_pixel_format_);
+      use_offscreen_dict.Get(options::kDeviceScaleFactor,
+                             &offscreen_device_scale_factor_);
     }
   }
 
@@ -858,6 +860,7 @@ WebContents::WebContents(v8::Isolate* isolate,
       auto* view = new OffScreenWebContentsView(
           false, offscreen_use_shared_texture_,
           offscreen_shared_texture_pixel_format_,
+          offscreen_device_scale_factor_,
           base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
       params.view = view;
       params.delegate_view = view;
@@ -879,7 +882,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     content::WebContents::CreateParams params(session->browser_context());
     auto* view = new OffScreenWebContentsView(
         transparent, offscreen_use_shared_texture_,
-        offscreen_shared_texture_pixel_format_,
+        offscreen_shared_texture_pixel_format_, offscreen_device_scale_factor_,
         base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
     params.view = view;
     params.delegate_view = view;
@@ -1243,6 +1246,7 @@ void WebContents::MaybeOverrideCreateParamsForNewWindow(
       auto* view = new OffScreenWebContentsView(
           false, offscreen_use_shared_texture_,
           offscreen_shared_texture_pixel_format_,
+          offscreen_device_scale_factor_,
           base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
       create_params->view = view;
       create_params->delegate_view = view;
