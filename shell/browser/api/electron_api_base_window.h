@@ -83,6 +83,9 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowMoved() override;
   void OnWindowSwipe(const std::string& direction) override;
   void OnWindowRotateGesture(float rotation) override;
+  void OnWindowSwipeGesture(const std::string& direction,
+                            const std::string& phase,
+                            float progress) override;
   void OnWindowSheetBegin() override;
   void OnWindowSheetEnd() override;
   void OnWindowEnterFullScreen() override;

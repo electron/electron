@@ -210,6 +210,10 @@ class NativeWindowMac : public NativeWindow,
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
   bool always_simple_fullscreen() const { return always_simple_fullscreen_; }
 
+  // Two-finger swipe gesture events.
+  void SetSwipeGesture(bool enabled);
+  bool IsSwipeGestureEnabled() const { return swipe_gesture_enabled_; }
+
   // We need to save the result of windowWillUseStandardFrame:defaultFrame
   // because macOS calls it with what it refers to as the "best fit" frame for a
   // zoom. This means that even if an aspect ratio is set, macOS might adjust it
@@ -315,6 +319,10 @@ class NativeWindowMac : public NativeWindow,
 
   // Client that provides app-specific frame behaviors to NativeFrameViewMac.
   std::unique_ptr<NativeAppWindowFrameViewMacClient> frame_view_client_;
+  raw_ptr<content::WebContents> web_contents_ = nullptr;
+
+  // Whether swipe gesture events are enabled.
+  bool swipe_gesture_enabled_ = false;
 };
 
 }  // namespace electron
