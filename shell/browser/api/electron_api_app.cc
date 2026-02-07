@@ -1868,6 +1868,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("isEmojiPanelSupported",
                  base::BindRepeating(&Browser::IsEmojiPanelSupported, browser))
 #if BUILDFLAG(IS_MAC)
+      .SetMethod("isActive", base::BindRepeating(&Browser::IsActive, browser))
       .SetMethod("hide", base::BindRepeating(&Browser::Hide, browser))
       .SetMethod("isHidden", base::BindRepeating(&Browser::IsHidden, browser))
       .SetMethod("show", base::BindRepeating(&Browser::Show, browser))
