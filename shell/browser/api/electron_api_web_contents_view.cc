@@ -155,7 +155,8 @@ v8::Local<v8::Function> WebContentsView::GetConstructor(v8::Isolate* isolate) {
 // static
 gin_helper::WrappableBase* WebContentsView::New(gin::Arguments* const args) {
   v8::Isolate* const isolate = args->isolate();
-  gin_helper::Dictionary web_preferences;
+  gin_helper::Dictionary web_preferences =
+      gin_helper::Dictionary::CreateEmpty(isolate);
   v8::Local<v8::Value> existing_web_contents_value;
   {
     v8::Local<v8::Value> options_value;
@@ -166,12 +167,18 @@ gin_helper::WrappableBase* WebContentsView::New(gin::Arguments* const args) {
         return nullptr;
       }
       v8::Local<v8::Value> web_preferences_value;
-      if (options.Get("webPreferences", &web_preferences_value)) {
+      if (options.Get(options::kWebPreferences, &web_preferences_value)) {
         if (!gin::ConvertFromV8(isolate, web_preferences_value,
                                 &web_preferences)) {
           args->ThrowTypeError("options.webPreferences must be an object");
           return nullptr;
         }
+      }
+
+      bool paint_when_initially_hidden;
+      if (options.Get(options::kPaintWhenInitiallyHidden,
+                      &paint_when_initially_hidden)) {
+        web_preferences.Set(options::kShow, paint_when_initially_hidden);
       }
 
       if (options.Get("webContents", &existing_web_contents_value)) {
@@ -190,11 +197,6 @@ gin_helper::WrappableBase* WebContentsView::New(gin::Arguments* const args) {
       }
     }
   }
-
-  if (web_preferences.IsEmpty())
-    web_preferences = gin_helper::Dictionary::CreateEmpty(isolate);
-  if (!web_preferences.Has(options::kShow))
-    web_preferences.Set(options::kShow, false);
 
   if (!existing_web_contents_value.IsEmpty()) {
     web_preferences.SetHidden("webContents", existing_web_contents_value);
