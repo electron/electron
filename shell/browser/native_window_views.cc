@@ -413,7 +413,11 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   }
 
   gfx::Size size = bounds.size();
+#if BUILDFLAG(IS_WIN)
+  if (use_content_size_)
+#else
   if (has_frame() && use_content_size_)
+#endif
     size = ContentBoundsToWindowBounds(gfx::Rect(size)).size();
 
   widget()->CenterWindow(size);
@@ -1648,8 +1652,21 @@ NativeWindowHandle NativeWindowViews::GetNativeWindowHandle() const {
 
 gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
     const gfx::Rect& bounds) const {
-  if (!has_frame())
+  if (!has_frame()) {
+#if BUILDFLAG(IS_WIN)
+    if (!IsMaximized() && IsResizable()) {
+      HWND hwnd = GetAcceleratedWidget();
+      gfx::Rect dpi_bounds = DIPToScreenRect(hwnd, bounds);
+      const int thickness = ::GetSystemMetrics(SM_CXSIZEFRAME) +
+                            ::GetSystemMetrics(SM_CXPADDEDBORDER);
+      return ScreenToDIPRect(
+          hwnd, gfx::Rect(dpi_bounds.x() - thickness, dpi_bounds.y(),
+                          dpi_bounds.width() + (thickness * 2),
+                          dpi_bounds.height() + thickness));
+    }
+#endif
     return bounds;
+  }
 
   gfx::Rect window_bounds(bounds);
 #if BUILDFLAG(IS_WIN)
@@ -1672,8 +1689,21 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
 
 gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
     const gfx::Rect& bounds) const {
-  if (!has_frame())
+  if (!has_frame()) {
+#if BUILDFLAG(IS_WIN)
+    if (!IsMaximized() && IsResizable()) {
+      HWND hwnd = GetAcceleratedWidget();
+      gfx::Rect dpi_bounds = DIPToScreenRect(hwnd, bounds);
+      const int thickness = ::GetSystemMetrics(SM_CXSIZEFRAME) +
+                            ::GetSystemMetrics(SM_CXPADDEDBORDER);
+      return ScreenToDIPRect(
+          hwnd, gfx::Rect(dpi_bounds.x() + thickness, dpi_bounds.y(),
+                          dpi_bounds.width() - (thickness * 2),
+                          dpi_bounds.height() - thickness));
+    }
+#endif
     return bounds;
+  }
 
   gfx::Rect content_bounds(bounds);
 #if BUILDFLAG(IS_WIN)
