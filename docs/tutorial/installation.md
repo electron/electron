@@ -112,11 +112,16 @@ cache also in `~/.electron`.
 You can also override the local cache location by providing a `electron_config_cache`
 environment variable.
 
-The cache contains the version's official zip file as well as a checksum, and is stored as
-`[checksum]/[filename]`. A typical cache might look like this:
+The cache is stored as `[cache-key]/[filename]`, where `cache-key` is a SHA256
+hash derived from the artifact's download directory URL (for example,
+`https://github.com/electron/electron/releases/download/v15.3.1`). This is
+different from the artifact checksum listed in `SHASUMS256.txt`.
+Using a custom mirror and/or custom directory changes this key.
+
+A typical cache might look like this:
 
 ```sh
-├── a91b089b5dc5b1279966511344b805ec84869b6cd60af44f800b363bba25b915
+├── 523ee27feac8b931299c79e78b7ca4f365aa3f7069fff666cae93c7fb9ff2fee
 │   └── electron-v15.3.1-darwin-x64.zip
 ```
 
