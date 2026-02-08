@@ -165,6 +165,13 @@ driver.wait(() => {
 driver.quit()
 ```
 
+> [!NOTE]
+> ChromeDriver and WebDriver may add additional command-line switches when
+> launching your Electron app (for example, `--remote-debugging-port`).
+> If your app parses `process.argv` in strict mode (e.g. with `yargs.strict()`),
+> allow unknown options or filter out WebDriver-added switches before
+> validating arguments.
+
 ## Using Playwright
 
 [Microsoft Playwright](https://playwright.dev) is an end-to-end testing framework built
