@@ -688,12 +688,19 @@ pooled sockets using previous proxy from being reused by future requests.
     * `any` (default) - Resolver will pick an appropriate source. Results could
       come from DNS, MulticastDNS, HOSTS file, etc
     * `system` - Results will only be retrieved from the system or OS, e.g. via
-      the `getaddrinfo()` system call
-    * `dns` - Results will only come from DNS queries
+      the `getaddrinfo()` system call. This bypasses
+      [`app.configureHostResolver()`](app.md#appconfigurehostresolveroptions).
+    * `dns` - Results will only come from DNS queries. This follows
+      [`app.configureHostResolver()`](app.md#appconfigurehostresolveroptions)
+      and the `secureDnsPolicy` value for this request.
     * `mdns` - Results will only come from Multicast DNS queries
     * `localOnly` - No external sources will be used. Results will only come
       from fast local sources that are available no matter the source setting,
       e.g. cache, hosts file, IP literal resolution, etc.
+    The `source` option selects the resolver backend. Whether Secure DNS
+    (DNS-over-HTTPS) is used is controlled by
+    [`app.configureHostResolver()`](app.md#appconfigurehostresolveroptions)
+    and `secureDnsPolicy`.
   * `cacheUsage` string (optional) - Indicates what DNS cache entries, if any,
     can be used to provide a response. One of the following values:
     * `allowed` (default) - Results may come from the host cache if non-stale

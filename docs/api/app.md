@@ -1187,6 +1187,12 @@ This can be configured to either restrict usage of non-encrypted DNS
 (`secureDnsMode: "secure"`), or disable DNS-over-HTTPS (`secureDnsMode:
 "off"`). It is also possible to enable or disable the built-in resolver.
 
+These settings apply to lookups that use Chromium's DNS resolver (for example,
+[`ses.resolveHost()`](session.md#sesresolvehosthost-options) with
+`source: 'dns'` or the default `source: 'any'`). Lookups with
+`source: 'system'` are delegated to the OS resolver and do not use
+`app.configureHostResolver()` Secure DNS settings.
+
 To disable insecure DNS, you can specify a `secureDnsMode` of `"secure"`. If you do
 so, you should make sure to provide a list of DNS-over-HTTPS servers to use, in
 case the user's DNS configuration does not include a provider that supports
