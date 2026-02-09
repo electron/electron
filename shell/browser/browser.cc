@@ -192,10 +192,11 @@ void Browser::DidFinishLaunching(base::DictValue launch_info) {
   }
 
   is_ready_ = true;
-  for (BrowserObserver& observer : observers_)
-    observer.OnFinishLaunching(launch_info.Clone());
   if (ready_promise_)
     ready_promise_->Resolve();
+
+  for (BrowserObserver& observer : observers_)
+    observer.OnFinishLaunching(launch_info.Clone());
 }
 
 v8::Local<v8::Value> Browser::WhenReady(v8::Isolate* isolate) {

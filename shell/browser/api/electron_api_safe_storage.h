@@ -73,10 +73,10 @@ class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage>,
 
   std::string DecryptString(v8::Isolate* isolate, v8::Local<v8::Value> buffer);
 
-  v8::Local<v8::Promise> AsyncEncryptString(v8::Isolate* isolate,
+  v8::Local<v8::Promise> encryptStringAsync(v8::Isolate* isolate,
                                             const std::string& plaintext);
 
-  v8::Local<v8::Promise> AsyncDecryptString(v8::Isolate* isolate,
+  v8::Local<v8::Promise> decryptStringAsync(v8::Isolate* isolate,
                                             v8::Local<v8::Value> buffer);
 
 #if BUILDFLAG(IS_LINUX)

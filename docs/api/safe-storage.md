@@ -8,7 +8,7 @@ This module adds extra protection to data being stored on disk by using OS-provi
 security semantics for each platform are outlined below.
 
 > [!NOTE]
-> We recommend using the asynchronous API (`asyncEncryptString`/`asyncDecryptString`) over the synchronous API.
+> We recommend using the asynchronous API (`encryptStringAsync`/`decryptStringAsync`) over the synchronous API.
 > The async API is non-blocking, supports key rotation, and handles temporary unavailability gracefully.
 > The synchronous API may be deprecated in a future version of Electron.
 
@@ -76,20 +76,20 @@ This function will throw an error if encryption fails.
 Returns `string` - the decrypted string. Decrypts the encrypted buffer
 obtained  with `safeStorage.encryptString` back into a string.
 
-### `safeStorage.asyncEncryptString(plainText)`
+### `safeStorage.encryptStringAsync(plainText)`
 
 * `plainText` string
 
 Returns `Promise<Buffer>` -  An array of bytes representing the encrypted string.
 
-### `safeStorage.asyncDecryptString(encrypted)`
+### `safeStorage.decryptStringAsync(encrypted)`
 
 * `encrypted` Buffer
 
 Returns `Promise<Object>` - Resolve with an object containing the following:
 
 * `shouldReEncrypt` boolean - whether data that has just been returned from the decrypt operation should be
-  re-encrypted, as the key has been rotated or a new  key is available that provides a different security level. If `true`, you should call `asyncDecryptString` again to receive the new encrypted string.
+  re-encrypted, as the key has been rotated or a new  key is available that provides a different security level. If `true`, you should call `decryptStringAsync` again to receive the new decrypted string.
 * `result` string - the decrypted string.
 
 ### `safeStorage.setUsePlainTextEncryption(usePlainText)`

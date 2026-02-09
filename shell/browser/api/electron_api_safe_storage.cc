@@ -76,8 +76,8 @@ gin::ObjectTemplateBuilder SafeStorage::GetObjectTemplateBuilder(
       .SetMethod("setUsePlainTextEncryption", &SafeStorage::SetUsePasswordV10)
       .SetMethod("encryptString", &SafeStorage::EncryptString)
       .SetMethod("decryptString", &SafeStorage::DecryptString)
-      .SetMethod("asyncEncryptString", &SafeStorage::AsyncEncryptString)
-      .SetMethod("asyncDecryptString", &SafeStorage::AsyncDecryptString)
+      .SetMethod("encryptStringAsync", &SafeStorage::encryptStringAsync)
+      .SetMethod("decryptStringAsync", &SafeStorage::decryptStringAsync)
 #if BUILDFLAG(IS_LINUX)
       .SetMethod("getSelectedStorageBackend",
                  &SafeStorage::GetSelectedLinuxBackend)
@@ -105,7 +105,7 @@ void SafeStorage::OnOsCryptReady(os_crypt_async::Encryptor encryptor) {
     } else {
       pending.promise.RejectWithErrorMessage(
           "Error while encrypting the text provided to "
-          "safeStorage.asyncEncryptString.");
+          "safeStorage.encryptStringAsync.");
     }
   }
   pending_encrypts_.clear();
@@ -127,12 +127,12 @@ void SafeStorage::OnOsCryptReady(os_crypt_async::Encryptor encryptor) {
       pending.promise.Resolve(dict);
     } else if (flags.temporarily_unavailable) {
       pending.promise.RejectWithErrorMessage(
-          "safeStorage.asyncDecryptString is temporarily unavailable. "
+          "safeStorage.decryptStringAsync is temporarily unavailable. "
           "Please try again.");
     } else {
       pending.promise.RejectWithErrorMessage(
           "Error while decrypting the ciphertext provided to "
-          "safeStorage.asyncDecryptString.");
+          "safeStorage.decryptStringAsync.");
     }
   }
   pending_decrypts_.clear();
@@ -258,7 +258,7 @@ std::string SafeStorage::DecryptString(v8::Isolate* isolate,
   return plaintext;
 }
 
-v8::Local<v8::Promise> SafeStorage::AsyncEncryptString(
+v8::Local<v8::Promise> SafeStorage::encryptStringAsync(
     v8::Isolate* isolate,
     const std::string& plaintext) {
   gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
@@ -279,16 +279,16 @@ v8::Local<v8::Promise> SafeStorage::AsyncEncryptString(
     } else {
       promise.RejectWithErrorMessage(
           "Error while encrypting the text provided to "
-          "safeStorage.asyncEncryptString.");
+          "safeStorage.encryptStringAsync.");
     }
     return handle;
   }
 
-  pending_encrypts_.push_back({std::move(promise), plaintext});
+  pending_encrypts_.emplace_back(std::move(promise), std::move(plaintext));
   return handle;
 }
 
-v8::Local<v8::Promise> SafeStorage::AsyncDecryptString(
+v8::Local<v8::Promise> SafeStorage::decryptStringAsync(
     v8::Isolate* isolate,
     v8::Local<v8::Value> buffer) {
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
@@ -302,7 +302,7 @@ v8::Local<v8::Promise> SafeStorage::AsyncDecryptString(
 
   if (!node::Buffer::HasInstance(buffer)) {
     promise.RejectWithErrorMessage(
-        "Expected the first argument of asyncDecryptString() to be a buffer");
+        "Expected the first argument of decryptStringAsync() to be a buffer");
     return handle;
   }
 
@@ -318,15 +318,6 @@ v8::Local<v8::Promise> SafeStorage::AsyncDecryptString(
     return handle;
   }
 
-  if (ciphertext.find(kEncryptionVersionPrefixV10) != 0 &&
-      ciphertext.find(kEncryptionVersionPrefixV11) != 0) {
-    promise.RejectWithErrorMessage(
-        "Error while decrypting the ciphertext provided to "
-        "safeStorage.asyncDecryptString. "
-        "Ciphertext does not appear to be encrypted.");
-    return handle;
-  }
-
   if (is_available_) {
     std::string plaintext;
     os_crypt_async::Encryptor::DecryptFlags flags;
@@ -338,12 +329,12 @@ v8::Local<v8::Promise> SafeStorage::AsyncDecryptString(
       promise.Resolve(dict);
     } else if (flags.temporarily_unavailable) {
       promise.RejectWithErrorMessage(
-          "safeStorage.asyncDecryptString is temporarily unavailable. "
+          "safeStorage.decryptStringAsync is temporarily unavailable. "
           "Please try again.");
     } else {
       promise.RejectWithErrorMessage(
           "Error while decrypting the ciphertext provided to "
-          "safeStorage.asyncDecryptString.");
+          "safeStorage.decryptStringAsync.");
     }
     return handle;
   }

@@ -11,7 +11,6 @@
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/functional/bind.h"
-#include "base/logging.h"
 #include "base/notimplemented.h"
 #include "base/path_service.h"
 #include "chrome/browser/browser_process.h"
@@ -465,16 +464,15 @@ void BrowserProcessImpl::CreateOSCryptAsync() {
   base::CommandLine* cmd_line = base::CommandLine::ForCurrentProcess();
   const auto password_store =
       cmd_line->GetSwitchValueASCII(password_manager::kPasswordStore);
-  if (password_store != "basic") {
-    if (base::FeatureList::IsEnabled(features::kDbusSecretPortal)) {
-      // Use a higher priority than the FreedesktopSecretKeyProvider.
-      providers.emplace_back(
-          /*precedence=*/15u,
-          std::make_unique<os_crypt_async::SecretPortalKeyProvider>(
-              local_state(),
-              base::FeatureList::IsEnabled(
-                  features::kSecretPortalKeyProviderUseForEncryption)));
-    }
+
+  if (base::FeatureList::IsEnabled(features::kDbusSecretPortal)) {
+    // Use a higher priority than the FreedesktopSecretKeyProvider.
+    providers.emplace_back(
+        /*precedence=*/15u,
+        std::make_unique<os_crypt_async::SecretPortalKeyProvider>(
+            local_state(),
+            base::FeatureList::IsEnabled(
+                features::kSecretPortalKeyProviderUseForEncryption)));
   }
 
   auto freedesktop_config =
