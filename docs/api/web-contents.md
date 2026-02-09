@@ -2168,7 +2168,7 @@ Returns `boolean` - If _offscreen rendering_ is enabled returns whether it is cu
 * `fps` Integer
 
 If _offscreen rendering_ is enabled sets the frame rate to the specified number.
-Only values between 1 and 240 are accepted.
+When `webPreferences.offscreen.useSharedTexture` is `false` only values between 1 and 240 are accepted.
 
 #### `contents.getFrameRate()`
 

@@ -14,7 +14,7 @@ _Notes_:
 * There are two rendering modes that can be used (see the section below) and only
 the dirty area is passed to the `paint` event to be more efficient.
 * You can stop/continue the rendering as well as set the frame rate.
-* When `webPreferences.offscreen.useSharedTexture` is not `true`, the maximum frame rate is 240 because greater values bring only performance
+* When `webPreferences.offscreen.useSharedTexture` is `false`, the maximum frame rate is 240 because greater values bring only performance
 losses with no benefits.
 * When nothing is happening on a webpage, no frames are generated.
 * An offscreen window is always created as a
