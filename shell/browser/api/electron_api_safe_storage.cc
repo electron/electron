@@ -116,16 +116,19 @@ void SafeStorage::OnOsCryptReady(os_crypt_async::Encryptor encryptor) {
     bool decrypted =
         encryptor_->DecryptString(pending.ciphertext, &plaintext, &flags);
 
-    if (decrypted || flags.temporarily_unavailable) {
+    if (decrypted) {
       v8::Isolate* isolate = pending.promise.isolate();
       v8::HandleScope handle_scope(isolate);
       auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
 
       dict.Set("shouldReEncrypt", flags.should_reencrypt);
-      dict.Set("isTemporarilyUnavailable", flags.temporarily_unavailable);
       dict.Set("result", plaintext);
 
       pending.promise.Resolve(dict);
+    } else if (flags.temporarily_unavailable) {
+      pending.promise.RejectWithErrorMessage(
+          "safeStorage.asyncDecryptString is temporarily unavailable. "
+          "Please try again.");
     } else {
       pending.promise.RejectWithErrorMessage(
           "Error while decrypting the ciphertext provided to "
@@ -310,7 +313,6 @@ v8::Local<v8::Promise> SafeStorage::AsyncDecryptString(
   if (ciphertext.empty()) {
     auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
     dict.Set("shouldReEncrypt", false);
-    dict.Set("isTemporarilyUnavailable", false);
     dict.Set("result", "");
     promise.Resolve(dict);
     return handle;
@@ -332,9 +334,12 @@ v8::Local<v8::Promise> SafeStorage::AsyncDecryptString(
     if (decrypted) {
       auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
       dict.Set("shouldReEncrypt", flags.should_reencrypt);
-      dict.Set("isTemporarilyUnavailable", flags.temporarily_unavailable);
       dict.Set("result", plaintext);
       promise.Resolve(dict);
+    } else if (flags.temporarily_unavailable) {
+      promise.RejectWithErrorMessage(
+          "safeStorage.asyncDecryptString is temporarily unavailable. "
+          "Please try again.");
     } else {
       promise.RejectWithErrorMessage(
           "Error while decrypting the ciphertext provided to "

@@ -135,10 +135,8 @@ describe('safeStorage module', () => {
       const decryptResult = await safeStorage.asyncDecryptString(encrypted);
       expect(decryptResult).to.have.property('result');
       expect(decryptResult).to.have.property('shouldReEncrypt');
-      expect(decryptResult).to.have.property('isTemporarilyUnavailable');
       expect(decryptResult.result).to.equal('plaintext');
       expect(decryptResult.shouldReEncrypt).to.be.a('boolean');
-      expect(decryptResult.isTemporarilyUnavailable).to.be.a('boolean');
     });
 
     it('UTF-16 characters can be decrypted', async () => {
