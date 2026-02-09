@@ -10,7 +10,7 @@ M151, and so we should allow for building until then.
 This patch can be removed at the M151 branch point.
 
 diff --git a/common.gypi b/common.gypi
-index c08f65b0448806c613b27eb91f9dd512adab938c..58ae004bc3e9cc6fa36330bb7bfd67bb8e46336c 100644
+index bdadbdaa607b2f668749fc484271de8d126bbd17..8df2802191b7fe6ae14edbd85cb3a5d16eb5a76a 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -677,7 +677,7 @@
