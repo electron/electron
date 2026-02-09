@@ -6933,7 +6933,7 @@ describe('BrowserWindow module', () => {
         hasShadow: false
       });
 
-      await backgroundWindow.loadURL('about:blank');
+      await backgroundWindow.loadURL('data:text/html,<html></html>');
 
       const foregroundWindow = new BrowserWindow({
         ...display.bounds,
@@ -6974,7 +6974,7 @@ describe('BrowserWindow module', () => {
         hasShadow: false
       });
 
-      await backgroundWindow.loadURL('about:blank');
+      await backgroundWindow.loadURL('data:text/html,<html></html>');
 
       const foregroundWindow = new BrowserWindow({
         ...display.bounds,
@@ -7027,7 +7027,7 @@ describe('BrowserWindow module', () => {
         backgroundColor: HexColors.BLUE
       });
 
-      w.loadURL('about:blank');
+      w.loadURL('data:text/html,<html></html>');
       await once(w, 'ready-to-show');
 
       const screenCapture = new ScreenCapture(display);

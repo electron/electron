@@ -44,6 +44,10 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
                            int frame_thickness) const override;
   bool HandleMouseEventForCaption(UINT message) const override;
   bool HandleMouseEvent(ui::MouseEvent* event) override;
+  bool HandleIMEMessage(UINT message,
+                        WPARAM w_param,
+                        LPARAM l_param,
+                        LRESULT* result) override;
   void HandleVisibilityChanged(bool visible) override;
   void SetAllowScreenshots(bool allow) override;
 

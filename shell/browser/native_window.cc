@@ -96,9 +96,11 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window,
 
 }  // namespace
 
-NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
+NativeWindow::NativeWindow(const int32_t base_window_id,
+                           const gin_helper::Dictionary& options,
                            NativeWindow* parent)
-    : title_bar_style_{options.ValueOrDefault(options::kTitleBarStyle,
+    : base_window_id_{base_window_id},
+      title_bar_style_{options.ValueOrDefault(options::kTitleBarStyle,
                                               TitleBarStyle::kNormal)},
       transparent_{options.ValueOrDefault(options::kTransparent, false)},
       enable_larger_than_screen_{
@@ -108,6 +110,8 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
       has_frame_{options.ValueOrDefault(options::kFrame, true) &&
                  title_bar_style_ == TitleBarStyle::kNormal},
       parent_{parent} {
+  DCHECK_NE(base_window_id_, 0);
+
 #if BUILDFLAG(IS_WIN)
   options.Get(options::kBackgroundMaterial, &background_material_);
 #elif BUILDFLAG(IS_MAC)

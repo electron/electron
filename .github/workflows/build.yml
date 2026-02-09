@@ -47,6 +47,7 @@ permissions: {}
 
 jobs:
   setup:
+    if: github.repository == 'electron/electron'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -57,7 +58,7 @@ jobs:
         build-image-sha: ${{ steps.set-output.outputs.build-image-sha }}
         docs-only: ${{ steps.set-output.outputs.docs-only }}
     steps:
-    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         ref: ${{ github.event.pull_request.head.sha }}
     - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
@@ -124,7 +125,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         path: src/electron
         fetch-depth: 0
@@ -156,7 +157,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha}}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         path: src/electron
         fetch-depth: 0
@@ -188,7 +189,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha}}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         path: src/electron
         fetch-depth: 0
@@ -283,13 +284,15 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-electron-build-and-test-and-nan.yml
+    uses: ./.github/workflows/pipeline-electron-build-and-tidy-and-test-and-nan.yml
     needs: checkout-linux
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
+      clang-tidy-runs-on: electron-arc-centralus-linux-amd64-8core
       test-runs-on: electron-arc-centralus-linux-amd64-4core
       build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      clang-tidy-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       test-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
       target-platform: linux
       target-arch: x64
@@ -426,7 +429,7 @@ jobs:
     permissions:
       contents: read
     needs: [docs-only, macos-x64, macos-arm64, linux-x64, linux-x64-asan, linux-arm, linux-arm64, windows-x64, windows-x86, windows-arm64]
-    if: always() && !contains(needs.*.result, 'failure')
+    if: always() && github.repository == 'electron/electron' && !contains(needs.*.result, 'failure')
     steps: 
     - name: GitHub Actions Jobs Done
       run: |

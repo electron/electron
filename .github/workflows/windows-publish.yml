@@ -22,6 +22,7 @@ permissions: {}
 
 jobs:
   checkout-windows:
+    if: github.repository == 'electron/electron'
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
@@ -40,7 +41,7 @@ jobs:
       build-image-sha: ${{ inputs.build-image-sha }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         path: src/electron
         fetch-depth: 0
@@ -51,9 +52,11 @@ jobs:
         target-platform: win
 
   publish-x64-win:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      attestations: write
       contents: read
+      id-token: write
     needs: checkout-windows
     with:
       environment: production-release
@@ -67,9 +70,11 @@ jobs:
     secrets: inherit
 
   publish-arm64-win:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      attestations: write
       contents: read
+      id-token: write
     needs: checkout-windows
     with:
       environment: production-release
@@ -83,9 +88,11 @@ jobs:
     secrets: inherit
 
   publish-x86-win:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      attestations: write
       contents: read
+      id-token: write
     needs: checkout-windows
     with:
       environment: production-release

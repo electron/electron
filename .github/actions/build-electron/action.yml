@@ -26,6 +26,9 @@ inputs:
   is-asan:
     description: 'The ASan Linux build'
     required: false
+  upload-out-gen-artifacts:
+    description: 'Whether to upload the out/${dir}/gen artifacts'
+    required: false
 runs:
   using: "composite"
   steps:
@@ -216,6 +219,7 @@ runs:
     - name: Publish Electron Dist ${{ inputs.step-suffix }}
       if: ${{ inputs.is-release == 'true' }}
       shell: bash
+      id: github-upload
       run: |
         rm -rf src/out/Default/obj
         cd src/electron
@@ -226,6 +230,11 @@ runs:
           echo 'Uploading Electron release distribution to GitHub releases'
           script/release/uploaders/upload.py --verbose
         fi
+    - name: Generate artifact attestation
+      if: ${{ inputs.is-release == 'true' }}
+      uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f # v3.2.0
+      with:
+        subject-path: ${{ steps.github-upload.outputs.UPLOADED_PATHS }}
     - name: Generate siso report
       if: ${{ inputs.target-platform != 'win' && !cancelled() }}
       shell: bash
@@ -274,3 +283,9 @@ runs:
       with:
         name: src_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./src_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
+    - name: Upload Out Gen Artifacts ${{ inputs.step-suffix }}
+      if: ${{ inputs.upload-out-gen-artifacts == 'true' }}
+      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+      with:
+        name: out_gen_artifacts_${{ env.ARTIFACT_KEY }}
+        path: ./src/out/Default/gen

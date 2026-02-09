@@ -199,9 +199,10 @@ class NativeWindowClientView : public views::ClientView {
 
 }  // namespace
 
-NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
+NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
+                                     const gin_helper::Dictionary& options,
                                      NativeWindow* parent)
-    : NativeWindow(options, parent) {
+    : NativeWindow{base_window_id, options, parent} {
   if (std::string val; options.Get(options::kTitle, &val))
     SetTitle(val);
 
@@ -2002,9 +2003,10 @@ void NativeWindowViews::MoveBehindTaskBarIfNeeded() {
 
 // static
 std::unique_ptr<NativeWindow> NativeWindow::Create(
+    const int32_t base_window_id,
     const gin_helper::Dictionary& options,
     NativeWindow* parent) {
-  return std::make_unique<NativeWindowViews>(options, parent);
+  return std::make_unique<NativeWindowViews>(base_window_id, options, parent);
 }
 
 }  // namespace electron

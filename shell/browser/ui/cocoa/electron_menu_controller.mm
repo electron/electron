@@ -484,14 +484,15 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   if (index < 0 || index >= count)
     return;
 
+  // When the menu is closed, we need to allow shortcuts to be triggered even
+  // if the menu item is disabled. So we only disable the menu item when the
+  // menu is open. This matches behavior of |validateUserInterfaceItem|.
+  item.enabled = model->IsEnabledAt(index) || !isMenuOpen_;
   item.hidden = !model->IsVisibleAt(index);
-  item.enabled = model->IsEnabledAt(index);
   item.state = model->IsItemCheckedAt(index) ? NSControlStateValueOn
                                              : NSControlStateValueOff;
 }
 
-// Recursively refreshes the menu tree starting from |menu|, applying the
-// model state to each menu item.
 - (void)refreshMenuTree:(NSMenu*)menu {
   for (NSMenuItem* item in menu.itemArray) {
     [self applyStateToMenuItem:item];
@@ -557,6 +558,14 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 
 - (void)menuWillOpen:(NSMenu*)menu {
   isMenuOpen_ = YES;
+
+  // macOS automatically injects a duplicate "Toggle Full Screen" menu item
+  // when we set menu.delegate on submenus. Remove hidden duplicates.
+  for (NSMenuItem* item in menu.itemArray) {
+    if (item.isHidden && item.action == @selector(toggleFullScreenMode:))
+      [menu removeItem:item];
+  }
+
   [self refreshMenuTree:menu];
   if (model_)
     model_->MenuWillShow();
@@ -567,18 +576,19 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   if (!isMenuOpen_)
     return;
 
-  bool has_close_cb = !popupCloseCallback.is_null();
+  isMenuOpen_ = NO;
+  [self refreshMenuTree:menu];
 
   // There are two scenarios where we should emit menu-did-close:
   // 1. It's a popup and the top level menu is closed.
   // 2. It's an application menu, and the current menu's supermenu
   //    is the top-level menu.
+  bool has_close_cb = !popupCloseCallback.is_null();
   if (menu != menu_) {
     if (has_close_cb || menu.supermenu != menu_)
       return;
   }
 
-  isMenuOpen_ = NO;
   if (model_)
     model_->MenuWillClose();
   // Post async task so that itemSelected runs before the close callback

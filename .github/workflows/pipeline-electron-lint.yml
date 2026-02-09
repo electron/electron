@@ -27,7 +27,7 @@ jobs:
     container: ${{ fromJSON(inputs.container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         path: src/electron
         fetch-depth: 0
@@ -85,4 +85,8 @@ jobs:
       run: |
         cd src/electron
         node script/yarn.js tsc -p tsconfig.script.json
-    
+    - name: Check GHA Workflows
+      shell: bash
+      run: |
+        cd src/electron
+        node script/copy-pipeline-segment-publish.js --check

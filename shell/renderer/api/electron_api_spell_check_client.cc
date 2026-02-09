@@ -91,7 +91,8 @@ SpellCheckClient::~SpellCheckClient() {
 
 void SpellCheckClient::RequestCheckingOfText(
     const blink::WebString& text_to_check,
-    const std::vector<gfx::Range>& /* spelling_markers */,
+    const std::vector<
+        WebTextCheckClient::WebSpellingMarker>& /* spelling_markers */,
     ShouldForceRefreshTextCheckService /* should_force_refresh */,
     std::unique_ptr<blink::WebTextCheckingCompletion> completion_callback) {
   std::u16string text(text_to_check.Utf16());
