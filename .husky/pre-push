@@ -1,1 +1,2 @@
+npm run check-signed-commits
 npm run prepack
