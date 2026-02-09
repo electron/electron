@@ -1660,6 +1660,18 @@ describe('webContents module', () => {
     });
   });
 
+  describe('getDevToolsTargetId()', () => {
+    afterEach(closeAllWindows);
+    it('returns the devtools target id', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      const devToolsId = w.webContents.getDevToolsTargetId();
+      expect(devToolsId).to.be.a('string').that.is.not.empty();
+      // Verify it's the inverse of fromDevToolsTargetId
+      expect(webContents.fromDevToolsTargetId(devToolsId)).to.equal(w.webContents);
+    });
+  });
+
   describe('userAgent APIs', () => {
     afterEach(closeAllWindows);
     it('is not empty by default', () => {
