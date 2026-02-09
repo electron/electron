@@ -14,6 +14,27 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (41.0)
 
+### Behavior Changed: `NativeImage.toBitmap()` now normalizes color space
+
+`NativeImage.toBitmap()` (and its deprecated alias `NativeImage.getBitmap()`) now normalizes pixel data to sRGB by default. Previously, raw pixel data was returned without color space conversion, which meant pixel values from images with different embedded color profiles (e.g., Display P3 on macOS) could differ for the same visual color.
+
+You can pass a `colorSpace` option to convert to a specific color space:
+
+```js
+const image = nativeImage.createFromPath('photo.png');
+// New default: normalized to sRGB
+const srgbBitmap = image.toBitmap();
+// Convert to Display P3
+const p3Bitmap = image.toBitmap({
+  colorSpace: {
+    primaries: 'p3',
+    transfer: 'srgb',
+    matrix: 'rgb',
+    range: 'full'
+  }
+});
+```
+
 ### Behavior Changed: PDFs no longer create a separate WebContents
 
 Previously, PDF resources created a separate guest [WebContents](https://www.electronjs.org/docs/latest/api/web-contents) for rendering. Now, PDFs are rendered within the same WebContents instead. If you have code to detect PDF resources, use the [frame tree](https://www.electronjs.org/docs/latest/api/web-frame-main) instead of WebContents.
