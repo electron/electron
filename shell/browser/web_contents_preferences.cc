@@ -317,11 +317,19 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   // unless nodeIntegrationInSubFrames is enabled
   bool can_sandbox_frame = is_subframe && !node_integration_in_sub_frames_;
 
+  // Keep no-sandbox authoritative once it is present on the process command
+  // line; avoid conflicting sandbox flags on child command lines.
+  if (command_line->HasSwitch(sandbox::policy::switches::kNoSandbox))
+    command_line->RemoveSwitch(switches::kEnableSandbox);
+
   if (IsSandboxed() || can_sandbox_frame) {
-    command_line->AppendSwitch(switches::kEnableSandbox);
+    if (!command_line->HasSwitch(sandbox::policy::switches::kNoSandbox))
+      command_line->AppendSwitch(switches::kEnableSandbox);
   } else if (!command_line->HasSwitch(switches::kEnableSandbox)) {
-    command_line->AppendSwitch(sandbox::policy::switches::kNoSandbox);
-    command_line->AppendSwitch(::switches::kNoZygote);
+    if (!command_line->HasSwitch(sandbox::policy::switches::kNoSandbox))
+      command_line->AppendSwitch(sandbox::policy::switches::kNoSandbox);
+    if (!command_line->HasSwitch(::switches::kNoZygote))
+      command_line->AppendSwitch(::switches::kNoZygote);
   }
 
 #if BUILDFLAG(IS_MAC)
