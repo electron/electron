@@ -50,7 +50,7 @@ jobs:
     container: ${{ fromJSON(inputs.test-container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         path: src/electron
         fetch-depth: 0
@@ -65,12 +65,12 @@ jobs:
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Download Generated Artifacts
-      uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
       with:
         name: generated_artifacts_${{ env.BUILD_TYPE }}_${{ env.TARGET_ARCH }}
         path: ./generated_artifacts_${{ env.BUILD_TYPE }}_${{ env.TARGET_ARCH }}
     - name: Download Src Artifacts
-      uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
       with:
         name: src_artifacts_linux_${{ env.TARGET_ARCH }}
         path: ./src_artifacts_linux_${{ env.TARGET_ARCH }}
@@ -106,7 +106,7 @@ jobs:
     container: ${{ fromJSON(inputs.test-container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         path: src/electron
         fetch-depth: 0
@@ -121,12 +121,12 @@ jobs:
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Download Generated Artifacts
-      uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
       with:
         name: generated_artifacts_${{ env.BUILD_TYPE }}_${{ env.TARGET_ARCH }}
         path: ./generated_artifacts_${{ env.BUILD_TYPE }}_${{ env.TARGET_ARCH }}
     - name: Download Src Artifacts
-      uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
       with:
         name: src_artifacts_linux_${{ env.TARGET_ARCH }}
         path: ./src_artifacts_linux_${{ env.TARGET_ARCH }}

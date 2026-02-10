@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Sanders <dsanders11@ucsbalum.com>
+Date: Wed, 21 Jan 2026 17:32:51 -0800
+Subject: chore: handle removal of v8::PropertyCallbackInfo<T>::This()
+
+Refs https://chromium-review.googlesource.com/c/v8/v8/+/7474608
+See https://issues.chromium.org/issues/455600234
+
+diff --git a/nan_callbacks_12_inl.h b/nan_callbacks_12_inl.h
+index 24979fb0d66595f5e80f493c78291d6600bfc34a..5cb6d98406ada00186289cc471726fa2a5ae711d 100644
+--- a/nan_callbacks_12_inl.h
++++ b/nan_callbacks_12_inl.h
+@@ -176,7 +176,20 @@ class PropertyCallbackInfo {
+ 
+   inline v8::Isolate* GetIsolate() const { return info_.GetIsolate(); }
+   inline v8::Local<v8::Value> Data() const { return data_; }
+-  inline v8::Local<v8::Object> This() const { return info_.This(); }
++  inline v8::Local<v8::Object> This() const {
++#if defined(V8_MAJOR_VERSION) &&                                               \
++    (V8_MAJOR_VERSION > 14 ||                                                  \
++     (V8_MAJOR_VERSION == 14 &&                                                \
++      (defined(V8_MINOR_VERSION) &&                                            \
++       (V8_MINOR_VERSION > 6 ||                                                \
++        (V8_MINOR_VERSION == 6 && defined(V8_BUILD_NUMBER) &&                  \
++         V8_BUILD_NUMBER >= 40)))))
++    return info_.HolderV2();
++#else
++    return info_.This();
++#endif
++  }
++
+   inline v8::Local<v8::Object> Holder() const { return info_.HolderV2(); }
+   inline ReturnValue<T> GetReturnValue() const {
+     return ReturnValue<T>(info_.GetReturnValue());

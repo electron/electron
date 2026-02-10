@@ -62,7 +62,7 @@ console.log(webContents)
 ### `webContents.getAllWebContents()`
 
 Returns `WebContents[]` - An array of all `WebContents` instances. This will contain web contents
-for all windows, webviews, opened devtools, and devtools extension background pages.
+for all windows, webviews, opened DevTools, and DevTools extension background pages.
 
 ### `webContents.getFocusedWebContents()`
 
@@ -958,7 +958,7 @@ win.loadURL('https://github.com')
 
 #### Event: 'devtools-reload-page'
 
-Emitted when the devtools window instructs the webContents to reload
+Emitted when the DevTools window instructs the webContents to reload
 
 #### Event: 'will-attach-webview'
 
@@ -1865,66 +1865,20 @@ Removes the specified path from DevTools workspace.
 
 * `devToolsWebContents` WebContents
 
-Uses the `devToolsWebContents` as the target `WebContents` to show devtools.
+Uses the `devToolsWebContents` as the target `WebContents` to show DevTools.
 
 The `devToolsWebContents` must not have done any navigation, and it should not
 be used for other purposes after the call.
 
-By default Electron manages the devtools by creating an internal `WebContents`
+By default, Electron manages the DevTools by creating an internal `WebContents`
 with native view, which developers have very limited control of. With the
 `setDevToolsWebContents` method, developers can use any `WebContents` to show
-the devtools in it, including `BrowserWindow`, `BrowserView` and `<webview>`
-tag.
+the DevTools in it, such as [`BrowserWindow`](./browser-window.md) or [`WebContentsView`](./web-contents-view.md).
 
-Note that closing the devtools does not destroy the `devToolsWebContents`, it
-is caller's responsibility to destroy `devToolsWebContents`.
+Note that closing the DevTools does not destroy the `devToolsWebContents`, it
+is the caller's responsibility to destroy `devToolsWebContents` manually.
 
-An example of showing devtools in a `<webview>` tag:
-
-```html
-<html>
-<head>
-  <style type="text/css">
-    * { margin: 0; }
-    #browser { height: 70%; }
-    #devtools { height: 30%; }
-  </style>
-</head>
-<body>
-  <webview id="browser" src="https://github.com"></webview>
-  <webview id="devtools" src="about:blank"></webview>
-  <script>
-    const { ipcRenderer } = require('electron')
-    const emittedOnce = (element, eventName) => new Promise(resolve => {
-      element.addEventListener(eventName, event => resolve(event), { once: true })
-    })
-    const browserView = document.getElementById('browser')
-    const devtoolsView = document.getElementById('devtools')
-    const browserReady = emittedOnce(browserView, 'dom-ready')
-    const devtoolsReady = emittedOnce(devtoolsView, 'dom-ready')
-    Promise.all([browserReady, devtoolsReady]).then(() => {
-      const targetId = browserView.getWebContentsId()
-      const devtoolsId = devtoolsView.getWebContentsId()
-      ipcRenderer.send('open-devtools', targetId, devtoolsId)
-    })
-  </script>
-</body>
-</html>
-```
-
-```js
-// Main process
-const { ipcMain, webContents } = require('electron')
-
-ipcMain.on('open-devtools', (event, targetContentsId, devtoolsContentsId) => {
-  const target = webContents.fromId(targetContentsId)
-  const devtools = webContents.fromId(devtoolsContentsId)
-  target.setDevToolsWebContents(devtools)
-  target.openDevTools()
-})
-```
-
-An example of showing devtools in a `BrowserWindow`:
+An example of showing DevTools in a `BrowserWindow`:
 
 ```js title='main.js'
 const { app, BrowserWindow } = require('electron')
@@ -1944,31 +1898,31 @@ app.whenReady().then(() => {
 #### `contents.openDevTools([options])`
 
 * `options` Object (optional)
-  * `mode` string - Opens the devtools with specified dock state, can be
+  * `mode` string - Opens the DevTools with specified dock state, can be
     `left`, `right`, `bottom`, `undocked`, `detach`. Defaults to last used dock state.
     In `undocked` mode it's possible to dock back. In `detach` mode it's not.
-  * `activate` boolean (optional) - Whether to bring the opened devtools window
+  * `activate` boolean (optional) - Whether to bring the opened DevTools window
     to the foreground. The default is `true`.
   * `title` string (optional) - A title for the DevTools window (only in `undocked` or `detach` mode).
 
-Opens the devtools.
+Opens the DevTools.
 
 When `contents` is a `<webview>` tag, the `mode` would be `detach` by default,
 explicitly passing an empty `mode` can force using last used dock state.
 
-On Windows, if Windows Control Overlay is enabled, Devtools will be opened with `mode: 'detach'`.
+On Windows, if Windows Control Overlay is enabled, DevTools will be opened with `mode: 'detach'`.
 
 #### `contents.closeDevTools()`
 
-Closes the devtools.
+Closes the DevTools view.
 
 #### `contents.isDevToolsOpened()`
 
-Returns `boolean` - Whether the devtools is opened.
+Returns `boolean` - Whether the DevTools view is opened.
 
 #### `contents.isDevToolsFocused()`
 
-Returns `boolean` - Whether the devtools view is focused .
+Returns `boolean` - Whether the DevTools view is focused .
 
 #### `contents.getDevToolsTitle()`
 
@@ -2214,7 +2168,7 @@ Returns `boolean` - If _offscreen rendering_ is enabled returns whether it is cu
 * `fps` Integer
 
 If _offscreen rendering_ is enabled sets the frame rate to the specified number.
-Only values between 1 and 240 are accepted.
+When `webPreferences.offscreen.useSharedTexture` is `false` only values between 1 and 240 are accepted.
 
 #### `contents.getFrameRate()`
 
@@ -2410,7 +2364,8 @@ A [`NavigationHistory`](navigation-history.md) used by this webContents.
 
 #### `contents.hostWebContents` _Readonly_
 
-A [`WebContents`](web-contents.md) instance that might own this `WebContents`.
+A `WebContents | null` property that represents a [`WebContents`](web-contents.md)
+instance that might own this `WebContents`.
 
 #### `contents.devToolsWebContents` _Readonly_
 

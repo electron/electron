@@ -685,9 +685,10 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
       blink::mojom::StreamDevicesSet::New();
   v8::Local<v8::Value> result;
   if (!args->GetNext(&result) || result->IsNullOrUndefined()) {
-    std::move(callback).Run(
-        blink::mojom::StreamDevicesSet(),
-        blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
+    std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                            blink::mojom::MediaStreamRequestResult::
+                                INVALID_DISPLAY_CAPTURE_CONSTRAINTS,
+                            nullptr);
     return;
   }
   gin_helper::Dictionary result_dict;
@@ -695,9 +696,10 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
     args->ThrowTypeError(
         "Display Media Request streams callback must be called with null "
         "or a valid object");
-    std::move(callback).Run(
-        blink::mojom::StreamDevicesSet(),
-        blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
+    std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                            blink::mojom::MediaStreamRequestResult::
+                                INVALID_DISPLAY_CAPTURE_CONSTRAINTS,
+                            nullptr);
     return;
   }
   stream_devices_set->stream_devices.emplace_back(
@@ -735,9 +737,10 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
     } else {
       args->ThrowTypeError(
           "video must be a WebFrameMain or DesktopCapturerSource");
-      std::move(callback).Run(
-          blink::mojom::StreamDevicesSet(),
-          blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
+      std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                              blink::mojom::MediaStreamRequestResult::
+                                  INVALID_DISPLAY_CAPTURE_CONSTRAINTS,
+                              nullptr);
       return;
     }
     has_video = true;
@@ -784,9 +787,10 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
       args->ThrowTypeError(
           "audio must be a WebFrameMain, \"loopback\" or "
           "\"loopbackWithMute\"");
-      std::move(callback).Run(
-          blink::mojom::StreamDevicesSet(),
-          blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
+      std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                              blink::mojom::MediaStreamRequestResult::
+                                  INVALID_DISPLAY_CAPTURE_CONSTRAINTS,
+                              nullptr);
       return;
     }
   }
@@ -794,9 +798,10 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
   if ((video_requested && !has_video)) {
     args->ThrowTypeError(
         "Video was requested, but no video stream was provided");
-    std::move(callback).Run(
-        blink::mojom::StreamDevicesSet(),
-        blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
+    std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                            blink::mojom::MediaStreamRequestResult::
+                                INVALID_DISPLAY_CAPTURE_CONSTRAINTS,
+                            nullptr);
     return;
   }
 

@@ -13,6 +13,7 @@
 
 #include "base/base64.h"
 #include "base/containers/span.h"
+#include "base/dcheck_is_on.h"
 #include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram.h"
 #include "base/strings/pattern.h"
@@ -21,8 +22,8 @@
 #include "base/timer/timer.h"
 #include "base/uuid.h"
 #include "base/values.h"
+#include "build/util/chromium_git_revision.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
-#include "components/embedder_support/user_agent_utils.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -142,7 +143,7 @@ double GetNextZoomLevel(double level, bool out) {
 GURL GetRemoteBaseURL() {
   return GURL(absl::StrFormat("%s%s/%s/", kChromeUIDevToolsRemoteFrontendBase,
                               kChromeUIDevToolsRemoteFrontendPath,
-                              embedder_support::GetChromiumGitRevision()));
+                              CHROMIUM_GIT_REVISION));
 }
 
 GURL GetDevToolsURL(bool can_dock) {
@@ -955,6 +956,35 @@ bool InspectableWebContents::HandleKeyboardEvent(
     const input::NativeWebKeyboardEvent& event) {
   auto* delegate = web_contents_->GetDelegate();
   return !delegate || delegate->HandleKeyboardEvent(source, event);
+}
+
+bool InspectableWebContents::DidAddMessageToConsole(
+    content::WebContents* source,
+    blink::mojom::ConsoleMessageLevel log_level,
+    const std::u16string& message,
+    int32_t line_no,
+    const std::u16string& source_id) {
+  // Suppress Chromium's default logging of DevTools frontend console messages
+  // into native logs for the managed DevTools WebContents. Can be overridden by
+  // enabling verbose logging.
+  if (source == managed_devtools_web_contents_.get()) {
+#if DCHECK_IS_ON()
+    // In debug/testing builds, let logging through.
+    return false;
+#endif
+
+    if (VLOG_IS_ON(1)) {
+      // Match Chromium's `content::LogConsoleMessage()` output format, but emit
+      // it as a verbose log.
+      logging::LogMessage("CONSOLE", line_no, logging::LOGGING_VERBOSE).stream()
+          << "\"" << message << "\", source: " << source_id << " (" << line_no
+          << ")";
+    }
+
+    return true;  // Suppress the default logging.
+  }
+
+  return false;  // Allow the default logging.
 }
 
 void InspectableWebContents::CloseContents(content::WebContents* source) {

@@ -195,6 +195,7 @@ class InspectableWebContents
                         const std::string& request) override {}
   void RegisterAidaClientEvent(DispatchCallback callback,
                                const std::string& request) override {}
+  void SetChromeFlag(const std::string& flag_name, bool value) override {}
   void DispatchHttpRequest(
       DispatchCallback callback,
       const DevToolsDispatchHttpRequestParams& params) override {}
@@ -221,6 +222,11 @@ class InspectableWebContents
   // content::WebContentsDelegate:
   bool HandleKeyboardEvent(content::WebContents*,
                            const input::NativeWebKeyboardEvent&) override;
+  bool DidAddMessageToConsole(content::WebContents* source,
+                              blink::mojom::ConsoleMessageLevel log_level,
+                              const std::u16string& message,
+                              int32_t line_no,
+                              const std::u16string& source_id) override;
   void CloseContents(content::WebContents* source) override;
   std::unique_ptr<content::EyeDropper> OpenEyeDropper(
       content::RenderFrameHost* frame,

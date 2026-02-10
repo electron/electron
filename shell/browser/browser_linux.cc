@@ -203,7 +203,7 @@ void Browser::ShowAboutPanel() {
     GdkPixbuf* icon =
         gdk_pixbuf_new_from_file_at_size(str->c_str(), width, height, &error);
     if (error != nullptr) {
-      g_warning("%s", error->message);
+      LOG(INFO) << error->message;
       g_clear_error(&error);
     } else {
       gtk_about_dialog_set_logo(dialog, icon);

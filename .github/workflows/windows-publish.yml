@@ -6,7 +6,7 @@ on:
       build-image-sha:
         type: string
         description: 'SHA for electron/build image'
-        default: '933c7d6ff6802706875270bec2e3c891cf8add3f'
+        default: 'a82b87d7a4f5ff0cab61405f8151ac4cf4942aeb'
         required: true
       upload-to-storage:
         description: 'Uploads to Azure storage'
@@ -22,6 +22,7 @@ permissions: {}
 
 jobs:
   checkout-windows:
+    if: github.repository == 'electron/electron'
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
@@ -40,7 +41,7 @@ jobs:
       build-image-sha: ${{ inputs.build-image-sha }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         path: src/electron
         fetch-depth: 0
@@ -51,9 +52,11 @@ jobs:
         target-platform: win
 
   publish-x64-win:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      attestations: write
       contents: read
+      id-token: write
     needs: checkout-windows
     with:
       environment: production-release
@@ -67,9 +70,11 @@ jobs:
     secrets: inherit
 
   publish-arm64-win:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      attestations: write
       contents: read
+      id-token: write
     needs: checkout-windows
     with:
       environment: production-release
@@ -83,9 +88,11 @@ jobs:
     secrets: inherit
 
   publish-x86-win:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      attestations: write
       contents: read
+      id-token: write
     needs: checkout-windows
     with:
       environment: production-release

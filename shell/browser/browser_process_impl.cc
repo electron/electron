@@ -27,6 +27,7 @@
 #include "components/proxy_config/pref_proxy_config_tracker_impl.h"
 #include "components/proxy_config/proxy_config_dictionary.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
+#include "components/supervised_user/core/browser/device_parental_controls_noop_impl.h"  // nogncheck
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/network_quality_observer_factory.h"
 #include "content/public/browser/network_service_instance.h"
@@ -140,7 +141,7 @@ void BrowserProcessImpl::PreCreateThreads() {
   // chrome-extension:// URLs are safe to request anywhere, but may only
   // commit (including in iframes) in extension processes.
   content::ChildProcessSecurityPolicy::GetInstance()
-      ->RegisterWebSafeIsolatedScheme(extensions::kExtensionScheme, true);
+      ->RegisterWebSafeIsolatedScheme(extensions::kExtensionScheme);
   // Must be created before the IOThread.
   // Once IOThread class is no longer needed,
   // this can be created on first use.
@@ -251,6 +252,18 @@ BrowserProcessImpl::background_printing_manager() {
   return nullptr;
 }
 
+supervised_user::DeviceParentalControls&
+BrowserProcessImpl::device_parental_controls() {
+  if (!device_parental_controls_)
+    device_parental_controls_ =
+        std::make_unique<supervised_user::DeviceParentalControlsNoOpImpl>();
+  return *device_parental_controls_;
+}
+
+activity_reporter::ActivityReporter* BrowserProcessImpl::activity_reporter() {
+  return nullptr;
+}
+
 IntranetRedirectDetector* BrowserProcessImpl::intranet_redirect_detector() {
   return nullptr;
 }
@@ -283,10 +296,6 @@ BrowserProcessImpl::subresource_filter_ruleset_service() {
 
 component_updater::ComponentUpdateService*
 BrowserProcessImpl::component_updater() {
-  return nullptr;
-}
-
-MediaFileSystemRegistry* BrowserProcessImpl::media_file_system_registry() {
   return nullptr;
 }
 

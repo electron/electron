@@ -57,6 +57,7 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
       content::MainFunctionParams main_function_params) override;
   bool ShouldCreateFeatureList(InvokedIn invoked_in) override;
   bool ShouldInitializeMojo(InvokedIn invoked_in) override;
+  bool ShouldLoadV8Snapshot(const std::string& process_type) override;
   bool ShouldLockSchemeRegistry() override;
 #if BUILDFLAG(IS_LINUX)
   void ZygoteForked() override;

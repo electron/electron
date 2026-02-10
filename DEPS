@@ -2,9 +2,9 @@ gclient_gn_args_from = 'src'
 
 vars = {
   'chromium_version':
-    '144.0.7547.0',
+    '146.0.7650.0',
   'node_version':
-    'v24.11.1',
+    'v24.13.0',
   'nan_version':
     '675cefebca42410733da8a454c8d9391fcebfbc2',
   'squirrel.mac_version':
@@ -152,7 +152,7 @@ hooks = [
     'action': [
       'python3',
       '-c',
-      'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["node", ".yarn/releases/yarn-4.11.0.cjs", "install", "--immutable"]);',
+      'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["node", ".yarn/releases/yarn-4.12.0.cjs", "install", "--immutable"]);',
     ],
   },
   {

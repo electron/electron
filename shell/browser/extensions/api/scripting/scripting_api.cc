@@ -109,7 +109,7 @@ std::vector<mojom::JSSourcePtr> FileSourcesToJSSources(
   js_sources.reserve(file_sources.size());
   for (auto& file_source : file_sources) {
     js_sources.push_back(mojom::JSSource::New(
-        std::move(*file_source.data),
+        std::move(file_source.data),
         extension.ResolveExtensionURL(file_source.file_name)));
   }
 
@@ -125,7 +125,7 @@ std::vector<mojom::CSSSourcePtr> FileSourcesToCSSSources(
   css_sources.reserve(file_sources.size());
   for (auto& file_source : file_sources) {
     css_sources.push_back(mojom::CSSSource::New(
-        std::move(*file_source.data),
+        std::move(file_source.data),
         InjectionKeyForFile(
             host_id, extension.ResolveExtensionURL(file_source.file_name))));
   }

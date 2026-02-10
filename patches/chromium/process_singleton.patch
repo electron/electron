@@ -51,7 +51,7 @@ index c19313c0b58baf0597a99d52ed7fcdb7faacc934..2748dd196fe1f56357348a204e24f0b8
    base::win::MessageWindow window_;  // The message-only window.
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 0ad5dd7547b9814476450e6ca4e35754d6995efc..12d50032ed589c861f73fa395156e4a6583f852d 100644
+index 09f3425d08097eba3a9dc40d0a4af38209b06b1f..73aa4cb9652870b0bff4684d7c72ae7dbd852db8 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -55,6 +55,7 @@

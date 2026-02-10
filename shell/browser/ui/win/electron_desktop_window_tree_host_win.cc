@@ -150,6 +150,31 @@ bool ElectronDesktopWindowTreeHostWin::HandleMouseEvent(ui::MouseEvent* event) {
   return views::DesktopWindowTreeHostWin::HandleMouseEvent(event);
 }
 
+bool ElectronDesktopWindowTreeHostWin::HandleIMEMessage(UINT message,
+                                                        WPARAM w_param,
+                                                        LPARAM l_param,
+                                                        LRESULT* result) {
+  if ((message == WM_SYSCHAR) && (w_param == VK_SPACE)) {
+    if (native_window_view_->widget() &&
+        native_window_view_->widget()->non_client_view()) {
+      const auto* frame =
+          native_window_view_->widget()->non_client_view()->frame_view();
+      auto location = frame->GetSystemMenuScreenPixelLocation();
+
+      bool prevent_default = false;
+      native_window_view_->NotifyWindowSystemContextMenu(
+          location.x(), location.y(), &prevent_default);
+
+      return prevent_default ||
+             views::DesktopWindowTreeHostWin::HandleIMEMessage(message, w_param,
+                                                               l_param, result);
+    }
+  }
+
+  return views::DesktopWindowTreeHostWin::HandleIMEMessage(message, w_param,
+                                                           l_param, result);
+}
+
 void ElectronDesktopWindowTreeHostWin::HandleVisibilityChanged(bool visible) {
   if (native_window_view_->widget())
     native_window_view_->widget()->OnNativeWidgetVisibilityChanged(visible);

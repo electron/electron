@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-const { GitProcess } = require('dugite');
 const { ESLint } = require('eslint');
 const minimist = require('minimist');
 
@@ -282,7 +281,7 @@ const LINTERS = [{
 }, {
   key: 'md',
   roots: ['.'],
-  ignoreRoots: ['.git', '.github/workflows/node_modules', 'node_modules', 'spec/node_modules', 'spec/fixtures/native-addon'],
+  ignoreRoots: ['.claude', '.git', '.github/workflows/node_modules', 'node_modules', 'spec/node_modules', 'spec/fixtures/native-addon'],
   test: filename => filename.endsWith('.md'),
   run: async (opts, filenames) => {
     const { getCodeBlocks } = await import('@electron/lint-roller/dist/lib/markdown.js');
@@ -431,9 +430,13 @@ function populateLinterWithArgs (linter, opts) {
 }
 
 async function findChangedFiles (top) {
-  const result = await GitProcess.exec(['diff', '--name-only', '--cached'], top);
-  if (result.exitCode !== 0) {
-    console.log('Failed to find changed files', GitProcess.parseError(result.stderr));
+  const result = childProcess.spawnSync('git', ['diff', '--name-only', '--cached'], {
+    cwd: top,
+    encoding: 'utf8',
+    stdio: ['inherit', 'pipe', 'pipe']
+  });
+  if (result.status !== 0) {
+    console.log('Failed to find changed files', result.stderr);
     process.exit(1);
   }
   const relativePaths = result.stdout.split(/\r\n|\r|\n/g);

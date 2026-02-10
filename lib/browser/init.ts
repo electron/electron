@@ -126,11 +126,7 @@ if (packageJson.productName != null) {
 }
 
 // Set application's desktop name.
-if (packageJson.desktopName != null) {
-  app.setDesktopName(packageJson.desktopName);
-} else {
-  app.setDesktopName(`${app.name}.desktop`);
-}
+app.setDesktopName(packageJson.desktopName || `${app.name}.desktop`);
 
 // Set v8 flags, deliberately lazy load so that apps that do not use this
 // feature do not pay the price

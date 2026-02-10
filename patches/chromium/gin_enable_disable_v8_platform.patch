@@ -7,7 +7,7 @@ We don't use gin to create the V8 platform, because we need to inject Node
 things.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 456409c9e84c7a061d474470c8e42c5ddb5eb799..87187d05175a9da4fd7af03ba8a139a2d9554551 100644
+index 646647b6e257ecc5ff0934fe8204db74651c1510..15904644aa5451c6cb0fc2a46a67678824cd0bec 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
 @@ -162,11 +162,13 @@ void IsolateHolder::Initialize(ScriptMode mode,
@@ -41,10 +41,10 @@ index 3909e70dc1425c2cb02624f4b3017784a2ae6c9d..a57b92f02085d6392e6d9d0cc037df6b
    // Returns whether `Initialize` has already been invoked in the process.
    // Initialization is a one-way operation (i.e., this method cannot return
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 0b14695a25f9a36a008fca636f98eb26e36ecc7d..3c57e1273453388fac9c7a7593f767d413f00dbe 100644
+index e11231ebfedd7421f104d5f471486ad8d8d6ecbb..3b0e038918a175c70beb91e0c5d816aed2e6f181 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -534,7 +534,8 @@ void SetFeatureFlags() {
+@@ -526,7 +526,8 @@ void SetFeatureFlags() {
  void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
                                 const std::string& js_command_line_flags,
                                 bool disallow_v8_feature_flag_overrides,
@@ -54,7 +54,7 @@ index 0b14695a25f9a36a008fca636f98eb26e36ecc7d..3c57e1273453388fac9c7a7593f767d4
    static bool v8_is_initialized = false;
    if (v8_is_initialized)
      return;
-@@ -549,7 +550,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
+@@ -541,7 +542,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
    }
    SetFlags(mode, js_command_line_flags);
  

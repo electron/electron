@@ -1,0 +1,159 @@
+name: Pipeline Segment - Electron Clang-Tidy
+
+on:
+  workflow_call:
+    inputs:
+      target-platform:
+        type: string
+        description: 'Platform to run on, can be macos, win or linux'
+        required: true
+      target-arch:
+        type: string
+        description: 'Arch to build for, can be x64, arm64 or arm'
+        required: true
+      clang-tidy-runs-on:
+        type: string
+        description: 'What host to run clang-tidy on'
+        required: true
+      clang-tidy-container:
+        type: string
+        description: 'JSON container information for aks runs-on'
+        required: false
+        default: '{"image":null}'
+
+permissions: {}
+
+concurrency:
+  group: electron-clang-tidy-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || (inputs.target-platform == 'linux' && '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True' || '--custom-var=checkout_win=True') }}
+  ELECTRON_OUT_DIR: Default
+
+jobs:
+  clang-tidy:
+    defaults:
+      run:
+        shell: bash
+    runs-on: ${{ inputs.clang-tidy-runs-on }}
+    permissions:
+      contents: read
+    container: ${{ fromJSON(inputs.clang-tidy-container) }}
+    env:
+      BUILD_TYPE: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
+      TARGET_ARCH: ${{ inputs.target-arch }}
+      TARGET_PLATFORM: ${{ inputs.target-platform }}
+      ARTIFACT_KEY: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}_${{ inputs.target-arch }}
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        path: src/electron
+        fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Cleanup disk space on macOS
+      if: ${{ inputs.target-platform == 'macos' }}
+      shell: bash
+      run: |   
+        sudo mkdir -p $TMPDIR/del-target
+
+        tmpify() {
+          if [ -d "$1" ]; then
+            sudo mv "$1" $TMPDIR/del-target/$(echo $1|shasum -a 256|head -n1|cut -d " " -f1)
+          fi
+        }   
+        tmpify /Library/Developer/CoreSimulator
+        tmpify ~/Library/Developer/CoreSimulator
+        sudo rm -rf $TMPDIR/del-target
+    - name: Check disk space after freeing up space
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: df -h
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
+    - name: Install Build Tools
+      uses: ./src/electron/.github/actions/install-build-tools
+    - name: Enable windows toolchain
+      if: ${{ inputs.target-platform == 'win' }}
+      run: |
+        echo "ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN=1" >> $GITHUB_ENV
+    - name: Generate DEPS Hash
+      run: |
+        node src/electron/script/generate-deps-hash.js
+        DEPSHASH=v1-src-cache-$(cat src/electron/.depshash)
+        echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
+        echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
+    - name: Restore src cache via AZCopy
+      if: ${{ inputs.target-platform == 'macos' }}
+      uses: ./src/electron/.github/actions/restore-cache-azcopy
+      with:
+        target-platform: ${{ inputs.target-platform }}      
+    - name: Restore src cache via AKS
+      if: ${{ inputs.target-platform == 'linux' || inputs.target-platform == 'win' }}
+      uses: ./src/electron/.github/actions/restore-cache-aks
+      with:
+        target-platform: ${{ inputs.target-platform }}
+    - name: Run Electron Only Hooks
+      run: |
+        echo "solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]" > tmpgclient
+        if [ "${{ inputs.target-platform }}" = "win" ]; then
+          echo "solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False,'install_sysroot':False,'checkout_win':True},'managed':False}]" > tmpgclient
+          echo "target_os=['win']" >> tmpgclient
+        fi
+        e d gclient runhooks --gclientfile=tmpgclient
+
+        # Fix VS Toolchain
+        if [ "${{ inputs.target-platform }}" = "win" ]; then
+          rm -rf src/third_party/depot_tools/win_toolchain/vs_files
+          e d python3 src/build/vs_toolchain.py update --force
+        fi
+    - name: Regenerate DEPS Hash
+      run: |
+        (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js
+        echo "DEPSHASH=$(cat src/electron/.depshash)" >> $GITHUB_ENV
+    - name: Add CHROMIUM_BUILDTOOLS_PATH to env
+      run: echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
+    - name: Checkout Electron
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        path: src/electron
+        fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Install Dependencies
+      uses: ./src/electron/.github/actions/install-dependencies
+    - name: Default GN gen
+      run: |
+        cd src/electron
+        git pack-refs
+    - name: Download Out Gen Artifacts
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+      with:
+        name: out_gen_artifacts_${{ env.ARTIFACT_KEY }}
+        path: ./src/out/${{ env.ELECTRON_OUT_DIR }}/gen
+    - name: Add Clang problem matcher
+      shell: bash
+      run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
+    - name: Run Clang-Tidy
+      run: |
+        e init -f --root=$(pwd) --out=${ELECTRON_OUT_DIR} testing --target-cpu ${TARGET_ARCH}
+
+        export GN_EXTRA_ARGS="target_cpu=\"${TARGET_ARCH}\""
+        if [ "${{ inputs.target-platform }}" = "win" ]; then
+          export GN_EXTRA_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
+        fi
+
+        e build --only-gen
+
+        cd src/electron
+        node script/yarn.js lint:clang-tidy --jobs 8 --out-dir ../out/${ELECTRON_OUT_DIR}
+    - name: Remove Clang problem matcher
+      shell: bash
+      run: echo "::remove-matcher owner=clang::"
+    - name: Wait for active SSH sessions
+      if: always() && !cancelled()
+      shell: bash
+      run: |
+        while [ -f /var/.ssh-lock ]
+        do
+          sleep 60
+        done

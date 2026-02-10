@@ -9,7 +9,7 @@ that cannot be decoded (might be related to SSL implementation issues),
 skip them.
 
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 96f6ea29525bc2c60297e7be5bc1d0b74cd568e1..9b83f8d6b2c7639044e739a7f055e457882370a2 100644
+index fc6d295a401d5283ba19dd5c95b748c83b7055a9..b971ea5b6842549563c0c54168d17ecf6e72bb73 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -507,7 +507,11 @@ void ReadMacOSKeychainCertificates(

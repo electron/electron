@@ -577,7 +577,7 @@ index 824d6d8a9242302c2ab0c0c517d0cc329e607100..d3b25c90c90fe860990789aa96c872b4
    // Indication that the job is getting canceled.
    bool canceling_job_ = false;
 diff --git a/chrome/browser/printing/printer_query.cc b/chrome/browser/printing/printer_query.cc
-index 20bbbeddd18ef26b68defcdbd4a7c62706c43d0b..7b0071c169556a080ecbf5e8a6a3b878675f6bf7 100644
+index c31c873db21ef06b6d0f19c789c9a097f3cfeb2b..94a05c657a895cadc98324f7fef133c3d206fbd9 100644
 --- a/chrome/browser/printing/printer_query.cc
 +++ b/chrome/browser/printing/printer_query.cc
 @@ -356,17 +356,19 @@ void PrinterQuery::UpdatePrintSettings(base::Value::Dict new_settings,
@@ -605,10 +605,10 @@ index 20bbbeddd18ef26b68defcdbd4a7c62706c43d0b..7b0071c169556a080ecbf5e8a6a3b878
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/chrome/browser/printing/printer_query_oop.cc b/chrome/browser/printing/printer_query_oop.cc
-index 68465045179c9bbe747679509453d8a802176568..eac20bd0ab74891ad9f38d43ee5b6ca51b5cff48 100644
+index f58d494764ea77c997770ae0257b7c21b248a0e0..6eb4a9436a9bee5420a29ec643b984cea0700faa 100644
 --- a/chrome/browser/printing/printer_query_oop.cc
 +++ b/chrome/browser/printing/printer_query_oop.cc
-@@ -128,7 +128,7 @@ void PrinterQueryOop::OnDidAskUserForSettings(
+@@ -126,7 +126,7 @@ void PrinterQueryOop::OnDidAskUserForSettings(
      std::unique_ptr<PrintSettings> new_settings,
      mojom::ResultCode result) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -666,7 +666,7 @@ index ac2f719be566020d9f41364560c12e6d6d0fe3d8..16d758a6936f66148a196761cfb875f6
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 31dfa8c3c28b9eb184b6e84f4b10c57efec0765e..5990bda676df813dd318d9119a70aec0d8bb1832 100644
+index 1750c48c5dcff0ec3f45497a0949bdefe01bc730..73ac20c027c44fa0e1d5df94ce050ebb992c10e9 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -54,6 +54,7 @@
@@ -677,7 +677,7 @@ index 31dfa8c3c28b9eb184b6e84f4b10c57efec0765e..5990bda676df813dd318d9119a70aec0
  #include "printing/units.h"
  #include "services/metrics/public/cpp/ukm_source_id.h"
  #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
-@@ -1250,14 +1251,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
+@@ -1255,14 +1256,14 @@ void PrintRenderFrameHelper::ScriptedPrint(bool user_initiated) {
    }
  
    print_in_progress_ = true;
@@ -694,7 +694,7 @@ index 31dfa8c3c28b9eb184b6e84f4b10c57efec0765e..5990bda676df813dd318d9119a70aec0
    if (!weak_this) {
      return;
    }
-@@ -1288,12 +1289,14 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
+@@ -1293,12 +1294,14 @@ void PrintRenderFrameHelper::BindPrintRenderFrameReceiver(
    receivers_.Add(this, std::move(receiver));
  }
  
@@ -712,7 +712,7 @@ index 31dfa8c3c28b9eb184b6e84f4b10c57efec0765e..5990bda676df813dd318d9119a70aec0
    ScopedIPC scoped_ipc(weak_ptr_factory_.GetWeakPtr());
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint) {
      return;
-@@ -1310,9 +1313,10 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
+@@ -1315,9 +1318,10 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
  
      is_loading_ = frame->WillPrintSoon();
      if (is_loading_) {
@@ -726,7 +726,7 @@ index 31dfa8c3c28b9eb184b6e84f4b10c57efec0765e..5990bda676df813dd318d9119a70aec0
        SetupOnStopLoadingTimeout();
        return;
      }
-@@ -1322,7 +1326,7 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
+@@ -1327,7 +1331,7 @@ void PrintRenderFrameHelper::PrintRequestedPagesInternal(
    // plugin node and print that instead.
    auto plugin = delegate_->GetPdfElement(frame);
  
@@ -735,7 +735,7 @@ index 31dfa8c3c28b9eb184b6e84f4b10c57efec0765e..5990bda676df813dd318d9119a70aec0
  
    if (render_frame_gone_) {
      return;
-@@ -1478,6 +1482,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
+@@ -1483,6 +1487,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
  
@@ -744,7 +744,7 @@ index 31dfa8c3c28b9eb184b6e84f4b10c57efec0765e..5990bda676df813dd318d9119a70aec0
    print_preview_context_.OnPrintPreview();
  
  #if BUILDFLAG(IS_CHROMEOS)
-@@ -2090,17 +2096,25 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2095,17 +2101,25 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -773,7 +773,7 @@ index 31dfa8c3c28b9eb184b6e84f4b10c57efec0765e..5990bda676df813dd318d9119a70aec0
      DidFinishPrinting(PrintingResult::kFailPrintInit);
      return;
    }
-@@ -2121,8 +2135,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
+@@ -2126,8 +2140,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
          print_pages_params_->params->print_scaling_option;
  
      auto self = weak_ptr_factory_.GetWeakPtr();
@@ -790,7 +790,7 @@ index 31dfa8c3c28b9eb184b6e84f4b10c57efec0765e..5990bda676df813dd318d9119a70aec0
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2389,29 +2410,43 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2394,29 +2415,43 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
@@ -923,10 +923,10 @@ index 2f34f45aaf89e6f4600be1d2b8444c636b0cc83f..5bfd45c5efbf300a36e016af80e18fb9
    virtual mojom::ResultCode OnError();
  
 diff --git a/printing/printing_context_linux.cc b/printing/printing_context_linux.cc
-index e83735211e30a77ef1bc82b6a252da02a18626fc..b0c8fd3c5e3c5b3d2d64bee9df513e1b4829809c 100644
+index 5c555d8768e2a1d9e6ac86fc9392420a42f5193d..f547f7e6008635ff03c3b96911772c18790e89aa 100644
 --- a/printing/printing_context_linux.cc
 +++ b/printing/printing_context_linux.cc
-@@ -54,9 +54,8 @@ void PrintingContextLinux::AskUserForSettings(int max_pages,
+@@ -66,9 +66,8 @@ void PrintingContextLinux::AskUserForSettings(int max_pages,
                                                bool is_scripted,
                                                PrintSettingsCallback callback) {
    if (!print_dialog_) {

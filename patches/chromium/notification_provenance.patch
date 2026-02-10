@@ -7,10 +7,10 @@ Pass RenderFrameHost through to PlatformNotificationService
 so Electron can identify which renderer a notification came from.
 
 diff --git a/chrome/browser/notifications/platform_notification_service_impl.cc b/chrome/browser/notifications/platform_notification_service_impl.cc
-index 5b2b9b50fd76526e790055b3ed2ebbe966db850e..a3fdfaa605e5b6df1828b38d0ed05776397e3122 100644
+index fd890f3c91b0e614174362e2b7d61a63b9094c0c..6e63db38f289a6a83fdd93879e067d85fed25705 100644
 --- a/chrome/browser/notifications/platform_notification_service_impl.cc
 +++ b/chrome/browser/notifications/platform_notification_service_impl.cc
-@@ -265,6 +265,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
+@@ -266,6 +266,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
  
  // TODO(awdf): Rename to DisplayNonPersistentNotification (Similar for Close)
  void PlatformNotificationServiceImpl::DisplayNotification(
@@ -92,7 +92,7 @@ index 8ccff8edf6c45a96978fea0b02a8d7ebd8768578..264af7461226718ff300faa22ba45875
          contents_.get()->GetPrimaryMainFrame()->GetWeakDocumentPtr(),
          RenderProcessHost::NotificationServiceCreatorType::kDocument,
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 2c9e6225d0085c67dc1ae51cca2614b2c74120a7..ad194578a06e74488a853cb8f3f042fd339eefea 100644
+index b433a6bb12880e26068cff3e542b9a45576292ba..85e2db609f92fefda0f293f74d9e9fd48f4cb686 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
 @@ -286,6 +286,7 @@ void PlatformNotificationContextImpl::Shutdown() {
@@ -133,10 +133,10 @@ index 9bf238e64af483294ae3c3f18a4e9aed49a8658d..b9b2a4c8c387b8e8b4eb1f02fc0f891c
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index efa9f5f3d1efddfe8118c60bf44ac53d02e24df8..95f8614d6c8fbf74f60bcb127f19f78ddf6697e7 100644
+index 9308ef3abab38292865a9f2ccc5abfe7e47d70d3..430c191b8d282b63aa5a04207da28660f203d910 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2359,7 +2359,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2354,7 +2354,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      case RenderProcessHost::NotificationServiceCreatorType::kSharedWorker:
      case RenderProcessHost::NotificationServiceCreatorType::kDedicatedWorker: {
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
@@ -145,7 +145,7 @@ index efa9f5f3d1efddfe8118c60bf44ac53d02e24df8..95f8614d6c8fbf74f60bcb127f19f78d
            creator_type, std::move(receiver));
        break;
      }
-@@ -2367,7 +2367,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2362,7 +2362,7 @@ void RenderProcessHostImpl::CreateNotificationService(
        CHECK(rfh);
  
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
@@ -176,10 +176,10 @@ index 82db1db4175fb9f4ee7490d5a163164ef4495ecb..4f51683be14ba6ee657a290c7747969e
        const GURL& origin,
        const GURL& document_url,
 diff --git a/content/test/mock_platform_notification_service.cc b/content/test/mock_platform_notification_service.cc
-index 32a0cf38389989d3e1c287ad4a3f26b6d3615370..8a788f243e913ef26246b5ea4ac4ac5c1dfc4b86 100644
+index ea62ad4af02c6e4dcc3115985ad62f7a3a141acd..e5a561bc059fb34686b1976ada599fafc50849fe 100644
 --- a/content/test/mock_platform_notification_service.cc
 +++ b/content/test/mock_platform_notification_service.cc
-@@ -29,6 +29,7 @@ MockPlatformNotificationService::MockPlatformNotificationService(
+@@ -28,6 +28,7 @@ MockPlatformNotificationService::MockPlatformNotificationService(
  MockPlatformNotificationService::~MockPlatformNotificationService() = default;
  
  void MockPlatformNotificationService::DisplayNotification(

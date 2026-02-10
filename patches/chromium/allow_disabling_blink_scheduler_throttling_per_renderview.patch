@@ -6,7 +6,7 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl_unittest.cc b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-index 1390ff8785644a5e2c9d057124bf364972db53cc..8fcb52f033e175703f6695197ae61cd97bc15002 100644
+index 14e6fd9b6d20fa18fc5b558f9a7bbf76f9fd4059..b12ce72835b2acd9099a4fad4308b5eee7963635 100644
 --- a/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 @@ -168,6 +168,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
@@ -23,10 +23,10 @@ index 1390ff8785644a5e2c9d057124bf364972db53cc..8fcb52f033e175703f6695197ae61cd9
      return receiver_.BindNewEndpointAndPassDedicatedRemote();
    }
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 44fc40e608097797e4c2f5675bf10e5cdeb54d27..aa1d092cfc389fe81052160dc435981069a8a600 100644
+index b8193571d0a3b7609e89b284f57a9cbf36d593e0..0d42b04031006b844d5a2a2b73241d2b7e2fb93d 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -756,6 +756,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -759,6 +759,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
@@ -39,10 +39,10 @@ index 44fc40e608097797e4c2f5675bf10e5cdeb54d27..aa1d092cfc389fe81052160dc4359810
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index 834dd10992a7ab6235cdf8e6ec1a019376a4056e..3b9ac2bc6954ab3a1a1f456ff64723da7db80fb0 100644
+index 2dddaff6c16c55288b6ea72cb8df0f8737971d71..dce9dae250ff2ac070752830df41cc45ed72823e 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
-@@ -135,6 +135,7 @@ class CONTENT_EXPORT RenderViewHostImpl
+@@ -134,6 +134,7 @@ class CONTENT_EXPORT RenderViewHostImpl
    void EnablePreferredSizeMode() override;
    void WriteIntoTrace(perfetto::TracedProto<TraceProto> context) const override;
  
@@ -51,10 +51,10 @@ index 834dd10992a7ab6235cdf8e6ec1a019376a4056e..3b9ac2bc6954ab3a1a1f456ff64723da
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index b4f1a82dc4294313c4439cb132ae05ea8cd19a99..6a6ede73a913615fdefd5d21c2c7dd46f296010a 100644
+index 722eff1cf2e51fe628b873c67694764c99dae496..b16c96b5682846d897c2f0f4dd3881d386928b68 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -633,8 +633,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
+@@ -646,8 +646,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
    // OnShowWithPageVisibility will not call NotifyHostAndDelegateOnWasShown,
    // which updates `visibility_`, unless the host is hidden. Make sure no update
    // is needed.
@@ -116,10 +116,10 @@ index 932658273154ef2e022358e493a8e7c00c86e732..57bbfb5cde62c9496c351c861880a189
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 451d0a2808c530e9493a97cfcb64b2b8725404c8..58272b9f3709b7f1fdbf75df640c2fff19c18840 100644
+index e47f324d52c0837eff24c592da0c51f0aaf47565..3642fb358bc92dcf523b589ac5fe07c877f3a221 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -2505,6 +2505,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
+@@ -2530,6 +2530,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
    TRACE_EVENT2("navigation", "WebViewImpl::SetPageLifecycleStateInternal",
                 "old_state", old_state, "new_state", new_state);
  
@@ -130,7 +130,7 @@ index 451d0a2808c530e9493a97cfcb64b2b8725404c8..58272b9f3709b7f1fdbf75df640c2fff
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -4018,10 +4022,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -4165,10 +4169,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -155,7 +155,7 @@ index 451d0a2808c530e9493a97cfcb64b2b8725404c8..58272b9f3709b7f1fdbf75df640c2fff
    // Do not throttle if the page should be painting.
    bool is_visible =
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index aecdcea36ed0a502a9da68e871e0ee86040b4350..b2788642a20511f3725d045bc97bc108fba88752 100644
+index e55ac3fc72ce5b4acebaa6705c6f7080f0ac8fd4..ff27ea4dc50d163aaa22513907960950a080353a 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -445,6 +445,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
@@ -166,7 +166,7 @@ index aecdcea36ed0a502a9da68e871e0ee86040b4350..b2788642a20511f3725d045bc97bc108
    void SetVisibilityState(mojom::blink::PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    mojom::blink::PageVisibilityState GetVisibilityState() override;
-@@ -938,6 +939,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -953,6 +954,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    // If true, we send IPC messages when |preferred_size_| changes.
    bool send_preferred_size_changes_ = false;
  
