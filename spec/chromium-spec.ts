@@ -3290,7 +3290,8 @@ describe('chromium features', () => {
 
         protocol.handle('custom', () => net.fetch(pathToFileURL(fixture).toString()));
 
-        const w = new BrowserWindow({ show: false });
+        // `show: true` is necessary on Windows and Linux due to https://github.com/electron/electron/issues/32001
+        const w = new BrowserWindow({ show: true });
         await w.loadURL('custom://my-url');
 
         const hasAttribution = await w.webContents.executeJavaScript('hasAttributionPromise');
