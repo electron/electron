@@ -58,7 +58,7 @@ index 404e2aa8c88d0cc0e6717c01e0df68899c64cc32..16462f305a2ac6b6c3d7b85024f2e526
  }
  
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 97c43afb487b58c0c77bd59b4a6b6d7a13690053..23a4d7b651935a4029249fb2f1dd3ed46ea3b26f 100644
+index 74bbb9fb83246a90bc425e259150f0868020ac9e..a4b3a1c0907c9d50baf6c8cd473cb4c7369d0a5c 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
 @@ -189,7 +189,8 @@ inline Environment* Environment::GetCurrent(v8::Local<v8::Context> context) {
@@ -193,10 +193,10 @@ index fe4aad63bc877be105830a80aa6be10ce3f8fda4..588b1fef718853bec95a4e4a3b14809a
  
  void BindingData::MemoryInfo(MemoryTracker* tracker) const {
 diff --git a/src/node_realm-inl.h b/src/node_realm-inl.h
-index f162d1506c990a5fe578be6f1324427e3f9023f4..b57bb0b42e98b954c0c8662c667e589d6c68a5d3 100644
+index 0af487a9abc9ee1783367ac86b0016ab89e02006..c01cef477aaba52f9894943acede7fb22ed17dcb 100644
 --- a/src/node_realm-inl.h
 +++ b/src/node_realm-inl.h
-@@ -21,7 +21,8 @@ inline Realm* Realm::GetCurrent(v8::Local<v8::Context> context) {
+@@ -22,7 +22,8 @@ inline Realm* Realm::GetCurrent(v8::Local<v8::Context> context) {
      return nullptr;
    }
    return static_cast<Realm*>(
