@@ -17,7 +17,7 @@ run them, users need to go through multiple advanced and manual steps.
 
 If you are building an Electron app that you intend to package and distribute,
 it should be code signed. The Electron ecosystem tooling makes codesigning your
-apps straightforward - this documentation explains how sign your apps on both
+apps straightforward - this documentation explains how to sign your apps on both
 Windows and macOS.
 
 ## Signing & notarizing macOS builds
@@ -210,7 +210,7 @@ const msiCreator = new MSICreator({
 const supportBinaries = await msiCreator.create()
 
 // 🆕 Step 2a: optionally sign support binaries if you
-// sign you binaries as part of of your packaging script
+// sign your binaries as part of your packaging script
 for (const binary of supportBinaries) {
   // Binaries are the new stub executable and optionally
   // the Squirrel auto updater.

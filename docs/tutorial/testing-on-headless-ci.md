@@ -2,8 +2,8 @@
 
 Being based on Chromium, Electron requires a display driver to function.
 If Chromium can't find a display driver, Electron will fail to launch -
-and therefore not executing any of your tests, regardless of how you are running
-them. Testing Electron-based apps on Travis, CircleCI, Jenkins or similar Systems
+and therefore not execute any of your tests, regardless of how you are running
+them. Testing Electron-based apps on Travis, CircleCI, Jenkins or similar systems
 requires therefore a little bit of configuration. In essence, we need to use
 a virtual display driver.
 

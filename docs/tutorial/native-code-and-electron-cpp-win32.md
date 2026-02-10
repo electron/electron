@@ -4,13 +4,13 @@ This tutorial builds on the [general introduction to Native Code and Electron](.
 
 Specifically, we'll be integrating with two commonly used native Windows libraries:
 
-* `comctl32.lib`, which contains common controls and user interface components. It provides various UI elements like buttons, scrollbars, toolbars, status bars, progress bars, and tree views. As far as GUI development on Windows goes, this library is very low-level and basic - more modern frameworks like WinUI or WPF are advanced and alternatives but require a lot more C++ and Windows version considerations than are useful for this tutorial. This way, we can avoid the many perils of building native interfaces for multiple Windows versions!
+* `comctl32.lib`, which contains common controls and user interface components. It provides various UI elements like buttons, scrollbars, toolbars, status bars, progress bars, and tree views. As far as GUI development on Windows goes, this library is very low-level and basic - more modern frameworks like WinUI or WPF are more advanced alternatives but require a lot more C++ and Windows version considerations than are useful for this tutorial. This way, we can avoid the many perils of building native interfaces for multiple Windows versions!
 * `shcore.lib`, a library that provides high-DPI awareness functionality and other Shell-related features around managing displays and UI elements.
 
 This tutorial will be most useful to those who already have some familiarity with native C++ GUI development on Windows. You should have experience with basic window classes and procedures, like `WNDCLASSEXW` and `WindowProc` functions. You should also be familiar with the Windows message loop, which is the heart of any native application - our code will be using `GetMessage`, `TranslateMessage`, and `DispatchMessage` to handle messages. Lastly, we'll be using (but not explaining) standard Win32 controls like `WC_EDITW` or `WC_BUTTONW`.
 
 > [!NOTE]
-> If you're not familiar with C++ GUI development on Windows, we recommend Microsoft's excellent documentation and guides, particular for beginners. "[Get Started with Win32 and C++](https://learn.microsoft.com/en-us/windows/win32/learnwin32/learn-to-program-for-windows)" is a great introduction.
+> If you're not familiar with C++ GUI development on Windows, we recommend Microsoft's excellent documentation and guides, particularly for beginners. "[Get Started with Win32 and C++](https://learn.microsoft.com/en-us/windows/win32/learnwin32/learn-to-program-for-windows)" is a great introduction.
 
 ## Requirements
 
@@ -1333,7 +1333,7 @@ npm run build
 
 ## Conclusion
 
-You've now built a complete native Node.js addon for Windows using C++ and the Win32 API. Some of things we've done here are:
+You've now built a complete native Node.js addon for Windows using C++ and the Win32 API. Some of the things we've done here are:
 
 1. Creating a native Windows GUI from C++
 2. Implementing a Todo list application with Add, Edit, and Delete functionality
