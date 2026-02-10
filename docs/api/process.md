@@ -99,13 +99,13 @@ property is used instead of the `--throw-deprecation` command line flag.
 
 A `boolean` that controls whether or not deprecations printed to `stderr` include
  their stack trace. Setting this to `true` will print stack traces for deprecations.
- This property is instead of the `--trace-deprecation` command line flag.
+ This property is used instead of the `--trace-deprecation` command line flag.
 
 ### `process.traceProcessWarnings`
 
 A `boolean` that controls whether or not process warnings printed to `stderr` include
  their stack trace. Setting this to `true` will print stack traces for process warnings
- (including deprecations). This property is instead of the `--trace-warnings` command
+ (including deprecations). This property is used instead of the `--trace-warnings` command
  line flag.
 
 ### `process.type` _Readonly_

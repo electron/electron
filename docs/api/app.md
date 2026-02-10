@@ -633,7 +633,7 @@ Returns `string` - The current application directory.
 Returns `string` - A path to a special directory or file associated with `name`. On
 failure, an `Error` is thrown.
 
-If `app.getPath('logs')` is called without called `app.setAppLogsPath()` being called first, a default log directory will be created equivalent to calling `app.setAppLogsPath()` without a `path` parameter.
+If `app.getPath('logs')` is called without calling `app.setAppLogsPath()` being called first, a default log directory will be created equivalent to calling `app.setAppLogsPath()` without a `path` parameter.
 
 ### `app.getFileIcon(path[, options])`
 
@@ -648,7 +648,7 @@ Returns `Promise<NativeImage>` - fulfilled with the app's icon, which is a [Nati
 
 Fetches a path's associated icon.
 
-On _Windows_, there a 2 kinds of icons:
+On _Windows_, there are 2 kinds of icons:
 
 * Icons associated with certain file extensions, like `.mp3`, `.png`, etc.
 * Icons inside the file itself, like `.exe`, `.dll`, `.ico`.
@@ -764,7 +764,7 @@ app.getPreferredSystemLanguages() // ['fr-CA', 'en-US', 'zh-Hans-FI', 'es-419']
 
 Both the available languages and regions and the possible return values differ between the two operating systems.
 
-As can be seen with the example above, on Windows, it is possible that a preferred system language has no country code, and that one of the preferred system languages corresponds with the language used for the regional format. On macOS, the region serves more as a default country code: the user doesn't need to have Finnish as a preferred language to use Finland as the region,and the country code `FI` is used as the country code for preferred system languages that do not have associated countries in the language name.
+As can be seen with the example above, on Windows, it is possible that a preferred system language has no country code, and that one of the preferred system languages corresponds with the language used for the regional format. On macOS, the region serves more as a default country code: the user doesn't need to have Finnish as a preferred language to use Finland as the region, and the country code `FI` is used as the country code for preferred system languages that do not have associated countries in the language name.
 
 ### `app.addRecentDocument(path)` _macOS_ _Windows_
 
@@ -1226,7 +1226,7 @@ Returns `boolean` - whether hardware acceleration is currently enabled.
 ### `app.disableDomainBlockingFor3DAPIs()`
 
 By default, Chromium disables 3D APIs (e.g. WebGL) until restart on a per
-domain basis if the GPU processes crashes too frequently. This function
+domain basis if the GPU process crashes too frequently. This function
 disables that behavior.
 
 This method can only be called before app is ready.

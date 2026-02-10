@@ -383,7 +383,7 @@ Emitted after a server side redirect occurs during navigation.  For example a 30
 redirect.
 
 This event cannot be prevented, if you want to prevent redirects you should
-checkout out the `will-redirect` event above.
+check out the `will-redirect` event above.
 
 #### Event: 'did-navigate'
 
@@ -1465,7 +1465,7 @@ Ignore application menu shortcuts while this web contents is focused.
   without a recognized 'action' value will result in a console error and have
   the same effect as returning `{action: 'deny'}`.
 
-Called before creating a window a new window is requested by the renderer, e.g.
+Called before creating a window when a new window is requested by the renderer, e.g.
 by `window.open()`, a link with `target="_blank"`, shift+clicking on a link, or
 submitting a form with `<form target="_blank">`. See
 [`window.open()`](window-open.md) for more details and how to use this in
@@ -2369,7 +2369,7 @@ instance that might own this `WebContents`.
 
 #### `contents.devToolsWebContents` _Readonly_
 
-A `WebContents | null` property that represents the of DevTools `WebContents` associated with a given `WebContents`.
+A `WebContents | null` property that represents the DevTools `WebContents` associated with a given `WebContents`.
 
 > [!NOTE]
 > Users should never store this object because it may become `null`

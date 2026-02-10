@@ -172,7 +172,7 @@ Enables net log events to be saved and writes them to `path`.
 Sets the verbosity of logging when used together with `--enable-logging`.
 `N` should be one of [Chrome's LogSeverities][severities].
 
-Note that two complimentary logging mechanisms in Chromium -- `LOG()`
+Note that two complementary logging mechanisms in Chromium -- `LOG()`
 and `VLOG()` -- are controlled by different switches. `--log-level`
 controls `LOG()` messages, while `--v` and `--vmodule` control `VLOG()`
 messages. So you may want to use a combination of these three switches

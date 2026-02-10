@@ -210,7 +210,7 @@ const msiCreator = new MSICreator({
 const supportBinaries = await msiCreator.create()
 
 // 🆕 Step 2a: optionally sign support binaries if you
-// sign you binaries as part of of your packaging script
+// sign your binaries as part of your packaging script
 for (const binary of supportBinaries) {
   // Binaries are the new stub executable and optionally
   // the Squirrel auto updater.
