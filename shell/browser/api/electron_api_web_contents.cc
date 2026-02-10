@@ -1507,15 +1507,21 @@ void WebContents::EnterFullscreenModeForTab(
       WebContentsPermissionHelper::FromWebContents(source);
   auto callback =
       base::BindRepeating(&WebContents::OnEnterFullscreenModeForTab,
-                          base::Unretained(this), requesting_frame, options);
+                          GetWeakPtr(), requesting_frame->GetGlobalId(),
+                          options);
   permission_helper->RequestFullscreenPermission(requesting_frame, callback);
 }
 
 void WebContents::OnEnterFullscreenModeForTab(
-    content::RenderFrameHost* requesting_frame,
+    content::GlobalRenderFrameHostId requesting_frame_id,
     const blink::mojom::FullscreenOptions& options,
     bool allowed) {
   if (!allowed || !owner_window())
+    return;
+
+  auto* requesting_frame =
+      content::RenderFrameHost::FromID(requesting_frame_id);
+  if (!requesting_frame)
     return;
 
   auto* source = content::WebContents::FromRenderFrameHost(requesting_frame);
@@ -1637,7 +1643,7 @@ void WebContents::RequestPointerLock(content::WebContents* web_contents,
   permission_helper->RequestPointerLockPermission(
       user_gesture, last_unlocked_by_target,
       base::BindOnce(&WebContents::OnRequestPointerLock,
-                     base::Unretained(this)));
+                     GetWeakPtr()));
 }
 
 void WebContents::LostPointerLock() {
@@ -1668,7 +1674,7 @@ void WebContents::RequestKeyboardLock(content::WebContents* web_contents,
       WebContentsPermissionHelper::FromWebContents(web_contents);
   permission_helper->RequestKeyboardLockPermission(
       esc_key_locked, base::BindOnce(&WebContents::OnRequestKeyboardLock,
-                                     base::Unretained(this)));
+                                     GetWeakPtr()));
 }
 
 void WebContents::CancelKeyboardLockRequest(

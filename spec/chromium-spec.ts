@@ -716,6 +716,39 @@ describe('chromium features', () => {
     });
   });
 
+  it('does not crash when window is closed during async fullscreen permission request', async () => {
+    const w = new BrowserWindow({ show: false });
+    const ses = w.webContents.session;
+
+    let permissionCallback: ((granted: boolean) => void) | null = null;
+    ses.setPermissionRequestHandler((_wc, permission, callback) => {
+      if (permission === 'fullscreen') {
+        // Hold the callback to simulate async decision (e.g. user dialog)
+        permissionCallback = callback;
+      } else {
+        callback(true);
+      }
+    });
+
+    await w.loadURL('data:text/html,<body>');
+
+    // Trigger fullscreen request from the renderer
+    w.webContents.executeJavaScript('document.body.requestFullscreen()').catch(() => {});
+
+    // Wait until the permission handler has captured the callback
+    await waitUntil(() => permissionCallback !== null);
+
+    // Destroy the window while the permission callback is still pending
+    w.close();
+    await once(w, 'closed');
+
+    // Now fire the captured callback — this previously caused a UAF crash
+    ses.setPermissionRequestHandler(null);
+    permissionCallback!(true);
+
+    // If we reach here without crashing, the fix works.
+  });
+
   describe('navigator.languages', () => {
     it('should return the system locale only', async () => {
       const appLocale = app.getLocale();
