@@ -112,10 +112,14 @@ gfx::Size FramelessView::CalculatePreferredSize(
 }
 
 gfx::Size FramelessView::GetMinimumSize() const {
+  if (!window_)
+    return gfx::Size();
   return window_->GetMinimumSize();
 }
 
 gfx::Size FramelessView::GetMaximumSize() const {
+  if (!window_)
+    return gfx::Size();
   return window_->GetMaximumSize();
 }
 BEGIN_METADATA(FramelessView)

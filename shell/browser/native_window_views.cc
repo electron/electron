@@ -1673,11 +1673,10 @@ gfx::Rect NativeWindowViews::LogicalToWidgetBounds(
     const gfx::Rect& bounds) const {
   gfx::Rect widget_bounds(bounds);
   const gfx::Insets frame_insets = GetRestoredFrameBorderInsets();
-  if (!frame_insets.IsEmpty()) {
-    widget_bounds.Outset(
-        gfx::Outsets::TLBR(frame_insets.top(), frame_insets.left(),
-                           frame_insets.bottom(), frame_insets.right()));
-  }
+  widget_bounds.Outset(
+      gfx::Outsets::TLBR(frame_insets.top(), frame_insets.left(),
+                         frame_insets.bottom(), frame_insets.right()));
+
   return widget_bounds;
 }
 
@@ -1694,17 +1693,16 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
     return bounds;
 
   gfx::Rect window_bounds(bounds);
-  if (widget()->non_client_view()) {
+
+  if (auto* ncv = widget()->non_client_view()) {
 #if BUILDFLAG(IS_WIN)
     HWND hwnd = GetAcceleratedWidget();
     gfx::Rect dpi_bounds = DIPToScreenRect(hwnd, bounds);
-    window_bounds = ScreenToDIPRect(
-        hwnd, widget()->non_client_view()->GetWindowBoundsForClientBounds(
-                  dpi_bounds));
+    window_bounds =
+        ScreenToDIPRect(hwnd, ncv->GetWindowBoundsForClientBounds(dpi_bounds));
 #else
     window_bounds = WidgetToLogicalBounds(
-        widget()->non_client_view()->GetWindowBoundsForClientBounds(
-            window_bounds));
+        ncv->GetWindowBoundsForClientBounds(window_bounds));
 #endif
   }
 

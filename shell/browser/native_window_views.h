@@ -160,8 +160,8 @@ class NativeWindowViews : public NativeWindow,
   // Translates between logical/opaque window bounds exposed to callers
   // and the absolute bounds of the underlying widget, which can be larger to
   // fit CSD, e.g. transparent outer regions for shadows and resize targets.
-  virtual gfx::Rect LogicalToWidgetBounds(const gfx::Rect& bounds) const;
-  virtual gfx::Rect WidgetToLogicalBounds(const gfx::Rect& bounds) const;
+  gfx::Rect LogicalToWidgetBounds(const gfx::Rect& bounds) const;
+  gfx::Rect WidgetToLogicalBounds(const gfx::Rect& bounds) const;
 
   void IncrementChildModals();
   void DecrementChildModals();
