@@ -255,6 +255,31 @@ This switch only works when `--enable-logging` is also passed.
 
 See also `--enable-logging`, `--log-level`, and `--v`.
 
+### --widevine-cdm-path=`path`
+
+Specifies the directory containing Widevine CDM files.
+
+Electron looks for `manifest.json` in this directory and then loads the
+platform-specific Widevine CDM library.
+If this switch is not set, Electron uses bundled Widevine CDM when available.
+Electron also checks the bundled location at
+`<Electron executable directory>/WidevineCdm`.
+
+This switch is only effective in builds where Widevine support is enabled
+(`enable_widevine = true`).
+
+### --widevine-cdm-version=`version`
+
+Optional. Specifies the Widevine CDM version when it cannot be read from
+`manifest.json`. You can omit this switch when the manifest already contains
+the version.
+
+Use this together with `--widevine-cdm-path` when needed. For example:
+`4.10.2891.0`.
+
+This switch is only effective in builds where Widevine support is enabled
+(`enable_widevine = true`).
+
 ### --force_high_performance_gpu
 
 Force using discrete GPU when there are multiple GPUs available.
