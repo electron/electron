@@ -196,12 +196,18 @@ jobs:
       run: |
         cd src/out/Default
         unzip -:o dist.zip
-    #- name: Import & Trust Self-Signed Codesigning Cert on MacOS
-    #  if: ${{ inputs.target-platform == 'macos' && inputs.target-arch == 'x64' }}
-    #  run: |
-    #    sudo security authorizationdb write com.apple.trust-settings.admin allow
-    #    cd src/electron
-    #    ./script/codesign/generate-identity.sh
+    - name: Import & Trust Self-Signed Codesigning Cert on MacOS
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        cd src/electron
+        ./script/codesign/generate-identity.sh
+    - name: Sign Electron.app for macOS tests
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        identity=$(src/electron/script/codesign/get-trusted-identity.sh)
+        if [ -n "$identity" ]; then
+          codesign -s "$identity" --deep --force src/out/Default/Electron.app
+        fi
 
     - name: Run Electron Tests
       shell: bash
