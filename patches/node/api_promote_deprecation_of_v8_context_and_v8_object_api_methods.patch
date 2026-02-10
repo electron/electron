@@ -44,10 +44,10 @@ index 37d83e41b618a07aca98118260abe9618f11256d..26d5c1bd3c8191fce1d22b969996b6bf
  
  template <typename T>
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 5dfbd564d5bbd22ebf3b529a07b73e85cbe51986..b0c3c52cab63c6ae67079aa752bd58dd4f162451 100644
+index 97c43afb487b58c0c77bd59b4a6b6d7a13690053..23a4d7b651935a4029249fb2f1dd3ed46ea3b26f 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -199,7 +199,8 @@ inline Environment* Environment::GetCurrent(v8::Local<v8::Context> context) {
+@@ -189,7 +189,8 @@ inline Environment* Environment::GetCurrent(v8::Local<v8::Context> context) {
    }
    return static_cast<Environment*>(
        context->GetAlignedPointerFromEmbedderData(
