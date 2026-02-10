@@ -3,6 +3,8 @@
 set -eo pipefail
 
 dir="$(dirname $0)"/.working
+KEYCHAIN="electron-codesign.keychain-db"
+KEYCHAIN_TEMP="$(openssl rand -hex 12)"
 
 cleanup() {
     rm -rf "$dir"
@@ -18,30 +20,16 @@ mkdir -p "$dir"
 
 # Generate Certs
 openssl req -new -newkey rsa:2048 -x509 -days 7300 -nodes -config "$(dirname $0)"/codesign.cnf -extensions extended -batch -out "$dir"/certificate.cer -keyout "$dir"/certificate.key
-sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain "$dir"/certificate.cer
-sudo security import "$dir"/certificate.key -A -k /Library/Keychains/System.keychain
 
-# restart(reload) taskgated daemon
-sudo pkill -f /usr/libexec/taskgated
+# macOS 15+ blocks modifications to the system keychain via SIP/TCC,
+# so we use a custom user-scoped keychain instead.
+# Refs https://github.com/electron/electron/issues/48182
+security create-keychain -p "$KEYCHAIN_TEMP" "$KEYCHAIN"
+security set-keychain-settings -t 3600 -u "$KEYCHAIN"
+security unlock-keychain -p "$KEYCHAIN_TEMP" "$KEYCHAIN"
 
-# need once
-sudo security authorizationdb write system.privilege.taskport allow
-# need once
-DevToolsSecurity -enable
+security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+security import "$dir"/certificate.cer -k "$KEYCHAIN" -T /usr/bin/codesign
+security import "$dir"/certificate.key -k "$KEYCHAIN" -T /usr/bin/codesign -A
 
-# openssl req -newkey rsa:2048 -nodes -keyout "$dir"/private.pem -x509 -days 1 -out "$dir"/certificate.pem -extensions extended -config "$(dirname $0)"/codesign.cnf
-# openssl x509 -inform PEM -in "$dir"/certificate.pem -outform DER -out "$dir"/certificate.cer
-# openssl x509 -pubkey -noout -in "$dir"/certificate.pem > "$dir"/public.key
-# rm -f "$dir"/certificate.pem
-
-# Import Certs
-# security import "$dir"/certificate.cer -k $KEY_CHAIN
-# security import "$dir"/private.pem -k $KEY_CHAIN
-# security import "$dir"/public.key -k $KEY_CHAIN
-
-# Generate Trust Settings
-# TODO: Remove NPX
-npm_config_yes=true npx ts-node "$(dirname $0)"/gen-trust.ts "$dir"/certificate.cer "$dir"/trust.xml
-
-# Import Trust Settings
-sudo security trust-settings-import -d "$dir/trust.xml"
+security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_TEMP" "$KEYCHAIN"
