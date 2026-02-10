@@ -419,7 +419,7 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   }
 
   gfx::Size size = bounds.size();
-  if ((has_frame() || has_client_frame()) && use_content_size_)
+  if (has_frame() && use_content_size_)
     size = ContentBoundsToWindowBounds(gfx::Rect(size)).size();
 
   widget()->CenterWindow(size);
@@ -1690,7 +1690,7 @@ gfx::Rect NativeWindowViews::WidgetToLogicalBounds(
 
 gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
     const gfx::Rect& bounds) const {
-  if (!has_frame() && !has_client_frame())
+  if (!has_frame())
     return bounds;
 
   gfx::Rect window_bounds(bounds);
@@ -1718,7 +1718,7 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
 
 gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
     const gfx::Rect& bounds) const {
-  if (!has_frame() && !has_client_frame())
+  if (!has_frame())
     return bounds;
 
   gfx::Rect content_bounds(bounds);
