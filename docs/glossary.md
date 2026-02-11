@@ -14,7 +14,7 @@ dependency tree from `node_modules`).
 
 ### ASAR integrity
 
-ASAR integrity is an security feature that validates the contents of your app's
+ASAR integrity is a security feature that validates the contents of your app's
 ASAR archives at runtime. When enabled, your Electron app will verify the
 header hash of its ASAR archive on runtime. If no hash is present or if there is a mismatch in the
 hashes, the app will forcefully terminate.
@@ -137,9 +137,9 @@ See also: [code signing](#code-signing)
 
 ### OSR
 
-OSR (offscreen rendering) can be used for loading heavy page in
+OSR (offscreen rendering) can be used for loading a heavy page in
 background and then displaying it after (it will be much faster).
-It allows you to render page without showing it on screen.
+It allows you to render a page without showing it on screen.
 
 For more information, read the [Offscreen Rendering][] tutorial.
 
