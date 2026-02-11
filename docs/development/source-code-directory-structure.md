@@ -14,7 +14,7 @@ control via the [`DEPS`](https://github.com/electron/electron/blob/main/DEPS) fi
 [initializing a local Electron checkout](./build-instructions-gn.md), Electron's source code is just one
 of many nested folders within the project root.
 
-The project contains a single `src` folder that corresponds a specific git checkout of
+The project contains a single `src` folder that corresponds to a specific git checkout of
 [Chromium's `src` folder](https://source.chromium.org/chromium/chromium/src). In addition, Electron's
 repository code is contained in `src/electron` (with its own nested git repository), and other
 Electron-specific third-party dependencies (e.g. [nan](https://github.com/nodejs/nan) or

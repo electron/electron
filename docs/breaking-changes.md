@@ -110,7 +110,7 @@ Users can force XWayland by passing `--ozone-platform=x11`.
 ### Removed: `ORIGINAL_XDG_CURRENT_DESKTOP` environment variable
 
 Previously, Electron changed the value of `XDG_CURRENT_DESKTOP` internally to `Unity`, and stored the original name of the desktop session
-in a separate variable. `XDG_CURRENT_DESKTOP` is no longer overriden and now reflects the actual desktop environment.
+in a separate variable. `XDG_CURRENT_DESKTOP` is no longer overridden and now reflects the actual desktop environment.
 
 ### Removed: macOS 11 support
 
@@ -191,7 +191,7 @@ window is not currently visible.
 
 `app.commandLine` was only meant to handle chromium switches (which aren't case-sensitive) and switches passed via `app.commandLine` will not be passed down to any of the child processes.
 
-If you were using `app.commandLine` to control the behavior of the  main process, you should do this via `process.argv`.
+If you were using `app.commandLine` to control the behavior of the main process, you should do this via `process.argv`.
 
 ### Deprecated: `NativeImage.getBitmap()`
 
@@ -221,7 +221,7 @@ from upstream Chromium.
 ### Deprecated: `null` value for `session` property in `ProtocolResponse`
 
 Previously, setting the ProtocolResponse.session property to `null`
-Would create a random independent session. This is no longer supported.
+would create a random independent session. This is no longer supported.
 
 Using single-purpose sessions here is discouraged due to overhead costs;
 however, old code that needs to preserve this behavior can emulate it by
@@ -232,7 +232,7 @@ and then using it in `ProtocolResponse.session`.
 
 When calling `Session.clearStorageData(options)`, the `options.quota`
 property is deprecated. Since the `syncable` type was removed, there
-is only type left -- `'temporary'` -- so specifying it is unnecessary.
+is only one type left -- `'temporary'` -- so specifying it is unnecessary.
 
 ### Deprecated: Extension methods and events on `session`
 
@@ -561,7 +561,7 @@ more information.
 
 ### Removed: The `--disable-color-correct-rendering` switch
 
-This switch was never formally documented but it's removal is being noted here regardless. Chromium itself now has better support for color spaces so this flag should not be needed.
+This switch was never formally documented but its removal is being noted here regardless. Chromium itself now has better support for color spaces so this flag should not be needed.
 
 ### Behavior Changed: `BrowserView.setAutoResize` behavior on macOS
 
@@ -1252,7 +1252,7 @@ more details.
 
 ### API Changed: `webContents.printToPDF()`
 
-`webContents.printToPDF()` has been modified to conform to [`Page.printToPDF`](https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-printToPDF) in the Chrome DevTools Protocol. This has been changes in order to
+`webContents.printToPDF()` has been modified to conform to [`Page.printToPDF`](https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-printToPDF) in the Chrome DevTools Protocol. This has been changed in order to
 address changes upstream that made our previous implementation untenable and rife with bugs.
 
 **Arguments Changed**
