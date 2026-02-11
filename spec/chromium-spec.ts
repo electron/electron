@@ -3209,14 +3209,12 @@ describe('chromium features', () => {
       const rc = await startRemoteControlApp(['--enable-features=AlwaysLogLOAFURL']);
       const hasAttribution = await rc.remotely(async (fixture: string) => {
         const { BrowserWindow, protocol, net } = require('electron/main');
-        const { once } = require('node:events');
         const { pathToFileURL } = require('node:url');
 
         protocol.handle('custom', () => net.fetch(pathToFileURL(fixture).toString()));
 
         const w = new BrowserWindow({ show: false });
-        w.loadURL('custom://my-url');
-        await once(w.webContents, 'did-finish-load');
+        await w.loadURL('custom://my-url');
 
         const hasAttribution = await w.webContents.executeJavaScript('hasAttributionPromise');
 
