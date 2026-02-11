@@ -91,8 +91,6 @@ jobs:
     permissions:
       contents: read
       id-token: write
-      attestations: write
-      artifact-metadata: write      
     container: ${{ fromJSON(inputs.build-container) }}
     environment: ${{ inputs.environment }}
     env:

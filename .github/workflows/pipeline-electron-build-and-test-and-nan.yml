@@ -67,8 +67,6 @@ jobs:
     permissions:
       contents: read
       id-token: write
-      attestations: write
-      artifact-metadata: write
     with:
       build-runs-on: ${{ inputs.build-runs-on }}
       build-container: ${{ inputs.build-container }}
