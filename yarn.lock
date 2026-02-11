@@ -490,6 +490,7 @@ __metadata:
     webpack: "npm:^5.95.0"
     webpack-cli: "npm:^6.0.1"
     wrapper-webpack-plugin: "npm:^2.2.0"
+    yaml: "npm:^2.8.1"
   dependenciesMeta:
     abstract-socket:
       built: true
@@ -14487,6 +14488,15 @@ __metadata:
   bin:
     yaml: bin.mjs
   checksum: 10c0/f6f7310cf7264a8107e72c1376f4de37389945d2fb4656f8060eca83f01d2d703f9d1b925dd8f39852a57034fafefde6225409ddd9f22aebfda16c6141b71858
+  languageName: node
+  linkType: hard
+
+"yaml@npm:^2.8.1":
+  version: 2.8.2
+  resolution: "yaml@npm:2.8.2"
+  bin:
+    yaml: bin.mjs
+  checksum: 10c0/703e4dc1e34b324aa66876d63618dcacb9ed49f7e7fe9b70f1e703645be8d640f68ab84f12b86df8ac960bac37acf5513e115de7c970940617ce0343c8c9cd96
   languageName: node
   linkType: hard
 

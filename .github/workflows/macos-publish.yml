@@ -47,9 +47,11 @@ jobs:
         target-platform: macos
 
   publish-x64-darwin:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      attestations: write
       contents: read
+      id-token: write
     needs: checkout-macos
     with:
       environment: production-release
@@ -64,9 +66,11 @@ jobs:
     secrets: inherit
 
   publish-x64-mas:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      attestations: write
       contents: read
+      id-token: write
     needs: checkout-macos
     with:
       environment: production-release
@@ -81,9 +85,11 @@ jobs:
     secrets: inherit
 
   publish-arm64-darwin:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      attestations: write
       contents: read
+      id-token: write
     needs: checkout-macos
     with:
       environment: production-release
@@ -98,9 +104,11 @@ jobs:
     secrets: inherit
 
   publish-arm64-mas:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      attestations: write
       contents: read
+      id-token: write
     needs: checkout-macos
     with:
       environment: production-release
