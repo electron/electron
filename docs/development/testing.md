@@ -17,7 +17,7 @@ style, run `npm run lint`, which will run a variety of linting checks
 against your changes depending on which areas of the code they touch.
 
 Many of these checks are included as precommit hooks, so it's likely
-you error would be caught at commit time.
+your error would be caught at commit time.
 
 ## Unit Tests
 
