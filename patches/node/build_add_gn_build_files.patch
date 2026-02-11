@@ -11,7 +11,7 @@ really in 20/21. We have to wait until 22 is released to be able to
 build with upstream GN files.
 
 diff --git a/configure.py b/configure.py
-index 750ddc8ace6cad894e738f6e1d983b5906acc10f..e063f9131d4d547d231811dafea03c8c52b611e6 100755
+index f31d460038db2fa2fa4c47d62be3100da959978f..209f23b04663113e4f6b3c3242c0544cfed9a950 100755
 --- a/configure.py
 +++ b/configure.py
 @@ -1736,7 +1736,7 @@ def configure_v8(o, configs):
@@ -68,10 +68,10 @@ index d4438f7fd61598afac2c1e3184721a759d22b10c..e2407027ab05e59b2f0f1c213b98ea46
  
  assert(!node_enable_inspector || node_use_openssl,
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 581b9886ded52f294b7cc6b080b2269b7617c85e..e43e2559aaf48add88aad342b1c96fd34f26c87f 100644
+index 7b34b14856a5193c723987f69d6040bdb6aa7c34..90fdf52d79954bf2cd86fd1d2d6da8199683d344 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -774,6 +774,7 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -775,6 +775,7 @@ void BuiltinLoader::RegisterExternalReferences(
    registry->Register(GetNatives);
  
    RegisterExternalReferencesForInternalizedBuiltinCode(registry);
@@ -95,7 +95,7 @@ index 7a7b84337feb67960819472e43192dbdc151e299..bcdd50f635757f41287c87df1db9cd3b
 diff --git a/tools/js2c.cc b/tools/js2c.cc
 old mode 100644
 new mode 100755
-index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2e9dfb0f0
+index 9c2f70de4e00834ff448e573743898072dc14c5d..71a12c606f4da7165cc41a295a278b2e504af1b6
 --- a/tools/js2c.cc
 +++ b/tools/js2c.cc
 @@ -28,6 +28,7 @@ namespace js2c {
@@ -190,7 +190,7 @@ index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2
                     static_cast<int>(def_buf.size()),
                     def_buf.data(),
                     static_cast<int>(init_buf.size()),
-@@ -846,12 +890,15 @@ int JS2C(const FileList& js_files,
+@@ -836,12 +880,15 @@ int JS2C(const FileList& js_files,
      }
    }
  
@@ -206,7 +206,7 @@ index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2
    Fragment out = Format(definitions, initializers, registrations);
    return WriteIfChanged(out, dest);
  }
-@@ -877,6 +924,8 @@ int Main(int argc, char* argv[]) {
+@@ -867,6 +914,8 @@ int Main(int argc, char* argv[]) {
      std::string arg(argv[i]);
      if (arg == "--verbose") {
        is_verbose = true;
@@ -215,7 +215,7 @@ index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2
      } else if (arg == "--root") {
        if (i == argc - 1) {
          fprintf(stderr, "--root must be followed by a path\n");
-@@ -925,6 +974,14 @@ int Main(int argc, char* argv[]) {
+@@ -915,6 +964,14 @@ int Main(int argc, char* argv[]) {
      }
    }
  
@@ -230,7 +230,7 @@ index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2
    // Should have exactly 3 types: `.js`, `.mjs` and `.gypi`.
    assert(file_map.size() == 3);
    auto gypi_it = file_map.find(".gypi");
-@@ -951,6 +1008,7 @@ int Main(int argc, char* argv[]) {
+@@ -941,6 +998,7 @@ int Main(int argc, char* argv[]) {
    std::sort(mjs_it->second.begin(), mjs_it->second.end());
  
    return JS2C(js_it->second, mjs_it->second, gypi_it->second[0], output);
