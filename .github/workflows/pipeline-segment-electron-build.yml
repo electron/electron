@@ -90,7 +90,6 @@ jobs:
     runs-on: ${{ inputs.build-runs-on }}
     permissions:
       contents: read
-      id-token: write
     container: ${{ fromJSON(inputs.build-container) }}
     environment: ${{ inputs.environment }}
     env:

@@ -75,7 +75,6 @@ jobs:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
     permissions:
       contents: read
-      id-token: write
     with:
       build-runs-on: ${{ inputs.build-runs-on }}
       build-container: ${{ inputs.build-container }}
