@@ -3203,6 +3203,26 @@ describe('chromium features', () => {
       expect(rgb).to.equal('');
     });
   });
+
+  describe('long-animation-frame', () => {
+    it('should include script attribution on custom protocols if AlwaysLogLOAFURL is enabled', async () => {
+      const rc = await startRemoteControlApp(['--enable-features=AlwaysLogLOAFURL']);
+      const hasAttribution = await rc.remotely(async (fixture: string) => {
+        const { BrowserWindow, protocol, net } = require('electron/main');
+        const { once } = require('node:events');
+        const { pathToFileURL } = require('node:url');
+
+        protocol.handle('custom', () => net.fetch(pathToFileURL(fixture).toString()));
+
+        const w = new BrowserWindow({ show: false });
+        w.loadURL('custom://my-url');
+        await once(w.webContents, 'did-finish-load');
+
+        return await w.webContents.executeJavaScript('hasAttributionPromise');
+      }, path.join(fixturesPath, 'chromium', 'long-animation-frame.html'));
+      expect(hasAttribution).to.be.true();
+    });
+  });
 });
 
 describe('font fallback', () => {
