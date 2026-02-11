@@ -246,6 +246,8 @@ void ElectronMainDelegate::PreSandboxStartup() {
   // Register the pseudonymization salt descriptor in GlobalDescriptors.
   // (see https://crbug.com/40850085) Only affects processes launched
   // without the zygote (i.e. utility processes)
+  // TODO: Remove in favor of
+  // https://chromium-review.googlesource.com/c/chromium/src/+/7568382
   if (!process_type.empty() && !IsZygoteProcess()) {
     base::GlobalDescriptors::GetInstance()->Set(
         kPseudonymizationSaltDescriptor,
