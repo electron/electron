@@ -15,10 +15,10 @@ Reviewed-by: Noam Rosenthal <nrosenthal@google.com>
 Cr-Commit-Position: refs/heads/main@{#1579397}
 
 diff --git a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
-index 24e58da8eaa9319e2bb626c69d5ad23de720e108..0ffea9dafe3e3dffcbaf9031082aa88dccb46267 100644
+index 20eb792c45d23874fb6a3982a335a140820a94d0..1e8c8c6f73bf576f10cb32beb80cadcaa9516b71 100644
 --- a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
 +++ b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
-@@ -516,8 +516,15 @@ void AnimationFrameTimingMonitor::Trace(Visitor* visitor) const {
+@@ -524,8 +524,15 @@ void AnimationFrameTimingMonitor::Trace(Visitor* visitor) const {
    visitor->Trace(frame_handling_input_);
  }
  
@@ -35,7 +35,7 @@ index 24e58da8eaa9319e2bb626c69d5ad23de720e108..0ffea9dafe3e3dffcbaf9031082aa88d
    return kurl.ProtocolIsData() || kurl.ProtocolIsInHTTPFamily() ||
           kurl.ProtocolIs("blob") || kurl.IsEmpty();
 diff --git a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.h b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.h
-index f2fe39be2db525d89fcd9787c2ae9285babab26d..c395cf39d404f6c4f6f6e23c9fb8dfe92151a7d2 100644
+index 60a891c17f34ec617c86d0fcbfcec0f2469bdd07..91475dfc3175cf49b8396c9f029cb25bf3ec1e75 100644
 --- a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.h
 +++ b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.h
 @@ -22,6 +22,11 @@ class TimeTicks;
