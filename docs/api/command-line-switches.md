@@ -375,7 +375,7 @@ Finally, you'll need to ensure that the version of Chromium in Electron matches 
 * `AlwaysLogLOAFURL`: enables script attribution for
   [`long-animation-frame`](https://developer.mozilla.org/en-US/docs/Web/API/Performance_API/Long_animation_frame_timing)
   `PerformanceObserver` events for non-http(s), non-data, non-blob URLs (such as `file:` or custom
-  protocol URLs). (Use in development only. Might have security implications in production.)
+  protocol URLs).
 
 [app]: app.md
 [append-switch]: command-line.md#commandlineappendswitchswitch-value
