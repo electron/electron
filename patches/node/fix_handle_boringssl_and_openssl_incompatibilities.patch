@@ -107,7 +107,7 @@ index e2407027ab05e59b2f0f1c213b98ea469db7a91b..c64761b730e61edcdc0e46a48699f2fd
    # The location of simdutf - use the one from node's deps by default.
    node_simdutf_path = "//third_party/simdutf"
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index 5ed2f8b35a1e2f8348a0f3891f37944f49371256..bd453ae633b2833cc3c6e3e415b43792dc5bf2e5 100644
+index ed509e5c9fe79c5d545180fef0fea9ab6f1ba39b..9446314c95e57ea408568d107a9f6e76886650cb 100644
 --- a/src/crypto/crypto_cipher.cc
 +++ b/src/crypto/crypto_cipher.cc
 @@ -447,6 +447,7 @@ bool CipherBase::InitAuthenticated(const char* cipher_type,
@@ -151,7 +151,7 @@ index d005bf0ffb93445fa6611a1beb1b465764271ede..01770687bd191c61af02e76d7de24bba
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 03c0c6f42d84efaeba0cc3b997cd29f77648b00d..f3631d538a38dc3a93a47707ea8dab0462fa2140 100644
+index 4e968477ebcc08fb0ccd6abd4d66240309cf76e8..2e3f31e1765024373c3fc2acd33fc3bfb352a906 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -143,7 +143,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
@@ -163,7 +163,7 @@ index 03c0c6f42d84efaeba0cc3b997cd29f77648b00d..f3631d538a38dc3a93a47707ea8dab04
        X509* ca = sk_X509_value(extra_certs, i);
  
        // NOTE: Increments reference count on `ca`
-@@ -1832,11 +1832,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
+@@ -1855,11 +1855,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
    // If the user specified "auto" for dhparams, the JavaScript layer will pass
    // true to this function instead of the original string. Any other string
    // value will be interpreted as custom DH parameters below.
@@ -177,7 +177,7 @@ index 03c0c6f42d84efaeba0cc3b997cd29f77648b00d..f3631d538a38dc3a93a47707ea8dab04
    DHPointer dh;
    {
      BIOPointer bio(LoadBIO(env, args[0]));
-@@ -2062,7 +2063,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
+@@ -2085,7 +2086,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
    }
  
    // Add CA certs too
@@ -276,7 +276,7 @@ index 205e248e0f20f019e189a6c69d3c011a616b3939..12b0d804c6f1d4998b85160b0aac8eb7
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
 diff --git a/src/env.h b/src/env.h
-index ed2253f1fc3cf8d59e73e4f2478dfb0d4227aacd..84a650885a79bc5c49efdc26f62ec8db48de775c 100644
+index 3ab33341806ad6c0b06b982a30a57b7b5399e38f..754ddf7b331465c56081db05d6fd2a45fe50596a 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -52,7 +52,7 @@
@@ -311,7 +311,7 @@ index d9c533f100d25aeab1fe8589932a8ddead431258..2acab8786a8a752b17961445edeb872c
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.h b/src/node_options.h
-index 1f15c6cc6a9ae192b1b394c437393e744b5b1153..638e49ccf48d9b9c60189af9255ce7cef9184723 100644
+index 887ead81d4b8bd55351091c06ed641c6a87b8419..6d4df44ccc06c3278948879a2430ab6f459cbec4 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@

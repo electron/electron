@@ -7,7 +7,7 @@ Subject: build: ensure native module compilation fails if not using a new
 This should not be upstreamed, it is a quality-of-life patch for downstream module builders.
 
 diff --git a/common.gypi b/common.gypi
-index 8280cff0d93d42a95875b78de84221aa1bcae092..76a03b9a5458f4afc0ab5768c8a2e90633749fe9 100644
+index cf3ceaf19972ee107deff63b4dba16c12191c615..6159350823fd9f0090e2b98e8797e829fd481750 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -89,6 +89,8 @@
@@ -42,7 +42,7 @@ index 8280cff0d93d42a95875b78de84221aa1bcae092..76a03b9a5458f4afc0ab5768c8a2e906
        # list in v8/BUILD.gn.
        ['v8_enable_v8_checks == 1', {
 diff --git a/configure.py b/configure.py
-index e063f9131d4d547d231811dafea03c8c52b611e6..a5c764d9e7fb0ffa219202015ec67ed6d3e14c04 100755
+index 209f23b04663113e4f6b3c3242c0544cfed9a950..88164b99ae3d37f47e5e9a9ba96d7b450d6ba4ab 100755
 --- a/configure.py
 +++ b/configure.py
 @@ -1717,6 +1717,7 @@ def configure_library(lib, output, pkgname=None):

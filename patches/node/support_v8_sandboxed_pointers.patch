@@ -235,7 +235,7 @@ index 84a650885a79bc5c49efdc26f62ec8db48de775c..ba442937bf0d7831c9a84b5a57211e9f
    std::vector<SnapshotIndex> primitive_values;
    std::vector<PropInfo> template_values;
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index 49df0b4284748effb27b05ecd69f05699dd8be75..eb104ab80fd2052d1523cb2f2ecdb6d23ac3be98 100644
+index ddee7b7e40c3ee4054b2b15b75154607aa6431ed..decc3c8c966c2322f22d6bdd871514bb53882a29 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -81,6 +81,7 @@ using v8::SharedArrayBuffer;
