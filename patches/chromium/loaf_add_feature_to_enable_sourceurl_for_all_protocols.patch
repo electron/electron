@@ -15,10 +15,10 @@ Reviewed-by: Noam Rosenthal <nrosenthal@google.com>
 Cr-Commit-Position: refs/heads/main@{#1579397}
 
 diff --git a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
-index 24e58da8eaa9319e2bb626c69d5ad23de720e108..0ffea9dafe3e3dffcbaf9031082aa88dccb46267 100644
+index 6e118aeed3b13e4d36064f2e114aba9edf4bb6dc..5e0304eda6548e7065527e03c0635bd1387138bd 100644
 --- a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
 +++ b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
-@@ -516,8 +516,15 @@ void AnimationFrameTimingMonitor::Trace(Visitor* visitor) const {
+@@ -519,8 +519,15 @@ void AnimationFrameTimingMonitor::Trace(Visitor* visitor) const {
    visitor->Trace(frame_handling_input_);
  }
  
