@@ -28,7 +28,7 @@ with breakpoints inside Electron's source code.
   format.
 
 * **ProcMon**: The [free SysInternals tool][sys-internals] allows you to inspect
-  a processes parameters, file handles, and registry operations.
+  a process's parameters, file handles, and registry operations.
 
 ## Attaching to and Debugging Electron
 

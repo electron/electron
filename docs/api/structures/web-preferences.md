@@ -40,7 +40,7 @@
 * `javascript` boolean (optional) - Enables JavaScript support. Default is `true`.
 * `webSecurity` boolean (optional) - When `false`, it will disable the
   same-origin policy (usually using testing websites by people), and set
-  `allowRunningInsecureContent` to `true` if this options has not been set
+  `allowRunningInsecureContent` to `true` if this option has not been set
   by user. Default is `true`.
 * `allowRunningInsecureContent` boolean (optional) - Allow an https page to run
   JavaScript, CSS or plugins from http URLs. Default is `false`.
