@@ -44,7 +44,7 @@ index 37d83e41b618a07aca98118260abe9618f11256d..26d5c1bd3c8191fce1d22b969996b6bf
  
  template <typename T>
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 74bbb9fb83246a90bc425e259150f0868020ac9e..a4b3a1c0907c9d50baf6c8cd473cb4c7369d0a5c 100644
+index 777335321fc9037d91d88fb5852bbf5b05f50d0a..3dceb8b5448fd4971245f7408db4cae103f0a347 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
 @@ -199,7 +199,8 @@ inline Environment* Environment::GetCurrent(v8::Local<v8::Context> context) {

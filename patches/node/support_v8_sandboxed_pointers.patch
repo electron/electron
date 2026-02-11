@@ -190,7 +190,7 @@ index b30297eac08ad9587642b723f91d7e3b954294d4..4c5427596d1c90d3a413cdd9ff4f1151
    auto backing = ArrayBuffer::NewBackingStore(
        mem->data,
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 97c43afb487b58c0c77bd59b4a6b6d7a13690053..5dfbd564d5bbd22ebf3b529a07b73e85cbe51986 100644
+index 74bbb9fb83246a90bc425e259150f0868020ac9e..777335321fc9037d91d88fb5852bbf5b05f50d0a 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
 @@ -44,6 +44,16 @@
@@ -211,7 +211,7 @@ index 97c43afb487b58c0c77bd59b4a6b6d7a13690053..5dfbd564d5bbd22ebf3b529a07b73e85
    return isolate_;
  }
 diff --git a/src/env.h b/src/env.h
-index 84a650885a79bc5c49efdc26f62ec8db48de775c..ba442937bf0d7831c9a84b5a57211e9f90c81705 100644
+index 754ddf7b331465c56081db05d6fd2a45fe50596a..db1ed241f730791ba3e3f93349cb5ff3437c738d 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -111,6 +111,19 @@ class ModuleWrap;
@@ -235,7 +235,7 @@ index 84a650885a79bc5c49efdc26f62ec8db48de775c..ba442937bf0d7831c9a84b5a57211e9f
    std::vector<SnapshotIndex> primitive_values;
    std::vector<PropInfo> template_values;
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index ddee7b7e40c3ee4054b2b15b75154607aa6431ed..decc3c8c966c2322f22d6bdd871514bb53882a29 100644
+index ddee7b7e40c3ee4054b2b15b75154607aa6431ed..9b74343d01913a27bde608d73d890ae127143960 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -81,6 +81,7 @@ using v8::SharedArrayBuffer;
