@@ -246,7 +246,6 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-      id-token: write
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-macos
     with:
@@ -266,7 +265,6 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-      id-token: write
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-macos
     with:
@@ -286,7 +284,6 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-      id-token: write
     uses: ./.github/workflows/pipeline-electron-build-and-tidy-and-test-and-nan.yml
     needs: checkout-linux
     if: ${{ needs.setup.outputs.src == 'true' }}
@@ -310,7 +307,6 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-      id-token: write
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
     if: ${{ needs.setup.outputs.src == 'true' }}
@@ -333,7 +329,6 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-      id-token: write
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
     if: ${{ needs.setup.outputs.src == 'true' }}
@@ -355,7 +350,6 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-      id-token: write
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-linux
     if: ${{ needs.setup.outputs.src == 'true' }}
@@ -377,7 +371,6 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-      id-token: write
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-windows
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
@@ -397,7 +390,6 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-      id-token: write
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-windows
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
@@ -417,7 +409,6 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-      id-token: write
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: checkout-windows
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
