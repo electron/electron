@@ -37,6 +37,22 @@ webContents.setWindowOpenHandler((details) => {
 })
 ```
 
+### Behavior Changed: `NSAudioCaptureUsageDescription` should be included in your app's Info.plist file to use `desktopCapturer` (🍏 macOS ≥14.2)
+
+Per [Chromium update](https://source.chromium.org/chromium/chromium/src/+/ad17e8f8b93d5f34891b06085d373a668918255e) which enables Apple's newer [CoreAudio Tap API](https://developer.apple.com/documentation/CoreAudio/capturing-system-audio-with-core-audio-taps#Configure-the-sample-code-project) by default, you now must have `NSAudioCaptureUsageDescription` defined in your `Info.plist` to use `desktopCapturer`.
+
+Electron's `desktopCapturer` will create a dead audio stream if the new permission is absent however no errors or warnings will occur. This is partially a side-effect of Chromium not falling back to the older `Screen & System Audio Recording` permissions system if the new system fails.
+
+To restore previous behavior:
+
+```js
+// main.js (right beneath your require/import statments)
+app.commandLine.appendSwitch(
+  'disable-features',
+  'MacCatapLoopbackAudioForScreenShare'
+)
+```
+
 ### Behavior Changed: shared texture OSR `paint` event data structure
 
 When using shared texture offscreen rendering feature, the `paint` event now emits a more structured object.
