@@ -3218,7 +3218,11 @@ describe('chromium features', () => {
         w.loadURL('custom://my-url');
         await once(w.webContents, 'did-finish-load');
 
-        return await w.webContents.executeJavaScript('hasAttributionPromise');
+        const hasAttribution = await w.webContents.executeJavaScript('hasAttributionPromise');
+
+        global.setTimeout(() => require('electron').app.quit());
+
+        return hasAttribution;
       }, path.join(fixturesPath, 'chromium', 'long-animation-frame.html'));
       expect(hasAttribution).to.be.true();
     });
