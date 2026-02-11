@@ -56,11 +56,6 @@ on:
         required: false
         type: boolean
         default: false
-      upload-out-gen-artifacts:
-        description: Whether to upload the src/gen artifacts
-        required: false
-        type: boolean
-        default: false
       enable-ssh:
         description: Enable SSH debugging
         required: false
@@ -107,7 +102,7 @@ jobs:
         run: |
           mkdir src
       - name: Checkout Electron
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           path: src/electron
           fetch-depth: 0
@@ -132,7 +127,7 @@ jobs:
         run: df -h
       - name: Setup Node.js/npm
         if: ${{ inputs.target-platform == 'macos' }}
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f
         with:
           node-version: 22.21.x
           cache: yarn
@@ -177,7 +172,7 @@ jobs:
         if: ${{ inputs.target-platform == 'linux' }}
         uses: ./src/electron/.github/actions/restore-cache-aks
       - name: Checkout Electron
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           path: src/electron
           fetch-depth: 0
@@ -221,7 +216,6 @@ jobs:
           generate-symbols: ${{ inputs.generate-symbols }}
           upload-to-storage: ${{ inputs.upload-to-storage }}
           is-asan: ${{ inputs.is-asan }}
-          upload-out-gen-artifacts: ${{ inputs.upload-out-gen-artifacts }}
       - name: Set GN_EXTRA_ARGS for MAS Build
         if: ${{ inputs.target-platform == 'macos' && (inputs.target-variant == 'all' ||
           inputs.target-variant == 'mas') }}
