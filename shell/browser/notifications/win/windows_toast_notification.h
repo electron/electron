@@ -59,7 +59,6 @@ class WindowsToastNotification : public Notification {
  private:
   friend class ToastEventHandler;
 
-  HRESULT ShowInternal(const NotificationOptions& options);
   static std::u16string GetToastXml(const std::u16string& title,
                                     const std::u16string& msg,
                                     const std::wstring& icon_path,

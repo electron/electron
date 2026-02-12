@@ -80,6 +80,7 @@ class WebContentsPreferences
   std::optional<base::FilePath> GetPreloadPath() const { return preload_path_; }
   bool ShouldFocusOnNavigation() const { return focus_on_navigation_; }
   bool IsSandboxed() const;
+  std::optional<double> GetZoomFactor() const { return zoom_factor_; }
 
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
@@ -136,6 +137,7 @@ class WebContentsPreferences
   blink::mojom::V8CacheOptions v8_cache_options_;
   bool deprecated_paste_enabled_ = false;
   bool focus_on_navigation_;
+  std::optional<double> zoom_factor_;
 
 #if BUILDFLAG(IS_MAC)
   bool scroll_bounce_;
