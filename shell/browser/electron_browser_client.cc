@@ -62,6 +62,7 @@
 #include "net/ssl/ssl_cert_request_info.h"
 #include "net/ssl/ssl_private_key.h"
 #include "printing/buildflags/buildflags.h"
+#include "sandbox/policy/switches.h"
 #include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/features.h"
@@ -554,9 +555,10 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   if (process_type == ::switches::kUtilityProcess ||
       process_type == ::switches::kRendererProcess) {
     // Copy following switches to child process.
-    static constexpr std::array<const char*, 10U> kCommonSwitchNames = {
+    static constexpr std::array<const char*, 11U> kCommonSwitchNames = {
         switches::kStandardSchemes.c_str(),
         switches::kEnableSandbox.c_str(),
+        sandbox::policy::switches::kNoSandbox,
         switches::kSecureSchemes.c_str(),
         switches::kBypassCSPSchemes.c_str(),
         switches::kCORSSchemes.c_str(),
@@ -570,6 +572,16 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     if (process_type == ::switches::kUtilityProcess ||
         content::RenderProcessHost::FromID(process_id)) {
       MaybeAppendSecureOriginsAllowlistSwitch(command_line);
+    }
+
+    // Keep no-sandbox authoritative if both switches are present.
+    if (command_line->HasSwitch(sandbox::policy::switches::kNoSandbox))
+      command_line->RemoveSwitch(switches::kEnableSandbox);
+
+    // Canonicalize repeated no-sandbox from multiple append paths.
+    if (command_line->HasSwitch(sandbox::policy::switches::kNoSandbox)) {
+      command_line->RemoveSwitch(sandbox::policy::switches::kNoSandbox);
+      command_line->AppendSwitch(sandbox::policy::switches::kNoSandbox);
     }
   }
 
@@ -587,6 +599,12 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     if (delegate_) {
       auto app_path = static_cast<api::App*>(delegate_)->GetAppPath();
       command_line->AppendSwitchPath(switches::kAppPath, app_path);
+    }
+
+    // no-sandbox renderers must bypass zygote.
+    if (command_line->HasSwitch(sandbox::policy::switches::kNoSandbox) &&
+        !command_line->HasSwitch(::switches::kNoZygote)) {
+      command_line->AppendSwitch(::switches::kNoZygote);
     }
 
     auto env = base::Environment::Create();
@@ -615,6 +633,21 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       if (session_prefs->HasServiceWorkerPreloadScript()) {
         command_line->AppendSwitch(switches::kServiceWorkerPreload);
       }
+    }
+
+    // Renderer command-line assembly also pulls selected browser switches.
+    // Drop local copies here so these flags appear only once.
+    const base::CommandLine& browser_command_line =
+        *base::CommandLine::ForCurrentProcess();
+    if (browser_command_line.HasSwitch(sandbox::policy::switches::kNoSandbox))
+      command_line->RemoveSwitch(sandbox::policy::switches::kNoSandbox);
+    if (browser_command_line.HasSwitch(::switches::kNoZygote))
+      command_line->RemoveSwitch(::switches::kNoZygote);
+
+    // Canonicalize repeated no-zygote from multiple append paths.
+    if (command_line->HasSwitch(::switches::kNoZygote)) {
+      command_line->RemoveSwitch(::switches::kNoZygote);
+      command_line->AppendSwitch(::switches::kNoZygote);
     }
   }
 }

@@ -5,11 +5,14 @@
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/strings/string_util.h"
+#include "content/public/common/content_switches.h"
+#include "sandbox/policy/switches.h"
 #include "services/network/public/cpp/network_switches.h"
 #include "shell/common/gin_converters/base_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/options_switches.h"
 #include "third_party/abseil-cpp/absl/strings/ascii.h"
 
 namespace {
@@ -32,6 +35,8 @@ void AppendSwitch(const std::string& switch_string,
                   gin::Arguments* const args) {
   auto switch_str = base::ToLowerASCII(switch_string);
   auto* command_line = base::CommandLine::ForCurrentProcess();
+  const bool had_no_sandbox =
+      command_line->HasSwitch(sandbox::policy::switches::kNoSandbox);
   if (base::EndsWith(switch_string, "-path",
                      base::CompareCase::INSENSITIVE_ASCII) ||
       switch_string == network::switches::kLogNetLog) {
@@ -46,6 +51,14 @@ void AppendSwitch(const std::string& switch_string,
     command_line->AppendSwitchNative(switch_str, value);
   else
     command_line->AppendSwitch(switch_str);
+
+  // When --no-sandbox is added at runtime, keep switch state consistent for
+  // future children: avoid mixed sandbox flags and avoid zygote reuse.
+  if (switch_str == sandbox::policy::switches::kNoSandbox) {
+    command_line->RemoveSwitch(electron::switches::kEnableSandbox);
+    if (!had_no_sandbox && !command_line->HasSwitch(switches::kNoZygote))
+      command_line->AppendSwitch(switches::kNoZygote);
+  }
 }
 
 void RemoveSwitch(const std::string& switch_string) {

@@ -286,12 +286,11 @@ static_library("chrome") {
     deps += [ ":system_media_capture_permissions_mac_conflict" ]
   }
 
-  if (enable_widevine) {
+  # See //chrome/renderer/BUILD.gn L:278
+  if (enable_library_cdms || is_win || is_android) {
     sources += [
       "//chrome/renderer/media/chrome_key_systems.cc",
       "//chrome/renderer/media/chrome_key_systems.h",
-      "//chrome/renderer/media/chrome_key_systems_provider.cc",
-      "//chrome/renderer/media/chrome_key_systems_provider.h",
     ]
     deps += [ "//components/cdm/renderer" ]
   }

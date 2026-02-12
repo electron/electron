@@ -10,6 +10,7 @@
 #include "base/command_line.h"
 #include "base/containers/contains.h"
 #include "base/debug/stack_trace.h"
+#include "components/cdm/renderer/key_system_support_update.h"
 #include "content/public/renderer/render_frame.h"
 #include "net/http/http_request_headers.h"
 #include "shell/common/api/electron_bindings.h"
@@ -87,6 +88,15 @@ void ElectronRendererClient::RunScriptsAtDocumentEnd(
 void ElectronRendererClient::UndeferLoad(content::RenderFrame* render_frame) {
   render_frame->GetWebFrame()->GetDocumentLoader()->SetDefersLoading(
       blink::LoaderFreezeMode::kNone);
+}
+
+std::unique_ptr<media::KeySystemSupportRegistration>
+ElectronRendererClient::GetSupportedKeySystems(
+    content::RenderFrame* render_frame,
+    media::GetSupportedKeySystemsCB cb) {
+  return cdm::GetSupportedKeySystemsUpdates(render_frame,
+                                            /*can_persist_data=*/true,
+                                            std::move(cb));
 }
 
 void ElectronRendererClient::DidCreateScriptContext(
