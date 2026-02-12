@@ -640,7 +640,7 @@ index 48f47bf3eeb8464d1c3925f0f73f62c790cac2f0..b7b2b7c1b7e99927012ce1676cc753b2
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index a5fc9193711a7cc2eee45171178c070321177ca2..2a195724de141fd4f0f06c03314e6096a0d0ed3f 100644
+index a5fc9193711a7cc2eee45171178c070321177ca2..94bd32ce1ddd3f8b4315cd06be59d7550b591891 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -22,6 +22,7 @@
@@ -677,7 +677,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..2a195724de141fd4f0f06c03314e6096
  @end
  
  struct NSEdgeAndCornerThicknesses {
-@@ -159,13 +164,17 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event;
+@@ -159,13 +164,30 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event;
  @implementation NSView (CRFrameViewAdditions)
  // If a mouseDown: falls through to the frame view, turn it into a window drag.
  - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
@@ -685,6 +685,19 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..2a195724de141fd4f0f06c03314e6096
    if ([self.window _resizeDirectionForMouseLocation:event.locationInWindow] !=
        -1)
      return;
++#else
++  // For MAS builds, approximate the resize direction check.
++  if (self.window.styleMask & NSWindowStyleMaskResizable) {
++    constexpr CGFloat kResizeThreshold = 5.0;
++    NSPoint location = event.locationInWindow;
++    NSRect frame = self.window.frame;
++    CGFloat width = NSWidth(frame);
++    CGFloat height = NSHeight(frame);
++    if (location.x < kResizeThreshold || location.x > width - kResizeThreshold ||
++        location.y < kResizeThreshold || location.y > height - kResizeThreshold) {
++      return;
++    }
++  }
 +#endif
    [self.window performWindowDragWithEvent:event];
  }
@@ -695,7 +708,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..2a195724de141fd4f0f06c03314e6096
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (self.window.isMovable)
-@@ -193,6 +202,8 @@ - (BOOL)usesCustomDrawing {
+@@ -193,6 +215,8 @@ - (BOOL)usesCustomDrawing {
  }
  @end
  
@@ -704,7 +717,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..2a195724de141fd4f0f06c03314e6096
  @implementation NativeWidgetMacNSWindow {
   @private
    CommandDispatcher* __strong _commandDispatcher;
-@@ -268,6 +279,7 @@ - (BOOL)invokeOriginalIsVisibleForTesting {
+@@ -268,6 +292,7 @@ - (BOOL)invokeOriginalIsVisibleForTesting {
  // bubbles and the find bar, but these should not be movable.
  // Instead, let's push this up to the parent window which should be
  // the browser.
@@ -712,7 +725,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..2a195724de141fd4f0f06c03314e6096
  - (void)_zoomToScreenEdge:(NSUInteger)edge {
    if (self.parentWindow) {
      [self.parentWindow _zoomToScreenEdge:edge];
-@@ -275,6 +287,7 @@ - (void)_zoomToScreenEdge:(NSUInteger)edge {
+@@ -275,6 +300,7 @@ - (void)_zoomToScreenEdge:(NSUInteger)edge {
      [super _zoomToScreenEdge:edge];
    }
  }
@@ -720,7 +733,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..2a195724de141fd4f0f06c03314e6096
  
  // This override helps diagnose lifetime issues in crash stacktraces by
  // inserting a symbol on NativeWidgetMacNSWindow and should be kept even if it
-@@ -407,6 +420,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -407,6 +433,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -729,7 +742,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..2a195724de141fd4f0f06c03314e6096
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -418,6 +433,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -418,6 +446,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
@@ -738,7 +751,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..2a195724de141fd4f0f06c03314e6096
  - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
    if (self.isHeadless || self.parentWindow) {
      // AppKit's default implementation moves child windows down to avoid
-@@ -455,12 +472,14 @@ - (BOOL)_usesCustomDrawing {
+@@ -455,12 +485,14 @@ - (BOOL)_usesCustomDrawing {
  // if it were valid to set that style for windows, setting the window style
  // recalculates and re-caches a bunch of stuff, so a surgical override is the
  // cleanest approach.
@@ -753,7 +766,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..2a195724de141fd4f0f06c03314e6096
  
  + (void)_getExteriorResizeEdgeThicknesses:
              (NSEdgeAndCornerThicknesses*)outThicknesses
-@@ -714,9 +733,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
+@@ -714,9 +746,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
  }
  
  - (void)saveRestorableState {
@@ -765,7 +778,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..2a195724de141fd4f0f06c03314e6096
  
    // Certain conditions, such as in the Speedometer 3 benchmark, can trigger a
    // rapid succession of calls to saveRestorableState. If there's no pending
-@@ -783,6 +804,7 @@ - (void)reallySaveRestorableState {
+@@ -783,6 +817,7 @@ - (void)reallySaveRestorableState {
  // affects its restorable state changes.
  - (void)invalidateRestorableState {
    [super invalidateRestorableState];
@@ -773,7 +786,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..2a195724de141fd4f0f06c03314e6096
    if ([self _isConsideredOpenForPersistentState]) {
      if (_willUpdateRestorableState)
        return;
-@@ -795,6 +817,7 @@ - (void)invalidateRestorableState {
+@@ -795,6 +830,7 @@ - (void)invalidateRestorableState {
      _willUpdateRestorableState = NO;
      [NSObject cancelPreviousPerformRequestsWithTarget:self];
    }
@@ -781,7 +794,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..2a195724de141fd4f0f06c03314e6096
  }
  
  // On newer SDKs, _canMiniaturize respects NSWindowStyleMaskMiniaturizable in
-@@ -971,6 +994,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -971,6 +1007,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
    // Since _removeFromGroups: is not documented it could go away in newer
    // versions of macOS. If the selector does not exist, DumpWithoutCrashing() so
    // we hear about the change.
@@ -789,7 +802,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..2a195724de141fd4f0f06c03314e6096
    if (![NSWindow instancesRespondToSelector:@selector(_removeFromGroups:)]) {
      base::debug::DumpWithoutCrashing();
      return;
-@@ -988,6 +1012,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -988,6 +1025,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
        [currentWindow _removeFromGroups:child];
      }
    }

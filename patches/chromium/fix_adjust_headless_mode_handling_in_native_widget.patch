@@ -23,10 +23,10 @@ additional headless changes from breaking macOS window behavior.
 https://chromium-review.googlesource.com/c/chromium/src/+/7487666
 
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 2a195724de141fd4f0f06c03314e6096a0d0ed3f..2532ae21d9244b2ec9747ef7d9916668dcad145c 100644
+index 94bd32ce1ddd3f8b4315cd06be59d7550b591891..ad005e0a19a7763da089fccc659d93c8815dc860 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-@@ -218,6 +218,7 @@ @implementation NativeWidgetMacNSWindow {
+@@ -231,6 +231,7 @@ @implementation NativeWidgetMacNSWindow {
    BOOL _isEnforcingNeverMadeVisible;
    BOOL _activationIndependence;
    BOOL _isTooltip;
@@ -34,7 +34,7 @@ index 2a195724de141fd4f0f06c03314e6096a0d0ed3f..2532ae21d9244b2ec9747ef7d9916668
    BOOL _isShufflingForOrdering;
    BOOL _miniaturizationInProgress;
    std::unique_ptr<NativeWidgetMacNSWindowHeadlessInfo> _headless_info;
-@@ -225,6 +226,7 @@ @implementation NativeWidgetMacNSWindow {
+@@ -238,6 +239,7 @@ @implementation NativeWidgetMacNSWindow {
  @synthesize bridgedNativeWidgetId = _bridgedNativeWidgetId;
  @synthesize bridge = _bridge;
  @synthesize isTooltip = _isTooltip;
@@ -42,7 +42,7 @@ index 2a195724de141fd4f0f06c03314e6096a0d0ed3f..2532ae21d9244b2ec9747ef7d9916668
  @synthesize isShufflingForOrdering = _isShufflingForOrdering;
  @synthesize preventKeyWindow = _preventKeyWindow;
  @synthesize childWindowAddedHandler = _childWindowAddedHandler;
-@@ -246,23 +248,6 @@ - (instancetype)initWithContentRect:(NSRect)contentRect
+@@ -259,23 +261,6 @@ - (instancetype)initWithContentRect:(NSRect)contentRect
    return self;
  }
  
