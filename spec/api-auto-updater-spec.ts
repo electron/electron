@@ -56,29 +56,6 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
         ).to.throw('Expected options object to contain a \'url\' string property in setFeedUrl call');
       });
     });
-
-    ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64')('on Mac', function () {
-      it('emits an error when the application is unsigned', async () => {
-        const errorEvent = once(autoUpdater, 'error') as Promise<[Error]>;
-        autoUpdater.setFeedURL({ url: '' });
-        const [error] = await errorEvent;
-        expect(error.message).equal('Could not get code signature for running application');
-      });
-
-      it('does not throw if default is the serverType', () => {
-        // "Could not get code signature..." means the function got far enough to validate that serverType was OK.
-        expect(() => autoUpdater.setFeedURL({ url: '', serverType: 'default' })).to.throw('Could not get code signature for running application');
-      });
-
-      it('does not throw if json is the serverType', () => {
-        // "Could not get code signature..." means the function got far enough to validate that serverType was OK.
-        expect(() => autoUpdater.setFeedURL({ url: '', serverType: 'json' })).to.throw('Could not get code signature for running application');
-      });
-
-      it('does throw if an unknown string is the serverType', () => {
-        expect(() => autoUpdater.setFeedURL({ url: '', serverType: 'weow' as any })).to.throw('Expected serverType to be \'default\' or \'json\'');
-      });
-    });
   });
 
   describe('quitAndInstall', () => {

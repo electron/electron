@@ -7,11 +7,8 @@ import * as path from 'node:path';
 const features = process._linkedBinding('electron_common_features');
 const fixturesPath = path.resolve(__dirname, '..', 'fixtures');
 
-// Re-enable codesign tests for macOS x64
-// Refs https://github.com/electron/electron/issues/48182
 export const shouldRunCodesignTests =
     process.platform === 'darwin' &&
-    !(process.env.CI) &&
     !process.mas &&
     !features.isComponentBuild();
 
