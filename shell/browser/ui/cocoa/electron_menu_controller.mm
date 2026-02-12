@@ -583,17 +583,24 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   if (!isMenuOpen_)
     return;
 
-  isMenuOpen_ = NO;
-
   // There are two scenarios where we should emit menu-did-close:
   // 1. It's a popup and the top level menu is closed.
   // 2. It's an application menu, and the current menu's supermenu
   //    is the top-level menu.
   bool has_close_cb = !popupCloseCallback.is_null();
+  bool should_emit_close = true;
   if (menu != menu_) {
-    if (has_close_cb || menu.supermenu != menu_)
-      return;
+    should_emit_close = !has_close_cb && menu.supermenu == menu_;
   }
+
+  [self refreshMenuTree:menu];
+
+  // Submenu's close event arrives before the top-level menu closes.
+  // Don't change isMenuOpen_ until the top-level one receives the close event.
+  if (!should_emit_close)
+    return;
+
+  isMenuOpen_ = NO;
 
   if (model_)
     model_->MenuWillClose();
