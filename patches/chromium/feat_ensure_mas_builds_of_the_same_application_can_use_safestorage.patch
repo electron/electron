@@ -12,7 +12,7 @@ We attempt to migrate the safe storage key from the old account, if that migrati
 Existing apps that aren't built for the app store should be unimpacted, there is one edge case where a user uses BOTH an AppStore and a darwin build of the same app only one will keep it's access to the safestorage key as during the migration we delete the old account.  This is an acceptable edge case as no one should be actively using two versions of the same app.
 
 diff --git a/components/os_crypt/common/keychain_password_mac.mm b/components/os_crypt/common/keychain_password_mac.mm
-index a3a8c87ad73f3bc69fc567f9f9d054b185093d7b..4fad67f372b90421b9c0244eb21e198b98aba357 100644
+index a3a8c87ad73f3bc69fc567f9f9d054b185093d7b..e9e0259f8faf35576a6a7ca658c5041e2a1fefd3 100644
 --- a/components/os_crypt/common/keychain_password_mac.mm
 +++ b/components/os_crypt/common/keychain_password_mac.mm
 @@ -32,6 +32,12 @@
@@ -28,12 +28,19 @@ index a3a8c87ad73f3bc69fc567f9f9d054b185093d7b..4fad67f372b90421b9c0244eb21e198b
  // These two strings ARE indeed user facing.  But they are used to access
  // the encryption keyword.  So as to not lose encrypted data when system
  // locale changes we DO NOT LOCALIZE.
-@@ -88,8 +94,38 @@
+@@ -88,16 +94,51 @@
                                    uma_result);
    };
  
+-  auto password = keychain.FindGenericPassword(service_name, account_name);
 +  const std::string suffixed_account_name = account_name + kAccountNameSuffix;
-   auto password = keychain.FindGenericPassword(service_name, account_name);
++  auto password =
++      keychain.FindGenericPassword(service_name, suffixed_account_name);
+ 
+   if (password.has_value()) {
+     uma_result = FindGenericPasswordResult::kPasswordFound;
+     return std::string(base::as_string_view(*password));
+   }
  
 +  // If the suffixed account didn't exist, we should check if the legacy
 +  // non-suffixed account exists. If it does we can use that key and migrate it
@@ -61,14 +68,12 @@ index a3a8c87ad73f3bc69fc567f9f9d054b185093d7b..4fad67f372b90421b9c0244eb21e198b
 +      } else {
 +        OSSTATUS_DLOG(ERROR, error) << "Keychain add for suffixed key failed";
 +      }
++
++      uma_result = FindGenericPasswordResult::kPasswordFound;
++      return std::string(base::as_string_view(*password));
 +    }
 +  }
 +
-   if (password.has_value()) {
-     uma_result = FindGenericPasswordResult::kPasswordFound;
-     return std::string(base::as_string_view(*password));
-@@ -97,7 +133,8 @@
- 
    if (password.error() == errSecItemNotFound) {
      uma_result = FindGenericPasswordResult::kPasswordNotFound;
 -    return AddRandomPasswordToKeychain(keychain, service_name, account_name);
