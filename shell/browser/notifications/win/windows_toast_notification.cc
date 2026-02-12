@@ -9,8 +9,12 @@
 #include "shell/browser/notifications/win/windows_toast_notification.h"
 
 #include <string_view>
+#include <unordered_map>
+#include <unordered_set>
 
 #include <shlobj.h>
+#include <windows.data.xml.dom.h>
+#include <windows.foundation.collections.h>
 #include <wrl\wrappers\corewrappers.h>
 
 #include "base/containers/fixed_flat_map.h"
@@ -58,6 +62,13 @@ namespace winui = ABI::Windows::UI;
   } while (false)
 
 namespace electron {
+
+ToastHistoryEntry::ToastHistoryEntry() = default;
+ToastHistoryEntry::~ToastHistoryEntry() = default;
+ToastHistoryEntry::ToastHistoryEntry(const ToastHistoryEntry&) = default;
+ToastHistoryEntry& ToastHistoryEntry::operator=(const ToastHistoryEntry&) = default;
+ToastHistoryEntry::ToastHistoryEntry(ToastHistoryEntry&&) = default;
+ToastHistoryEntry& ToastHistoryEntry::operator=(ToastHistoryEntry&&) = default;
 
 namespace {
 
@@ -148,6 +159,61 @@ const char* GetTemplateType(bool two_lines, bool has_icon) {
   return two_lines ? kToastText02 : kToastText01;
 }
 
+std::u16string HstringToU16(HSTRING value) {
+  if (!value)
+    return {};
+  unsigned int length = 0;
+  const wchar_t* buffer = WindowsGetStringRawBuffer(value, &length);
+  return std::u16string(reinterpret_cast<const char16_t*>(buffer), length);
+}
+
+std::u16string GetAttributeValue(
+    const ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNode>& node,
+    const wchar_t* name) {
+  ComPtr<ABI::Windows::Data::Xml::Dom::IXmlElement> element;
+  if (FAILED(node.As(&element)))
+    return {};
+
+  HSTRING value = nullptr;
+  if (FAILED(element->GetAttribute(HStringReference(name).Get(), &value)) ||
+      !value) {
+    return {};
+  }
+
+  auto result = HstringToU16(value);
+  WindowsDeleteString(value);
+  return result;
+}
+
+std::u16string GetInnerText(
+    const ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNode>& node) {
+  ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNodeSerializer> serializer;
+  if (FAILED(node.As(&serializer)))
+    return {};
+
+  HSTRING value = nullptr;
+  if (FAILED(serializer->get_InnerText(&value)) || !value)
+    return {};
+
+  auto result = HstringToU16(value);
+  WindowsDeleteString(value);
+  return result;
+}
+
+ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNodeList> SelectNodes(
+    const ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNode>& node,
+    const wchar_t* xpath) {
+  ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNodeSelector> selector;
+  if (FAILED(node.As(&selector)))
+    return nullptr;
+
+  ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNodeList> list;
+  if (FAILED(selector->SelectNodes(HStringReference(xpath).Get(), &list)))
+    return nullptr;
+
+  return list;
+}
+
 }  // namespace
 
 // static
@@ -208,6 +274,219 @@ bool WindowsToastNotification::Initialize() {
                          ->CreateToastNotifierWithId(
                              app_id, toast_notifier_->GetAddressOf()));
   }
+}
+
+std::vector<ToastHistoryEntry> WindowsToastNotification::GetHistory() {
+  std::vector<ToastHistoryEntry> history;
+  if (!Initialize())
+    return history;
+
+  ComPtr<winui::Notifications::IToastNotificationManagerStatics2>
+      toast_manager2;
+  if (FAILED(toast_manager_->As(&toast_manager2)))
+    return history;
+
+  ComPtr<winui::Notifications::IToastNotificationHistory> notification_history;
+  if (FAILED(toast_manager2->get_History(&notification_history)))
+    return history;
+
+  ComPtr<winui::Notifications::IToastNotificationHistory2> notification_history2;
+  if (FAILED(notification_history.As(&notification_history2)))
+    return history;
+
+  ComPtr<ABI::Windows::Foundation::Collections::IVectorView<
+      winui::Notifications::ToastNotification*>>
+      toast_history;
+
+  ScopedHString app_id;
+  if (!GetAppUserModelID(&app_id))
+    return history;
+  HRESULT hr = notification_history2->GetHistoryWithId(app_id, &toast_history);
+
+  if (FAILED(hr) || !toast_history)
+    return history;
+
+  unsigned int size = 0;
+  if (FAILED(toast_history->get_Size(&size)))
+    return history;
+
+  history.reserve(size);
+  for (unsigned int i = 0; i < size; ++i) {
+    ComPtr<winui::Notifications::IToastNotification> toast;
+    if (FAILED(toast_history->GetAt(i, &toast)))
+      continue;
+
+    ToastHistoryEntry entry;
+
+    ComPtr<ABI::Windows::Data::Xml::Dom::IXmlDocument> xml_content;
+    if (FAILED(toast->get_Content(&xml_content)))
+      continue;
+
+    ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNodeSerializer> serializer;
+    if (SUCCEEDED(xml_content.As(&serializer))) {
+      HSTRING xml = nullptr;
+      if (SUCCEEDED(serializer->GetXml(&xml)) && xml) {
+        entry.toast_xml = HstringToU16(xml);
+        WindowsDeleteString(xml);
+      }
+    }
+
+    ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNode> content_node;
+    if (FAILED(xml_content.As(&content_node)))
+      continue;
+
+    if (auto toast_nodes = SelectNodes(content_node, L"/toast")) {
+      ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNode> toast_node;
+      if (SUCCEEDED(toast_nodes->Item(0, &toast_node)) && toast_node) {
+        auto scenario = GetAttributeValue(toast_node, L"scenario");
+        if (scenario == u"reminder")
+          entry.timeout_type = u"never";
+      }
+    }
+    if (entry.timeout_type.empty())
+      entry.timeout_type = u"default";
+
+    if (auto text_nodes =
+            SelectNodes(content_node, L"/toast/visual/binding/text")) {
+      unsigned int text_size = 0;
+      if (SUCCEEDED(text_nodes->get_Length(&text_size)) && text_size > 0) {
+        ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNode> text_node;
+        if (SUCCEEDED(text_nodes->Item(0, &text_node)) && text_node) {
+          entry.title = GetInnerText(text_node);
+        }
+        if (text_size > 1 && SUCCEEDED(text_nodes->Item(1, &text_node)) &&
+            text_node) {
+          entry.body = GetInnerText(text_node);
+        }
+      }
+    }
+
+    if (auto image_nodes =
+            SelectNodes(content_node, L"/toast/visual/binding/image")) {
+      unsigned int image_size = 0;
+      if (SUCCEEDED(image_nodes->get_Length(&image_size))) {
+        for (unsigned int idx = 0; idx < image_size; ++idx) {
+          ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNode> image_node;
+          if (FAILED(image_nodes->Item(idx, &image_node)) || !image_node)
+            continue;
+          auto placement = GetAttributeValue(image_node, L"placement");
+          auto src = GetAttributeValue(image_node, L"src");
+          if (!src.empty() &&
+              (placement.empty() || placement == u"appLogoOverride")) {
+            entry.icon_path = src;
+            break;
+          }
+        }
+      }
+    }
+
+    if (auto audio_nodes = SelectNodes(content_node, L"/toast/audio")) {
+      unsigned int audio_size = 0;
+      if (SUCCEEDED(audio_nodes->get_Length(&audio_size)) && audio_size > 0) {
+        ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNode> audio_node;
+        if (SUCCEEDED(audio_nodes->Item(0, &audio_node)) && audio_node) {
+          auto silent = GetAttributeValue(audio_node, L"silent");
+          entry.silent = (silent == u"true");
+          auto src = GetAttributeValue(audio_node, L"src");
+          if (!src.empty())
+            entry.sound = src;
+        }
+      }
+    }
+
+    std::unordered_map<std::u16string, std::vector<std::u16string>>
+        selection_inputs;
+    if (auto input_nodes = SelectNodes(content_node, L"/toast/actions/input")) {
+      unsigned int input_size = 0;
+      if (SUCCEEDED(input_nodes->get_Length(&input_size))) {
+        for (unsigned int idx = 0; idx < input_size; ++idx) {
+          ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNode> input_node;
+          if (FAILED(input_nodes->Item(idx, &input_node)) || !input_node)
+            continue;
+          auto type = GetAttributeValue(input_node, L"type");
+          auto id = GetAttributeValue(input_node, L"id");
+          if (type == u"text" && id == u"reply") {
+            entry.has_reply = true;
+            entry.reply_placeholder =
+                GetAttributeValue(input_node, L"placeHolderContent");
+            continue;
+          }
+          if (type == u"selection" && !id.empty()) {
+            std::vector<std::u16string> items;
+            if (auto selection_nodes = SelectNodes(input_node, L"selection")) {
+              unsigned int sel_size = 0;
+              if (SUCCEEDED(selection_nodes->get_Length(&sel_size))) {
+                for (unsigned int sel_i = 0; sel_i < sel_size; ++sel_i) {
+                  ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNode> sel_node;
+                  if (FAILED(selection_nodes->Item(sel_i, &sel_node)) ||
+                      !sel_node) {
+                    continue;
+                  }
+                  auto sel_content = GetAttributeValue(sel_node, L"content");
+                  if (!sel_content.empty())
+                    items.push_back(sel_content);
+                }
+              }
+            }
+            selection_inputs.emplace(id, std::move(items));
+          }
+        }
+      }
+    }
+
+    std::unordered_set<std::u16string> used_selection_ids;
+    if (auto action_nodes =
+            SelectNodes(content_node, L"/toast/actions/action")) {
+      unsigned int action_size = 0;
+      if (SUCCEEDED(action_nodes->get_Length(&action_size))) {
+        for (unsigned int idx = 0; idx < action_size; ++idx) {
+          ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNode> action_node;
+          if (FAILED(action_nodes->Item(idx, &action_node)) || !action_node)
+            continue;
+
+          auto activation = GetAttributeValue(action_node, L"activationType");
+          auto arguments = GetAttributeValue(action_node, L"arguments");
+          auto action_content = GetAttributeValue(action_node, L"content");
+          auto hint_input_id = GetAttributeValue(action_node, L"hint-inputId");
+
+          if (activation == u"system" && arguments == u"dismiss") {
+            entry.close_button_text = action_content;
+            continue;
+          }
+
+          if (hint_input_id == u"reply") {
+            entry.has_reply = true;
+            continue;
+          }
+
+          if (!hint_input_id.empty()) {
+            auto it = selection_inputs.find(hint_input_id);
+            if (it != selection_inputs.end() &&
+                !used_selection_ids.contains(hint_input_id)) {
+              NotificationAction action;
+              action.type = u"selection";
+              action.text = action_content;
+              // Note: selection items not stored in NotificationAction
+              entry.actions.push_back(std::move(action));
+              used_selection_ids.insert(hint_input_id);
+              continue;
+            }
+          }
+
+          if (!action_content.empty()) {
+            NotificationAction action;
+            action.type = u"button";
+            action.text = action_content;
+            entry.actions.push_back(std::move(action));
+          }
+        }
+      }
+    }
+
+    history.push_back(std::move(entry));
+  }
+
+  return history;
 }
 
 WindowsToastNotification::WindowsToastNotification(

@@ -110,6 +110,7 @@ declare namespace NodeJS {
 
   interface NotificationBinding {
     isSupported(): boolean;
+    getHistory(): Electron.Notification[];
     Notification: typeof Electron.Notification;
   }
 

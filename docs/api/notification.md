@@ -30,6 +30,12 @@ The `Notification` class has the following static methods:
 
 Returns `boolean` - Whether or not desktop notifications are supported on the current system
 
+#### `Notification.getHistory()` _Windows_
+
+Returns `Notification[]` - the notification history, for all notifications sent by this app, from Action Center.
+
+See [`ToastNotificationHistory.GetHistory`](https://learn.microsoft.com/en-us/uwp/api/windows.ui.notifications.toastnotificationhistory.gethistory?view=winrt-26100#windows-ui-notifications-toastnotificationhistory-gethistory) for more information
+
 ### `new Notification([options])`
 
 * `options` Object (optional)

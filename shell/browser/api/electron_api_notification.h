@@ -37,6 +37,7 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
                            public NotificationDelegate {
  public:
   static bool IsSupported();
+  static v8::Local<v8::Value> GetHistory(v8::Isolate* isolate);
 
   // gin_helper::Constructible
   static gin_helper::Handle<Notification> New(gin_helper::ErrorThrower thrower,

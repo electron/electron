@@ -13,6 +13,7 @@
 #include <windows.ui.notifications.h>
 #include <wrl/implements.h>
 #include <string>
+#include <vector>
 
 #include "base/memory/scoped_refptr.h"
 #include "base/task/single_thread_task_runner.h"
@@ -27,6 +28,28 @@ using Microsoft::WRL::RuntimeClassFlags;
 namespace electron {
 
 class ScopedHString;
+
+struct ToastHistoryEntry {
+  ToastHistoryEntry();
+  ~ToastHistoryEntry();
+  ToastHistoryEntry(const ToastHistoryEntry&);
+  ToastHistoryEntry& operator=(const ToastHistoryEntry&);
+  ToastHistoryEntry(ToastHistoryEntry&&);
+  ToastHistoryEntry& operator=(ToastHistoryEntry&&);
+
+  std::u16string toast_xml;
+  std::u16string title;
+  std::u16string body;
+  std::u16string icon_path;
+  std::u16string timeout_type;
+  std::u16string reply_placeholder;
+  std::u16string sound;
+  std::u16string urgency;
+  std::u16string close_button_text;
+  bool silent = false;
+  bool has_reply = false;
+  std::vector<NotificationAction> actions;
+};
 
 using DesktopToastActivatedEventHandler =
     ABI::Windows::Foundation::ITypedEventHandler<
@@ -45,6 +68,7 @@ class WindowsToastNotification : public Notification {
  public:
   // Should only be called by NotificationPresenterWin.
   static bool Initialize();
+  static std::vector<ToastHistoryEntry> GetHistory();
 
   WindowsToastNotification(NotificationDelegate* delegate,
                            NotificationPresenter* presenter);

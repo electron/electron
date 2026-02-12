@@ -16,6 +16,10 @@
 #include "shell/common/node_includes.h"
 #include "url/gurl.h"
 
+#if BUILDFLAG(IS_WIN)
+#include "shell/browser/notifications/win/windows_toast_notification.h"
+#endif
+
 namespace gin {
 
 template <>
@@ -42,6 +46,29 @@ struct Converter<electron::NotificationAction> {
     return ConvertToV8(isolate, dict);
   }
 };
+
+#if BUILDFLAG(IS_WIN)
+template <>
+struct Converter<electron::ToastHistoryEntry> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const electron::ToastHistoryEntry& entry) {
+    auto dict = gin::Dictionary::CreateEmpty(isolate);
+    dict.Set("title", entry.title);
+    dict.Set("body", entry.body);
+    dict.Set("icon", entry.icon_path);
+    dict.Set("silent", entry.silent);
+    dict.Set("hasReply", entry.has_reply);
+    dict.Set("timeoutType", entry.timeout_type);
+    dict.Set("replyPlaceholder", entry.reply_placeholder);
+    dict.Set("sound", entry.sound);
+    dict.Set("urgency", entry.urgency);
+    dict.Set("actions", entry.actions);
+    dict.Set("closeButtonText", entry.close_button_text);
+    dict.Set("toastXml", entry.toast_xml);
+    return ConvertToV8(isolate, dict);
+  }
+};
+#endif
 
 }  // namespace gin
 
@@ -208,6 +235,15 @@ bool Notification::IsSupported() {
                ->GetNotificationPresenter();
 }
 
+v8::Local<v8::Value> Notification::GetHistory(v8::Isolate* isolate) {
+#if BUILDFLAG(IS_WIN)
+  return gin::ConvertToV8(isolate,
+                          electron::WindowsToastNotification::GetHistory());
+#else
+  return v8::Array::New(isolate);
+#endif
+}
+
 void Notification::FillObjectTemplate(v8::Isolate* isolate,
                                       v8::Local<v8::ObjectTemplate> templ) {
   gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
@@ -256,6 +292,7 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict{isolate, exports};
   dict.Set("Notification", Notification::GetConstructor(isolate, context));
   dict.SetMethod("isSupported", &Notification::IsSupported);
+  dict.SetMethod("getHistory", &Notification::GetHistory);
 }
 
 }  // namespace
