@@ -633,7 +633,7 @@ void NativeWindow::NotifyWindowExecuteAppCommand(
 }
 
 void NativeWindow::NotifyTouchBarItemInteraction(const std::string& item_id,
-                                                 base::Value::Dict details) {
+                                                 base::DictValue details) {
   observers_.Notify(&NativeWindowObserver::OnTouchBarItemResult, item_id,
                     details);
 }

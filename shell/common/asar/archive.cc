@@ -37,16 +37,16 @@ const char kSeparators[] = "\\/";
 const char kSeparators[] = "/";
 #endif
 
-const base::Value::Dict* GetNodeFromPath(std::string path,
-                                         const base::Value::Dict& root);
+const base::DictValue* GetNodeFromPath(std::string path,
+                                       const base::DictValue& root);
 
 // Gets the "files" from "dir".
-const base::Value::Dict* GetFilesNode(const base::Value::Dict& root,
-                                      const base::Value::Dict& dir) {
+const base::DictValue* GetFilesNode(const base::DictValue& root,
+                                    const base::DictValue& dir) {
   // Test for symbol linked directory.
   const std::string* link = dir.FindString("link");
   if (link != nullptr) {
-    const base::Value::Dict* linked_node = GetNodeFromPath(*link, root);
+    const base::DictValue* linked_node = GetNodeFromPath(*link, root);
     if (!linked_node)
       return nullptr;
     return linked_node->FindDict("files");
@@ -56,27 +56,27 @@ const base::Value::Dict* GetFilesNode(const base::Value::Dict& root,
 }
 
 // Gets sub-file "name" from "dir".
-const base::Value::Dict* GetChildNode(const base::Value::Dict& root,
-                                      const std::string& name,
-                                      const base::Value::Dict& dir) {
+const base::DictValue* GetChildNode(const base::DictValue& root,
+                                    const std::string& name,
+                                    const base::DictValue& dir) {
   if (name.empty())
     return &root;
 
-  const base::Value::Dict* files = GetFilesNode(root, dir);
+  const base::DictValue* files = GetFilesNode(root, dir);
   return files ? files->FindDict(name) : nullptr;
 }
 
 // Gets the node of "path" from "root".
-const base::Value::Dict* GetNodeFromPath(std::string path,
-                                         const base::Value::Dict& root) {
+const base::DictValue* GetNodeFromPath(std::string path,
+                                       const base::DictValue& root) {
   if (path.empty())
     return &root;
 
-  const base::Value::Dict* dir = &root;
+  const base::DictValue* dir = &root;
   for (size_t delimiter_position = path.find_first_of(kSeparators);
        delimiter_position != std::string::npos;
        delimiter_position = path.find_first_of(kSeparators)) {
-    const base::Value::Dict* child =
+    const base::DictValue* child =
         GetChildNode(root, path.substr(0, delimiter_position), *dir);
     if (!child)
       return nullptr;
@@ -91,7 +91,7 @@ const base::Value::Dict* GetNodeFromPath(std::string path,
 bool FillFileInfoWithNode(Archive::FileInfo* info,
                           uint32_t header_size,
                           bool load_integrity,
-                          const base::Value::Dict* node) {
+                          const base::DictValue* node) {
   if (std::optional<int> size = node->FindInt("size")) {
     info->size = static_cast<uint32_t>(*size);
   } else {
@@ -120,11 +120,11 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   if (load_integrity &&
       electron::fuses::IsEmbeddedAsarIntegrityValidationEnabled()) {
-    if (const base::Value::Dict* integrity = node->FindDict("integrity")) {
+    if (const base::DictValue* integrity = node->FindDict("integrity")) {
       const std::string* algorithm = integrity->FindString("algorithm");
       const std::string* hash = integrity->FindString("hash");
       std::optional<int> block_size = integrity->FindInt("blockSize");
-      const base::Value::List* blocks = integrity->FindList("blocks");
+      const base::ListValue* blocks = integrity->FindList("blocks");
 
       if (algorithm && hash && block_size && block_size > 0 && blocks) {
         IntegrityPayload integrity_payload;
@@ -281,8 +281,7 @@ bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) const {
   if (!header_)
     return false;
 
-  const base::Value::Dict* node =
-      GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
+  const base::DictValue* node = GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
   if (!node)
     return false;
 
@@ -297,8 +296,7 @@ bool Archive::Stat(const base::FilePath& path, Stats* stats) const {
   if (!header_)
     return false;
 
-  const base::Value::Dict* node =
-      GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
+  const base::DictValue* node = GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
   if (!node)
     return false;
 
@@ -320,12 +318,11 @@ bool Archive::Readdir(const base::FilePath& path,
   if (!header_)
     return false;
 
-  const base::Value::Dict* node =
-      GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
+  const base::DictValue* node = GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
   if (!node)
     return false;
 
-  const base::Value::Dict* files_node = GetFilesNode(*header_, *node);
+  const base::DictValue* files_node = GetFilesNode(*header_, *node);
   if (!files_node)
     return false;
 
@@ -339,8 +336,7 @@ bool Archive::Realpath(const base::FilePath& path,
   if (!header_)
     return false;
 
-  const base::Value::Dict* node =
-      GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
+  const base::DictValue* node = GetNodeFromPath(path.AsUTF8Unsafe(), *header_);
   if (!node)
     return false;
 

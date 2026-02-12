@@ -10,7 +10,7 @@ usage of BrowserList and Browser as we subclass related methods and use our
 WindowList.
 
 diff --git a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
-index 3a9f87d82212bfeab23b312a593fb855df344780..83b4a7fe7149f2b195e53fcb05f77da3b33c3777 100644
+index 9b22efa07e43b60a8bd8bb6288792846709fae87..cf60a541720ffbcdaa5163d727a7761dcb30f131 100644
 --- a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 @@ -48,6 +48,7 @@
@@ -21,19 +21,19 @@ index 3a9f87d82212bfeab23b312a593fb855df344780..83b4a7fe7149f2b195e53fcb05f77da3
  #include "ui/accessibility/accessibility_features.h"
  #include "ui/accessibility/ax_mode.h"
  #include "ui/accessibility/ax_updates_and_events.h"
-@@ -179,7 +180,7 @@ base::Value::Dict BuildTargetDescriptor(content::RenderViewHost* rvh) {
+@@ -179,7 +180,7 @@ base::DictValue BuildTargetDescriptor(content::RenderViewHost* rvh) {
                                 rvh->GetRoutingID(), accessibility_mode);
  }
  
 -#if !BUILDFLAG(IS_ANDROID)
 +#if 0
- base::Value::Dict BuildTargetDescriptor(BrowserWindowInterface* browser) {
-   base::Value::Dict target_data;
+ base::DictValue BuildTargetDescriptor(BrowserWindowInterface* browser) {
+   base::DictValue target_data;
    target_data.Set(kSessionIdField, browser->GetSessionID().id());
 @@ -226,7 +227,7 @@ void HandleAccessibilityRequestCallback(
    auto& browser_accessibility_state =
        *content::BrowserAccessibilityState::GetInstance();
-   base::Value::Dict data;
+   base::DictValue data;
 -  PrefService* pref = Profile::FromBrowserContext(current_context)->GetPrefs();
 +  PrefService* pref = static_cast<electron::ElectronBrowserContext*>(current_context)->prefs();
    ui::AXMode mode = browser_accessibility_state.GetAccessibilityMode();
@@ -51,7 +51,7 @@ index 3a9f87d82212bfeab23b312a593fb855df344780..83b4a7fe7149f2b195e53fcb05f77da3
 @@ -355,13 +356,13 @@ void HandleAccessibilityRequestCallback(
    data.Set(kPagesField, std::move(page_list));
  
-   base::Value::List browser_list;
+   base::ListValue browser_list;
 -#if !BUILDFLAG(IS_ANDROID)
 +#if 0
    ForEachCurrentBrowserWindowInterfaceOrderedByActivation(
@@ -64,7 +64,7 @@ index 3a9f87d82212bfeab23b312a593fb855df344780..83b4a7fe7149f2b195e53fcb05f77da3
    data.Set(kBrowsersField, std::move(browser_list));
  
  #if BUILDFLAG(IS_WIN)
-@@ -848,7 +849,8 @@ void AccessibilityUIMessageHandler::SetGlobalString(
+@@ -847,7 +848,8 @@ void AccessibilityUIMessageHandler::SetGlobalString(
    const std::string value = CheckJSValue(data.FindString(kValueField));
  
    if (string_name == kApiTypeField) {
@@ -74,7 +74,7 @@ index 3a9f87d82212bfeab23b312a593fb855df344780..83b4a7fe7149f2b195e53fcb05f77da3
      pref->SetString(prefs::kShownAccessibilityApiType, value);
    }
  }
-@@ -902,7 +904,8 @@ void AccessibilityUIMessageHandler::RequestWebContentsTree(
+@@ -901,7 +903,8 @@ void AccessibilityUIMessageHandler::RequestWebContentsTree(
                       AXPropertyFilter::ALLOW_EMPTY);
    AddPropertyFilters(property_filters, deny, AXPropertyFilter::DENY);
  
@@ -84,7 +84,7 @@ index 3a9f87d82212bfeab23b312a593fb855df344780..83b4a7fe7149f2b195e53fcb05f77da3
    ui::AXApiType::Type api_type =
        ui::AXApiType::From(pref->GetString(prefs::kShownAccessibilityApiType));
    std::string accessibility_contents =
-@@ -922,7 +925,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
+@@ -921,7 +924,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
  
    AllowJavascript();
  
@@ -93,16 +93,16 @@ index 3a9f87d82212bfeab23b312a593fb855df344780..83b4a7fe7149f2b195e53fcb05f77da3
    std::vector<AXPropertyFilter> property_filters;
    AddPropertyFilters(property_filters, allow, AXPropertyFilter::ALLOW);
    AddPropertyFilters(property_filters, allow_empty,
-@@ -949,7 +952,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
+@@ -948,7 +951,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
    if (found) {
      return;
    }
 -#endif  // !BUILDFLAG(IS_ANDROID)
 +#endif
    // No browser with the specified |session_id| was found.
-   base::Value::Dict result;
+   base::DictValue result;
    result.Set(kSessionIdField, session_id);
-@@ -992,11 +995,13 @@ void AccessibilityUIMessageHandler::StopRecording(
+@@ -991,11 +994,13 @@ void AccessibilityUIMessageHandler::StopRecording(
  }
  
  ui::AXApiType::Type AccessibilityUIMessageHandler::GetRecordingApiType() {
@@ -119,7 +119,7 @@ index 3a9f87d82212bfeab23b312a593fb855df344780..83b4a7fe7149f2b195e53fcb05f77da3
    // Check to see if it is in the supported types list.
    if (std::find(supported_types.begin(), supported_types.end(), api_type) ==
        supported_types.end()) {
-@@ -1066,10 +1071,13 @@ void AccessibilityUIMessageHandler::RequestAccessibilityEvents(
+@@ -1065,10 +1070,13 @@ void AccessibilityUIMessageHandler::RequestAccessibilityEvents(
  // static
  void AccessibilityUIMessageHandler::RegisterProfilePrefs(
      user_prefs::PrefRegistrySyncable* registry) {
@@ -127,14 +127,14 @@ index 3a9f87d82212bfeab23b312a593fb855df344780..83b4a7fe7149f2b195e53fcb05f77da3
    const std::string_view default_api_type =
        std::string_view(ui::AXApiType::Type(ui::AXApiType::kBlink));
    registry->RegisterStringPref(prefs::kShownAccessibilityApiType,
-                                std::string(default_api_type));
+                                default_api_type);
 +  registry->RegisterBooleanPref(prefs::kShowInternalAccessibilityTree, false);
 +#endif
  }
  
  void AccessibilityUIMessageHandler::OnVisibilityChanged(
 diff --git a/chrome/browser/ui/webui/accessibility/accessibility_ui.h b/chrome/browser/ui/webui/accessibility/accessibility_ui.h
-index 4b9d7df73c901c57c14693e9f24a51694ecd375f..93e1c9a79d88c8b4c57b244c9eec1e83c1d1fa0a 100644
+index 67f7e34271994ff66da2a3c3b90c2f02797c2d14..8f786bc00dc4a7cc775ca3ff3fca4da680272682 100644
 --- a/chrome/browser/ui/webui/accessibility/accessibility_ui.h
 +++ b/chrome/browser/ui/webui/accessibility/accessibility_ui.h
 @@ -28,6 +28,8 @@ namespace content {
@@ -152,6 +152,6 @@ index 4b9d7df73c901c57c14693e9f24a51694ecd375f..93e1c9a79d88c8b4c57b244c9eec1e83
   private:
 +  friend class ElectronAccessibilityUIMessageHandler;
 +
-   void ToggleAccessibilityForWebContents(const base::Value::List& args);
-   void SetGlobalFlag(const base::Value::List& args);
-   void SetGlobalString(const base::Value::List& args);
+   void ToggleAccessibilityForWebContents(const base::ListValue& args);
+   void SetGlobalFlag(const base::ListValue& args);
+   void SetGlobalString(const base::ListValue& args);

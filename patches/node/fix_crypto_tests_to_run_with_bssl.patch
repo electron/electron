@@ -161,6 +161,21 @@ index 75cb4800ff1bd51fedd7bc4e2d7e6af6f4f48346..b4363c31592763235116d970a5f45d4c
  // Test XOF hash functions and the outputLength option.
  {
    // Default outputLengths.
+diff --git a/test/parallel/test-crypto-pqc-key-objects-ml-dsa.js b/test/parallel/test-crypto-pqc-key-objects-ml-dsa.js
+index 37eab463deae472a78102c9fc6e03d4b642854ce..99e8c47702c55a9518ff093a58d87c753bec3aa8 100644
+--- a/test/parallel/test-crypto-pqc-key-objects-ml-dsa.js
++++ b/test/parallel/test-crypto-pqc-key-objects-ml-dsa.js
+@@ -4,6 +4,10 @@ const common = require('../common');
+ if (!common.hasCrypto)
+   common.skip('missing crypto');
+ 
++if (process.features.openssl_is_boringssl) {
++  common.skip('Skipping unsupported ML-DSA key tests');
++}
++
+ const { hasOpenSSL } = require('../common/crypto');
+ 
+ const assert = require('assert');
 diff --git a/test/parallel/test-crypto-rsa-dsa.js b/test/parallel/test-crypto-rsa-dsa.js
 index 119bc3c2d20ea7d681f0b579f9d91ad46cdc3634..8d13b105fa426015a873c411ad1d7f64b3d9580e 100644
 --- a/test/parallel/test-crypto-rsa-dsa.js

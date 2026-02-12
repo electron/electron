@@ -66,6 +66,8 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/nix/xdg_util.h"
+#include "base/posix/global_descriptors.h"
+#include "content/public/common/content_descriptors.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #include "v8/include/v8.h"
 #endif
@@ -239,6 +241,20 @@ std::optional<int> ElectronMainDelegate::BasicStartupComplete() {
 void ElectronMainDelegate::PreSandboxStartup() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   std::string process_type = GetProcessType();
+
+#if BUILDFLAG(IS_LINUX)
+  // Register the pseudonymization salt descriptor in GlobalDescriptors.
+  // (see https://crbug.com/40850085) Only affects processes launched
+  // without the zygote (i.e. utility processes)
+  // TODO: Remove in favor of
+  // https://chromium-review.googlesource.com/c/chromium/src/+/7568382
+  if (!process_type.empty() && !IsZygoteProcess()) {
+    base::GlobalDescriptors::GetInstance()->Set(
+        kPseudonymizationSaltDescriptor,
+        kPseudonymizationSaltDescriptor +
+            base::GlobalDescriptors::kBaseDescriptor);
+  }
+#endif
 
   base::FilePath user_data_dir =
       command_line->GetSwitchValuePath(::switches::kUserDataDir);

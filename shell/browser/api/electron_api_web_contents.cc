@@ -68,6 +68,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/visibility.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/child_process_id.h"
 #include "content/public/common/referrer_type_converters.h"
 #include "content/public/common/result_codes.h"
 #include "content/public/common/webplugininfo.h"
@@ -642,13 +643,14 @@ std::string RegisterFileSystem(content::WebContents* web_contents,
       content::ChildProcessSecurityPolicy::GetInstance();
   content::RenderViewHost* render_view_host = web_contents->GetRenderViewHost();
   int renderer_id = render_view_host->GetProcess()->GetDeprecatedID();
+  content::ChildProcessId process_id = render_view_host->GetProcess()->GetID();
   policy->GrantReadFileSystem(renderer_id, file_system.id());
   policy->GrantWriteFileSystem(renderer_id, file_system.id());
   policy->GrantCreateFileForFileSystem(renderer_id, file_system.id());
   policy->GrantDeleteFromFileSystem(renderer_id, file_system.id());
 
-  if (!policy->CanReadFile(renderer_id, path))
-    policy->GrantReadFile(renderer_id, path);
+  if (!policy->CanReadFile(process_id, path))
+    policy->GrantReadFile(process_id, path);
 
   return file_system.id();
 }
@@ -665,8 +667,8 @@ FileSystem CreateFileSystemStruct(content::WebContents* web_contents,
   return FileSystem(type, file_system_name, root_url, file_system_path);
 }
 
-base::Value::Dict CreateFileSystemValue(const FileSystem& file_system) {
-  base::Value::Dict value;
+base::DictValue CreateFileSystemValue(const FileSystem& file_system) {
+  base::DictValue value;
   value.Set("type", file_system.type);
   value.Set("fileSystemName", file_system.file_system_name);
   value.Set("rootURL", file_system.root_url);
@@ -709,7 +711,7 @@ PrefService* GetPrefService(content::WebContents* web_contents) {
 }
 
 // returns a Dict of filesystem_path -> type
-[[nodiscard]] const base::Value::Dict& GetAddedFileSystems(
+[[nodiscard]] const base::DictValue& GetAddedFileSystems(
     content::WebContents* web_contents) {
   return GetPrefService(web_contents)->GetDict(prefs::kDevToolsFileSystemPaths);
 }
@@ -3020,7 +3022,7 @@ bool WebContents::IsCurrentlyAudible() {
 namespace {
 
 void OnGetDeviceNameToUse(base::WeakPtr<content::WebContents> web_contents,
-                          base::Value::Dict print_settings,
+                          base::DictValue print_settings,
                           printing::CompletionCallback print_callback,
                           // <error, device_name>
                           std::pair<std::string, std::u16string> info) {
@@ -3099,7 +3101,7 @@ void WebContents::Print(gin::Arguments* const args) {
     return;
   }
 
-  base::Value::Dict settings;
+  base::DictValue settings;
   if (options.IsEmptyObject()) {
     content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents());
     if (!rfh)
@@ -3130,7 +3132,7 @@ void WebContents::Print(gin::Arguments* const args) {
 
     if (margin_type == printing::mojom::MarginType::kCustomMargins) {
       settings.Set(printing::kSettingMarginsCustom,
-                   base::Value::Dict{}
+                   base::DictValue{}
                        .Set(printing::kSettingMarginTop,
                             margins.ValueOrDefault("top", 0))
                        .Set(printing::kSettingMarginBottom,
@@ -3198,11 +3200,11 @@ void WebContents::Print(gin::Arguments* const args) {
   // Set custom page ranges to print
   std::vector<gin_helper::Dictionary> page_ranges;
   if (options.Get("pageRanges", &page_ranges)) {
-    base::Value::List page_range_list;
+    base::ListValue page_range_list;
     for (auto& range : page_ranges) {
       int from, to;
       if (range.Get("from", &from) && range.Get("to", &to)) {
-        base::Value::Dict range_dict;
+        base::DictValue range_dict;
         // Chromium uses 1-based page ranges, so increment each by 1.
         range_dict.Set(printing::kSettingPageRangeFrom, from + 1);
         range_dict.Set(printing::kSettingPageRangeTo, to + 1);
@@ -3220,13 +3222,13 @@ void WebContents::Print(gin::Arguments* const args) {
       "duplexMode", printing::mojom::DuplexMode::kSimplex);
   settings.Set(printing::kSettingDuplexMode, static_cast<int>(duplex_mode));
 
-  base::Value::Dict media_size;
+  base::DictValue media_size;
   if (options.Get("mediaSize", &media_size)) {
     settings.Set(printing::kSettingMediaSize, std::move(media_size));
   } else {
     // Default to A4 paper size (210mm x 297mm)
     settings.Set(printing::kSettingMediaSize,
-                 base::Value::Dict()
+                 base::DictValue()
                      .Set(printing::kSettingMediaSizeHeightMicrons, 297000)
                      .Set(printing::kSettingMediaSizeWidthMicrons, 210000)
                      .Set(printing::kSettingsImageableAreaLeftMicrons, 0)
@@ -4176,9 +4178,9 @@ void WebContents::DevToolsAppendToFile(const std::string& url,
 void WebContents::DevToolsRequestFileSystems() {
   const std::string empty_str;
   content::WebContents* const dtwc = GetDevToolsWebContents();
-  const base::Value::Dict& added_paths = GetAddedFileSystems(dtwc);
+  const base::DictValue& added_paths = GetAddedFileSystems(dtwc);
 
-  auto filesystems = base::Value::List::with_capacity(added_paths.size());
+  auto filesystems = base::ListValue::with_capacity(added_paths.size());
   for (const auto path_and_type : added_paths) {
     const auto& [path, type_val] = path_and_type;
     const auto& type = type_val.is_string() ? type_val.GetString() : empty_str;
@@ -4215,7 +4217,7 @@ void WebContents::DevToolsAddFileSystem(
 
   FileSystem file_system = CreateFileSystemStruct(
       GetDevToolsWebContents(), file_system_id, path.AsUTF8Unsafe(), type);
-  base::Value::Dict file_system_value = CreateFileSystemValue(file_system);
+  base::DictValue file_system_value = CreateFileSystemValue(file_system);
 
   auto* pref_service = GetPrefService(GetDevToolsWebContents());
   ScopedDictPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
@@ -4325,7 +4327,7 @@ void WebContents::DevToolsSetEyeDropperActive(bool active) {
 }
 
 void WebContents::ColorPickedInEyeDropper(int r, int g, int b, int a) {
-  base::Value::Dict color;
+  base::DictValue color;
   color.Set("r", r);
   color.Set("g", g);
   color.Set("b", b);
@@ -4377,7 +4379,7 @@ void WebContents::OnDevToolsSearchCompleted(
     int request_id,
     const std::string& file_system_path,
     const std::vector<std::string>& file_paths) {
-  base::Value::List file_paths_value;
+  base::ListValue file_paths_value;
   for (const auto& file_path : file_paths)
     file_paths_value.Append(file_path);
   inspectable_web_contents_->CallClientFunction(

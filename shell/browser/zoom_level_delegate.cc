@@ -63,7 +63,7 @@ void ZoomLevelDelegate::SetDefaultZoomLevelPref(double level) {
 }
 
 double ZoomLevelDelegate::GetDefaultZoomLevelPref() const {
-  const base::Value::Dict& default_zoom_level_dictionary =
+  const base::DictValue& default_zoom_level_dictionary =
       pref_service_->GetDict(kPartitionDefaultZoomLevel);
   // If no default has been previously set, the default returned is the
   // value used to initialize default_zoom_level in this function.
@@ -77,15 +77,15 @@ void ZoomLevelDelegate::OnZoomLevelChanged(
 
   double level = change.zoom_level;
   ScopedDictPrefUpdate update(pref_service_, kPartitionPerHostZoomLevels);
-  base::Value::Dict& host_zoom_dictionaries = update.Get();
+  base::DictValue& host_zoom_dictionaries = update.Get();
 
   bool modification_is_removal =
       blink::ZoomValuesEqual(level, host_zoom_map_->GetDefaultZoomLevel());
 
-  base::Value::Dict* host_zoom_dictionary =
+  base::DictValue* host_zoom_dictionary =
       host_zoom_dictionaries.FindDict(partition_key_);
   if (!host_zoom_dictionary) {
-    base::Value::Dict dict;
+    base::DictValue dict;
     host_zoom_dictionaries.Set(partition_key_, std::move(dict));
     host_zoom_dictionary = host_zoom_dictionaries.FindDict(partition_key_);
   }
@@ -97,9 +97,9 @@ void ZoomLevelDelegate::OnZoomLevelChanged(
 }
 
 void ZoomLevelDelegate::ExtractPerHostZoomLevels(
-    const base::Value::Dict& host_zoom_dictionary) {
+    const base::DictValue& host_zoom_dictionary) {
   std::vector<std::string> keys_to_remove;
-  base::Value::Dict host_zoom_dictionary_copy = host_zoom_dictionary.Clone();
+  base::DictValue host_zoom_dictionary_copy = host_zoom_dictionary.Clone();
   for (auto [host, value] : host_zoom_dictionary_copy) {
     const std::optional<double> zoom_level = value.GetIfDouble();
 
@@ -123,7 +123,7 @@ void ZoomLevelDelegate::ExtractPerHostZoomLevels(
   // have an empty host.
   {
     ScopedDictPrefUpdate update(pref_service_, kPartitionPerHostZoomLevels);
-    base::Value::Dict* sanitized_host_zoom_dictionary =
+    base::DictValue* sanitized_host_zoom_dictionary =
         update->FindDict(partition_key_);
     if (sanitized_host_zoom_dictionary) {
       for (const std::string& key : keys_to_remove)
@@ -143,9 +143,9 @@ void ZoomLevelDelegate::InitHostZoomMap(content::HostZoomMap* host_zoom_map) {
 
   // Initialize the HostZoomMap with per-host zoom levels from the persisted
   // zoom-level preference values.
-  const base::Value::Dict& host_zoom_dictionaries =
+  const base::DictValue& host_zoom_dictionaries =
       pref_service_->GetDict(kPartitionPerHostZoomLevels);
-  const base::Value::Dict* host_zoom_dictionary =
+  const base::DictValue* host_zoom_dictionary =
       host_zoom_dictionaries.FindDict(partition_key_);
   if (host_zoom_dictionary) {
     // Since we're calling this before setting up zoom_subscription_ below we

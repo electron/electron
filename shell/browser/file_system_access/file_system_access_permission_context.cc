@@ -263,7 +263,7 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
         static_cast<electron::ElectronPermissionManager*>(
             context_->browser_context()->GetPermissionControllerDelegate());
     if (permission_manager && permission_manager->HasPermissionCheckHandler()) {
-      base::Value::Dict details;
+      base::DictValue details;
       details.Set("filePath", base::FilePathToValue(path_info_.path));
       details.Set("isDirectory", handle_type_ == HandleType::kDirectory);
       details.Set("fileAccessType",
@@ -360,7 +360,7 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
       return;
     }
 
-    base::Value::Dict details;
+    base::DictValue details;
     details.Set("filePath", base::FilePathToValue(path_info_.path));
     details.Set("isDirectory", handle_type_ == HandleType::kDirectory);
     details.Set("fileAccessType",
@@ -822,7 +822,7 @@ void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
 }
 
 void FileSystemAccessPermissionContext::MaybeEvictEntries(
-    base::Value::Dict& dict) {
+    base::DictValue& dict) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
   std::vector<std::pair<base::Time, std::string>> entries;
@@ -861,7 +861,7 @@ void FileSystemAccessPermissionContext::SetLastPickedDirectory(
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
   // Create an entry into the nested dictionary.
-  base::Value::Dict entry;
+  base::DictValue entry;
   entry.Set(kPathKey, base::FilePathToValue(path_info.path));
   entry.Set(kPathTypeKey, static_cast<int>(path_info.type));
   entry.Set(kDisplayNameKey, path_info.display_name);
@@ -869,11 +869,11 @@ void FileSystemAccessPermissionContext::SetLastPickedDirectory(
 
   auto it = id_pathinfo_map_.find(origin);
   if (it != id_pathinfo_map_.end()) {
-    base::Value::Dict& dict = it->second;
+    base::DictValue& dict = it->second;
     dict.Set(GenerateLastPickedDirectoryKey(id), std::move(entry));
     MaybeEvictEntries(dict);
   } else {
-    base::Value::Dict dict;
+    base::DictValue dict;
     dict.Set(GenerateLastPickedDirectoryKey(id), std::move(entry));
     MaybeEvictEntries(dict);
     id_pathinfo_map_.try_emplace(origin, std::move(dict));

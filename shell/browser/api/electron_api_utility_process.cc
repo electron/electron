@@ -19,6 +19,7 @@
 #include "content/public/common/result_codes.h"
 #include "gin/object_template_builder.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
+#include "services/network/public/cpp/originating_process.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
@@ -214,7 +215,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   mojo::PendingRemote<network::mojom::URLLoaderFactory> url_loader_factory;
   network::mojom::URLLoaderFactoryParamsPtr loader_params =
       network::mojom::URLLoaderFactoryParams::New();
-  loader_params->process_id = pid_;
+  loader_params->process_id = network::OriginatingProcess::browser();
   loader_params->is_orb_enabled = false;
   loader_params->is_trusted = true;
   if (create_network_observer) {

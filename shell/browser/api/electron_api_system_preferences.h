@@ -77,25 +77,25 @@ class SystemPreferences final
   void OnWndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
   // BrowserObserver:
-  void OnFinishLaunching(base::Value::Dict launch_info) override;
+  void OnFinishLaunching(base::DictValue launch_info) override;
 
 #elif BUILDFLAG(IS_MAC)
   using NotificationCallback = base::RepeatingCallback<
       void(const std::string&, base::Value, const std::string&)>;
 
   void PostNotification(const std::string& name,
-                        base::Value::Dict user_info,
+                        base::DictValue user_info,
                         gin::Arguments* args);
   int SubscribeNotification(v8::Local<v8::Value> maybe_name,
                             const NotificationCallback& callback);
   void UnsubscribeNotification(int id);
   void PostLocalNotification(const std::string& name,
-                             base::Value::Dict user_info);
+                             base::DictValue user_info);
   int SubscribeLocalNotification(v8::Local<v8::Value> maybe_name,
                                  const NotificationCallback& callback);
   void UnsubscribeLocalNotification(int request_id);
   void PostWorkspaceNotification(const std::string& name,
-                                 base::Value::Dict user_info);
+                                 base::DictValue user_info);
   int SubscribeWorkspaceNotification(v8::Local<v8::Value> maybe_name,
                                      const NotificationCallback& callback);
   void UnsubscribeWorkspaceNotification(int request_id);

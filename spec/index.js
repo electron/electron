@@ -38,7 +38,10 @@ app.commandLine.appendSwitch('host-resolver-rules', [
 // Enable features required by tests.
 app.commandLine.appendSwitch('enable-features', [
   // spec/api-web-frame-main-spec.ts
-  'DocumentPolicyIncludeJSCallStacksInCrashReports'
+  'DocumentPolicyIncludeJSCallStacksInCrashReports',
+  // spec/spellchecker-spec.ts - allows spellcheck without user gesture
+  // https://chromium-review.googlesource.com/c/chromium/src/+/7452579
+  'UnrestrictSpellingAndGrammarForTesting'
 ].join(','));
 
 global.standardScheme = 'app';

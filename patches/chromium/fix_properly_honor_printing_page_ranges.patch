@@ -25,7 +25,7 @@ index 8be4ca70ff71cfc33cd812ec0cc9ae8155538532..f7985331838387232b27e557e4351134
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index 72f8e7e8fd00f55f7e4338fe585f9da03d105cd4..8b57241f09889dabdc283b2b9cd804eaa4816e27 100644
+index 4f15b217fcf8119f323e04596978c6710d73727a..7ffd6c873a4320c76605417819a8b71ffd9ced65 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
 @@ -543,7 +543,8 @@ bool IsIppColorModelColorful(mojom::ColorModel color_model) {
@@ -113,7 +113,7 @@ index f8e903f21cee7041dea67b479c298baf9093d719..ed5d59f29992b0925efd89cb0ac4b33a
    } else {
      // No need to bother, we don't know how many pages are available.
 diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
-index bd4a853bdb365045075092301b66116f016708fd..9540053fd35e84e60096c91e5f65ec7b6930720e 100644
+index 16c80d9ff00089ced6d65dc618316079b9204ba2..96fb7867eb92e19bc8513907124b2cfdaecc4c55 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
 +++ b/ui/gtk/printing/print_dialog_gtk.cc
 @@ -21,6 +21,7 @@

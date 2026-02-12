@@ -115,7 +115,7 @@ node::Environment* CreateEnvironment(v8::Isolate* isolate,
   node::Environment* env = node::CreateEnvironment(isolate_data, context, args,
                                                    exec_args, env_flags);
   if (auto message = try_catch.Message(); !message.IsEmpty()) {
-    base::Value::Dict dict;
+    base::DictValue dict;
 
     if (std::string str; gin::ConvertFromV8(isolate, message->Get(), &str))
       dict.Set("message", std::move(str));
