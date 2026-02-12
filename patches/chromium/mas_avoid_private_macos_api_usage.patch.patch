@@ -61,6 +61,127 @@ index d68e37353cb4c5037b080f9a23dc252bbba2db4a..7b101305f8986cb5d1e8c0ac60f48ddc
    ]
  
    # Used by metrics/crc32
+diff --git a/base/allocator/BUILD.gn b/base/allocator/BUILD.gn
+index 2cc49d83a83c6c64780da3f2caa009908a36dd7c..e2941ac5177d3ca59859482b668b716f58d6f5d4 100644
+--- a/base/allocator/BUILD.gn
++++ b/base/allocator/BUILD.gn
+@@ -28,6 +28,7 @@ if (is_apple) {
+     deps = [
+       ":buildflags",
+       "//base/allocator/partition_allocator:buildflags",
++      "//electron/build/config:generate_mas_config",
+     ]
+   }
+ }
+diff --git a/base/allocator/early_zone_registration_apple.cc b/base/allocator/early_zone_registration_apple.cc
+index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e94209690611e3b082a 100644
+--- a/base/allocator/early_zone_registration_apple.cc
++++ b/base/allocator/early_zone_registration_apple.cc
+@@ -197,15 +197,33 @@ void EarlyMallocZoneRegistration() {
+   // a duplicate even when a binary copy of this code exists.
+   if (allocator_shim::IsZoneAlreadyRegistered(
+           allocator_shim::kDelegatingZoneName)) {
++#if !IS_MAS_BUILD()
+     abort_report_np(
+         "The delegating default zone has unexpectedly already been "
+         "registered.");
++#else
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
++    os_log_fault(OS_LOG_DEFAULT, "The delegating default zone "
++                 "has unexpectedly already been registered.");
++#pragma clang diagnostic pop
++    abort();
++#endif
+   }
+   if (allocator_shim::IsZoneAlreadyRegistered(
+           allocator_shim::kPartitionAllocZoneName)) {
++#if !IS_MAS_BUILD()
+     abort_report_np(
+         "The PartitionAlloc default zone has unexpectedly already been "
+         "registered.");
++#else
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
++    os_log_fault(OS_LOG_DEFAULT, "The PartitionAlloc default zone "
++                 "has unexpectedly already been registered.");
++#pragma clang diagnostic pop
++    abort();
++#endif
+   }
+ 
+   // Register puts the new zone at the end, unregister swaps the new zone with
+@@ -229,7 +247,16 @@ void EarlyMallocZoneRegistration() {
+ 
+   // Sanity check.
+   if (allocator_shim::GetDefaultMallocZoneOrDie() != &g_delegating_zone) {
++#if !IS_MAS_BUILD()
+     abort_report_np("Failed to install the delegating zone as default.");
++#else
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
++    os_log_fault(OS_LOG_DEFAULT, "Failed to install the delegating zone "
++                 "as default.");
++#pragma clang diagnostic pop
++    abort();
++#endif
+   }
+ }
+ 
+diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
+index 995598ce2d5c4a1a4531784753ca7e2203233c14..7ebaaaffe78fe575ae545617e54e1a53a3c98d6b 100644
+--- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
++++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
+@@ -966,6 +966,7 @@ if (is_clang_or_gcc) {
+       ":allocator_base",
+       ":allocator_core",
+       ":buildflags",
++      "//electron/build/config:generate_mas_config",
+     ]
+   }
+ }  # if (is_clang_or_gcc)
+diff --git a/base/allocator/partition_allocator/src/partition_alloc/shim/early_zone_registration_utils_apple.h b/base/allocator/partition_allocator/src/partition_alloc/shim/early_zone_registration_utils_apple.h
+index 725b3d78c27d9621500d8193b0b4e45c6103cff0..cd3580fb4b7261b5d8e6ff691214e432c0170dc4 100644
+--- a/base/allocator/partition_allocator/src/partition_alloc/shim/early_zone_registration_utils_apple.h
++++ b/base/allocator/partition_allocator/src/partition_alloc/shim/early_zone_registration_utils_apple.h
+@@ -12,16 +12,21 @@
+ 
+ #include <mach/mach.h>
+ #include <malloc/malloc.h>
++#include <os/log.h>
+ 
+ #include <span>
+ #include <string_view>
+ 
++#include "electron/mas.h"
++
++#if !IS_MAS_BUILD()
+ extern "C" {
+ // abort_report_np() records the message in a special section that both the
+ // system CrashReporter and Crashpad collect in crash reports. See also in
+ // chrome_exe_main_mac.cc.
+ void abort_report_np(const char* fmt, ...);
+ }  // extern "C"
++#endif
+ 
+ namespace allocator_shim {
+ 
+@@ -34,7 +39,15 @@ inline std::span<malloc_zone_t*> GetMallocZonesOrDie() {
+   kern_return_t result = malloc_get_all_zones(
+       mach_task_self(), /*reader=*/nullptr, &zones, &zone_count);
+   if (result != KERN_SUCCESS) [[unlikely]] {
++#if !IS_MAS_BUILD()
+     abort_report_np("Cannot enumerate malloc zones.");
++#else
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
++    os_log_fault(OS_LOG_DEFAULT, "Cannot enumerate malloc zones.");
++#pragma clang diagnostic pop
++    abort();
++#endif
+   }
+   // This is not guaranteed by the C++ standard, but commonly satisfied.
+   // It must be safe to assume the same memory layout for arrays of two
 diff --git a/base/enterprise_util_mac.mm b/base/enterprise_util_mac.mm
 index 4bf9a3c27e05c6635b2beb8e880b5b43dbed61b5..f328fbb49c45991f44a9c75325491d0873746b61 100644
 --- a/base/enterprise_util_mac.mm
@@ -519,7 +640,7 @@ index 020050de162705651b4eb8378880cd4eb017d46c..2d3554861a570271d6f9b9a2c8b1de53
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 3c7bfe98848cbb3a309737b84ff1c8d683a83ec7..84036a1c4635e7b5bca5ebe1ea5e303bd07b2ea0 100644
+index 3c7bfe98848cbb3a309737b84ff1c8d683a83ec7..a90f7b90368aca3807f3eb19ffbfbfc11d3de160 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -21,6 +21,7 @@
@@ -556,7 +677,7 @@ index 3c7bfe98848cbb3a309737b84ff1c8d683a83ec7..84036a1c4635e7b5bca5ebe1ea5e303b
  @end
  
  struct NSEdgeAndCornerThicknesses {
-@@ -158,13 +163,17 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event;
+@@ -158,13 +163,30 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event;
  @implementation NSView (CRFrameViewAdditions)
  // If a mouseDown: falls through to the frame view, turn it into a window drag.
  - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
@@ -564,6 +685,19 @@ index 3c7bfe98848cbb3a309737b84ff1c8d683a83ec7..84036a1c4635e7b5bca5ebe1ea5e303b
    if ([self.window _resizeDirectionForMouseLocation:event.locationInWindow] !=
        -1)
      return;
++#else
++  // For MAS builds, approximate the resize direction check.
++  if (self.window.styleMask & NSWindowStyleMaskResizable) {
++    constexpr CGFloat kResizeThreshold = 5.0;
++    NSPoint location = event.locationInWindow;
++    NSRect frame = self.window.frame;
++    CGFloat width = NSWidth(frame);
++    CGFloat height = NSHeight(frame);
++    if (location.x < kResizeThreshold || location.x > width - kResizeThreshold ||
++        location.y < kResizeThreshold || location.y > height - kResizeThreshold) {
++      return;
++    }
++  }
 +#endif
    [self.window performWindowDragWithEvent:event];
  }
@@ -574,7 +708,7 @@ index 3c7bfe98848cbb3a309737b84ff1c8d683a83ec7..84036a1c4635e7b5bca5ebe1ea5e303b
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (self.window.isMovable)
-@@ -192,6 +201,8 @@ - (BOOL)usesCustomDrawing {
+@@ -192,6 +214,8 @@ - (BOOL)usesCustomDrawing {
  }
  @end
  
@@ -583,7 +717,7 @@ index 3c7bfe98848cbb3a309737b84ff1c8d683a83ec7..84036a1c4635e7b5bca5ebe1ea5e303b
  @implementation NativeWidgetMacNSWindow {
   @private
    CommandDispatcher* __strong _commandDispatcher;
-@@ -241,6 +252,7 @@ - (instancetype)initWithContentRect:(NSRect)contentRect
+@@ -241,6 +265,7 @@ - (instancetype)initWithContentRect:(NSRect)contentRect
  // bubbles and the find bar, but these should not be movable.
  // Instead, let's push this up to the parent window which should be
  // the browser.
@@ -591,7 +725,7 @@ index 3c7bfe98848cbb3a309737b84ff1c8d683a83ec7..84036a1c4635e7b5bca5ebe1ea5e303b
  - (void)_zoomToScreenEdge:(NSUInteger)edge {
    if (self.parentWindow) {
      [self.parentWindow _zoomToScreenEdge:edge];
-@@ -248,6 +260,7 @@ - (void)_zoomToScreenEdge:(NSUInteger)edge {
+@@ -248,6 +273,7 @@ - (void)_zoomToScreenEdge:(NSUInteger)edge {
      [super _zoomToScreenEdge:edge];
    }
  }
@@ -599,7 +733,7 @@ index 3c7bfe98848cbb3a309737b84ff1c8d683a83ec7..84036a1c4635e7b5bca5ebe1ea5e303b
  
  // This override helps diagnose lifetime issues in crash stacktraces by
  // inserting a symbol on NativeWidgetMacNSWindow and should be kept even if it
-@@ -393,6 +406,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -393,6 +419,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -608,7 +742,7 @@ index 3c7bfe98848cbb3a309737b84ff1c8d683a83ec7..84036a1c4635e7b5bca5ebe1ea5e303b
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -404,6 +419,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -404,6 +432,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
@@ -617,7 +751,7 @@ index 3c7bfe98848cbb3a309737b84ff1c8d683a83ec7..84036a1c4635e7b5bca5ebe1ea5e303b
  - (BOOL)_isTitleHidden {
    bool shouldShowWindowTitle = YES;
    if (_bridge)
-@@ -428,12 +445,14 @@ - (BOOL)_usesCustomDrawing {
+@@ -428,12 +458,14 @@ - (BOOL)_usesCustomDrawing {
  // if it were valid to set that style for windows, setting the window style
  // recalculates and re-caches a bunch of stuff, so a surgical override is the
  // cleanest approach.
@@ -632,7 +766,7 @@ index 3c7bfe98848cbb3a309737b84ff1c8d683a83ec7..84036a1c4635e7b5bca5ebe1ea5e303b
  
  + (void)_getExteriorResizeEdgeThicknesses:
              (NSEdgeAndCornerThicknesses*)outThicknesses
-@@ -687,9 +706,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
+@@ -687,9 +719,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
  }
  
  - (void)saveRestorableState {
@@ -644,7 +778,7 @@ index 3c7bfe98848cbb3a309737b84ff1c8d683a83ec7..84036a1c4635e7b5bca5ebe1ea5e303b
  
    // Certain conditions, such as in the Speedometer 3 benchmark, can trigger a
    // rapid succession of calls to saveRestorableState. If there's no pending
-@@ -756,6 +777,7 @@ - (void)reallySaveRestorableState {
+@@ -756,6 +790,7 @@ - (void)reallySaveRestorableState {
  // affects its restorable state changes.
  - (void)invalidateRestorableState {
    [super invalidateRestorableState];
@@ -652,7 +786,7 @@ index 3c7bfe98848cbb3a309737b84ff1c8d683a83ec7..84036a1c4635e7b5bca5ebe1ea5e303b
    if ([self _isConsideredOpenForPersistentState]) {
      if (_willUpdateRestorableState)
        return;
-@@ -768,6 +790,7 @@ - (void)invalidateRestorableState {
+@@ -768,6 +803,7 @@ - (void)invalidateRestorableState {
      _willUpdateRestorableState = NO;
      [NSObject cancelPreviousPerformRequestsWithTarget:self];
    }
@@ -660,7 +794,7 @@ index 3c7bfe98848cbb3a309737b84ff1c8d683a83ec7..84036a1c4635e7b5bca5ebe1ea5e303b
  }
  
  // On newer SDKs, _canMiniaturize respects NSWindowStyleMaskMiniaturizable in
-@@ -944,6 +967,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -944,6 +980,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
    // Since _removeFromGroups: is not documented it could go away in newer
    // versions of macOS. If the selector does not exist, DumpWithoutCrashing() so
    // we hear about the change.
@@ -668,7 +802,7 @@ index 3c7bfe98848cbb3a309737b84ff1c8d683a83ec7..84036a1c4635e7b5bca5ebe1ea5e303b
    if (![NSWindow instancesRespondToSelector:@selector(_removeFromGroups:)]) {
      base::debug::DumpWithoutCrashing();
      return;
-@@ -961,6 +985,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -961,6 +998,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
        [currentWindow _removeFromGroups:child];
      }
    }
@@ -1315,7 +1449,7 @@ index d145bdb3f879ae7e2d77f3b58fe7abd09d6f7255..8973f310aa62b59bc829e8e0f8ed068b
  
  source_set("sandbox_unittests") {
 diff --git a/sandbox/mac/sandbox_logging.cc b/sandbox/mac/sandbox_logging.cc
-index 950cf7cfee4e11766dccf5c0bf3f15a8562f0f1e..a5adaaabdbbd91fedbc4cb679c865bc342536090 100644
+index 950cf7cfee4e11766dccf5c0bf3f15a8562f0f1e..2d99498b83180f1aa4b79cfab0ea2b1f27080106 100644
 --- a/sandbox/mac/sandbox_logging.cc
 +++ b/sandbox/mac/sandbox_logging.cc
 @@ -21,6 +21,7 @@
@@ -1338,18 +1472,19 @@ index 950cf7cfee4e11766dccf5c0bf3f15a8562f0f1e..a5adaaabdbbd91fedbc4cb679c865bc3
  
  namespace sandbox::logging {
  
-@@ -81,9 +84,11 @@ void SendOsLog(Level level, const char* message) {
-     sandbox::crash_message::SetCrashMessage(message);
+@@ -82,7 +85,12 @@ void SendOsLog(Level level, const char* message) {
    }
  
-+#if !IS_MAS_BUILD()
    if (level == Level::FATAL) {
++#if !IS_MAS_BUILD()
      abort_report_np(message);
-   }
++#else
++    os_log_fault(OS_LOG_DEFAULT, "%s", message);
++    abort();
 +#endif
+   }
  }
  
- // |error| is strerror(errno) when a P* logging function is called. Pass
 diff --git a/sandbox/mac/sandbox_serializer.cc b/sandbox/mac/sandbox_serializer.cc
 index 0e6e650f88e6aadd46bec96a8b41768c37d7cc6a..a6830e3f886e408c254ccd1c2b1d5c15cd3bcb92 100644
 --- a/sandbox/mac/sandbox_serializer.cc
