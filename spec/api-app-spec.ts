@@ -155,6 +155,14 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'win32')('app.setToastActivatorCLSID()', () => {
+    it('throws on invalid format', () => {
+      expect(() => {
+        app.setToastActivatorCLSID('1234567890');
+      }).to.throw(/Invalid CLSID format/);
+    });
+  });
+
   describe('app.isPackaged', () => {
     it('should be false during tests', () => {
       expect(app.isPackaged).to.equal(false);
