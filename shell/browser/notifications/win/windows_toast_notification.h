@@ -94,6 +94,7 @@ class WindowsToastNotification : public Notification {
       scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner);
   static bool CreateToastNotification(
       ComPtr<ABI::Windows::Data::Xml::Dom::IXmlDocument> toast_xml,
+      const NotificationOptions& options,
       const std::string& notification_id,
       base::WeakPtr<Notification> weak_notification,
       scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner,

@@ -280,8 +280,9 @@ void WindowsToastNotification::CreateToastNotificationOnBackgroundThread(
   // Continue to create the toast notification
   ComPtr<ABI::Windows::UI::Notifications::IToastNotification>
       toast_notification;
-  if (!CreateToastNotification(toast_xml, notification_id, weak_notification,
-                               ui_task_runner, &toast_notification)) {
+  if (!CreateToastNotification(toast_xml, options, notification_id,
+                               weak_notification, ui_task_runner,
+                               &toast_notification)) {
     return;  // Error already posted to UI thread
   }
 
@@ -349,6 +350,7 @@ bool WindowsToastNotification::CreateToastXmlDocument(
 // returns the created notification via out parameter.
 bool WindowsToastNotification::CreateToastNotification(
     ComPtr<ABI::Windows::Data::Xml::Dom::IXmlDocument> toast_xml,
+    const NotificationOptions& options,
     const std::string& notification_id,
     base::WeakPtr<Notification> weak_notification,
     scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner,
@@ -411,6 +413,23 @@ bool WindowsToastNotification::CreateToastNotification(
   if (FAILED(hr)) {
     std::string err = base::StrCat(
         {"WinAPI: Setting tag failed, ERROR ", FailureResultToString(hr)});
+    DebugLog(err);
+    PostNotificationFailedToUIThread(weak_notification, err, ui_task_runner);
+    return false;
+  }
+
+  winui::Notifications::ToastNotificationPriority priority =
+      winui::Notifications::ToastNotificationPriority::
+          ToastNotificationPriority_Default;
+  if (options.urgency == u"critical") {
+    priority = winui::Notifications::ToastNotificationPriority::
+        ToastNotificationPriority_High;
+  }
+
+  hr = toast2->put_Priority(priority);
+  if (FAILED(hr)) {
+    std::string err = base::StrCat(
+        {"WinAPI: Setting priority failed, ERROR ", FailureResultToString(hr)});
     DebugLog(err);
     PostNotificationFailedToUIThread(weak_notification, err, ui_task_runner);
     return false;
