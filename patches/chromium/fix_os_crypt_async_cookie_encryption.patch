@@ -17,10 +17,10 @@ Revert "Reland "Port net::CookieCryptoDelegate to os_crypt async""
 This reverts commit f01b115c7e21a09cc762f65bf7fd9c6ea9d9d0f8.
 
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 464b75de67b41f3a947af2cb885e1aada0f5869d..0272712c00c1e59d79d83e4b610482c79addd52e 100644
+index c75d7e336ad00230c2a7852f62c69b8f0cae748d..8e80ebd537871b204f254a4468996350b8f4f231 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -740,6 +740,8 @@ static_library("browser") {
+@@ -716,6 +716,8 @@ static_library("browser") {
      "net/chrome_report_sender.h",
      "net/convert_explicitly_allowed_network_ports_pref.cc",
      "net/convert_explicitly_allowed_network_ports_pref.h",
@@ -192,7 +192,7 @@ index b862afe7663111a6cbd342d33723942770bb0490..9dc46cedb109cea63bf71aa43fc7a2b6
  #include "services/network/public/mojom/network_context.mojom.h"
  #include "testing/gtest/include/gtest/gtest.h"
 diff --git a/chrome/browser/net/system_network_context_manager.cc b/chrome/browser/net/system_network_context_manager.cc
-index 0f49109d35e6af1416f402baaa1aed64311f0ace..cd669a8deae1687877a75a05fa9c4c7b52720246 100644
+index 223c7a55b1db65430d22dcff9898845ccaca68a0..9f7347a39c1a0a982632fc6a6b04240b0a3b9510 100644
 --- a/chrome/browser/net/system_network_context_manager.cc
 +++ b/chrome/browser/net/system_network_context_manager.cc
 @@ -919,13 +919,8 @@ void SystemNetworkContextManager::DisableQuic() {
@@ -491,7 +491,7 @@ index bb308187837371ecfa2482affaf35ac7ed98c1f3..1e554fe95b0521a883ced83fc67f5d52
    sources = [
      "os_crypt.h",
 diff --git a/headless/BUILD.gn b/headless/BUILD.gn
-index 3b7ac1e77fb8f1696e6fea46e5e76fd05151b6c0..fa9731f028cf2e2ba7c821e67d3fca95f3e16f36 100644
+index 0d07069219883d28af7add90ad4509a94109603f..b732da23aa014aaa3525bbadaec97178d7844e04 100644
 --- a/headless/BUILD.gn
 +++ b/headless/BUILD.gn
 @@ -373,7 +373,6 @@ component("headless_non_renderer") {
@@ -731,10 +731,10 @@ index 91d74eaadd9f4d451e809b38a2f999b298068820..e45427ce90f909e609688ab59f4581b1
    mojo::PendingRemote<::network::mojom::NetworkContext> system_context_;
  };
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 53cee001783f11a6364e66e4845c95eb27113285..24263b12793249fe823d62e62e7751ce9cdb6aa2 100644
+index f9e704f9dc76f802b330487238717a6df3ba7b36..1702b7f7603d98e2f08a8af7310daa1fb3250d54 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -3252,12 +3252,7 @@ NetworkContext::MakeSessionCleanupCookieStore() const {
+@@ -3274,12 +3274,7 @@ NetworkContext::MakeSessionCleanupCookieStore() const {
        crypto_delegate = std::make_unique<CookieOSCryptAsyncDelegate>(
            std::move(params_->cookie_encryption_provider));
      } else {
@@ -749,7 +749,7 @@ index 53cee001783f11a6364e66e4845c95eb27113285..24263b12793249fe823d62e62e7751ce
    }
  
 diff --git a/services/network/public/cpp/BUILD.gn b/services/network/public/cpp/BUILD.gn
-index b48bdf27cd97142ceebc1f0b769b502bf037ce36..3b1424b6df37aa4a3cd341e8b89524e34480d4ac 100644
+index eb6d8e40d27b7d1027e9afcace37aad487c333d7..3916ffd9787183bdd1e04dce1fe8e9dafd16b338 100644
 --- a/services/network/public/cpp/BUILD.gn
 +++ b/services/network/public/cpp/BUILD.gn
 @@ -69,8 +69,6 @@ component("cpp") {
@@ -761,7 +761,7 @@ index b48bdf27cd97142ceebc1f0b769b502bf037ce36..3b1424b6df37aa4a3cd341e8b89524e3
      "cors/cors.cc",
      "cors/cors.h",
      "cors/origin_access_list.cc",
-@@ -187,8 +185,6 @@ component("cpp") {
+@@ -191,8 +189,6 @@ component("cpp") {
    deps = [
      "//base",
      "//components/link_header_util",
@@ -771,10 +771,10 @@ index b48bdf27cd97142ceebc1f0b769b502bf037ce36..3b1424b6df37aa4a3cd341e8b89524e3
      "//ipc",
      "//net",
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index b78bde54c454a986ae8b2ed68bf0cf5a3d10568f..23c76697cc74f342b8c6786ec62b257ad1c2efd8 100644
+index 0a837fbd18a0e597805b418a7f3022c499fb0c41..e511f65399c20cb9889c56a1c2c9e97eb84b3bf2 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -573,9 +573,10 @@ struct NetworkContextParams {
+@@ -576,9 +576,10 @@ struct NetworkContextParams {
    bool acam_preflight_spec_conformant = true;
  
    // Sets the cookie encryption provider to be used by this network context if

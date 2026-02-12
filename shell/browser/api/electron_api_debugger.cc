@@ -53,31 +53,31 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
       message_str, base::JSON_REPLACE_INVALID_CHARACTERS);
   if (!parsed_message || !parsed_message->is_dict())
     return;
-  base::Value::Dict& dict = parsed_message->GetDict();
+  base::DictValue& dict = parsed_message->GetDict();
   std::optional<int> id = dict.FindInt("id");
   if (!id) {
     std::string* method = dict.FindString("method");
     if (!method)
       return;
     std::string* session_id = dict.FindString("sessionId");
-    base::Value::Dict* params = dict.FindDict("params");
-    Emit("message", *method, params ? std::move(*params) : base::Value::Dict(),
+    base::DictValue* params = dict.FindDict("params");
+    Emit("message", *method, params ? std::move(*params) : base::DictValue(),
          session_id ? *session_id : "");
   } else {
     auto it = pending_requests_.find(*id);
     if (it == pending_requests_.end())
       return;
 
-    gin_helper::Promise<base::Value::Dict> promise = std::move(it->second);
+    gin_helper::Promise<base::DictValue> promise = std::move(it->second);
     pending_requests_.erase(it);
 
-    base::Value::Dict* error = dict.FindDict("error");
+    base::DictValue* error = dict.FindDict("error");
     if (error) {
       std::string* error_message = error->FindString("message");
       promise.RejectWithErrorMessage(error_message ? *error_message : "");
     } else {
-      base::Value::Dict* result = dict.FindDict("result");
-      promise.Resolve(result ? std::move(*result) : base::Value::Dict());
+      base::DictValue* result = dict.FindDict("result");
+      promise.Resolve(result ? std::move(*result) : base::DictValue());
     }
   }
 }
@@ -132,7 +132,7 @@ void Debugger::Detach() {
 
 v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
-  gin_helper::Promise<base::Value::Dict> promise(isolate);
+  gin_helper::Promise<base::DictValue> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (!agent_host_) {
@@ -146,7 +146,7 @@ v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
     return handle;
   }
 
-  base::Value::Dict command_params;
+  base::DictValue command_params;
   args->GetNext(&command_params);
 
   std::string session_id;
@@ -155,7 +155,7 @@ v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
     return handle;
   }
 
-  base::Value::Dict request;
+  base::DictValue request;
   int request_id = ++previous_request_id_;
   pending_requests_.emplace(request_id, std::move(promise));
   request.Set("id", request_id);

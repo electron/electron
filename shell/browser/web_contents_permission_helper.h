@@ -59,10 +59,10 @@ class WebContentsPermissionHelper
                          blink::PermissionType permission,
                          base::OnceCallback<void(bool)> callback,
                          bool user_gesture = false,
-                         base::Value::Dict details = {});
+                         base::DictValue details = {});
 
   bool CheckPermission(blink::PermissionType permission,
-                       base::Value::Dict details) const;
+                       base::DictValue details) const;
 
   // TODO(clavin): refactor to use the WebContents provided by the
   // WebContentsUserData base class instead of storing a duplicate ref

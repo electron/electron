@@ -13,7 +13,7 @@
 
 namespace electron {
 
-NSArray* ListValueToNSArray(const base::Value::List& value) {
+NSArray* ListValueToNSArray(const base::ListValue& value) {
   const auto json = base::WriteJson(value);
   if (!json.has_value())
     return nil;
@@ -26,8 +26,8 @@ NSArray* ListValueToNSArray(const base::Value::List& value) {
   return obj;
 }
 
-base::Value::List NSArrayToValue(NSArray* arr) {
-  base::Value::List result;
+base::ListValue NSArrayToValue(NSArray* arr) {
+  base::ListValue result;
   if (!arr)
     return result;
 
@@ -54,7 +54,7 @@ base::Value::List NSArrayToValue(NSArray* arr) {
   return result;
 }
 
-NSDictionary* DictionaryValueToNSDictionary(const base::Value::Dict& value) {
+NSDictionary* DictionaryValueToNSDictionary(const base::DictValue& value) {
   const auto json = base::WriteJson(value);
   if (!json.has_value())
     return nil;
@@ -67,8 +67,8 @@ NSDictionary* DictionaryValueToNSDictionary(const base::Value::Dict& value) {
   return obj;
 }
 
-base::Value::Dict NSDictionaryToValue(NSDictionary* dict) {
-  base::Value::Dict result;
+base::DictValue NSDictionaryToValue(NSDictionary* dict) {
+  base::DictValue result;
   if (!dict)
     return result;
 
