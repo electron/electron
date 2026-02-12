@@ -11,7 +11,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ELECTRON_DIR = resolve(__dirname, '..');
 
 const DEPS_REGEX = /chromium_version':\n +'(.+?)',/m;
-const CL_REGEX = /https:\/\/chromium-review\.googlesource\.com\/c\/(?:chromium\/src|v8\/v8)\/\+\/(\d+)/g;
+const CL_REGEX = /https:\/\/chromium-review\.googlesource\.com\/c\/(?:chromium\/src|v8\/v8)\/\+\/(\d+)(#\S+)?/g;
 const ROLLER_BRANCH_PATTERN = /^roller\/chromium\/(.+)$/;
 
 function getCommitsSinceMergeBase (mergeBase) {
@@ -170,7 +170,8 @@ async function main () {
 
     const cls = [...commit.message.matchAll(CL_REGEX)].map((match) => ({
       url: match[0],
-      clNumber: match[1]
+      clNumber: match[1],
+      fragment: match[2] ?? null
     }));
 
     if (cls.length === 0) {
@@ -181,6 +182,12 @@ async function main () {
     console.log(`\nChecking commit ${shortSha}: ${firstLine}`);
 
     for (const cl of cls) {
+      // Skip CLs annotated with #nolint
+      if (cl.fragment === '#nolint') {
+        console.log(`  ⏭️  CL ${cl.clNumber}: skipped (#nolint)`);
+        continue;
+      }
+
       // Check cache first (use URL as key to distinguish same CL number across repos)
       if (checkedCLs.has(cl.url)) {
         const cached = checkedCLs.get(cl.url);
