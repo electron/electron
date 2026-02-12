@@ -90,12 +90,12 @@ class Session final : public gin::Wrappable<Session>,
   // Gets the Session of |partition|.
   static Session* FromPartition(v8::Isolate* isolate,
                                 const std::string& partition,
-                                base::Value::Dict options = {});
+                                base::DictValue options = {});
 
   // Gets the Session based on |path|.
   static Session* FromPath(gin::Arguments* args,
                            const base::FilePath& path,
-                           base::Value::Dict options = {});
+                           base::DictValue options = {});
 
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "Session"; }

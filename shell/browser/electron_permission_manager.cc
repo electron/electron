@@ -174,7 +174,7 @@ void ElectronPermissionManager::RequestPermissionWithDetails(
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     bool user_gesture,
-    base::Value::Dict details,
+    base::DictValue details,
     StatusCallback response_callback) {
   if (render_frame_host->IsNestedWithinFencedFrame()) {
     std::move(response_callback)
@@ -213,7 +213,7 @@ void ElectronPermissionManager::RequestPermissions(
 void ElectronPermissionManager::RequestPermissionsWithDetails(
     content::RenderFrameHost* render_frame_host,
     const content::PermissionRequestDescription& request_description,
-    base::Value::Dict details,
+    base::DictValue details,
     StatusesCallback response_callback) {
   if (request_description.permissions.empty()) {
     std::move(response_callback).Run({});
@@ -315,7 +315,7 @@ blink::mojom::PermissionStatus ElectronPermissionManager::GetPermissionStatus(
     const GURL& embedding_origin) {
   const auto permission =
       blink::PermissionDescriptorToPermissionType(permission_descriptor);
-  base::Value::Dict details;
+  base::DictValue details;
   details.Set("embeddingOrigin", embedding_origin.spec());
   bool granted = CheckPermissionWithDetails(permission, {}, requesting_origin,
                                             std::move(details));
@@ -338,7 +338,7 @@ void ElectronPermissionManager::CheckBluetoothDevicePair(
     gin_helper::Dictionary details,
     PairCallback pair_callback) const {
   if (bluetooth_pairing_handler_.is_null()) {
-    base::Value::Dict response;
+    base::DictValue response;
     response.Set("confirmed", false);
     std::move(pair_callback).Run(std::move(response));
   } else {
@@ -350,7 +350,7 @@ bool ElectronPermissionManager::CheckPermissionWithDetails(
     blink::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
-    base::Value::Dict details) const {
+    base::DictValue details) const {
   if (permission == blink::PermissionType::GEOLOCATION &&
       IsGeolocationDisabledViaCommandLine())
     return false;
@@ -450,7 +450,7 @@ ElectronPermissionManager::GetPermissionResultForCurrentDocument(
 
   const auto permission =
       blink::PermissionDescriptorToPermissionType(permission_descriptor);
-  base::Value::Dict details;
+  base::DictValue details;
   details.Set("embeddingOrigin",
               content::PermissionUtil::GetLastCommittedOriginAsURL(
                   render_frame_host->GetMainFrame())

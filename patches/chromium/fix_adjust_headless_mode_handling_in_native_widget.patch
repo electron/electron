@@ -18,11 +18,59 @@ Additionally, this patch reverts
 https://chromium-review.googlesource.com/c/chromium/src/+/6936895
 as we depend on the removed functionality in this patch.
 
+2026-02-06: Partial revert of the following patch to prevent
+additional headless changes from breaking macOS window behavior.
+https://chromium-review.googlesource.com/c/chromium/src/+/7487666
+
+diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
+index 96588e0dfd084822f5c98cfaf2ee3c403fbd5e5f..b7983880254a09722d540c41937095f63cbb8109 100644
+--- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
++++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
+@@ -218,6 +218,7 @@ @implementation NativeWidgetMacNSWindow {
+   BOOL _isEnforcingNeverMadeVisible;
+   BOOL _activationIndependence;
+   BOOL _isTooltip;
++  BOOL _isHeadless;
+   BOOL _isShufflingForOrdering;
+   BOOL _miniaturizationInProgress;
+   std::unique_ptr<NativeWidgetMacNSWindowHeadlessInfo> _headless_info;
+@@ -225,6 +226,7 @@ @implementation NativeWidgetMacNSWindow {
+ @synthesize bridgedNativeWidgetId = _bridgedNativeWidgetId;
+ @synthesize bridge = _bridge;
+ @synthesize isTooltip = _isTooltip;
++@synthesize isHeadless = _isHeadless;
+ @synthesize isShufflingForOrdering = _isShufflingForOrdering;
+ @synthesize preventKeyWindow = _preventKeyWindow;
+ @synthesize childWindowAddedHandler = _childWindowAddedHandler;
+@@ -246,23 +248,6 @@ - (instancetype)initWithContentRect:(NSRect)contentRect
+   return self;
+ }
+ 
+-- (BOOL)isHeadless {
+-  return _headless_info != nullptr;
+-}
+-
+-- (void)setIsHeadless:(BOOL)isHeadless {
+-  // NativeWidgetMacNSWindowHeadlessInfo constructor overrides certain NSWindow
+-  // methods in order to implement headless mode behavior. This affects all
+-  // NativeWidgetMacNSWindow instances, however, the overrides will fallback to
+-  // the original implementations if there is no headless info associated with
+-  // the window.
+-  if (isHeadless) {
+-    _headless_info = std::make_unique<NativeWidgetMacNSWindowHeadlessInfo>();
+-  } else {
+-    _headless_info.reset();
+-  }
+-}
+-
+ - (NativeWidgetMacNSWindowHeadlessInfo*)headlessInfo {
+   return _headless_info.get();
+ }
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index b620a31aed5801160dc49d964df56410786e6f2e..6161185d8360822cf349114e530aa896f01af25c 100644
+index b99b8ec014c81c1d6ad14a6758568dd864102e2a..5747d9b79444674b65d481248fb0576679cdef4e 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -533,7 +533,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -534,7 +534,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    is_translucent_window_ = params->is_translucent;
    pending_restoration_data_ = params->state_restoration_data;
  

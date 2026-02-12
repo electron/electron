@@ -25,7 +25,7 @@
 // To add a new component to this API, simply:
 // 1. Add your component to the Component enum in
 //      shell/common/extensions/api/resources_private.idl
-// 2. Create an AddStringsForMyComponent(base::Value::Dict* dict) method.
+// 2. Create an AddStringsForMyComponent(base::DictValue* dict) method.
 // 3. Tie in that method to the switch statement in Run()
 
 namespace extensions {
@@ -40,7 +40,7 @@ ResourcesPrivateGetStringsFunction::~ResourcesPrivateGetStringsFunction() =
 
 ExtensionFunction::ResponseAction ResourcesPrivateGetStringsFunction::Run() {
   get_strings::Params params = get_strings::Params::Create(args()).value();
-  base::Value::Dict dict;
+  base::DictValue dict;
 
   switch (params.component) {
     case api::resources_private::Component::kPdf:

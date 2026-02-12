@@ -339,7 +339,7 @@ float NativeImage::GetAspectRatio(const std::optional<float> scale_factor) {
 }
 
 gin_helper::Handle<NativeImage> NativeImage::Resize(gin::Arguments* args,
-                                                    base::Value::Dict options) {
+                                                    base::DictValue options) {
   float scale_factor = GetScaleFactorFromOptions(args);
 
   gfx::Size size = GetSize(scale_factor);

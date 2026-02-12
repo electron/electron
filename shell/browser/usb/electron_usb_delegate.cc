@@ -178,7 +178,7 @@ bool ElectronUsbDelegate::CanRequestDevicePermission(
   if (!browser_context)
     return false;
 
-  base::Value::Dict details;
+  base::DictValue details;
   details.Set("securityOrigin", origin.GetURL().spec());
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context->GetPermissionControllerDelegate());
