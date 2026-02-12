@@ -178,10 +178,10 @@ index cb13d84388bcc6806d3b038a51e1cc2d1feccda1..687b2cf3e63b2a3306e2cbac67e3e216
      MakeWeak();
    }
 diff --git a/src/node_process_methods.cc b/src/node_process_methods.cc
-index fe4aad63bc877be105830a80aa6be10ce3f8fda4..588b1fef718853bec95a4e4a3b14809a0e7018ea 100644
+index 67278974199db46fed85b443e7cdd30accd7687f..e52c08541ec4180f16e4bceaac1bd6b97cf13e8b 100644
 --- a/src/node_process_methods.cc
 +++ b/src/node_process_methods.cc
-@@ -672,8 +672,8 @@ void BindingData::RegisterExternalReferences(
+@@ -680,8 +680,8 @@ void BindingData::RegisterExternalReferences(
  
  BindingData* BindingData::FromV8Value(Local<Value> value) {
    Local<Object> v8_object = value.As<Object>();
