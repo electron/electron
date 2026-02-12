@@ -39,7 +39,7 @@ ElectronMessagingDelegate::IsNativeMessagingHostAllowed(
   return PolicyPermission::DISALLOW;
 }
 
-std::optional<base::Value::Dict> ElectronMessagingDelegate::MaybeGetTabInfo(
+std::optional<base::DictValue> ElectronMessagingDelegate::MaybeGetTabInfo(
     content::WebContents* web_contents) {
   if (web_contents) {
     auto* api_contents = electron::api::WebContents::From(web_contents);

@@ -68,8 +68,7 @@ class Debugger final : public gin::Wrappable<Debugger>,
                               content::RenderFrameHost* new_rfh) override;
 
  private:
-  using PendingRequestMap =
-      std::map<int, gin_helper::Promise<base::Value::Dict>>;
+  using PendingRequestMap = std::map<int, gin_helper::Promise<base::DictValue>>;
 
   void Attach(gin::Arguments* args);
   bool IsAttached();
