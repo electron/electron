@@ -321,12 +321,33 @@ grit("resources") {
     "grit/electron_resources.h",
     "electron_resources.pak",
   ]
+  if (translate_genders) {
+    outputs += [
+      "electron_resources_MASCULINE.pak",
+      "electron_resources_FEMININE.pak",
+      "electron_resources_NEUTER.pak",
+    ]
+  }
+
+  foreach(locale, all_chrome_locales) {
+    outputs += [ "electron_strings_$locale.pak" ]
+    if (translate_genders) {
+      outputs += [
+        "electron_strings_${locale}_MASCULINE.pak",
+        "electron_strings_${locale}_FEMININE.pak",
+        "electron_strings_${locale}_NEUTER.pak",
+      ]
+    }
+  }
 
   # Mojo manifest overlays are generated.
   grit_flags = [
     "-E",
     "target_gen_dir=" + rebase_path(target_gen_dir, root_build_dir),
   ]
+  if (translate_genders) {
+    grit_flags += [ "--translate-genders" ]
+  }
 
   deps = [ ":copy_shell_devtools_discovery_page" ]
 
@@ -450,6 +471,7 @@ source_set("electron_lib") {
     "//chrome:strings",
     "//chrome/app:command_ids",
     "//chrome/app/resources:platform_locale_settings",
+    "//chrome/common/notifications",
     "//components/autofill/core/common:features",
     "//components/certificate_transparency",
     "//components/compose:buildflags",
@@ -618,6 +640,7 @@ source_set("electron_lib") {
       "SecurityInterface.framework",
       "ServiceManagement.framework",
       "StoreKit.framework",
+      "UserNotifications.framework",
     ]
 
     weak_frameworks = [ "QuickLookThumbnailing.framework" ]
