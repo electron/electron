@@ -58,7 +58,7 @@ class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage>,
 
  private:
   // BrowserObserver:
-  void OnFinishLaunching(base::Value::Dict launch_info) override;
+  void OnFinishLaunching(base::DictValue launch_info) override;
 
   void OnOsCryptReady(os_crypt_async::Encryptor encryptor);
 
