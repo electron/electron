@@ -17,10 +17,10 @@ Revert "Reland "Port net::CookieCryptoDelegate to os_crypt async""
 This reverts commit f01b115c7e21a09cc762f65bf7fd9c6ea9d9d0f8.
 
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index c75d7e336ad00230c2a7852f62c69b8f0cae748d..8e80ebd537871b204f254a4468996350b8f4f231 100644
+index d8d8cd48e480302499271c3abafde23b6530ed9e..aa461113fcede10e7538c2ea4a9182c12538bfd3 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -716,6 +716,8 @@ static_library("browser") {
+@@ -714,6 +714,8 @@ static_library("browser") {
      "net/chrome_report_sender.h",
      "net/convert_explicitly_allowed_network_ports_pref.cc",
      "net/convert_explicitly_allowed_network_ports_pref.h",
@@ -172,7 +172,7 @@ index 8f80cabd7c919c682e603ff6af0c12ae4431e366..68df8a7a04e9a8455b7143432173d9e4
 -#endif  // SERVICES_NETWORK_PUBLIC_CPP_COOKIE_ENCRYPTION_PROVIDER_IMPL_H_
 +#endif  // CHROME_BROWSER_NET_COOKIE_ENCRYPTION_PROVIDER_IMPL_H_
 diff --git a/chrome/browser/net/cookie_encryption_provider_interactive_uitest.cc b/chrome/browser/net/cookie_encryption_provider_interactive_uitest.cc
-index b862afe7663111a6cbd342d33723942770bb0490..9dc46cedb109cea63bf71aa43fc7a2b64730ed12 100644
+index 80a738ef815e33058d22df4595e2c9ddad3937c3..007473976bc4bbeeeefbb75d6c03b795be5267d7 100644
 --- a/chrome/browser/net/cookie_encryption_provider_interactive_uitest.cc
 +++ b/chrome/browser/net/cookie_encryption_provider_interactive_uitest.cc
 @@ -13,6 +13,7 @@
@@ -192,7 +192,7 @@ index b862afe7663111a6cbd342d33723942770bb0490..9dc46cedb109cea63bf71aa43fc7a2b6
  #include "services/network/public/mojom/network_context.mojom.h"
  #include "testing/gtest/include/gtest/gtest.h"
 diff --git a/chrome/browser/net/system_network_context_manager.cc b/chrome/browser/net/system_network_context_manager.cc
-index 223c7a55b1db65430d22dcff9898845ccaca68a0..9f7347a39c1a0a982632fc6a6b04240b0a3b9510 100644
+index 341cae2bda7fce9e5133966cb8670b9858a44654..6ba158980107ee77d38acc40dd377017731f0de7 100644
 --- a/chrome/browser/net/system_network_context_manager.cc
 +++ b/chrome/browser/net/system_network_context_manager.cc
 @@ -919,13 +919,8 @@ void SystemNetworkContextManager::DisableQuic() {
@@ -445,7 +445,7 @@ index 9d142e9f13fb0d30d5795c2a82f2cbc5274d381c..1e1b7ebc234d7e3f981e023fe49cd0b1
  }  // namespace cookie_config
  
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index bb308187837371ecfa2482affaf35ac7ed98c1f3..1e554fe95b0521a883ced83fc67f5d52a3d45759 100644
+index ea48241edef8eaf7bfc8285d7cbbea567d3a7cbb..4bb0fe1ef70133f2d7df516192d61b95d36ce4de 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
 @@ -12,7 +12,13 @@ component("sync") {
@@ -462,7 +462,7 @@ index bb308187837371ecfa2482affaf35ac7ed98c1f3..1e554fe95b0521a883ced83fc67f5d52
      "//components/os_crypt/async/browser:dpapi_key_provider",
      "//components/os_crypt/async/browser:freedesktop_secret_key_provider",
      "//components/os_crypt/async/browser:keychain_key_provider",
-@@ -22,18 +28,24 @@ component("sync") {
+@@ -22,15 +28,24 @@ component("sync") {
      "//components/os_crypt/async/common:unit_tests",
      "//components/os_crypt/sync:test_support",
      "//components/os_crypt/sync:unit_tests",
@@ -472,13 +472,13 @@ index bb308187837371ecfa2482affaf35ac7ed98c1f3..1e554fe95b0521a883ced83fc67f5d52
 +    "//components/password_manager/core/browser/password_store:password_store_impl",
 +    "//components/password_manager/core/browser/password_store:unit_tests",
      "//components/signin/core/browser",
-     "//components/sync:unit_tests",
-     "//components/sync/nigori",
-     "//components/sync/service",
++    "//components/sync:unit_tests",
++    "//components/sync/nigori",
++    "//components/sync/service",
 +    "//components/trusted_vault",
 +    "//components/trusted_vault:unit_tests",
 +    "//content/browser",
-     "//headless:headless_non_renderer",
+     "//headless:headless_browser",
 +    "//headless:headless_shell_lib",
      "//ios/chrome/browser/web/model:web_internal",
      "//services/network:network_service",
@@ -490,20 +490,8 @@ index bb308187837371ecfa2482affaf35ac7ed98c1f3..1e554fe95b0521a883ced83fc67f5d52
  
    sources = [
      "os_crypt.h",
-diff --git a/headless/BUILD.gn b/headless/BUILD.gn
-index 0d07069219883d28af7add90ad4509a94109603f..b732da23aa014aaa3525bbadaec97178d7844e04 100644
---- a/headless/BUILD.gn
-+++ b/headless/BUILD.gn
-@@ -373,7 +373,6 @@ component("headless_non_renderer") {
-     "//components/keyed_service/content",
-     "//components/origin_trials:browser",
-     "//components/origin_trials:common",
--    "//components/os_crypt/async/browser",
-     "//components/os_crypt/sync",
-     "//components/policy:generated",
-     "//components/policy/content",
 diff --git a/headless/lib/browser/DEPS b/headless/lib/browser/DEPS
-index 75d0960a5964fabf518d0b8b2f67e29e9b3d6fe6..8261f1ab27597459726063cc6faa2a5ed0bfce17 100644
+index 14de55a42b5cd21caad4d9c21b9f4573c77b436e..30c5598abf83f9fb6040fc5ebcfde72beb858a72 100644
 --- a/headless/lib/browser/DEPS
 +++ b/headless/lib/browser/DEPS
 @@ -44,7 +44,6 @@ specific_include_rules = {
@@ -538,7 +526,7 @@ index f664e9994a3c38ef2aa30773f6ca4668451dd76c..ad83a721a8bf17225af7d2c5954ecdd8
        this, IsOffTheRecord() ? profile_metrics::BrowserProfileType::kIncognito
                               : profile_metrics::BrowserProfileType::kRegular);
 diff --git a/headless/lib/browser/headless_browser_impl.cc b/headless/lib/browser/headless_browser_impl.cc
-index f0c79ccd63e102c4ef51535f476ceddc6c5156a9..c1e9430b3f5b67338f204ca5563a02c2da87cd49 100644
+index eb1a52ac99254bac3219f072e859ba68d11f8c59..80558c02a49b90a30c86ce32f61076aa35aab7b8 100644
 --- a/headless/lib/browser/headless_browser_impl.cc
 +++ b/headless/lib/browser/headless_browser_impl.cc
 @@ -16,8 +16,6 @@
@@ -731,10 +719,10 @@ index 91d74eaadd9f4d451e809b38a2f999b298068820..e45427ce90f909e609688ab59f4581b1
    mojo::PendingRemote<::network::mojom::NetworkContext> system_context_;
  };
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index f9e704f9dc76f802b330487238717a6df3ba7b36..1702b7f7603d98e2f08a8af7310daa1fb3250d54 100644
+index b83e4c4c2eddb9fc276fffb77bb115e2721b1684..b884f242bbe4dfdc9d823a4afb6f95ad71742c71 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -3274,12 +3274,7 @@ NetworkContext::MakeSessionCleanupCookieStore() const {
+@@ -3278,12 +3278,7 @@ NetworkContext::MakeSessionCleanupCookieStore() const {
        crypto_delegate = std::make_unique<CookieOSCryptAsyncDelegate>(
            std::move(params_->cookie_encryption_provider));
      } else {
@@ -749,10 +737,10 @@ index f9e704f9dc76f802b330487238717a6df3ba7b36..1702b7f7603d98e2f08a8af7310daa1f
    }
  
 diff --git a/services/network/public/cpp/BUILD.gn b/services/network/public/cpp/BUILD.gn
-index eb6d8e40d27b7d1027e9afcace37aad487c333d7..3916ffd9787183bdd1e04dce1fe8e9dafd16b338 100644
+index 5507a9ebdc1a495fbf0d7c4eaad3d905ad1d18c9..aaf9119e4f714abccfa662d15d304f190b8dcaff 100644
 --- a/services/network/public/cpp/BUILD.gn
 +++ b/services/network/public/cpp/BUILD.gn
-@@ -69,8 +69,6 @@ component("cpp") {
+@@ -71,8 +71,6 @@ component("cpp") {
      "content_decoding_interceptor.h",
      "content_language_parser.cc",
      "content_language_parser.h",
@@ -761,17 +749,17 @@ index eb6d8e40d27b7d1027e9afcace37aad487c333d7..3916ffd9787183bdd1e04dce1fe8e9da
      "cors/cors.cc",
      "cors/cors.h",
      "cors/origin_access_list.cc",
-@@ -191,8 +189,6 @@ component("cpp") {
+@@ -195,8 +193,6 @@ component("cpp") {
    deps = [
      "//base",
      "//components/link_header_util",
 -    "//components/os_crypt/async/browser",
 -    "//components/os_crypt/async/common",
      "//components/prefs",
+     "//components/url_pattern",
      "//ipc",
-     "//net",
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 0a837fbd18a0e597805b418a7f3022c499fb0c41..e511f65399c20cb9889c56a1c2c9e97eb84b3bf2 100644
+index b843412396f17bc094fa5a5dcf4ab3a11ef7d00d..12263d516497009081ebb1f52ec245b0339f9923 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -576,9 +576,10 @@ struct NetworkContextParams {
