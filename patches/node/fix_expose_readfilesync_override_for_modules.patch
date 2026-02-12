@@ -19,44 +19,6 @@ index bb874fec74c73b5de0ef6d1e2a872ebceefb11ce..6fafe2a8029c535fa98276e2d73f04ee
    V(builtin_module_require, v8::Function)                                      \
    V(performance_entry_callback, v8::Function)                                  \
    V(prepare_stack_trace_callback, v8::Function)                                \
-diff --git a/src/memory_tracker.cc b/src/memory_tracker.cc
-new file mode 100644
-index 0000000000000000000000000000000000000000..65a3d2e3500f7085dd85aac44c40a79d026a332a
---- /dev/null
-+++ b/src/memory_tracker.cc
-@@ -0,0 +1,9 @@
-+#include "memory_tracker-inl.h"
-+
-+namespace node {
-+
-+// Out-of-line destructor serves as the key function for the vtable, preventing
-+// it from being stripped by -fwhole-program-vtables during ThinLTO linking.
-+MemoryRetainerNode::~MemoryRetainerNode() = default;
-+
-+}  // namespace node
-diff --git a/src/node_http_common.cc b/src/node_http_common.cc
-new file mode 100644
-index 0000000000000000000000000000000000000000..2baf7281e4bdd3cc483dca53bb82124c00a4d27e
---- /dev/null
-+++ b/src/node_http_common.cc
-@@ -0,0 +1,17 @@
-+#include "env-inl.h"
-+#include "memory_tracker.h"
-+#include "util.h"
-+#include "node_http_common-inl.h"
-+#include "node_http2.h"
-+
-+namespace node {
-+
-+// Out-of-line destructor serves as the key function for the vtable, preventing
-+// it from being stripped by -fwhole-program-vtables during ThinLTO linking.
-+template <typename T>
-+NgRcBufPointer<T>::External::~External() {}
-+
-+template class NgRcBufPointer<
-+    http2::Http2RcBufferPointerTraits>::External;
-+
-+}  // namespace node
 diff --git a/src/node_modules.cc b/src/node_modules.cc
 index 95a7b8c32693c32ca9f57e01aff9ef06b84f78b2..cecdda74847801fd5821bc0afdf0dfc9f131c44a 100644
 --- a/src/node_modules.cc
@@ -178,26 +140,3 @@ index d610306a3a3111327f111def823b07c3da04192f..5bb7245816822282977e62ce3b0e6c0b
    static void ReadPackageJSON(const v8::FunctionCallbackInfo<v8::Value>& args);
    static void GetNearestParentPackageJSON(
        const v8::FunctionCallbackInfo<v8::Value>& args);
-diff --git a/src/node_union_bytes.cc b/src/node_union_bytes.cc
-new file mode 100644
-index 0000000000000000000000000000000000000000..aba95f8a47c41f3e439bb2a0f4170d28fab1b9c1
---- /dev/null
-+++ b/src/node_union_bytes.cc
-@@ -0,0 +1,17 @@
-+#include "node_union_bytes.h"
-+
-+namespace node {
-+
-+// Out-of-line destructor serves as the key function for the vtable, preventing
-+// it from being stripped by -fwhole-program-vtables during ThinLTO linking.
-+template <typename Char, typename IChar, typename Base>
-+StaticExternalByteResource<Char, IChar, Base>::~StaticExternalByteResource() {}
-+
-+template class StaticExternalByteResource<uint8_t,
-+                                          char,
-+                                          v8::String::ExternalOneByteStringResource>;
-+template class StaticExternalByteResource<uint16_t,
-+                                          uint16_t,
-+                                          v8::String::ExternalStringResource>;
-+
-+}  // namespace node
