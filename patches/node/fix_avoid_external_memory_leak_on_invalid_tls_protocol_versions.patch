@@ -20,18 +20,9 @@ only allocate the native SecureContext on success.
 This should be upstreamed to Node.js.
 
 diff --git a/lib/internal/tls/common.js b/lib/internal/tls/common.js
-index 66331d2d9999e93e59cbce9e153affb942b79946..fa8437264ad8ffc6ff0eac92060f1fd48ee6300d 100644
+index 66331d2d9999e93e59cbce9e153affb942b79946..0f7fd0747ea779f76a9e64ed37d195bd735ea2a8 100644
 --- a/lib/internal/tls/common.js
 +++ b/lib/internal/tls/common.js
-@@ -72,7 +72,7 @@ const {
- function SecureContext(secureProtocol, secureOptions, minVersion, maxVersion) {
-   if (!(this instanceof SecureContext)) {
-     return new SecureContext(secureProtocol, secureOptions, minVersion,
--                             maxVersion);
-+      maxVersion);
-   }
- 
-   if (secureProtocol) {
 @@ -82,10 +82,11 @@ function SecureContext(secureProtocol, secureOptions, minVersion, maxVersion) {
        throw new ERR_TLS_PROTOCOL_VERSION_CONFLICT(maxVersion, secureProtocol);
    }
@@ -47,50 +38,6 @@ index 66331d2d9999e93e59cbce9e153affb942b79946..fa8437264ad8ffc6ff0eac92060f1fd4
  
    if (secureOptions) {
      validateInteger(secureOptions, 'secureOptions');
-@@ -108,7 +109,7 @@ function createSecureContext(options) {
-     secureOptions |= SSL_OP_CIPHER_SERVER_PREFERENCE;
- 
-   const c = new SecureContext(secureProtocol, secureOptions,
--                              minVersion, maxVersion);
-+    minVersion, maxVersion);
- 
-   configSecureContext(c.context, options);
- 
-@@ -131,20 +132,20 @@ function translatePeerCertificate(c) {
- 
-     // XXX: More key validation?
-     info.replace(/([^\n:]*):([^\n]*)(?:\n|$)/g,
--                 (all, key, val) => {
--                   if (val.charCodeAt(0) === 0x22) {
--                     // The translatePeerCertificate function is only
--                     // used on internally created legacy certificate
--                     // objects, and any value that contains a quote
--                     // will always be a valid JSON string literal,
--                     // so this should never throw.
--                     val = JSONParse(val);
--                   }
--                   if (key in c.infoAccess)
--                     c.infoAccess[key].push(val);
--                   else
--                     c.infoAccess[key] = [val];
--                 });
-+      (all, key, val) => {
-+        if (val.charCodeAt(0) === 0x22) {
-+          // The translatePeerCertificate function is only
-+          // used on internally created legacy certificate
-+          // objects, and any value that contains a quote
-+          // will always be a valid JSON string literal,
-+          // so this should never throw.
-+          val = JSONParse(val);
-+        }
-+        if (key in c.infoAccess)
-+          c.infoAccess[key].push(val);
-+        else
-+          c.infoAccess[key] = [val];
-+      });
-   }
-   return c;
- }
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
 index ca62d3001bf51193d78caac0cccd93c188a8410c..d6af2460c3745901415d4e785cf210da8a730a8d 100644
 --- a/src/crypto/crypto_context.cc
