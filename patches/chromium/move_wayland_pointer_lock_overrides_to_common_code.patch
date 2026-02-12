@@ -1,0 +1,143 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?V=C3=A4in=C3=B6=20M=C3=A4kel=C3=A4?=
+ <vaino.o.makela@gmail.com>
+Date: Mon, 5 Jan 2026 11:27:05 -0800
+Subject: Move Wayland pointer lock overrides to common code
+
+Since the Wayland-specific pointer lock implementation overrides were
+placed in Chrome-specific code, they could not be used by other projects
+depending on Chromium source like Electron, making pointer lock not work
+on Wayland for them without special care. Moving the function
+implementations to the more generic DesktopWindowTreeHostLinux class
+allows Electron to benefit from this code without having to override the
+functions itself.
+
+Change-Id: Ideb7dca9fd3dfb491df8f68296ba2d21069901cd
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7362747
+Reviewed-by: Thomas Anderson <thomasanderson@chromium.org>
+Reviewed-by: Kramer Ge <fangzhoug@chromium.org>
+Commit-Queue: Kramer Ge <fangzhoug@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1564501}
+
+diff --git a/AUTHORS b/AUTHORS
+index 2384448120f5e5ac6b0315625e897d961bfc19b8..7eb8f26120a23539b0780eb3f7e1d6a7ac52b102 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -1604,6 +1604,7 @@ Vitaliy Kharin <kvserr@gmail.com>
+ Vivek Galatage <vivek.vg@samsung.com>
+ Vlad Zahorodnii <vlad.zahorodnii@kde.org>
+ Volker Sorge <volker.sorge@gmail.com>
++Väinö Mäkelä <vaino.o.makela@gmail.com>
+ Waihung Fu <fufranci@amazon.com>
+ wafuwafu13 <mariobaske@i.softbank.jp>
+ Wojciech Bielawski <wojciech.bielawski@gmail.com>
+diff --git a/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_linux.cc b/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_linux.cc
+index 87d1f5c0f8f9e286a58e809ae9cfc2b84dd97ed2..e2afae41f0b2fce9eb0428119b66ff09f4811932 100644
+--- a/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_linux.cc
++++ b/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_linux.cc
+@@ -126,35 +126,6 @@ void BrowserDesktopWindowTreeHostLinux::FrameTypeChanged() {
+   UpdateFrameHints();
+ }
+ 
+-bool BrowserDesktopWindowTreeHostLinux::SupportsMouseLock() {
+-  auto* wayland_extension = ui::GetWaylandToplevelExtension(*platform_window());
+-  if (!wayland_extension) {
+-    return false;
+-  }
+-
+-  return wayland_extension->SupportsPointerLock();
+-}
+-
+-void BrowserDesktopWindowTreeHostLinux::LockMouse(aura::Window* window) {
+-  DesktopWindowTreeHostLinux::LockMouse(window);
+-
+-  if (SupportsMouseLock()) {
+-    auto* wayland_extension =
+-        ui::GetWaylandToplevelExtension(*platform_window());
+-    wayland_extension->LockPointer(true /*enabled*/);
+-  }
+-}
+-
+-void BrowserDesktopWindowTreeHostLinux::UnlockMouse(aura::Window* window) {
+-  DesktopWindowTreeHostLinux::UnlockMouse(window);
+-
+-  if (SupportsMouseLock()) {
+-    auto* wayland_extension =
+-        ui::GetWaylandToplevelExtension(*platform_window());
+-    wayland_extension->LockPointer(false /*enabled*/);
+-  }
+-}
+-
+ void BrowserDesktopWindowTreeHostLinux::TabDraggingKindChanged(
+     TabDragKind tab_drag_kind) {
+   CHECK(browser_widget_);
+diff --git a/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_linux.h b/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_linux.h
+index 01ef9a93657f9401191adb4b8bd17528da790127..12ca597be51480e45acf4490cf6e533c23c30556 100644
+--- a/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_linux.h
++++ b/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_linux.h
+@@ -80,9 +80,6 @@ class BrowserDesktopWindowTreeHostLinux
+   void CloseNow() override;
+   void Show(ui::mojom::WindowShowState show_state,
+             const gfx::Rect& restore_bounds) override;
+-  bool SupportsMouseLock() override;
+-  void LockMouse(aura::Window* window) override;
+-  void UnlockMouse(aura::Window* window) override;
+   void ClientDestroyedWidget() override;
+ 
+   // ui::X11ExtensionDelegate:
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.cc
+index dfc327588c74d43893820a97056780ece2b22de5..1c5c18a8fb57376f53f8659c99384b4919b10db8 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.cc
+@@ -348,6 +348,35 @@ DesktopWindowTreeHostLinux::GetKeyboardLayoutMap() {
+   return WindowTreeHostPlatform::GetKeyboardLayoutMap();
+ }
+ 
++bool DesktopWindowTreeHostLinux::SupportsMouseLock() {
++  auto* wayland_extension = ui::GetWaylandToplevelExtension(*platform_window());
++  if (!wayland_extension) {
++    return false;
++  }
++
++  return wayland_extension->SupportsPointerLock();
++}
++
++void DesktopWindowTreeHostLinux::LockMouse(aura::Window* window) {
++  DesktopWindowTreeHostPlatform::LockMouse(window);
++
++  if (SupportsMouseLock()) {
++    auto* wayland_extension =
++        ui::GetWaylandToplevelExtension(*platform_window());
++    wayland_extension->LockPointer(true /*enabled*/);
++  }
++}
++
++void DesktopWindowTreeHostLinux::UnlockMouse(aura::Window* window) {
++  DesktopWindowTreeHostPlatform::UnlockMouse(window);
++
++  if (SupportsMouseLock()) {
++    auto* wayland_extension =
++        ui::GetWaylandToplevelExtension(*platform_window());
++    wayland_extension->LockPointer(false /*enabled*/);
++  }
++}
++
+ void DesktopWindowTreeHostLinux::OnCompleteSwapWithNewSize(
+     const gfx::Size& size) {
+   if (GetX11Extension()) {
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h
+index 5c57268b37e2acdb30b09dd525a0eefc11f39112..c773bbe351260d958de222cd4e7942d757a53c25 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h
+@@ -93,6 +93,11 @@ class VIEWS_EXPORT DesktopWindowTreeHostLinux
+   // DesktopWindowTreeHostPlatform:
+   base::flat_map<std::string, std::string> GetKeyboardLayoutMap() override;
+ 
++  // WindowTreeHost:
++  bool SupportsMouseLock() override;
++  void LockMouse(aura::Window* window) override;
++  void UnlockMouse(aura::Window* window) override;
++
+   // Called back by compositor_observer_ if the latter is set.
+   virtual void OnCompleteSwapWithNewSize(const gfx::Size& size);
+ 
