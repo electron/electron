@@ -53,7 +53,7 @@ let name = CommandLine.arguments.count >= 2 ? CommandLine.arguments[1] : "Electr
 let pid = NSWorkspace.shared.runningApplications.first(where: {$0.localizedName == name})!.processIdentifier
 let axApp = AXUIElementCreateApplication(pid)
 let result = AXUIElementSetAttributeValue(axApp, "AXManualAccessibility" as CFString, true as CFTypeRef)
-print("Setting 'AXManualAccessibility' \(error.rawValue == 0 ? "succeeded" : "failed")")
+print("Setting 'AXManualAccessibility' \(result == 0 ? "succeeded" : "failed")")
 ```
 
 [a11y-docs]: https://www.chromium.org/developers/design-documents/accessibility#TOC-How-Chrome-detects-the-presence-of-Assistive-Technology
