@@ -23,6 +23,9 @@ export default contextBridge;
 
 export const internalContextBridge = {
   contextIsolationEnabled: process.contextIsolated,
+  tryOverrideGlobalValueFromIsolatedWorld: (keys: string[], value: any) => {
+    return binding._overrideGlobalValueFromIsolatedWorld(keys, value, true, true);
+  },
   overrideGlobalValueFromIsolatedWorld: (keys: string[], value: any) => {
     return binding._overrideGlobalValueFromIsolatedWorld(keys, value, false);
   },
