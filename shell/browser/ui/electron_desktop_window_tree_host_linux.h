@@ -74,7 +74,7 @@ class ElectronDesktopWindowTreeHostLinux
  private:
   void UpdateWindowState(ui::PlatformWindowState new_state);
 
-  bool IsShowingFrame() const;
+  bool IsShowingFrame(ui::PlatformWindowState window_state) const;
 
   gfx::ImageSkia saved_window_icon_;
 

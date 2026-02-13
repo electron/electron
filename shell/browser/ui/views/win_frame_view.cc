@@ -274,6 +274,21 @@ bool WinFrameView::GetShouldPaintAsActive() {
   return ShouldPaintAsActive();
 }
 
+gfx::Size WinFrameView::GetMinimumSize() const {
+  // Chromium expects minimum size to be in content dimensions on Windows
+  // because it adds the frame border automatically in OnGetMinMaxInfo.
+  return window_->GetContentMinimumSize();
+}
+
+gfx::Size WinFrameView::GetMaximumSize() const {
+  // Chromium expects minimum size to be in content dimensions on Windows
+  // because it adds the frame border automatically in OnGetMinMaxInfo.
+  gfx::Size size = window_->GetContentMaximumSize();
+  // Electron public APIs returns (0, 0) when maximum size is not set, but it
+  // would break internal window APIs like HWNDMessageHandler::SetAspectRatio.
+  return size.IsEmpty() ? gfx::Size(INT_MAX, INT_MAX) : size;
+}
+
 BEGIN_METADATA(WinFrameView)
 END_METADATA
 

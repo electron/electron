@@ -42,9 +42,9 @@ class ClientFrameViewLinux : public FramelessView,
 
   void Init(NativeWindowViews* window, views::Widget* frame) override;
 
-  // These are here for ElectronDesktopWindowTreeHostLinux to use.
-  gfx::Insets RestoredMirroredFrameBorderInsets() const;
-  gfx::Insets RestoredFrameBorderInsets() const;
+  // FramelessView:
+  gfx::Insets RestoredFrameBorderInsets() const override;
+
   gfx::Insets GetInputInsets() const;
   gfx::Rect GetWindowContentBounds() const;
   SkRRect GetRoundedWindowContentBounds() const;
@@ -74,10 +74,6 @@ class ClientFrameViewLinux : public FramelessView,
   void SizeConstraintsChanged() override;
 
   // Overridden from View:
-  gfx::Size CalculatePreferredSize(
-      const views::SizeBounds& available_size) const override;
-  gfx::Size GetMinimumSize() const override;
-  gfx::Size GetMaximumSize() const override;
   void Layout(PassKey) override;
   void OnPaint(gfx::Canvas* canvas) override;
 
@@ -126,8 +122,6 @@ class ClientFrameViewLinux : public FramelessView,
   gfx::Rect GetTitlebarBounds() const;
   gfx::Insets GetTitlebarContentInsets() const;
   gfx::Rect GetTitlebarContentBounds() const;
-
-  gfx::Size SizeWithDecorations(gfx::Size size) const;
 
   raw_ptr<ui::NativeTheme> theme_;
   ThemeValues theme_values_;
