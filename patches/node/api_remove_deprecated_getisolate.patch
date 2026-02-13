@@ -85,10 +85,10 @@ index cc60ddddb037e0279615bbe24821eb20fd8da677..37d83e41b618a07aca98118260abe961
  
    return handle;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index f3631d538a38dc3a93a47707ea8dab0462fa2140..12ad6e6ddbda2cc679e733f7a9c6b9e4cf9623dd 100644
+index 2e3f31e1765024373c3fc2acd33fc3bfb352a906..ca62d3001bf51193d78caac0cccd93c188a8410c 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -1022,7 +1022,7 @@ bool ArrayOfStringsToX509s(Local<Context> context,
+@@ -1045,7 +1045,7 @@ bool ArrayOfStringsToX509s(Local<Context> context,
                             Local<Array> cert_array,
                             std::vector<X509*>* certs) {
    ClearErrorOnReturn clear_error_on_return;
@@ -120,10 +120,10 @@ index 4c5427596d1c90d3a413cdd9ff4f1151e657073d..70135a6be65e41fcb3564ddf6d1e8083
                             NewStringType::kNormal,
                             mem->length)
 diff --git a/src/encoding_binding.cc b/src/encoding_binding.cc
-index 266f640fb1c6503a424e77cc41fc15bc658bb6a5..877ae8a18f6b8f2c7e3474dfba060d99db88e6b9 100644
+index a913e34c73db3fb62aedcf28bee1bf1c4d59de7a..9de38eb9907269e99fdf0907aa35862572a2c643 100644
 --- a/src/encoding_binding.cc
 +++ b/src/encoding_binding.cc
-@@ -76,7 +76,7 @@ void BindingData::Deserialize(Local<Context> context,
+@@ -75,7 +75,7 @@ void BindingData::Deserialize(Local<Context> context,
                                int index,
                                InternalFieldInfoBase* info) {
    DCHECK_IS_SNAPSHOT_SLOT(index);
@@ -388,10 +388,10 @@ index d278a32c9934c15bc721da164efccca7bc7e7111..ab862bf93a411e6ae6da7c9f9706cee2
    BlobBindingData* binding = realm->AddBindingData<BlobBindingData>(holder);
    CHECK_NOT_NULL(binding);
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index e69eb280050cae0c0f394b2f956eef947e628904..9bb4576fcf4f07550e7d6f4ff2310cedc8093c5f 100644
+index 703ac1be06249736073f797058d170576a0db1bf..f0607ec9fd1983386166d0f4782adac99ace943e 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -274,7 +274,7 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileInternal(
+@@ -275,7 +275,7 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileInternal(
      const char* id,
      LocalVector<String>* parameters,
      Realm* optional_realm) {
@@ -400,7 +400,7 @@ index e69eb280050cae0c0f394b2f956eef947e628904..9bb4576fcf4f07550e7d6f4ff2310ced
    EscapableHandleScope scope(isolate);
  
    Local<String> source;
-@@ -396,7 +396,7 @@ void BuiltinLoader::SaveCodeCache(const char* id, Local<Function> fun) {
+@@ -397,7 +397,7 @@ void BuiltinLoader::SaveCodeCache(const char* id, Local<Function> fun) {
  MaybeLocal<Function> BuiltinLoader::LookupAndCompile(Local<Context> context,
                                                       const char* id,
                                                       Realm* optional_realm) {
@@ -409,7 +409,7 @@ index e69eb280050cae0c0f394b2f956eef947e628904..9bb4576fcf4f07550e7d6f4ff2310ced
    LocalVector<String> parameters(isolate);
    // Detects parameters of the scripts based on module ids.
    // internal/bootstrap/realm: process, getLinkedBinding,
-@@ -450,7 +450,7 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompile(Local<Context> context,
+@@ -451,7 +451,7 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompile(Local<Context> context,
  MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,
                                                  const char* id,
                                                  Realm* realm) {
@@ -418,7 +418,7 @@ index e69eb280050cae0c0f394b2f956eef947e628904..9bb4576fcf4f07550e7d6f4ff2310ced
    // Detects parameters of the scripts based on module ids.
    // internal/bootstrap/realm: process, getLinkedBinding,
    //                           getInternalBinding, primordials
-@@ -506,7 +506,7 @@ MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,
+@@ -507,7 +507,7 @@ MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,
    if (!maybe_fn.ToLocal(&fn)) {
      return MaybeLocal<Value>();
    }
@@ -427,7 +427,7 @@ index e69eb280050cae0c0f394b2f956eef947e628904..9bb4576fcf4f07550e7d6f4ff2310ced
    return fn->Call(context, undefined, argc, argv);
  }
  
-@@ -544,14 +544,14 @@ bool BuiltinLoader::CompileAllBuiltinsAndCopyCodeCache(
+@@ -545,14 +545,14 @@ bool BuiltinLoader::CompileAllBuiltinsAndCopyCodeCache(
        to_eager_compile_.emplace(id);
      }
  
@@ -533,10 +533,10 @@ index 55a0c986c5b6989ee9ce277bb6a9778abb2ad2ee..809d88f21e5572807e38132d40ee7587
    READONLY_PROPERTY(target, "exitCodes", exit_codes);
  
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 7dfb7a486040e0188eb53ee7a65f91a99e713a3a..c364f2a4f6dd6ec066b00f364108383154be12ec 100644
+index ba6ffc2b6565dea500bc8dd4818c8fcb7648694a..e834325a763f7ea8f53210145b5edd134d6b67e6 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -3834,7 +3834,7 @@ void BindingData::Deserialize(Local<Context> context,
+@@ -3843,7 +3843,7 @@ void BindingData::Deserialize(Local<Context> context,
                                int index,
                                InternalFieldInfoBase* info) {
    DCHECK_IS_SNAPSHOT_SLOT(index);
@@ -586,7 +586,7 @@ index 57e068ae249d618c2658638f9f3b03e1fedb6524..8c51ae4e0a435971c6d0288af8781087
    data_.Reset();
    return ret;
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index d3907c3d063c7757cdd7ef99ed09bea1eb58a3fd..df9925404e77ec61900f89a5241c86a599e548c5 100644
+index cecdda74847801fd5821bc0afdf0dfc9f131c44a..04ebecc5d924f6c2fddd9992462d1ff692e1cee5 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -70,7 +70,7 @@ void BindingData::Deserialize(v8::Local<v8::Context> context,
@@ -598,7 +598,7 @@ index d3907c3d063c7757cdd7ef99ed09bea1eb58a3fd..df9925404e77ec61900f89a5241c86a5
    Realm* realm = Realm::GetCurrent(context);
    BindingData* binding = realm->AddBindingData<BindingData>(holder);
    CHECK_NOT_NULL(binding);
-@@ -709,7 +709,7 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
+@@ -750,7 +750,7 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
    Realm* realm = Realm::GetCurrent(context);
    realm->AddBindingData<BindingData>(target);
  
@@ -608,10 +608,10 @@ index d3907c3d063c7757cdd7ef99ed09bea1eb58a3fd..df9925404e77ec61900f89a5241c86a5
  
  #define V(status)                                                              \
 diff --git a/src/node_process_methods.cc b/src/node_process_methods.cc
-index e453bacc3e5247493a3582c24174bfe6e590825d..fe4aad63bc877be105830a80aa6be10ce3f8fda4 100644
+index 4a258e5f140994536386492059d64c9cf94ea0a6..67278974199db46fed85b443e7cdd30accd7687f 100644
 --- a/src/node_process_methods.cc
 +++ b/src/node_process_methods.cc
-@@ -737,7 +737,7 @@ void BindingData::Deserialize(Local<Context> context,
+@@ -745,7 +745,7 @@ void BindingData::Deserialize(Local<Context> context,
                                int index,
                                InternalFieldInfoBase* info) {
    DCHECK_IS_SNAPSHOT_SLOT(index);
@@ -621,7 +621,7 @@ index e453bacc3e5247493a3582c24174bfe6e590825d..fe4aad63bc877be105830a80aa6be10c
    // Recreate the buffer in the constructor.
    InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
 diff --git a/src/node_realm.cc b/src/node_realm.cc
-index 2a5fe9fe501d1fd9356eeb7d044a872fa5a55f38..39f6f142044c42904d234da20a266315346c135a 100644
+index 6d2e4eb641a8ffaacf4aebd3522008a285387a30..47bd7d9f19077ac7a558c73db5f51bdf8da291e7 100644
 --- a/src/node_realm.cc
 +++ b/src/node_realm.cc
 @@ -22,7 +22,7 @@ using v8::String;
@@ -660,7 +660,7 @@ index c2e24b4645e7903e08c80aead1c18c7bcff1bd89..e34d24d51d5c090b560d06f727043f20
    // Recreate the buffer in the constructor.
    InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index 955b76cbc71d0cd3a1cc01c3c0dea0536a792dc0..0b111ce1fb1d59cad019ba13bbfc513f157d3f06 100644
+index 6bfc54dd81446545ebbb0faedb55a5383b81de49..2e52fb801684feb22800d4809daab006fc7cae9c 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
 @@ -2061,7 +2061,7 @@ bool StatementSync::BindParams(const FunctionCallbackInfo<Value>& args) {
@@ -736,7 +736,7 @@ index 370221d3cddc201180260ecb3a222bc831c91093..f5aff2f65fe6b9f48cf970ab3e7c57cf
      THROW_ERR_WASI_NOT_STARTED(isolate);
      return EinvalError<R>();
 diff --git a/src/node_webstorage.cc b/src/node_webstorage.cc
-index cc90af827a3fbd14fb4cbfbfd39cc661f22cf6e1..5819d9bca845e0eed6d4d93564469d8f3c36200b 100644
+index 5c7d268d38ff55ce4db07463b1ea0bcb2f4e63ea..bd83654012442195866e57173b6e5d4d25fecf0f 100644
 --- a/src/node_webstorage.cc
 +++ b/src/node_webstorage.cc
 @@ -57,7 +57,7 @@ using v8::Value;
@@ -748,7 +748,7 @@ index cc90af827a3fbd14fb4cbfbfd39cc661f22cf6e1..5819d9bca845e0eed6d4d93564469d8f
    auto dom_exception_str = FIXED_ONE_BYTE_STRING(isolate, "DOMException");
    auto err_name = FIXED_ONE_BYTE_STRING(isolate, "QuotaExceededError");
    auto err_message =
-@@ -433,7 +433,7 @@ Maybe<void> Storage::Store(Local<Name> key, Local<Value> value) {
+@@ -437,7 +437,7 @@ Maybe<void> Storage::Store(Local<Name> key, Local<Value> value) {
  }
  
  static MaybeLocal<String> Uint32ToName(Local<Context> context, uint32_t index) {
@@ -758,10 +758,10 @@ index cc90af827a3fbd14fb4cbfbfd39cc661f22cf6e1..5819d9bca845e0eed6d4d93564469d8f
  
  static void Clear(const FunctionCallbackInfo<Value>& info) {
 diff --git a/src/node_worker.cc b/src/node_worker.cc
-index 62c53368d1173edb7eb42e3337049c46fd7cdda9..7d08d8af7f6d99f7bd41cb7eb91063c630b3f87b 100644
+index e7d26b4c8cbb08a175084ceac51395860dc60598..fa4ec53ee556a23c8fd018caa1eee51bc5e004fe 100644
 --- a/src/node_worker.cc
 +++ b/src/node_worker.cc
-@@ -1466,8 +1466,6 @@ void GetEnvMessagePort(const FunctionCallbackInfo<Value>& args) {
+@@ -1465,8 +1465,6 @@ void GetEnvMessagePort(const FunctionCallbackInfo<Value>& args) {
    Local<Object> port = env->message_port();
    CHECK_IMPLIES(!env->is_main_thread(), !port.IsEmpty());
    if (!port.IsEmpty()) {
