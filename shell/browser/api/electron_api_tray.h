@@ -35,6 +35,13 @@ namespace electron::api {
 
 class Menu;
 
+#if BUILDFLAG(IS_MAC)
+void SetLayeredTrayImages(TrayIcon* tray_icon,
+                          const std::vector<gfx::Image>& layers);
+void SetPressedLayeredTrayImages(TrayIcon* tray_icon,
+                                 const std::vector<gfx::Image>& layers);
+#endif
+
 class Tray final : public gin_helper::DeprecatedWrappable<Tray>,
                    public gin_helper::EventEmitterMixin<Tray>,
                    public gin_helper::Constructible<Tray>,
@@ -114,6 +121,14 @@ class Tray final : public gin_helper::DeprecatedWrappable<Tray>,
   v8::Local<v8::Value> GetGUID();
 
   bool CheckAlive();
+
+#if BUILDFLAG(IS_MAC)
+  // Helper to parse layers array from JS value.
+  // Returns nullopt if the value is not a layered image format.
+  std::optional<std::vector<gfx::Image>> ParseImageLayers(
+      v8::Isolate* isolate,
+      v8::Local<v8::Value> image);
+#endif
 
   v8::Global<v8::Value> menu_;
   std::optional<base::Uuid> guid_;

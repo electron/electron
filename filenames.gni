@@ -130,6 +130,7 @@ filenames = {
     "shell/browser/api/electron_api_base_window_mac.mm",
     "shell/browser/api/electron_api_menu_mac.h",
     "shell/browser/api/electron_api_menu_mac.mm",
+    "shell/browser/api/electron_api_tray_mac.mm",
     "shell/browser/api/electron_api_native_theme_mac.mm",
     "shell/browser/api/electron_api_power_monitor_mac.mm",
     "shell/browser/api/electron_api_push_notifications_mac.mm",
