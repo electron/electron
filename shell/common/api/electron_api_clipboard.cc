@@ -31,6 +31,35 @@ namespace {
              : ui::ClipboardBuffer::kCopyPaste;
 }
 
+[[nodiscard]] electron::api::Clipboard::PrivacyType GetClipboardPrivacyType(
+    gin::Arguments* args) {
+  std::string privacy_type_str;
+  if (args->GetNext(&privacy_type_str)) {
+    if (privacy_type_str == "confidential") {
+      return electron::api::Clipboard::PrivacyType::kConfidential;
+    } else if (privacy_type_str == "off-the-record") {
+      return electron::api::Clipboard::PrivacyType::kOffTheRecord;
+    }
+  }
+  return electron::api::Clipboard::PrivacyType::kNone;
+}
+
+void SetClipboardWriterPrivacyType(
+    ui::ScopedClipboardWriter& writer,
+    electron::api::Clipboard::PrivacyType privacy_type) {
+  switch (privacy_type) {
+    case electron::api::Clipboard::PrivacyType::kConfidential:
+      writer.MarkAsConfidential();
+      break;
+    case electron::api::Clipboard::PrivacyType::kOffTheRecord:
+      writer.MarkAsOffTheRecord();
+      break;
+    case electron::api::Clipboard::PrivacyType::kNone:
+      // Do nothing.
+      break;
+  }
+}
+
 }  // namespace
 
 namespace electron::api {
@@ -123,12 +152,14 @@ void Clipboard::WriteBuffer(const std::string& format,
   DCHECK_EQ(n_got, n_bytes);
 
   ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
+  SetClipboardWriterPrivacyType(writer, GetClipboardPrivacyType(args));
   writer.WriteUnsafeRawData(base::UTF8ToUTF16(format), std::move(big_buffer));
 }
 
 void Clipboard::Write(const gin_helper::Dictionary& data,
                       gin::Arguments* const args) {
   ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
+  SetClipboardWriterPrivacyType(writer, GetClipboardPrivacyType(args));
   std::u16string text, html, bookmark;
   gfx::Image image;
 
@@ -175,6 +206,7 @@ std::u16string Clipboard::ReadText(gin::Arguments* const args) {
 void Clipboard::WriteText(const std::u16string& text,
                           gin::Arguments* const args) {
   ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
+  SetClipboardWriterPrivacyType(writer, GetClipboardPrivacyType(args));
   writer.WriteText(text);
 }
 
@@ -187,6 +219,7 @@ std::u16string Clipboard::ReadRTF(gin::Arguments* const args) {
 
 void Clipboard::WriteRTF(const std::string& text, gin::Arguments* const args) {
   ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
+  SetClipboardWriterPrivacyType(writer, GetClipboardPrivacyType(args));
   writer.WriteRTF(text);
 }
 
@@ -206,6 +239,7 @@ std::u16string Clipboard::ReadHTML(gin::Arguments* const args) {
 void Clipboard::WriteHTML(const std::u16string& html,
                           gin::Arguments* const args) {
   ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
+  SetClipboardWriterPrivacyType(writer, GetClipboardPrivacyType(args));
   writer.WriteHTML(html, std::string());
 }
 
@@ -224,6 +258,7 @@ void Clipboard::WriteBookmark(const std::u16string& title,
                               const std::string& url,
                               gin::Arguments* const args) {
   ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
+  SetClipboardWriterPrivacyType(writer, GetClipboardPrivacyType(args));
   writer.WriteBookmark(title, url);
 }
 
@@ -261,6 +296,7 @@ gfx::Image Clipboard::ReadImage(gin::Arguments* const args) {
 void Clipboard::WriteImage(const gfx::Image& image,
                            gin::Arguments* const args) {
   ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
+  SetClipboardWriterPrivacyType(writer, GetClipboardPrivacyType(args));
   SkBitmap orig = image.AsBitmap();
   SkBitmap bmp;
 
