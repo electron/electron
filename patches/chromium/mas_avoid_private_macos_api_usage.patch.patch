@@ -61,6 +61,127 @@ index 01b3ae3c904b76a0421f0562cfcd887980087d80..b712db260fb9b941da82b6a4d1849db1
    ]
  
    # Used by metrics/crc32
+diff --git a/base/allocator/BUILD.gn b/base/allocator/BUILD.gn
+index 2cc49d83a83c6c64780da3f2caa009908a36dd7c..e2941ac5177d3ca59859482b668b716f58d6f5d4 100644
+--- a/base/allocator/BUILD.gn
++++ b/base/allocator/BUILD.gn
+@@ -28,6 +28,7 @@ if (is_apple) {
+     deps = [
+       ":buildflags",
+       "//base/allocator/partition_allocator:buildflags",
++      "//electron/build/config:generate_mas_config",
+     ]
+   }
+ }
+diff --git a/base/allocator/early_zone_registration_apple.cc b/base/allocator/early_zone_registration_apple.cc
+index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e94209690611e3b082a 100644
+--- a/base/allocator/early_zone_registration_apple.cc
++++ b/base/allocator/early_zone_registration_apple.cc
+@@ -197,15 +197,33 @@ void EarlyMallocZoneRegistration() {
+   // a duplicate even when a binary copy of this code exists.
+   if (allocator_shim::IsZoneAlreadyRegistered(
+           allocator_shim::kDelegatingZoneName)) {
++#if !IS_MAS_BUILD()
+     abort_report_np(
+         "The delegating default zone has unexpectedly already been "
+         "registered.");
++#else
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
++    os_log_fault(OS_LOG_DEFAULT, "The delegating default zone "
++                 "has unexpectedly already been registered.");
++#pragma clang diagnostic pop
++    abort();
++#endif
+   }
+   if (allocator_shim::IsZoneAlreadyRegistered(
+           allocator_shim::kPartitionAllocZoneName)) {
++#if !IS_MAS_BUILD()
+     abort_report_np(
+         "The PartitionAlloc default zone has unexpectedly already been "
+         "registered.");
++#else
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
++    os_log_fault(OS_LOG_DEFAULT, "The PartitionAlloc default zone "
++                 "has unexpectedly already been registered.");
++#pragma clang diagnostic pop
++    abort();
++#endif
+   }
+ 
+   // Register puts the new zone at the end, unregister swaps the new zone with
+@@ -229,7 +247,16 @@ void EarlyMallocZoneRegistration() {
+ 
+   // Sanity check.
+   if (allocator_shim::GetDefaultMallocZoneOrDie() != &g_delegating_zone) {
++#if !IS_MAS_BUILD()
+     abort_report_np("Failed to install the delegating zone as default.");
++#else
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
++    os_log_fault(OS_LOG_DEFAULT, "Failed to install the delegating zone "
++                 "as default.");
++#pragma clang diagnostic pop
++    abort();
++#endif
+   }
+ }
+ 
+diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
+index 780c58f4fdc6161e631b76cfdcf39f4305341e25..08b09b5f25c780611b182400d221a9b50576f2ab 100644
+--- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
++++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
+@@ -988,6 +988,7 @@ if (is_clang_or_gcc) {
+       ":allocator_base",
+       ":allocator_core",
+       ":buildflags",
++      "//electron/build/config:generate_mas_config",
+     ]
+   }
+ }  # if (is_clang_or_gcc)
+diff --git a/base/allocator/partition_allocator/src/partition_alloc/shim/early_zone_registration_utils_apple.h b/base/allocator/partition_allocator/src/partition_alloc/shim/early_zone_registration_utils_apple.h
+index 725b3d78c27d9621500d8193b0b4e45c6103cff0..cd3580fb4b7261b5d8e6ff691214e432c0170dc4 100644
+--- a/base/allocator/partition_allocator/src/partition_alloc/shim/early_zone_registration_utils_apple.h
++++ b/base/allocator/partition_allocator/src/partition_alloc/shim/early_zone_registration_utils_apple.h
+@@ -12,16 +12,21 @@
+ 
+ #include <mach/mach.h>
+ #include <malloc/malloc.h>
++#include <os/log.h>
+ 
+ #include <span>
+ #include <string_view>
+ 
++#include "electron/mas.h"
++
++#if !IS_MAS_BUILD()
+ extern "C" {
+ // abort_report_np() records the message in a special section that both the
+ // system CrashReporter and Crashpad collect in crash reports. See also in
+ // chrome_exe_main_mac.cc.
+ void abort_report_np(const char* fmt, ...);
+ }  // extern "C"
++#endif
+ 
+ namespace allocator_shim {
+ 
+@@ -34,7 +39,15 @@ inline std::span<malloc_zone_t*> GetMallocZonesOrDie() {
+   kern_return_t result = malloc_get_all_zones(
+       mach_task_self(), /*reader=*/nullptr, &zones, &zone_count);
+   if (result != KERN_SUCCESS) [[unlikely]] {
++#if !IS_MAS_BUILD()
+     abort_report_np("Cannot enumerate malloc zones.");
++#else
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
++    os_log_fault(OS_LOG_DEFAULT, "Cannot enumerate malloc zones.");
++#pragma clang diagnostic pop
++    abort();
++#endif
+   }
+   // This is not guaranteed by the C++ standard, but commonly satisfied.
+   // It must be safe to assume the same memory layout for arrays of two
 diff --git a/base/enterprise_util_mac.mm b/base/enterprise_util_mac.mm
 index 4bf9a3c27e05c6635b2beb8e880b5b43dbed61b5..f328fbb49c45991f44a9c75325491d0873746b61 100644
 --- a/base/enterprise_util_mac.mm
@@ -1315,7 +1436,7 @@ index d145bdb3f879ae7e2d77f3b58fe7abd09d6f7255..8973f310aa62b59bc829e8e0f8ed068b
  
  source_set("sandbox_unittests") {
 diff --git a/sandbox/mac/sandbox_logging.cc b/sandbox/mac/sandbox_logging.cc
-index 950cf7cfee4e11766dccf5c0bf3f15a8562f0f1e..a5adaaabdbbd91fedbc4cb679c865bc342536090 100644
+index 950cf7cfee4e11766dccf5c0bf3f15a8562f0f1e..2d99498b83180f1aa4b79cfab0ea2b1f27080106 100644
 --- a/sandbox/mac/sandbox_logging.cc
 +++ b/sandbox/mac/sandbox_logging.cc
 @@ -21,6 +21,7 @@
@@ -1338,18 +1459,19 @@ index 950cf7cfee4e11766dccf5c0bf3f15a8562f0f1e..a5adaaabdbbd91fedbc4cb679c865bc3
  
  namespace sandbox::logging {
  
-@@ -81,9 +84,11 @@ void SendOsLog(Level level, const char* message) {
-     sandbox::crash_message::SetCrashMessage(message);
+@@ -82,7 +85,12 @@ void SendOsLog(Level level, const char* message) {
    }
  
-+#if !IS_MAS_BUILD()
    if (level == Level::FATAL) {
++#if !IS_MAS_BUILD()
      abort_report_np(message);
-   }
++#else
++    os_log_fault(OS_LOG_DEFAULT, "%s", message);
++    abort();
 +#endif
+   }
  }
  
- // |error| is strerror(errno) when a P* logging function is called. Pass
 diff --git a/sandbox/mac/sandbox_serializer.cc b/sandbox/mac/sandbox_serializer.cc
 index 0e6e650f88e6aadd46bec96a8b41768c37d7cc6a..a6830e3f886e408c254ccd1c2b1d5c15cd3bcb92 100644
 --- a/sandbox/mac/sandbox_serializer.cc
