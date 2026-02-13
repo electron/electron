@@ -255,12 +255,12 @@ index e12c1d078147d956a1d9b1bc498c1b1d6fe7b974..233362259dc4e728ed37435e65041764
  
  }  // namespace base
 diff --git a/components/os_crypt/common/keychain_password_mac.mm b/components/os_crypt/common/keychain_password_mac.mm
-index 66e0c5e9779959bcc45ef1f274f98a00de1c01e1..944f58043b9f634e79c9a9840a39c26966560f02 100644
+index f240dc22ee391c98c8768af7141b7447b6507cc6..69bfbbf0f58ca3b05a601bea87b14dcf0fb2eecb 100644
 --- a/components/os_crypt/common/keychain_password_mac.mm
 +++ b/components/os_crypt/common/keychain_password_mac.mm
-@@ -20,6 +20,7 @@
+@@ -19,6 +19,7 @@
+ #include "base/types/expected.h"
  #include "build/branding_buildflags.h"
- #include "crypto/apple/keychain.h"
  #include "crypto/apple/keychain_v2.h"
 +#include "electron/mas.h"
  #include "third_party/abseil-cpp/absl/cleanup/cleanup.h"
@@ -840,7 +840,7 @@ index 712d59e1f7d9681c122e6d05a8b65bccbfacb492..de24209bbd3cd4a530c6f32990a0f93a
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 2995b3f72415470ed87bbd9bef8e6b0afff8171e..8f27ed543490b1a799519cb137f6ce0bc0cccd7c 100644
+index c8571401ff6ddda6ee9f4cb444427cd6c32f7010..4762ccc7ca8ad5382e1943854768f45189765bce 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -345,6 +345,7 @@ source_set("browser") {
@@ -961,10 +961,10 @@ index cf8652cb6ddbf07e114d576c192bcda99dc78e3a..c4ada35c3ca32ce06ffc57577af7bc4c
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index ae5552ac87161a824f3510bf5fd2955ef53a610a..119742322566a66c1f12c51aeb911860e02a7027 100644
+index 14faeba4a7b089b42e505cfb42ae1b86f7b8a6c0..e884d1399f636888c8b6a20d10b884c0001b36c7 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -272,6 +272,7 @@ source_set("common") {
+@@ -275,6 +275,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -1055,7 +1055,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index ecbe2a7612aca0a8f01f926788abf5c7b72b82d0..4830a8c5d56da9de82680aa4915fe4d0b3a67d5a 100644
+index 2ee7adcc96a2b46ebcdebdab9d785337c0b212bc..7d1e32f62a59f703b4638f3a13a98b96fbfbc864 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -700,6 +700,7 @@ static_library("test_support") {

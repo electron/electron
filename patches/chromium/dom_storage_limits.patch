@@ -31,7 +31,7 @@ index 9d9a8aeab2343942a88ee882e21191719bee019f..9f58743e0bb79e3e10095a6a1adc5438
  // In the storage service we allow some overage to
  // accommodate concurrent writes from different clients
 diff --git a/third_party/blink/public/mojom/dom_storage/storage_area.mojom b/third_party/blink/public/mojom/dom_storage/storage_area.mojom
-index 6186710032cd9cdc3dc0514c80c7639a8e43129e..9b896ddf8ef962742fee8e9de799a3b2a611a876 100644
+index 2552cc9cfab2c54caf584b14944324b92ae22171..f6e9a4a998f13d55b4d213a8bae2d50b090f138a 100644
 --- a/third_party/blink/public/mojom/dom_storage/storage_area.mojom
 +++ b/third_party/blink/public/mojom/dom_storage/storage_area.mojom
 @@ -50,7 +50,8 @@ struct KeyValue {
