@@ -24,6 +24,8 @@ media::VideoPixelFormat GetTargetPixelFormatFromOption(
     return media::PIXEL_FORMAT_ARGB;
   } else if (pixel_format_option == "rgbaf16") {
     return media::PIXEL_FORMAT_RGBAF16;
+  }else if (pixel_format_option == "nv12") {
+    return media::PIXEL_FORMAT_NV12;
   }
 
   // Use ARGB as default.
