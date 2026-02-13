@@ -151,7 +151,7 @@ index dd6ecd1f9d82f6661b2480c0195e33515633429f..334d5cb7df7a763e0929468392dad834
    isolate_ =
        NewIsolate(isolate_params_.get(), event_loop, platform, snapshot_data);
 diff --git a/src/node_worker.cc b/src/node_worker.cc
-index 7bae29747d8cd8e83973d105099f9111fc185fe1..62c53368d1173edb7eb42e3337049c46fd7cdda9 100644
+index fcfd5fecdebd2724441eb83b498b38b11eedad25..e7d26b4c8cbb08a175084ceac51395860dc60598 100644
 --- a/src/node_worker.cc
 +++ b/src/node_worker.cc
 @@ -181,6 +181,9 @@ class WorkerThreadData {

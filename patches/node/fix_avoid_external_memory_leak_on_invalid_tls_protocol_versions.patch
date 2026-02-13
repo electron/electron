@@ -19,10 +19,10 @@ only allocate the native SecureContext on success.
 
 This should be upstreamed to Node.js.
 
-diff --git a/lib/_tls_common.js b/lib/_tls_common.js
+diff --git a/lib/internal/tls/common.js b/lib/internal/tls/common.js
 index 66331d2d9999e93e59cbce9e153affb942b79946..0f7fd0747ea779f76a9e64ed37d195bd735ea2a8 100644
---- a/lib/_tls_common.js
-+++ b/lib/_tls_common.js
+--- a/lib/internal/tls/common.js
++++ b/lib/internal/tls/common.js
 @@ -82,10 +82,11 @@ function SecureContext(secureProtocol, secureOptions, minVersion, maxVersion) {
        throw new ERR_TLS_PROTOCOL_VERSION_CONFLICT(maxVersion, secureProtocol);
    }
@@ -39,10 +39,10 @@ index 66331d2d9999e93e59cbce9e153affb942b79946..0f7fd0747ea779f76a9e64ed37d195bd
    if (secureOptions) {
      validateInteger(secureOptions, 'secureOptions');
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 12ad6e6ddbda2cc679e733f7a9c6b9e4cf9623dd..fc6d295a401d5283ba19dd5c95b748c83b7055a9 100644
+index ca62d3001bf51193d78caac0cccd93c188a8410c..d6af2460c3745901415d4e785cf210da8a730a8d 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -1354,10 +1354,8 @@ SecureContext::SecureContext(Environment* env, Local<Object> wrap)
+@@ -1377,10 +1377,8 @@ SecureContext::SecureContext(Environment* env, Local<Object> wrap)
  }
  
  inline void SecureContext::Reset() {
