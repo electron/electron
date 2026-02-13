@@ -56,7 +56,7 @@
     "ts-node": "6.2.0",
     "typescript": "^5.8.3",
     "url": "^0.11.4",
-    "webpack": "^5.95.0",
+    "webpack": "^5.104.1",
     "webpack-cli": "^6.0.1",
     "wrapper-webpack-plugin": "^2.2.0",
     "yaml": "^2.8.1"
