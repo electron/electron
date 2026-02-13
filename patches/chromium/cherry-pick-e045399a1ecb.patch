@@ -1,0 +1,132 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Dominik=20R=C3=B6ttsches?= <drott@chromium.org>
+Date: Thu, 12 Feb 2026 06:35:36 -0800
+Subject: Avoid stale iteration in CSSFontFeatureValuesMap
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+To avoid invalid iterator state, take a snapshot of the
+map when creating the iteration source. This addresses
+the immediate problem of iterating while modifying.
+
+Remaining work tracked in https://crbug.com/483936078
+
+Fixed: 483569511
+Change-Id: Ie29cfdf7ed94bbe189b44c842a5efce571bb2cee
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7566570
+Commit-Queue: Dominik Röttsches <drott@chromium.org>
+Reviewed-by: Anders Hartvoll Ruud <andruud@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1583927}
+
+diff --git a/third_party/blink/renderer/core/css/css_font_feature_values_map.cc b/third_party/blink/renderer/core/css/css_font_feature_values_map.cc
+index 0c5990799fbfdff5f1d1e04a9038a471217ad0d2..2ea27901e3ba503e7e1acc5dacf90dc60d52ac1a 100644
+--- a/third_party/blink/renderer/core/css/css_font_feature_values_map.cc
++++ b/third_party/blink/renderer/core/css/css_font_feature_values_map.cc
+@@ -13,16 +13,15 @@ class FontFeatureValuesMapIterationSource final
+     : public PairSyncIterable<CSSFontFeatureValuesMap>::IterationSource {
+  public:
+   FontFeatureValuesMapIterationSource(const CSSFontFeatureValuesMap& map,
+-                                      const FontFeatureAliases* aliases)
+-      : map_(map), aliases_(aliases), iterator_(aliases->begin()) {}
++                                      const FontFeatureAliases aliases)
++      : map_(map),
++        aliases_(std::move(aliases)),
++        iterator_(aliases_.begin()) {}
+ 
+   bool FetchNextItem(ScriptState* script_state,
+                      String& map_key,
+                      Vector<uint32_t>& map_value) override {
+-    if (!aliases_) {
+-      return false;
+-    }
+-    if (iterator_ == aliases_->end()) {
++    if (iterator_ == aliases_.end()) {
+       return false;
+     }
+     map_key = iterator_->key;
+@@ -37,9 +36,13 @@ class FontFeatureValuesMapIterationSource final
+   }
+ 
+  private:
+-  // Needs to be kept alive while we're iterating over it.
+   const Member<const CSSFontFeatureValuesMap> map_;
+-  const FontFeatureAliases* aliases_;
++  // Create a copy to keep the iterator from becoming invalid if there are
++  // modifications to the aliases HashMap while iterating.
++  // TODO(https://crbug.com/483936078): Implement live/stable iteration over
++  // FontFeatureAliases by changing its storage type, avoiding taking a copy
++  // here.
++  const FontFeatureAliases aliases_;
+   FontFeatureAliases::const_iterator iterator_;
+ };
+ 
+@@ -49,8 +52,8 @@ uint32_t CSSFontFeatureValuesMap::size() const {
+ 
+ PairSyncIterable<CSSFontFeatureValuesMap>::IterationSource*
+ CSSFontFeatureValuesMap::CreateIterationSource(ScriptState*) {
+-  return MakeGarbageCollected<FontFeatureValuesMapIterationSource>(*this,
+-                                                                   aliases_);
++  return MakeGarbageCollected<FontFeatureValuesMapIterationSource>(
++      *this, aliases_ ? *aliases_ : FontFeatureAliases());
+ }
+ 
+ bool CSSFontFeatureValuesMap::GetMapEntry(ScriptState*,
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-fonts/font_feature_values_map_iteration.html b/third_party/blink/web_tests/external/wpt/css/css-fonts/font_feature_values_map_iteration.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..eac7198b0b4a58007cbcc77ad3e9357a1009117c
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-fonts/font_feature_values_map_iteration.html
+@@ -0,0 +1,52 @@
++<!DOCTYPE html>
++<html>
++  <head>
++    <title>CSSFontFeatureValuesMap Iteration and Modification</title>
++    <link
++      rel="help"
++      href="https://drafts.csswg.org/css-fonts-4/#om-fontfeaturevalues"
++    />
++    <meta
++      name="assert"
++      content="Iteration while modifying CSSFontFeatureValuesMap does not crash."
++    />
++    <script type="text/javascript" src="/resources/testharness.js"></script>
++    <script
++      type="text/javascript"
++      src="/resources/testharnessreport.js"
++    ></script>
++  </head>
++  <body>
++    <style>
++      @font-feature-values TestFont {
++        @styleset {
++          a: 1;
++          b: 2;
++          c: 3;
++        }
++      }
++    </style>
++    <script>
++      test(() => {
++        const rule = document.styleSheets[0].cssRules[0];
++        const map = rule.styleset;
++        const iterator = map.entries();
++        let count = 0;
++
++        while (count < 10) {
++          const { value: entry, done } = iterator.next();
++          if (done) break;
++
++          const [key, value] = entry;
++
++          map.delete(key);
++          for (let i = 0; i < 100; i++) {
++            map.set(`newkey_${count}_${i}`, i);
++          }
++
++          count++;
++        }
++      }, "Iteration of the CSSFontFeatureValuesMap does not crash.");
++    </script>
++  </body>
++</html>
