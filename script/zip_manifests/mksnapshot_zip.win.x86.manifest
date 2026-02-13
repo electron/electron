@@ -1,0 +1,15 @@
+mksnapshot.exe
+mksnapshot_args
+d3dcompiler_47.dll
+icudtl.dat
+ffmpeg.dll
+libEGL.dll
+libGLESv2.dll
+vk_swiftshader.dll
+vulkan-1.dll
+gen/v8/embedded.S
+LICENSE
+LICENSES.chromium.html
+v8_context_snapshot_generator.exe
+vk_swiftshader_icd.json
+snapshot_blob.bin
