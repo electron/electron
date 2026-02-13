@@ -5882,6 +5882,23 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    ifdescribe(process.platform === 'linux')('menu bar AltGr behavior', () => {
+      it('does not toggle auto-hide menu bar visibility', async () => {
+        const w = new BrowserWindow({ show: false, autoHideMenuBar: true });
+        w.setMenuBarVisibility(false);
+        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+
+        w.show();
+        await once(w, 'show');
+        w.webContents.focus();
+        w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'AltGr' });
+        w.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'AltGr' });
+        await setTimeout();
+
+        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+      });
+    });
+
     ifdescribe(process.platform !== 'darwin')('when fullscreen state is changed', () => {
       it('correctly remembers state prior to fullscreen change', async () => {
         const w = new BrowserWindow({ show: false });
