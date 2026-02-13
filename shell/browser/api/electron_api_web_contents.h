@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include "base/containers/flat_set.h"
 #include "base/functional/callback_forward.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
@@ -461,6 +462,9 @@ class WebContents final : public ExclusiveAccessContext,
   WebContents& operator=(const WebContents&) = delete;
 
  private:
+  // Store last emitted favicon URLs to avoid duplicate page-favicon-updated
+  // events
+  base::flat_set<GURL> last_favicon_urls_;
   // Does not manage lifetime of |web_contents|.
   WebContents(v8::Isolate* isolate, content::WebContents* web_contents);
   // Takes over ownership of |web_contents|.
