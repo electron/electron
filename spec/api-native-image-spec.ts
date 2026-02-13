@@ -33,6 +33,12 @@ describe('nativeImage module', () => {
     height: 3,
     width: 3
   };
+  const imageColorSpaceSRGB = {
+    path: path.join(fixturesPath, 'assets', 'colorspace-srgb.png')
+  };
+  const imageColorSpaceP3 = {
+    path: path.join(fixturesPath, 'assets', 'colorspace-p3.png')
+  };
 
   const dataUrlImages = [
     image1x1,
@@ -421,6 +427,33 @@ describe('nativeImage module', () => {
       const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
       const crop = image.crop({ width: 25, height: 64, x: 0, y: 0 });
       expect(crop.toBitmap().length).to.equal(25 * 64 * 4);
+    });
+
+    it('toBitmap() normalizes color space for consistent pixel values', () => {
+      const srgbImage = nativeImage.createFromPath(imageColorSpaceSRGB.path);
+      const p3Image = nativeImage.createFromPath(imageColorSpaceP3.path);
+
+      // Both default to sRGB normalization
+      const srgbBuf = srgbImage.toBitmap();
+      const p3Buf = p3Image.toBitmap();
+
+      expect(srgbBuf.length).to.equal(p3Buf.length);
+
+      // Pixel values should be nearly identical after sRGB normalization
+      for (let i = 0; i < srgbBuf.length; i++) {
+        expect(Math.abs(srgbBuf[i] - p3Buf[i])).to.be.at.most(3);
+      }
+    });
+
+    it('toBitmap() accepts a colorSpace option', () => {
+      const image = nativeImage.createFromPath(imageColorSpaceP3.path);
+
+      const srgbBuf = image.toBitmap({ colorSpace: { primaries: 'bt709', transferFunction: 'iec61966-2-1', matrix: 'rgb', range: 'full' } });
+      const p3Buf = image.toBitmap({ colorSpace: { primaries: 'smptest432-1', transferFunction: 'iec61966-2-1', matrix: 'rgb', range: 'full' } });
+
+      // Both should produce valid buffers of the same size (same pixel dimensions)
+      expect(srgbBuf.length).to.be.greaterThan(0);
+      expect(p3Buf.length).to.equal(srgbBuf.length);
     });
   });
 
