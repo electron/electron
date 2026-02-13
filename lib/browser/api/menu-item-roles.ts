@@ -164,9 +164,9 @@ export const roleList: Record<RoleId, Role> = {
     label: 'Toggle Developer Tools',
     accelerator: isMac ? 'Alt+Command+I' : 'Ctrl+Shift+I',
     nonNativeMacOSRole: true,
-    webContentsMethod: wc => {
-      const bw = wc.getOwnerBrowserWindow();
-      if (bw) bw.webContents.toggleDevTools();
+    webContentsMethod: () => {
+      const focusedWebContent = webContents.getFocusedWebContents();
+      focusedWebContent?.toggleDevTools();
     }
   },
   togglefullscreen: {
