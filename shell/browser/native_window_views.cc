@@ -1011,17 +1011,13 @@ void NativeWindowViews::MoveTop() {
 
 bool NativeWindowViews::CanResize() const {
 #if BUILDFLAG(IS_WIN)
-  return resizable_ && thick_frame_;
+  return has_frame() ? resizable_ && thick_frame_ : resizable_;
 #else
   return resizable_;
 #endif
 }
 
 bool NativeWindowViews::IsResizable() const {
-#if BUILDFLAG(IS_WIN)
-  if (has_frame())
-    return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME;
-#endif
   return CanResize();
 }
 
