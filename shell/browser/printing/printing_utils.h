@@ -44,6 +44,11 @@ std::pair<std::string, std::u16string> GetDeviceNameToUse(
 // This function creates a task runner for use with printing tasks.
 scoped_refptr<base::TaskRunner> CreatePrinterHandlerTaskRunner();
 
+// This function returns the default paper size of the specified printer, if
+// available.
+std::optional<gfx::Size> GetPrinterDefaultPaperSize(
+    const std::string& printer_name);
+
 }  // namespace electron
 
 #endif  // ELECTRON_SHELL_BROWSER_PRINTING_PRINTING_UTILS_H_
