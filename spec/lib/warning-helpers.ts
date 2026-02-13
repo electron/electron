@@ -8,11 +8,6 @@ async function expectWarnings (
 ) {
   const messages: { name: string, message: string }[] = [];
 
-  const originalWarn = console.warn;
-  console.warn = (message) => {
-    messages.push({ name: 'Warning', message });
-  };
-
   const warningListener = (error: Error) => {
     messages.push({ name: error.name, message: error.message });
   };
@@ -24,7 +19,6 @@ async function expectWarnings (
   } finally {
     // process.emitWarning seems to need us to wait a tick
     await new Promise(process.nextTick);
-    console.warn = originalWarn;
     process.off('warning' as any, warningListener);
     expect(messages).to.have.lengthOf(expected.length);
     for (const [idx, { name, message }] of messages.entries()) {

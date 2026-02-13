@@ -1,7 +1,3 @@
-type DeprecationHandler = (message: string) => void;
-
-let deprecationHandler: DeprecationHandler | null = null;
-
 export function warnOnce (oldName: string, newName?: string) {
   return warnOnceMessage(newName
     ? `'${oldName}' is deprecated and will be removed. Please use '${newName}' instead.`
@@ -11,36 +7,24 @@ export function warnOnce (oldName: string, newName?: string) {
 export function warnOnceMessage (msg: string) {
   let warned = false;
   return () => {
-    if (!warned && !process.noDeprecation) {
+    if (!warned) {
       warned = true;
       log(msg);
     }
   };
 }
 
-export function setHandler (handler: DeprecationHandler | null): void {
-  deprecationHandler = handler;
-}
-
-export function getHandler (): DeprecationHandler | null {
-  return deprecationHandler;
-}
-
 export function warn (oldName: string, newName: string): void {
-  if (!process.noDeprecation) {
-    log(`'${oldName}' is deprecated. Use '${newName}' instead.`);
-  }
+  log(`'${oldName}' is deprecated. Use '${newName}' instead.`);
 }
 
 export function log (message: string): void {
-  if (typeof deprecationHandler === 'function') {
-    deprecationHandler(message);
-  } else if (process.throwDeprecation) {
-    throw new Error(message);
-  } else if (process.traceDeprecation) {
-    return console.trace(message);
+  if (process.emitWarning) {
+    process.emitWarning(message, 'DeprecationWarning');
   } else {
-    return console.warn(`(electron) ${message}`);
+    // Fallback if process.emitWarning is not available,
+    // such as a renderer process without Node integration
+    console.warn(`(electron) ${message}`);
   }
 }
 
@@ -84,8 +68,7 @@ export function event (emitter: NodeJS.EventEmitter, oldName: string, newName: s
 // remove a property with no replacement
 export function removeProperty<T extends Object, K extends (keyof T & string)>(object: T, removedName: K, onlyForValues?: any[]): T {
   // if the property's already been removed, warn about it
-  // eslint-disable-next-line no-proto
-  const info = Object.getOwnPropertyDescriptor((object as any).__proto__, removedName);
+  const info = Object.getOwnPropertyDescriptor(object, removedName);
   if (!info) {
     log(`Unable to remove property '${removedName}' from an object that lacks it.`);
     return object;
