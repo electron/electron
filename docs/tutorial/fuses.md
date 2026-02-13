@@ -137,6 +137,33 @@ The extra privileges granted to the `file://` protocol by this fuse are incomple
 * `file://` protocol pages have universal access granted to child frames also running on `file://`
   protocols regardless of sandbox settings
 
+### `wasmTrapHandlers`
+
+**Default:** Enabled
+
+**@electron/fuses:** `FuseV1Options.WasmTrapHandlers`
+
+The `wasmTrapHandlers` fuse controls whether V8 will use signal handlers to trap Out of Bounds memory
+access from WebAssembly. The feature works by surrounding the WebAssembly memory with large guard regions
+and then installing a signal handler that traps attempt to access memory in the guard region. The feature
+is only supported on the following 64-bit systems.
+
+Linux. MacOS, Windows - x86_64
+Linux, MacOS - aarch64
+
+| Guard Pages | WASM heap | Guard Pages |
+|-----8GB-----|           |-----8GB-----|
+
+When the fuse is disabled V8 will use explicit bound checks in the generated WebAssembly code to ensure
+memory safety. However, this method has some downsides
+
+* The compiler generates extra nodes for each memory reference, leading to longer compile times due to the
+additional processing time needed for these nodes.
+* In turn, these extra nodes lead to lots of extra code being generated, making WebAssembly modules bigger
+than they ideally should be.
+* This extra code, particularly the compare and branch before every memory reference,
+incurs a significant runtime cost.
+
 ## How do I flip fuses?
 
 ### The easy way

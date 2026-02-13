@@ -11,6 +11,7 @@
 #include "base/no_destructor.h"
 #include "base/process/process.h"
 #include "base/strings/utf_string_conversions.h"
+#include "electron/fuses.h"
 #include "electron/mas.h"
 #include "net/base/network_change_notifier.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
@@ -22,6 +23,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/v8_util.h"
 #include "shell/services/node/parent_port.h"
 
 #if !IS_MAS_BUILD()
@@ -129,6 +131,15 @@ void NodeService::Initialize(
 
   v8::Isolate* const isolate = js_env_->isolate();
   v8::HandleScope scope{isolate};
+
+  // Enable trap handlers before user script execution.
+#if ((BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)) && \
+     defined(ARCH_CPU_X86_64)) ||                                       \
+    ((BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC)) && defined(ARCH_CPU_ARM64))
+  if (electron::fuses::IsWasmTrapHandlersEnabled()) {
+    electron::SetUpWebAssemblyTrapHandler();
+  }
+#endif
 
   node_bindings_->Initialize(isolate, isolate->GetCurrentContext());
 
