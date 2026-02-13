@@ -19,11 +19,11 @@ struct Converter<device::mojom::HidDeviceInfoPtr> {
       v8::Isolate* isolate,
       const device::mojom::HidDeviceInfoPtr& device) {
     base::Value value = electron::HidChooserContext::DeviceInfoToValue(*device);
-    base::Value::Dict& dict = value.GetDict();
+    base::DictValue& dict = value.GetDict();
     dict.Set("deviceId",
              electron::HidChooserController::PhysicalDeviceIdFromDeviceInfo(
                  *device));
-    return gin::Converter<base::Value::Dict>::ToV8(isolate, dict);
+    return gin::Converter<base::DictValue>::ToV8(isolate, dict);
   }
 };
 

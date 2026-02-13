@@ -88,6 +88,7 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "base/strings/utf_string_conversions.h"
+#include "shell/browser/notifications/win/windows_toast_activator.h"
 #include "shell/browser/ui/win/jump_list.h"
 #endif
 
@@ -510,7 +511,7 @@ int ImportIntoCertStore(CertificateManagerModel* model, base::Value options) {
   net::ScopedCERTCertificateList imported_certs;
   int rv = -1;
 
-  if (const base::Value::Dict* dict = options.GetIfDict(); dict != nullptr) {
+  if (const base::DictValue* dict = options.GetIfDict(); dict != nullptr) {
     if (const std::string* str = dict->FindString("certificate"); str)
       cert_path = *str;
 
@@ -611,7 +612,7 @@ void App::OnWillFinishLaunching() {
   Emit("will-finish-launching");
 }
 
-void App::OnFinishLaunching(base::Value::Dict launch_info) {
+void App::OnFinishLaunching(base::DictValue launch_info) {
 #if BUILDFLAG(IS_LINUX)
   // Set the application name for audio streams shown in external
   // applications. Only affects pulseaudio currently.
@@ -662,8 +663,8 @@ void App::OnDidFailToContinueUserActivity(const std::string& type,
 
 void App::OnContinueUserActivity(bool* prevent_default,
                                  const std::string& type,
-                                 base::Value::Dict user_info,
-                                 base::Value::Dict details) {
+                                 base::DictValue user_info,
+                                 base::DictValue details) {
   if (Emit("continue-activity", type, base::Value(std::move(user_info)),
            base::Value(std::move(details)))) {
     *prevent_default = true;
@@ -671,13 +672,13 @@ void App::OnContinueUserActivity(bool* prevent_default,
 }
 
 void App::OnUserActivityWasContinued(const std::string& type,
-                                     base::Value::Dict user_info) {
+                                     base::DictValue user_info) {
   Emit("activity-was-continued", type, base::Value(std::move(user_info)));
 }
 
 void App::OnUpdateUserActivityState(bool* prevent_default,
                                     const std::string& type,
-                                    base::Value::Dict user_info) {
+                                    base::DictValue user_info) {
   if (Emit("update-activity-state", type, base::Value(std::move(user_info)))) {
     *prevent_default = true;
   }
@@ -1584,7 +1585,7 @@ v8::Local<v8::Promise> App::SetProxy(gin::Arguments* args) {
     return handle;
   }
 
-  base::Value::Dict proxy_config;
+  base::DictValue proxy_config;
   switch (proxy_mode) {
     case ProxyPrefs::MODE_DIRECT:
       proxy_config = ProxyConfigDictionary::CreateDirect();
@@ -1840,6 +1841,10 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #if BUILDFLAG(IS_WIN)
       .SetMethod("setAppUserModelId",
                  base::BindRepeating(&Browser::SetAppUserModelID, browser))
+      .SetMethod("setToastActivatorCLSID",
+                 base::BindRepeating(&App::SetToastActivatorCLSID,
+                                     base::Unretained(this)))
+      .SetProperty("toastActivatorCLSID", &App::GetToastActivatorCLSID)
 #endif
       .SetMethod(
           "isDefaultProtocolClient",
@@ -1966,6 +1971,34 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("setProxy", &App::SetProxy)
       .SetMethod("resolveProxy", &App::ResolveProxy);
 }
+
+#if BUILDFLAG(IS_WIN)
+void App::SetToastActivatorCLSID(gin_helper::ErrorThrower thrower,
+                                 const std::string& id) {
+  std::wstring wide = base::UTF8ToWide(id);
+  CLSID parsed;
+  if (FAILED(::CLSIDFromString(wide.c_str(), &parsed))) {
+    if (!wide.empty() && wide.front() != L'{') {
+      std::wstring with_braces = L"{" + wide + L"}";
+      if (FAILED(::CLSIDFromString(with_braces.c_str(), &parsed))) {
+        thrower.ThrowError("Invalid CLSID format");
+        return;
+      }
+      wide = std::move(with_braces);
+    } else {
+      thrower.ThrowError("Invalid CLSID format");
+      return;
+    }
+  }
+
+  SetAppToastActivatorCLSID(wide);
+}
+
+v8::Local<v8::Value> App::GetToastActivatorCLSID(v8::Isolate* isolate) {
+  return gin::ConvertToV8(isolate,
+                          base::WideToUTF8(GetAppToastActivatorCLSID()));
+}
+#endif
 
 const char* App::GetHumanReadableName() const {
   return "Electron / App";

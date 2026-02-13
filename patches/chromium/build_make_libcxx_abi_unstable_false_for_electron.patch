@@ -3,15 +3,22 @@ From: Charles Kerr <charles@charleskerr.com>
 Date: Tue, 22 Mar 2022 16:24:44 -0500
 Subject: build: make libcxx_abi_unstable false for electron
 
-https://nornagon.medium.com/a-libc-odyssey-973e51649063
+The libc++ C++ standard library uses ABI versioning to control binary
+compatibility. ABI version 2 (Chromium's default) enables various
+optimizations that break compatibility with system libc++, while ABI
+version 1 maintains compatibility needed for native Node.js modules.
 
-See also https://github.com/electron/electron/issues/45810#issuecomment-2691417213.
+References:
+* https://nornagon.medium.com/a-libc-odyssey-973e51649063
+* https://github.com/electron/electron/issues/45810#issuecomment-2691417213.
+* https://libcxx.llvm.org/ABIGuarantees.html
+* third_party/libc++/src/include/__configuration/abi.h
 
 diff --git a/buildtools/third_party/libc++/__config_site b/buildtools/third_party/libc++/__config_site
-index 3cd0af88fd13613216464d31d04e26dbb8f61343..6335536338e1eba8b56055eee31910ecba6a65c4 100644
+index 3cd0af88fd13613216464d31d04e26dbb8f61343..218cfaf258ebc55e4d332c67abd02b5b1ad2ba19 100644
 --- a/buildtools/third_party/libc++/__config_site
 +++ b/buildtools/third_party/libc++/__config_site
-@@ -18,7 +18,9 @@
+@@ -18,7 +18,11 @@
  //    _LIBCPP_ABI_NAMESPACE to a shorter value.
  #define _LIBCPP_ABI_NAMESPACE __Cr
  
@@ -19,6 +26,8 @@ index 3cd0af88fd13613216464d31d04e26dbb8f61343..6335536338e1eba8b56055eee31910ec
 +#define _LIBCPP_ABI_VERSION 1
 +#define _LIBCPP_ABI_USE_WRAP_ITER_IN_STD_ARRAY
 +#define _LIBCPP_ABI_USE_WRAP_ITER_IN_STD_STRING_VIEW
++#define _LIBCPP_ABI_TRIVIALLY_COPYABLE_BIT_ITERATOR
++#define _LIBCPP_ABI_BITSET_VECTOR_BOOL_CONST_SUBSCRIPT_RETURN_BOOL
  
  #define _LIBCPP_ABI_FORCE_ITANIUM 0
  #define _LIBCPP_ABI_FORCE_MICROSOFT 0

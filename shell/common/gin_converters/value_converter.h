@@ -17,12 +17,12 @@ struct Converter<base::ValueView> {
 };
 
 template <>
-struct Converter<base::Value::Dict> {
+struct Converter<base::DictValue> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     base::Value::Dict* out);
+                     base::DictValue* out);
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const base::Value::Dict& val) {
+                                   const base::DictValue& val) {
     return gin::ConvertToV8(isolate, base::ValueView{val});
   }
 };
@@ -39,12 +39,12 @@ struct Converter<base::Value> {
 };
 
 template <>
-struct Converter<base::Value::List> {
+struct Converter<base::ListValue> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     base::Value::List* out);
+                     base::ListValue* out);
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const base::Value::List& val) {
+                                   const base::ListValue& val) {
     return gin::ConvertToV8(isolate, base::ValueView{val});
   }
 };

@@ -117,7 +117,7 @@ class NativeImage final : public gin_helper::DeprecatedWrappable<NativeImage> {
   v8::Local<v8::Value> GetBitmap(gin::Arguments* args);
   v8::Local<v8::Value> GetNativeHandle(gin_helper::ErrorThrower thrower);
   gin_helper::Handle<NativeImage> Resize(gin::Arguments* args,
-                                         base::Value::Dict options);
+                                         base::DictValue options);
   gin_helper::Handle<NativeImage> Crop(v8::Isolate* isolate,
                                        const gfx::Rect& rect);
   std::string ToDataURL(gin::Arguments* args);

@@ -221,7 +221,7 @@ void SystemPreferences::OnWndProc(HWND hwnd,
   Emit("color-changed");
 }
 
-void SystemPreferences::OnFinishLaunching(base::Value::Dict launch_info) {
+void SystemPreferences::OnFinishLaunching(base::DictValue launch_info) {
   hwnd_subscription_ =
       gfx::SingletonHwnd::GetInstance()->RegisterCallback(base::BindRepeating(
           &SystemPreferences::OnWndProc, base::Unretained(this)));

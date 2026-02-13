@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Niklas Wenzel <dev@nikwen.de>
+Date: Wed, 4 Feb 2026 06:02:40 -0800
+Subject: LoAF: Add feature to enable sourceURL for all protocols
+
+Backports https://crrev.com/c/7510894 (minus the test changes).
+
+Can be removed when that CL is included via a Chromium roll.
+
+Change-Id: Id5e58a151b13cc0ac054f4ec237b038255d683fd
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7510894
+Commit-Queue: Noam Rosenthal <nrosenthal@google.com>
+Reviewed-by: Dave Tapuska <dtapuska@chromium.org>
+Reviewed-by: Noam Rosenthal <nrosenthal@google.com>
+Cr-Commit-Position: refs/heads/main@{#1579397}
+
+diff --git a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
+index 20eb792c45d23874fb6a3982a335a140820a94d0..1e8c8c6f73bf576f10cb32beb80cadcaa9516b71 100644
+--- a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
++++ b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.cc
+@@ -524,8 +524,15 @@ void AnimationFrameTimingMonitor::Trace(Visitor* visitor) const {
+   visitor->Trace(frame_handling_input_);
+ }
+ 
++BASE_FEATURE(kAlwaysLogLOAFURL, base::FEATURE_DISABLED_BY_DEFAULT);
++
+ namespace {
++
+ bool ShouldAllowScriptURL(const String& url) {
++  if (base::FeatureList::IsEnabled(kAlwaysLogLOAFURL)) {
++    return true;
++  }
++
+   KURL kurl(url);
+   return kurl.ProtocolIsData() || kurl.ProtocolIsInHTTPFamily() ||
+          kurl.ProtocolIs("blob") || kurl.IsEmpty();
+diff --git a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.h b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.h
+index 60a891c17f34ec617c86d0fcbfcec0f2469bdd07..91475dfc3175cf49b8396c9f029cb25bf3ec1e75 100644
+--- a/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.h
++++ b/third_party/blink/renderer/core/frame/animation_frame_timing_monitor.h
+@@ -22,6 +22,11 @@ class TimeTicks;
+ 
+ namespace blink {
+ 
++// When enabled, long-animation-frame events will always include the sourceURL,
++// regardless of protocol. This is useful during development when using `file:`
++// URLs or custom protocols defined by embedders.
++CORE_EXPORT BASE_DECLARE_FEATURE(kAlwaysLogLOAFURL);
++
+ class LocalFrame;
+ 
+ // Monitors long-animation-frame timing (LoAF).

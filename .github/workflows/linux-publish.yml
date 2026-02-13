@@ -46,6 +46,7 @@ jobs:
   publish-x64:
     uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      artifact-metadata: write
       attestations: write
       contents: read
       id-token: write
@@ -65,6 +66,7 @@ jobs:
   publish-arm:
     uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      artifact-metadata: write
       attestations: write
       contents: read
       id-token: write
@@ -84,6 +86,7 @@ jobs:
   publish-arm64:
     uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      artifact-metadata: write
       attestations: write
       contents: read
       id-token: write

@@ -40,7 +40,7 @@ If you are on arm64 architecture, the build script may be pointing to the wrong 
 
 ### Certificates fail to verify
 
-installing [`certifi`](https://pypi.org/project/certifi/) will fix the following error:
+Installing [`certifi`](https://pypi.org/project/certifi/) will fix the following error:
 
 ```sh
 ________ running 'python3 src/tools/clang/scripts/update.py' in '/Users/<user>/electron'

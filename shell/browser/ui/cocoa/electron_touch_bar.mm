@@ -254,7 +254,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   NSColor* color = ((NSColorPickerTouchBarItem*)sender).color;
   std::string hex_color =
       electron::ToRGBHex(skia::NSDeviceColorToSkColor(color));
-  base::Value::Dict details;
+  base::DictValue details;
   details.Set("color", hex_color);
   window_->NotifyTouchBarItemInteraction([item_id UTF8String],
                                          std::move(details));
@@ -264,7 +264,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   NSString* identifier = ((NSSliderTouchBarItem*)sender).identifier;
   NSString* item_id = [self idFromIdentifier:identifier
                                   withPrefix:SliderIdentifier];
-  base::Value::Dict details;
+  base::DictValue details;
   details.Set("value", [((NSSliderTouchBarItem*)sender).slider intValue]);
   window_->NotifyTouchBarItemInteraction([item_id UTF8String],
                                          std::move(details));
@@ -278,7 +278,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 - (void)segmentedControlAction:(id)sender {
   NSString* item_id =
       [NSString stringWithFormat:@"%ld", ((NSSegmentedControl*)sender).tag];
-  base::Value::Dict details;
+  base::DictValue details;
   details.Set("selectedIndex",
               static_cast<int>(((NSSegmentedControl*)sender).selectedSegment));
   details.Set(
@@ -291,7 +291,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (void)scrubber:(NSScrubber*)scrubber
     didSelectItemAtIndex:(NSInteger)selectedIndex {
-  base::Value::Dict details;
+  base::DictValue details;
   details.Set("selectedIndex", static_cast<int>(selectedIndex));
   details.Set("type", "select");
   window_->NotifyTouchBarItemInteraction([scrubber.identifier UTF8String],
@@ -300,7 +300,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (void)scrubber:(NSScrubber*)scrubber
     didHighlightItemAtIndex:(NSInteger)highlightedIndex {
-  base::Value::Dict details;
+  base::DictValue details;
   details.Set("highlightedIndex", static_cast<int>(highlightedIndex));
   details.Set("type", "highlight");
   window_->NotifyTouchBarItemInteraction([scrubber.identifier UTF8String],
