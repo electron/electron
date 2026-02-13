@@ -78,7 +78,8 @@ dynamically changed.
 
 #### `menuItem.label`
 
-A `string` indicating the item's visible label.
+A `string` indicating the item's visible label. This property can be
+dynamically changed.
 
 #### `menuItem.click`
 
@@ -118,8 +119,8 @@ An `Accelerator | null` indicating the item's [user-assigned accelerator](https:
 
 #### `menuItem.icon`
 
-A `NativeImage | string` (optional) indicating the
-item's icon, if set.
+A `NativeImage | string` (optional) indicating the item's icon, if set.
+This property can be dynamically changed.
 
 #### `menuItem.sublabel`
 
