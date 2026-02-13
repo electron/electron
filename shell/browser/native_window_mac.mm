@@ -22,6 +22,7 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"
+#include "content/public/browser/web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/ui/cocoa/electron_native_widget_mac.h"
@@ -34,6 +35,8 @@
 #include "shell/browser/ui/cocoa/window_buttons_proxy.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/window_list.h"
+#include "shell/common/api/electron_api_native_image.h"
+#include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_util.h"
@@ -356,6 +359,12 @@ NativeWindowMac::NativeWindowMac(const int32_t base_window_id,
 
   UpdateWindowOriginalFrame();
   original_level_ = [window_ level];
+
+  // Initialize swipe gesture events.
+  bool swipe_gesture = false;
+  if (options.Get(options::kSwipeGesture, &swipe_gesture)) {
+    SetSwipeGesture(swipe_gesture);
+  }
 }
 
 void NativeWindowMac::SetContentView(views::View* view) {
@@ -1882,6 +1891,10 @@ std::unique_ptr<NativeWindow> NativeWindow::Create(
     const gin_helper::Dictionary& options,
     NativeWindow* parent) {
   return std::make_unique<NativeWindowMac>(base_window_id, options, parent);
+}
+
+void NativeWindowMac::SetSwipeGesture(bool enabled) {
+  swipe_gesture_enabled_ = enabled;
 }
 
 }  // namespace electron

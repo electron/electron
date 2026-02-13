@@ -602,6 +602,13 @@ void NativeWindow::NotifyWindowSwipe(const std::string& direction) {
   observers_.Notify(&NativeWindowObserver::OnWindowSwipe, direction);
 }
 
+void NativeWindow::NotifyWindowSwipeGesture(const std::string& direction,
+                                            const std::string& phase,
+                                            float progress) {
+  observers_.Notify(&NativeWindowObserver::OnWindowSwipeGesture, direction,
+                    phase, progress);
+}
+
 void NativeWindow::NotifyWindowRotateGesture(float rotation) {
   observers_.Notify(&NativeWindowObserver::OnWindowRotateGesture, rotation);
 }

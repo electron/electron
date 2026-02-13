@@ -229,6 +229,8 @@ inline constexpr std::string_view kFocusOnNavigation = "focusOnNavigation";
 
 inline constexpr std::string_view kModal = "modal";
 
+inline constexpr std::string_view kSwipeGesture = "swipeGesture";
+
 }  // namespace options
 
 // Following are actually command line switches, should be moved to other files.

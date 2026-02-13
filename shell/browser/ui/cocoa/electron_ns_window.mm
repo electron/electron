@@ -115,7 +115,12 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 
 }  // namespace
 
-@implementation ElectronNSWindow
+@implementation ElectronNSWindow {
+  // Two-finger swipe gesture state
+  NSSize _cumulativeScrollDelta;
+  BOOL _inSwipeGesture;
+  id __strong _scrollEventMonitor;
+}
 
 @synthesize acceptsFirstMouse;
 @synthesize enableLargerThanScreen;
@@ -154,15 +159,54 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
       }
     }
 #else
-    NSView* view = [[self contentView] superview];
-    SwizzleSwipeWithEvent(view, @selector(swiz_nsview_swipeWithEvent:));
+    NSView* frameView = [[self contentView] superview];
+    SwizzleSwipeWithEvent(frameView, @selector(swiz_nsview_swipeWithEvent:));
 #endif  // IS_MAS_BUILD
     shell_ = shell;
+    _inSwipeGesture = NO;
+    _cumulativeScrollDelta = NSZeroSize;
+
+    // Set up scroll event monitor for two-finger swipe gestures
+    [self setupScrollEventMonitor];
   }
   return self;
 }
 
+- (void)setupScrollEventMonitor {
+  __weak ElectronNSWindow* weakSelf = self;
+
+  _scrollEventMonitor = [NSEvent
+      addLocalMonitorForEventsMatchingMask:NSEventMaskScrollWheel
+                                   handler:^NSEvent*(NSEvent* event) {
+                                     ElectronNSWindow* strongSelf = weakSelf;
+                                     if (!strongSelf)
+                                       return event;
+
+                                     // Only handle events for this window
+                                     if (event.window != strongSelf)
+                                       return event;
+
+                                     // Check if swipe gesture events are
+                                     // enabled
+                                     if (!strongSelf->shell_ ||
+                                         !strongSelf->shell_
+                                              ->IsSwipeGestureEnabled())
+                                       return event;
+
+                                     // Try to handle as swipe gesture
+                                     if ([strongSelf
+                                             handleSwipeScrollEvent:event]) {
+                                       return nil;  // Consume the event
+                                     }
+                                     return event;
+                                   }];
+}
+
 - (void)cleanup {
+  if (_scrollEventMonitor) {
+    [NSEvent removeMonitor:_scrollEventMonitor];
+    _scrollEventMonitor = nil;
+  }
   shell_ = nullptr;
 }
 
@@ -175,6 +219,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     return [super accessibilityFocusedUIElement];
   return nil;
 }
+
 - (NSRect)originalContentRectForFrameRect:(NSRect)frameRect {
   return [super contentRectForFrameRect:frameRect];
 }
@@ -184,6 +229,115 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     return [shell_->touch_bar() makeTouchBar];
   else
     return nil;
+}
+
+// Two-finger Swipe Gesture (Event-based)
+
+- (BOOL)handleSwipeScrollEvent:(NSEvent*)event {
+  NSEventPhase phase = event.phase;
+  NSEventPhase momentumPhase = event.momentumPhase;
+
+  // Reset state on new gesture
+  if (phase == NSEventPhaseBegan) {
+    _cumulativeScrollDelta = NSZeroSize;
+    _inSwipeGesture = NO;
+    return NO;
+  }
+
+  // Ignore momentum phase and non-gesture events
+  if (momentumPhase != NSEventPhaseNone || phase == NSEventPhaseNone) {
+    return NO;
+  }
+
+  // If already tracking a swipe, let it continue
+  if (_inSwipeGesture) {
+    return NO;
+  }
+
+  // Check if swipe tracking from scroll events is enabled in System Prefs
+  if (!NSEvent.swipeTrackingFromScrollEventsEnabled) {
+    return NO;
+  }
+
+  // Accumulate scroll deltas
+  _cumulativeScrollDelta.width += event.scrollingDeltaX;
+  _cumulativeScrollDelta.height += event.scrollingDeltaY;
+
+  CGFloat absWidth = fabs(_cumulativeScrollDelta.width);
+  CGFloat absHeight = fabs(_cumulativeScrollDelta.height);
+
+  // Need minimum movement to start considering
+  if (absWidth + absHeight < 5) {
+    return NO;
+  }
+
+  // If vertical movement dominates, this is not a horizontal swipe
+  if (absHeight > absWidth * 0.5) {
+    return NO;
+  }
+
+  // Need enough horizontal movement to trigger
+  if (absWidth < 30) {
+    return NO;
+  }
+
+  // Determine direction
+  BOOL isLeftSwipe = _cumulativeScrollDelta.width > 0;
+  if (event.directionInvertedFromDevice) {
+    isLeftSwipe = !isLeftSwipe;
+  }
+
+  // Start tracking and emitting events
+  [self initiateSwipeTrackingWithEvent:event isLeftSwipe:isLeftSwipe];
+  return YES;
+}
+
+- (void)initiateSwipeTrackingWithEvent:(NSEvent*)event
+                           isLeftSwipe:(BOOL)isLeftSwipe {
+  _inSwipeGesture = YES;
+
+  __weak ElectronNSWindow* weakSelf = self;
+  NSString* direction = isLeftSwipe ? @"left" : @"right";
+
+  // Emit begin event
+  if (shell_) {
+    shell_->NotifyWindowSwipeGesture([direction UTF8String], "began", 0.0);
+  }
+
+  [event trackSwipeEventWithOptions:NSEventSwipeTrackingLockDirection
+           dampenAmountThresholdMin:-1
+                                max:1
+                       usingHandler:^(CGFloat gestureAmount, NSEventPhase phase,
+                                      BOOL isComplete, BOOL* stop) {
+                         ElectronNSWindow* strongSelf = weakSelf;
+                         if (!strongSelf || !strongSelf->shell_) {
+                           *stop = YES;
+                           return;
+                         }
+
+                         // gestureAmount goes from 0 to +/-1
+                         CGFloat progress = fabs(gestureAmount);
+
+                         // Determine phase string
+                         NSString* phaseStr = @"changed";
+                         if (phase == NSEventPhaseEnded) {
+                           phaseStr = @"ended";
+                         } else if (phase == NSEventPhaseCancelled) {
+                           phaseStr = @"cancelled";
+                         }
+
+                         // Emit event to JavaScript
+                         strongSelf->shell_->NotifyWindowSwipeGesture(
+                             [direction UTF8String], [phaseStr UTF8String],
+                             progress);
+
+                         // Clean up on end/cancel
+                         if (phase == NSEventPhaseEnded ||
+                             phase == NSEventPhaseCancelled || isComplete) {
+                           strongSelf->_inSwipeGesture = NO;
+                           strongSelf->_cumulativeScrollDelta = NSZeroSize;
+                         }
+                       }];
 }
 
 // NSWindow overrides.
