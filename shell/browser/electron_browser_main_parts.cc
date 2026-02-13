@@ -496,10 +496,8 @@ void ElectronBrowserMainParts::WillRunMainMessageLoop(
 }
 
 void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC)
-  std::string app_name = electron::Browser::Get()->GetName();
-#endif
 #if BUILDFLAG(IS_LINUX)
+  std::string app_name = electron::Browser::Get()->GetName();
   auto shutdown_cb =
       base::BindOnce([] { LOG(FATAL) << "Failed to shutdown."; });
   ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
@@ -536,10 +534,6 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
       os_crypt::SelectBackend(config->store, use_backend, desktop_env);
   fake_browser_process_->SetLinuxStorageBackend(selected_backend);
   OSCrypt::SetConfig(std::move(config));
-#endif
-#if BUILDFLAG(IS_MAC)
-  KeychainPassword::GetServiceName() = app_name + " Safe Storage";
-  KeychainPassword::GetAccountName() = app_name;
 #endif
 #if BUILDFLAG(IS_POSIX)
   // Exit in response to SIGINT, SIGTERM, etc.
