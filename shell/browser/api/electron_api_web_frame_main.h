@@ -118,6 +118,8 @@ class WebFrameMain final : public gin_helper::DeprecatedWrappable<WebFrameMain>,
 
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* args,
                                            const std::u16string& code);
+  void CopyVideoFrameAt(int x, int y);
+  void SaveVideoFrameAs(int x, int y);
   bool Reload();
   bool IsDestroyed() const;
   void Send(v8::Isolate* isolate,
