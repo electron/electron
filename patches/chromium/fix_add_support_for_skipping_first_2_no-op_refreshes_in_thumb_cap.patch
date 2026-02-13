@@ -13,6 +13,10 @@ The third refresh (the one we want) is "we have windows, and have thumbnail requ
 This really isn't ideal at all, we need to refactor desktopCapturer (read completely re-implement it)
 to use StartUpdating and handle the events instead of using the "get the list once" method.
 
+NSImage defaults to the smallest available representation (32x32),
+which breaks historical Electron behavior. Explicitly setting the size
+preserves the 128x128 resolution used by window icons.
+
 diff --git a/chrome/browser/media/webrtc/desktop_media_list.h b/chrome/browser/media/webrtc/desktop_media_list.h
 index 09895ccfa99999e6e0ea24a3190d3f429ee40344..b1189cebeabe49971c0d0d4d013e6fe26e7df5a5 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list.h
@@ -43,3 +47,17 @@ index f95b2230135dbcd6b19a31215d4f10be3481148c..9e1eb8423969e75d5ece0056690f651c
  }
  
  void DesktopMediaListBase::ScheduleNextRefresh() {
+diff --git a/chrome/browser/media/webrtc/window_icon_util_mac.mm b/chrome/browser/media/webrtc/window_icon_util_mac.mm
+index 33b98bffdde5441842354c61d5d5041f03540253..45d741a1983a0c6fe62cb6afd1afb41d599c5978 100644
+--- a/chrome/browser/media/webrtc/window_icon_util_mac.mm
++++ b/chrome/browser/media/webrtc/window_icon_util_mac.mm
+@@ -54,5 +54,9 @@
+     return gfx::ImageSkia();
+   }
+ 
++  // Icon's NSImage defaults to the smallest which can be only 32x32. This
++  // increases the image icon resolution.
++  [icon_image setSize:NSMakeSize(128, 128)];
++
+   return gfx::Image(icon_image).AsImageSkia();
+ }
