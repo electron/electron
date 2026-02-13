@@ -66,6 +66,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowEndSession(const std::vector<std::string>& reasons) override;
   void OnWindowBlur() override;
   void OnWindowFocus() override;
+  void OnWindowIsKeyChanged(bool is_key) override;
   void OnWindowShow() override;
   void OnWindowHide() override;
   void OnWindowMaximize() override;

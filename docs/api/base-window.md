@@ -188,6 +188,28 @@ Returns:
 
 Emitted when the window gains focus.
 
+#### Event: 'did-become-key' _macOS_
+
+Returns:
+
+* `event` Event
+
+Emitted when the window becomes the key window. On macOS, this is distinct from
+`focus` because a window can become key without becoming main (focused). This is
+useful for floating panels, overlays, or Spotlight-like interfaces using
+`NSPanel`.
+
+#### Event: 'did-resign-key' _macOS_
+
+Returns:
+
+* `event` Event
+
+Emitted when the window resigns key window status. On macOS, this is distinct
+from `blur` because a window can lose key status without losing main status.
+This is useful for floating panels, overlays, or Spotlight-like interfaces using
+`NSPanel`.
+
 #### Event: 'show'
 
 Emitted when the window is shown.
