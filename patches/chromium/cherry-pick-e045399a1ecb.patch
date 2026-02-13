@@ -20,10 +20,10 @@ Reviewed-by: Anders Hartvoll Ruud <andruud@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1583927}
 
 diff --git a/third_party/blink/renderer/core/css/css_font_feature_values_map.cc b/third_party/blink/renderer/core/css/css_font_feature_values_map.cc
-index 24303069e2531afebec29977378ba708051e117d..2459cf268bf120b019bd0d94743ac48d8a33478b 100644
+index 24303069e2531afebec29977378ba708051e117d..1862dae14a63769f0fe1fe1cf5f6f880148ce37b 100644
 --- a/third_party/blink/renderer/core/css/css_font_feature_values_map.cc
 +++ b/third_party/blink/renderer/core/css/css_font_feature_values_map.cc
-@@ -13,17 +13,15 @@ class FontFeatureValuesMapIterationSource final
+@@ -13,17 +13,16 @@ class FontFeatureValuesMapIterationSource final
      : public PairSyncIterable<CSSFontFeatureValuesMap>::IterationSource {
   public:
    FontFeatureValuesMapIterationSource(const CSSFontFeatureValuesMap& map,
@@ -36,18 +36,17 @@ index 24303069e2531afebec29977378ba708051e117d..2459cf268bf120b019bd0d94743ac48d
  
    bool FetchNextItem(ScriptState* script_state,
                       String& map_key,
--                     Vector<uint32_t>& map_value,
--                     ExceptionState&) override {
+                      Vector<uint32_t>& map_value,
+                      ExceptionState&) override {
 -    if (!aliases_) {
 -      return false;
 -    }
 -    if (iterator_ == aliases_->end()) {
-+                     Vector<uint32_t>& map_value) override {
 +    if (iterator_ == aliases_.end()) {
        return false;
      }
      map_key = iterator_->key;
-@@ -38,9 +36,13 @@ class FontFeatureValuesMapIterationSource final
+@@ -38,9 +37,13 @@ class FontFeatureValuesMapIterationSource final
    }
  
   private:
@@ -63,14 +62,12 @@ index 24303069e2531afebec29977378ba708051e117d..2459cf268bf120b019bd0d94743ac48d
    FontFeatureAliases::const_iterator iterator_;
  };
  
-@@ -49,9 +51,9 @@ uint32_t CSSFontFeatureValuesMap::size() const {
- }
+@@ -50,8 +53,8 @@ uint32_t CSSFontFeatureValuesMap::size() const {
  
  PairSyncIterable<CSSFontFeatureValuesMap>::IterationSource*
--CSSFontFeatureValuesMap::CreateIterationSource(ScriptState*, ExceptionState&) {
+ CSSFontFeatureValuesMap::CreateIterationSource(ScriptState*, ExceptionState&) {
 -  return MakeGarbageCollected<FontFeatureValuesMapIterationSource>(*this,
 -                                                                   aliases_);
-+CSSFontFeatureValuesMap::CreateIterationSource(ScriptState*) {
 +  return MakeGarbageCollected<FontFeatureValuesMapIterationSource>(
 +      *this, aliases_ ? *aliases_ : FontFeatureAliases());
  }
