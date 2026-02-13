@@ -6722,8 +6722,7 @@ describe('BrowserWindow module', () => {
       expect(data.constructor.name).to.equal('NativeImage');
       expect(data.isEmpty()).to.be.false('data is empty');
       const size = data.getSize();
-      // TODO(reito): Use scale factor 1.0f when Electron 42.
-      const { scaleFactor } = screen.getPrimaryDisplay();
+      const scaleFactor = 1;
       expect(size.width).to.be.closeTo(100 * scaleFactor, 2);
       expect(size.height).to.be.closeTo(100 * scaleFactor, 2);
     });

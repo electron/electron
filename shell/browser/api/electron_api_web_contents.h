@@ -820,12 +820,8 @@ class WebContents final : public ExclusiveAccessContext,
   bool offscreen_use_shared_texture_ = false;
   std::string offscreen_shared_texture_pixel_format_ = "argb";
 
-  // TODO(reito): 0.0f means the device scale factor is not set, it's a
-  // migration of the breaking change so that we can read the device scale
-  // factor from physical primary screen's info. In Electron 42, we need to set
-  // this to 1.0f so that the offscreen rendering use 1.0 as default when
-  // `deviceScaleFactor` is not specified in webPreferences.
-  float offscreen_device_scale_factor_ = 0.0f;
+  // Use 1.0f for consistent behavior.
+  float offscreen_device_scale_factor_ = 1.0f;
 
   // Whether window is fullscreened by HTML5 api.
   bool html_fullscreen_ = false;
