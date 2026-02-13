@@ -1485,6 +1485,11 @@ mainWindow.webContents.setWindowOpenHandler((details) => {
       const browserView = new BrowserView(options)
       mainWindow.addBrowserView(browserView)
       browserView.setBounds({ x: 0, y: 0, width: 640, height: 480 })
+      // For `background-tab` disposition (e.g., when middle-clicking or ctrl/cmd-clicking a link),
+      // `options.webContents` is undefined because its creation can be deferred. So load the URL manually.
+      if (details.disposition === 'background-tab') {
+        browserView.webContents.loadURL(details.url)
+      }
       return browserView.webContents
     }
   }
