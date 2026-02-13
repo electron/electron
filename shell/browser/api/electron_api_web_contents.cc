@@ -50,6 +50,7 @@
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/desktop_streams_registry.h"
+#include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/file_select_listener.h"
@@ -2775,6 +2776,12 @@ std::string WebContents::GetMediaSourceID(
   return id;
 }
 
+std::string WebContents::GetOrCreateDevToolsTargetId() {
+  auto agent_host =
+      content::DevToolsAgentHost::GetOrCreateFor(web_contents());
+  return agent_host->GetId();
+}
+
 bool WebContents::IsCrashed() const {
   return web_contents()->IsCrashed();
 }
@@ -4641,6 +4648,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
                  &WebContents::SetWebRTCIPHandlingPolicy)
       .SetMethod("setWebRTCUDPPortRange", &WebContents::SetWebRTCUDPPortRange)
       .SetMethod("getMediaSourceId", &WebContents::GetMediaSourceID)
+      .SetMethod("getOrCreateDevToolsTargetId", &WebContents::GetOrCreateDevToolsTargetId)
       .SetMethod("getWebRTCIPHandlingPolicy",
                  &WebContents::GetWebRTCIPHandlingPolicy)
       .SetMethod("getWebRTCUDPPortRange", &WebContents::GetWebRTCUDPPortRange)
