@@ -30,7 +30,7 @@ The `dialog` module has the following methods:
     * `openFile` - Allow files to be selected.
     * `openDirectory` - Allow directories to be selected.
     * `multiSelections` - Allow multiple paths to be selected.
-    * `showHiddenFiles` - Show hidden files in dialog.
+    * `showHiddenFiles` _macOS_ _Windows_ _Deprecated_ - Show hidden files in dialog. Deprecated on Linux.
     * `createDirectory` _macOS_ - Allow creating new directories from dialog.
     * `promptToCreate` _Windows_ - Prompt for creation if the file path entered
       in the dialog does not exist. This does not actually create the file at
@@ -102,7 +102,7 @@ dialog.showOpenDialogSync(mainWindow, {
     * `openFile` - Allow files to be selected.
     * `openDirectory` - Allow directories to be selected.
     * `multiSelections` - Allow multiple paths to be selected.
-    * `showHiddenFiles` - Show hidden files in dialog.
+    * `showHiddenFiles` _macOS_ _Windows_ _Deprecated_ - Show hidden files in dialog. Deprecated on Linux.
     * `createDirectory` _macOS_ - Allow creating new directories from dialog.
     * `promptToCreate` _Windows_ - Prompt for creation if the file path entered
       in the dialog does not exist. This does not actually create the file at
@@ -185,7 +185,7 @@ dialog.showOpenDialog(mainWindow, {
   * `showsTagField` boolean (optional) _macOS_ - Show the tags input box,
     defaults to `true`.
   * `properties` string[]&#32;(optional)
-    * `showHiddenFiles` - Show hidden files in dialog.
+    * `showHiddenFiles` _macOS_ _Windows_ _Deprecated_ - Show hidden files in dialog. Deprecated on Linux.
     * `createDirectory` _macOS_ - Allow creating new directories from dialog.
     * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
       as a directory instead of a file.
@@ -215,7 +215,7 @@ The `filters` specifies an array of file types that can be displayed, see
     displayed in front of the filename text field.
   * `showsTagField` boolean (optional) _macOS_ - Show the tags input box, defaults to `true`.
   * `properties` string[]&#32;(optional)
-    * `showHiddenFiles` - Show hidden files in dialog.
+    * `showHiddenFiles` _macOS_ _Windows_ _Deprecated_ - Show hidden files in dialog. Deprecated on Linux.
     * `createDirectory` _macOS_ - Allow creating new directories from dialog.
     * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
       as a directory instead of a file.
