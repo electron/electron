@@ -19,7 +19,9 @@ class NotificationDelegate {
 
   // Notification was replied to
   virtual void NotificationReplied(const std::string& reply) {}
-  virtual void NotificationAction(int index) {}
+  // |selection_index| is >= 0 only for selection actions (Windows), otherwise
+  // -1.
+  virtual void NotificationAction(int action_index, int selection_index = -1) {}
 
   virtual void NotificationClick() {}
   virtual void NotificationClosed() {}
