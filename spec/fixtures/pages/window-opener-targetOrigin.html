@@ -9,7 +9,7 @@
     }
   }
   const parsedURL = new URL(window.location.href);
-  if (parsedURL.searchParams.get('opened') != null) {
+  if (parsedURL.searchParams.has('opened')) {
     // Ensure origins are properly checked by removing a single character from the end
     tryPostMessage('do not deliver substring origin', window.location.origin.substring(0, window.location.origin.length - 1))
     tryPostMessage('do not deliver file://', 'file://')

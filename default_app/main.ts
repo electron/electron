@@ -253,7 +253,7 @@ async function startRepl () {
 if (option.file && !option.webdriver) {
   const file = option.file;
   // eslint-disable-next-line n/no-deprecated-api
-  const protocol = url.parse(file).protocol;
+  const protocol = URL.canParse(file) ? new URL(file).protocol : null;
   const extension = path.extname(file);
   if (protocol === 'http:' || protocol === 'https:' || protocol === 'file:' || protocol === 'chrome:') {
     await loadApplicationByURL(file);
