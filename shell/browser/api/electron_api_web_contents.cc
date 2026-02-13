@@ -2744,7 +2744,7 @@ std::string WebContents::GetMediaSourceID(
   return id;
 }
 
-std::string WebContents::GetDevToolsTargetId() {
+std::string WebContents::GetOrCreateDevToolsTargetId() {
   auto agent_host =
       content::DevToolsAgentHost::GetOrCreateFor(web_contents());
   return agent_host->GetId();
@@ -4596,7 +4596,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
                  &WebContents::SetWebRTCIPHandlingPolicy)
       .SetMethod("setWebRTCUDPPortRange", &WebContents::SetWebRTCUDPPortRange)
       .SetMethod("getMediaSourceId", &WebContents::GetMediaSourceID)
-      .SetMethod("getDevToolsTargetId", &WebContents::GetDevToolsTargetId)
+      .SetMethod("getOrCreateDevToolsTargetId", &WebContents::GetOrCreateDevToolsTargetId)
       .SetMethod("getWebRTCIPHandlingPolicy",
                  &WebContents::GetWebRTCIPHandlingPolicy)
       .SetMethod("getWebRTCUDPPortRange", &WebContents::GetWebRTCUDPPortRange)

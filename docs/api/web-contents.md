@@ -2234,12 +2234,15 @@ Returns `string` - The identifier of a WebContents stream. This identifier can b
 with `navigator.mediaDevices.getUserMedia` using a `chromeMediaSource` of `tab`.
 The identifier is restricted to the web contents that it is registered to and is only valid for 10 seconds.
 
-#### `contents.getDevToolsTargetId()`
+#### `contents.getOrCreateDevToolsTargetId()`
 
 Returns `string` - The Chrome DevTools Protocol
 [TargetID](https://chromedevtools.github.io/devtools-protocol/tot/Target/#type-TargetID)
 associated with this WebContents. This is the reverse of
 [`webContents.fromDevToolsTargetId()`](#webcontentsfromdevtoolstargetidtargetid).
+
+> [!NOTE]
+> This method creates a new DevTools agent for this WebContents if one does not already exist.
 
 #### `contents.getOSProcessId()`
 

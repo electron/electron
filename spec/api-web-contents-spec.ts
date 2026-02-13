@@ -1660,12 +1660,12 @@ describe('webContents module', () => {
     });
   });
 
-  describe('getDevToolsTargetId()', () => {
+  describe('getOrCreateDevToolsTargetId()', () => {
     afterEach(closeAllWindows);
     it('returns the devtools target id', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
-      const devToolsId = w.webContents.getDevToolsTargetId();
+      const devToolsId = w.webContents.getOrCreateDevToolsTargetId();
       expect(devToolsId).to.be.a('string').that.is.not.empty();
       // Verify it's the inverse of fromDevToolsTargetId
       expect(webContents.fromDevToolsTargetId(devToolsId)).to.equal(w.webContents);
