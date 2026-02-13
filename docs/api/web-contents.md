@@ -5,6 +5,7 @@
 Process: [Main](../glossary.md#main-process)
 
 `webContents` is an [EventEmitter][event-emitter].
+
 It is responsible for rendering and controlling a web page and is a property of
 the [`BrowserWindow`](browser-window.md) object. An example of accessing the
 `webContents` object:
@@ -18,6 +19,80 @@ win.loadURL('https://github.com')
 const contents = win.webContents
 console.log(contents)
 ```
+
+## Showing the window gracefully
+
+When using `BaseWindow` and `WebContentsView`, users may see the web content load incrementally if the window is shown immediately. To create a seamless experience without a visual flash, you can use the following strategies.
+
+### Using the ready-to-show event
+
+The `ready-to-show` event is emitted by the `webContents` within a `WebContentsView` when the renderer process has rendered the page for the first time. Showing the window only after this event ensures a smooth transition.
+
+```js
+const { BaseWindow, WebContentsView } = require('electron')
+
+function createWindow () {
+  const win = new BaseWindow({
+    width: 1200,
+    height: 800,
+    show: false // Start with the window hidden
+  })
+
+  const view = new WebContentsView()
+  win.contentView.addChildView(view)
+  view.setBounds({ x: 0, y: 0, width: 1200, height: 800 })
+
+  // The event is emitted by the webContents of the view
+  view.webContents.once('ready-to-show', () => {
+    win.show()
+  })
+
+  view.webContents.loadURL('https://github.com')
+}
+```
+
+Note: By default, `WebContentsView` has `paintWhenInitiallyHidden` set to `true`. This allows the renderer to paint while the window is **hidden**, triggering `ready-to-show`. If you manually set `paintWhenInitiallyHidden: false`, the `ready-to-show` event will never fire until the window is already visible.
+
+### Setting the backgroundColor property
+
+For complex applications, the `ready-to-show` event might take a moment to fire, making the app feel unresponsive. In these cases, it is better to show the window immediately but set a `backgroundColor` that matches your application's theme to hide the initial white flash.
+
+```js
+const { BaseWindow, WebContentsView } = require('electron')
+
+function createWindow () {
+  // Set a background color close to your app's CSS background
+  const win = new BaseWindow({
+    width: 1200,
+    height: 800,
+    backgroundColor: '#2e2c29'
+  })
+
+  const view = new WebContentsView()
+  win.contentView.addChildView(view)
+  view.setBounds({ x: 0, y: 0, width: 1200, height: 800 })
+
+  view.webContents.loadURL('https://github.com')
+}
+```
+
+Note that even for apps that use the `ready-to-show` event, it is still recommended to set a `backgroundColor` to make the app feel more native and prevent a white flash during the initial window creation.
+
+Some examples of valid `backgroundColor` values include:
+
+```js
+const { BaseWindow } = require('electron')
+
+const win = new BaseWindow()
+
+// Different color formats are supported
+win.setBackgroundColor('hsl(230, 100%, 50%)')
+win.setBackgroundColor('rgb(255, 145, 145)')
+win.setBackgroundColor('#ff00a3')
+win.setBackgroundColor('blueviolet')
+```
+
+For more information about these color types, see the valid options in [win.setBackgroundColor](base-window.md#winsetbackgroundcolorbackgroundcolor).
 
 ## Navigation Events
 
@@ -111,6 +186,13 @@ Process: [Main](../glossary.md#main-process)<br />
 _This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
 ### Instance Events
+
+#### Event: 'ready-to-show'
+
+Emitted when the web page has been rendered (while not being shown) and window can be displayed without a visual flash.
+
+Please note that using this event implies that the renderer will be considered "visible" and
+paint even though `show` is false.  This event will never fire if you use `paintWhenInitiallyHidden: false`
 
 #### Event: 'did-finish-load'
 

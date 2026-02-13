@@ -41,9 +41,8 @@ Process: [Main](../glossary.md#main-process)
 
 * `options` Object (optional)
   * `webPreferences` [WebPreferences](structures/web-preferences.md) (optional) - Settings of web page's features.
-  * `webContents` [WebContents](web-contents.md) (optional) - If present, the given WebContents will be adopted by the WebContentsView. A WebContents may only be presented in one WebContentsView at a time.
-
-Creates a WebContentsView.
+  * `webContents`[WebContents](web-contents.md) (optional) - If present, the given WebContents will be adopted by the WebContentsView. A WebContents may only be presented in one WebContentsView at a time.
+  * `paintWhenInitiallyHidden` Boolean (optional) - Whether the renderer should paint while the view is hidden. **Defaults to true**. This ensures the [WebContents](web-contents.md) `ready-to-show` event fires during initial load.
 
 ### Instance Properties
 
