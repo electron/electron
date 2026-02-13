@@ -149,6 +149,7 @@ void WebContentsPreferences::Clear() {
   preload_path_ = std::nullopt;
   v8_cache_options_ = blink::mojom::V8CacheOptions::kDefault;
   deprecated_paste_enabled_ = false;
+  focus_on_navigation_ = true;
 
 #if BUILDFLAG(IS_MAC)
   scroll_bounce_ = false;
@@ -248,6 +249,8 @@ void WebContentsPreferences::SetFromDictionary(
 
   web_preferences.Get(options::kEnableDeprecatedPaste,
                       &deprecated_paste_enabled_);
+
+  web_preferences.Get(options::kFocusOnNavigation, &focus_on_navigation_);
 
 #if BUILDFLAG(IS_MAC)
   web_preferences.Get(options::kScrollBounce, &scroll_bounce_);
