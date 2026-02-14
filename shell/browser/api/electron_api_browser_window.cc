@@ -293,12 +293,12 @@ void BrowserWindow::Show() {
   BaseWindow::Show();
 }
 
-void BrowserWindow::ShowInactive() {
+void BrowserWindow::ShowInactive(gin::Arguments* args) {
   // This method doesn't make sense for modal window.
   if (IsModal())
     return;
   web_contents()->WasShown();
-  BaseWindow::ShowInactive();
+  BaseWindow::ShowInactive(args);
 }
 
 // static
