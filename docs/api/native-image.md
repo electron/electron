@@ -194,10 +194,14 @@ Returns `NativeImage`
 
 Creates a new `NativeImage` instance from `dataUrl`, a base 64 encoded [Data URL][data-url] string.
 
-### `nativeImage.createFromNamedImage(imageName[, hslShift])` _macOS_
+### `nativeImage.createFromNamedImage(imageName[, options])` _macOS_
 
 * `imageName` string
-* `hslShift` number[] (optional)
+* `options` Object | number[] (optional)
+  * `hslShift` number[] (optional)
+  * `pointSize` Number (optional) - Defaults to `30.0`.
+  * `weight` 'ultralight' | 'thin' | 'light' | 'regular' | 'medium' | 'semibold' | 'bold' | 'heavy' | 'black' (optional) - Defaults to `regular`.
+  * `scale` 'small' | 'medium' | 'large' (optional) - Defaults to `medium`.
 
 Returns `NativeImage`
 
@@ -238,6 +242,23 @@ const image = nativeImage.createFromNamedImage('square.and.pencil')
 
 where `'square.and.pencil'` is the symbol name from the
 [SF Symbols app](https://developer.apple.com/sf-symbols/).
+
+### `nativeImage.createMenuSymbol(imageName)` _macOS_
+
+* `imageName` string
+
+Returns `NativeImage`
+
+Creates a new `NativeImage` instance from an SF Symbol for use in a native [Menu](./menu.md). See [SF Symbols](https://developer.apple.com/sf-symbols/) for a list of possible values.
+
+```js
+const { nativeImage, MenuItem } = require('electron')
+
+const item = new MenuItem({
+  icon: nativeImage.createMenuSymbol('folder.badge.plus'),
+  label: 'Create Folder'
+})
+```
 
 ## Class: NativeImage
 
