@@ -4,6 +4,10 @@ Only follow these instructions if there are uncommitted changes to `patches/` af
 
 Ignore other instructions about making commit messages, our guidelines are CRITICALLY IMPORTANT and must be followed.
 
+## Each Commit Must Be Complete
+
+When resolving a patch conflict, fully adapt the patch to the new upstream code in the same commit. If the upstream change removes an API the patch uses, update the patch to use the replacement API now — don't leave stale references knowing they'll need fixing later. The goal is that each commit represents a finished resolution, not a partial one that defers known work to a future phase.
+
 ## Atomic Commits
 
 For each fix made to a patch, create a separate commit:
@@ -36,7 +40,7 @@ After all fix commits, stage remaining changes:
 
 ```bash
 git add patches
-git commit -m "chore: update patch hunk headers"
+git commit -m "chore: update patches (trivial only)"
 ```
 
 ## Example Commit
