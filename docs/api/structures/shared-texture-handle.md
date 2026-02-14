@@ -1,6 +1,6 @@
 # SharedTextureHandle Object
 
-* `ntHandle` Buffer (optional) _Windows_ - NT HANDLE holds the shared texture. Note that this NT HANDLE is local to current process.
+* `ntHandle` Buffer (optional) _Windows_ - NT HANDLE holds the shared texture. Note that this NT HANDLE is local to current process. Output texture of `rgba`, `bgra`, `rgbaf16` formats don't have keyed mutex on texture handle, but `nv12` format texture handles have.
 * `ioSurface` Buffer (optional) _macOS_ - IOSurfaceRef holds the shared texture. Note that this IOSurface is local to current process (not global).
 * `nativePixmap` Object (optional) _Linux_ - Structure contains planes of shared texture.
   * `planes` Object[] _Linux_ - Each plane's info of the shared texture.
