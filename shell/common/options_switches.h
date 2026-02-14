@@ -186,6 +186,8 @@ inline constexpr std::string_view kUseSharedTexture = "useSharedTexture";
 inline constexpr std::string_view kSharedTexturePixelFormat =
     "sharedTexturePixelFormat";
 
+inline constexpr std::string_view kDeviceScaleFactor = "deviceScaleFactor";
+
 inline constexpr std::string_view kNodeIntegrationInSubFrames =
     "nodeIntegrationInSubFrames";
 
