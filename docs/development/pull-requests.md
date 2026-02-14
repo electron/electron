@@ -86,6 +86,12 @@ Note that multiple commits get squashed when they are landed.
 The `electron/electron` repo enforces [commit signatures](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) for all incoming PRs.
 To sign your commits, see GitHub's documentation on [Telling Git about your signing key](https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key).
 
+##### Pre-push hook verification
+
+A pre-push Git hook automatically verifies that all commits being pushed are signed. If unsigned commits are detected, the push will be rejected with error messages detailing the unsigned commits.
+
+This verification can also be run manually via `npm run check-signed-commits`.
+
 #### Commit message guidelines
 
 A good commit message should describe what changed and why. The Electron project
