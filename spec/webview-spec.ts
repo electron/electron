@@ -2229,4 +2229,57 @@ describe('<webview> tag', function () {
       expect(e.channel).to.equal(message);
     });
   });
+
+  describe('type attribute', () => {
+    let w: WebContents;
+    before(async () => {
+      const window = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          contextIsolation: false,
+          nodeIntegration: true
+        }
+      });
+      await window.loadURL(`file://${fixtures}/pages/blank.html`);
+      w = window.webContents;
+    });
+    afterEach(async () => {
+      await w.executeJavaScript(`{
+        for (const el of document.querySelectorAll('webview')) el.remove();
+      }`);
+    });
+    after(closeAllWindows);
+
+    it('should accept type="module" attribute', async () => {
+      await w.executeJavaScript(`
+        new Promise((resolve, reject) => {
+          const webview = new WebView()
+          webview.setAttribute('type', 'module')
+          webview.setAttribute('src', 'about:blank')
+          webview.addEventListener('dom-ready', () => {
+            resolve(webview.getAttribute('type'))
+          })
+          document.body.appendChild(webview)
+        })
+      `);
+    });
+
+    it('should validate type attribute values', async () => {
+      const result = await w.executeJavaScript(`
+        new Promise((resolve) => {
+          const webview = new WebView()
+          webview.setAttribute('type', 'invalid')
+          webview.setAttribute('src', 'about:blank')
+          // Give some time for the mutation to be processed
+          setTimeout(() => {
+            resolve(webview.getAttribute('type'))
+          }, 100)
+          document.body.appendChild(webview)
+        })
+      `);
+      // Should be empty string for invalid values
+      expect(result).to.equal('');
+    });
+  });
 });
