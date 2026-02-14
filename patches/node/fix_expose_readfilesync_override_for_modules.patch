@@ -20,7 +20,7 @@ index bb874fec74c73b5de0ef6d1e2a872ebceefb11ce..6fafe2a8029c535fa98276e2d73f04ee
    V(performance_entry_callback, v8::Function)                                  \
    V(prepare_stack_trace_callback, v8::Function)                                \
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index fa0aa90cf4d6a9fae3cde0b0bb743b88b47c07bb..d3907c3d063c7757cdd7ef99ed09bea1eb58a3fd 100644
+index 95a7b8c32693c32ca9f57e01aff9ef06b84f78b2..cecdda74847801fd5821bc0afdf0dfc9f131c44a 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -23,12 +23,14 @@ namespace modules {
@@ -46,7 +46,7 @@ index fa0aa90cf4d6a9fae3cde0b0bb743b88b47c07bb..d3907c3d063c7757cdd7ef99ed09bea1
    auto binding_data = realm->GetBindingData<BindingData>();
  
    auto cache_entry = binding_data->package_configs_.find(path.data());
-@@ -103,8 +106,48 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
+@@ -111,8 +114,48 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
  
    PackageConfig package_config{};
    package_config.file_path = path;
@@ -93,11 +93,11 @@ index fa0aa90cf4d6a9fae3cde0b0bb743b88b47c07bb..d3907c3d063c7757cdd7ef99ed09bea1
 +    }
 +  }
 +  if (read_err < 0) {
-     return nullptr;
-   }
-   simdjson::ondemand::document document;
-@@ -242,6 +285,12 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
-   return &cached.first->second;
+     // Add `nullopt` to the package config cache so that we don't
+     // need to open and attempt to read this path again
+     binding_data->package_configs_.insert({std::string(path), std::nullopt});
+@@ -254,6 +297,12 @@ const BindingData::PackageConfig* BindingData::GetPackageJSON(
+   return &*cached.first->second;
  }
  
 +void BindingData::OverrideReadFileSync(const FunctionCallbackInfo<Value>& args) {
@@ -109,7 +109,7 @@ index fa0aa90cf4d6a9fae3cde0b0bb743b88b47c07bb..d3907c3d063c7757cdd7ef99ed09bea1
  void BindingData::ReadPackageJSON(const FunctionCallbackInfo<Value>& args) {
    CHECK_GE(args.Length(), 1);  // path, [is_esm, base, specifier]
    CHECK(args[0]->IsString());  // path
-@@ -635,6 +684,8 @@ void SaveCompileCacheEntry(const FunctionCallbackInfo<Value>& args) {
+@@ -672,6 +721,8 @@ void SaveCompileCacheEntry(const FunctionCallbackInfo<Value>& args) {
  void BindingData::CreatePerIsolateProperties(IsolateData* isolate_data,
                                               Local<ObjectTemplate> target) {
    Isolate* isolate = isolate_data->isolate();
@@ -118,7 +118,7 @@ index fa0aa90cf4d6a9fae3cde0b0bb743b88b47c07bb..d3907c3d063c7757cdd7ef99ed09bea1
    SetMethod(isolate, target, "readPackageJSON", ReadPackageJSON);
    SetMethod(isolate,
              target,
-@@ -694,6 +745,8 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
+@@ -735,6 +786,8 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
  
  void BindingData::RegisterExternalReferences(
      ExternalReferenceRegistry* registry) {
@@ -126,9 +126,9 @@ index fa0aa90cf4d6a9fae3cde0b0bb743b88b47c07bb..d3907c3d063c7757cdd7ef99ed09bea1
 +
    registry->Register(ReadPackageJSON);
    registry->Register(GetNearestParentPackageJSONType);
-   registry->Register(GetPackageScopeConfig<false>);
+   registry->Register(GetNearestParentPackageJSON);
 diff --git a/src/node_modules.h b/src/node_modules.h
-index e4ba6b75bc86d14deada835903ba68a4cb0eccc5..ae77f9ec81b358bd356993617cd07671d382e8ca 100644
+index d610306a3a3111327f111def823b07c3da04192f..5bb7245816822282977e62ce3b0e6c0b9c6ac32b 100644
 --- a/src/node_modules.h
 +++ b/src/node_modules.h
 @@ -54,6 +54,8 @@ class BindingData : public SnapshotableObject {
@@ -138,5 +138,5 @@ index e4ba6b75bc86d14deada835903ba68a4cb0eccc5..ae77f9ec81b358bd356993617cd07671
 +  static void OverrideReadFileSync(
 +      const v8::FunctionCallbackInfo<v8::Value>& args);
    static void ReadPackageJSON(const v8::FunctionCallbackInfo<v8::Value>& args);
-   static void GetNearestParentPackageJSONType(
+   static void GetNearestParentPackageJSON(
        const v8::FunctionCallbackInfo<v8::Value>& args);

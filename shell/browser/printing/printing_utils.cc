@@ -191,4 +191,33 @@ scoped_refptr<base::TaskRunner> CreatePrinterHandlerTaskRunner() {
 #endif
 }
 
+std::optional<gfx::Size> GetPrinterDefaultPaperSize(
+    const std::string& printer_name) {
+#if BUILDFLAG(IS_WIN)
+  // Blocking is needed here because Windows printer drivers are oftentimes
+  // not thread-safe and have to be accessed on the UI thread.
+  ScopedAllowBlockingForElectron allow_blocking;
+#endif
+
+  if (printer_name.empty())
+    return std::nullopt;
+
+  scoped_refptr<printing::PrintBackend> print_backend =
+      printing::PrintBackend::CreateInstance(
+          g_browser_process->GetApplicationLocale());
+
+  if (!print_backend)
+    return std::nullopt;
+
+  printing::PrinterSemanticCapsAndDefaults caps;
+  printing::mojom::ResultCode result =
+      print_backend->GetPrinterSemanticCapsAndDefaults(printer_name, &caps);
+  if (result != printing::mojom::ResultCode::kSuccess)
+    return std::nullopt;
+
+  if (!caps.default_paper.size_um().IsEmpty())
+    return caps.default_paper.size_um();
+  return std::nullopt;
+}
+
 }  // namespace electron
