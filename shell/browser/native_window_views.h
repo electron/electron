@@ -36,7 +36,7 @@ class ClientFrameViewLinux;
 class GlobalMenuBarX11;
 #endif
 
-#if BUILDFLAG(IS_OZONE_X11)
+#if BUILDFLAG(SUPPORTS_OZONE_X11)
 class EventDisabler;
 #endif
 
@@ -273,7 +273,7 @@ class NativeWindowViews : public NativeWindow,
   std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
 #endif
 
-#if BUILDFLAG(IS_OZONE_X11)
+#if BUILDFLAG(SUPPORTS_OZONE_X11)
   // To disable the mouse events.
   std::unique_ptr<EventDisabler> event_disabler_;
 #endif
