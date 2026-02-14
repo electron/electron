@@ -7,14 +7,13 @@ description: Guide for performing Chromium version upgrades in the Electron proj
 
 ## Summary
 
-Run `e sync --3` repeatedly, fixing patch conflicts as they arise, until it succeeds. Then run `e patches all` and commit changes atomically.
+Run `e sync --3` repeatedly, fixing patch conflicts as they arise, until it succeeds. Then export patches and commit changes atomically.
 
 ## Success Criteria
 
 Phase One is complete when:
 - `e sync --3` exits with code 0 (no patch failures)
-- `e patches all` has been run to export all changes
-- All changes are committed per the commit guidelines below
+- All changes are committed per the commit guidelines
 
 Do not stop until these criteria are met.
 
@@ -30,12 +29,18 @@ The `roller/chromium/main` branch is created by automation to update Electron's 
 - `patches/`: Patch files organized by target
 - `docs/development/patches.md`: Patch system documentation
 
+## Pre-flight Checks
+
+Run these once at the start of each upgrade session:
+
+1. **Clear rerere cache** (if enabled): `git rerere clear` in both the electron and `..` repos. Stale recorded resolutions from a prior attempt can silently apply wrong merges.
+2. **Ensure pre-commit hooks are installed**: Check that `.git/hooks/pre-commit` exists. If not, run `yarn husky` to install it. The hook runs `lint-staged` which handles clang-format for C++ files.
+
 ## Workflow
 
-1. Delete the `.git/rr-cache` in both the `electron` and `..` folder to ensure no accidental rerere replays occur from before this upgrade phase attempt started
-2. Run `e sync --3` (the `--3` flag enables 3-way merge, always required)
-3. If succeeds → skip to step 6
-4. If patch fails:
+1. Run `e sync --3` (the `--3` flag enables 3-way merge, always required)
+2. If succeeds → skip to step 5
+3. If patch fails:
    - Identify target repo and patch from error output
    - Analyze failure (see references/patch-analysis.md)
    - Fix conflict in target repo's working directory
@@ -43,10 +48,8 @@ The `roller/chromium/main` branch is created by automation to update Electron's 
    - Repeat until all patches for that repo apply
    - IMPORTANT: Once `git am --continue` succeeds you MUST run `e patches {target}` to export fixes
    - Return to step 1
-5. When `e sync --3` succeeds, run `e patches all`
-6. **Read `references/phase-one-commit-guidelines.md` NOW**, then commit changes following those instructions exactly.
-
-Before committing any Phase One changes, you MUST read `references/phase-one-commit-guidelines.md` and follow its instructions exactly.
+4. When `e sync --3` succeeds, run `e patches all`
+5. **Read `references/phase-one-commit-guidelines.md` NOW**, then commit changes following those instructions exactly.
 
 ## Commands Reference
 
@@ -56,6 +59,7 @@ Before committing any Phase One changes, you MUST read `references/phase-one-com
 | `git am --continue` | Continue after resolving conflict (run in target repo) |
 | `e patches {target}` | Export commits from target repo to patch files |
 | `e patches all` | Export all patches from all targets |
+| `e patches {target} --commit-updates` | Export patches and auto-commit trivial changes |
 | `e patches --list-targets` | List targets and config paths |
 
 ## Patch System Mental Model
@@ -81,24 +85,20 @@ Fix existing patches 99% of the time rather than creating new ones.
 2. **Never change TODO assignees**: `TODO(name)` must retain original name
 3. **Update descriptions**: If upstream changed (e.g., `DCHECK` → `CHECK_IS_TEST`), update patch commit message to reflect current state
 
-## Final Deliverable
-
-After Phase One, write a summary of every change: what was fixed, why, reasoning, and Chromium CL links.
-
 # Electron Chromium Upgrade: Phase Two
 
 ## Summary
 
-Run `e build -k 999` repeatedly, fixing build issues as they arise, until it succeeds. Then run `e start --version` to validate Electron launches and commit changes atomically.
+Run `e build -k 999 -- --quiet` repeatedly, fixing build issues as they arise, until it succeeds. Then run `e start --version` to validate Electron launches and commit changes atomically.
 
 Run Phase Two immediately after Phase One is complete.
 
 ## Success Criteria
 
 Phase Two is complete when:
-- `e build -k 999` exits with code 0 (no build failures)
+- `e build -k 999 -- --quiet` exits with code 0 (no build failures)
 - `e start --version` has been run to check Electron launches
-- All changes are committed per the commit guidelines below
+- All changes are committed per the commit guidelines
 
 Do not stop until these criteria are met. Do not delete code or features, never comment out code in order to take short cut. Make all existing code, logic and intention work.
 
@@ -112,8 +112,7 @@ The `roller/chromium/main` branch is created by automation to update Electron's 
 
 ## Workflow
 
-1. Run `e build -k 999` (the `-k 999` flag is a flag to ninja to say "do not stop until you find that many errors" it is an attempt to get as much error
-  context as possible for each time we run build)
+1. Run `e build -k 999 -- --quiet` (the `--quiet` flag suppresses per-target status lines, showing only errors and the final result)
 2. If succeeds → skip to step 6
 3. If build fails:
     - Identify underlying file in "electron" from the compilation error message
@@ -126,27 +125,17 @@ The `roller/chromium/main` branch is created by automation to update Electron's 
 4. **CRITICAL**: After ANY commit (especially patch commits), immediately run `git status` in the electron repo
     - Look for other modified `.patch` files that only have index/hunk header changes
     - These are dependent patches affected by your fix
-    - Commit them immediately with: `git commit -am "chore: update patch hunk headers"`
-    - This prevents losing track of necessary updates
+    - Commit them immediately with: `git commit -am "chore: update patches (trivial only)"`
 5. Return to step 1
 6. When `e build` succeeds, run `e start --version`
 7. Check if you have any pending changes in the Chromium repo by running `git status`
     - If you have changes follow the instructions below in "A. Patch Fixes" to correctly commit those modifications into the appropriate patch file
 
-Before committing any Phase Two changes, you MUST read `references/phase-two-commit-guidelines.md` and follow its instructions exactly.
-
-## Build Error Detection
-
-When monitoring `e build -k 999` output, filter for errors using this regex pattern:
-error:|FAILED:|fatal:|subcommand failed|build finished
-
-The build output is extremely verbose. Filtering is essential to catch errors quickly.
-
 ## Commands Reference
 
 | Command | Purpose |
 |---------|---------|
-| `e build -k 999` | Builds Electron and won't stop until either all targets attempted or 999 errors found |
+| `e build -k 999 -- --quiet` | Build Electron, continue on errors, suppress status lines |
 | `e build -t {target}.o` | Build just one specific target to verify a fix |
 | `e start --version` | Validate Electron launches after successful build |
 
@@ -163,27 +152,20 @@ When the error is in a file that Electron patches (check with `grep -l "filename
     git add <modified-file>
     git commit --fixup=<original-patch-commit-hash>
     GIT_SEQUENCE_EDITOR=: git rebase --autosquash --autostash -i <commit>^
-3. Export the updated patch: e patches chromium
-4. Commit the updated patch file in the electron repo following the `references/phase-one-commit-guidelines.md`, then commit changes following those instructions exactly. **READ THESE GUIDELINES BEFORE COMMITTING THESE CHANGES**
+    ```
+3. Export the updated patch: `e patches chromium`
+4. Commit the updated patch file following `references/phase-one-commit-guidelines.md`.
 
 To find the original patch commit to fixup: `git log --oneline | grep -i "keyword from patch name"`
 
 The base commit for rebase is the Chromium commit before patches were applied. Find it by checking the `refs/patches/upstream-head` ref.
 
-B. Electron Code Fixes (for files in shell/, electron/, etc.)
+### B. Electron Code Fixes (for files in shell/, electron/, etc.)
 
 When the error is in Electron's own source code:
 
 1. Edit files directly in the electron repo
 2. Commit directly (no patch export needed)
-
-Dependent Patch Updates
-
-IMPORTANT: When you modify a patch, other patches that apply to the same file may have their hunk headers invalidated. After committing a patch fix:
-
-1. Run git status in the electron repo
-2. Look for other modified .patch files with just index/hunk header changes
-3. Commit these with: git commit -m "chore: update patch hunk headers"
 
 # Critical: Read Before Committing
 
