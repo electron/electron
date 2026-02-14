@@ -33,7 +33,7 @@
 #include "third_party/webrtc/modules/desktop_capture/win/dxgi_duplicator_controller.h"
 #include "third_party/webrtc/modules/desktop_capture/win/screen_capturer_win_directx.h"
 #include "ui/display/win/display_info.h"
-#elif BUILDFLAG(IS_OZONE_X11)
+#elif BUILDFLAG(SUPPORTS_OZONE_X11)
 #include "base/logging.h"
 #include "ui/base/x/x11_display_util.h"
 #include "ui/base/x/x11_util.h"
@@ -461,7 +461,7 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
     for (auto& source : screen_sources) {
       source.display_id = base::NumberToString(source.media_list_source.id.id);
     }
-#elif BUILDFLAG(IS_OZONE_X11)
+#elif BUILDFLAG(SUPPORTS_OZONE_X11)
     // On Linux, with X11, the source id is the numeric value of the
     // display name atom and the display id is either the EDID or the
     // loop index when that display was found (see
