@@ -24,7 +24,7 @@ All versions of `@electron/asar` support ASAR integrity.
 ## How it works
 
 Each ASAR archive contains a JSON string header. The header format includes an `integrity` object
-that contain a hex encoded hash of the entire archive as well as an array of hex encoded hashes for each
+that contains a hex encoded hash of the entire archive as well as an array of hex encoded hashes for each
 block of `blockSize` bytes.
 
 ```json

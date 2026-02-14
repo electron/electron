@@ -110,7 +110,7 @@ const win = new BrowserWindow({
 #### Show and hide the traffic lights programmatically _macOS_
 
 You can also show and hide the traffic lights programmatically from the main process.
-The `win.setWindowButtonVisibility` forces traffic lights to be show or hidden depending
+The `win.setWindowButtonVisibility` forces traffic lights to be shown or hidden depending
 on the value of its boolean parameter.
 
 ```js title='main.js'

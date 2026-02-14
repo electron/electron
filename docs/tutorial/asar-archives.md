@@ -6,7 +6,7 @@ hide_title: false
 ---
 
 After creating an [application distribution](application-distribution.md), the
-app's source code are usually bundled into an [ASAR archive](https://github.com/electron/asar),
+app's source code is usually bundled into an [ASAR archive](https://github.com/electron/asar),
 which is a simple extensive archive format designed for Electron apps. By bundling the app
 we can mitigate issues around long path names on Windows, speed up `require` and conceal your source
 code from cursory inspection.
@@ -134,7 +134,7 @@ underlying system calls, Electron will extract the needed file into a
 temporary file and pass the path of the temporary file to the APIs to make them
 work. This adds a little overhead for those APIs.
 
-APIs that requires extra unpacking are:
+APIs that require extra unpacking are:
 
 * `child_process.execFile`
 * `child_process.execFileSync`
