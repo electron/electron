@@ -56,6 +56,7 @@ Before committing any Phase One changes, you MUST read `references/phase-one-com
 | `git am --continue` | Continue after resolving conflict (run in target repo) |
 | `e patches {target}` | Export commits from target repo to patch files |
 | `e patches all` | Export all patches from all targets |
+| `e patches {target} --commit-updates` | Export patches and auto-commit trivial changes |
 | `e patches --list-targets` | List targets and config paths |
 
 ## Patch System Mental Model
@@ -126,7 +127,7 @@ The `roller/chromium/main` branch is created by automation to update Electron's 
 4. **CRITICAL**: After ANY commit (especially patch commits), immediately run `git status` in the electron repo
     - Look for other modified `.patch` files that only have index/hunk header changes
     - These are dependent patches affected by your fix
-    - Commit them immediately with: `git commit -am "chore: update patch hunk headers"`
+    - Commit them immediately with: `git commit -am "chore: update patches (trivial only)"`
     - This prevents losing track of necessary updates
 5. Return to step 1
 6. When `e build` succeeds, run `e start --version`
@@ -183,7 +184,7 @@ IMPORTANT: When you modify a patch, other patches that apply to the same file ma
 
 1. Run git status in the electron repo
 2. Look for other modified .patch files with just index/hunk header changes
-3. Commit these with: git commit -m "chore: update patch hunk headers"
+3. Commit these with: git commit -m "chore: update patches (trivial only)"
 
 # Critical: Read Before Committing
 

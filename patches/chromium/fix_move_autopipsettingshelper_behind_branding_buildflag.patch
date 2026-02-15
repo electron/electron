@@ -83,7 +83,7 @@ index e8a525444092a20624616b280b99f9b218180410..c2c43e67cf671bbf2282fb5728860b5f
  
  PictureInPictureOcclusionTracker*
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 89083187a3b872eaba30f1075445d0709a1607b3..00c3913eb2b58db525599bfa38ba637d42fdc1f4 100644
+index ff3634d3138c91d380e405ce8f375819bafd23f3..eb439c429b99d72cbfa5cae25c97cf066623bb5b 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -444,11 +444,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(

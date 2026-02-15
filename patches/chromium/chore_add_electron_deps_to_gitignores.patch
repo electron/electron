@@ -6,10 +6,10 @@ Subject: chore: add electron deps to gitignores
 Makes things like "git status" quicker when developing electron locally
 
 diff --git a/.gitignore b/.gitignore
-index 1e90af1c4a66df7f3acce570fbfb0d3b15d66195..21d4dabc8275aacf7a6252dd5861127a0bb661e0 100644
+index 2e51e5ac21e2ee4b94944c2c39f788e51e82f489..285e151fc1cf2ae0768fa71c5620dfdda48e1115 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -227,6 +227,7 @@ vs-chromium-project.txt
+@@ -229,6 +229,7 @@ vs-chromium-project.txt
  /data
  /delegate_execute
  /device/serial/device_serial_mojo.xml

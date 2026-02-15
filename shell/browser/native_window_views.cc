@@ -5,7 +5,7 @@
 // FIXME(ckerr) this incorrect #include order is a temporary
 // fix to unblock the roll. Will fix in an upgrade followup.
 #include "ui/base/ozone_buildflags.h"
-#if BUILDFLAG(IS_OZONE_X11)
+#if BUILDFLAG(SUPPORTS_OZONE_X11)
 #include "ui/base/x/x11_util.h"
 #endif
 
@@ -65,7 +65,7 @@
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #include "ui/views/window/native_frame_view.h"
 
-#if BUILDFLAG(IS_OZONE_X11)
+#if BUILDFLAG(SUPPORTS_OZONE_X11)
 #include "shell/browser/ui/views/global_menu_bar_x11.h"
 #include "shell/browser/ui/x/event_disabler.h"
 #include "shell/browser/ui/x/x_window_utils.h"

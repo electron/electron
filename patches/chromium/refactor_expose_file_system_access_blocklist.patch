@@ -8,7 +8,7 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index b2457fa5e7de1a4ea28a71985e54825b5172d370..ac44b6723085c7a94a5d8736e24ea4ea22ac206a 100644
+index e45b723af85446b5c7537d49e70f34b2a67bab97..ac44b6723085c7a94a5d8736e24ea4ea22ac206a 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -83,11 +83,13 @@
@@ -130,7 +130,7 @@ index b2457fa5e7de1a4ea28a71985e54825b5172d370..ac44b6723085c7a94a5d8736e24ea4ea
 -          // to
 -          // access only _its_ corresponding natively installed application, but
 -          // unfortunately there's no straightforward way to do that. See
--          // https://crbug.com/984641#c22.
+-          // https://crbug.com/40095723#c22.
 -          {base::DIR_HOME, FILE_PATH_LITERAL("Library/Containers"),
 -           BlockType::kDontBlockChildren},
 -          // Allow access to iCloud files...
