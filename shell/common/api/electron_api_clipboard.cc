@@ -80,8 +80,7 @@ std::string Clipboard::Read(const std::string& format_string) {
     clipboard->ExtractCustomPlatformNames(
         ui::ClipboardBuffer::kCopyPaste, /* data_dst = */ std::nullopt,
         base::BindOnce(
-            [](std::map<std::string, std::string>* out,
-               base::OnceClosure quit,
+            [](std::map<std::string, std::string>* out, base::OnceClosure quit,
                std::map<std::string, std::string> result) {
               *out = std::move(result);
               std::move(quit).Run();
@@ -95,8 +94,7 @@ std::string Clipboard::Read(const std::string& format_string) {
     clipboard->ExtractCustomPlatformNames(
         ui::ClipboardBuffer::kSelection, /* data_dst = */ std::nullopt,
         base::BindOnce(
-            [](std::map<std::string, std::string>* out,
-               base::OnceClosure quit,
+            [](std::map<std::string, std::string>* out, base::OnceClosure quit,
                std::map<std::string, std::string> result) {
               *out = std::move(result);
               std::move(quit).Run();
