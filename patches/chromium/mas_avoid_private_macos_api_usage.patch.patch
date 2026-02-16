@@ -74,10 +74,10 @@ index 2cc49d83a83c6c64780da3f2caa009908a36dd7c..e2941ac5177d3ca59859482b668b716f
    }
  }
 diff --git a/base/allocator/early_zone_registration_apple.cc b/base/allocator/early_zone_registration_apple.cc
-index 416e541436d201aabca26cdbf7e8477103bd014c..17b187924c8f5dca73b5e43d93f08d41679dd243 100644
+index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e94209690611e3b082a 100644
 --- a/base/allocator/early_zone_registration_apple.cc
 +++ b/base/allocator/early_zone_registration_apple.cc
-@@ -197,15 +197,27 @@ void EarlyMallocZoneRegistration() {
+@@ -197,15 +197,33 @@ void EarlyMallocZoneRegistration() {
    // a duplicate even when a binary copy of this code exists.
    if (allocator_shim::IsZoneAlreadyRegistered(
            allocator_shim::kDelegatingZoneName)) {
@@ -86,8 +86,11 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..17b187924c8f5dca73b5e43d93f08d41
          "The delegating default zone has unexpectedly already been "
          "registered.");
 +#else
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
 +    os_log_fault(OS_LOG_DEFAULT, "The delegating default zone "
 +                 "has unexpectedly already been registered.");
++#pragma clang diagnostic pop
 +    abort();
 +#endif
    }
@@ -98,32 +101,38 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..17b187924c8f5dca73b5e43d93f08d41
          "The PartitionAlloc default zone has unexpectedly already been "
          "registered.");
 +#else
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
 +    os_log_fault(OS_LOG_DEFAULT, "The PartitionAlloc default zone "
 +                 "has unexpectedly already been registered.");
++#pragma clang diagnostic pop
 +    abort();
 +#endif
    }
  
    // Register puts the new zone at the end, unregister swaps the new zone with
-@@ -229,7 +241,13 @@ void EarlyMallocZoneRegistration() {
+@@ -229,7 +247,16 @@ void EarlyMallocZoneRegistration() {
  
    // Sanity check.
    if (allocator_shim::GetDefaultMallocZoneOrDie() != &g_delegating_zone) {
 +#if !IS_MAS_BUILD()
      abort_report_np("Failed to install the delegating zone as default.");
 +#else
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
 +    os_log_fault(OS_LOG_DEFAULT, "Failed to install the delegating zone "
 +                 "as default.");
++#pragma clang diagnostic pop
 +    abort();
 +#endif
    }
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index 995598ce2d5c4a1a4531784753ca7e2203233c14..7ebaaaffe78fe575ae545617e54e1a53a3c98d6b 100644
+index 780c58f4fdc6161e631b76cfdcf39f4305341e25..08b09b5f25c780611b182400d221a9b50576f2ab 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -966,6 +966,7 @@ if (is_clang_or_gcc) {
+@@ -988,6 +988,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -132,7 +141,7 @@ index 995598ce2d5c4a1a4531784753ca7e2203233c14..7ebaaaffe78fe575ae545617e54e1a53
    }
  }  # if (is_clang_or_gcc)
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/shim/early_zone_registration_utils_apple.h b/base/allocator/partition_allocator/src/partition_alloc/shim/early_zone_registration_utils_apple.h
-index 725b3d78c27d9621500d8193b0b4e45c6103cff0..d6aa1db3f48c90d411b90bdf147442c29f70f393 100644
+index 725b3d78c27d9621500d8193b0b4e45c6103cff0..cd3580fb4b7261b5d8e6ff691214e432c0170dc4 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/shim/early_zone_registration_utils_apple.h
 +++ b/base/allocator/partition_allocator/src/partition_alloc/shim/early_zone_registration_utils_apple.h
 @@ -12,16 +12,21 @@
@@ -157,14 +166,17 @@ index 725b3d78c27d9621500d8193b0b4e45c6103cff0..d6aa1db3f48c90d411b90bdf147442c2
  
  namespace allocator_shim {
  
-@@ -34,7 +39,12 @@ inline std::span<malloc_zone_t*> GetMallocZonesOrDie() {
+@@ -34,7 +39,15 @@ inline std::span<malloc_zone_t*> GetMallocZonesOrDie() {
    kern_return_t result = malloc_get_all_zones(
        mach_task_self(), /*reader=*/nullptr, &zones, &zone_count);
    if (result != KERN_SUCCESS) [[unlikely]] {
 +#if !IS_MAS_BUILD()
      abort_report_np("Cannot enumerate malloc zones.");
 +#else
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wunsafe-buffer-usage"
 +    os_log_fault(OS_LOG_DEFAULT, "Cannot enumerate malloc zones.");
++#pragma clang diagnostic pop
 +    abort();
 +#endif
    }
