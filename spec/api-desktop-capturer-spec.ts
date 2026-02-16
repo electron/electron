@@ -255,3 +255,41 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     }
   });
 });
+
+describe('desktopCapturer window icons', () => {
+  let w: BrowserWindow;
+
+  before(async () => {
+    w = new BrowserWindow({
+      width: 200,
+      height: 200,
+      show: true,
+      title: 'desktop-capturer-test-window'
+    });
+    await w.loadURL('about:blank');
+  });
+
+  after(() => {
+    if (w) w.destroy();
+  });
+
+  it('returns high resolution window icons', async function () {
+    const sources = await desktopCapturer.getSources({
+      types: ['window'],
+      fetchWindowIcons: true
+    });
+
+    const testSource = sources.find(
+      s => s.name === 'desktop-capturer-test-window'
+    );
+
+    if (testSource) {
+      expect(testSource.appIcon.isEmpty(), 'Icon should not be empty').to.equal(false);
+
+      const { width, height } = testSource.appIcon.getSize();
+
+      expect(width).to.equal(128);
+      expect(height).to.equal(128);
+    }
+  });
+});
