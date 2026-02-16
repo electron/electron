@@ -51,7 +51,6 @@ void StartLoadingOrDefer(
         request, std::move(client), traffic_annotation);
     return;
   }
-
   ElectronURLLoaderFactory::StartLoading(
       std::move(loader), request_id, options, request, std::move(client),
       traffic_annotation, std::move(proxy_factory_remote), type, args);
