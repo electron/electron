@@ -129,10 +129,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index 780c58f4fdc6161e631b76cfdcf39f4305341e25..08b09b5f25c780611b182400d221a9b50576f2ab 100644
+index 995598ce2d5c4a1a4531784753ca7e2203233c14..7ebaaaffe78fe575ae545617e54e1a53a3c98d6b 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -988,6 +988,7 @@ if (is_clang_or_gcc) {
+@@ -966,6 +966,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
