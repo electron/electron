@@ -36,7 +36,7 @@ setting.
     This is an advanced feature requiring a native node module to work with your own code.
     The frames are directly copied in GPU textures, thus this mode is very fast because
     there's no CPU-GPU memory copies overhead, and you can directly import the shared
-    texture to your own rendering program. You can read more details at
+    texture to your own rendering program. You can read more details
     [here](https://github.com/electron/electron/blob/main/shell/browser/osr/README.md).
 
 2. Use CPU shared memory bitmap

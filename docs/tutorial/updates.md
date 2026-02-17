@@ -44,7 +44,7 @@ following JSON format:
       "updateTo": {
         "version": "1.2.1",
         "pub_date": "2023-09-18T12:29:53+01:00",
-        "notes": "Theses are some release notes innit",
+        "notes": "These are some release notes innit",
         "name": "1.2.1",
         "url": "https://mycompany.example.com/myapp/releases/myrelease"
       }
@@ -54,7 +54,7 @@ following JSON format:
       "updateTo": {
         "version": "1.2.3",
         "pub_date": "2024-09-18T12:29:53+01:00",
-        "notes": "Theses are some more release notes innit",
+        "notes": "These are some more release notes innit",
         "name": "1.2.3",
         "url": "https://mycompany.example.com/myapp/releases/myrelease3"
       }
@@ -307,7 +307,7 @@ app update. All other properties in the object are optional.
 {
     "url": "https://your-static.storage/your-app-1.2.3-darwin.zip",
     "name": "1.2.3",
-    "notes": "Theses are some release notes innit",
+    "notes": "These are some release notes innit",
     "pub_date": "2024-09-18T12:29:53+01:00"
 }
 ```
