@@ -29,6 +29,7 @@
 #include "shell/browser/api/electron_api_system_preferences.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
+#include "shell/browser/ui/views/frameless_view.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/web_view_manager.h"
@@ -41,14 +42,19 @@
 #include "ui/base/hit_test.h"
 #include "ui/compositor/compositor.h"
 #include "ui/display/screen.h"
+#include "ui/gfx/geometry/insets.h"
+#include "ui/gfx/geometry/outsets.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/native_ui_types.h"
 #include "ui/ozone/public/ozone_platform.h"
 #include "ui/views/background.h"
 #include "ui/views/controls/webview/webview.h"
+#include "ui/views/view_utils.h"
 #include "ui/views/widget/native_widget_private.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/client_view.h"
+#include "ui/views/window/frame_view.h"
+#include "ui/views/window/non_client_view.h"
 #include "ui/wm/core/shadow_types.h"
 #include "ui/wm/core/window_util.h"
 
@@ -431,9 +437,12 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     window->AddPreTargetHandler(this);
 
 #if BUILDFLAG(IS_LINUX)
-  // On linux after the widget is initialized we might have to force set the
-  // bounds if the bounds are smaller than the current display
-  SetBounds(gfx::Rect(GetPosition(), bounds.size()), false);
+  // We need to set bounds again after widget init for two reasons:
+  // 1. For CSD windows, user-specified bounds need  to be inflated by frame
+  //    insets, but the frame view isn't available at first.
+  // 2. The widget clamps bounds to fit the screen, but we want to allow
+  //    windows larger than the display.
+  SetBounds(gfx::Rect(GetPosition(), size), false);
 #endif
 }
 
@@ -874,16 +883,14 @@ void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
   }
 #endif
 
-  widget()->SetBounds(bounds);
+  widget()->SetBounds(LogicalToWidgetBounds(bounds));
 }
 
 gfx::Rect NativeWindowViews::GetBounds() const {
-#if BUILDFLAG(IS_WIN)
   if (IsMinimized())
-    return widget()->GetRestoredBounds();
-#endif
+    return WidgetToLogicalBounds(widget()->GetRestoredBounds());
 
-  return widget()->GetWindowBoundsInScreen();
+  return WidgetToLogicalBounds(widget()->GetWindowBoundsInScreen());
 }
 
 gfx::Rect NativeWindowViews::GetContentBounds() const {
@@ -904,7 +911,7 @@ gfx::Rect NativeWindowViews::GetNormalBounds() const {
   if (IsMaximized() && transparent())
     return restore_bounds_;
 #endif
-  return widget()->GetRestoredBounds();
+  return WidgetToLogicalBounds(widget()->GetRestoredBounds());
 }
 
 void NativeWindowViews::SetContentSizeConstraints(
@@ -1480,6 +1487,22 @@ gfx::NativeWindow NativeWindowViews::GetNativeWindow() const {
   return widget()->GetNativeWindow();
 }
 
+gfx::Insets NativeWindowViews::GetRestoredFrameBorderInsets() const {
+  auto* non_client_view = widget()->non_client_view();
+  if (!non_client_view)
+    return gfx::Insets();
+
+  auto* frame_view = non_client_view->frame_view();
+  if (!frame_view)
+    return gfx::Insets();
+
+  if (auto* frameless = views::AsViewClass<FramelessView>(frame_view)) {
+    return frameless->RestoredFrameBorderInsets();
+  }
+
+  return gfx::Insets();
+}
+
 void NativeWindowViews::SetProgressBar(double progress,
                                        NativeWindow::ProgressState state) {
 #if BUILDFLAG(IS_WIN)
@@ -1645,21 +1668,42 @@ NativeWindowHandle NativeWindowViews::GetNativeWindowHandle() const {
   return GetAcceleratedWidget();
 }
 
+gfx::Rect NativeWindowViews::LogicalToWidgetBounds(
+    const gfx::Rect& bounds) const {
+  gfx::Rect widget_bounds(bounds);
+  const gfx::Insets frame_insets = GetRestoredFrameBorderInsets();
+  widget_bounds.Outset(
+      gfx::Outsets::TLBR(frame_insets.top(), frame_insets.left(),
+                         frame_insets.bottom(), frame_insets.right()));
+
+  return widget_bounds;
+}
+
+gfx::Rect NativeWindowViews::WidgetToLogicalBounds(
+    const gfx::Rect& bounds) const {
+  gfx::Rect logical_bounds(bounds);
+  logical_bounds.Inset(GetRestoredFrameBorderInsets());
+  return logical_bounds;
+}
+
 gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
     const gfx::Rect& bounds) const {
   if (!has_frame())
     return bounds;
 
   gfx::Rect window_bounds(bounds);
+
+  if (auto* ncv = widget()->non_client_view()) {
 #if BUILDFLAG(IS_WIN)
-  if (widget()->non_client_view()) {
     HWND hwnd = GetAcceleratedWidget();
     gfx::Rect dpi_bounds = DIPToScreenRect(hwnd, bounds);
-    window_bounds = ScreenToDIPRect(
-        hwnd, widget()->non_client_view()->GetWindowBoundsForClientBounds(
-                  dpi_bounds));
-  }
+    window_bounds =
+        ScreenToDIPRect(hwnd, ncv->GetWindowBoundsForClientBounds(dpi_bounds));
+#else
+    window_bounds = WidgetToLogicalBounds(
+        ncv->GetWindowBoundsForClientBounds(window_bounds));
 #endif
+  }
 
   if (root_view_.HasMenu() && root_view_.is_menu_bar_visible()) {
     int menu_bar_height = root_view_.GetMenuBarHeight();
@@ -1686,6 +1730,10 @@ gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
   content_bounds.set_width(content_bounds.width() - (rect.right - rect.left));
   content_bounds.set_height(content_bounds.height() - (rect.bottom - rect.top));
   content_bounds.set_size(ScreenToDIPRect(hwnd, content_bounds).size());
+#else
+  if (auto* frame_view = widget()->non_client_view()->frame_view()) {
+    content_bounds = frame_view->GetBoundsForClientView();
+  }
 #endif
 
   if (root_view_.HasMenu() && root_view_.is_menu_bar_visible()) {

@@ -16,6 +16,7 @@
 #include "shell/browser/ui/views/root_view.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "ui/base/ozone_buildflags.h"
+#include "ui/gfx/geometry/insets.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/widget/widget_observer.h"
 
@@ -155,6 +156,12 @@ class NativeWindowViews : public NativeWindow,
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
 
+  // Translates between logical/opaque window bounds exposed to callers
+  // and the absolute bounds of the underlying widget, which can be larger to
+  // fit CSD, e.g. transparent outer regions for shadows and resize targets.
+  gfx::Rect LogicalToWidgetBounds(const gfx::Rect& bounds) const;
+  gfx::Rect WidgetToLogicalBounds(const gfx::Rect& bounds) const;
+
   void IncrementChildModals();
   void DecrementChildModals();
 
@@ -203,6 +210,8 @@ class NativeWindowViews : public NativeWindow,
   void set_overlay_symbol_color(SkColor color) {
     overlay_symbol_color_ = color;
   }
+
+  gfx::Insets GetRestoredFrameBorderInsets() const;
 
   // views::WidgetObserver:
   void OnWidgetActivationChanged(views::Widget* widget, bool active) override;
