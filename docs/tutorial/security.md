@@ -771,7 +771,7 @@ ipcMain.handle('get-secrets', (e) => {
 })
 
 function validateSender (frame) {
-  // Value the host of the URL using an actual URL parser and an allowlist
+  // Validate the host of the URL using an actual URL parser and an allowlist
   if ((new URL(frame.url)).host === 'electronjs.org') return true
   return false
 }

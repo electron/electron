@@ -17,7 +17,7 @@ run them, users need to go through multiple advanced and manual steps.
 
 If you are building an Electron app that you intend to package and distribute,
 it should be code signed. The Electron ecosystem tooling makes codesigning your
-apps straightforward - this documentation explains how sign your apps on both
+apps straightforward - this documentation explains how to sign your apps on both
 Windows and macOS.
 
 ## Signing & notarizing macOS builds
