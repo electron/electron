@@ -78,7 +78,7 @@ std::string Clipboard::Read(const std::string& format_string) {
   {
     base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
     clipboard->ExtractCustomPlatformNames(
-        ui::ClipboardBuffer::kCopyPaste, /* data_dst = */ std::nullopt,
+        ui::ClipboardBuffer::kCopyPaste, /* data_dst = */ nullptr,
         base::BindOnce(
             [](std::map<std::string, std::string>* out, base::OnceClosure quit,
                std::map<std::string, std::string> result) {
@@ -92,7 +92,7 @@ std::string Clipboard::Read(const std::string& format_string) {
   if (!custom_format_names.contains(format_string)) {
     base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
     clipboard->ExtractCustomPlatformNames(
-        ui::ClipboardBuffer::kSelection, /* data_dst = */ std::nullopt,
+        ui::ClipboardBuffer::kSelection, /* data_dst = */ nullptr,
         base::BindOnce(
             [](std::map<std::string, std::string>* out, base::OnceClosure quit,
                std::map<std::string, std::string> result) {
@@ -261,7 +261,7 @@ gfx::Image Clipboard::ReadImage(gin::Arguments* const args) {
   base::RepeatingClosure callback = run_loop.QuitClosure();
   clipboard->ReadPng(
       GetClipboardBuffer(args),
-      /* data_dst = */ std::nullopt,
+      /* data_dst = */ nullptr,
       base::BindOnce(
           [](std::optional<gfx::Image>* image, base::RepeatingClosure cb,
              const std::vector<uint8_t>& result) {
