@@ -62,9 +62,9 @@ class InspectableWebContentsView : public views::View {
   // views::View:
   void Layout(PassKey) override;
 
- private:
   views::View* GetContentsView() const;
 
+ private:
   // Owns us.
   raw_ptr<InspectableWebContents> inspectable_web_contents_;
 
