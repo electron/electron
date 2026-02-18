@@ -12,10 +12,10 @@ We attempt to migrate the safe storage key from the old account, if that migrati
 Existing apps that aren't built for the app store should be unimpacted, there is one edge case where a user uses BOTH an AppStore and a darwin build of the same app only one will keep it's access to the safestorage key as during the migration we delete the old account.  This is an acceptable edge case as no one should be actively using two versions of the same app.
 
 diff --git a/components/os_crypt/common/keychain_password_mac.mm b/components/os_crypt/common/keychain_password_mac.mm
-index a3a8c87ad73f3bc69fc567f9f9d054b185093d7b..e9e0259f8faf35576a6a7ca658c5041e2a1fefd3 100644
+index 944f58043b9f634e79c9a9840a39c26966560f02..96dcbff6a05299bd7481e756e09a2e69361f3e18 100644
 --- a/components/os_crypt/common/keychain_password_mac.mm
 +++ b/components/os_crypt/common/keychain_password_mac.mm
-@@ -32,6 +32,12 @@
+@@ -33,6 +33,12 @@
  
  namespace {
  
@@ -28,7 +28,7 @@ index a3a8c87ad73f3bc69fc567f9f9d054b185093d7b..e9e0259f8faf35576a6a7ca658c5041e
  // These two strings ARE indeed user facing.  But they are used to access
  // the encryption keyword.  So as to not lose encrypted data when system
  // locale changes we DO NOT LOCALIZE.
-@@ -88,16 +94,51 @@
+@@ -89,16 +95,51 @@
                                    uma_result);
    };
  

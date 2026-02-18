@@ -50,10 +50,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 01b3ae3c904b76a0421f0562cfcd887980087d80..b712db260fb9b941da82b6a4d1849db1964074c2 100644
+index d0317b2920ca8b545d3294d6121aa0085969ab0b..e0149246c75790298cb3c107752a61daa5fc96d1 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1084,6 +1084,7 @@ component("base") {
+@@ -1079,6 +1079,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -129,10 +129,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index 780c58f4fdc6161e631b76cfdcf39f4305341e25..08b09b5f25c780611b182400d221a9b50576f2ab 100644
+index 8b706f07b3c370f1a6f83ac23e508a0a22eae1db..d85a8886cc1bbe65359c03dc1e3e9b014d543ecc 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -988,6 +988,7 @@ if (is_clang_or_gcc) {
+@@ -987,6 +987,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -376,22 +376,22 @@ index e12c1d078147d956a1d9b1bc498c1b1d6fe7b974..233362259dc4e728ed37435e65041764
  
  }  // namespace base
 diff --git a/components/os_crypt/common/keychain_password_mac.mm b/components/os_crypt/common/keychain_password_mac.mm
-index 0206d808c72b38e3d3abc98bd9a44fc47ed6c4da..a3a8c87ad73f3bc69fc567f9f9d054b185093d7b 100644
+index 66e0c5e9779959bcc45ef1f274f98a00de1c01e1..944f58043b9f634e79c9a9840a39c26966560f02 100644
 --- a/components/os_crypt/common/keychain_password_mac.mm
 +++ b/components/os_crypt/common/keychain_password_mac.mm
-@@ -19,6 +19,7 @@
- #include "base/types/expected.h"
+@@ -20,6 +20,7 @@
  #include "build/branding_buildflags.h"
  #include "crypto/apple/keychain.h"
+ #include "crypto/apple/keychain_v2.h"
 +#include "electron/mas.h"
  #include "third_party/abseil-cpp/absl/cleanup/cleanup.h"
  
- using crypto::apple::Keychain;
+ using crypto::apple::KeychainV2;
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index 2d155f49248a24b5551cb93e010ac1a0c0f94261..23aa391aaf380f87310fb295277809f8b105d6e8 100644
+index 57b209f51ef1629f1201e4ba5d713c0ce32ebb24..2535b697f48fb5a28ee65d3cc651db5e5bc17b24 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
-@@ -61,6 +61,7 @@ component("sync") {
+@@ -60,6 +60,7 @@ component("sync") {
      deps += [
        "//components/os_crypt/common:keychain_password_mac",
        "//crypto:mock_apple_keychain",
@@ -612,7 +612,7 @@ index 3a815ebf505bd95fa7f6b61ba433d98fbfe20225..149de0175c2ec0e41e3ba40caad7019c
 +
  @end
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-index 889c0849910afa8f5be8bd8f55692bb482335383..ff2a4bc790b0fa2dec9702d82a0221855833cb65 100644
+index 48f47bf3eeb8464d1c3925f0f73f62c790cac2f0..b7b2b7c1b7e99927012ce1676cc753b2bcdd887b 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 @@ -10,6 +10,7 @@
@@ -640,7 +640,7 @@ index 889c0849910afa8f5be8bd8f55692bb482335383..ff2a4bc790b0fa2dec9702d82a022185
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 20fbdb2d4ac747aa174c5d8e19fd9f1ea48314a9..f8f58f12464189650399879756f7a450d86beaf0 100644
+index a5fc9193711a7cc2eee45171178c070321177ca2..94bd32ce1ddd3f8b4315cd06be59d7550b591891 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -22,6 +22,7 @@
@@ -717,7 +717,7 @@ index 20fbdb2d4ac747aa174c5d8e19fd9f1ea48314a9..f8f58f12464189650399879756f7a450
  @implementation NativeWidgetMacNSWindow {
   @private
    CommandDispatcher* __strong _commandDispatcher;
-@@ -262,6 +286,7 @@ - (NativeWidgetMacNSWindowHeadlessInfo*)headlessInfo {
+@@ -268,6 +292,7 @@ - (BOOL)invokeOriginalIsVisibleForTesting {
  // bubbles and the find bar, but these should not be movable.
  // Instead, let's push this up to the parent window which should be
  // the browser.
@@ -725,7 +725,7 @@ index 20fbdb2d4ac747aa174c5d8e19fd9f1ea48314a9..f8f58f12464189650399879756f7a450
  - (void)_zoomToScreenEdge:(NSUInteger)edge {
    if (self.parentWindow) {
      [self.parentWindow _zoomToScreenEdge:edge];
-@@ -269,6 +294,7 @@ - (void)_zoomToScreenEdge:(NSUInteger)edge {
+@@ -275,6 +300,7 @@ - (void)_zoomToScreenEdge:(NSUInteger)edge {
      [super _zoomToScreenEdge:edge];
    }
  }
@@ -733,7 +733,7 @@ index 20fbdb2d4ac747aa174c5d8e19fd9f1ea48314a9..f8f58f12464189650399879756f7a450
  
  // This override helps diagnose lifetime issues in crash stacktraces by
  // inserting a symbol on NativeWidgetMacNSWindow and should be kept even if it
-@@ -401,6 +427,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -407,6 +433,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -742,7 +742,7 @@ index 20fbdb2d4ac747aa174c5d8e19fd9f1ea48314a9..f8f58f12464189650399879756f7a450
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -412,6 +440,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -418,6 +446,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
@@ -751,7 +751,7 @@ index 20fbdb2d4ac747aa174c5d8e19fd9f1ea48314a9..f8f58f12464189650399879756f7a450
  - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
    if (self.isHeadless || self.parentWindow) {
      // AppKit's default implementation moves child windows down to avoid
-@@ -449,12 +479,14 @@ - (BOOL)_usesCustomDrawing {
+@@ -455,12 +485,14 @@ - (BOOL)_usesCustomDrawing {
  // if it were valid to set that style for windows, setting the window style
  // recalculates and re-caches a bunch of stuff, so a surgical override is the
  // cleanest approach.
@@ -766,7 +766,7 @@ index 20fbdb2d4ac747aa174c5d8e19fd9f1ea48314a9..f8f58f12464189650399879756f7a450
  
  + (void)_getExteriorResizeEdgeThicknesses:
              (NSEdgeAndCornerThicknesses*)outThicknesses
-@@ -708,9 +740,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
+@@ -714,9 +746,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
  }
  
  - (void)saveRestorableState {
@@ -778,7 +778,7 @@ index 20fbdb2d4ac747aa174c5d8e19fd9f1ea48314a9..f8f58f12464189650399879756f7a450
  
    // Certain conditions, such as in the Speedometer 3 benchmark, can trigger a
    // rapid succession of calls to saveRestorableState. If there's no pending
-@@ -777,6 +811,7 @@ - (void)reallySaveRestorableState {
+@@ -783,6 +817,7 @@ - (void)reallySaveRestorableState {
  // affects its restorable state changes.
  - (void)invalidateRestorableState {
    [super invalidateRestorableState];
@@ -786,7 +786,7 @@ index 20fbdb2d4ac747aa174c5d8e19fd9f1ea48314a9..f8f58f12464189650399879756f7a450
    if ([self _isConsideredOpenForPersistentState]) {
      if (_willUpdateRestorableState)
        return;
-@@ -789,6 +824,7 @@ - (void)invalidateRestorableState {
+@@ -795,6 +830,7 @@ - (void)invalidateRestorableState {
      _willUpdateRestorableState = NO;
      [NSObject cancelPreviousPerformRequestsWithTarget:self];
    }
@@ -794,7 +794,7 @@ index 20fbdb2d4ac747aa174c5d8e19fd9f1ea48314a9..f8f58f12464189650399879756f7a450
  }
  
  // On newer SDKs, _canMiniaturize respects NSWindowStyleMaskMiniaturizable in
-@@ -965,6 +1001,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -971,6 +1007,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
    // Since _removeFromGroups: is not documented it could go away in newer
    // versions of macOS. If the selector does not exist, DumpWithoutCrashing() so
    // we hear about the change.
@@ -802,7 +802,7 @@ index 20fbdb2d4ac747aa174c5d8e19fd9f1ea48314a9..f8f58f12464189650399879756f7a450
    if (![NSWindow instancesRespondToSelector:@selector(_removeFromGroups:)]) {
      base::debug::DumpWithoutCrashing();
      return;
-@@ -982,6 +1019,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -988,6 +1025,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
        [currentWindow _removeFromGroups:child];
      }
    }
@@ -811,7 +811,7 @@ index 20fbdb2d4ac747aa174c5d8e19fd9f1ea48314a9..f8f58f12464189650399879756f7a450
  
  - (NSWindow*)rootWindow {
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index c6cfdc7b778f2027280d8624a0d48f385365f758..b99b8ec014c81c1d6ad14a6758568dd864102e2a 100644
+index b89085a51a1692ddbc62e8e4b85d358bbf85533f..4d81f8bce7febc78bb620a46683f9c7dcf459227 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -822,7 +822,7 @@ index c6cfdc7b778f2027280d8624a0d48f385365f758..b99b8ec014c81c1d6ad14a6758568dd8
  #include "mojo/public/cpp/bindings/self_owned_receiver.h"
  #include "net/cert/x509_util_apple.h"
  #include "ui/accelerated_widget_mac/window_resize_helper_mac.h"
-@@ -74,10 +75,13 @@
+@@ -75,10 +76,13 @@
  using CGRegionRef = CFTypeRef;
  
  CG_EXTERN CGSConnectionID CGSMainConnectionID(void);
@@ -836,7 +836,7 @@ index c6cfdc7b778f2027280d8624a0d48f385365f758..b99b8ec014c81c1d6ad14a6758568dd8
  
  namespace {
  constexpr auto kUIPaintTimeout = base::Milliseconds(500);
-@@ -732,10 +736,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -731,10 +735,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -849,7 +849,7 @@ index c6cfdc7b778f2027280d8624a0d48f385365f758..b99b8ec014c81c1d6ad14a6758568dd8
  
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
-@@ -1221,6 +1227,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -1186,6 +1192,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
  }
  
  void NativeWidgetNSWindowBridge::SetAllowScreenshots(bool allow) {
@@ -857,7 +857,7 @@ index c6cfdc7b778f2027280d8624a0d48f385365f758..b99b8ec014c81c1d6ad14a6758568dd8
    CGSConnectionID connection_id = CGSMainConnectionID();
    CGSWindowID window_id = ns_window().windowNumber;
    CGRect frame = ns_window().frame;
-@@ -1230,6 +1237,10 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -1195,6 +1202,10 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
      region.reset(CGRegionCreateWithRect(frame));
    }
    CGSSetWindowCaptureExcludeShape(connection_id, window_id, region.get());
@@ -974,10 +974,10 @@ index 712d59e1f7d9681c122e6d05a8b65bccbfacb492..de24209bbd3cd4a530c6f32990a0f93a
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index dea1ad18b05a249f6e0b867e1a6ecd528b2e36d6..db2a79357a6a0fa0862c0a94358de3798166023f 100644
+index 2f57856179bffdc35ca14cc7b1419bee9d7bbf8e..e2f3ce4ee3cbbb3c10110981a4bccd12c9b2400c 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -345,6 +345,7 @@ source_set("browser") {
+@@ -344,6 +344,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -1095,10 +1095,10 @@ index cf8652cb6ddbf07e114d576c192bcda99dc78e3a..c4ada35c3ca32ce06ffc57577af7bc4c
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 864bedc939029e594abb441c390c143739874fc9..3ef7c5ad377ddba1a00c55a97c7602d55effb299 100644
+index 20b61c2dfc3433f02f5c6b8f25386b8a9a6011db..3d88ae364383bd9721eb9c9fc4fdd6e85a20f448 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -265,6 +265,7 @@ source_set("common") {
+@@ -271,6 +271,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -1189,7 +1189,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index fb48801fd89b4fabb7eb294aa4d088f69a4f5384..0e2df5a8844d431e0cf7baa6f15403745b5cd9b2 100644
+index d81514903d29a5522cdcba43eff532999f4836d2..f576900ca186c43d032da4e13d77549876c59203 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -700,6 +700,7 @@ static_library("test_support") {
@@ -1209,7 +1209,7 @@ index fb48801fd89b4fabb7eb294aa4d088f69a4f5384..0e2df5a8844d431e0cf7baa6f1540374
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2063,6 +2066,7 @@ test("content_browsertests") {
+@@ -2064,6 +2067,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1217,7 +1217,7 @@ index fb48801fd89b4fabb7eb294aa4d088f69a4f5384..0e2df5a8844d431e0cf7baa6f1540374
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3405,6 +3409,7 @@ test("content_unittests") {
+@@ -3410,6 +3414,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1296,10 +1296,10 @@ index f300e8d331057e894b43b74944e5052c39206844..4ff5277d550485cd79c5b5316d89c730
  
  base::WeakPtr<BluetoothLowEnergyAdapterApple>
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index 327c2a54f2977ec99885c8c50709129cd5dcd87f..67c1b8a68dec740d0230d6b2396234b9a8b39a8a 100644
+index 03a74b7d29f12be3a5d208b43beaa13f47a8e4a6..d36254ca28c1a3a4ef2b15cfbb3272129588cc20 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
-@@ -119,6 +119,7 @@ component("service") {
+@@ -125,6 +125,7 @@ component("service") {
          "QuartzCore.framework",
        ]
        defines += [ "GL_SILENCE_DEPRECATION" ]
@@ -2140,7 +2140,7 @@ index ef031ba14e4c649f6f3a5718ac521e6b424d64cb..38e528450196b4dbd5fa6a25b96baa10
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 7d1c33b93adebfb9d93464399af2df84418d74f4..0b9789fad27bd46acecda88ccf3b13e58c39232c 100644
+index f4570ade0bc32c45e35b2d1eb11a192f3d78efd9..4da3ddf5aa20ce6320af522a04f2a251e995f610 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -355,6 +355,13 @@ component("base") {
@@ -2261,10 +2261,10 @@ index 93e90c4eba9bc9b93d68e834eb6baabeb2d0ecf0..1b90f41d05f847a94adf2f4da827b1d0
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 1b3ed08902ddb5a4400345c4b0d204ca82df2c5e..6db9f06dbaf357cf83ac7b6ff9acc2f20149d09c 100644
+index 47da87797a4a6e2163fc356955b516d6c7a2f276..87d7cac13dfe0bd5ec91398f7fe75c0c28ef0474 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
-@@ -138,6 +138,12 @@ component("display") {
+@@ -140,6 +140,12 @@ component("display") {
      "//ui/gfx/geometry",
    ]
  
@@ -2308,10 +2308,10 @@ index bfffd0444b0711b201cedaddfd3edaa7b5d9220a..8cdae9f250d407d0c2d34ba7c0891b84
    // Query the display's refresh rate.
    display.set_display_frequency(screen.maximumFramesPerSecond);
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 8db4f9770541cbd49830fba2770adb03c5db3b2e..7fcbd3fc20a1b116587bf6507cd43ca6f0164b22 100644
+index 26cd4350c26f79661e607e3856644704c395b9ab..9f8c78bc9abcc7ac23462c3c79d58b777278730f 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -280,6 +280,8 @@ component("gfx") {
+@@ -284,6 +284,8 @@ component("gfx") {
        "CoreGraphics.framework",
        "CoreText.framework",
      ]
@@ -2359,10 +2359,10 @@ index bbe355cf69f160866188216cc274d75bd35603db..06ee100d7ea2e892dbf3c0b1adc96c50
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 6253f851c93670055f3fe9e14e1b8d0970e9beb9..b1b224285e5dfef66cfbec828e47527e3b8dfcde 100644
+index 5cbc7acdb196ecb8dcc987b81cf774938ff8bdfe..39badc4037525eb0039d6514cc988e8df2e6c953 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -726,6 +726,8 @@ component("views") {
+@@ -728,6 +728,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -2371,7 +2371,7 @@ index 6253f851c93670055f3fe9e14e1b8d0970e9beb9..b1b224285e5dfef66cfbec828e47527e
    }
  
    if (is_win) {
-@@ -1155,6 +1157,8 @@ source_set("test_support") {
+@@ -1157,6 +1159,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  

@@ -7,7 +7,7 @@ Pass RenderFrameHost through to PlatformNotificationService
 so Electron can identify which renderer a notification came from.
 
 diff --git a/chrome/browser/notifications/platform_notification_service_impl.cc b/chrome/browser/notifications/platform_notification_service_impl.cc
-index fd890f3c91b0e614174362e2b7d61a63b9094c0c..6e63db38f289a6a83fdd93879e067d85fed25705 100644
+index 8ffb699fa54ca06d3d6e6160403cbc302a765367..ab86e573011f5e128217f4739be16358cc02b4e0 100644
 --- a/chrome/browser/notifications/platform_notification_service_impl.cc
 +++ b/chrome/browser/notifications/platform_notification_service_impl.cc
 @@ -266,6 +266,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
@@ -133,7 +133,7 @@ index 9bf238e64af483294ae3c3f18a4e9aed49a8658d..b9b2a4c8c387b8e8b4eb1f02fc0f891c
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 02369c57e0a307d32a9f38752a650aedeec34808..377c9375ba8e98bb7b8db39259d15a3ae504af7b 100644
+index 8c6e66e4d3535375cfe532d61038522fd4938fe2..35b847929648f538729d4e8b1c4ecc8992af545c 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -2353,7 +2353,7 @@ void RenderProcessHostImpl::CreateNotificationService(

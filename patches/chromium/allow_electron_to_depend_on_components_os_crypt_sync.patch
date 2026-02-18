@@ -10,7 +10,7 @@ so we can remove this patch once we migrate our code to use
 os_crypt async.
 
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index 23aa391aaf380f87310fb295277809f8b105d6e8..bb308187837371ecfa2482affaf35ac7ed98c1f3 100644
+index 2535b697f48fb5a28ee65d3cc651db5e5bc17b24..64345078af6ebb76f5ca695ff7b87f8df1956e5f 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
 @@ -10,6 +10,7 @@ import("//components/os_crypt/sync/features.gni")
