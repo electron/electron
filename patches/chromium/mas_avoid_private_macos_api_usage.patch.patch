@@ -396,7 +396,7 @@ index 71158ca9a7101911bb76f0c1b5300b0ff0e326b3..1441b9d4f9560c8b26d4beffe31449ed
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 433f12928857e288b6b0d4f4dd3d1f29da08cf6c..bb95aabec2e0d5c7b3a5d315c9a3f8cb3a45c8d2 100644
+index 433f12928857e288b6b0d4f4dd3d1f29da08cf6c..98bd545ad806c0f3eece970560c769a4b119a486 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -21,6 +21,7 @@
@@ -426,7 +426,29 @@ index 433f12928857e288b6b0d4f4dd3d1f29da08cf6c..bb95aabec2e0d5c7b3a5d315c9a3f8cb
  - (BOOL)hasKeyAppearance;
  - (long long)_resizeDirectionForMouseLocation:(CGPoint)location;
  - (BOOL)_isConsideredOpenForPersistentState;
-@@ -165,6 +170,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
+@@ -158,13 +163,30 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event;
+ @implementation NSView (CRFrameViewAdditions)
+ // If a mouseDown: falls through to the frame view, turn it into a window drag.
+ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
++#if !IS_MAS_BUILD()
+   if ([self.window _resizeDirectionForMouseLocation:event.locationInWindow] !=
+       -1)
+     return;
++#else
++  // For MAS builds, approximate the resize direction check.
++  if (self.window.styleMask & NSWindowStyleMaskResizable) {
++    constexpr CGFloat kResizeThreshold = 5.0;
++    NSPoint location = event.locationInWindow;
++    NSRect frame = self.window.frame;
++    CGFloat width = NSWidth(frame);
++    CGFloat height = NSHeight(frame);
++    if (location.x < kResizeThreshold || location.x > width - kResizeThreshold ||
++        location.y < kResizeThreshold || location.y > height - kResizeThreshold) {
++      return;
++    }
++  }
++#endif
+   [self.window performWindowDragWithEvent:event];
  }
  @end
  
@@ -435,7 +457,7 @@ index 433f12928857e288b6b0d4f4dd3d1f29da08cf6c..bb95aabec2e0d5c7b3a5d315c9a3f8cb
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (self.window.isMovable)
-@@ -192,6 +199,8 @@ - (BOOL)usesCustomDrawing {
+@@ -192,6 +214,8 @@ - (BOOL)usesCustomDrawing {
  }
  @end
  
@@ -444,7 +466,7 @@ index 433f12928857e288b6b0d4f4dd3d1f29da08cf6c..bb95aabec2e0d5c7b3a5d315c9a3f8cb
  @implementation NativeWidgetMacNSWindow {
   @private
    CommandDispatcher* __strong _commandDispatcher;
-@@ -389,6 +398,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -389,6 +413,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -453,7 +475,7 @@ index 433f12928857e288b6b0d4f4dd3d1f29da08cf6c..bb95aabec2e0d5c7b3a5d315c9a3f8cb
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -400,6 +411,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -400,6 +426,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
