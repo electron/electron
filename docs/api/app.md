@@ -250,7 +250,9 @@ Returns:
 
 Emitted when the user clicks the native macOS new tab button. The new
 tab button is only visible if the current `BrowserWindow` has a
-`tabbingIdentifier`
+`tabbingIdentifier`.
+
+You must create a window in this handler in order for macOS tabbing to work as expected.
 
 ### Event: 'browser-window-blur'
 
