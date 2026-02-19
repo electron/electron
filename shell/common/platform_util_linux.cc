@@ -41,6 +41,8 @@
 #include "dbus/message.h"
 #include "dbus/object_proxy.h"
 
+
+#include "electron/electron_gtk_stubs.h"
 #include "shell/common/platform_util_internal.h"
 #include "url/gurl.h"
 
@@ -446,6 +448,15 @@ bool PlatformTrashItem(const base::FilePath& full_path, std::string* error) {
 }  // namespace internal
 
 void Beep() {
+  // `gdk_display_beep` is actually stubbed out, and the function pointer the
+  // stub uses may be nullptr. We need to initialize the stub here to ensure
+  // that is not the case so that we can avoid a crash.
+  // TODO: move this elsewhere if / when we start using stubs for more functions.
+  if (!electron::IsElectron_gdkInitialized()) {
+    electron::InitializeElectron_gdk(gtk::GetLibGdk());
+    CHECK(electron::IsElectron_gdkInitialized())
+        << "Failed to initialize libgdk";
+  }
   auto* display = gdk_display_get_default();
   if (!display)
     return;
