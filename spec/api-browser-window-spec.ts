@@ -4882,6 +4882,27 @@ describe('BrowserWindow module', () => {
       await restore;
       expect(w.isMaximized()).to.equal(true);
     });
+
+    ifit(process.platform !== 'linux')('should not break fullscreen state', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.show();
+
+      const enterFS = once(w, 'enter-full-screen');
+      w.setFullScreen(true);
+      await enterFS;
+      expect(w.isFullScreen()).to.be.true('not fullscreen');
+
+      w.restore();
+      await setTimeout(1000);
+
+      expect(w.isFullScreen()).to.be.true('not fullscreen after restore');
+      expect(w.isMinimized()).to.be.false('should not be minimized');
+
+      // Clean up fullscreen state.
+      const leaveFS = once(w, 'leave-full-screen');
+      w.setFullScreen(false);
+      await leaveFS;
+    });
   });
 
   // TODO(dsanders11): Enable once maximize event works on Linux again on CI
