@@ -350,6 +350,11 @@ Affects the default output directory of [v8.setHeapSnapshotNearHeapLimit](https:
 
 Disable exposition of [Navigator API][] on the global scope from Node.js.
 
+### `--experimental-transform-types`
+
+Enables the [transformation](https://nodejs.org/api/typescript.html#type-stripping)
+of TypeScript-only syntax into JavaScript code.
+
 ## Chromium Flags
 
 There isn't a documented list of all Chromium switches, but there are a few ways to find them.
