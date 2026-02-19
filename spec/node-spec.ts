@@ -1030,4 +1030,26 @@ describe('node feature', () => {
       });
     });
   });
+
+  describe('type stripping', () => {
+    it('strips TypeScript types automatically in the main process', async () => {
+      const child = childProcess.spawn(process.execPath, [path.join(fixtures, 'type-stripping', 'basic.ts')]);
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('will not transform TypeScript types without --experimental-transform-types', async () => {
+      const child = childProcess.spawn(process.execPath, [path.join(fixtures, 'type-stripping', 'transform-types-node.ts')], {
+        env: { ELECTRON_RUN_AS_NODE: 'true' }
+      });
+      const [code] = await once(child, 'exit');
+      expect(code).to.not.equal(0);
+    });
+
+    it('transforms TypeScript types with --experimental-transform-types', async () => {
+      const child = childProcess.spawn(process.execPath, ['--experimental-transform-types', path.join(fixtures, 'type-stripping', 'transform-types.ts')]);
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
+    });
+  });
 });
