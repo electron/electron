@@ -74,7 +74,7 @@
     "lint:gn": "node ./script/lint.js --gn",
     "lint:docs": "remark docs -qf && npm run lint:js-in-markdown && npm run create-typescript-definitions && npm run lint:ts-check-js-in-markdown && npm run lint:docs-fiddles && npm run lint:docs-relative-links && npm run lint:markdown && npm run lint:api-history",
     "lint:docs-fiddles": "standard \"docs/fiddles/**/*.js\"",
-    "lint:docs-relative-links": "lint-roller-markdown-links --root docs \"**/*.md\"",
+    "lint:docs-relative-links": "lint-roller-markdown-links --resource-root . --root docs \"**/*.md\"",
     "lint:markdown": "node ./script/lint.js --md",
     "lint:ts-check-js-in-markdown": "lint-roller-markdown-ts-check --root docs \"**/*.md\" --ignore \"breaking-changes.md\"",
     "lint:js-in-markdown": "lint-roller-markdown-standard --root docs \"**/*.md\"",
