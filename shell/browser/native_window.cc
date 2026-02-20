@@ -192,8 +192,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   if (bool val; options.Get(options::kMovable, &val))
     SetMovable(val);
 
-  if (bool val; options.Get(options::kHasShadow, &val))
-    SetHasShadow(val);
+  SetHasShadow(options.ValueOrDefault(options::kHasShadow, true));
 
   if (double val; options.Get(options::kOpacity, &val))
     SetOpacity(val);

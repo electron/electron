@@ -35,6 +35,7 @@ namespace electron {
 #if BUILDFLAG(IS_LINUX)
 class ClientFrameViewLinux;
 class GlobalMenuBarX11;
+class LinuxFrameLayout;
 #endif
 
 #if BUILDFLAG(IS_OZONE_X11)
@@ -198,9 +199,7 @@ class NativeWindowViews : public NativeWindow,
   SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
 
 #if BUILDFLAG(IS_LINUX)
-  // returns the ClientFrameViewLinux iff that is our FrameView type,
-  // nullptr otherwise.
-  ClientFrameViewLinux* GetClientFrameViewLinux();
+  LinuxFrameLayout* GetLinuxFrameLayout();
 #endif
 
  private:
@@ -367,6 +366,7 @@ class NativeWindowViews : public NativeWindow,
   bool maximizable_ = true;
   bool minimizable_ = true;
   bool fullscreenable_ = true;
+  bool has_shadow_ = true;
   gfx::Size widget_size_;
   double opacity_ = 1.0;
   bool widget_destroyed_ = false;

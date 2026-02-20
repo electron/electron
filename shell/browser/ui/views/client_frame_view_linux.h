@@ -13,13 +13,12 @@
 #include "base/memory/raw_ptr_exclusion.h"
 #include "base/scoped_observation.h"
 #include "shell/browser/ui/views/frameless_view.h"
-#include "third_party/skia/include/core/SkRRect.h"
+#include "shell/browser/ui/views/linux_frame_layout.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/base/ui_base_types.h"
 #include "ui/linux/linux_ui.h"
 #include "ui/linux/nav_button_provider.h"
 #include "ui/linux/window_button_order_observer.h"
-#include "ui/linux/window_frame_provider.h"
 #include "ui/native_theme/native_theme.h"
 #include "ui/native_theme/native_theme_observer.h"
 #include "ui/views/controls/button/image_button.h"
@@ -44,15 +43,7 @@ class ClientFrameViewLinux : public FramelessView,
 
   // FramelessView:
   gfx::Insets RestoredFrameBorderInsets() const override;
-
-  gfx::Insets GetInputInsets() const;
-  gfx::Rect GetWindowContentBounds() const;
-  SkRRect GetRoundedWindowContentBounds() const;
-  int GetTranslucentTopAreaHeight() const;
-
-  // Returns whether the frame is in a tiled state.
-  bool tiled() const { return tiled_; }
-  void set_tiled(bool tiled) { tiled_ = tiled; }
+  LinuxFrameLayout* GetLinuxFrameLayout() const override;
 
  protected:
   // ui::NativeThemeObserver:
@@ -79,8 +70,6 @@ class ClientFrameViewLinux : public FramelessView,
 
   // Overridden from views::ViewTargeterDelegate
   views::View* TargetForRect(views::View* root, const gfx::Rect& rect) override;
-
-  ui::WindowFrameProvider* GetFrameProvider() const;
 
  private:
   static constexpr int kNavButtonCount = 4;
@@ -123,6 +112,8 @@ class ClientFrameViewLinux : public FramelessView,
   gfx::Insets GetTitlebarContentInsets() const;
   gfx::Rect GetTitlebarContentBounds() const;
 
+  std::unique_ptr<LinuxFrameLayout> linux_frame_layout_;
+
   raw_ptr<ui::NativeTheme> theme_;
   ThemeValues theme_values_;
 
@@ -134,16 +125,12 @@ class ClientFrameViewLinux : public FramelessView,
   std::vector<views::FrameButton> leading_frame_buttons_;
   std::vector<views::FrameButton> trailing_frame_buttons_;
 
-  bool host_supports_client_frame_shadow_ = false;
-
   base::ScopedObservation<ui::NativeTheme, ui::NativeThemeObserver>
       native_theme_observer_{this};
   base::ScopedObservation<ui::LinuxUi, ui::WindowButtonOrderObserver>
       window_button_order_observer_{this};
 
   base::CallbackListSubscription paint_as_active_changed_subscription_;
-
-  bool tiled_ = false;
 };
 
 }  // namespace electron

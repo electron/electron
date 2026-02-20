@@ -10,6 +10,7 @@
 #include "base/memory/raw_ptr.h"
 #include "chrome/browser/ui/view_ids.h"
 #include "shell/browser/ui/views/frameless_view.h"
+#include "shell/browser/ui/views/linux_frame_layout.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/linux/window_button_order_observer.h"
 #include "ui/views/controls/button/button.h"
@@ -40,6 +41,7 @@ class OpaqueFrameView : public FramelessView {
   int ResizingBorderHitTest(const gfx::Point& point) override;
   void InvalidateCaptionButtons() override;
   gfx::Insets RestoredFrameBorderInsets() const override;
+  LinuxFrameLayout* GetLinuxFrameLayout() const override;
 
   // views::FrameView:
   gfx::Rect GetBoundsForClientView() const override;
@@ -162,6 +164,8 @@ class OpaqueFrameView : public FramelessView {
   int GetWindowCaptionSpacing(views::FrameButton button_id,
                               bool leading_spacing,
                               bool is_leading_button) const;
+
+  std::unique_ptr<LinuxFrameLayout> linux_frame_layout_;
 
   // Window controls.
   raw_ptr<views::Button> minimize_button_;

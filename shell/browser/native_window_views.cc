@@ -65,6 +65,7 @@
 #include "shell/browser/linux/x11_util.h"
 #include "shell/browser/ui/electron_desktop_window_tree_host_linux.h"
 #include "shell/browser/ui/views/client_frame_view_linux.h"
+#include "shell/browser/ui/views/linux_frame_layout.h"
 #include "shell/browser/ui/views/native_frame_view.h"
 #include "shell/browser/ui/views/opaque_frame_view.h"
 #include "shell/common/platform_util.h"
@@ -262,6 +263,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   gfx::Rect bounds{0, 0, width, height};
   widget_size_ = bounds.size();
 
+  has_shadow_ = options.ValueOrDefault(options::kHasShadow, true);
+
   widget()->AddObserver(this);
 
   using InitParams = views::Widget::InitParams;
@@ -418,7 +421,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   }
 
   gfx::Size size = bounds.size();
-  if (has_frame() && use_content_size_)
+  if ((has_frame() || has_client_frame()) && use_content_size_)
     size = ContentBoundsToWindowBounds(gfx::Rect(size)).size();
 
   widget()->CenterWindow(size);
@@ -1275,18 +1278,27 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
     DeleteObject((HBRUSH)previous_brush);
   InvalidateRect(GetAcceleratedWidget(), nullptr, 1);
 #endif
-  widget()->GetCompositor()->SetBackgroundColor(background_color);
+  SkColor compositor_color = background_color;
+#if BUILDFLAG(IS_LINUX)
+  // Widget background needs to stay transparent for CSD shadow regions.
+  LinuxFrameLayout* frame_layout = GetLinuxFrameLayout();
+  const bool uses_csd =
+      frame_layout && frame_layout->SupportsClientFrameShadow();
+  if (transparent() || uses_csd)
+    compositor_color = SK_ColorTRANSPARENT;
+#endif
+  widget()->GetCompositor()->SetBackgroundColor(compositor_color);
 }
 
 void NativeWindowViews::SetHasShadow(bool has_shadow) {
+  has_shadow_ = has_shadow;
   wm::SetShadowElevation(GetNativeWindow(),
                          has_shadow ? wm::kShadowElevationInactiveWindow
                                     : wm::kShadowElevationNone);
 }
 
 bool NativeWindowViews::HasShadow() const {
-  return GetNativeWindow()->GetProperty(wm::kShadowElevationKey) !=
-         wm::kShadowElevationNone;
+  return has_shadow_;
 }
 
 void NativeWindowViews::SetOpacity(const double opacity) {
@@ -1688,7 +1700,7 @@ gfx::Rect NativeWindowViews::WidgetToLogicalBounds(
 
 gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
     const gfx::Rect& bounds) const {
-  if (!has_frame())
+  if (!has_frame() && !has_client_frame())
     return bounds;
 
   gfx::Rect window_bounds(bounds);
@@ -1715,7 +1727,7 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
 
 gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
     const gfx::Rect& bounds) const {
-  if (!has_frame())
+  if (!has_frame() && !has_client_frame())
     return bounds;
 
   gfx::Rect content_bounds(bounds);
@@ -1920,15 +1932,10 @@ std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
 }
 
 #if BUILDFLAG(IS_LINUX)
-electron::ClientFrameViewLinux* NativeWindowViews::GetClientFrameViewLinux() {
-  // Check to make sure this window's non-client frame view is a
-  // ClientFrameViewLinux.  If either has_frame() or has_client_frame()
-  // are false, it will be an OpaqueFrameView or NativeFrameView instead.
-  // See NativeWindowViews::CreateFrameView.
-  if (!has_frame() || !has_client_frame())
-    return {};
-  return static_cast<ClientFrameViewLinux*>(
+LinuxFrameLayout* NativeWindowViews::GetLinuxFrameLayout() {
+  auto* view = views::AsViewClass<FramelessView>(
       widget()->non_client_view()->frame_view());
+  return view ? view->GetLinuxFrameLayout() : nullptr;
 }
 #endif
 
