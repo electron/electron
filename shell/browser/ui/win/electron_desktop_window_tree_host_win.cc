@@ -197,6 +197,14 @@ void ElectronDesktopWindowTreeHostWin::SetAllowScreenshots(bool allow) {
   UpdateAllowScreenshots();
 }
 
+// Refs https://chromium-review.googlesource.com/c/chromium/src/+/7095963
+// Chromium's fullscreen handler conflicts with ours and results in incorrect
+// restoration.
+void ElectronDesktopWindowTreeHostWin::Restore() {
+  ::SendMessage(GetAcceleratedWidget(), WM_SYSCOMMAND,
+                static_cast<WPARAM>(SC_RESTORE), 0);
+}
+
 void ElectronDesktopWindowTreeHostWin::UpdateAllowScreenshots() {
   bool allowed = views::DesktopWindowTreeHostWin::AreScreenshotsAllowed();
   if (allowed == allow_screenshots_)
