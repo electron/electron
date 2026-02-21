@@ -245,7 +245,7 @@ index 1ef2c9052262eccdbc40030746a858b7f30ac469..c7101b0d71826b05f61bfe0e74429d92
  }
  
 diff --git a/content/common/features.cc b/content/common/features.cc
-index 7a69a491a99812dea78f4244facefc5def2f16b6..22b1874c1d2a25281327c3d4a023c48b14955347 100644
+index 4694ce5a21f5a7ce9d2b418a06fc82a193e72a4a..fe398012794ca185042385660dc47c670adb5f15 100644
 --- a/content/common/features.cc
 +++ b/content/common/features.cc
 @@ -354,6 +354,14 @@ BASE_FEATURE(kInterestGroupUpdateIfOlderThan, base::FEATURE_ENABLED_BY_DEFAULT);
