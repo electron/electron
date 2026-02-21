@@ -19,7 +19,7 @@
 #include "content/public/common/result_codes.h"
 #include "gin/object_template_builder.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
-#include "services/network/public/cpp/originating_process.h"
+#include "services/network/public/cpp/originating_process_id.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"

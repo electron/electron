@@ -41,7 +41,7 @@
 #include "gin/arguments.h"
 #include "media/audio/audio_device_description.h"
 #include "services/network/public/cpp/features.h"
-#include "services/network/public/cpp/originating_process.h"
+#include "services/network/public/cpp/originating_process_id.h"
 #include "services/network/public/cpp/url_loader_factory_builder.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/network_context.mojom.h"
