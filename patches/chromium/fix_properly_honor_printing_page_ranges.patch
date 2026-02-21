@@ -62,23 +62,18 @@ index 4f15b217fcf8119f323e04596978c6710d73727a..7ffd6c873a4320c76605417819a8b71f
    PMPrintSettings print_settings =
        static_cast<PMPrintSettings>([print_info_ PMPrintSettings]);
 diff --git a/printing/printing_context_system_dialog_win.cc b/printing/printing_context_system_dialog_win.cc
-index f8e903f21cee7041dea67b479c298baf9093d719..ed5d59f29992b0925efd89cb0ac4b33a03a31788 100644
+index 8ac33c08d89f9ff7da5ff97835050f3f1d419793..eb631ad802ab6684a74e07f03ceb5c1022a7fc91 100644
 --- a/printing/printing_context_system_dialog_win.cc
 +++ b/printing/printing_context_system_dialog_win.cc
-@@ -4,10 +4,12 @@
- 
- #include "printing/printing_context_system_dialog_win.h"
- 
-+#include <algorithm>
- #include <utility>
+@@ -9,6 +9,7 @@
  
  #include "base/auto_reset.h"
  #include "base/compiler_specific.h"
 +#include "base/containers/span.h"
  #include "base/strings/utf_string_conversions.h"
  #include "base/task/current_thread.h"
- #include "printing/backend/win_helper.h"
-@@ -74,13 +76,28 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
+ #include "base/win/scoped_hglobal.h"
+@@ -76,13 +77,28 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
    PRINTPAGERANGE ranges[32] = {};
    dialog_options.nStartPage = START_PAGE_GENERAL;
    if (max_pages) {

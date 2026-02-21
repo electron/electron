@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index b24a969b257b3854a6e49ec16a7cd7ca74e11036..b0bb049e9b52827152b89826d185b8b8fbac39aa 100644
+index 46f4627856678c26fd1024b6f20253b0164475bb..1718e3138961349bc79d3f0fc753097b125276e9 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -9998,6 +9998,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10006,6 +10006,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index b24a969b257b3854a6e49ec16a7cd7ca74e11036..b0bb049e9b52827152b89826d185b8b8
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 2639400b52df75164f2e3a0eeb9b2ff73c4dd285..e1bc262366e11ddccfa3942b9becb786ac06eba9 100644
+index d8725eeb8a7ee31bf11b43b08d76bb699aee371d..b6c4b24ac87e0aaeac82bd18b43bf4c12f469cf7 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5360,6 +5360,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5361,6 +5361,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    create_params.initially_hidden = renderer_started_hidden;
    create_params.initial_popup_url = params.target_url;
  
@@ -35,7 +35,7 @@ index 2639400b52df75164f2e3a0eeb9b2ff73c4dd285..e1bc262366e11ddccfa3942b9becb786
    // Even though all codepaths leading here are in response to a renderer
    // trying to open a new window, if the new window ends up in a different
    // browsing instance, then the RenderViewHost, RenderWidgetHost,
-@@ -5412,6 +5416,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5413,6 +5417,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // Sets the newly created WebContents WindowOpenDisposition.
    new_contents_impl->original_window_open_disposition_ = params.disposition;
  
@@ -48,7 +48,7 @@ index 2639400b52df75164f2e3a0eeb9b2ff73c4dd285..e1bc262366e11ddccfa3942b9becb786
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -5453,12 +5463,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5454,12 +5464,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -90,7 +90,7 @@ index 368d4b51b5b50ce5f48a1371ca5f69d053cdf014..715facf2ec1d8f1dfd8bfe1949481ab2
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index aff5ce9518500bb655b5e7ae33ecde29d0b0c014..27a3ec60ef7e1fef85a4b5be1e7e519d11a711d3 100644
+index 2c74ab3c01dc5e67aa5e5ada790201932d9569bb..965de8a4d84908a25b57be4a685451454848ea82 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -205,6 +205,7 @@ class NetworkService;
@@ -111,7 +111,7 @@ index aff5ce9518500bb655b5e7ae33ecde29d0b0c014..27a3ec60ef7e1fef85a4b5be1e7e519d
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 509256e4c327806f9a24eab69c1d4e84581767ce..f8f3996cbd00c06bec2962a54488b2d8f1666530 100644
+index 2de33a2926953e6ca012764127da4c6ec457959c..b246049104bad331651699a93260835fd943a840 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -34,6 +34,17 @@ namespace content {
@@ -133,7 +133,7 @@ index 509256e4c327806f9a24eab69c1d4e84581767ce..f8f3996cbd00c06bec2962a54488b2d8
      WebContents* source,
      const OpenURLParams& params,
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index ea862108a0f83a4aa966046ba15a8ca6757261ee..8fd2a5d359dd883754316095f66a83e8e255926c 100644
+index c0c3706f9b20299ab4d8f96e26adb1b8e882470b..c7896c828644ed84b8423df4486d8e36835a6c4d 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -18,6 +18,7 @@
@@ -152,7 +152,7 @@ index ea862108a0f83a4aa966046ba15a8ca6757261ee..8fd2a5d359dd883754316095f66a83e8
  #include "content/public/common/window_container_type.mojom-forward.h"
  #include "third_party/blink/public/common/input/web_mouse_event.h"
  #include "third_party/blink/public/common/page/drag_operation.h"
-@@ -400,6 +402,16 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -402,6 +404,16 @@ class CONTENT_EXPORT WebContentsDelegate {
        const StoragePartitionConfig& partition_config,
        SessionStorageNamespace* session_storage_namespace);
  
@@ -185,10 +185,10 @@ index dd17c9c1d3d17736ca7ec934977069cdb7ed30b8..757ee4f4e5862d8ebaf8279e3f9e8b95
    // moved on send.
    bool is_background_tab =
 diff --git a/content/web_test/browser/web_test_content_browser_client.cc b/content/web_test/browser/web_test_content_browser_client.cc
-index 576fd50ec4c27c6c2da9674e68f65fd0a21d1d68..b44304f128fb97523c9c9046b5edece8c09c5c0f 100644
+index 7a57cb3a1414a77704c42ae01a9dc89fae4ad4a3..769601c2749f0781317f668cf806042db626c348 100644
 --- a/content/web_test/browser/web_test_content_browser_client.cc
 +++ b/content/web_test/browser/web_test_content_browser_client.cc
-@@ -538,6 +538,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
+@@ -539,6 +539,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,

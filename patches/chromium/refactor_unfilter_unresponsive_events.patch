@@ -15,7 +15,7 @@ This CL removes these filters so the unresponsive event can still be
 accessed from our JS event. The filtering is moved into Electron's code.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 4248fe3b201b9b62ab7c3bfc07658f116e974867..c6f195bc51925686d573c74bd6d8edaa1edd96b7 100644
+index f1276da6c20a8c1e4bd124b20c47057fa677894b..79f24f6f667222091b220f8b7f010b7e33415487 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -10370,25 +10370,13 @@ void WebContentsImpl::RendererUnresponsive(

@@ -414,7 +414,7 @@ index 33e2ff42e4d9da442d522b959a4a21c2f7032b6b..a0d81212327fc17e1f4704e78803c1d7
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index c0b42521519d0d13e79c5b4bf67446f006209419..a2727e8450429e1f07824ecb0785fb3c717d56d7 100644
+index 863a091228114ad24dce8dd26dafe7557fedbbf7..b1f788e4a42970b6d96a7a189afee211b367d4db 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
 @@ -131,6 +131,9 @@ struct SchemeRegistry {
@@ -444,7 +444,7 @@ index c0b42521519d0d13e79c5b4bf67446f006209419..a2727e8450429e1f07824ecb0785fb3c
                                  std::string_view handler) {
    DoAddSchemeWithHandler(
 diff --git a/url/url_util.h b/url/url_util.h
-index 1f9304c7ea5488a1c50891e3dabfa3a61af97b7b..f965c1dbd47781748d3091209d140a128ca7192f 100644
+index e0bcce98722ab2af3216c0309e26e354c79be754..f889e914d50fd5491aac96d5bd2ec9759ac6002c 100644
 --- a/url/url_util.h
 +++ b/url/url_util.h
 @@ -115,6 +115,15 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCSPBypassingSchemes();
