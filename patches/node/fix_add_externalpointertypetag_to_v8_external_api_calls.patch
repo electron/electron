@@ -99,3 +99,29 @@ index c5c61888ecaaeeb23ebc9887f19ae3ad4c30dbd4..e2db3f4935ad58c5b409c67bfe5fc964
    Utf8Value utf8(isolate, args[1].As<String>());
    env->compile_cache_handler()->MaybeSave(cache_entry, utf8.ToStringView());
  }
+diff --git a/src/node_util.cc b/src/node_util.cc
+index e9f4c1cdb60c03dce210f49e18dda57a4934a8b5..263edfd92e38c66f7912c602b306d420b503a839 100644
+--- a/src/node_util.cc
++++ b/src/node_util.cc
+@@ -93,7 +93,7 @@ static void GetExternalValue(
+   Isolate* isolate = args.GetIsolate();
+   Local<External> external = args[0].As<External>();
+ 
+-  void* ptr = external->Value();
++  void* ptr = external->Value(v8::kExternalPointerTypeTagDefault);
+   uint64_t value = reinterpret_cast<uint64_t>(ptr);
+   Local<BigInt> ret = BigInt::NewFromUnsigned(isolate, value);
+   args.GetReturnValue().Set(ret);
+diff --git a/src/stream_base.cc b/src/stream_base.cc
+index 566204e667c8e8802db6ac47881d33178f6147b2..31af8313611961d8c18654ce9ccaee6e6af087b1 100644
+--- a/src/stream_base.cc
++++ b/src/stream_base.cc
+@@ -653,7 +653,7 @@ void StreamBase::GetExternal(const FunctionCallbackInfo<Value>& args) {
+   StreamBase* wrap = StreamBase::FromObject(args.This().As<Object>());
+   if (wrap == nullptr) return;
+ 
+-  Local<External> ext = External::New(args.GetIsolate(), wrap);
++  Local<External> ext = External::New(args.GetIsolate(), wrap, v8::kExternalPointerTypeTagDefault);
+   args.GetReturnValue().Set(ext);
+ }
+ 
