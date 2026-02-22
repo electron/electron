@@ -22,7 +22,7 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/mojom/early_hints.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
-#include "shell/browser/net/asar/asar_url_loader.h"
+#include "shell/browser/net/asar/asar_url_loader_factory.h"
 #include "shell/common/options_switches.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "url/origin.h"
@@ -822,11 +822,9 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   // Chromium does not provide a way to override this behavior. So in order to
   // make ServiceWorker work with file:// URLs, we have to intercept its
   // requests here.
-  if (IsForServiceWorkerScript() && request.url.SchemeIsFile()) {
-    asar::CreateAsarURLLoader(
-        request, std::move(loader), std::move(client),
-        base::MakeRefCounted<net::HttpResponseHeaders>(""));
-    return;
+  if (IsForServiceWorkerScript() && request.url.SchemeIsFile() &&
+      !override_target_factory.is_bound()) {
+    override_target_factory.Bind(AsarURLLoaderFactory::Create());
   }
 
   if (!web_request_->HasListener()) {
