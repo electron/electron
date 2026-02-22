@@ -240,7 +240,11 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveResponse(
     // Set-Cookie if it existed.
     auto saved_headers = current_response_->headers;
     current_response_ = std::move(head);
-    current_response_->headers = saved_headers;
+    // If this response is from a file or handler, OnHeadersReceived will not
+    // be called before OnReceiveResponse, so make sure the saved headers exist
+    // before setting them.
+    if (saved_headers)
+      current_response_->headers = saved_headers;
     ContinueToResponseStarted(net::OK);
   } else {
     current_response_ = std::move(head);
