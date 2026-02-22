@@ -42,9 +42,7 @@
 #include "media/audio/audio_device_description.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/originating_process.h"
-#include "services/network/public/cpp/url_loader_factory_builder.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
-#include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/browser/cookie_change_notifier.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_main_parts.h"
@@ -568,11 +566,9 @@ content::PreconnectManager* ElectronBrowserContext::GetPreconnectManager() {
   return preconnect_manager_.get();
 }
 
-scoped_refptr<network::SharedURLLoaderFactory>
-ElectronBrowserContext::GetURLLoaderFactory() {
-  if (url_loader_factory_)
-    return url_loader_factory_;
-
+std::pair<network::URLLoaderFactoryBuilder,
+          mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>>
+ElectronBrowserContext::CreateURLLoaderFactoryBuilder() {
   network::URLLoaderFactoryBuilder factory_builder;
 
   // Consult the embedder.
@@ -585,6 +581,16 @@ ElectronBrowserContext::GetURLLoaderFactory() {
           url::Origin(), net::IsolationInfo(), std::nullopt,
           ukm::kInvalidSourceIdObj, factory_builder, &header_client, nullptr,
           nullptr, nullptr, nullptr);
+
+  return std::make_pair(std::move(factory_builder), std::move(header_client));
+}
+
+scoped_refptr<network::SharedURLLoaderFactory>
+ElectronBrowserContext::GetURLLoaderFactory() {
+  if (url_loader_factory_)
+    return url_loader_factory_;
+
+  auto [factory_builder, header_client] = CreateURLLoaderFactoryBuilder();
 
   network::mojom::URLLoaderFactoryParamsPtr params =
       network::mojom::URLLoaderFactoryParams::New();
@@ -605,22 +611,8 @@ ElectronBrowserContext::GetURLLoaderFactory() {
 
 scoped_refptr<network::SharedURLLoaderFactory>
 ElectronBrowserContext::InterceptURLLoaderFactory(
-    scoped_refptr<network::SharedURLLoaderFactory> terminal) {
-  network::URLLoaderFactoryBuilder factory_builder;
-
-  // Consult the embedder.
-  mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>
-      header_client;
-
-  static_cast<content::ContentBrowserClient*>(ElectronBrowserClient::Get())
-      ->WillCreateURLLoaderFactory(
-          this, nullptr, -1,
-          content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
-          url::Origin(), net::IsolationInfo(), std::nullopt,
-          ukm::kInvalidSourceIdObj, factory_builder, &header_client, nullptr,
-          nullptr, nullptr, nullptr);
-
-  return std::move(factory_builder).Finish(terminal);
+    scoped_refptr<network::SharedURLLoaderFactory> factory) {
+  return CreateURLLoaderFactoryBuilder().first.Finish(factory);
 }
 
 content::PushMessagingService*

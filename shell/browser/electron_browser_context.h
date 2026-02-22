@@ -17,6 +17,8 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/media_stream_request.h"
 #include "mojo/public/cpp/bindings/remote.h"
+#include "services/network/public/cpp/url_loader_factory_builder.h"
+#include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/ssl_config.mojom.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
 
@@ -92,7 +94,7 @@ class ElectronBrowserContext : public content::BrowserContext {
   content::PreconnectManager* GetPreconnectManager();
   scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory();
   scoped_refptr<network::SharedURLLoaderFactory> InterceptURLLoaderFactory(
-      scoped_refptr<network::SharedURLLoaderFactory> terminal);
+      scoped_refptr<network::SharedURLLoaderFactory> factory);
 
   std::string GetMediaDeviceIDSalt();
 
@@ -182,6 +184,10 @@ class ElectronBrowserContext : public content::BrowserContext {
       const content::MediaStreamRequest& request,
       content::MediaResponseCallback callback,
       gin::Arguments* args);
+
+  std::pair<network::URLLoaderFactoryBuilder,
+            mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>>
+  CreateURLLoaderFactoryBuilder();
 
   // Initialize pref registry.
   void InitPrefs();
