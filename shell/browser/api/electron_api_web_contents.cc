@@ -4645,6 +4645,19 @@ gin_helper::Handle<WebContents> WebContents::CreateFromWebPreferences(
       existing_preferences->SetFromDictionary(web_preferences_dict);
       web_contents->SetBackgroundColor(
           existing_preferences->GetBackgroundColor());
+
+      double zoom_factor;
+      if (web_preferences.Get(options::kZoomFactor, &zoom_factor)) {
+        auto* zoom_controller = WebContentsZoomController::FromWebContents(
+            web_contents->web_contents());
+        if (zoom_controller) {
+          zoom_controller->SetDefaultZoomFactor(zoom_factor);
+          // Also set the current zoom level immediately, since the page
+          // has already navigated by the time we wrap the webContents.
+          zoom_controller->SetZoomLevel(
+              blink::ZoomFactorToZoomLevel(zoom_factor));
+        }
+      }
     }
   } else {
     // Create one if not.
