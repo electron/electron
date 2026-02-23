@@ -147,7 +147,12 @@ gin::ObjectTemplateBuilder NativeTheme::GetObjectTemplateBuilder(
                    &NativeTheme::ShouldUseInvertedColorScheme)
       .SetProperty("inForcedColorsMode", &NativeTheme::InForcedColorsMode)
       .SetProperty("prefersReducedTransparency",
-                   &NativeTheme::GetPrefersReducedTransparency);
+                   &NativeTheme::GetPrefersReducedTransparency)
+#if BUILDFLAG(IS_MAC)
+      .SetProperty("shouldDifferentiateWithoutColor",
+                   &NativeTheme::ShouldDifferentiateWithoutColor)
+#endif
+      ;
 }
 
 const char* NativeTheme::GetTypeName() {
