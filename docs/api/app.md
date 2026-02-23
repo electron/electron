@@ -575,7 +575,7 @@ You should seek to use the `steal` option as sparingly as possible.
 
 ### `app.isActive()` _macOS_
 
-Returns `boolean` - `true` if the application is active, which means it is the foreground application. Will be `true` after calling `app.focus()` if it was successful.
+Returns `boolean` - `true` if the application is active (i.e. focused).
 
 ### `app.hide()` _macOS_
 
