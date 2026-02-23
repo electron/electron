@@ -7,6 +7,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { closeAllWindows } from './lib/window-helpers';
+import { ifdescribe } from './lib/spec-helpers';
 
 describe('nativeTheme module', () => {
   describe('nativeTheme.shouldUseDarkColors', () => {
@@ -117,6 +118,12 @@ describe('nativeTheme module', () => {
   describe('nativeTheme.prefersReducesTransparency', () => {
     it('returns a boolean', () => {
       expect(nativeTheme.prefersReducedTransparency).to.be.a('boolean');
+    });
+  });
+
+  ifdescribe(process.platform === 'darwin')('nativeTheme.shouldDifferentiateWithoutColor', () => {
+    it('returns a boolean', () => {
+      expect(nativeTheme.shouldDifferentiateWithoutColor).to.be.a('boolean');
     });
   });
 });

@@ -84,3 +84,7 @@ Currently, Windows high contrast is the only system setting that triggers forced
 ### `nativeTheme.prefersReducedTransparency` _Readonly_
 
 A `boolean` that indicates whether the user has chosen via system accessibility settings to reduce transparency at the OS level.
+
+### `nativeTheme.shouldDifferentiateWithoutColor` _macOS_ _Readonly_
+
+A `boolean` that indicates whether the user prefers UI that differentiates items using something other than color alone (e.g. shapes or labels). This maps to [NSWorkspace.accessibilityDisplayShouldDifferentiateWithoutColor](https://developer.apple.com/documentation/appkit/nsworkspace/accessibilitydisplayshoulddifferentiatewithoutcolor).
