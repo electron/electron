@@ -108,9 +108,19 @@ declare namespace NodeJS {
     resolveHost(host: string, options?: Electron.ResolveHostOptions): Promise<Electron.ResolvedHost>;
   }
 
+  interface ActivationArgumentsInternal {
+    type: string;
+    arguments: string;
+    actionIndex?: number;
+    reply?: string;
+    userInputs?: Record<string, string>;
+  }
+
   interface NotificationBinding {
     isSupported(): boolean;
     Notification: typeof Electron.Notification;
+    // Windows-only callback for cold-start notification activation
+    handleActivation?: (callback: (details: ActivationArgumentsInternal) => void) => void;
   }
 
   interface PowerMonitorBinding extends Electron.PowerMonitor {
