@@ -50,6 +50,7 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
                         LRESULT* result) override;
   void HandleVisibilityChanged(bool visible) override;
   void SetAllowScreenshots(bool allow) override;
+  void Restore() override;
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;

@@ -435,7 +435,11 @@ Emitted when the window has closed a sheet.
 
 #### Event: 'new-window-for-tab' _macOS_
 
-Emitted when the native new tab button is clicked.
+Emitted when the user clicks the native macOS new tab button. The new
+tab button is only visible if the current `BrowserWindow` has a
+`tabbingIdentifier`.
+
+You must create a window in this handler in order for macOS tabbing to work as expected.
 
 #### Event: 'system-context-menu' _Windows_ _Linux_
 
@@ -1165,7 +1169,7 @@ under this mode apps can choose to optimize their UI for tablets, such as
 enlarging the titlebar and hiding titlebar buttons.
 
 This API returns whether the window is in tablet mode, and the `resize` event
-can be be used to listen to changes to tablet mode.
+can be used to listen to changes to tablet mode.
 
 #### `win.getMediaSourceId()`
 

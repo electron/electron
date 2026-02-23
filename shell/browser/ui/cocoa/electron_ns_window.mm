@@ -320,7 +320,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (void)disableHeadlessMode {
-  if (shell_) {
+  if (shell_ && self.isHeadless) {
     // We initialize the window in headless mode to allow painting before it is
     // shown, but we don't want the headless behavior of allowing the window to
     // be placed unconstrained.

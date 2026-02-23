@@ -50,6 +50,7 @@ jobs:
   publish-x64-darwin:
     uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      artifact-metadata: write
       attestations: write
       contents: read
       id-token: write
@@ -69,6 +70,7 @@ jobs:
   publish-x64-mas:
     uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      artifact-metadata: write
       attestations: write
       contents: read
       id-token: write
@@ -88,6 +90,7 @@ jobs:
   publish-arm64-darwin:
     uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      artifact-metadata: write
       attestations: write
       contents: read
       id-token: write
@@ -107,6 +110,7 @@ jobs:
   publish-arm64-mas:
     uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
+      artifact-metadata: write
       attestations: write
       contents: read
       id-token: write

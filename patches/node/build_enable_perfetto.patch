@@ -64,7 +64,7 @@ index e664663348adc7bb31f7c9ec78481bbeb71401d9..62b659beb766b8256b214447af376f43
  
  function ipToInt(ip) {
 diff --git a/node.gyp b/node.gyp
-index c3917f805464669c709bef83b9982ef95d0fbaa1..56e11cde31897260bf41db3f32f5c6d6fbd6d5bf 100644
+index c035d1d7cdac1d18cca0ef5cefbc5ce4c1fd1b86..a48e4e5d1fb7621b12b9abeaaf78214515a23efc 100644
 --- a/node.gyp
 +++ b/node.gyp
 @@ -176,7 +176,6 @@

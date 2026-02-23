@@ -199,9 +199,10 @@ class InspectableWebContents
   void DispatchHttpRequest(
       DispatchCallback callback,
       const DevToolsDispatchHttpRequestParams& params) override {}
+  void RequestRestart() override {}
 
   // content::DevToolsFrontendHostDelegate:
-  void HandleMessageFromDevToolsFrontend(base::Value::Dict message);
+  void HandleMessageFromDevToolsFrontend(base::DictValue message);
 
   // content::DevToolsAgentHostClient:
   void DispatchProtocolMessage(content::DevToolsAgentHost* agent_host,

@@ -87,10 +87,12 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
   // GC collects the object.
   auto* monitor = new OffscreenReleaseHolderMonitor(val.releaser_holder);
 
-  auto releaserHolder = v8::External::New(isolate, monitor);
+  auto releaserHolder =
+      v8::External::New(isolate, monitor, v8::kExternalPointerTypeTagDefault);
   auto releaserFunc = [](const v8::FunctionCallbackInfo<v8::Value>& info) {
     auto* mon = static_cast<OffscreenReleaseHolderMonitor*>(
-        info.Data().As<v8::External>()->Value());
+        info.Data().As<v8::External>()->Value(
+            v8::kExternalPointerTypeTagDefault));
     // Release the shared texture, so that future frames can be generated.
     mon->ReleaseTexture();
     // Release the monitor happens at GC, don't release here.

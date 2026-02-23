@@ -66,6 +66,7 @@ jobs:
         git config user.name "Electron Bot"
         git fetch origin refs/pull/${PR_NUMBER}/head
         git merge --squash FETCH_HEAD
+        git commit -n -m "Squashed commits"
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
       with:

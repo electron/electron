@@ -108,7 +108,7 @@ namespace electron::api {
 namespace {
 
 // Returns whether |cookie| matches |filter|.
-bool MatchesCookie(const base::Value::Dict& filter,
+bool MatchesCookie(const base::DictValue& filter,
                    const net::CanonicalCookie& cookie) {
   const std::string* str;
   if ((str = filter.FindString("name")) && *str != cookie.Name())
@@ -130,7 +130,7 @@ bool MatchesCookie(const base::Value::Dict& filter,
 }
 
 // Remove cookies from |list| not matching |filter|, and pass it to |callback|.
-void FilterCookies(base::Value::Dict filter,
+void FilterCookies(base::DictValue filter,
                    gin_helper::Promise<net::CookieList> promise,
                    const net::CookieList& cookies) {
   net::CookieList result;
@@ -142,7 +142,7 @@ void FilterCookies(base::Value::Dict filter,
 }
 
 void FilterCookieWithStatuses(
-    base::Value::Dict filter,
+    base::DictValue filter,
     gin_helper::Promise<net::CookieList> promise,
     const net::CookieAccessResultList& list,
     const net::CookieAccessResultList& excluded_list) {
@@ -236,7 +236,9 @@ const std::string InclusionStatusToString(net::CookieInclusionStatus status) {
             "The cookie contains no content or only whitespace."},
            {Reason::EXCLUDE_ANONYMOUS_CONTEXT,
             "The cookie is unpartitioned and being accessed from an anonymous "
-            "context."}});
+            "context."},
+           {Reason::EXCLUDE_INVALID_PATH,
+            "The cookie was set with an invalid Path attribute."}});
   static_assert(
       Reasons.size() ==
           net::CookieInclusionStatus::ExclusionReasonBitset::kValueCount,
@@ -310,7 +312,7 @@ v8::Local<v8::Promise> Cookies::Get(v8::Isolate* isolate,
   auto* storage_partition = browser_context_->GetDefaultStoragePartition();
   auto* manager = storage_partition->GetCookieManagerForBrowserProcess();
 
-  base::Value::Dict dict;
+  base::DictValue dict;
   gin::ConvertFromV8(isolate, filter.GetHandle(), &dict);
 
   std::string url;
@@ -359,7 +361,7 @@ v8::Local<v8::Promise> Cookies::Remove(v8::Isolate* isolate,
 }
 
 v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
-                                    base::Value::Dict details) {
+                                    base::DictValue details) {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 

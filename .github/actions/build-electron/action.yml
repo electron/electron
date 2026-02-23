@@ -98,7 +98,7 @@ runs:
         # Upload build stats to Datadog
         if ($env:DD_API_KEY) {
           try {
-            npx node electron\script\build-stats.mjs out\Default\siso.exe.INFO --upload-stats
+            npx node electron\script\build-stats.mjs out\Default\siso.exe.INFO --upload-stats ; $LASTEXITCODE = 0
           } catch {
             Write-Host "Build stats upload failed, continuing..."
           }

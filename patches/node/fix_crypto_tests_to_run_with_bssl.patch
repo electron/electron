@@ -299,7 +299,7 @@ index d22281abbd5c3cab3aaa3ac494301fa6b4a8a968..5f0c6a4aed2e868a1a1049212edf2187
  s.pipe(h).on('data', common.mustCall(function(c) {
    assert.strictEqual(c, expect);
 diff --git a/test/parallel/test-crypto-key-objects-to-crypto-key.js b/test/parallel/test-crypto-key-objects-to-crypto-key.js
-index 141e51d1ab74a4fc3b176b303807fb1cf2a58ce1..7ea6643fe5c8cc0e7613782419e1d465f99314cd 100644
+index 141e51d1ab74a4fc3b176b303807fb1cf2a58ce1..ba4fc881aa72ba7c39e8ae227a08be0ecf501c6f 100644
 --- a/test/parallel/test-crypto-key-objects-to-crypto-key.js
 +++ b/test/parallel/test-crypto-key-objects-to-crypto-key.js
 @@ -26,9 +26,14 @@ function assertCryptoKey(cryptoKey, keyObject, algorithm, extractable, usages) {
@@ -318,7 +318,7 @@ index 141e51d1ab74a4fc3b176b303807fb1cf2a58ce1..7ea6643fe5c8cc0e7613782419e1d465
      for (const algorithm of algorithms) {
        const usages = algorithm === 'AES-KW' ? ['wrapKey', 'unwrapKey'] : ['encrypt', 'decrypt'];
        for (const extractable of [true, false]) {
-@@ -97,7 +102,14 @@ function assertCryptoKey(cryptoKey, keyObject, algorithm, extractable, usages) {
+@@ -97,7 +102,13 @@ function assertCryptoKey(cryptoKey, keyObject, algorithm, extractable, usages) {
  }
  
  {
@@ -330,7 +330,6 @@ index 141e51d1ab74a4fc3b176b303807fb1cf2a58ce1..7ea6643fe5c8cc0e7613782419e1d465
 +  }
 +
 +  for (const algorithm of algorithms) {
-+   console.log(algorithm);
      const { publicKey, privateKey } = generateKeyPairSync(algorithm.toLowerCase());
      assert.throws(() => {
        publicKey.toCryptoKey(algorithm === 'Ed25519' ? 'X25519' : 'Ed25519', true, []);
@@ -541,6 +540,21 @@ index 75cb4800ff1bd51fedd7bc4e2d7e6af6f4f48346..b4363c31592763235116d970a5f45d4c
  // Test XOF hash functions and the outputLength option.
  {
    // Default outputLengths.
+diff --git a/test/parallel/test-crypto-pqc-key-objects-ml-dsa.js b/test/parallel/test-crypto-pqc-key-objects-ml-dsa.js
+index 37eab463deae472a78102c9fc6e03d4b642854ce..99e8c47702c55a9518ff093a58d87c753bec3aa8 100644
+--- a/test/parallel/test-crypto-pqc-key-objects-ml-dsa.js
++++ b/test/parallel/test-crypto-pqc-key-objects-ml-dsa.js
+@@ -4,6 +4,10 @@ const common = require('../common');
+ if (!common.hasCrypto)
+   common.skip('missing crypto');
+ 
++if (process.features.openssl_is_boringssl) {
++  common.skip('Skipping unsupported ML-DSA key tests');
++}
++
+ const { hasOpenSSL } = require('../common/crypto');
+ 
+ const assert = require('assert');
 diff --git a/test/parallel/test-crypto-rsa-dsa.js b/test/parallel/test-crypto-rsa-dsa.js
 index 119bc3c2d20ea7d681f0b579f9d91ad46cdc3634..ad9cd4fd81aff32ec175f469176e1012b81872ac 100644
 --- a/test/parallel/test-crypto-rsa-dsa.js
@@ -700,7 +714,7 @@ index a66f0a94efd7c952c1d2320fbc7a39fe3a88a8a1..dc5846db0e3dcf8f7cb5f7efcdbc81c1
    for (const [file, length] of keys) {
      const privKey = fixtures.readKey(file);
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
-index 84111740cd9ef6425b747e24e984e66e46b0b2ef..974ee53431ca853aeee1ffbd845e65504feef02e 100644
+index d21a6bd3d98d6db26cc82896e62da2869cf22842..21553911f8e16a76187bfff120dfbeead04e6269 100644
 --- a/test/parallel/test-crypto.js
 +++ b/test/parallel/test-crypto.js
 @@ -62,7 +62,7 @@ assert.throws(() => {

@@ -20,10 +20,10 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index b8b5151bae179da02725a37c0942cb26aaddb042..951682514323db7325496201f82716516e3e87f9 100644
+index 26f508b259cab776d32c95731900b30cc8df649f..3b25ba24e81c7b5b27e65f30ea7a2c174c397efa 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -554,7 +554,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -552,7 +552,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::LOCAL_NETWORK;
      case PermissionType::LOOPBACK_NETWORK:
        return ContentSettingsType::LOOPBACK_NETWORK;
@@ -34,7 +34,7 @@ index b8b5151bae179da02725a37c0942cb26aaddb042..951682514323db7325496201f8271651
    }
  
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index b47be001075cfd1ef963cac3e877704c64bc62f4..1b99c0e3bd89fb909bc18537dc70c0e04f4149c7 100644
+index f263d96b11aee75bbd0e6b8f4ff5a520f7047e9e..d278eae0806c1d51e949c7026fa01f01494c8dd3 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
 @@ -97,7 +97,8 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
@@ -48,7 +48,7 @@ index b47be001075cfd1ef963cac3e877704c64bc62f4..1b99c0e3bd89fb909bc18537dc70c0e0
  }
  
 diff --git a/content/browser/permissions/permission_descriptor_util.cc b/content/browser/permissions/permission_descriptor_util.cc
-index 17ff5e9376c44ef0dba7d2f95c50e1af5230b140..260951e60f5d805a044afe94cad6fca86bb7e365 100644
+index 8acf00d2618d9a0552750f0f8e1d734b52f790b1..d2ea06fa66c07baaf741382af40de154068a7d6b 100644
 --- a/content/browser/permissions/permission_descriptor_util.cc
 +++ b/content/browser/permissions/permission_descriptor_util.cc
 @@ -180,7 +180,12 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
@@ -66,7 +66,7 @@ index 17ff5e9376c44ef0dba7d2f95c50e1af5230b140..260951e60f5d805a044afe94cad6fca8
    }
    NOTREACHED();
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
-index 47e020ed0e706dee01fbee90a2af2fe6c521cd9b..9297e5667ef794fad52d76d878d2d50aefad3d11 100644
+index 0d873c13f1463d37e0fcdeacf68a84817b6524ca..19b8fa4b094b646ad6a5864c5e14a2f125fb7880 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
 @@ -108,7 +108,10 @@ std::string GetPermissionString(PermissionType permission) {
@@ -90,7 +90,7 @@ index 47e020ed0e706dee01fbee90a2af2fe6c521cd9b..9297e5667ef794fad52d76d878d2d50a
  
      case PermissionType::NUM:
 diff --git a/third_party/blink/public/common/permissions/permission_utils.h b/third_party/blink/public/common/permissions/permission_utils.h
-index 638d0ee4fb368d28465322d34dbfca645ecd162d..38c20e7f0c597815ce5ee3333f12183ac1e18c62 100644
+index b124d53fdd245f055f57ad00250112e2637e1cd1..31158388db2df745af999adc9d07fc9272a2d6f8 100644
 --- a/third_party/blink/public/common/permissions/permission_utils.h
 +++ b/third_party/blink/public/common/permissions/permission_utils.h
 @@ -69,7 +69,7 @@ enum class PermissionType {
@@ -103,7 +103,7 @@ index 638d0ee4fb368d28465322d34dbfca645ecd162d..38c20e7f0c597815ce5ee3333f12183a
    NUM,
    MIN_VALUE = MIDI_SYSEX,
 diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
-index 10ef656b019f46d389de074e5aad292af1728eac..cd200c6aadb304e440df65532a9ef86f0aef4fa7 100644
+index 699f6dfd43f0f6f8ab2b717e75ad74fa9dca0789..8a2e1ec60c337d4fb40292b53ee8949e0ce2b8a4 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
 @@ -47,7 +47,7 @@ enum PermissionName {
@@ -152,7 +152,7 @@ index 8fded9303e74737d82ca6d54e00807ebabf6c1ac..c0b66eb9a62f8f75e3c4de43f467ddd0
  
  bool ClipboardCommands::ExecuteCopy(LocalFrame& frame,
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index 91ef9f50a41150108f8cb4abfecba2b7c54f5fa4..ca46a15c03d72da4a301aff6fc18c173eaa7e6c8 100644
+index 27cdc852f5974951f0a10157a0473e67791f6688..e9b7dcb070567580e8c6ad11b2bb943083e804f6 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
 @@ -151,6 +151,8 @@ String PermissionNameToString(PermissionName name) {

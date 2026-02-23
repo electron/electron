@@ -3977,6 +3977,28 @@ describe('BrowserWindow module', () => {
         expect(webPreferences!.contextIsolation).to.equal(false);
       });
 
+      it('should apply zoomFactor from setWindowOpenHandler overrideBrowserWindowOptions', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true
+          }
+        });
+
+        w.webContents.setWindowOpenHandler(() => ({
+          action: 'allow',
+          overrideBrowserWindowOptions: {
+            webPreferences: {
+              zoomFactor: 2.0
+            }
+          }
+        }));
+        w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
+        const [childWindow] = await once(w.webContents, 'did-create-window') as [BrowserWindow, any];
+        await once(childWindow.webContents, 'did-finish-load');
+        expect(childWindow.webContents.getZoomFactor()).to.be.closeTo(2.0, 0.1);
+      });
+
       it('should set ipc event sender correctly', async () => {
         const w = new BrowserWindow({
           show: false,
@@ -4881,6 +4903,27 @@ describe('BrowserWindow module', () => {
       w.restore();
       await restore;
       expect(w.isMaximized()).to.equal(true);
+    });
+
+    ifit(process.platform !== 'linux')('should not break fullscreen state', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.show();
+
+      const enterFS = once(w, 'enter-full-screen');
+      w.setFullScreen(true);
+      await enterFS;
+      expect(w.isFullScreen()).to.be.true('not fullscreen');
+
+      w.restore();
+      await setTimeout(1000);
+
+      expect(w.isFullScreen()).to.be.true('not fullscreen after restore');
+      expect(w.isMinimized()).to.be.false('should not be minimized');
+
+      // Clean up fullscreen state.
+      const leaveFS = once(w, 'leave-full-screen');
+      w.setFullScreen(false);
+      await leaveFS;
     });
   });
 
@@ -6722,8 +6765,7 @@ describe('BrowserWindow module', () => {
       expect(data.constructor.name).to.equal('NativeImage');
       expect(data.isEmpty()).to.be.false('data is empty');
       const size = data.getSize();
-      // TODO(reito): Use scale factor 1.0f when Electron 42.
-      const { scaleFactor } = screen.getPrimaryDisplay();
+      const scaleFactor = 1;
       expect(size.width).to.be.closeTo(100 * scaleFactor, 2);
       expect(size.height).to.be.closeTo(100 * scaleFactor, 2);
     });
@@ -7032,121 +7074,6 @@ describe('BrowserWindow module', () => {
 
       const screenCapture = new ScreenCapture(display);
       await screenCapture.expectColorAtCenterMatches(HexColors.BLUE);
-    });
-  });
-
-  describe('draggable regions', () => {
-    afterEach(closeAllWindows);
-
-    ifit(hasCapturableScreen())('should allow the window to be dragged when enabled', async () => {
-      // FIXME: nut-js has been removed from npm; we need to find a replacement
-      // WOA fails to load libnut so we're using require to defer loading only
-      // on supported platforms.
-      // "@nut-tree\libnut-win32\build\Release\libnut.node is not a valid Win32 application."
-      // @ts-ignore: nut-js is an optional dependency so it may not be installed
-      const { mouse, straightTo, centerOf, Region, Button } = require('@nut-tree/nut-js') as typeof import('@nut-tree/nut-js');
-
-      const display = screen.getPrimaryDisplay();
-
-      const w = new BrowserWindow({
-        x: 0,
-        y: 0,
-        width: display.bounds.width / 2,
-        height: display.bounds.height / 2,
-        frame: false,
-        titleBarStyle: 'hidden'
-      });
-
-      const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
-      w.loadFile(overlayHTML);
-      await once(w, 'ready-to-show');
-
-      const winBounds = w.getBounds();
-      const titleBarHeight = 30;
-      const titleBarRegion = new Region(winBounds.x, winBounds.y, winBounds.width, titleBarHeight);
-      const screenRegion = new Region(display.bounds.x, display.bounds.y, display.bounds.width, display.bounds.height);
-
-      const startPos = w.getPosition();
-
-      await mouse.setPosition(await centerOf(titleBarRegion));
-      await mouse.pressButton(Button.LEFT);
-      await mouse.drag(straightTo(centerOf(screenRegion)));
-
-      // Wait for move to complete
-      await Promise.race([
-        once(w, 'move'),
-        setTimeout(100) // fallback for possible race condition
-      ]);
-
-      const endPos = w.getPosition();
-
-      expect(startPos).to.not.deep.equal(endPos);
-    });
-
-    ifit(hasCapturableScreen())('should allow the window to be dragged when no WCO and --webkit-app-region: drag enabled', async () => {
-      // FIXME: nut-js has been removed from npm; we need to find a replacement
-      // @ts-ignore: nut-js is an optional dependency so it may not be installed
-      const { mouse, straightTo, centerOf, Region, Button } = require('@nut-tree/nut-js') as typeof import('@nut-tree/nut-js');
-
-      const display = screen.getPrimaryDisplay();
-      const w = new BrowserWindow({
-        x: 0,
-        y: 0,
-        width: display.bounds.width / 2,
-        height: display.bounds.height / 2,
-        frame: false
-      });
-
-      const basePageHTML = path.join(__dirname, 'fixtures', 'pages', 'base-page.html');
-      w.loadFile(basePageHTML);
-      await once(w, 'ready-to-show');
-
-      await w.webContents.executeJavaScript(`
-        const style = document.createElement('style');
-        style.innerHTML = \`
-        #titlebar {
-            
-          background-color: red;
-          height: 30px;
-          width: 100%;
-          -webkit-user-select: none;
-          -webkit-app-region: drag;
-          position: fixed;
-          top: 0;
-          left: 0;
-          z-index: 1000000000000;
-        }
-        \`;
-        
-        const titleBar = document.createElement('title-bar');
-        titleBar.id = 'titlebar';
-        titleBar.textContent = 'test-titlebar';
-        
-        document.body.append(style);
-        document.body.append(titleBar);
-      `);
-      // allow time for titlebar to finish loading
-      await setTimeout(2000);
-
-      const winBounds = w.getBounds();
-      const titleBarHeight = 30;
-      const titleBarRegion = new Region(winBounds.x, winBounds.y, winBounds.width, titleBarHeight);
-      const screenRegion = new Region(display.bounds.x, display.bounds.y, display.bounds.width, display.bounds.height);
-
-      const startPos = w.getPosition();
-      await mouse.setPosition(await centerOf(titleBarRegion));
-      await mouse.pressButton(Button.LEFT);
-      await mouse.drag(straightTo(centerOf(screenRegion)));
-
-      // Wait for move to complete
-      await Promise.race([
-        once(w, 'move'),
-        setTimeout(1000) // fallback for possible race condition
-      ]);
-
-      const endPos = w.getPosition();
-
-      expect(startPos).to.not.deep.equal(endPos);
     });
   });
 });

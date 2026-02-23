@@ -64,7 +64,7 @@ index 705a2ee24e463a65784a48844d7c9c26ae7b48db..87bf9b64616688152bd681cb57cefbc6
  
  TextInputManager::SelectionRegion::SelectionRegion(
 diff --git a/content/browser/renderer_host/text_input_manager.h b/content/browser/renderer_host/text_input_manager.h
-index 75df43e3cd2721a92c90c18154d53d5c203e2465..ce42c75c8face36d21f53f44c0201ac46df71d6a 100644
+index 5158897a7a7af9f29580faa17498a8dbab40af87..96617b9bb0275144b0e9ed18547d9982aa05baea 100644
 --- a/content/browser/renderer_host/text_input_manager.h
 +++ b/content/browser/renderer_host/text_input_manager.h
 @@ -69,6 +69,10 @@ class CONTENT_EXPORT TextInputManager {
@@ -87,10 +87,10 @@ index 75df43e3cd2721a92c90c18154d53d5c203e2465..ce42c75c8face36d21f53f44c0201ac4
    // The view with active text input state, i.e., a focused <input> element.
    // It will be nullptr if no such view exists. Note that the active view
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 3649b08b774c2bc2d8b314f6a4d02a67444de305..aa42c0a3815cb28387ee57dcfe1fc30a7b6500f1 100644
+index 3b3bd369e235c9710fb80789dbb289350714c535..0e4fb92136e7ee014dd390142bb4c38349c3ed6b 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -10198,7 +10198,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
+@@ -10208,7 +10208,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
                          "WebContentsImpl::OnFocusedElementChangedInFrame",
                          "render_frame_host", frame);
    RenderWidgetHostViewBase* root_view =

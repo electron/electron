@@ -10,10 +10,10 @@ on Windows.  We should refactor our code so that this patch isn't
 necessary.
 
 diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
-index 00882bfa1977eb6306c5ca75bb576d2717d8f24d..60cc87850bf7c3f89f5b6f8be53cbcf124beca73 100644
+index 6a4b21bef4d184bff421e0f352993525c684690a..bd20bb85ad1612cfd95cced5ca68d540ddf13325 100644
 --- a/testing/variations/fieldtrial_testing_config.json
 +++ b/testing/variations/fieldtrial_testing_config.json
-@@ -26116,6 +26116,21 @@
+@@ -26776,6 +26776,21 @@
              ]
          }
      ],
@@ -67,7 +67,7 @@ index 5f5ea15678bd76399fdbbb8904fe155657f49335..a67c124878fb710599fed5d9714bfa72
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kApplyInitialUrlToWebContents);
  
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index b37df4100eac1263f874dc5bff9e29eea64c1c0a..724a094c1b9a3c1efaf65c5222e40433a374b76d 100644
+index 8fe4ef2a5699fdf1a895a2981f5cc7312070fbc2..2bf4889631ea93ab34bad6e69b301f1b09844840 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 @@ -84,6 +84,23 @@ namespace {
@@ -219,7 +219,7 @@ index b37df4100eac1263f874dc5bff9e29eea64c1c0a..724a094c1b9a3c1efaf65c5222e40433
  }
  
  gfx::Rect
-@@ -920,18 +959,26 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
+@@ -922,18 +961,26 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
  
  void DesktopWindowTreeHostWin::GetWindowMask(const gfx::Size& size_px,
                                               SkPath* path) {

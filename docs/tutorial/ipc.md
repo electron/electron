@@ -171,7 +171,7 @@ sections.
 
 In the main process, we'll be creating a `handleFileOpen()` function that calls
 `dialog.showOpenDialog` and returns the value of the file path selected by the user. This function
-is used as a callback whenever an `ipcRender.invoke` message is sent through the `dialog:openFile`
+is used as a callback whenever an `ipcRenderer.invoke` message is sent through the `dialog:openFile`
 channel from the renderer process. The return value is then returned as a Promise to the original
 `invoke` call.
 
@@ -446,7 +446,7 @@ After loading the preload script, your renderer process should have access to th
 We don't directly expose the whole `ipcRenderer.on` API for [security reasons][]. Make sure to
 limit the renderer's access to Electron APIs as much as possible.
 Also don't just pass the callback to `ipcRenderer.on` as this will leak `ipcRenderer` via `event.sender`.
-Use a custom handler that invoke the `callback` only with the desired arguments.
+Use a custom handler that invokes the `callback` only with the desired arguments.
 :::
 
 :::info

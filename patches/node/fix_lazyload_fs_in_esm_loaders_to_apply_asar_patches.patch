@@ -28,7 +28,7 @@ index 5f1921d15bc1d3a68c35990f85e36a0e8a5b3ec4..99c6ce57c04768d125dd0a1c6bd62bca
      const result = dataURLProcessor(url);
      if (result === 'failure') {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 5f03cf14e948d449d303b22ab6710b5508fb83b2..72cc9444ca93ef7a1526e23314693aeaf5f173b0 100644
+index 4fd58b1cea557ec122bd860e1ebc15bd04c44f78..8dc8bbfe8d73e2d11edc261d6fe9f37aaa81e4cd 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -25,7 +25,7 @@ const {
@@ -40,7 +40,7 @@ index 5f03cf14e948d449d303b22ab6710b5508fb83b2..72cc9444ca93ef7a1526e23314693aea
  const { getOptionValue } = require('internal/options');
  // Do not eagerly grab .manifest, it may be in TDZ
  const { sep, posix: { relative: relativePosixPath }, resolve } = require('path');
-@@ -276,7 +276,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
+@@ -277,7 +277,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
    }
  
    if (!preserveSymlinks) {

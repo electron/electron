@@ -8,7 +8,7 @@ Check for broken links by confirming the file exists before setting its utime.
 This patch should be upstreamed & removed.
 
 diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
-index 91dfea4fa3724a9d8120381503aa9caa9ba36f25..a4136cf157cc2c2df0812f4b7d622d68e0ff386b 100755
+index 25aae31df7604819841c9c089c29c18fb2f1fcd4..dc72a5726a5f31716b1657cf6deee1dafb8b2af7 100755
 --- a/tools/clang/scripts/update.py
 +++ b/tools/clang/scripts/update.py
 @@ -201,10 +201,9 @@ def DownloadAndUnpack(url, output_dir, path_prefixes=None, is_known_zip=False):

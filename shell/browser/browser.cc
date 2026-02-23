@@ -180,7 +180,7 @@ void Browser::WillFinishLaunching() {
   observers_.Notify(&BrowserObserver::OnWillFinishLaunching);
 }
 
-void Browser::DidFinishLaunching(base::Value::Dict launch_info) {
+void Browser::DidFinishLaunching(base::DictValue launch_info) {
   // Make sure the userData directory is created.
   ScopedAllowBlockingForElectron allow_blocking;
   base::FilePath user_data;
@@ -192,9 +192,8 @@ void Browser::DidFinishLaunching(base::Value::Dict launch_info) {
   }
 
   is_ready_ = true;
-  if (ready_promise_) {
+  if (ready_promise_)
     ready_promise_->Resolve();
-  }
 
   for (BrowserObserver& observer : observers_)
     observer.OnFinishLaunching(launch_info.Clone());

@@ -121,7 +121,7 @@ index b30297eac08ad9587642b723f91d7e3b954294d4..4c5427596d1c90d3a413cdd9ff4f1151
    auto backing = ArrayBuffer::NewBackingStore(
        mem->data,
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index 49df0b4284748effb27b05ecd69f05699dd8be75..77da37881bb351249c45e405289193c10d083e0c 100644
+index ddee7b7e40c3ee4054b2b15b75154607aa6431ed..decc3c8c966c2322f22d6bdd871514bb53882a29 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -1420,7 +1420,7 @@ inline size_t CheckNumberToSize(Local<Value> number) {
@@ -309,3 +309,17 @@ index ef659f1c39f7ee958879bf395377bc99911fc346..225b1465b7c97d972a38968faf6d6850
    auto ab = ArrayBuffer::New(isolate, std::move(bs));
    v8::Local<Uint8Array> u8 = v8::Uint8Array::New(ab, 0, 1);
  
+diff --git a/test/parallel/test-buffer-concat.js b/test/parallel/test-buffer-concat.js
+index 9f0eadd2f10163c3c30657c84eb0ba55db17364d..7c1a6f71ca24dd2e54f9f5987aae2014b44bfba6 100644
+--- a/test/parallel/test-buffer-concat.js
++++ b/test/parallel/test-buffer-concat.js
+@@ -84,8 +84,7 @@ assert.throws(() => {
+   Buffer.concat([Buffer.from('hello')], -2);
+ }, {
+   code: 'ERR_OUT_OF_RANGE',
+-  message: 'The value of "length" is out of range. It must be >= 0 && <= 9007199254740991. ' +
+-           'Received -2'
++  message: /The value of "length" is out of range\. It must be >= 0 && <= (?:34359738367|9007199254740991)\. Received -2/
+ });
+ 
+ // eslint-disable-next-line node-core/crypto-check

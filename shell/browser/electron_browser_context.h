@@ -67,20 +67,20 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   // Get or create the default BrowserContext.
   static ElectronBrowserContext* GetDefaultBrowserContext(
-      base::Value::Dict options = {});
+      base::DictValue options = {});
 
   // Get or create the BrowserContext according to its |partition| and
   // |in_memory|. The |options| will be passed to constructor when there is no
   // existing BrowserContext.
   static ElectronBrowserContext* From(const std::string& partition,
                                       bool in_memory,
-                                      base::Value::Dict options = {});
+                                      base::DictValue options = {});
 
   // Get or create the BrowserContext using the |path|.
   // The |options| will be passed to constructor when there is no
   // existing BrowserContext.
   static ElectronBrowserContext* FromPath(const base::FilePath& path,
-                                          base::Value::Dict options = {});
+                                          base::DictValue options = {});
 
   static void DestroyAllContexts();
 
@@ -172,9 +172,9 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   ElectronBrowserContext(const PartitionOrPath partition_location,
                          bool in_memory,
-                         base::Value::Dict options);
+                         base::DictValue options);
 
-  ElectronBrowserContext(base::FilePath partition, base::Value::Dict options);
+  ElectronBrowserContext(base::FilePath partition, base::DictValue options);
 
   static void DisplayMediaDeviceChosen(
       const content::MediaStreamRequest& request,

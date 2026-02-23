@@ -9,10 +9,10 @@ conflict with Blink's in renderer and worker processes.
 We should try to upstream some version of this.
 
 diff --git a/doc/api/cli.md b/doc/api/cli.md
-index 667603438cc41701820d6aaa734d21ac35bcc8d1..6611face009797f9d540be4478df80d05888893a 100644
+index d94226df8d90d791c3c5fdb7cab7357b0e2555b0..7512ec43ea10d9b0e167125040bc8136f7ad568a 100644
 --- a/doc/api/cli.md
 +++ b/doc/api/cli.md
-@@ -1798,6 +1798,14 @@ changes:
+@@ -1814,6 +1814,14 @@ changes:
  
  Disable using [syntax detection][] to determine module type.
  
@@ -27,7 +27,7 @@ index 667603438cc41701820d6aaa734d21ac35bcc8d1..6611face009797f9d540be4478df80d0
  ### `--no-experimental-global-navigator`
  
  <!-- YAML
-@@ -3476,6 +3484,7 @@ one is included in the list below.
+@@ -3493,6 +3501,7 @@ one is included in the list below.
  * `--no-addons`
  * `--no-async-context-frame`
  * `--no-deprecation`
@@ -79,7 +79,7 @@ index 9a99ff6d44320c0e28f4a787d24ea98ae1c96196..8f5810267d1ba430bae02be141f087f2
  function setupWebsocket() {
    if (getOptionValue('--no-experimental-websocket')) {
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 342bffb00fd355f7f1c5d0d83133bd5561be91e1..41f268195c281689339e98ceb98e8034ecd28b63 100644
+index f6f81f50c8bd91a72ca96093dc64c183bd58039b..aa18dab6e4171d8a7f0af4b7db1b8c2c07191859 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -545,7 +545,11 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {

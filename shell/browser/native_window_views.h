@@ -16,6 +16,7 @@
 #include "shell/browser/ui/views/root_view.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "ui/base/ozone_buildflags.h"
+#include "ui/gfx/geometry/insets.h"
 #include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/widget/widget_observer.h"
 
@@ -34,9 +35,10 @@ namespace electron {
 #if BUILDFLAG(IS_LINUX)
 class ClientFrameViewLinux;
 class GlobalMenuBarX11;
+class LinuxFrameLayout;
 #endif
 
-#if BUILDFLAG(IS_OZONE_X11)
+#if BUILDFLAG(SUPPORTS_OZONE_X11)
 class EventDisabler;
 #endif
 
@@ -156,6 +158,12 @@ class NativeWindowViews : public NativeWindow,
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
 
+  // Translates between logical/opaque window bounds exposed to callers
+  // and the absolute bounds of the underlying widget, which can be larger to
+  // fit CSD, e.g. transparent outer regions for shadows and resize targets.
+  gfx::Rect LogicalToWidgetBounds(const gfx::Rect& bounds) const;
+  gfx::Rect WidgetToLogicalBounds(const gfx::Rect& bounds) const;
+
   void IncrementChildModals();
   void DecrementChildModals();
 
@@ -192,9 +200,7 @@ class NativeWindowViews : public NativeWindow,
   SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
 
 #if BUILDFLAG(IS_LINUX)
-  // returns the ClientFrameViewLinux iff that is our FrameView type,
-  // nullptr otherwise.
-  ClientFrameViewLinux* GetClientFrameViewLinux();
+  LinuxFrameLayout* GetLinuxFrameLayout();
 #endif
 
  private:
@@ -204,6 +210,8 @@ class NativeWindowViews : public NativeWindow,
   void set_overlay_symbol_color(SkColor color) {
     overlay_symbol_color_ = color;
   }
+
+  gfx::Insets GetRestoredFrameBorderInsets() const;
 
   // views::WidgetObserver:
   void OnWidgetActivationChanged(views::Widget* widget, bool active) override;
@@ -273,7 +281,7 @@ class NativeWindowViews : public NativeWindow,
   std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
 #endif
 
-#if BUILDFLAG(IS_OZONE_X11)
+#if BUILDFLAG(SUPPORTS_OZONE_X11)
   // To disable the mouse events.
   std::unique_ptr<EventDisabler> event_disabler_;
 #endif
@@ -359,6 +367,7 @@ class NativeWindowViews : public NativeWindow,
   bool maximizable_ = true;
   bool minimizable_ = true;
   bool fullscreenable_ = true;
+  bool has_shadow_ = true;
   gfx::Size widget_size_;
   double opacity_ = 1.0;
   bool widget_destroyed_ = false;

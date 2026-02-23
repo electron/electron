@@ -33,7 +33,7 @@ std::string EncodeToken(const base::UnguessableToken& token) {
 }
 
 base::Value PortInfoToValue(const device::mojom::SerialPortInfo& port) {
-  base::Value::Dict value;
+  base::DictValue value;
   if (port.display_name && !port.display_name->empty()) {
     value.Set(kPortNameKey, *port.display_name);
   } else {

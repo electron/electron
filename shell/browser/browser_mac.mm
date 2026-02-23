@@ -304,7 +304,7 @@ bool Browser::SetBadgeCount(std::optional<int> count) {
 }
 
 void Browser::SetUserActivity(const std::string& type,
-                              base::Value::Dict user_info,
+                              base::DictValue user_info,
                               gin::Arguments* args) {
   std::string url_string;
   args->GetNext(&url_string);
@@ -330,7 +330,7 @@ void Browser::ResignCurrentActivity() {
 }
 
 void Browser::UpdateCurrentActivity(const std::string& type,
-                                    base::Value::Dict user_info) {
+                                    base::DictValue user_info) {
   [[AtomApplication sharedApplication]
       updateCurrentActivity:base::SysUTF8ToNSString(type)
                withUserInfo:DictionaryValueToNSDictionary(
@@ -351,8 +351,8 @@ void Browser::DidFailToContinueUserActivity(const std::string& type,
 }
 
 bool Browser::ContinueUserActivity(const std::string& type,
-                                   base::Value::Dict user_info,
-                                   base::Value::Dict details) {
+                                   base::DictValue user_info,
+                                   base::DictValue details) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
     observer.OnContinueUserActivity(&prevent_default, type, user_info.Clone(),
@@ -361,13 +361,13 @@ bool Browser::ContinueUserActivity(const std::string& type,
 }
 
 void Browser::UserActivityWasContinued(const std::string& type,
-                                       base::Value::Dict user_info) {
+                                       base::DictValue user_info) {
   for (BrowserObserver& observer : observers_)
     observer.OnUserActivityWasContinued(type, user_info.Clone());
 }
 
 bool Browser::UpdateUserActivityState(const std::string& type,
-                                      base::Value::Dict user_info) {
+                                      base::DictValue user_info) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
     observer.OnUpdateUserActivityState(&prevent_default, type,
@@ -621,7 +621,7 @@ void Browser::ShowAboutPanel() {
       orderFrontStandardAboutPanelWithOptions:options];
 }
 
-void Browser::SetAboutPanelOptions(base::Value::Dict options) {
+void Browser::SetAboutPanelOptions(base::DictValue options) {
   about_panel_options_.clear();
 
   for (const auto pair : options) {

@@ -6,10 +6,10 @@ Subject: refactor: patch electron PermissionTypes into blink
 6387077: [PermissionOptions] Generalize PermissionRequestDescription | https://chromium-review.googlesource.com/c/chromium/src/+/6387077
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 951682514323db7325496201f82716516e3e87f9..2d2358e1438013ba79963a692b45030692cefdca 100644
+index 3b25ba24e81c7b5b27e65f30ea7a2c174c397efa..f0503f0502a5b4bf2fe3b22ccde42acece395e6a 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -554,9 +554,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -552,9 +552,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::LOCAL_NETWORK;
      case PermissionType::LOOPBACK_NETWORK:
        return ContentSettingsType::LOOPBACK_NETWORK;
@@ -30,7 +30,7 @@ index 951682514323db7325496201f82716516e3e87f9..2d2358e1438013ba79963a692b450306
  
    return ContentSettingsType::DEFAULT;
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 1b99c0e3bd89fb909bc18537dc70c0e04f4149c7..9aa94047dbd6067109988766584b915f40283b2c 100644
+index d278eae0806c1d51e949c7026fa01f01494c8dd3..6e663bb95de59ddc06064a9bf26e6e58828c1a7f 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
 @@ -97,9 +97,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
@@ -53,7 +53,7 @@ index 1b99c0e3bd89fb909bc18537dc70c0e04f4149c7..9aa94047dbd6067109988766584b915f
  
  #if !BUILDFLAG(IS_ANDROID)
 diff --git a/content/browser/permissions/permission_descriptor_util.cc b/content/browser/permissions/permission_descriptor_util.cc
-index 260951e60f5d805a044afe94cad6fca86bb7e365..f8e74586db1aef323d78f7ef6b5b31d26c1861b5 100644
+index d2ea06fa66c07baaf741382af40de154068a7d6b..3397e741fbc52ce45cd62dd3fe12e73b8c010c4b 100644
 --- a/content/browser/permissions/permission_descriptor_util.cc
 +++ b/content/browser/permissions/permission_descriptor_util.cc
 @@ -180,13 +180,27 @@ content::PermissionDescriptorUtil::CreatePermissionDescriptorForPermissionType(
@@ -90,7 +90,7 @@ index 260951e60f5d805a044afe94cad6fca86bb7e365..f8e74586db1aef323d78f7ef6b5b31d2
    NOTREACHED();
  }
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
-index 9297e5667ef794fad52d76d878d2d50aefad3d11..99241994175249437141fcf6f49918f8f073e907 100644
+index 19b8fa4b094b646ad6a5864c5e14a2f125fb7880..9728d674902d84f99fd93f258a8868ab811a8707 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
 @@ -108,11 +108,21 @@ std::string GetPermissionString(PermissionType permission) {
@@ -158,7 +158,7 @@ index 9297e5667ef794fad52d76d878d2d50aefad3d11..99241994175249437141fcf6f49918f8
  }
  
 diff --git a/third_party/blink/public/common/permissions/permission_utils.h b/third_party/blink/public/common/permissions/permission_utils.h
-index 38c20e7f0c597815ce5ee3333f12183ac1e18c62..7bce804a8ed1c8a2f2ac18524c6317db8bbc4442 100644
+index 31158388db2df745af999adc9d07fc9272a2d6f8..fed5994c8563792405838d8923d3502aedbe85a2 100644
 --- a/third_party/blink/public/common/permissions/permission_utils.h
 +++ b/third_party/blink/public/common/permissions/permission_utils.h
 @@ -69,8 +69,17 @@ enum class PermissionType {
@@ -182,7 +182,7 @@ index 38c20e7f0c597815ce5ee3333f12183ac1e18c62..7bce804a8ed1c8a2f2ac18524c6317db
    MIN_VALUE = MIDI_SYSEX,
  };
 diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
-index cd200c6aadb304e440df65532a9ef86f0aef4fa7..88448c95da18953402b6de44676edfb19f657c05 100644
+index 8a2e1ec60c337d4fb40292b53ee8949e0ce2b8a4..e5d9922b15ccd8c08e4dd0b2656d606c8e896b66 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
 @@ -47,8 +47,16 @@ enum PermissionName {
@@ -204,7 +204,7 @@ index cd200c6aadb304e440df65532a9ef86f0aef4fa7..88448c95da18953402b6de44676edfb1
    bool sysex;
  };
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index ca46a15c03d72da4a301aff6fc18c173eaa7e6c8..7a52f09c49fbf8343b33f8c07057c5de894f6f28 100644
+index e9b7dcb070567580e8c6ad11b2bb943083e804f6..898efc336171ba6e33788dc754afaa47e3928f9e 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
 @@ -151,8 +151,22 @@ String PermissionNameToString(PermissionName name) {

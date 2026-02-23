@@ -40,7 +40,7 @@
 * `javascript` boolean (optional) - Enables JavaScript support. Default is `true`.
 * `webSecurity` boolean (optional) - When `false`, it will disable the
   same-origin policy (usually using testing websites by people), and set
-  `allowRunningInsecureContent` to `true` if this options has not been set
+  `allowRunningInsecureContent` to `true` if this option has not been set
   by user. Default is `true`.
 * `allowRunningInsecureContent` boolean (optional) - Allow an https page to run
   JavaScript, CSS or plugins from http URLs. Default is `false`.
@@ -94,7 +94,7 @@
     The actual output pixel format and color space of the texture should refer to [`OffscreenSharedTexture`](../structures/offscreen-shared-texture.md) object in the `paint` event.
     * `argb` - The requested output texture format is 8-bit unorm RGBA, with SRGB SDR color space.
     * `rgbaf16` - The requested output texture format is 16-bit float RGBA, with scRGB HDR color space.
-  * `deviceScaleFactor` number (optional) _Experimental_ - The device scale factor of the offscreen rendering output. If not set, will use primary display's scale factor as default.
+  * `deviceScaleFactor` number (optional) _Experimental_ - The device scale factor of the offscreen rendering output. If not set, will use `1` as default.
 * `contextIsolation` boolean (optional) - Whether to run Electron APIs and
   the specified `preload` script in a separate JavaScript context. Defaults
   to `true`. The context that the `preload` script runs in will only have

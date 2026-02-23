@@ -17,6 +17,56 @@
    Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/{CL_NUMBER}
    ```
 
+## Critical: Resolve by Intent, Not by Mechanical Merge
+
+When resolving a patch conflict, do NOT blindly preserve the patch's old code. Instead:
+
+1. **Understand the upstream CL's full scope** — not just the conflicting hunk.
+   Run `git show <commit> --stat` and read diffs for all affected files.
+   Upstream may have removed structs, members, or methods that the patch
+   references in other hunks or files.
+
+2. **Re-read the patch commit message** to understand its *intent* — what
+   behavior does it need to preserve or add?
+
+3. **Implement the intent against the new upstream code.** If the patch's
+   purpose is "add a feature flag guard", add only the guard — don't also
+   restore old code inside the guard that upstream separately removed.
+
+### Lesson: Upstream Removals Break Patch References
+
+- **Trigger:** Patch conflict involves an upstream refactor (not just context drift)
+- **Strategy:** After identifying the upstream CL, check its full diff for
+  removed types, members, and methods. If the patch's old code references
+  something removed, the resolution must use the new upstream mechanism.
+- **Evidence:** An upstream CL removed a `HeadlessModeWindow` struct from a
+  header, but the conflict was only in a `.mm` file. Mechanically keeping the
+  patch's old line (`headless_mode_window_ = ...`) produced code referencing
+  a nonexistent type — caught only on review, not at patch-apply time.
+
+### Lesson: Separate Patch Purpose from Patch Implementation
+
+- **Trigger:** Conflict between "upstream simplified code" vs "patch has older code"
+- **Strategy:** Identify the *minimal* change the patch needs. If the patch
+  wraps code in a conditional, only add the conditional — don't restore old
+  code that was inside the conditional but was separately cleaned up upstream.
+- **Evidence:** An occlusion patch needed only a feature flag check, but the
+  old patch also contained a version check that upstream intentionally removed.
+  Mechanically preserving the old patch code re-added the removed check.
+
+### Lesson: Finish the Adaptation at Conflict Time
+
+- **Trigger:** A patch conflict involves an upstream API removal or replacement
+- **Strategy:** When resolving the conflict, fully adapt the patch to use the
+  new API in the same commit. Don't remove the old code and leave behind stale
+  references that will "be fixed in Phase Two." Each patch fix commit should be
+  a complete resolution.
+- **Evidence:** A safestorage patch conflicted because Chromium removed Keychain V1.
+  The conflict was resolved by removing V1 hunks, but the remaining code still
+  called V1 methods (`FindGenericPassword` with 3 args, `ItemDelete` with
+  `SecKeychainItemRef`). These should have been adapted to V2 APIs in the same
+  commit, not deferred.
+
 ## Common Failure Patterns
 
 | Pattern | Cause | Solution |

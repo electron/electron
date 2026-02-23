@@ -70,6 +70,7 @@
   "parallel/test-tls-multi-pfx",
   "parallel/test-tls-no-cert-required",
   "parallel/test-tls-no-sslv23",
+  "parallel/test-tls-off-thread-cert-loading",
   "parallel/test-tls-options-boolean-check",
   "parallel/test-tls-passphrase",
   "parallel/test-tls-psk-alpn-callback-exception-handling",

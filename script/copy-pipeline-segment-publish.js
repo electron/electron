@@ -12,6 +12,7 @@ const baseContents = fs.readFileSync(base, 'utf-8');
 
 const parsedBase = yaml.parse(baseContents);
 parsedBase.jobs.build.permissions = {
+  'artifact-metadata': 'write',
   attestations: 'write',
   contents: 'read',
   'id-token': 'write'

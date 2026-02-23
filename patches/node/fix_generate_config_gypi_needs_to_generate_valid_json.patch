@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 10 Feb 2026 16:48:47 +0100
+Subject: fix: generate_config_gypi needs to generate valid JSON
+
+Node.js added new process.config.variables entries, which the GN generator
+emitted with Python repr (single quotes). This made the JSON parse blow
+up. Fix this by switching to json.dumps.
+
+This should be upstreamed.
+
+diff --git a/tools/generate_config_gypi.py b/tools/generate_config_gypi.py
+index abd11e1dbda8d400cb900343c6e8d2d6e84fe944..436767e633e1f492fa858645e25ce9b904a5fccb 100755
+--- a/tools/generate_config_gypi.py
++++ b/tools/generate_config_gypi.py
+@@ -58,7 +58,7 @@ def translate_config(out_dir, config, v8_config):
+       'llvm_version': 13,
+       'napi_build_version': config['napi_build_version'],
+       'node_builtin_shareable_builtins':
+-          eval(config['node_builtin_shareable_builtins']),
++          json.loads(config['node_builtin_shareable_builtins']),
+       'node_module_version': int(config['node_module_version']),
+       'node_use_openssl': config['node_use_openssl'],
+       'node_use_amaro': config['node_use_amaro'],
+@@ -102,7 +102,8 @@ def main():
+ 
+   # Write output.
+   with open(args.target, 'w') as f:
+-    f.write(repr(translate_config(args.out_dir, config, v8_config)))
++    f.write(json.dumps(translate_config(args.out_dir, config, v8_config),
++                       sort_keys=True))
+ 
+   # Write depfile. Force regenerating config.gypi when GN configs change.
+   if args.dep_file:

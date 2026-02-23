@@ -43,10 +43,10 @@ index 21d5ab99800c0830cc31ec4ebb24e3f05cd904d8..3f8f514519d6e4a0abe3690f5df35de8
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfXfaSupport);
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index d7150c5f576f141cac2755c32dfb8e763675ff7b..ace4033f0257e3da62e7ebaf1a98b177c9e1e49b 100644
+index 32cc3ee248d7bc488b91aa44504f057da1b1471c..cb5ae8612b29f222d452df9e2354e67cd14e8999 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
-@@ -248,10 +248,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
+@@ -255,10 +255,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
  
  #if BUILDFLAG(ENABLE_PDF_INK2)
  bool IsPdfAnnotationsEnabledByPolicy(content::BrowserContext* context) {
@@ -100,7 +100,7 @@ index bc0bad82ebcdceadc505e912ff27202b452fefab..6b77c57fccc4619a1df3b4ed661d2bdd
  
  ProfileSelection ProfileSelections::GetProfileSelection(
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index c063b296c7ff808342e5437a53fbcef6d7534342..9f3329d098a74316ddc2f04d8d470674d756ceba 100644
+index cf9cf84da456314804083c902859a0965425479f..779bdd17641c1808ff2c707b3de5f6c9b331ca2d 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
 @@ -20,8 +20,10 @@

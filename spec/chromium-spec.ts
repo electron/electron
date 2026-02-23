@@ -3280,6 +3280,29 @@ describe('chromium features', () => {
       expect(rgb).to.equal('');
     });
   });
+
+  describe('long-animation-frame', () => {
+    it('should include script attribution on custom protocols if AlwaysLogLOAFURL is enabled', async () => {
+      const rc = await startRemoteControlApp(['--enable-features=AlwaysLogLOAFURL']);
+      const hasAttribution = await rc.remotely(async (fixture: string) => {
+        const { BrowserWindow, protocol, net } = require('electron/main');
+        const { pathToFileURL } = require('node:url');
+
+        protocol.handle('custom', () => net.fetch(pathToFileURL(fixture).toString()));
+
+        // `show: true` is necessary on Windows and Linux due to https://github.com/electron/electron/issues/32001
+        const w = new BrowserWindow({ show: true });
+        await w.loadURL('custom://my-url');
+
+        const hasAttribution = await w.webContents.executeJavaScript('hasAttributionPromise');
+
+        global.setTimeout(() => require('electron').app.quit());
+
+        return hasAttribution;
+      }, path.join(fixturesPath, 'chromium', 'long-animation-frame.html'));
+      expect(hasAttribution).to.be.true();
+    });
+  });
 });
 
 describe('font fallback', () => {

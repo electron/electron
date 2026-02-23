@@ -93,6 +93,7 @@ jobs:
         shell: bash
     runs-on: ${{ inputs.build-runs-on }}
     permissions:
+      artifact-metadata: write
       attestations: write
       contents: read
       id-token: write

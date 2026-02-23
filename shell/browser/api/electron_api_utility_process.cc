@@ -19,6 +19,7 @@
 #include "content/public/common/result_codes.h"
 #include "gin/object_template_builder.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
+#include "services/network/public/cpp/originating_process.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
@@ -70,7 +71,8 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     base::EnvironmentMap env_map,
     base::FilePath current_working_directory,
     bool use_plugin_helper,
-    bool create_network_observer) {
+    bool create_network_observer,
+    bool disclaim_responsibility) {
 #if BUILDFLAG(IS_WIN)
   base::win::ScopedHandle stdout_write(nullptr);
   base::win::ScopedHandle stderr_write(nullptr);
@@ -184,6 +186,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
           .WithChildFlags(use_plugin_helper
                               ? content::ChildProcessHost::CHILD_PLUGIN
                               : content::ChildProcessHost::CHILD_NORMAL)
+          .WithDisclaimResponsibility(disclaim_responsibility)
 #endif
           .WithProcessCallback(
               base::BindOnce(&UtilityProcessWrapper::OnServiceProcessLaunch,
@@ -212,7 +215,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   mojo::PendingRemote<network::mojom::URLLoaderFactory> url_loader_factory;
   network::mojom::URLLoaderFactoryParamsPtr loader_params =
       network::mojom::URLLoaderFactoryParams::New();
-  loader_params->process_id = pid_;
+  loader_params->process_id = network::OriginatingProcess::browser();
   loader_params->is_orb_enabled = false;
   loader_params->is_trusted = true;
   if (create_network_observer) {
@@ -451,6 +454,7 @@ gin_helper::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
   std::u16string display_name;
   bool use_plugin_helper = false;
   bool create_network_observer = false;
+  bool disclaim_responsibility = false;
   std::map<IOHandle, IOType> stdio;
   base::FilePath current_working_directory;
   base::EnvironmentMap env_map;
@@ -494,13 +498,15 @@ gin_helper::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
 
 #if BUILDFLAG(IS_MAC)
     opts.Get("allowLoadingUnsignedLibraries", &use_plugin_helper);
+    opts.Get("disclaim", &disclaim_responsibility);
 #endif
   }
   auto handle = gin_helper::CreateHandle(
-      args->isolate(), new UtilityProcessWrapper(
-                           std::move(params), display_name, std::move(stdio),
-                           env_map, current_working_directory,
-                           use_plugin_helper, create_network_observer));
+      args->isolate(),
+      new UtilityProcessWrapper(
+          std::move(params), display_name, std::move(stdio), env_map,
+          current_working_directory, use_plugin_helper, create_network_observer,
+          disclaim_responsibility));
   handle->Pin(args->isolate());
   return handle;
 }

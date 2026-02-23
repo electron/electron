@@ -24,6 +24,35 @@ for more consistent output sizes.
 
 ## Planned Breaking API Changes (41.0)
 
+### Behavior Changed: `electron` no longer downloads itself via `postinstall` script
+
+Previously, the `electron` npm package would download the Electron binary from the repository's
+GitHub Releases in the package's `postinstall` script.
+
+With recent supply chain security attacks against the npm ecosystem with `postinstall` scripts as a
+common attack vector, Electron will now download itself dynamically the first time that its main
+`bin` script is run (e.g. via `npx electron`). With this change, you can now use Electron with the
+npm `--ignore-scripts` flag. See [RFC #22](https://github.com/electron/rfcs/pull/22) for more context.
+
+```sh
+# won't install binary to `node_modules/electron`
+npm install electron --save-dev --ignore-scripts
+
+# will download the binary on demand before starting electron process
+npx electron .
+
+# subsequent runs will used the binary downloaded from the first run
+npx electron .
+```
+
+If you need to download the Electron binary on-demand, you can now call the `install-electron` script,
+which contains the exact same code from the former `postinstall` script.
+
+```sh
+npm install electron --save-dev --ignore-scripts
+npx install-electron --no
+```
+
 ### Behavior Changed: PDFs no longer create a separate WebContents
 
 Previously, PDF resources created a separate guest [WebContents](https://www.electronjs.org/docs/latest/api/web-contents) for rendering. Now, PDFs are rendered within the same WebContents instead. If you have code to detect PDF resources, use the [frame tree](https://www.electronjs.org/docs/latest/api/web-frame-main) instead of WebContents.
@@ -76,6 +105,22 @@ webContents.setWindowOpenHandler((details) => {
 })
 ```
 
+### Behavior Changed: `NSAudioCaptureUsageDescription` should be included in your app's Info.plist file to use `desktopCapturer` (🍏 macOS ≥14.2)
+
+Per [Chromium update](https://source.chromium.org/chromium/chromium/src/+/ad17e8f8b93d5f34891b06085d373a668918255e) which enables Apple's newer [CoreAudio Tap API](https://developer.apple.com/documentation/CoreAudio/capturing-system-audio-with-core-audio-taps#Configure-the-sample-code-project) by default, you now must have `NSAudioCaptureUsageDescription` defined in your `Info.plist` to use `desktopCapturer`.
+
+Electron's `desktopCapturer` will create a dead audio stream if the new permission is absent however no errors or warnings will occur. This is partially a side-effect of Chromium not falling back to the older `Screen & System Audio Recording` permissions system if the new system fails.
+
+To restore previous behavior:
+
+```js
+// main.js (right beneath your require/import statments)
+app.commandLine.appendSwitch(
+  'disable-features',
+  'MacCatapLoopbackAudioForScreenShare'
+)
+```
+
 ### Behavior Changed: shared texture OSR `paint` event data structure
 
 When using shared texture offscreen rendering feature, the `paint` event now emits a more structured object.
@@ -94,7 +139,7 @@ Users can force XWayland by passing `--ozone-platform=x11`.
 ### Removed: `ORIGINAL_XDG_CURRENT_DESKTOP` environment variable
 
 Previously, Electron changed the value of `XDG_CURRENT_DESKTOP` internally to `Unity`, and stored the original name of the desktop session
-in a separate variable. `XDG_CURRENT_DESKTOP` is no longer overriden and now reflects the actual desktop environment.
+in a separate variable. `XDG_CURRENT_DESKTOP` is no longer overridden and now reflects the actual desktop environment.
 
 ### Removed: macOS 11 support
 
@@ -175,7 +220,7 @@ window is not currently visible.
 
 `app.commandLine` was only meant to handle chromium switches (which aren't case-sensitive) and switches passed via `app.commandLine` will not be passed down to any of the child processes.
 
-If you were using `app.commandLine` to control the behavior of the  main process, you should do this via `process.argv`.
+If you were using `app.commandLine` to control the behavior of the main process, you should do this via `process.argv`.
 
 ### Deprecated: `NativeImage.getBitmap()`
 
@@ -205,7 +250,7 @@ from upstream Chromium.
 ### Deprecated: `null` value for `session` property in `ProtocolResponse`
 
 Previously, setting the ProtocolResponse.session property to `null`
-Would create a random independent session. This is no longer supported.
+would create a random independent session. This is no longer supported.
 
 Using single-purpose sessions here is discouraged due to overhead costs;
 however, old code that needs to preserve this behavior can emulate it by
@@ -216,7 +261,7 @@ and then using it in `ProtocolResponse.session`.
 
 When calling `Session.clearStorageData(options)`, the `options.quota`
 property is deprecated. Since the `syncable` type was removed, there
-is only type left -- `'temporary'` -- so specifying it is unnecessary.
+is only one type left -- `'temporary'` -- so specifying it is unnecessary.
 
 ### Deprecated: Extension methods and events on `session`
 
@@ -545,7 +590,7 @@ more information.
 
 ### Removed: The `--disable-color-correct-rendering` switch
 
-This switch was never formally documented but it's removal is being noted here regardless. Chromium itself now has better support for color spaces so this flag should not be needed.
+This switch was never formally documented but its removal is being noted here regardless. Chromium itself now has better support for color spaces so this flag should not be needed.
 
 ### Behavior Changed: `BrowserView.setAutoResize` behavior on macOS
 
@@ -1236,7 +1281,7 @@ more details.
 
 ### API Changed: `webContents.printToPDF()`
 
-`webContents.printToPDF()` has been modified to conform to [`Page.printToPDF`](https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-printToPDF) in the Chrome DevTools Protocol. This has been changes in order to
+`webContents.printToPDF()` has been modified to conform to [`Page.printToPDF`](https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-printToPDF) in the Chrome DevTools Protocol. This has been changed in order to
 address changes upstream that made our previous implementation untenable and rife with bugs.
 
 **Arguments Changed**
