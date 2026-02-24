@@ -33,7 +33,7 @@ WebContentsView::WebContentsView(v8::Isolate* isolate,
                                  gin_helper::Handle<WebContents> web_contents)
     : View(web_contents->inspectable_web_contents()->GetView()),
       web_contents_(isolate, web_contents.ToV8()),
-      api_web_contents_(web_contents.get()) {
+      api_web_contents_(web_contents->GetWeakPtr()) {
   set_delete_view(false);
   view()->SetProperty(
       views::kFlexBehaviorKey,
