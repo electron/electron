@@ -414,3 +414,29 @@ index 255293ac2deb689d0e15644c4645780b09ad0e3b..ce8ccdacc8a01ffebbea4f188fd34af3
      v8::Local<v8::Value> val = v8::Local<v8::Value>::New(isolate, data);
  
      if (!val.IsEmpty()) {
+diff --git a/test/cpp/nannew.cpp b/test/cpp/nannew.cpp
+index e36ce4f85d2a30dcba1e8bc13232459b4699d921..c368c34581ff8f1a704a718b88972903af588f73 100644
+--- a/test/cpp/nannew.cpp
++++ b/test/cpp/nannew.cpp
+@@ -136,7 +136,7 @@ NAN_METHOD(testExternal) {
+ 
+   t.plan(2);
+ 
+-  t.ok(_(New<External>(&ttt)->Value() == &ttt));
++  t.ok(_(New<External>(&ttt)->Value(v8::kExternalPointerTypeTagDefault) == &ttt));
+   t.ok(_( assertType<External>(New<External>(&ttt))));
+ 
+   info.GetReturnValue().SetUndefined();
+diff --git a/test/cpp/news.cpp b/test/cpp/news.cpp
+index 3597f0fca8a7adff7738468a9a8bd54e854c9625..f913b679a77b43f9264b68f75af44c316cd5e1cb 100644
+--- a/test/cpp/news.cpp
++++ b/test/cpp/news.cpp
+@@ -93,7 +93,7 @@ NAN_METHOD(NewBooleanObject) {
+ 
+ NAN_METHOD(NewExternal) {
+   v8::Local<v8::External> ext = New<v8::External>(&magic);
+-  assert(*static_cast<int *>(ext->Value()) == 1337);
++  assert(*static_cast<int *>(ext->Value(v8::kExternalPointerTypeTagDefault)) == 1337);
+   info.GetReturnValue().Set(New("passed").ToLocalChecked());
+ }
+ 
