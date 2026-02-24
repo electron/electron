@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 16 Feb 2026 22:33:57 +0100
+Subject: fix: update DBus signal signature for XDG GlobalShortcuts portal
+
+Refs https://chromium-review.googlesource.com/c/chromium/src/+/7143562
+
+The Activated signal from the XDG GlobalShortcuts portal has signature "osta{sv}",
+but ConnectToSignal was declared with "ost". The strict ReadMessage parser
+fails on the extra trailing options vardict. Fix by updating the signature
+to match the spec.
+
+This should be upstreamed.
+
+diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
+index 505e59edad7acb41f272f1e323cfd90744e4701b..ead80cfac902a7630cf502b03cb7d2ee048944ac 100644
+--- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
++++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
+@@ -78,7 +78,7 @@ void GlobalAcceleratorListenerLinux::OnServiceStarted(bool service_started) {
+   global_shortcuts_proxy_ = bus_->GetObjectProxy(
+       kPortalServiceName, dbus::ObjectPath(kPortalObjectPath));
+ 
+-  dbus_utils::ConnectToSignal<"ost">(
++  dbus_utils::ConnectToSignal<"osta{sv}">(
+       global_shortcuts_proxy_, kGlobalShortcutsInterface, kSignalActivated,
+       base::BindRepeating(&GlobalAcceleratorListenerLinux::OnActivatedSignal,
+                           weak_ptr_factory_.GetWeakPtr()),
+@@ -299,13 +299,14 @@ void GlobalAcceleratorListenerLinux::OnBindShortcuts(
+ }
+ 
+ void GlobalAcceleratorListenerLinux::OnActivatedSignal(
+-    dbus_utils::ConnectToSignalResultSig<"ost"> result) {
++    dbus_utils::ConnectToSignalResultSig<"osta{sv}"> result) {
+   if (!result.has_value()) {
+     LOG(ERROR) << "Failed to parse Activated signal.";
+     return;
+   }
+ 
+-  auto [session_handle, shortcut_id, timestamp] = std::move(result.value());
++  auto [session_handle, shortcut_id, timestamp, options] =
++      std::move(result.value());
+ 
+   // Only process the signal if it comes from our current session.
+   if (!session_proxy_ || session_proxy_->object_path() != session_handle) {
+diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.h b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.h
+index 3838de75a0a3791f774e2ddedec0f6c7f2f30157..91a205e6c526aa02b46b1590fa427e8875a67280 100644
+--- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.h
++++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.h
+@@ -97,7 +97,8 @@ class GlobalAcceleratorListenerLinux : public GlobalAcceleratorListener {
+       base::expected<dbus_xdg::Dictionary, dbus_xdg::ResponseError> results);
+ 
+   // Callbacks for DBus signals.
+-  void OnActivatedSignal(dbus_utils::ConnectToSignalResultSig<"ost"> result);
++  void OnActivatedSignal(
++      dbus_utils::ConnectToSignalResultSig<"osta{sv}"> result);
+ 
+   void OnSignalConnected(const std::string& interface_name,
+                          const std::string& signal_name,

@@ -3983,6 +3983,28 @@ describe('BrowserWindow module', () => {
         expect(webPreferences!.contextIsolation).to.equal(false);
       });
 
+      it('should apply zoomFactor from setWindowOpenHandler overrideBrowserWindowOptions', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true
+          }
+        });
+
+        w.webContents.setWindowOpenHandler(() => ({
+          action: 'allow',
+          overrideBrowserWindowOptions: {
+            webPreferences: {
+              zoomFactor: 2.0
+            }
+          }
+        }));
+        w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
+        const [childWindow] = await once(w.webContents, 'did-create-window') as [BrowserWindow, any];
+        await once(childWindow.webContents, 'did-finish-load');
+        expect(childWindow.webContents.getZoomFactor()).to.be.closeTo(2.0, 0.1);
+      });
+
       it('should set ipc event sender correctly', async () => {
         const w = new BrowserWindow({
           show: false,
@@ -4887,6 +4909,27 @@ describe('BrowserWindow module', () => {
       w.restore();
       await restore;
       expect(w.isMaximized()).to.equal(true);
+    });
+
+    ifit(process.platform !== 'linux')('should not break fullscreen state', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.show();
+
+      const enterFS = once(w, 'enter-full-screen');
+      w.setFullScreen(true);
+      await enterFS;
+      expect(w.isFullScreen()).to.be.true('not fullscreen');
+
+      w.restore();
+      await setTimeout(1000);
+
+      expect(w.isFullScreen()).to.be.true('not fullscreen after restore');
+      expect(w.isMinimized()).to.be.false('should not be minimized');
+
+      // Clean up fullscreen state.
+      const leaveFS = once(w, 'leave-full-screen');
+      w.setFullScreen(false);
+      await leaveFS;
     });
   });
 
@@ -5885,6 +5928,23 @@ describe('BrowserWindow module', () => {
           w.setMenuBarVisibility(true);
           expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
         });
+      });
+    });
+
+    ifdescribe(process.platform === 'linux')('menu bar AltGr behavior', () => {
+      it('does not toggle auto-hide menu bar visibility', async () => {
+        const w = new BrowserWindow({ show: false, autoHideMenuBar: true });
+        w.setMenuBarVisibility(false);
+        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+
+        w.show();
+        await once(w, 'show');
+        w.webContents.focus();
+        w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'AltGr' });
+        w.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'AltGr' });
+        await setTimeout();
+
+        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
       });
     });
 

@@ -1167,7 +1167,7 @@ The approach demonstrated here allows you to:
 * Setting up bidirectional communication using callbacks and events
 * Configuring a custom build process to compile Swift code
 
-For more information on developing with Swift and Swift, refer to Apple's developer documentation:
+For more information on developing with Swift and SwiftUI, refer to Apple's developer documentation:
 
 * [Swift Programming Language](https://developer.apple.com/swift/)
 * [SwiftUI Framework](https://developer.apple.com/documentation/swiftui)
