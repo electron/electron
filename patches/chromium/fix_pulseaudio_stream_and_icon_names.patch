@@ -16,10 +16,33 @@ instead of having 20 "Chromium" outputs and "Chromium input" inputs, that are ac
 completely different applications.
 
 This patch can be removed when upstream starts using AudioManager::SetGlobalAppName()
-for all pa_context names (and when actually works with AudioServiceOutOfProcess). 
+for all pa_context names (and when actually works with AudioServiceOutOfProcess).
 
+diff --git a/content/browser/audio/audio_service.cc b/content/browser/audio/audio_service.cc
+index 70615782c50d18606c3baa42a223e54f8619bc07..19bc8504c964d225b42065a994dfadb516143d49 100644
+--- a/content/browser/audio/audio_service.cc
++++ b/content/browser/audio/audio_service.cc
+@@ -29,6 +29,7 @@
+ #include "services/audio/public/mojom/audio_service.mojom.h"
+ #include "services/audio/service.h"
+ #include "services/audio/service_factory.h"
++#include "electron/shell/common/application_info.h"
+ 
+ #if BUILDFLAG(ENABLE_PASSTHROUGH_AUDIO_CODECS) && BUILDFLAG(IS_WIN)
+ #define PASS_EDID_ON_COMMAND_LINE 1
+@@ -109,6 +110,10 @@ void LaunchAudioServiceOutOfProcess(
+     mojo::PendingReceiver<audio::mojom::AudioService> receiver,
+     uint32_t codec_bitmask) {
+   std::vector<std::string> switches;
++#if BUILDFLAG(IS_LINUX)
++  // Set app_name variable for pulse_util to grab and set pa_context name
++  setenv("app_name", electron::GetPossiblyOverriddenApplicationName().c_str(), 1);
++#endif
+ #if BUILDFLAG(IS_MAC)
+   // On Mac, the audio service requires a CFRunLoop provided by a
+   // UI MessageLoop type, to run AVFoundation and CoreAudio code.
 diff --git a/media/audio/pulse/pulse_util.cc b/media/audio/pulse/pulse_util.cc
-index a08e42a..78915db 100644
+index a08e42a464a3894cbf2b8e3cf8a320a33423b719..78915db7d33db69e3489736f346c872b9ef6ec78 100644
 --- a/media/audio/pulse/pulse_util.cc
 +++ b/media/audio/pulse/pulse_util.cc
 @@ -10,6 +10,7 @@
@@ -93,26 +116,3 @@ index a08e42a..78915db 100644
    *stream = pa_stream_new_with_proplist(
        *context, "Playback", &sample_specifications, map, property_list.get());
    RETURN_ON_FAILURE(*stream, "failed to create PA playback stream");
-diff --git a/content/browser/audio/audio_service.cc b/content/browser/audio/audio_service.cc
-index 608b5e3..c9f48bd 100644
---- a/content/browser/audio/audio_service.cc
-+++ b/content/browser/audio/audio_service.cc
-@@ -29,6 +29,7 @@
- #include "services/audio/public/mojom/audio_service.mojom.h"
- #include "services/audio/service.h"
- #include "services/audio/service_factory.h"
-+#include "electron/shell/common/application_info.h"
- 
- #if BUILDFLAG(ENABLE_PASSTHROUGH_AUDIO_CODECS)
- #include "ui/display/util/edid_parser.h"
-@@ -115,6 +116,10 @@ void LaunchAudioServiceOutOfProcess(
-     mojo::PendingReceiver<audio::mojom::AudioService> receiver,
-     uint32_t codec_bitmask) {
-   std::vector<std::string> switches;
-+#if BUILDFLAG(IS_LINUX)
-+  // Set app_name variable for pulse_util to grab and set pa_context name
-+  setenv("app_name", electron::GetPossiblyOverriddenApplicationName().c_str(), 1);
-+#endif
- #if BUILDFLAG(IS_MAC)
-   // On Mac, the audio service requires a CFRunLoop provided by a
-   // UI MessageLoop type, to run AVFoundation and CoreAudio code.
