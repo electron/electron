@@ -43,10 +43,10 @@ index 21d5ab99800c0830cc31ec4ebb24e3f05cd904d8..3f8f514519d6e4a0abe3690f5df35de8
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfXfaSupport);
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index 32cc3ee248d7bc488b91aa44504f057da1b1471c..cb5ae8612b29f222d452df9e2354e67cd14e8999 100644
+index 6757b8354a4053f164d9286dac07c06cab563fd8..f609176384cc5b7f65042956df16e4a052a27cf6 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
-@@ -255,10 +255,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
+@@ -260,10 +260,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
  
  #if BUILDFLAG(ENABLE_PDF_INK2)
  bool IsPdfAnnotationsEnabledByPolicy(content::BrowserContext* context) {
@@ -58,8 +58,17 @@ index 32cc3ee248d7bc488b91aa44504f057da1b1471c..cb5ae8612b29f222d452df9e2354e67c
 +#endif
 +  return true;
  }
- #endif  // BUILDFLAG(ENABLE_PDF_INK2)
  
+ bool IsPdfInk2AnnotationsEnabled(content::BrowserContext* context) {
+@@ -427,7 +430,7 @@ void DispatchShouldUpdateViewportEvent(content::RenderFrameHost* embedder_host,
+ }
+ 
+ bool ShouldShowGlicSummarizeButton(content::BrowserContext* context) {
+-#if BUILDFLAG(ENABLE_GLIC)
++#if 0
+   Profile* profile = Profile::FromBrowserContext(context);
+   if (!glic::GlicEnabling::IsEnabledForProfile(profile)) {
+     return false;
 diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
 index bc0bad82ebcdceadc505e912ff27202b452fefab..6b77c57fccc4619a1df3b4ed661d2bdd60960228 100644
 --- a/chrome/browser/profiles/profile_selections.cc

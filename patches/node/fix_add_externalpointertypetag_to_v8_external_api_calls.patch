@@ -1,0 +1,127 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alice Zhao <alicelovescake@anthropic.com>
+Date: Fri, 20 Feb 2026 21:57:00 -0800
+Subject: fix: add ExternalPointerTypeTag to v8::External API calls
+
+V8 changed v8::External::New and v8::External::Value to require
+an ExternalPointerTypeTag parameter. Use kExternalPointerTypeTagDefault
+for all existing call sites.
+
+diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
+index d6af2460c3745901415d4e785cf210da8a730a8d..4b5b892b81727c8f93e3041d33902c31d3776a52 100644
+--- a/src/crypto/crypto_context.cc
++++ b/src/crypto/crypto_context.cc
+@@ -2336,7 +2336,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
+ void SecureContext::CtxGetter(const FunctionCallbackInfo<Value>& info) {
+   SecureContext* sc;
+   ASSIGN_OR_RETURN_UNWRAP(&sc, info.This());
+-  Local<External> ext = External::New(info.GetIsolate(), sc->ctx_.get());
++  Local<External> ext = External::New(info.GetIsolate(), sc->ctx_.get(), v8::kExternalPointerTypeTagDefault);
+   info.GetReturnValue().Set(ext);
+ }
+ 
+diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
+index a944c18518471a55a44a7ff32190fe9920d0cb20..82214a5d051bb2ca487c92f684b03dcf709255a0 100644
+--- a/src/js_native_api_v8.cc
++++ b/src/js_native_api_v8.cc
+@@ -356,7 +356,7 @@ inline napi_status Unwrap(napi_env env,
+                  .ToLocalChecked();
+   RETURN_STATUS_IF_FALSE(env, val->IsExternal(), napi_invalid_arg);
+   Reference* reference =
+-      static_cast<v8impl::Reference*>(val.As<v8::External>()->Value());
++      static_cast<v8impl::Reference*>(val.As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault));
+ 
+   if (result) {
+     *result = reference->Data();
+@@ -395,14 +395,14 @@ class CallbackBundle {
+     bundle->cb_data = data;
+     bundle->env = env;
+ 
+-    v8::Local<v8::Value> cbdata = v8::External::New(env->isolate, bundle);
++    v8::Local<v8::Value> cbdata = v8::External::New(env->isolate, bundle, v8::kExternalPointerTypeTagDefault);
+     ReferenceWithFinalizer::New(
+         env, cbdata, 0, ReferenceOwnership::kRuntime, Delete, bundle, nullptr);
+     return cbdata;
+   }
+ 
+   static CallbackBundle* FromCallbackData(v8::Local<v8::Value> data) {
+-    return reinterpret_cast<CallbackBundle*>(data.As<v8::External>()->Value());
++    return reinterpret_cast<CallbackBundle*>(data.As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault));
+   }
+ 
+  public:
+@@ -575,7 +575,7 @@ inline napi_status Wrap(napi_env env,
+ 
+   CHECK(obj->SetPrivate(context,
+                         NAPI_PRIVATE_KEY(context, wrapper),
+-                        v8::External::New(env->isolate, reference))
++                        v8::External::New(env->isolate, reference, v8::kExternalPointerTypeTagDefault))
+             .FromJust());
+ 
+   return GET_RETURN_STATUS(env);
+@@ -842,7 +842,7 @@ class ExternalWrapper {
+  public:
+   static v8::Local<v8::External> New(napi_env env, void* data) {
+     ExternalWrapper* wrapper = new ExternalWrapper(data);
+-    v8::Local<v8::External> external = v8::External::New(env->isolate, wrapper);
++    v8::Local<v8::External> external = v8::External::New(env->isolate, wrapper, v8::kExternalPointerTypeTagDefault);
+     wrapper->persistent_.Reset(env->isolate, external);
+     wrapper->persistent_.SetWeak(
+         wrapper, WeakCallback, v8::WeakCallbackType::kParameter);
+@@ -851,7 +851,7 @@ class ExternalWrapper {
+   }
+ 
+   static ExternalWrapper* From(v8::Local<v8::External> external) {
+-    return static_cast<ExternalWrapper*>(external->Value());
++    return static_cast<ExternalWrapper*>(external->Value(v8::kExternalPointerTypeTagDefault));
+   }
+ 
+   void* Data() { return data_; }
+diff --git a/src/node_modules.cc b/src/node_modules.cc
+index c5c61888ecaaeeb23ebc9887f19ae3ad4c30dbd4..e2db3f4935ad58c5b409c67bfe5fc964f4ea5e83 100644
+--- a/src/node_modules.cc
++++ b/src/node_modules.cc
+@@ -642,7 +642,7 @@ void GetCompileCacheEntry(const FunctionCallbackInfo<Value>& args) {
+   v8::LocalVector<v8::Name> names(isolate,
+                                   {FIXED_ONE_BYTE_STRING(isolate, "external")});
+   v8::LocalVector<v8::Value> values(isolate,
+-                                    {v8::External::New(isolate, cache_entry)});
++                                    {v8::External::New(isolate, cache_entry, v8::kExternalPointerTypeTagDefault)});
+   if (cache_entry->cache != nullptr) {
+     Debug(env,
+           DebugCategory::COMPILE_CACHE,
+@@ -752,7 +752,7 @@ void SaveCompileCacheEntry(const FunctionCallbackInfo<Value>& args) {
+   CHECK(args[0]->IsExternal());
+   CHECK(args[1]->IsString());  // TODO(joyeecheung): accept buffer.
+   auto* cache_entry =
+-      static_cast<CompileCacheEntry*>(args[0].As<External>()->Value());
++      static_cast<CompileCacheEntry*>(args[0].As<External>()->Value(v8::kExternalPointerTypeTagDefault));
+   Utf8Value utf8(isolate, args[1].As<String>());
+   env->compile_cache_handler()->MaybeSave(cache_entry, utf8.ToStringView());
+ }
+diff --git a/src/node_util.cc b/src/node_util.cc
+index e9f4c1cdb60c03dce210f49e18dda57a4934a8b5..263edfd92e38c66f7912c602b306d420b503a839 100644
+--- a/src/node_util.cc
++++ b/src/node_util.cc
+@@ -93,7 +93,7 @@ static void GetExternalValue(
+   Isolate* isolate = args.GetIsolate();
+   Local<External> external = args[0].As<External>();
+ 
+-  void* ptr = external->Value();
++  void* ptr = external->Value(v8::kExternalPointerTypeTagDefault);
+   uint64_t value = reinterpret_cast<uint64_t>(ptr);
+   Local<BigInt> ret = BigInt::NewFromUnsigned(isolate, value);
+   args.GetReturnValue().Set(ret);
+diff --git a/src/stream_base.cc b/src/stream_base.cc
+index 566204e667c8e8802db6ac47881d33178f6147b2..31af8313611961d8c18654ce9ccaee6e6af087b1 100644
+--- a/src/stream_base.cc
++++ b/src/stream_base.cc
+@@ -653,7 +653,7 @@ void StreamBase::GetExternal(const FunctionCallbackInfo<Value>& args) {
+   StreamBase* wrap = StreamBase::FromObject(args.This().As<Object>());
+   if (wrap == nullptr) return;
+ 
+-  Local<External> ext = External::New(args.GetIsolate(), wrap);
++  Local<External> ext = External::New(args.GetIsolate(), wrap, v8::kExternalPointerTypeTagDefault);
+   args.GetReturnValue().Set(ext);
+ }
+ 

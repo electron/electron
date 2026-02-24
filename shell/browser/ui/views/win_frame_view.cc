@@ -275,12 +275,16 @@ bool WinFrameView::GetShouldPaintAsActive() {
 }
 
 gfx::Size WinFrameView::GetMinimumSize() const {
+  if (!window_)
+    return gfx::Size();
   // Chromium expects minimum size to be in content dimensions on Windows
   // because it adds the frame border automatically in OnGetMinMaxInfo.
   return window_->GetContentMinimumSize();
 }
 
 gfx::Size WinFrameView::GetMaximumSize() const {
+  if (!window_)
+    return gfx::Size();
   // Chromium expects minimum size to be in content dimensions on Windows
   // because it adds the frame border automatically in OnGetMinMaxInfo.
   gfx::Size size = window_->GetContentMaximumSize();

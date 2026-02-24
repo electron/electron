@@ -23,11 +23,6 @@ Creates a new touch bar with the specified items. Use
 > The TouchBar API is currently experimental and may change or be
 > removed in future Electron releases.
 
-> [!TIP]
-> If you don't have a MacBook with Touch Bar, you can use
-> [Touch Bar Simulator](https://github.com/sindresorhus/touch-bar-simulator)
-> to test Touch Bar usage in your app.
-
 ### Static Properties
 
 #### `TouchBarButton`

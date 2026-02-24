@@ -59,10 +59,11 @@ describe('WebContentsView', () => {
     const browserWindow = new BrowserWindow();
 
     const webContentsView = new WebContentsView();
-    webContentsView.webContents.loadURL('about:blank');
-    webContentsView.webContents.destroy();
+    const wc = webContentsView.webContents;
+    wc.loadURL('about:blank');
+    wc.destroy();
 
-    const destroyed = once(webContentsView.webContents, 'destroyed');
+    const destroyed = once(wc, 'destroyed');
     await destroyed;
     expect(() => browserWindow.contentView.addChildView(webContentsView)).to.throw(
       'Can\'t add a destroyed child view to a parent view'
@@ -90,13 +91,14 @@ describe('WebContentsView', () => {
     const w = new BaseWindow({ show: false });
     const v = new View();
     const wcv = new WebContentsView();
+    const wc = wcv.webContents;
     w.setContentView(v);
     v.addChildView(wcv);
-    await wcv.webContents.loadURL('about:blank');
-    const destroyed = once(wcv.webContents, 'destroyed');
-    wcv.webContents.executeJavaScript('window.close()');
+    await wc.loadURL('about:blank');
+    const destroyed = once(wc, 'destroyed');
+    wc.executeJavaScript('window.close()');
     await destroyed;
-    expect(wcv.webContents.isDestroyed()).to.be.true();
+    expect(wc.isDestroyed()).to.be.true();
     v.removeChildView(wcv);
   });
 
@@ -170,18 +172,19 @@ describe('WebContentsView', () => {
   it('does not crash when closed via window.close()', async () => {
     const bw = new BrowserWindow();
     const wcv = new WebContentsView();
+    const wc = wcv.webContents;
 
     await bw.loadURL('data:text/html,<h1>Main Window</h1>');
     bw.contentView.addChildView(wcv);
 
     const dto = new Promise<boolean>((resolve) => {
-      wcv.webContents.on('blur', () => {
-        const devToolsOpen = wcv.webContents.isDevToolsOpened();
+      wc.on('blur', () => {
+        const devToolsOpen = !wc.isDestroyed() && wc.isDevToolsOpened();
         resolve(devToolsOpen);
       });
     });
 
-    wcv.webContents.loadURL('data:text/html,<script>window.close()</script>');
+    wc.loadURL('data:text/html,<script>window.close()</script>');
 
     const open = await dto;
     expect(open).to.be.false();
