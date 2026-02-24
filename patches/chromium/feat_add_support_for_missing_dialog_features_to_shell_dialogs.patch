@@ -262,7 +262,7 @@ index 61683d0eddb04c494ca5e650e7d556b44968ec49..5492456a9138b250e97a5479838bb443
  
  }  // namespace ui
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index c66b8da5d3ce640c1a1bdfdaec66bba3b4878d3e..bf57b000175b93908ed44b31726dc1941d9bf5a9 100644
+index 985419afaf7830b180ea890029e4f08aa090da52..404db5850076bfc5046aec1a413b72a284565178 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 @@ -22,9 +22,11 @@

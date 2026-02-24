@@ -112,7 +112,7 @@ index 13a211107294e856616d1626fa1dc9c79eb5646c..549a36886d665c1a8100f09b7a86c8dc
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 1cdafc5c4189c0af64c03b8140ff310e0579d10f..939ebc202ef225387f0e9e77885a7a21aafef559 100644
+index c4f6d52508042c365a71060f5b64ad8b5b57d3aa..ad14c9357b85be82db9a75bc48084b5b961fccf1 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -373,6 +373,9 @@ URLLoader::URLLoader(
@@ -155,7 +155,7 @@ index 1cdafc5c4189c0af64c03b8140ff310e0579d10f..939ebc202ef225387f0e9e77885a7a21
  
    if (expected_response_headers_for_synthetic_response &&
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 3411c79d785cc6f9d6404e6384ec8e97f6bad8d7..9890fee8cba2da4bf126d4849a4ca41e3d3d2209 100644
+index f849b9ccd321fe5cf67266328a347ca72d089887..7d2ef80e723e872fb42a201f6fa29072d792ead3 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -629,6 +629,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader

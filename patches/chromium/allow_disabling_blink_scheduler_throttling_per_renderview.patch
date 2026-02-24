@@ -6,7 +6,7 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl_unittest.cc b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-index 371aa33917134510649ede22d1eca68fe1c7e4c4..6b8ad80f822a4100a164d0dbd52e15a96801d2ef 100644
+index 497c23b182d9288950ff54b4c70bdb0fbe80f91b..7e2839bf619ce3c0b88b33b1df2032672292fe06 100644
 --- a/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 @@ -168,6 +168,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
@@ -116,7 +116,7 @@ index 932658273154ef2e022358e493a8e7c00c86e732..57bbfb5cde62c9496c351c861880a189
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index d9518342ac260ceab7e67062912320282809ff25..6e7a1ffeadc4cf6ca23de271f4f9c2af3a62e88a 100644
+index cbdbf550db35685e806320d0984cf93adc760753..440d08d8e693d57bea4bba6899d0d78c1030d1ff 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -2519,6 +2519,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
@@ -130,7 +130,7 @@ index d9518342ac260ceab7e67062912320282809ff25..6e7a1ffeadc4cf6ca23de271f4f9c2af
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -4192,10 +4196,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -4193,10 +4197,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
