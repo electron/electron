@@ -20,7 +20,7 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 1e0b4bfd8b31f9ccbd663e8bb7c3990a9fa9c879..d9d7e902dfaaf360dc80bd292b56eeba9cfc5f12 100644
+index 26f508b259cab776d32c95731900b30cc8df649f..3b25ba24e81c7b5b27e65f30ea7a2c174c397efa 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
 @@ -552,7 +552,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(

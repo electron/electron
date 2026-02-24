@@ -13,7 +13,7 @@ app.requestSingleInstanceLock API so that users can pass in a JSON
 object for the second instance to send to the first instance.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 2748dd196fe1f56357348a204e24f0b8a28b97dd..5800dd00b47c657d9e6766f3fc5a30654cffffa6 100644
+index f076d0f783e2c0f6b5444002f756001adf2729bd..a03d99f929e2d354cdba969567d781561656261d 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
 @@ -18,7 +18,8 @@
@@ -65,7 +65,7 @@ index 2748dd196fe1f56357348a204e24f0b8a28b97dd..5800dd00b47c657d9e6766f3fc5a3065
  #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 73aa4cb9652870b0bff4684d7c72ae7dbd852db8..b55c942a8ccb326e4898172a7b4f6c0aa3183a0b 100644
+index 5a88dfda5eb2c4bf5b547a76eef81b530f3ea96e..0c423610fc2c5514693d33b527088cf839a404f2 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -619,6 +619,7 @@ class ProcessSingleton::LinuxWatcher

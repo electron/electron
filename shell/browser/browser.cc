@@ -192,9 +192,8 @@ void Browser::DidFinishLaunching(base::DictValue launch_info) {
   }
 
   is_ready_ = true;
-  if (ready_promise_) {
+  if (ready_promise_)
     ready_promise_->Resolve();
-  }
 
   for (BrowserObserver& observer : observers_)
     observer.OnFinishLaunching(launch_info.Clone());

@@ -95,7 +95,7 @@
     * `argb` - The requested output texture format is 8-bit unorm RGBA, with SRGB SDR color space.
     * `rgbaf16` - The requested output texture format is 16-bit float RGBA, with scRGB HDR color space.
     * `nv12` - The requested output texture format is 12bpp with Y plane followed by a 2x2 interleaved UV plane, with REC709 color space.
-  * `deviceScaleFactor` number (optional) _Experimental_ - The device scale factor of the offscreen rendering output. If not set, will use primary display's scale factor as default.
+  * `deviceScaleFactor` number (optional) _Experimental_ - The device scale factor of the offscreen rendering output. If not set, will use `1` as default.
 * `contextIsolation` boolean (optional) - Whether to run Electron APIs and
   the specified `preload` script in a separate JavaScript context. Defaults
   to `true`. The context that the `preload` script runs in will only have

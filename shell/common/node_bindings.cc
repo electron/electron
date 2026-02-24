@@ -413,6 +413,7 @@ bool IsAllowedOption(const std::string_view option) {
           "--inspect-port",
           "--inspect-publish-uid",
           "--experimental-network-inspection",
+          "--experimental-transform-types",
       });
 
   // This should be aligned with what's possible to set via the process object.

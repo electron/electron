@@ -4,19 +4,65 @@ Only follow these instructions if there are uncommitted changes to `patches/` af
 
 Ignore other instructions about making commit messages, our guidelines are CRITICALLY IMPORTANT and must be followed.
 
-## Atomic Commits
+## Each Commit Must Be Complete
 
-For each fix made to a patch, create a separate commit:
+When resolving a patch conflict, fully adapt the patch to the new upstream code in the same commit. If the upstream change removes an API the patch uses, update the patch to use the replacement API now — don't leave stale references knowing they'll need fixing later. The goal is that each commit represents a finished resolution, not a partial one that defers known work to a future phase.
+
+## Commit Message Style
+
+**Titles** follow the 60/80-character guideline: simple changes fit within 60 characters, otherwise the limit is 80 characters.
+
+Always include a `Co-Authored-By` trailer identifying the AI model that assisted (e.g., `Co-Authored-By: <AI model attribution>`).
+
+### Patch conflict fixes
+
+Use `fix(patch):` prefix. The title should name the upstream change, not your response to it:
 
 ```
-fix(patch-conflict): {concise title}
-
-{Brief explanation, 1-2 paragraphs max}
+fix(patch): {topic headline}
 
 Ref: {Chromium CL link}
+
+Co-Authored-By: <AI model attribution>
 ```
 
-IMPORTANT: Ensure that any changes made to patch content as a result of a change in Chromium is committed individually. Each change should have it's own commit message and it's own REF.
+Only add a description body if it provides clarity beyond the title. For straightforward context drift or simple API renames, the title + Ref is sufficient.
+
+Examples:
+- `fix(patch): constant moved to header`
+- `fix(patch): headless mode refactor upstream`
+- `fix(patch): V1 Keychain removal`
+
+### Upstreamed patch removal
+
+When patches are no longer needed (applied cleanly with "already applied" or confirmed upstreamed), group ALL removals into a single commit:
+
+```
+chore: remove upstreamed patch
+```
+
+or (if multiple):
+
+```
+chore: remove upstreamed patches
+```
+
+If the patch file did NOT contain a `Reviewed-on: https://chromium-review.googlesource.com/c/chromium/...` link, add a `Ref:` in the commit. If it did (i.e. cherry-picks), no `Ref:` is needed.
+
+### Trivial patch updates
+
+After all fix commits, stage remaining trivial changes (index, line numbers, context only):
+
+```bash
+git add patches
+git commit -m "chore: update patches (trivial only)"
+```
+
+**Conflict resolution can produce trivial results.** A `git am` conflict doesn't always mean the patch content changed — context drift alone can cause a conflict. After resolving and exporting, inspect the patch diff: if only index hashes, line numbers, and context lines changed (not the patch's own `+`/`-` lines), it's trivial and belongs here, not in a `fix(patch):` commit.
+
+## Atomic Commits
+
+Each patch conflict fix gets its own commit with its own Ref.
 
 IMPORTANT: Try really hard to find the CL reference per the instructions below. Each change you made should in theory have been in response to a change made in Chromium that you identified or can identify. Try for a while to identify and include the ref in the commit message. Do not give up easily.
 
@@ -30,23 +76,27 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/XXXXXXX
 
 If no CL found after searching: `Ref: Unable to locate CL`
 
-## Final Cleanup
+## Example Commits
 
-After all fix commits, stage remaining changes:
-
-```bash
-git add patches
-git commit -m "chore: update patch hunk headers"
-```
-
-## Example Commit
+### Patch conflict fix (simple — title is sufficient)
 
 ```
-fix(patch-conflict): update web_contents_impl.cc context for navigation refactor
+fix(patch): constant moved to header
 
-The upstream navigation code was refactored to use NavigationRequest directly
-instead of going through NavigationController. Updated surrounding context
-to match new code structure.
+Ref: https://chromium-review.googlesource.com/c/chromium/src/+/7536483
 
-Ref: https://chromium-review.googlesource.com/c/chromium/src/+/1234567
+Co-Authored-By: <AI model attribution>
+```
+
+### Patch conflict fix (complex — description adds value)
+
+```
+fix(patch): V1 Keychain removal
+
+Upstream deleted the V1 Keychain API. Removed V1 hunks and adapted
+keychain_password_mac.mm to use KeychainV2 APIs.
+
+Ref: https://chromium-review.googlesource.com/c/chromium/src/+/7540447
+
+Co-Authored-By: <AI model attribution>
 ```

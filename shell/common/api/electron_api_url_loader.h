@@ -127,13 +127,13 @@ class SimpleURLLoaderWrapper final
   void OnDataUseUpdate(int32_t network_traffic_annotation_id_hash,
                        base::ByteSize recv_bytes,
                        base::ByteSize sent_bytes) override {}
-  void OnWebSocketConnectedToPrivateNetwork(
+  void OnWebSocketConnectedToLocalNetwork(
       const GURL& request_url,
       network::mojom::IPAddressSpace ip_address_space) override {}
   void Clone(
       mojo::PendingReceiver<network::mojom::URLLoaderNetworkServiceObserver>
           observer) override;
-  void OnUrlLoaderConnectedToPrivateNetwork(
+  void OnUrlLoaderConnectedToLocalNetwork(
       const GURL& request_url,
       network::mojom::IPAddressSpace response_address_space,
       network::mojom::IPAddressSpace client_address_space,

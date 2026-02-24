@@ -155,6 +155,10 @@ e test                    # Run full test suite
 
 When working on the `roller/chromium/main` branch to upgrade Chromium activate the "Electron Chromium Upgrade" skill.
 
+## Pull Requests
+
+PR bodies must always include a `Notes:` section as the **last line** of the body. This is a consumer-facing release note for Electron app developers — describe the user-visible fix or change, not internal implementation details. Use `Notes: none` if there is no user-facing change.
+
 ## Code Style
 
 **C++:** Follows Chromium style, enforced by clang-format

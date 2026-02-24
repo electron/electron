@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve as _resolve } from 'node:path';
 
-import { ELECTRON_DIR } from '../../lib/utils';
+import { compareVersions, ELECTRON_DIR } from '../../lib/utils';
 import { createGitHubTokenStrategy } from '../github-token';
 import { ELECTRON_ORG, ELECTRON_REPO } from '../types';
 
@@ -610,26 +610,6 @@ const getNotes = async (fromRef: string, toRef: string, newVersion: string) => {
   }
 
   return notes;
-};
-
-const compareVersions = (v1: string, v2: string) => {
-  const [split1, split2] = [v1.split('.'), v2.split('.')];
-
-  if (split1.length !== split2.length) {
-    throw new Error(
-      `Expected version strings to have same number of sections: ${split1} and ${split2}`
-    );
-  }
-  for (let i = 0; i < split1.length; i++) {
-    const p1 = parseInt(split1[i], 10);
-    const p2 = parseInt(split2[i], 10);
-
-    if (p1 > p2) return 1;
-    else if (p1 < p2) return -1;
-    // Continue checking the value if this portion is equal
-  }
-
-  return 0;
 };
 
 const removeSupercededStackUpdates = (commits: Commit[]) => {

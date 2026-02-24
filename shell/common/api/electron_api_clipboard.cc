@@ -75,14 +75,32 @@ std::string Clipboard::Read(const std::string& format_string) {
   }
   // Otherwise, resolve custom format names
   std::map<std::string, std::string> custom_format_names;
-  custom_format_names =
-      clipboard->ExtractCustomPlatformNames(ui::ClipboardBuffer::kCopyPaste,
-                                            /* data_dst = */ nullptr);
+  {
+    base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
+    clipboard->ExtractCustomPlatformNames(
+        ui::ClipboardBuffer::kCopyPaste, /* data_dst = */ std::nullopt,
+        base::BindOnce(
+            [](std::map<std::string, std::string>* out, base::OnceClosure quit,
+               std::map<std::string, std::string> result) {
+              *out = std::move(result);
+              std::move(quit).Run();
+            },
+            &custom_format_names, run_loop.QuitClosure()));
+    run_loop.Run();
+  }
 #if BUILDFLAG(IS_LINUX)
   if (!custom_format_names.contains(format_string)) {
-    custom_format_names =
-        clipboard->ExtractCustomPlatformNames(ui::ClipboardBuffer::kSelection,
-                                              /* data_dst = */ nullptr);
+    base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
+    clipboard->ExtractCustomPlatformNames(
+        ui::ClipboardBuffer::kSelection, /* data_dst = */ std::nullopt,
+        base::BindOnce(
+            [](std::map<std::string, std::string>* out, base::OnceClosure quit,
+               std::map<std::string, std::string> result) {
+              *out = std::move(result);
+              std::move(quit).Run();
+            },
+            &custom_format_names, run_loop.QuitClosure()));
+    run_loop.Run();
   }
 #endif
 
@@ -243,7 +261,7 @@ gfx::Image Clipboard::ReadImage(gin::Arguments* const args) {
   base::RepeatingClosure callback = run_loop.QuitClosure();
   clipboard->ReadPng(
       GetClipboardBuffer(args),
-      /* data_dst = */ nullptr,
+      /* data_dst = */ std::nullopt,
       base::BindOnce(
           [](std::optional<gfx::Image>* image, base::RepeatingClosure cb,
              const std::vector<uint8_t>& result) {
