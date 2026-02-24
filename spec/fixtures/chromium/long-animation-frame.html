@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+  <body>
+    <div id="update"></div>
+    <script>
+      var hasAttributionPromise = new Promise((resolve) => {
+        new PerformanceObserver((list) => {
+          const entries = list.getEntries();
+          const has_attribution =
+            entries.length > 0 &&
+            entries.every(
+              ({ scripts }) =>
+                scripts.length > 0 &&
+                scripts.every(({ sourceURL }) => sourceURL === location.href),
+            );
+          resolve(has_attribution);
+        }).observe({ entryTypes: ["long-animation-frame"] });
+
+        // Produce a long animation frame
+        requestAnimationFrame(() => {
+          const before = performance.now();
+          document.querySelector("#update").innerHTML = "Update";
+          while (performance.now() < before + 60) {}
+          requestAnimationFrame(() => {});
+        });
+      });
+    </script>
+  </body>
+</html>

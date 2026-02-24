@@ -336,11 +336,12 @@ void BrowserWindow::BuildPrototype(v8::Isolate* isolate,
 // static
 v8::Local<v8::Value> BrowserWindow::From(v8::Isolate* isolate,
                                          NativeWindow* native_window) {
-  auto* existing = TrackableObject::FromWrappedClass(isolate, native_window);
-  if (existing)
-    return existing->GetWrapper();
-  else
-    return v8::Null(isolate);
+  if (native_window != nullptr) {
+    if (auto* base = FromWeakMapID(isolate, native_window->base_window_id()))
+      return base->GetWrapper();
+  }
+
+  return v8::Null(isolate);
 }
 
 }  // namespace electron::api

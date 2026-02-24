@@ -7,31 +7,28 @@
 
 #include <string>
 
+#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/network/public/cpp/data_element.h"
 #include "services/network/public/mojom/data_pipe_getter.mojom.h"
-#include "shell/common/gin_helper/wrappable.h"
-
-namespace gin_helper {
-template <typename T>
-class Handle;
-}  // namespace gin_helper
 
 namespace electron::api {
 
 // Retains reference to the data pipe.
-class DataPipeHolder final
-    : public gin_helper::DeprecatedWrappable<DataPipeHolder> {
+class DataPipeHolder final : public gin::Wrappable<DataPipeHolder> {
  public:
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
-  const char* GetTypeName() override;
+  // gin::Wrappable
+  static const gin::WrapperInfo kWrapperInfo;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
 
-  static gin_helper::Handle<DataPipeHolder> Create(
-      v8::Isolate* isolate,
-      const network::DataElement& element);
-  static gin_helper::Handle<DataPipeHolder> From(v8::Isolate* isolate,
-                                                 const std::string& id);
+  static DataPipeHolder* Create(v8::Isolate* isolate,
+                                const network::DataElement& element);
+  static DataPipeHolder* From(v8::Isolate* isolate, std::string_view id);
+
+  // Make public for cppgc::MakeGarbageCollected.
+  explicit DataPipeHolder(const network::DataElement& element);
+  ~DataPipeHolder() override;
 
   // Read all data at once.
   //
@@ -47,9 +44,6 @@ class DataPipeHolder final
   DataPipeHolder& operator=(const DataPipeHolder&) = delete;
 
  private:
-  explicit DataPipeHolder(const network::DataElement& element);
-  ~DataPipeHolder() override;
-
   std::string id_;
   mojo::Remote<network::mojom::DataPipeGetter> data_pipe_;
 };

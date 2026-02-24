@@ -16,23 +16,22 @@ amount of chromium code that needs to be changed for Electron
 as well as keeps these storage areas limited to a bounded
 size meanwhile giving application developers more space to work with.
 
-diff --git a/components/services/storage/dom_storage/dom_storage_constants.cc b/components/services/storage/dom_storage/dom_storage_constants.cc
-index aa5edd1d07d97bee4912b14996ff804351240e94..8334b7eb6a3293c068f5234508f8dca780ccb262 100644
---- a/components/services/storage/dom_storage/dom_storage_constants.cc
-+++ b/components/services/storage/dom_storage/dom_storage_constants.cc
-@@ -6,7 +6,9 @@
+diff --git a/components/services/storage/dom_storage/dom_storage_constants.h b/components/services/storage/dom_storage/dom_storage_constants.h
+index 9d9a8aeab2343942a88ee882e21191719bee019f..9f58743e0bb79e3e10095a6a1adc543846022f3b 100644
+--- a/components/services/storage/dom_storage/dom_storage_constants.h
++++ b/components/services/storage/dom_storage/dom_storage_constants.h
+@@ -11,7 +11,8 @@ namespace storage {
  
- namespace storage {
- 
--const size_t kPerStorageAreaQuota = 10 * 1024 * 1024;
+ // The quota for each storage area.
+ // This value is enforced by clients and by the storage service.
+-inline constexpr size_t kPerStorageAreaQuota = 10 * 1024 * 1024;
 +// Electron's dom_storage_limits.patch increased this value from 10MiB to 100MiB
-+const size_t kPerStorageAreaQuota = 100 * 1024 * 1024;
-+
- const size_t kPerStorageAreaOverQuotaAllowance = 100 * 1024;
++inline constexpr size_t kPerStorageAreaQuota = 100 * 1024 * 1024;
  
- }  // namespace storage
+ // In the storage service we allow some overage to
+ // accommodate concurrent writes from different clients
 diff --git a/third_party/blink/public/mojom/dom_storage/storage_area.mojom b/third_party/blink/public/mojom/dom_storage/storage_area.mojom
-index 332be0811d86c7a265f440ab7719460160a22617..e3382d843599ef6017e0ac557919b3a41809f17d 100644
+index 2552cc9cfab2c54caf584b14944324b92ae22171..f6e9a4a998f13d55b4d213a8bae2d50b090f138a 100644
 --- a/third_party/blink/public/mojom/dom_storage/storage_area.mojom
 +++ b/third_party/blink/public/mojom/dom_storage/storage_area.mojom
 @@ -50,7 +50,8 @@ struct KeyValue {

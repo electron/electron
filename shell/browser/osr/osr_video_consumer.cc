@@ -77,9 +77,10 @@ OffScreenVideoConsumer::~OffScreenVideoConsumer() = default;
 void OffScreenVideoConsumer::SetActive(bool active) {
   if (active) {
     video_capturer_->Start(
-        this, view_->offscreen_use_shared_texture()
-                  ? viz::mojom::BufferFormatPreference::kPreferGpuMemoryBuffer
-                  : viz::mojom::BufferFormatPreference::kDefault);
+        this,
+        view_->offscreen_use_shared_texture()
+            ? viz::mojom::BufferFormatPreference::kPreferMappableSharedImage
+            : viz::mojom::BufferFormatPreference::kDefault);
   } else {
     video_capturer_->Stop();
   }

@@ -141,13 +141,15 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
         notification_, "x-canonical-append", g_variant_new_string("true"));
   }
 
-  // Send the desktop name to identify the application
-  // The desktop-entry is the part before the .desktop
-  std::string desktop_id = platform_util::GetXdgAppId();
-  if (!desktop_id.empty()) {
+  // https://specifications.freedesktop.org/notification/latest-single/#id-1.9.7
+  // This specifies the name of the desktop filename representing the
+  // calling program. This should be the same as the prefix used for the
+  // application's .desktop file. An example would be "rhythmbox" from
+  // "rhythmbox.desktop". This can be used by the daemon to retrieve the
+  // correct icon for the application, for logging purposes, etc.
+  if (const std::optional<std::string> name = platform_util::GetXdgAppId()) {
     GetLibNotifyLoader().notify_notification_set_hint(
-        notification_, "desktop-entry",
-        g_variant_new_string(desktop_id.c_str()));
+        notification_, "desktop-entry", g_variant_new_string(name->c_str()));
   }
 
   GetLibNotifyLoader().notify_notification_set_hint(

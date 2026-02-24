@@ -588,6 +588,7 @@ Stops any `findInPage` request for the `webview` with the provided `action`.
   * `footer` string (optional) - string to be printed as page footer.
   * `pageSize` string | Size (optional) - Specify page size of the printed document. Can be `A3`,
   `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height` in microns.
+  * `usePrinterDefaultPageSize` boolean (optional) - Whether to use the system's default page size. Default is `false`. Cannot be combined with `pageSize`. When `deviceName` is provided, uses the default page size of that specific printer. When `deviceName` is not provided, uses the default page size of the system's default printer. If the printer's default page size cannot be retrieved, falls back to A4 (210mm x 297mm).
 
 Returns `Promise<void>`
 

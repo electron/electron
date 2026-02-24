@@ -13,21 +13,22 @@ https://github.com/electron/electron/pull/48675#issuecomment-3452781711
 for more info.
 
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-index 72a61f80eb5dfafe2609ec9e3f8f34c7c84f7abe..c5c3092607b4dc0e1fa7f7fc39b8f7e82d59ffd7 100644
+index 72a61f80eb5dfafe2609ec9e3f8f34c7c84f7abe..af68cc7486c450f9b9765f562fab71855686cc2e 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-@@ -133,8 +133,8 @@ int NextServiceId() {
+@@ -133,8 +133,9 @@ int NextServiceId() {
    return ++status_icon_count;
  }
  
 -std::string PropertyIdFromId(int service_id) {
 -  return "chrome_status_icon_" + base::NumberToString(service_id);
 +std::string PropertyIdFromId(int service_id, const std::string_view app_name) {
-+  return base::StrCat({ app_name, "_status_icon_", base::NumberToString(service_id) });
++  return base::StrCat(
++      {app_name, "_status_icon_", base::NumberToString(service_id)});
  }
  
  using DbusImage = std::tuple</*width=*/int32_t,
-@@ -224,12 +224,13 @@ base::FilePath WriteIconFile(size_t icon_file_id,
+@@ -224,12 +225,13 @@ base::FilePath WriteIconFile(size_t icon_file_id,
  
  }  // namespace
  
@@ -43,12 +44,13 @@ index 72a61f80eb5dfafe2609ec9e3f8f34c7c84f7abe..c5c3092607b4dc0e1fa7f7fc39b8f7e8
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    CheckStatusNotifierWatcherHasOwner();
  }
-@@ -405,7 +406,7 @@ void StatusIconLinuxDbus::OnHostRegisteredResponse(
+@@ -405,7 +407,8 @@ void StatusIconLinuxDbus::OnHostRegisteredResponse(
    properties_->SetProperty<"s">(kInterfaceStatusNotifierItem, kPropertyCategory,
                                  kPropertyValueCategory, false);
    properties_->SetProperty<"s">(kInterfaceStatusNotifierItem, kPropertyId,
 -                                PropertyIdFromId(service_id_), false);
-+                                PropertyIdFromId(service_id_, app_name_), false);
++                                PropertyIdFromId(service_id_, app_name_),
++                                false);
    properties_->SetProperty<"s">(kInterfaceStatusNotifierItem,
                                  kPropertyOverlayIconName, "", false);
    properties_->SetProperty<"s">(kInterfaceStatusNotifierItem, kPropertyStatus,

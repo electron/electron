@@ -33,7 +33,7 @@ GPUInfoManager::~GPUInfoManager() {
 
 // Should be posted to the task runner
 void GPUInfoManager::ProcessCompleteInfo() {
-  base::Value::Dict result = EnumerateGPUInfo(gpu_data_manager_->GetGPUInfo());
+  base::DictValue result = EnumerateGPUInfo(gpu_data_manager_->GetGPUInfo());
   // We have received the complete information, resolve all promises that
   // were waiting for this info.
   for (auto& promise : complete_info_promise_set_) {
@@ -76,8 +76,7 @@ void GPUInfoManager::FetchBasicInfo(gin_helper::Promise<base::Value> promise) {
   promise.Resolve(base::Value(EnumerateGPUInfo(gpu_info)));
 }
 
-base::Value::Dict GPUInfoManager::EnumerateGPUInfo(
-    gpu::GPUInfo gpu_info) const {
+base::DictValue GPUInfoManager::EnumerateGPUInfo(gpu::GPUInfo gpu_info) const {
   GPUInfoEnumerator enumerator;
   gpu_info.EnumerateFields(&enumerator);
   return enumerator.GetDictionary();

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:desktop2="http://schemas.microsoft.com/appx/manifest/desktop/windows10/2"
+  IgnorableNamespaces="uap uap3 desktop2">
+<Identity Name="Electron.Dev.MSIX"
+          ProcessorArchitecture="x64"
+          Version="1.0.0.0"
+          Publisher="CN=Electron"/>
+  <Properties>
+    <DisplayName>Electron Dev MSIX</DisplayName>
+    <PublisherDisplayName>Electron</PublisherDisplayName>
+    <Logo>assets\icon.png</Logo>
+  </Properties>
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.17763.0" />
+  </Dependencies>
+  <Resources>
+    <Resource Language="en-US" />
+  </Resources>
+  <Applications>
+    <Application Id="ElectronMSIX" Executable="Electron.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+          DisplayName="Electron Dev MSIX"
+          Description="Electron running with Identity"
+          Square44x44Logo="assets\Square44x44Logo.png"
+          Square150x150Logo="assets\Square150x150Logo.png"
+          BackgroundColor="transparent">
+      </uap:VisualElements>
+       <Extensions>
+        <uap3:Extension
+          Category="windows.appExecutionAlias"
+          Executable="Electron.exe"
+          EntryPoint="Windows.FullTrustApplication">
+          <uap3:AppExecutionAlias>
+            <desktop:ExecutionAlias Alias="ElectronMSIX.exe" />
+          </uap3:AppExecutionAlias>
+        </uap3:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+    <Capability Name="internetClient" />
+  </Capabilities>
+</Package>

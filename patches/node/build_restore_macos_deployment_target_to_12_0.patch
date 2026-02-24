@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <vertedinde@electronjs.org>
+Date: Thu, 5 Feb 2026 15:29:44 -0800
+Subject: build: restore macos deployment target to 12.0
+
+Partially reverts https://github.com/nodejs/node/commit/8b4022177750530d2c142a5a0349d98fb82f16e2
+Electron will follow Chromium's lead and deprecate macos 12 with
+M151, and so we should allow for building until then.
+
+This patch can be removed at the M151 branch point.
+
+diff --git a/common.gypi b/common.gypi
+index 5f47ec9bb405f6c1574304ac68807929604cd402..914f28b41d05b1485874885570ae5adaabd8e1b2 100644
+--- a/common.gypi
++++ b/common.gypi
+@@ -677,7 +677,7 @@
+           'GCC_ENABLE_PASCAL_STRINGS': 'NO',        # No -mpascal-strings
+           'GCC_STRICT_ALIASING': 'NO',              # -fno-strict-aliasing
+           'PREBINDING': 'NO',                       # No -Wl,-prebind
+-          'MACOSX_DEPLOYMENT_TARGET': '13.5',       # -mmacosx-version-min=13.5
++          'MACOSX_DEPLOYMENT_TARGET': '12.0',       # -mmacosx-version-min=12.0
+           'USE_HEADERMAP': 'NO',
+           'WARNING_CFLAGS': [
+             '-Wall',

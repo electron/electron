@@ -28,7 +28,7 @@ The `Menu` class has the following static methods:
 
 #### `Menu.setApplicationMenu(menu)`
 
-- `menu` Menu | null
+- `menu` [Menu](menu.md) | null
 
 Sets `menu` as the application menu on macOS. On Windows and Linux, the
 `menu` will be set as each window's top menu.
@@ -39,7 +39,7 @@ indicate which letter should get a generated accelerator. For example, using
 opens the associated menu. The indicated character in the button label then gets an
 underline, and the `&` character is not displayed on the button label.
 
-In order to escape the `&` character in an item name, add a proceeding `&`. For example, `&&File` would result in `&File` displayed on the button label.
+In order to escape the `&` character in an item name, add a preceding `&`. For example, `&&File` would result in `&File` displayed on the button label.
 
 Passing `null` will suppress the default menu. On Windows and Linux,
 this has the additional effect of removing the menu bar from the window.
@@ -70,9 +70,9 @@ for more information on macOS' native actions.
 
 #### `Menu.buildFromTemplate(template)`
 
-- `template` (MenuItemConstructorOptions | MenuItem)[]
+- `template` (MenuItemConstructorOptions | [MenuItem](menu-item.md))[]
 
-Returns `Menu`
+Returns [`Menu`](menu.md)
 
 Generally, the `template` is an array of `options` for constructing a
 [MenuItem](menu-item.md). The usage can be referenced above.
@@ -123,7 +123,7 @@ Appends the `menuItem` to the menu.
 
 - `id` string
 
-Returns `MenuItem | null` the item with the specified `id`
+Returns [`MenuItem | null`](menu-item.md) - the item with the specified `id`
 
 #### `menu.insert(pos, menuItem)`
 

@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(e sync)",
+      "Bash(e patches --list-targets:*)",
+      "Bash(git add:*)",
+      "Bash(git am:*)",
+      "Bash(git commit:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(e patches:*)",
+      "Bash(e sync:*)",
+      "Skill(electron-chromium-upgrade)",
+      "Read(*)",
+      "Bash(echo:*)",
+      "Bash(e build:*)",
+      "Bash(tee:*)",
+      "Bash(git diff:*)",
+      "Bash(git rev-parse:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

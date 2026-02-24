@@ -1216,7 +1216,7 @@ function createWindow () {
 
   mainWindow.webContents.session.setBluetoothPairingHandler((details, callback) => {
     bluetoothPinCallback = callback
-    // Send a IPC message to the renderer to prompt the user to confirm the pairing.
+    // Send an IPC message to the renderer to prompt the user to confirm the pairing.
     // Note that this will require logic in the renderer to handle this message and
     // display a prompt to the user.
     mainWindow.webContents.send('bluetooth-pairing-request', details)
@@ -1264,7 +1264,7 @@ session.defaultSession.allowNTLMCredentialsForDomains('*')
 
 Overrides the `userAgent` and `acceptLanguages` for this session.
 
-The `acceptLanguages` must a comma separated ordered list of language codes, for
+The `acceptLanguages` must be a comma separated ordered list of language codes, for
 example `"en-US,fr,de,ko,zh-CN,ja"`.
 
 This doesn't affect existing `WebContents`, and each `WebContents` can use
@@ -1512,7 +1512,7 @@ will not work on non-persistent (in-memory) sessions.
 * `options` Object (optional)
   * `allowFileAccess` boolean - Whether to allow the extension to read local files over `file://`
     protocol and inject content scripts into `file://` pages. This is required e.g. for loading
-    devtools extensions on `file://` URLs. Defaults to false.
+    DevTools extensions on `file://` URLs. Defaults to false.
 
 Returns `Promise<Extension>` - resolves when the extension is loaded.
 
@@ -1538,7 +1538,7 @@ const path = require('node:path')
 app.whenReady().then(async () => {
   await session.defaultSession.loadExtension(
     path.join(__dirname, 'react-devtools'),
-    // allowFileAccess is required to load the devtools extension on file:// URLs.
+    // allowFileAccess is required to load the DevTools extension on file:// URLs.
     { allowFileAccess: true }
   )
   // Note that in order to use the React DevTools extension, you'll need to

@@ -830,7 +830,9 @@ gin_helper::Dictionary TraceKeyPath(const gin_helper::Dictionary& start,
                                     const std::vector<std::string>& key_path) {
   gin_helper::Dictionary current = start;
   for (size_t i = 0; i < key_path.size() - 1; i++) {
-    CHECK(current.Get(key_path[i], &current));
+    CHECK(current.Get(key_path[i], &current))
+        << "Failed to get property '" << key_path[i] << "' at index " << i
+        << " in key path";
   }
   return current;
 }

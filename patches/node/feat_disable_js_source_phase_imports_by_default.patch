@@ -18,7 +18,7 @@ Stage 3.
 Upstreamed in https://github.com/nodejs/node/pull/60364
 
 diff --git a/src/node.cc b/src/node.cc
-index d77735f4f5686e914811c0576975b57e6c631398..d8e1c809df6e96ed561c73c0e8de0cf9736e4aaa 100644
+index ae082f2d0498e0e694e427da71078ca19086e275..f9630a5cd9bed1535a7839517313a2d47d403b1f 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -782,7 +782,7 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,

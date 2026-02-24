@@ -1,8 +1,7 @@
 import { Octokit } from '@octokit/rest';
 import * as chalk from 'chalk';
-import { GitProcess } from 'dugite';
 
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 
 import { createGitHubTokenStrategy } from './github-token';
@@ -166,11 +165,12 @@ async function createRelease (
 }
 
 async function pushRelease (branch: string) {
-  const pushDetails = await GitProcess.exec(
-    ['push', 'origin', `HEAD:${branch}`, '--follow-tags'],
-    ELECTRON_DIR
-  );
-  if (pushDetails.exitCode === 0) {
+  const pushDetails = spawnSync('git', ['push', 'origin', `HEAD:${branch}`, '--follow-tags'], {
+    cwd: ELECTRON_DIR,
+    encoding: 'utf8',
+    stdio: ['inherit', 'pipe', 'pipe']
+  });
+  if (pushDetails.status === 0) {
     console.log(
       `${pass} Successfully pushed the release.  Wait for ` +
         'release builds to finish before running "npm run release".'
@@ -191,11 +191,12 @@ async function runReleaseBuilds (branch: string, newVersion: string) {
 
 async function tagRelease (version: string) {
   console.log(`Tagging release ${version}.`);
-  const checkoutDetails = await GitProcess.exec(
-    ['tag', '-a', '-m', version, version],
-    ELECTRON_DIR
-  );
-  if (checkoutDetails.exitCode === 0) {
+  const checkoutDetails = spawnSync('git', ['tag', '-a', '-m', version, version], {
+    cwd: ELECTRON_DIR,
+    encoding: 'utf8',
+    stdio: ['inherit', 'pipe', 'pipe']
+  });
+  if (checkoutDetails.status === 0) {
     console.log(`${pass} Successfully tagged ${version}.`);
   } else {
     console.log(

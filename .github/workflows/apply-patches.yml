@@ -1,0 +1,73 @@
+name: Apply Patches
+
+on:
+  pull_request:
+
+permissions: {}
+
+concurrency:
+  group: apply-patches-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  setup:
+    if: github.repository == 'electron/electron'
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      has-patches: ${{ steps.filter.outputs.patches }}
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        persist-credentials: false
+        ref: ${{ github.event.pull_request.head.sha }}
+    # Use dorny/paths-filter instead of the path filter under the on: pull_request: block
+    # so that the output can be used to conditionally run the apply-patches job, which lets
+    # the job be marked as a required status check (conditional skip counts as a success).
+    - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+      id: filter
+      with:
+        filters: |
+          patches:
+            - DEPS
+            - 'patches/**'
+
+  apply-patches:
+    needs: setup
+    if: ${{ needs.setup.outputs.has-patches == 'true' }}
+    runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
+    container:
+      image: ghcr.io/electron/build:a82b87d7a4f5ff0cab61405f8151ac4cf4942aeb
+      options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+        - /var/run/sas:/var/run/sas
+    env:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        path: src/electron
+        fetch-depth: 0
+        persist-credentials: false
+        ref: ${{ github.event.pull_request.base.ref }}
+    - name: Merge PR HEAD
+      working-directory: src/electron
+      env:
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: |
+        git config user.email "electron@github.com"
+        git config user.name "Electron Bot"
+        git fetch origin refs/pull/${PR_NUMBER}/head
+        git merge --squash FETCH_HEAD
+        git commit -n -m "Squashed commits"
+    - name: Checkout & Sync & Save
+      uses: ./src/electron/.github/actions/checkout
+      with:
+        target-platform: linux

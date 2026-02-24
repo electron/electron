@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andy Locascio <loc@anthropic.com>
+Date: Tue, 6 Jan 2026 08:23:03 -0800
+Subject: fix: clean up old staged updates before downloading new update
+
+When checkForUpdates() is called while an update is already staged,
+Squirrel creates a new temporary directory for the download without
+cleaning up the old one. This can lead to significant disk usage if
+the app keeps checking for updates without restarting.
+
+This change adds a force parameter to pruneUpdateDirectories that
+bypasses the AwaitingRelaunch state check. This is called before
+creating a new temp directory, ensuring old staged updates are
+cleaned up when a new download starts.
+
+diff --git a/Squirrel/SQRLUpdater.m b/Squirrel/SQRLUpdater.m
+index d156616e81e6f25a3bded30e6216b8fc311f31bc..6cd4346bf43b191147aff819cb93387e71275a46 100644
+--- a/Squirrel/SQRLUpdater.m
++++ b/Squirrel/SQRLUpdater.m
+@@ -543,11 +543,17 @@ - (RACSignal *)downloadBundleForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL
+ #pragma mark File Management
+ 
+ - (RACSignal *)uniqueTemporaryDirectoryForUpdate {
+-	return [[[RACSignal
++	// Clean up any old staged update directories before creating a new one.
++	// This prevents disk usage from growing when checkForUpdates() is called
++	// multiple times without the app restarting.
++	return [[[[[self
++		pruneUpdateDirectoriesWithForce:YES]
++		ignoreValues]
++		concat:[RACSignal
+ 		defer:^{
+ 			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+ 			return [directoryManager storageURL];
+-		}]
++		}]]
+ 		flattenMap:^(NSURL *storageURL) {
+ 			NSURL *updateDirectoryTemplate = [storageURL URLByAppendingPathComponent:[SQRLUpdaterUniqueTemporaryDirectoryPrefix stringByAppendingString:@"XXXXXXX"]];
+ 			char *updateDirectoryCString = strdup(updateDirectoryTemplate.path.fileSystemRepresentation);
+@@ -643,7 +649,7 @@ - (BOOL)isRunningOnReadOnlyVolume {
+ 
+ - (RACSignal *)performHousekeeping {
+ 	return [[RACSignal
+-		merge:@[ [self pruneUpdateDirectories], [self truncateLogs] ]]
++		merge:@[ [self pruneUpdateDirectoriesWithForce:NO], [self truncateLogs] ]]
+ 		catch:^(NSError *error) {
+ 			NSLog(@"Error doing housekeeping: %@", error);
+ 			return [RACSignal empty];
+@@ -658,11 +664,12 @@ - (RACSignal *)performHousekeeping {
+ ///
+ /// Sends each removed directory then completes, or errors, on an unspecified
+ /// thread.
+-- (RACSignal *)pruneUpdateDirectories {
++- (RACSignal *)pruneUpdateDirectoriesWithForce:(BOOL)force {
+ 	return [[[RACSignal
+ 		defer:^{
+-			// If we already have updates downloaded we don't wanna prune them.
+-			if (self.state == SQRLUpdaterStateAwaitingRelaunch) return [RACSignal empty];
++			// If we already have updates downloaded we don't wanna prune them,
++			// unless force is YES (used when starting a new download).
++			if (!force && self.state == SQRLUpdaterStateAwaitingRelaunch) return [RACSignal empty];
+ 
+ 			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+ 			return [directoryManager storageURL];

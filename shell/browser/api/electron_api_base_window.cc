@@ -111,8 +111,8 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
   }
 
   // Creates NativeWindow.
-  window_ = NativeWindow::Create(
-      options, parent.IsEmpty() ? nullptr : parent->window_.get());
+  NativeWindow* parent_native = parent.IsEmpty() ? nullptr : parent->window();
+  window_ = NativeWindow::Create(GetID(), options, parent_native);
   window_->AddObserver(this);
 
   SetContentView(View::Create(isolate));
@@ -146,7 +146,6 @@ BaseWindow::~BaseWindow() {
 }
 
 void BaseWindow::InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) {
-  AttachAsUserData(window_.get());
   gin_helper::TrackableObject<BaseWindow>::InitWith(isolate, wrapper);
 
   // We can only append this window to parent window's child windows after this
@@ -334,7 +333,7 @@ void BaseWindow::OnExecuteAppCommand(const std::string_view command_name) {
 }
 
 void BaseWindow::OnTouchBarItemResult(const std::string& item_id,
-                                      const base::Value::Dict& details) {
+                                      const base::DictValue& details) {
   Emit("-touch-bar-interaction", item_id, details);
 }
 

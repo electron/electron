@@ -285,6 +285,19 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   return base::SysUTF8ToNSString(shell_ ? shell_->GetTitle() : "");
 }
 
+- (NSString*)accessibilityDocument {
+  // Prefer representedFilename set via Electron's setRepresentedFilename API.
+  // This works around a Chromium change (https://crrev.com/c/6187085) where
+  // NativeWidgetMacNSWindow's accessibilityDocument override doesn't fall back
+  // to NSWindow's default behavior of returning the representedFilename.
+  NSString* representedFilename = [self representedFilename];
+  if (representedFilename.length > 0) {
+    return [[NSURL fileURLWithPath:representedFilename] absoluteString];
+  }
+  // Fall back to Chromium's implementation for web content URLs.
+  return [super accessibilityDocument];
+}
+
 - (BOOL)canBecomeMainWindow {
   return !self.disableKeyOrMainWindow;
 }
@@ -307,7 +320,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (void)disableHeadlessMode {
-  if (shell_) {
+  if (shell_ && self.isHeadless) {
     // We initialize the window in headless mode to allow painting before it is
     // shown, but we don't want the headless behavior of allowing the window to
     // be placed unconstrained.

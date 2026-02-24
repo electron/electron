@@ -68,6 +68,10 @@ Menu::Menu(gin::Arguments* args)
 }
 
 Menu::~Menu() {
+  RemoveModelObserver();
+}
+
+void Menu::RemoveModelObserver() {
   if (model_) {
     model_->RemoveObserver(this);
   }

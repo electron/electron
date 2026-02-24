@@ -17,7 +17,7 @@ run them, users need to go through multiple advanced and manual steps.
 
 If you are building an Electron app that you intend to package and distribute,
 it should be code signed. The Electron ecosystem tooling makes codesigning your
-apps straightforward - this documentation explains how sign your apps on both
+apps straightforward - this documentation explains how to sign your apps on both
 Windows and macOS.
 
 ## Signing & notarizing macOS builds
@@ -210,7 +210,7 @@ const msiCreator = new MSICreator({
 const supportBinaries = await msiCreator.create()
 
 // 🆕 Step 2a: optionally sign support binaries if you
-// sign you binaries as part of of your packaging script
+// sign your binaries as part of your packaging script
 for (const binary of supportBinaries) {
   // Binaries are the new stub executable and optionally
   // the Squirrel auto updater.
@@ -237,6 +237,20 @@ As of October 2025, Azure Trusted Signing is available to US and Canada-based or
 with 3+ years of verifiable business history and to individual developers in the US and Canada.
 Microsoft is looking to make the program more widely available. If you're reading this at a
 later point, it could make sense to check if the eligibility criteria have changed.
+
+#### Using `jsign` for Azure Trusted Signing
+
+For developers on Linux or macOS, [`jsign`](https://ebourg.github.io/jsign/) can be used to sign Windows apps via Azure Trusted Signing. Example usage:
+
+```bash
+jsign --storetype TRUSTEDSIGNING \
+      --keystore https://eus.codesigning.azure.net/ \
+      --storepass $AZURE_ACCESS_TOKEN \
+      --alias trusted-sign-acct/AppName \
+      --tsaurl http://timestamp.acs.microsoft.com/ \
+      --tsmode RFC3161 \
+      --replace <file>
+```
 
 #### Using Electron Forge
 

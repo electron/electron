@@ -780,7 +780,7 @@ void Browser::ShowEmojiPanel() {
 }
 
 void Browser::ShowAboutPanel() {
-  base::Value::Dict dict;
+  base::DictValue dict;
   std::string aboutMessage = "";
   gfx::ImageSkia image;
 
@@ -815,7 +815,7 @@ void Browser::ShowAboutPanel() {
                            base::BindOnce([](int, bool) { /* do nothing. */ }));
 }
 
-void Browser::SetAboutPanelOptions(base::Value::Dict options) {
+void Browser::SetAboutPanelOptions(base::DictValue options) {
   about_panel_options_ = std::move(options);
 }
 

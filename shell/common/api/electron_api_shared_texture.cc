@@ -7,7 +7,6 @@
 #include "base/base64.h"
 #include "base/command_line.h"
 #include "base/numerics/byte_conversions.h"
-#include "components/viz/common/resources/shared_image_format_utils.h"
 #include "content/browser/compositor/image_transport_factory.h"  // nogncheck
 #include "gpu/command_buffer/client/context_support.h"
 #include "gpu/ipc/client/client_shared_image_interface.h"
@@ -128,6 +127,8 @@ std::string TransferVideoPixelFormatToString(media::VideoPixelFormat format) {
       return "rgbaf16";
     case media::PIXEL_FORMAT_NV12:
       return "nv12";
+    case media::PIXEL_FORMAT_P010LE:
+      return "p010le";
     default:
       NOTREACHED();
   }
@@ -359,7 +360,8 @@ void ImportedTextureGetVideoFrame(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value());
+      info.Data().As<v8::External>()->Value(
+          v8::kExternalPointerTypeTagDefault));
 
   if (wrapper->IsReferenceReleased()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
@@ -381,7 +383,8 @@ void ImportedTextureStartTransferSharedTexture(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value());
+      info.Data().As<v8::External>()->Value(
+          v8::kExternalPointerTypeTagDefault));
 
   if (wrapper->IsReferenceReleased()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
@@ -395,7 +398,8 @@ void ImportedTextureStartTransferSharedTexture(
 
 void ImportedTextureRelease(const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value());
+      info.Data().As<v8::External>()->Value(
+          v8::kExternalPointerTypeTagDefault));
 
   auto cb = info[0];
   if (cb->IsFunction()) {
@@ -414,7 +418,8 @@ void ImportedTextureGetFrameCreationSyncToken(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value());
+      info.Data().As<v8::External>()->Value(
+          v8::kExternalPointerTypeTagDefault));
 
   if (wrapper->IsReferenceReleased()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
@@ -430,7 +435,8 @@ void ImportedTextureSetReleaseSyncToken(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value());
+      info.Data().As<v8::External>()->Value(
+          v8::kExternalPointerTypeTagDefault));
 
   if (wrapper->IsReferenceReleased()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
@@ -453,7 +459,8 @@ v8::Local<v8::Value> CreateImportedSharedTextureFromSharedImage(
   auto* wrapper = new ImportedSharedTextureWrapper();
   wrapper->ist = base::WrapRefCounted(imported);
 
-  auto imported_wrapped = v8::External::New(isolate, wrapper);
+  auto imported_wrapped =
+      v8::External::New(isolate, wrapper, v8::kExternalPointerTypeTagDefault);
   gin::Dictionary root(isolate, v8::Object::New(isolate));
 
   auto releaser = v8::Function::New(isolate->GetCurrentContext(),
@@ -570,6 +577,8 @@ struct Converter<ImportSharedTextureInfo> {
         out->pixel_format = media::PIXEL_FORMAT_RGBAF16;
       else if (pixel_format_str == "nv12")
         out->pixel_format = media::PIXEL_FORMAT_NV12;
+      else if (pixel_format_str == "p010le")
+        out->pixel_format = media::PIXEL_FORMAT_P010LE;
       else
         return false;
     }
@@ -707,8 +716,8 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
   media::VideoPixelFormat pixel_format = shared_texture.pixel_format;
   gfx::ColorSpace color_space = shared_texture.color_space;
 
-  auto buffer_format = media::VideoPixelFormatToGfxBufferFormat(pixel_format);
-  if (!buffer_format.has_value()) {
+  auto si_format = media::VideoPixelFormatToSharedImageFormat(pixel_format);
+  if (!si_format.has_value()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
         "Invalid shared texture buffer format");
     return v8::Null(isolate);
@@ -727,10 +736,8 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
       gpu::SHARED_IMAGE_USAGE_RASTER_READ |
       gpu::SHARED_IMAGE_USAGE_DISPLAY_READ;
 #endif
-
-  auto si_format = viz::GetSharedImageFormat(buffer_format.value());
   auto si =
-      sii->CreateSharedImage({si_format, coded_size, color_space,
+      sii->CreateSharedImage({si_format.value(), coded_size, color_space,
                               shared_image_usage, "SharedTextureVideoFrame"},
                              std::move(gmb_handle));
 

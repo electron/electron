@@ -88,7 +88,7 @@ async function main () {
     }
 
     const versionString = `v${args.electronVersion}`;
-    console.log(`Running against Electron ${versionString.green}`);
+    console.log(`Running against Electron ${chalk.green(versionString)}`);
   }
 
   const [lastSpecHash, lastSpecInstallHash] = loadLastSpecHash();

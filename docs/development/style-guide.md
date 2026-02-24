@@ -99,7 +99,7 @@ Using `autoUpdater` as an example:
 
 ## Methods
 
-### `autoUpdater.setFeedURL(url[, requestHeaders])`
+### `autoUpdater.setFeedURL(options)`
 ```
 
 ### Classes

@@ -369,10 +369,10 @@ class ClearDataTask : public gin_helper::CleanedUpAtExit {
   std::vector<std::unique_ptr<ClearDataOperation>> operations_;
 };
 
-base::Value::Dict createProxyConfig(ProxyPrefs::ProxyMode proxy_mode,
-                                    std::string const& pac_url,
-                                    std::string const& proxy_server,
-                                    std::string const& bypass_list) {
+base::DictValue createProxyConfig(ProxyPrefs::ProxyMode proxy_mode,
+                                  std::string const& pac_url,
+                                  std::string const& proxy_server,
+                                  std::string const& bypass_list) {
   if (proxy_mode == ProxyPrefs::MODE_DIRECT) {
     return ProxyConfigDictionary::CreateDirect();
   }
@@ -1044,15 +1044,13 @@ bool Session::IsPersistent() {
 
 v8::Local<v8::Promise> Session::GetBlobData(v8::Isolate* isolate,
                                             const std::string& uuid) {
-  gin_helper::Handle<DataPipeHolder> holder =
-      DataPipeHolder::From(isolate, uuid);
-  if (holder.IsEmpty()) {
-    gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
-    promise.RejectWithErrorMessage("Could not get blob data handle");
-    return promise.GetHandle();
+  if (DataPipeHolder* holder = DataPipeHolder::From(isolate, uuid)) {
+    return holder->ReadAll(isolate);
   }
 
-  return holder->ReadAll(isolate);
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+  promise.RejectWithErrorMessage("Could not get blob data handle");
+  return promise.GetHandle();
 }
 
 void Session::DownloadURL(const GURL& url, gin::Arguments* args) {
@@ -1581,7 +1579,7 @@ void Session::SetSpellCheckerLanguages(
     gin_helper::ErrorThrower thrower,
     const std::vector<std::string>& languages) {
 #if !BUILDFLAG(IS_MAC)
-  base::Value::List language_codes;
+  base::ListValue language_codes;
   for (const std::string& lang : languages) {
     std::string code = spellcheck::GetCorrespondingSpellCheckLanguage(lang);
     if (code.empty()) {
@@ -1740,7 +1738,7 @@ Session* Session::FromOrCreate(v8::Isolate* isolate,
 // static
 Session* Session::FromPartition(v8::Isolate* isolate,
                                 const std::string& partition,
-                                base::Value::Dict options) {
+                                base::DictValue options) {
   ElectronBrowserContext* browser_context;
   if (partition.empty()) {
     browser_context =
@@ -1759,7 +1757,7 @@ Session* Session::FromPartition(v8::Isolate* isolate,
 // static
 Session* Session::FromPath(gin::Arguments* args,
                            const base::FilePath& path,
-                           base::Value::Dict options) {
+                           base::DictValue options) {
   ElectronBrowserContext* browser_context;
 
   if (path.empty()) {
@@ -1904,7 +1902,7 @@ Session* FromPartition(const std::string& partition, gin::Arguments* args) {
     args->ThrowTypeError("Session can only be received when app is ready");
     return {};
   }
-  base::Value::Dict options;
+  base::DictValue options;
   args->GetNext(&options);
   return Session::FromPartition(args->isolate(), partition, std::move(options));
 }
@@ -1914,7 +1912,7 @@ Session* FromPath(const base::FilePath& path, gin::Arguments* args) {
     args->ThrowTypeError("Session can only be received when app is ready");
     return {};
   }
-  base::Value::Dict options;
+  base::DictValue options;
   args->GetNext(&options);
   return Session::FromPath(args, path, std::move(options));
 }
