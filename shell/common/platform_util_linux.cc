@@ -454,7 +454,7 @@ void Beep() {
   // TODO: move this elsewhere if / when we start using stubs for more
   // GDK functions than just `gdk_display_beep`.
   if (!electron::IsElectron_gdkInitialized()) {
-    electron::InitializeElectron_gdk(gtk::GetLibGdk3());
+    electron::InitializeElectron_gdk(gtk::GetLibGdk());
     CHECK(electron::IsElectron_gdkInitialized())
         << "Failed to initialize libgdk";
   }
