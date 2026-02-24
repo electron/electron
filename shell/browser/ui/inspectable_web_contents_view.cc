@@ -92,6 +92,13 @@ InspectableWebContentsView::InspectableWebContentsView(
 }
 
 InspectableWebContentsView::~InspectableWebContentsView() {
+  if (devtools_window_web_view_)
+    devtools_window_web_view_->SetWebContents(nullptr);
+  if (devtools_web_view_)
+    devtools_web_view_->SetWebContents(nullptr);
+  if (contents_web_view_)
+    contents_web_view_->SetWebContents(nullptr);
+
   if (devtools_window_)
     inspectable_web_contents()->SaveDevToolsBounds(
         devtools_window_->GetWindowBoundsInScreen());
