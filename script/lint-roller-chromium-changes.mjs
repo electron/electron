@@ -14,6 +14,23 @@ const DEPS_REGEX = /chromium_version':\n +'(.+?)',/m;
 const CL_REGEX = /https:\/\/chromium-review\.googlesource\.com\/c\/(?:chromium\/src|v8\/v8)\/\+\/(\d+)(#\S+)?/g;
 const ROLLER_BRANCH_PATTERN = /^roller\/chromium\/(.+)$/;
 
+function getCurrentBranch () {
+  // In CI, use `GITHUB_HEAD_REF` since we checkout the PR branch in detached HEAD state
+  if (process.env.GITHUB_HEAD_REF) {
+    return process.env.GITHUB_HEAD_REF;
+  }
+
+  try {
+    return execSync('git rev-parse --abbrev-ref HEAD', {
+      cwd: ELECTRON_DIR,
+      encoding: 'utf8'
+    }).trim();
+  } catch {
+    console.error('Could not determine current git branch');
+    process.exit(1);
+  }
+}
+
 function getCommitsSinceMergeBase (mergeBase) {
   try {
     const output = execSync(`git log --format=%H%n%B%n---COMMIT_END--- ${mergeBase}..HEAD`, {
@@ -92,17 +109,7 @@ async function getGerritPatchDetails (clUrl) {
 }
 
 async function main () {
-  let currentBranch;
-
-  try {
-    currentBranch = execSync('git rev-parse --abbrev-ref HEAD', {
-      cwd: ELECTRON_DIR,
-      encoding: 'utf8'
-    }).trim();
-  } catch {
-    console.error('Could not determine current git branch');
-    process.exit(1);
-  }
+  const currentBranch = getCurrentBranch();
 
   // Check if we're on a roller/chromium/* branch
   const branchMatch = ROLLER_BRANCH_PATTERN.exec(currentBranch);
