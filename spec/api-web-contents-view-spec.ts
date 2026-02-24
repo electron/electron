@@ -176,7 +176,8 @@ describe('WebContentsView', () => {
 
     const dto = new Promise<boolean>((resolve) => {
       wcv.webContents.on('blur', () => {
-        const devToolsOpen = wcv.webContents.isDevToolsOpened();
+        const devToolsOpen = wcv.webContents && !wcv.webContents.isDestroyed() &&
+          wcv.webContents.isDevToolsOpened();
         resolve(devToolsOpen);
       });
     });
