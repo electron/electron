@@ -1,4 +1,4 @@
-import { app, net, session, ClientRequest, ClientRequestConstructorOptions, utilityProcess } from 'electron/main';
+import { net, session, ClientRequest, ClientRequestConstructorOptions, utilityProcess } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -1700,10 +1700,7 @@ describe('net module', () => {
       expect(firstResponse.ok).to.be.true();
       expect(await firstResponse.text()).to.equal('first');
 
-      const restartPromise = once(app, '-network-service-created');
-
-      binding.simulateNetworkServiceCrash();
-      await restartPromise;
+      await binding.simulateNetworkServiceCrash();
 
       // Wait for StoragePartitionImpl's NetworkContext disconnect handler to
       // fire and reinitialize the context in the new Network Service.
@@ -1730,10 +1727,7 @@ describe('net module', () => {
       expect(firstResult.ok).to.be.true();
       expect(firstResult.body).to.equal('utility-first');
 
-      const restartPromise = once(app, '-network-service-created');
-
-      binding.simulateNetworkServiceCrash();
-      await restartPromise;
+      await binding.simulateNetworkServiceCrash();
 
       // Needed for UpdateURLLoaderFactory IPC to propagate to the utility process
       // and for any in-flight requests to settle

@@ -73,7 +73,8 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     base::FilePath current_working_directory,
     bool use_plugin_helper,
     bool create_network_observer,
-    bool disclaim_responsibility) {
+    bool disclaim_responsibility)
+    : create_network_observer_(create_network_observer) {
 #if BUILDFLAG(IS_WIN)
   base::win::ScopedHandle stdout_write(nullptr);
   base::win::ScopedHandle stderr_write(nullptr);
@@ -213,31 +214,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   connector_->set_connection_error_handler(base::BindOnce(
       &UtilityProcessWrapper::CloseConnectorPort, weak_factory_.GetWeakPtr()));
 
-  mojo::PendingRemote<network::mojom::URLLoaderFactory> url_loader_factory;
-  network::mojom::URLLoaderFactoryParamsPtr loader_params =
-      network::mojom::URLLoaderFactoryParams::New();
-  loader_params->process_id = network::OriginatingProcess::browser();
-  loader_params->is_orb_enabled = false;
-  loader_params->is_trusted = true;
-  if (create_network_observer) {
-    url_loader_network_observer_.emplace();
-    loader_params->url_loader_network_observer =
-        url_loader_network_observer_->Bind();
-  }
-
-  network::mojom::NetworkContext* network_context =
-      g_browser_process->system_network_context_manager()->GetContext();
-  network_context->CreateURLLoaderFactory(
-      url_loader_factory.InitWithNewPipeAndPassReceiver(),
-      std::move(loader_params));
-  params->url_loader_factory = std::move(url_loader_factory);
-  mojo::PendingRemote<network::mojom::HostResolver> host_resolver;
-  network_context->CreateHostResolver(
-      {}, host_resolver.InitWithNewPipeAndPassReceiver());
-  params->host_resolver = std::move(host_resolver);
-  params->use_network_observer_from_url_loader_factory =
-      create_network_observer;
-
+  params->url_loader_factory_params = CreateURLLoaderFactoryParams();
   node_service_remote_->Initialize(std::move(params),
                                    receiver_.BindNewPipeAndPassRemote());
 
@@ -441,32 +418,38 @@ void UtilityProcessWrapper::CreateAndSendURLLoaderFactory(bool /* crashed */) {
   if (!node_service_remote_.is_connected())
     return;
 
-  auto* manager = g_browser_process->system_network_context_manager();
-  if (!manager)
-    return;
+  node_service_remote_->UpdateURLLoaderFactory(CreateURLLoaderFactoryParams());
+}
 
-  network::mojom::NetworkContext* network_context = manager->GetContext();
-
+node::mojom::URLLoaderFactoryParamsPtr
+UtilityProcessWrapper::CreateURLLoaderFactoryParams() {
+  node::mojom::URLLoaderFactoryParamsPtr params =
+      node::mojom::URLLoaderFactoryParams::New();
   mojo::PendingRemote<network::mojom::URLLoaderFactory> url_loader_factory;
-  auto loader_params = network::mojom::URLLoaderFactoryParams::New();
-  // Use kBrowserProcessId to match the initial factory creation (where pid_
-  // was 0 before the process launched). This is required because non-browser
-  // process IDs require a request_initiator_origin_lock to be set.
+  network::mojom::URLLoaderFactoryParamsPtr loader_params =
+      network::mojom::URLLoaderFactoryParams::New();
   loader_params->process_id = network::OriginatingProcess::browser();
   loader_params->is_orb_enabled = false;
   loader_params->is_trusted = true;
+  if (create_network_observer_) {
+    url_loader_network_observer_.emplace();
+    loader_params->url_loader_network_observer =
+        url_loader_network_observer_->Bind();
+  }
 
+  network::mojom::NetworkContext* network_context =
+      g_browser_process->system_network_context_manager()->GetContext();
   network_context->CreateURLLoaderFactory(
       url_loader_factory.InitWithNewPipeAndPassReceiver(),
       std::move(loader_params));
-
-  // Create host resolver from the same network context
+  params->url_loader_factory = std::move(url_loader_factory);
   mojo::PendingRemote<network::mojom::HostResolver> host_resolver;
   network_context->CreateHostResolver(
       {}, host_resolver.InitWithNewPipeAndPassReceiver());
-
-  node_service_remote_->UpdateURLLoaderFactory(std::move(url_loader_factory),
-                                               std::move(host_resolver));
+  params->host_resolver = std::move(host_resolver);
+  params->use_network_observer_from_url_loader_factory =
+      create_network_observer_;
+  return params;
 }
 
 // static

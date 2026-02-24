@@ -68,15 +68,13 @@ URLLoaderBundle* URLLoaderBundle::GetInstance() {
 void URLLoaderBundle::SetURLLoaderFactory(
     mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_factory,
     mojo::Remote<network::mojom::HostResolver> host_resolver,
-    std::optional<bool> use_network_observer_from_url_loader_factory) {
+    bool use_network_observer_from_url_loader_factory) {
   factory_ = network::SharedURLLoaderFactory::Create(
       std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
           std::move(pending_factory)));
   host_resolver_ = std::move(host_resolver);
-  if (use_network_observer_from_url_loader_factory.has_value()) {
-    should_use_network_observer_from_url_loader_factory_ =
-        use_network_observer_from_url_loader_factory.value();
-  }
+  should_use_network_observer_from_url_loader_factory_ =
+      use_network_observer_from_url_loader_factory;
 }
 
 scoped_refptr<network::SharedURLLoaderFactory>
@@ -124,10 +122,9 @@ void NodeService::Initialize(
 
   ParentPort::GetInstance()->Initialize(std::move(params->port));
 
-  URLLoaderBundle::GetInstance()->SetURLLoaderFactory(
-      std::move(params->url_loader_factory),
-      mojo::Remote(std::move(params->host_resolver)),
-      params->use_network_observer_from_url_loader_factory);
+  if (params->url_loader_factory_params) {
+    UpdateURLLoaderFactory(std::move(params->url_loader_factory_params));
+  }
 
   js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
 
@@ -211,10 +208,11 @@ void NodeService::Initialize(
 }
 
 void NodeService::UpdateURLLoaderFactory(
-    mojo::PendingRemote<network::mojom::URLLoaderFactory> url_loader_factory,
-    mojo::PendingRemote<network::mojom::HostResolver> host_resolver) {
+    node::mojom::URLLoaderFactoryParamsPtr params) {
   URLLoaderBundle::GetInstance()->SetURLLoaderFactory(
-      std::move(url_loader_factory), mojo::Remote(std::move(host_resolver)));
+      std::move(params->url_loader_factory),
+      mojo::Remote(std::move(params->host_resolver)),
+      params->use_network_observer_from_url_loader_factory);
 }
 
 }  // namespace electron

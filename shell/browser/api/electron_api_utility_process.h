@@ -103,6 +103,7 @@ class UtilityProcessWrapper final
   // Creates and sends a new URLLoaderFactory to the utility process.
   // Called after Network Service restart to update the factory.
   void CreateAndSendURLLoaderFactory(bool crashed);
+  node::mojom::URLLoaderFactoryParamsPtr CreateURLLoaderFactoryParams();
 
   base::ProcessId pid_ = base::kNullProcessId;
 #if BUILDFLAG(IS_WIN)
@@ -116,6 +117,7 @@ class UtilityProcessWrapper final
   bool connector_closed_ = false;
   bool terminated_ = false;
   bool killed_ = false;
+  bool create_network_observer_ = false;
   std::unique_ptr<mojo::Connector> connector_;
   blink::MessagePortDescriptor host_port_;
   mojo::Receiver<node::mojom::NodeServiceClient> receiver_{this};

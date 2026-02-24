@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_SERVICES_NODE_NODE_SERVICE_H_
 
 #include <memory>
-#include <optional>
 
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
@@ -42,8 +41,7 @@ class URLLoaderBundle {
   void SetURLLoaderFactory(
       mojo::PendingRemote<network::mojom::URLLoaderFactory> factory,
       mojo::Remote<network::mojom::HostResolver> host_resolver,
-      std::optional<bool> use_network_observer_from_url_loader_factory =
-          std::nullopt);
+      bool use_network_observer_from_url_loader_factory);
   scoped_refptr<network::SharedURLLoaderFactory> GetSharedURLLoaderFactory();
   network::mojom::HostResolver* GetHostResolver();
   bool ShouldUseNetworkObserverfromURLLoaderFactory() const;
@@ -68,8 +66,7 @@ class NodeService : public node::mojom::NodeService {
                   mojo::PendingRemote<node::mojom::NodeServiceClient>
                       client_pending_remote) override;
   void UpdateURLLoaderFactory(
-      mojo::PendingRemote<network::mojom::URLLoaderFactory> url_loader_factory,
-      mojo::PendingRemote<network::mojom::HostResolver> host_resolver) override;
+      node::mojom::URLLoaderFactoryParamsPtr params) override;
 
  private:
   // This needs to be initialized first so that it can be destroyed last
