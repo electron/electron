@@ -44,7 +44,7 @@ Debug symbols for MacOS (dSYM) now use xz compression in order to handle larger 
 ### Deprecated: `showHiddenFiles` in Dialogs on Linux
 
 This property will still be honored on macOS and Windows, but support on Linux
-will be removed in Electron 41. GTK intends for this to be a user choice rather
+will be removed in Electron 42. GTK intends for this to be a user choice rather
 than an app choice and has removed the API to do this programmatically.
 
 ## Planned Breaking API Changes (39.0)
