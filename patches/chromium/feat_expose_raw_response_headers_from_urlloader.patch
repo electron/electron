@@ -76,7 +76,7 @@ index ce69b40f1738bea97f52ed954a2908c5abdcad8b..67e8b7093a6359afef3044b2e7fc63a8
        network::ResourceRequest::TrustedParams::EnabledClientHints>&
    enabled_client_hints(
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index 0a0c6d22bdb2ce106e8e18adb5141999167e3f93..e49e8f85bdd122ee263d69efe0ee0abc139e83b3 100644
+index 9db6156ff06caca52cd4c2d47a9ff094a45eccb3..f141436a3b9feb56ca9c41b6c398451bc2bdd770 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
 @@ -111,6 +111,9 @@ struct TrustedUrlRequestParams {
@@ -90,7 +90,7 @@ index 0a0c6d22bdb2ce106e8e18adb5141999167e3f93..e49e8f85bdd122ee263d69efe0ee0abc
    // when it receives the AcceptCHFrame.
    EnabledClientHints? enabled_client_hints;
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index 13a211107294e856616d1626fa1dc9c79eb5646c..549a36886d665c1a8100f09b7a86c8dc13c80e84 100644
+index 916dadfe0eba27c8493b1b64bb01f9e77153692e..4a599fed851ea5af4be66895b7b2d83c5f128c0d 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -14,6 +14,7 @@ import "services/network/public/mojom/encoded_body_length.mojom";

@@ -414,10 +414,10 @@ index 33e2ff42e4d9da442d522b959a4a21c2f7032b6b..a0d81212327fc17e1f4704e78803c1d7
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index c83464823d2618c784b6c3f0baa1508fdb904873..13d1afdc7092005d458fd1ae60c80c596bfad90c 100644
+index 8dd125800231bd8acc3a267feb88009d455757f1..f6e35d8d4bd57813bef8586ad6e3fff3fd5ff7d1 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
-@@ -131,6 +131,9 @@ struct SchemeRegistry {
+@@ -132,6 +132,9 @@ struct SchemeRegistry {
        kMaterializedViewScheme,
    };
  
@@ -427,7 +427,7 @@ index c83464823d2618c784b6c3f0baa1508fdb904873..13d1afdc7092005d458fd1ae60c80c59
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -666,6 +669,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+@@ -667,6 +670,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
    return GetSchemeRegistry().empty_document_schemes;
  }
  
@@ -444,7 +444,7 @@ index c83464823d2618c784b6c3f0baa1508fdb904873..13d1afdc7092005d458fd1ae60c80c59
                                  std::string_view handler) {
    DoAddSchemeWithHandler(
 diff --git a/url/url_util.h b/url/url_util.h
-index 0ddda0ebdb51d023b366b82af3ee2833716c3953..6c7b48555b46edff0cbc7f1c6a258e627b53a224 100644
+index 8d7210827ed4efdc42c3c94abeff57d74e6c7ed8..141aa6858d00f56615769bc1919f69ed38209d26 100644
 --- a/url/url_util.h
 +++ b/url/url_util.h
 @@ -115,6 +115,15 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCSPBypassingSchemes();

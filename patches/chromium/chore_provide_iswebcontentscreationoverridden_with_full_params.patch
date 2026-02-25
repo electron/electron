@@ -159,7 +159,7 @@ index 783d05c39ecbe5e556af2e5fd8b4f30fb5aa1196..e1895bcf9d3c6818aa64b1479774a143
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index fca620bdddec4d4a8de558675a1b5c52ab52cc56..2d09f22a415426f1d749344f75e97b264a55b46f 100644
+index 6e3bab760b4a5156870c792782f499a4eff69eb8..763daa00d3cacb4530bf0e465888f9659bce6b5a 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -207,15 +207,14 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
@@ -223,7 +223,7 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index e16b5921b1f44723895bd9bba67aee2bfacfc54d..e4f8359646cf581172c8bb7ddf54e85a7a097d67 100644
+index 2c34c776b747f1de8e8f1d9eb3386acc19c183d3..4556e86d40d3abcc4091d09dc9fa85145d73aa41 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5312,8 +5312,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
