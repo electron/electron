@@ -16,19 +16,19 @@ describe('nativeImage module', () => {
     height: 190
   };
   const image1x1 = {
-    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADElEQVR4nGJhAAIAAAAA//8MRDDqAAAABklEQVQDAAAZAAXV/wceAAAAAElFTkSuQmCC',
+    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADElEQVR4nGJiAAIAAAAA//81yQwvAAAABklEQVQDAAAPAAMkN33pAAAAAElFTkSuQmCC',
     path: path.join(fixturesPath, 'assets', '1x1.png'),
     height: 1,
     width: 1
   };
   const image2x2 = {
-    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAE0lEQVR4nGL5//8/AwMDCwMYAAAAAP//fpSNxQAAAAZJREFUAwAkPgMGdYltawAAAABJRU5ErkJggg==',
+    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAE0lEQVR4nGL5//8/AwMDEwMYAAAAAP//aYxtrAAAAAZJREFUAwAkMAMEkRkhTQAAAABJRU5ErkJggg==',
     path: path.join(fixturesPath, 'assets', '2x2.jpg'),
     height: 2,
     width: 2
   };
   const image3x3 = {
-    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAABCWlDQ1BfAAB4nJWQsUrDUBSGv6oggqCDg4PDHVyVakEcnKoQXGOE6pbEGIUkDUlKVxdxFsRZxGfQBxFdXPoIDuLsfxswXTr0XM49H+f+nPtzoDVCsdCGNKsK1+ma3tm5WRzR0hmHH5Y500Oq389a+77F7LF0EZWh6rfSK/S5Rh6J1+Kae5aDmhPLwyqvxDeWC889FD+IV+MJDiY4zAurfxEfpMkgbHyzHGWnJ6r7yg1KXBy6GN0+KQMq8ZBr1SvRLttKg0eh90z6SyKsZVOP7D9p1A/M3ze94BHe7mD9q+ltPsPKLbx+NL1mh7lf+P/bmet0png2Y88OfZ2YRE4Mx3IVyqX12maHvT9v1kU+i+h9qQAAAA9JREFUeJxiYUACLDg5AAAAAP//htosgQAAAAZJREFUAwABXwANF48ZOwAAAABJRU5ErkJggg==',
+    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAABCWlDQ1BfAAB4nJWQsUrDUBSGv6oggqCDg4PDHVyVakEcnKoQXGOE6pbEGIUkDUlKVxdxFsRZxGfQBxFdXPoIDuLsfxswXTr0XM49H+f+nPtzoDVCsdCGNKsK1+ma3tm5WRzR0hmHH5Y500Oq389a+77F7LF0EZWh6rfSK/S5Rh6J1+Kae5aDmhPLwyqvxDeWC889FD+IV+MJDiY4zAurfxEfpMkgbHyzHGWnJ6r7yg1KXBy6GN0+KQMq8ZBr1SvRLttKg0eh90z6SyKsZVOP7D9p1A/M3ze94BHe7mD9q+ltPsPKLbx+NL1mh7lf+P/bmet0png2Y88OfZ2YRE4Mx3IVyqX12maHvT9v1kU+i+h9qQAAAA9JREFUeJxiYkACTDg5AAAAAP//rSd/1QAAAAZJREFUAwAAwwAHu+/W1AAAAABJRU5ErkJggg==',
     path: path.join(fixturesPath, 'assets', '3x3.png'),
     height: 3,
     width: 3
@@ -549,13 +549,10 @@ describe('nativeImage module', () => {
       expect(image.isEmpty()).to.be.false();
       expect(image.getSize()).to.deep.equal({ width: 1, height: 1 });
 
-      const expectedOne = nativeImage.createFromPath(imageDataOne.path);
-      const expectedTwo = nativeImage.createFromPath(imageDataTwo.path);
-      const expectedThree = nativeImage.createFromPath(imageDataThree.path);
-      expect(image.toBitmap({ scaleFactor: 1.0 }).equals(expectedOne.toBitmap())).to.be.true();
-      expect(image.toBitmap({ scaleFactor: 2.0 }).equals(expectedTwo.toBitmap())).to.be.true();
-      expect(image.toBitmap({ scaleFactor: 3.0 }).equals(expectedThree.toBitmap())).to.be.true();
-      expect(image.toBitmap({ scaleFactor: 4.0 }).equals(expectedThree.toBitmap())).to.be.true();
+      expect(image.toDataURL({ scaleFactor: 1.0 })).to.equal(imageDataOne.dataUrl);
+      expect(image.toDataURL({ scaleFactor: 2.0 })).to.equal(imageDataTwo.dataUrl);
+      expect(image.toDataURL({ scaleFactor: 3.0 })).to.equal(imageDataThree.dataUrl);
+      expect(image.toDataURL({ scaleFactor: 4.0 })).to.equal(imageDataThree.dataUrl);
     });
 
     it('supports adding a data URL representation for a scale factor', () => {
@@ -587,13 +584,10 @@ describe('nativeImage module', () => {
       expect(image.isEmpty()).to.be.false();
       expect(image.getSize()).to.deep.equal({ width: 1, height: 1 });
 
-      const expectedOne = nativeImage.createFromPath(imageDataOne.path);
-      const expectedTwo = nativeImage.createFromPath(imageDataTwo.path);
-      const expectedThree = nativeImage.createFromPath(imageDataThree.path);
-      expect(image.toBitmap({ scaleFactor: 1.0 }).equals(expectedOne.toBitmap())).to.be.true();
-      expect(image.toBitmap({ scaleFactor: 2.0 }).equals(expectedTwo.toBitmap())).to.be.true();
-      expect(image.toBitmap({ scaleFactor: 3.0 }).equals(expectedThree.toBitmap())).to.be.true();
-      expect(image.toBitmap({ scaleFactor: 4.0 }).equals(expectedThree.toBitmap())).to.be.true();
+      expect(image.toDataURL({ scaleFactor: 1.0 })).to.equal(imageDataOne.dataUrl);
+      expect(image.toDataURL({ scaleFactor: 2.0 })).to.equal(imageDataTwo.dataUrl);
+      expect(image.toDataURL({ scaleFactor: 3.0 })).to.equal(imageDataThree.dataUrl);
+      expect(image.toDataURL({ scaleFactor: 4.0 })).to.equal(imageDataThree.dataUrl);
     });
 
     it('supports adding a representation to an existing image', () => {
@@ -612,9 +606,8 @@ describe('nativeImage module', () => {
         dataURL: imageDataThree.dataUrl
       });
 
-      const expectedTwo = nativeImage.createFromPath(imageDataTwo.path);
-      expect(image.toBitmap({ scaleFactor: 1.0 }).equals(nativeImage.createFromPath(imageDataOne.path).toBitmap())).to.be.true();
-      expect(image.toBitmap({ scaleFactor: 2.0 }).equals(expectedTwo.toBitmap())).to.be.true();
+      expect(image.toDataURL({ scaleFactor: 1.0 })).to.equal(imageDataOne.dataUrl);
+      expect(image.toDataURL({ scaleFactor: 2.0 })).to.equal(imageDataTwo.dataUrl);
     });
   });
 });
