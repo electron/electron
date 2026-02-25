@@ -549,10 +549,13 @@ describe('nativeImage module', () => {
       expect(image.isEmpty()).to.be.false();
       expect(image.getSize()).to.deep.equal({ width: 1, height: 1 });
 
-      expect(image.toDataURL({ scaleFactor: 1.0 })).to.equal(imageDataOne.dataUrl);
-      expect(image.toDataURL({ scaleFactor: 2.0 })).to.equal(imageDataTwo.dataUrl);
-      expect(image.toDataURL({ scaleFactor: 3.0 })).to.equal(imageDataThree.dataUrl);
-      expect(image.toDataURL({ scaleFactor: 4.0 })).to.equal(imageDataThree.dataUrl);
+      const expectedOne = nativeImage.createFromPath(imageDataOne.path);
+      const expectedTwo = nativeImage.createFromPath(imageDataTwo.path);
+      const expectedThree = nativeImage.createFromPath(imageDataThree.path);
+      expect(image.toBitmap({ scaleFactor: 1.0 }).equals(expectedOne.toBitmap())).to.be.true();
+      expect(image.toBitmap({ scaleFactor: 2.0 }).equals(expectedTwo.toBitmap())).to.be.true();
+      expect(image.toBitmap({ scaleFactor: 3.0 }).equals(expectedThree.toBitmap())).to.be.true();
+      expect(image.toBitmap({ scaleFactor: 4.0 }).equals(expectedThree.toBitmap())).to.be.true();
     });
 
     it('supports adding a data URL representation for a scale factor', () => {
@@ -584,10 +587,13 @@ describe('nativeImage module', () => {
       expect(image.isEmpty()).to.be.false();
       expect(image.getSize()).to.deep.equal({ width: 1, height: 1 });
 
-      expect(image.toDataURL({ scaleFactor: 1.0 })).to.equal(imageDataOne.dataUrl);
-      expect(image.toDataURL({ scaleFactor: 2.0 })).to.equal(imageDataTwo.dataUrl);
-      expect(image.toDataURL({ scaleFactor: 3.0 })).to.equal(imageDataThree.dataUrl);
-      expect(image.toDataURL({ scaleFactor: 4.0 })).to.equal(imageDataThree.dataUrl);
+      const expectedOne = nativeImage.createFromPath(imageDataOne.path);
+      const expectedTwo = nativeImage.createFromPath(imageDataTwo.path);
+      const expectedThree = nativeImage.createFromPath(imageDataThree.path);
+      expect(image.toBitmap({ scaleFactor: 1.0 }).equals(expectedOne.toBitmap())).to.be.true();
+      expect(image.toBitmap({ scaleFactor: 2.0 }).equals(expectedTwo.toBitmap())).to.be.true();
+      expect(image.toBitmap({ scaleFactor: 3.0 }).equals(expectedThree.toBitmap())).to.be.true();
+      expect(image.toBitmap({ scaleFactor: 4.0 }).equals(expectedThree.toBitmap())).to.be.true();
     });
 
     it('supports adding a representation to an existing image', () => {
@@ -606,8 +612,9 @@ describe('nativeImage module', () => {
         dataURL: imageDataThree.dataUrl
       });
 
-      expect(image.toDataURL({ scaleFactor: 1.0 })).to.equal(imageDataOne.dataUrl);
-      expect(image.toDataURL({ scaleFactor: 2.0 })).to.equal(imageDataTwo.dataUrl);
+      const expectedTwo = nativeImage.createFromPath(imageDataTwo.path);
+      expect(image.toBitmap({ scaleFactor: 1.0 }).equals(nativeImage.createFromPath(imageDataOne.path).toBitmap())).to.be.true();
+      expect(image.toBitmap({ scaleFactor: 2.0 }).equals(expectedTwo.toBitmap())).to.be.true();
     });
   });
 });
