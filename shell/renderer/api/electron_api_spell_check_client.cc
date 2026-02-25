@@ -31,7 +31,7 @@ namespace {
 bool HasWordCharacters(const std::u16string& text, size_t index) {
   base_icu::UChar32 code;
   while (index < text.size() &&
-         base::ReadUnicodeCharacter(text.c_str(), text.size(), &index, &code)) {
+         base::ReadUnicodeCharacter(text, &index, &code)) {
     ++index;
     UErrorCode error = U_ZERO_ERROR;
     if (uscript_getScript(code, &error) != USCRIPT_COMMON)
