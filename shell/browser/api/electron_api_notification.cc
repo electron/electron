@@ -22,7 +22,9 @@
 
 #if BUILDFLAG(IS_WIN)
 #include <windows.h>
-#include <cstdio>
+
+#include "base/no_destructor.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/notifications/win/windows_toast_activator.h"
 #endif
 
@@ -276,15 +278,16 @@ v8::Local<v8::Value> ActivationArgumentsToV8(
   return dict.GetHandle();
 }
 
-// Storage for the JavaScript callback (persistent so it survives GC)
-v8::Global<v8::Function>* g_js_launch_callback = nullptr;
-v8::Isolate* g_js_isolate = nullptr;
+// Storage for the JavaScript callback (persistent so it survives GC).
+// Uses base::NoDestructor to avoid exit-time destructor issues with globals.
+// v8::Global supports Reset() for reassignment.
+base::NoDestructor<v8::Global<v8::Function>> g_js_launch_callback;
 
 void InvokeJsCallback(const electron::ActivationArguments& details) {
-  if (!g_js_launch_callback || g_js_launch_callback->IsEmpty() || !g_js_isolate)
+  if (g_js_launch_callback->IsEmpty())
     return;
 
-  v8::Isolate* isolate = g_js_isolate;
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   if (context.IsEmpty())
@@ -306,12 +309,8 @@ void InvokeJsCallback(const electron::ActivationArguments& details) {
 // static
 void Notification::HandleActivation(v8::Isolate* isolate,
                                     v8::Local<v8::Function> callback) {
-  // Replace any previous callback
-  if (g_js_launch_callback) {
-    delete g_js_launch_callback;
-  }
-  g_js_launch_callback = new v8::Global<v8::Function>(isolate, callback);
-  g_js_isolate = isolate;
+  // Replace any previous callback using Reset (v8::Global supports this)
+  g_js_launch_callback->Reset(isolate, callback);
 
   // Register the C++ callback that invokes the JS callback.
   // - If activation details already exist, callback is invoked immediately.

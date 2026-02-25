@@ -53,29 +53,29 @@ ActivationArguments::ActivationArguments(const ActivationArguments&) = default;
 ActivationArguments& ActivationArguments::operator=(
     const ActivationArguments&) = default;
 
-ActivationArguments* g_activation_arguments = nullptr;
-
-ActivationCallback* g_launch_callback = nullptr;
+// Use NoDestructor to avoid exit-time destructor issues with globals.
+// unique_ptr provides automatic memory management.
+base::NoDestructor<std::unique_ptr<ActivationArguments>> g_activation_arguments;
+base::NoDestructor<std::unique_ptr<ActivationCallback>> g_launch_callback;
 
 void SetActivationHandler(ActivationCallback callback) {
-  delete g_launch_callback;
-  g_launch_callback = new ActivationCallback(std::move(callback));
+  *g_launch_callback =
+      std::make_unique<ActivationCallback>(std::move(callback));
 
   // If we already have stored details (late subscription), invoke immediately
-  if (g_activation_arguments) {
-    (*g_launch_callback)(*g_activation_arguments);
+  if (*g_activation_arguments) {
+    (**g_launch_callback)(**g_activation_arguments);
     // Clear the details after handling
-    delete g_activation_arguments;
-    g_activation_arguments = nullptr;
+    g_activation_arguments->reset();
   }
 }
 
 namespace {
 
 ActivationArguments& GetOrCreateActivationArguments() {
-  if (!g_activation_arguments)
-    g_activation_arguments = new ActivationArguments();
-  return *g_activation_arguments;
+  if (!*g_activation_arguments)
+    *g_activation_arguments = std::make_unique<ActivationArguments>();
+  return **g_activation_arguments;
 }
 
 void DebugLog(std::string_view log_msg) {
@@ -453,13 +453,12 @@ void HandleToastActivation(const std::wstring& invoked_args,
 
   // Helper to invoke or store callback
   auto handle_callback = [&](const ActivationArguments& args) {
-    if (g_launch_callback) {
+    if (*g_launch_callback) {
       // Callback registered - invoke it (callback stays registered for future)
       DebugLog("Invoking registered activation callback");
-      (*g_launch_callback)(args);
+      (**g_launch_callback)(args);
       // Clear any stored details (callback handled it)
-      delete g_activation_arguments;
-      g_activation_arguments = nullptr;
+      g_activation_arguments->reset();
     } else {
       // No callback yet - store details for late subscription
       DebugLog("Storing activation details (no callback registered yet)");
