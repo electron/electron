@@ -80,6 +80,12 @@ your preload script and expose it using the [contextBridge](https://www.electron
 Debug symbols for MacOS (dSYM) now use xz compression in order to handle larger file sizes. `dsym.zip` files are now
 `dsym.tar.xz` files. End users using debug symbols may need to update their zip utilities.
 
+### Deprecated: `showHiddenFiles` in Dialogs on Linux
+
+This property will still be honored on macOS and Windows, but support on Linux
+will be removed in Electron 42. GTK intends for this to be a user choice rather
+than an app choice and has removed the API to do this programmatically.
+
 ## Planned Breaking API Changes (39.0)
 
 ### Deprecated: `--host-rules` command line switch

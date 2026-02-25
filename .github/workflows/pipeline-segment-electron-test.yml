@@ -30,9 +30,14 @@ on:
         required: false
         type: boolean
         default: false
+      display-server:
+        description: 'Display backend for Linux tests: x11 or wayland'
+        required: false
+        type: string
+        default: x11
 
 concurrency:
-  group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ inputs.display-server }}-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
 
 permissions: {}
@@ -59,7 +64,7 @@ jobs:
       fail-fast: false
       matrix:
         build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
-        shard: ${{ inputs.target-platform == 'linux' && fromJSON('[1, 2, 3]') || fromJSON('[1, 2]') }}
+        shard: ${{ case(inputs.display-server == 'wayland', fromJSON('[1]'), inputs.target-platform == 'linux', fromJSON('[1, 2, 3]'), fromJSON('[1, 2]')) }}
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
@@ -210,7 +215,22 @@ jobs:
         cd src/electron
         export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
         # Get which tests are on this shard
-        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ inputs.target-platform == 'linux' && 3 || 2 }})
+        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ case(inputs.display-server == 'wayland', 1, inputs.target-platform == 'linux', 3, 2) }})
+        if [ "${{ inputs.display-server }}" = "wayland" ]; then
+          allowlist_file=script/wayland-test-allowlist.txt
+          filtered_tests=""
+          for test_file in $tests_files; do
+            if grep -Fxq "$test_file" "$allowlist_file"; then
+              filtered_tests="$filtered_tests $test_file"
+            fi
+          done
+          tests_files="${filtered_tests# }"
+
+          if [ -z "$tests_files" ]; then
+            echo "No tests matched Wayland filter, skipping."
+            exit 0
+          fi
+        fi
 
         # Run tests
         if [ "${{ inputs.target-platform }}" != "linux" ]; then
@@ -245,7 +265,11 @@ jobs:
             if [ "${{ inputs.target-arch }}" = "arm" ]; then
               runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --skipYarnInstall --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
             else 
-              runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
+              if [ "${{ inputs.display-server }}" = "wayland" ]; then
+                runuser -u builduser -- script/actions/run-tests-wayland.sh script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
+              else
+                runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
+              fi
             fi
             
           fi
@@ -268,7 +292,7 @@ jobs:
       if: always() && !cancelled()
       uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
       with:
-        name: test_artifacts_${{ env.ARTIFACT_KEY }}_${{ matrix.shard }}
+        name: ${{ inputs.target-platform == 'linux' && format('test_artifacts_{0}_{1}_{2}', env.ARTIFACT_KEY, inputs.display-server, matrix.shard) || format('test_artifacts_{0}_{1}', env.ARTIFACT_KEY, matrix.shard) }}
         path: src/electron/spec/artifacts
         if-no-files-found: ignore
     - name: Wait for active SSH sessions

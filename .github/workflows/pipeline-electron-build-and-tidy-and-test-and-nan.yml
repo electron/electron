@@ -110,6 +110,21 @@ jobs:
       test-runs-on: ${{ inputs.test-runs-on }}
       test-container: ${{ inputs.test-container }}
     secrets: inherit
+  test-wayland:
+    uses: ./.github/workflows/pipeline-segment-electron-test.yml
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    needs: build
+    if: ${{ inputs.target-platform == 'linux' && inputs.target-arch == 'x64' && !inputs.is-asan }}
+    with:
+      target-arch: ${{ inputs.target-arch }}
+      target-platform: ${{ inputs.target-platform }}
+      test-runs-on: ${{ inputs.test-runs-on }}
+      test-container: ${{ inputs.test-container }}
+      display-server: wayland
+    secrets: inherit
   nn-test:
     uses: ./.github/workflows/pipeline-segment-node-nan-test.yml
     permissions:

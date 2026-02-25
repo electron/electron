@@ -122,10 +122,9 @@ void NodeService::Initialize(
 
   ParentPort::GetInstance()->Initialize(std::move(params->port));
 
-  URLLoaderBundle::GetInstance()->SetURLLoaderFactory(
-      std::move(params->url_loader_factory),
-      mojo::Remote(std::move(params->host_resolver)),
-      params->use_network_observer_from_url_loader_factory);
+  if (params->url_loader_factory_params) {
+    UpdateURLLoaderFactory(std::move(params->url_loader_factory_params));
+  }
 
   js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
 
@@ -206,6 +205,14 @@ void NodeService::Initialize(
   // Run entry script.
   node_bindings_->PrepareEmbedThread();
   node_bindings_->StartPolling();
+}
+
+void NodeService::UpdateURLLoaderFactory(
+    node::mojom::URLLoaderFactoryParamsPtr params) {
+  URLLoaderBundle::GetInstance()->SetURLLoaderFactory(
+      std::move(params->url_loader_factory),
+      mojo::Remote(std::move(params->host_resolver)),
+      params->use_network_observer_from_url_loader_factory);
 }
 
 }  // namespace electron

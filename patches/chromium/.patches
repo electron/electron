@@ -144,3 +144,4 @@ fix_linux_tray_id.patch
 expose_gtk_ui_platform_field.patch
 patch_osr_control_screen_info.patch
 refactor_allow_customizing_config_in_freedesktopsecretkeyprovider.patch
+fix_wayland_test_crash_on_teardown.patch
