@@ -868,10 +868,10 @@ index d21a6bd3d98d6db26cc82896e62da2869cf22842..21553911f8e16a76187bfff120dfbeea
  
  // Make sure memory isn't released before being returned
 diff --git a/test/parallel/test-tls-client-auth.js b/test/parallel/test-tls-client-auth.js
-index b347c0a88df571296127985f8e7b70de66726cc0..66465783d344dab1330069e36577d41fc75db962 100644
+index 04bf40b9a9e1ac6b92e98e3c4201c3e6e427d70c..495a7590be29370900659d1385afcbbb99a1fbf8 100644
 --- a/test/parallel/test-tls-client-auth.js
 +++ b/test/parallel/test-tls-client-auth.js
-@@ -112,7 +112,7 @@ if (tls.DEFAULT_MAX_VERSION === 'TLSv1.3') connect({
+@@ -110,7 +110,7 @@ if (tls.DEFAULT_MAX_VERSION === 'TLSv1.3') connect({
    // and sends a fatal Alert to the client that the client discovers there has
    // been a fatal error.
    pair.client.conn.once('error', common.mustCall((err) => {
@@ -879,12 +879,12 @@ index b347c0a88df571296127985f8e7b70de66726cc0..66465783d344dab1330069e36577d41f
 +    //assert.strictEqual(err.code, 'ERR_SSL_TLSV13_ALERT_CERTIFICATE_REQUIRED');
      cleanup();
    }));
- });
+ }));
 diff --git a/test/parallel/test-tls-peer-certificate.js b/test/parallel/test-tls-peer-certificate.js
-index 41e3c883d950e074dffcdd6df888eaf47696039c..304724b564956ff3c38cb42793141ddcc57dfd75 100644
+index 6c440ee44b8cf862a7bc96975ed503a1f49b33a4..212c2b0cbeeeb929a9622541ea49d9eb198188ce 100644
 --- a/test/parallel/test-tls-peer-certificate.js
 +++ b/test/parallel/test-tls-peer-certificate.js
-@@ -55,7 +55,7 @@ connect({
+@@ -54,7 +54,7 @@ connect({
    assert.strictEqual(peerCert.ca, false);
    assert.strictEqual(peerCert.issuerCertificate.ca, true);
    assert.strictEqual(peerCert.subject.emailAddress, 'ry@tinyclouds.org');
@@ -893,7 +893,7 @@ index 41e3c883d950e074dffcdd6df888eaf47696039c..304724b564956ff3c38cb42793141ddc
    assert.strictEqual(peerCert.exponent, '0x10001');
    assert.strictEqual(peerCert.bits, 2048);
    // The conversion to bits is odd because modulus isn't a buffer, its a hex
-@@ -95,7 +95,7 @@ connect({
+@@ -94,7 +94,7 @@ connect({
  
    const issuer = peerCert.issuerCertificate;
    assert.strictEqual(issuer.issuerCertificate, issuer);
@@ -901,8 +901,8 @@ index 41e3c883d950e074dffcdd6df888eaf47696039c..304724b564956ff3c38cb42793141ddc
 +  assert.match(issuer.serialNumber, /4AB16C8DFD6A7D0D2DFCABDF9C4B0E92C6AD0229/i);
  
    return cleanup();
- });
-@@ -114,7 +114,7 @@ connect({
+ }));
+@@ -112,7 +112,7 @@ connect({
  
    assert.ok(peerCert.issuerCertificate);
    assert.strictEqual(peerCert.subject.emailAddress, 'ry@tinyclouds.org');
@@ -911,7 +911,7 @@ index 41e3c883d950e074dffcdd6df888eaf47696039c..304724b564956ff3c38cb42793141ddc
    assert.strictEqual(peerCert.exponent, undefined);
    assert.strictEqual(peerCert.pubKey, undefined);
    assert.strictEqual(peerCert.modulus, undefined);
-@@ -146,7 +146,6 @@ connect({
+@@ -144,7 +144,6 @@ connect({
  
    const issuer = peerCert.issuerCertificate;
    assert.strictEqual(issuer.issuerCertificate, issuer);
@@ -919,12 +919,12 @@ index 41e3c883d950e074dffcdd6df888eaf47696039c..304724b564956ff3c38cb42793141ddc
 -
 +  assert.match(issuer.serialNumber, /32E8197681DA33185867B52885F678BFDBA51727/i);
    return cleanup();
- });
+ }));
 diff --git a/test/parallel/test-tls-pfx-authorizationerror.js b/test/parallel/test-tls-pfx-authorizationerror.js
-index eb705d591ef23a90bd78d52797fd1a58bc84a7dd..da428f1320e9e7bd1683724806a7438ed5aa38cc 100644
+index 53fcc0b16b5bd6f50c334fb7cc5671e31c1546b9..da428f1320e9e7bd1683724806a7438ed5aa38cc 100644
 --- a/test/parallel/test-tls-pfx-authorizationerror.js
 +++ b/test/parallel/test-tls-pfx-authorizationerror.js
-@@ -22,13 +22,13 @@ const server = tls
+@@ -22,8 +22,8 @@ const server = tls
        rejectUnauthorized: false
      },
      common.mustCall(function(c) {
@@ -935,19 +935,7 @@ index eb705d591ef23a90bd78d52797fd1a58bc84a7dd..da428f1320e9e7bd1683724806a7438e
        assert.strictEqual(c.authorizationError, null);
        c.end();
      })
-   )
--  .listen(0, function() {
-+  .listen(0, common.mustCall(function() {
-     const client = tls.connect(
-       {
-         port: this.address().port,
-@@ -36,16 +36,16 @@ const server = tls
-         passphrase: 'sample',
-         rejectUnauthorized: false
-       },
--      function() {
-+      common.mustCall(() => {
-         for (let i = 0; i < 10; ++i) {
+@@ -41,8 +41,8 @@ const server = tls
            // Calling this repeatedly is a regression test that verifies
            // that .getCertificate() does not accidentally decrease the
            // reference count of the X509* certificate on the native side.
@@ -958,11 +946,6 @@ index eb705d591ef23a90bd78d52797fd1a58bc84a7dd..da428f1320e9e7bd1683724806a7438e
          }
          client.end();
          server.close();
--      }
-+      }),
-     );
--  });
-+  }));
 diff --git a/test/parallel/test-tls-set-sigalgs.js b/test/parallel/test-tls-set-sigalgs.js
 index 985ca13ba2ac7d58f87c263c7654c4f4087efddf..21c199bdb12739f82a075c4e10e08faf8c587cf4 100644
 --- a/test/parallel/test-tls-set-sigalgs.js
@@ -1045,7 +1028,7 @@ index bd788ec4ed88289d35798b8af8c9490a68e081a2..c6a6f33490595faabaefc9b58afdd813
      for (const name of ['ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87']) {
        parameters.push({
 diff --git a/test/parallel/test-x509-escaping.js b/test/parallel/test-x509-escaping.js
-index c8fc4abbb108a6d6849e8452d97d29187da2ebe6..825ba4c8dce775f401080a0522565bb7a087bcc3 100644
+index a5937a09cb1535778a6345885a69ca9bcecf3e96..336313d30b3329b73c04f2f6d6a5e02375a11a72 100644
 --- a/test/parallel/test-x509-escaping.js
 +++ b/test/parallel/test-x509-escaping.js
 @@ -438,7 +438,7 @@ const { hasOpenSSL3 } = require('../common/crypto');

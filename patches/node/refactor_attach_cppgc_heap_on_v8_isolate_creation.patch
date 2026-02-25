@@ -18,7 +18,7 @@ This can be removed when Node.js upgrades to a version of V8 containing CLs
 from the above issue.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 53f05293bd94e159dfedf48735989e668acdd08e..d753ad6c6b49b26b86920124f7ac90c1e052638e 100644
+index 5f51ad205189bd75d0d9638b1104c12b537b4e9b..8974bac7dca43294cc5cc4570f8e2e78f42aefaa 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -323,6 +323,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
@@ -102,7 +102,7 @@ index fdabe48dd7776c59298f7d972286d0d2ed062752..b5cf58cc953590493beb52abf249e33e
        isolate, object, wrappable);
  }
 diff --git a/src/node.h b/src/node.h
-index 19c34a430d095c06ccf5a988db91311d420a485a..5a6004ca4dfd15a813f3fcc7687958432e4fd5a0 100644
+index b92a9d42da8419741c435643b7401efcb21a9e8b..bbe35c7a8f1bc0bcddf628af42b71efaef8a7759 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -78,6 +78,7 @@
@@ -123,7 +123,7 @@ index 19c34a430d095c06ccf5a988db91311d420a485a..5a6004ca4dfd15a813f3fcc768795843
  NODE_EXTERN v8::Isolate* NewIsolate(
      std::shared_ptr<ArrayBufferAllocator> allocator,
      struct uv_loop_s* event_loop,
-@@ -1624,9 +1626,10 @@ void RegisterSignalHandler(int signal,
+@@ -1702,9 +1704,10 @@ void RegisterSignalHandler(int signal,
  // work with only Node.js versions with v8::Object::Wrap() should use that
  // instead.
  NODE_DEPRECATED("Use v8::Object::Wrap()",
@@ -138,7 +138,7 @@ index 19c34a430d095c06ccf5a988db91311d420a485a..5a6004ca4dfd15a813f3fcc768795843
  }  // namespace node
  
 diff --git a/src/node_main_instance.cc b/src/node_main_instance.cc
-index dd6ecd1f9d82f6661b2480c0195e33515633429f..334d5cb7df7a763e0929468392dad83421cad606 100644
+index 6f674df3ed0dc1b4e5cd3a249fb787a9fc98361d..90f9eb84b6835c36a91ce23d77722812ce173c0f 100644
 --- a/src/node_main_instance.cc
 +++ b/src/node_main_instance.cc
 @@ -44,6 +44,8 @@ NodeMainInstance::NodeMainInstance(const SnapshotData* snapshot_data,
@@ -151,7 +151,7 @@ index dd6ecd1f9d82f6661b2480c0195e33515633429f..334d5cb7df7a763e0929468392dad834
    isolate_ =
        NewIsolate(isolate_params_.get(), event_loop, platform, snapshot_data);
 diff --git a/src/node_worker.cc b/src/node_worker.cc
-index fcfd5fecdebd2724441eb83b498b38b11eedad25..e7d26b4c8cbb08a175084ceac51395860dc60598 100644
+index fa7dc52b19119ed3d2dc407c029f56107476bc39..1acc61af0c995ddefbc00fe232b2454de77a84a3 100644
 --- a/src/node_worker.cc
 +++ b/src/node_worker.cc
 @@ -181,6 +181,9 @@ class WorkerThreadData {

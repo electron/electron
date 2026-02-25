@@ -9,10 +9,10 @@ conflict with Blink's in renderer and worker processes.
 We should try to upstream some version of this.
 
 diff --git a/doc/api/cli.md b/doc/api/cli.md
-index d94226df8d90d791c3c5fdb7cab7357b0e2555b0..7512ec43ea10d9b0e167125040bc8136f7ad568a 100644
+index f05686608297e538f0a6f65abb389281bced4291..c8da076f80a559b9ee6d2ffed831b088c15c8e88 100644
 --- a/doc/api/cli.md
 +++ b/doc/api/cli.md
-@@ -1814,6 +1814,14 @@ changes:
+@@ -1820,6 +1820,14 @@ changes:
  
  Disable using [syntax detection][] to determine module type.
  
@@ -27,7 +27,7 @@ index d94226df8d90d791c3c5fdb7cab7357b0e2555b0..7512ec43ea10d9b0e167125040bc8136
  ### `--no-experimental-global-navigator`
  
  <!-- YAML
-@@ -3493,6 +3501,7 @@ one is included in the list below.
+@@ -3499,6 +3507,7 @@ one is included in the list below.
  * `--no-addons`
  * `--no-async-context-frame`
  * `--no-deprecation`
@@ -96,7 +96,7 @@ index f6f81f50c8bd91a72ca96093dc64c183bd58039b..aa18dab6e4171d8a7f0af4b7db1b8c2c
              "experimental WebSocket API",
              &EnvironmentOptions::experimental_websocket,
 diff --git a/test/parallel/test-process-env-allowed-flags-are-documented.js b/test/parallel/test-process-env-allowed-flags-are-documented.js
-index f09bf0940dad2068f0aa5dce783dd422773d4bbb..ccf4ffcacf9bd9965978738656b8fe091fee4d6a 100644
+index d62a2583523c6b3c1de394a18e8060199e446bf1..7d6c6ea7949fd6b52bb54c31a2d71257349e64a9 100644
 --- a/test/parallel/test-process-env-allowed-flags-are-documented.js
 +++ b/test/parallel/test-process-env-allowed-flags-are-documented.js
 @@ -122,7 +122,6 @@ const undocumented = difference(process.allowedNodeEnvironmentFlags,

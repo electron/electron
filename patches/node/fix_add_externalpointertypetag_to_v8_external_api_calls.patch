@@ -78,7 +78,7 @@ index a944c18518471a55a44a7ff32190fe9920d0cb20..82214a5d051bb2ca487c92f684b03dcf
  
    void* Data() { return data_; }
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index c5c61888ecaaeeb23ebc9887f19ae3ad4c30dbd4..e2db3f4935ad58c5b409c67bfe5fc964f4ea5e83 100644
+index d067b47e7e30a95740fe0275c70445707dec426b..391c57eed9058602bd8311d885cf5fc60bfea903 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -642,7 +642,7 @@ void GetCompileCacheEntry(const FunctionCallbackInfo<Value>& args) {
