@@ -89,6 +89,8 @@ class App final : public gin::Wrappable<App>,
 
   static bool IsPackaged();
 
+  bool AreExtensionsEnabledOnAllProtocols() const;
+
   App();
   ~App() override;
 
@@ -236,6 +238,7 @@ class App final : public gin::Wrappable<App>,
   v8::Local<v8::Promise> GetGPUInfo(v8::Isolate* isolate,
                                     const std::string& info_type);
   void EnableSandbox(gin_helper::ErrorThrower thrower);
+  void EnableExtensionsOnAllProtocols(gin_helper::ErrorThrower thrower);
   void SetUserAgentFallback(const std::string& user_agent);
   std::string GetUserAgentFallback();
   v8::Local<v8::Promise> SetProxy(gin::Arguments* args);
@@ -292,6 +295,10 @@ class App final : public gin::Wrappable<App>,
   bool disable_hw_acceleration_ = false;
   bool disable_domain_blocking_for_3DAPIs_ = false;
   bool watch_singleton_socket_on_ready_ = false;
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  bool enable_extensions_on_all_protocols_ = false;
+#endif
 
   std::unique_ptr<content::ScopedAccessibilityMode> scoped_accessibility_mode_;
 };

@@ -162,6 +162,11 @@ RendererClientBase::RendererClientBase() {
       ParseSchemesCLISwitch(command_line, switches::kSecureSchemes);
   for (const std::string& scheme : secure_schemes_list)
     url::AddSecureScheme(scheme.data());
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // Parse --enable-extensions-on-all-protocols
+  if (command_line->HasSwitch(switches::kEnableExtensionsOnAllProtocols))
+    URLPattern::EnableExtensionsOnAllProtocols();
+#endif
   // We rely on the unique process host id which is notified to the
   // renderer process via command line switch from the content layer,
   // if this switch is removed from the content layer for some reason,

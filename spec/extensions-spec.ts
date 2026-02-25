@@ -3,6 +3,7 @@ import { app, session, webFrameMain, BrowserWindow, ipcMain, WebContents, Extens
 import { expect } from 'chai';
 import * as WebSocket from 'ws';
 
+import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
@@ -1336,6 +1337,28 @@ describe('chrome extensions', () => {
         const bgAfter = await w.webContents.executeJavaScript('window.getComputedStyle(document.body).backgroundColor');
         expect(bgAfter).to.equal('rgb(255, 0, 0)');
       });
+    });
+  });
+
+  describe('custom protocol', () => {
+    async function runFixture (name: string) {
+      const appProcess = spawn(process.execPath, [(path.join(fixtures, 'extensions', name, 'main.js'))]);
+
+      let output = '';
+      appProcess.stdout.on('data', (data) => { output += data; });
+      await once(appProcess.stdout, 'end');
+
+      return output.trim();
+    };
+
+    it('loads DevTools extensions on custom protocols with app.enableExtensionsOnAllProtocols() and runs content and background scripts', async () => {
+      const output = await runFixture('custom-protocol');
+      expect(output).to.equal('Title: MESSAGE RECEIVED');
+    });
+
+    it('loads DevTools panels on custom protocols with app.enableExtensionsOnAllProtocols()', async () => {
+      const output = await runFixture('custom-protocol-panel');
+      expect(output).to.equal('ELECTRON TEST PANEL created');
     });
   });
 });
