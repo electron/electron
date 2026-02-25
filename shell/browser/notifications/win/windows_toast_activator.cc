@@ -371,7 +371,7 @@ void HandleToastActivation(const std::wstring& invoked_args,
 
   int action_index = -1;
   if (!action_index_str.empty()) {
-    action_index = std::stoi(action_index_str);
+    base::StringToInt(base::WideToUTF8(action_index_str), &action_index);
   }
 
   std::string reply_text;
