@@ -20,7 +20,7 @@ index ab7dc27de3e304f6d912d5834da47e3b4eb25495..b6c0fd4ceee989dac55c7d54e52fef18
    }
  }
 diff --git a/unofficial.gni b/unofficial.gni
-index 253226009faf563f6db285d4b2908f308c1f96ea..dd686d2f7c8d2f6e8d6bd13a7bf2b4b140556ba9 100644
+index 4ab316e45bd84e43a53335df60f847b17fe6c2fa..def9a302830e493e51cc2b3588816fcbd3a1bb51 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -143,7 +143,10 @@ template("node_gn_build") {
@@ -35,7 +35,7 @@ index 253226009faf563f6db285d4b2908f308c1f96ea..dd686d2f7c8d2f6e8d6bd13a7bf2b4b1
      public_configs = [
        ":node_external_config",
        "deps/googletest:googletest_config",
-@@ -362,6 +365,7 @@ template("node_gn_build") {
+@@ -364,6 +367,7 @@ template("node_gn_build") {
        "src/embedded_data.h",
      ]
      include_dirs = [ "src", "tools" ]

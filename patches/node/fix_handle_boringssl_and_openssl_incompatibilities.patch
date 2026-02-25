@@ -94,7 +94,7 @@ index 175ec8ba0f2a908ffad2ce48434aeed573b09c90..3218590ddce1e92c2a9d776f20f9fb01
    Cipher() = default;
    Cipher(const EVP_CIPHER* cipher) : cipher_(cipher) {}
 diff --git a/node.gni b/node.gni
-index e2407027ab05e59b2f0f1c213b98ea469db7a91b..c64761b730e61edcdc0e46a48699f2fd5bb1c0a6 100644
+index 156fee33b3813fe4d94a1c9585f217a99dbfbd5f..8239967653fee7791800ee3292e77b91bffaaef9 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -11,7 +11,7 @@ declare_args() {
