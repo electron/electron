@@ -8,6 +8,7 @@
 #include <string_view>
 
 #include "base/strings/cstring_view.h"
+#include "electron/buildflags/buildflags.h"
 
 namespace electron {
 
@@ -269,6 +270,12 @@ inline constexpr base::cstring_view kStreamingSchemes = "streaming-schemes";
 
 // Register schemes as supporting V8 code cache.
 inline constexpr base::cstring_view kCodeCacheSchemes = "code-cache-schemes";
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+// Enable Chrome extensions on all protocols.
+inline constexpr base::cstring_view kEnableExtensionsOnAllProtocols =
+    "enable-extensions-on-all-protocols";
+#endif
 
 // The browser process app model ID
 inline constexpr base::cstring_view kAppUserModelId = "app-user-model-id";

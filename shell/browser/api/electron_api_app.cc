@@ -86,6 +86,10 @@
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-traced-handle.h"
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "extensions/common/url_pattern.h"
+#endif
+
 #if BUILDFLAG(IS_WIN)
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/notifications/win/windows_toast_activator.h"
@@ -1546,6 +1550,28 @@ void App::EnableSandbox(gin_helper::ErrorThrower thrower) {
   command_line->AppendSwitch(switches::kEnableSandbox);
 }
 
+void App::EnableExtensionsOnAllProtocols(gin_helper::ErrorThrower thrower) {
+  if (Browser::Get()->is_ready()) {
+    thrower.ThrowError(
+        "app.enableExtensionsOnAllProtocols() can only be called "
+        "before app is ready");
+    return;
+  }
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  enable_extensions_on_all_protocols_ = true;
+  URLPattern::EnableExtensionsOnAllProtocols();
+#endif
+}
+
+bool App::AreExtensionsEnabledOnAllProtocols() const {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  return enable_extensions_on_all_protocols_;
+#else
+  return false;
+#endif
+}
+
 v8::Local<v8::Promise> App::SetProxy(gin::Arguments* args) {
   v8::Isolate* isolate = args->isolate();
   gin_helper::Promise<void> promise(isolate);
@@ -1950,6 +1976,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  &App::IsHardwareAccelerationEnabled)
       .SetMethod("disableDomainBlockingFor3DAPIs",
                  &App::DisableDomainBlockingFor3DAPIs)
+      .SetMethod("enableExtensionsOnAllProtocols",
+                 &App::EnableExtensionsOnAllProtocols)
       .SetMethod("getFileIcon", &App::GetFileIcon)
       .SetMethod("getAppMetrics", &App::GetAppMetrics)
       .SetMethod("getGPUFeatureStatus", &App::GetGPUFeatureStatus)

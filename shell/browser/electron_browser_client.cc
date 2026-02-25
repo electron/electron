@@ -617,6 +617,12 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
         command_line->AppendSwitch(switches::kServiceWorkerPreload);
       }
     }
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+    if (api::App::Get()->AreExtensionsEnabledOnAllProtocols()) {
+      command_line->AppendSwitch(switches::kEnableExtensionsOnAllProtocols);
+    }
+#endif
   }
 }
 

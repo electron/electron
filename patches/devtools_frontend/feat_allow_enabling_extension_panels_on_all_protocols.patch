@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Niklas Wenzel <dev@nikwen.de>
+Date: Wed, 25 Feb 2026 16:23:07 +0100
+Subject: feat: allow enabling extension panels on all protocols
+
+This allows us to show Chrome extension panels on pages served over
+custom protocols.
+
+diff --git a/front_end/core/root/Runtime.ts b/front_end/core/root/Runtime.ts
+index 2e212d3da32a6b3954b5e1b41f54d494268124e2..66766fefd08338ee1e5d2a1501b7be12ae3803e1 100644
+--- a/front_end/core/root/Runtime.ts
++++ b/front_end/core/root/Runtime.ts
+@@ -643,6 +643,7 @@ export type HostConfig = Platform.TypeScriptUtilities.RecursivePartial<{
+    * or guest mode, rather than a "normal" profile.
+    */
+   isOffTheRecord: boolean,
++  devToolsExtensionsOnAllProtocols: boolean,
+   devToolsEnableOriginBoundCookies: HostConfigEnableOriginBoundCookies,
+   devToolsAnimationStylesInStylesTab: HostConfigAnimationStylesInStylesTab,
+   devToolsJpegXlImageFormat: HostConfigJpegXlImageFormat,
+diff --git a/front_end/panels/common/ExtensionServer.ts b/front_end/panels/common/ExtensionServer.ts
+index 0a5ec620b135b128013d6ddbb5299f9a5813f122..1a6118b4fa1607a634720b5579a50d1b4478b60a 100644
+--- a/front_end/panels/common/ExtensionServer.ts
++++ b/front_end/panels/common/ExtensionServer.ts
+@@ -12,6 +12,7 @@ import * as Host from '../../core/host/host.js';
+ import * as i18n from '../../core/i18n/i18n.js';
+ import * as Platform from '../../core/platform/platform.js';
+ import * as _ProtocolClient from '../../core/protocol_client/protocol_client.js';  // eslint-disable-line @typescript-eslint/no-unused-vars
++import * as Root from '../../core/root/root.js';
+ import * as SDK from '../../core/sdk/sdk.js';
+ import type * as Protocol from '../../generated/protocol.js';
+ import * as Bindings from '../../models/bindings/bindings.js';
+@@ -1607,7 +1608,7 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper<EventTyp
+       return false;
+     }
+ 
+-    if (!kPermittedSchemes.includes(parsedURL.protocol)) {
++    if (!Root.Runtime.hostConfig.devToolsExtensionsOnAllProtocols && !kPermittedSchemes.includes(parsedURL.protocol)) {
+       return false;
+     }
+ 
