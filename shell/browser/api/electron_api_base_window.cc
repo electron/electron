@@ -981,11 +981,10 @@ BaseWindow* BaseWindow::GetParentWindow() const {
   if (parent_window_.IsEmpty())
     return nullptr;
 
-  auto* isolate = this->isolate();
-  v8::HandleScope scope{isolate};
-  auto local = v8::Local<v8::Value>::New(isolate, parent_window_);
+  v8::HandleScope scope{isolate()};
+  auto local = v8::Local<v8::Value>::New(isolate(), parent_window_);
   BaseWindow* parent = nullptr;
-  gin::ConvertFromV8(isolate, local, &parent);
+  gin::ConvertFromV8(isolate(), local, &parent);
   return parent;
 }
 
