@@ -9,6 +9,7 @@
 #include "base/environment.h"
 #include "base/functional/bind.h"
 #include "base/logging.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/single_thread_task_runner.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -279,7 +280,8 @@ void OnDeploymentCompleted(std::unique_ptr<DeploymentCallbackData> data,
         HRESULT error_code;
         hr = async_info->get_ErrorCode(&error_code);
         if (SUCCEEDED(hr)) {
-          error += " (" + std::to_string(static_cast<int>(error_code)) + ")";
+          error +=
+              " (" + base::NumberToString(static_cast<int>(error_code)) + ")";
         }
       }
     }
@@ -798,10 +800,10 @@ v8::Local<v8::Value> GetPackageInfo() {
         ABI::Windows::ApplicationModel::PackageVersion pkg_version;
         hr = package_id->get_Version(&pkg_version);
         if (SUCCEEDED(hr)) {
-          std::string version = std::to_string(pkg_version.Major) + "." +
-                                std::to_string(pkg_version.Minor) + "." +
-                                std::to_string(pkg_version.Build) + "." +
-                                std::to_string(pkg_version.Revision);
+          std::string version = base::NumberToString(pkg_version.Major) + "." +
+                                base::NumberToString(pkg_version.Minor) + "." +
+                                base::NumberToString(pkg_version.Build) + "." +
+                                base::NumberToString(pkg_version.Revision);
           result.Set("version", version);
         }
       }
