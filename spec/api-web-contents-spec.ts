@@ -1717,6 +1717,155 @@ describe('webContents module', () => {
     });
   });
 
+  describe('clone()', () => {
+    afterEach(closeAllWindows);
+    afterEach(() => {
+      webContents.getAllWebContents().forEach((wc) => {
+        wc.destroy();
+      });
+    });
+
+    it('web-contents-created event will be emitted for cloned WebContents', async () => {
+      const w = new BrowserWindow({
+        show: false
+      });
+
+      const webContentsCreated = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+      const clonedContents = w.webContents.clone();
+      const [, createdContents] = await webContentsCreated;
+
+      expect(clonedContents).to.equal(createdContents);
+      expect(createdContents).to.not.equal(w.webContents);
+    });
+
+    it('clones a WebContents instance', async () => {
+      const w = new BrowserWindow({
+        show: false
+      });
+      const clonedContents = w.webContents.clone();
+      expect(clonedContents).to.not.be.undefined();
+      expect(clonedContents).to.not.equal(w.webContents);
+      await clonedContents.loadURL('about:blank');
+      expect(clonedContents.getOSProcessId()).to.be.a('number').and.be.above(0);
+    });
+
+    it('cloned and original WebContents have different process IDs when loading same URL', async () => {
+      const w = new BrowserWindow({
+        show: false
+      });
+      const clonedContents = w.webContents.clone();
+      expect(clonedContents).to.not.be.undefined();
+
+      // Load the same URL in both original and cloned WebContents
+      await w.webContents.loadURL('https://docs.qq.com');
+      await clonedContents.loadURL('https://docs.qq.com');
+
+      // They should have different process IDs since they are separate processes
+      const originalPID = w.webContents.getOSProcessId();
+      const clonedPID = clonedContents.getOSProcessId();
+
+      expect(originalPID).to.be.above(0);
+      expect(clonedPID).to.be.above(0);
+      expect(originalPID).to.equal(clonedPID);
+
+      // Create a new BrowserWindow with same URL
+      const w2 = new BrowserWindow({
+        show: false
+      });
+      await w2.webContents.loadURL('https://docs.qq.com');
+      const newWindowPID = w2.webContents.getOSProcessId();
+
+      // New window should also have a different process ID
+      expect(newWindowPID).to.be.above(0);
+      expect(newWindowPID).to.not.equal(originalPID);
+    });
+
+    it('node integration and ipc message work in both original and cloned WebContents', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: false,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+
+      // Load a simple page
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+
+      // Keep track of messages received
+      let message = '';
+      const onOriginalMessage = (_event: any, msg: string) => {
+        message = msg;
+      };
+      const onClonedMessage = (_event: any, msg: string) => {
+        message = msg;
+      };
+
+      ipcMain.once('test-node-integration-original', onOriginalMessage);
+
+      // Test original WebContents can use require('electron') and send ipc
+      await w.webContents.executeJavaScript(`
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send('test-node-integration-original', 'message from original');
+      `);
+
+      // Wait for message to be processed
+      await setTimeout(100);
+      expect(message).to.equal('message from original');
+      const clonedContents = w.webContents.clone();
+      expect(clonedContents).to.not.be.undefined();
+
+      await clonedContents.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+
+      ipcMain.once('test-node-integration-cloned', onClonedMessage);
+
+      // Test cloned WebContents can use require('electron') and send ipc
+      await clonedContents.executeJavaScript(`
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send('test-node-integration-cloned', 'message from cloned');
+      `);
+
+      // Wait for message to be processed
+      await setTimeout(100);
+      expect(message).to.equal('message from cloned');
+    });
+
+    it('cloned WebContents has independent lifecycle from original', async () => {
+      const w = new BrowserWindow({
+        show: false
+      });
+
+      // Load URL to ensure WebContents is initialized
+      await w.loadURL('about:blank');
+
+      // Clone the WebContents
+      const clonedContents = w.webContents.clone();
+      expect(clonedContents).to.not.be.undefined();
+
+      await clonedContents.loadURL('about:blank');
+
+      // Both should not be destroyed initially
+      expect(w.webContents.isDestroyed()).to.be.false();
+      expect(clonedContents.isDestroyed()).to.be.false();
+
+      const origWebContents = w.webContents;
+
+      // Destroy the original WebContents
+      w.webContents.destroy();
+
+      await setTimeout();
+
+      // Original should be destroyed, but cloned should still be alive
+      expect(origWebContents.isDestroyed()).to.be.true();
+      expect(clonedContents.isDestroyed()).to.be.false();
+
+      // Cloned WebContents should still be usable
+      const url = clonedContents.getURL();
+      expect(url).to.equal('about:blank');
+    });
+  });
+
   describe('getMediaSourceId()', () => {
     afterEach(closeAllWindows);
     it('returns a valid stream id', () => {

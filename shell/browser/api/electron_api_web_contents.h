@@ -197,6 +197,7 @@ class WebContents final : public ExclusiveAccessContext,
   int32_t GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
   [[nodiscard]] Type type() const { return type_; }
+  v8::Local<v8::Value> Clone(v8::Isolate* isolate);
   void LoadURL(const GURL& url, const gin_helper::Dictionary& options);
   void Reload();
   void ReloadIgnoringCache();
