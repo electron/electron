@@ -2261,6 +2261,20 @@ Returns `Integer` - The Chromium internal `pid` of the associated renderer. Can
 be compared to the `frameProcessId` passed by frame specific navigation events
 (e.g. `did-frame-navigate`)
 
+#### `contents.clone()`
+
+Returns `WebContents` - A cloned WebContents instance. This method creates a copy
+of the WebContents with the following attributes:
+
+* **WebPreferences** - All preferences from the original WebContents are copied
+* **SiteInstance** - Uses the same SiteInstance as the original. This means the cloned WebContents will reuse the same render process as the original when loading same-origin pages, and only spawn a new render process for cross-origin navigations. This process allocation behavior is consistent with window.open and tab duplication in Chromium. For more details, see [Chromium's Site Isolation](https://www.chromium.org/developers/design-documents/site-isolation/) design document.
+* **Opener relationship** - Inherits the opener (window.opener) relationship
+* **Navigation state** - Copies the navigation history and controller state
+
+The cloned WebContents is an independent instance with its own lifecycle that can be destroyed separately and will not contain any open web pages.
+
+This API is useful for use cases where you want to create a new WebContents that shares the same render process with the original for same-origin content, while maintaining full lifecycle independence. Additionally, reusing the existing render process can help optimize memory usage and page load speed to a certain extent, as it eliminates the overhead of spawning and initializing a new render process from scratch.
+
 #### `contents.takeHeapSnapshot(filePath)`
 
 * `filePath` string - Path to the output file.
