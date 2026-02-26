@@ -33,6 +33,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/v8_util.h"
@@ -163,16 +164,16 @@ v8::Local<v8::Value> Converter<net::CertPrincipal>::ToV8(
 v8::Local<v8::Value> Converter<net::HttpResponseHeaders*>::ToV8(
     v8::Isolate* isolate,
     net::HttpResponseHeaders* headers) {
-  base::Value::Dict response_headers;
+  base::DictValue response_headers;
   if (headers) {
     size_t iter = 0;
     std::string key;
     std::string value;
     while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
       key = base::ToLowerASCII(key);
-      base::Value::List* values = response_headers.FindList(key);
+      base::ListValue* values = response_headers.FindList(key);
       if (!values)
-        values = &response_headers.Set(key, base::Value::List())->GetList();
+        values = &response_headers.Set(key, base::ListValue())->GetList();
       values->Append(value);
     }
   }
@@ -244,7 +245,7 @@ v8::Local<v8::Value> Converter<net::HttpRequestHeaders>::ToV8(
 bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
                                                 v8::Local<v8::Value> val,
                                                 net::HttpRequestHeaders* out) {
-  base::Value::Dict dict;
+  base::DictValue dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
   for (const auto it : dict) {
@@ -538,7 +539,7 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
         // TODO(zcbenz): After the NetworkService refactor, the old blobUUID API
         // becomes unnecessarily complex, we should deprecate the getBlobData
         // API and return the DataPipeHolder wrapper directly.
-        auto holder = electron::api::DataPipeHolder::Create(isolate, element);
+        auto* holder = electron::api::DataPipeHolder::Create(isolate, element);
         upload_data.Set("blobUUID", holder->id());
         // The lifetime of data pipe is bound to the uploadData object.
         upload_data.Set("dataPipe", holder);
@@ -587,12 +588,12 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
   base::Value list_value;
   if (!ConvertFromV8(isolate, val, &list_value) || !list_value.is_list())
     return false;
-  base::Value::List& list = list_value.GetList();
+  base::ListValue& list = list_value.GetList();
   *out = base::MakeRefCounted<network::ResourceRequestBody>();
   for (base::Value& dict_value : list) {
     if (!dict_value.is_dict())
       return false;
-    base::Value::Dict& dict = dict_value.GetDict();
+    base::DictValue& dict = dict_value.GetDict();
     std::string* type = dict.FindString("type");
     if (!type)
       return false;

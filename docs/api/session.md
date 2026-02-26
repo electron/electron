@@ -1216,7 +1216,7 @@ function createWindow () {
 
   mainWindow.webContents.session.setBluetoothPairingHandler((details, callback) => {
     bluetoothPinCallback = callback
-    // Send a IPC message to the renderer to prompt the user to confirm the pairing.
+    // Send an IPC message to the renderer to prompt the user to confirm the pairing.
     // Note that this will require logic in the renderer to handle this message and
     // display a prompt to the user.
     mainWindow.webContents.send('bluetooth-pairing-request', details)
@@ -1264,7 +1264,7 @@ session.defaultSession.allowNTLMCredentialsForDomains('*')
 
 Overrides the `userAgent` and `acceptLanguages` for this session.
 
-The `acceptLanguages` must a comma separated ordered list of language codes, for
+The `acceptLanguages` must be a comma separated ordered list of language codes, for
 example `"en-US,fr,de,ko,zh-CN,ja"`.
 
 This doesn't affect existing `WebContents`, and each `WebContents` can use

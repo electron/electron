@@ -14,7 +14,7 @@ permissions: {}
 jobs:
   release-branch-created:
     name: Release Branch Created
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.ref_type == 'branch' && endsWith(github.event.ref, '-x-y') && !startsWith(github.event.ref, 'roller')) }}
+    if: ${{ github.repository == 'electron/electron' && (github.event_name == 'workflow_dispatch' || (github.event.ref_type == 'branch' && endsWith(github.event.ref, '-x-y') && !startsWith(github.event.ref, 'roller'))) }}
     permissions:
       contents: read
       pull-requests: write

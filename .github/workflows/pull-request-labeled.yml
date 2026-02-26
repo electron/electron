@@ -44,3 +44,35 @@ jobs:
           project-number: 94
           field: Status
           field-value: ✅ Reviewed
+  pull-request-labeled-ai-pr:
+    name: ai-pr label added
+    if: github.event.label.name == 'ai-pr'
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+    - name: Generate GitHub App token
+      uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
+      id: generate-token
+      with:
+        creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
+    - name: Create comment
+      uses: actions-cool/issues-helper@71b62d7da76e59ff7b193904feb6e77d4dbb2777 # v3.7.6
+      with:
+        actions: 'create-comment'
+        token: ${{ steps.generate-token.outputs.token }}
+        issue-number: ${{ github.event.pull_request.number }}
+        body: |
+          <!-- ai-pr -->
+
+          *AI PR Detected*
+
+          Hello @${{ github.event.pull_request.user.login }}. Due to the high amount of AI spam PRs we receive, if a PR is detected to be majority AI-generated without disclosure and untested, we will automatically close the PR.
+
+          We welcome the use of AI tools, as long as the PR meets our quality standards and has clearly been built and tested. If you believe your PR was closed in error, we welcome you to resubmit. However, please read our [CONTRIBUTING.md](http://contributing.md/) carefully before reopening. Thanks for your contribution.
+    - name: Close the pull request
+      env:
+        GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+        GH_REPO: electron/electron
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: |
+        gh pr close "$PR_NUMBER"

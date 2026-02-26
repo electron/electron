@@ -64,7 +64,7 @@ index c284163fba86ec820af1996571fbd3d092d41d34..5f1921d15bc1d3a68c35990f85e36a0e
    }
  }
 diff --git a/lib/internal/modules/esm/loader.js b/lib/internal/modules/esm/loader.js
-index abfe88c272dcc4aa1e95948bf754f55e1df74ddf..7a29cd391fdf050ebda50c5b2f263d27001ced74 100644
+index 22c1e9f1ae652b033903f56f394352806ddff754..961da666a233541203b5416909fd1ff0326e63e1 100644
 --- a/lib/internal/modules/esm/loader.js
 +++ b/lib/internal/modules/esm/loader.js
 @@ -437,7 +437,7 @@ class ModuleLoader {
@@ -77,7 +77,7 @@ index abfe88c272dcc4aa1e95948bf754f55e1df74ddf..7a29cd391fdf050ebda50c5b2f263d27
        if (cjsModule?.[kIsExecuting]) {
          const parentFilename = urlToFilename(parentURL);
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index c27ee4c6612c6a7ea0b6355f03563e8724fd0e40..5f03cf14e948d449d303b22ab6710b5508fb83b2 100644
+index cc1230648881d8d14ba3902fca78291c90fb79fb..edf347102fedbb28bce221defa99c37b5834024b 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -751,6 +751,9 @@ function packageImportsResolve(name, base, conditions) {
@@ -103,10 +103,10 @@ index c27ee4c6612c6a7ea0b6355f03563e8724fd0e40..5f03cf14e948d449d303b22ab6710b55
  
    const packageConfig = packageJsonReader.read(packageJSONPath, { __proto__: null, specifier, base, isESM: true });
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 1716328c7a98996a8933dbaa00a1c6c3156fb2ff..30f887663bbbd9913eff35f0e6e5b8291adda120 100644
+index d6c96996a900da8e7d4f7f5104312e73e72c2d62..ec76d7ffa45f49721d395e8e33be79114daa0369 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -223,7 +223,9 @@ function createCJSModuleWrap(url, translateContext, parentURL, loadCJS = loadCJS
+@@ -214,7 +214,9 @@ function createCJSModuleWrap(url, translateContext, parentURL, loadCJS = loadCJS
    const { exportNames, module } = cjsPreparseModuleExports(filename, source, sourceFormat);
    cjsCache.set(url, module);
  
@@ -117,7 +117,7 @@ index 1716328c7a98996a8933dbaa00a1c6c3156fb2ff..30f887663bbbd9913eff35f0e6e5b829
    if (!exportNames.has('default')) {
      ArrayPrototypePush(wrapperNames, 'default');
    }
-@@ -325,6 +327,10 @@ translators.set('require-commonjs', (url, translateContext, parentURL) => {
+@@ -313,6 +315,10 @@ translators.set('require-commonjs', (url, translateContext, parentURL) => {
    return createCJSModuleWrap(url, translateContext, parentURL);
  });
  
@@ -129,10 +129,10 @@ index 1716328c7a98996a8933dbaa00a1c6c3156fb2ff..30f887663bbbd9913eff35f0e6e5b829
  // This translator function must be sync, as `require` is sync.
  translators.set('require-commonjs-typescript', (url, translateContext, parentURL) => {
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index a1473fdac8aba3be541df3b6688a05c0dfbe403f..0a87d997856ea227f8f21393909ffc4634043f24 100644
+index 813208f39e6622a43ae27ba0cc5d11d1e0de55c1..1c1e6075ebabbdbc29d811fcb9f911ee29b28f9e 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1609,6 +1609,8 @@ function fileURLToPath(path, options = kEmptyObject) {
+@@ -1604,6 +1604,8 @@ function fileURLToPath(path, options = kEmptyObject) {
      path = new URL(path);
    else if (!isURL(path))
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);

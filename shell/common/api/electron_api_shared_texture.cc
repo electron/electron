@@ -360,7 +360,8 @@ void ImportedTextureGetVideoFrame(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value());
+      info.Data().As<v8::External>()->Value(
+          v8::kExternalPointerTypeTagDefault));
 
   if (wrapper->IsReferenceReleased()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
@@ -382,7 +383,8 @@ void ImportedTextureStartTransferSharedTexture(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value());
+      info.Data().As<v8::External>()->Value(
+          v8::kExternalPointerTypeTagDefault));
 
   if (wrapper->IsReferenceReleased()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
@@ -396,7 +398,8 @@ void ImportedTextureStartTransferSharedTexture(
 
 void ImportedTextureRelease(const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value());
+      info.Data().As<v8::External>()->Value(
+          v8::kExternalPointerTypeTagDefault));
 
   auto cb = info[0];
   if (cb->IsFunction()) {
@@ -415,7 +418,8 @@ void ImportedTextureGetFrameCreationSyncToken(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value());
+      info.Data().As<v8::External>()->Value(
+          v8::kExternalPointerTypeTagDefault));
 
   if (wrapper->IsReferenceReleased()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
@@ -431,7 +435,8 @@ void ImportedTextureSetReleaseSyncToken(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value());
+      info.Data().As<v8::External>()->Value(
+          v8::kExternalPointerTypeTagDefault));
 
   if (wrapper->IsReferenceReleased()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
@@ -454,7 +459,8 @@ v8::Local<v8::Value> CreateImportedSharedTextureFromSharedImage(
   auto* wrapper = new ImportedSharedTextureWrapper();
   wrapper->ist = base::WrapRefCounted(imported);
 
-  auto imported_wrapped = v8::External::New(isolate, wrapper);
+  auto imported_wrapped =
+      v8::External::New(isolate, wrapper, v8::kExternalPointerTypeTagDefault);
   gin::Dictionary root(isolate, v8::Object::New(isolate));
 
   auto releaser = v8::Function::New(isolate->GetCurrentContext(),

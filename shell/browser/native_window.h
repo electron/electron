@@ -17,7 +17,6 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/strings/cstring_view.h"
-#include "base/supports_user_data.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
@@ -56,8 +55,7 @@ using NativeWindowHandle = gfx::NativeView;
 using NativeWindowHandle = gfx::AcceleratedWidget;
 #endif
 
-class NativeWindow : public base::SupportsUserData,
-                     public views::WidgetDelegate {
+class NativeWindow : public views::WidgetDelegate {
  public:
   ~NativeWindow() override;
 
@@ -68,6 +66,7 @@ class NativeWindow : public base::SupportsUserData,
   // Create window with existing WebContents, the caller is responsible for
   // managing the window's live.
   static std::unique_ptr<NativeWindow> Create(
+      int32_t base_window_id,
       const gin_helper::Dictionary& options,
       NativeWindow* parent = nullptr);
 
@@ -336,7 +335,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowAlwaysOnTopChanged();
   void NotifyWindowExecuteAppCommand(std::string_view command_name);
   void NotifyTouchBarItemInteraction(const std::string& item_id,
-                                     base::Value::Dict details);
+                                     base::DictValue details);
   void NotifyNewWindowForTab();
   void NotifyWindowSystemContextMenu(int x, int y, bool* prevent_default);
   void NotifyLayoutWindowControlsOverlay();
@@ -429,8 +428,12 @@ class NativeWindow : public base::SupportsUserData,
   // throttling, then throttling in the `ui::Compositor` will be disabled.
   void UpdateBackgroundThrottlingState();
 
+  [[nodiscard]] auto base_window_id() const { return base_window_id_; }
+
  protected:
-  NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
+  NativeWindow(int32_t base_window_id,
+               const gin_helper::Dictionary& options,
+               NativeWindow* parent);
 
   void set_titlebar_overlay_height(int height) {
     titlebar_overlay_height_ = height;
@@ -487,6 +490,9 @@ class NativeWindow : public base::SupportsUserData,
 
   static inline int32_t next_id_ = 0;
   const int32_t window_id_ = ++next_id_;
+
+  // ID of the api::BaseWindow that owns this NativeWindow.
+  const int32_t base_window_id_;
 
   // The "titleBarStyle" option.
   const TitleBarStyle title_bar_style_;

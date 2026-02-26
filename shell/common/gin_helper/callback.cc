@@ -14,7 +14,10 @@ namespace {
 
 struct TranslatorHolder {
   explicit TranslatorHolder(v8::Isolate* isolate)
-      : handle(isolate, v8::External::New(isolate, this)) {
+      : handle(isolate,
+               v8::External::New(isolate,
+                                 this,
+                                 v8::kExternalPointerTypeTagDefault)) {
     handle.SetWeak(this, &GC, v8::WeakCallbackType::kParameter);
   }
   ~TranslatorHolder() {
@@ -57,7 +60,8 @@ void CallTranslator(v8::Local<v8::External> external,
     }
   }
 
-  auto* holder = static_cast<TranslatorHolder*>(external->Value());
+  auto* holder = static_cast<TranslatorHolder*>(
+      external->Value(v8::kExternalPointerTypeTagDefault));
   holder->translator.Run(args);
 
   // Free immediately for one-time callback.

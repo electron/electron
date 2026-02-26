@@ -97,9 +97,8 @@ void ElectronExtensionsAPIProvider::RegisterPermissions(
                                         extensions::GetPermissionAliases());
 }
 
-void ElectronExtensionsAPIProvider::RegisterManifestHandlers() {
-  extensions::ManifestHandlerRegistry* registry =
-      extensions::ManifestHandlerRegistry::Get();
+void ElectronExtensionsAPIProvider::RegisterManifestHandlers(
+    extensions::ManifestHandlerRegistry* registry) {
   registry->RegisterHandler(
       std::make_unique<extensions::MinimumChromeVersionChecker>());
 }

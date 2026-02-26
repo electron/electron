@@ -1,0 +1,442 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alice Zhao <alicelovescake@anthropic.com>
+Date: Mon, 23 Feb 2026 10:57:52 -0800
+Subject: fix: add ExternalPointerTypeTag to v8::External API calls
+
+V8 changed v8::External::New and v8::External::Value to require
+an ExternalPointerTypeTag parameter.
+
+diff --git a/nan_callbacks_12_inl.h b/nan_callbacks_12_inl.h
+index 5cb6d98406ada00186289cc471726fa2a5ae711d..a6dc3b5864d0e98fa604e12f1c132c8089d1efe8 100644
+--- a/nan_callbacks_12_inl.h
++++ b/nan_callbacks_12_inl.h
+@@ -215,7 +215,7 @@ void FunctionCallbackWrapper(const v8::FunctionCallbackInfo<v8::Value> &info) {
+   FunctionCallback callback = reinterpret_cast<FunctionCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kFunctionIndex)
+-          .As<v8::Value>().As<v8::External>()->Value()));
++          .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   FunctionCallbackInfo<v8::Value>
+       cbinfo(info, obj->GetInternalField(kDataIndex).As<v8::Value>());
+   callback(cbinfo);
+@@ -234,7 +234,7 @@ void GetterCallbackWrapper(
+   GetterCallback callback = reinterpret_cast<GetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kGetterIndex)
+-          .As<v8::Value>().As<v8::External>()->Value()));
++          .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(property.As<v8::String>(), cbinfo);
+ }
+ 
+@@ -252,7 +252,7 @@ void SetterCallbackWrapper(
+   SetterCallback callback = reinterpret_cast<SetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kSetterIndex)
+-          .As<v8::Value>().As<v8::External>()->Value()));
++          .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(property.As<v8::String>(), value, cbinfo);
+ }
+ 
+@@ -271,7 +271,7 @@ void GetterCallbackWrapper(
+   GetterCallback callback = reinterpret_cast<GetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kGetterIndex)
+-          .As<v8::Value>().As<v8::External>()->Value()));
++          .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(property, cbinfo);
+ }
+ 
+@@ -289,7 +289,7 @@ void SetterCallbackWrapper(
+   SetterCallback callback = reinterpret_cast<SetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kSetterIndex)
+-          .As<v8::Value>().As<v8::External>()->Value()));
++          .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(property, value, cbinfo);
+ }
+ 
+@@ -313,7 +313,7 @@ v8::Intercepted PropertyGetterCallbackWrapper(
+   PropertyGetterCallback callback = reinterpret_cast<PropertyGetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyGetterIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   return callback(property.As<v8::String>(), cbinfo);
+ }
+ 
+@@ -331,7 +331,7 @@ v8::Intercepted PropertySetterCallbackWrapper(
+   PropertySetterCallback callback = reinterpret_cast<PropertySetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertySetterIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   return callback(property.As<v8::String>(), value, cbinfo);
+ }
+ 
+@@ -351,7 +351,7 @@ void PropertyGetterCallbackWrapper(
+   PropertyGetterCallback callback = reinterpret_cast<PropertyGetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyGetterIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(property.As<v8::String>(), cbinfo);
+ }
+ 
+@@ -369,7 +369,7 @@ void PropertySetterCallbackWrapper(
+   PropertySetterCallback callback = reinterpret_cast<PropertySetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertySetterIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(property.As<v8::String>(), value, cbinfo);
+ }
+ 
+@@ -388,7 +388,7 @@ void PropertyEnumeratorCallbackWrapper(
+   PropertyEnumeratorCallback callback =
+       reinterpret_cast<PropertyEnumeratorCallback>(reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyEnumeratorIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(cbinfo);
+ }
+ 
+@@ -407,7 +407,7 @@ v8::Intercepted PropertyDeleterCallbackWrapper(
+   PropertyDeleterCallback callback = reinterpret_cast<PropertyDeleterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyDeleterIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   return callback(property.As<v8::String>(), cbinfo);
+ }
+ 
+@@ -425,7 +425,7 @@ v8::Intercepted PropertyQueryCallbackWrapper(
+   PropertyQueryCallback callback = reinterpret_cast<PropertyQueryCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyQueryIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   return callback(property.As<v8::String>(), cbinfo);
+ }
+ 
+@@ -442,7 +442,7 @@ void PropertyDeleterCallbackWrapper(
+   PropertyDeleterCallback callback = reinterpret_cast<PropertyDeleterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyDeleterIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(property.As<v8::String>(), cbinfo);
+ }
+ 
+@@ -459,7 +459,7 @@ void PropertyQueryCallbackWrapper(
+   PropertyQueryCallback callback = reinterpret_cast<PropertyQueryCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyQueryIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(property.As<v8::String>(), cbinfo);
+ }
+ 
+@@ -477,7 +477,7 @@ void PropertyGetterCallbackWrapper(
+   PropertyGetterCallback callback = reinterpret_cast<PropertyGetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyGetterIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(property, cbinfo);
+ }
+ 
+@@ -495,7 +495,7 @@ void PropertySetterCallbackWrapper(
+   PropertySetterCallback callback = reinterpret_cast<PropertySetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertySetterIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(property, value, cbinfo);
+ }
+ 
+@@ -513,7 +513,7 @@ void PropertyEnumeratorCallbackWrapper(
+   PropertyEnumeratorCallback callback =
+       reinterpret_cast<PropertyEnumeratorCallback>(reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyEnumeratorIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(cbinfo);
+ }
+ 
+@@ -530,7 +530,7 @@ void PropertyDeleterCallbackWrapper(
+   PropertyDeleterCallback callback = reinterpret_cast<PropertyDeleterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyDeleterIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(property, cbinfo);
+ }
+ 
+@@ -547,7 +547,7 @@ void PropertyQueryCallbackWrapper(
+   PropertyQueryCallback callback = reinterpret_cast<PropertyQueryCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyQueryIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(property, cbinfo);
+ }
+ 
+@@ -566,7 +566,7 @@ v8::Intercepted IndexGetterCallbackWrapper(
+   IndexGetterCallback callback = reinterpret_cast<IndexGetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kIndexPropertyGetterIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   return callback(index, cbinfo);
+ }
+ 
+@@ -584,7 +584,7 @@ v8::Intercepted IndexSetterCallbackWrapper(
+   IndexSetterCallback callback = reinterpret_cast<IndexSetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kIndexPropertySetterIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   return callback(index, value, cbinfo);
+ }
+ 
+@@ -603,7 +603,7 @@ void IndexGetterCallbackWrapper(
+   IndexGetterCallback callback = reinterpret_cast<IndexGetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kIndexPropertyGetterIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(index, cbinfo);
+ }
+ 
+@@ -620,7 +620,7 @@ void IndexSetterCallbackWrapper(
+   IndexSetterCallback callback = reinterpret_cast<IndexSetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kIndexPropertySetterIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(index, value, cbinfo);
+ }
+ 
+@@ -641,7 +641,7 @@ void IndexEnumeratorCallbackWrapper(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(
+               kIndexPropertyEnumeratorIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(cbinfo);
+ }
+ 
+@@ -659,7 +659,7 @@ v8::Intercepted IndexDeleterCallbackWrapper(
+   IndexDeleterCallback callback = reinterpret_cast<IndexDeleterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kIndexPropertyDeleterIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   return callback(index, cbinfo);
+ }
+ 
+@@ -675,7 +675,7 @@ v8::Intercepted IndexQueryCallbackWrapper(
+   IndexQueryCallback callback = reinterpret_cast<IndexQueryCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kIndexPropertyQueryIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   return callback(index, cbinfo);
+ }
+ 
+@@ -691,7 +691,7 @@ void IndexDeleterCallbackWrapper(
+   IndexDeleterCallback callback = reinterpret_cast<IndexDeleterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kIndexPropertyDeleterIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(index, cbinfo);
+ }
+ 
+@@ -707,7 +707,7 @@ void IndexQueryCallbackWrapper(
+   IndexQueryCallback callback = reinterpret_cast<IndexQueryCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kIndexPropertyQueryIndex)
+-              .As<v8::Value>().As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(index, cbinfo);
+ }
+ 
+diff --git a/nan_callbacks_pre_12_inl.h b/nan_callbacks_pre_12_inl.h
+index 74861e2035029b1519a5be81d0ee43d4ad9a22a8..96936862c8ec553e4333cee58256236e6d1750e2 100644
+--- a/nan_callbacks_pre_12_inl.h
++++ b/nan_callbacks_pre_12_inl.h
+@@ -303,7 +303,7 @@ v8::Handle<v8::Value> FunctionCallbackWrapper(const v8::Arguments &args) {
+   v8::Local<v8::Object> obj = args.Data().As<v8::Object>();
+   FunctionCallback callback = reinterpret_cast<FunctionCallback>(
+       reinterpret_cast<intptr_t>(
+-          obj->GetInternalField(kFunctionIndex).As<v8::External>()->Value()));
++          obj->GetInternalField(kFunctionIndex).As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   FunctionCallbackInfo<v8::Value>
+       cbinfo(args, obj->GetInternalField(kDataIndex));
+   callback(cbinfo);
+@@ -320,7 +320,7 @@ v8::Handle<v8::Value> GetterCallbackWrapper(
+       cbinfo(info, obj->GetInternalField(kDataIndex));
+   GetterCallback callback = reinterpret_cast<GetterCallback>(
+       reinterpret_cast<intptr_t>(
+-          obj->GetInternalField(kGetterIndex).As<v8::External>()->Value()));
++          obj->GetInternalField(kGetterIndex).As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(property, cbinfo);
+   return ReturnValueImp<v8::Value>(cbinfo.GetReturnValue()).Value();
+ }
+@@ -338,7 +338,7 @@ void SetterCallbackWrapper(
+       cbinfo(info, obj->GetInternalField(kDataIndex));
+   SetterCallback callback = reinterpret_cast<SetterCallback>(
+       reinterpret_cast<intptr_t>(
+-          obj->GetInternalField(kSetterIndex).As<v8::External>()->Value()));
++          obj->GetInternalField(kSetterIndex).As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(property, value, cbinfo);
+ }
+ 
+@@ -354,7 +354,7 @@ v8::Handle<v8::Value> PropertyGetterCallbackWrapper(
+   PropertyGetterCallback callback = reinterpret_cast<PropertyGetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyGetterIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(property, cbinfo);
+   return ReturnValueImp<v8::Value>(cbinfo.GetReturnValue()).Value();
+ }
+@@ -373,7 +373,7 @@ v8::Handle<v8::Value> PropertySetterCallbackWrapper(
+   PropertySetterCallback callback = reinterpret_cast<PropertySetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertySetterIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(property, value, cbinfo);
+   return ReturnValueImp<v8::Value>(cbinfo.GetReturnValue()).Value();
+ }
+@@ -390,7 +390,7 @@ v8::Handle<v8::Array> PropertyEnumeratorCallbackWrapper(
+   PropertyEnumeratorCallback callback =
+       reinterpret_cast<PropertyEnumeratorCallback>(reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyEnumeratorIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(cbinfo);
+   return ReturnValueImp<v8::Array>(cbinfo.GetReturnValue()).Value();
+ }
+@@ -408,7 +408,7 @@ v8::Handle<v8::Boolean> PropertyDeleterCallbackWrapper(
+   PropertyDeleterCallback callback = reinterpret_cast<PropertyDeleterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyDeleterIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(property, cbinfo);
+   return ReturnValueImp<v8::Boolean>(cbinfo.GetReturnValue()).Value();
+ }
+@@ -425,7 +425,7 @@ v8::Handle<v8::Integer> PropertyQueryCallbackWrapper(
+   PropertyQueryCallback callback = reinterpret_cast<PropertyQueryCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyQueryIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(property, cbinfo);
+   return ReturnValueImp<v8::Integer>(cbinfo.GetReturnValue()).Value();
+ }
+@@ -442,7 +442,7 @@ v8::Handle<v8::Value> IndexGetterCallbackWrapper(
+   IndexGetterCallback callback = reinterpret_cast<IndexGetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kIndexPropertyGetterIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(index, cbinfo);
+   return ReturnValueImp<v8::Value>(cbinfo.GetReturnValue()).Value();
+ }
+@@ -461,7 +461,7 @@ v8::Handle<v8::Value> IndexSetterCallbackWrapper(
+   IndexSetterCallback callback = reinterpret_cast<IndexSetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kIndexPropertySetterIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(index, value, cbinfo);
+   return ReturnValueImp<v8::Value>(cbinfo.GetReturnValue()).Value();
+ }
+@@ -478,7 +478,7 @@ v8::Handle<v8::Array> IndexEnumeratorCallbackWrapper(
+   IndexEnumeratorCallback callback = reinterpret_cast<IndexEnumeratorCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kIndexPropertyEnumeratorIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(cbinfo);
+   return ReturnValueImp<v8::Array>(cbinfo.GetReturnValue()).Value();
+ }
+@@ -495,7 +495,7 @@ v8::Handle<v8::Boolean> IndexDeleterCallbackWrapper(
+   IndexDeleterCallback callback = reinterpret_cast<IndexDeleterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kIndexPropertyDeleterIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(index, cbinfo);
+   return ReturnValueImp<v8::Boolean>(cbinfo.GetReturnValue()).Value();
+ }
+@@ -512,7 +512,7 @@ v8::Handle<v8::Integer> IndexQueryCallbackWrapper(
+   IndexQueryCallback callback = reinterpret_cast<IndexQueryCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kIndexPropertyQueryIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault)));
+   callback(index, cbinfo);
+   return ReturnValueImp<v8::Integer>(cbinfo.GetReturnValue()).Value();
+ }
+diff --git a/nan_implementation_12_inl.h b/nan_implementation_12_inl.h
+index 255293ac2deb689d0e15644c4645780b09ad0e3b..ce8ccdacc8a01ffebbea4f188fd34af3a7240b4d 100644
+--- a/nan_implementation_12_inl.h
++++ b/nan_implementation_12_inl.h
+@@ -76,7 +76,7 @@ Factory<v8::Date>::New(double value) {
+ 
+ Factory<v8::External>::return_t
+ Factory<v8::External>::New(void * value) {
+-  return v8::External::New(v8::Isolate::GetCurrent(), value);
++  return v8::External::New(v8::Isolate::GetCurrent(), value, v8::kExternalPointerTypeTagDefault);
+ }
+ 
+ //=== Function =================================================================
+@@ -92,7 +92,7 @@ Factory<v8::Function>::New( FunctionCallback callback
+ 
+   obj->SetInternalField(
+       imp::kFunctionIndex
+-    , v8::External::New(isolate, reinterpret_cast<void *>(callback)));
++    , v8::External::New(isolate, reinterpret_cast<void *>(callback), v8::kExternalPointerTypeTagDefault));
+ 
+   v8::Local<v8::Value> val = v8::Local<v8::Value>::New(isolate, data);
+ 
+@@ -128,7 +128,7 @@ Factory<v8::FunctionTemplate>::New( FunctionCallback callback
+ 
+     obj->SetInternalField(
+         imp::kFunctionIndex
+-      , v8::External::New(isolate, reinterpret_cast<void *>(callback)));
++      , v8::External::New(isolate, reinterpret_cast<void *>(callback), v8::kExternalPointerTypeTagDefault));
+     v8::Local<v8::Value> val = v8::Local<v8::Value>::New(isolate, data);
+ 
+     if (!val.IsEmpty()) {
+diff --git a/test/cpp/nannew.cpp b/test/cpp/nannew.cpp
+index e36ce4f85d2a30dcba1e8bc13232459b4699d921..c368c34581ff8f1a704a718b88972903af588f73 100644
+--- a/test/cpp/nannew.cpp
++++ b/test/cpp/nannew.cpp
+@@ -136,7 +136,7 @@ NAN_METHOD(testExternal) {
+ 
+   t.plan(2);
+ 
+-  t.ok(_(New<External>(&ttt)->Value() == &ttt));
++  t.ok(_(New<External>(&ttt)->Value(v8::kExternalPointerTypeTagDefault) == &ttt));
+   t.ok(_( assertType<External>(New<External>(&ttt))));
+ 
+   info.GetReturnValue().SetUndefined();
+diff --git a/test/cpp/news.cpp b/test/cpp/news.cpp
+index 3597f0fca8a7adff7738468a9a8bd54e854c9625..f913b679a77b43f9264b68f75af44c316cd5e1cb 100644
+--- a/test/cpp/news.cpp
++++ b/test/cpp/news.cpp
+@@ -93,7 +93,7 @@ NAN_METHOD(NewBooleanObject) {
+ 
+ NAN_METHOD(NewExternal) {
+   v8::Local<v8::External> ext = New<v8::External>(&magic);
+-  assert(*static_cast<int *>(ext->Value()) == 1337);
++  assert(*static_cast<int *>(ext->Value(v8::kExternalPointerTypeTagDefault)) == 1337);
+   info.GetReturnValue().Set(New("passed").ToLocalChecked());
+ }
+ 

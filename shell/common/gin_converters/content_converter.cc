@@ -187,7 +187,7 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "payment-handler");
     case blink::PermissionType::PERIODIC_BACKGROUND_SYNC:
       return StringToV8(isolate, "periodic-background-sync");
-    case blink::PermissionType::DURABLE_STORAGE:
+    case blink::PermissionType::PERSISTENT_STORAGE:
       return StringToV8(isolate, "persistent-storage");
     case blink::PermissionType::GEOLOCATION:
       return StringToV8(isolate, "geolocation");

@@ -1688,4 +1688,61 @@ describe('net module', () => {
       }
     });
   }
+
+  describe('Network Service crash recovery', () => {
+    const binding = process._linkedBinding('electron_common_testing');
+
+    it('should recover net.fetch after Network Service crash (main process)', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.end('first');
+      });
+      const firstResponse = await net.fetch(serverUrl);
+      expect(firstResponse.ok).to.be.true();
+      expect(await firstResponse.text()).to.equal('first');
+
+      await binding.simulateNetworkServiceCrash();
+
+      // Wait for StoragePartitionImpl's NetworkContext disconnect handler to
+      // fire and reinitialize the context in the new Network Service.
+      await setTimeout(500);
+
+      const secondServerUrl = await respondOnce.toSingleURL((request, response) => {
+        response.end('second');
+      });
+      const secondResponse = await net.fetch(secondServerUrl);
+      expect(secondResponse.ok).to.be.true();
+      expect(await secondResponse.text()).to.equal('second');
+    });
+
+    it('should recover net.fetch after Network Service crash (utility process)', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'api', 'utility-process', 'network-restart-test.js'));
+      await once(child, 'spawn');
+      await once(child, 'message');
+
+      const firstServerUrl = await respondOnce.toSingleURL((request, response) => {
+        response.end('utility-first');
+      });
+      child.postMessage({ type: 'fetch', url: firstServerUrl });
+      const [firstResult] = await once(child, 'message');
+      expect(firstResult.ok).to.be.true();
+      expect(firstResult.body).to.equal('utility-first');
+
+      await binding.simulateNetworkServiceCrash();
+
+      // Needed for UpdateURLLoaderFactory IPC to propagate to the utility process
+      // and for any in-flight requests to settle
+      await setTimeout(500);
+
+      const secondServerUrl = await respondOnce.toSingleURL((request, response) => {
+        response.end('utility-second');
+      });
+      child.postMessage({ type: 'fetch', url: secondServerUrl });
+      const [secondResult] = await once(child, 'message');
+      expect(secondResult.ok).to.be.true();
+      expect(secondResult.body).to.equal('utility-second');
+
+      child.kill();
+      await once(child, 'exit');
+    });
+  });
 });

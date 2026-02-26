@@ -135,7 +135,7 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
   bool has_mime_type = dict.Get("mimeType", &head->mime_type);
   bool has_content_type = false;
 
-  base::Value::Dict headers;
+  base::DictValue headers;
   if (dict.Get("headers", &headers)) {
     for (const auto iter : headers) {
       if (iter.second.is_string()) {
@@ -204,7 +204,7 @@ class URLPipeLoader : public network::mojom::URLLoader,
                 mojo::PendingReceiver<network::mojom::URLLoader> loader,
                 mojo::PendingRemote<network::mojom::URLLoaderClient> client,
                 const net::NetworkTrafficAnnotationTag& annotation,
-                base::Value::Dict upload_data)
+                base::DictValue upload_data)
       : url_loader_(this, std::move(loader)), client_(std::move(client)) {
     url_loader_.set_disconnect_handler(
         base::BindOnce(&URLPipeLoader::NotifyComplete, base::Unretained(this),
@@ -228,7 +228,7 @@ class URLPipeLoader : public network::mojom::URLLoader,
   void Start(scoped_refptr<network::SharedURLLoaderFactory> factory,
              std::unique_ptr<network::ResourceRequest> request,
              const net::NetworkTrafficAnnotationTag& annotation,
-             base::Value::Dict upload_data) {
+             base::DictValue upload_data) {
     loader_ = network::SimpleURLLoader::Create(std::move(request), annotation);
     loader_->SetOnResponseStartedCallback(base::BindOnce(
         &URLPipeLoader::OnResponseStarted, weak_factory_.GetWeakPtr()));
@@ -665,7 +665,7 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
   if (!dict.Get("method", &request->method))
     request->method = original_request.method;
 
-  base::Value::Dict upload_data;
+  base::DictValue upload_data;
   if (request->method != net::HttpRequestHeaders::kGetMethod &&
       request->method != net::HttpRequestHeaders::kHeadMethod)
     dict.Get("uploadData", &upload_data);

@@ -68,6 +68,10 @@ Menu::Menu(gin::Arguments* args)
 }
 
 Menu::~Menu() {
+  RemoveModelObserver();
+}
+
+void Menu::RemoveModelObserver() {
   if (model_) {
     model_->RemoveObserver(this);
   }
@@ -307,6 +311,8 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("_getAcceleratorTextAt", &Menu::GetAcceleratorTextAtForTesting)
 #if BUILDFLAG(IS_MAC)
       .SetMethod("_getUserAcceleratorAt", &Menu::GetUserAcceleratorAt)
+      .SetMethod("_simulateSubmenuCloseSequenceForTesting",
+                 &Menu::SimulateSubmenuCloseSequenceForTesting)
 #endif
       .Build();
 }

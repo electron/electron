@@ -36,6 +36,12 @@ Process: [Main](../glossary.md#main-process)<br />
     `com.apple.security.cs.allow-unsigned-executable-memory` entitlements. This will allow the utility process
     to load unsigned libraries. Unless you specifically need this capability, it is best to leave this disabled.
     Default is `false`.
+  * `disclaim` boolean (optional) _macOS_ - With this flag, the utility process will disclaim
+    responsibility for the child process. This causes the operating system to consider the child
+    process as a separate entity for purposes of security policies like Transparency, Consent, and
+    Control (TCC). When responsibility is disclaimed, the parent process will not be attributed
+    for any TCC requests initiated by the child process. This is useful when launching processes
+    that run third-party or otherwise untrusted code. Default is `false`.
   * `respondToAuthRequestsFromMainProcess` boolean (optional) - With this flag, all HTTP 401 and 407 network
     requests created via the [net module](net.md) will allow responding to them via the
     [`app#login`](app.md#event-login) event in the main process instead of the default

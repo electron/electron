@@ -2,7 +2,6 @@ import { app, BrowserWindow, Menu, session, net as electronNet, WebContents, uti
 
 import { assert, expect } from 'chai';
 import * as semver from 'semver';
-import split = require('split')
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -11,11 +10,12 @@ import * as http from 'node:http';
 import * as https from 'node:https';
 import * as net from 'node:net';
 import * as path from 'node:path';
+import * as readline from 'node:readline';
 import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers';
-import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
+import { ifdescribe, ifit, isWayland, listen, waitUntil } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -155,6 +155,14 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'win32')('app.setToastActivatorCLSID()', () => {
+    it('throws on invalid format', () => {
+      expect(() => {
+        app.setToastActivatorCLSID('1234567890');
+      }).to.throw(/Invalid CLSID format/);
+    });
+  });
+
   describe('app.isPackaged', () => {
     it('should be false during tests', () => {
       expect(app.isPackaged).to.equal(false);
@@ -260,11 +268,11 @@ describe('app module', () => {
       const firstExited = once(first, 'exit');
 
       // Wait for the first app to boot.
-      const firstStdoutLines = first.stdout.pipe(split());
-      while ((await once(firstStdoutLines, 'data')).toString() !== 'started') {
+      const firstStdoutLines = readline.createInterface({ input: first.stdout });
+      while ((await once(firstStdoutLines, 'line')).toString() !== 'started') {
         // wait.
       }
-      const additionalDataPromise = once(firstStdoutLines, 'data');
+      const additionalDataPromise = once(firstStdoutLines, 'line');
 
       const secondInstanceArgs = [process.execPath, appPath, ...testArgs.args, '--some-switch', 'some-arg'];
       const second = cp.spawn(secondInstanceArgs[0], secondInstanceArgs.slice(1));
@@ -579,7 +587,7 @@ describe('app module', () => {
     });
 
     // FIXME: re-enable this test on win32.
-    ifit(process.platform !== 'win32')('should emit render-process-gone event when renderer crashes', async () => {
+    ifit(process.platform !== 'win32' && !isWayland)('should emit render-process-gone event when renderer crashes', async () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -1429,7 +1437,7 @@ describe('app module', () => {
 
   describe('getApplicationNameForProtocol()', () => {
     // TODO: Linux CI doesn't have registered http & https handlers
-    ifit(!(process.env.CI && process.platform === 'linux'))('returns application names for common protocols', function () {
+    ifit(!(process.env.CI && process.platform === 'linux') && !isWayland)('returns application names for common protocols', function () {
       // We can't expect particular app names here, but these protocols should
       // at least have _something_ registered. Except on our Linux CI
       // environment apparently.

@@ -273,6 +273,12 @@ describe('webContents module', () => {
       }).to.throw(`Unsupported pageSize: ${badSize}`);
     });
 
+    it('throws when a user passes both pageSize and usePrinterDefaultPageSize', () => {
+      expect(() => {
+        w.webContents.print({ pageSize: 'A4', usePrinterDefaultPageSize: true });
+      }).to.throw('usePrinterDefaultPageSize cannot be combined with pageSize');
+    });
+
     it('throws when an invalid callback is passed', () => {
       expect(() => {
         // @ts-ignore this line is intentionally incorrect
@@ -1608,6 +1614,35 @@ describe('webContents module', () => {
         const blurPromise = once(w.webContents, 'blur');
         await moveFocusToDevTools(w);
         await expect(blurPromise).to.eventually.be.fulfilled();
+      });
+    });
+
+    describe('focusOnNavigation webPreference', () => {
+      afterEach(closeAllWindows);
+
+      it('focuses the webContents on navigation by default', async () => {
+        const w = new BrowserWindow({ show: true });
+        await once(w, 'focus');
+        await w.loadURL('about:blank');
+        await moveFocusToDevTools(w);
+        expect(w.webContents.isFocused()).to.be.false();
+        await w.loadURL('data:text/html,<body>test</body>');
+        expect(w.webContents.isFocused()).to.be.true();
+      });
+
+      it('does not focus the webContents on navigation when focusOnNavigation is false', async () => {
+        const w = new BrowserWindow({
+          show: true,
+          webPreferences: {
+            focusOnNavigation: false
+          }
+        });
+        await once(w, 'focus');
+        await w.loadURL('about:blank');
+        await moveFocusToDevTools(w);
+        expect(w.webContents.isFocused()).to.be.false();
+        await w.loadURL('data:text/html,<body>test</body>');
+        expect(w.webContents.isFocused()).to.be.false();
       });
     });
   });

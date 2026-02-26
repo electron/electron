@@ -40,7 +40,7 @@ class GPUInfoManager : private content::GpuDataManagerObserver,
   // content::GpuDataManagerObserver
   void OnGpuInfoUpdate() override;
 
-  base::Value::Dict EnumerateGPUInfo(gpu::GPUInfo gpu_info) const;
+  base::DictValue EnumerateGPUInfo(gpu::GPUInfo gpu_info) const;
 
   // These should be posted to the task queue
   void CompleteInfoFetcher(gin_helper::Promise<base::Value> promise);

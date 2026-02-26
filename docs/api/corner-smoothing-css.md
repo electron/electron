@@ -49,7 +49,7 @@ Use the `system-ui` keyword to match the smoothness to the OS design language.
 | Value: | `60%` | `0%` |
 | Example: | ![A rectangle with round corners whose smoothness matches macOS](../images/corner-smoothing-example-60.svg) | ![A rectangle with round corners whose smoothness matches Windows and Linux](../images/corner-smoothing-example-0.svg) |
 
-### Controlling availibility
+### Controlling availability
 
 This CSS rule can be disabled using the Blink feature flag `ElectronCSSCornerSmoothing`.
 

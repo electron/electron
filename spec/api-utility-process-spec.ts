@@ -863,5 +863,24 @@ describe('utilityProcess module', () => {
         await exit;
       }
     });
+
+    // Note: This doesn't test that disclaiming works (that requires stubbing / mocking TCC which is
+    // just straight up not possible generically). This just tests that utility processes still launch
+    // when disclaimed.
+    ifit(process.platform === 'darwin')('supports disclaim option on macOS', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'post-message.js'), [], {
+        disclaim: true
+      });
+      await once(child, 'spawn');
+      expect(child.pid).to.be.a('number');
+      // Verify the process can communicate normally
+      const testMessage = 'test-disclaim';
+      child.postMessage(testMessage);
+      const [data] = await once(child, 'message');
+      expect(data).to.equal(testMessage);
+      const exit = once(child, 'exit');
+      expect(child.kill()).to.be.true();
+      await exit;
+    });
   });
 });

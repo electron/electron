@@ -57,6 +57,10 @@ class ElectronMenuModel;
 // Whether the menu is currently open.
 - (BOOL)isMenuOpen;
 
+// Recursively refreshes the menu tree starting from |menu|, applying the
+// model state (enabled, checked, hidden etc) to each menu item.
+- (void)refreshMenuTree:(NSMenu*)menu;
+
 // NSMenuDelegate methods this class implements. Subclasses should call super
 // if extending the behavior.
 - (void)menuWillOpen:(NSMenu*)menu;

@@ -56,11 +56,6 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 }
 
 - (void)applicationWillFinishLaunching:(NSNotification*)notify {
-  // Don't add the "Enter Full Screen" menu item automatically.
-  [[NSUserDefaults standardUserDefaults]
-      setBool:NO
-       forKey:@"NSFullScreenMenuItemEverywhere"];
-
   [[[NSWorkspace sharedWorkspace] notificationCenter]
       addObserver:self
          selector:@selector(willPowerOff:)
@@ -114,7 +109,14 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 }
 
 - (NSMenu*)applicationDockMenu:(NSApplication*)sender {
-  return menu_controller_ ? menu_controller_.menu : nil;
+  if (!menu_controller_)
+    return nil;
+
+  // Manually refresh menu state since menuWillOpen: is not called
+  // by macOS for dock menus for some reason before they are displayed.
+  NSMenu* menu = menu_controller_.menu;
+  [menu_controller_ refreshMenuTree:menu];
+  return menu;
 }
 
 - (BOOL)application:(NSApplication*)sender openFile:(NSString*)filename {

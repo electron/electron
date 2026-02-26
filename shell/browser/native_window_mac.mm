@@ -151,9 +151,11 @@ class NativeAppWindowFrameViewMacClient
 
 NativeWindowMac::~NativeWindowMac() = default;
 
-NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
+NativeWindowMac::NativeWindowMac(const int32_t base_window_id,
+                                 const gin_helper::Dictionary& options,
                                  NativeWindow* parent)
-    : NativeWindow(options, parent), root_view_(new RootViewMac(this)) {
+    : NativeWindow{base_window_id, options, parent},
+      root_view_(new RootViewMac(this)) {
   ui::NativeTheme::GetInstanceForNativeUi()->AddObserver(this);
   display::Screen::Get()->AddObserver(this);
 
@@ -1876,9 +1878,10 @@ void NativeWindowMac::OnWidgetInitialized() {
 
 // static
 std::unique_ptr<NativeWindow> NativeWindow::Create(
+    const int32_t base_window_id,
     const gin_helper::Dictionary& options,
     NativeWindow* parent) {
-  return std::make_unique<NativeWindowMac>(options, parent);
+  return std::make_unique<NativeWindowMac>(base_window_id, options, parent);
 }
 
 }  // namespace electron

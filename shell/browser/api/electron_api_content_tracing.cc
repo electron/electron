@@ -45,7 +45,7 @@ struct Converter<base::trace_event::TraceConfig> {
       }
     }
 
-    base::Value::Dict memory_dump_config;
+    base::DictValue memory_dump_config;
     if (ConvertFromV8(isolate, val, &memory_dump_config)) {
       *out = base::trace_event::TraceConfig(std::move(memory_dump_config));
       return true;

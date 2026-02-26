@@ -216,7 +216,7 @@ void WebContentsPermissionHelper::RequestPermission(
     blink::PermissionType permission,
     base::OnceCallback<void(bool)> callback,
     bool user_gesture,
-    base::Value::Dict details) {
+    base::DictValue details) {
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
   auto origin = web_contents_->GetLastCommittedURL();
@@ -229,7 +229,7 @@ void WebContentsPermissionHelper::RequestPermission(
 
 bool WebContentsPermissionHelper::CheckPermission(
     blink::PermissionType permission,
-    base::Value::Dict details) const {
+    base::DictValue details) const {
   auto* rfh = web_contents_->GetPrimaryMainFrame();
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
@@ -252,8 +252,8 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
   auto callback = base::BindOnce(&MediaAccessAllowed, request,
                                  std::move(response_callback));
 
-  base::Value::Dict details;
-  base::Value::List media_types;
+  base::DictValue details;
+  base::ListValue media_types;
   if (request.audio_type ==
       blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
     media_types.Append("audio");
@@ -306,7 +306,7 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
     base::OnceCallback<void(bool)> callback,
     bool user_gesture,
     const GURL& url) {
-  base::Value::Dict details;
+  base::DictValue details;
   details.Set("externalURL", url.spec());
   RequestPermission(requesting_frame, blink::PermissionType::OPEN_EXTERNAL,
                     std::move(callback), user_gesture, std::move(details));
@@ -315,7 +315,7 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
 bool WebContentsPermissionHelper::CheckMediaAccessPermission(
     const url::Origin& security_origin,
     blink::mojom::MediaStreamType type) const {
-  base::Value::Dict details;
+  base::DictValue details;
   details.Set("securityOrigin", security_origin.GetURL().spec());
   details.Set("mediaType", MediaStreamTypeToString(type));
   auto blink_type = type == blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE
@@ -326,7 +326,7 @@ bool WebContentsPermissionHelper::CheckMediaAccessPermission(
 
 bool WebContentsPermissionHelper::CheckSerialAccessPermission(
     const url::Origin& embedding_origin) const {
-  base::Value::Dict details;
+  base::DictValue details;
   details.Set("securityOrigin", embedding_origin.GetURL().spec());
   return CheckPermission(blink::PermissionType::SERIAL, std::move(details));
 }

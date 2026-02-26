@@ -32,7 +32,8 @@ class ElectronExtensionsAPIProvider : public extensions::ExtensionsAPIProvider {
   std::string_view GetAPISchema(const std::string& name) override;
   void RegisterPermissions(
       extensions::PermissionsInfo* permissions_info) override;
-  void RegisterManifestHandlers() override;
+  void RegisterManifestHandlers(
+      extensions::ManifestHandlerRegistry* registry) override;
 };
 
 }  // namespace electron

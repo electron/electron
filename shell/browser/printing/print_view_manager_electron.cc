@@ -4,9 +4,9 @@
 
 #include "shell/browser/printing/print_view_manager_electron.h"
 
+#include <algorithm>
 #include <utility>
 
-#include "base/containers/contains.h"
 #include "base/functional/bind.h"
 #include "components/printing/browser/print_to_pdf/pdf_print_utils.h"
 #include "printing/mojom/print.mojom.h"
@@ -98,7 +98,7 @@ void PrintViewManagerElectron::GetDefaultPrintSettings(
 void PrintViewManagerElectron::ScriptedPrint(
     printing::mojom::ScriptedPrintParamsPtr params,
     ScriptedPrintCallback callback) {
-  if (!base::Contains(pdf_jobs_, params->cookie)) {
+  if (!std::ranges::contains(pdf_jobs_, params->cookie)) {
     PrintViewManagerBase::ScriptedPrint(std::move(params), std::move(callback));
     return;
   }
@@ -134,7 +134,7 @@ void PrintViewManagerElectron::CheckForCancel(int32_t preview_ui_id,
 
 void PrintViewManagerElectron::DidGetPrintedPagesCount(int32_t cookie,
                                                        uint32_t number_pages) {
-  if (!base::Contains(pdf_jobs_, cookie)) {
+  if (!std::ranges::contains(pdf_jobs_, cookie)) {
     PrintViewManagerBase::DidGetPrintedPagesCount(cookie, number_pages);
   }
 }

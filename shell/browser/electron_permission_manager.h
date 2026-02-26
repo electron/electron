@@ -46,7 +46,7 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   using StatusCallback = base::OnceCallback<void(content::PermissionResult)>;
   using StatusesCallback =
       base::OnceCallback<void(const std::vector<content::PermissionResult>&)>;
-  using PairCallback = base::OnceCallback<void(base::Value::Dict)>;
+  using PairCallback = base::OnceCallback<void(base::DictValue)>;
   using RequestHandler = base::RepeatingCallback<void(content::WebContents*,
                                                       blink::PermissionType,
                                                       StatusCallback,
@@ -73,7 +73,7 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
       content::RenderFrameHost* render_frame_host,
       const GURL& requesting_origin,
       bool user_gesture,
-      base::Value::Dict details,
+      base::DictValue details,
       StatusCallback response_callback);
 
   // Handler to dispatch permission requests in JS.
@@ -92,7 +92,7 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   bool CheckPermissionWithDetails(blink::PermissionType permission,
                                   content::RenderFrameHost* render_frame_host,
                                   const GURL& requesting_origin,
-                                  base::Value::Dict details) const;
+                                  base::DictValue details) const;
 
   bool CheckDevicePermission(blink::PermissionType permission,
                              const url::Origin& origin,
@@ -158,7 +158,7 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   void RequestPermissionsWithDetails(
       content::RenderFrameHost* render_frame_host,
       const content::PermissionRequestDescription& request_description,
-      base::Value::Dict details,
+      base::DictValue details,
       StatusesCallback callback);
 
   RequestHandler request_handler_;

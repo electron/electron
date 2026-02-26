@@ -6,7 +6,7 @@ Subject: feat: add support for embedder snapshot validation
 IsValid is not exposed despite being commented as for embedders, this exposes something that works for us.
 
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 4c4fb85d96e553912090f13c2ac1a48f3170a515..697c588ecd286942657b07f2a3fac05626904786 100644
+index e63c8e92e3d8ae1ff0bec37e614ca8ed989b21e4..743b785e7effe57b8c55fd2e6d779353226f807e 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
 @@ -76,11 +76,23 @@ bool GenerateEntropy(unsigned char* buffer, size_t amount) {
@@ -33,7 +33,7 @@ index 4c4fb85d96e553912090f13c2ac1a48f3170a515..697c588ecd286942657b07f2a3fac056
    } else {
      data->data = nullptr;
      data->raw_size = 0;
-@@ -225,6 +237,10 @@ constexpr std::string_view kV8FlagParam = "V8FlagParam";
+@@ -226,6 +238,10 @@ constexpr std::string_view kV8FlagParam = "V8FlagParam";
  
  }  // namespace
  

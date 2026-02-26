@@ -59,10 +59,11 @@ describe('WebContentsView', () => {
     const browserWindow = new BrowserWindow();
 
     const webContentsView = new WebContentsView();
-    webContentsView.webContents.loadURL('about:blank');
-    webContentsView.webContents.destroy();
+    const wc = webContentsView.webContents;
+    wc.loadURL('about:blank');
+    wc.destroy();
 
-    const destroyed = once(webContentsView.webContents, 'destroyed');
+    const destroyed = once(wc, 'destroyed');
     await destroyed;
     expect(() => browserWindow.contentView.addChildView(webContentsView)).to.throw(
       'Can\'t add a destroyed child view to a parent view'
@@ -90,13 +91,14 @@ describe('WebContentsView', () => {
     const w = new BaseWindow({ show: false });
     const v = new View();
     const wcv = new WebContentsView();
+    const wc = wcv.webContents;
     w.setContentView(v);
     v.addChildView(wcv);
-    await wcv.webContents.loadURL('about:blank');
-    const destroyed = once(wcv.webContents, 'destroyed');
-    wcv.webContents.executeJavaScript('window.close()');
+    await wc.loadURL('about:blank');
+    const destroyed = once(wc, 'destroyed');
+    wc.executeJavaScript('window.close()');
     await destroyed;
-    expect(wcv.webContents.isDestroyed()).to.be.true();
+    expect(wc.isDestroyed()).to.be.true();
     v.removeChildView(wcv);
   });
 
@@ -170,18 +172,19 @@ describe('WebContentsView', () => {
   it('does not crash when closed via window.close()', async () => {
     const bw = new BrowserWindow();
     const wcv = new WebContentsView();
+    const wc = wcv.webContents;
 
     await bw.loadURL('data:text/html,<h1>Main Window</h1>');
     bw.contentView.addChildView(wcv);
 
     const dto = new Promise<boolean>((resolve) => {
-      wcv.webContents.on('blur', () => {
-        const devToolsOpen = wcv.webContents.isDevToolsOpened();
+      wc.on('blur', () => {
+        const devToolsOpen = !wc.isDestroyed() && wc.isDevToolsOpened();
         resolve(devToolsOpen);
       });
     });
 
-    wcv.webContents.loadURL('data:text/html,<script>window.close()</script>');
+    wc.loadURL('data:text/html,<script>window.close()</script>');
 
     const open = await dto;
     expect(open).to.be.false();
@@ -396,6 +399,40 @@ describe('WebContentsView', () => {
     it('should allow setting when not attached', async () => {
       const v = new WebContentsView();
       v.setBorderRadius(100);
+    });
+  });
+
+  describe('focusOnNavigation webPreference', () => {
+    it('focuses the webContents on navigation by default', async () => {
+      const w = new BrowserWindow();
+      await once(w, 'focus');
+      const v = new WebContentsView();
+      w.setContentView(v);
+      await v.webContents.loadURL('about:blank');
+      const devToolsFocused = once(v.webContents, 'devtools-focused');
+      v.webContents.openDevTools({ mode: 'right' });
+      await devToolsFocused;
+      expect(v.webContents.isFocused()).to.be.false();
+      await v.webContents.loadURL('data:text/html,<body>test</body>');
+      expect(v.webContents.isFocused()).to.be.true();
+    });
+
+    it('does not focus the webContents on navigation when focusOnNavigation is false', async () => {
+      const w = new BrowserWindow();
+      await once(w, 'focus');
+      const v = new WebContentsView({
+        webPreferences: {
+          focusOnNavigation: false
+        }
+      });
+      w.setContentView(v);
+      await v.webContents.loadURL('about:blank');
+      const devToolsFocused = once(v.webContents, 'devtools-focused');
+      v.webContents.openDevTools({ mode: 'right' });
+      await devToolsFocused;
+      expect(v.webContents.isFocused()).to.be.false();
+      await v.webContents.loadURL('data:text/html,<body>test</body>');
+      expect(v.webContents.isFocused()).to.be.false();
     });
   });
 });

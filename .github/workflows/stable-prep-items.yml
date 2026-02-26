@@ -10,6 +10,7 @@ permissions: {}
 jobs:
   check-stable-prep-items:
     name: Check Stable Prep Items
+    if: github.repository == 'electron/electron'
     runs-on: ubuntu-latest
     permissions: {}
     steps:
