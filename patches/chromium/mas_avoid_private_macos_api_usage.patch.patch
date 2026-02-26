@@ -1189,10 +1189,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 6929b317df4bdb2e078efb02a00f902168ca12eb..6b889f419f09ef8b92d21e05502d3180b35d9e0e 100644
+index 70f483a8917ad4d0a71626d9092fe2c2015b3a9b..c5e2227a333daf4d84ce42de11edef150c3f8b4d 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -698,6 +698,7 @@ static_library("test_support") {
+@@ -699,6 +699,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -1200,7 +1200,7 @@ index 6929b317df4bdb2e078efb02a00f902168ca12eb..6b889f419f09ef8b92d21e05502d3180
    ]
  
    data_deps = [
-@@ -1173,6 +1174,8 @@ static_library("browsertest_support") {
+@@ -1174,6 +1175,8 @@ static_library("browsertest_support") {
    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
    # enable the diagnostic by removing this line.
    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -1209,7 +1209,7 @@ index 6929b317df4bdb2e078efb02a00f902168ca12eb..6b889f419f09ef8b92d21e05502d3180
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2062,6 +2065,7 @@ test("content_browsertests") {
+@@ -2063,6 +2066,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1217,7 +1217,7 @@ index 6929b317df4bdb2e078efb02a00f902168ca12eb..6b889f419f09ef8b92d21e05502d3180
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3409,6 +3413,7 @@ test("content_unittests") {
+@@ -3410,6 +3414,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",

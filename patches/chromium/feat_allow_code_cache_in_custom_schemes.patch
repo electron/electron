@@ -400,7 +400,7 @@ index 225e017909b8869231b870eaaf161a0b5e93e2a0..846a5251429630b8528a84a3d67ed56c
    if (schemes.allow_non_standard_schemes_in_origins)
      url::EnableNonStandardSchemesForAndroidWebView();
 diff --git a/content/public/common/content_client.h b/content/public/common/content_client.h
-index 33e2ff42e4d9da442d522b959a4a21c2f7032b6b..a0d81212327fc17e1f4704e78803c1d7d82b2016 100644
+index 08f78e8f7bf7ffdc40bd53a5229a2a75bed8fa4d..a987fd0bd8d13600b3177b8d3c9cdbfeb05b9955 100644
 --- a/content/public/common/content_client.h
 +++ b/content/public/common/content_client.h
 @@ -139,6 +139,9 @@ class CONTENT_EXPORT ContentClient {
@@ -444,7 +444,7 @@ index 8dd125800231bd8acc3a267feb88009d455757f1..f6e35d8d4bd57813bef8586ad6e3fff3
                                  std::string_view handler) {
    DoAddSchemeWithHandler(
 diff --git a/url/url_util.h b/url/url_util.h
-index 8d7210827ed4efdc42c3c94abeff57d74e6c7ed8..141aa6858d00f56615769bc1919f69ed38209d26 100644
+index aee64c6a32c1b6bce363a55dcda52763a6ac52ec..b3eae2b6928211dcea4159e2e09794e174616f1b 100644
 --- a/url/url_util.h
 +++ b/url/url_util.h
 @@ -115,6 +115,15 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCSPBypassingSchemes();
