@@ -84,6 +84,7 @@ class Menu : public gin::Wrappable<Menu>,
       int command_id,
       ElectronMenuModel::SharingItem* item) const override;
   v8::Local<v8::Value> GetUserAcceleratorAt(int command_id) const;
+  virtual void SimulateSubmenuCloseSequenceForTesting();
 #endif
   void ExecuteCommand(int command_id, int event_flags) override;
   void OnMenuWillShow(ui::SimpleMenuModel* source) override;
