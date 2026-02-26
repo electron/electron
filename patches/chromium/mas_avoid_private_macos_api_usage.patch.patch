@@ -50,7 +50,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 0d3f3638037a2a4b701c0739a43b7ac5ccee5795..a62d7450e2bbd75280191292b2e27ab6fb5338a4 100644
+index 01a54278608f07453c86013785bc5f685861f0e4..16fe1a9c13ba1b2c95a3c0d23133cd6179b0400e 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1085,6 +1085,7 @@ component("base") {
@@ -869,7 +869,7 @@ index efcdbc9d3114c2229af87af755f642f053f51730..01d4ee891850efc4b27a8663c9be1c75
  
  void NativeWidgetNSWindowBridge::SetColorMode(
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 10497f25d8386ae2807d0a3389ba303f75ae1b20..6ed74ce305052e3f88727d15277aa86eafdffcd0 100644
+index 7aab80076a041fac6cd81f477456a6c9169c3cb5..cbdc5064414818b8320ecf3ff1e3439d52adee08 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -390,6 +390,7 @@ viz_component("service") {
@@ -880,7 +880,7 @@ index 10497f25d8386ae2807d0a3389ba303f75ae1b20..6ed74ce305052e3f88727d15277aa86e
    }
  
    if (is_ios) {
-@@ -716,6 +717,7 @@ viz_source_set("unit_tests") {
+@@ -717,6 +718,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -2058,7 +2058,7 @@ index 54d483d6b3f1a56573e21b1f873b8dee8fc25a0f..33bc8c9ef097a907060ed347dca2ad46
  
      if (is_ios) {
 diff --git a/ui/accessibility/platform/browser_accessibility_manager_mac.mm b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
-index 423fa6c7d4c9e1a17f0df2a7b1357c3424070f8e..b7e9a3ae2b5e004c670b20dff12e9bf8dd0543fb 100644
+index 6c0b1c205824d00b2f07c9920643ae4d305e1a2f..955ba9057ef33ca4da46a5ea0be8dd4b80873e5a 100644
 --- a/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 +++ b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 @@ -14,6 +14,7 @@
@@ -2095,7 +2095,7 @@ index 423fa6c7d4c9e1a17f0df2a7b1357c3424070f8e..b7e9a3ae2b5e004c670b20dff12e9bf8
  
        // Use native VoiceOver support for live regions.
        BrowserAccessibilityCocoa* retained_node = native_node;
-@@ -717,6 +722,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -720,6 +725,7 @@ void PostAnnouncementNotification(NSString* announcement,
      return window == [NSApp accessibilityFocusedWindow];
    }
  
@@ -2103,7 +2103,7 @@ index 423fa6c7d4c9e1a17f0df2a7b1357c3424070f8e..b7e9a3ae2b5e004c670b20dff12e9bf8
    // TODO(accessibility): We need a solution to the problem described below.
    // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
    // 1. NSApp is the browser which spawned the PWA, and what it considers the
-@@ -745,6 +751,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -748,6 +754,7 @@ void PostAnnouncementNotification(NSString* announcement,
    if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]]) {
      return true;
    }
@@ -2308,7 +2308,7 @@ index bfffd0444b0711b201cedaddfd3edaa7b5d9220a..8cdae9f250d407d0c2d34ba7c0891b84
    // Query the display's refresh rate.
    display.set_display_frequency(screen.maximumFramesPerSecond);
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index a4e4367a1e7eb3f9f6d66e01db5768bc957da16e..ec014ee74dee2c5237a73fc1f1ad832d5596f93b 100644
+index ba4f7988df80d7bb4fabf4b2095a115c7a3f010a..41e5813281c29e9bce051a5ec0a136f1ebcf4ef5 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -284,6 +284,8 @@ component("gfx") {
