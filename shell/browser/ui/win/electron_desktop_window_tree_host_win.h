@@ -7,8 +7,10 @@
 
 #include <windows.h>
 
+#include <memory>
 #include <optional>
 
+#include "ui/events/event.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_win.h"
 
 namespace electron {
@@ -44,6 +46,7 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
                            int frame_thickness) const override;
   bool HandleMouseEventForCaption(UINT message) const override;
   bool HandleMouseEvent(ui::MouseEvent* event) override;
+  void HandleKeyEvent(ui::KeyEvent* event) override;
   bool HandleIMEMessage(UINT message,
                         WPARAM w_param,
                         LPARAM l_param,
@@ -63,6 +66,10 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
   std::optional<bool> force_should_paint_as_active_;
   bool allow_screenshots_ = true;
   bool widget_init_done_ = false;
+
+  // Stores the ALT+SPACE key event deferred from HandleKeyEvent so it can be
+  // replayed in HandleIMEMessage if the system-context-menu is prevented.
+  std::unique_ptr<ui::KeyEvent> deferred_alt_space_event_;
 };
 
 }  // namespace electron

@@ -4,6 +4,8 @@
 
 #include "shell/browser/ui/win/electron_desktop_window_tree_host_win.h"
 
+#include <memory>
+
 #include "base/win/windows_version.h"
 #include "electron/buildflags/buildflags.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -11,6 +13,7 @@
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/win/dark_mode.h"
 #include "ui/base/win/hwnd_metrics.h"
+#include "ui/events/keycodes/keyboard_codes.h"
 
 namespace electron {
 
@@ -150,6 +153,25 @@ bool ElectronDesktopWindowTreeHostWin::HandleMouseEvent(ui::MouseEvent* event) {
   return views::DesktopWindowTreeHostWin::HandleMouseEvent(event);
 }
 
+void ElectronDesktopWindowTreeHostWin::HandleKeyEvent(ui::KeyEvent* event) {
+  // Chromium's base implementation intentionally drops ALT+SPACE keydown
+  // events so that the subsequent WM_SYSCHAR can open the system menu.
+  // We defer the event instead, so that if the system-context-menu event
+  // is prevented by the user, we can replay it to the renderer.
+  if ((event->type() == ui::EventType::kKeyPressed) &&
+      (event->key_code() == ui::VKEY_SPACE) &&
+      (event->flags() & ui::EF_ALT_DOWN) &&
+      !(event->flags() & ui::EF_CONTROL_DOWN)) {
+    if (views::Widget* widget = GetWidget();
+        widget && widget->non_client_view()) {
+      deferred_alt_space_event_ = std::make_unique<ui::KeyEvent>(*event);
+      return;
+    }
+  }
+
+  views::DesktopWindowTreeHostWin::HandleKeyEvent(event);
+}
+
 bool ElectronDesktopWindowTreeHostWin::HandleIMEMessage(UINT message,
                                                         WPARAM w_param,
                                                         LPARAM l_param,
@@ -165,8 +187,20 @@ bool ElectronDesktopWindowTreeHostWin::HandleIMEMessage(UINT message,
       native_window_view_->NotifyWindowSystemContextMenu(
           location.x(), location.y(), &prevent_default);
 
-      return prevent_default ||
-             views::DesktopWindowTreeHostWin::HandleIMEMessage(message, w_param,
+      if (prevent_default) {
+        // The system menu was suppressed. Replay the deferred ALT+SPACE
+        // keydown so it reaches before-input-event and the renderer.
+        if (deferred_alt_space_event_) {
+          SendEventToSink(deferred_alt_space_event_.get());
+          deferred_alt_space_event_.reset();
+        }
+        return true;
+      }
+
+      // System menu not prevented — discard the deferred event and let
+      // the default WM_SYSCHAR handling open the system menu.
+      deferred_alt_space_event_.reset();
+      return views::DesktopWindowTreeHostWin::HandleIMEMessage(message, w_param,
                                                                l_param, result);
     }
   }
