@@ -283,13 +283,12 @@ describe('desktopCapturer window icons', () => {
       s => s.name === 'desktop-capturer-test-window'
     );
 
-    if (testSource) {
-      expect(testSource.appIcon.isEmpty(), 'Icon should not be empty').to.equal(false);
+    expect(testSource, 'Test window source should be found').to.not.equal(undefined);
+    expect(testSource!.appIcon.isEmpty(), 'Icon should not be empty').to.equal(false);
 
-      const { width, height } = testSource.appIcon.getSize();
+    const { width, height } = testSource!.appIcon.getSize();
 
-      expect(width).to.equal(128);
-      expect(height).to.equal(128);
-    }
+    expect(width).to.equal(128);
+    expect(height).to.equal(128);
   });
 });
