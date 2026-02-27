@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <khammond@slack-corp.com>
+Date: Fri, 27 Feb 2026 13:12:14 -0800
+Subject: fix: add explicit JSON property mappings for Mantle 2.x compatibility
+
+SQRLShipItRequest.JSONKeyPathsByPropertyKey returned an empty dictionary,
+which in Mantle 1.x meant "use implicit/default property name mapping"
+but in Mantle 2.x means "serialize no properties". This caused the
+ShipItState.plist to be written as {} (empty JSON), making ShipIt unable
+to read the update request back.
+
+Explicitly map all properties so serialization and deserialization work
+correctly with Mantle 2.x.
+
+diff --git a/Squirrel/SQRLShipItRequest.m b/Squirrel/SQRLShipItRequest.m
+index 726f91d01524e3812cb3a769db2416f6638dbca6..06ee51a29d4007429b759ec599a5b9a7ebfab837 100644
+--- a/Squirrel/SQRLShipItRequest.m
++++ b/Squirrel/SQRLShipItRequest.m
+@@ -60,7 +60,13 @@ - (instancetype)initWithUpdateBundleURL:(NSURL *)updateBundleURL targetBundleURL
+ #pragma mark Serialization
+ 
+ + (NSDictionary *)JSONKeyPathsByPropertyKey {
+-	return @{};
++	return @{
++		@keypath(SQRLShipItRequest.new, updateBundleURL): @"updateBundleURL",
++		@keypath(SQRLShipItRequest.new, targetBundleURL): @"targetBundleURL",
++		@keypath(SQRLShipItRequest.new, bundleIdentifier): @"bundleIdentifier",
++		@keypath(SQRLShipItRequest.new, launchAfterInstallation): @"launchAfterInstallation",
++		@keypath(SQRLShipItRequest.new, useUpdateBundleName): @"useUpdateBundleName",
++	};
+ }
+ 
+ + (NSValueTransformer *)updateBundleURLJSONTransformer {
