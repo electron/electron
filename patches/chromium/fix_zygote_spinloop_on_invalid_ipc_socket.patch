@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: krka <krka@users.noreply.github.com>
+Date: Thu, 27 Feb 2026 09:00:00 +0100
+Subject: fix: exit orphaned zygote on invalid IPC socket instead of spinning
+
+When the browser process exits and restarts, orphaned zygote processes
+may be left with IPC file descriptors (fd 3) pointing to regular files
+instead of sockets. The existing error handling logs the ENOTSOCK error
+but returns to the main loop, where ppoll() on a regular file returns
+immediately, creating a tight spinloop at ~4000 iterations/second.
+
+This burns 80%+ of a CPU core indefinitely and spams error logs at
+thousands of lines per second, growing ~/.xsession-errors or the
+systemd journal to multi-GB sizes.
+
+The fix extends the existing EOF/ECONNRESET exit path to also cover
+ENOTSOCK and EBADF, which indicate the IPC socket is fundamentally
+invalid and unrecoverable.
+
+Bug: https://github.com/electron/electron/issues/XXXXX
+Bug: https://github.com/microsoft/vscode/issues/288893
+
+diff --git a/content/zygote/zygote_linux.cc b/content/zygote/zygote_linux.cc
+--- a/content/zygote/zygote_linux.cc
++++ b/content/zygote/zygote_linux.cc
+@@ -240,6 +240,14 @@ bool Zygote::HandleRequestFromBrowser(int fd) {
+   }
+
+   if (len == -1) {
++    // If the IPC socket fd is fundamentally invalid (not a socket, or bad fd),
++    // there is no way to recover. This happens when the zygote is orphaned
++    // after the browser process exits and restarts, leaving file descriptors
++    // pointing to non-socket files. Exit to avoid an infinite spinloop.
++    if (errno == ENOTSOCK || errno == EBADF) {
++      LOG(ERROR) << "Zygote IPC socket is invalid, exiting orphaned zygote";
++      _exit(0);
++    }
+     PLOG(ERROR) << "Error reading message from browser";
+     return false;
+   }
