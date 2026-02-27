@@ -113,6 +113,11 @@ declare namespace NodeJS {
     Notification: typeof Electron.Notification;
   }
 
+  interface ConnectionCostMonitorBinding {
+    createConnectionCostMonitor(): Electron.EventEmitter & { emit: Function };
+    isConnectionMetered(): boolean;
+  }
+
   interface PowerMonitorBinding extends Electron.PowerMonitor {
     createPowerMonitor(): PowerMonitorBinding;
     setListeningForShutdown(listening: boolean): void;
