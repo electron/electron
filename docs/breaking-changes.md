@@ -53,6 +53,17 @@ npm install electron --save-dev --ignore-scripts
 npx install-electron --no
 ```
 
+If you need to test changes across platforms or architectures, you should now use the
+`ELECTRON_INSTALL_ARCH` and `ELECTRON_INSTALL_PLATFORM` environment variables.
+
+```sh
+# before: pass npm config flag on install command
+npm install --platform=mas electron --save-dev
+# after: add env var when you first run the Electron command
+npm install electron --save-dev
+ELECTRON_INSTALL_PLATFORM=mas npx electron . --no
+```
+
 ### Behavior Changed: PDFs no longer create a separate WebContents
 
 Previously, PDF resources created a separate guest [WebContents](https://www.electronjs.org/docs/latest/api/web-contents) for rendering. Now, PDFs are rendered within the same WebContents instead. If you have code to detect PDF resources, use the [frame tree](https://www.electronjs.org/docs/latest/api/web-frame-main) instead of WebContents.

@@ -51,18 +51,19 @@ any dependencies in your app will not be installed.
 ## Customization
 
 If you want to change the architecture that is downloaded (e.g., `x64` on an
-`arm64` machine), you can use the `--arch` flag with npm install or set the
-`npm_config_arch` environment variable:
+`arm64` machine), you can set the `ELECTRON_INSTALL_ARCH` environment variable:
 
-```shell
-npm install --arch=x64 electron
+```sh
+# Inside an npm script or with npx
+ELECTRON_INSTALL_ARCH=x64 electron .
 ```
 
 In addition to changing the architecture, you can also specify the platform
 (e.g., `win32`, `linux`, etc.) using the `--platform` flag:
 
-```shell
-npm install --platform=win32 electron
+```sh
+# Inside an npm script or with npx
+ELECTRON_INSTALL_PLATFORM=mas electron .
 ```
 
 ## Proxies
