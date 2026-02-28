@@ -73,7 +73,7 @@ A [`typeof DeferredResponse`](#class-deferredresponse) reference to the
 Process: [Main](../glossary.md#main-process)<br />
 _This class is not exported from the `'electron'` module. It is only available as a property of the `protocol` module._
 
-### `new DeferredResponse()`
+### `new protocol.DeferredResponse()`
 
 Creates a sentinel response value that tells `protocol.handle` to defer
 the original request back to the built-in handler.
