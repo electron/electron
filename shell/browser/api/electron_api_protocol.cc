@@ -79,6 +79,9 @@ struct Converter<CustomScheme> {
 
 namespace electron::api {
 
+gin::DeprecatedWrapperInfo DeferredResponse::kWrapperInfo = {
+    gin::kEmbedderNativeGin};
+
 gin::DeprecatedWrapperInfo Protocol::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 std::vector<std::string>& GetStandardSchemes() {
@@ -272,6 +275,27 @@ v8::Local<v8::Promise> Protocol::IsProtocolHandled(v8::Isolate* const isolate,
                    std::ranges::contains(kBuiltinSchemes, scheme));
 }
 
+DeferredResponse::DeferredResponse() = default;
+
+DeferredResponse::~DeferredResponse() = default;
+
+// static
+gin_helper::Handle<DeferredResponse> DeferredResponse::New(
+    gin_helper::ErrorThrower thrower) {
+  return gin_helper::CreateHandle(thrower.isolate(), new DeferredResponse{});
+}
+
+// static
+v8::Local<v8::ObjectTemplate> DeferredResponse::FillObjectTemplate(
+    v8::Isolate* isolate,
+    v8::Local<v8::ObjectTemplate> tmpl) {
+  return gin::ObjectTemplateBuilder(isolate, GetClassName(), tmpl).Build();
+}
+
+const char* DeferredResponse::GetTypeName() {
+  return GetClassName();
+}
+
 void Protocol::HandleOptionalCallback(gin::Arguments* args, Error error) {
   base::RepeatingCallback<void(v8::Local<v8::Value>)> callback;
   if (args->GetNext(&callback)) {
@@ -363,6 +387,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
+  dict.Set("DeferredResponse",
+           electron::api::DeferredResponse::GetConstructor(isolate, context));
   dict.Set("Protocol",
            electron::api::Protocol::GetConstructor(isolate, context));
   dict.SetMethod("registerSchemesAsPrivileged", &RegisterSchemesAsPrivileged);
