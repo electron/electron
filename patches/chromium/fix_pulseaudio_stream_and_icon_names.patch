@@ -19,18 +19,20 @@ This patch can be removed when upstream starts using AudioManager::SetGlobalAppN
 for all pa_context names (and when actually works with AudioServiceOutOfProcess).
 
 diff --git a/content/browser/audio/audio_service.cc b/content/browser/audio/audio_service.cc
-index 70615782c50d18606c3baa42a223e54f8619bc07..19bc8504c964d225b42065a994dfadb516143d49 100644
+index 70615782c50d18606c3baa42a223e54f8619bc07..451ea666b5dbe0e2ea14e158d0aad76d47d4890c 100644
 --- a/content/browser/audio/audio_service.cc
 +++ b/content/browser/audio/audio_service.cc
-@@ -29,6 +29,7 @@
+@@ -29,6 +29,9 @@
  #include "services/audio/public/mojom/audio_service.mojom.h"
  #include "services/audio/service.h"
  #include "services/audio/service_factory.h"
++#if BUILDFLAG(IS_LINUX)
 +#include "electron/shell/common/application_info.h"
++#endif
  
  #if BUILDFLAG(ENABLE_PASSTHROUGH_AUDIO_CODECS) && BUILDFLAG(IS_WIN)
  #define PASS_EDID_ON_COMMAND_LINE 1
-@@ -109,6 +110,10 @@ void LaunchAudioServiceOutOfProcess(
+@@ -109,6 +112,10 @@ void LaunchAudioServiceOutOfProcess(
      mojo::PendingReceiver<audio::mojom::AudioService> receiver,
      uint32_t codec_bitmask) {
    std::vector<std::string> switches;
