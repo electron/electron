@@ -56,6 +56,28 @@ app.whenReady().then(() => {
 })
 ```
 
+## Properties
+
+The `protocol` module has the following properties:
+
+### `protocol.DeferredResponse`
+
+A [`typeof DeferredResponse`](#class-deferredresponse) reference to the
+`DeferredResponse` constructor.
+
+## Class: DeferredResponse
+
+> A sentinel response value that defers handling to the built-in protocol
+> handler.
+
+Process: [Main](../glossary.md#main-process)<br />
+_This class is not exported from the `'electron'` module. It is only available as a property of the `protocol` module._
+
+### `new DeferredResponse()`
+
+Creates a sentinel response value that tells `protocol.handle` to defer to the
+built-in handler for the original request.
+
 ## Methods
 
 The `protocol` module has the following methods:
@@ -119,13 +141,16 @@ expect streaming responses.
 
 * `scheme` string - scheme to handle, for example `https` or `my-app`. This is
   the bit before the `:` in a URL.
-* `handler` Function\<[GlobalResponse](https://nodejs.org/api/globals.html#response) | null | Promise\<GlobalResponse\> | null\>
+* `handler` Function\<[GlobalResponse](https://nodejs.org/api/globals.html#response) | [DeferredResponse](#class-deferredresponse) | Promise\<[GlobalResponse](https://nodejs.org/api/globals.html#response) | [DeferredResponse](#class-deferredresponse)\>\>
   * `request` [GlobalRequest](https://nodejs.org/api/globals.html#request)
 
 Register a protocol handler for `scheme`. Requests made to URLs with this
 scheme will delegate to this handler to determine what response should be sent.
 
-Either a `Response` or `null` can be returned (either optionally wrapped in a `Promise`). If `null` is returned, the original request is deferred back to the built-in handler.
+Either a `Response` or `new protocol.DeferredResponse()` can be returned (either
+optionally wrapped in a `Promise`). Returning
+`new protocol.DeferredResponse()` defers the request back to the built-in
+handler.
 
 Example:
 
