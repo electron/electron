@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Noah Gregory <noahmgregory@gmail.com>
+Date: Fri, 27 Feb 2026 21:29:48 -0500
+Subject: fix: add explicit JSON property mappings for ShipIt request model
+
+
+diff --git a/Squirrel/SQRLShipItRequest.m b/Squirrel/SQRLShipItRequest.m
+index 726f91d01524e3812cb3a769db2416f6638dbca6..5f0d6de57a6ee6b0bd8a24c439f87239295bd937 100644
+--- a/Squirrel/SQRLShipItRequest.m
++++ b/Squirrel/SQRLShipItRequest.m
+@@ -60,7 +60,13 @@ - (instancetype)initWithUpdateBundleURL:(NSURL *)updateBundleURL targetBundleURL
+ #pragma mark Serialization
+ 
+ + (NSDictionary *)JSONKeyPathsByPropertyKey {
+-	return @{};
++	return @{
++		@keypath(SQRLShipItRequest.new, updateBundleURL): @keypath(SQRLShipItRequest.new, updateBundleURL),
++		@keypath(SQRLShipItRequest.new, targetBundleURL): @keypath(SQRLShipItRequest.new, targetBundleURL),
++		@keypath(SQRLShipItRequest.new, bundleIdentifier): @keypath(SQRLShipItRequest.new, bundleIdentifier),
++		@keypath(SQRLShipItRequest.new, launchAfterInstallation): @keypath(SQRLShipItRequest.new, launchAfterInstallation),
++		@keypath(SQRLShipItRequest.new, useUpdateBundleName): @keypath(SQRLShipItRequest.new, useUpdateBundleName),
++	};
+ }
+ 
+ + (NSValueTransformer *)updateBundleURLJSONTransformer {
