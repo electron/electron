@@ -75,8 +75,8 @@ _This class is not exported from the `'electron'` module. It is only available a
 
 ### `new DeferredResponse()`
 
-Creates a sentinel response value that tells `protocol.handle` to defer to the
-built-in handler for the original request.
+Creates a sentinel response value that tells `protocol.handle` to defer
+the original request back to the built-in handler.
 
 ## Methods
 
@@ -149,7 +149,7 @@ scheme will delegate to this handler to determine what response should be sent.
 
 Either a `Response` or `new protocol.DeferredResponse()` can be returned (either
 optionally wrapped in a `Promise`). Returning
-`new protocol.DeferredResponse()` defers the request back to the built-in
+`new protocol.DeferredResponse()` defers the original request back to the built-in
 handler.
 
 Example:
