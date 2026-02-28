@@ -37,6 +37,22 @@ void AddServiceWorkerScheme(const std::string& scheme);
 void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
                                  v8::Local<v8::Value> val);
 
+class DeferredResponse final
+    : public gin_helper::DeprecatedWrappable<DeferredResponse>,
+      public gin_helper::Constructible<DeferredResponse> {
+ public:
+  static gin_helper::Handle<DeferredResponse> New(gin_helper::ErrorThrower);
+  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
+      v8::Isolate* isolate,
+      v8::Local<v8::ObjectTemplate> tmpl);
+  static const char* GetClassName() { return "DeferredResponse"; }
+
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  const char* GetTypeName() override;
+  DeferredResponse();
+  ~DeferredResponse() override;
+};
+
 // Protocol implementation based on network services.
 class Protocol final : public gin_helper::DeprecatedWrappable<Protocol>,
                        public gin_helper::Constructible<Protocol> {

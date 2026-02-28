@@ -12,6 +12,7 @@
 #include "base/functional/callback_helpers.h"
 #include "base/strings/string_split.h"
 #include "content/public/browser/browser_context.h"
+#include "gin/converter.h"
 #include "gin/arguments.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "net/base/completion_repeating_callback.h"
@@ -23,6 +24,7 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/mojom/early_hints.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
+#include "shell/browser/api/electron_api_protocol.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 #include "shell/common/options_switches.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
@@ -43,7 +45,9 @@ void StartLoadingOrDefer(
     ProtocolType type,
     gin::Arguments* args) {
   v8::Local<v8::Value> handler_return_value = args->PeekNext();
-  if (!handler_return_value.IsEmpty() && handler_return_value->IsNull()) {
+  electron::api::DeferredResponse* deferred_response = nullptr;
+  if (gin::ConvertFromV8(args->isolate(), handler_return_value,
+                         &deferred_response) && deferred_response) {
     mojo::Remote<network::mojom::URLLoaderFactory> proxy_factory(
         std::move(proxy_factory_remote));
     proxy_factory->CreateLoaderAndStart(
