@@ -29,9 +29,13 @@ def calculate_sha256(filepath):
 input_file = sys.argv[1]
 output_file = sys.argv[2]
 
+if not os.path.isfile(input_file):
+    print(f"Input file does not exist or is not a regular file: {input_file}", file=sys.stderr)
+    sys.exit(2)
+
 checksum = calculate_sha256(input_file)
 
 checksum_h = TEMPLATE_H.replace("{checksum}", checksum)
 
-with open(output_file, 'w') as f:
+with open(output_file, 'w', encoding='utf-8') as f:
     f.write(checksum_h)
