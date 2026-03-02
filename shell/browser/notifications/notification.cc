@@ -46,9 +46,10 @@ void Notification::NotificationClicked() {
   Destroy();
 }
 
-void Notification::NotificationDismissed(bool should_destroy) {
+void Notification::NotificationDismissed(bool should_destroy,
+                                         const std::string& close_reason) {
   if (delegate())
-    delegate()->NotificationClosed();
+    delegate()->NotificationClosed(close_reason);
 
   set_is_dismissed(true);
 
