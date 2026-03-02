@@ -177,7 +177,7 @@ switch to another application.
 ### Event: 'continue-activity' _macOS_
 
 Returns:
-
+  
 * `event` Event
 * `type` string - A string identifying the activity. Maps to
   [`NSUserActivity.activityType`][activity-type].
