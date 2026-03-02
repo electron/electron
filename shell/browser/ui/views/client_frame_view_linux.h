@@ -112,7 +112,7 @@ class ClientFrameViewLinux : public FramelessView,
   gfx::Insets GetTitlebarContentInsets() const;
   gfx::Rect GetTitlebarContentBounds() const;
 
-  std::unique_ptr<LinuxFrameLayout> linux_frame_layout_;
+  std::unique_ptr<LinuxCSDNativeFrameLayout> linux_frame_layout_;
 
   raw_ptr<ui::NativeTheme> theme_;
   ThemeValues theme_values_;

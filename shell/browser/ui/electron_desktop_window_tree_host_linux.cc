@@ -243,8 +243,8 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
         // The opaque region is a list of rectangles that contain only fully
         // opaque pixels of the window.  We need to convert the clipping
         // rounded-rect into this format.
-        SkRRect rrect = layout->GetRoundedWindowContentBounds();
-        gfx::RectF rectf(layout->GetWindowContentBounds());
+        SkRRect rrect = layout->GetRoundedWindowBounds();
+        gfx::RectF rectf(layout->GetWindowBounds());
         rectf.Scale(scale);
         // It is acceptable to omit some pixels that are opaque, but the region
         // must not include any translucent pixels.  Therefore, we must
