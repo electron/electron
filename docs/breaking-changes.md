@@ -22,8 +22,6 @@ Developers had to manually calculate the correct size using `screen.getPrimaryDi
 to the primary display's scale factor (preserving the old behavior). Starting from Electron 42, the default will change to a constant value of `1.0`
 for more consistent output sizes.
 
-## Planned Breaking API Changes (41.0)
-
 ### Behavior Changed: `electron` no longer downloads itself via `postinstall` script
 
 Previously, the `electron` npm package would download the Electron binary from the repository's
@@ -52,6 +50,8 @@ which contains the exact same code from the former `postinstall` script.
 npm install electron --save-dev --ignore-scripts
 npx install-electron --no
 ```
+
+## Planned Breaking API Changes (41.0)
 
 ### Behavior Changed: PDFs no longer create a separate WebContents
 
