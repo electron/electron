@@ -14,18 +14,10 @@ We don't need to do this for zlib, as the existing gn workflow uses the same
 Upstreamed at https://github.com/nodejs/node/pull/55903
 
 diff --git a/unofficial.gni b/unofficial.gni
-index 20d2483bb16e297ab5b12aab6f56948d6d25cb03..253226009faf563f6db285d4b2908f308c1f96ea 100644
+index bff7b0650cfe8578a044e45d0f9e352859909695..4ab316e45bd84e43a53335df60f847b17fe6c2fa 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -160,7 +160,6 @@ template("node_gn_build") {
-       ":run_node_js2c",
-       "deps/cares",
-       "deps/histogram",
--      "deps/llhttp",
-       "deps/nbytes",
-       "deps/nghttp2",
-       "deps/postject",
-@@ -198,7 +197,17 @@ template("node_gn_build") {
+@@ -199,7 +199,17 @@ template("node_gn_build") {
        configs -= [ "//build/config/gcc:symbol_visibility_hidden" ]
        configs += [ "//build/config/gcc:symbol_visibility_default" ]
      }
@@ -44,7 +36,7 @@ index 20d2483bb16e297ab5b12aab6f56948d6d25cb03..253226009faf563f6db285d4b2908f30
      if (v8_enable_i18n_support) {
        deps += [ "//third_party/icu" ]
      }
-@@ -231,6 +240,19 @@ template("node_gn_build") {
+@@ -232,6 +242,19 @@ template("node_gn_build") {
        sources += node_inspector.node_inspector_sources +
                   node_inspector.node_inspector_generated_sources
      }
