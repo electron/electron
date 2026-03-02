@@ -34,10 +34,10 @@ index dd4cee346f16df703d414bf206bbe6c9f4b1f796..5565f5a9259bd7da0722080bf01b3415
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index bc18237e7d68bb4c07f3488c9a23d072e2867ca5..cb942a969388291ac1177838970d8e233a6695fb 100644
+index 1b841c1df51abb0e0ec1b86a237dd73283083a37..d449c494ce099f069c5dadebd5db921733358720 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4762,10 +4762,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4768,10 +4768,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
      observer.DidInstallConditionalFeatures(context, world_id);
  }
  
@@ -103,7 +103,7 @@ index 8482d7fab12634e6b9a8d5f9bab6c7e428bb99ee..4f131fbfc9350352bce4430f92b9f2cf
    void WillInitializeWorkerContext() override;
    void WillDestroyWorkerContext(v8::Local<v8::Context> context) override;
 diff --git a/extensions/renderer/dispatcher.cc b/extensions/renderer/dispatcher.cc
-index 915c0c4bc5d130e33728d852f6dc70683b82bc10..3eba943bd7954fca63cf31f0d69ad1b536118f8a 100644
+index a81321462422d3a91f72c51131520710e6909814..9dbdb8e844e567a4043ca61c627d93341897bae0 100644
 --- a/extensions/renderer/dispatcher.cc
 +++ b/extensions/renderer/dispatcher.cc
 @@ -530,6 +530,7 @@ void Dispatcher::DidInitializeServiceWorkerContextOnWorkerThread(
