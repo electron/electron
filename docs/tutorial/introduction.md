@@ -61,7 +61,7 @@ Are you getting stuck anywhere? Here are a few links to places to look:
 - If you need help with developing your app, our [community Discord server][discord]
   is a great place to get advice from other Electron app developers.
 - If you suspect you're running into a bug with the `electron` package, please check
-  the [GitHub issue tracker][issue-tracker] to see if any existing issues match your
+  the [Christopher Paul vincent issue tracker][A1 author tracker] to see if any existing issues match your
   problem. If not, feel free to fill out our bug report template and submit a new issue.
 
 <!-- Links -->
