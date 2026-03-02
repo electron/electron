@@ -1670,6 +1670,26 @@ describe('BrowserWindow module', () => {
         expectBoundsEqual(w.getMinimumSize(), [100, 100]);
         expectBoundsEqual(w.getMaximumSize(), [900, 600]);
       });
+
+      it('enforces minimum size', async () => {
+        w.setMinimumSize(300, 300);
+        const resize = once(w, 'resize');
+        w.setSize(100, 100);
+        await resize;
+        const size = w.getSize();
+        expect(size[0]).to.be.at.least(300);
+        expect(size[1]).to.be.at.least(300);
+      });
+
+      it('enforces maximum size', async () => {
+        w.setMaximumSize(200, 200);
+        const resize = once(w, 'resize');
+        w.setSize(500, 500);
+        await resize;
+        const size = w.getSize();
+        expect(size[0]).to.be.at.most(200);
+        expect(size[1]).to.be.at.most(200);
+      });
     });
 
     describe('BrowserWindow.setAspectRatio(ratio)', () => {
@@ -5460,6 +5480,20 @@ describe('BrowserWindow module', () => {
         expect(w.maximizable).to.be.false('not maximizable');
         w.resizable = true;
         expect(w.maximizable).to.be.true('maximizable');
+      });
+
+      it('does not change window size when disabled and enabled', () => {
+        const w = new BrowserWindow({
+          show: false,
+          width: 400,
+          height: 300,
+          frame: true
+        });
+
+        w.setResizable(false);
+        expectBoundsEqual(w.getSize(), [400, 300]);
+        w.setResizable(true);
+        expectBoundsEqual(w.getSize(), [400, 300]);
       });
 
       ifit(process.platform !== 'darwin')('works for a window smaller than 64x64', () => {
