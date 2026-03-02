@@ -146,10 +146,9 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
   NSDictionary* user_info = userActivity.userInfo ?: @{};
 
   electron::Browser* browser = electron::Browser::Get();
-  return browser->ContinueUserActivity(
-             activity_type,
-             electron::NSDictionaryToValue(user_info),
-             electron::NSDictionaryToValue(details))
+  return browser->ContinueUserActivity(activity_type,
+                                       electron::NSDictionaryToValue(user_info),
+                                       electron::NSDictionaryToValue(details))
              ? YES
              : NO;
 }
