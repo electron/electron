@@ -135,7 +135,6 @@ void WebContentsPreferences::Clear() {
   default_encoding_ = std::nullopt;
   is_webview_ = false;
   custom_args_.clear();
-  custom_switches_.clear();
   enable_blink_features_ = std::nullopt;
   disable_blink_features_ = std::nullopt;
   disable_popups_ = false;
@@ -204,7 +203,6 @@ void WebContentsPreferences::SetFromDictionary(
   if (web_preferences.Get("defaultEncoding", &encoding))
     default_encoding_ = encoding;
   web_preferences.Get(options::kCustomArgs, &custom_args_);
-  web_preferences.Get("commandLineSwitches", &custom_switches_);
   web_preferences.Get("disablePopups", &disable_popups_);
   web_preferences.Get("disableDialogs", &disable_dialogs_);
   web_preferences.Get("safeDialogs", &safe_dialogs_);
@@ -337,11 +335,6 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   for (const auto& arg : custom_args_)
     if (!arg.empty())
       command_line->AppendArg(arg);
-
-  // Custom command line switches.
-  for (const auto& arg : custom_switches_)
-    if (!arg.empty())
-      command_line->AppendSwitch(arg);
 
   if (enable_blink_features_)
     command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures,
