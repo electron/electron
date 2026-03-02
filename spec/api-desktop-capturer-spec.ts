@@ -254,4 +254,71 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
       destroyWindows();
     }
   });
+
+  ifit(process.platform === 'darwin')('showInactive with bringToFront should control z-order', async function () {
+    // DesktopCapturer.getSources() is guaranteed to return in the correct
+    // z-order from foreground to background.
+    const w1 = new BrowserWindow({ show: false, width: 100, height: 100 });
+    const w2 = new BrowserWindow({ show: false, width: 100, height: 100 });
+
+    const destroyWindows = () => {
+      w1.destroy();
+      w2.destroy();
+    };
+
+    try {
+      // Show and focus both windows sequentially to establish z-order.
+      // w2 should end up in front of w1.
+      for (const w of [w1, w2]) {
+        const wShown = once(w, 'show');
+        const wFocused = once(w, 'focus');
+        w.show();
+        w.focus();
+        await wShown;
+        await wFocused;
+      }
+
+      const getSources = async () => {
+        const sources = await desktopCapturer.getSources({
+          types: ['window'],
+          thumbnailSize: { width: 0, height: 0 }
+        });
+        return sources;
+      };
+
+      // Verify initial z-order: w2 (front) then w1 (back).
+      let sources = await getSources();
+      const initialW2Index = sources.findIndex(s => s.id === w2.getMediaSourceId());
+      const initialW1Index = sources.findIndex(s => s.id === w1.getMediaSourceId());
+
+      // If the environment doesn't give us reliable z-order, bail out.
+      if (initialW2Index === -1 || initialW1Index === -1 || initialW2Index >= initialW1Index) return;
+
+      // Hide w1, then showInactive with bringToFront: false.
+      // It should appear behind w2.
+      w1.hide();
+      await setTimeout(500);
+      w1.showInactive({ bringToFront: false });
+      await setTimeout(2000);
+
+      sources = await getSources();
+      const backW2Index = sources.findIndex(s => s.id === w2.getMediaSourceId());
+      const backW1Index = sources.findIndex(s => s.id === w1.getMediaSourceId());
+      expect(backW2Index).to.be.lessThan(backW1Index, 'w1 should be behind w2 after showInactive({ bringToFront: false })');
+
+      // Hide w1 again, then showInactive with default (bringToFront: true).
+      // It should appear in front of w2.
+      w1.hide();
+      await setTimeout(500);
+      w1.showInactive();
+      await setTimeout(2000);
+
+      sources = await getSources();
+      const frontW1Index = sources.findIndex(s => s.id === w1.getMediaSourceId());
+      const frontW2Index = sources.findIndex(s => s.id === w2.getMediaSourceId());
+      expect(frontW1Index).to.be.lessThan(frontW2Index, 'w1 should be in front of w2 after showInactive() with default bringToFront');
+    } finally {
+      destroyWindows();
+    }
+  });
 });
