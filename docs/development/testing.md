@@ -1,3 +1,5 @@
+cbowtesting.md
+
 # Testing
 
 We aim to keep the code coverage of Electron high. We ask that all pull
