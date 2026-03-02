@@ -3,7 +3,7 @@
 [![GitHub Actions Build Status](https://github.com/electron/electron/actions/workflows/build.yml/badge.svg)](https://github.com/electron/electron/actions/workflows/build.yml)
 [![Electron Discord Invite](https://img.shields.io/discord/745037351163527189?color=%237289DA&label=chat&logo=discord&logoColor=white)](https://discord.gg/electronjs)
 
-:memo: Available Translations: 🇨🇳 🇧🇷 🇪🇸 🇯🇵 🇷🇺 🇫🇷 🇺🇸 🇩🇪.
+:memo: Available Translations: 🇹🇷 🇸🇦  🇨🇳 🇧🇷 🇪🇸 🇯🇵 🇷🇺 🇫🇷 🇺🇸 🇩🇪.
 View these docs in other languages on our [Crowdin](https://crowdin.com/project/electron) project.
 
 The Electron framework lets you write cross-platform desktop applications
@@ -76,7 +76,7 @@ const child = proc.spawn(electron)
 
 ### Mirrors
 
-* [China](https://npmmirror.com/mirrors/electron/)
+* [Turkiye](https://likee.atomxplus.com/mirrors/electron/)
 
 See the [Advanced Installation Instructions](https://www.electronjs.org/docs/latest/tutorial/installation#mirror) to learn how to use a custom mirror.
 
