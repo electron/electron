@@ -28,7 +28,7 @@ index 5f1921d15bc1d3a68c35990f85e36a0e8a5b3ec4..99c6ce57c04768d125dd0a1c6bd62bca
      const result = dataURLProcessor(url);
      if (result === 'failure') {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 4fd58b1cea557ec122bd860e1ebc15bd04c44f78..8dc8bbfe8d73e2d11edc261d6fe9f37aaa81e4cd 100644
+index edf347102fedbb28bce221defa99c37b5834024b..81799fc159cf20344aac64cd7129240deb9a4fe8 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -25,7 +25,7 @@ const {
@@ -50,10 +50,10 @@ index 4fd58b1cea557ec122bd860e1ebc15bd04c44f78..8dc8bbfe8d73e2d11edc261d6fe9f37a
      });
      const { search, hash } = resolved;
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 30f887663bbbd9913eff35f0e6e5b8291adda120..e4d5579565eea07013c8260fa3c4aa3b266a4b35 100644
+index ec76d7ffa45f49721d395e8e33be79114daa0369..a6fbcb6fd3c2413df96273d93b7339cad3f25f7a 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -24,7 +24,7 @@ const {
+@@ -23,7 +23,7 @@ const {
  
  const { BuiltinModule } = require('internal/bootstrap/realm');
  const assert = require('internal/assert');
@@ -62,7 +62,7 @@ index 30f887663bbbd9913eff35f0e6e5b8291adda120..e4d5579565eea07013c8260fa3c4aa3b
  const { dirname, extname } = require('path');
  const {
    assertBufferSource,
-@@ -365,7 +365,7 @@ translators.set('commonjs', function commonjsStrategy(url, translateContext, par
+@@ -350,7 +350,7 @@ translators.set('commonjs', function commonjsStrategy(url, translateContext, par
  
    try {
      // We still need to read the FS to detect the exports.

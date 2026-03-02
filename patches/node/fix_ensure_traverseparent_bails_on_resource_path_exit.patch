@@ -8,7 +8,7 @@ resource path. This commit ensures that the TraverseParent function
 bails out if the parent path is outside of the resource path.
 
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index 04ebecc5d924f6c2fddd9992462d1ff692e1cee5..5d9a9da3a068a68c13c5c0cacfe07eec3dad8bc3 100644
+index 0cd351e7aff9e293e736e0aca22e67b577eb48eb..b925434940baeeb6b06882242ca947736866d175 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -345,8 +345,41 @@ const BindingData::PackageConfig* BindingData::TraverseParent(

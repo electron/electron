@@ -388,7 +388,7 @@ index bd788ec4ed88289d35798b8af8c9490a68e081a2..1a5477ba928bce93320f8056db02e1a7
  function generateWrappingKeys() {
    return Promise.all(Object.keys(kWrappingData).map(async (name) => {
 diff --git a/test/parallel/test-x509-escaping.js b/test/parallel/test-x509-escaping.js
-index c8fc4abbb108a6d6849e8452d97d29187da2ebe6..825ba4c8dce775f401080a0522565bb7a087bcc3 100644
+index a5937a09cb1535778a6345885a69ca9bcecf3e96..336313d30b3329b73c04f2f6d6a5e02375a11a72 100644
 --- a/test/parallel/test-x509-escaping.js
 +++ b/test/parallel/test-x509-escaping.js
 @@ -438,7 +438,7 @@ const { hasOpenSSL3 } = require('../common/crypto');
