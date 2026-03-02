@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Noah Gregory <noahmgregory@gmail.com>
+Date: Mon, 2 Mar 2026 02:19:41 -0500
+Subject: fix: ensure no `nil` events are inserted into `mPendingSignalEvents`
+
+This patch is intended to fix #49904, which appears to be caused by
+`nil` events in `mPendingSignalEvents`. See my comment on the issue
+for more information. This patch is potentially upstreamable; I did
+file an issue (https://issues.chromium.org/u/1/issues/488762987).
+
+diff --git a/src/libANGLE/renderer/metal/SyncMtl.mm b/src/libANGLE/renderer/metal/SyncMtl.mm
+index baf76a97c99da9e592d94beb9b7ce818481d89de..836fee21d12e344ae19108f242249d4d7b1fd1a0 100644
+--- a/src/libANGLE/renderer/metal/SyncMtl.mm
++++ b/src/libANGLE/renderer/metal/SyncMtl.mm
+@@ -63,6 +63,10 @@ static uint64_t SanitizeTimeout(uint64_t timeout)
+                       uint64_t signalValue,
+                       bool enqueueEvent)
+     {
++        // We don't actually know if we're out of memory, but we can't continue without an event
++        //  and GL_OUT_OF_MEMORY is the most appropriate error code for us to use here.
++        ANGLE_CHECK(contextMtl, sharedEvent != nil, "Failed to create MTLSharedEvent.", GL_OUT_OF_MEMORY);
++        
+         mMetalSharedEvent = std::move(sharedEvent);
+         mSignalValue = signalValue;
+ 
+@@ -159,6 +163,10 @@ static uint64_t SanitizeTimeout(uint64_t timeout)
+             mMetalEvent = contextMtl->getMetalDevice().newEvent();
+         }
+ 
++        // We don't actually know if we're out of memory, but we can't continue without an event
++        //  and GL_OUT_OF_MEMORY is the most appropriate error code for us to use here.
++        ANGLE_CHECK(contextMtl, mMetalEvent != nil, "Failed to create MTLEvent.", GL_OUT_OF_MEMORY);
++
+         mEncodedCommandBufferSerial = contextMtl->queueEventSignal(mMetalEvent, kEventSignalValue);
+         return angle::Result::Continue;
+     }
