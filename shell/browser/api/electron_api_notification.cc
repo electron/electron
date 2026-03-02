@@ -189,8 +189,23 @@ void Notification::NotificationFailed(const std::string& error) {
 
 void Notification::NotificationDestroyed() {}
 
-void Notification::NotificationClosed() {
-  Emit("close");
+void Notification::NotificationClosed(const std::string& reason) {
+  if (reason.empty()) {
+    Emit("close");
+  } else {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    v8::HandleScope handle_scope(isolate);
+
+    gin_helper::internal::Event* event =
+        gin_helper::internal::Event::New(isolate);
+    v8::Local<v8::Object> event_object =
+        event->GetWrapper(isolate).ToLocalChecked();
+
+    gin_helper::Dictionary dict(isolate, event_object);
+    dict.Set("reason", reason);
+
+    EmitWithoutEvent("close", event_object);
+  }
 }
 
 void Notification::Close() {

@@ -111,7 +111,8 @@ app.whenReady().then(() => {
 
 Returns:
 
-* `event` Event
+* `details` Event\<\>
+  * `reason` _Windows_ string (optional) - The reason the notification was closed. This can be one of 'userCanceled', 'applicationHidden', or 'timedOut'.
 
 Emitted when the notification is closed by manual intervention from the user.
 

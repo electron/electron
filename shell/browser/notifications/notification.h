@@ -76,7 +76,8 @@ class Notification {
 
   // Should be called by derived classes.
   void NotificationClicked();
-  void NotificationDismissed(bool should_destroy = true);
+  void NotificationDismissed(bool should_destroy = true,
+                             const std::string& close_reason = "");
   void NotificationFailed(const std::string& error = "");
 
   // delete this.
