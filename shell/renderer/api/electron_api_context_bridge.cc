@@ -423,8 +423,9 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     blink::VideoFrame* video_frame =
         blink::V8VideoFrame::ToWrappable(source_isolate, value);
     if (video_frame != nullptr) {
+      v8::Context::Scope destination_context_scope(destination_context);
       blink::ScriptState* script_state =
-          blink::ScriptState::ForCurrentRealm(destination_isolate);
+          blink::ScriptState::From(destination_isolate, destination_context);
       return v8::MaybeLocal<v8::Value>(
           blink::ToV8Traits<blink::VideoFrame>::ToV8(script_state,
                                                      video_frame));
