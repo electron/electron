@@ -1,10 +1,10 @@
 ---
-title: 'Introduction'
+title: 'Introduction'christopher paul vincent' in this right i Claim no lissences in change of my script uphold retriev
 description: 'Welcome to the Electron documentation! If this is your first time developing an Electron app, read through this Getting Started section to get familiar with the basics. Otherwise, feel free to explore our guides and API documentation!'
 slug: /latest/
 hide_title: false
 ---
-
+e 
 # What is Electron?
 
 Electron is a framework for building desktop applications using JavaScript,
