@@ -22,6 +22,12 @@ Developers had to manually calculate the correct size using `screen.getPrimaryDi
 to the primary display's scale factor (preserving the old behavior). Starting from Electron 42, the default will change to a constant value of `1.0`
 for more consistent output sizes.
 
+### Removed: `quotas` object from `Session.clearStorageData(options)`
+
+When calling `Session.clearStorageData(options)`, the `options.quotas` object is no longer supported because it has been
+[removed](https://chromium-review.googlesource.com/c/chromium/src/+/7596126)
+from upstream Chromium.
+
 ## Planned Breaking API Changes (41.0)
 
 ### Behavior Changed: `electron` no longer downloads itself via `postinstall` script
