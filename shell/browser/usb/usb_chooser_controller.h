@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_USB_USB_CHOOSER_CONTROLLER_H_
 #define ELECTRON_SHELL_BROWSER_USB_USB_CHOOSER_CONTROLLER_H_
 
+#include <string>
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
@@ -74,6 +75,9 @@ class UsbChooserController final : private UsbChooserContext::DeviceObserver,
       observation_{this};
 
   base::WeakPtr<ElectronUsbDelegate> usb_delegate_;
+
+  // Filtered list of devices that passed DisplayDevice()
+  std::vector<device::mojom::UsbDeviceInfoPtr> devices_;
 
   content::GlobalRenderFrameHostId render_frame_host_id_;
 
