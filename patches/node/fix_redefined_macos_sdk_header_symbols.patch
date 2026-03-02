@@ -10,10 +10,10 @@ change, it seems to introduce an incompatibility when compiling
 using clang modules. Disabling them resolves the issue.
 
 diff --git a/unofficial.gni b/unofficial.gni
-index dd686d2f7c8d2f6e8d6bd13a7bf2b4b140556ba9..97e4bcfaa8aa42a5fc2b68ccdd8128eac8886532 100644
+index def9a302830e493e51cc2b3588816fcbd3a1bb51..900c5e4d8a48d0725420518c923c7024518158b8 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -195,6 +195,10 @@ template("node_gn_build") {
+@@ -197,6 +197,10 @@ template("node_gn_build") {
          "CoreFoundation.framework",
          "Security.framework",
        ]
@@ -24,7 +24,7 @@ index dd686d2f7c8d2f6e8d6bd13a7bf2b4b140556ba9..97e4bcfaa8aa42a5fc2b68ccdd8128ea
      }
      if (is_posix) {
        configs -= [ "//build/config/gcc:symbol_visibility_hidden" ]
-@@ -367,6 +371,12 @@ template("node_gn_build") {
+@@ -369,6 +373,12 @@ template("node_gn_build") {
      include_dirs = [ "src", "tools" ]
      configs += [ "//build/config/compiler:no_exit_time_destructors" ]
  

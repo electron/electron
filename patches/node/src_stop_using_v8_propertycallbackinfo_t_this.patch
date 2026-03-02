@@ -63,7 +63,7 @@ index e66d4fcb0c064f96cdb819c783027d864fe88d12..619980b36db457ef7e476eacd446e3bf
      return Intercepted::kNo;
    }
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index 5d9a9da3a068a68c13c5c0cacfe07eec3dad8bc3..c5c61888ecaaeeb23ebc9887f19ae3ad4c30dbd4 100644
+index b925434940baeeb6b06882242ca947736866d175..d067b47e7e30a95740fe0275c70445707dec426b 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -682,7 +682,7 @@ static void PathHelpersLazyGetter(Local<v8::Name> name,
