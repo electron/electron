@@ -45,6 +45,10 @@ void OffScreenWebContentsView::SetWebContents(
     view->InstallTransparency();
 }
 
+void OffScreenWebContentsView::SetCallback(const OnPaintCallback& callback) {
+  callback_ = callback;
+}
+
 void OffScreenWebContentsView::SetNativeWindow(NativeWindow* window) {
   if (native_window_)
     native_window_->RemoveObserver(this);

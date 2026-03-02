@@ -1311,10 +1311,11 @@ void WebContents::MaybeOverrideCreateParamsForNewWindow(
          dict.Get(options::kOffscreen, &is_offscreen) && is_offscreen);
 
     if (is_offscreen) {
+      // Use a no-op callback here. The real OnPaint callback will be bound
+      // to the child WebContents in AddNewContents via SetCallback().
       auto* view = new OffScreenWebContentsView(
           false, offscreen_use_shared_texture_,
-          offscreen_shared_texture_pixel_format_,
-          base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
+          offscreen_shared_texture_pixel_format_, base::DoNothing());
       create_params->view = view;
       create_params->delegate_view = view;
     }
@@ -1341,6 +1342,15 @@ content::WebContents* WebContents::AddNewContents(
 
   v8::HandleScope handle_scope(isolate);
   auto api_web_contents = CreateAndTake(isolate, std::move(new_contents), type);
+
+  // Rebind the paint callback to the child WebContents. The
+  // OffScreenWebContentsView was initially created with the parent's OnPaint
+  // in MaybeOverrideCreateParamsForNewWindow, but the paint data
+  // belongs to the child.
+  if (auto* osr_view = api_web_contents->GetOffScreenWebContentsView()) {
+    osr_view->SetCallback(base::BindRepeating(&WebContents::OnPaint,
+                                              api_web_contents->GetWeakPtr()));
+  }
 
   // We call RenderFrameCreated here as at this point the empty "about:blank"
   // render frame has already been created.  If the window never navigates again
