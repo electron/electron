@@ -27,7 +27,7 @@ export XDG_RUNTIME_DIR=/run/user/0
 
 echo "Starting entrypoint"
 echo "System: $(uname -s) $(uname -r) $(uname -m), page size: $(getconf PAGESIZE) bytes"
-/root/src/out/Default/electron --version
+runuser -u builduser -- xvfb-run /root/src/out/Default/electron --version
 EXIT_CODE=$?
 echo "Test execution finished with exit code $EXIT_CODE"
 echo $EXIT_CODE > /exit-code
