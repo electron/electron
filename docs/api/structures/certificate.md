@@ -1,4 +1,4 @@
-# Certificate Object
+# Certificate Object 
 
 * `data` string - PEM encoded data
 * `issuer` [CertificatePrincipal](certificate-principal.md) - Issuer principal
