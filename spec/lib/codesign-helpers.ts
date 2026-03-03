@@ -80,3 +80,7 @@ export function spawn (cmd: string, args: string[], opts: any = {}) {
 export function signApp (appPath: string, identity: string) {
   return spawn('codesign', ['-s', identity, '--deep', '--force', appPath]);
 };
+
+export function unsignApp (appPath: string) {
+  return spawn('codesign', ['--remove-signature', '--deep', appPath]);
+};
