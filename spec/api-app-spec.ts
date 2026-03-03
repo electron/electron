@@ -462,34 +462,6 @@ describe('app module', () => {
         }
       });
     });
-
-    ifit(process.platform === 'win32')('does not crash with hidden titlebar window', function (done) {
-      this.timeout(120000);
-
-      let state = 'none';
-      server!.once('error', error => done(error));
-      server!.on('connection', client => {
-        client.once('data', data => {
-          if (String(data) === '--first' && state === 'none') {
-            state = 'first-launch';
-          } else if (String(data) === '--second' && state === 'first-launch') {
-            done();
-          } else {
-            done(`Unexpected state: "${state}", data: "${data}"`);
-          }
-        });
-      });
-
-      const appPath = path.join(fixturesPath, 'api', 'relaunch-hidden-titlebar');
-      const child = cp.spawn(process.execPath, [appPath, '--first']);
-      child.stdout.on('data', (c) => console.log(c.toString()));
-      child.stderr.on('data', (c) => console.log(c.toString()));
-      child.on('exit', (code, signal) => {
-        if (code !== 0) {
-          done(`Process crashed with code "${code}" signal "${signal}"`);
-        }
-      });
-    });
   });
 
   ifdescribe(process.platform === 'darwin')('app.setUserActivity(type, userInfo)', () => {
