@@ -666,6 +666,46 @@ describe('contextBridge', () => {
         expect(result).to.deep.equal(['1245']);
       });
 
+      it('should handle VideoFrames', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            getVideoFrame: () => {
+              const canvas = new OffscreenCanvas(16, 16);
+              canvas.getContext('2d')!.fillRect(0, 0, 16, 16);
+              return new VideoFrame(canvas, { timestamp: 0 });
+            }
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          const frame = root.example.getVideoFrame();
+          const info = [frame.constructor.name, frame.codedWidth, frame.codedHeight, frame.timestamp];
+          frame.close();
+          return info;
+        });
+        expect(result).to.deep.equal(['VideoFrame', 16, 16, 0]);
+      });
+
+      it('should handle VideoFrames going backwards over the bridge', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            getVideoFrameInfo: (fn: Function) => {
+              const frame = fn();
+              const info = [frame.constructor.name, frame.codedWidth, frame.codedHeight, frame.timestamp];
+              frame.close();
+              return info;
+            }
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          return root.example.getVideoFrameInfo(() => {
+            const canvas = new OffscreenCanvas(32, 32);
+            canvas.getContext('2d')!.fillRect(0, 0, 32, 32);
+            return new VideoFrame(canvas, { timestamp: 100 });
+          });
+        });
+        expect(result).to.deep.equal(['VideoFrame', 32, 32, 100]);
+      });
+
       // Can only run tests which use the GCRunner in non-sandboxed environments
       if (!useSandbox) {
         it('should release the global hold on methods sent across contexts', async () => {
@@ -904,7 +944,12 @@ describe('contextBridge', () => {
               [Symbol('foo')]: 123
             },
             getBody: () => document.body,
-            getBlob: () => new Blob(['ab', 'cd'])
+            getBlob: () => new Blob(['ab', 'cd']),
+            getVideoFrame: () => {
+              const canvas = new OffscreenCanvas(16, 16);
+              canvas.getContext('2d')!.fillRect(0, 0, 16, 16);
+              return new VideoFrame(canvas, { timestamp: 0 });
+            }
           });
         });
         const result = await callWithBindings(async (root: any) => {
@@ -978,7 +1023,8 @@ describe('contextBridge', () => {
             [arg, Object],
             [arg.key, String],
             [example.getBody(), HTMLBodyElement],
-            [example.getBlob(), Blob]
+            [example.getBlob(), Blob],
+            [example.getVideoFrame(), VideoFrame]
           ];
           return {
             protoMatches: protoChecks.map(([a, Constructor]) => Object.getPrototypeOf(a) === Constructor.prototype)
