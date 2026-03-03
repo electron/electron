@@ -604,7 +604,7 @@ ElectronBrowserContext::GetURLLoaderFactory() {
   network::mojom::URLLoaderFactoryParamsPtr params =
       network::mojom::URLLoaderFactoryParams::New();
   params->header_client = std::move(header_client);
-  params->process_id = network::OriginatingProcess::browser();
+  params->process_id = network::OriginatingProcessId::browser();
   params->is_trusted = true;
   params->is_orb_enabled = false;
   // The tests of net module would fail if this setting is true, it seems that
