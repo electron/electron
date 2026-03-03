@@ -85,6 +85,8 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   bool HasPermissionRequestHandler() const;
   bool HasPermissionCheckHandler() const;
 
+  void CancelPendingRequests(content::WebContents* web_contents);
+
   void CheckBluetoothDevicePair(gin_helper::Dictionary details,
                                 PairCallback pair_callback) const;
 

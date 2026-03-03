@@ -24,6 +24,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/frame_tree_node_id.h"
+#include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/javascript_dialog_manager.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -333,7 +334,7 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(
-      content::RenderFrameHost* requesting_frame,
+      const content::GlobalRenderFrameHostToken& frame_token,
       const blink::mojom::FullscreenOptions& options,
       bool allowed);
 
