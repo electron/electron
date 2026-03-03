@@ -909,7 +909,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
     }
     if (!setter->IsNullOrUndefined() && setter->IsObject()) {
       v8::Local<v8::Context> source_context =
-          getter->GetCreationContextChecked(isolate);
+          setter.As<v8::Object>()->GetCreationContextChecked(isolate);
       v8::MaybeLocal<v8::Value> maybe_setter_proxy = PassValueToOtherContext(
           isolate, source_context, isolate, main_context, setter,
           source_context->Global(), false, BridgeErrorTarget::kSource);
