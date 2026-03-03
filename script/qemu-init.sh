@@ -27,6 +27,7 @@ export XDG_RUNTIME_DIR=/run/user/0
 
 echo "Starting entrypoint"
 echo "System: $(uname -s) $(uname -r) $(uname -m), page size: $(getconf PAGESIZE) bytes"
+sudo chown builduser:builduser /root/src -R
 runuser -u builduser -- xvfb-run /root/src/out/Default/electron --version
 EXIT_CODE=$?
 echo "Test execution finished with exit code $EXIT_CODE"
@@ -34,4 +35,4 @@ echo $EXIT_CODE > /exit-code
 sync
 
 echo "Powering off"
-echo o > /proc/sysrq-trigger
+sudo shutdown -h now
