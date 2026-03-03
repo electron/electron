@@ -144,7 +144,9 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
         extensions::Command::AcceleratorToString(accelerator);
     ui::CommandMap commands;
     extensions::Command command(
-        command_str, base::UTF8ToUTF16("Electron shortcut " + command_str),
+        command_str,
+        base::UTF8ToUTF16(electron::Browser::Get()->GetName() +
+                          " shortcut: " + command_str),
         /*accelerator=*/std::string(), /*global=*/true);
     command.set_accelerator(accelerator);
     commands[command_str] = command;
