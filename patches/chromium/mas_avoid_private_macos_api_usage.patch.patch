@@ -50,10 +50,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index c78afc504cb31ffaf0bd3345a7ee0998943b579d..b7a892e56e144be6cdbaf4d43bdb43f6ae2bf329 100644
+index 291a38ecaed529da92dd82d400ec27ca0933a273..6728aff04643e8e9524579adc6aae732f5e742ac 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1083,6 +1083,7 @@ component("base") {
+@@ -1084,6 +1084,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -129,10 +129,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index efc8000d298955316bdf2ab72a3c991d4d46aece..0c2ca4b1fc2f4368da32ad4730becb55a8fdbf46 100644
+index 08687f5bf1312138f078bef64898235a7cab1f26..f662542733d0e8a0d27a6594942c8533287902bd 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -977,6 +977,7 @@ if (is_clang_or_gcc) {
+@@ -969,6 +969,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -974,7 +974,7 @@ index 2f1fcace77c403c0e136ae2fc40633cccccce038..9ce9c1771310e81b18ba6fe4569544ff
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 2956a818e72eca14ce3799d3ce85520df5681bf2..31aa4453ca14a9f86773b286c4bae2326e6504d5 100644
+index 1c7ac93d0629cd20fef14db85dc222ab2d6377a1..4d95a7d819287a9b44d831f8081b6eac4f7dfddd 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -345,6 +345,7 @@ source_set("browser") {
@@ -1189,7 +1189,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 70f483a8917ad4d0a71626d9092fe2c2015b3a9b..c5e2227a333daf4d84ce42de11edef150c3f8b4d 100644
+index ad5276da08af1059200c9267997c4f35bc086320..86d46ec7f3cdc39e75469b13aefd812ffecac2d8 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -699,6 +699,7 @@ static_library("test_support") {
@@ -2261,10 +2261,10 @@ index 93e90c4eba9bc9b93d68e834eb6baabeb2d0ecf0..1b90f41d05f847a94adf2f4da827b1d0
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 47da87797a4a6e2163fc356955b516d6c7a2f276..87d7cac13dfe0bd5ec91398f7fe75c0c28ef0474 100644
+index c09f41bea0da71a885d682fbb1e678d26f0d0284..aa5d07bd04af4f404026c20821859068c8e131e7 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
-@@ -140,6 +140,12 @@ component("display") {
+@@ -142,6 +142,12 @@ component("display") {
      "//ui/gfx/geometry",
    ]
  
@@ -2359,10 +2359,10 @@ index bbe355cf69f160866188216cc274d75bd35603db..06ee100d7ea2e892dbf3c0b1adc96c50
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 5cbc7acdb196ecb8dcc987b81cf774938ff8bdfe..39badc4037525eb0039d6514cc988e8df2e6c953 100644
+index 845041089b0feccf5e5fac6a0e108f9e44cf32ae..d85cb6e8e83e4f0ecb0711560c49e6520eb060e7 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -728,6 +728,8 @@ component("views") {
+@@ -730,6 +730,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -2371,7 +2371,7 @@ index 5cbc7acdb196ecb8dcc987b81cf774938ff8bdfe..39badc4037525eb0039d6514cc988e8d
    }
  
    if (is_win) {
-@@ -1157,6 +1159,8 @@ source_set("test_support") {
+@@ -1159,6 +1161,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  

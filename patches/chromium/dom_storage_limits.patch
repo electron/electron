@@ -17,7 +17,7 @@ as well as keeps these storage areas limited to a bounded
 size meanwhile giving application developers more space to work with.
 
 diff --git a/components/services/storage/dom_storage/dom_storage_constants.h b/components/services/storage/dom_storage/dom_storage_constants.h
-index 9d9a8aeab2343942a88ee882e21191719bee019f..9f58743e0bb79e3e10095a6a1adc543846022f3b 100644
+index 6168559e4ee26c29d15aa56a84f23c6c68b8382a..58005a64044c0da29f221aa23c51a1d8b082af5b 100644
 --- a/components/services/storage/dom_storage/dom_storage_constants.h
 +++ b/components/services/storage/dom_storage/dom_storage_constants.h
 @@ -11,7 +11,8 @@ namespace storage {

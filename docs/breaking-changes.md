@@ -51,6 +51,12 @@ npm install electron --save-dev --ignore-scripts
 npx install-electron --no
 ```
 
+### Removed: `quotas` object from `Session.clearStorageData(options)`
+
+When calling `Session.clearStorageData(options)`, the `options.quotas` object is no longer supported because it has been
+[removed](https://chromium-review.googlesource.com/c/chromium/src/+/7596126)
+from upstream Chromium.
+
 ## Planned Breaking API Changes (41.0)
 
 ### Behavior Changed: PDFs no longer create a separate WebContents
