@@ -10,7 +10,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { collectStreamBody, collectStreamBodyBuffer, getResponse, kOneKiloByte, kOneMegaByte, randomBuffer, randomString, respondNTimes, respondOnce } from './lib/net-helpers';
-import { listen, defer } from './lib/spec-helpers';
+import { listen, defer, ifdescribe, isTestingBindingAvailable } from './lib/spec-helpers';
 
 const utilityFixturePath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process', 'api-net-spec.js');
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -1689,7 +1689,7 @@ describe('net module', () => {
     });
   }
 
-  describe('Network Service crash recovery', () => {
+  ifdescribe(isTestingBindingAvailable())('Network Service crash recovery', () => {
     const binding = process._linkedBinding('electron_common_testing');
 
     it('should recover net.fetch after Network Service crash (main process)', async () => {
