@@ -202,6 +202,17 @@ void CocoaNotification::ScheduleNotification(
                        << [identifier UTF8String] << ") "
                        << [error.localizedDescription UTF8String];
            }
+           std::string error_description =
+               [error.localizedDescription UTF8String];
+           task_runner->PostTask(
+               FROM_HERE, base::BindOnce(
+                              [](base::WeakPtr<Notification> weak_self,
+                                 std::string error_description) {
+                                if (Notification* self = weak_self.get()) {
+                                  self->NotificationFailed(error_description);
+                                }
+                              },
+                              weak_self, std::move(error_description)));
          } else {
            task_runner->PostTask(
                FROM_HERE, base::BindOnce(
