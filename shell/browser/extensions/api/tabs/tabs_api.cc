@@ -266,7 +266,7 @@ ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
   std::optional<bool> audible = params->query_info.audible;
   std::optional<bool> muted = params->query_info.muted;
 
-  base::Value::List result;
+  base::ListValue result;
 
   // Filter out webContents that don't belong to the current browser context.
   auto* bc = browser_context();

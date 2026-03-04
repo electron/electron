@@ -368,7 +368,18 @@ def upload_io_to_github(release, filename, filepath, version):
       for c in iter(lambda: upload_process.stdout.read(1), b""):
         sys.stdout.buffer.write(c)
         sys.stdout.flush()
+    upload_process.wait()
+    if upload_process.returncode != 0:
+      sys.exit(upload_process.returncode)
 
+  if "GITHUB_OUTPUT" in os.environ:
+    output_path = os.environ["GITHUB_OUTPUT"]
+    with open(output_path, "r+", encoding='utf-8') as github_output:
+      if len(github_output.readlines()) > 0:
+        github_output.write(",")
+      else:
+        github_output.write('UPLOADED_PATHS=')
+      github_output.write(filepath)
 
 def upload_sha256_checksum(version, file_path, key_prefix=None):
   checksum_path = f'{file_path}.sha256sum'

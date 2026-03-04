@@ -17,7 +17,7 @@ See [`Menu`](menu.md) for examples.
 * `options` Object
   * `click` Function (optional) - Will be called with
     `click(menuItem, window, event)` when the menu item is clicked.
-    * `menuItem` MenuItem
+    * `menuItem` [MenuItem](menu-item.md)
     * `window` [BaseWindow](base-window.md) | undefined - This will not be defined if no window is open.
     * `event` [KeyboardEvent](structures/keyboard-event.md)
   * `role` string (optional) - Can be `undo`, `redo`, `cut`, `copy`, `paste`, `pasteAndMatchStyle`, `delete`, `selectAll`, `reload`, `forceReload`, `toggleDevTools`, `resetZoom`, `zoomIn`, `zoomOut`, `toggleSpellChecker`, `togglefullscreen`, `window`, `minimize`, `close`, `help`, `about`, `services`, `hide`, `hideOthers`, `unhide`, `quit`, `showSubstitutions`, `toggleSmartQuotes`, `toggleSmartDashes`, `toggleTextReplacement`, `startSpeaking`, `stopSpeaking`, `zoom`, `front`, `appMenu`, `fileMenu`, `editMenu`, `viewMenu`, `shareMenu`, `recentDocuments`, `toggleTabBar`, `selectNextTab`, `selectPreviousTab`, `showAllTabs`, `mergeAllWindows`, `clearRecentDocuments`, `moveTabToNewWindow` or `windowMenu` - Define the action of the menu item, when specified the
@@ -73,12 +73,15 @@ The following properties are available on instances of `MenuItem`:
 
 #### `menuItem.id`
 
-A `string` indicating the item's unique id. This property can be
-dynamically changed.
+A `string` indicating the item's unique id.
+
+This property can be dynamically changed.
 
 #### `menuItem.label`
 
 A `string` indicating the item's visible label.
+
+This property can be dynamically changed.
 
 #### `menuItem.click`
 
@@ -91,7 +94,7 @@ It can be called with `menuItem.click(event, focusedWindow, focusedWebContents)`
 
 #### `menuItem.submenu`
 
-A `Menu` (optional) containing the menu
+A [`Menu`](menu.md) (optional) containing the menu
 item's submenu, if present.
 
 #### `menuItem.type`
@@ -107,7 +110,7 @@ A `string` (optional) indicating the item's role, if set. Can be `undo`, `redo`,
 
 #### `menuItem.accelerator`
 
-An `Accelerator` (optional) indicating the item's accelerator, if set.
+An `Accelerator | null` indicating the item's accelerator, if set.
 
 #### `menuItem.userAccelerator` _Readonly_ _macOS_
 
@@ -118,12 +121,15 @@ An `Accelerator | null` indicating the item's [user-assigned accelerator](https:
 
 #### `menuItem.icon`
 
-A `NativeImage | string` (optional) indicating the
-item's icon, if set.
+A `NativeImage | string` (optional) indicating the item's icon, if set.
+
+This property can be dynamically changed.
 
 #### `menuItem.sublabel`
 
 A `string` indicating the item's sublabel.
+
+This property can be dynamically changed.
 
 #### `menuItem.toolTip` _macOS_
 
@@ -131,18 +137,21 @@ A `string` indicating the item's hover text.
 
 #### `menuItem.enabled`
 
-A `boolean` indicating whether the item is enabled. This property can be
-dynamically changed.
+A `boolean` indicating whether the item is enabled.
+
+This property can be dynamically changed.
 
 #### `menuItem.visible`
 
-A `boolean` indicating whether the item is visible. This property can be
-dynamically changed.
+A `boolean` indicating whether the item is visible.
+
+This property can be dynamically changed.
 
 #### `menuItem.checked`
 
-A `boolean` indicating whether the item is checked. This property can be
-dynamically changed.
+A `boolean` indicating whether the item is checked.
+
+This property can be dynamically changed.
 
 A `checkbox` menu item will toggle the `checked` property on and off when
 selected.
@@ -171,4 +180,4 @@ A `number` indicating an item's sequential unique id.
 
 #### `menuItem.menu`
 
-A `Menu` that the item is a part of.
+A [`Menu`](menu.md) that the item is a part of.

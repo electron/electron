@@ -23,6 +23,7 @@
 #include "base/json/json_reader.h"
 #include "base/no_destructor.h"
 #include "base/strings/strcat.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/current_thread.h"
 #include "base/threading/scoped_blocking_call.h"
@@ -68,6 +69,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/visibility.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/child_process_id.h"
 #include "content/public/common/referrer_type_converters.h"
 #include "content/public/common/result_codes.h"
 #include "content/public/common/webplugininfo.h"
@@ -96,6 +98,7 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_navigation_throttle.h"
+#include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/file_select_helper.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
@@ -426,6 +429,36 @@ namespace {
 // Global toggle for disabling draggable regions checks.
 bool g_disable_draggable_regions = false;
 
+// Constants we use for printing.
+constexpr char kFrom[] = "from";
+constexpr char kTo[] = "to";
+constexpr char kUseDefaultPrinterPageSize[] = "usePrinterDefaultPageSize";
+constexpr char kSilent[] = "silent";
+constexpr char kHeader[] = "header";
+constexpr char kFooter[] = "footer";
+constexpr char kPageRanges[] = "pageRanges";
+constexpr char kMediaSize[] = "mediaSize";
+constexpr char kDpi[] = "dpi";
+constexpr char kMarginType[] = "marginType";
+constexpr char kMargins[] = "margins";
+
+// Constants we use for printToPDF options.
+constexpr char kLandscape[] = "landscape";
+constexpr char kDisplayHeaderFooter[] = "displayHeaderFooter";
+constexpr char kPrintBackground[] = "printBackground";
+constexpr char kScale[] = "scale";
+constexpr char kPaperWidth[] = "paperWidth";
+constexpr char kPaperHeight[] = "paperHeight";
+constexpr char kMarginTop[] = "marginTop";
+constexpr char kMarginBottom[] = "marginBottom";
+constexpr char kMarginLeft[] = "marginLeft";
+constexpr char kMarginRight[] = "marginRight";
+constexpr char kHeaderTemplate[] = "headerTemplate";
+constexpr char kFooterTemplate[] = "footerTemplate";
+constexpr char kPreferCSSPageSize[] = "preferCSSPageSize";
+constexpr char kGenerateTaggedPDF[] = "generateTaggedPDF";
+constexpr char kGenerateDocumentOutline[] = "generateDocumentOutline";
+
 constexpr std::string_view CursorTypeToString(
     ui::mojom::CursorType cursor_type) {
   switch (cursor_type) {
@@ -544,6 +577,28 @@ constexpr std::string_view CursorTypeToString(
   }
 }
 
+// Refs
+// https://source.chromium.org/chromium/chromium/src/+/main:components/page_content_annotations/content/page_context_fetcher.cc;l=206-223;drc=376a51732fd3b17b83451ceb93eea7ad07204798
+std::string_view CopyFromSurfaceErrorToString(
+    content::CopyFromSurfaceError error) {
+  switch (error) {
+    case content::CopyFromSurfaceError::kUnknown:
+      return "Unknown";
+    case content::CopyFromSurfaceError::kNotImplemented:
+      return "Not implemented";
+    case content::CopyFromSurfaceError::kFrameGone:
+      return "Frame Gone";
+    case content::CopyFromSurfaceError::kTimeout:
+      return "Timeout";
+    case content::CopyFromSurfaceError::kEmbeddingTokenChanged:
+      return "EmbeddingTokenChanged";
+    case content::CopyFromSurfaceError::kVizSentEmptyBitmap:
+      return "VizSentEmptyBitmap";
+    case content::CopyFromSurfaceError::kUnknownVizError:
+      return "UnknownVizError";
+  }
+}
+
 base::IDMap<WebContents*>& GetAllWebContents() {
   static base::NoDestructor<base::IDMap<WebContents*>> s_all_web_contents;
   return *s_all_web_contents;
@@ -561,7 +616,8 @@ void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
   }
 
   if (!result.has_value()) {
-    promise.RejectWithErrorMessage(result.error());
+    promise.RejectWithErrorMessage(
+        CopyFromSurfaceErrorToString(result.error()));
     capture_handle.RunAndReset();
     return;
   }
@@ -619,13 +675,14 @@ std::string RegisterFileSystem(content::WebContents* web_contents,
       content::ChildProcessSecurityPolicy::GetInstance();
   content::RenderViewHost* render_view_host = web_contents->GetRenderViewHost();
   int renderer_id = render_view_host->GetProcess()->GetDeprecatedID();
+  content::ChildProcessId process_id = render_view_host->GetProcess()->GetID();
   policy->GrantReadFileSystem(renderer_id, file_system.id());
   policy->GrantWriteFileSystem(renderer_id, file_system.id());
   policy->GrantCreateFileForFileSystem(renderer_id, file_system.id());
   policy->GrantDeleteFromFileSystem(renderer_id, file_system.id());
 
-  if (!policy->CanReadFile(renderer_id, path))
-    policy->GrantReadFile(renderer_id, path);
+  if (!policy->CanReadFile(process_id, path))
+    policy->GrantReadFile(process_id, path);
 
   return file_system.id();
 }
@@ -642,8 +699,8 @@ FileSystem CreateFileSystemStruct(content::WebContents* web_contents,
   return FileSystem(type, file_system_name, root_url, file_system_path);
 }
 
-base::Value::Dict CreateFileSystemValue(const FileSystem& file_system) {
-  base::Value::Dict value;
+base::DictValue CreateFileSystemValue(const FileSystem& file_system) {
+  base::DictValue value;
   value.Set("type", file_system.type);
   value.Set("fileSystemName", file_system.file_system_name);
   value.Set("rootURL", file_system.root_url);
@@ -686,7 +743,7 @@ PrefService* GetPrefService(content::WebContents* web_contents) {
 }
 
 // returns a Dict of filesystem_path -> type
-[[nodiscard]] const base::Value::Dict& GetAddedFileSystems(
+[[nodiscard]] const base::DictValue& GetAddedFileSystems(
     content::WebContents* web_contents) {
   return GetPrefService(web_contents)->GetDict(prefs::kDevToolsFileSystemPaths);
 }
@@ -826,6 +883,8 @@ WebContents::WebContents(v8::Isolate* isolate,
                              &offscreen_use_shared_texture_);
       use_offscreen_dict.Get(options::kSharedTexturePixelFormat,
                              &offscreen_shared_texture_pixel_format_);
+      use_offscreen_dict.Get(options::kDeviceScaleFactor,
+                             &offscreen_device_scale_factor_);
     }
   }
 
@@ -864,6 +923,7 @@ WebContents::WebContents(v8::Isolate* isolate,
       auto* view = new OffScreenWebContentsView(
           false, offscreen_use_shared_texture_,
           offscreen_shared_texture_pixel_format_,
+          offscreen_device_scale_factor_,
           base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
       params.view = view;
       params.delegate_view = view;
@@ -885,7 +945,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     content::WebContents::CreateParams params(session->browser_context());
     auto* view = new OffScreenWebContentsView(
         transparent, offscreen_use_shared_texture_,
-        offscreen_shared_texture_pixel_format_,
+        offscreen_shared_texture_pixel_format_, offscreen_device_scale_factor_,
         base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
     params.view = view;
     params.delegate_view = view;
@@ -1051,6 +1111,16 @@ void WebContents::InitWithWebContents(
 }
 
 WebContents::~WebContents() {
+  if (web_contents()) {
+    auto* permission_manager = static_cast<ElectronPermissionManager*>(
+        web_contents()->GetBrowserContext()->GetPermissionControllerDelegate());
+    if (permission_manager)
+      permission_manager->CancelPendingRequests(web_contents());
+  }
+
+  if (inspectable_web_contents_)
+    inspectable_web_contents_->GetView()->SetDelegate(nullptr);
+
   if (owner_window_) {
     owner_window_->RemoveBackgroundThrottlingSource(this);
   }
@@ -1064,8 +1134,6 @@ WebContents::~WebContents() {
     WebContentsDestroyed();
     return;
   }
-
-  inspectable_web_contents_->GetView()->SetDelegate(nullptr);
 
   // This event is only for internal use, which is emitted when WebContents is
   // being destroyed.
@@ -1224,6 +1292,8 @@ content::WebContents* WebContents::CreateCustomWebContents(
     const GURL& opener_url,
     const std::string& frame_name,
     const GURL& target_url,
+    WindowOpenDisposition disposition,
+    const blink::mojom::WindowFeatures& window_features,
     const content::StoragePartitionConfig& partition_config,
     content::SessionStorageNamespace* session_storage_namespace) {
   return nullptr;
@@ -1245,10 +1315,12 @@ void WebContents::MaybeOverrideCreateParamsForNewWindow(
          dict.Get(options::kOffscreen, &is_offscreen) && is_offscreen);
 
     if (is_offscreen) {
+      // Use a no-op callback here. The real OnPaint callback will be bound
+      // to the child WebContents in AddNewContents via SetCallback().
       auto* view = new OffScreenWebContentsView(
           false, offscreen_use_shared_texture_,
           offscreen_shared_texture_pixel_format_,
-          base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
+          offscreen_device_scale_factor_, base::DoNothing());
       create_params->view = view;
       create_params->delegate_view = view;
     }
@@ -1275,6 +1347,15 @@ content::WebContents* WebContents::AddNewContents(
 
   v8::HandleScope handle_scope(isolate);
   auto api_web_contents = CreateAndTake(isolate, std::move(new_contents), type);
+
+  // Rebind the paint callback to the child WebContents. The
+  // OffScreenWebContentsView was initially created with the parent's OnPaint
+  // in MaybeOverrideCreateParamsForNewWindow, but the paint data
+  // belongs to the child.
+  if (auto* osr_view = api_web_contents->GetOffScreenWebContentsView()) {
+    osr_view->SetCallback(base::BindRepeating(&WebContents::OnPaint,
+                                              api_web_contents->GetWeakPtr()));
+  }
 
   // We call RenderFrameCreated here as at this point the empty "about:blank"
   // render frame has already been created.  If the window never navigates again
@@ -1478,16 +1559,22 @@ void WebContents::EnterFullscreenModeForTab(
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(source);
   auto callback =
-      base::BindRepeating(&WebContents::OnEnterFullscreenModeForTab,
-                          base::Unretained(this), requesting_frame, options);
-  permission_helper->RequestFullscreenPermission(requesting_frame, callback);
+      base::BindOnce(&WebContents::OnEnterFullscreenModeForTab, GetWeakPtr(),
+                     requesting_frame->GetGlobalFrameToken(), options);
+  permission_helper->RequestFullscreenPermission(requesting_frame,
+                                                 std::move(callback));
 }
 
 void WebContents::OnEnterFullscreenModeForTab(
-    content::RenderFrameHost* requesting_frame,
+    const content::GlobalRenderFrameHostToken& frame_token,
     const blink::mojom::FullscreenOptions& options,
     bool allowed) {
   if (!allowed || !owner_window())
+    return;
+
+  auto* requesting_frame =
+      content::RenderFrameHost::FromFrameToken(frame_token);
+  if (!requesting_frame)
     return;
 
   auto* source = content::WebContents::FromRenderFrameHost(requesting_frame);
@@ -1608,8 +1695,7 @@ void WebContents::RequestPointerLock(content::WebContents* web_contents,
       WebContentsPermissionHelper::FromWebContents(web_contents);
   permission_helper->RequestPointerLockPermission(
       user_gesture, last_unlocked_by_target,
-      base::BindOnce(&WebContents::OnRequestPointerLock,
-                     base::Unretained(this)));
+      base::BindOnce(&WebContents::OnRequestPointerLock, GetWeakPtr()));
 }
 
 void WebContents::LostPointerLock() {
@@ -1639,8 +1725,8 @@ void WebContents::RequestKeyboardLock(content::WebContents* web_contents,
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   permission_helper->RequestKeyboardLockPermission(
-      esc_key_locked, base::BindOnce(&WebContents::OnRequestKeyboardLock,
-                                     base::Unretained(this)));
+      esc_key_locked,
+      base::BindOnce(&WebContents::OnRequestKeyboardLock, GetWeakPtr()));
 }
 
 void WebContents::CancelKeyboardLockRequest(
@@ -2070,6 +2156,10 @@ void WebContents::ReadyToCommitNavigation(
   // Only focus for top-level contents.
   if (type_ != Type::kBrowserWindow)
     return;
+  // Don't focus if focusOnNavigation is disabled.
+  auto* prefs = WebContentsPreferences::From(web_contents());
+  if (prefs && !prefs->ShouldFocusOnNavigation())
+    return;
   web_contents()->SetInitialFocus();
 }
 
@@ -2202,8 +2292,8 @@ void WebContents::DevToolsOpened() {
   // Inherit owner window in devtools when it doesn't have one.
   auto* devtools = inspectable_web_contents_->GetDevToolsWebContents();
   bool has_window = devtools->GetUserData(NativeWindowRelay::UserDataKey());
-  if (owner_window_ && !has_window) {
-    DCHECK(!owner_window_.WasInvalidated());
+  if (owner_window() && !has_window) {
+    CHECK(!owner_window_.WasInvalidated());
     DCHECK_EQ(handle->owner_window(), nullptr);
     handle->SetOwnerWindow(devtools, owner_window());
   }
@@ -2593,7 +2683,7 @@ void WebContents::RestoreHistory(
       thrower.ThrowError(
           "Failed to restore navigation history: Invalid navigation entry at "
           "index " +
-          std::to_string(index) + ".");
+          base::NumberToString(index) + ".");
       return;
     }
 
@@ -2992,7 +3082,7 @@ bool WebContents::IsCurrentlyAudible() {
 namespace {
 
 void OnGetDeviceNameToUse(base::WeakPtr<content::WebContents> web_contents,
-                          base::Value::Dict print_settings,
+                          base::DictValue print_settings,
                           printing::CompletionCallback print_callback,
                           // <error, device_name>
                           std::pair<std::string, std::u16string> info) {
@@ -3017,6 +3107,28 @@ void OnGetDeviceNameToUse(base::WeakPtr<content::WebContents> web_contents,
     print_settings.Set(printing::kSettingDpiHorizontal, dpi.width());
     print_settings.Set(printing::kSettingDpiVertical, dpi.height());
   }
+
+  auto make_media_size = [](int height_microns, int width_microns) {
+    return base::DictValue()
+        .Set(printing::kSettingMediaSizeHeightMicrons, height_microns)
+        .Set(printing::kSettingMediaSizeWidthMicrons, width_microns)
+        .Set(printing::kSettingsImageableAreaLeftMicrons, 0)
+        .Set(printing::kSettingsImageableAreaTopMicrons, height_microns)
+        .Set(printing::kSettingsImageableAreaRightMicrons, width_microns)
+        .Set(printing::kSettingsImageableAreaBottomMicrons, 0)
+        .Set(printing::kSettingMediaSizeIsDefault, true);
+  };
+
+  const bool use_default_size =
+      print_settings.FindBool(kUseDefaultPrinterPageSize).value_or(false);
+  std::optional<gfx::Size> paper_size;
+  if (use_default_size)
+    paper_size = GetPrinterDefaultPaperSize(base::UTF16ToUTF8(info.second));
+
+  print_settings.Set(
+      printing::kSettingMediaSize,
+      paper_size ? make_media_size(paper_size->height(), paper_size->width())
+                 : make_media_size(297000, 210000));
 
   content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents.get());
   if (!rfh)
@@ -3071,7 +3183,7 @@ void WebContents::Print(gin::Arguments* const args) {
     return;
   }
 
-  base::Value::Dict settings;
+  base::DictValue settings;
   if (options.IsEmptyObject()) {
     content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents());
     if (!rfh)
@@ -3087,30 +3199,32 @@ void WebContents::Print(gin::Arguments* const args) {
   }
 
   // Set optional silent printing.
-  settings.Set("silent", options.ValueOrDefault("silent", false));
+  settings.Set(kSilent, options.ValueOrDefault(kSilent, false));
 
-  settings.Set(printing::kSettingShouldPrintBackgrounds,
-               options.ValueOrDefault("printBackground", false));
+  settings.Set(
+      printing::kSettingShouldPrintBackgrounds,
+      options.ValueOrDefault(printing::kSettingShouldPrintBackgrounds, false));
 
   // Set custom margin settings
   auto margins = gin_helper::Dictionary::CreateEmpty(isolate);
-  if (options.Get("margins", &margins)) {
+  if (options.Get(kMargins, &margins)) {
     printing::mojom::MarginType margin_type =
         printing::mojom::MarginType::kDefaultMargins;
-    margins.Get("marginType", &margin_type);
+    margins.Get(kMarginType, &margin_type);
     settings.Set(printing::kSettingMarginsType, static_cast<int>(margin_type));
 
     if (margin_type == printing::mojom::MarginType::kCustomMargins) {
-      settings.Set(printing::kSettingMarginsCustom,
-                   base::Value::Dict{}
-                       .Set(printing::kSettingMarginTop,
-                            margins.ValueOrDefault("top", 0))
-                       .Set(printing::kSettingMarginBottom,
-                            margins.ValueOrDefault("bottom", 0))
-                       .Set(printing::kSettingMarginLeft,
-                            margins.ValueOrDefault("left", 0))
-                       .Set(printing::kSettingMarginRight,
-                            margins.ValueOrDefault("right", 0)));
+      settings.Set(
+          printing::kSettingMarginsCustom,
+          base::DictValue{}
+              .Set(printing::kSettingMarginTop,
+                   margins.ValueOrDefault(printing::kSettingMarginTop, 0))
+              .Set(printing::kSettingMarginBottom,
+                   margins.ValueOrDefault(printing::kSettingMarginBottom, 0))
+              .Set(printing::kSettingMarginLeft,
+                   margins.ValueOrDefault(printing::kSettingMarginLeft, 0))
+              .Set(printing::kSettingMarginRight,
+                   margins.ValueOrDefault(printing::kSettingMarginRight, 0)));
     }
   } else {
     settings.Set(
@@ -3119,37 +3233,42 @@ void WebContents::Print(gin::Arguments* const args) {
   }
 
   // Set whether to print color or greyscale
-  settings.Set(printing::kSettingColor,
-               static_cast<int>(options.ValueOrDefault("color", true)
-                                    ? printing::mojom::ColorModel::kColor
-                                    : printing::mojom::ColorModel::kGray));
+  settings.Set(
+      printing::kSettingColor,
+      static_cast<int>(options.ValueOrDefault(printing::kSettingColor, true)
+                           ? printing::mojom::ColorModel::kColor
+                           : printing::mojom::ColorModel::kGray));
 
   // Is the orientation landscape or portrait.
   settings.Set(printing::kSettingLandscape,
-               options.ValueOrDefault("landscape", false));
+               options.ValueOrDefault(printing::kSettingLandscape, false));
 
   // We set the default to the system's default printer and only update
   // if at the Chromium level if the user overrides.
   // Printer device name as opened by the OS.
   const auto device_name =
-      options.ValueOrDefault("deviceName", std::u16string{});
+      options.ValueOrDefault(printing::kSettingDeviceName, std::u16string{});
 
   settings.Set(printing::kSettingScaleFactor,
-               options.ValueOrDefault("scaleFactor", 100));
+               options.ValueOrDefault(printing::kSettingScaleFactor, 100));
 
   settings.Set(printing::kSettingPagesPerSheet,
-               options.ValueOrDefault("pagesPerSheet", 1));
+               options.ValueOrDefault(printing::kSettingPagesPerSheet, 1));
 
   // True if the user wants to print with collate.
   settings.Set(printing::kSettingCollate,
-               options.ValueOrDefault("collate", true));
+               options.ValueOrDefault(printing::kSettingCollate, true));
+
+  // True if the user wants to print using the printer's default page size.
+  settings.Set(kUseDefaultPrinterPageSize,
+               options.ValueOrDefault(kUseDefaultPrinterPageSize, false));
 
   // The number of individual copies to print
-  settings.Set(printing::kSettingCopies, options.ValueOrDefault("copies", 1));
-
+  settings.Set(printing::kSettingCopies,
+               options.ValueOrDefault(printing::kSettingCopies, 1));
   // Strings to be printed as headers and footers if requested by the user.
-  const auto header = options.ValueOrDefault("header", std::string{});
-  const auto footer = options.ValueOrDefault("footer", std::string{});
+  const auto header = options.ValueOrDefault(kHeader, std::string{});
+  const auto footer = options.ValueOrDefault(kFooter, std::string{});
 
   if (!(header.empty() && footer.empty())) {
     settings.Set(printing::kSettingHeaderFooterEnabled, true);
@@ -3169,12 +3288,12 @@ void WebContents::Print(gin::Arguments* const args) {
 
   // Set custom page ranges to print
   std::vector<gin_helper::Dictionary> page_ranges;
-  if (options.Get("pageRanges", &page_ranges)) {
-    base::Value::List page_range_list;
+  if (options.Get(kPageRanges, &page_ranges)) {
+    base::ListValue page_range_list;
     for (auto& range : page_ranges) {
       int from, to;
-      if (range.Get("from", &from) && range.Get("to", &to)) {
-        base::Value::Dict range_dict;
+      if (range.Get(kFrom, &from) && range.Get(kTo, &to)) {
+        base::DictValue range_dict;
         // Chromium uses 1-based page ranges, so increment each by 1.
         range_dict.Set(printing::kSettingPageRangeFrom, from + 1);
         range_dict.Set(printing::kSettingPageRangeTo, to + 1);
@@ -3189,31 +3308,22 @@ void WebContents::Print(gin::Arguments* const args) {
 
   // Duplex type user wants to use.
   const auto duplex_mode = options.ValueOrDefault(
-      "duplexMode", printing::mojom::DuplexMode::kSimplex);
+      printing::kSettingDuplexMode, printing::mojom::DuplexMode::kSimplex);
   settings.Set(printing::kSettingDuplexMode, static_cast<int>(duplex_mode));
 
-  base::Value::Dict media_size;
-  if (options.Get("mediaSize", &media_size)) {
+  // Set custom media size if passed. If none is passed, the media size
+  // will be set in OnGetDeviceNameToUse based on the printer's default
+  // settings where applicable.
+  base::DictValue media_size;
+  if (options.Get(kMediaSize, &media_size))
     settings.Set(printing::kSettingMediaSize, std::move(media_size));
-  } else {
-    // Default to A4 paper size (210mm x 297mm)
-    settings.Set(printing::kSettingMediaSize,
-                 base::Value::Dict()
-                     .Set(printing::kSettingMediaSizeHeightMicrons, 297000)
-                     .Set(printing::kSettingMediaSizeWidthMicrons, 210000)
-                     .Set(printing::kSettingsImageableAreaLeftMicrons, 0)
-                     .Set(printing::kSettingsImageableAreaTopMicrons, 297000)
-                     .Set(printing::kSettingsImageableAreaRightMicrons, 210000)
-                     .Set(printing::kSettingsImageableAreaBottomMicrons, 0)
-                     .Set(printing::kSettingMediaSizeIsDefault, true));
-  }
 
   // Set custom dots per inch (dpi)
-  if (gin_helper::Dictionary dpi; options.Get("dpi", &dpi)) {
+  if (gin_helper::Dictionary dpi; options.Get(kDpi, &dpi)) {
     settings.Set(printing::kSettingDpiHorizontal,
-                 dpi.ValueOrDefault("horizontal", 72));
+                 dpi.ValueOrDefault(printing::kSettingDpiHorizontal, 72));
     settings.Set(printing::kSettingDpiVertical,
-                 dpi.ValueOrDefault("vertical", 72));
+                 dpi.ValueOrDefault(printing::kSettingDpiVertical, 72));
   }
 
   print_task_runner_->PostTaskAndReplyWithResult(
@@ -3231,24 +3341,24 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
 
   // This allows us to track headless printing calls.
   auto unique_id = settings.GetDict().FindInt(printing::kPreviewRequestID);
-  auto landscape = settings.GetDict().FindBool("landscape");
+  auto landscape = settings.GetDict().FindBool(kLandscape);
   auto display_header_footer =
-      settings.GetDict().FindBool("displayHeaderFooter");
-  auto print_background = settings.GetDict().FindBool("printBackground");
-  auto scale = settings.GetDict().FindDouble("scale");
-  auto paper_width = settings.GetDict().FindDouble("paperWidth");
-  auto paper_height = settings.GetDict().FindDouble("paperHeight");
-  auto margin_top = settings.GetDict().FindDouble("marginTop");
-  auto margin_bottom = settings.GetDict().FindDouble("marginBottom");
-  auto margin_left = settings.GetDict().FindDouble("marginLeft");
-  auto margin_right = settings.GetDict().FindDouble("marginRight");
-  auto page_ranges = *settings.GetDict().FindString("pageRanges");
-  auto header_template = *settings.GetDict().FindString("headerTemplate");
-  auto footer_template = *settings.GetDict().FindString("footerTemplate");
-  auto prefer_css_page_size = settings.GetDict().FindBool("preferCSSPageSize");
-  auto generate_tagged_pdf = settings.GetDict().FindBool("generateTaggedPDF");
+      settings.GetDict().FindBool(kDisplayHeaderFooter);
+  auto print_background = settings.GetDict().FindBool(kPrintBackground);
+  auto scale = settings.GetDict().FindDouble(kScale);
+  auto paper_width = settings.GetDict().FindDouble(kPaperWidth);
+  auto paper_height = settings.GetDict().FindDouble(kPaperHeight);
+  auto margin_top = settings.GetDict().FindDouble(kMarginTop);
+  auto margin_bottom = settings.GetDict().FindDouble(kMarginBottom);
+  auto margin_left = settings.GetDict().FindDouble(kMarginLeft);
+  auto margin_right = settings.GetDict().FindDouble(kMarginRight);
+  auto page_ranges = *settings.GetDict().FindString(kPageRanges);
+  auto header_template = *settings.GetDict().FindString(kHeaderTemplate);
+  auto footer_template = *settings.GetDict().FindString(kFooterTemplate);
+  auto prefer_css_page_size = settings.GetDict().FindBool(kPreferCSSPageSize);
+  auto generate_tagged_pdf = settings.GetDict().FindBool(kGenerateTaggedPDF);
   auto generate_document_outline =
-      settings.GetDict().FindBool("generateDocumentOutline");
+      settings.GetDict().FindBool(kGenerateDocumentOutline);
 
   content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents());
   absl::variant<printing::mojom::PrintPagesParamsPtr, std::string>
@@ -3608,6 +3718,7 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
     bitmap_size = gfx::ScaleToCeiledSize(view_size, scale);
 
   view->CopyFromSurface(gfx::Rect(rect.origin(), view_size), bitmap_size,
+                        base::TimeDelta(),
                         base::BindOnce(&OnCapturePageDone, std::move(promise),
                                        std::move(capture_handle)));
   return handle;
@@ -4147,9 +4258,9 @@ void WebContents::DevToolsAppendToFile(const std::string& url,
 void WebContents::DevToolsRequestFileSystems() {
   const std::string empty_str;
   content::WebContents* const dtwc = GetDevToolsWebContents();
-  const base::Value::Dict& added_paths = GetAddedFileSystems(dtwc);
+  const base::DictValue& added_paths = GetAddedFileSystems(dtwc);
 
-  auto filesystems = base::Value::List::with_capacity(added_paths.size());
+  auto filesystems = base::ListValue::with_capacity(added_paths.size());
   for (const auto path_and_type : added_paths) {
     const auto& [path, type_val] = path_and_type;
     const auto& type = type_val.is_string() ? type_val.GetString() : empty_str;
@@ -4186,7 +4297,7 @@ void WebContents::DevToolsAddFileSystem(
 
   FileSystem file_system = CreateFileSystemStruct(
       GetDevToolsWebContents(), file_system_id, path.AsUTF8Unsafe(), type);
-  base::Value::Dict file_system_value = CreateFileSystemValue(file_system);
+  base::DictValue file_system_value = CreateFileSystemValue(file_system);
 
   auto* pref_service = GetPrefService(GetDevToolsWebContents());
   ScopedDictPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
@@ -4296,7 +4407,7 @@ void WebContents::DevToolsSetEyeDropperActive(bool active) {
 }
 
 void WebContents::ColorPickedInEyeDropper(int r, int g, int b, int a) {
-  base::Value::Dict color;
+  base::DictValue color;
   color.Set("r", r);
   color.Set("g", g);
   color.Set("b", b);
@@ -4348,7 +4459,7 @@ void WebContents::OnDevToolsSearchCompleted(
     int request_id,
     const std::string& file_system_path,
     const std::vector<std::string>& file_paths) {
-  base::Value::List file_paths_value;
+  base::ListValue file_paths_value;
   for (const auto& file_path : file_paths)
     file_paths_value.Append(file_path);
   inspectable_web_contents_->CallClientFunction(
@@ -4661,6 +4772,19 @@ gin_helper::Handle<WebContents> WebContents::CreateFromWebPreferences(
       existing_preferences->SetFromDictionary(web_preferences_dict);
       web_contents->SetBackgroundColor(
           existing_preferences->GetBackgroundColor());
+
+      double zoom_factor;
+      if (web_preferences.Get(options::kZoomFactor, &zoom_factor)) {
+        auto* zoom_controller = WebContentsZoomController::FromWebContents(
+            web_contents->web_contents());
+        if (zoom_controller) {
+          zoom_controller->SetDefaultZoomFactor(zoom_factor);
+          // Also set the current zoom level immediately, since the page
+          // has already navigated by the time we wrap the webContents.
+          zoom_controller->SetZoomLevel(
+              blink::ZoomFactorToZoomLevel(zoom_factor));
+        }
+      }
     }
   } else {
     // Create one if not.

@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 
+#include "base/functional/bind.h"
 #include "base/mac/scoped_sending_event.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/current_thread.h"
@@ -51,7 +52,11 @@ namespace electron::api {
 
 MenuMac::MenuMac(gin::Arguments* args) : Menu{args} {}
 
-MenuMac::~MenuMac() = default;
+MenuMac::~MenuMac() {
+  // Must remove observer before destroying menu_controller_, which holds
+  // a weak reference to model_
+  RemoveModelObserver();
+}
 
 void MenuMac::PopupAt(BaseWindow* window,
                       std::optional<WebFrameMain*> frame,
@@ -240,6 +245,20 @@ std::u16string MenuMac::GetAcceleratorTextAtForTesting(int index) const {
   else
     text += key;
   return text;
+}
+
+void Menu::SimulateSubmenuCloseSequenceForTesting() {
+  ElectronMenuController* controller =
+      [[ElectronMenuController alloc] initWithModel:model()
+                              useDefaultAccelerator:NO];
+  NSMenu* menu = [controller menu];
+  NSMenu* submenu = menu.itemArray[0].submenu;
+
+  [controller setPopupCloseCallback:base::BindOnce([] {})];
+  [controller menuWillOpen:menu];
+  [controller menuWillOpen:submenu];
+  [controller menuDidClose:submenu];
+  [controller menuDidClose:menu];
 }
 
 void MenuMac::ClosePopupOnUI(int32_t window_id) {

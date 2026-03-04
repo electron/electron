@@ -14,11 +14,13 @@
 #include "base/process/launch.h"
 #include "base/process/process.h"
 #include "chrome/browser/browser_process.h"
+#include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/child_process_host.h"
 #include "content/public/browser/service_process_host.h"
 #include "content/public/common/result_codes.h"
 #include "gin/object_template_builder.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
+#include "services/network/public/cpp/originating_process_id.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
@@ -70,7 +72,9 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     base::EnvironmentMap env_map,
     base::FilePath current_working_directory,
     bool use_plugin_helper,
-    bool create_network_observer) {
+    bool create_network_observer,
+    bool disclaim_responsibility)
+    : create_network_observer_(create_network_observer) {
 #if BUILDFLAG(IS_WIN)
   base::win::ScopedHandle stdout_write(nullptr);
   base::win::ScopedHandle stderr_write(nullptr);
@@ -184,6 +188,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
           .WithChildFlags(use_plugin_helper
                               ? content::ChildProcessHost::CHILD_PLUGIN
                               : content::ChildProcessHost::CHILD_NORMAL)
+          .WithDisclaimResponsibility(disclaim_responsibility)
 #endif
           .WithProcessCallback(
               base::BindOnce(&UtilityProcessWrapper::OnServiceProcessLaunch,
@@ -209,32 +214,15 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   connector_->set_connection_error_handler(base::BindOnce(
       &UtilityProcessWrapper::CloseConnectorPort, weak_factory_.GetWeakPtr()));
 
-  mojo::PendingRemote<network::mojom::URLLoaderFactory> url_loader_factory;
-  network::mojom::URLLoaderFactoryParamsPtr loader_params =
-      network::mojom::URLLoaderFactoryParams::New();
-  loader_params->process_id = pid_;
-  loader_params->is_orb_enabled = false;
-  loader_params->is_trusted = true;
-  if (create_network_observer) {
-    url_loader_network_observer_.emplace();
-    loader_params->url_loader_network_observer =
-        url_loader_network_observer_->Bind();
-  }
-  network::mojom::NetworkContext* network_context =
-      g_browser_process->system_network_context_manager()->GetContext();
-  network_context->CreateURLLoaderFactory(
-      url_loader_factory.InitWithNewPipeAndPassReceiver(),
-      std::move(loader_params));
-  params->url_loader_factory = std::move(url_loader_factory);
-  mojo::PendingRemote<network::mojom::HostResolver> host_resolver;
-  network_context->CreateHostResolver(
-      {}, host_resolver.InitWithNewPipeAndPassReceiver());
-  params->host_resolver = std::move(host_resolver);
-  params->use_network_observer_from_url_loader_factory =
-      create_network_observer;
-
+  params->url_loader_factory_params = CreateURLLoaderFactoryParams();
   node_service_remote_->Initialize(std::move(params),
                                    receiver_.BindNewPipeAndPassRemote());
+
+  // Subscribe to Network Service process gone notifications.
+  network_service_gone_subscription_ =
+      content::RegisterNetworkServiceProcessGoneHandler(base::BindRepeating(
+          &UtilityProcessWrapper::CreateAndSendURLLoaderFactory,
+          weak_factory_.GetWeakPtr()));
 }
 
 UtilityProcessWrapper::~UtilityProcessWrapper() {
@@ -426,6 +414,44 @@ void UtilityProcessWrapper::OnV8FatalError(const std::string& location,
   EmitWithoutEvent("error", "FatalError", location, report);
 }
 
+void UtilityProcessWrapper::CreateAndSendURLLoaderFactory(bool /* crashed */) {
+  if (!node_service_remote_.is_connected())
+    return;
+
+  node_service_remote_->UpdateURLLoaderFactory(CreateURLLoaderFactoryParams());
+}
+
+node::mojom::URLLoaderFactoryParamsPtr
+UtilityProcessWrapper::CreateURLLoaderFactoryParams() {
+  node::mojom::URLLoaderFactoryParamsPtr params =
+      node::mojom::URLLoaderFactoryParams::New();
+  mojo::PendingRemote<network::mojom::URLLoaderFactory> url_loader_factory;
+  network::mojom::URLLoaderFactoryParamsPtr loader_params =
+      network::mojom::URLLoaderFactoryParams::New();
+  loader_params->process_id = network::OriginatingProcessId::browser();
+  loader_params->is_orb_enabled = false;
+  loader_params->is_trusted = true;
+  if (create_network_observer_) {
+    url_loader_network_observer_.emplace();
+    loader_params->url_loader_network_observer =
+        url_loader_network_observer_->Bind();
+  }
+
+  network::mojom::NetworkContext* network_context =
+      g_browser_process->system_network_context_manager()->GetContext();
+  network_context->CreateURLLoaderFactory(
+      url_loader_factory.InitWithNewPipeAndPassReceiver(),
+      std::move(loader_params));
+  params->url_loader_factory = std::move(url_loader_factory);
+  mojo::PendingRemote<network::mojom::HostResolver> host_resolver;
+  network_context->CreateHostResolver(
+      {}, host_resolver.InitWithNewPipeAndPassReceiver());
+  params->host_resolver = std::move(host_resolver);
+  params->use_network_observer_from_url_loader_factory =
+      create_network_observer_;
+  return params;
+}
+
 // static
 raw_ptr<UtilityProcessWrapper> UtilityProcessWrapper::FromProcessId(
     base::ProcessId pid) {
@@ -451,6 +477,7 @@ gin_helper::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
   std::u16string display_name;
   bool use_plugin_helper = false;
   bool create_network_observer = false;
+  bool disclaim_responsibility = false;
   std::map<IOHandle, IOType> stdio;
   base::FilePath current_working_directory;
   base::EnvironmentMap env_map;
@@ -494,13 +521,15 @@ gin_helper::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
 
 #if BUILDFLAG(IS_MAC)
     opts.Get("allowLoadingUnsignedLibraries", &use_plugin_helper);
+    opts.Get("disclaim", &disclaim_responsibility);
 #endif
   }
   auto handle = gin_helper::CreateHandle(
-      args->isolate(), new UtilityProcessWrapper(
-                           std::move(params), display_name, std::move(stdio),
-                           env_map, current_working_directory,
-                           use_plugin_helper, create_network_observer));
+      args->isolate(),
+      new UtilityProcessWrapper(
+          std::move(params), display_name, std::move(stdio), env_map,
+          current_working_directory, use_plugin_helper, create_network_observer,
+          disclaim_responsibility));
   handle->Pin(args->isolate());
   return handle;
 }

@@ -165,6 +165,9 @@ class Browser : private WindowListObserver {
   // Set the handler which decides whether to shutdown.
   void SetShutdownHandler(base::RepeatingCallback<bool()> handler);
 
+  // Returns whether the application is active.
+  bool IsActive();
+
   // Hide the application.
   void Hide();
   bool IsHidden();
@@ -174,7 +177,7 @@ class Browser : private WindowListObserver {
 
   // Creates an activity and sets it as the one currently in use.
   void SetUserActivity(const std::string& type,
-                       base::Value::Dict user_info,
+                       base::DictValue user_info,
                        gin::Arguments* args);
 
   // Returns the type name of the current user activity.
@@ -189,7 +192,7 @@ class Browser : private WindowListObserver {
 
   // Updates the current user activity
   void UpdateCurrentActivity(const std::string& type,
-                             base::Value::Dict user_info);
+                             base::DictValue user_info);
 
   // Indicates that an user activity is about to be resumed.
   bool WillContinueUserActivity(const std::string& type);
@@ -200,16 +203,16 @@ class Browser : private WindowListObserver {
 
   // Resumes an activity via hand-off.
   bool ContinueUserActivity(const std::string& type,
-                            base::Value::Dict user_info,
-                            base::Value::Dict details);
+                            base::DictValue user_info,
+                            base::DictValue details);
 
   // Indicates that an activity was continued on another device.
   void UserActivityWasContinued(const std::string& type,
-                                base::Value::Dict user_info);
+                                base::DictValue user_info);
 
   // Gives an opportunity to update the Handoff payload.
   bool UpdateUserActivityState(const std::string& type,
-                               base::Value::Dict user_info);
+                               base::DictValue user_info);
 
   void ApplyForcedRTL();
 
@@ -246,7 +249,7 @@ class Browser : private WindowListObserver {
 #endif  // BUILDFLAG(IS_MAC)
 
   void ShowAboutPanel();
-  void SetAboutPanelOptions(base::Value::Dict options);
+  void SetAboutPanelOptions(base::DictValue options);
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   void ShowEmojiPanel();
@@ -306,7 +309,7 @@ class Browser : private WindowListObserver {
 
   // Tell the application the loading has been done.
   void WillFinishLaunching();
-  void DidFinishLaunching(base::Value::Dict launch_info);
+  void DidFinishLaunching(base::DictValue launch_info);
 
   void OnAccessibilitySupportChanged();
 
@@ -379,7 +382,7 @@ class Browser : private WindowListObserver {
   bool was_launched_at_login_;
 #endif
 
-  base::Value::Dict about_panel_options_;
+  base::DictValue about_panel_options_;
 
 #if BUILDFLAG(IS_WIN)
   void UpdateBadgeContents(HWND hwnd,

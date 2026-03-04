@@ -38,7 +38,10 @@ app.commandLine.appendSwitch('host-resolver-rules', [
 // Enable features required by tests.
 app.commandLine.appendSwitch('enable-features', [
   // spec/api-web-frame-main-spec.ts
-  'DocumentPolicyIncludeJSCallStacksInCrashReports'
+  'DocumentPolicyIncludeJSCallStacksInCrashReports',
+  // spec/spellchecker-spec.ts - allows spellcheck without user gesture
+  // https://chromium-review.googlesource.com/c/chromium/src/+/7452579
+  'UnrestrictSpellingAndGrammarForTesting'
 ].join(','));
 
 global.standardScheme = 'app';
@@ -189,6 +192,14 @@ app.whenReady().then(async () => {
   chai.config.truncateThreshold = 0;
 
   const runner = mocha.run(cb);
+
+  const RETRY_EVENT = Mocha?.Runner?.constants?.EVENT_TEST_RETRY || 'retry';
+
+  runner.on(RETRY_EVENT, (test, err) => {
+    console.log(`Failure in test: "${test.fullTitle()}"`);
+    if (err?.stack) console.log(err.stack.split('\n').slice(0, 3).join('\n'));
+    console.log(`Retrying test (${test.currentRetry() + 1}/${test.retries()})...`);
+  });
 }).catch((err) => {
   console.error('An error occurred while running the spec runner');
   console.error(err);

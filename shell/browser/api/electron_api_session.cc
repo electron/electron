@@ -128,7 +128,6 @@ namespace {
 struct ClearStorageDataOptions {
   blink::StorageKey storage_key;
   uint32_t storage_types = StoragePartition::REMOVE_DATA_MASK_ALL;
-  uint32_t quota_types = StoragePartition::QUOTA_MANAGED_STORAGE_MASK_ALL;
 };
 
 uint32_t GetStorageMask(const std::vector<std::string>& storage_types) {
@@ -149,16 +148,6 @@ uint32_t GetStorageMask(const std::vector<std::string>& storage_types) {
       storage_mask |= *val;
   }
   return storage_mask;
-}
-
-uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
-  uint32_t quota_mask = 0;
-  for (const auto& it : quota_types) {
-    auto type = base::ToLowerASCII(it);
-    if (type == "temporary")
-      quota_mask |= StoragePartition::QUOTA_MANAGED_STORAGE_MASK_TEMPORARY;
-  }
-  return quota_mask;
 }
 
 constexpr BrowsingDataRemover::DataType kClearDataTypeAll =
@@ -369,10 +358,10 @@ class ClearDataTask : public gin_helper::CleanedUpAtExit {
   std::vector<std::unique_ptr<ClearDataOperation>> operations_;
 };
 
-base::Value::Dict createProxyConfig(ProxyPrefs::ProxyMode proxy_mode,
-                                    std::string const& pac_url,
-                                    std::string const& proxy_server,
-                                    std::string const& bypass_list) {
+base::DictValue createProxyConfig(ProxyPrefs::ProxyMode proxy_mode,
+                                  std::string const& pac_url,
+                                  std::string const& proxy_server,
+                                  std::string const& bypass_list) {
   if (proxy_mode == ProxyPrefs::MODE_DIRECT) {
     return ProxyConfigDictionary::CreateDirect();
   }
@@ -411,8 +400,6 @@ struct Converter<ClearStorageDataOptions> {
     std::vector<std::string> types;
     if (options.Get("storages", &types))
       out->storage_types = GetStorageMask(types);
-    if (options.Get("quotas", &types))
-      out->quota_types = GetQuotaMask(types);
     return true;
   }
 };
@@ -739,8 +726,8 @@ v8::Local<v8::Promise> Session::ClearStorageData(gin::Arguments* args) {
   }
 
   browser_context()->GetDefaultStoragePartition()->ClearData(
-      options.storage_types, options.quota_types, options.storage_key,
-      base::Time(), base::Time::Max(),
+      options.storage_types, options.storage_key, base::Time(),
+      base::Time::Max(),
       base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
                      std::move(promise)));
   return handle;
@@ -1044,15 +1031,13 @@ bool Session::IsPersistent() {
 
 v8::Local<v8::Promise> Session::GetBlobData(v8::Isolate* isolate,
                                             const std::string& uuid) {
-  gin_helper::Handle<DataPipeHolder> holder =
-      DataPipeHolder::From(isolate, uuid);
-  if (holder.IsEmpty()) {
-    gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
-    promise.RejectWithErrorMessage("Could not get blob data handle");
-    return promise.GetHandle();
+  if (DataPipeHolder* holder = DataPipeHolder::From(isolate, uuid)) {
+    return holder->ReadAll(isolate);
   }
 
-  return holder->ReadAll(isolate);
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+  promise.RejectWithErrorMessage("Could not get blob data handle");
+  return promise.GetHandle();
 }
 
 void Session::DownloadURL(const GURL& url, gin::Arguments* args) {
@@ -1581,7 +1566,7 @@ void Session::SetSpellCheckerLanguages(
     gin_helper::ErrorThrower thrower,
     const std::vector<std::string>& languages) {
 #if !BUILDFLAG(IS_MAC)
-  base::Value::List language_codes;
+  base::ListValue language_codes;
   for (const std::string& lang : languages) {
     std::string code = spellcheck::GetCorrespondingSpellCheckLanguage(lang);
     if (code.empty()) {
@@ -1740,7 +1725,7 @@ Session* Session::FromOrCreate(v8::Isolate* isolate,
 // static
 Session* Session::FromPartition(v8::Isolate* isolate,
                                 const std::string& partition,
-                                base::Value::Dict options) {
+                                base::DictValue options) {
   ElectronBrowserContext* browser_context;
   if (partition.empty()) {
     browser_context =
@@ -1759,7 +1744,7 @@ Session* Session::FromPartition(v8::Isolate* isolate,
 // static
 Session* Session::FromPath(gin::Arguments* args,
                            const base::FilePath& path,
-                           base::Value::Dict options) {
+                           base::DictValue options) {
   ElectronBrowserContext* browser_context;
 
   if (path.empty()) {
@@ -1904,7 +1889,7 @@ Session* FromPartition(const std::string& partition, gin::Arguments* args) {
     args->ThrowTypeError("Session can only be received when app is ready");
     return {};
   }
-  base::Value::Dict options;
+  base::DictValue options;
   args->GetNext(&options);
   return Session::FromPartition(args->isolate(), partition, std::move(options));
 }
@@ -1914,7 +1899,7 @@ Session* FromPath(const base::FilePath& path, gin::Arguments* args) {
     args->ThrowTypeError("Session can only be received when app is ready");
     return {};
   }
-  base::Value::Dict options;
+  base::DictValue options;
   args->GetNext(&options);
   return Session::FromPath(args, path, std::move(options));
 }

@@ -10,10 +10,10 @@ Subject: chore: "grandfather in" Electron Views and Delegates
 6448510: Lock further access to View::set_owned_by_client(). | https://chromium-review.googlesource.com/c/chromium/src/+/6448510
 
 diff --git a/ui/views/view.h b/ui/views/view.h
-index 07449516b6e97d971a78acb3d21e9fd2c35f6d54..48b636ddb72f956265a97847cc1d3e137a2cd1cd 100644
+index d410372741fbe404a37ada06118c351a9480e564..3c81a2dc067789a58cc9e9d3b8cad783bc66827d 100644
 --- a/ui/views/view.h
 +++ b/ui/views/view.h
-@@ -77,6 +77,19 @@ class ArcNotificationContentView;
+@@ -78,6 +78,19 @@ class ArcNotificationContentView;
  class WideFrameView;
  }  // namespace ash
  
@@ -33,7 +33,7 @@ index 07449516b6e97d971a78acb3d21e9fd2c35f6d54..48b636ddb72f956265a97847cc1d3e13
  namespace exo {
  class ShellSurfaceBase;
  }
-@@ -308,6 +321,14 @@ class VIEWS_EXPORT View : public ui::LayerDelegate,
+@@ -309,6 +322,14 @@ class VIEWS_EXPORT View : public ui::LayerDelegate,
   public:
    class OwnedByClientPassKey {
     private:
@@ -49,7 +49,7 @@ index 07449516b6e97d971a78acb3d21e9fd2c35f6d54..48b636ddb72f956265a97847cc1d3e13
      // These existing cases are "grandfathered in", but there shouldn't be more.
      // See comments atop class.
 diff --git a/ui/views/widget/widget_delegate.h b/ui/views/widget/widget_delegate.h
-index 0315a1fac360ecea54cf8c5c065e777508193169..49df61c710fad846a29f074a91ceba2d8d239d5a 100644
+index 8060008a22ed6aabb1821cf725caec500d80425c..f5685b0275793219f84bd1891195a29dab6fcb4a 100644
 --- a/ui/views/widget/widget_delegate.h
 +++ b/ui/views/widget/widget_delegate.h
 @@ -168,6 +168,12 @@ namespace crostini {
@@ -65,7 +65,7 @@ index 0315a1fac360ecea54cf8c5c065e777508193169..49df61c710fad846a29f074a91ceba2d
  namespace exo {
  class ShellSurfaceBase;
  }
-@@ -368,6 +374,7 @@ class VIEWS_EXPORT WidgetDelegate {
+@@ -364,6 +370,7 @@ class VIEWS_EXPORT WidgetDelegate {
  
    class OwnedByWidgetPassKey {
     private:
@@ -73,7 +73,7 @@ index 0315a1fac360ecea54cf8c5c065e777508193169..49df61c710fad846a29f074a91ceba2d
      // DO NOT ADD TO THIS LIST!
      // These existing cases are "grandfathered in", but there shouldn't be more.
      // See comments atop `SetOwnedByWidget()`.
-@@ -461,6 +468,7 @@ class VIEWS_EXPORT WidgetDelegate {
+@@ -457,6 +464,7 @@ class VIEWS_EXPORT WidgetDelegate {
    };
    class RegisterDeleteCallbackPassKey {
     private:
@@ -81,7 +81,7 @@ index 0315a1fac360ecea54cf8c5c065e777508193169..49df61c710fad846a29f074a91ceba2d
      // DO NOT ADD TO THIS LIST!
      // These existing cases are "grandfathered in", but there shouldn't be more.
      // See comments atop `RegisterDeleteDelegateCallback()`.
-@@ -916,6 +924,7 @@ class VIEWS_EXPORT WidgetDelegateView : public WidgetDelegate, public View {
+@@ -912,6 +920,7 @@ class VIEWS_EXPORT WidgetDelegateView : public WidgetDelegate, public View {
    View* GetContentsView() override;
  
   private:

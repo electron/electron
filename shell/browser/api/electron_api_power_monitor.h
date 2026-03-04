@@ -6,40 +6,45 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
 
 #include "base/power_monitor/power_observer.h"
+#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
-#include "shell/common/gin_helper/pinnable.h"
-#include "shell/common/gin_helper/wrappable.h"
-#include "ui/base/idle/idle.h"
+#include "shell/common/gin_helper/self_keep_alive.h"
 
 #if BUILDFLAG(IS_LINUX)
 #include "shell/browser/lib/power_observer_linux.h"
 #endif
 
+namespace gin {
+class ObjectTemplateBuilder;
+}  // namespace gin
+
 namespace electron::api {
 
-class PowerMonitor final : public gin_helper::DeprecatedWrappable<PowerMonitor>,
+class PowerMonitor final : public gin::Wrappable<PowerMonitor>,
                            public gin_helper::EventEmitterMixin<PowerMonitor>,
-                           public gin_helper::Pinnable<PowerMonitor>,
                            private base::PowerStateObserver,
                            private base::PowerSuspendObserver,
                            private base::PowerThermalObserver {
  public:
-  static v8::Local<v8::Value> Create(v8::Isolate* isolate);
+  static PowerMonitor* Create(v8::Isolate* isolate);
 
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  // gin::Wrappable
+  static const gin::WrapperInfo kWrapperInfo;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
+  const char* GetClassName() const { return "PowerMonitor"; }
+
+  // Make public for cppgc::MakeGarbageCollected.
+  PowerMonitor();
+  ~PowerMonitor() override;
 
   // disable copy
   PowerMonitor(const PowerMonitor&) = delete;
   PowerMonitor& operator=(const PowerMonitor&) = delete;
 
  private:
-  explicit PowerMonitor(v8::Isolate* isolate);
-  ~PowerMonitor() override;
-
 #if BUILDFLAG(IS_LINUX)
   void SetListeningForShutdown(bool);
 #endif
@@ -88,6 +93,8 @@ class PowerMonitor final : public gin_helper::DeprecatedWrappable<PowerMonitor>,
 #if BUILDFLAG(IS_LINUX)
   PowerObserverLinux power_observer_linux_{this};
 #endif
+
+  gin_helper::SelfKeepAlive<PowerMonitor> keep_alive_{this};
 };
 
 }  // namespace electron::api

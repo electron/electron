@@ -8,7 +8,7 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index e6eec996fa48384e3c78d11e0b2ea5df4d61bd0f..b8ef416fb71c1e3523ff69c733e108c2b873d492 100644
+index e45b723af85446b5c7537d49e70f34b2a67bab97..ac44b6723085c7a94a5d8736e24ea4ea22ac206a 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -83,11 +83,13 @@
@@ -25,7 +25,7 @@ index e6eec996fa48384e3c78d11e0b2ea5df4d61bd0f..b8ef416fb71c1e3523ff69c733e108c2
  #include "components/tabs/public/tab_interface.h"
  #if BUILDFLAG(ENABLE_PLATFORM_APPS)
  #include "extensions/browser/extension_registry.h"  // nogncheck
-@@ -288,190 +290,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
+@@ -287,190 +289,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
  }
  #endif
  
@@ -130,7 +130,7 @@ index e6eec996fa48384e3c78d11e0b2ea5df4d61bd0f..b8ef416fb71c1e3523ff69c733e108c2
 -          // to
 -          // access only _its_ corresponding natively installed application, but
 -          // unfortunately there's no straightforward way to do that. See
--          // https://crbug.com/984641#c22.
+-          // https://crbug.com/40095723#c22.
 -          {base::DIR_HOME, FILE_PATH_LITERAL("Library/Containers"),
 -           BlockType::kDontBlockChildren},
 -          // Allow access to iCloud files...
@@ -277,7 +277,7 @@ index e6eec996fa48384e3c78d11e0b2ea5df4d61bd0f..b8ef416fb71c1e3523ff69c733e108c2
  
  std::vector<FileRequestData> ChromeFileSystemAccessPermissionContext::
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index c026a5ac558d3570c8d893943f93a5833c16ccd2..4a9bc924e609066086812bc1002258b6ce586c14 100644
+index add60ba0e2ca7be385b59d46e3bdaceb55996947..5163e7092c3016494321b4c4a5f785f37f8b9411 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -9,10 +9,13 @@

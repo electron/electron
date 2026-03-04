@@ -10,10 +10,10 @@ on Windows.  We should refactor our code so that this patch isn't
 necessary.
 
 diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
-index 14c435521cd5c648de4339411e0ee50d51c8fccc..1adf43e188873679637c9de32bc52368c1797207 100644
+index 8e53696964653c0efb6ca1a2b396deedd5ef155e..e56bc8872b33b5195935f7f1dac6f774d7ff29c9 100644
 --- a/testing/variations/fieldtrial_testing_config.json
 +++ b/testing/variations/fieldtrial_testing_config.json
-@@ -25805,6 +25805,21 @@
+@@ -26390,6 +26390,21 @@
              ]
          }
      ],
@@ -67,7 +67,7 @@ index 5f5ea15678bd76399fdbbb8904fe155657f49335..a67c124878fb710599fed5d9714bfa72
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kApplyInitialUrlToWebContents);
  
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index b37df4100eac1263f874dc5bff9e29eea64c1c0a..724a094c1b9a3c1efaf65c5222e40433a374b76d 100644
+index ca91b370065b91f12764e188bb786b54ea45bcf3..fd3b1960cd567c7361effa0516782a5c2283526d 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 @@ -84,6 +84,23 @@ namespace {
@@ -94,7 +94,7 @@ index b37df4100eac1263f874dc5bff9e29eea64c1c0a..724a094c1b9a3c1efaf65c5222e40433
  // Updates the cursor clip region. Used for mouse locking.
  void UpdateMouseLockRegion(aura::Window* window, bool locked) {
    if (!locked) {
-@@ -332,9 +349,14 @@ bool DesktopWindowTreeHostWin::IsVisible() const {
+@@ -334,9 +351,14 @@ bool DesktopWindowTreeHostWin::IsVisible() const {
  }
  
  void DesktopWindowTreeHostWin::SetSize(const gfx::Size& size) {
@@ -111,7 +111,7 @@ index b37df4100eac1263f874dc5bff9e29eea64c1c0a..724a094c1b9a3c1efaf65c5222e40433
  }
  
  void DesktopWindowTreeHostWin::StackAbove(aura::Window* window) {
-@@ -349,30 +371,40 @@ void DesktopWindowTreeHostWin::StackAtTop() {
+@@ -351,30 +373,40 @@ void DesktopWindowTreeHostWin::StackAtTop() {
  }
  
  void DesktopWindowTreeHostWin::CenterWindow(const gfx::Size& size) {
@@ -154,7 +154,7 @@ index b37df4100eac1263f874dc5bff9e29eea64c1c0a..724a094c1b9a3c1efaf65c5222e40433
    return display::win::GetScreenWin()->ScreenToDIPRect(GetHWND(), pixel_bounds);
  }
  
-@@ -680,37 +712,44 @@ void DesktopWindowTreeHostWin::HideImpl() {
+@@ -682,37 +714,44 @@ void DesktopWindowTreeHostWin::HideImpl() {
  // other get/set methods work in DIP.
  
  gfx::Rect DesktopWindowTreeHostWin::GetBoundsInPixels() const {
@@ -219,7 +219,7 @@ index b37df4100eac1263f874dc5bff9e29eea64c1c0a..724a094c1b9a3c1efaf65c5222e40433
  }
  
  gfx::Rect
-@@ -920,18 +959,26 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
+@@ -924,18 +963,26 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
  
  void DesktopWindowTreeHostWin::GetWindowMask(const gfx::Size& size_px,
                                               SkPath* path) {

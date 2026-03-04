@@ -8,7 +8,6 @@
 #include <utility>
 
 #include "base/command_line.h"
-#include "base/containers/contains.h"
 #include "base/functional/bind.h"
 #include "content/public/browser/web_contents.h"
 #include "gin/data_object_builder.h"
@@ -153,7 +152,7 @@ void HidChooserController::OnDeviceAdded(
 
 void HidChooserController::OnDeviceRemoved(
     const device::mojom::HidDeviceInfo& device) {
-  if (!base::Contains(items_, PhysicalDeviceIdFromDeviceInfo(device)))
+  if (!std::ranges::contains(items_, PhysicalDeviceIdFromDeviceInfo(device)))
     return;
 
   gin::WeakCell<api::Session>* session = GetSession();
@@ -173,7 +172,7 @@ void HidChooserController::OnDeviceRemoved(
 void HidChooserController::OnDeviceChanged(
     const device::mojom::HidDeviceInfo& device) {
   bool has_chooser_item =
-      base::Contains(items_, PhysicalDeviceIdFromDeviceInfo(device));
+      std::ranges::contains(items_, PhysicalDeviceIdFromDeviceInfo(device));
   if (!DisplayDevice(device)) {
     if (has_chooser_item)
       OnDeviceRemoved(device);
@@ -264,8 +263,8 @@ bool HidChooserController::DisplayDevice(
   // devices may be displayed if the origin is privileged or the blocklist is
   // disabled.
   const bool has_fido_collection =
-      base::Contains(device.collections, device::mojom::kPageFido,
-                     [](const auto& c) { return c->usage->usage_page; });
+      std::ranges::contains(device.collections, device::mojom::kPageFido,
+                            [](const auto& c) { return c->usage->usage_page; });
 
   if (has_fido_collection) {
     if (base::CommandLine::ForCurrentProcess()->HasSwitch(

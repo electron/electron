@@ -263,7 +263,12 @@ WebContents.prototype.print = function (options: ElectronInternal.WebContentsPri
     throw new TypeError('webContents.print(): Invalid print settings specified.');
   }
 
-  const { pageSize } = options;
+  const { pageSize, usePrinterDefaultPageSize } = options;
+
+  if (usePrinterDefaultPageSize !== undefined && pageSize !== undefined) {
+    throw new Error('usePrinterDefaultPageSize cannot be combined with pageSize');
+  }
+
   if (typeof pageSize === 'string' && PDFPageSizes[pageSize]) {
     const mediaSize = PDFPageSizes[pageSize];
     options.mediaSize = {

@@ -423,8 +423,9 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     blink::VideoFrame* video_frame =
         blink::V8VideoFrame::ToWrappable(source_isolate, value);
     if (video_frame != nullptr) {
+      v8::Context::Scope destination_context_scope(destination_context);
       blink::ScriptState* script_state =
-          blink::ScriptState::ForCurrentRealm(destination_isolate);
+          blink::ScriptState::From(destination_isolate, destination_context);
       return v8::MaybeLocal<v8::Value>(
           blink::ToV8Traits<blink::VideoFrame>::ToV8(script_state,
                                                      video_frame));
@@ -830,7 +831,9 @@ gin_helper::Dictionary TraceKeyPath(const gin_helper::Dictionary& start,
                                     const std::vector<std::string>& key_path) {
   gin_helper::Dictionary current = start;
   for (size_t i = 0; i < key_path.size() - 1; i++) {
-    CHECK(current.Get(key_path[i], &current));
+    CHECK(current.Get(key_path[i], &current))
+        << "Failed to get property '" << key_path[i] << "' at index " << i
+        << " in key path";
   }
   return current;
 }
@@ -903,7 +906,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
     }
     if (!setter->IsNullOrUndefined() && setter->IsObject()) {
       v8::Local<v8::Context> source_context =
-          getter->GetCreationContextChecked(isolate);
+          setter.As<v8::Object>()->GetCreationContextChecked(isolate);
       v8::MaybeLocal<v8::Value> maybe_setter_proxy = PassValueToOtherContext(
           isolate, source_context, isolate, main_context, setter,
           source_context->Global(), false, BridgeErrorTarget::kSource);

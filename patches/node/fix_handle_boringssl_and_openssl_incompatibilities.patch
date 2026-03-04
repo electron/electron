@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index e1c2da6969a1ce937d397735e844930f3234bba7..0bed152014949c22b6c610198df39a2522890279 100644
+index 461819ce0fa732048e4365c40a86ef55d984c35f..fa55c980a9c4f373723a867fd41276d67b0b9413 100644
 --- a/deps/ncrypto/ncrypto.cc
 +++ b/deps/ncrypto/ncrypto.cc
 @@ -11,6 +11,7 @@
@@ -94,7 +94,7 @@ index 175ec8ba0f2a908ffad2ce48434aeed573b09c90..3218590ddce1e92c2a9d776f20f9fb01
    Cipher() = default;
    Cipher(const EVP_CIPHER* cipher) : cipher_(cipher) {}
 diff --git a/node.gni b/node.gni
-index e2407027ab05e59b2f0f1c213b98ea469db7a91b..c64761b730e61edcdc0e46a48699f2fd5bb1c0a6 100644
+index 156fee33b3813fe4d94a1c9585f217a99dbfbd5f..8239967653fee7791800ee3292e77b91bffaaef9 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -11,7 +11,7 @@ declare_args() {
@@ -107,7 +107,7 @@ index e2407027ab05e59b2f0f1c213b98ea469db7a91b..c64761b730e61edcdc0e46a48699f2fd
    # The location of simdutf - use the one from node's deps by default.
    node_simdutf_path = "//third_party/simdutf"
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index 5ed2f8b35a1e2f8348a0f3891f37944f49371256..bd453ae633b2833cc3c6e3e415b43792dc5bf2e5 100644
+index ed509e5c9fe79c5d545180fef0fea9ab6f1ba39b..9446314c95e57ea408568d107a9f6e76886650cb 100644
 --- a/src/crypto/crypto_cipher.cc
 +++ b/src/crypto/crypto_cipher.cc
 @@ -447,6 +447,7 @@ bool CipherBase::InitAuthenticated(const char* cipher_type,
@@ -151,7 +151,7 @@ index d005bf0ffb93445fa6611a1beb1b465764271ede..01770687bd191c61af02e76d7de24bba
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 6482bd58bb6a95cfa4074ea9535e1443aea66bb5..20d3c1d9d17fde18fc09b6ee219137831eb08a45 100644
+index 4e968477ebcc08fb0ccd6abd4d66240309cf76e8..2e3f31e1765024373c3fc2acd33fc3bfb352a906 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -143,7 +143,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
@@ -163,7 +163,7 @@ index 6482bd58bb6a95cfa4074ea9535e1443aea66bb5..20d3c1d9d17fde18fc09b6ee21913783
        X509* ca = sk_X509_value(extra_certs, i);
  
        // NOTE: Increments reference count on `ca`
-@@ -1831,11 +1831,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
+@@ -1855,11 +1855,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
    // If the user specified "auto" for dhparams, the JavaScript layer will pass
    // true to this function instead of the original string. Any other string
    // value will be interpreted as custom DH parameters below.
@@ -177,7 +177,7 @@ index 6482bd58bb6a95cfa4074ea9535e1443aea66bb5..20d3c1d9d17fde18fc09b6ee21913783
    DHPointer dh;
    {
      BIOPointer bio(LoadBIO(env, args[0]));
-@@ -2061,7 +2062,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
+@@ -2085,7 +2086,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
    }
  
    // Add CA certs too
@@ -276,7 +276,7 @@ index 205e248e0f20f019e189a6c69d3c011a616b3939..12b0d804c6f1d4998b85160b0aac8eb7
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
 diff --git a/src/env.h b/src/env.h
-index f3a2d221f4bb52987e1bdacdadf19aacfcf65ec3..d34aec43630b3cf53004d8180446d7136b59ceac 100644
+index 3ab33341806ad6c0b06b982a30a57b7b5399e38f..754ddf7b331465c56081db05d6fd2a45fe50596a 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -52,7 +52,7 @@
@@ -288,7 +288,7 @@ index f3a2d221f4bb52987e1bdacdadf19aacfcf65ec3..d34aec43630b3cf53004d8180446d713
  #include <openssl/evp.h>
  #endif
  
-@@ -1058,7 +1058,7 @@ class Environment final : public MemoryRetainer {
+@@ -1059,7 +1059,7 @@ class Environment final : public MemoryRetainer {
      kExitInfoFieldCount
    };
  
@@ -298,7 +298,7 @@ index f3a2d221f4bb52987e1bdacdadf19aacfcf65ec3..d34aec43630b3cf53004d8180446d713
    // We declare another alias here to avoid having to include crypto_util.h
    using EVPMDPointer = DeleteFnPtr<EVP_MD, EVP_MD_free>;
 diff --git a/src/node_metadata.h b/src/node_metadata.h
-index d9c533f100d25aeab1fe8589932a8ddead431258..2acab8786a8a752b17961445edeb872c2b08fdeb 100644
+index 7f6268a1d83d3182b318bc95fd2ee119a2df8dea..f2ee335aa98a2465f63dafa33664197acc6f79b1 100644
 --- a/src/node_metadata.h
 +++ b/src/node_metadata.h
 @@ -8,7 +8,7 @@
@@ -311,7 +311,7 @@ index d9c533f100d25aeab1fe8589932a8ddead431258..2acab8786a8a752b17961445edeb872c
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.h b/src/node_options.h
-index 3a1503a035e12b5dce75c77c327607c857a8a367..941ae4f15c42fb8016d03c786973fd4709ac1a0d 100644
+index 887ead81d4b8bd55351091c06ed641c6a87b8419..6d4df44ccc06c3278948879a2430ab6f459cbec4 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@

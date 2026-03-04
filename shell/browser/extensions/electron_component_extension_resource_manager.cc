@@ -28,7 +28,7 @@ ElectronComponentExtensionResourceManager::
   AddComponentResourceEntries(kPdfResources);
 
   // Register strings for the PDF viewer, so that $i18n{} replacements work.
-  base::Value::Dict dict = pdf_extension_util::GetStrings(
+  base::DictValue dict = pdf_extension_util::GetStrings(
       pdf_extension_util::PdfViewerContext::kPdfViewer);
 
   ui::TemplateReplacements pdf_viewer_replacements;

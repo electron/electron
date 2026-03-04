@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 7ddb32ba04bc878f368931c14fb3ade0dd2e074d..5fb241ff924fb8662eac549640a35b94cba2dd81 100644
+index a634a526a3042ac09dbc436c4905a6c6e28949d9..275eca5fe7d18d802fc032006c9995a2da71ba6b 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -47,7 +47,7 @@
@@ -116,10 +116,10 @@ index 7ddb32ba04bc878f368931c14fb3ade0dd2e074d..5fb241ff924fb8662eac549640a35b94
    extension_url_.reset();
    exclusive_access_manager()->UpdateBubble(base::NullCallback());
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.h b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
-index b158facefee93d9a36baa4ad446afacb8db68af0..b064037bd43804f1e7c93be06a4d9477d4f5b63f 100644
+index e477ff115410940ed8ba96c3572f4f48ccea8a9d..7a3495c6d26667508271fe2cc77fafaae9d39204 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.h
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
-@@ -261,7 +261,7 @@ class FullscreenController : public ExclusiveAccessControllerBase {
+@@ -270,7 +270,7 @@ class FullscreenController : public ExclusiveAccessControllerBase {
    // Set of parameters used to enter fullscreen
    std::optional<FullscreenTabParams> fullscreen_parameters_;
  

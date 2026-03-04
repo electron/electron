@@ -186,6 +186,8 @@ inline constexpr std::string_view kUseSharedTexture = "useSharedTexture";
 inline constexpr std::string_view kSharedTexturePixelFormat =
     "sharedTexturePixelFormat";
 
+inline constexpr std::string_view kDeviceScaleFactor = "deviceScaleFactor";
+
 inline constexpr std::string_view kNodeIntegrationInSubFrames =
     "nodeIntegrationInSubFrames";
 
@@ -221,6 +223,9 @@ inline constexpr std::string_view kSpellcheck = "spellcheck";
 // document.execCommand("paste").
 inline constexpr std::string_view kEnableDeprecatedPaste =
     "enableDeprecatedPaste";
+
+// Whether to focus the webContents on navigation.
+inline constexpr std::string_view kFocusOnNavigation = "focusOnNavigation";
 
 inline constexpr std::string_view kModal = "modal";
 

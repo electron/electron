@@ -45,12 +45,12 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
   static const char* GetClassName() { return "Notification"; }
 
   // NotificationDelegate:
-  void NotificationAction(int index) override;
+  void NotificationAction(int action_index, int selection_index) override;
   void NotificationClick() override;
   void NotificationReplied(const std::string& reply) override;
   void NotificationDisplayed() override;
   void NotificationDestroyed() override;
-  void NotificationClosed() override;
+  void NotificationClosed(const std::string& reason) override;
   void NotificationFailed(const std::string& error) override;
 
   // gin_helper::Wrappable

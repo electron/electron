@@ -484,6 +484,7 @@ void SimpleURLLoaderWrapper::Clone(
 
 void SimpleURLLoaderWrapper::Cancel() {
   loader_.reset();
+  url_loader_factory_.reset();
   pinned_wrapper_.Reset();
   pinned_chunk_pipe_getter_.Reset();
   // This ensures that no further callbacks will be called, so there's no need
@@ -750,6 +751,7 @@ void SimpleURLLoaderWrapper::OnComplete(bool success) {
   // we would perform cleanup of the wrapper and we should bail out below.
   if (self) {
     loader_.reset();
+    url_loader_factory_.reset();
     pinned_wrapper_.Reset();
     pinned_chunk_pipe_getter_.Reset();
   }

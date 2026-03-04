@@ -18,6 +18,7 @@
 #include "base/environment.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/single_thread_task_runner.h"
@@ -68,6 +69,7 @@
   V(electron_browser_in_app_purchase)     \
   V(electron_browser_menu)                \
   V(electron_browser_message_port)        \
+  V(electron_browser_msix_updater)        \
   V(electron_browser_native_theme)        \
   V(electron_browser_notification)        \
   V(electron_browser_power_monitor)       \
@@ -191,7 +193,7 @@ void V8OOMErrorCallback(const char* location, const v8::OOMDetails& details) {
 
 #if !IS_MAS_BUILD()
   electron::crash_keys::SetCrashKey("electron.v8-oom.is_heap_oom",
-                                    std::to_string(details.is_heap_oom));
+                                    base::NumberToString(details.is_heap_oom));
   if (location) {
     electron::crash_keys::SetCrashKey("electron.v8-oom.location", location);
   }
@@ -412,6 +414,7 @@ bool IsAllowedOption(const std::string_view option) {
           "--inspect-port",
           "--inspect-publish-uid",
           "--experimental-network-inspection",
+          "--experimental-transform-types",
       });
 
   // This should be aligned with what's possible to set via the process object.

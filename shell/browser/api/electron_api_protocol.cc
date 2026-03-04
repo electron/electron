@@ -4,11 +4,11 @@
 
 #include "shell/browser/api/electron_api_protocol.h"
 
+#include <algorithm>
 #include <string_view>
 #include <vector>
 
 #include "base/command_line.h"
-#include "base/containers/contains.h"
 #include "base/no_destructor.h"
 #include "content/common/url_schemes.h"
 #include "content/public/browser/child_process_security_policy.h"
@@ -269,7 +269,7 @@ v8::Local<v8::Promise> Protocol::IsProtocolHandled(v8::Isolate* const isolate,
                    // So we have to test against a hard-coded builtin schemes
                    // list make it work with old code. We should deprecate
                    // this API with the new |isProtocolRegistered| API.
-                   base::Contains(kBuiltinSchemes, scheme));
+                   std::ranges::contains(kBuiltinSchemes, scheme));
 }
 
 void Protocol::HandleOptionalCallback(gin::Arguments* args, Error error) {

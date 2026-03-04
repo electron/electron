@@ -28,7 +28,7 @@ index 5f1921d15bc1d3a68c35990f85e36a0e8a5b3ec4..99c6ce57c04768d125dd0a1c6bd62bca
      const result = dataURLProcessor(url);
      if (result === 'failure') {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 5f03cf14e948d449d303b22ab6710b5508fb83b2..72cc9444ca93ef7a1526e23314693aeaf5f173b0 100644
+index edf347102fedbb28bce221defa99c37b5834024b..81799fc159cf20344aac64cd7129240deb9a4fe8 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -25,7 +25,7 @@ const {
@@ -40,7 +40,7 @@ index 5f03cf14e948d449d303b22ab6710b5508fb83b2..72cc9444ca93ef7a1526e23314693aea
  const { getOptionValue } = require('internal/options');
  // Do not eagerly grab .manifest, it may be in TDZ
  const { sep, posix: { relative: relativePosixPath }, resolve } = require('path');
-@@ -276,7 +276,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
+@@ -277,7 +277,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
    }
  
    if (!preserveSymlinks) {
@@ -50,10 +50,10 @@ index 5f03cf14e948d449d303b22ab6710b5508fb83b2..72cc9444ca93ef7a1526e23314693aea
      });
      const { search, hash } = resolved;
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 52b8b5d9255f782af96aa859dec4ffa6ca82c9d0..96869be3c48b84106a5fe2cb752fe979a211d96a 100644
+index ec76d7ffa45f49721d395e8e33be79114daa0369..a6fbcb6fd3c2413df96273d93b7339cad3f25f7a 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -24,7 +24,7 @@ const {
+@@ -23,7 +23,7 @@ const {
  
  const { BuiltinModule } = require('internal/bootstrap/realm');
  const assert = require('internal/assert');
@@ -62,7 +62,7 @@ index 52b8b5d9255f782af96aa859dec4ffa6ca82c9d0..96869be3c48b84106a5fe2cb752fe979
  const { dirname, extname } = require('path');
  const {
    assertBufferSource,
-@@ -362,7 +362,7 @@ translators.set('commonjs', function commonjsStrategy(url, translateContext, par
+@@ -350,7 +350,7 @@ translators.set('commonjs', function commonjsStrategy(url, translateContext, par
  
    try {
      // We still need to read the FS to detect the exports.

@@ -23,6 +23,14 @@ class NotificationPresenter;
 struct NotificationAction {
   std::u16string type;
   std::u16string text;
+  std::vector<std::u16string> items;
+
+  NotificationAction();
+  ~NotificationAction();
+  NotificationAction(const NotificationAction&);
+  NotificationAction& operator=(const NotificationAction&);
+  NotificationAction(NotificationAction&&) noexcept;
+  NotificationAction& operator=(NotificationAction&&) noexcept;
 };
 
 struct NotificationOptions {
@@ -68,7 +76,8 @@ class Notification {
 
   // Should be called by derived classes.
   void NotificationClicked();
-  void NotificationDismissed(bool should_destroy = true);
+  void NotificationDismissed(bool should_destroy = true,
+                             const std::string& close_reason = "");
   void NotificationFailed(const std::string& error = "");
 
   // delete this.

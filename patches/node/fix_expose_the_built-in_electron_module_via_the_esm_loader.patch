@@ -6,7 +6,7 @@ Subject: fix: expose the built-in electron module via the ESM loader
 This allows usage of `import { app } from 'electron'` and `import('electron')` natively in the browser + non-sandboxed renderer
 
 diff --git a/lib/internal/modules/esm/get_format.js b/lib/internal/modules/esm/get_format.js
-index 01584983c16a2ab6eec2fbb01208504f2771148b..6afbbca6c95103f3ecad29485581c94735bac0d3 100644
+index 48ccb97a6244eab4bcfbee92feb9829ca32ad0c5..043d094540845228556b0f9837f48fbaddedfb47 100644
 --- a/lib/internal/modules/esm/get_format.js
 +++ b/lib/internal/modules/esm/get_format.js
 @@ -26,6 +26,7 @@ const protocolHandlers = {
@@ -64,20 +64,20 @@ index c284163fba86ec820af1996571fbd3d092d41d34..5f1921d15bc1d3a68c35990f85e36a0e
    }
  }
 diff --git a/lib/internal/modules/esm/loader.js b/lib/internal/modules/esm/loader.js
-index d536d8215c93abd4b9e1faa125257fe120242e92..20bc3b3b15a01251964e741e16500d5d1fb5994e 100644
+index 22c1e9f1ae652b033903f56f394352806ddff754..961da666a233541203b5416909fd1ff0326e63e1 100644
 --- a/lib/internal/modules/esm/loader.js
 +++ b/lib/internal/modules/esm/loader.js
-@@ -499,7 +499,7 @@ class ModuleLoader {
-     }
+@@ -437,7 +437,7 @@ class ModuleLoader {
+     assert(wrap instanceof ModuleWrap, `Translator used for require(${url}) should not be async`);
  
      const cjsModule = wrap[imported_cjs_symbol];
 -    if (cjsModule) {
 +    if (cjsModule && translatorKey !== 'electron') {
-       assert(translatorKey === 'commonjs-sync');
        // Check if the ESM initiating import CJS is being required by the same CJS module.
        if (cjsModule?.[kIsExecuting]) {
+         const parentFilename = urlToFilename(parentURL);
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index c27ee4c6612c6a7ea0b6355f03563e8724fd0e40..5f03cf14e948d449d303b22ab6710b5508fb83b2 100644
+index cc1230648881d8d14ba3902fca78291c90fb79fb..edf347102fedbb28bce221defa99c37b5834024b 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -751,6 +751,9 @@ function packageImportsResolve(name, base, conditions) {
@@ -103,10 +103,10 @@ index c27ee4c6612c6a7ea0b6355f03563e8724fd0e40..5f03cf14e948d449d303b22ab6710b55
  
    const packageConfig = packageJsonReader.read(packageJSONPath, { __proto__: null, specifier, base, isESM: true });
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 446349113e13bce042734010fd98af053c8cf31e..52b8b5d9255f782af96aa859dec4ffa6ca82c9d0 100644
+index d6c96996a900da8e7d4f7f5104312e73e72c2d62..ec76d7ffa45f49721d395e8e33be79114daa0369 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -220,7 +220,9 @@ function createCJSModuleWrap(url, translateContext, parentURL, loadCJS = loadCJS
+@@ -214,7 +214,9 @@ function createCJSModuleWrap(url, translateContext, parentURL, loadCJS = loadCJS
    const { exportNames, module } = cjsPreparseModuleExports(filename, source, sourceFormat);
    cjsCache.set(url, module);
  
@@ -117,7 +117,7 @@ index 446349113e13bce042734010fd98af053c8cf31e..52b8b5d9255f782af96aa859dec4ffa6
    if (!exportNames.has('default')) {
      ArrayPrototypePush(wrapperNames, 'default');
    }
-@@ -322,6 +324,10 @@ translators.set('require-commonjs', (url, translateContext, parentURL) => {
+@@ -313,6 +315,10 @@ translators.set('require-commonjs', (url, translateContext, parentURL) => {
    return createCJSModuleWrap(url, translateContext, parentURL);
  });
  
@@ -129,10 +129,10 @@ index 446349113e13bce042734010fd98af053c8cf31e..52b8b5d9255f782af96aa859dec4ffa6
  // This translator function must be sync, as `require` is sync.
  translators.set('require-commonjs-typescript', (url, translateContext, parentURL) => {
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index a1473fdac8aba3be541df3b6688a05c0dfbe403f..0a87d997856ea227f8f21393909ffc4634043f24 100644
+index 813208f39e6622a43ae27ba0cc5d11d1e0de55c1..1c1e6075ebabbdbc29d811fcb9f911ee29b28f9e 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1609,6 +1609,8 @@ function fileURLToPath(path, options = kEmptyObject) {
+@@ -1604,6 +1604,8 @@ function fileURLToPath(path, options = kEmptyObject) {
      path = new URL(path);
    else if (!isURL(path))
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);

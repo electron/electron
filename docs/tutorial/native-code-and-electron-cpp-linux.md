@@ -1339,7 +1339,7 @@ For developers wanting to learn more, you can refer to the [official N-API docum
 
 ### Putting `cpp_addon.cc` together
 
-We've now finished the bridge part our addon - that is, the code that's most concerned with being the bridge between your JavaScript and C++ code (and by contrast, less so actually interacting with the operating system or GTK). After adding all the sections above, your `src/cpp_addon.cc` should look like this:
+We've now finished the bridge part of our addon - that is, the code that's most concerned with being the bridge between your JavaScript and C++ code (and by contrast, less so actually interacting with the operating system or GTK). After adding all the sections above, your `src/cpp_addon.cc` should look like this:
 
 ```cpp title='src/cpp_addon.cc'
 #include <napi.h>
