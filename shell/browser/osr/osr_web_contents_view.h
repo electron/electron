@@ -44,6 +44,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
 
   void SetWebContents(content::WebContents*);
   void SetNativeWindow(NativeWindow* window);
+  void SetCallback(const OnPaintCallback& callback);
 
   // NativeWindowObserver:
   void OnWindowResize() override;

@@ -73,12 +73,15 @@ The following properties are available on instances of `MenuItem`:
 
 #### `menuItem.id`
 
-A `string` indicating the item's unique id. This property can be
-dynamically changed.
+A `string` indicating the item's unique id.
+
+This property can be dynamically changed.
 
 #### `menuItem.label`
 
 A `string` indicating the item's visible label.
+
+This property can be dynamically changed.
 
 #### `menuItem.click`
 
@@ -118,12 +121,15 @@ An `Accelerator | null` indicating the item's [user-assigned accelerator](https:
 
 #### `menuItem.icon`
 
-A `NativeImage | string` (optional) indicating the
-item's icon, if set.
+A `NativeImage | string` (optional) indicating the item's icon, if set.
+
+This property can be dynamically changed.
 
 #### `menuItem.sublabel`
 
 A `string` indicating the item's sublabel.
+
+This property can be dynamically changed.
 
 #### `menuItem.toolTip` _macOS_
 
@@ -131,18 +137,21 @@ A `string` indicating the item's hover text.
 
 #### `menuItem.enabled`
 
-A `boolean` indicating whether the item is enabled. This property can be
-dynamically changed.
+A `boolean` indicating whether the item is enabled.
+
+This property can be dynamically changed.
 
 #### `menuItem.visible`
 
-A `boolean` indicating whether the item is visible. This property can be
-dynamically changed.
+A `boolean` indicating whether the item is visible.
+
+This property can be dynamically changed.
 
 #### `menuItem.checked`
 
-A `boolean` indicating whether the item is checked. This property can be
-dynamically changed.
+A `boolean` indicating whether the item is checked.
+
+This property can be dynamically changed.
 
 A `checkbox` menu item will toggle the `checked` property on and off when
 selected.

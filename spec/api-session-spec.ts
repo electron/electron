@@ -426,8 +426,7 @@ describe('session module', () => {
       await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
       await w.webContents.session.clearStorageData({
         origin: 'file://',
-        storages: ['localstorage'],
-        quotas: ['temporary']
+        storages: ['localstorage']
       });
       while (await w.webContents.executeJavaScript('localStorage.length') !== 0) {
         // The storage clear isn't instantly visible to the renderer, so keep
