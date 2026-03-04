@@ -1,0 +1,140 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mitchell Cohen <mitch.cohen@me.com>
+Date: Sun, 1 Mar 2026 16:25:13 -0500
+Subject: fix: pass trigger for global shortcuts on Wayland
+
+Allows the global shortcut portal on Wayland to accept the trigger
+values requested by Electron apps, instead of requiring user input.
+
+This patch should be submitted upstream.
+
+diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
+index a5bb1271231bb092c5e35fcf0cc99f0a18164147..1f02bf54fc6a3c0feb37b51dd6c9be9615073bcf 100644
+--- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
++++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
+@@ -15,6 +15,7 @@
+ #include "base/logging.h"
+ #include "base/nix/xdg_util.h"
+ #include "base/strings/string_number_conversions.h"
++#include "base/strings/string_util.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "components/dbus/thread_linux/dbus_thread_linux.h"
+ #include "components/dbus/xdg/portal.h"
+@@ -49,6 +50,91 @@ std::string GetShortcutPrefix(const std::string& accelerator_group_id,
+       .substr(0, 32);
+ }
+ 
++// Converts a ui::Accelerator to an XDG shortcut string:
++// https://specifications.freedesktop.org/shortcuts-spec/latest/.
++std::string AcceleratorToXdgTrigger(const ui::Accelerator& accelerator) {
++  std::string trigger;
++
++  if (accelerator.IsCtrlDown()) {
++    trigger += "CTRL+";
++  }
++  if (accelerator.IsAltDown()) {
++    trigger += "ALT+";
++  }
++  if (accelerator.IsShiftDown()) {
++    trigger += "SHIFT+";
++  }
++  if (accelerator.IsCmdDown()) {
++    trigger += "LOGO+";
++  }
++
++  ui::KeyboardCode key = accelerator.key_code();
++  if (key >= ui::VKEY_A && key <= ui::VKEY_Z) {
++    trigger += base::ToLowerASCII(static_cast<char>(key));
++  } else if (key >= ui::VKEY_0 && key <= ui::VKEY_9) {
++    trigger += static_cast<char>(key);
++  } else if (key >= ui::VKEY_F1 && key <= ui::VKEY_F24) {
++    trigger += "F" + base::NumberToString(1 + (key - ui::VKEY_F1));
++  } else {
++    switch (key) {
++      case ui::VKEY_SPACE:
++        trigger += "space";
++        break;
++      case ui::VKEY_RETURN:
++        trigger += "Return";
++        break;
++      case ui::VKEY_TAB:
++        trigger += "Tab";
++        break;
++      case ui::VKEY_ESCAPE:
++        trigger += "Escape";
++        break;
++      case ui::VKEY_BACK:
++        trigger += "BackSpace";
++        break;
++      case ui::VKEY_DELETE:
++        trigger += "Delete";
++        break;
++      case ui::VKEY_INSERT:
++        trigger += "Insert";
++        break;
++      case ui::VKEY_HOME:
++        trigger += "Home";
++        break;
++      case ui::VKEY_END:
++        trigger += "End";
++        break;
++      case ui::VKEY_PRIOR:
++        trigger += "Page_Up";
++        break;
++      case ui::VKEY_NEXT:
++        trigger += "Page_Down";
++        break;
++      case ui::VKEY_UP:
++        trigger += "Up";
++        break;
++      case ui::VKEY_DOWN:
++        trigger += "Down";
++        break;
++      case ui::VKEY_LEFT:
++        trigger += "Left";
++        break;
++      case ui::VKEY_RIGHT:
++        trigger += "Right";
++        break;
++      case ui::VKEY_OEM_COMMA:
++        trigger += "comma";
++        break;
++      case ui::VKEY_OEM_PERIOD:
++        trigger += "period";
++        break;
++      default:
++        return "";
++    }
++  }
++  return trigger;
++}
++
+ }  // namespace
+ 
+ GlobalAcceleratorListenerLinux::GlobalAcceleratorListenerLinux(
+@@ -253,6 +339,12 @@ void GlobalAcceleratorListenerLinux::BindShortcuts(DbusShortcuts old_shortcuts,
+       new_props["description"] =
+           dbus_utils::Variant::Wrap<"s">(std::move(*description));
+     }
++    auto preferred_trigger =
++        TakeFromDict<std::string>(properties, "preferred_trigger");
++    if (preferred_trigger) {
++      new_props["preferred_trigger"] =
++          dbus_utils::Variant::Wrap<"s">(std::move(*preferred_trigger));
++    }
+     shortcuts.emplace_back(id, std::move(new_props));
+   }
+ 
+@@ -260,6 +352,12 @@ void GlobalAcceleratorListenerLinux::BindShortcuts(DbusShortcuts old_shortcuts,
+     dbus_xdg::Dictionary props;
+     props["description"] = dbus_utils::Variant::Wrap<"s">(
+         base::UTF16ToUTF8(bound_cmd.command.description()));
++    std::string trigger =
++        AcceleratorToXdgTrigger(bound_cmd.command.accelerator());
++    if (!trigger.empty()) {
++      props["preferred_trigger"] =
++          dbus_utils::Variant::Wrap<"s">(std::move(trigger));
++    }
+     shortcuts.emplace_back(modified_id, std::move(props));
+   }
+ 
