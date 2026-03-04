@@ -195,8 +195,11 @@ jobs:
       run: |
         cd src/electron
         ./script/codesign/generate-identity.sh
+    # Only sign on x64 — arm64 builds are already ad-hoc signed, and re-signing
+    # with an untrusted cert breaks macOS system integrations (e.g. dock bounce).
+    # Autoupdater tests sign their own fixture copies via signApp().
     - name: Sign Electron.app for macOS tests
-      if: ${{ inputs.target-platform == 'macos' }}
+      if: ${{ inputs.target-platform == 'macos' && inputs.target-arch == 'x64' }}
       run: |
         identity=$(src/electron/script/codesign/get-trusted-identity.sh)
         if [ -n "$identity" ]; then
