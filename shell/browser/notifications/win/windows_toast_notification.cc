@@ -800,9 +800,24 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
 IFACEMETHODIMP ToastEventHandler::Invoke(
     winui::Notifications::IToastNotification* sender,
     winui::Notifications::IToastDismissedEventArgs* e) {
+  winui::Notifications::ToastDismissalReason reason;
+  std::string reason_string;
+  if (SUCCEEDED(e->get_Reason(&reason))) {
+    switch (reason) {
+      case winui::Notifications::ToastDismissalReason_UserCanceled:
+        reason_string = "userCanceled";
+        break;
+      case winui::Notifications::ToastDismissalReason_ApplicationHidden:
+        reason_string = "applicationHidden";
+        break;
+      case winui::Notifications::ToastDismissalReason_TimedOut:
+        reason_string = "timedOut";
+        break;
+    }
+  }
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE, base::BindOnce(&Notification::NotificationDismissed,
-                                notification_, false));
+                                notification_, false, reason_string));
   DebugLog("Notification dismissed");
   return S_OK;
 }
