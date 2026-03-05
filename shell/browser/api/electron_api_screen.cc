@@ -30,7 +30,7 @@
 #endif
 
 #if BUILDFLAG(IS_LINUX)
-#include "shell/browser/linux/x11_util.h"
+#include "shell/browser/linux/ozone_util.h"
 #endif
 
 namespace electron::api {
@@ -173,7 +173,7 @@ gfx::PointF Screen::ScreenToDIPPoint(const gfx::PointF& point_px) {
 #if BUILDFLAG(IS_WIN)
   return display::win::GetScreenWin()->ScreenToDIPPoint(point_px);
 #elif BUILDFLAG(IS_LINUX)
-  if (x11_util::IsX11()) {
+  if (ozone_util::IsX11()) {
     gfx::Point pt_px = gfx::ToFlooredPoint(point_px);
     display::Display display = GetDisplayNearestPoint(pt_px);
     gfx::Vector2d delta_px = pt_px - display.native_origin();
@@ -192,7 +192,7 @@ gfx::Point Screen::DIPToScreenPoint(const gfx::Point& point_dip) {
 #if BUILDFLAG(IS_WIN)
   return display::win::GetScreenWin()->DIPToScreenPoint(point_dip);
 #elif BUILDFLAG(IS_LINUX)
-  if (x11_util::IsX11()) {
+  if (ozone_util::IsX11()) {
     display::Display display = GetDisplayNearestPoint(point_dip);
     gfx::Rect bounds_dip = display.bounds();
     gfx::Vector2d delta_dip = point_dip - bounds_dip.origin();

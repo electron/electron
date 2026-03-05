@@ -27,7 +27,7 @@ constexpr int kResizeInsideBoundsSize = 5;
 std::unique_ptr<LinuxFrameLayout> LinuxFrameLayout::Create(
     NativeWindowViews* window,
     bool wants_shadow) {
-  if (x11_util::IsX11() || window->IsTranslucent() || !wants_shadow) {
+  if (ozone_util::IsX11() || window->IsTranslucent() || !wants_shadow) {
     return std::make_unique<LinuxUndecoratedFrameLayout>(window);
   } else {
     return std::make_unique<LinuxCSDFrameLayout>(window);
