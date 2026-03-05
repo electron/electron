@@ -14,6 +14,17 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (42.0)
 
+### Behavior Changed: Dialog methods default to Downloads directory
+
+The `defaultPath` option for the following methods now defaults to the user's Downloads folder (or their home directory if Downloads doesn't exist) when not explicitly provided:
+
+* `dialog.showOpenDialog`
+* `dialog.showOpenDialogSync`
+* `dialog.showSaveDialog`
+* `dialog.showSaveDialogSync`
+
+Previously, these methods used the last-opened directory or an OS-determined default. To preserve the old behavior, explicitly pass `defaultPath` when calling these methods.
+
 ### Behavior Changed: Offscreen rendering will use `1.0` as default device scale factor.
 
 Previously, OSR used the primary display's device scale factor for rendering, which made the output frame size vary across users.

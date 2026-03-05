@@ -21,6 +21,7 @@
 #include "base/win/registry.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/win/dialog_thread.h"
+#include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
@@ -106,8 +107,12 @@ static HRESULT ShowFileDialog(IFileDialog* dialog,
 static void ApplySettings(IFileDialog* dialog, const DialogSettings& settings) {
   std::wstring file_part;
 
-  if (!IsDirectory(settings.default_path))
-    file_part = settings.default_path.BaseName().value();
+  base::FilePath default_path = settings.default_path.empty()
+                                    ? electron::GetDefaultPath()
+                                    : settings.default_path;
+
+  if (!IsDirectory(default_path))
+    file_part = default_path.BaseName().value();
 
   dialog->SetFileName(file_part.c_str());
 
@@ -149,8 +154,8 @@ static void ApplySettings(IFileDialog* dialog, const DialogSettings& settings) {
     }
   }
 
-  if (settings.default_path.IsAbsolute()) {
-    SetDefaultFolder(dialog, settings.default_path);
+  if (default_path.IsAbsolute()) {
+    SetDefaultFolder(dialog, default_path);
   }
 }
 

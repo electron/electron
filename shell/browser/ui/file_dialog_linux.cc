@@ -13,6 +13,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/file_dialog.h"
+#include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -81,14 +82,18 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     ui::SelectFileDialog::FileTypeInfo file_info =
         GetFilterInfo(settings.filters);
     ApplySettings(settings);
-    dialog_->SelectFile(
-        ui::SelectFileDialog::SELECT_SAVEAS_FILE,
-        base::UTF8ToUTF16(settings.title), settings.default_path,
-        &file_info /* file_types */, 0 /* file_type_index */,
-        base::FilePath::StringType() /* default_extension */,
-        settings.parent_window ? settings.parent_window->GetNativeWindow()
-                               : nullptr,
-        nullptr);
+    base::FilePath default_path = settings.default_path.empty()
+                                      ? electron::GetDefaultPath()
+                                      : settings.default_path;
+
+    dialog_->SelectFile(ui::SelectFileDialog::SELECT_SAVEAS_FILE,
+                        base::UTF8ToUTF16(settings.title), default_path,
+                        &file_info /* file_types */, 0 /* file_type_index */,
+                        base::FilePath::StringType() /* default_extension */,
+                        settings.parent_window
+                            ? settings.parent_window->GetNativeWindow()
+                            : nullptr,
+                        nullptr);
   }
 
   void RunSaveDialog(gin_helper::Promise<gin_helper::Dictionary> promise,
@@ -108,9 +113,13 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     ui::SelectFileDialog::FileTypeInfo file_info =
         GetFilterInfo(settings.filters);
     ApplySettings(settings);
+    base::FilePath default_path = settings.default_path.empty()
+                                      ? electron::GetDefaultPath()
+                                      : settings.default_path;
+
     dialog_->SelectFile(
         GetDialogType(settings.properties), base::UTF8ToUTF16(settings.title),
-        settings.default_path, &file_info, 0 /* file_type_index */,
+        default_path, &file_info, 0 /* file_type_index */,
         base::FilePath::StringType() /* default_extension */,
         settings.parent_window ? settings.parent_window->GetNativeWindow()
                                : nullptr,
