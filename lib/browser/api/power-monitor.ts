@@ -8,13 +8,19 @@ const {
   isOnBatteryPower
 } = process._linkedBinding('electron_browser_power_monitor');
 
+// Hold the native PowerMonitor at module level so it is never garbage-collected
+// while this module is alive. The C++ side registers OS-level callbacks (HWND
+// user-data on Windows, shutdown handler on macOS, notification observers) that
+// prevent safe collection of the C++ wrapper while those registrations exist.
+let pm: any;
+
 class PowerMonitor extends EventEmitter implements Electron.PowerMonitor {
   constructor () {
     super();
     // Don't start the event source until both a) the app is ready and b)
     // there's a listener registered for a powerMonitor event.
     this.once('newListener', () => {
-      const pm = createPowerMonitor();
+      pm = createPowerMonitor();
       pm.emit = this.emit.bind(this);
 
       if (process.platform === 'linux') {
