@@ -19,9 +19,8 @@ This document uses the following convention to categorize breaking changes:
 Electron has migrated from the deprecated `NSUserNotification` API to the
 [`UNNotification`](https://developer.apple.com/documentation/usernotifications)
 API on macOS. The new API requires that an application be code-signed in order
-for notifications to be displayed. If an application is not code-signed
-(including ad-hoc signed), notifications will fail silently or emit a `failed`
-event on the `Notification` object.
+for notifications to be displayed. If an application is not code-signed,
+notifications will emit a `failed` event on the `Notification` object.
 
 ### Behavior Changed: Offscreen rendering will use `1.0` as default device scale factor.
 
