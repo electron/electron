@@ -8,6 +8,7 @@
 namespace ozone_util {
 
 bool IsX11();
+bool IsWayland();
 
 }  // namespace ozone_util
 
