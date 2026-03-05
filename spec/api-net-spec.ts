@@ -1690,9 +1690,8 @@ describe('net module', () => {
   }
 
   ifdescribe(isTestingBindingAvailable())('Network Service crash recovery', () => {
-    const binding = process._linkedBinding('electron_common_testing');
-
     it('should recover net.fetch after Network Service crash (main process)', async () => {
+      const binding = process._linkedBinding('electron_common_testing');
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
         response.end('first');
       });
@@ -1715,6 +1714,7 @@ describe('net module', () => {
     });
 
     it('should recover net.fetch after Network Service crash (utility process)', async () => {
+      const binding = process._linkedBinding('electron_common_testing');
       const child = utilityProcess.fork(path.join(fixturesPath, 'api', 'utility-process', 'network-restart-test.js'));
       await once(child, 'spawn');
       await once(child, 'message');
