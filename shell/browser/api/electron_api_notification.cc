@@ -74,6 +74,7 @@ Notification::Notification(gin::Arguments* args) {
 
   gin::Dictionary opts(nullptr);
   if (args->GetNext(&opts)) {
+    opts.Get("id", &id_);
     opts.Get("title", &title_);
     opts.Get("subtitle", &subtitle_);
     opts.Get("body", &body_);
@@ -107,6 +108,10 @@ gin_helper::Handle<Notification> Notification::New(
 }
 
 // Setters
+void Notification::SetId(const std::string& new_id) {
+  id_ = new_id;
+}
+
 void Notification::SetTitle(const std::u16string& new_title) {
   title_ = new_title;
 }
@@ -236,8 +241,9 @@ void Notification::Close() {
 void Notification::Show() {
   Close();
   if (presenter_) {
-    notification_ = presenter_->CreateNotification(
-        this, base::Uuid::GenerateRandomV4().AsLowercaseString());
+    std::string notification_id =
+        id_.empty() ? base::Uuid::GenerateRandomV4().AsLowercaseString() : id_;
+    notification_ = presenter_->CreateNotification(this, notification_id);
     if (notification_) {
       electron::NotificationOptions options;
       options.title = title_;
@@ -342,6 +348,7 @@ void Notification::FillObjectTemplate(v8::Isolate* isolate,
   gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
       .SetMethod("show", &Notification::Show)
       .SetMethod("close", &Notification::Close)
+      .SetProperty("id", &Notification::id, &Notification::SetId)
       .SetProperty("title", &Notification::title, &Notification::SetTitle)
       .SetProperty("subtitle", &Notification::subtitle,
                    &Notification::SetSubtitle)
