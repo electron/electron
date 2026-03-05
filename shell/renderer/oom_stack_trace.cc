@@ -76,7 +76,7 @@ void CaptureStackOnInterrupt(v8::Isolate* isolate, void* data) {
   std::string js_stack = FormatStackTrace(isolate, stack);
   if (!js_stack.empty()) {
 #if !IS_MAS_BUILD()
-    crash_keys::SetCrashKey("js-oom-stack", js_stack);
+    crash_keys::SetCrashKey("electron.v8-oom.stack", js_stack);
 #endif
     fprintf(stderr, "\n<--- JS stacktrace (captured at safe point) --->\n%s\n",
             js_stack.c_str());
