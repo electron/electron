@@ -104,7 +104,7 @@ size_t NearHeapLimitCallback(void* data,
 
 #if !IS_MAS_BUILD()
   crash_keys::SetCrashKey(
-      "js-oom-stack",
+      "electron.v8-oom.stack",
       absl::StrFormat("Heap: used=%.1fMB limit=%.1fMB (stack pending)",
                       stats.used_heap_size() / 1048576.0,
                       stats.heap_size_limit() / 1048576.0));
