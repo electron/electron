@@ -46,6 +46,10 @@ void CocoaNotification::Show(const NotificationOptions& options) {
   content.subtitle = base::SysUTF16ToNSString(options.subtitle);
   content.body = base::SysUTF16ToNSString(options.msg);
 
+  if (!options.group_id.empty()) {
+    content.threadIdentifier = base::SysUTF8ToNSString(options.group_id);
+  }
+
   if (options.silent) {
     content.sound = nil;
   } else if (options.sound.empty()) {
@@ -174,8 +178,7 @@ void CocoaNotification::Show(const NotificationOptions& options) {
 
 void CocoaNotification::ScheduleNotification(
     UNMutableNotificationContent* content) {
-  NSString* identifier =
-      base::SysUTF8ToNSString(notification_id());
+  NSString* identifier = base::SysUTF8ToNSString(notification_id());
 
   UNNotificationRequest* request =
       [UNNotificationRequest requestWithIdentifier:identifier

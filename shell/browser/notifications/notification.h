@@ -49,6 +49,7 @@ struct NotificationOptions {
   std::vector<NotificationAction> actions;
   std::u16string close_button_text;
   std::u16string toast_xml;
+  std::string group_id;
 
   NotificationOptions();
   NotificationOptions(const NotificationOptions&);

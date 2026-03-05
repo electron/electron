@@ -36,6 +36,27 @@ describe('Notification module', () => {
     expect(n.id).to.equal('');
   });
 
+  ifit(process.platform === 'darwin')('inits, gets and sets groupId property', () => {
+    const n = new Notification({
+      title: 'title',
+      body: 'body',
+      groupId: 'E017VKL2N8H|C07RBMNS9EK'
+    });
+
+    expect(n.groupId).to.equal('E017VKL2N8H|C07RBMNS9EK');
+    n.groupId = 'new-group';
+    expect(n.groupId).to.equal('new-group');
+  });
+
+  ifit(process.platform === 'darwin')('defaults groupId to empty string when not provided', () => {
+    const n = new Notification({
+      title: 'title',
+      body: 'body'
+    });
+
+    expect(n.groupId).to.equal('');
+  });
+
   it('inits, gets and sets basic string properties correctly', () => {
     const n = new Notification({
       title: 'title',
@@ -165,6 +186,26 @@ describe('Notification module', () => {
   ifit(process.platform === 'darwin')('emits show and close events with custom id', async () => {
     const n = new Notification({
       id: 'test-custom-id',
+      title: 'test notification',
+      body: 'test body',
+      silent: true
+    });
+    {
+      const e = once(n, 'show');
+      n.show();
+      await e;
+    }
+    {
+      const e = once(n, 'close');
+      n.close();
+      await e;
+    }
+  });
+
+  ifit(process.platform === 'darwin')('emits show and close events with custom id and groupId', async () => {
+    const n = new Notification({
+      id: 'E017VKL2N8H|C07RBMNS9EK|1772656675.039',
+      groupId: 'E017VKL2N8H|C07RBMNS9EK',
       title: 'test notification',
       body: 'test body',
       silent: true
