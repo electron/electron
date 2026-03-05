@@ -9,6 +9,7 @@
 
 #include "base/functional/bind.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/window_list.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/native_window_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -30,10 +31,6 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "shell/browser/linux/x11_util.h"
-#endif
-
-#if defined(USE_OZONE)
-#include "ui/ozone/public/ozone_platform.h"
 #endif
 
 namespace electron::api {
@@ -97,11 +94,11 @@ gfx::Point Screen::GetCursorScreenPoint(v8::Isolate* isolate) {
 #if defined(USE_OZONE)
   // Wayland will crash unless a window is created prior to calling
   // GetCursorScreenPoint.
-  if (!ui::OzonePlatform::IsInitialized()) {
+  if (WindowList::IsEmpty()) {
     gin_helper::ErrorThrower thrower(isolate);
     thrower.ThrowError(
-        "screen.getCursorScreenPoint() cannot be called before a window has "
-        "been created.");
+        "screen.getCursorScreenPoint() cannot be called on Wayland unless a "
+        "window has been created.");
     return {};
   }
 #endif
