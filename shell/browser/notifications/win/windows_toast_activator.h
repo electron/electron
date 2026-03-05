@@ -8,6 +8,8 @@
 #include <NotificationActivationCallback.h>
 #include <windows.h>
 #include <wrl/implements.h>
+#include <functional>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -41,8 +43,31 @@ struct ActivationUserInput {
   std::wstring value;
 };
 
+// Arguments from a notification activation when the app was launched cold
+// (no existing notification object to receive the event)
+struct ActivationArguments {
+  ActivationArguments();
+  ~ActivationArguments();
+  ActivationArguments(const ActivationArguments&);
+  ActivationArguments& operator=(const ActivationArguments&);
+
+  std::string type;       // "click", "action", or "reply"
+  int action_index = -1;  // For action type, the button index
+  std::string reply;      // For reply type, the user's reply text
+  std::string arguments;  // Raw activation arguments
+  std::map<std::string, std::string> user_inputs;  // All user inputs
+};
+
 void HandleToastActivation(const std::wstring& invoked_args,
                            std::vector<ActivationUserInput> inputs);
+
+// Callback type for launch activation handler
+using ActivationCallback = std::function<void(const ActivationArguments&)>;
+
+// Set a callback to handle notification activation.
+// If details already exist, callback is invoked immediately.
+// Callback remains registered for all future activations.
+void SetActivationHandler(ActivationCallback callback);
 
 }  // namespace electron
 

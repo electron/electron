@@ -15,6 +15,7 @@
 #undef StrCat
 #endif
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -26,6 +27,7 @@
 #include "base/hash/hash.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/string_number_conversions_win.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
@@ -45,7 +47,42 @@
 
 namespace electron {
 
+ActivationArguments::ActivationArguments() = default;
+ActivationArguments::~ActivationArguments() = default;
+ActivationArguments::ActivationArguments(const ActivationArguments&) = default;
+ActivationArguments& ActivationArguments::operator=(
+    const ActivationArguments&) = default;
+
+// Use NoDestructor to avoid exit-time destructor issues with globals.
+// unique_ptr provides automatic memory management.
+base::NoDestructor<std::unique_ptr<ActivationArguments>> g_activation_arguments;
+base::NoDestructor<std::unique_ptr<ActivationCallback>> g_launch_callback;
+
+void SetActivationHandler(ActivationCallback callback) {
+  *g_launch_callback =
+      std::make_unique<ActivationCallback>(std::move(callback));
+
+  // If we already have stored details (late subscription), invoke immediately
+  if (*g_activation_arguments) {
+    (**g_launch_callback)(**g_activation_arguments);
+    // Clear the details after handling
+    g_activation_arguments->reset();
+  }
+}
+
 namespace {
+
+ActivationArguments& GetOrCreateActivationArguments() {
+  if (!*g_activation_arguments)
+    *g_activation_arguments = std::make_unique<ActivationArguments>();
+  return **g_activation_arguments;
+}
+
+void DebugLog(std::string_view log_msg) {
+  if (electron::debug_notifications) {
+    LOG(INFO) << log_msg;
+  }
+}
 
 class NotificationActivatorFactory final : public IClassFactory {
  public:
@@ -323,6 +360,11 @@ IFACEMETHODIMP NotificationActivator::Activate(
   std::wstring args = invoked_args ? invoked_args : L"";
   std::wstring aumid = app_user_model_id ? app_user_model_id : L"";
 
+  DebugLog("=== NotificationActivator::Activate CALLED ===");
+  DebugLog("  AUMID: " + base::WideToUTF8(aumid));
+  DebugLog("  Args: " + base::WideToUTF8(args));
+  DebugLog("  Data count: " + base::NumberToString(data_count));
+
   std::vector<ActivationUserInput> copied_inputs;
   if (data && data_count) {
     std::vector<NOTIFICATION_USER_INPUT_DATA> temp;
@@ -347,6 +389,10 @@ IFACEMETHODIMP NotificationActivator::Activate(
 
 void HandleToastActivation(const std::wstring& invoked_args,
                            std::vector<ActivationUserInput> inputs) {
+  DebugLog("=== HandleToastActivation CALLED ===");
+  DebugLog("  invoked_args: " + base::WideToUTF8(invoked_args));
+  DebugLog("  inputs count: " + base::NumberToString(inputs.size()));
+
   // Expected invoked_args format:
   // type=<click|action|reply>&action=<index>&tag=<hash> Parse simple key=value
   // pairs separated by '&'.
@@ -382,14 +428,68 @@ void HandleToastActivation(const std::wstring& invoked_args,
     }
   }
 
+  auto build_activation_args = [&]() -> ActivationArguments {
+    ActivationArguments args;
+    args.arguments = base::WideToUTF8(invoked_args);
+
+    if (type == L"action") {
+      args.type = "action";
+      args.action_index = action_index;
+    } else if (type == L"reply" || !reply_text.empty()) {
+      args.type = "reply";
+      args.reply = reply_text;
+    } else {
+      args.type = "click";
+    }
+
+    // Store all user inputs
+    for (const auto& entry : inputs) {
+      args.user_inputs[base::WideToUTF8(entry.key)] =
+          base::WideToUTF8(entry.value);
+    }
+
+    return args;
+  };
+
+  // Helper to invoke or store callback
+  auto handle_callback = [&](const ActivationArguments& args) {
+    if (*g_launch_callback) {
+      // Callback registered - invoke it (callback stays registered for future)
+      DebugLog("Invoking registered activation callback");
+      (**g_launch_callback)(args);
+      // Clear any stored details (callback handled it)
+      g_activation_arguments->reset();
+    } else {
+      // No callback yet - store details for late subscription
+      DebugLog("Storing activation details (no callback registered yet)");
+      auto& details = GetOrCreateActivationArguments();
+      details = args;
+    }
+  };
+
   auto* browser_client =
       static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get());
-  if (!browser_client)
+  DebugLog(std::string("browser_client = ") +
+           (browser_client ? "valid" : "NULL"));
+  if (!browser_client) {
+    // App not fully initialized - store for later retrieval
+    DebugLog("App not initialized - storing details");
+    handle_callback(build_activation_args());
     return;
+  }
 
   NotificationPresenter* presenter = browser_client->GetNotificationPresenter();
-  if (!presenter)
+  DebugLog(std::string("presenter = ") + (presenter ? "valid" : "NULL"));
+  if (!presenter) {
+    // Presenter not ready - store for later retrieval
+    DebugLog("Presenter not ready - storing details");
+    handle_callback(build_activation_args());
     return;
+  }
+
+  ActivationArguments activation_args = build_activation_args();
+  DebugLog("Activation: type=" + activation_args.type);
+  handle_callback(activation_args);
 
   Notification* target = nullptr;
   for (auto* n : presenter->notifications()) {
@@ -401,9 +501,12 @@ void HandleToastActivation(const std::wstring& invoked_args,
     }
   }
 
-  if (!target)
+  if (!target) {
+    DebugLog("No matching Notification object found");
     return;
+  }
 
+  DebugLog("Dispatching to Notification object delegate");
   if (type == L"action" && target->delegate()) {
     int selection_index = -1;
     for (const auto& entry : inputs) {

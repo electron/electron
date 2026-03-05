@@ -4,7 +4,11 @@
 
 #include "shell/browser/api/electron_api_notification.h"
 
+#include "base/functional/bind.h"
 #include "base/uuid.h"
+#include "build/build_config.h"
+#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
@@ -15,6 +19,14 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "url/gurl.h"
+
+#if BUILDFLAG(IS_WIN)
+#include <windows.h>
+
+#include "base/no_destructor.h"
+#include "shell/browser/javascript_environment.h"
+#include "shell/browser/notifications/win/windows_toast_activator.h"
+#endif
 
 namespace gin {
 
@@ -252,6 +264,79 @@ bool Notification::IsSupported() {
                ->GetNotificationPresenter();
 }
 
+#if BUILDFLAG(IS_WIN)
+namespace {
+
+// Helper to convert ActivationArguments to JS object
+v8::Local<v8::Value> ActivationArgumentsToV8(
+    v8::Isolate* isolate,
+    const electron::ActivationArguments& details) {
+  gin_helper::Dictionary dict = gin_helper::Dictionary::CreateEmpty(isolate);
+  dict.Set("type", details.type);
+  dict.Set("arguments", details.arguments);
+
+  if (details.type == "action") {
+    dict.Set("actionIndex", details.action_index);
+  } else if (details.type == "reply") {
+    dict.Set("reply", details.reply);
+  }
+
+  if (!details.user_inputs.empty()) {
+    gin_helper::Dictionary inputs =
+        gin_helper::Dictionary::CreateEmpty(isolate);
+    for (const auto& [key, value] : details.user_inputs) {
+      inputs.Set(key, value);
+    }
+    dict.Set("userInputs", inputs);
+  }
+
+  return dict.GetHandle();
+}
+
+// Storage for the JavaScript callback (persistent so it survives GC).
+// Uses base::NoDestructor to avoid exit-time destructor issues with globals.
+// v8::Global supports Reset() for reassignment.
+base::NoDestructor<v8::Global<v8::Function>> g_js_launch_callback;
+
+void InvokeJsCallback(const electron::ActivationArguments& details) {
+  if (g_js_launch_callback->IsEmpty())
+    return;
+
+  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  if (context.IsEmpty())
+    return;
+
+  v8::Context::Scope context_scope(context);
+
+  v8::Local<v8::Function> callback = g_js_launch_callback->Get(isolate);
+  v8::Local<v8::Value> argv[] = {ActivationArgumentsToV8(isolate, details)};
+
+  v8::TryCatch try_catch(isolate);
+  callback->Call(context, v8::Undefined(isolate), 1, argv)
+      .FromMaybe(v8::Local<v8::Value>());
+  // Callback stays registered for future activations
+}
+
+}  // namespace
+
+// static
+void Notification::HandleActivation(v8::Isolate* isolate,
+                                    v8::Local<v8::Function> callback) {
+  // Replace any previous callback using Reset (v8::Global supports this)
+  g_js_launch_callback->Reset(isolate, callback);
+
+  // Register the C++ callback that invokes the JS callback.
+  // - If activation details already exist, callback is invoked immediately.
+  // - Callback remains registered for all future activations.
+  electron::SetActivationHandler(
+      [](const electron::ActivationArguments& details) {
+        InvokeJsCallback(details);
+      });
+}
+#endif
+
 void Notification::FillObjectTemplate(v8::Isolate* isolate,
                                       v8::Local<v8::ObjectTemplate> templ) {
   gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
@@ -300,6 +385,9 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict{isolate, exports};
   dict.Set("Notification", Notification::GetConstructor(isolate, context));
   dict.SetMethod("isSupported", &Notification::IsSupported);
+#if BUILDFLAG(IS_WIN)
+  dict.SetMethod("handleActivation", &Notification::HandleActivation);
+#endif
 }
 
 }  // namespace
