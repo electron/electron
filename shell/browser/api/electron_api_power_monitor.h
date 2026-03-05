@@ -49,6 +49,7 @@ class PowerMonitor final : public gin_helper::DeprecatedWrappable<PowerMonitor>,
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   void InitPlatformSpecificMonitors();
+  void DestroyPlatformSpecificMonitors();
 #endif
 
   // base::PowerStateObserver implementations:
