@@ -15,6 +15,27 @@ describe('Notification module', () => {
     expect(Notification.isSupported()).to.be.a('boolean');
   });
 
+  ifit(process.platform === 'darwin')('inits, gets and sets id property', () => {
+    const n = new Notification({
+      id: 'my-custom-id',
+      title: 'title',
+      body: 'body'
+    });
+
+    expect(n.id).to.equal('my-custom-id');
+    n.id = 'new-id';
+    expect(n.id).to.equal('new-id');
+  });
+
+  ifit(process.platform === 'darwin')('defaults id to empty string when not provided', () => {
+    const n = new Notification({
+      title: 'title',
+      body: 'body'
+    });
+
+    expect(n.id).to.equal('');
+  });
+
   it('inits, gets and sets basic string properties correctly', () => {
     const n = new Notification({
       title: 'title',
@@ -125,6 +146,25 @@ describe('Notification module', () => {
 
   ifit(process.platform === 'darwin')('emits show and close events', async () => {
     const n = new Notification({
+      title: 'test notification',
+      body: 'test body',
+      silent: true
+    });
+    {
+      const e = once(n, 'show');
+      n.show();
+      await e;
+    }
+    {
+      const e = once(n, 'close');
+      n.close();
+      await e;
+    }
+  });
+
+  ifit(process.platform === 'darwin')('emits show and close events with custom id', async () => {
+    const n = new Notification({
+      id: 'test-custom-id',
       title: 'test notification',
       body: 'test body',
       silent: true

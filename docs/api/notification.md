@@ -39,6 +39,7 @@ Returns `boolean` - Whether or not desktop notifications are supported on the cu
 ### `new Notification([options])`
 
 * `options` Object (optional)
+  * `id` string (optional) _macOS_ - A unique identifier for the notification. If not provided, a random UUID will be generated. This identifier can be used to later remove or update the notification.
   * `title` string (optional) - A title for the notification, which will be displayed at the top of the notification window when it is shown.
   * `subtitle` string (optional) _macOS_ - A subtitle for the notification, which will be displayed below the title.
   * `body` string (optional) - The body text of the notification, which will be displayed below the title or subtitle.
@@ -282,6 +283,10 @@ app.whenReady().then(() => {
 ```
 
 ### Instance Properties
+
+#### `notification.id` _macOS_
+
+A `string` property representing the unique identifier of the notification. If not set in the constructor, a random UUID will be generated when `show()` is called.
 
 #### `notification.title`
 
