@@ -80,6 +80,14 @@ PowerMonitor::PowerMonitor() {
 }
 
 PowerMonitor::~PowerMonitor() {
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
+  DestroyPlatformSpecificMonitors();
+#endif
+
+#if BUILDFLAG(IS_MAC)
+  Browser::Get()->SetShutdownHandler(base::RepeatingCallback<bool()>());
+#endif
+
   auto* power_monitor = base::PowerMonitor::GetInstance();
   power_monitor->RemovePowerStateObserver(this);
   power_monitor->RemovePowerSuspendObserver(this);
