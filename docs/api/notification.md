@@ -8,6 +8,12 @@ Process: [Main](../glossary.md#main-process)
 > If you want to show notifications from a renderer process you should use the
 > [web Notifications API](../tutorial/notifications.md)
 
+> [!NOTE]
+> On MacOS, notifications use the UNNotification API as their underlying framework.
+> This API requires an application to be code-signed in order for notifications
+> to appear. Unsigned binaries will emit a `failed` event when notifications
+> are called.
+
 ## Class: Notification
 
 > Create OS desktop notifications
