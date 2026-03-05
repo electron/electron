@@ -108,10 +108,10 @@ Returns `Promise<DesktopCapturerSource[]>` - Resolves with an array of [`Desktop
 
 PipeWire supports a single capture for both screens and windows. If you request the window and screen type, the selected source will be returned as a window capture.
 
-### MacOS versions 14.2 or higher
+### macOS versions 14.2 or higher
 
-`NSAudioCaptureUsageDescription` Info.plist key must be added in-order for audio to be captured by
-`desktopCapturer`. If instead you are running electron from another program like a terminal or IDE
+`NSAudioCaptureUsageDescription` Info.plist key must be added in order for audio to be captured by
+`desktopCapturer`. If instead you are running Electron from another program like a terminal or IDE
 then that parent program must contain the Info.plist key.
 
 This is in order to facillitate use of Apple's new [CoreAudio Tap API](https://developer.apple.com/documentation/CoreAudio/capturing-system-audio-with-core-audio-taps#Configure-the-sample-code-project) by Chromium.
@@ -121,12 +121,12 @@ This is in order to facillitate use of Apple's new [CoreAudio Tap API](https://d
 > permission not present will still create a dead audio stream however no warnings or errors are
 > displayed.
 
-As of electron `v39.0.0-beta.4` Chromium [made Apple's new `CoreAudio Tap API` the default](https://source.chromium.org/chromium/chromium/src/+/ad17e8f8b93d5f34891b06085d373a668918255e)
+As of Electron `v39.0.0-beta.4`, Chromium [made Apple's new `CoreAudio Tap API` the default](https://source.chromium.org/chromium/chromium/src/+/ad17e8f8b93d5f34891b06085d373a668918255e)
 for desktop audio capture. There is no fallback to the older `Screen & System Audio Recording`
 permissions system even if [CoreAudio Tap API](https://developer.apple.com/documentation/CoreAudio/capturing-system-audio-with-core-audio-taps) stream creation fails.
 
 If you need to continue using `Screen & System Audio Recording` permissions for `desktopCapturer`
-on macOS versions 14.2 and later, you can apply a chromium feature flag to force use of that older
+on macOS versions 14.2 and later, you can apply a Chromium feature flag to force use of that older
 permissions system:
 
 ```js
@@ -134,7 +134,7 @@ permissions system:
 app.commandLine.appendSwitch('disable-features', 'MacCatapLoopbackAudioForScreenShare')
 ```
 
-### MacOS versions 12.7.6 or lower
+### macOS versions 12.7.6 or lower
 
 `navigator.mediaDevices.getUserMedia` does not work on macOS versions 12.7.6 and prior for audio
 capture due to a fundamental limitation whereby apps that want to access the system's audio require
