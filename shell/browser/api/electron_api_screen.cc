@@ -91,17 +91,16 @@ Screen::~Screen() {
 }
 
 gfx::Point Screen::GetCursorScreenPoint(v8::Isolate* isolate) {
-#if defined(USE_OZONE)
-  // Wayland will crash unless a window is created prior to calling
-  // GetCursorScreenPoint.
-  if (WindowList::IsEmpty()) {
-    gin_helper::ErrorThrower thrower(isolate);
+  // WaylandScreen::GetCursorScreenPoint() will crash
+  // unless there's at least one window.
+  if (ozone_util::IsWayland() && WindowList::IsEmpty()) {
+    gin_helper::ErrorThrower thrower{isolate};
     thrower.ThrowError(
         "screen.getCursorScreenPoint() cannot be called on Wayland unless a "
         "window has been created.");
     return {};
   }
-#endif
+
   auto* screen = GetDisplayScreen();
   return screen ? screen->GetCursorScreenPoint() : gfx::Point{};
 }
