@@ -87,8 +87,8 @@ MouseDownImpl g_nsnextstepframe_mousedown;
         (electron::NativeWindowMac*)[(id)self.window shell];
     if (shell && !shell->has_frame())
       [self cr_mouseDownOnFrameView:event];
-    g_nsthemeframe_mousedown(self, @selector(mouseDown:), event);
   }
+  g_nsthemeframe_mousedown(self, @selector(mouseDown:), event);
 }
 
 - (void)swiz_nsnextstepframe_mouseDown:(NSEvent*)event {
@@ -98,8 +98,8 @@ MouseDownImpl g_nsnextstepframe_mousedown;
     if (shell && !shell->has_frame()) {
       [self cr_mouseDownOnFrameView:event];
     }
-    g_nsnextstepframe_mousedown(self, @selector(mouseDown:), event);
   }
+  g_nsnextstepframe_mousedown(self, @selector(mouseDown:), event);
 }
 
 - (void)swiz_nsview_swipeWithEvent:(NSEvent*)event {
