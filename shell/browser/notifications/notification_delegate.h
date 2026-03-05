@@ -24,7 +24,7 @@ class NotificationDelegate {
   virtual void NotificationAction(int action_index, int selection_index = -1) {}
 
   virtual void NotificationClick() {}
-  virtual void NotificationClosed() {}
+  virtual void NotificationClosed(const std::string& reason = "") {}
   virtual void NotificationDisplayed() {}
 
  protected:
