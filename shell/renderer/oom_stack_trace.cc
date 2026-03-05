@@ -95,10 +95,9 @@ size_t NearHeapLimitCallback(void* data,
 
   v8::HeapStatistics stats;
   isolate->GetHeapStatistics(&stats);
-  std::string heap_info =
-      absl::StrFormat("Heap: used=%.1fMB limit=%.1fMB",
-                      stats.used_heap_size() / 1048576.0,
-                      stats.heap_size_limit() / 1048576.0);
+  std::string heap_info = absl::StrFormat("Heap: used=%.1fMB limit=%.1fMB",
+                                          stats.used_heap_size() / 1048576.0,
+                                          stats.heap_size_limit() / 1048576.0);
   fprintf(stderr, "\n<--- Near heap limit --->\n%s\n", heap_info.c_str());
   fflush(stderr);
 
