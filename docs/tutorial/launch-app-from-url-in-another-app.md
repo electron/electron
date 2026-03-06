@@ -87,6 +87,13 @@ if (!gotTheLock) {
   // Create mainWindow, load the rest of the app, etc...
   app.whenReady().then(() => {
     createWindow()
+    // Check for deep link on cold start
+    if (process.argv.length >= 2) {
+      const lastArg = process.argv[process.argv.length - 1]
+      if (lastArg.startsWith('electron-fiddle://')) {
+        dialog.showErrorBox('Welcome Back', `You arrived from: ${lastArg}`)
+      }
+    }
   })
 }
 ```
