@@ -15,6 +15,27 @@ This is needed to remove dependency on the zero_fill_field_
 that is exposed to JS
 Refs https://github.com/nodejs/node/commit/3cdb1cd437f63dd256ae2ab3b7e9016257326cb4
 
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index d19cae298147f1b310506eec49b6fbd036fb1195..ecd2d481d97e5dab934481b085b949f47904a6c4 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -108,14 +108,8 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
+ }
+ 
+ void* NodeArrayBufferAllocator::Allocate(size_t size) {
+-  void* ret;
+-  if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers) {
+-    COUNT_GENERIC_USAGE("NodeArrayBufferAllocator.Allocate.ZeroFilled");
+-    ret = allocator_->Allocate(size);
+-  } else {
+-    COUNT_GENERIC_USAGE("NodeArrayBufferAllocator.Allocate.Uninitialized");
+-    ret = allocator_->AllocateUninitialized(size);
+-  }
++  void* ret = allocator_->Allocate(size);
++  COUNT_GENERIC_USAGE("NodeArrayBufferAllocator.Allocate.Uninitialized");
+   if (ret != nullptr) [[likely]] {
+     total_mem_usage_.fetch_add(size, std::memory_order_relaxed);
+   }
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
 index c862f91bf1f9494b747b2950e8e37547ba08b6b8..9fd48697845fca304e1dabf7c57ab208d9649a73 100644
 --- a/src/crypto/crypto_cipher.cc
