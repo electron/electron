@@ -37,6 +37,9 @@
   the same session. Default is the default session.
 * `zoomFactor` number (optional) - The default zoom factor of the page, `3.0` represents
   `300%`. Default is `1.0`.
+* `zoomMode` string (optional) - The initial zoom mode for the page. See
+  [`contents.setZoomMode`](../web-contents.md#contentssetzoommodemode) for available
+  modes. Default is `'default'`.
 * `javascript` boolean (optional) - Enables JavaScript support. Default is `true`.
 * `webSecurity` boolean (optional) - When `false`, it will disable the
   same-origin policy (usually using testing websites by people), and set
