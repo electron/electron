@@ -38,6 +38,9 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
                            public NotificationDelegate {
  public:
   static bool IsSupported();
+  static v8::Local<v8::Promise> GetHistory(v8::Isolate* isolate);
+  static void Remove(gin::Arguments* args);
+  static void RemoveAll();
 
 #if BUILDFLAG(IS_WIN)
   // Register a callback to handle all notification activations.

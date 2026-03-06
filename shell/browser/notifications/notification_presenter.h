@@ -8,12 +8,14 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <vector>
 
+#include "base/functional/callback.h"
 #include "base/memory/weak_ptr.h"
+#include "shell/browser/notifications/notification.h"
 
 namespace electron {
 
-class Notification;
 class NotificationDelegate;
 
 class NotificationPresenter {
@@ -22,10 +24,19 @@ class NotificationPresenter {
 
   virtual ~NotificationPresenter();
 
+  using GetDeliveredNotificationsCallback =
+      base::OnceCallback<void(std::vector<NotificationInfo>)>;
+
   base::WeakPtr<Notification> CreateNotification(
       NotificationDelegate* delegate,
       const std::string& notification_id);
   void CloseNotificationWithId(const std::string& notification_id);
+
+  virtual void GetDeliveredNotifications(
+      GetDeliveredNotificationsCallback callback);
+  virtual void RemoveDeliveredNotifications(
+      const std::vector<std::string>& identifiers);
+  virtual void RemoveAllDeliveredNotifications();
 
   std::set<Notification*> notifications() const { return notifications_; }
 

@@ -76,10 +76,56 @@ app.whenReady().then(() => {
 })
 ```
 
+#### `Notification.getHistory()` _macOS_
+
+Returns `Promise<NotificationHistoryInfo[]>` - Resolves with an array of [`NotificationHistoryInfo`](structures/notification-history-info.md) objects representing all delivered notifications still present in Notification Center.
+
+> [!NOTE]
+> Like all macOS notification APIs, this method requires the application to be
+> code-signed. In unsigned development builds, notifications are not delivered
+> to Notification Center and this method will resolve with an empty array.
+
+```js
+const { Notification, app } = require('electron')
+
+app.whenReady().then(async () => {
+  const history = await Notification.getHistory()
+  for (const n of history) {
+    console.log(`${n.id}: ${n.title}`)
+  }
+})
+```
+
+#### `Notification.remove(id)` _macOS_
+
+* `id` (string | string[]) - The notification identifier(s) to remove. These correspond to the `id` values set in the [`Notification` constructor](#new-notificationoptions).
+
+Removes one or more delivered notifications from Notification Center by their identifier(s).
+
+```js
+const { Notification } = require('electron')
+
+// Remove a single notification
+Notification.remove('my-notification-id')
+
+// Remove multiple notifications
+Notification.remove(['msg-1', 'msg-2', 'msg-3'])
+```
+
+#### `Notification.removeAll()` _macOS_
+
+Removes all of the app's delivered notifications from Notification Center.
+
+```js
+const { Notification } = require('electron')
+
+Notification.removeAll()
+```
+
 ### `new Notification([options])`
 
 * `options` Object (optional)
-  * `id` string (optional) _macOS_ - A unique identifier for the notification, mapping to `UNNotificationRequest`'s [`identifier`](https://developer.apple.com/documentation/usernotifications/unnotificationrequest/identifier) property. Defaults to a random UUID if not provided or if an empty string is passed. This can be used to remove or update previously delivered notifications.
+  * `id` string (optional) _macOS_ - A unique identifier for the notification, mapping to `UNNotificationRequest`'s [`identifier`](https://developer.apple.com/documentation/usernotifications/unnotificationrequest/identifier) property. Defaults to a random UUID if not provided or if an empty string is passed. Use this identifier with [`Notification.remove()`](#notificationremoveid-macos) to remove specific delivered notifications, or with [`Notification.getHistory()`](#notificationgethistory-macos) to identify them.
   * `groupId` string (optional) _macOS_ - A string identifier used to visually group notifications together in Notification Center. Maps to `UNNotificationContent`'s [`threadIdentifier`](https://developer.apple.com/documentation/usernotifications/unnotificationcontent/threadidentifier) property.
   * `title` string (optional) - A title for the notification, which will be displayed at the top of the notification window when it is shown.
   * `subtitle` string (optional) _macOS_ - A subtitle for the notification, which will be displayed below the title.

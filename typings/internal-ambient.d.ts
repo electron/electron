@@ -118,6 +118,9 @@ declare namespace NodeJS {
 
   interface NotificationBinding {
     isSupported(): boolean;
+    getHistory(): Promise<Electron.NotificationHistoryInfo[]>;
+    remove(id: string | string[]): void;
+    removeAll(): void;
     Notification: typeof Electron.Notification;
     // Windows-only callback for cold-start notification activation
     handleActivation?: (callback: (details: ActivationArgumentsInternal) => void) => void;
