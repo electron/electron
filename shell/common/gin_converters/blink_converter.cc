@@ -5,6 +5,7 @@
 #include "shell/common/gin_converters/blink_converter.h"
 
 #include <algorithm>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -623,16 +624,8 @@ v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
   dict.Set("canCut", !!(editFlags & blink::ContextMenuDataEditFlags::kCanCut));
   dict.Set("canCopy",
            !!(editFlags & blink::ContextMenuDataEditFlags::kCanCopy));
-
-  bool pasteFlag = false;
-  if (editFlags & blink::ContextMenuDataEditFlags::kCanPaste) {
-    std::vector<std::u16string> types;
-    ui::Clipboard::GetForCurrentThread()->ReadAvailableTypes(
-        ui::ClipboardBuffer::kCopyPaste, /* data_dst = */ nullptr, &types);
-    pasteFlag = !types.empty();
-  }
-  dict.Set("canPaste", pasteFlag);
-
+  dict.Set("canPaste",
+           !!(editFlags & blink::ContextMenuDataEditFlags::kCanPaste));
   dict.Set("canDelete",
            !!(editFlags & blink::ContextMenuDataEditFlags::kCanDelete));
   dict.Set("canSelectAll",

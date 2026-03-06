@@ -40,8 +40,20 @@ std::vector<std::u16string> Clipboard::AvailableFormats(
     gin::Arguments* const args) {
   std::vector<std::u16string> format_types;
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  clipboard->ReadAvailableTypes(GetClipboardBuffer(args),
-                                /* data_dst = */ nullptr, &format_types);
+
+  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
+  clipboard->ReadAvailableTypes(
+      GetClipboardBuffer(args),
+      /* data_dst = */ std::nullopt,
+      base::BindOnce(
+          [](std::vector<std::u16string>* out, base::OnceClosure quit,
+             std::vector<std::u16string> result) {
+            *out = std::move(result);
+            std::move(quit).Run();
+          },
+          &format_types, run_loop.QuitClosure()));
+  run_loop.Run();
+
   return format_types;
 }
 
@@ -71,7 +83,19 @@ std::string Clipboard::Read(const std::string& format_string) {
 #endif
   if (rawFormatAvailable) {
     std::string data;
-    clipboard->ReadData(rawFormat, /* data_dst = */ nullptr, &data);
+
+    base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
+    clipboard->ReadData(
+        rawFormat,
+        /* data_dst = */ std::nullopt,
+        base::BindOnce(
+            [](std::string* out, base::OnceClosure quit, std::string result) {
+              *out = std::move(result);
+              std::move(quit).Run();
+            },
+            &data, run_loop.QuitClosure()));
+    run_loop.Run();
+
     return data;
   }
   // Otherwise, resolve custom format names
@@ -115,7 +139,19 @@ std::string Clipboard::Read(const std::string& format_string) {
         ui::ClipboardFormatType::CustomPlatformType(format_string));
   }
   std::string data;
-  clipboard->ReadData(format, /* data_dst = */ nullptr, &data);
+
+  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
+  clipboard->ReadData(
+      format,
+      /* data_dst = */ std::nullopt,
+      base::BindOnce(
+          [](std::string* out, base::OnceClosure quit, std::string result) {
+            *out = std::move(result);
+            std::move(quit).Run();
+          },
+          &data, run_loop.QuitClosure()));
+  run_loop.Run();
+
   return data;
 }
 
@@ -176,14 +212,34 @@ std::u16string Clipboard::ReadText(gin::Arguments* const args) {
   auto type = GetClipboardBuffer(args);
   if (clipboard->IsFormatAvailable(ui::ClipboardFormatType::PlainTextType(),
                                    type, /* data_dst = */ nullptr)) {
-    clipboard->ReadText(type, /* data_dst = */ nullptr, &data);
+    base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
+    clipboard->ReadText(type,
+                        /* data_dst = */ std::nullopt,
+                        base::BindOnce(
+                            [](std::u16string* out, base::OnceClosure quit,
+                               std::u16string result) {
+                              *out = std::move(result);
+                              std::move(quit).Run();
+                            },
+                            &data, run_loop.QuitClosure()));
+    run_loop.Run();
   } else {
 #if BUILDFLAG(IS_WIN)
     if (clipboard->IsFormatAvailable(ui::ClipboardFormatType::PlainTextAType(),
                                      type,
                                      /* data_dst = */ nullptr)) {
       std::string result;
-      clipboard->ReadAsciiText(type, /* data_dst = */ nullptr, &result);
+      base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
+      clipboard->ReadAsciiText(
+          type,
+          /* data_dst = */ std::nullopt,
+          base::BindOnce(
+              [](std::string* out, base::OnceClosure quit, std::string value) {
+                *out = std::move(value);
+                std::move(quit).Run();
+              },
+              &result, run_loop.QuitClosure()));
+      run_loop.Run();
       data = base::ASCIIToUTF16(result);
     }
 #endif
