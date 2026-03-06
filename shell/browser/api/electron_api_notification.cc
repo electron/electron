@@ -9,10 +9,12 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/common/gin_converters/image_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "url/gurl.h"
 
@@ -264,6 +266,78 @@ bool Notification::IsSupported() {
                ->GetNotificationPresenter();
 }
 
+// static
+v8::Local<v8::Promise> Notification::GetHistory(v8::Isolate* isolate) {
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  auto* presenter =
+      static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
+          ->GetNotificationPresenter();
+  if (!presenter) {
+    promise.Resolve(v8::Array::New(isolate));
+    return handle;
+  }
+
+  presenter->GetDeliveredNotifications(base::BindOnce(
+      [](gin_helper::Promise<v8::Local<v8::Value>> promise,
+         std::vector<electron::NotificationInfo> notifications) {
+        v8::Isolate* isolate = promise.isolate();
+        v8::HandleScope handle_scope(isolate);
+
+        v8::Local<v8::Array> result =
+            v8::Array::New(isolate, notifications.size());
+        for (size_t i = 0; i < notifications.size(); i++) {
+          auto dict = gin::Dictionary::CreateEmpty(isolate);
+          dict.Set("id", notifications[i].id);
+          dict.Set("title", notifications[i].title);
+          dict.Set("subtitle", notifications[i].subtitle);
+          dict.Set("body", notifications[i].body);
+          dict.Set("groupId", notifications[i].group_id);
+          result
+              ->Set(isolate->GetCurrentContext(), static_cast<uint32_t>(i),
+                    gin::ConvertToV8(isolate, dict))
+              .Check();
+        }
+
+        promise.Resolve(result.As<v8::Value>());
+      },
+      std::move(promise)));
+
+  return handle;
+}
+
+// static
+void Notification::Remove(gin::Arguments* args) {
+  auto* presenter =
+      static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
+          ->GetNotificationPresenter();
+  if (!presenter)
+    return;
+
+  // Accept either a single string or an array of strings.
+  std::string single_id;
+  std::vector<std::string> ids;
+  if (args->GetNext(&ids)) {
+    presenter->RemoveDeliveredNotifications(ids);
+  } else if (args->GetNext(&single_id)) {
+    presenter->RemoveDeliveredNotifications({single_id});
+  } else {
+    args->ThrowTypeError("Expected a string or array of strings");
+  }
+}
+
+// static
+void Notification::RemoveAll() {
+  auto* presenter =
+      static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
+          ->GetNotificationPresenter();
+  if (!presenter)
+    return;
+
+  presenter->RemoveAllDeliveredNotifications();
+}
+
 void Notification::FillObjectTemplate(v8::Isolate* isolate,
                                       v8::Local<v8::ObjectTemplate> templ) {
   gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
@@ -315,6 +389,9 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict{isolate, exports};
   dict.Set("Notification", Notification::GetConstructor(isolate, context));
   dict.SetMethod("isSupported", &Notification::IsSupported);
+  dict.SetMethod("getHistory", &Notification::GetHistory);
+  dict.SetMethod("remove", &Notification::Remove);
+  dict.SetMethod("removeAll", &Notification::RemoveAll);
 }
 
 }  // namespace

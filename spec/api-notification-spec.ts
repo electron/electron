@@ -234,4 +234,110 @@ describe('Notification module', () => {
   });
 
   // TODO(sethlu): Find way to test init with notification icon?
+
+  describe('static methods', () => {
+    ifit(process.platform === 'darwin')('getHistory returns an array', async () => {
+      const history = await Notification.getHistory();
+      expect(history).to.be.an('array');
+    });
+
+    ifit(process.platform === 'darwin')('getHistory returns delivered notifications', async () => {
+      const n = new Notification({
+        id: 'history-test-id',
+        title: 'history test',
+        body: 'history body',
+        groupId: 'history-group',
+        silent: true
+      });
+
+      const shown = once(n, 'show');
+      n.show();
+      await shown;
+
+      const history = await Notification.getHistory();
+      const found = history.find((item: any) => item.id === 'history-test-id');
+      expect(found).to.not.be.undefined();
+      expect(found.title).to.equal('history test');
+      expect(found.body).to.equal('history body');
+      expect(found.groupId).to.equal('history-group');
+
+      n.close();
+    });
+
+    ifit(process.platform === 'darwin')('remove removes a notification by id', async () => {
+      const n = new Notification({
+        id: 'remove-test-id',
+        title: 'remove test',
+        body: 'remove body',
+        silent: true
+      });
+
+      const shown = once(n, 'show');
+      n.show();
+      await shown;
+
+      Notification.remove('remove-test-id');
+
+      // Give the notification center a moment to process the removal
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const history = await Notification.getHistory();
+      const found = history.find((item: any) => item.id === 'remove-test-id');
+      expect(found).to.be.undefined();
+    });
+
+    ifit(process.platform === 'darwin')('remove accepts an array of ids', async () => {
+      const n1 = new Notification({
+        id: 'remove-array-1',
+        title: 'test 1',
+        body: 'body 1',
+        silent: true
+      });
+      const n2 = new Notification({
+        id: 'remove-array-2',
+        title: 'test 2',
+        body: 'body 2',
+        silent: true
+      });
+
+      const shown1 = once(n1, 'show');
+      n1.show();
+      await shown1;
+
+      const shown2 = once(n2, 'show');
+      n2.show();
+      await shown2;
+
+      Notification.remove(['remove-array-1', 'remove-array-2']);
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const history = await Notification.getHistory();
+      const found1 = history.find((item: any) => item.id === 'remove-array-1');
+      const found2 = history.find((item: any) => item.id === 'remove-array-2');
+      expect(found1).to.be.undefined();
+      expect(found2).to.be.undefined();
+    });
+
+    ifit(process.platform === 'darwin')('removeAll removes all notifications', async () => {
+      const n = new Notification({
+        id: 'remove-all-test',
+        title: 'removeAll test',
+        body: 'body',
+        silent: true
+      });
+
+      const shown = once(n, 'show');
+      n.show();
+      await shown;
+
+      Notification.removeAll();
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const history = await Notification.getHistory();
+      const found = history.find((item: any) => item.id === 'remove-all-test');
+      expect(found).to.be.undefined();
+    });
+  });
 });

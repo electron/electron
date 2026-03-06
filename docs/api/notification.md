@@ -36,6 +36,48 @@ The `Notification` class has the following static methods:
 
 Returns `boolean` - Whether or not desktop notifications are supported on the current system
 
+#### `Notification.getHistory()` _macOS_
+
+Returns `Promise<NotificationHistoryInfo[]>` - Resolves with an array of [`NotificationHistoryInfo`](structures/notification-history-info.md) objects representing all delivered notifications still present in Notification Center.
+
+```js
+const { Notification } = require('electron')
+
+const history = await Notification.getHistory()
+for (const n of history) {
+  console.log(`${n.id}: ${n.title}`)
+}
+```
+
+#### `Notification.remove(id)` _macOS_
+
+* `id` (string | string[]) - The notification identifier(s) to remove.
+
+Removes one or more delivered notifications from Notification Center by their identifier(s).
+
+```js
+const { Notification } = require('electron')
+
+// Remove a single notification
+Notification.remove('test-id|test-group-id|group-label')
+
+// Remove multiple notifications
+Notification.remove([
+  'test-id|test-group-id|group-label',
+  'test-id|test-group-id|group-label-2'
+])
+```
+
+#### `Notification.removeAll()` _macOS_
+
+Removes all of the app's delivered notifications from Notification Center.
+
+```js
+const { Notification } = require('electron')
+
+Notification.removeAll()
+```
+
 ### `new Notification([options])`
 
 * `options` Object (optional)

@@ -24,6 +24,13 @@ class NotificationPresenterMac : public NotificationPresenter {
   NotificationPresenterMac();
   ~NotificationPresenterMac() override;
 
+  // NotificationPresenter
+  void GetDeliveredNotifications(
+      GetDeliveredNotificationsCallback callback) override;
+  void RemoveDeliveredNotifications(
+      const std::vector<std::string>& identifiers) override;
+  void RemoveAllDeliveredNotifications() override;
+
   NotificationImageRetainer* image_retainer() { return image_retainer_.get(); }
   scoped_refptr<base::SequencedTaskRunner> image_task_runner() {
     return image_task_runner_;

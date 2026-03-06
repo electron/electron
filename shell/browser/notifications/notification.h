@@ -59,6 +59,21 @@ struct NotificationOptions {
   ~NotificationOptions();
 };
 
+struct NotificationInfo {
+  std::string id;
+  std::string title;
+  std::string subtitle;
+  std::string body;
+  std::string group_id;
+
+  NotificationInfo();
+  ~NotificationInfo();
+  NotificationInfo(const NotificationInfo&);
+  NotificationInfo& operator=(const NotificationInfo&);
+  NotificationInfo(NotificationInfo&&) noexcept;
+  NotificationInfo& operator=(NotificationInfo&&) noexcept;
+};
+
 class Notification {
  public:
   virtual ~Notification();

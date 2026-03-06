@@ -22,6 +22,15 @@ NotificationOptions& NotificationOptions::operator=(NotificationOptions&&) =
     default;
 NotificationOptions::~NotificationOptions() = default;
 
+NotificationInfo::NotificationInfo() = default;
+NotificationInfo::~NotificationInfo() = default;
+NotificationInfo::NotificationInfo(const NotificationInfo&) = default;
+NotificationInfo& NotificationInfo::operator=(const NotificationInfo&) =
+    default;
+NotificationInfo::NotificationInfo(NotificationInfo&&) noexcept = default;
+NotificationInfo& NotificationInfo::operator=(NotificationInfo&&) noexcept =
+    default;
+
 NotificationAction::NotificationAction() = default;
 NotificationAction::~NotificationAction() = default;
 NotificationAction::NotificationAction(const NotificationAction&) = default;
