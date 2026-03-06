@@ -34,6 +34,9 @@ describe('autofill', () => {
     const w = new BrowserWindow({ show: true });
     await w.loadFile(path.join(fixturesPath, 'pages', 'datalist-time.html'));
 
+    // Focus input element explicitly to avoid flakiness from Tab
+    await w.webContents.executeJavaScript("document.querySelector('input').focus()");
+
     const inputText = '11P'; // 1:01 PM
     for (const keyCode of inputText) {
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Tab' });
