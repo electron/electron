@@ -51,7 +51,7 @@
     "stream-json": "^1.9.1",
     "tap-xunit": "^2.4.1",
     "temp": "^0.9.4",
-    "timers-browserify": "1.4.2",
+    "timers-browserify": "2.0.12",
     "ts-loader": "^8.0.2",
     "ts-node": "6.2.0",
     "typescript": "^5.8.3",

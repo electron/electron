@@ -633,7 +633,7 @@ __metadata:
     stream-json: "npm:^1.9.1"
     tap-xunit: "npm:^2.4.1"
     temp: "npm:^0.9.4"
-    timers-browserify: "npm:1.4.2"
+    timers-browserify: "npm:2.0.12"
     ts-loader: "npm:^8.0.2"
     ts-node: "npm:6.2.0"
     typescript: "npm:^5.8.3"
@@ -11127,7 +11127,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"process@npm:^0.11.10, process@npm:~0.11.0":
+"process@npm:^0.11.10":
   version: 0.11.10
   resolution: "process@npm:0.11.10"
   checksum: 10c0/40c3ce4b7e6d4b8c3355479df77aeed46f81b279818ccdc500124e6a5ab882c0cc81ff7ea16384873a95a74c4570b01b120f287abbdd4c877931460eca6084b3
@@ -12789,7 +12789,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"setimmediate@npm:^1.0.5":
+"setimmediate@npm:^1.0.4, setimmediate@npm:^1.0.5":
   version: 1.0.5
   resolution: "setimmediate@npm:1.0.5"
   checksum: 10c0/5bae81bfdbfbd0ce992893286d49c9693c82b1bcc00dcaaf3a09c8f428fdeacf4190c013598b81875dfac2b08a572422db7df779a99332d0fce186d15a3e4d49
@@ -13733,12 +13733,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"timers-browserify@npm:1.4.2":
-  version: 1.4.2
-  resolution: "timers-browserify@npm:1.4.2"
+"timers-browserify@npm:2.0.12":
+  version: 2.0.12
+  resolution: "timers-browserify@npm:2.0.12"
   dependencies:
-    process: "npm:~0.11.0"
-  checksum: 10c0/96e9b6d629bbb8bed7c55745112d065a2abdc33f3c29354c62de2fb02916893994b28678d675cdfceb12ca8e26f5e77e41fda9b2aa449f74ba0bbf191735a656
+    setimmediate: "npm:^1.0.4"
+  checksum: 10c0/98e84db1a685bc8827c117a8bc62aac811ad56a995d07938fc7ed8cdc5bf3777bfe2d4e5da868847194e771aac3749a20f6cdd22091300fe889a76fe214a4641
   languageName: node
   linkType: hard
 
