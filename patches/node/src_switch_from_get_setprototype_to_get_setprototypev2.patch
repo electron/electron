@@ -10,10 +10,10 @@ Reviewed-By: Moshe Atlow <moshe@atlow.co.il>
 Reviewed-By: James M Snell <jasnell@gmail.com>
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 33827edce63c9fe08b52aea59571391a83853443..79327877b0f34cbafb3efcc21617027d4011f806 100644
+index f3a992b634e9532cba34ec4d54b3a1d0f68a8545..6034b779fe05850cfc4e7f7af221489be9369b54 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -878,7 +878,7 @@ Maybe<void> InitializePrimordials(Local<Context> context,
+@@ -882,7 +882,7 @@ Maybe<void> InitializePrimordials(Local<Context> context,
    CHECK(!exports->Has(context, primordials_string).FromJust());
  
    Local<Object> primordials = Object::New(isolate);
@@ -38,10 +38,10 @@ index 487b8b7adfd35646d20fdb15be5fd6f2bee9315b..6a3c4e6952a8f3250bf1b57652a1622e
      }
      return false;
 diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
-index 7b2efa49468c0bed2f5935552addd3ab37d0a50b..413db3ed9b88d7b7fb2ac6dd1153dade9ff830fd 100644
+index 4a748957431da4b3a55ecaa5db9c45e2061f76f1..e62dce7a3e5f32ebb926ad2ffe57887ab1887b8d 100644
 --- a/src/js_native_api_v8.cc
 +++ b/src/js_native_api_v8.cc
-@@ -1577,7 +1577,7 @@ napi_status NAPI_CDECL napi_get_prototype(napi_env env,
+@@ -1578,7 +1578,7 @@ napi_status NAPI_CDECL napi_get_prototype(napi_env env,
    CHECK_TO_OBJECT(env, context, obj, object);
  
    // This doesn't invokes Proxy's [[GetPrototypeOf]] handler.
@@ -51,7 +51,7 @@ index 7b2efa49468c0bed2f5935552addd3ab37d0a50b..413db3ed9b88d7b7fb2ac6dd1153dade
    return GET_RETURN_STATUS(env);
  }
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index 8a5b6b57321c2843a965a7e51b2ebed991a1e424..e844fe6cb33acefd075516e675075421ad5c3cff 100644
+index b87b53843c3369832e561b9ffd40ca7c2134e74c..0cf2a07deb382dfd96607f84b583ffbd62447769 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -283,8 +283,9 @@ MaybeLocal<Uint8Array> New(Environment* env,
@@ -135,7 +135,7 @@ index b1ee513fc0873a51b4885f612dbf7b950b5cf2ca..2f23cc63f148a792f1302e1d2d888227
    Local<Object> internal_constants = Object::New(isolate);
    CHECK(internal_constants->SetPrototype(env->context(),
 diff --git a/src/node_options.cc b/src/node_options.cc
-index b067685822dc056e446e1a9402a5a6cba86cc722..e93e8684e518b30a2514768a269be6d32d1f5b94 100644
+index 5a1675f2b4448e5da71f0badee8ac5f2d2a9c6ee..1ebc7bfca2d89f78898873e8b6f838f3f4c2e576 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -1552,7 +1552,8 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
@@ -159,10 +159,10 @@ index b067685822dc056e446e1a9402a5a6cba86cc722..e93e8684e518b30a2514768a269be6d3
      return;
    }
 diff --git a/src/node_webstorage.cc b/src/node_webstorage.cc
-index 9a7b7db881a564a68683c55cb10919454e80edbf..bf88ce68f9173ef24a283dd370e71903220b0077 100644
+index d6dee522023a4e65d948b1554e9ae472f1e96e40..e7d0c4e2e1150a62a1ccfbe9e9ec08b6b2e5be65 100644
 --- a/src/node_webstorage.cc
 +++ b/src/node_webstorage.cc
-@@ -532,7 +532,7 @@ template <typename T>
+@@ -536,7 +536,7 @@ template <typename T>
  static bool ShouldIntercept(Local<Name> property,
                              const PropertyCallbackInfo<T>& info) {
    Environment* env = Environment::GetCurrent(info);

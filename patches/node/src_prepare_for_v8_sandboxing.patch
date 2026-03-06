@@ -212,10 +212,10 @@ index 7fe3d09851d4476fa3f77ea0a0b49e8af13fae4f..b60ad6b1cdb0b923ba2de1b7205ed5ce
    Local<Value> ret;
    if (!Buffer::New(env, ab, 0, ab->ByteLength()).ToLocal(&ret)) return {};
 diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
-index 413db3ed9b88d7b7fb2ac6dd1153dade9ff830fd..6da93b8569a34841e846c320ec0a6ca7f1ea0da6 100644
+index e62dce7a3e5f32ebb926ad2ffe57887ab1887b8d..878d9764e072f0b0105508541beff205bf97b1ab 100644
 --- a/src/js_native_api_v8.cc
 +++ b/src/js_native_api_v8.cc
-@@ -114,7 +114,7 @@ napi_status NewExternalString(napi_env env,
+@@ -116,7 +116,7 @@ napi_status NewExternalString(napi_env env,
    CHECK_NEW_STRING_ARGS(env, str, length, result);
  
    napi_status status;
@@ -225,10 +225,10 @@ index 413db3ed9b88d7b7fb2ac6dd1153dade9ff830fd..6da93b8569a34841e846c320ec0a6ca7
    if (status == napi_ok) {
      if (copied != nullptr) {
 diff --git a/src/node_api.cc b/src/node_api.cc
-index 2769997f0ede0e921fcb8826942609e497e5f9cb..d9b17780f6143f1c3f8488a20144376963e43fbc 100644
+index 26583f964edadef46ee65e52844a4d9a0ddacc2f..9086dd9d6f409f266a1e9ae603733ecfd0fb8d72 100644
 --- a/src/node_api.cc
 +++ b/src/node_api.cc
-@@ -1056,7 +1056,7 @@ napi_create_external_buffer(napi_env env,
+@@ -1058,7 +1058,7 @@ napi_create_external_buffer(napi_env env,
    NAPI_PREAMBLE(env);
    CHECK_ARG(env, result);
  
@@ -238,7 +238,7 @@ index 2769997f0ede0e921fcb8826942609e497e5f9cb..d9b17780f6143f1c3f8488a201443769
  #else
    v8::Isolate* isolate = env->isolate;
 diff --git a/src/node_options.cc b/src/node_options.cc
-index e93e8684e518b30a2514768a269be6d32d1f5b94..547cda780376f578b0f78eb9158dc14a3faf874d 100644
+index 1ebc7bfca2d89f78898873e8b6f838f3f4c2e576..bec62634d153e2311959ad2fb56f54dfbbb80f09 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -83,6 +83,8 @@ void PerProcessOptions::CheckOptions(std::vector<std::string>* errors,

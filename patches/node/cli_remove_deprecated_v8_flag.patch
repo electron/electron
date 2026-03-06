@@ -18,10 +18,10 @@ Reviewed-By: Michaël Zasso <targos@protonmail.com>
 Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
 
 diff --git a/doc/api/cli.md b/doc/api/cli.md
-index 7ff68d28f1c80d8a852f649e2c39216a2f4bdb16..a97053929c81ac18bcb3beda7cecb69621b6e70c 100644
+index 0dfbe4b4fe0e4113e5e6c0cbe8a5d3ec4ff97e5a..2133555fd05f0c4f4b03c1d76ae8e33c14b621fa 100644
 --- a/doc/api/cli.md
 +++ b/doc/api/cli.md
-@@ -3522,7 +3522,6 @@ V8 options that are allowed are:
+@@ -3528,7 +3528,6 @@ V8 options that are allowed are:
  * `--disallow-code-generation-from-strings`
  * `--enable-etw-stack-walking`
  * `--expose-gc`
@@ -30,7 +30,7 @@ index 7ff68d28f1c80d8a852f649e2c39216a2f4bdb16..a97053929c81ac18bcb3beda7cecb696
  * `--jitless`
  * `--max-old-space-size`
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 3026b3d814ae652a9996c1dcba62b4fa678ac871..4bbace2f702777fa12ba9246984894721df99b50 100644
+index 41de3936265f0544831521fe753d2050e91b58e1..acd747ff5d853a920a66c27d421ae9ddfc7bcd82 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -1060,11 +1060,6 @@ PerIsolateOptionsParser::PerIsolateOptionsParser(

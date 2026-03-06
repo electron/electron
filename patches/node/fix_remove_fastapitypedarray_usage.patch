@@ -48,7 +48,7 @@ index fe669d40c31a29334b047b9cfee3067f64ef0a7b..9e5de7bbe574add017cd12ee091304d0
  
  static CFunction fast_timing_safe_equal(CFunction::Make(FastTimingSafeEqual));
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index b9f0c97938203b4652780a7d707c5e83319330b0..8a5b6b57321c2843a965a7e51b2ebed991a1e424 100644
+index 2fdada446c5d1ffa460f483a3360aeca658d9eef..b87b53843c3369832e561b9ffd40ca7c2134e74c 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -44,6 +44,14 @@

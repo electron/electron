@@ -77,10 +77,10 @@ index 78985575beb3df7722ba90968e8f085574b5afdf..e032c016efe227c26364e81804ad183c
        // Check if the ESM initiating import CJS is being required by the same CJS module.
        if (cjsModule?.[kIsExecuting]) {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 859b6bfedac4bbee2df054f9ebca7cbaaed45f18..5aa946f66c71beff0b7a43c30638ab28a1a5dfc0 100644
+index ec28ea021909071557277c2c98600afb203dfaa1..cb44ec468edb22adc7a159cabec528cc135c9ec5 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -750,6 +750,9 @@ function packageImportsResolve(name, base, conditions) {
+@@ -751,6 +751,9 @@ function packageImportsResolve(name, base, conditions) {
    throw importNotDefined(name, packageJSONUrl, base);
  }
  
@@ -90,7 +90,7 @@ index 859b6bfedac4bbee2df054f9ebca7cbaaed45f18..5aa946f66c71beff0b7a43c30638ab28
  
  /**
   * Resolves a package specifier to a URL.
-@@ -764,6 +767,11 @@ function packageResolve(specifier, base, conditions) {
+@@ -765,6 +768,11 @@ function packageResolve(specifier, base, conditions) {
      return new URL('node:' + specifier);
    }
  
@@ -138,10 +138,10 @@ index 757f093becd112002f3422302f4c29bb464f1a6c..c8cea2117080930105b33e4e50586a2c
  // This translator function must be sync, as `require` is sync.
  translators.set('require-commonjs-typescript', (url, source, isMain) => {
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index ad1c2c9966085b8febd261b2fc776ce49bc1bd36..96fdce31168ae70ce20f3bfb81931705b2d55f31 100644
+index 62e240a8a0488c826339b92eb62e78162e0a32b8..f4019eeb831423f9fc1249ed9581ba9492b6c738 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1608,6 +1608,8 @@ function fileURLToPath(path, options = kEmptyObject) {
+@@ -1603,6 +1603,8 @@ function fileURLToPath(path, options = kEmptyObject) {
      path = new URL(path);
    else if (!isURL(path))
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);
