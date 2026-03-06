@@ -1652,9 +1652,30 @@ void WebContents::RendererResponsive(
 
 bool WebContents::HandleContextMenu(content::RenderFrameHost& render_frame_host,
                                     const content::ContextMenuParams& params) {
-  Emit("context-menu", std::make_pair(params, &render_frame_host));
+  ui::Clipboard::GetForCurrentThread()->ReadAvailableTypes(
+      ui::ClipboardBuffer::kCopyPaste, std::nullopt,
+      base::BindOnce(&WebContents::OnReadAvailableTypes, GetWeakPtr(), params,
+                     render_frame_host.GetGlobalId()));
 
   return true;
+}
+
+void WebContents::OnReadAvailableTypes(
+    const content::ContextMenuParams& params,
+    content::GlobalRenderFrameHostId render_frame_host_id,
+    std::vector<std::u16string> types) {
+  content::RenderFrameHost* render_frame_host =
+      content::RenderFrameHost::FromID(render_frame_host_id);
+  if (!render_frame_host) {
+    return;
+  }
+
+  ContextMenuParamsWithRenderFrameHost event_data{
+      params,
+      render_frame_host,
+      !types.empty(),
+  };
+  Emit("context-menu", event_data);
 }
 
 void WebContents::FindReply(content::WebContents* web_contents,

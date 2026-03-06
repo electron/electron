@@ -615,7 +615,9 @@ Converter<std::optional<blink::mojom::FormControlType>>::ToV8(
   return StringToV8(isolate, str);
 }
 
-v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
+v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate,
+                                   int editFlags,
+                                   bool is_paste_enabled) {
   auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("canUndo",
            !!(editFlags & blink::ContextMenuDataEditFlags::kCanUndo));
@@ -624,8 +626,11 @@ v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
   dict.Set("canCut", !!(editFlags & blink::ContextMenuDataEditFlags::kCanCut));
   dict.Set("canCopy",
            !!(editFlags & blink::ContextMenuDataEditFlags::kCanCopy));
-  dict.Set("canPaste",
-           !!(editFlags & blink::ContextMenuDataEditFlags::kCanPaste));
+  bool pasteFlag = false;
+  if (editFlags & blink::ContextMenuDataEditFlags::kCanPaste) {
+    pasteFlag = is_paste_enabled;
+  }
+  dict.Set("canPaste", pasteFlag);
   dict.Set("canDelete",
            !!(editFlags & blink::ContextMenuDataEditFlags::kCanDelete));
   dict.Set("canSelectAll",

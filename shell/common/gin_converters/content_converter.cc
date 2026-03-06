@@ -89,8 +89,8 @@ v8::Local<v8::Value> Converter<blink::mojom::MenuItem::Type>::ToV8(
 v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
     v8::Isolate* isolate,
     const ContextMenuParamsWithRenderFrameHost& val) {
-  const auto& params = val.first;
-  content::RenderFrameHost* render_frame_host = val.second;
+  const auto& params = val.params;
+  content::RenderFrameHost* render_frame_host = val.render_frame_host;
   auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.SetGetter("frame", render_frame_host, v8::DontEnum);
   dict.Set("x", params.x);
@@ -107,7 +107,8 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
       params.has_image_contents;
   dict.Set("hasImageContents", has_image_contents);
   dict.Set("isEditable", params.is_editable);
-  dict.Set("editFlags", EditFlagsToV8(isolate, params.edit_flags));
+  dict.Set("editFlags",
+           EditFlagsToV8(isolate, params.edit_flags, val.is_paste_enabled));
   dict.Set("selectionText", params.selection_text);
   dict.Set("titleText", params.title_text);
   dict.Set("altText", params.alt_text);
