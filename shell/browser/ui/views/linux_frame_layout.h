@@ -50,20 +50,20 @@ class LinuxFrameLayout {
   // Insets to use for non-client resize hit-testing.
   gfx::Insets GetResizeBorderInsets() const;
 
-  virtual bool IsShowingShadow() const;
-  virtual bool SupportsClientFrameShadow() const;
+  bool IsShowingShadow() const;
+  bool SupportsClientFrameShadow() const;
 
   bool tiled() const;
   void set_tiled(bool tiled);
 
   // The logical bounds of the window interior.
-  virtual gfx::Rect GetWindowBounds() const;
+  gfx::Rect GetWindowBounds() const;
   // The logical window bounds as a rounded rect with corner radii applied.
   SkRRect GetRoundedWindowBounds() const;
   // The corner radius of the top corners of the window, in DIPs.
   virtual float GetTopCornerRadiusDip() const;
 
-  virtual int GetTranslucentTopAreaHeight() const;
+  int GetTranslucentTopAreaHeight() const;
 
  protected:
   gfx::Insets NormalizeBorderInsets(const gfx::Insets& frame_insets,
