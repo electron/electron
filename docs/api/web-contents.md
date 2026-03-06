@@ -246,10 +246,11 @@ Returns:
   * `frame` WebFrameMain | null - The frame to be navigated.
     May be `null` if accessed after the frame has either navigated or been destroyed.
   * `initiator` WebFrameMain | null (optional) - The frame which initiated the
-    navigation, which can be a parent frame (e.g. via `window.open` with a
-    frame's name), or null if the navigation was not initiated by a frame. This
-    can also be null if the initiating frame was deleted before the event was
-    emitted.
+    navigation. This can be a parent frame (e.g. via `window.open` with a
+    frame's name), a child frame (e.g. an unsandboxed iframe navigating its
+    parent via `<a target="_top">`), or null if the navigation was not initiated
+    by a frame. This can also be null if the initiating frame was deleted before
+    the event was emitted.
 * `url` string _Deprecated_
 * `isInPlace` boolean _Deprecated_
 * `isMainFrame` boolean _Deprecated_
@@ -280,10 +281,11 @@ Returns:
   * `frame` WebFrameMain | null - The frame to be navigated.
     May be `null` if accessed after the frame has either navigated or been destroyed.
   * `initiator` WebFrameMain | null (optional) - The frame which initiated the
-    navigation, which can be a parent frame (e.g. via `window.open` with a
-    frame's name), or null if the navigation was not initiated by a frame. This
-    can also be null if the initiating frame was deleted before the event was
-    emitted.
+    navigation. This can be a parent frame (e.g. via `window.open` with a
+    frame's name), a child frame (e.g. an unsandboxed iframe navigating its
+    parent via `<a target="_top">`), or null if the navigation was not initiated
+    by a frame. This can also be null if the initiating frame was deleted before
+    the event was emitted.
 
 Emitted when a user or the page wants to start navigation in any frame. It can happen when
 the `window.location` object is changed or a user clicks a link in the page.
@@ -312,10 +314,11 @@ Returns:
   * `frame` WebFrameMain | null - The frame to be navigated.
     May be `null` if accessed after the frame has either navigated or been destroyed.
   * `initiator` WebFrameMain | null (optional) - The frame which initiated the
-    navigation, which can be a parent frame (e.g. via `window.open` with a
-    frame's name), or null if the navigation was not initiated by a frame. This
-    can also be null if the initiating frame was deleted before the event was
-    emitted.
+    navigation. This can be a parent frame (e.g. via `window.open` with a
+    frame's name), a child frame (e.g. an unsandboxed iframe navigating its
+    parent via `<a target="_top">`), or null if the navigation was not initiated
+    by a frame. This can also be null if the initiating frame was deleted before
+    the event was emitted.
 * `url` string _Deprecated_
 * `isInPlace` boolean _Deprecated_
 * `isMainFrame` boolean _Deprecated_
@@ -337,10 +340,11 @@ Returns:
   * `frame` WebFrameMain | null - The frame to be navigated.
     May be `null` if accessed after the frame has either navigated or been destroyed.
   * `initiator` WebFrameMain | null (optional) - The frame which initiated the
-    navigation, which can be a parent frame (e.g. via `window.open` with a
-    frame's name), or null if the navigation was not initiated by a frame. This
-    can also be null if the initiating frame was deleted before the event was
-    emitted.
+    navigation. This can be a parent frame (e.g. via `window.open` with a
+    frame's name), a child frame (e.g. an unsandboxed iframe navigating its
+    parent via `<a target="_top">`), or null if the navigation was not initiated
+    by a frame. This can also be null if the initiating frame was deleted before
+    the event was emitted.
 * `url` string _Deprecated_
 * `isInPlace` boolean _Deprecated_
 * `isMainFrame` boolean _Deprecated_
@@ -369,10 +373,11 @@ Returns:
   * `frame` WebFrameMain | null - The frame to be navigated.
     May be `null` if accessed after the frame has either navigated or been destroyed.
   * `initiator` WebFrameMain | null (optional) - The frame which initiated the
-    navigation, which can be a parent frame (e.g. via `window.open` with a
-    frame's name), or null if the navigation was not initiated by a frame. This
-    can also be null if the initiating frame was deleted before the event was
-    emitted.
+    navigation. This can be a parent frame (e.g. via `window.open` with a
+    frame's name), a child frame (e.g. an unsandboxed iframe navigating its
+    parent via `<a target="_top">`), or null if the navigation was not initiated
+    by a frame. This can also be null if the initiating frame was deleted before
+    the event was emitted.
 * `url` string _Deprecated_
 * `isInPlace` boolean _Deprecated_
 * `isMainFrame` boolean _Deprecated_
