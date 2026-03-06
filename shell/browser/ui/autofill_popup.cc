@@ -182,10 +182,14 @@ void AutofillPopup::CreateView(content::RenderFrameHost* frame_host,
   views::View::ConvertPointToScreen(parent, &menu_position);
   popup_bounds_ = gfx::Rect(menu_position, element_bounds_.size());
 
+  auto* widget = parent->GetWidget();
+  if (!widget)
+    return;
+
   parent_ = parent;
   parent_->AddObserver(this);
 
-  view_ = new AutofillPopupView(this, parent->GetWidget());
+  view_ = new AutofillPopupView(this, widget);
 
   if (offscreen) {
     auto* rwhv = embedder_frame_host ? embedder_frame_host->GetView()
