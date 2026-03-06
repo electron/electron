@@ -64,6 +64,8 @@ class ProxyingURLLoaderFactory
     // For usual requests
     InProgressRequest(
         ProxyingURLLoaderFactory* factory,
+        const mojo::Remote<network::mojom::URLLoaderFactory>
+            override_target_factory,
         uint64_t web_request_id,
         int32_t frame_routing_id,
         int32_t network_service_request_id,
@@ -140,6 +142,8 @@ class ProxyingURLLoaderFactory
     void HandleBeforeRequestRedirect();
 
     raw_ptr<ProxyingURLLoaderFactory> const factory_;
+    const mojo::Remote<network::mojom::URLLoaderFactory>
+        override_target_factory_;
     network::ResourceRequest request_;
     const std::optional<url::Origin> original_initiator_;
     const uint64_t request_id_ = 0;

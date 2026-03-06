@@ -43,9 +43,7 @@
 #include "media/audio/audio_device_description.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/originating_process_id.h"
-#include "services/network/public/cpp/url_loader_factory_builder.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
-#include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/browser/cookie_change_notifier.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_main_parts.h"
@@ -583,11 +581,9 @@ void ElectronBrowserContext::OnNetworkServiceProcessGone(bool /* crashed */) {
   url_loader_factory_.reset();
 }
 
-scoped_refptr<network::SharedURLLoaderFactory>
-ElectronBrowserContext::GetURLLoaderFactory() {
-  if (url_loader_factory_)
-    return url_loader_factory_;
-
+std::pair<network::URLLoaderFactoryBuilder,
+          mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>>
+ElectronBrowserContext::CreateURLLoaderFactoryBuilder() {
   network::URLLoaderFactoryBuilder factory_builder;
 
   // Consult the embedder.
@@ -600,6 +596,16 @@ ElectronBrowserContext::GetURLLoaderFactory() {
           url::Origin(), net::IsolationInfo(), std::nullopt,
           ukm::kInvalidSourceIdObj, factory_builder, &header_client, nullptr,
           nullptr, nullptr, nullptr);
+
+  return std::make_pair(std::move(factory_builder), std::move(header_client));
+}
+
+scoped_refptr<network::SharedURLLoaderFactory>
+ElectronBrowserContext::GetURLLoaderFactory() {
+  if (url_loader_factory_)
+    return url_loader_factory_;
+
+  auto [factory_builder, header_client] = CreateURLLoaderFactoryBuilder();
 
   network::mojom::URLLoaderFactoryParamsPtr params =
       network::mojom::URLLoaderFactoryParams::New();
@@ -616,6 +622,12 @@ ElectronBrowserContext::GetURLLoaderFactory() {
       std::move(factory_builder)
           .Finish(storage_partition->GetNetworkContext(), std::move(params));
   return url_loader_factory_;
+}
+
+scoped_refptr<network::SharedURLLoaderFactory>
+ElectronBrowserContext::InterceptURLLoaderFactory(
+    scoped_refptr<network::SharedURLLoaderFactory> factory) {
+  return CreateURLLoaderFactoryBuilder().first.Finish(factory);
 }
 
 content::PushMessagingService*
