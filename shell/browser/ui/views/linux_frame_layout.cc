@@ -77,6 +77,8 @@ LinuxFrameLayout::LinuxFrameLayout(NativeWindowViews* window)
   host_supports_client_frame_shadow_ = false;
 }
 
+LinuxFrameLayout::~LinuxFrameLayout() = default;
+
 gfx::Insets LinuxFrameLayout::RestoredFrameBorderInsets() const {
   return gfx::Insets();
 }
@@ -144,6 +146,8 @@ LinuxCSDNativeFrameLayout::LinuxCSDNativeFrameLayout(NativeWindowViews* window)
   host_supports_client_frame_shadow_ = CheckClientFrameShadowSupport(window);
 }
 
+LinuxCSDNativeFrameLayout::~LinuxCSDNativeFrameLayout() = default;
+
 gfx::Insets LinuxCSDNativeFrameLayout::RestoredFrameBorderInsets() const {
   const gfx::Insets input_insets = GetInputInsets();
   const gfx::Insets frame_insets = GetFrameProvider()->GetFrameThicknessDip();
@@ -169,6 +173,8 @@ LinuxCSDCustomFrameLayout::LinuxCSDCustomFrameLayout(NativeWindowViews* window)
     : LinuxFrameLayout(window) {
   host_supports_client_frame_shadow_ = CheckClientFrameShadowSupport(window);
 }
+
+LinuxCSDCustomFrameLayout::~LinuxCSDCustomFrameLayout() = default;
 
 gfx::Insets LinuxCSDCustomFrameLayout::RestoredFrameBorderInsets() const {
   const gfx::Insets input_insets = GetInputInsets();

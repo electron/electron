@@ -37,7 +37,7 @@ class LinuxFrameLayout {
   };
 
   explicit LinuxFrameLayout(NativeWindowViews* window);
-  virtual ~LinuxFrameLayout() = default;
+  virtual ~LinuxFrameLayout();
 
   static std::unique_ptr<LinuxFrameLayout> Create(NativeWindowViews* window,
                                                   bool wants_shadow,
@@ -78,7 +78,7 @@ class LinuxFrameLayout {
 class LinuxCSDNativeFrameLayout : public LinuxFrameLayout {
  public:
   explicit LinuxCSDNativeFrameLayout(NativeWindowViews* window);
-  ~LinuxCSDNativeFrameLayout() override = default;
+  ~LinuxCSDNativeFrameLayout() override;
 
   gfx::Insets RestoredFrameBorderInsets() const override;
   gfx::Insets GetInputInsets() const override;
@@ -90,7 +90,7 @@ class LinuxCSDNativeFrameLayout : public LinuxFrameLayout {
 class LinuxCSDCustomFrameLayout : public LinuxFrameLayout {
  public:
   explicit LinuxCSDCustomFrameLayout(NativeWindowViews* window);
-  ~LinuxCSDCustomFrameLayout() override = default;
+  ~LinuxCSDCustomFrameLayout() override;
 
   gfx::Insets RestoredFrameBorderInsets() const override;
   gfx::Insets GetInputInsets() const override;
