@@ -8,17 +8,26 @@ require a largeish patch to get working, so just redirect it to our
 implementation instead.
 
 diff --git a/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc b/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
-index 9fd5f8813728f46d63a215df31e7542aef4d3899..4e600c23a554dfa63acbe6805ee8374156191377 100644
+index 50e5ac31c57cab1476df494da879615b305a93f3..4e600c23a554dfa63acbe6805ee8374156191377 100644
 --- a/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
 +++ b/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
 @@ -12,8 +12,8 @@
  #include "base/numerics/safe_conversions.h"
  #include "base/unguessable_token.h"
  #include "base/uuid.h"
--#include "chrome/browser/extensions/api/streams_private/streams_private_api.h"
+-#include "chrome/browser/extensions/api/mime_handlers/dispatch_mime_handler_event.h"
 -#include "chrome/browser/plugins/plugin_utils.h"
 +#include "electron/shell/browser/extensions/api/streams_private/streams_private_api.h"
 +#include "electron/shell/browser/plugins/plugin_utils.h"
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
  #include "content/public/browser/download_utils.h"
+@@ -224,7 +224,7 @@ void PluginResponseInterceptorURLLoaderThrottle::WillProcessResponse(
+   content::GetUIThreadTaskRunner({})->PostTask(
+       FROM_HERE,
+       base::BindOnce(
+-          &extensions::mime_handlers::SendExecuteMimeTypeHandlerEvent,
++          &extensions::StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent,
+           extension_id, stream_id, embedded, frame_tree_node_id_,
+           std::move(transferrable_loader), response_url, internal_id));
+ 

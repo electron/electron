@@ -8,10 +8,10 @@ Allow registering custom protocols to handle service worker main script fetching
 Refs https://bugs.chromium.org/p/chromium/issues/detail?id=996511
 
 diff --git a/content/browser/service_worker/service_worker_context_wrapper.cc b/content/browser/service_worker/service_worker_context_wrapper.cc
-index 6436665d3084164ebe3ac2896c462360558a8d74..78a0b8b71f4fc31798bcb1dc89fe10480f19967b 100644
+index 5dc2d7c4405eb32ea697c28c4c79a3da3d1d7ff2..0e71782c946029113b2da9989521cb06fbce11be 100644
 --- a/content/browser/service_worker/service_worker_context_wrapper.cc
 +++ b/content/browser/service_worker/service_worker_context_wrapper.cc
-@@ -1941,6 +1941,26 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
+@@ -1950,6 +1950,26 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
        loader_factory_bundle_info =
            context()->loader_factory_bundle_for_update_check()->Clone();
  
@@ -38,7 +38,7 @@ index 6436665d3084164ebe3ac2896c462360558a8d74..78a0b8b71f4fc31798bcb1dc89fe1048
    if (auto* config = content::WebUIConfigMap::GetInstance().GetConfig(
            browser_context(), scope)) {
      // If this is a Service Worker for a WebUI, the WebUI's URLDataSource
-@@ -1960,9 +1980,7 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
+@@ -1969,9 +1989,7 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
              features::kEnableServiceWorkersForChromeScheme) &&
          scope.scheme() == kChromeUIScheme) {
        config->RegisterURLDataSource(browser_context());
@@ -49,7 +49,7 @@ index 6436665d3084164ebe3ac2896c462360558a8d74..78a0b8b71f4fc31798bcb1dc89fe1048
            .emplace(kChromeUIScheme, CreateWebUIServiceWorkerLoaderFactory(
                                          browser_context(), kChromeUIScheme,
                                          base::flat_set<std::string>()));
-@@ -1970,9 +1988,7 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
+@@ -1979,9 +1997,7 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
                     features::kEnableServiceWorkersForChromeUntrusted) &&
                 scope.scheme() == kChromeUIUntrustedScheme) {
        config->RegisterURLDataSource(browser_context());
