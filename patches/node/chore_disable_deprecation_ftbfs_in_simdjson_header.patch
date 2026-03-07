@@ -8,10 +8,13 @@ Without this patch, building with simdjson fails with
 > error: identifier '_padded' preceded by whitespace in a literal operator
 > declaration is deprecated [-Werror,-Wdeprecated-literal-operator]
 
+and
+> error: declaration requires an exit-time destructor [-Werror,-Wexit-time-destructors]
+
 This patch can be removed once this is fixed upstream in simdjson.
 
 diff --git a/deps/simdjson/simdjson.h b/deps/simdjson/simdjson.h
-index 1d6560e80fab0458b22f0ac2437056bce4873e8f..3c09f2c9450320f3c4ffb7097d32711ad3f33d29 100644
+index 1d6560e80fab0458b22f0ac2437056bce4873e8f..c3dbe2b6fc08c36a07ced5e29a814f7bcd85b748 100644
 --- a/deps/simdjson/simdjson.h
 +++ b/deps/simdjson/simdjson.h
 @@ -4215,12 +4215,17 @@ inline std::ostream& operator<<(std::ostream& out, simdjson_result<padded_string
@@ -51,3 +54,37 @@ index 1d6560e80fab0458b22f0ac2437056bce4873e8f..3c09f2c9450320f3c4ffb7097d32711a
  #endif // SIMDJSON_PADDED_STRING_INL_H
  /* end file simdjson/padded_string-inl.h */
  /* skipped duplicate #include "simdjson/padded_string_view.h" */
+@@ -44745,12 +44755,16 @@ simdjson_inline simdjson_warn_unused std::unique_ptr<ondemand::parser>& parser::
+   return parser_instance;
+ }
+ 
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wexit-time-destructors"
++
+ simdjson_inline simdjson_warn_unused std::unique_ptr<ondemand::parser>& parser::get_threadlocal_parser_if_exists() {
+   // @the-moisrex points out that this could be implemented with std::optional (C++17).
+   thread_local std::unique_ptr<ondemand::parser> parser_instance = nullptr;
+   return parser_instance;
+ }
+ 
++#pragma clang diagnostic pop
+ 
+ } // namespace ondemand
+ } // namespace arm64
+@@ -59221,12 +59235,16 @@ simdjson_inline simdjson_warn_unused std::unique_ptr<ondemand::parser>& parser::
+   return parser_instance;
+ }
+ 
++#pragma clang diagnostic push
++#pragma clang diagnostic ignored "-Wexit-time-destructors"
++
+ simdjson_inline simdjson_warn_unused std::unique_ptr<ondemand::parser>& parser::get_threadlocal_parser_if_exists() {
+   // @the-moisrex points out that this could be implemented with std::optional (C++17).
+   thread_local std::unique_ptr<ondemand::parser> parser_instance = nullptr;
+   return parser_instance;
+ }
+ 
++#pragma clang diagnostic pop
+ 
+ } // namespace ondemand
+ } // namespace fallback
