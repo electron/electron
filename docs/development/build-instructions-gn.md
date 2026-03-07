@@ -69,6 +69,27 @@ Some quick tips on building once your checkout is set up:
   via Electron's [patch system](./patches.md). The `e patches` command can export all relevant patches to
   `${root}/src/electron/patches/` once your code change is ready.
 
+### Passing custom GN args with Build Tools
+
+When using `e build`, you can pass custom GN args via `GN_EXTRA_ARGS`.
+In current Build Tools behavior, `GN_EXTRA_ARGS` is applied when `CI` is set.
+
+On Linux and macOS:
+
+```sh
+export CI=true
+export GN_EXTRA_ARGS="enable_widevine=true"
+e build --target electron
+```
+
+On Windows (PowerShell):
+
+```powershell
+$env:CI="true"
+$env:GN_EXTRA_ARGS="enable_widevine=true"
+e build --target electron
+```
+
 > [!IMPORTANT]
 > Unless you're applying upstream patches, you should treat `${root}/src/` as a read-only folder and
 > spend most of your development time in `${root}/src/electron/`. You should not need to make any
@@ -234,6 +255,17 @@ $ gn gen out/Release --args="import(\`"//electron/build/args/release.gn\`")"
 > This will generate a `out/Testing` or `out/Release` build directory under `${root}/src/` with the testing or release build depending upon the configuration passed above. You can replace `Testing|Release` with another names, but it should be a subdirectory of `out`.
 
 Also you shouldn't have to run `gn gen` again—if you want to change the build arguments, you can run `gn args out/Testing` to bring up an editor. To see the list of available build configuration options, run `gn args out/Testing --list`.
+
+To build Electron with Widevine support, add this GN arg:
+
+```gn
+enable_widevine = true
+```
+
+This enables Widevine support in the Electron binary. At runtime, provide CDM
+files with switches such as `--widevine-cdm-path` when needed.
+Without that switch, Electron checks the bundled location at
+`<Electron executable directory>/WidevineCdm`.
 
 **To build, run `ninja` with the `electron` target:**
 Note: This will also take a while and probably heat up your lap.
