@@ -227,42 +227,52 @@ DesktopCapturer::DesktopCapturer(v8::Isolate* isolate) {}
 
 DesktopCapturer::~DesktopCapturer() = default;
 
-DesktopCapturer::DesktopListListener::DesktopListListener(
-    OnceCallback update_callback,
-    OnceCallback failure_callback,
-    bool skip_thumbnails)
-    : update_callback_(std::move(update_callback)),
+DesktopCapturer::SourceListObserver::SourceListObserver(
+    base::OnceClosure ready_callback,
+    base::OnceClosure failure_callback,
+    DesktopMediaList* list,
+    bool need_thumbnails)
+    : ready_callback_(std::move(ready_callback)),
       failure_callback_(std::move(failure_callback)),
-      have_thumbnail_(skip_thumbnails) {}
+      list_(list),
+      need_thumbnails_(need_thumbnails) {}
 
-DesktopCapturer::DesktopListListener::~DesktopListListener() = default;
+DesktopCapturer::SourceListObserver::~SourceListObserver() = default;
 
-void DesktopCapturer::DesktopListListener::OnDelegatedSourceListSelection() {
-  if (have_thumbnail_) {
-    content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
-                                                 std::move(update_callback_));
-  } else {
-    have_selection_ = true;
-  }
+void DesktopCapturer::SourceListObserver::OnSourceAdded(int index) {
+  CheckReady();
 }
 
-void DesktopCapturer::DesktopListListener::OnSourceThumbnailChanged(int index) {
-  if (have_selection_) {
-    // This is called every time a thumbnail is refreshed. Reset variable to
-    // ensure that the callback is not run again.
-    have_selection_ = false;
-
-    // PipeWire returns a single source, so index is not relevant.
-    content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
-                                                 std::move(update_callback_));
-  } else {
-    have_thumbnail_ = true;
-  }
+void DesktopCapturer::SourceListObserver::OnSourceThumbnailChanged(int index) {
+  CheckReady();
 }
 
-void DesktopCapturer::DesktopListListener::OnDelegatedSourceListDismissed() {
+void DesktopCapturer::SourceListObserver::OnDelegatedSourceListDismissed() {
+  if (finished_)
+    return;
+  finished_ = true;
   content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
                                                std::move(failure_callback_));
+}
+
+void DesktopCapturer::SourceListObserver::CheckReady() {
+  if (finished_)
+    return;
+
+  int count = list_->GetSourceCount();
+  if (count == 0)
+    return;
+
+  if (need_thumbnails_) {
+    for (int i = 0; i < count; i++) {
+      if (list_->GetSource(i).thumbnail.isNull())
+        return;
+    }
+  }
+
+  finished_ = true;
+  content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
+                                               std::move(ready_callback_));
 }
 
 void DesktopCapturer::StartHandling(bool capture_window,
@@ -283,6 +293,8 @@ void DesktopCapturer::StartHandling(bool capture_window,
   // clear any existing captured sources.
   captured_sources_.clear();
 
+  bool need_thumbnails = !thumbnail_size.IsEmpty();
+
   if (capture_window && capture_screen) {
     // Some capturers like PipeWire support a single capturer for both screens
     // and windows. Use it if possible, treating both as window capture
@@ -299,17 +311,20 @@ void DesktopCapturer::StartHandling(bool capture_window,
           DesktopMediaList::Type::kWindow, std::move(capturer), true, true);
       window_capturer_->SetThumbnailSize(thumbnail_size);
 
-      OnceCallback update_callback = base::BindOnce(
+      base::OnceClosure update_callback = base::BindOnce(
           &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
           window_capturer_.get());
-      OnceCallback failure_callback = base::BindOnce(
+      base::OnceClosure failure_callback = base::BindOnce(
           &DesktopCapturer::HandleFailure, weak_ptr_factory_.GetWeakPtr());
 
-      window_listener_ = std::make_unique<DesktopListListener>(
+      window_observer_ = std::make_unique<SourceListObserver>(
           std::move(update_callback), std::move(failure_callback),
-          thumbnail_size.IsEmpty());
-      window_capturer_->StartUpdating(window_listener_.get());
+          window_capturer_.get(), need_thumbnails);
+      window_capturer_->StartUpdating(window_observer_.get());
 
+      safety_timer_.Start(FROM_HERE, base::Seconds(5),
+                          base::BindOnce(&DesktopCapturer::HandleSafetyTimeout,
+                                         weak_ptr_factory_.GetWeakPtr()));
       return;
     }
   }
@@ -325,71 +340,49 @@ void DesktopCapturer::StartHandling(bool capture_window,
   }
 #endif
 
-  {
-    // Initialize the source list.
-    // Apply the new thumbnail size and restart capture.
-    if (capture_window) {
-      auto capturer = MakeWindowCapturer();
-      if (capturer) {
-        window_capturer_ = std::make_unique<NativeDesktopMediaList>(
-            DesktopMediaList::Type::kWindow, std::move(capturer), true, true);
-        window_capturer_->SetThumbnailSize(thumbnail_size);
-#if BUILDFLAG(IS_MAC)
-        window_capturer_->skip_next_refresh_ =
-            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kWindow)
-                ? thumbnail_size.IsEmpty() ? 1 : 2
-                : 0;
-#endif
+  if (capture_window) {
+    auto capturer = MakeWindowCapturer();
+    if (capturer) {
+      window_capturer_ = std::make_unique<NativeDesktopMediaList>(
+          DesktopMediaList::Type::kWindow, std::move(capturer), true, true);
+      window_capturer_->SetThumbnailSize(thumbnail_size);
 
-        OnceCallback update_callback = base::BindOnce(
-            &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
-            window_capturer_.get());
+      base::OnceClosure update_callback = base::BindOnce(
+          &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
+          window_capturer_.get());
+      base::OnceClosure failure_callback = base::BindOnce(
+          &DesktopCapturer::HandleFailure, weak_ptr_factory_.GetWeakPtr());
 
-        if (window_capturer_->IsSourceListDelegated()) {
-          OnceCallback failure_callback = base::BindOnce(
-              &DesktopCapturer::HandleFailure, weak_ptr_factory_.GetWeakPtr());
-          window_listener_ = std::make_unique<DesktopListListener>(
-              std::move(update_callback), std::move(failure_callback),
-              thumbnail_size.IsEmpty());
-          window_capturer_->StartUpdating(window_listener_.get());
-        } else {
-          window_capturer_->Update(std::move(update_callback),
-                                   /* refresh_thumbnails = */ true);
-        }
-      }
-    }
-
-    if (capture_screen) {
-      auto capturer = MakeScreenCapturer();
-      if (capturer) {
-        screen_capturer_ = std::make_unique<NativeDesktopMediaList>(
-            DesktopMediaList::Type::kScreen, std::move(capturer));
-        screen_capturer_->SetThumbnailSize(thumbnail_size);
-#if BUILDFLAG(IS_MAC)
-        screen_capturer_->skip_next_refresh_ =
-            ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kScreen)
-                ? thumbnail_size.IsEmpty() ? 1 : 2
-                : 0;
-#endif
-
-        OnceCallback update_callback = base::BindOnce(
-            &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
-            screen_capturer_.get());
-
-        if (screen_capturer_->IsSourceListDelegated()) {
-          OnceCallback failure_callback = base::BindOnce(
-              &DesktopCapturer::HandleFailure, weak_ptr_factory_.GetWeakPtr());
-          screen_listener_ = std::make_unique<DesktopListListener>(
-              std::move(update_callback), std::move(failure_callback),
-              thumbnail_size.IsEmpty());
-          screen_capturer_->StartUpdating(screen_listener_.get());
-        } else {
-          screen_capturer_->Update(std::move(update_callback),
-                                   /* refresh_thumbnails = */ true);
-        }
-      }
+      window_observer_ = std::make_unique<SourceListObserver>(
+          std::move(update_callback), std::move(failure_callback),
+          window_capturer_.get(), need_thumbnails);
+      window_capturer_->StartUpdating(window_observer_.get());
     }
   }
+
+  if (capture_screen) {
+    auto capturer = MakeScreenCapturer();
+    if (capturer) {
+      screen_capturer_ = std::make_unique<NativeDesktopMediaList>(
+          DesktopMediaList::Type::kScreen, std::move(capturer));
+      screen_capturer_->SetThumbnailSize(thumbnail_size);
+
+      base::OnceClosure update_callback = base::BindOnce(
+          &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
+          screen_capturer_.get());
+      base::OnceClosure failure_callback = base::BindOnce(
+          &DesktopCapturer::HandleFailure, weak_ptr_factory_.GetWeakPtr());
+
+      screen_observer_ = std::make_unique<SourceListObserver>(
+          std::move(update_callback), std::move(failure_callback),
+          screen_capturer_.get(), need_thumbnails);
+      screen_capturer_->StartUpdating(screen_observer_.get());
+    }
+  }
+
+  safety_timer_.Start(FROM_HERE, base::Seconds(5),
+                      base::BindOnce(&DesktopCapturer::HandleSafetyTimeout,
+                                     weak_ptr_factory_.GetWeakPtr()));
 }
 
 void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
@@ -483,10 +476,14 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
 }
 
 void DesktopCapturer::HandleSuccess() {
+  safety_timer_.Stop();
+
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   gin_helper::CallMethod(this, "_onfinished", captured_sources_);
 
+  window_observer_.reset();
+  screen_observer_.reset();
   screen_capturer_.reset();
   window_capturer_.reset();
 
@@ -494,15 +491,37 @@ void DesktopCapturer::HandleSuccess() {
 }
 
 void DesktopCapturer::HandleFailure() {
+  safety_timer_.Stop();
+
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
 
   gin_helper::CallMethod(this, "_onerror", "Failed to get sources.");
 
+  window_observer_.reset();
+  screen_observer_.reset();
   screen_capturer_.reset();
   window_capturer_.reset();
 
   Unpin();
+}
+
+void DesktopCapturer::HandleSafetyTimeout() {
+  // Collect whatever sources are available from lists that haven't
+  // reported yet.
+  if (capture_window_ && window_capturer_) {
+    UpdateSourcesList(window_capturer_.get());
+  }
+  if (capture_screen_ && screen_capturer_) {
+    UpdateSourcesList(screen_capturer_.get());
+  }
+  // If UpdateSourcesList didn't trigger HandleSuccess (e.g., no capturers
+  // were created), force completion with whatever we have.
+  if (capture_window_ || capture_screen_) {
+    capture_window_ = false;
+    capture_screen_ = false;
+    HandleSuccess();
+  }
 }
 
 // static
