@@ -1850,15 +1850,13 @@ describe('app module', () => {
       });
 
       it('should return a positive number for informational type', () => {
-        const appHasFocus = !!BrowserWindow.getFocusedWindow();
-        if (!appHasFocus) {
+        if (!app.isActive()) {
           expect(app.dock?.bounce('informational')).to.be.at.least(0);
         }
       });
 
       it('should return a positive number for critical type', () => {
-        const appHasFocus = !!BrowserWindow.getFocusedWindow();
-        if (!appHasFocus) {
+        if (!app.isActive()) {
           expect(app.dock?.bounce('critical')).to.be.at.least(0);
         }
       });

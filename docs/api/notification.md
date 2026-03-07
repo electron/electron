@@ -8,6 +8,12 @@ Process: [Main](../glossary.md#main-process)
 > If you want to show notifications from a renderer process you should use the
 > [web Notifications API](../tutorial/notifications.md)
 
+> [!NOTE]
+> On MacOS, notifications use the UNNotification API as their underlying framework.
+> This API requires an application to be code-signed in order for notifications
+> to appear. Unsigned binaries will emit a `failed` event when notifications
+> are called.
+
 ## Class: Notification
 
 > Create OS desktop notifications
@@ -29,6 +35,46 @@ The `Notification` class has the following static methods:
 #### `Notification.isSupported()`
 
 Returns `boolean` - Whether or not desktop notifications are supported on the current system
+
+#### `Notification.handleActivation(callback)` _Windows_
+
+* `callback` Function
+  * `details` [ActivationArguments](structures/activation-arguments.md) - Details about the notification activation.
+
+Registers a callback to handle all notification activations. The callback is invoked whenever a
+notification is clicked, replied to, or has an action button pressed - regardless of whether
+the original `Notification` object is still in memory.
+
+This method handles timing automatically:
+
+* If an activation already occurred before calling this method, the callback is invoked immediately
+  with those details.
+* For all subsequent activations, the callback is invoked when they occur.
+
+The callback remains registered until replaced by another call to `handleActivation`.
+
+This provides a centralized way to handle notification interactions that works in all scenarios:
+
+* Cold start (app launched from notification click)
+* Notifications persisted in AC that have no in-memory representation after app re-start
+* Notification object was garbage collected
+* Notification object is still in memory (callback is invoked in addition to instance events)
+
+```js
+const { Notification, app } = require('electron')
+
+app.whenReady().then(() => {
+  // Register handler for all notification activations
+  Notification.handleActivation((details) => {
+    console.log('Notification activated:', details.type)
+    if (details.type === 'reply') {
+      console.log('User reply:', details.reply)
+    } else if (details.type === 'action') {
+      console.log('Action index:', details.actionIndex)
+    }
+  })
+})
+```
 
 ### `new Notification([options])`
 

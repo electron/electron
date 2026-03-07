@@ -15,6 +15,7 @@
 }
 
 - (void)addEmitter:(electron::api::PowerMonitor*)monitor_;
+- (void)removeEmitter:(electron::api::PowerMonitor*)monitor_;
 
 @end
 
@@ -62,6 +63,10 @@
   self->emitters.push_back(monitor_);
 }
 
+- (void)removeEmitter:(electron::api::PowerMonitor*)monitor_ {
+  std::erase(self->emitters, monitor_);
+}
+
 - (void)onScreenLocked:(NSNotification*)notification {
   for (auto* emitter : self->emitters) {
     emitter->Emit("lock-screen");
@@ -96,6 +101,11 @@ void PowerMonitor::InitPlatformSpecificMonitors() {
   if (!g_lock_monitor)
     g_lock_monitor = [[MacLockMonitor alloc] init];
   [g_lock_monitor addEmitter:this];
+}
+
+void PowerMonitor::DestroyPlatformSpecificMonitors() {
+  if (g_lock_monitor)
+    [g_lock_monitor removeEmitter:this];
 }
 
 }  // namespace electron::api

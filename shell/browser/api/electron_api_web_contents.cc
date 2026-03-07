@@ -429,6 +429,7 @@ namespace {
 // Global toggle for disabling draggable regions checks.
 bool g_disable_draggable_regions = false;
 
+#if BUILDFLAG(ENABLE_PRINTING)
 // Constants we use for printing.
 constexpr char kFrom[] = "from";
 constexpr char kTo[] = "to";
@@ -458,6 +459,7 @@ constexpr char kFooterTemplate[] = "footerTemplate";
 constexpr char kPreferCSSPageSize[] = "preferCSSPageSize";
 constexpr char kGenerateTaggedPDF[] = "generateTaggedPDF";
 constexpr char kGenerateDocumentOutline[] = "generateDocumentOutline";
+#endif  // BUILDFLAG(ENABLE_PRINTING)
 
 constexpr std::string_view CursorTypeToString(
     ui::mojom::CursorType cursor_type) {
@@ -2265,6 +2267,11 @@ void WebContents::DidUpdateFaviconURL(
         iter->icon_url.is_valid())
       unique_urls.insert(iter->icon_url);
   }
+  // Only emit if favicon URLs actually changed
+  if (unique_urls == last_favicon_urls_)
+    return;
+  last_favicon_urls_ = unique_urls;
+
   Emit("page-favicon-updated", unique_urls);
 }
 

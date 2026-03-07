@@ -10,7 +10,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { collectStreamBody, collectStreamBodyBuffer, getResponse, kOneKiloByte, kOneMegaByte, randomBuffer, randomString, respondNTimes, respondOnce } from './lib/net-helpers';
-import { listen, defer } from './lib/spec-helpers';
+import { listen, defer, ifdescribe, isTestingBindingAvailable } from './lib/spec-helpers';
 
 const utilityFixturePath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process', 'api-net-spec.js');
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -1689,10 +1689,9 @@ describe('net module', () => {
     });
   }
 
-  describe('Network Service crash recovery', () => {
-    const binding = process._linkedBinding('electron_common_testing');
-
+  ifdescribe(isTestingBindingAvailable())('Network Service crash recovery', () => {
     it('should recover net.fetch after Network Service crash (main process)', async () => {
+      const binding = process._linkedBinding('electron_common_testing');
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
         response.end('first');
       });
@@ -1715,6 +1714,7 @@ describe('net module', () => {
     });
 
     it('should recover net.fetch after Network Service crash (utility process)', async () => {
+      const binding = process._linkedBinding('electron_common_testing');
       const child = utilityProcess.fork(path.join(fixturesPath, 'api', 'utility-process', 'network-restart-test.js'));
       await once(child, 'spawn');
       await once(child, 'message');

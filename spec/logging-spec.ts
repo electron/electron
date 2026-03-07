@@ -7,16 +7,7 @@ import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-import { startRemoteControlApp, ifdescribe, ifit } from './lib/spec-helpers';
-
-function isTestingBindingAvailable () {
-  try {
-    process._linkedBinding('electron_common_testing');
-    return true;
-  } catch {
-    return false;
-  }
-}
+import { startRemoteControlApp, ifdescribe, ifit, isTestingBindingAvailable } from './lib/spec-helpers';
 
 // This test depends on functions that are only available when DCHECK_IS_ON.
 ifdescribe(isTestingBindingAvailable())('logging', () => {
