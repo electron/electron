@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index b5cd09da713c37a45fcbc046f3aef8828fa51c9f..0b8a68977fc4dc7d1989197779016402f92f5e7d 100644
+index 4071923717092ce31fa8031184af71af089588ce..270e221668e27207970c2e131432d2efa7038a75 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -10017,6 +10017,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10019,6 +10019,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index b5cd09da713c37a45fcbc046f3aef8828fa51c9f..0b8a68977fc4dc7d1989197779016402
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 64bc568b6ee9ac47588358bc4120a3a5646a24a7..003a171003baacb024cebf58b4957eb6979fda8e 100644
+index 5106dc268e7ade5b89198f641b0a17902b87e951..cbd5c331e801445bd1ab0984776231a2a648a29a 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5377,6 +5377,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -77,7 +77,7 @@ index ecfe129905639e9b7a5ed973017539cfaec9c2af..39308fa42e57b2dfba91aaa6f33d1a0b
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 3b7e54501698aeb6310780dd81ae23fa193a8edb..99cc391e52b6a8acd8083cffa2deb0bb725f1a4a 100644
+index 3a7c61028412a84e3b96f689dd56b7f161afbb94..5eec6acbb6fa94ca9d7ee1324a7fdb62de8aa42f 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -868,6 +868,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -90,7 +90,7 @@ index 3b7e54501698aeb6310780dd81ae23fa193a8edb..99cc391e52b6a8acd8083cffa2deb0bb
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 9fb362f1924868a486ec7e51ce31aef2f6931b0d..03372a5dad8cfe5f3866a4501293cd436e3f34af 100644
+index bf77fbd24b051eb029fa283a1fa82f4995fb6d02..ec1bb0fec53be50236dcdddd5b09db01fdad3f4c 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -205,6 +205,7 @@ class NetworkService;
@@ -170,10 +170,10 @@ index 0650197909d484b8a0f48ab61b22471c71bce0e8..29c380d7845aab1a7b3417e0d3940ea0
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 6dfc8a618a4e454f5a25f8b188f09d0bc2662679..415b2bf329db639e4d3732c290b055aa6b5825de 100644
+index 2cf52ebc1ce7c469855554c83a07c4ef3d8aff57..60661707197f972da2f6ee0718a344581da529cf 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6854,6 +6854,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6844,6 +6844,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
    params->started_by_ad =
        GetWebFrame()->IsAdFrame() || GetWebFrame()->IsAdScriptInStack();
  
@@ -224,10 +224,10 @@ index d92bab531c12c62a5321a23f4a0cb89691668127..2060e04795ba8e7a923fd0fe3485b8c5
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 4f167a3dcd36f837415bda493ddd59a34db95049..373d601544c4218f972fca7a170e3b26d82e1b3d 100644
+index cbc875cf147d4cd76ceb6e769e1ad17f992bc6ca..dfbc59e40438c378b87df8e0ea64a08ae877b817 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2328,6 +2328,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2329,6 +2329,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, entered_window);
  

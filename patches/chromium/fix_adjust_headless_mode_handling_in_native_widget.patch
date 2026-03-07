@@ -93,7 +93,7 @@ index a9ad418f46fc6fdd437025a475f2538f706baa0c..9bdbd620a68ce3fad8eecd88cac3159f
    // window's workspace and fullscreen state, and can be retrieved from or
    // applied to a window.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index dccf58b3d0d1003d236e204cde4edbab00610eac..3bceb396989c59449e7f76183b9d13721509349e 100644
+index ac1905d73675e5645c8baa38c7c95af54dfb0c33..c2946ef91613438f56e333a198cfbeb1013ffdbc 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -560,6 +560,7 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
@@ -105,10 +105,10 @@ index dccf58b3d0d1003d236e204cde4edbab00610eac..3bceb396989c59449e7f76183b9d1372
    bool is_visible_on_all_workspaces_ = false;
    gfx::Rect window_bounds_before_fullscreen_;
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 04ccf05abbdeba229a39f547d1affc6e21e7d377..89275857eee2606c68279485e08f336d90a82f76 100644
+index fe1fc7c7c37918196773cb555423db9077048a0d..8e6a8771ff1e312f25b504d09fec2f7aa3bbbad0 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -467,6 +467,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -468,6 +468,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    if (!is_tooltip) {
      tooltip_manager_ = std::make_unique<TooltipManagerMac>(GetNSWindowMojo());
    }
@@ -116,7 +116,7 @@ index 04ccf05abbdeba229a39f547d1affc6e21e7d377..89275857eee2606c68279485e08f336d
  
    if (params.workspace.length()) {
      std::string restoration_data;
-@@ -484,6 +485,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -485,6 +486,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
      window_params->modal_type = widget->widget_delegate()->GetModalType();
      window_params->is_translucent =
          params.opacity == Widget::InitParams::WindowOpacity::kTranslucent;
@@ -124,7 +124,7 @@ index 04ccf05abbdeba229a39f547d1affc6e21e7d377..89275857eee2606c68279485e08f336d
      window_params->is_tooltip = is_tooltip;
  
      // macOS likes to put shadows on most things. However, frameless windows
-@@ -665,9 +667,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -666,9 +668,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // case it will never become visible but we want its compositor to produce
    // frames for screenshooting and screencasting.
    UpdateCompositorProperties();
