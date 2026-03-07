@@ -1765,6 +1765,15 @@ describe('app module', () => {
     });
   });
 
+  describe('enableExtensionsOnAllProtocols() API', () => {
+    // Proper tests are in extensions-spec.ts
+    it('throws when called after app is ready', () => {
+      expect(() => {
+        app.enableExtensionsOnAllProtocols();
+      }).to.throw(/before app is ready/);
+    });
+  });
+
   describe('disableDomainBlockingFor3DAPIs() API', () => {
     it('throws when called after app is ready', () => {
       expect(() => {
