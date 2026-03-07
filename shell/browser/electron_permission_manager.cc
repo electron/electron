@@ -274,8 +274,7 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
   int request_id = pending_requests_.Add(std::make_unique<PendingRequest>(
       render_frame_host, std::move(permissions), std::move(response_callback)));
 
-  details.Set("requestingOrigin",
-              render_frame_host->GetLastCommittedOrigin().Serialize());
+  details.Set("requestingUrl", render_frame_host->GetLastCommittedURL().spec());
   details.Set("isMainFrame", render_frame_host->GetParent() == nullptr);
   base::Value dict_value(std::move(details));
 
@@ -386,8 +385,8 @@ bool ElectronPermissionManager::CheckPermissionWithDetails(
           ? content::WebContents::FromRenderFrameHost(render_frame_host)
           : nullptr;
   if (render_frame_host) {
-    details.Set("requestingOrigin",
-                render_frame_host->GetLastCommittedOrigin().Serialize());
+    details.Set("requestingUrl",
+                render_frame_host->GetLastCommittedURL().spec());
   }
   details.Set("isMainFrame",
               render_frame_host && render_frame_host->GetParent() == nullptr);
