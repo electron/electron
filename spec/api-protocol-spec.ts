@@ -1613,6 +1613,45 @@ describe('protocol module', () => {
       expect(await contents.executeJavaScript('document.documentElement.textContent')).to.equal('hello');
     });
 
+    // For more context on the difference between the above test and the below test, see:
+    // https://github.com/electron/electron/pull/49671
+
+    it('can defer to the built-in handler and receive redirects', async () => {
+      protocol.handle('http', () => null);
+      defer(() => { protocol.unhandle('http'); });
+
+      const headersReceived: Array<{ url: string, statusCode: number }> = [];
+      session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+        if (details.webContentsId === contents.id && details.resourceType === 'mainFrame') {
+          headersReceived.push({ url: details.url, statusCode: details.statusCode });
+        }
+        callback({ cancel: false, responseHeaders: details.responseHeaders });
+      });
+      defer(() => { session.defaultSession.webRequest.onHeadersReceived(null); });
+
+      let redirectURL = '';
+      contents.once('did-redirect-navigation', (_event, redirectedURL) => {
+        redirectURL = redirectedURL;
+      });
+
+      const server = http.createServer((req, res) => {
+        if (req.url === '/final') {
+          res.end('hello');
+          server.close();
+        } else {
+          res.writeHead(302, { Location: '/final' });
+          res.end();
+        }
+      });
+      const { url } = await listen(server);
+      await contents.loadURL(url);
+
+      expect(redirectURL).to.equal(`${url}/final`);
+      expect(headersReceived[0]).to.deep.equal({ url: `${url}/`, statusCode: 302 });
+      expect(headersReceived[1]).to.deep.equal({ url: `${url}/final`, statusCode: 200 });
+      expect(await contents.executeJavaScript('document.documentElement.textContent')).to.equal('hello');
+    });
+
     it('supports sniffing mime type', async () => {
       protocol.handle('http', async (req) => {
         return net.fetch(req, { bypassCustomProtocolHandlers: true });

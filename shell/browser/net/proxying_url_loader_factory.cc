@@ -12,6 +12,8 @@
 #include "base/functional/callback_helpers.h"
 #include "base/strings/string_split.h"
 #include "content/public/browser/browser_context.h"
+#include "gin/converter.h"
+#include "gin/arguments.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/base/load_flags.h"
@@ -22,12 +24,43 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/mojom/early_hints.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
+#include "shell/browser/api/electron_api_protocol.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 #include "shell/common/options_switches.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "url/origin.h"
 
 namespace electron {
+
+namespace {
+
+void StartLoadingOrDefer(
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
+    int32_t request_id,
+    uint32_t options,
+    const network::ResourceRequest& request,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> proxy_factory_remote,
+    ProtocolType type,
+    gin::Arguments* args) {
+  v8::Local<v8::Value> handler_return_value = args->PeekNext();
+  electron::api::DeferredResponse* deferred_response = nullptr;
+  if (gin::ConvertFromV8(args->isolate(), handler_return_value,
+                         &deferred_response) && deferred_response) {
+    mojo::Remote<network::mojom::URLLoaderFactory> proxy_factory(
+        std::move(proxy_factory_remote));
+    proxy_factory->CreateLoaderAndStart(
+        std::move(loader), request_id, options | kBypassCustomProtocolHandlers,
+        request, std::move(client), traffic_annotation);
+    return;
+  }
+  ElectronURLLoaderFactory::StartLoading(
+      std::move(loader), request_id, options, request, std::move(client),
+      traffic_annotation, std::move(proxy_factory_remote), type, args);
+}
+
+}  // namespace
 
 ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
     FollowRedirectParams() = default;
@@ -806,7 +839,7 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
       // <scheme, <type, handler>>
       it->second.second.Run(
           request,
-          base::BindOnce(&ElectronURLLoaderFactory::StartLoading,
+          base::BindOnce(&StartLoadingOrDefer,
                          std::move(loader), request_id, options, request,
                          std::move(client), traffic_annotation,
                          std::move(loader_remote), it->second.first));

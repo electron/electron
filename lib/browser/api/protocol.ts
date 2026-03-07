@@ -1,4 +1,4 @@
-import { ProtocolRequest, session } from 'electron/main';
+import { ProtocolRequest, ProtocolResponse, session } from 'electron/main';
 
 import { createReadStream } from 'fs';
 import { Readable } from 'stream';
@@ -7,7 +7,12 @@ import { ReadableStream } from 'stream/web';
 import type { ReadableStreamDefaultReader } from 'stream/web';
 
 // Global protocol APIs.
-const { registerSchemesAsPrivileged, getStandardSchemes, Protocol } = process._linkedBinding('electron_browser_protocol');
+const {
+  registerSchemesAsPrivileged,
+  getStandardSchemes,
+  Protocol,
+  DeferredResponse
+} = process._linkedBinding('electron_browser_protocol');
 
 const ERR_FAILED = -2;
 const ERR_UNEXPECTED = -9;
@@ -115,9 +120,21 @@ function validateResponse (res: Response) {
   return true;
 }
 
-Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, handler: (req: Request) => Response | Promise<Response>) {
+// We need to brand it to avoid having unrelated types like `Response` be assignable to it.
+declare const kDeferredBrand: unique symbol;
+type DeferredResponseBranded = Electron.DeferredResponse & { [kDeferredBrand]: true };
+
+// We have to extract this check out to allow for better type inference in the handler function.
+function isDeferredResponse (res: unknown): res is DeferredResponseBranded {
+  return res instanceof DeferredResponse;
+}
+
+Protocol.prototype.handle = function (
+  this: Electron.Protocol,
+  scheme: string, handler: (req: Request) => (Response | DeferredResponseBranded) | Promise<Response | DeferredResponseBranded>
+) {
   const register = isBuiltInScheme(scheme) ? this.interceptProtocol : this.registerProtocol;
-  const success = register.call(this, scheme, async (preq: ProtocolRequest, cb: any) => {
+  const success = register.call(this, scheme, async (preq: ProtocolRequest, cb: (pres: ProtocolResponse | DeferredResponseBranded) => void) => {
     try {
       const body = convertToRequestBody(preq.uploadData);
       const headers = new Headers(preq.headers);
@@ -132,16 +149,17 @@ Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, h
         duplex: body instanceof ReadableStream ? 'half' : undefined
       } as any);
       const res = await handler(req);
-      if (!validateResponse(res)) {
+      if (isDeferredResponse(res)) {
+        return cb(res);
+      } else if (!validateResponse(res)) {
         return cb({ error: ERR_UNEXPECTED });
       } else if (res.type === 'error') {
         cb({ error: ERR_FAILED });
       } else {
         cb({
-          data: res.body ? Readable.fromWeb(res.body as ReadableStream<ArrayBufferView>) : null,
+          data: res.body ? Readable.fromWeb(res.body as ReadableStream<ArrayBufferView>) : undefined,
           headers: res.headers ? Object.fromEntries(res.headers) : {},
           statusCode: res.status,
-          statusText: res.statusText,
           mimeType: (res as any).__original_resp?._responseHead?.mimeType
         });
       }
@@ -166,6 +184,7 @@ Protocol.prototype.isProtocolHandled = function (this: Electron.Protocol, scheme
 const protocol = {
   registerSchemesAsPrivileged,
   getStandardSchemes,
+  DeferredResponse,
   registerStringProtocol: (...args) => session.defaultSession.protocol.registerStringProtocol(...args),
   registerBufferProtocol: (...args) => session.defaultSession.protocol.registerBufferProtocol(...args),
   registerStreamProtocol: (...args) => session.defaultSession.protocol.registerStreamProtocol(...args),
