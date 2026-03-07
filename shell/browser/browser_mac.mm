@@ -146,6 +146,10 @@ void Browser::Focus(gin::Arguments* args) {
   [[AtomApplication sharedApplication] activateIgnoringOtherApps:steal_focus];
 }
 
+bool Browser::IsActive() {
+  return [[AtomApplication sharedApplication] isActive];
+}
+
 void Browser::Hide() {
   [[AtomApplication sharedApplication] hide:nil];
 }

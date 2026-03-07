@@ -1178,10 +1178,6 @@ session.defaultSession.clearStorageData({ storages: ['shadercache', 'cachestorag
 // @ts-expect-error Invalid type value
 session.defaultSession.clearStorageData({ storages: ['wrong_path'] });
 
-session.defaultSession.clearStorageData({ quotas: ['temporary'] });
-// @ts-expect-error Invalid type value
-session.defaultSession.clearStorageData({ quotas: ['bad_type'] });
-
 session.defaultSession.on('will-download', (event, item, webContents) => {
   console.log('will-download', webContents.id);
   event.preventDefault();

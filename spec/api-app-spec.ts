@@ -1773,6 +1773,31 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'darwin')('app isActive API', () => {
+    describe('app.isActive', () => {
+      afterEach(closeAllWindows);
+
+      it('returns true when the app becomes active', async () => {
+        expect(app.isActive()).to.equal(false);
+
+        const w = new BrowserWindow({
+          width: 200,
+          height: 200,
+          show: false
+        });
+
+        w.show();
+
+        await expect(
+          waitUntil(() => app.isActive())
+        ).to.eventually.be.fulfilled();
+
+        w.close();
+        app.hide();
+      });
+    });
+  });
+
   ifdescribe(process.platform === 'darwin')('app hide and show API', () => {
     describe('app.isHidden', () => {
       it('returns true when the app is hidden', async () => {
@@ -1825,15 +1850,13 @@ describe('app module', () => {
       });
 
       it('should return a positive number for informational type', () => {
-        const appHasFocus = !!BrowserWindow.getFocusedWindow();
-        if (!appHasFocus) {
+        if (!app.isActive()) {
           expect(app.dock?.bounce('informational')).to.be.at.least(0);
         }
       });
 
       it('should return a positive number for critical type', () => {
-        const appHasFocus = !!BrowserWindow.getFocusedWindow();
-        if (!appHasFocus) {
+        if (!app.isActive()) {
           expect(app.dock?.bounce('critical')).to.be.at.least(0);
         }
       });

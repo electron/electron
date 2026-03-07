@@ -54,6 +54,7 @@ class PowerMonitor final : public gin::Wrappable<PowerMonitor>,
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   void InitPlatformSpecificMonitors();
+  void DestroyPlatformSpecificMonitors();
 #endif
 
   // base::PowerStateObserver implementations:

@@ -233,3 +233,12 @@ export async function listen (server: http.Server | https.Server | http2.Http2Se
   const protocol = (server instanceof http.Server) ? 'http' : 'https';
   return { port, hostname, url: url.format({ protocol, hostname, port }) };
 }
+
+export function isTestingBindingAvailable () {
+  try {
+    process._linkedBinding('electron_common_testing');
+    return true;
+  } catch {
+    return false;
+  }
+}

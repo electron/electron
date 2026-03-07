@@ -159,6 +159,29 @@ When working on the `roller/chromium/main` branch to upgrade Chromium activate t
 
 PR bodies must always include a `Notes:` section as the **last line** of the body. This is a consumer-facing release note for Electron app developers — describe the user-visible fix or change, not internal implementation details. Use `Notes: none` if there is no user-facing change.
 
+### PR Labeling (write-access only)
+
+When the user has write access to `electron/electron`, add these labels when creating PRs:
+
+**Semver label** — one of:
+
+- `semver/none` — build changes, refactors, CI, or anything with no end-user impact
+- `semver/patch` — backwards-compatible bug fixes
+- `semver/minor` — backwards-compatible new functionality
+- `semver/major` — incompatible API changes
+
+**Backport target labels** — add `target/{N}-x-y` for each supported release branch the change should land on. Default policy:
+
+- **Bug fixes** — backport to all active release lines _except the oldest_
+- **Security fixes** — backport to all active release lines _including the oldest_
+- **Features (semver/minor) and breaking changes (semver/major)** — no backport labels; main-only by default
+
+To find which release branches are active, check label colors — active `target/*` labels use color `#ad244f`, older/EOL ones use `#ededed`:
+
+```bash
+gh label list --repo electron/electron --search target/ --json name,color --jq '.[] | select(.color == "ad244f") | .name'
+```
+
 ## Code Style
 
 **C++:** Follows Chromium style, enforced by clang-format
