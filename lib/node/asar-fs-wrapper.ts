@@ -1232,6 +1232,8 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   // has filesystem caching.
   overrideAPI(fs, 'copyFile');
   overrideAPISync(fs, 'copyFileSync');
+  overrideAPI(fs, 'cp');
+  overrideAPISync(fs, 'cpSync');
 
   overrideAPI(fs, 'open');
   overrideAPISync(process, 'dlopen', 1);
