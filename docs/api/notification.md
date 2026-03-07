@@ -79,6 +79,8 @@ app.whenReady().then(() => {
 ### `new Notification([options])`
 
 * `options` Object (optional)
+  * `id` string (optional) _macOS_ - A unique identifier for the notification. If not provided, a random UUID will be generated. This identifier can be used to later remove or update the notification.
+  * `groupId` string (optional) _macOS_ - A string identifier used to visually group notifications together. On macOS, this maps to the `threadIdentifier` property of `UNNotificationContent`.
   * `title` string (optional) - A title for the notification, which will be displayed at the top of the notification window when it is shown.
   * `subtitle` string (optional) _macOS_ - A subtitle for the notification, which will be displayed below the title.
   * `body` string (optional) - The body text of the notification, which will be displayed below the title or subtitle.
@@ -322,6 +324,14 @@ app.whenReady().then(() => {
 ```
 
 ### Instance Properties
+
+#### `notification.id` _macOS_
+
+A `string` property representing the unique identifier of the notification. If not set in the constructor, a random UUID will be generated when `show()` is called.
+
+#### `notification.groupId` _macOS_
+
+A `string` property representing the group identifier of the notification. Notifications with the same `groupId` will be visually grouped together in Notification Center on macOS.
 
 #### `notification.title`
 
