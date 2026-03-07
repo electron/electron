@@ -9,10 +9,10 @@ This is already applied in newer versions of Node so we can drop
 this patch once we upgrade to v23.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 79327877b0f34cbafb3efcc21617027d4011f806..8a12475857135bd3e904610b7eb887c397c8e73c 100644
+index 6034b779fe05850cfc4e7f7af221489be9369b54..d19cae298147f1b310506eec49b6fbd036fb1195 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -827,7 +827,7 @@ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
+@@ -832,7 +832,7 @@ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
  
    Local<Object> private_symbols_object;
    if (!private_symbols->NewInstance(context).ToLocal(&private_symbols_object) ||
@@ -21,7 +21,7 @@ index 79327877b0f34cbafb3efcc21617027d4011f806..8a12475857135bd3e904610b7eb887c3
            .IsNothing()) {
      return MaybeLocal<Object>();
    }
-@@ -853,7 +853,7 @@ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
+@@ -858,7 +858,7 @@ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
    Local<Object> per_isolate_symbols_object;
    if (!per_isolate_symbols->NewInstance(context).ToLocal(
            &per_isolate_symbols_object) ||

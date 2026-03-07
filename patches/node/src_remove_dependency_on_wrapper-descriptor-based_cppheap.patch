@@ -16,7 +16,7 @@ patch:
 (cherry picked from commit 30329d06235a9f9733b1d4da479b403462d1b326)
 
 diff --git a/src/env-inl.h b/src/env-inl.h
-index da2c468f11cdc320cfec794b1b8b24904b93491e..98e1e1e75bae94038bba0049447ab48b0acfb8cc 100644
+index bcf5fb6104ccf937304d109f1c0f5d07ca54acd4..d1a7e1212da46a8e5c2fffee46542ac8bec828ee 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
 @@ -62,31 +62,6 @@ inline uv_loop_t* IsolateData::event_loop() const {
@@ -146,7 +146,7 @@ index 926645dc647fe7ca01165462f08eac1ade71ac4e..85641b68b1e6f6dd4149f33ba13f76bc
  
  void IsolateData::MemoryInfo(MemoryTracker* tracker) const {
 diff --git a/src/env.h b/src/env.h
-index 35e16159a94bb97f19d17767e3ad4bb798660f44..2d5fa8dbd75851bca30453548f6cbe0159509f26 100644
+index 723e4738dd1c32710e521775d66e0d957334344c..888f0a5572254d775cbf672dcf07b789782292ea 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -177,10 +177,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
@@ -161,10 +161,10 @@ index 35e16159a94bb97f19d17767e3ad4bb798660f44..2d5fa8dbd75851bca30453548f6cbe01
    inline MultiIsolatePlatform* platform() const;
    inline const SnapshotData* snapshot_data() const;
 diff --git a/src/node.h b/src/node.h
-index 96c599aa6448e2aa8e57e84f811564a5281c139a..d3a965661d068db359bb1bb4b14e59c28bb615f9 100644
+index 4e66924e4ca5b5d787fc6259de940a3fb40bff38..91468bfd755db6adde5cc8cecb184312db90a654 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -1576,24 +1576,14 @@ void RegisterSignalHandler(int signal,
+@@ -1575,24 +1575,14 @@ void RegisterSignalHandler(int signal,
                             bool reset_handler = false);
  #endif  // _WIN32
  

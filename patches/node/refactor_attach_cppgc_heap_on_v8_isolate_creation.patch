@@ -18,10 +18,10 @@ This can be removed when Node.js upgrades to a version of V8 containing CLs
 from the above issue.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index fd71ceac65ccef1d2832b45b0b5612877cee22c1..ceac508418f489a8077c1bc85a2feaf85bf60480 100644
+index 8356e588659d2208700659f3e3ce5438fba9462f..d2614bba9463056e931b6d5c1f3153e2f576b779 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -308,6 +308,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
+@@ -313,6 +313,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
                      MultiIsolatePlatform* platform,
                      const SnapshotData* snapshot_data,
                      const IsolateSettings& settings) {
@@ -32,7 +32,7 @@ index fd71ceac65ccef1d2832b45b0b5612877cee22c1..ceac508418f489a8077c1bc85a2feaf8
    Isolate* isolate = Isolate::Allocate();
    if (isolate == nullptr) return nullptr;
  
-@@ -351,9 +355,12 @@ Isolate* NewIsolate(ArrayBufferAllocator* allocator,
+@@ -356,9 +360,12 @@ Isolate* NewIsolate(ArrayBufferAllocator* allocator,
                      uv_loop_t* event_loop,
                      MultiIsolatePlatform* platform,
                      const EmbedderSnapshotData* snapshot_data,
@@ -82,7 +82,7 @@ index 85641b68b1e6f6dd4149f33ba13f76bccc8bf47d..c6209cc7cf317de1bb9217e39dd760e5
  void SetCppgcReference(Isolate* isolate,
                         Local<Object> object,
 diff --git a/src/env.h b/src/env.h
-index 2d5fa8dbd75851bca30453548f6cbe0159509f26..c346e3a9c827993036438685d758a734f9ce8c05 100644
+index 888f0a5572254d775cbf672dcf07b789782292ea..2af2846af6ba7d8ad6e0edca5e2f6279e4c672a3 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -157,7 +157,6 @@ class NODE_EXTERN_PRIVATE IsolateData : public MemoryRetainer {
@@ -102,7 +102,7 @@ index 2d5fa8dbd75851bca30453548f6cbe0159509f26..c346e3a9c827993036438685d758a734
    worker::Worker* worker_context_ = nullptr;
    PerIsolateWrapperData* wrapper_data_;
 diff --git a/src/node.cc b/src/node.cc
-index 0ffc69d54631fa3dbac20337b26f7a0679560b96..f012b365455bb111cddea44fcff020804086ab72 100644
+index 152a9d9b17f9b14922421e2fe9866b6056f13ec7..f85b5ed687180d7a12648b87398a734fb321f346 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -1288,6 +1288,14 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
@@ -136,10 +136,10 @@ index 0ffc69d54631fa3dbac20337b26f7a0679560b96..f012b365455bb111cddea44fcff02080
    bool use_wasm_trap_handler =
        !per_process::cli_options->disable_wasm_trap_handler;
 diff --git a/src/node.h b/src/node.h
-index d3a965661d068db359bb1bb4b14e59c28bb615f9..16a0c71aef949b0ddd27def9dc843298f9a6b75f 100644
+index 91468bfd755db6adde5cc8cecb184312db90a654..fe44369dff7519ea0d960ae478d5caf524e17366 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -590,7 +590,8 @@ NODE_EXTERN v8::Isolate* NewIsolate(
+@@ -589,7 +589,8 @@ NODE_EXTERN v8::Isolate* NewIsolate(
      struct uv_loop_s* event_loop,
      MultiIsolatePlatform* platform,
      const EmbedderSnapshotData* snapshot_data = nullptr,
@@ -174,7 +174,7 @@ index 4119ac1b002681d39711eac810ca2fcc2702ffc7..790347056cde949ffe6cf8498a7eca0c
  
  ExitCode NodeMainInstance::Run() {
 diff --git a/src/node_worker.cc b/src/node_worker.cc
-index 29c4b1de42b3127a98871d200c80197bf974b31f..8555ab556b5b74a1cf9cf30747f1f417bfe4e4d9 100644
+index 083abea7d744e552dd349e5e1ceb75dfaaa79eaa..ddfea91272d03d4ef1d4ac1b982ada5dcd24b601 100644
 --- a/src/node_worker.cc
 +++ b/src/node_worker.cc
 @@ -177,6 +177,9 @@ class WorkerThreadData {
