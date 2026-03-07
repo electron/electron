@@ -319,6 +319,13 @@ By default inspector websocket url is available in stderr and under /json/list e
 
 Enable support for DevTools network inspector events, for visibility into requests made by the nodejs `http` and `https` modules.
 
+### `--experimental-inspector-network-resource`
+
+Enable support for resolving source maps over the network when using the Node.js inspector.
+
+When enabled, DevTools can retrieve remote source maps for main and utility
+process scripts via the Node.js inspector.
+
 ### `--no-deprecation`
 
 Silence deprecation warnings.
