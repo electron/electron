@@ -12,7 +12,7 @@ import { AddressInfo } from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { copyMacOSFixtureApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn } from './lib/codesign-helpers';
+import { copyMacOSFixtureApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn, unsignApp } from './lib/codesign-helpers';
 import { withTempDirectory } from './lib/fs-helpers';
 import { ifdescribe, ifit } from './lib/spec-helpers';
 
@@ -146,10 +146,40 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
   ifit(process.arch !== 'arm64')('should fail to set the feed URL when the app is not signed', async () => {
     await withTempDirectory(async (dir) => {
       const appPath = await copyMacOSFixtureApp(dir);
+      await unsignApp(appPath);
       const launchResult = await launchApp(appPath, ['http://myupdate']);
       console.log(launchResult);
       expect(launchResult.code).to.equal(1);
       expect(launchResult.out).to.include('Could not get code signature for running application');
+    });
+  });
+
+  ifit(process.arch !== 'arm64')('should fail with code signature error when serverType is default and app is unsigned', async () => {
+    await withTempDirectory(async (dir) => {
+      const appPath = await copyMacOSFixtureApp(dir);
+      await unsignApp(appPath);
+      const launchResult = await launchApp(appPath, ['', 'default']);
+      expect(launchResult.code).to.equal(1);
+      expect(launchResult.out).to.include('Could not get code signature for running application');
+    });
+  });
+
+  ifit(process.arch !== 'arm64')('should fail with code signature error when serverType is json and app is unsigned', async () => {
+    await withTempDirectory(async (dir) => {
+      const appPath = await copyMacOSFixtureApp(dir);
+      await unsignApp(appPath);
+      const launchResult = await launchApp(appPath, ['', 'json']);
+      expect(launchResult.code).to.equal(1);
+      expect(launchResult.out).to.include('Could not get code signature for running application');
+    });
+  });
+
+  ifit(process.arch !== 'arm64')('should fail with serverType error when an invalid serverType is provided', async () => {
+    await withTempDirectory(async (dir) => {
+      const appPath = await copyMacOSFixtureApp(dir);
+      const launchResult = await launchApp(appPath, ['', 'weow']);
+      expect(launchResult.code).to.equal(1);
+      expect(launchResult.out).to.include("Expected serverType to be 'default' or 'json'");
     });
   });
 

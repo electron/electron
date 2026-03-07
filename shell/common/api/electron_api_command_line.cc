@@ -5,7 +5,7 @@
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/strings/string_util.h"
-#include "services/network/public/cpp/network_switches.h"
+#include "net/base/switches.h"
 #include "shell/common/gin_converters/base_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -34,7 +34,7 @@ void AppendSwitch(const std::string& switch_string,
   auto* command_line = base::CommandLine::ForCurrentProcess();
   if (base::EndsWith(switch_string, "-path",
                      base::CompareCase::INSENSITIVE_ASCII) ||
-      switch_string == network::switches::kLogNetLog) {
+      switch_string == net::switches::kLogNetLog) {
     base::FilePath path;
     args->GetNext(&path);
     command_line->AppendSwitchPath(switch_str, path);

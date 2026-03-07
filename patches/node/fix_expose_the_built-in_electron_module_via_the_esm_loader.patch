@@ -77,10 +77,10 @@ index 22c1e9f1ae652b033903f56f394352806ddff754..961da666a233541203b5416909fd1ff0
        if (cjsModule?.[kIsExecuting]) {
          const parentFilename = urlToFilename(parentURL);
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index c1d774b9c5c4049f7ecda4e3a1faaa59dad01764..4fd58b1cea557ec122bd860e1ebc15bd04c44f78 100644
+index cc1230648881d8d14ba3902fca78291c90fb79fb..edf347102fedbb28bce221defa99c37b5834024b 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -752,6 +752,9 @@ function packageImportsResolve(name, base, conditions) {
+@@ -751,6 +751,9 @@ function packageImportsResolve(name, base, conditions) {
    throw importNotDefined(name, packageJSONUrl, base);
  }
  
@@ -90,7 +90,7 @@ index c1d774b9c5c4049f7ecda4e3a1faaa59dad01764..4fd58b1cea557ec122bd860e1ebc15bd
  
  /**
   * Resolves a package specifier to a URL.
-@@ -766,6 +769,11 @@ function packageResolve(specifier, base, conditions) {
+@@ -765,6 +768,11 @@ function packageResolve(specifier, base, conditions) {
      return new URL('node:' + specifier);
    }
  
@@ -103,10 +103,10 @@ index c1d774b9c5c4049f7ecda4e3a1faaa59dad01764..4fd58b1cea557ec122bd860e1ebc15bd
  
    const packageConfig = packageJsonReader.read(packageJSONPath, { __proto__: null, specifier, base, isESM: true });
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 1716328c7a98996a8933dbaa00a1c6c3156fb2ff..30f887663bbbd9913eff35f0e6e5b8291adda120 100644
+index d6c96996a900da8e7d4f7f5104312e73e72c2d62..ec76d7ffa45f49721d395e8e33be79114daa0369 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -223,7 +223,9 @@ function createCJSModuleWrap(url, translateContext, parentURL, loadCJS = loadCJS
+@@ -214,7 +214,9 @@ function createCJSModuleWrap(url, translateContext, parentURL, loadCJS = loadCJS
    const { exportNames, module } = cjsPreparseModuleExports(filename, source, sourceFormat);
    cjsCache.set(url, module);
  
@@ -117,7 +117,7 @@ index 1716328c7a98996a8933dbaa00a1c6c3156fb2ff..30f887663bbbd9913eff35f0e6e5b829
    if (!exportNames.has('default')) {
      ArrayPrototypePush(wrapperNames, 'default');
    }
-@@ -325,6 +327,10 @@ translators.set('require-commonjs', (url, translateContext, parentURL) => {
+@@ -313,6 +315,10 @@ translators.set('require-commonjs', (url, translateContext, parentURL) => {
    return createCJSModuleWrap(url, translateContext, parentURL);
  });
  

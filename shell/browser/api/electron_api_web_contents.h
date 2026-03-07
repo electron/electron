@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include "base/containers/flat_set.h"
 #include "base/functional/callback_forward.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
@@ -24,6 +25,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/frame_tree_node_id.h"
+#include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/javascript_dialog_manager.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -336,7 +338,7 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(
-      content::RenderFrameHost* requesting_frame,
+      const content::GlobalRenderFrameHostToken& frame_token,
       const blink::mojom::FullscreenOptions& options,
       bool allowed);
 
@@ -461,6 +463,9 @@ class WebContents final : public ExclusiveAccessContext,
   WebContents& operator=(const WebContents&) = delete;
 
  private:
+  // Store last emitted favicon URLs to avoid duplicate page-favicon-updated
+  // events
+  base::flat_set<GURL> last_favicon_urls_;
   // Does not manage lifetime of |web_contents|.
   WebContents(v8::Isolate* isolate, content::WebContents* web_contents);
   // Takes over ownership of |web_contents|.
@@ -506,6 +511,8 @@ class WebContents final : public ExclusiveAccessContext,
       const GURL& opener_url,
       const std::string& frame_name,
       const GURL& target_url,
+      WindowOpenDisposition disposition,
+      const blink::mojom::WindowFeatures& window_features,
       const content::StoragePartitionConfig& partition_config,
       content::SessionStorageNamespace* session_storage_namespace) override;
   void WebContentsCreatedWithFullParams(

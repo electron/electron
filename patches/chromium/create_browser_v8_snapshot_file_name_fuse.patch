@@ -7,7 +7,7 @@ By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This
 to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 81e2e8bbae7c2d8c5ef6c4fad5121121317901ca..3c7722778d909d35ab268c81fd406f0870502fd4 100644
+index b795a9dbf898570a7cd8469ee386c4edf4bfa275..449940fe1b6969576f1b2c21d7719620e578e8a8 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -277,8 +277,13 @@ void AsanProcessInfoCB(const char* reason,
@@ -25,7 +25,7 @@ index 81e2e8bbae7c2d8c5ef6c4fad5121121317901ca..3c7722778d909d35ab268c81fd406f08
  #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
    base::FileDescriptorStore& file_descriptor_store =
        base::FileDescriptorStore::GetInstance();
-@@ -954,7 +959,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
+@@ -959,7 +964,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
  
  #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
    if (delegate_->ShouldLoadV8Snapshot(process_type)) {

@@ -6,7 +6,7 @@ Subject: Allow setting secondary label via SimpleMenuModel
 Builds on https://chromium-review.googlesource.com/c/chromium/src/+/2208976
 
 diff --git a/ui/menus/simple_menu_model.cc b/ui/menus/simple_menu_model.cc
-index 156e5068000ceb89a096f51d358ae69a3f0cf5d8..4609ad44d0f75789070e28fa8e485a98cc60c11a 100644
+index 069f5000b8b648fefba2b8970bb88a8daae0ba5b..652fcecf32b05193bfb31a6a1002bcb019c3077f 100644
 --- a/ui/menus/simple_menu_model.cc
 +++ b/ui/menus/simple_menu_model.cc
 @@ -57,6 +57,11 @@ std::u16string SimpleMenuModel::Delegate::GetLabelForCommandId(
@@ -33,7 +33,7 @@ index 156e5068000ceb89a096f51d358ae69a3f0cf5d8..4609ad44d0f75789070e28fa8e485a98
  void SimpleMenuModel::SetMinorText(size_t index,
                                     const std::u16string& minor_text) {
    items_[ValidateItemIndex(index)].minor_text = minor_text;
-@@ -458,6 +468,12 @@ std::u16string SimpleMenuModel::GetLabelAt(size_t index) const {
+@@ -462,6 +472,12 @@ std::u16string SimpleMenuModel::GetLabelAt(size_t index) const {
    return items_[ValidateItemIndex(index)].label;
  }
  
@@ -47,7 +47,7 @@ index 156e5068000ceb89a096f51d358ae69a3f0cf5d8..4609ad44d0f75789070e28fa8e485a98
    return items_[ValidateItemIndex(index)].minor_text;
  }
 diff --git a/ui/menus/simple_menu_model.h b/ui/menus/simple_menu_model.h
-index 8ddab95a135c34c8153dfe208104f0233e511093..59dc68ce7d69c10fe6f3b286c790da155e2d16f2 100644
+index 78e2be4c0146c09eccb23edecc304119095c4761..17fe4df6737f0d7b59ef955c27854c3a08a18a59 100644
 --- a/ui/menus/simple_menu_model.h
 +++ b/ui/menus/simple_menu_model.h
 @@ -99,6 +99,7 @@ class COMPONENT_EXPORT(UI_MENUS) SimpleMenuModel : public MenuModel {
@@ -68,19 +68,19 @@ index 8ddab95a135c34c8153dfe208104f0233e511093..59dc68ce7d69c10fe6f3b286c790da15
    // Sets the minor text for the item at |index|.
    void SetMinorText(size_t index, const std::u16string& minor_text);
  
-@@ -276,6 +280,7 @@ class COMPONENT_EXPORT(UI_MENUS) SimpleMenuModel : public MenuModel {
+@@ -279,6 +283,7 @@ class COMPONENT_EXPORT(UI_MENUS) SimpleMenuModel : public MenuModel {
    ui::MenuSeparatorType GetSeparatorTypeAt(size_t index) const override;
    int GetCommandIdAt(size_t index) const override;
    std::u16string GetLabelAt(size_t index) const override;
 +  std::u16string GetSecondaryLabelAt(size_t index) const override;
    std::u16string GetMinorTextAt(size_t index) const override;
-   ImageModel GetMinorIconAt(size_t index) const override;
-   bool IsItemDynamicAt(size_t index) const override;
-@@ -324,6 +329,7 @@ class COMPONENT_EXPORT(UI_MENUS) SimpleMenuModel : public MenuModel {
+   bool GetMinorTextIsUrlAt(size_t index) const override;
+ 
+@@ -329,6 +334,7 @@ class COMPONENT_EXPORT(UI_MENUS) SimpleMenuModel : public MenuModel {
      ItemType type = TYPE_COMMAND;
      std::u16string label;
      ui::Accelerator accelerator;
 +    std::u16string secondary_label;
      std::u16string minor_text;
+     bool minor_text_is_url = false;
      ImageModel minor_icon;
-     ImageModel icon;

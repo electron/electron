@@ -1,4 +1,4 @@
-name: Issue Commented
+name: Issue / Pull Request Commented
 
 on:
   issue_comment:
@@ -8,16 +8,16 @@ on:
 permissions: {}
 
 jobs:
-  issue-commented:
+  blocked-issue-commented:
     name: Remove blocked/{need-info,need-repro} on comment
-    if: ${{ (contains(github.event.issue.labels.*.name, 'blocked/need-repro') || contains(github.event.issue.labels.*.name, 'blocked/need-info ❌')) && github.event.comment.user.type != 'Bot' }}
-    runs-on: ubuntu-latest
+    if: ${{ !github.event.issue.pull_request && (contains(github.event.issue.labels.*.name, 'blocked/need-repro') || contains(github.event.issue.labels.*.name, 'blocked/need-info ❌')) && github.event.comment.user.type != 'Bot' }}
+    runs-on: ubuntu-slim
     steps:
       - name: Get author association
         id: get-author-association
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
+        run: &get-author-association |
           AUTHOR_ASSOCIATION=$(gh api /repos/electron/electron/issues/comments/${{ github.event.comment.id }} --jq '.author_association')
           echo "author_association=$AUTHOR_ASSOCIATION" >> "$GITHUB_OUTPUT"
       - name: Generate GitHub App token
@@ -33,3 +33,56 @@ jobs:
           ISSUE_URL: ${{ github.event.issue.html_url }}
         run: |
           gh issue edit $ISSUE_URL --remove-label 'blocked/need-repro','blocked/need-info ❌'
+
+  pr-reviewer-requested:
+    name: Maintainer requested reviewer on PR
+    if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/request-review') && github.event.comment.user.type != 'Bot' }}
+    runs-on: ubuntu-slim
+    steps:
+      - name: Get author association
+        id: get-author-association
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: *get-author-association
+      - name: Generate GitHub App token
+        uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
+        if: ${{ contains(fromJSON('["MEMBER", "OWNER"]'), steps.get-author-association.outputs.author_association) }}
+        id: generate-token
+        with:
+          creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
+      - name: Request reviewer
+        if: ${{ contains(fromJSON('["MEMBER", "OWNER"]'), steps.get-author-association.outputs.author_association) }}
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+          PR_URL: ${{ github.event.issue.html_url }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          RAW=$(echo "$COMMENT_BODY" | head -n 1 | sed 's|/request-review\s*||' | xargs)
+
+          if [ -z "$RAW" ]; then
+            echo "::warning::No username provided. Usage: /request-review <username>[,<username>,...]"
+            exit 0
+          fi
+
+          IFS=',' read -ra USERS <<< "$RAW"
+          for USER in "${USERS[@]}"; do
+            NAME=$(echo "$USER" | sed 's/@//g' | xargs)
+            if [ -z "$NAME" ]; then
+              continue
+            fi
+
+            # Strip "electron/" prefix if present to get the bare name
+            BARE_NAME=$(echo "$NAME" | sed 's|^electron/||')
+
+            # If the original name contained "electron/" or looks like a team slug, treat as team
+            if [ "$NAME" != "$BARE_NAME" ]; then
+              gh pr edit $PR_URL --add-reviewer "electron/$BARE_NAME"
+            else
+              if ! gh api /orgs/electron/public_members/$BARE_NAME --silent > /dev/null 2>&1; then
+                echo "::warning::$BARE_NAME is not a public member of the electron organization."
+                continue
+              fi
+
+              gh pr edit $PR_URL --add-reviewer "$BARE_NAME"
+            fi
+          done

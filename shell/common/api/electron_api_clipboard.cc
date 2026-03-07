@@ -21,6 +21,7 @@
 #include "ui/base/clipboard/scoped_clipboard_writer.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/image/image.h"
+#include "url/gurl.h"
 
 namespace {
 
@@ -199,7 +200,19 @@ void Clipboard::WriteText(const std::u16string& text,
 std::u16string Clipboard::ReadRTF(gin::Arguments* const args) {
   std::string data;
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  clipboard->ReadRTF(GetClipboardBuffer(args), /* data_dst = */ nullptr, &data);
+
+  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
+  clipboard->ReadRTF(
+      GetClipboardBuffer(args),
+      /* data_dst = */ std::nullopt,
+      base::BindOnce(
+          [](std::string* out, base::OnceClosure quit, std::string result) {
+            *out = std::move(result);
+            std::move(quit).Run();
+          },
+          &data, run_loop.QuitClosure()));
+  run_loop.Run();
+
   return base::UTF8ToUTF16(data);
 }
 
@@ -209,16 +222,28 @@ void Clipboard::WriteRTF(const std::string& text, gin::Arguments* const args) {
 }
 
 std::u16string Clipboard::ReadHTML(gin::Arguments* const args) {
-  std::u16string data;
   std::u16string html;
-  std::string url;
-  uint32_t start;
-  uint32_t end;
+  uint32_t start = 0;
+  uint32_t end = 0;
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  clipboard->ReadHTML(GetClipboardBuffer(args), /* data_dst = */ nullptr, &html,
-                      &url, &start, &end);
-  data = html.substr(start, end - start);
-  return data;
+
+  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
+  clipboard->ReadHTML(
+      GetClipboardBuffer(args),
+      /* data_dst = */ std::nullopt,
+      base::BindOnce(
+          [](std::u16string* out_html, uint32_t* out_start, uint32_t* out_end,
+             base::OnceClosure quit, std::u16string markup, GURL src_url,
+             uint32_t fragment_start, uint32_t fragment_end) {
+            *out_html = std::move(markup);
+            *out_start = fragment_start;
+            *out_end = fragment_end;
+            std::move(quit).Run();
+          },
+          &html, &start, &end, run_loop.QuitClosure()));
+  run_loop.Run();
+
+  return html.substr(start, end - start);
 }
 
 void Clipboard::WriteHTML(const std::u16string& html,
@@ -229,12 +254,25 @@ void Clipboard::WriteHTML(const std::u16string& html,
 
 v8::Local<v8::Value> Clipboard::ReadBookmark(v8::Isolate* const isolate) {
   std::u16string title;
-  std::string url;
+  GURL url;
   auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  clipboard->ReadBookmark(/* data_dst = */ nullptr, &title, &url);
+
+  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
+  clipboard->ReadBookmark(
+      /* data_dst = */ std::nullopt,
+      base::BindOnce(
+          [](std::u16string* out_title, GURL* out_url, base::OnceClosure quit,
+             std::u16string title, GURL url) {
+            *out_title = std::move(title);
+            *out_url = std::move(url);
+            std::move(quit).Run();
+          },
+          &title, &url, run_loop.QuitClosure()));
+  run_loop.Run();
+
   dict.Set("title", title);
-  dict.Set("url", url);
+  dict.Set("url", url.spec());
   return dict.GetHandle();
 }
 

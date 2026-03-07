@@ -37,6 +37,7 @@
 #include "shell/browser/ui/win/jump_list.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
+#include "shell/common/command_line_util_win.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/login_item_settings_converter.h"
@@ -79,13 +80,22 @@ bool GetProtocolLaunchPath(gin::Arguments* args, std::wstring* exe) {
     return false;
   }
 
+  // Strip surrounding double quotes before re-quoting with AddQuoteForArg.
+  if (exe->size() >= 2 && exe->front() == L'"' && exe->back() == L'"') {
+    *exe = exe->substr(1, exe->size() - 2);
+  }
+
   // Read in optional args arg
   std::vector<std::wstring> launch_args;
   if (args->GetNext(&launch_args) && !launch_args.empty()) {
-    std::wstring joined_args = base::JoinString(launch_args, L"\" \"");
-    *exe = base::StrCat({L"\"", *exe, L"\" \"", joined_args, L"\" \"%1\""});
+    std::wstring result = electron::AddQuoteForArg(*exe);
+    for (const auto& arg : launch_args) {
+      result += L' ';
+      result += electron::AddQuoteForArg(arg);
+    }
+    *exe = base::StrCat({result, L" \"%1\""});
   } else {
-    *exe = base::StrCat({L"\"", *exe, L"\" \"%1\""});
+    *exe = base::StrCat({electron::AddQuoteForArg(*exe), L" \"%1\""});
   }
 
   return true;
@@ -153,9 +163,18 @@ bool FormatCommandLineString(std::wstring* exe,
     return false;
   }
 
+  // Strip surrounding double quotes before re-quoting with AddQuoteForArg.
+  if (exe->size() >= 2 && exe->front() == L'"' && exe->back() == L'"') {
+    *exe = exe->substr(1, exe->size() - 2);
+  }
+
+  *exe = electron::AddQuoteForArg(*exe);
+
   if (!launch_args.empty()) {
-    std::u16string joined_launch_args = base::JoinString(launch_args, u" ");
-    *exe = base::StrCat({*exe, L" ", base::AsWStringView(joined_launch_args)});
+    for (const auto& arg : launch_args) {
+      *exe += L' ';
+      *exe += electron::AddQuoteForArg(std::wstring(base::AsWStringView(arg)));
+    }
   }
 
   return true;

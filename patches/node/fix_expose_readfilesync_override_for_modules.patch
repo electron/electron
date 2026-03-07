@@ -8,10 +8,10 @@ an API override to replace the native `ReadFileSync` in the `modules`
 binding.
 
 diff --git a/src/env_properties.h b/src/env_properties.h
-index bb874fec74c73b5de0ef6d1e2a872ebceefb11ce..6fafe2a8029c535fa98276e2d73f04ee603a7805 100644
+index 454750db0113d289e7f8c8cb160e91797790572c..09786f710a88e0243bfaab10d0eca5cb2db62245 100644
 --- a/src/env_properties.h
 +++ b/src/env_properties.h
-@@ -491,6 +491,7 @@
+@@ -492,6 +492,7 @@
    V(maybe_cache_generated_source_map, v8::Function)                            \
    V(messaging_deserialize_create_object, v8::Function)                         \
    V(message_port, v8::Object)                                                  \
@@ -20,7 +20,7 @@ index bb874fec74c73b5de0ef6d1e2a872ebceefb11ce..6fafe2a8029c535fa98276e2d73f04ee
    V(performance_entry_callback, v8::Function)                                  \
    V(prepare_stack_trace_callback, v8::Function)                                \
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index 95a7b8c32693c32ca9f57e01aff9ef06b84f78b2..cecdda74847801fd5821bc0afdf0dfc9f131c44a 100644
+index 3e4918a35e0d2f100f14596a3857f927b2a38c8f..ffc19850ac563082b14729e93d69695ef2c868f5 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
 @@ -23,12 +23,14 @@ namespace modules {
@@ -118,7 +118,7 @@ index 95a7b8c32693c32ca9f57e01aff9ef06b84f78b2..cecdda74847801fd5821bc0afdf0dfc9
    SetMethod(isolate, target, "readPackageJSON", ReadPackageJSON);
    SetMethod(isolate,
              target,
-@@ -735,6 +786,8 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
+@@ -751,6 +802,8 @@ void BindingData::CreatePerContextProperties(Local<Object> target,
  
  void BindingData::RegisterExternalReferences(
      ExternalReferenceRegistry* registry) {

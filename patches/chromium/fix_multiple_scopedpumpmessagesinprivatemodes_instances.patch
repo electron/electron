@@ -13,10 +13,10 @@ This patch adds a global reference count to keep track of
 enable/disable behavior on this reference count.
 
 diff --git a/base/message_loop/message_pump_apple.mm b/base/message_loop/message_pump_apple.mm
-index 55753d0249ad013f244a88d77a4bdf4620df4a45..aa73243057b27e38e664629ef402f00de8835975 100644
+index c0a11588b63fc764177dc9a7194c3a02759d80b0..d800b03835358884f2be46f42f4be0b67dafb091 100644
 --- a/base/message_loop/message_pump_apple.mm
 +++ b/base/message_loop/message_pump_apple.mm
-@@ -774,20 +774,29 @@ explicit OptionalAutoreleasePool(MessagePumpCFRunLoopBase* pump) {
+@@ -775,20 +775,29 @@ explicit OptionalAutoreleasePool(MessagePumpCFRunLoopBase* pump) {
  
  #else
  

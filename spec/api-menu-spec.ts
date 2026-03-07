@@ -946,6 +946,27 @@ describe('Menu module', function () {
     }
   });
 
+  ifit(process.platform === 'darwin')(
+    'emits menu close event even if submenu closes first',
+    async () => {
+      const menu = Menu.buildFromTemplate([{
+        label: 'parent',
+        submenu: [{
+          label: 'child'
+        }]
+      }]);
+
+      const menuWillClose = once(menu, 'menu-will-close');
+      (menu as any)._simulateSubmenuCloseSequenceForTesting();
+
+      await Promise.race([
+        menuWillClose,
+        setTimeout(1000).then(() => {
+          throw new Error('menu-will-close was not emitted');
+        })
+      ]);
+    });
+
   describe('Menu.setApplicationMenu', () => {
     it('sets a menu', () => {
       const menu = Menu.buildFromTemplate([

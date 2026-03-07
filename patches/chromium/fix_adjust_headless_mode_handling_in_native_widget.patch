@@ -67,7 +67,7 @@ index 94bd32ce1ddd3f8b4315cd06be59d7550b591891..ad005e0a19a7763da089fccc659d93c8
    return _headless_info.get();
  }
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 01d4ee891850efc4b27a8663c9be1c754fd2843b..f241962a1e0e40b95b219bc9578fba5f0a1c8669 100644
+index 5e546b1462ce7944636d6ded2bfa1616390192e1..cb2cbf79138c5b94e1086c5fcada1bafa6d06a04 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -535,7 +535,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -80,7 +80,7 @@ index 01d4ee891850efc4b27a8663c9be1c754fd2843b..f241962a1e0e40b95b219bc9578fba5f
    }
  
 diff --git a/components/remote_cocoa/common/native_widget_ns_window.mojom b/components/remote_cocoa/common/native_widget_ns_window.mojom
-index 7387ef1852678d48908bd1d7dc0e5d44ca613195..4aa37d1f54758e2acbf9b4e467cc22fc1e092e68 100644
+index a9ad418f46fc6fdd437025a475f2538f706baa0c..9bdbd620a68ce3fad8eecd88cac3159fda7d74ae 100644
 --- a/components/remote_cocoa/common/native_widget_ns_window.mojom
 +++ b/components/remote_cocoa/common/native_widget_ns_window.mojom
 @@ -83,6 +83,8 @@ struct NativeWidgetNSWindowInitParams {
@@ -138,7 +138,7 @@ index 04ccf05abbdeba229a39f547d1affc6e21e7d377..89275857eee2606c68279485e08f336d
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index 76579d56af01b14504ce240f09b60bdb7f5e6b6a..5a6ae46a0033c3bdc9cebc86e09c1aa08d989708 100644
+index e62f180fd782f29c25cf47a4e6be0cce46c99b17..b65d050fee7a607658efa6914c35186d9452f26f 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
 @@ -223,6 +223,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
@@ -169,7 +169,7 @@ index 76579d56af01b14504ce240f09b60bdb7f5e6b6a..5a6ae46a0033c3bdc9cebc86e09c1aa0
  
    if (params.opacity == views::Widget::InitParams::WindowOpacity::kInferred &&
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index f64f2a4e70e290898a4e655dbba01c73c75a180b..69493800e35e469ba670dee8f25ac069f1c04bfd 100644
+index 285cd57cf18d7cb5cbe787194def75efbd0ceacb..9b7043f23498dd04c05a89f373f019c210cc246d 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
 @@ -324,6 +324,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
@@ -194,7 +194,7 @@ index f64f2a4e70e290898a4e655dbba01c73c75a180b..69493800e35e469ba670dee8f25ac069
      // If set, the window size will follow the content preferred size.
      bool autosize = false;
  
-@@ -1291,6 +1299,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1297,6 +1305,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // with it. TYPE_CONTROL and TYPE_TOOLTIP is not considered top level.
    bool is_top_level() const { return is_top_level_; }
  
@@ -206,7 +206,7 @@ index f64f2a4e70e290898a4e655dbba01c73c75a180b..69493800e35e469ba670dee8f25ac069
    // True if the window size will follow the content preferred size.
    bool is_autosized() const { return is_autosized_; }
  
-@@ -1734,6 +1747,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1740,6 +1753,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // If true, the mouse is currently down.
    bool is_mouse_button_pressed_ = false;
  

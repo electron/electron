@@ -9,6 +9,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_ELECTRON_DESKTOP_WINDOW_TREE_HOST_LINUX_H_
 #define ELECTRON_SHELL_BROWSER_UI_ELECTRON_DESKTOP_WINDOW_TREE_HOST_LINUX_H_
 
+#include <optional>
+
 #include "base/memory/raw_ptr.h"
 #include "base/scoped_observation.h"
 #include "ui/gfx/image/image_skia.h"
@@ -52,6 +54,8 @@ class ElectronDesktopWindowTreeHostLinux
   // ui::PlatformWindowDelegate
   gfx::Insets CalculateInsetsInDIP(
       ui::PlatformWindowState window_state) const override;
+  std::optional<gfx::Size> GetMinimumSizeForWindow() const override;
+  std::optional<gfx::Size> GetMaximumSizeForWindow() const override;
   void OnBoundsChanged(const BoundsChange& change) override;
   void OnWindowStateChanged(ui::PlatformWindowState old_state,
                             ui::PlatformWindowState new_state) override;

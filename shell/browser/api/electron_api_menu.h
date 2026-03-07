@@ -73,6 +73,9 @@ class Menu : public gin::Wrappable<Menu>,
   bool IsCommandIdChecked(int command_id) const override;
   bool IsCommandIdEnabled(int command_id) const override;
   bool IsCommandIdVisible(int command_id) const override;
+  std::u16string GetLabelForCommandId(int command_id) const override;
+  std::u16string GetSecondaryLabelForCommandId(int command_id) const override;
+  ui::ImageModel GetIconForCommandId(int command_id) const override;
   bool ShouldCommandIdWorkWhenHidden(int command_id) const override;
   bool GetAcceleratorForCommandIdWithParams(
       int command_id,
@@ -84,6 +87,7 @@ class Menu : public gin::Wrappable<Menu>,
       int command_id,
       ElectronMenuModel::SharingItem* item) const override;
   v8::Local<v8::Value> GetUserAcceleratorAt(int command_id) const;
+  virtual void SimulateSubmenuCloseSequenceForTesting();
 #endif
   void ExecuteCommand(int command_id, int event_flags) override;
   void OnMenuWillShow(ui::SimpleMenuModel* source) override;

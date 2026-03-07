@@ -128,7 +128,6 @@ namespace {
 struct ClearStorageDataOptions {
   blink::StorageKey storage_key;
   uint32_t storage_types = StoragePartition::REMOVE_DATA_MASK_ALL;
-  uint32_t quota_types = StoragePartition::QUOTA_MANAGED_STORAGE_MASK_ALL;
 };
 
 uint32_t GetStorageMask(const std::vector<std::string>& storage_types) {
@@ -149,16 +148,6 @@ uint32_t GetStorageMask(const std::vector<std::string>& storage_types) {
       storage_mask |= *val;
   }
   return storage_mask;
-}
-
-uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
-  uint32_t quota_mask = 0;
-  for (const auto& it : quota_types) {
-    auto type = base::ToLowerASCII(it);
-    if (type == "temporary")
-      quota_mask |= StoragePartition::QUOTA_MANAGED_STORAGE_MASK_TEMPORARY;
-  }
-  return quota_mask;
 }
 
 constexpr BrowsingDataRemover::DataType kClearDataTypeAll =
@@ -411,8 +400,6 @@ struct Converter<ClearStorageDataOptions> {
     std::vector<std::string> types;
     if (options.Get("storages", &types))
       out->storage_types = GetStorageMask(types);
-    if (options.Get("quotas", &types))
-      out->quota_types = GetQuotaMask(types);
     return true;
   }
 };
@@ -739,8 +726,8 @@ v8::Local<v8::Promise> Session::ClearStorageData(gin::Arguments* args) {
   }
 
   browser_context()->GetDefaultStoragePartition()->ClearData(
-      options.storage_types, options.quota_types, options.storage_key,
-      base::Time(), base::Time::Max(),
+      options.storage_types, options.storage_key, base::Time(),
+      base::Time::Max(),
       base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
                      std::move(promise)));
   return handle;

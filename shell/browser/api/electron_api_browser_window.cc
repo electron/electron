@@ -209,12 +209,8 @@ void BrowserWindow::UpdateWindowControlsOverlay(
 
 void BrowserWindow::CloseImmediately() {
   // Close all child windows before closing current window.
-  v8::HandleScope handle_scope(isolate());
-  for (v8::Local<v8::Value> value : GetChildWindows()) {
-    gin_helper::Handle<BrowserWindow> child;
-    if (gin::ConvertFromV8(isolate(), value, &child) && !child.IsEmpty())
-      child->window()->CloseImmediately();
-  }
+  for (BaseWindow* child : GetChildWindows())
+    child->window()->CloseImmediately();
 
   BaseWindow::CloseImmediately();
 }

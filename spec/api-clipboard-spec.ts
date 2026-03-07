@@ -56,13 +56,13 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
 
   ifdescribe(process.platform !== 'linux')('clipboard.readBookmark', () => {
     it('returns title and url', () => {
-      clipboard.writeBookmark('a title', 'https://electronjs.org');
+      clipboard.writeBookmark('a title', 'https://electronjs.org/');
 
       const readBookmark = clipboard.readBookmark();
       if (process.platform !== 'win32') {
         expect(readBookmark.title).to.equal('a title');
       }
-      expect(clipboard.readBookmark().url).to.equal('https://electronjs.org');
+      expect(clipboard.readBookmark().url).to.equal('https://electronjs.org/');
 
       clipboard.writeText('no bookmark');
       expect(clipboard.readBookmark()).to.deep.equal({
@@ -90,7 +90,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
 
   describe('clipboard.write()', () => {
     it('returns data correctly', () => {
-      const text = 'test';
+      const text = 'https://electronjs.org/';
       const rtf = '{\\rtf1\\utf8 text}';
       const p = path.join(fixtures, 'assets', 'logo.png');
       const i = nativeImage.createFromPath(p);
@@ -99,9 +99,9 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
       if (process.platform === 'darwin') {
         markup = '<meta charset=\'utf-8\'><b>Hi</b>';
       }
-      const bookmark = { title: 'a title', url: 'test' };
+      const bookmark = { title: 'a title', url: text };
       clipboard.write({
-        text: 'test',
+        text,
         html: '<b>Hi</b>',
         rtf: '{\\rtf1\\utf8 text}',
         bookmark: 'a title',

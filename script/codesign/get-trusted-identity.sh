@@ -2,7 +2,7 @@
 
 set -e
 
-valid_certs=$(security find-identity -p codesigning -v)
+valid_certs=$(security find-identity -p codesigning)
 if [[ $valid_certs == *"1)"* ]]; then
   first_valid_cert=$(echo $valid_certs | sed 's/ \".*//' | sed 's/.* //')
   echo $first_valid_cert
