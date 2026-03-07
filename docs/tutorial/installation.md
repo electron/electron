@@ -66,6 +66,10 @@ In addition to changing the architecture, you can also specify the platform
 ELECTRON_INSTALL_PLATFORM=mas electron .
 ```
 
+> [!TIP]
+> To see all available platform/architecture combinations, see the artifacts
+> for each release on [Electron's GitHub Releases](https://github.com/electron/electron/releases).
+
 ## Proxies
 
 If you need to use an HTTP proxy, you need to set the `ELECTRON_GET_USE_PROXY` variable to any
