@@ -59,6 +59,17 @@ npm install electron --save-dev --ignore-scripts
 npx install-electron --no
 ```
 
+If you need to test changes across platforms or architectures, you should now use the
+`ELECTRON_INSTALL_ARCH` and `ELECTRON_INSTALL_PLATFORM` environment variables.
+
+```sh
+# before: pass npm config flag on install command
+npm install --platform=mas electron --save-dev
+# after: add env var when you first run the Electron command
+npm install electron --save-dev
+ELECTRON_INSTALL_PLATFORM=mas npx electron . --no
+```
+
 ### Removed: `quotas` object from `Session.clearStorageData(options)`
 
 When calling `Session.clearStorageData(options)`, the `options.quotas` object is no longer supported because it has been
