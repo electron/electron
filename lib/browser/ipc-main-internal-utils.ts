@@ -19,8 +19,8 @@ export function invokeInWebContents<T> (sender: Electron.WebContents, command: s
     const requestId = ++nextId;
     const channel = `${command}_RESPONSE_${requestId}`;
     ipcMainInternal.on(channel, function handler (event, error: Error, result: any) {
-      if (event.type === 'frame' && event.sender !== sender) {
-        console.error(`Reply to ${command} sent by unexpected WebContents (${event.sender.id})`);
+      if (event.type !== 'frame' || event.sender !== sender) {
+        console.error(`Reply to ${command} sent by unexpected sender`);
         return;
       }
 
@@ -43,8 +43,8 @@ export function invokeInWebFrameMain<T> (sender: Electron.WebFrameMain, command:
     const channel = `${command}_RESPONSE_${requestId}`;
     const frameTreeNodeId = sender.frameTreeNodeId;
     ipcMainInternal.on(channel, function handler (event, error: Error, result: any) {
-      if (event.type === 'frame' && event.frameTreeNodeId !== frameTreeNodeId) {
-        console.error(`Reply to ${command} sent by unexpected WebFrameMain (${event.frameTreeNodeId})`);
+      if (event.type !== 'frame' || event.frameTreeNodeId !== frameTreeNodeId) {
+        console.error(`Reply to ${command} sent by unexpected sender`);
         return;
       }
 
