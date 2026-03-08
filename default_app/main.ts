@@ -255,8 +255,12 @@ async function startRepl () {
 // start the default app.
 if (option.file && !option.webdriver) {
   const file = option.file;
-  // eslint-disable-next-line n/no-deprecated-api
-  const protocol = url.parse(file).protocol;
+  let protocol: string | null = null;
+  try {
+    protocol = new URL(file).protocol;
+  } catch {
+    // file is not a valid URL string
+  }
   const extension = path.extname(file);
   if (protocol === 'http:' || protocol === 'https:' || protocol === 'file:' || protocol === 'chrome:') {
     await loadApplicationByURL(file);
