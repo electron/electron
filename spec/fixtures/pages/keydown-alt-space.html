@@ -1,0 +1,15 @@
+<html>
+
+<body>
+  <script type="text/javascript" charset="utf-8">
+    const { ipcRenderer } = require('electron');
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === " " && e.altKey) {
+        ipcRenderer.send('alt-space-renderer');
+      }
+    });
+  </script>
+</body>
+
+</html>
