@@ -216,9 +216,9 @@ void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInWorker)) {
     auto* current = WebWorkerObserver::GetCurrent();
-    if (current)
-      return;
-    WebWorkerObserver::Create()->WorkerScriptReadyForEvaluation(context);
+    if (!current)
+      current = WebWorkerObserver::Create();
+    current->WorkerScriptReadyForEvaluation(context);
   }
 }
 
