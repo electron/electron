@@ -15,7 +15,7 @@ References:
 * third_party/libc++/src/include/__configuration/abi.h
 
 diff --git a/buildtools/third_party/libc++/__config_site b/buildtools/third_party/libc++/__config_site
-index 3cd0af88fd13613216464d31d04e26dbb8f61343..218cfaf258ebc55e4d332c67abd02b5b1ad2ba19 100644
+index 8e1fb11322711b10256b3eaf5f0c30dabd18ff4f..5b26dbaf522b7f95ccdf4b40573db69b22603235 100644
 --- a/buildtools/third_party/libc++/__config_site
 +++ b/buildtools/third_party/libc++/__config_site
 @@ -18,7 +18,11 @@

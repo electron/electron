@@ -779,6 +779,11 @@ class WebContents final : public ExclusiveAccessContext,
   // Update the html fullscreen flag in both browser and renderer.
   void UpdateHtmlApiFullscreen(bool fullscreen);
 
+  void OnReadAvailableTypes(
+      const content::ContextMenuParams& params,
+      content::GlobalRenderFrameHostId render_frame_host_id,
+      std::vector<std::u16string> types);
+
   cppgc::Persistent<api::Session> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   cppgc::Persistent<api::Debugger> debugger_;

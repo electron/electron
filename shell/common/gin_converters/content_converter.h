@@ -7,6 +7,8 @@
 
 #include <utility>
 
+#include "base/memory/raw_ptr.h"
+#include "content/public/browser/context_menu_params.h"
 #include "content/public/common/referrer.h"
 #include "content/public/common/stop_find_action.h"
 #include "gin/converter.h"
@@ -26,8 +28,11 @@ namespace input {
 struct NativeWebKeyboardEvent;
 }
 
-using ContextMenuParamsWithRenderFrameHost =
-    std::pair<content::ContextMenuParams, content::RenderFrameHost*>;
+struct ContextMenuParamsWithRenderFrameHost {
+  content::ContextMenuParams params;
+  raw_ptr<content::RenderFrameHost> render_frame_host;
+  bool is_paste_enabled;
+};
 
 namespace gin {
 

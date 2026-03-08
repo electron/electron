@@ -61,6 +61,8 @@ class ElectronSandboxedRendererClient : public RendererClientBase {
   std::unique_ptr<media::KeySystemSupportRegistration> GetSupportedKeySystems(
       content::RenderFrame* render_frame,
       media::GetSupportedKeySystemsCB cb) override;
+      const GURL& script_url,
+      const blink::ServiceWorkerToken& service_worker_token) override;
 
  private:
   void EmitProcessEvent(content::RenderFrame* render_frame,
