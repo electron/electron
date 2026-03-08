@@ -26,4 +26,9 @@ void NativeTheme::UpdateMacOSAppearanceForOverrideValue(
   [[NSApplication sharedApplication] setAppearance:new_appearance];
 }
 
+bool NativeTheme::ShouldDifferentiateWithoutColor() {
+  return [[NSWorkspace sharedWorkspace]
+      accessibilityDisplayShouldDifferentiateWithoutColor];
+}
+
 }  // namespace electron::api
