@@ -1438,6 +1438,89 @@ describe('chromium features', () => {
       expect(data).to.equal('object function object function');
     });
 
+    it('Worker does not have node integration when nodeIntegrationInWorker is disabled via setWindowOpenHandler', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          nodeIntegrationInWorker: true,
+          contextIsolation: false
+        }
+      });
+
+      w.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          show: false,
+          webPreferences: {
+            nodeIntegration: false,
+            nodeIntegrationInWorker: false,
+            contextIsolation: true
+          }
+        }
+      }));
+
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const childCreated = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
+      w.webContents.executeJavaScript(`window.open(${JSON.stringify(`file://${fixturesPath}/pages/blank.html`)}); void 0;`);
+      const [, child] = await childCreated;
+      await once(child.webContents, 'did-finish-load');
+
+      const data = await child.webContents.executeJavaScript(`
+        const worker = new Worker('../workers/worker_node.js');
+        new Promise((resolve) => { worker.onmessage = e => resolve(e.data); })
+      `);
+      expect(data).to.equal('undefined undefined undefined undefined');
+    });
+
+    it('Worker has node integration when nodeIntegrationInWorker is enabled via setWindowOpenHandler', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          nodeIntegrationInWorker: false,
+          contextIsolation: false
+        }
+      });
+
+      w.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            nodeIntegrationInWorker: true,
+            contextIsolation: false
+          }
+        }
+      }));
+
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+
+      // Parent's workers should NOT have node integration.
+      const parentData = await w.webContents.executeJavaScript(`
+        new Promise((resolve) => {
+          const worker = new Worker('../workers/worker_node.js');
+          worker.onmessage = e => resolve(e.data);
+        })
+      `);
+      expect(parentData).to.equal('undefined undefined undefined undefined');
+
+      const childCreated = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
+      w.webContents.executeJavaScript(`window.open(${JSON.stringify(`file://${fixturesPath}/pages/blank.html`)}); void 0;`);
+      const [, child] = await childCreated;
+      await once(child.webContents, 'did-finish-load');
+
+      // Child's workers should have node integration.
+      const childData = await child.webContents.executeJavaScript(`
+        new Promise((resolve) => {
+          const worker = new Worker('../workers/worker_node.js');
+          worker.onmessage = e => resolve(e.data);
+        })
+      `);
+      expect(childData).to.equal('object function object function');
+    });
+
     it('Worker has access to fetch-dependent interfaces with nodeIntegrationInWorker', async () => {
       const w = new BrowserWindow({
         show: false,
