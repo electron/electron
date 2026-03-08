@@ -309,6 +309,16 @@ void ElectronMainDelegate::PreSandboxStartup() {
 #if BUILDFLAG(IS_MAC)
     // Enable AVFoundation.
     command_line->AppendSwitch("enable-avfoundation");
+
+#if defined(ARCH_CPU_ARM64)
+    // Performance boosts for Apple Silicon
+    // Force Metal for ANGLE and hardware acceleration
+    command_line->AppendSwitchASCII("use-gl", "angle");
+    command_line->AppendSwitchASCII("use-angle", "metal");
+    command_line->AppendSwitchASCII("enable-features", "Metal");
+    // Enable V8 Sparkplug baseline compiler for faster JS execution
+    command_line->AppendSwitchASCII("js-flags", "--sparkplug");
+#endif
 #endif
   }
 }
