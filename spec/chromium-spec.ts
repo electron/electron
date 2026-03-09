@@ -989,13 +989,12 @@ describe('chromium features', () => {
       w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
         expect(permission).to.equal('fileSystem');
 
-        const { href } = url.pathToFileURL(writablePath);
         expect(details).to.deep.equal({
           fileAccessType: 'writable',
           isDirectory: false,
           isMainFrame: true,
           filePath: testFile,
-          requestingUrl: href
+          requestingOrigin: 'file://'
         });
 
         callback(true);
@@ -1040,13 +1039,12 @@ describe('chromium features', () => {
       w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
         expect(permission).to.equal('fileSystem');
 
-        const { href } = url.pathToFileURL(writablePath);
         expect(details).to.deep.equal({
           fileAccessType: 'writable',
           isDirectory: false,
           isMainFrame: true,
           filePath: testFile,
-          requestingUrl: href
+          requestingOrigin: 'file://'
         });
 
         callback(false);
@@ -3756,10 +3754,9 @@ describe('paste execCommand', () => {
         };
       }
     });
-    ses.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+    ses.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
       if (requestingOrigin === `${webContents?.opener?.origin}/` &&
-          details.requestingUrl === 'about:blank' &&
-          permission === 'deprecated-sync-clipboard-read') {
+        permission === 'deprecated-sync-clipboard-read') {
         return true;
       }
       return false;
