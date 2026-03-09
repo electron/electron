@@ -236,7 +236,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
                                          gin::Arguments* args) {
-  if (protocol.empty())
+  if (!IsValidProtocolScheme(protocol))
     return false;
 
   NSString* identifier = [base::apple::MainBundle() bundleIdentifier];
@@ -252,7 +252,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
                                       gin::Arguments* args) {
-  if (protocol.empty())
+  if (!IsValidProtocolScheme(protocol))
     return false;
 
   NSString* identifier = [base::apple::MainBundle() bundleIdentifier];
