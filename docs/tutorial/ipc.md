@@ -50,7 +50,7 @@ sections.
 
 In the main process, set an IPC listener on the `set-title` channel with the `ipcMain.on` API:
 
-```js {6-10,22} title='main.js (Main Process)'
+```js {7-11,23} title='main.js (Main Process)'
 const { app, BrowserWindow, ipcMain } = require('electron')
 
 const path = require('node:path')
