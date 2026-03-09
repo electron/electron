@@ -11,14 +11,12 @@ const { contextIsolationEnabled } = internalContextBridge;
 * 1) Use menu API to show context menu.
 */
 window.onload = function () {
-  if (window.InspectorFrontendHost) {
-    if (contextIsolationEnabled) {
-      internalContextBridge.overrideGlobalValueFromIsolatedWorld([
-        'InspectorFrontendHost', 'showContextMenuAtPoint'
-      ], createMenu);
-    } else {
-      window.InspectorFrontendHost.showContextMenuAtPoint = createMenu;
-    }
+  if (contextIsolationEnabled) {
+    internalContextBridge.tryOverrideGlobalValueFromIsolatedWorld([
+      'InspectorFrontendHost', 'showContextMenuAtPoint'
+    ], createMenu);
+  } else {
+    window.InspectorFrontendHost!.showContextMenuAtPoint = createMenu;
   }
 };
 
