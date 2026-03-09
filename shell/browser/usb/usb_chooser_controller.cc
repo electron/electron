@@ -43,7 +43,7 @@ UsbChooserController::UsbChooserController(
     : WebContentsObserver(web_contents),
       options_(std::move(options)),
       callback_(std::move(callback)),
-      origin_(render_frame_host->GetMainFrame()->GetLastCommittedOrigin()),
+      origin_(render_frame_host->GetLastCommittedOrigin()),
       usb_delegate_(usb_delegate),
       render_frame_host_id_(render_frame_host->GetGlobalId()) {
   chooser_context_ = UsbChooserContextFactory::GetForBrowserContext(
