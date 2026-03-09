@@ -1683,7 +1683,7 @@ describe('session module', () => {
 
   describe('ses.setPermissionCheckHandler(handler)', () => {
     afterEach(closeAllWindows);
-    it('details provides requestingOrigin for mainFrame', async () => {
+    it('details provides requestingURL for mainFrame', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -1691,7 +1691,7 @@ describe('session module', () => {
         }
       });
       const ses = w.webContents.session;
-      const loadUrl = 'https://myfakesite';
+      const loadUrl = 'https://myfakesite/';
       let handlerDetails : Electron.PermissionCheckHandlerHandlerDetails;
 
       ses.protocol.interceptStringProtocol('https', (req, cb) => {
@@ -1716,10 +1716,10 @@ describe('session module', () => {
       await w.loadURL(loadUrl);
       const state = await readClipboardPermission();
       expect(state).to.equal('granted');
-      expect(handlerDetails!.requestingOrigin).to.equal(loadUrl);
+      expect(handlerDetails!.requestingUrl).to.equal(loadUrl);
     });
 
-    it('details provides requestingOrigin for cross origin subFrame', async () => {
+    it('details provides requestingURL for cross origin subFrame', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -1727,14 +1727,14 @@ describe('session module', () => {
         }
       });
       const ses = w.webContents.session;
-      const loadUrl = 'https://myfakesite';
+      const loadUrl = 'https://myfakesite/';
       let handlerDetails : Electron.PermissionCheckHandlerHandlerDetails;
 
       ses.protocol.interceptStringProtocol('https', (req, cb) => {
         cb('<html><script>console.log(\'test\');</script></html>');
       });
 
-      ses.setPermissionCheckHandler((_wc, permission, _requestingOrigin, details) => {
+      ses.setPermissionCheckHandler((wc, permission, requestingOrigin, details) => {
         if (permission === 'clipboard-read') {
           handlerDetails = details;
           return true;
@@ -1760,7 +1760,7 @@ describe('session module', () => {
       const [,, frameProcessId, frameRoutingId] = await once(w.webContents, 'did-frame-finish-load');
       const state = await readClipboardPermission(webFrameMain.fromId(frameProcessId, frameRoutingId));
       expect(state).to.equal('granted');
-      expect(handlerDetails!.requestingOrigin).to.equal(loadUrl);
+      expect(handlerDetails!.requestingUrl).to.equal(loadUrl);
       expect(handlerDetails!.isMainFrame).to.be.false();
       expect(handlerDetails!.embeddingOrigin).to.equal('file:///');
     });
