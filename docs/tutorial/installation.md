@@ -58,6 +58,14 @@ If you want to change the architecture that is downloaded (e.g., `x64` on an
 ELECTRON_INSTALL_ARCH=x64 electron .
 ```
 
+Supported architectures are a subset of Node.js [`process.arch`](https://nodejs.org/api/process.html#processarch)
+values, and include:
+
+* `x64` (Intel Mac and 64-bit Windows)
+* `ia32` (32-bit Windows)
+* `arm64` (Apple silicon, Windows on ARM, ARM64 Linux)
+* `armv7l` (32-bit ARM)
+
 In addition to changing the architecture, you can also specify the platform
 (e.g., `win32`, `linux`, etc.) using the `--platform` flag:
 
@@ -66,9 +74,16 @@ In addition to changing the architecture, you can also specify the platform
 ELECTRON_INSTALL_PLATFORM=mas electron .
 ```
 
+Supported platforms are Node-like [platform strings](https://nodejs.org/api/process.html#processplatform):
+
+* `darwin`
+* `mas` ([Mac App Store](./mac-app-store-submission-guide.md))
+* `win32`
+* `linux`
+
 > [!TIP]
-> To see all available platform/architecture combinations, see the artifacts
-> for each release on [Electron's GitHub Releases](https://github.com/electron/electron/releases).
+> To see all available platform/architecture combinations for a particular release, see the artifacts
+> on [Electron's GitHub Releases](https://github.com/electron/electron/releases).
 
 ## Proxies
 
