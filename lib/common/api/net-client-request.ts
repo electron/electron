@@ -226,9 +226,26 @@ function validateHeader (name: any, value: any): void {
   }
 }
 
+function parseURLString (urlString: string): ClientRequestConstructorOptions {
+  const hashIndex = urlString.indexOf('#');
+  const requestURL = hashIndex === -1 ? urlString : urlString.slice(0, hashIndex);
+
+  try {
+    const parsed = new URL(urlString);
+    return {
+      protocol: parsed.protocol,
+      host: parsed.host,
+      hostname: parsed.hostname,
+      path: `${parsed.pathname}${parsed.search}`,
+      ...(parsed.port ? { port: parsed.port } : {})
+    };
+  } catch {
+    return { path: requestURL };
+  }
+}
+
 function parseOptions (optionsIn: ClientRequestConstructorOptions | string): NodeJS.CreateURLLoaderOptions & ExtraURLLoaderOptions {
-  // eslint-disable-next-line n/no-deprecated-api
-  const options: any = typeof optionsIn === 'string' ? url.parse(optionsIn) : { ...optionsIn };
+  const options: any = typeof optionsIn === 'string' ? parseURLString(optionsIn) : { ...optionsIn };
 
   let urlStr: string = options.url;
 
@@ -260,11 +277,23 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
       // an invalid request.
       throw new TypeError('Request path contains unescaped characters');
     }
-    // eslint-disable-next-line n/no-deprecated-api
-    const pathObj = url.parse(options.path || '/');
-    urlObj.pathname = pathObj.pathname;
-    urlObj.search = pathObj.search;
-    urlObj.hash = pathObj.hash;
+    const requestPath = options.path || '/';
+    const hashIndex = requestPath.indexOf('#');
+    const searchIndex = requestPath.indexOf('?');
+    const pathEnd = Math.min(
+      searchIndex === -1 ? requestPath.length : searchIndex,
+      hashIndex === -1 ? requestPath.length : hashIndex
+    );
+
+    if (pathEnd > 0) {
+      urlObj.pathname = requestPath.slice(0, pathEnd);
+    }
+    if (searchIndex !== -1) {
+      urlObj.search = requestPath.slice(searchIndex, hashIndex === -1 ? requestPath.length : hashIndex);
+    }
+    if (hashIndex !== -1) {
+      urlObj.hash = requestPath.slice(hashIndex);
+    }
     urlStr = url.format(urlObj);
   }
 
