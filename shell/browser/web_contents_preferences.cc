@@ -343,9 +343,6 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     command_line->AppendSwitchASCII(::switches::kDisableBlinkFeatures,
                                     *disable_blink_features_);
 
-  if (node_integration_in_worker_)
-    command_line->AppendSwitch(switches::kNodeIntegrationInWorker);
-
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents
   // we can fetch the options used to initially configure the WebContents
