@@ -1478,6 +1478,29 @@ describe('app module', () => {
     });
   });
 
+  describe('protocol scheme validation', () => {
+    it('rejects empty protocol names', () => {
+      expect(app.setAsDefaultProtocolClient('')).to.equal(false);
+      expect(app.isDefaultProtocolClient('')).to.equal(false);
+      expect(app.removeAsDefaultProtocolClient('')).to.equal(false);
+    });
+
+    it('rejects non-conformant protocol names ', () => {
+      // Starting with a digit.
+      expect(app.setAsDefaultProtocolClient('0badscheme')).to.equal(false);
+      // Starting with a hyphen.
+      expect(app.setAsDefaultProtocolClient('-badscheme')).to.equal(false);
+      // Containing backslashes.
+      expect(app.setAsDefaultProtocolClient('http\\shell\\open\\command')).to.equal(false);
+      // Containing forward slashes.
+      expect(app.setAsDefaultProtocolClient('bad/protocol')).to.equal(false);
+      // Containing spaces.
+      expect(app.setAsDefaultProtocolClient('bad protocol')).to.equal(false);
+      // Containing colons.
+      expect(app.setAsDefaultProtocolClient('bad:protocol')).to.equal(false);
+    });
+  });
+
   ifdescribe(process.platform === 'win32')('app launch through uri', () => {
     it('does not launch for argument following a URL', async () => {
       const appPath = path.join(fixturesPath, 'api', 'quit-app');

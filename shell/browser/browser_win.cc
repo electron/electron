@@ -429,7 +429,7 @@ bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
 
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
                                             gin::Arguments* args) {
-  if (protocol.empty())
+  if (!IsValidProtocolScheme(protocol))
     return false;
 
   // Main Registry Key
@@ -508,7 +508,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
   // Software\Classes", which is inherited by "HKEY_CLASSES_ROOT"
   // anyway, and can be written by unprivileged users.
 
-  if (protocol.empty())
+  if (!IsValidProtocolScheme(protocol))
     return false;
 
   std::wstring exe;
@@ -538,7 +538,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
                                       gin::Arguments* args) {
-  if (protocol.empty())
+  if (!IsValidProtocolScheme(protocol))
     return false;
 
   std::wstring exe;
