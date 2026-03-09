@@ -65,7 +65,7 @@ index 2748dd196fe1f56357348a204e24f0b8a28b97dd..5800dd00b47c657d9e6766f3fc5a3065
  #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 08cbe32a258bf478f1da0a07064d3e9ef14c44a5..b9f2a43cb90fac4b031a4b4da38d6435a50990d2 100644
+index 08cbe32a258bf478f1da0a07064d3e9ef14c44a5..c683575aab2154b46b1fa9cc9e5e30aa8ed4f0ee 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -614,6 +614,7 @@ class ProcessSingleton::LinuxWatcher
@@ -106,21 +106,39 @@ index 08cbe32a258bf478f1da0a07064d3e9ef14c44a5..b9f2a43cb90fac4b031a4b4da38d6435
    const size_t kMinMessageLength = std::size(kStartToken) + 4;
    if (bytes_read_ < kMinMessageLength) {
      buf_[bytes_read_] = 0;
-@@ -757,10 +763,28 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+@@ -757,10 +763,46 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
    tokens.erase(tokens.begin());
    tokens.erase(tokens.begin());
  
 +  size_t num_args;
-+  base::StringToSizeT(tokens[0], &num_args);
-+  std::vector<std::string> command_line(tokens.begin() + 1, tokens.begin() + 1 + num_args);
++  if (!base::StringToSizeT(tokens[0], &num_args) ||
++      num_args > tokens.size() - 1) {
++    LOG(ERROR) << "Invalid num_args in socket message";
++    CleanupAndDeleteSelf();
++    return;
++  }
++  std::vector<std::string> command_line(tokens.begin() + 1,
++                                        tokens.begin() + 1 + num_args);
 +
 +  std::vector<uint8_t> additional_data;
-+  if (tokens.size() >= 3 + num_args) {
++  // After consuming [num_args, argv...], two more tokens are needed for
++  // additional data: [size, payload]. Subtract to avoid overflow when
++  // num_args is large.
++  if (tokens.size() - 1 - num_args >= 2) {
 +    size_t additional_data_size;
-+    base::StringToSizeT(tokens[1 + num_args], &additional_data_size);
++    if (!base::StringToSizeT(tokens[1 + num_args], &additional_data_size)) {
++      LOG(ERROR) << "Invalid additional_data_size in socket message";
++      CleanupAndDeleteSelf();
++      return;
++    }
 +    std::string remaining_args = base::JoinString(
 +        base::span(tokens.begin() + 2 + num_args, tokens.end()),
 +        std::string(1, kTokenDelimiter));
++    if (additional_data_size > remaining_args.size()) {
++      LOG(ERROR) << "additional_data_size exceeds payload length";
++      CleanupAndDeleteSelf();
++      return;
++    }
 +    const uint8_t* additional_data_bits =
 +        reinterpret_cast<const uint8_t*>(remaining_args.c_str());
 +    additional_data = std::vector<uint8_t>(
@@ -136,7 +154,7 @@ index 08cbe32a258bf478f1da0a07064d3e9ef14c44a5..b9f2a43cb90fac4b031a4b4da38d6435
    fd_watch_controller_.reset();
  
    // LinuxWatcher::HandleMessage() is in charge of destroying this SocketReader
-@@ -789,8 +813,10 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
+@@ -789,8 +831,10 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
  //
  ProcessSingleton::ProcessSingleton(
      const base::FilePath& user_data_dir,
@@ -147,7 +165,7 @@ index 08cbe32a258bf478f1da0a07064d3e9ef14c44a5..b9f2a43cb90fac4b031a4b4da38d6435
        current_pid_(base::GetCurrentProcId()) {
    socket_path_ = user_data_dir.Append(chrome::kSingletonSocketFilename);
    lock_path_ = user_data_dir.Append(chrome::kSingletonLockFilename);
-@@ -911,7 +937,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -911,7 +955,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
               sizeof(socket_timeout));
  
    // Found another process, prepare our command line
@@ -157,7 +175,7 @@ index 08cbe32a258bf478f1da0a07064d3e9ef14c44a5..b9f2a43cb90fac4b031a4b4da38d6435
    std::string to_send(kStartToken);
    to_send.push_back(kTokenDelimiter);
  
-@@ -921,11 +948,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -921,11 +966,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
    to_send.append(current_dir.value());
  
    const std::vector<std::string>& argv = cmd_line.argv();
@@ -180,10 +198,18 @@ index 08cbe32a258bf478f1da0a07064d3e9ef14c44a5..b9f2a43cb90fac4b031a4b4da38d6435
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 64ebf49c0d1b6396d1cfbe3bf91480f61b47688d..bec94d4039379400ae8b00f1adbbb16a02ccbac0 100644
+index 64ebf49c0d1b6396d1cfbe3bf91480f61b47688d..3458909dd20e2b7fdf624a0e0eaeed6e8271475b 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
-@@ -81,10 +81,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
+@@ -9,6 +9,7 @@
+ #include <shellapi.h>
+ #include <stddef.h>
+ 
++#include "base/base64.h"
+ #include "base/base_paths.h"
+ #include "base/command_line.h"
+ #include "base/files/file_path.h"
+@@ -81,10 +82,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
  
  bool ParseCommandLine(const COPYDATASTRUCT* cds,
                        base::CommandLine* parsed_command_line,
@@ -198,7 +224,7 @@ index 64ebf49c0d1b6396d1cfbe3bf91480f61b47688d..bec94d4039379400ae8b00f1adbbb16a
    static const int min_message_size = 7;
    if (cds->cbData < min_message_size * sizeof(wchar_t) ||
        cds->cbData % sizeof(wchar_t) != 0) {
-@@ -134,6 +136,23 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
+@@ -134,6 +137,25 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
      const std::wstring cmd_line =
          msg.substr(second_null + 1, third_null - second_null);
      *parsed_command_line = base::CommandLine::FromString(cmd_line);
@@ -211,18 +237,20 @@ index 64ebf49c0d1b6396d1cfbe3bf91480f61b47688d..bec94d4039379400ae8b00f1adbbb16a
 +      return true;
 +    }
 +
-+    // Get the actual additional data.
-+    const std::wstring additional_data =
-+        msg.substr(third_null + 1, fourth_null - third_null);
-+    base::span<const uint8_t> additional_data_bytes =
-+        base::as_byte_span(additional_data);
-+    *parsed_additional_data = std::vector<uint8_t>(
-+        additional_data_bytes.begin(), additional_data_bytes.end());
++    // Get the actual additional data. It is base64-encoded so it can
++    // safely traverse the null-delimited wchar_t buffer.
++    const std::wstring encoded_w =
++        msg.substr(third_null + 1, fourth_null - third_null - 1);
++    std::string encoded = base::WideToASCII(encoded_w);
++    std::optional<std::vector<uint8_t>> decoded = base::Base64Decode(encoded);
++    if (decoded) {
++      *parsed_additional_data = std::move(*decoded);
++    }
 +
      return true;
    }
    return false;
-@@ -155,13 +174,14 @@ bool ProcessLaunchNotification(
+@@ -155,13 +177,14 @@ bool ProcessLaunchNotification(
  
    base::CommandLine parsed_command_line(base::CommandLine::NO_PROGRAM);
    base::FilePath current_directory;
@@ -240,7 +268,7 @@ index 64ebf49c0d1b6396d1cfbe3bf91480f61b47688d..bec94d4039379400ae8b00f1adbbb16a
    return true;
  }
  
-@@ -265,9 +285,11 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -265,9 +288,11 @@ bool ProcessSingleton::EscapeVirtualization(
  ProcessSingleton::ProcessSingleton(
      const std::string& program_name,
      const base::FilePath& user_data_dir,
@@ -252,7 +280,7 @@ index 64ebf49c0d1b6396d1cfbe3bf91480f61b47688d..bec94d4039379400ae8b00f1adbbb16a
        program_name_(program_name),
        is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-@@ -294,7 +316,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+@@ -294,7 +319,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
      return PROCESS_NONE;
    }
  
@@ -262,10 +290,18 @@ index 64ebf49c0d1b6396d1cfbe3bf91480f61b47688d..bec94d4039379400ae8b00f1adbbb16a
        return PROCESS_NOTIFIED;
      case NotifyChromeResult::NOTIFY_FAILED:
 diff --git a/chrome/browser/win/chrome_process_finder.cc b/chrome/browser/win/chrome_process_finder.cc
-index 58a4c5adfda49fb4bd1b5351bd02d358946043bd..adaa070eb0f3cf8f771b57743a7436fd48a1e576 100644
+index 58a4c5adfda49fb4bd1b5351bd02d358946043bd..6f21585faca6e98d2ed08be6a91df88947da6b3a 100644
 --- a/chrome/browser/win/chrome_process_finder.cc
 +++ b/chrome/browser/win/chrome_process_finder.cc
-@@ -39,7 +39,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
+@@ -11,6 +11,7 @@
+ #include <string>
+ #include <string_view>
+ 
++#include "base/base64.h"
+ #include "base/check.h"
+ #include "base/command_line.h"
+ #include "base/files/file_path.h"
+@@ -39,7 +40,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
    return base::win::MessageWindow::FindWindow(user_data_dir.value());
  }
  
@@ -276,7 +312,7 @@ index 58a4c5adfda49fb4bd1b5351bd02d358946043bd..adaa070eb0f3cf8f771b57743a7436fd
    TRACE_EVENT0("startup", "AttemptToNotifyRunningChrome");
  
    DCHECK(remote_window);
-@@ -70,12 +72,24 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
+@@ -70,12 +73,22 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
      new_command_line.AppendSwitch(switches::kSourceAppId);
    }
    // Send the command line to the remote chrome window.
@@ -288,14 +324,12 @@ index 58a4c5adfda49fb4bd1b5351bd02d358946043bd..adaa070eb0f3cf8f771b57743a7436fd
         std::wstring_view{L"\0", 1}, new_command_line.GetCommandLineString(),
         std::wstring_view{L"\0", 1}});
  
-+  size_t additional_data_size = additional_data.size_bytes();
-+  if (additional_data_size) {
-+    size_t padded_size = additional_data_size / sizeof(wchar_t);
-+    if (additional_data_size % sizeof(wchar_t) != 0) {
-+      padded_size++;
-+    }
-+    to_send.append(reinterpret_cast<const wchar_t*>(additional_data.data()),
-+                   padded_size);
++  if (!additional_data.empty()) {
++    // Base64-encode so the payload survives the null-delimited wchar_t
++    // framing; raw serialized bytes can contain 0x0000 sequences which
++    // would otherwise terminate the field early.
++    std::string encoded = base::Base64Encode(additional_data);
++    to_send.append(base::ASCIIToWide(encoded));
 +    to_send.append(L"\0", 1);  // Null separator.
 +  }
 +
