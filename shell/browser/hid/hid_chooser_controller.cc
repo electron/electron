@@ -87,13 +87,9 @@ HidChooserController::HidChooserController(
       exclusion_filters_(std::move(exclusion_filters)),
       callback_(std::move(callback)),
       initiator_document_(render_frame_host->GetWeakDocumentPtr()),
-      origin_(content::WebContents::FromRenderFrameHost(render_frame_host)
-                  ->GetPrimaryMainFrame()
-                  ->GetLastCommittedOrigin()),
+      origin_(render_frame_host->GetLastCommittedOrigin()),
       hid_delegate_(hid_delegate),
       render_frame_host_id_(render_frame_host->GetGlobalId()) {
-  // The use above of GetMainFrame is safe as content::HidService instances are
-  // not created for fenced frames.
   DCHECK(!render_frame_host->IsNestedWithinFencedFrame());
 
   chooser_context_ = HidChooserContextFactory::GetForBrowserContext(
