@@ -52,25 +52,21 @@ bool ElectronSerialDelegate::CanRequestPortPermission(
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   return permission_helper->CheckSerialAccessPermission(
-      web_contents->GetPrimaryMainFrame()->GetLastCommittedOrigin());
+      frame->GetLastCommittedOrigin());
 }
 
 bool ElectronSerialDelegate::HasPortPermission(
     content::RenderFrameHost* frame,
     const device::mojom::SerialPortInfo& port) {
-  auto* web_contents = content::WebContents::FromRenderFrameHost(frame);
   return GetChooserContext(frame)->HasPortPermission(
-      web_contents->GetPrimaryMainFrame()->GetLastCommittedOrigin(), port,
-      frame);
+      frame->GetLastCommittedOrigin(), port, frame);
 }
 
 void ElectronSerialDelegate::RevokePortPermissionWebInitiated(
     content::RenderFrameHost* frame,
     const base::UnguessableToken& token) {
-  auto* web_contents = content::WebContents::FromRenderFrameHost(frame);
   return GetChooserContext(frame)->RevokePortPermissionWebInitiated(
-      web_contents->GetPrimaryMainFrame()->GetLastCommittedOrigin(), token,
-      frame);
+      frame->GetLastCommittedOrigin(), token, frame);
 }
 
 const device::mojom::SerialPortInfo* ElectronSerialDelegate::GetPortInfo(
