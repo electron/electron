@@ -90,7 +90,7 @@ index e503e4940c6c5afa8e4907ce3fcabdf8a12e8d81..3df4be54916dda28e3725baba53a7bef
    // when it receives the AcceptCHFrame.
    EnabledClientHints? enabled_client_hints;
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index 916dadfe0eba27c8493b1b64bb01f9e77153692e..4a599fed851ea5af4be66895b7b2d83c5f128c0d 100644
+index 0d3aa45778e02c4a5bcdea6e8b0f5ab722e86aa3..fbe4f3d2931cdd9893a3c96667015d4091aed479 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -14,6 +14,7 @@ import "services/network/public/mojom/encoded_body_length.mojom";
@@ -112,7 +112,7 @@ index 916dadfe0eba27c8493b1b64bb01f9e77153692e..4a599fed851ea5af4be66895b7b2d83c
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index eb1b02a8a311f5f02302fddf76e468d30951683b..e4c62716106a0665bbeca11f0c94ac431e8b1c4e 100644
+index ed2de2a74f757f8dbb03d24934468933bc6923ed..a985ad9c86b4cf55abd52d62275e56788dd46a3d 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -373,6 +373,9 @@ URLLoader::URLLoader(
@@ -155,7 +155,7 @@ index eb1b02a8a311f5f02302fddf76e468d30951683b..e4c62716106a0665bbeca11f0c94ac43
  
    if (expected_response_headers_for_synthetic_response &&
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index f6691de75d3c586c8644eaf1efffbb2b69916007..254cbddbfd5a21f142d2d2767b62320b29ebe27b 100644
+index 5c04a9cc1d789b92623cd92be8cb7f94e53a7a1c..ccb3b820435eafaf47c316a3db4789ff605229f3 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -629,6 +629,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader

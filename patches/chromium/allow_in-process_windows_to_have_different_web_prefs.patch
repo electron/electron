@@ -32,7 +32,7 @@ index 23672617af41f1d88b551da7b4ad0a19e39a2092..df032abeeca76c0cd914cbefcb6ba1a9
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index c13ae7f9f49afc0f5355920453df0cebcd55bf3d..1e96abbeac5d466c1831e6687796a031c4cfa596 100644
+index cd34e8f534e86d4ff11ea1d8020d215f37cd730b..9ee7cd49b021ff4277b7bfd9c9e015eb75489562 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -9,6 +9,7 @@
@@ -43,7 +43,7 @@ index c13ae7f9f49afc0f5355920453df0cebcd55bf3d..1e96abbeac5d466c1831e6687796a031
  #include "build/build_config.h"
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
-@@ -464,6 +465,19 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+@@ -472,6 +473,19 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    bool should_screenshot_on_mainframe_same_doc_navigation = true;
  #endif  // BUILDFLAG(IS_ANDROID)
  

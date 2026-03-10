@@ -8,10 +8,10 @@ where callsites that deal with multiple contexts need to distinguish
 the current isolate.
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index be73f8a82ec031899cfaa7a7ddcf9e0170d187ad..09ca1f311b68a195f52a90aa375e7ea83bd439fa 100644
+index d64fef6bfc37264dcdc1bbea22eb5c4e099553dd..41d40326505c4ced9837df7f03b791c9435124bf 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -388,6 +388,7 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -382,6 +382,7 @@ class CONTENT_EXPORT ContentRendererClient {
    // WillDestroyServiceWorkerContextOnWorkerThread() is called.
    virtual void WillEvaluateServiceWorkerOnWorkerThread(
        blink::WebServiceWorkerContextProxy* context_proxy,
@@ -34,10 +34,10 @@ index dd4cee346f16df703d414bf206bbe6c9f4b1f796..5565f5a9259bd7da0722080bf01b3415
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index e4cb58ffaaeb9de75ec9658819f7305760fff9cb..25c04e67478865344d0b1291f6a584324d8d2fa8 100644
+index 40d1f104794795dba6cd59518819e98a4cdbfc44..8352f70c6c11af2890a03a2fae1729d27fc8da1f 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4765,10 +4765,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4775,10 +4775,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
      observer.DidInstallConditionalFeatures(context, world_id);
  }
  
@@ -167,10 +167,10 @@ index f96781a047056876b030581b539be0507acc3a1c..cd9be80be2500a001b1895c81ee597dd
    // Called when initial script evaluation finished for the main script.
    // |success| is true if the evaluation completed with no uncaught exception.
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index 1ce4e9a1e7b5d5cfbb6201c000eada80b3b3d174..c3557fdc4916cd199a61ab087f0866ce4297ba7e 100644
+index d241042fc37ffe4a2afecbc3c02e89f18e990929..044c38438029702fdbb6747b64932bd0d26372a5 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
-@@ -677,7 +677,8 @@ class BLINK_EXPORT WebLocalFrameClient {
+@@ -678,7 +678,8 @@ class BLINK_EXPORT WebLocalFrameClient {
                                               int32_t world_id) {}
  
    // WebKit is about to release its reference to a v8 context for a frame.
@@ -181,7 +181,7 @@ index 1ce4e9a1e7b5d5cfbb6201c000eada80b3b3d174..c3557fdc4916cd199a61ab087f0866ce
  
    // Geometry notifications ----------------------------------------------
 diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-index 8bd06f4c155cc0ed8afaf89347f9fc9728bb1e41..85ae42670cc038e18e4a0ea05e3de25c116b7a79 100644
+index 0787bc8a602c60e5b42933813baa6b9d923c9823..c4adcc6083e09e56416587fbcde10c9026e54066 100644
 --- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 @@ -108,11 +108,12 @@ void LocalWindowProxy::DisposeContext(Lifecycle next_status,

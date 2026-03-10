@@ -54,7 +54,7 @@ index 9b598ba34285bfe04c7c45557dd51af73bece3fe..c435d4441c99f87cc6a38fa73f73da6b
      if (mouse_event_callback.Run(mouse_event)) {
        return;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index bc19afc0674f26e3d77b4af5544bb03095c7b31e..b8c2a2be98f4bbe5d05a11e82a131e156c20b858 100644
+index b9a2f127138e78c1cea4af084f34421908e86224..3f767c219bdb6d73bff9942312736d9523bc6a02 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4475,6 +4475,12 @@ void WebContentsImpl::RenderWidgetWasResized(
@@ -71,10 +71,10 @@ index bc19afc0674f26e3d77b4af5544bb03095c7b31e..b8c2a2be98f4bbe5d05a11e82a131e15
                                            const gfx::PointF& client_pt) {
    if (delegate_) {
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 08311b3d853761fc14c8c7d7c4132441448831be..65848b8dc49bff70f12b1d28937d14ebb44afa1b 100644
+index 8a9a4da89a73afe520d8a7532f456b62e78dee89..289e4d4c39e46a08505cba2d92ae6ce83973e526 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1127,6 +1127,7 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1131,6 +1131,7 @@ class CONTENT_EXPORT WebContentsImpl
  
    double GetPendingZoomLevel(RenderWidgetHostImpl* rwh) override;
  

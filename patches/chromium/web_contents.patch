@@ -9,7 +9,7 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 861720198a3cbfe198ec328f899cdb6d0fcafdf7..8a733118b17d65ae9e9d5c0949e7f4db1be58716 100644
+index 6a2444ad5d20164be9877cf6b856d2bf762dcd26..13a7c72b8e728ebe6e4fb3aa7af7ae5e652256d5 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4192,6 +4192,13 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
@@ -35,7 +35,7 @@ index 861720198a3cbfe198ec328f899cdb6d0fcafdf7..8a733118b17d65ae9e9d5c0949e7f4db
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 78776430d970d73d3c92f94c26764a3e94ee0013..cce0d7df8ea6608a4fdb84d5eefbfb252a0031db 100644
+index f071103d3b15d46c96dc193bdbd657e00eb1083e..b0c7360c88bca2f0b3e902c14ade90cf11b17184 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -129,11 +129,14 @@ class PrerenderHandle;
