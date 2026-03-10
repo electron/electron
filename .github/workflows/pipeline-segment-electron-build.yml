@@ -124,7 +124,7 @@ jobs:
       run: df -h
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'macos' }}
-      uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+      uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
       with:
         node-version: 22.21.x
         cache: yarn

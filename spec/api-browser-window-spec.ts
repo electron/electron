@@ -569,6 +569,67 @@ describe('BrowserWindow module', () => {
         .catch((e) => console.log(e));
       expect(await w.webContents.executeJavaScript('window.ping')).to.equal('pong');
     });
+
+    describe('webRequest', () => {
+      afterEach(() => {
+        session.defaultSession.webRequest.onBeforeRequest(null);
+      });
+
+      it('triggers webRequest handlers for https', async () => {
+        session.defaultSession.webRequest.onBeforeRequest((_, cb) => {
+          cb({ cancel: true });
+        });
+
+        await expect(w.loadURL('https://foo')).to.eventually.be.rejectedWith(/^ERR_BLOCKED_BY_CLIENT/);
+      });
+
+      it('triggers webRequest handlers for intercepted https', async () => {
+        session.defaultSession.webRequest.onBeforeRequest((_, cb) => {
+          cb({ cancel: true });
+        });
+
+        session.defaultSession.protocol.handle('https', () => new Response());
+        defer(() => {
+          session.defaultSession.protocol.unhandle('https');
+        });
+
+        await expect(w.loadURL('https://foo')).to.eventually.be.rejectedWith(/^ERR_BLOCKED_BY_CLIENT/);
+      });
+
+      it('triggers webRequest handlers for file urls', async () => {
+        session.defaultSession.webRequest.onBeforeRequest((_, cb) => {
+          cb({ cancel: true });
+        });
+
+        await expect(w.loadURL('file://foo')).to.eventually.be.rejectedWith(/^ERR_BLOCKED_BY_CLIENT/);
+      });
+
+      it('triggers webRequest handlers for intercepted file urls', async () => {
+        session.defaultSession.webRequest.onBeforeRequest((_, cb) => {
+          cb({ cancel: true });
+        });
+
+        session.defaultSession.protocol.handle('file', () => new Response());
+        defer(() => {
+          session.defaultSession.protocol.unhandle('file');
+        });
+
+        await expect(w.loadURL('file://foo')).to.eventually.be.rejectedWith(/^ERR_BLOCKED_BY_CLIENT/);
+      });
+
+      it('triggers webRequest handlers for registered protocols', async () => {
+        session.defaultSession.webRequest.onBeforeRequest((_, cb) => {
+          cb({ cancel: true });
+        });
+
+        session.defaultSession.protocol.handle('custom-protocol', () => new Response());
+        defer(() => {
+          session.defaultSession.protocol.unhandle('custom-protocol');
+        });
+
+        await expect(w.loadURL('custom-protocol://foo')).to.eventually.be.rejectedWith(/^ERR_BLOCKED_BY_CLIENT/);
+      });
+    });
   });
 
   for (const sandbox of [false, true]) {
@@ -5959,37 +6020,26 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    ifdescribe(process.platform === 'linux')('menu bar AltGr behavior', () => {
-      it('does not toggle auto-hide menu bar visibility', async () => {
-        const w = new BrowserWindow({ show: false, autoHideMenuBar: true });
-        w.setMenuBarVisibility(false);
-        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
-
-        w.show();
-        await once(w, 'show');
-        w.webContents.focus();
-        w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'AltGr' });
-        w.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'AltGr' });
-        await setTimeout();
-
-        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
-      });
-    });
-
     ifdescribe(process.platform !== 'darwin')('when fullscreen state is changed', () => {
       it('correctly remembers state prior to fullscreen change', async () => {
         const w = new BrowserWindow({ show: false });
+
+        // This should do nothing.
+        w.setFullScreen(false);
+
         expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
         w.setMenuBarVisibility(false);
         expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
 
         const enterFS = once(w, 'enter-full-screen');
         w.setFullScreen(true);
+        w.setFullScreen(true); // This should do nothing.
         await enterFS;
         expect(w.fullScreen).to.be.true('not fullscreen');
 
         const exitFS = once(w, 'leave-full-screen');
         w.setFullScreen(false);
+        w.setFullScreen(false); // This should do nothing.
         await exitFS;
         expect(w.fullScreen).to.be.false('not fullscreen');
 
@@ -6006,11 +6056,13 @@ describe('BrowserWindow module', () => {
 
         const enterFS = once(w, 'enter-full-screen');
         w.setFullScreen(true);
+        w.setFullScreen(true); // This should do nothing.
         await enterFS;
         expect(w.fullScreen).to.be.true('not fullscreen');
 
         const exitFS = once(w, 'leave-full-screen');
         w.setFullScreen(false);
+        w.setFullScreen(false); // This should do nothing.
         await exitFS;
         expect(w.fullScreen).to.be.false('not fullscreen');
 
@@ -6022,6 +6074,9 @@ describe('BrowserWindow module', () => {
       it('correctly remembers state prior to HTML fullscreen transition', async () => {
         const w = new BrowserWindow();
         await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+        // This should do nothing.
+        w.setFullScreen(false);
 
         expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
         expect(w.isFullScreen()).to.be.false('is fullscreen');

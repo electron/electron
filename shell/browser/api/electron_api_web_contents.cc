@@ -51,6 +51,7 @@
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/desktop_streams_registry.h"
+#include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/file_select_listener.h"
@@ -98,6 +99,7 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_navigation_throttle.h"
+#include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/file_select_helper.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
@@ -428,6 +430,7 @@ namespace {
 // Global toggle for disabling draggable regions checks.
 bool g_disable_draggable_regions = false;
 
+#if BUILDFLAG(ENABLE_PRINTING)
 // Constants we use for printing.
 constexpr char kFrom[] = "from";
 constexpr char kTo[] = "to";
@@ -457,6 +460,7 @@ constexpr char kFooterTemplate[] = "footerTemplate";
 constexpr char kPreferCSSPageSize[] = "preferCSSPageSize";
 constexpr char kGenerateTaggedPDF[] = "generateTaggedPDF";
 constexpr char kGenerateDocumentOutline[] = "generateDocumentOutline";
+#endif  // BUILDFLAG(ENABLE_PRINTING)
 
 constexpr std::string_view CursorTypeToString(
     ui::mojom::CursorType cursor_type) {
@@ -1110,6 +1114,13 @@ void WebContents::InitWithWebContents(
 }
 
 WebContents::~WebContents() {
+  if (web_contents()) {
+    auto* permission_manager = static_cast<ElectronPermissionManager*>(
+        web_contents()->GetBrowserContext()->GetPermissionControllerDelegate());
+    if (permission_manager)
+      permission_manager->CancelPendingRequests(web_contents());
+  }
+
   if (inspectable_web_contents_)
     inspectable_web_contents_->GetView()->SetDelegate(nullptr);
 
@@ -1307,11 +1318,12 @@ void WebContents::MaybeOverrideCreateParamsForNewWindow(
          dict.Get(options::kOffscreen, &is_offscreen) && is_offscreen);
 
     if (is_offscreen) {
+      // Use a no-op callback here. The real OnPaint callback will be bound
+      // to the child WebContents in AddNewContents via SetCallback().
       auto* view = new OffScreenWebContentsView(
           false, offscreen_use_shared_texture_,
           offscreen_shared_texture_pixel_format_,
-          offscreen_device_scale_factor_,
-          base::BindRepeating(&WebContents::OnPaint, base::Unretained(this)));
+          offscreen_device_scale_factor_, base::DoNothing());
       create_params->view = view;
       create_params->delegate_view = view;
     }
@@ -1338,6 +1350,15 @@ content::WebContents* WebContents::AddNewContents(
 
   v8::HandleScope handle_scope(isolate);
   auto api_web_contents = CreateAndTake(isolate, std::move(new_contents), type);
+
+  // Rebind the paint callback to the child WebContents. The
+  // OffScreenWebContentsView was initially created with the parent's OnPaint
+  // in MaybeOverrideCreateParamsForNewWindow, but the paint data
+  // belongs to the child.
+  if (auto* osr_view = api_web_contents->GetOffScreenWebContentsView()) {
+    osr_view->SetCallback(base::BindRepeating(&WebContents::OnPaint,
+                                              api_web_contents->GetWeakPtr()));
+  }
 
   // We call RenderFrameCreated here as at this point the empty "about:blank"
   // render frame has already been created.  If the window never navigates again
@@ -1541,16 +1562,22 @@ void WebContents::EnterFullscreenModeForTab(
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(source);
   auto callback =
-      base::BindRepeating(&WebContents::OnEnterFullscreenModeForTab,
-                          base::Unretained(this), requesting_frame, options);
-  permission_helper->RequestFullscreenPermission(requesting_frame, callback);
+      base::BindOnce(&WebContents::OnEnterFullscreenModeForTab, GetWeakPtr(),
+                     requesting_frame->GetGlobalFrameToken(), options);
+  permission_helper->RequestFullscreenPermission(requesting_frame,
+                                                 std::move(callback));
 }
 
 void WebContents::OnEnterFullscreenModeForTab(
-    content::RenderFrameHost* requesting_frame,
+    const content::GlobalRenderFrameHostToken& frame_token,
     const blink::mojom::FullscreenOptions& options,
     bool allowed) {
   if (!allowed || !owner_window())
+    return;
+
+  auto* requesting_frame =
+      content::RenderFrameHost::FromFrameToken(frame_token);
+  if (!requesting_frame)
     return;
 
   auto* source = content::WebContents::FromRenderFrameHost(requesting_frame);
@@ -1626,9 +1653,30 @@ void WebContents::RendererResponsive(
 
 bool WebContents::HandleContextMenu(content::RenderFrameHost& render_frame_host,
                                     const content::ContextMenuParams& params) {
-  Emit("context-menu", std::make_pair(params, &render_frame_host));
+  ui::Clipboard::GetForCurrentThread()->ReadAvailableTypes(
+      ui::ClipboardBuffer::kCopyPaste, std::nullopt,
+      base::BindOnce(&WebContents::OnReadAvailableTypes, GetWeakPtr(), params,
+                     render_frame_host.GetGlobalId()));
 
   return true;
+}
+
+void WebContents::OnReadAvailableTypes(
+    const content::ContextMenuParams& params,
+    content::GlobalRenderFrameHostId render_frame_host_id,
+    std::vector<std::u16string> types) {
+  content::RenderFrameHost* render_frame_host =
+      content::RenderFrameHost::FromID(render_frame_host_id);
+  if (!render_frame_host) {
+    return;
+  }
+
+  ContextMenuParamsWithRenderFrameHost event_data{
+      params,
+      render_frame_host,
+      !types.empty(),
+  };
+  Emit("context-menu", event_data);
 }
 
 void WebContents::FindReply(content::WebContents* web_contents,
@@ -1671,8 +1719,7 @@ void WebContents::RequestPointerLock(content::WebContents* web_contents,
       WebContentsPermissionHelper::FromWebContents(web_contents);
   permission_helper->RequestPointerLockPermission(
       user_gesture, last_unlocked_by_target,
-      base::BindOnce(&WebContents::OnRequestPointerLock,
-                     base::Unretained(this)));
+      base::BindOnce(&WebContents::OnRequestPointerLock, GetWeakPtr()));
 }
 
 void WebContents::LostPointerLock() {
@@ -1702,8 +1749,8 @@ void WebContents::RequestKeyboardLock(content::WebContents* web_contents,
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   permission_helper->RequestKeyboardLockPermission(
-      esc_key_locked, base::BindOnce(&WebContents::OnRequestKeyboardLock,
-                                     base::Unretained(this)));
+      esc_key_locked,
+      base::BindOnce(&WebContents::OnRequestKeyboardLock, GetWeakPtr()));
 }
 
 void WebContents::CancelKeyboardLockRequest(
@@ -2242,6 +2289,11 @@ void WebContents::DidUpdateFaviconURL(
         iter->icon_url.is_valid())
       unique_urls.insert(iter->icon_url);
   }
+  // Only emit if favicon URLs actually changed
+  if (unique_urls == last_favicon_urls_)
+    return;
+  last_favicon_urls_ = unique_urls;
+
   Emit("page-favicon-updated", unique_urls);
 }
 
@@ -2776,6 +2828,11 @@ std::string WebContents::GetMediaSourceID(
           media_id, content::kRegistryStreamTypeTab);
 
   return id;
+}
+
+std::string WebContents::GetOrCreateDevToolsTargetId() {
+  auto agent_host = content::DevToolsAgentHost::GetOrCreateFor(web_contents());
+  return agent_host->GetId();
 }
 
 bool WebContents::IsCrashed() const {
@@ -4644,6 +4701,8 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
                  &WebContents::SetWebRTCIPHandlingPolicy)
       .SetMethod("setWebRTCUDPPortRange", &WebContents::SetWebRTCUDPPortRange)
       .SetMethod("getMediaSourceId", &WebContents::GetMediaSourceID)
+      .SetMethod("getOrCreateDevToolsTargetId",
+                 &WebContents::GetOrCreateDevToolsTargetId)
       .SetMethod("getWebRTCIPHandlingPolicy",
                  &WebContents::GetWebRTCIPHandlingPolicy)
       .SetMethod("getWebRTCUDPPortRange", &WebContents::GetWebRTCUDPPortRange)

@@ -5,6 +5,7 @@
 #include "shell/renderer/api/electron_api_context_bridge.h"
 
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <utility>
@@ -423,8 +424,9 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContextInner(
     blink::VideoFrame* video_frame =
         blink::V8VideoFrame::ToWrappable(source_isolate, value);
     if (video_frame != nullptr) {
+      v8::Context::Scope destination_context_scope(destination_context);
       blink::ScriptState* script_state =
-          blink::ScriptState::ForCurrentRealm(destination_isolate);
+          blink::ScriptState::From(destination_isolate, destination_context);
       return v8::MaybeLocal<v8::Value>(
           blink::ToV8Traits<blink::VideoFrame>::ToV8(script_state,
                                                      video_frame));
@@ -826,13 +828,18 @@ void ExposeAPIInWorld(v8::Isolate* isolate,
   ExposeAPI(isolate, source_context, target_isolate, target_context, key, api);
 }
 
-gin_helper::Dictionary TraceKeyPath(const gin_helper::Dictionary& start,
-                                    const std::vector<std::string>& key_path) {
+std::optional<gin_helper::Dictionary> TraceKeyPath(
+    const gin_helper::Dictionary& start,
+    const std::vector<std::string>& key_path,
+    bool allow_silent_failure) {
   gin_helper::Dictionary current = start;
   for (size_t i = 0; i < key_path.size() - 1; i++) {
-    CHECK(current.Get(key_path[i], &current))
-        << "Failed to get property '" << key_path[i] << "' at index " << i
-        << " in key path";
+    if (!current.Get(key_path[i], &current)) {
+      if (allow_silent_failure)
+        return std::nullopt;
+      CHECK(false) << "Failed to get property '" << key_path[i] << "' at index "
+                   << i << " in key path";
+    }
   }
   return current;
 }
@@ -841,7 +848,8 @@ void OverrideGlobalValueFromIsolatedWorld(
     v8::Isolate* isolate,
     const std::vector<std::string>& key_path,
     v8::Local<v8::Object> value,
-    bool support_dynamic_properties) {
+    bool support_dynamic_properties,
+    bool allow_silent_failure) {
   if (key_path.empty())
     return;
 
@@ -853,7 +861,11 @@ void OverrideGlobalValueFromIsolatedWorld(
   gin_helper::Dictionary global(isolate, main_context->Global());
 
   const std::string final_key = key_path[key_path.size() - 1];
-  gin_helper::Dictionary target_object = TraceKeyPath(global, key_path);
+  auto maybe_target_object =
+      TraceKeyPath(global, key_path, allow_silent_failure);
+  if (!maybe_target_object.has_value())
+    return;
+  gin_helper::Dictionary target_object = maybe_target_object.value();
 
   {
     v8::Context::Scope main_context_scope(main_context);
@@ -886,8 +898,8 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
   gin_helper::Dictionary global(isolate, main_context->Global());
 
   const std::string final_key = key_path[key_path.size() - 1];
-  v8::Local<v8::Object> target_object =
-      TraceKeyPath(global, key_path).GetHandle();
+  auto target_dict = TraceKeyPath(global, key_path, false);
+  v8::Local<v8::Object> target_object = target_dict.value().GetHandle();
 
   {
     v8::Context::Scope main_context_scope(main_context);
@@ -905,7 +917,7 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
     }
     if (!setter->IsNullOrUndefined() && setter->IsObject()) {
       v8::Local<v8::Context> source_context =
-          getter->GetCreationContextChecked(isolate);
+          setter.As<v8::Object>()->GetCreationContextChecked(isolate);
       v8::MaybeLocal<v8::Value> maybe_setter_proxy = PassValueToOtherContext(
           isolate, source_context, isolate, main_context, setter,
           source_context->Global(), false, BridgeErrorTarget::kSource);

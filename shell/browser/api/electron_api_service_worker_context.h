@@ -11,6 +11,7 @@
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/wrappable.h"
 #include "third_party/blink/public/common/service_worker/embedded_worker_status.h"
+#include "third_party/blink/public/common/tokens/tokens.h"
 
 namespace content {
 class StoragePartition;
@@ -55,7 +56,8 @@ class ServiceWorkerContext final
       std::shared_ptr<gin_helper::Promise<v8::Local<v8::Value>>> shared_promise,
       int64_t version_id,
       int process_id,
-      int thread_id);
+      int thread_id,
+      const blink::ServiceWorkerToken& token);
   void DidFailToStartWorkerForScope(
       std::shared_ptr<gin_helper::Promise<v8::Local<v8::Value>>> shared_promise,
       content::StatusCodeResponse status);

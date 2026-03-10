@@ -77,7 +77,7 @@ jobs:
         cp $(which node) /mnt/runner-externals/node24/bin/
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'win' }}
-      uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+      uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
       with:
         node-version: 22.21.x
     - name: Add TCC permissions on macOS
@@ -173,12 +173,12 @@ jobs:
         echo "DISABLE_CRASH_REPORTER_TESTS=true" >> $GITHUB_ENV
         echo "IS_ASAN=true" >> $GITHUB_ENV
     - name: Download Generated Artifacts
-      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+      uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3
       with:
         name: generated_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./generated_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
     - name: Download Src Artifacts
-      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+      uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3
       with:
         name: src_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./src_artifacts_${{ matrix.build-type }}_${{ inputs.target-arch }}
@@ -196,12 +196,21 @@ jobs:
       run: |
         cd src/out/Default
         unzip -:o dist.zip
-    #- name: Import & Trust Self-Signed Codesigning Cert on MacOS
-    #  if: ${{ inputs.target-platform == 'macos' && inputs.target-arch == 'x64' }}
-    #  run: |
-    #    sudo security authorizationdb write com.apple.trust-settings.admin allow
-    #    cd src/electron
-    #    ./script/codesign/generate-identity.sh
+    - name: Import & Trust Self-Signed Codesigning Cert on MacOS
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        cd src/electron
+        ./script/codesign/generate-identity.sh
+    # Sign with our self-signed cert so that macOS system integrations
+    # (UNNotifications, dock bounce, etc.) work in tests on both architectures.
+    # Autoupdater tests sign their own fixture copies via signApp().
+    - name: Sign Electron.app for macOS tests
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        identity=$(src/electron/script/codesign/get-trusted-identity.sh)
+        if [ -n "$identity" ]; then
+          codesign -s "$identity" --deep --force src/out/Default/Electron.app
+        fi
 
     - name: Run Electron Tests
       shell: bash
@@ -290,7 +299,7 @@ jobs:
       if: always() && !cancelled()
     - name: Upload Test Artifacts
       if: always() && !cancelled()
-      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
       with:
         name: ${{ inputs.target-platform == 'linux' && format('test_artifacts_{0}_{1}_{2}', env.ARTIFACT_KEY, inputs.display-server, matrix.shard) || format('test_artifacts_{0}_{1}', env.ARTIFACT_KEY, matrix.shard) }}
         path: src/electron/spec/artifacts

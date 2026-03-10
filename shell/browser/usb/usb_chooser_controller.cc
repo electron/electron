@@ -43,7 +43,7 @@ UsbChooserController::UsbChooserController(
     : WebContentsObserver(web_contents),
       options_(std::move(options)),
       callback_(std::move(callback)),
-      origin_(render_frame_host->GetMainFrame()->GetLastCommittedOrigin()),
+      origin_(render_frame_host->GetLastCommittedOrigin()),
       usb_delegate_(usb_delegate),
       render_frame_host_id_(render_frame_host->GetGlobalId()) {
   chooser_context_ = UsbChooserContextFactory::GetForBrowserContext(
@@ -68,6 +68,7 @@ gin::WeakCell<api::Session>* UsbChooserController::GetSession() {
 void UsbChooserController::OnDeviceAdded(
     const device::mojom::UsbDeviceInfo& device_info) {
   if (DisplayDevice(device_info)) {
+    devices_.push_back(device_info.Clone());
     gin::WeakCell<api::Session>* session = GetSession();
     if (session && session->Get()) {
       session->Get()->Emit("usb-device-added", device_info.Clone(),
@@ -78,6 +79,9 @@ void UsbChooserController::OnDeviceAdded(
 
 void UsbChooserController::OnDeviceRemoved(
     const device::mojom::UsbDeviceInfo& device_info) {
+  std::erase_if(devices_, [&device_info](const auto& device) {
+    return device->guid == device_info.guid;
+  });
   gin::WeakCell<api::Session>* session = GetSession();
   if (session && session->Get()) {
     session->Get()->Emit("usb-device-removed", device_info.Clone(),
@@ -90,9 +94,11 @@ void UsbChooserController::OnDeviceChosen(gin::Arguments* args) {
   if (!args->GetNext(&device_id) || device_id.empty()) {
     RunCallback(/*device_info=*/nullptr);
   } else {
-    auto* device_info = chooser_context_->GetDeviceInfo(device_id);
-    if (device_info) {
-      RunCallback(device_info->Clone());
+    const auto it = std::ranges::find_if(
+        devices_,
+        [&device_id](const auto& device) { return device->guid == device_id; });
+    if (it != devices_.end()) {
+      RunCallback((*it)->Clone());
     } else {
       util::EmitWarning(
           base::StrCat({"The device id ", device_id, " was not found."}),
@@ -126,6 +132,11 @@ void UsbChooserController::GotUsbDeviceList(
     std::erase_if(devices, [this](const auto& device_info) {
       return !DisplayDevice(*device_info);
     });
+
+    devices_.clear();
+    for (const auto& device : devices) {
+      devices_.push_back(device->Clone());
+    }
 
     v8::Local<v8::Object> details = gin::DataObjectBuilder(isolate)
                                         .Set("deviceList", devices)

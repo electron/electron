@@ -103,15 +103,18 @@ void Browser::ClearRecentDocuments() {}
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
                                          gin::Arguments* args) {
+  if (!IsValidProtocolScheme(protocol))
+    return false;
+
   return SetDefaultWebClient(protocol);
 }
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
                                       gin::Arguments* args) {
-  auto env = base::Environment::Create();
-
-  if (protocol.empty())
+  if (!IsValidProtocolScheme(protocol))
     return false;
+
+  auto env = base::Environment::Create();
 
   std::vector<std::string> argv = {kXdgSettings, "check",
                                    kXdgSettingsDefaultSchemeHandler, protocol};
