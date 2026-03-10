@@ -21,8 +21,9 @@
 #include "shell/browser/browser.h"
 #include "shell/common/gin_converters/accelerator_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/node_includes.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "base/mac/mac_util.h"
@@ -50,8 +51,9 @@ bool MapHasMediaKeys(
 
 namespace electron::api {
 
-gin::DeprecatedWrapperInfo GlobalShortcut::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+const gin::WrapperInfo GlobalShortcut::kWrapperInfo = {
+    {gin::kEmbedderNativeGin},
+    gin::kElectronGlobalShortcut};
 
 GlobalShortcut::GlobalShortcut() = default;
 
@@ -233,16 +235,15 @@ void GlobalShortcut::UnregisterAll() {
 }
 
 // static
-gin_helper::Handle<GlobalShortcut> GlobalShortcut::Create(
-    v8::Isolate* isolate) {
-  return gin_helper::CreateHandle(isolate, new GlobalShortcut());
+GlobalShortcut* GlobalShortcut::Create(v8::Isolate* isolate) {
+  return cppgc::MakeGarbageCollected<GlobalShortcut>(
+      isolate->GetCppHeap()->GetAllocationHandle());
 }
 
 // static
 gin::ObjectTemplateBuilder GlobalShortcut::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin_helper::DeprecatedWrappable<
-             GlobalShortcut>::GetObjectTemplateBuilder(isolate)
+  return gin::Wrappable<GlobalShortcut>::GetObjectTemplateBuilder(isolate)
       .SetMethod("registerAll", &GlobalShortcut::RegisterAll)
       .SetMethod("register", &GlobalShortcut::Register)
       .SetMethod("isRegistered", &GlobalShortcut::IsRegistered)
@@ -250,8 +251,12 @@ gin::ObjectTemplateBuilder GlobalShortcut::GetObjectTemplateBuilder(
       .SetMethod("unregisterAll", &GlobalShortcut::UnregisterAll);
 }
 
-const char* GlobalShortcut::GetTypeName() {
-  return "GlobalShortcut";
+const gin::WrapperInfo* GlobalShortcut::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* GlobalShortcut::GetHumanReadableName() const {
+  return "Electron / GlobalShortcut";
 }
 
 }  // namespace electron::api
