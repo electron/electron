@@ -23,6 +23,8 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/node_includes.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace gin {
 
@@ -48,12 +50,13 @@ struct Converter<electron::TrayIcon::IconType> {
 
 namespace electron::api {
 
-gin::DeprecatedWrapperInfo Tray::kWrapperInfo = {gin::kEmbedderNativeGin};
+const gin::WrapperInfo Tray::kWrapperInfo = {{gin::kEmbedderNativeGin},
+                                             gin::kElectronTray};
 
 Tray::Tray(v8::Isolate* isolate,
            v8::Local<v8::Value> image,
            std::optional<base::Uuid> guid)
-    : guid_(guid), tray_icon_(TrayIcon::Create(guid)) {
+    : guid_{guid}, tray_icon_{TrayIcon::Create(guid)} {
   SetImage(isolate, image);
   tray_icon_->AddObserver(this);
   if (guid.has_value())
@@ -63,10 +66,10 @@ Tray::Tray(v8::Isolate* isolate,
 Tray::~Tray() = default;
 
 // static
-gin_helper::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
-                                   v8::Local<v8::Value> image,
-                                   std::optional<base::Uuid> guid,
-                                   gin::Arguments* args) {
+Tray* Tray::New(gin_helper::ErrorThrower thrower,
+                v8::Local<v8::Value> image,
+                std::optional<base::Uuid> guid,
+                gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create Tray before app is ready");
     return {};
@@ -81,16 +84,15 @@ gin_helper::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
   // Make sure to abort early and propagate the error to JS.
   // Refs https://chromium-review.googlesource.com/c/v8/v8/+/5050065
   v8::TryCatch try_catch(args->isolate());
-  auto* tray = new Tray(args->isolate(), image, guid);
+  Tray* tray = cppgc::MakeGarbageCollected<Tray>(
+      args->isolate()->GetCppHeap()->GetAllocationHandle(), args->isolate(),
+      image, guid);
   if (try_catch.HasCaught()) {
-    delete tray;
     try_catch.ReThrow();
     return {};
   }
 
-  auto handle = gin_helper::CreateHandle(args->isolate(), tray);
-  handle->Pin(args->isolate());
-  return handle;
+  return tray;
 }
 
 void Tray::OnClicked(const gfx::Rect& bounds,
@@ -186,9 +188,9 @@ void Tray::OnDragEnded() {
 }
 
 void Tray::Destroy() {
-  Unpin();
   menu_.Reset();
   tray_icon_.reset();
+  keep_alive_.Clear();
 }
 
 bool Tray::IsDestroyed() {
@@ -437,12 +439,12 @@ void Tray::FillObjectTemplate(v8::Isolate* isolate,
       .Build();
 }
 
-const char* Tray::GetTypeName() {
-  return GetClassName();
+const gin::WrapperInfo* Tray::wrapper_info() const {
+  return &kWrapperInfo;
 }
 
-void Tray::WillBeDestroyed() {
-  ClearWeak();
+const char* Tray::GetHumanReadableName() const {
+  return "Electron / Tray";
 }
 
 }  // namespace electron::api
@@ -457,7 +459,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin::Dictionary dict{isolate, exports};
-  dict.Set("Tray", Tray::GetConstructor(isolate, context));
+  dict.Set("Tray", Tray::GetConstructor(isolate, context, &Tray::kWrapperInfo));
 }
 
 }  // namespace
