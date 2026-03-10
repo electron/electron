@@ -11,7 +11,7 @@ really in 20/21. We have to wait until 22 is released to be able to
 build with upstream GN files.
 
 diff --git a/configure.py b/configure.py
-index 91283ca577f580dbf1e0c4e2dbf851a9ceaa38ed..e8eaff30ec947677db2d45425f9180759d0c55de 100755
+index 77c87f5a9539714f68278d95ec79878cc52dc18b..ff93eebd4714ac8d9c9abe9c53e3636f02e0baac 100755
 --- a/configure.py
 +++ b/configure.py
 @@ -1728,7 +1728,7 @@ def configure_v8(o, configs):
@@ -93,7 +93,7 @@ index f9426599f2d5dc6ad061407f0c4eb2c9203a4433..302030f610965f07dd6998d282275c1b
  // Handles compilation and caching of built-in JavaScript modules and
  // bootstrap scripts, whose source are bundled into the binary as static data.
 diff --git a/tools/install.py b/tools/install.py
-index 8797b59e59c85a8877b977fa3281e50165e6f6b2..0af01e075616195f38fb242626dcab770ec1eb57 100755
+index a619fd17b16e404cf8deb5b91f7dbd980895f760..2b981b23e724120f69a5f7ef655e5f648aa310e9 100755
 --- a/tools/install.py
 +++ b/tools/install.py
 @@ -222,6 +222,7 @@ def headers(options, action):
@@ -115,7 +115,7 @@ index 8797b59e59c85a8877b977fa3281e50165e6f6b2..0af01e075616195f38fb242626dcab77
 diff --git a/tools/js2c.cc b/tools/js2c.cc
 old mode 100644
 new mode 100755
-index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2e9dfb0f0
+index 9c2f70de4e00834ff448e573743898072dc14c5d..71a12c606f4da7165cc41a295a278b2e504af1b6
 --- a/tools/js2c.cc
 +++ b/tools/js2c.cc
 @@ -28,6 +28,7 @@ namespace js2c {
@@ -210,7 +210,7 @@ index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2
                     static_cast<int>(def_buf.size()),
                     def_buf.data(),
                     static_cast<int>(init_buf.size()),
-@@ -846,12 +890,15 @@ int JS2C(const FileList& js_files,
+@@ -836,12 +880,15 @@ int JS2C(const FileList& js_files,
      }
    }
  
@@ -226,7 +226,7 @@ index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2
    Fragment out = Format(definitions, initializers, registrations);
    return WriteIfChanged(out, dest);
  }
-@@ -877,6 +924,8 @@ int Main(int argc, char* argv[]) {
+@@ -867,6 +914,8 @@ int Main(int argc, char* argv[]) {
      std::string arg(argv[i]);
      if (arg == "--verbose") {
        is_verbose = true;
@@ -235,7 +235,7 @@ index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2
      } else if (arg == "--root") {
        if (i == argc - 1) {
          fprintf(stderr, "--root must be followed by a path\n");
-@@ -925,6 +974,14 @@ int Main(int argc, char* argv[]) {
+@@ -915,6 +964,14 @@ int Main(int argc, char* argv[]) {
      }
    }
  
@@ -250,7 +250,7 @@ index 21992cbe894a880e3223c379326b62db22f2f12d..1296a5457422099035ba34f2b02624f2
    // Should have exactly 3 types: `.js`, `.mjs` and `.gypi`.
    assert(file_map.size() == 3);
    auto gypi_it = file_map.find(".gypi");
-@@ -951,6 +1008,7 @@ int Main(int argc, char* argv[]) {
+@@ -941,6 +998,7 @@ int Main(int argc, char* argv[]) {
    std::sort(mjs_it->second.begin(), mjs_it->second.end());
  
    return JS2C(js_it->second, mjs_it->second, gypi_it->second[0], output);

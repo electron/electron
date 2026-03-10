@@ -16,24 +16,28 @@ that is exposed to JS
 Refs https://github.com/nodejs/node/commit/3cdb1cd437f63dd256ae2ab3b7e9016257326cb4
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 8a12475857135bd3e904610b7eb887c397c8e73c..3702672f4e2c3b1bff9f9f5c66ca251af447826a 100644
+index d19cae298147f1b310506eec49b6fbd036fb1195..ecd2d481d97e5dab934481b085b949f47904a6c4 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -107,11 +107,7 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
+@@ -108,14 +108,8 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
  }
  
  void* NodeArrayBufferAllocator::Allocate(size_t size) {
 -  void* ret;
--  if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
+-  if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers) {
+-    COUNT_GENERIC_USAGE("NodeArrayBufferAllocator.Allocate.ZeroFilled");
 -    ret = allocator_->Allocate(size);
--  else
+-  } else {
+-    COUNT_GENERIC_USAGE("NodeArrayBufferAllocator.Allocate.Uninitialized");
 -    ret = allocator_->AllocateUninitialized(size);
+-  }
 +  void* ret = allocator_->Allocate(size);
++  COUNT_GENERIC_USAGE("NodeArrayBufferAllocator.Allocate.Uninitialized");
    if (ret != nullptr) [[likely]] {
      total_mem_usage_.fetch_add(size, std::memory_order_relaxed);
    }
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index c00d3616e08b00b1e0a3a29b2dbb5278e1e14fcc..8939c5e5085d00b098f66074b9ee033f5be55d08 100644
+index c862f91bf1f9494b747b2950e8e37547ba08b6b8..9fd48697845fca304e1dabf7c57ab208d9649a73 100644
 --- a/src/crypto/crypto_cipher.cc
 +++ b/src/crypto/crypto_cipher.cc
 @@ -20,6 +20,7 @@ using ncrypto::SSLPointer;
@@ -44,7 +48,7 @@ index c00d3616e08b00b1e0a3a29b2dbb5278e1e14fcc..8939c5e5085d00b098f66074b9ee033f
  using v8::Context;
  using v8::FunctionCallbackInfo;
  using v8::FunctionTemplate;
-@@ -774,10 +775,10 @@ CipherBase::UpdateResult CipherBase::Update(
+@@ -773,10 +774,10 @@ CipherBase::UpdateResult CipherBase::Update(
      return kErrorState;
    }
  
@@ -59,7 +63,7 @@ index c00d3616e08b00b1e0a3a29b2dbb5278e1e14fcc..8939c5e5085d00b098f66074b9ee033f
  
    buffer = {
        .data = reinterpret_cast<const unsigned char*>(data),
-@@ -852,11 +853,10 @@ bool CipherBase::Final(std::unique_ptr<BackingStore>* out) {
+@@ -851,11 +852,10 @@ bool CipherBase::Final(std::unique_ptr<BackingStore>* out) {
  
    const int mode = ctx_.getMode();
  
@@ -75,7 +79,7 @@ index c00d3616e08b00b1e0a3a29b2dbb5278e1e14fcc..8939c5e5085d00b098f66074b9ee033f
  
    if (kind_ == kDecipher &&
        Cipher::FromCtx(ctx_).isSupportedAuthenticatedMode()) {
-@@ -972,10 +972,10 @@ bool PublicKeyCipher::Cipher(
+@@ -971,10 +971,10 @@ bool PublicKeyCipher::Cipher(
      return false;
    }
  
@@ -359,7 +363,7 @@ index fd29d17de195017970856ce30d7a9c5785b0b8ee..7fe3d09851d4476fa3f77ea0a0b49e8a
    unsigned char* serialized = reinterpret_cast<unsigned char*>(bs->Data());
    CHECK_GE(i2d_RSA_PUBKEY(rsa, &serialized), 0);
 diff --git a/src/encoding_binding.cc b/src/encoding_binding.cc
-index 5ace688bb7ffc86eedf5aff11ab0ab487ad9440e..31058543a164bb45ba989e8c433994e0857a98b9 100644
+index 22eecffa437a9e0f4a0e170953aa35fa527511b5..5b45f2223cece766bd7d27ac0d3a853c82f8ce07 100644
 --- a/src/encoding_binding.cc
 +++ b/src/encoding_binding.cc
 @@ -15,6 +15,7 @@ namespace encoding_binding {
@@ -383,7 +387,7 @@ index 5ace688bb7ffc86eedf5aff11ab0ab487ad9440e..31058543a164bb45ba989e8c433994e0
      CHECK(bs);
  
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 98e1e1e75bae94038bba0049447ab48b0acfb8cc..fe395bf89f9c1e5bb2dabc8fceda7b9b2b877415 100644
+index d1a7e1212da46a8e5c2fffee46542ac8bec828ee..97018f2378fe4848944f26f51684b21ac118d1b3 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
 @@ -44,16 +44,6 @@
@@ -432,7 +436,7 @@ index 161d577e0ea6a251c83ba1903b1ec9a582a5317c..52713421465c23c959afac1955168294
    released_allocated_buffers_.emplace(buf.base, std::move(bs));
    return buf;
 diff --git a/src/env.h b/src/env.h
-index c346e3a9c827993036438685d758a734f9ce8c05..28c8df87c8e2f06e2ed8c554260bfdedb860bb4a 100644
+index 2af2846af6ba7d8ad6e0edca5e2f6279e4c672a3..87cff857bbe65c32e1931886b953c5e32deba193 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -114,19 +114,6 @@ class ModuleWrap;
@@ -456,7 +460,7 @@ index c346e3a9c827993036438685d758a734f9ce8c05..28c8df87c8e2f06e2ed8c554260bfded
    std::vector<SnapshotIndex> primitive_values;
    std::vector<PropInfo> template_values;
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index e844fe6cb33acefd075516e675075421ad5c3cff..06c84eb6ec097e3cb39502116135a7802aed13ce 100644
+index 0cf2a07deb382dfd96607f84b583ffbd62447769..f2943d5ceca106564e421c668ec8815c43c21085 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -66,6 +66,7 @@ namespace Buffer {
@@ -525,7 +529,7 @@ index e844fe6cb33acefd075516e675075421ad5c3cff..06c84eb6ec097e3cb39502116135a780
        return env->ThrowRangeError("Array buffer allocation failed");
      }
 diff --git a/src/node_http2.cc b/src/node_http2.cc
-index 8237c9b7d325dd925ae8798d7795fcd94eeb13d0..a22cf6c4e33e5cf2d3168ce03dc35af8a9584af7 100644
+index 7c070ae09e77afc7773724a516217059189138a7..bb761c0a201cbed568258d07d8ec0d6a80de8b3b 100644
 --- a/src/node_http2.cc
 +++ b/src/node_http2.cc
 @@ -27,6 +27,7 @@ using v8::Array;

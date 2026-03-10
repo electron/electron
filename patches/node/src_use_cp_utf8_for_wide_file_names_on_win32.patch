@@ -24,10 +24,10 @@ Reviewed-By: Joyee Cheung <joyeec9h3@gmail.com>
 Reviewed-By: Rafael Gonzaga <rafael.nunu@hotmail.com>
 
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 75be21c9e8b413f522240a906da06d26c44d5b71..e94c2b5f2cf7cac413cd5cb782fa1cca6d764960 100644
+index 57c8dc35dc86efed6e8736e4649b90905a8da54b..89c51a3fd0752ac1586de6840243e93ef5bc080e 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -3056,42 +3056,6 @@ static void GetFormatOfExtensionlessFile(
+@@ -3066,42 +3066,6 @@ static void GetFormatOfExtensionlessFile(
    return args.GetReturnValue().Set(EXTENSIONLESS_FORMAT_JAVASCRIPT);
  }
  
@@ -70,7 +70,7 @@ index 75be21c9e8b413f522240a906da06d26c44d5b71..e94c2b5f2cf7cac413cd5cb782fa1cca
  static void CpSyncCheckPaths(const FunctionCallbackInfo<Value>& args) {
    Environment* env = Environment::GetCurrent(args);
    Isolate* isolate = env->isolate();
-@@ -3104,7 +3068,7 @@ static void CpSyncCheckPaths(const FunctionCallbackInfo<Value>& args) {
+@@ -3114,7 +3078,7 @@ static void CpSyncCheckPaths(const FunctionCallbackInfo<Value>& args) {
    THROW_IF_INSUFFICIENT_PERMISSIONS(
        env, permission::PermissionScope::kFileSystemRead, src.ToStringView());
  
@@ -79,7 +79,7 @@ index 75be21c9e8b413f522240a906da06d26c44d5b71..e94c2b5f2cf7cac413cd5cb782fa1cca
  
    BufferValue dest(isolate, args[1]);
    CHECK_NOT_NULL(*dest);
-@@ -3112,7 +3076,7 @@ static void CpSyncCheckPaths(const FunctionCallbackInfo<Value>& args) {
+@@ -3122,7 +3086,7 @@ static void CpSyncCheckPaths(const FunctionCallbackInfo<Value>& args) {
    THROW_IF_INSUFFICIENT_PERMISSIONS(
        env, permission::PermissionScope::kFileSystemWrite, dest.ToStringView());
  
@@ -88,7 +88,7 @@ index 75be21c9e8b413f522240a906da06d26c44d5b71..e94c2b5f2cf7cac413cd5cb782fa1cca
    bool dereference = args[2]->IsTrue();
    bool recursive = args[3]->IsTrue();
  
-@@ -3141,8 +3105,8 @@ static void CpSyncCheckPaths(const FunctionCallbackInfo<Value>& args) {
+@@ -3151,8 +3115,8 @@ static void CpSyncCheckPaths(const FunctionCallbackInfo<Value>& args) {
        (src_status.type() == std::filesystem::file_type::directory) ||
        (dereference && src_status.type() == std::filesystem::file_type::symlink);
  
@@ -99,7 +99,7 @@ index 75be21c9e8b413f522240a906da06d26c44d5b71..e94c2b5f2cf7cac413cd5cb782fa1cca
  
    if (!error_code) {
      // Check if src and dest are identical.
-@@ -3237,7 +3201,7 @@ static bool CopyUtimes(const std::filesystem::path& src,
+@@ -3247,7 +3211,7 @@ static bool CopyUtimes(const std::filesystem::path& src,
    uv_fs_t req;
    auto cleanup = OnScopeLeave([&req]() { uv_fs_req_cleanup(&req); });
  
@@ -108,7 +108,7 @@ index 75be21c9e8b413f522240a906da06d26c44d5b71..e94c2b5f2cf7cac413cd5cb782fa1cca
    int result = uv_fs_stat(nullptr, &req, src_path_str.c_str(), nullptr);
    if (is_uv_error(result)) {
      env->ThrowUVException(result, "stat", nullptr, src_path_str.c_str());
-@@ -3248,7 +3212,7 @@ static bool CopyUtimes(const std::filesystem::path& src,
+@@ -3258,7 +3222,7 @@ static bool CopyUtimes(const std::filesystem::path& src,
    const double source_atime = s->st_atim.tv_sec + s->st_atim.tv_nsec / 1e9;
    const double source_mtime = s->st_mtim.tv_sec + s->st_mtim.tv_nsec / 1e9;
  
@@ -117,7 +117,7 @@ index 75be21c9e8b413f522240a906da06d26c44d5b71..e94c2b5f2cf7cac413cd5cb782fa1cca
    int utime_result = uv_fs_utime(nullptr,
                                   &req,
                                   dest_file_path_str.c_str(),
-@@ -3383,7 +3347,7 @@ static void CpSyncCopyDir(const FunctionCallbackInfo<Value>& args) {
+@@ -3393,7 +3357,7 @@ static void CpSyncCopyDir(const FunctionCallbackInfo<Value>& args) {
      std::error_code error;
      for (auto dir_entry : std::filesystem::directory_iterator(src)) {
        auto dest_file_path = dest / dir_entry.path().filename();
@@ -126,7 +126,7 @@ index 75be21c9e8b413f522240a906da06d26c44d5b71..e94c2b5f2cf7cac413cd5cb782fa1cca
  
        if (dir_entry.is_symlink()) {
          if (verbatim_symlinks) {
-@@ -3446,7 +3410,7 @@ static void CpSyncCopyDir(const FunctionCallbackInfo<Value>& args) {
+@@ -3452,7 +3416,7 @@ static void CpSyncCopyDir(const FunctionCallbackInfo<Value>& args) {
                }
              } else if (std::filesystem::is_regular_file(dest_file_path)) {
                if (!dereference || (!force && error_on_exist)) {

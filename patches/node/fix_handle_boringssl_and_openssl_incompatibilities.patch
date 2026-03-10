@@ -185,10 +185,10 @@ index e2407027ab05e59b2f0f1c213b98ea469db7a91b..c64761b730e61edcdc0e46a48699f2fd
    # The location of simdutf - use the one from node's deps by default.
    node_simdutf_path = "//third_party/simdutf"
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index 2176fb6982484e2c42538478eeb4dd81c9d50ee1..c00d3616e08b00b1e0a3a29b2dbb5278e1e14fcc 100644
+index 07eb79acdf5e2d236b36daa1b314ed1afa19a545..c862f91bf1f9494b747b2950e8e37547ba08b6b8 100644
 --- a/src/crypto/crypto_cipher.cc
 +++ b/src/crypto/crypto_cipher.cc
-@@ -1027,7 +1027,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
+@@ -1026,7 +1026,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
      if (EVP_PKEY_decrypt_init(ctx.get()) <= 0) {
        return ThrowCryptoError(env, ERR_get_error());
      }
@@ -197,7 +197,7 @@ index 2176fb6982484e2c42538478eeb4dd81c9d50ee1..c00d3616e08b00b1e0a3a29b2dbb5278
      int rsa_pkcs1_implicit_rejection =
          EVP_PKEY_CTX_ctrl_str(ctx.get(), "rsa_pkcs1_implicit_rejection", "1");
      // From the doc -2 means that the option is not supported.
-@@ -1042,6 +1042,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
+@@ -1041,6 +1041,7 @@ void PublicKeyCipher::Cipher(const FunctionCallbackInfo<Value>& args) {
            env,
            "RSA_PKCS1_PADDING is no longer supported for private decryption");
      }
@@ -228,7 +228,7 @@ index d94f6e1c82c4a62547b3b395f375c86ce4deb5de..b81b9005365272217c77e2b9289bd9f8
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index d1430cd66dd045dcb52dd166e1eabc7202d1bd94..8f50d0cc132ac65fa74cf1fc2172247b5ad42962 100644
+index 8028f6db70f481e291aca2b8e0e6129900fbf67e..2cd7cd67c1c480eb9ec549a12bc2b9584d5a53b3 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -141,7 +141,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
@@ -240,7 +240,7 @@ index d1430cd66dd045dcb52dd166e1eabc7202d1bd94..8f50d0cc132ac65fa74cf1fc2172247b
        X509* ca = sk_X509_value(extra_certs, i);
  
        // NOTE: Increments reference count on `ca`
-@@ -1831,11 +1831,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
+@@ -1854,11 +1854,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
    // If the user specified "auto" for dhparams, the JavaScript layer will pass
    // true to this function instead of the original string. Any other string
    // value will be interpreted as custom DH parameters below.
@@ -254,7 +254,7 @@ index d1430cd66dd045dcb52dd166e1eabc7202d1bd94..8f50d0cc132ac65fa74cf1fc2172247b
    DHPointer dh;
    {
      BIOPointer bio(LoadBIO(env, args[0]));
-@@ -2061,7 +2062,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
+@@ -2084,7 +2085,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
    }
  
    // Add CA certs too
@@ -519,7 +519,7 @@ index 9c2360df7150571377eff37fc5e958d17900da30..4505786745c54a529f904d5e7813a862
  }  // namespace
  
 diff --git a/src/env.h b/src/env.h
-index 874e5f4d15a75307e45cf70c06fc104fed843a6a..35e16159a94bb97f19d17767e3ad4bb798660f44 100644
+index 7a63acde77d28c0f11c7f2563c8c3cb2ebdce780..723e4738dd1c32710e521775d66e0d957334344c 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -51,7 +51,7 @@
@@ -554,7 +554,7 @@ index d9c533f100d25aeab1fe8589932a8ddead431258..2acab8786a8a752b17961445edeb872c
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 31fc23fdbfabceab3cffd81a3e6650dde1ccd13a..3026b3d814ae652a9996c1dcba62b4fa678ac871 100644
+index 5b74045886e91a27e766a7f0a8f2dddfacaa1d46..41de3936265f0544831521fe753d2050e91b58e1 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -8,7 +8,7 @@
@@ -567,7 +567,7 @@ index 31fc23fdbfabceab3cffd81a3e6650dde1ccd13a..3026b3d814ae652a9996c1dcba62b4fa
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index 2e73fd2a05e329910d4c064474880f770c9f5957..d8751a6ee734233e2fc24866ed87d9cd516072ae 100644
+index c1bcc063a001194bb76efe9a202fb4ab271ba834..b7d9b429f0b498dfd70301074948a13a2d35532e 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@
