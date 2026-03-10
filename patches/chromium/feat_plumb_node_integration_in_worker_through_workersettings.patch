@@ -1,0 +1,73 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@anthropic.com>
+Date: Sat, 7 Mar 2026 23:07:30 -0800
+Subject: feat: plumb node_integration_in_worker through WorkerSettings
+
+Copy the node_integration_in_worker flag from the initiating frame's
+WebPreferences into WorkerSettings at dedicated worker creation time,
+so the value is readable per-worker on the worker thread rather than
+relying on a process-wide command line switch. The value is also
+propagated to nested workers via WorkerSettings::Copy.
+
+diff --git a/third_party/blink/renderer/core/workers/dedicated_worker.cc b/third_party/blink/renderer/core/workers/dedicated_worker.cc
+index fffe252477c521216086db3a15c6c26d8ccc25dc..defc359ccf7097ad7783b31b8260be6d8b1b3e03 100644
+--- a/third_party/blink/renderer/core/workers/dedicated_worker.cc
++++ b/third_party/blink/renderer/core/workers/dedicated_worker.cc
+@@ -37,6 +37,7 @@
+ #include "third_party/blink/renderer/core/frame/local_frame_client.h"
+ #include "third_party/blink/renderer/core/frame/web_frame_widget_impl.h"
+ #include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"
++#include "third_party/blink/renderer/core/exported/web_view_impl.h"
+ #include "third_party/blink/renderer/core/inspector/inspector_trace_events.h"
+ #include "third_party/blink/renderer/core/inspector/main_thread_debugger.h"
+ #include "third_party/blink/renderer/core/loader/document_loader.h"
+@@ -558,6 +559,12 @@ DedicatedWorker::CreateGlobalScopeCreationParams(
+     auto* frame = window->GetFrame();
+     parent_devtools_token = frame->GetDevToolsFrameToken();
+     settings = std::make_unique<WorkerSettings>(frame->GetSettings());
++    if (auto* web_local_frame = WebLocalFrameImpl::FromFrame(frame)) {
++      if (auto* web_view = web_local_frame->ViewImpl()) {
++        settings->SetNodeIntegrationInWorker(
++            web_view->GetWebPreferences().node_integration_in_worker);
++      }
++    }
+     agent_group_scheduler_compositor_task_runner =
+         execution_context->GetScheduler()
+             ->ToFrameScheduler()
+diff --git a/third_party/blink/renderer/core/workers/worker_settings.cc b/third_party/blink/renderer/core/workers/worker_settings.cc
+index 45680c5f6ea0c7e89ccf43eb88f8a11e3318c02e..3fa3af62f4e7ba8186441c5e3184b1c04fe32d12 100644
+--- a/third_party/blink/renderer/core/workers/worker_settings.cc
++++ b/third_party/blink/renderer/core/workers/worker_settings.cc
+@@ -40,6 +40,8 @@ std::unique_ptr<WorkerSettings> WorkerSettings::Copy(
+       old_settings->strictly_block_blockable_mixed_content_;
+   new_settings->generic_font_family_settings_ =
+       old_settings->generic_font_family_settings_;
++  new_settings->node_integration_in_worker_ =
++      old_settings->node_integration_in_worker_;
+   return new_settings;
+ }
+ 
+diff --git a/third_party/blink/renderer/core/workers/worker_settings.h b/third_party/blink/renderer/core/workers/worker_settings.h
+index 45c60dd2c44b05fdd279f759069383479823c7f2..33a2a0337efb9a46293e11d0d09b3fc182ab9618 100644
+--- a/third_party/blink/renderer/core/workers/worker_settings.h
++++ b/third_party/blink/renderer/core/workers/worker_settings.h
+@@ -43,6 +43,11 @@ class CORE_EXPORT WorkerSettings {
+     return generic_font_family_settings_;
+   }
+ 
++  bool NodeIntegrationInWorker() const { return node_integration_in_worker_; }
++  void SetNodeIntegrationInWorker(bool value) {
++    node_integration_in_worker_ = value;
++  }
++
+  private:
+   void CopyFlagValuesFromSettings(Settings*);
+ 
+@@ -54,6 +59,7 @@ class CORE_EXPORT WorkerSettings {
+   bool strict_mixed_content_checking_ = false;
+   bool allow_running_of_insecure_content_ = false;
+   bool strictly_block_blockable_mixed_content_ = false;
++  bool node_integration_in_worker_ = false;
+ 
+   GenericFontFamilySettings generic_font_family_settings_;
+ };
