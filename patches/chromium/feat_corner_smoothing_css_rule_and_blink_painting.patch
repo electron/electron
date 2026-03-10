@@ -46,10 +46,10 @@ index 6e60de1319c5506d7180719fa230ab9cf537b832..e570e335fbd413340ddedeee423eca71
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index e388ec680c1492b7ef7f3428f16d35f4d13c4b53..596c47fca1cfcf326dd9f7d999966a520482371a 100644
+index e388ec680c1492b7ef7f3428f16d35f4d13c4b53..56cabedc4588cefd69f7b5509eb093b42c122a92 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -9596,6 +9596,26 @@
+@@ -9596,6 +9596,27 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -66,6 +66,7 @@ index e388ec680c1492b7ef7f3428f16d35f4d13c4b53..596c47fca1cfcf326dd9f7d999966a52
 +      type_name: "Length",
 +      default_value: "Length::None()",
 +      keywords: ["system-ui"],
++      percentages_depend_on_used_value: false,
 +      converter: "ConvertCornerSmoothing",
 +      runtime_flag: "ElectronCSSCornerSmoothing",
 +      valid_for_permission_element: true,
