@@ -759,6 +759,8 @@ describe('chromium features', () => {
         let file = new URL(request.url).pathname!;
         if (file[0] === '/' && process.platform === 'win32') file = file.slice(1);
 
+        file = file.replace('service-worker.js', 'service-worker-intercepted.js');
+
         const content = fs.readFileSync(path.normalize(file));
         const ext = path.extname(file);
         let type = 'text/html';
@@ -781,13 +783,34 @@ describe('chromium features', () => {
         } else if (channel === 'error') {
           done(`unexpected error : ${message}`);
         } else if (channel === 'response') {
-          expect(message).to.equal('Hello from serviceWorker!');
+          expect(message).to.equal('Hello from serviceWorker intercepted!');
           customSession.clearStorageData({
             storages: ['serviceworkers']
           }).then(() => {
             customSession.protocol.uninterceptProtocol('file');
             done();
           });
+        }
+      });
+      w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
+      w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
+    });
+
+    it('should trigger webRequest handlers when loaded as a file', (done) => {
+      const customSession = session.fromPartition('sw-file-scheme-webRequest');
+      customSession.webRequest.onBeforeRequest((details, cb) => {
+        if (details.url.endsWith('service-worker.js')) {
+          done(); // Service worker triggered webRequest handler.
+        }
+        cb({});
+      });
+
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          session: customSession,
+          contextIsolation: false
         }
       });
       w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
