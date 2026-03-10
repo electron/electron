@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/functional/callback_forward.h"
+#include "base/memory/weak_ptr.h"
 #include "extensions/common/extension_id.h"
 #include "shell/common/gin_helper/wrappable.h"
 #include "ui/base/accelerators/accelerator.h"
@@ -62,6 +63,8 @@ class GlobalShortcut final
 
   AcceleratorCallbackMap accelerator_callback_map_;
   CommandCallbackMap command_callback_map_;
+
+  base::WeakPtrFactory<GlobalShortcut> weak_ptr_factory_{this};
 };
 
 }  // namespace electron::api
