@@ -1,0 +1,166 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Thu, 19 Feb 2026 16:29:16 -0500
+Subject: [ganesh] Guard verb counts in tessellation accumulation against
+ overflow
+
+Rejects adding a path if the total verb count would overflow.
+Rejects merging ops if their total verb counts would overflow.
+Clamps the min allocation size in the GrVertexChunkArray to prevent
+overflow.
+Clamps the preallocation verb count parameter to avoid overflow in their
+intermediate calculations.
+
+Bug: b/484983991
+Change-Id: I32359cf10a996baf46b023a6cb8c608834942e0b
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1169977
+Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+Reviewed-by: Thomas Smith <thomsmit@google.com>
+
+diff --git a/src/gpu/ganesh/GrVertexChunkArray.cpp b/src/gpu/ganesh/GrVertexChunkArray.cpp
+index b920c81df0c1c8dd76672ba84989b72322833847..ccfd8ef10f101072a8023584f7e0db8fc3195685 100644
+--- a/src/gpu/ganesh/GrVertexChunkArray.cpp
++++ b/src/gpu/ganesh/GrVertexChunkArray.cpp
+@@ -10,6 +10,7 @@
+ #include "src/gpu/ganesh/GrMeshDrawTarget.h"
+ 
+ #include <algorithm>
++#include <limits>
+ 
+ GrVertexChunkBuilder::~GrVertexChunkBuilder() {
+     if (!fChunks->empty()) {
+@@ -37,6 +38,12 @@ bool GrVertexChunkBuilder::allocChunk(int minCount) {
+         fCurrChunkVertexCapacity = 0;
+         return false;
+     }
+-    fMinVerticesPerChunk *= 2;
++
++    int maxVerticesPerChunk = std::numeric_limits<int>::max() / fStride;
++    if (maxVerticesPerChunk / 2 > fMinVerticesPerChunk) {
++        fMinVerticesPerChunk *= 2;
++    } else {
++        fMinVerticesPerChunk = maxVerticesPerChunk;
++    }
+     return true;
+ }
+diff --git a/src/gpu/ganesh/ops/AtlasRenderTask.cpp b/src/gpu/ganesh/ops/AtlasRenderTask.cpp
+index 5f05079cfa740ecf140ed7c43d6e04102893a21a..13b2ff4a85d091427c8a95344dfa788cf0ecccbe 100644
+--- a/src/gpu/ganesh/ops/AtlasRenderTask.cpp
++++ b/src/gpu/ganesh/ops/AtlasRenderTask.cpp
+@@ -54,6 +54,17 @@ bool AtlasRenderTask::addPath(const SkMatrix& viewMatrix, const SkPath& path,
+     SkASSERT(this->isEmpty());
+     SkASSERT(!fDynamicAtlas->isInstantiated());  // Paths can't be added after instantiate().
+ 
++    // Check for room in the list first and return false if prior draws need to be flushed first.
++    if (GrFillRuleForSkPath(path) == GrFillRule::kNonzero) {
++        if (!fWindingPathList.canAdd(path)) {
++            return false;
++        }
++    } else {
++        if (!fEvenOddPathList.canAdd(path)) {
++            return false;
++        }
++    }
++
+     if (!fDynamicAtlas->addRect(widthInAtlas, heightInAtlas, locationInAtlas)) {
+         return false;
+     }
+diff --git a/src/gpu/ganesh/ops/AtlasRenderTask.h b/src/gpu/ganesh/ops/AtlasRenderTask.h
+index c44b426db504f2e108f131fa42bf6a5bd31f7a78..de056f1961ba6cbced6b2ea9ffe630e63785da71 100644
+--- a/src/gpu/ganesh/ops/AtlasRenderTask.h
++++ b/src/gpu/ganesh/ops/AtlasRenderTask.h
+@@ -22,6 +22,7 @@
+ #include "src/gpu/ganesh/ops/OpsTask.h"
+ #include "src/gpu/ganesh/tessellate/PathTessellator.h"
+ 
++#include <limits>
+ #include <memory>
+ #include <utility>
+ 
+@@ -89,6 +90,7 @@ private:
+     class AtlasPathList : SkNoncopyable {
+     public:
+         void add(PathDrawAllocator* alloc, const SkMatrix& pathMatrix, const SkPath& path) {
++            SkASSERT(this->canAdd(path));
+             fPathDrawList = &alloc->emplace_back(pathMatrix, path, SK_PMColor4fTRANSPARENT,
+                                                  fPathDrawList);
+             if (path.isInverseFillType()) {
+@@ -98,6 +100,12 @@ private:
+             fTotalCombinedPathVerbCnt += path.countVerbs();
+             ++fPathCount;
+         }
++
++        bool canAdd(const SkPath& path) const {
++            // Return true so long as we won't overflow the total verb count
++            return std::numeric_limits<int>::max() - fTotalCombinedPathVerbCnt >= path.countVerbs();
++        }
++
+         const PathDrawList* pathDrawList() const { return fPathDrawList; }
+         int totalCombinedPathVerbCnt() const { return fTotalCombinedPathVerbCnt; }
+         int pathCount() const { return fPathCount; }
+diff --git a/src/gpu/ganesh/ops/PathTessellateOp.cpp b/src/gpu/ganesh/ops/PathTessellateOp.cpp
+index 3bc370f046751a155b11085188ca152853c52263..f879a2ec1dd28e7ec0438d99226f28612eb8b9ec 100644
+--- a/src/gpu/ganesh/ops/PathTessellateOp.cpp
++++ b/src/gpu/ganesh/ops/PathTessellateOp.cpp
+@@ -5,6 +5,7 @@
+  * found in the LICENSE file.
+  */
+ #include "src/gpu/ganesh/ops/PathTessellateOp.h"
++#include <limits>
+ 
+ #include "include/core/SkColor.h"
+ #include "include/gpu/ganesh/GrRecordingContext.h"
+@@ -53,10 +54,13 @@ GrDrawOp::CombineResult PathTessellateOp::onCombineIfPossible(GrOp* grOp,
+                                                               SkArenaAlloc*,
+                                                               const GrCaps&) {
+     auto* op = grOp->cast<PathTessellateOp>();
++    bool verbCountOverflow = std::numeric_limits<int>::max() - fTotalCombinedPathVerbCnt <
++            op->fTotalCombinedPathVerbCnt;
+     bool canMerge = fAAType == op->fAAType &&
+                     fStencil == op->fStencil &&
+                     fProcessors == op->fProcessors &&
+-                    fShaderMatrix == op->fShaderMatrix;
++                    fShaderMatrix == op->fShaderMatrix &&
++                    !verbCountOverflow;
+     if (canMerge) {
+         fTotalCombinedPathVerbCnt += op->fTotalCombinedPathVerbCnt;
+         fPatchAttribs |= op->fPatchAttribs;
+diff --git a/src/gpu/tessellate/FixedCountBufferUtils.h b/src/gpu/tessellate/FixedCountBufferUtils.h
+index f2ab0f427c1fa08ac3a11c5a285f51243cb7ad27..055f6a026656f69bf6ef5feeba21695a99e7f9f2 100644
+--- a/src/gpu/tessellate/FixedCountBufferUtils.h
++++ b/src/gpu/tessellate/FixedCountBufferUtils.h
+@@ -14,6 +14,7 @@
+ #include <algorithm>
+ #include <cstddef>
+ #include <cstdint>
++#include <limits>
+ 
+ namespace skgpu { struct VertexWriter; }
+ 
+@@ -44,6 +45,8 @@ public:
+         // Over-allocate enough curves for 1 in 4 to chop. Every chop introduces 2 new patches:
+         // another curve patch and a triangle patch that glues the two chops together,
+         // i.e. + 2 * ((count + 3) / 4) == (count + 3) / 2
++        constexpr int kMaxVerbCount = std::numeric_limits<int>::max() >> 2;
++        totalCombinedPathVerbCnt = std::min(kMaxVerbCount, totalCombinedPathVerbCnt);
+         return totalCombinedPathVerbCnt + (totalCombinedPathVerbCnt + 3) / 2;
+     }
+ 
+@@ -88,6 +91,8 @@ public:
+ 
+     static constexpr int PreallocCount(int totalCombinedPathVerbCnt)  {
+         // Over-allocate enough wedges for 1 in 4 to chop, i.e., ceil(maxWedges * 5/4)
++        constexpr int kMaxVerbCount = std::numeric_limits<int>::max() >> 3;
++        totalCombinedPathVerbCnt = std::min(kMaxVerbCount, totalCombinedPathVerbCnt);
+         return (totalCombinedPathVerbCnt * 5 + 3) / 4;
+     }
+ 
+@@ -140,6 +145,8 @@ public:
+         // Over-allocate enough patches for each stroke to chop once, and for 8 extra caps. Since
+         // we have to chop at inflections, points of 180 degree rotation, and anywhere a stroke
+         // requires too many parametric segments, many strokes will end up getting choppped.
++        constexpr int kMaxVerbCount = std::numeric_limits<int>::max() >> 2;
++        totalCombinedPathVerbCnt = std::min(kMaxVerbCount, totalCombinedPathVerbCnt);
+         return (totalCombinedPathVerbCnt * 2) + 8/* caps */;
+     }
+ 
