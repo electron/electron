@@ -101,8 +101,6 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
   const std::u16string& toast_xml() const { return toast_xml_; }
 
   // Prop Setters
-  void SetId(const std::string& new_id);
-  void SetGroupId(const std::string& new_group_id);
   void SetTitle(const std::u16string& new_title);
   void SetSubtitle(const std::u16string& new_subtitle);
   void SetBody(const std::u16string& new_body);
