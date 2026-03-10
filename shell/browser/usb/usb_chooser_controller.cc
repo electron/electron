@@ -69,10 +69,9 @@ void UsbChooserController::OnDeviceAdded(
     const device::mojom::UsbDeviceInfo& device_info) {
   if (DisplayDevice(device_info)) {
     devices_.push_back(device_info.Clone());
-    gin::WeakCell<api::Session>* session = GetSession();
-    if (session && session->Get()) {
-      session->Get()->Emit("usb-device-added", device_info.Clone(),
-                           web_contents());
+    api::Session* session = GetSession();
+    if (session) {
+      session->Emit("usb-device-added", device_info.Clone(), web_contents());
     }
   }
 }
@@ -82,10 +81,9 @@ void UsbChooserController::OnDeviceRemoved(
   std::erase_if(devices_, [&device_info](const auto& device) {
     return device->guid == device_info.guid;
   });
-  gin::WeakCell<api::Session>* session = GetSession();
-  if (session && session->Get()) {
-    session->Get()->Emit("usb-device-removed", device_info.Clone(),
-                         web_contents());
+  api::Session* session = GetSession();
+  if (session) {
+    session->Emit("usb-device-removed", device_info.Clone(), web_contents());
   }
 }
 
