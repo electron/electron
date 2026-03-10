@@ -5,14 +5,10 @@ Subject: feat: ensure mas builds of the same application can use safestorage
 
 This change ensures that MAS builds of applications with an equivilant darwin build that share the same name do not fight over access to the same Safe Storage account.
 
-Specifically this changes the account name for app "My App" from "My App" to "My App AppStore" if the app is using a MAS build of Electron.
-
-We attempt to migrate the safe storage key from the old account, if that migration succeeds we delete the old key and move on.
-
-Existing apps that aren't built for the app store should be unimpacted, there is one edge case where a user uses BOTH an AppStore and a darwin build of the same app only one will keep it's access to the safestorage key as during the migration we delete the old account.  This is an acceptable edge case as no one should be actively using two versions of the same app.
+Specifically this changes the account name for app "My App" from "My App Key" to "My App App Store Key" if the app is using a MAS build of Electron.
 
 diff --git a/components/os_crypt/common/keychain_password_mac.mm b/components/os_crypt/common/keychain_password_mac.mm
-index 69bfbbf0f58ca3b05a601bea87b14dcf0fb2eecb..d65359cfca82ca8c31922e8856435cf13b40810f 100644
+index 69bfbbf0f58ca3b05a601bea87b14dcf0fb2eecb..b01cd342ee22bff0123da693bccaf93fae7021c6 100644
 --- a/components/os_crypt/common/keychain_password_mac.mm
 +++ b/components/os_crypt/common/keychain_password_mac.mm
 @@ -32,6 +32,12 @@
@@ -28,7 +24,7 @@ index 69bfbbf0f58ca3b05a601bea87b14dcf0fb2eecb..d65359cfca82ca8c31922e8856435cf1
  // These two strings ARE indeed user facing.  But they are used to access
  // the encryption keyword.  So as to not lose encrypted data when system
  // locale changes we DO NOT LOCALIZE.
-@@ -88,16 +94,55 @@
+@@ -88,7 +94,9 @@
                                    uma_result);
    };
  
@@ -39,45 +35,8 @@ index 69bfbbf0f58ca3b05a601bea87b14dcf0fb2eecb..d65359cfca82ca8c31922e8856435cf1
  
    if (password.has_value()) {
      uma_result = FindGenericPasswordResult::kPasswordFound;
-     return std::string(base::as_string_view(*password));
-   }
+@@ -97,7 +105,8 @@
  
-+  // If the suffixed account didn't exist, we should check if the legacy
-+  // non-suffixed account exists. If it does we can use that key and migrate it
-+  // to the new account.
-+  if (password.error() == errSecItemNotFound) {
-+    password = keychain.FindGenericPassword(service_name, account_name);
-+
-+    if (password.has_value()) {
-+      // If we found the legacy account name we should copy it over to
-+      // the new suffixed account
-+      OSStatus error = keychain.AddGenericPassword(
-+          service_name, suffixed_account_name, *password);
-+
-+      if (error == noErr) {
-+        // If we successfully made the suffixed account we can delete the old
-+        // account to ensure new apps don't try to use it and run into IAM
-+        // issues
-+        NSDictionary* delete_query = @{
-+          (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
-+          (__bridge id)kSecAttrService : @(service_name.c_str()),
-+          (__bridge id)kSecAttrAccount : @(account_name.c_str()),
-+        };
-+        error = keychain.ItemDelete(
-+            (__bridge CFDictionaryRef)delete_query);
-+        if (error != noErr) {
-+          OSSTATUS_DLOG(ERROR, error)
-+              << "Keychain delete for legacy key failed";
-+        }
-+      } else {
-+        OSSTATUS_DLOG(ERROR, error) << "Keychain add for suffixed key failed";
-+      }
-+
-+      uma_result = FindGenericPasswordResult::kPasswordFound;
-+      return std::string(base::as_string_view(*password));
-+    }
-+  }
-+
    if (password.error() == errSecItemNotFound) {
      uma_result = FindGenericPasswordResult::kPasswordNotFound;
 -    return AddRandomPasswordToKeychain(keychain, service_name, account_name);
