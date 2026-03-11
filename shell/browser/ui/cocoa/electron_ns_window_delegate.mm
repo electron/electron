@@ -259,7 +259,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
   // Hide the traffic light buttons container before miniaturize so that
   // when the window is restored, macOS does not render the buttons at
   // their default position during the deminiaturize animation.
-  shell_->PrepareTrafficLightsForMiniaturize();
+  shell_->HideTrafficLights();
 }
 
 - (void)windowDidMiniaturize:(NSNotification*)notification {
@@ -280,7 +280,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
   // Reposition traffic light buttons and make them visible again.
   // They were hidden in windowWillMiniaturize to prevent a flash at
   // the default (0,0) position during the restore animation.
-  shell_->RestoreTrafficLightsAfterDeminiaturize();
+  shell_->RestoreTrafficLights();
   shell_->NotifyWindowRestore();
 }
 
