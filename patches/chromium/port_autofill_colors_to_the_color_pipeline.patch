@@ -61,7 +61,7 @@ index c0696d530d282dcc2d8d95c518faa6326a354e8e..5a967fd5697a92d2acea2ea81b6c1115
    CompleteDefaultWebNativeRendererColorIdsDefinition(
        mixer, dark_mode,
 diff --git a/ui/color/win/native_color_mixers_win.cc b/ui/color/win/native_color_mixers_win.cc
-index 43214fd65d27b6443d54a14ea8557932f65c29e8..6401b52c160728d3a3971ffad5305bde4f9ec363 100644
+index 40ae14a8fb35ab59735a188e15769d8c8d03efbc..cae50ac488e2ffc9c132edbcd574fd560dfc8e65 100644
 --- a/ui/color/win/native_color_mixers_win.cc
 +++ b/ui/color/win/native_color_mixers_win.cc
 @@ -145,6 +145,10 @@ void AddNativeUiColorMixer(ColorProvider* provider,
