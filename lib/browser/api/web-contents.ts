@@ -782,7 +782,7 @@ WebContents.prototype._init = function () {
   const originCounts = new Map<string, number>();
   const openDialogs = new Set<AbortController>();
   this.on('-run-dialog', async (info, callback) => {
-    const origin = info.frame.origin === 'file:' ? info.frame.url : info.frame.origin;
+    const origin = info.frame.origin === 'file://' ? info.frame.url : info.frame.origin;
     if ((originCounts.get(origin) ?? 0) < 0) return callback(false, '');
 
     const prefs = this.getLastWebPreferences();
