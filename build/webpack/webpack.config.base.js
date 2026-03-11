@@ -123,7 +123,7 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
           'electron/common$': electronAPIFile,
           'electron/utility$': electronAPIFile,
           // Force timers to resolve to our own shim that doesn't use window.postMessage
-          timers: path.resolve(electronRoot, 'lib', 'common', 'timers-shim.js')
+          timers: path.resolve(electronRoot, 'lib', 'common', 'timers-shim.ts')
         },
         extensions: ['.ts', '.js'],
         fallback: {
