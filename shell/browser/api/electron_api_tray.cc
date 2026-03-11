@@ -83,11 +83,12 @@ Tray* Tray::New(gin_helper::ErrorThrower thrower,
   // Error thrown by us will be dropped when entering V8.
   // Make sure to abort early and propagate the error to JS.
   // Refs https://chromium-review.googlesource.com/c/v8/v8/+/5050065
-  v8::TryCatch try_catch(args->isolate());
+  v8::Isolate* isolate = args->isolate();
+  v8::TryCatch try_catch{isolate};
   Tray* tray = cppgc::MakeGarbageCollected<Tray>(
-      args->isolate()->GetCppHeap()->GetAllocationHandle(), args->isolate(),
-      image, guid);
+      isolate->GetCppHeap()->GetAllocationHandle(), isolate, image, guid);
   if (try_catch.HasCaught()) {
+    tray->keep_alive_.Clear();
     try_catch.ReThrow();
     return {};
   }
