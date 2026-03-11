@@ -189,7 +189,7 @@ void Tray::OnDragEnded() {
 }
 
 void Tray::Destroy() {
-  menu_.Reset();
+  menu_.Clear();
   tray_icon_.reset();
   keep_alive_.Clear();
 }
@@ -377,12 +377,13 @@ void Tray::SetContextMenu(gin_helper::ErrorThrower thrower,
                           v8::Local<v8::Value> arg) {
   if (!CheckAlive())
     return;
-  gin_helper::Handle<Menu> menu;
+
   if (arg->IsNull()) {
-    menu_.Reset();
+    menu_.Clear();
     tray_icon_->SetContextMenu(nullptr);
-  } else if (gin::ConvertFromV8(thrower.isolate(), arg, &menu)) {
-    menu_.Reset(thrower.isolate(), menu.ToV8());
+  } else if (Menu* menu = nullptr;
+             gin::ConvertFromV8(thrower.isolate(), arg, &menu)) {
+    menu_ = menu;
     tray_icon_->SetContextMenu(menu->model());
   } else {
     thrower.ThrowTypeError("Must pass Menu or null");
@@ -438,6 +439,11 @@ void Tray::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("getBounds", &Tray::GetBounds)
       .SetMethod("getGUID", &Tray::GetGUID)
       .Build();
+}
+
+void Tray::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<Tray>::Trace(visitor);
+  visitor->Trace(menu_);
 }
 
 const gin::WrapperInfo* Tray::wrapper_info() const {

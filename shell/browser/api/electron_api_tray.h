@@ -48,6 +48,7 @@ class Tray final : public gin::Wrappable<Tray>,
 
   // gin::Wrappable
   static const gin::WrapperInfo kWrapperInfo;
+  void Trace(cppgc::Visitor*) const override;
   const gin::WrapperInfo* wrapper_info() const override;
   const char* GetHumanReadableName() const override;
 
@@ -109,7 +110,7 @@ class Tray final : public gin::Wrappable<Tray>,
 
   bool CheckAlive();
 
-  v8::Global<v8::Value> menu_;
+  cppgc::Member<Menu> menu_;
   std::optional<base::Uuid> guid_;
   std::unique_ptr<TrayIcon> tray_icon_;
   gin_helper::SelfKeepAlive<Tray> keep_alive_{this};
