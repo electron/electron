@@ -1,0 +1,130 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andy Locascio <loc@anthropic.com>
+Date: Tue, 6 Jan 2026 08:23:03 -0800
+Subject: fix: clean up orphaned staged updates before downloading new update
+
+When checkForUpdates() is called while an update is already staged,
+Squirrel creates a new temporary directory for the download without
+cleaning up the old one. This can lead to significant disk usage if
+the app keeps checking for updates without restarting.
+
+This change adds a pruneOrphanedUpdateDirectories step before creating
+a new temp directory. Unlike a blanket prune, this reads the current
+ShipItState.plist and preserves the directory it references, deleting
+only truly orphaned update directories. This keeps the on-disk
+footprint bounded (at most 2 dirs) while ensuring quitAndInstall
+remains safe to call even when a new check is in progress.
+
+Refs https://github.com/electron/electron/issues/50200
+
+diff --git a/Squirrel/SQRLUpdater.m b/Squirrel/SQRLUpdater.m
+index d156616e81e6f25a3bded30e6216b8fc311f31bc..41856e5754228d33982db72f97f2ff241615a357 100644
+--- a/Squirrel/SQRLUpdater.m
++++ b/Squirrel/SQRLUpdater.m
+@@ -543,11 +543,19 @@ - (RACSignal *)downloadBundleForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL
+ #pragma mark File Management
+ 
+ - (RACSignal *)uniqueTemporaryDirectoryForUpdate {
+-	return [[[RACSignal
++	// Clean up any orphaned update directories before creating a new one.
++	// This prevents disk usage from growing when checkForUpdates() is called
++	// multiple times without the app restarting. The currently staged update
++	// (referenced by ShipItState.plist) is always preserved so quitAndInstall
++	// remains safe to call while a new check is in progress.
++	return [[[[[self
++		pruneOrphanedUpdateDirectories]
++		ignoreValues]
++		concat:[RACSignal
+ 		defer:^{
+ 			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+ 			return [directoryManager storageURL];
+-		}]
++		}]]
+ 		flattenMap:^(NSURL *storageURL) {
+ 			NSURL *updateDirectoryTemplate = [storageURL URLByAppendingPathComponent:[SQRLUpdaterUniqueTemporaryDirectoryPrefix stringByAppendingString:@"XXXXXXX"]];
+ 			char *updateDirectoryCString = strdup(updateDirectoryTemplate.path.fileSystemRepresentation);
+@@ -668,25 +676,68 @@ - (RACSignal *)pruneUpdateDirectories {
+ 			return [directoryManager storageURL];
+ 		}]
+ 		flattenMap:^(NSURL *storageURL) {
+-			NSFileManager *manager = [[NSFileManager alloc] init];
+-			NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:storageURL includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsSubdirectoryDescendants errorHandler:^(NSURL *URL, NSError *error) {
+-				NSLog(@"Error enumerating item %@ within directory %@: %@", URL, storageURL, error);
+-				return YES;
+-			}];
++			return [self removeUpdateDirectoriesInStorageURL:storageURL excludingURL:nil];
++		}]
++		setNameWithFormat:@"%@ -prunedUpdateDirectories", self];
++}
+ 
+-			return [[enumerator.rac_sequence.signal
+-				filter:^(NSURL *enumeratedURL) {
+-					NSString *name = enumeratedURL.lastPathComponent;
+-					return [name hasPrefix:SQRLUpdaterUniqueTemporaryDirectoryPrefix];
+-				}]
+-				doNext:^(NSURL *directoryURL) {
+-					NSError *error = nil;
+-					if (![manager removeItemAtURL:directoryURL error:&error]) {
+-						NSLog(@"Error removing old update directory at %@: %@", directoryURL, error.sqrl_verboseDescription);
+-					}
++/// Lazily removes orphaned temporary directories upon subscription, always
++/// preserving the directory currently referenced by ShipItState.plist so that
++/// quitAndInstall remains safe to call mid-check.
++///
++/// Safe to call in any state. Sends each removed directory then completes on
++/// an unspecified thread. Errors reading the staged request are swallowed
++/// (treated as "nothing staged").
++- (RACSignal *)pruneOrphanedUpdateDirectories {
++	return [[[[[SQRLShipItRequest
++		readUsingURL:self.shipItStateURL]
++		map:^(SQRLShipItRequest *request) {
++			// The request holds the URL to the staged .app bundle; its parent
++			// is the update.XXXXXXX directory we must preserve.
++			return [request.updateBundleURL URLByDeletingLastPathComponent];
++		}]
++		catch:^(NSError *error) {
++			// No staged request (or unreadable) — nothing to preserve.
++			return [RACSignal return:nil];
++		}]
++		flattenMap:^(NSURL *stagedDirectoryURL) {
++			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
++			return [[directoryManager storageURL]
++				flattenMap:^(NSURL *storageURL) {
++					return [self removeUpdateDirectoriesInStorageURL:storageURL excludingURL:stagedDirectoryURL];
+ 				}];
+ 		}]
+-		setNameWithFormat:@"%@ -prunedUpdateDirectories", self];
++		setNameWithFormat:@"%@ -pruneOrphanedUpdateDirectories", self];
++}
++
++/// Shared enumerate-and-delete logic for update temp directories.
++///
++/// storageURL  - The Squirrel storage root to enumerate. Must not be nil.
++/// excludedURL - Directory to skip (compared by standardized path). May be nil.
++- (RACSignal *)removeUpdateDirectoriesInStorageURL:(NSURL *)storageURL excludingURL:(NSURL *)excludedURL {
++	NSParameterAssert(storageURL != nil);
++
++	NSFileManager *manager = [[NSFileManager alloc] init];
++	NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:storageURL includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsSubdirectoryDescendants errorHandler:^(NSURL *URL, NSError *error) {
++		NSLog(@"Error enumerating item %@ within directory %@: %@", URL, storageURL, error);
++		return YES;
++	}];
++
++	NSString *excludedPath = excludedURL.URLByStandardizingPath.path;
++
++	return [[enumerator.rac_sequence.signal
++		filter:^(NSURL *enumeratedURL) {
++			NSString *name = enumeratedURL.lastPathComponent;
++			if (![name hasPrefix:SQRLUpdaterUniqueTemporaryDirectoryPrefix]) return NO;
++			if (excludedPath != nil && [enumeratedURL.URLByStandardizingPath.path isEqualToString:excludedPath]) return NO;
++			return YES;
++		}]
++		doNext:^(NSURL *directoryURL) {
++			NSError *error = nil;
++			if (![manager removeItemAtURL:directoryURL error:&error]) {
++				NSLog(@"Error removing old update directory at %@: %@", directoryURL, error.sqrl_verboseDescription);
++			}
++		}];
+ }
+ 
+ 
