@@ -20,6 +20,10 @@
 
 class CaptionButtonPlaceholderContainer;
 
+namespace views {
+class FrameBackground;
+}
+
 namespace electron {
 
 class NativeWindowViews;
@@ -166,6 +170,7 @@ class OpaqueFrameView : public FramelessView {
                               bool is_leading_button) const;
 
   std::unique_ptr<LinuxFrameLayout> linux_frame_layout_;
+  std::unique_ptr<views::FrameBackground> frame_background_;
 
   // Window controls.
   raw_ptr<views::Button> minimize_button_;
