@@ -208,6 +208,7 @@ jobs:
 
     - name: Run Electron Tests
       shell: bash
+      timeout-minutes: 40
       env:
         MOCHA_REPORTER: mocha-multi-reporters
         MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
@@ -258,6 +259,19 @@ jobs:
             
           fi
         fi
+    - name: Take screenshot on timeout or cancellation
+      if: ${{ inputs.target-platform != 'linux' && (cancelled() || failure()) }}
+      shell: bash
+      run: |
+        screenshot_dir="src/electron/spec/artifacts"
+        mkdir -p "$screenshot_dir"
+        screenshot_file="$screenshot_dir/screenshot-timeout-$(date +%Y%m%d%H%M%S).png"
+        if [ "${{ inputs.target-platform }}" = "macos" ]; then
+          screencapture -x "$screenshot_file" || true
+        elif [ "${{ inputs.target-platform }}" = "win" ]; then
+          powershell -command "Add-Type -AssemblyName System.Windows.Forms; \$screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; \$bitmap = New-Object System.Drawing.Bitmap(\$screen.Width, \$screen.Height); \$graphics = [System.Drawing.Graphics]::FromImage(\$bitmap); \$graphics.CopyFromScreen(\$screen.Location, [System.Drawing.Point]::Empty, \$screen.Size); \$bitmap.Save('$screenshot_file')" || true
+        fi
+
     - name: Upload Test results to Datadog
       env:
         DD_ENV: ci
@@ -273,7 +287,7 @@ jobs:
         fi
       if: always() && !cancelled()
     - name: Upload Test Artifacts
-      if: always() && !cancelled()
+      if: always()
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
       with:
         name: test_artifacts_${{ env.ARTIFACT_KEY }}_${{ matrix.shard }}
