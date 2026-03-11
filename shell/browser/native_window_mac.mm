@@ -1535,6 +1535,18 @@ void NativeWindowMac::RedrawTrafficLights() {
     [buttons_proxy_ redraw];
 }
 
+void NativeWindowMac::HideTrafficLights() {
+  if (buttons_proxy_)
+    [buttons_proxy_ setVisible:NO];
+}
+
+void NativeWindowMac::RestoreTrafficLights() {
+  if (buttons_proxy_ && window_button_visibility_.value_or(true)) {
+    [buttons_proxy_ redraw];
+    [buttons_proxy_ setVisible:YES];
+  }
+}
+
 // In simpleFullScreen mode, update the frame for new bounds.
 void NativeWindowMac::UpdateFrame() {
   NSWindow* window = GetNativeWindow().GetNativeNSWindow();
