@@ -1570,6 +1570,8 @@ on all protocols, including [custom protocols](protocol.md).
 
 This can have security implications, so enable carefully (e.g., only during development).
 
+Once enabled, the feature cannot be disabled again until the app is restarted.
+
 This method can only be called before app is ready.
 
 ### `app.isInApplicationsFolder()` _macOS_
