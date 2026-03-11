@@ -1498,12 +1498,12 @@ void NativeWindowMac::RedrawTrafficLights() {
     [buttons_proxy_ redraw];
 }
 
-void NativeWindowMac::PrepareTrafficLightsForMiniaturize() {
+void NativeWindowMac::HideTrafficLights() {
   if (buttons_proxy_)
     [buttons_proxy_ setVisible:NO];
 }
 
-void NativeWindowMac::RestoreTrafficLightsAfterDeminiaturize() {
+void NativeWindowMac::RestoreTrafficLights() {
   if (buttons_proxy_ && window_button_visibility_.value_or(true)) {
     [buttons_proxy_ redraw];
     [buttons_proxy_ setVisible:YES];
