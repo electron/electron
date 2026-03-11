@@ -170,6 +170,12 @@ class NativeWindowMac : public NativeWindow,
   void NotifyWindowDidFailToEnterFullScreen();
   void NotifyWindowWillLeaveFullScreen();
 
+  // Hide/show traffic light buttons around miniaturize/deminiaturize to
+  // prevent them from flashing at the default position during the restore
+  // animation when a custom trafficLightPosition is configured.
+  void PrepareTrafficLightsForMiniaturize();
+  void RestoreTrafficLightsAfterDeminiaturize();
+
   // Cleanup observers when window is getting closed. Note that the destructor
   // can be called much later after window gets closed, so we should not do
   // cleanup in destructor.
