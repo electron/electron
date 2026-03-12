@@ -878,6 +878,11 @@ Returns `string` - Name of the application handling the protocol, or an empty
 This method returns the application name of the default handler for the protocol
 (aka URI scheme) of a URL.
 
+> [!NOTE]
+> On Linux, this method can be noticeably slower than on macOS and Windows.
+> If you need to call it repeatedly, cache the result instead of querying it on
+> every use.
+
 ### `app.getApplicationInfoForProtocol(url)` _macOS_ _Windows_
 
 * `url` string - a URL with the protocol name to check. Unlike the other
