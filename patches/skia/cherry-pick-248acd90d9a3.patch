@@ -1,7 +1,7 @@
-From 248acd90d9a35ac46b2ec30201ae50f301b8a173 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Greg Daniel <egdaniel@google.com>
 Date: Wed, 11 Mar 2026 16:00:23 -0400
-Subject: [PATCH] Make sure we are getting the correct atlas for glyph mask format.
+Subject: Make sure we are getting the correct atlas for glyph mask format.
 
 Bug: b/491421267
 Change-Id: I4eacd46599eca2df8c10a3fc894b9ce890fae1e2
@@ -10,13 +10,12 @@ Commit-Queue: Greg Daniel <egdaniel@google.com>
 Reviewed-by: Michael Ludwig <michaelludwig@google.com>
 (cherry picked from commit 0cab3e4ee34b3bca6ba7df676639d73ffe4b2135)
 Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1184916
----
 
 diff --git a/bench/GlyphQuadFillBench.cpp b/bench/GlyphQuadFillBench.cpp
-index 6793512..4fd0965 100644
+index 6793512e216b00e1f8112f8e681eecf5beee8fe8..4fd0965185f8bab5a55ec63329bf6aa36ad56ed0 100644
 --- a/bench/GlyphQuadFillBench.cpp
 +++ b/bench/GlyphQuadFillBench.cpp
-@@ -68,7 +68,7 @@
+@@ -68,7 +68,7 @@ class DirectMaskGlyphVertexFillBenchmark : public Benchmark {
          const sktext::gpu::AtlasSubRun* subRun =
                  sktext::gpu::TextBlobTools::FirstSubRun(fBlob.get());
          SkASSERT_RELEASE(subRun);
@@ -26,10 +25,10 @@ index 6793512..4fd0965 100644
      }
  
 diff --git a/gn/tests.gni b/gn/tests.gni
-index 346cf0c..93f4fe5 100644
+index 346cf0ca3b7884d3fb599508d50cc07019322b36..93f4fe5d3281035d1ff469a144e20e00bd783d71 100644
 --- a/gn/tests.gni
 +++ b/gn/tests.gni
-@@ -428,6 +428,7 @@
+@@ -428,6 +428,7 @@ pathops_tests_sources = [
  ganesh_tests_sources = [
    "$_tests/AdvancedBlendTest.cpp",
    "$_tests/ApplyGammaTest.cpp",
@@ -38,10 +37,10 @@ index 346cf0c..93f4fe5 100644
    "$_tests/BackendSurfaceMutableStateTest.cpp",
    "$_tests/BlendTest.cpp",
 diff --git a/src/gpu/ganesh/text/GrAtlasManager.cpp b/src/gpu/ganesh/text/GrAtlasManager.cpp
-index 403bfe2..1e7d9aa 100644
+index 403bfe274e56293bfe2382b02525ae742ba541a7..1e7d9aa0ce14f19e09d79544730c6aa922ae37d6 100644
 --- a/src/gpu/ganesh/text/GrAtlasManager.cpp
 +++ b/src/gpu/ganesh/text/GrAtlasManager.cpp
-@@ -178,8 +178,7 @@
+@@ -178,8 +178,7 @@ GrDrawOpAtlas::ErrorCode GrAtlasManager::addGlyphToAtlas(const SkGlyph& skGlyph,
      }
      SkASSERT(glyph != nullptr);
  
@@ -51,7 +50,7 @@ index 403bfe2..1e7d9aa 100644
      int bytesPerPixel = MaskFormatBytesPerPixel(expectedMaskFormat);
  
      int padding;
-@@ -299,7 +298,7 @@
+@@ -299,7 +298,7 @@ std::tuple<bool, int> GlyphVector::regenerateAtlasForGanesh(
  
      uint64_t currentAtlasGen = atlasManager->atlasGeneration(maskFormat);
  
@@ -60,7 +59,7 @@ index 403bfe2..1e7d9aa 100644
  
      if (fAtlasGeneration != currentAtlasGen) {
          // Calculate the texture coordinates for the vertexes during first use (fAtlasGeneration
-@@ -316,9 +315,10 @@
+@@ -316,9 +315,10 @@ std::tuple<bool, int> GlyphVector::regenerateAtlasForGanesh(
          for (const Variant& variant : glyphs) {
              Glyph* gpuGlyph = variant.glyph;
              SkASSERT(gpuGlyph != nullptr);
@@ -74,10 +73,10 @@ index 403bfe2..1e7d9aa 100644
                          skGlyph, gpuGlyph, srcPadding, target->resourceProvider(), uploadTarget);
                  if (code != GrDrawOpAtlas::ErrorCode::kSucceeded) {
 diff --git a/src/gpu/graphite/Device.cpp b/src/gpu/graphite/Device.cpp
-index ba80493..1e7027e 100644
+index ba8049369956f5ea00e09f947c4ed9067a99bb6c..1e7027ebcfaaf79e2c6bd17b65a046bdb8eef9ae 100644
 --- a/src/gpu/graphite/Device.cpp
 +++ b/src/gpu/graphite/Device.cpp
-@@ -1436,6 +1436,7 @@
+@@ -1436,6 +1436,7 @@ void Device::drawAtlasSubRun(const sktext::gpu::AtlasSubRun* subRun,
                                    int padding) {
          return glyphs->regenerateAtlasForGraphite(begin, end, maskFormat, padding, fRecorder);
      };
@@ -86,10 +85,10 @@ index ba80493..1e7027e 100644
          // For the remainder of the run, add any atlas uploads to the Recorder's TextAtlasManager
          auto[ok, glyphsRegenerated] = subRun->regenerateAtlas(subRunCursor, subRunEnd,
 diff --git a/src/gpu/graphite/text/TextAtlasManager.cpp b/src/gpu/graphite/text/TextAtlasManager.cpp
-index 6602a76..cbb51a6 100644
+index 6602a76c150bff077666fb91b990d3e45d528ce2..cbb51a66846922995912c3159afba879a2487313 100644
 --- a/src/gpu/graphite/text/TextAtlasManager.cpp
 +++ b/src/gpu/graphite/text/TextAtlasManager.cpp
-@@ -207,8 +207,7 @@
+@@ -207,8 +207,7 @@ DrawAtlas::ErrorCode TextAtlasManager::addGlyphToAtlas(const SkGlyph& skGlyph,
      }
      SkASSERT(glyph != nullptr);
  
@@ -99,7 +98,7 @@ index 6602a76..cbb51a6 100644
      int bytesPerPixel = MaskFormatBytesPerPixel(expectedMaskFormat);
  
      int padding;
-@@ -359,7 +358,7 @@
+@@ -359,7 +358,7 @@ std::tuple<bool, int> GlyphVector::regenerateAtlasForGraphite(int begin,
  
      uint64_t currentAtlasGen = atlasManager->atlasGeneration(maskFormat);
  
@@ -108,7 +107,7 @@ index 6602a76..cbb51a6 100644
  
      if (fAtlasGeneration != currentAtlasGen) {
          // Calculate the texture coordinates for the vertexes during first use (fAtlasGeneration
-@@ -375,9 +374,10 @@
+@@ -375,9 +374,10 @@ std::tuple<bool, int> GlyphVector::regenerateAtlasForGraphite(int begin,
          for (const Variant& variant : glyphs) {
              Glyph* gpuGlyph = variant.glyph;
              SkASSERT(gpuGlyph != nullptr);
@@ -122,7 +121,7 @@ index 6602a76..cbb51a6 100644
                  if (code != DrawAtlas::ErrorCode::kSucceeded) {
                      success = code != DrawAtlas::ErrorCode::kError;
 diff --git a/src/text/gpu/Glyph.h b/src/text/gpu/Glyph.h
-index 821612d..7942006 100644
+index 821612d68cecfe9dae9518e376e09fdf233395ad..7942006a563bcab925ea2129ab6f6beea438a4c8 100644
 --- a/src/text/gpu/Glyph.h
 +++ b/src/text/gpu/Glyph.h
 @@ -14,6 +14,25 @@
@@ -151,7 +150,7 @@ index 821612d..7942006 100644
  class Glyph {
  public:
      static skgpu::MaskFormat FormatFromSkGlyph(SkMask::Format format) {
-@@ -34,10 +53,11 @@
+@@ -34,10 +53,11 @@ public:
          SkUNREACHABLE;
      }
  
@@ -167,10 +166,10 @@ index 821612d..7942006 100644
  
  }  // namespace sktext::gpu
 diff --git a/src/text/gpu/GlyphVector.cpp b/src/text/gpu/GlyphVector.cpp
-index 2a8e85f..7bec7a0 100644
+index 2a8e85f926aa547169f4b85372e9d3fb99816956..7bec7a0b77d8560d5ef978281edd7df6c45cb56f 100644
 --- a/src/text/gpu/GlyphVector.cpp
 +++ b/src/text/gpu/GlyphVector.cpp
-@@ -99,14 +99,14 @@
+@@ -99,14 +99,14 @@ SkSpan<const Glyph*> GlyphVector::glyphs() const {
  
  // packedGlyphIDToGlyph must be run in single-threaded mode.
  // If fSkStrike is not sk_sp<SkStrike> then the conversion to Glyph* has not happened.
@@ -188,10 +187,10 @@ index 2a8e85f..7bec7a0 100644
  
          // This must be pinned for the Atlas filling to work.
 diff --git a/src/text/gpu/GlyphVector.h b/src/text/gpu/GlyphVector.h
-index 42b92a9..1eec632 100644
+index 42b92a93f70cc6d86d0a87dd07c2244e0da1281c..1eec6327d38fb4472b027faae68eecb9ad7509d7 100644
 --- a/src/text/gpu/GlyphVector.h
 +++ b/src/text/gpu/GlyphVector.h
-@@ -68,7 +68,7 @@
+@@ -68,7 +68,7 @@ public:
      // the sub runs.
      int unflattenSize() const { return GlyphVectorSize(fGlyphs.size()); }
  
@@ -201,10 +200,10 @@ index 42b92a9..1eec632 100644
      static size_t GlyphVectorSize(size_t count) {
          return sizeof(Variant) * count;
 diff --git a/src/text/gpu/StrikeCache.cpp b/src/text/gpu/StrikeCache.cpp
-index add3127..19df483 100644
+index add3127c92fdbfe56d6b56209a2235ce5a9f5acb..19df48329fd500f8682669ec96eb883b58243fdd 100644
 --- a/src/text/gpu/StrikeCache.cpp
 +++ b/src/text/gpu/StrikeCache.cpp
-@@ -207,10 +207,11 @@
+@@ -207,10 +207,11 @@ TextStrike::TextStrike(StrikeCache* strikeCache, const SkStrikeSpec& strikeSpec)
          : fStrikeCache(strikeCache)
          , fStrikeSpec{strikeSpec} {}
  
@@ -219,7 +218,7 @@ index add3127..19df483 100644
          fCache.set(glyph);
          fMemoryUsed += sizeof(Glyph);
          if (!fRemoved) {
-@@ -220,11 +221,11 @@
+@@ -220,11 +221,11 @@ Glyph* TextStrike::getGlyph(SkPackedGlyphID packedGlyphID) {
      return glyph;
  }
  
@@ -235,7 +234,7 @@ index add3127..19df483 100644
  }
  
 diff --git a/src/text/gpu/StrikeCache.h b/src/text/gpu/StrikeCache.h
-index 007c45c..014afd5 100644
+index 007c45c6c6feecba3ff031ba3939ad2402e082b9..014afd5286602e3e049d8e48ae328273e599dc41 100644
 --- a/src/text/gpu/StrikeCache.h
 +++ b/src/text/gpu/StrikeCache.h
 @@ -13,6 +13,7 @@
@@ -246,7 +245,7 @@ index 007c45c..014afd5 100644
  
  #include <cstddef>
  #include <cstdint>
-@@ -32,6 +33,7 @@
+@@ -32,6 +33,7 @@ struct SkPackedGlyphID;
  namespace sktext::gpu {
  
  class Glyph;
@@ -254,7 +253,7 @@ index 007c45c..014afd5 100644
  class StrikeCache;
  
  // The TextStrike manages an SkArenaAlloc for Glyphs. The SkStrike is what actually creates
-@@ -43,7 +45,7 @@
+@@ -43,7 +45,7 @@ public:
      TextStrike(StrikeCache* strikeCache,
                 const SkStrikeSpec& strikeSpec);
  
@@ -263,7 +262,7 @@ index 007c45c..014afd5 100644
      const SkStrikeSpec& strikeSpec() const { return fStrikeSpec; }
      const SkDescriptor& getDescriptor() const { return fStrikeSpec.descriptor(); }
  
-@@ -54,11 +56,11 @@
+@@ -54,11 +56,11 @@ private:
      const SkStrikeSpec fStrikeSpec;
  
      struct HashTraits {
@@ -279,10 +278,10 @@ index 007c45c..014afd5 100644
      // Store for the glyph information.
      SkArenaAlloc fAlloc{512};
 diff --git a/src/text/gpu/SubRunContainer.cpp b/src/text/gpu/SubRunContainer.cpp
-index 34b3f34..66531e0 100644
+index 34b3f347aa404a964f06ff18d43eef99f3b25f6b..66531e030ddfabc2204c8e27c9478251c507b5ec 100644
 --- a/src/text/gpu/SubRunContainer.cpp
 +++ b/src/text/gpu/SubRunContainer.cpp
-@@ -651,8 +651,9 @@
+@@ -651,8 +651,9 @@ public:
  
      int glyphSrcPadding() const override { return 0; }
  
@@ -294,7 +293,7 @@ index 34b3f34..66531e0 100644
      }
  
      std::tuple<bool, SkRect> deviceRectAndNeedsTransform(
-@@ -755,8 +756,9 @@
+@@ -755,8 +756,9 @@ public:
  
      const AtlasSubRun* testingOnly_atlasSubRun() const override { return this; }
  
@@ -306,7 +305,7 @@ index 34b3f34..66531e0 100644
      }
  
      int glyphSrcPadding() const override { return 1; }
-@@ -893,8 +895,9 @@
+@@ -893,8 +895,9 @@ public:
  
      const AtlasSubRun* testingOnly_atlasSubRun() const override { return this; }
  
@@ -319,10 +318,10 @@ index 34b3f34..66531e0 100644
  
      int glyphSrcPadding() const override { return SK_DistanceFieldInset; }
 diff --git a/src/text/gpu/SubRunContainer.h b/src/text/gpu/SubRunContainer.h
-index 2573dbb..4d1a3c8 100644
+index 2573dbb3964e9ab2cc0e276b60d4ab4f9804f0d9..4d1a3c8c2d55015d3d351d322ef039c45be2a398 100644
 --- a/src/text/gpu/SubRunContainer.h
 +++ b/src/text/gpu/SubRunContainer.h
-@@ -167,7 +167,7 @@
+@@ -167,7 +167,7 @@ public:
  
      const VertexFiller& vertexFiller() const { return fVertexFiller; }
  
@@ -333,7 +332,7 @@ index 2573dbb..4d1a3c8 100644
      const VertexFiller fVertexFiller;
 diff --git a/tests/AtlasOobTest.cpp b/tests/AtlasOobTest.cpp
 new file mode 100644
-index 0000000..4e6fb02
+index 0000000000000000000000000000000000000000..4e6fb02ee6af6543df285d8112f1a2ced5bd9ac9
 --- /dev/null
 +++ b/tests/AtlasOobTest.cpp
 @@ -0,0 +1,201 @@
