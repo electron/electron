@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kanishk Ranjan <kanishkranjan17@gmail.com>
+Date: Thu, 11 Dec 2025 10:03:47 -0800
+Subject: Mac: Fix WebRTC window icon conversion via gfx::Image
+
+The current WebRTC window picker implementation tries to manually convert
+NSImages to ImageSkia, but it does this incorrectly. As a result, the
+icons can appear corrupted or blank.
+
+This CL resolves the issue by using gfx::Image for the conversion. This
+method offers a reliable and standard way to change an NSImage into an
+ImageSkia.
+
+Feature-Flag: kUseGfxImageForMacWindowIcons
+Bug: 465028835
+Change-Id: Ib69bc151e9542d2402c1cd7d282e5f3298581862
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7239386
+Reviewed-by: Elad Alon <eladalon@chromium.org>
+Commit-Queue: Avi Drissman <avi@chromium.org>
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Reviewed-by: Tove Petersson <tovep@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1557501}
+
+diff --git a/AUTHORS b/AUTHORS
+index 7eb8f26120a23539b0780eb3f7e1d6a7ac52b102..fb0796cabdec4419e953306608a5b816ea1f2662 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -824,6 +824,7 @@ Kamil Rytarowski <krytarowski@gmail.com>
+ Kanaru Sato <i.am.kanaru.sato@gmail.com>
+ Kangil Han <kangil.han@samsung.com>
+ Kangyuan Shu <kangyuan.shu@intel.com>
++Kanishk Ranjan <kanishkranjan17@gmail.com>
+ Karan Thakkar <karanjthakkar@gmail.com>
+ Karel Král <kralkareliv@gmail.com>
+ Karl <karlpolicechromium@gmail.com>
+diff --git a/chrome/browser/media/webrtc/window_icon_util_mac.mm b/chrome/browser/media/webrtc/window_icon_util_mac.mm
+index 8bd216b9da864c9a8b82231ce6613cc120b32de7..c37b753c6aaf3b5036aacc74b310343fc7379188 100644
+--- a/chrome/browser/media/webrtc/window_icon_util_mac.mm
++++ b/chrome/browser/media/webrtc/window_icon_util_mac.mm
+@@ -8,9 +8,19 @@
+ 
+ #include "base/apple/foundation_util.h"
+ #include "base/apple/scoped_cftyperef.h"
++#include "base/feature_list.h"
++#include "ui/gfx/image/image.h"
++#include "ui/gfx/image/image_skia.h"
++
++// TODO(crbug.com/465028835): Remove these includes and the fallback code once
++// kUseGfxImageForMacWindowIcons is stable and the feature flag is removed
+ #include "third_party/libyuv/include/libyuv/convert_argb.h"
+ #include "third_party/skia/include/core/SkBitmap.h"
+ 
++BASE_FEATURE(kUseGfxImageForMacWindowIcons,
++             "UseGfxImageForMacWindowIcons",
++             base::FEATURE_ENABLED_BY_DEFAULT);
++
+ gfx::ImageSkia GetWindowIcon(content::DesktopMediaID id) {
+   DCHECK(id.type == content::DesktopMediaID::TYPE_WINDOW);
+ 
+@@ -35,6 +45,20 @@
+   NSImage* icon_image =
+       [[NSRunningApplication runningApplicationWithProcessIdentifier:pid] icon];
+ 
++  // TODO(crbug.com/465028835): Remove this feature check and the fallback
++  // path once kUseGfxImageForMacWindowIcons is stable and the flag is removed
++  if (base::FeatureList::IsEnabled(kUseGfxImageForMacWindowIcons)) {
++    // The app may have terminated, resulting in a nil icon.
++    if (!icon_image) {
++      return gfx::ImageSkia();
++    }
++
++    return gfx::Image(icon_image).AsImageSkia();
++  }
++
++  // TODO(crbug.com/465028835): Remove the code below this line once
++  // kUseGfxImageForMacWindowIcons is stable and the flag is removed.
++
+   // Icon's NSImage defaults to the smallest which can be only 32x32.
+   NSRect proposed_rect = NSMakeRect(0, 0, 128, 128);
+   CGImageRef cg_icon_image =
