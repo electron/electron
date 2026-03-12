@@ -11126,7 +11126,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"process@npm:^0.11.10, process@npm:~0.11.0":
+"process@npm:^0.11.10":
   version: 0.11.10
   resolution: "process@npm:0.11.10"
   checksum: 10c0/40c3ce4b7e6d4b8c3355479df77aeed46f81b279818ccdc500124e6a5ab882c0cc81ff7ea16384873a95a74c4570b01b120f287abbdd4c877931460eca6084b3
