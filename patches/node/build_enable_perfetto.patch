@@ -63,6 +63,31 @@ index f8b4fd7c4ca5a0907806c7e804de8c951675a36a..209e3bcf8be5a23ac528dcd673bed82c
  }
  
  function ipToInt(ip) {
+diff --git a/lib/internal/trace_events_async_hooks.js b/lib/internal/trace_events_async_hooks.js
+index a9f517ffc9e4eea5bc68997ffadc85d43dde2a52..d3db6bf119a6bb9cea1d069957f89cc7f99512b7 100644
+--- a/lib/internal/trace_events_async_hooks.js
++++ b/lib/internal/trace_events_async_hooks.js
+@@ -11,15 +11,13 @@ const { trace } = internalBinding('trace_events');
+ const async_wrap = internalBinding('async_wrap');
+ const async_hooks = require('async_hooks');
+ const {
+-  CHAR_LOWERCASE_B,
+-  CHAR_LOWERCASE_E,
++  CHAR_UPPERCASE_B,
++  CHAR_UPPERCASE_E,
+ } = require('internal/constants');
+ 
+-// Use small letters such that chrome://tracing groups by the name.
+-// The behavior is not only useful but the same as the events emitted using
+-// the specific C++ macros.
+-const kBeforeEvent = CHAR_LOWERCASE_B;
+-const kEndEvent = CHAR_LOWERCASE_E;
++// See v8/src/builtins/builtins-trace.cc - must be uppercase for perfetto
++const kBeforeEvent = CHAR_UPPERCASE_B;
++const kEndEvent = CHAR_UPPERCASE_E;
+ const kTraceEventCategory = 'node,node.async_hooks';
+ 
+ const kEnabled = Symbol('enabled');
 diff --git a/node.gyp b/node.gyp
 index f5cd416b5fe7a51084bc4af9a4427a8e62599fd8..5eb70ce3820f2b82121bc102c5182ab768cbef36 100644
 --- a/node.gyp
