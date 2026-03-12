@@ -21,8 +21,11 @@ if (isInstalled()) {
   process.exit(0);
 }
 
-const platform = process.env.npm_config_platform || process.platform;
-let arch = process.env.npm_config_arch || process.arch;
+const platform = process.env.ELECTRON_INSTALL_PLATFORM || process.env.npm_config_platform || process.platform;
+let arch =
+  process.env.ELECTRON_INSTALL_ARCH ||
+  process.env.npm_config_arch ||
+  process.arch;
 
 if (platform === 'darwin' && process.platform === 'darwin' && arch === 'x64' &&
     process.env.npm_config_arch === undefined) {
