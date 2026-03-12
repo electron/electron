@@ -55,6 +55,13 @@ The `globalShortcut` module has the following methods:
 
 ### `globalShortcut.register(accelerator, callback)`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/534
+```
+-->
+
 * `accelerator` string - An [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcut.
 * `callback` Function
 
@@ -77,6 +84,13 @@ the app has been authorized as a [trusted accessibility client](https://develope
 
 ### `globalShortcut.registerAll(accelerators, callback)`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/15542
+```
+-->
+
 * `accelerators` string[] - An array of [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcuts.
 * `callback` Function
 
@@ -96,6 +110,13 @@ the app has been authorized as a [trusted accessibility client](https://develope
 
 ### `globalShortcut.isRegistered(accelerator)`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/534
+```
+-->
+
 * `accelerator` string - An [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcut.
 
 Returns `boolean` - Whether this application has registered `accelerator`.
@@ -106,10 +127,24 @@ don't want applications to fight for global shortcuts.
 
 ### `globalShortcut.unregister(accelerator)`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/534
+```
+-->
+
 * `accelerator` string - An [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcut.
 
 Unregisters the global shortcut of `accelerator`.
 
 ### `globalShortcut.unregisterAll()`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/534
+```
+-->
 
 Unregisters all of the global shortcuts.

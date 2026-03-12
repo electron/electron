@@ -192,6 +192,7 @@ gh label list --repo electron/electron --search target/ --json name,color --jq '
 ```bash
 npm run lint              # Run all linters
 npm run lint:clang-format # C++ formatting
+npm run lint:api-history  # Validate API history YAML blocks in docs
 ```
 
 ## Key Files
