@@ -588,7 +588,7 @@ __metadata:
     eslint-plugin-node: "npm:^11.1.0"
     eslint-plugin-promise: "npm:^6.6.0"
     events: "npm:^3.2.0"
-    folder-hash: "npm:^4.1.1"
+    folder-hash: "npm:^4.1.2"
     got: "npm:^11.8.5"
     husky: "npm:^9.1.7"
     lint-staged: "npm:^16.1.0"
@@ -3416,7 +3416,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"brace-expansion@npm:^2.0.1":
+"brace-expansion@npm:^2.0.1, brace-expansion@npm:^2.0.2":
   version: 2.0.2
   resolution: "brace-expansion@npm:2.0.2"
   dependencies:
@@ -6180,15 +6180,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"folder-hash@npm:^4.1.1":
-  version: 4.1.1
-  resolution: "folder-hash@npm:4.1.1"
+"folder-hash@npm:^4.1.2":
+  version: 4.1.2
+  resolution: "folder-hash@npm:4.1.2"
   dependencies:
     debug: "npm:4.4.0"
-    minimatch: "npm:7.4.6"
+    minimatch: "npm:7.4.9"
   bin:
     folder-hash: bin/folder-hash
-  checksum: 10c0/71597548cccda43c3d4bda940fd1277f63839a86322d66dec2aa883dce4f51c4c0a6e274d7cb30cfbf4df9897d7a5649a09257e5ffada2fa50cd3a2b09da5a32
+  checksum: 10c0/7c26f7322820cff61745e168ed7c0d3fe9f9afafe7157d01de5cb708effc66761c2f4d1eda59d2925661baaac2adb8a04a51d0d1f01f8003d7e275610ca3f452
   languageName: node
   linkType: hard
 
@@ -9256,12 +9256,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"minimatch@npm:7.4.6":
-  version: 7.4.6
-  resolution: "minimatch@npm:7.4.6"
+"minimatch@npm:7.4.9":
+  version: 7.4.9
+  resolution: "minimatch@npm:7.4.9"
   dependencies:
-    brace-expansion: "npm:^2.0.1"
-  checksum: 10c0/e587bf3d90542555a3d58aca94c549b72d58b0a66545dd00eef808d0d66e5d9a163d3084da7f874e83ca8cc47e91c670e6c6f6593a3e7bb27fcc0e6512e87c67
+    brace-expansion: "npm:^2.0.2"
+  checksum: 10c0/8d5406a9697edb9b7ea02697d58cabcb3d3a9a4a02caa1cf57b9ab5ae22c78b2945600661a78f91d1545f77521f97f3cb5f8cb066e58356a121b50e4e60ccdbe
   languageName: node
   linkType: hard
 
