@@ -991,9 +991,8 @@ void WebContents::InitZoomController(content::WebContents* web_contents,
     // The mode will take full effect once the first navigation commits.
     auto mode = ParseZoomMode(zoom_mode_str);
     if (mode) {
-      bool persist =
-          *mode == WebContentsZoomController::ZOOM_MODE_ISOLATED ||
-          *mode == WebContentsZoomController::ZOOM_MODE_MANUAL;
+      bool persist = *mode == WebContentsZoomController::ZOOM_MODE_ISOLATED ||
+                     *mode == WebContentsZoomController::ZOOM_MODE_MANUAL;
       zoom_controller_->SetPersistZoomMode(persist);
       zoom_controller_->set_zoom_mode(*mode);
       // When persisting zoom mode AND a custom zoom factor is set, initialize
