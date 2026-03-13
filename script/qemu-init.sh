@@ -15,7 +15,9 @@ mkdir -p /run/user/0
 chmod 700 /run/user/0
 mount -t tmpfs tmpfs /var/tmp
 
-echo "Setting up machine-id for D-Bus"
+echo "Setting up hostname and machine-id for D-Bus"
+echo "electron-test" > /etc/hostname
+hostname electron-test
 cat /proc/sys/kernel/random/uuid | tr -d '-' > /etc/machine-id
 
 echo "Setting system clock"
@@ -36,4 +38,6 @@ echo $EXIT_CODE > /exit-code
 sync
 
 echo "Powering off"
-sudo shutdown -h now
+# poweroff -f bypasses the init system (this script IS pid 1) and
+# directly invokes the reboot() syscall, causing QEMU to exit immediately.
+poweroff -f

@@ -68,7 +68,7 @@ timeout 1800 qemu-system-aarch64 \
 	-m 4096 \
 	-smp 2 \
 	-kernel "$VMLINUZ" \
-	-append "console=ttyAMA0 root=/dev/vda rw init=/init net.ifnames=0" \
+	-append "console=ttyAMA0 root=/dev/vda rw init=/init net.ifnames=0 panic=1" \
 	-drive file="$DISK_IMG",format=raw,if=virtio \
 	-virtfs local,path="$TESTFILES",mount_tag=testfiles,security_model=none,id=testfiles \
 	-netdev user,id=net0 \
@@ -80,8 +80,8 @@ timeout 1800 qemu-system-aarch64 \
 echo "Extracting test results from disk image"
 MOUNT_DIR=$(mktemp -d)
 sudo mount -o loop "$DISK_IMG" "$MOUNT_DIR"
-if [ -f "$MOUNT_DIR/root/results.xml" ]; then
-	cp "$MOUNT_DIR/root/results.xml" "$TEST_DIR/results.xml"
+if [ -f "$MOUNT_DIR/results.xml" ]; then
+	cp "$MOUNT_DIR/results.xml" .
 fi
 EXIT_CODE=$(cat "$MOUNT_DIR/exit-code" 2>/dev/null || echo 1)
 sudo umount "$MOUNT_DIR"
