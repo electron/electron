@@ -1,0 +1,37 @@
+name: PR Triage Automation
+
+on:
+  pull_request_target:
+    types: [synchronize, review_requested]
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+jobs:
+  set-needs-review:
+    name: Set status to Needs Review
+    if: >-
+      (github.event_name == 'pull_request_target' && github.event.action == 'synchronize')
+      || (github.event_name == 'pull_request_target' && github.event.action == 'review_requested')
+      || (github.event_name == 'issue_comment'
+          && github.event.issue.pull_request
+          && github.event.comment.user.login == github.event.issue.user.login)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Generate GitHub App token
+        uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
+        id: generate-token
+        with:
+          creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
+          org: electron
+      - name: Set status to Needs Review
+        uses: dsanders11/project-actions/edit-item@2134fe7cc71c58b7ae259c82a8e63c6058255678 # v1.7.0
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          project-number: 118
+          field: Status
+          field-value: 🌀 Needs Review
+          fail-if-item-not-found: false
