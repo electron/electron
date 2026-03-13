@@ -207,8 +207,10 @@ base::OnceClosure Menu::BindSelfToClosure(base::OnceClosure callback) {
 
 void Menu::InsertItemAt(int index,
                         int command_id,
-                        const std::u16string& label) {
+                        const std::u16string& label,
+                        const std::u16string& accessibleLabel) {
   model_->InsertItemAt(index, command_id, label);
+  model_->SetAccessibleLabel(index, accessibleLabel);
 }
 
 void Menu::InsertSeparatorAt(int index) {
@@ -217,23 +219,29 @@ void Menu::InsertSeparatorAt(int index) {
 
 void Menu::InsertCheckItemAt(int index,
                              int command_id,
-                             const std::u16string& label) {
+                             const std::u16string& label,
+                             const std::u16string& accessibleLabel) {
   model_->InsertCheckItemAt(index, command_id, label);
+  model_->SetAccessibleLabel(index, accessibleLabel);
 }
 
 void Menu::InsertRadioItemAt(int index,
                              int command_id,
                              const std::u16string& label,
+                             const std::u16string& accessibleLabel,
                              int group_id) {
   model_->InsertRadioItemAt(index, command_id, label, group_id);
+  model_->SetAccessibleLabel(index, accessibleLabel);
 }
 
 void Menu::InsertSubMenuAt(int index,
                            int command_id,
                            const std::u16string& label,
+                           const std::u16string& accessibleLabel,
                            Menu* menu) {
   menu->parent_ = this;
   model_->InsertSubMenuAt(index, command_id, label, menu->model_.get());
+  model_->SetAccessibleLabel(index, accessibleLabel);
 }
 
 void Menu::SetIcon(int index, const gfx::Image& image) {

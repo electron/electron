@@ -176,11 +176,11 @@ declare namespace Electron {
     setIcon(index: number, image: string | NativeImage): void;
     setRole(index: number, role: string): void;
     setCustomType(index: number, customType: string): void;
-    insertItem(index: number, commandId: number, label: string): void;
-    insertCheckItem(index: number, commandId: number, label: string): void;
-    insertRadioItem(index: number, commandId: number, label: string, groupId: number): void;
+    insertItem(index: number, commandId: number, label: string, accessibleLabel?: string): void;
+    insertCheckItem(index: number, commandId: number, label: string, accessibleLabel?: string): void;
+    insertRadioItem(index: number, commandId: number, label: string, accessibleLabel: string | undefined, groupId: number): void;
     insertSeparator(index: number): void;
-    insertSubMenu(index: number, commandId: number, label: string, submenu?: Menu): void;
+    insertSubMenu(index: number, commandId: number, label: string, accessibleLabel: string | undefined, submenu?: Menu): void;
     delegate?: any;
     _getAcceleratorTextAt(index: number): string;
   }
