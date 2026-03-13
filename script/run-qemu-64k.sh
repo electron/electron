@@ -22,9 +22,16 @@ fi
 echo "Installing QEMU system emulation and tools"
 sudo apt-get update && sudo apt-get install -y qemu-system-arm binutils
 
-echo "Exporting container filesystem"
-CONTAINER_ID=$(docker create --platform linux/arm64 "$CONTAINER")
+KERNEL_URL="http://ports.ubuntu.com/ubuntu-ports/pool/main/l/linux/linux-image-unsigned-6.8.0-90-generic-64k_6.8.0-90.91_arm64.deb"
+KERNEL_DIR=$(mktemp -d)
 ROOTFS_DIR=$(mktemp -d)
+
+# Download kernel and export container filesystem in parallel
+echo "Downloading kernel and exporting container filesystem in parallel"
+curl -fL "$KERNEL_URL" -o "$KERNEL_DIR/kernel.deb" &
+CURL_PID=$!
+
+CONTAINER_ID=$(docker create --platform linux/arm64 "$CONTAINER")
 docker export "$CONTAINER_ID" | sudo tar -xf - -C "$ROOTFS_DIR"
 docker rm -f "$CONTAINER_ID"
 
@@ -32,10 +39,7 @@ echo "Removing container image to free disk space"
 docker rmi "$CONTAINER" || true
 docker system prune -f || true
 
-echo "Downloading Ubuntu 24.04 generic-64k kernel and modules for ARM64"
-KERNEL_URL="http://ports.ubuntu.com/ubuntu-ports/pool/main/l/linux/linux-image-unsigned-6.8.0-90-generic-64k_6.8.0-90.91_arm64.deb"
-KERNEL_DIR=$(mktemp -d)
-curl -fL "$KERNEL_URL" -o "$KERNEL_DIR/kernel.deb"
+wait $CURL_PID
 
 echo "Extracting kernel"
 (cd "$KERNEL_DIR" && ar x kernel.deb && tar xf data.tar*)
@@ -56,15 +60,23 @@ sudo chmod +x "$ROOTFS_DIR/init"
 echo "Creating disk image with root filesystem"
 df -h
 DISK_IMG=$(mktemp)
-dd if=/dev/zero of="$DISK_IMG" bs=1M count=20480 status=none
+truncate -s 10G "$DISK_IMG"
 sudo mkfs.ext4 -q -d "$ROOTFS_DIR" "$DISK_IMG"
 sudo rm -rf "$ROOTFS_DIR"
+
+# Use KVM acceleration if available (ARM64 host can run 64K-page guest via KVM)
+if [ -e /dev/kvm ] && [ -w /dev/kvm ]; then
+	echo "KVM available, using hardware acceleration"
+	ACCEL="-accel kvm -cpu host"
+else
+	echo "KVM not available, using TCG emulation"
+	ACCEL="-accel tcg,thread=multi -cpu max,pauth-impdef=on"
+fi
 
 echo "Starting QEMU VM with 64K page size kernel"
 timeout 1800 qemu-system-aarch64 \
 	-M virt \
-	-cpu max,pauth-impdef=on \
-	-accel tcg,thread=multi \
+	$ACCEL \
 	-m 4096 \
 	-smp 2 \
 	-kernel "$VMLINUZ" \
