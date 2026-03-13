@@ -114,6 +114,18 @@ std::u16string Menu::GetLabelForCommandId(int command_id) const {
   return label;
 }
 
+std::u16string Menu::GetAccessibleLabelForCommandId(int command_id) const {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Value> val =
+      gin_helper::CallMethod(isolate, const_cast<Menu*>(this),
+                             "_getAccessibleLabelForCommandId", command_id);
+  std::u16string label;
+  if (!gin::ConvertFromV8(isolate, val, &label))
+    label.clear();
+  return label;
+}
+
 std::u16string Menu::GetSecondaryLabelForCommandId(int command_id) const {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
