@@ -302,12 +302,12 @@ function removeExtraSeparators(items: (MenuItemConstructorOptions | MenuItem)[])
 
 function insertItemByType(this: MenuType, item: MenuItem, pos: number) {
   const types = {
-    normal: () => this.insertItem(pos, item.commandId, item.label, item.accessibleLabel),
-    header: () => this.insertItem(pos, item.commandId, item.label, item.accessibleLabel),
-    checkbox: () => this.insertCheckItem(pos, item.commandId, item.label, item.accessibleLabel),
+    normal: () => this.insertItem(pos, item.commandId, item.label),
+    header: () => this.insertItem(pos, item.commandId, item.label),
+    checkbox: () => this.insertCheckItem(pos, item.commandId, item.label),
     separator: () => this.insertSeparator(pos),
-    submenu: () => this.insertSubMenu(pos, item.commandId, item.label, item.accessibleLabel, item.submenu),
-    palette: () => this.insertSubMenu(pos, item.commandId, item.label, item.accessibleLabel, item.submenu),
+    submenu: () => this.insertSubMenu(pos, item.commandId, item.label, item.submenu),
+    palette: () => this.insertSubMenu(pos, item.commandId, item.label, item.submenu),
     radio: () => {
       // Grouping radio menu items
       item.overrideReadOnlyProperty('groupId', generateGroupId(this.items, pos));
@@ -328,7 +328,7 @@ function insertItemByType(this: MenuType, item: MenuItem, pos: number) {
           checked.set(item, true);
         }
       });
-      this.insertRadioItem(pos, item.commandId, item.label, item.accessibleLabel, item.groupId);
+      this.insertRadioItem(pos, item.commandId, item.label, item.groupId);
     }
   };
   types[item.type]();
