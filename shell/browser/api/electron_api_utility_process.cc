@@ -185,7 +185,9 @@ UtilityProcessWrapper::UtilityProcessWrapper(
           .WithAdditionalFds(std::move(fds_to_remap))
 #endif
 #if BUILDFLAG(IS_MAC)
-          .WithChildFlags(content::ChildProcessHost::CHILD_NORMAL)
+          .WithChildFlags(use_plugin_helper
+                              ? content::ChildProcessHost::CHILD_PLUGIN
+                              : content::ChildProcessHost::CHILD_NORMAL)
           .WithDisclaimResponsibility(disclaim_responsibility)
 #endif
           .WithProcessCallback(

@@ -500,7 +500,10 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
         content::ChildProcessHost::CHILD_RENDERER);
     auto gpu_child_path = content::ChildProcessHost::GetChildPath(
         content::ChildProcessHost::CHILD_GPU);
-    if (program != renderer_child_path && program != gpu_child_path) {
+    auto plugin_child_path = content::ChildProcessHost::GetChildPath(
+        content::ChildProcessHost::CHILD_PLUGIN);
+    if (program != renderer_child_path && program != gpu_child_path &&
+        program != plugin_child_path) {
       child_path = content::ChildProcessHost::GetChildPath(
           content::ChildProcessHost::CHILD_NORMAL);
       CHECK_EQ(program, child_path)

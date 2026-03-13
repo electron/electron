@@ -31,6 +31,7 @@ base::FilePath MainApplicationBundlePath() {
   // Up to Contents.
   if (!HasMainProcessKey() &&
       (path.value().ends_with(" Helper") ||
+       path.value().ends_with(content::kMacHelperSuffix_plugin) ||
        path.value().ends_with(content::kMacHelperSuffix_renderer) ||
        path.value().ends_with(content::kMacHelperSuffix_gpu))) {
     // The running executable is the helper. Go up five steps:

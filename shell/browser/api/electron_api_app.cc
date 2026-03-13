@@ -923,10 +923,12 @@ bool App::IsPackaged() {
   static const base::NoDestructor<std::string> renderer_helper(
       "electron helper" +
       base::ToLowerASCII(content::kMacHelperSuffix_renderer));
+  static const base::NoDestructor<std::string> plugin_helper(
+      "electron helper" + base::ToLowerASCII(content::kMacHelperSuffix_plugin));
   if (IsRendererProcess()) {
     return base_name != *renderer_helper;
   } else if (IsUtilityProcess()) {
-    return base_name != *default_helper;
+    return base_name != *default_helper && base_name != *plugin_helper;
   }
   return base_name != FILE_PATH_LITERAL("electron");
 #else
