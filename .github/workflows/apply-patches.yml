@@ -78,3 +78,4 @@ jobs:
         name: update-patches
         path: patches/update-patches.patch
         if-no-files-found: ignore
+        archive: false
