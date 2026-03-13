@@ -31,7 +31,9 @@ echo "Starting entrypoint"
 echo "System: $(uname -s) $(uname -r) $(uname -m), page size: $(getconf PAGESIZE) bytes"
 sudo chown -R builduser:builduser /home/builduser
 ls -la /home/builduser/src/out/Default/electron
-runuser -u builduser -- xvfb-run /home/builduser/src/out/Default/electron --version
+cd /home/builduser/src/electron
+node script/yarn.js install --immutable
+runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --skipYarnInstall --runners=main --trace-uncaught --enable-logging --files spec/api-app-spec.ts
 EXIT_CODE=$?
 echo "Test execution finished with exit code $EXIT_CODE"
 echo $EXIT_CODE > /exit-code
