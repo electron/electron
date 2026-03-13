@@ -1542,7 +1542,7 @@ Returns `number` - the current zoom level.
 <!--
 ```YAML history
 added:
-  - pr-url: https://github.com/electron/electron/pull/XXXXX
+  - pr-url: https://github.com/electron/electron/pull/49962
 ```
 -->
 
@@ -1567,7 +1567,7 @@ The `isolated` and `manual` zoom modes persist across navigations.
 <!--
 ```YAML history
 added:
-  - pr-url: https://github.com/electron/electron/pull/XXXXX
+  - pr-url: https://github.com/electron/electron/pull/49962
 ```
 -->
 
@@ -2387,7 +2387,7 @@ The zoom factor is the zoom percent divided by 100, so 300% = 3.0.
 <!--
 ```YAML history
 added:
-  - pr-url: https://github.com/electron/electron/pull/XXXXX
+  - pr-url: https://github.com/electron/electron/pull/49962
 ```
 -->
 
