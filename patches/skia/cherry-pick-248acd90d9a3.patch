@@ -1,0 +1,539 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Greg Daniel <egdaniel@google.com>
+Date: Wed, 11 Mar 2026 16:00:23 -0400
+Subject: Make sure we are getting the correct atlas for glyph mask format.
+
+Bug: b/491421267
+Change-Id: I4eacd46599eca2df8c10a3fc894b9ce890fae1e2
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1184076
+Commit-Queue: Greg Daniel <egdaniel@google.com>
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+(cherry picked from commit 0cab3e4ee34b3bca6ba7df676639d73ffe4b2135)
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1184916
+
+diff --git a/bench/GlyphQuadFillBench.cpp b/bench/GlyphQuadFillBench.cpp
+index 6793512e216b00e1f8112f8e681eecf5beee8fe8..4fd0965185f8bab5a55ec63329bf6aa36ad56ed0 100644
+--- a/bench/GlyphQuadFillBench.cpp
++++ b/bench/GlyphQuadFillBench.cpp
+@@ -68,7 +68,7 @@ class DirectMaskGlyphVertexFillBenchmark : public Benchmark {
+         const sktext::gpu::AtlasSubRun* subRun =
+                 sktext::gpu::TextBlobTools::FirstSubRun(fBlob.get());
+         SkASSERT_RELEASE(subRun);
+-        subRun->testingOnly_packedGlyphIDToGlyph(&fCache);
++        subRun->testingOnly_packedGlyphIDToGlyph(&fCache, subRun->maskFormat());
+         fVertices.reset(new char[subRun->vertexStride(drawMatrix) * subRun->glyphCount() * 4]);
+     }
+ 
+diff --git a/gn/tests.gni b/gn/tests.gni
+index 346cf0ca3b7884d3fb599508d50cc07019322b36..93f4fe5d3281035d1ff469a144e20e00bd783d71 100644
+--- a/gn/tests.gni
++++ b/gn/tests.gni
+@@ -428,6 +428,7 @@ pathops_tests_sources = [
+ ganesh_tests_sources = [
+   "$_tests/AdvancedBlendTest.cpp",
+   "$_tests/ApplyGammaTest.cpp",
++  "$_tests/AtlasOobTest.cpp",
+   "$_tests/BackendAllocationTest.cpp",
+   "$_tests/BackendSurfaceMutableStateTest.cpp",
+   "$_tests/BlendTest.cpp",
+diff --git a/src/gpu/ganesh/text/GrAtlasManager.cpp b/src/gpu/ganesh/text/GrAtlasManager.cpp
+index 403bfe274e56293bfe2382b02525ae742ba541a7..1e7d9aa0ce14f19e09d79544730c6aa922ae37d6 100644
+--- a/src/gpu/ganesh/text/GrAtlasManager.cpp
++++ b/src/gpu/ganesh/text/GrAtlasManager.cpp
+@@ -178,8 +178,7 @@ GrDrawOpAtlas::ErrorCode GrAtlasManager::addGlyphToAtlas(const SkGlyph& skGlyph,
+     }
+     SkASSERT(glyph != nullptr);
+ 
+-    MaskFormat glyphFormat = Glyph::FormatFromSkGlyph(skGlyph.maskFormat());
+-    MaskFormat expectedMaskFormat = this->resolveMaskFormat(glyphFormat);
++    MaskFormat expectedMaskFormat = this->resolveMaskFormat(glyph->fGlyphEntryKey.fFormat);
+     int bytesPerPixel = MaskFormatBytesPerPixel(expectedMaskFormat);
+ 
+     int padding;
+@@ -299,7 +298,7 @@ std::tuple<bool, int> GlyphVector::regenerateAtlasForGanesh(
+ 
+     uint64_t currentAtlasGen = atlasManager->atlasGeneration(maskFormat);
+ 
+-    this->packedGlyphIDToGlyph(target->strikeCache());
++    this->packedGlyphIDToGlyph(target->strikeCache(), maskFormat);
+ 
+     if (fAtlasGeneration != currentAtlasGen) {
+         // Calculate the texture coordinates for the vertexes during first use (fAtlasGeneration
+@@ -316,9 +315,10 @@ std::tuple<bool, int> GlyphVector::regenerateAtlasForGanesh(
+         for (const Variant& variant : glyphs) {
+             Glyph* gpuGlyph = variant.glyph;
+             SkASSERT(gpuGlyph != nullptr);
+-
++            SkASSERT(gpuGlyph->fGlyphEntryKey.fFormat == maskFormat);
+             if (!atlasManager->hasGlyph(maskFormat, gpuGlyph)) {
+-                const SkGlyph& skGlyph = *metricsAndImages.glyph(gpuGlyph->fPackedID);
++                const SkGlyph& skGlyph =
++                    *metricsAndImages.glyph(gpuGlyph->fGlyphEntryKey.fPackedID);
+                 auto code = atlasManager->addGlyphToAtlas(
+                         skGlyph, gpuGlyph, srcPadding, target->resourceProvider(), uploadTarget);
+                 if (code != GrDrawOpAtlas::ErrorCode::kSucceeded) {
+diff --git a/src/gpu/graphite/Device.cpp b/src/gpu/graphite/Device.cpp
+index ba8049369956f5ea00e09f947c4ed9067a99bb6c..1e7027ebcfaaf79e2c6bd17b65a046bdb8eef9ae 100644
+--- a/src/gpu/graphite/Device.cpp
++++ b/src/gpu/graphite/Device.cpp
+@@ -1436,6 +1436,7 @@ void Device::drawAtlasSubRun(const sktext::gpu::AtlasSubRun* subRun,
+                                   int padding) {
+         return glyphs->regenerateAtlasForGraphite(begin, end, maskFormat, padding, fRecorder);
+     };
++
+     for (int subRunCursor = 0; subRunCursor < subRunEnd;) {
+         // For the remainder of the run, add any atlas uploads to the Recorder's TextAtlasManager
+         auto[ok, glyphsRegenerated] = subRun->regenerateAtlas(subRunCursor, subRunEnd,
+diff --git a/src/gpu/graphite/text/TextAtlasManager.cpp b/src/gpu/graphite/text/TextAtlasManager.cpp
+index 6602a76c150bff077666fb91b990d3e45d528ce2..cbb51a66846922995912c3159afba879a2487313 100644
+--- a/src/gpu/graphite/text/TextAtlasManager.cpp
++++ b/src/gpu/graphite/text/TextAtlasManager.cpp
+@@ -207,8 +207,7 @@ DrawAtlas::ErrorCode TextAtlasManager::addGlyphToAtlas(const SkGlyph& skGlyph,
+     }
+     SkASSERT(glyph != nullptr);
+ 
+-    MaskFormat glyphFormat = Glyph::FormatFromSkGlyph(skGlyph.maskFormat());
+-    MaskFormat expectedMaskFormat = this->resolveMaskFormat(glyphFormat);
++    MaskFormat expectedMaskFormat = this->resolveMaskFormat(glyph->fGlyphEntryKey.fFormat);
+     int bytesPerPixel = MaskFormatBytesPerPixel(expectedMaskFormat);
+ 
+     int padding;
+@@ -359,7 +358,7 @@ std::tuple<bool, int> GlyphVector::regenerateAtlasForGraphite(int begin,
+ 
+     uint64_t currentAtlasGen = atlasManager->atlasGeneration(maskFormat);
+ 
+-    this->packedGlyphIDToGlyph(recorder->priv().strikeCache());
++    this->packedGlyphIDToGlyph(recorder->priv().strikeCache(), maskFormat);
+ 
+     if (fAtlasGeneration != currentAtlasGen) {
+         // Calculate the texture coordinates for the vertexes during first use (fAtlasGeneration
+@@ -375,9 +374,10 @@ std::tuple<bool, int> GlyphVector::regenerateAtlasForGraphite(int begin,
+         for (const Variant& variant : glyphs) {
+             Glyph* gpuGlyph = variant.glyph;
+             SkASSERT(gpuGlyph != nullptr);
+-
++            SkASSERT(gpuGlyph->fGlyphEntryKey.fFormat == maskFormat);
+             if (!atlasManager->hasGlyph(maskFormat, gpuGlyph)) {
+-                const SkGlyph& skGlyph = *metricsAndImages.glyph(gpuGlyph->fPackedID);
++                const SkGlyph& skGlyph =
++                    *metricsAndImages.glyph(gpuGlyph->fGlyphEntryKey.fPackedID);
+                 auto code = atlasManager->addGlyphToAtlas(skGlyph, gpuGlyph, srcPadding);
+                 if (code != DrawAtlas::ErrorCode::kSucceeded) {
+                     success = code != DrawAtlas::ErrorCode::kError;
+diff --git a/src/text/gpu/Glyph.h b/src/text/gpu/Glyph.h
+index 821612d68cecfe9dae9518e376e09fdf233395ad..7942006a563bcab925ea2129ab6f6beea438a4c8 100644
+--- a/src/text/gpu/Glyph.h
++++ b/src/text/gpu/Glyph.h
+@@ -14,6 +14,25 @@
+ 
+ namespace sktext::gpu {
+ 
++struct GlyphEntryKey {
++    explicit GlyphEntryKey(SkPackedGlyphID id, skgpu::MaskFormat format)
++            : fPackedID(id), fFormat(format) {}
++
++    const SkPackedGlyphID fPackedID;
++    skgpu::MaskFormat fFormat;
++
++    bool operator==(const GlyphEntryKey& that) const {
++        return fPackedID == that.fPackedID && fFormat == that.fFormat;
++    }
++    bool operator!=(const GlyphEntryKey& that) const {
++        return !(*this == that);
++    }
++
++    uint32_t hash() const {
++        return fPackedID.hash();
++    }
++};
++
+ class Glyph {
+ public:
+     static skgpu::MaskFormat FormatFromSkGlyph(SkMask::Format format) {
+@@ -34,10 +53,11 @@ public:
+         SkUNREACHABLE;
+     }
+ 
+-    explicit Glyph(SkPackedGlyphID packedGlyphID) : fPackedID(packedGlyphID) {}
++    explicit Glyph(SkPackedGlyphID packedGlyphID, skgpu::MaskFormat format)
++             : fGlyphEntryKey(packedGlyphID, format) {}
+ 
+-    const SkPackedGlyphID       fPackedID;
+-    skgpu::AtlasLocator         fAtlasLocator;
++    const GlyphEntryKey fGlyphEntryKey;
++    skgpu::AtlasLocator fAtlasLocator;
+ };
+ 
+ }  // namespace sktext::gpu
+diff --git a/src/text/gpu/GlyphVector.cpp b/src/text/gpu/GlyphVector.cpp
+index 2a8e85f926aa547169f4b85372e9d3fb99816956..7bec7a0b77d8560d5ef978281edd7df6c45cb56f 100644
+--- a/src/text/gpu/GlyphVector.cpp
++++ b/src/text/gpu/GlyphVector.cpp
+@@ -99,14 +99,14 @@ SkSpan<const Glyph*> GlyphVector::glyphs() const {
+ 
+ // packedGlyphIDToGlyph must be run in single-threaded mode.
+ // If fSkStrike is not sk_sp<SkStrike> then the conversion to Glyph* has not happened.
+-void GlyphVector::packedGlyphIDToGlyph(StrikeCache* cache) {
++void GlyphVector::packedGlyphIDToGlyph(StrikeCache* cache, MaskFormat maskFormat) {
+     if (fTextStrike == nullptr) {
+         SkStrike* strike = fStrikePromise.strike();
+         fTextStrike = cache->findOrCreateStrike(strike->strikeSpec());
+ 
+         // Get all the atlas locations for each glyph.
+         for (Variant& variant : fGlyphs) {
+-            variant.glyph = fTextStrike->getGlyph(variant.packedGlyphID);
++            variant.glyph = fTextStrike->getGlyph(variant.packedGlyphID, maskFormat);
+         }
+ 
+         // This must be pinned for the Atlas filling to work.
+diff --git a/src/text/gpu/GlyphVector.h b/src/text/gpu/GlyphVector.h
+index 42b92a93f70cc6d86d0a87dd07c2244e0da1281c..1eec6327d38fb4472b027faae68eecb9ad7509d7 100644
+--- a/src/text/gpu/GlyphVector.h
++++ b/src/text/gpu/GlyphVector.h
+@@ -68,7 +68,7 @@ public:
+     // the sub runs.
+     int unflattenSize() const { return GlyphVectorSize(fGlyphs.size()); }
+ 
+-    void packedGlyphIDToGlyph(StrikeCache* cache);
++    void packedGlyphIDToGlyph(StrikeCache* cache, skgpu::MaskFormat);
+ 
+     static size_t GlyphVectorSize(size_t count) {
+         return sizeof(Variant) * count;
+diff --git a/src/text/gpu/StrikeCache.cpp b/src/text/gpu/StrikeCache.cpp
+index add3127c92fdbfe56d6b56209a2235ce5a9f5acb..19df48329fd500f8682669ec96eb883b58243fdd 100644
+--- a/src/text/gpu/StrikeCache.cpp
++++ b/src/text/gpu/StrikeCache.cpp
+@@ -207,10 +207,11 @@ TextStrike::TextStrike(StrikeCache* strikeCache, const SkStrikeSpec& strikeSpec)
+         : fStrikeCache(strikeCache)
+         , fStrikeSpec{strikeSpec} {}
+ 
+-Glyph* TextStrike::getGlyph(SkPackedGlyphID packedGlyphID) {
+-    Glyph* glyph = fCache.findOrNull(packedGlyphID);
++Glyph* TextStrike::getGlyph(SkPackedGlyphID packedGlyphID, skgpu::MaskFormat format) {
++    GlyphEntryKey localKey(packedGlyphID, format);
++    Glyph* glyph = fCache.findOrNull(localKey);
+     if (glyph == nullptr) {
+-        glyph = fAlloc.make<Glyph>(packedGlyphID);
++        glyph = fAlloc.make<Glyph>(packedGlyphID, format);
+         fCache.set(glyph);
+         fMemoryUsed += sizeof(Glyph);
+         if (!fRemoved) {
+@@ -220,11 +221,11 @@ Glyph* TextStrike::getGlyph(SkPackedGlyphID packedGlyphID) {
+     return glyph;
+ }
+ 
+-const SkPackedGlyphID& TextStrike::HashTraits::GetKey(const Glyph* glyph) {
+-    return glyph->fPackedID;
++const GlyphEntryKey& TextStrike::HashTraits::GetKey(const Glyph* glyph) {
++    return glyph->fGlyphEntryKey;
+ }
+ 
+-uint32_t TextStrike::HashTraits::Hash(SkPackedGlyphID key) {
++uint32_t TextStrike::HashTraits::Hash(GlyphEntryKey key) {
+     return key.hash();
+ }
+ 
+diff --git a/src/text/gpu/StrikeCache.h b/src/text/gpu/StrikeCache.h
+index 007c45c6c6feecba3ff031ba3939ad2402e082b9..014afd5286602e3e049d8e48ae328273e599dc41 100644
+--- a/src/text/gpu/StrikeCache.h
++++ b/src/text/gpu/StrikeCache.h
+@@ -13,6 +13,7 @@
+ #include "src/core/SkDescriptor.h"
+ #include "src/core/SkStrikeSpec.h"
+ #include "src/core/SkTHash.h"
++#include "src/gpu/AtlasTypes.h"
+ 
+ #include <cstddef>
+ #include <cstdint>
+@@ -32,6 +33,7 @@ struct SkPackedGlyphID;
+ namespace sktext::gpu {
+ 
+ class Glyph;
++struct GlyphEntryKey;
+ class StrikeCache;
+ 
+ // The TextStrike manages an SkArenaAlloc for Glyphs. The SkStrike is what actually creates
+@@ -43,7 +45,7 @@ public:
+     TextStrike(StrikeCache* strikeCache,
+                const SkStrikeSpec& strikeSpec);
+ 
+-    Glyph* getGlyph(SkPackedGlyphID);
++    Glyph* getGlyph(SkPackedGlyphID, skgpu::MaskFormat format);
+     const SkStrikeSpec& strikeSpec() const { return fStrikeSpec; }
+     const SkDescriptor& getDescriptor() const { return fStrikeSpec.descriptor(); }
+ 
+@@ -54,11 +56,11 @@ private:
+     const SkStrikeSpec fStrikeSpec;
+ 
+     struct HashTraits {
+-        static const SkPackedGlyphID& GetKey(const Glyph* glyph);
+-        static uint32_t Hash(SkPackedGlyphID key);
++        static const GlyphEntryKey& GetKey(const Glyph* glyph);
++        static uint32_t Hash(GlyphEntryKey key);
+     };
+     // Map SkPackedGlyphID -> Glyph*.
+-    skia_private::THashTable<Glyph*, SkPackedGlyphID, HashTraits> fCache;
++    skia_private::THashTable<Glyph*, GlyphEntryKey, HashTraits> fCache;
+ 
+     // Store for the glyph information.
+     SkArenaAlloc fAlloc{512};
+diff --git a/src/text/gpu/SubRunContainer.cpp b/src/text/gpu/SubRunContainer.cpp
+index 34b3f347aa404a964f06ff18d43eef99f3b25f6b..66531e030ddfabc2204c8e27c9478251c507b5ec 100644
+--- a/src/text/gpu/SubRunContainer.cpp
++++ b/src/text/gpu/SubRunContainer.cpp
+@@ -651,8 +651,9 @@ public:
+ 
+     int glyphSrcPadding() const override { return 0; }
+ 
+-    void testingOnly_packedGlyphIDToGlyph(StrikeCache* cache) const override {
+-        fGlyphs.packedGlyphIDToGlyph(cache);
++    void testingOnly_packedGlyphIDToGlyph(StrikeCache* cache,
++                                          skgpu::MaskFormat maskFormat) const override {
++        fGlyphs.packedGlyphIDToGlyph(cache, maskFormat);
+     }
+ 
+     std::tuple<bool, SkRect> deviceRectAndNeedsTransform(
+@@ -755,8 +756,9 @@ public:
+ 
+     const AtlasSubRun* testingOnly_atlasSubRun() const override { return this; }
+ 
+-    void testingOnly_packedGlyphIDToGlyph(StrikeCache *cache) const override {
+-        fGlyphs.packedGlyphIDToGlyph(cache);
++    void testingOnly_packedGlyphIDToGlyph(StrikeCache *cache,
++                                          skgpu::MaskFormat maskFormat) const override {
++        fGlyphs.packedGlyphIDToGlyph(cache, maskFormat);
+     }
+ 
+     int glyphSrcPadding() const override { return 1; }
+@@ -893,8 +895,9 @@ public:
+ 
+     const AtlasSubRun* testingOnly_atlasSubRun() const override { return this; }
+ 
+-    void testingOnly_packedGlyphIDToGlyph(StrikeCache *cache) const override {
+-        fGlyphs.packedGlyphIDToGlyph(cache);
++    void testingOnly_packedGlyphIDToGlyph(StrikeCache *cache,
++                                          skgpu::MaskFormat maskFormat) const override {
++        fGlyphs.packedGlyphIDToGlyph(cache, maskFormat);
+     }
+ 
+     int glyphSrcPadding() const override { return SK_DistanceFieldInset; }
+diff --git a/src/text/gpu/SubRunContainer.h b/src/text/gpu/SubRunContainer.h
+index 2573dbb3964e9ab2cc0e276b60d4ab4f9804f0d9..4d1a3c8c2d55015d3d351d322ef039c45be2a398 100644
+--- a/src/text/gpu/SubRunContainer.h
++++ b/src/text/gpu/SubRunContainer.h
+@@ -167,7 +167,7 @@ public:
+ 
+     const VertexFiller& vertexFiller() const { return fVertexFiller; }
+ 
+-    virtual void testingOnly_packedGlyphIDToGlyph(StrikeCache* cache) const = 0;
++    virtual void testingOnly_packedGlyphIDToGlyph(StrikeCache* cache, skgpu::MaskFormat) const = 0;
+ 
+ protected:
+     const VertexFiller fVertexFiller;
+diff --git a/tests/AtlasOobTest.cpp b/tests/AtlasOobTest.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..4e6fb02ee6af6543df285d8112f1a2ced5bd9ac9
+--- /dev/null
++++ b/tests/AtlasOobTest.cpp
+@@ -0,0 +1,201 @@
++/*
++ * Copyright 2026 Google LLC
++ *
++ * Use of this source code is governed by a BSD-style license that can be
++ * found in the LICENSE file.
++ */
++#include "include/core/SkCanvas.h"
++#include "include/core/SkGraphics.h"
++#include "include/core/SkSerialProcs.h"
++#include "include/core/SkSurface.h"
++#include "include/private/chromium/SkChromeRemoteGlyphCache.h"
++#include "include/private/chromium/Slug.h"
++#include "src/core/SkDescriptor.h"
++#include "src/core/SkReadBuffer.h"
++#include "src/core/SkTypeface_remote.h"
++#include "src/core/SkWriteBuffer.h"
++#include "src/gpu/AtlasTypes.h"
++#include "tests/CtsEnforcement.h"
++#include "tests/Test.h"
++#include "tools/ToolUtils.h"
++
++#if defined(SK_GANESH)
++#include "include/gpu/ganesh/GrDirectContext.h"
++#include "include/gpu/ganesh/SkSurfaceGanesh.h"
++#endif
++
++#if defined(SK_GRAPHITE)
++#include "include/gpu/graphite/Context.h"
++#include "include/gpu/graphite/Surface.h"
++#include "tools/graphite/GraphiteTestContext.h"
++#endif  // defined(SK_GRAPHITE)
++
++#include <vector>
++#include <cstring>
++
++namespace {
++class FakeDiscardableManager : public SkStrikeClient::DiscardableHandleManager {
++public:
++    bool deleteHandle(SkDiscardableHandleId) override { return false; }
++    void notifyCacheMiss(SkStrikeClient::CacheMissType, int) override {}
++    void notifyReadFailure(const ReadFailureData&) override {}
++    void assertHandleValid(SkDiscardableHandleId) override {}
++};
++
++unsigned char kStrikeData[] = {
++  0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x65, 0x07, 0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x65,
++  0x00, 0x00, 0x00, 0x65, 0xd8, 0x50, 0xda, 0x99, 0x4c, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
++  0x63, 0x65, 0x72, 0x73, 0x38, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x65, 0x00, 0x00, 0x80, 0x41,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x10, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x61, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x41,
++  0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
++  0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0x62, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x41, 0x00, 0x00, 0x00, 0x00,
++  0x08, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0x63, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x41, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x08, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x64, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x20, 0x41, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00,
++  0x01, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x65, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x41,
++  0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
++  0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0x66, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x41, 0x00, 0x00, 0x00, 0x00,
++  0x08, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0x67, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x41, 0x00, 0x00, 0x00, 0x00, 0x08, 0x00, 0x08, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x65, 0x00, 0x00, 0x00, 0x66, 0x86, 0x07, 0xc2, 0x42,
++  0x4c, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x63, 0x65, 0x72, 0x73, 0x38, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x00, 0x65, 0x00, 0x00, 0x80, 0x41, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
++  0x99, 0x00, 0x00, 0x00, 0x00, 0x00, 0x20, 0x41, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00, 0x04, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
++  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x00, 0x00
++};
++
++unsigned char kDrawSlugOp[] = {
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x00, 0x00, 0x00, 0x41,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x3f,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x3f,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x3f,
++  0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x80, 0x3f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x80, 0x3f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x80, 0x3f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41,
++  0x00, 0x00, 0x00, 0x41, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++  0x86, 0x07, 0xc2, 0x42, 0x4c, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x63, 0x65, 0x72, 0x73,
++  0x38, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x65, 0x00, 0x00, 0x80, 0x41, 0x00, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
++  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x10, 0x00, 0x01, 0x00, 0x00, 0x00,
++  0x99, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
++};
++
++} // namespace
++
++// TODO: We expect this test to correctly hit an SkUnreachable and then crash. That does not work
++// with our current testing framework because we have no to "expect" a crash. So for now we will
++// land this test with only the valid loop enabled, but to test this is working locally, you should
++// change the loop to have both iterations.
++static void run_atlas_oob_test(skiatest::Reporter* reporter, SkCanvas* canvas) {
++    auto discardableManager = sk_make_sp<FakeDiscardableManager>();
++    SkStrikeClient client(discardableManager, false);
++
++    // 1. Prepare Strike Data
++    if (!client.readStrikeData(kStrikeData, sizeof(kStrikeData))) {
++        REPORTER_ASSERT(reporter, false, "Failed to read initial strike data");
++    }
++
++    // 2. Prepare and Execute DrawSlug ops
++    SkPaint paint;
++    for (int idx = 0; idx < 1; ++idx) {
++//    for (int idx = 0; idx < 2; ++idx) {
++        if (idx == 0) {
++                kDrawSlugOp[0x48] = (unsigned char)skgpu::MaskFormat::kARGB;
++        } else if (idx == 1) {
++                kDrawSlugOp[0x48] = (unsigned char)skgpu::MaskFormat::kA8;
++        }
++        kDrawSlugOp[0xd8] = SkMask::kARGB32_Format;
++        kDrawSlugOp[0xe0] = 0x99;
++
++        auto slug = client.deserializeSlugForTest(kDrawSlugOp, sizeof(kDrawSlugOp));
++        if (slug) {
++            slug->draw(canvas, paint);
++        }
++    }
++
++}
++
++#if defined(SK_GANESH)
++DEF_GANESH_TEST_FOR_RENDERING_CONTEXTS(Atlas_Oob_ganesh, reporter, ctxInfo, CtsEnforcement::kNextRelease) {
++    auto dContext = ctxInfo.directContext();
++    SkImageInfo info = SkImageInfo::MakeN32Premul(1024, 1024);
++    auto surface = SkSurfaces::RenderTarget(dContext, skgpu::Budgeted::kNo, info);
++    if (!surface) return;
++    auto canvas = surface->getCanvas();
++
++    run_atlas_oob_test(reporter, canvas);
++
++    dContext->flushAndSubmit();
++}
++#endif // defined(SK_GANESH)
++
++#if defined(SK_GRAPHITE)
++DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS(Atlas_Oob_graphite, reporter, context, CtsEnforcement::kNextRelease) {
++    using namespace skgpu::graphite;
++    std::unique_ptr<Recorder> recorder = context->makeRecorder();
++    SkImageInfo info = SkImageInfo::MakeN32Premul(1024, 1024);
++    auto surface = SkSurfaces::RenderTarget(recorder.get(), info);
++    if (!surface) return;
++    auto canvas = surface->getCanvas();
++
++    run_atlas_oob_test(reporter, canvas);
++
++    std::unique_ptr<Recording> recording = recorder->snap();
++    InsertRecordingInfo recordingInfo;
++    recordingInfo.fRecording = recording.get();
++    context->insertRecording(recordingInfo);
++    context->submit();
++}
++#endif // defined(SK_GRAPHITE)
