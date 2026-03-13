@@ -49,6 +49,17 @@ std::u16string ElectronMenuModel::GetCustomTypeAt(size_t index) {
   return iter == std::end(customTypes_) ? std::u16string() : iter->second;
 }
 
+void ElectronMenuModel::SetAccessibleLabel(size_t index, const std::u16string& accessibleLabel) {
+  int command_id = GetCommandIdAt(index);
+  accessibleLabels_[command_id] = accessibleLabel;
+}
+
+std::u16string ElectronMenuModel::GetAccessibleLabelAt(size_t index) {
+  const int command_id = GetCommandIdAt(index);
+  const auto iter = accessibleLabels_.find(command_id);
+  return iter == std::end(accessibleLabels_) ? std::u16string() : iter->second;
+}
+
 void ElectronMenuModel::SetRole(size_t index, const std::u16string& role) {
   int command_id = GetCommandIdAt(index);
   roles_[command_id] = role;

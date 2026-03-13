@@ -323,12 +323,15 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
                           fromModel:(electron::ElectronMenuModel*)model {
   std::u16string label16 = model->GetLabelAt(index);
   auto rawSecondaryLabel = model->GetSecondaryLabelAt(index);
+  std::u16string accessible_label16 = model->GetAccessibleLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
+  NSString* accessible_label = base::SysUTF16ToNSString(accessible_label16);
 
   NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:label
                                                 action:@selector(itemSelected:)
                                          keyEquivalent:@""];
-
+  item.accessibilityLabel = accessible_label;
+  
   if (!rawSecondaryLabel.empty()) {
     if (@available(macOS 14.4, *)) {
       NSString* secondary_label =

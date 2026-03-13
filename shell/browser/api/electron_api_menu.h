@@ -107,18 +107,24 @@ class Menu : public gin::Wrappable<Menu>,
   void OnMenuWillShow() override;
 
  private:
-  void InsertItemAt(int index, int command_id, const std::u16string& label);
+  void InsertItemAt(int index,
+                    int command_id,
+                    const std::u16string& label,
+                    const std::u16string& accessibleLabel);
   void InsertSeparatorAt(int index);
   void InsertCheckItemAt(int index,
                          int command_id,
-                         const std::u16string& label);
+                         const std::u16string& label,
+                         const std::u16string& accessibleLabel);
   void InsertRadioItemAt(int index,
                          int command_id,
                          const std::u16string& label,
+                         const std::u16string& accessibleLabel,
                          int group_id);
   void InsertSubMenuAt(int index,
                        int command_id,
                        const std::u16string& label,
+                       const std::u16string& accessibleLabel,
                        Menu* menu);
   void SetIcon(int index, const gfx::Image& image);
   void SetSublabel(int index, const std::u16string& sublabel);
