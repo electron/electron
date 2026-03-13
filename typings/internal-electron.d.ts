@@ -155,6 +155,7 @@ declare namespace Electron {
     _shouldCommandIdWorkWhenHidden(id: string): boolean;
     _isCommandIdVisible(id: string): boolean;
     _getLabelForCommandId(id: string): string;
+    _getAccessibleLabelForCommandId(id: string): string;
     _getSecondaryLabelForCommandId(id: string): string;
     _getIconForCommandId(id: string): string | Electron.NativeImage | null;
     _getAcceleratorForCommandId(id: string, useDefaultAccelerator: boolean): Accelerator | undefined;

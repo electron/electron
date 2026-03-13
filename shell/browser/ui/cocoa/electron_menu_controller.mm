@@ -502,8 +502,11 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   item.state = model->IsItemCheckedAt(index) ? NSControlStateValueOn
                                              : NSControlStateValueOff;
   std::u16string label16 = model->GetLabelAt(index);
+  std::u16string accessible_label16 = model->GetAccessibleLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
+  NSString* accessible_label = base::SysUTF16ToNSString(accessible_label16);
   item.title = label;
+  item.accessibilityLabel = accessible_label;
 
   std::u16string rawSecondaryLabel = model->GetSecondaryLabelAt(index);
   if (!rawSecondaryLabel.empty()) {

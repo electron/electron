@@ -54,7 +54,10 @@ void ElectronMenuModel::SetAccessibleLabel(size_t index, const std::u16string& a
   accessibleLabels_[command_id] = accessibleLabel;
 }
 
-std::u16string ElectronMenuModel::GetAccessibleLabelAt(size_t index) {
+std::u16string ElectronMenuModel::GetAccessibleLabelAt(size_t index) const {
+  if (delegate_)
+    return delegate_->GetAccessibleLabelForCommandId(GetCommandIdAt(index));
+
   const int command_id = GetCommandIdAt(index);
   const auto iter = accessibleLabels_.find(command_id);
   return iter == std::end(accessibleLabels_) ? std::u16string() : iter->second;
