@@ -33,12 +33,9 @@ $ git fetch upstream
 
 ### Step 2: Build
 
-Build steps and dependencies differ slightly depending on your operating system.
-See these detailed guides on building Electron locally:
-
-* [Building on macOS](build-instructions-macos.md)
-* [Building on Linux](build-instructions-linux.md)
-* [Building on Windows](build-instructions-windows.md)
+We recommend using [`@electron/build-tools`](https://github.com/electron/build-tools) to build
+Electron itself. See the [Build Instructions](./build-instructions-gn.md) documentation for a
+step-by-step guide and platform-specific notices.
 
 Once you've built the project locally, you're ready to start making changes!
 
