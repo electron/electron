@@ -330,7 +330,9 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:label
                                                 action:@selector(itemSelected:)
                                          keyEquivalent:@""];
-  item.accessibilityLabel = accessible_label;
+  if (!accessible_label16.empty()) {
+    item.accessibilityLabel = accessible_label;
+  }
   
   if (!rawSecondaryLabel.empty()) {
     if (@available(macOS 14.4, *)) {
@@ -506,7 +508,9 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
   NSString* accessible_label = base::SysUTF16ToNSString(accessible_label16);
   item.title = label;
-  item.accessibilityLabel = accessible_label;
+  if (!accessible_label16.empty()) {
+    item.accessibilityLabel = accessible_label;
+  }
 
   std::u16string rawSecondaryLabel = model->GetSecondaryLabelAt(index);
   if (!rawSecondaryLabel.empty()) {
