@@ -38,8 +38,6 @@ base::FilePath GetHelperAppPath(const base::FilePath& frameworks_path,
     helper_name += content::kMacHelperSuffix_renderer;
   } else if (val.ends_with(content::kMacHelperSuffix_gpu)) {
     helper_name += content::kMacHelperSuffix_gpu;
-  } else if (val.ends_with(content::kMacHelperSuffix_plugin)) {
-    helper_name += content::kMacHelperSuffix_plugin;
   }
 
   return frameworks_path.Append(name + " " + helper_name + ".app")
