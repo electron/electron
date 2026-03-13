@@ -1917,6 +1917,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #if BUILDFLAG(IS_LINUX)
       .SetMethod("isUnityRunning",
                  base::BindRepeating(&Browser::IsUnityRunning, browser))
+      .SetMethod("setActivationToken",
+                 base::BindRepeating(&base::nix::SetActivationToken))
 #endif
       .SetProperty("isPackaged", &App::IsPackaged)
       .SetMethod("setAppPath", &App::SetAppPath)
