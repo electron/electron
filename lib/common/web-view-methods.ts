@@ -53,8 +53,10 @@ export const syncMethods = new Set([
   'showDefinitionForSelection',
   'getZoomFactor',
   'getZoomLevel',
+  'getZoomMode',
   'setZoomFactor',
   'setZoomLevel',
+  'setZoomMode',
   ...navigationHistorySyncMethods
 ]);
 
@@ -63,6 +65,7 @@ export const properties = new Set([
   'userAgent',
   'zoomLevel',
   'zoomFactor',
+  'zoomMode',
   'frameRate'
 ]);
 

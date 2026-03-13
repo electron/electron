@@ -138,6 +138,9 @@ inline constexpr std::string_view kOverlayHeight = "height";
 // The factor of which page should be zoomed.
 inline constexpr std::string_view kZoomFactor = "zoomFactor";
 
+// The zoom mode for the web contents.
+inline constexpr std::string_view kZoomMode = "zoomMode";
+
 // Script that will be loaded by guest WebContents before other scripts.
 inline constexpr std::string_view kPreloadScript = "preload";
 

@@ -1528,13 +1528,51 @@ limits of 300% and 50% of original size, respectively. The formula for this is
 `scale := 1.2 ^ level`.
 
 > [!NOTE]
-> The zoom policy at the Chromium level is same-origin, meaning that the
-> zoom level for a specific domain propagates across all instances of windows with
-> the same domain. Differentiating the window URLs will make zoom work per-window.
+> The zoom policy at the Chromium level is same-origin by default, meaning that
+> the zoom level for a specific domain propagates across all instances of windows
+> with the same domain. To use per-tab zoom instead, set the zoom mode to
+> `'isolated'` via [`contents.setZoomMode('isolated')`](#contentssetzoommodemode).
 
 #### `contents.getZoomLevel()`
 
 Returns `number` - the current zoom level.
+
+#### `contents.setZoomMode(mode)`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/XXXXX
+```
+-->
+
+* `mode` string - Can be `default`, `isolated`, `manual`, or `disabled`.
+
+Sets the zoom mode for this web contents.
+
+* `default` - Zoom changes are handled automatically on a per-origin basis.
+  Other tabs navigated to the same origin will share the same zoom level.
+* `isolated` - Zoom changes are handled automatically but on a per-tab basis.
+  This tab will not be affected by zoom changes in other tabs, and vice versa.
+* `manual` - Automatic zoom handling is disabled. The `zoom-changed` event
+  will still be dispatched, but the page will not actually be zoomed.
+  The zoom level can be managed manually by the application.
+* `disabled` - All zooming in this tab is disabled. The tab will revert
+  to the default zoom level and all zoom changes will be ignored.
+
+The `isolated` and `manual` zoom modes persist across navigations.
+
+#### `contents.getZoomMode()`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/XXXXX
+```
+-->
+
+Returns `string` - The current zoom mode. Can be `default`, `isolated`,
+`manual`, or `disabled`.
 
 #### `contents.setVisualZoomLevelLimits(minimumLevel, maximumLevel)`
 
@@ -2343,6 +2381,20 @@ The original size is 0 and each increment above or below represents zooming 20% 
 A `number` property that determines the zoom factor for this web contents.
 
 The zoom factor is the zoom percent divided by 100, so 300% = 3.0.
+
+#### `contents.zoomMode`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/XXXXX
+```
+-->
+
+A `string` property that determines the zoom mode for this web contents.
+
+See [`contents.setZoomMode`](#contentssetzoommodemode) for a description of the
+available modes.
 
 #### `contents.frameRate`
 

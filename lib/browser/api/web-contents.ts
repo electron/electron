@@ -871,6 +871,11 @@ WebContents.prototype._init = function () {
     set: (factor) => this.setZoomFactor(factor)
   });
 
+  Object.defineProperty(this, 'zoomMode', {
+    get: () => this.getZoomMode(),
+    set: (mode) => this.setZoomMode(mode)
+  });
+
   Object.defineProperty(this, 'frameRate', {
     get: () => this.getFrameRate(),
     set: (rate) => this.setFrameRate(rate)

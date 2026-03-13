@@ -333,6 +333,8 @@ class WebContents final : public ExclusiveAccessContext,
   double GetZoomLevel() const;
   void SetZoomFactor(gin_helper::ErrorThrower thrower, double factor);
   double GetZoomFactor() const;
+  void SetZoomMode(gin_helper::ErrorThrower thrower, const std::string& mode);
+  std::string GetZoomMode() const;
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(
