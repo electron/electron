@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Wed, 25 Feb 2026 12:56:18 +0100
+Subject: [M144 Merge] [maglev] fix CanElideWriteBarrier Smi recording for phis
+
+Recording a Tagged use is not enough for 2 reasons:
+
+  * Tagged uses are sometimes ignored, in particular for loop phis
+    where we distinguish in-loop and out-of-loop uses.
+
+  * This Tagged use could only prevent untagging of this specific phi,
+    but none of its inputs. So we could have a Smi phi as input to the
+    current phi which gets untagged and retagged to a non-Smi, all
+    while the current phi doesn't get untagged.
+
+(cherry picked from commit a54bf5cd45e5b119e2afe6019428e81c3d626fb3)
+
+Change-Id: I9b3a2ea339f2c9d81dbb74a44425ba55d8c73871
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7604255
+Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#105444}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7659106
+Auto-Submit: Srinivas Sista <srinivassista@chromium.org>
+Reviewed-by: Rezvan Mahdavi Hezaveh <rezvan@chromium.org>
+Commit-Queue: Srinivas Sista <srinivassista@chromium.org>
+Reviewed-by: Deepti Gandluri <gdeepti@chromium.org>
+Owners-Override: Srinivas Sista <srinivassista@chromium.org>
+Cr-Commit-Position: refs/branch-heads/14.4@{#64}
+Cr-Branched-From: 80acc26727d5a34e77dabeebe7c9213ec1bd4768-refs/heads/14.4.258@{#1}
+Cr-Branched-From: ce7e597e90f6df3fa4b6df224bc613b80c635450-refs/heads/main@{#104020}
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 4664ca78b4413da6a3d9d6cafa705d33f5c02ee2..c682aec3ff109e42290c2e2ddec350f913e4e063 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -4496,7 +4496,11 @@ bool MaglevGraphBuilder::CanElideWriteBarrier(ValueNode* object,
+                                               ValueNode* value) {
+   if (value->Is<RootConstant>() || value->Is<ConsStringMap>()) return true;
+   if (!IsEmptyNodeType(GetType(value)) && CheckType(value, NodeType::kSmi)) {
+-    value->MaybeRecordUseReprHint(UseRepresentation::kTagged);
++    if constexpr (SmiValuesAre31Bits()) {
++      if (Phi* value_as_phi = value->TryCast<Phi>()) {
++        value_as_phi->SetUseRequires31BitValue();
++      }
++    }
+     return true;
+   }
+ 
