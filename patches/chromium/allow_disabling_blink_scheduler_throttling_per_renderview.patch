@@ -130,7 +130,7 @@ index f5bdcb8176a94705a3710ba5dbc536a96b35fed9..657a0e059f954a72d4f8654d1a8938ff
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -4182,10 +4186,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -4182,10 +4186,21 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -145,11 +145,9 @@ index f5bdcb8176a94705a3710ba5dbc536a96b35fed9..657a0e059f954a72d4f8654d1a8938ff
      bool is_initial_state) {
    DCHECK(GetPage());
 +
-+  if (!scheduler_throttling_allowed_) {
-+    GetPage()->SetVisibilityState(mojom::blink::PageVisibilityState::kVisible, is_initial_state);
-+    GetPage()->GetPageScheduler()->SetPageVisible(true);
-+    return;
-+  }
++  // If backgroundThrottling is disabled, the page is always visible.
++  if (!scheduler_throttling_allowed_)
++    visibility_state = mojom::blink::PageVisibilityState::kVisible;
 +
    GetPage()->SetVisibilityState(visibility_state, is_initial_state);
    // Do not throttle if the page should be painting.
