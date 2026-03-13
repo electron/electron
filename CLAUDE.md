@@ -127,6 +127,22 @@ patches/{target}/*.patch  →  [e sync --3]  →  target repo commits
 2. Create a git commit
 3. Run `e patches <target>` to export
 
+**Fixing patch conflicts on an existing PR:**
+
+If asked to fix a patch conflict on a branch that already has an open PR, check the PR's failed **Apply Patches** CI run for an `update-patches` artifact before running `e sync` locally. CI has already performed the 3-way merge and exported the resolved patch diff — applying it is much faster than a full local sync.
+
+```bash
+# Find the failed Apply Patches run for the PR and download the artifact
+gh run list --repo electron/electron --branch <pr-branch> --workflow "Apply Patches" --limit 1
+gh run download <run-id> --repo electron/electron --name update-patches
+
+# Apply the CI-generated fix, then push
+git am update-patches.patch
+git push
+```
+
+If no artifact exists (e.g. the 3-way merge itself failed), fall back to `e sync --3` and resolve manually.
+
 ## Testing
 
 **Test location:** `spec/` directory
@@ -192,6 +208,7 @@ gh label list --repo electron/electron --search target/ --json name,color --jq '
 ```bash
 npm run lint              # Run all linters
 npm run lint:clang-format # C++ formatting
+npm run lint:api-history  # Validate API history YAML blocks in docs
 ```
 
 ## Key Files

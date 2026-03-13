@@ -1,0 +1,5 @@
+{
+  "name": "electron-test-update-race",
+  "version": "1.0.0",
+  "main": "./index.js"
+}

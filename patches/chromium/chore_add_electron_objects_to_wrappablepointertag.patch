@@ -27,6 +27,7 @@ index fee622ebde42211de6f702b754cfa38595df5a1c..014040f26ac58a61dc07a9c926b4ce28
 +  kElectronReplyChannel,                // gin_helper::internal::ReplyChannel
 +  kElectronScreen,                      // electron::api::Screen
 +  kElectronSession,                     // electron::api::Session
++  kElectronTray,                        // electron::api::Tray
 +  kElectronWebRequest,                  // electron::api::WebRequest
 +  kLastPointerTag = kElectronWebRequest,
  };

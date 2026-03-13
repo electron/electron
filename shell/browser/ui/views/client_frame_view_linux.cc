@@ -112,7 +112,7 @@ ClientFrameViewLinux::~ClientFrameViewLinux() {
 void ClientFrameViewLinux::Init(NativeWindowViews* window,
                                 views::Widget* frame) {
   FramelessView::Init(window, frame);
-  linux_frame_layout_ = std::make_unique<LinuxCSDFrameLayout>(window);
+  linux_frame_layout_ = std::make_unique<LinuxCSDNativeFrameLayout>(window);
 
   // Unretained() is safe because the subscription is saved into an instance
   // member and thus will be cancelled upon the instance's destruction.
@@ -156,7 +156,8 @@ void ClientFrameViewLinux::OnWindowButtonOrderingChange() {
 }
 
 int ClientFrameViewLinux::ResizingBorderHitTest(const gfx::Point& point) {
-  return ResizingBorderHitTestImpl(point, RestoredFrameBorderInsets());
+  return ResizingBorderHitTestImpl(
+      point, linux_frame_layout_->GetResizeBorderInsets());
 }
 
 gfx::Rect ClientFrameViewLinux::GetBoundsForClientView() const {
@@ -235,8 +236,11 @@ void ClientFrameViewLinux::Layout(PassKey) {
 }
 
 void ClientFrameViewLinux::OnPaint(gfx::Canvas* canvas) {
-  linux_frame_layout_->PaintWindowFrame(
-      canvas, GetLocalBounds(), GetTitlebarBounds(), ShouldPaintAsActive());
+  if (auto* frame_provider = linux_frame_layout_->GetFrameProvider()) {
+    frame_provider->PaintWindowFrame(
+        canvas, GetLocalBounds(), GetTitlebarBounds().bottom(),
+        ShouldPaintAsActive(), linux_frame_layout_->GetInputInsets());
+  }
 }
 
 void ClientFrameViewLinux::PaintAsActiveChanged() {
@@ -267,7 +271,7 @@ void ClientFrameViewLinux::UpdateThemeValues() {
   }
 
   theme_values_.window_border_radius =
-      linux_frame_layout_->GetFrameProvider()->GetTopCornerRadiusDip();
+      linux_frame_layout_->GetTopCornerRadiusDip();
 
   gtk::GtkStyleContextGet(headerbar_context, "min-height",
                           &theme_values_.titlebar_min_height, nullptr);
