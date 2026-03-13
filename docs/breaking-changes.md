@@ -23,7 +23,22 @@ The `defaultPath` option for the following methods now defaults to the user's Do
 * `dialog.showSaveDialog`
 * `dialog.showSaveDialogSync`
 
-Previously, these methods used the last-opened directory or an OS-determined default. To preserve the old behavior, explicitly pass `defaultPath` when calling these methods.
+Previously, when no `defaultPath` was provided, the underlying OS file dialog would determine the initial directory — typically remembering the last directory the user navigated to, or falling back to an OS-specific default. Now, Electron explicitly sets the initial directory to Downloads, which also means the OS will no longer track and restore the last-used directory between dialog invocations.
+
+To preserve the old behavior, you can track the last-used directory yourself and pass it as `defaultPath`:
+
+```js
+const path = require('node:path')
+
+let lastUsedPath
+const result = await dialog.showOpenDialog({
+  defaultPath: lastUsedPath
+})
+
+if (!result.canceled && result.filePaths.length > 0) {
+  lastUsedPath = path.dirname(result.filePaths[0])
+}
+```
 
 ## Planned Breaking API Changes (42.0)
 
