@@ -18,7 +18,27 @@ mount -t tmpfs tmpfs /var/tmp
 echo "Setting up hostname and machine-id for D-Bus"
 echo "electron-test" > /etc/hostname
 hostname electron-test
+echo "127.0.0.1 electron-test" >> /etc/hosts
 cat /proc/sys/kernel/random/uuid | tr -d '-' > /etc/machine-id
+
+echo "Configuring network"
+# QEMU user-mode networking provides DHCP at 10.0.2.2 and DNS at 10.0.2.3
+# Find the virtio network interface and configure it via DHCP
+for iface in /sys/class/net/*/; do
+	iface=$(basename "$iface")
+	[ "$iface" = "lo" ] && continue
+	ip link set "$iface" up
+	# Try dhclient first, fall back to manual configuration
+	if command -v dhclient >/dev/null 2>&1; then
+		dhclient "$iface"
+	else
+		ip addr add 10.0.2.15/24 dev "$iface"
+		ip route add default via 10.0.2.2
+	fi
+	break
+done
+# Configure DNS resolver (QEMU SLIRP DNS forwarder)
+echo "nameserver 10.0.2.3" > /etc/resolv.conf
 
 echo "Setting system clock"
 date -s "$(cat /host-time)"
