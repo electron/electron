@@ -103,7 +103,7 @@ index 8482d7fab12634e6b9a8d5f9bab6c7e428bb99ee..4f131fbfc9350352bce4430f92b9f2cf
    void WillInitializeWorkerContext() override;
    void WillDestroyWorkerContext(v8::Local<v8::Context> context) override;
 diff --git a/extensions/renderer/dispatcher.cc b/extensions/renderer/dispatcher.cc
-index ae561f1b8555a93bf42efc0c93b89ba19c505f36..4fa04862fa3bed662dbc92422dfd1c7e808e74ba 100644
+index df4634ffecb4b58885374199a863092bfdecf681..33e0ed7a7beae556328ec8bff5e8101acc4b3d26 100644
 --- a/extensions/renderer/dispatcher.cc
 +++ b/extensions/renderer/dispatcher.cc
 @@ -530,6 +530,7 @@ void Dispatcher::DidInitializeServiceWorkerContextOnWorkerThread(
@@ -115,7 +115,7 @@ index ae561f1b8555a93bf42efc0c93b89ba19c505f36..4fa04862fa3bed662dbc92422dfd1c7e
      int64_t service_worker_version_id,
      const GURL& service_worker_scope,
 diff --git a/extensions/renderer/dispatcher.h b/extensions/renderer/dispatcher.h
-index a3445e12264a410dd9d8ba8459c2e27851b03144..271eb740ebf29445a2f1ace81b84d37597a75809 100644
+index c2a6eb257469647183167dad78f1ea42fa3922bb..3423e3a8315c5fc5958ec75adf3a844f487680fa 100644
 --- a/extensions/renderer/dispatcher.h
 +++ b/extensions/renderer/dispatcher.h
 @@ -151,6 +151,7 @@ class Dispatcher : public content::RenderThreadObserver,
@@ -245,10 +245,10 @@ index ea9e16b6dd6c96333c653fc602edfbd84cd9e5de..78c7c3a446a531fb7c77813f4cae4554
  
    // Returns true if we should allow register V8 extensions to be added.
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index 1e844f4709bc9e616711f717b4a79daf26c561fd..3e22bc128660e8de8e4198bf26e78af7161e811f 100644
+index f762722e2e2a27db2488aae25d78e79598f6a4b4..477a22d283796e60762d3be2a951bca58bfce182 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
-@@ -425,7 +425,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
+@@ -424,7 +424,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
                                int32_t world_id) override {}
    void DidInstallConditionalFeatures(v8::Local<v8::Context>,
                                       int32_t world_id) override {}

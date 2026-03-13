@@ -170,7 +170,7 @@ index e62f180fd782f29c25cf47a4e6be0cce46c99b17..b65d050fee7a607658efa6914c35186d
  
    if (params.opacity == views::Widget::InitParams::WindowOpacity::kInferred &&
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index 285cd57cf18d7cb5cbe787194def75efbd0ceacb..9b7043f23498dd04c05a89f373f019c210cc246d 100644
+index 964bbba8f17fb613521c05e5de2c11740ea69bcf..7aa208025162bf1deba59760403542ec61034937 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
 @@ -324,6 +324,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
@@ -207,7 +207,7 @@ index 285cd57cf18d7cb5cbe787194def75efbd0ceacb..9b7043f23498dd04c05a89f373f019c2
    // True if the window size will follow the content preferred size.
    bool is_autosized() const { return is_autosized_; }
  
-@@ -1740,6 +1753,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1737,6 +1750,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // If true, the mouse is currently down.
    bool is_mouse_button_pressed_ = false;
  
