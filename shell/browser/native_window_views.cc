@@ -822,6 +822,7 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   // We set the new value after notifying, so we can handle the size event
   // correctly.
   widget()->SetFullscreen(fullscreen);
+  MoveBehindTaskBarIfNeeded();
 
   // If restoring from fullscreen and the window isn't visible, force visible,
   // else a non-responsive window shell could be rendered.
@@ -1239,6 +1240,8 @@ bool NativeWindowViews::IsSimpleFullScreen() const {
 
 void NativeWindowViews::SetKiosk(bool kiosk) {
   SetFullScreen(kiosk);
+  if (kiosk)
+    SetAlwaysOnTop(ui::ZOrderLevel::kFloatingWindow);
 }
 
 bool NativeWindowViews::IsKiosk() const {
