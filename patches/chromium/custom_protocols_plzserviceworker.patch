@@ -8,7 +8,7 @@ Allow registering custom protocols to handle service worker main script fetching
 Refs https://bugs.chromium.org/p/chromium/issues/detail?id=996511
 
 diff --git a/content/browser/service_worker/service_worker_context_wrapper.cc b/content/browser/service_worker/service_worker_context_wrapper.cc
-index 884c9c6cf1e7a46a2a375d53b4b8761c769f2992..46d2505f8ac3aeccc2003763fecb78aedce53575 100644
+index 8682fb9e5961b4d07c352bc18163e48074f549f2..24adf3e0e9e970248d15c5706fdab31731ca7a91 100644
 --- a/content/browser/service_worker/service_worker_context_wrapper.cc
 +++ b/content/browser/service_worker/service_worker_context_wrapper.cc
 @@ -1956,6 +1956,26 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
@@ -49,14 +49,3 @@ index 884c9c6cf1e7a46a2a375d53b4b8761c769f2992..46d2505f8ac3aeccc2003763fecb78ae
            .emplace(kChromeUIScheme, CreateWebUIServiceWorkerLoaderFactory(
                                          browser_context(), kChromeUIScheme,
                                          base::flat_set<std::string>()));
-@@ -1985,9 +2003,7 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
-                    features::kEnableServiceWorkersForChromeUntrusted) &&
-                scope.scheme() == kChromeUIUntrustedScheme) {
-       config->RegisterURLDataSource(browser_context());
--      static_cast<blink::PendingURLLoaderFactoryBundle*>(
--          loader_factory_bundle_info.get())
--          ->pending_scheme_specific_factories()
-+      pending_scheme_specific_factories
-           .emplace(kChromeUIUntrustedScheme,
-                    CreateWebUIServiceWorkerLoaderFactory(
-                        browser_context(), kChromeUIUntrustedScheme,
