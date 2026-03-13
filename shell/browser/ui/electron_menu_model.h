@@ -89,7 +89,6 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   std::u16string GetToolTipAt(size_t index);
   void SetCustomType(size_t index, const std::u16string& customType);
   std::u16string GetCustomTypeAt(size_t index);
-  void SetAccessibleLabel(size_t index, const std::u16string& accessibleLabel);
   std::u16string GetAccessibleLabelAt(size_t index) const;
   void SetRole(size_t index, const std::u16string& role);
   std::u16string GetRoleAt(size_t index);
@@ -134,7 +133,6 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   base::flat_map<int, std::u16string> roles_;     // command id -> role
   base::flat_map<int, std::u16string>
       customTypes_;  // command id -> custom type
-  base::flat_map<int, std::u16string> accessibleLabels_;  // command id -> accessible label
   base::ObserverList<Observer> observers_;
 
   base::WeakPtrFactory<ElectronMenuModel> weak_factory_{this};
