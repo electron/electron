@@ -31,8 +31,8 @@ jobs:
           else
             echo "Not a release branch: $BRANCH_NAME"
           fi
-      - name: Determine Unsupported Major Version
-        id: determine-unsupported-major
+      - name: Determine Next Unsupported Major Version
+        id: determine-next-unsupported-major
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         env:
           MAJOR: ${{ steps.check-major-version.outputs.MAJOR }}
@@ -50,26 +50,27 @@ jobs:
 
           # Find the oldest version where eolDate >= stableDate of the new major
           # This gives us the oldest supported version when the new major goes stable
-          UNSUPPORTED_MAJOR=$(echo "$SCHEDULE" | jq -r --arg stableDate "$STABLE_DATE" '
+          NEXT_UNSUPPORTED_MAJOR=$(echo "$SCHEDULE" | jq -r --arg stableDate "$STABLE_DATE" '
             [.[] | select(.eolDate != null and .eolDate >= $stableDate)] | sort_by(.version | split(".")[0] | tonumber) | first | .version | split(".")[0]
           ')
 
-          if [[ -z "$UNSUPPORTED_MAJOR" || "$UNSUPPORTED_MAJOR" == "null" ]]; then
+          if [[ -z "$NEXT_UNSUPPORTED_MAJOR" || "$NEXT_UNSUPPORTED_MAJOR" == "null" ]]; then
             echo "Could not determine oldest supported version"
             exit 1
           fi
 
           echo "SCHEDULE=$SCHEDULE" >> "$GITHUB_OUTPUT"
-          echo "UNSUPPORTED_MAJOR=$UNSUPPORTED_MAJOR" >> "$GITHUB_OUTPUT"
+          echo "NEXT_UNSUPPORTED_MAJOR=$NEXT_UNSUPPORTED_MAJOR" >> "$GITHUB_OUTPUT"
       - name: New Release Branch Tasks
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: electron/electron
           MAJOR: ${{ steps.check-major-version.outputs.MAJOR }}
-          UNSUPPORTED_MAJOR: ${{ steps.determine-unsupported-major.outputs.UNSUPPORTED_MAJOR }}
+          NEXT_UNSUPPORTED_MAJOR: ${{ steps.determine-next-unsupported-major.outputs.NEXT_UNSUPPORTED_MAJOR }}
         run: |
           PREVIOUS_MAJOR=$((MAJOR - 1))
+          UNSUPPORTED_MAJOR=$((NEXT_UNSUPPORTED_MAJOR - 1))
 
           # Create new labels
           gh label create $MAJOR-x-y --color 8d9ee8 || true
@@ -108,8 +109,8 @@ jobs:
         id: generate-project-metadata
         env:
           MAJOR: ${{ steps.check-major-version.outputs.MAJOR }}
-          UNSUPPORTED_MAJOR: ${{ steps.determine-unsupported-major.outputs.UNSUPPORTED_MAJOR }}
-          SCHEDULE: ${{ steps.determine-unsupported-major.outputs.SCHEDULE }}
+          NEXT_UNSUPPORTED_MAJOR: ${{ steps.determine-next-unsupported-major.outputs.NEXT_UNSUPPORTED_MAJOR }}
+          SCHEDULE: ${{ steps.determine-next-unsupported-major.outputs.SCHEDULE }}
         with:
           script: |
             const schedule = JSON.parse(process.env.SCHEDULE)
@@ -144,7 +145,7 @@ jobs:
                 major,
                 "next-major": nextMajor,
                 "prev-major": prevMajor,
-                "ending-support-major": parseInt(process.env.UNSUPPORTED_MAJOR),
+                "ending-support-major": parseInt(process.env.NEXT_UNSUPPORTED_MAJOR),
                 "beta-date": betaDate,
                 "beta-prep-week": betaPrepWeek.toISOString().split('T')[0],
                 "beta-prep-week-end": betaPrepWeekEnd.toISOString().split('T')[0],
