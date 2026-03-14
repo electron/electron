@@ -30,6 +30,7 @@ const MenuItem = function (this: any, options: any) {
 
   this.overrideProperty('icon');
   this.overrideProperty('label', roles.getDefaultLabel(this.role));
+  this.overrideProperty('accessibleLabel', '');
   this.overrideProperty('sublabel', '');
   this.overrideProperty('toolTip', '');
   this.overrideProperty('enabled', true);
