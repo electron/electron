@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Pedro Rosa <pbrosa2004@gmail.com>
+Date: Sat, 14 Mar 2026 12:03:58 +0000
+Subject: fix: open CONOUT$ with read+write access for proper TTY detection
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+freopen("CONOUT$", "w") opens the console handle with GENERIC_WRITE
+only. When child processes inherit this handle, GetConsoleMode() fails
+because it requires GENERIC_READ access (per MSDN). libuv then
+classifies the handle as UV_FILE instead of UV_TTY, so Node.js creates
+a SyncWriteStream that writes raw bytes via WriteFile() without LF→CRLF
+translation, producing the ◙ glyph in Windows Terminal (ConPTY).
+
+Change "w" to "w+" so the handle gets GENERIC_READ | GENERIC_WRITE,
+allowing GetConsoleMode() to succeed in child processes and libuv to
+correctly detect UV_TTY.
+
+Bug: https://github.com/nicedoc/electron/issues/49427
+
+diff --git a/base/process/launch_win.cc b/base/process/launch_win.cc
+index 68dafcc94b859d7ce7a78d5687ac5f5032b7432d..f1392713e437606425c1018b24a87859e73695ef 100644
+--- a/base/process/launch_win.cc
++++ b/base/process/launch_win.cc
+@@ -237,7 +237,7 @@ void RouteStdioToConsole(bool create_console_if_not_found) {
+   // log-lines in output.
+   enum { kOutputBufferSize = 64 * 1024 };
+ 
+-  if (freopen("CONOUT$", "w", stdout)) {
++  if (freopen("CONOUT$", "w+", stdout)) {
+     setvbuf(stdout, nullptr, _IOLBF, kOutputBufferSize);
+     // Overwrite FD 1 for the benefit of any code that uses this FD
+     // directly.  This is safe because the CRT allocates FDs 0, 1 and
+@@ -246,7 +246,7 @@ void RouteStdioToConsole(bool create_console_if_not_found) {
+     // _open() after startup.
+     _dup2(_fileno(stdout), 1);
+   }
+-  if (freopen("CONOUT$", "w", stderr)) {
++  if (freopen("CONOUT$", "w+", stderr)) {
+     setvbuf(stderr, nullptr, _IOLBF, kOutputBufferSize);
+     _dup2(_fileno(stderr), 2);
+   }
