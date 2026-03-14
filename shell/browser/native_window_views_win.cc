@@ -324,6 +324,15 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
 
       return false;
     }
+    case WM_WINDOWPOSCHANGING: {
+      if (IsKiosk() && GetZOrderLevel() != ui::ZOrderLevel::kNormal) {
+        auto* window_pos = reinterpret_cast<WINDOWPOS*>(l_param);
+        if (window_pos->hwndInsertAfter != HWND_TOPMOST) {
+          window_pos->hwndInsertAfter = HWND_TOPMOST;
+        }
+      }
+      return false;
+    }
     case WM_GETMINMAXINFO: {
       WINDOWPLACEMENT wp;
       wp.length = sizeof(WINDOWPLACEMENT);
