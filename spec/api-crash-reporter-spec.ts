@@ -33,6 +33,7 @@ type CrashInfo = {
   longParam: string | undefined
   'electron.v8-fatal.location': string | undefined
   'electron.v8-fatal.message': string | undefined
+  'electron.v8-oom.stack': string | undefined
 }
 
 function checkCrash (expectedProcessType: string, fields: CrashInfo) {
@@ -275,6 +276,37 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         expect(crash.process_type).to.equal('renderer');
         expect(crash['electron.v8-fatal.location']).to.equal('v8::Context::New()');
         expect(crash['electron.v8-fatal.message']).to.equal('Circular extension dependency');
+      });
+
+      it('contains js stack trace in crash report when renderer runs out of memory', async () => {
+        const { remotely } = await startRemoteControlApp(['--js-flags=--max-old-space-size=20']);
+        const { port, waitForCrash } = await startServer();
+
+        await remotely((port: number) => {
+          require('electron').crashReporter.start({
+            submitURL: `http://127.0.0.1:${port}`,
+            compress: false,
+            ignoreSystemCrashHandler: true
+          });
+        }, [port]);
+
+        remotely(() => {
+          const { BrowserWindow } = require('electron');
+          const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+          bw.loadURL('about:blank');
+          bw.webContents.executeJavaScript(`
+            function oomTrigger() {
+              const arr = [];
+              while (true) arr.push(new Array(10000).fill('x'.repeat(100)));
+            }
+            oomTrigger();
+          `);
+        });
+
+        const crash = await waitForCrash();
+        expect(crash.process_type).to.equal('renderer');
+        expect(crash['electron.v8-oom.stack']).to.be.a('string');
+        expect(crash['electron.v8-oom.stack']).to.include('oomTrigger');
       });
     });
   });
