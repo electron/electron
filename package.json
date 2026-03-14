@@ -61,6 +61,7 @@
   "private": true,
   "scripts": {
     "asar": "asar",
+    "check-signed-commits": "node ./script/check-signed-commits.js",
     "generate-version-json": "node script/generate-version-json.js",
     "lint": "node ./script/lint.js && npm run lint:docs && npm run lint:chromium-roller",
     "lint:js": "node ./script/lint.js --js",
