@@ -49,6 +49,19 @@ app.whenReady().then(() => {
 The `net` API can be used only after the application emits the `ready` event.
 Trying to use the module before the `ready` event will throw an error.
 
+## Events
+
+### Event: 'connection-cost-changed'
+
+Returns:
+
+* `isMetered` boolean - Whether the current connection is metered.
+
+Emitted when the OS-level connection cost changes (e.g. when a user toggles the
+metered connection setting in Windows Network Settings). On Windows (10 Build
+19041+), this reflects the actual OS metered setting. On other platforms,
+cellular connections are considered metered.
+
 ## Methods
 
 The `net` module has the following methods:
@@ -131,6 +144,15 @@ won't be able to connect to remote sites. However, a return value of
 `true` is inconclusive; even if some link is up, it is uncertain
 whether a particular connection attempt to a particular remote site
 will be successful.
+
+### `net.isConnectionMetered()`
+
+Returns `boolean` - Whether the current network connection is metered.
+
+On Windows (10 Build 19041+), this reflects the OS-level metered connection
+setting configured in Windows Network Settings. On other platforms, cellular
+connections are considered metered and all other connection types are considered
+unmetered.
 
 ### `net.resolveHost(host, [options])`
 

@@ -17,6 +17,7 @@ index c29e8554933994ff56ccea394af34e17c4e9fc2c..6befb717f83d93d97033c240aa281e0b
    kWrappedExceptionHandler,      // extensions::WrappedExceptionHandler
 -  kLastPointerTag = kWrappedExceptionHandler,
 +  kElectronApp,                         // electron::api::App
++  kElectronConnectionCostMonitor,       // electron::api::ConnectionCostMonitor
 +  kElectronDataPipeHolder,              // electron::api::DataPipeHolder
 +  kElectronDebugger,                    // electron::api::Debugger
 +  kElectronEvent,                       // gin_helper::internal::Event
