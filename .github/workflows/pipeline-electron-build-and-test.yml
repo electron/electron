@@ -98,3 +98,15 @@ jobs:
       is-asan: ${{ inputs.is-asan }}
       enable-ssh: ${{ inputs.enable-ssh }}
     secrets: inherit
+  test-linux-64k:
+    uses: ./.github/workflows/pipeline-segment-electron-test-64k.yml
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    needs: build
+    if: ${{ inputs.target-platform == 'linux' && inputs.target-arch == 'arm64'}}
+    with:
+      test-runs-on: ${{ inputs.test-runs-on }}
+      test-container: ${{ inputs.test-container }}    
+    secrets: inherit     
