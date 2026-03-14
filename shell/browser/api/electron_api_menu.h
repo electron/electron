@@ -111,9 +111,7 @@ class Menu : public gin::Wrappable<Menu>,
   void OnMenuWillShow() override;
 
  private:
-  void InsertItemAt(int index,
-                    int command_id,
-                    const std::u16string& label);
+  void InsertItemAt(int index, int command_id, const std::u16string& label);
   void InsertSeparatorAt(int index);
   void InsertCheckItemAt(int index,
                          int command_id,
