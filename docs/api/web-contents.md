@@ -2256,6 +2256,18 @@ Returns `Integer` - The Chromium internal `pid` of the associated renderer. Can
 be compared to the `frameProcessId` passed by frame specific navigation events
 (e.g. `did-frame-navigate`)
 
+#### `contents.clone()`
+
+Returns `WebContents` - A cloned WebContents instance. This method creates a copy
+of the WebContents with the following attributes:
+
+* **WebPreferences** - All preferences from the original WebContents are copied
+* **SiteInstance** - Uses the same SiteInstance as the original
+* **Opener relationship** - Inherits the opener (window.opener) relationship
+* **Navigation state** - Copies the navigation history and controller state
+
+The cloned WebContents is an independent instance with its own lifecycle that can be destroyed separately and will not contain any open web pages.
+
 #### `contents.takeHeapSnapshot(filePath)`
 
 * `filePath` string - Path to the output file.
