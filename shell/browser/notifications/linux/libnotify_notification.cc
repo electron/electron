@@ -4,12 +4,15 @@
 
 #include "shell/browser/notifications/linux/libnotify_notification.h"
 
+#include <dlfcn.h>
+
 #include <string>
 
 #include "base/containers/flat_set.h"
 #include "base/files/file_enumerator.h"
 #include "base/functional/bind.h"
 #include "base/logging.h"
+#include "base/nix/xdg_util.h"
 #include "base/no_destructor.h"
 #include "base/process/process_handle.h"
 #include "base/strings/utf_string_conversions.h"
@@ -50,6 +53,22 @@ bool NotifierSupportsActions() {
   return HasCapability("actions");
 }
 
+using GetActivationTokenFunc = const char* (*)(NotifyNotification*);
+GetActivationTokenFunc g_get_activation_token = nullptr;
+bool g_activation_token_checked = false;
+
+void EnsureActivationTokenFunc() {
+  if (g_activation_token_checked)
+    return;
+  g_activation_token_checked = true;
+
+  void* handle = dlopen("libnotify.so.4", RTLD_LAZY);
+  if (handle) {
+    g_get_activation_token = reinterpret_cast<GetActivationTokenFunc>(
+        dlsym(handle, "notify_notification_get_activation_token"));
+  }
+}
+
 void log_and_clear_error(GError* error, const char* context) {
   LOG(ERROR) << context << ": domain=" << error->domain
              << " code=" << error->code << " message=\"" << error->message
@@ -73,6 +92,7 @@ bool LibnotifyNotification::Initialize() {
     LOG(WARNING) << "Unable to initialize libnotify; notifications disabled";
     return false;
   }
+  EnsureActivationTokenFunc();
   return true;
 }
 
@@ -192,6 +212,14 @@ void LibnotifyNotification::OnNotificationView(NotifyNotification* notification,
                                                gpointer user_data) {
   LibnotifyNotification* that = static_cast<LibnotifyNotification*>(user_data);
   DCHECK(that);
+
+  if (g_get_activation_token) {
+    const char* token = g_get_activation_token(notification);
+    if (token && *token) {
+      base::nix::SetActivationToken(std::string(token));
+    }
+  }
+
   that->NotificationClicked();
 }
 
