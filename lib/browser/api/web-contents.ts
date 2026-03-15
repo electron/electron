@@ -437,6 +437,14 @@ WebContents.prototype.loadURL = function (url, options) {
   return p;
 };
 
+WebContents.prototype.copyVideoFrameAt = function (x: number, y: number) {
+  this.mainFrame.copyVideoFrameAt(x, y);
+};
+
+WebContents.prototype.saveVideoFrameAs = function (x: number, y: number) {
+  this.mainFrame.saveVideoFrameAs(x, y);
+};
+
 WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electron.HandlerDetails) => Electron.WindowOpenHandlerResponse) {
   this._windowOpenHandler = handler;
 };
