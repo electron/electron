@@ -1,0 +1,149 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Niklas Wenzel <dev@nikwen.de>
+Date: Wed, 25 Feb 2026 16:24:03 +0100
+Subject: feat: allow enabling extensions on all protocols
+
+This allows us to use Chrome extensions on custom protocols.
+
+The patch can't really be upstreamed, unfortunately, because there are
+other URLPattern functions that we don't patch that Chrome needs.
+
+Patching those properly would require replacing the bitmap logic in
+URLPattern with a more flexible solution. This would be a larger effort
+and Chromium might reject it for performance reasons.
+
+See: https://source.chromium.org/chromium/chromium/src/+/main:extensions/common/url_pattern.h;l=53-74;drc=50dbcddad2f8e36ddfcec21d4551f389df425c37
+
+This patch makes it work in the context of Electron.
+
+diff --git a/extensions/browser/api/content_settings/content_settings_helpers.cc b/extensions/browser/api/content_settings/content_settings_helpers.cc
+index ea484a282d820da78e8dc1db27ad0ba6e070ac2c..6109f86f3b6ad8051473b409251bd4384d3af7e2 100644
+--- a/extensions/browser/api/content_settings/content_settings_helpers.cc
++++ b/extensions/browser/api/content_settings/content_settings_helpers.cc
+@@ -37,7 +37,7 @@ ContentSettingsPattern ParseExtensionPattern(std::string_view pattern_str,
+                                              std::string* error) {
+   const int kAllowedSchemes =
+       URLPattern::SCHEME_HTTP | URLPattern::SCHEME_HTTPS |
+-      URLPattern::SCHEME_FILE;
++      URLPattern::SCHEME_FILE | URLPattern::SCHEME_ELECTRON_OTHER;
+   URLPattern url_pattern(kAllowedSchemes);
+   URLPattern::ParseResult result = url_pattern.Parse(pattern_str);
+   if (result != URLPattern::ParseResult::kSuccess) {
+diff --git a/extensions/browser/api/web_request/extension_web_request_event_router.h b/extensions/browser/api/web_request/extension_web_request_event_router.h
+index 57ed3cf54b2921df09ad84906b3da7527c6080bb..29067792f0168e4df7f7aeb8114003acf4b92061 100644
+--- a/extensions/browser/api/web_request/extension_web_request_event_router.h
++++ b/extensions/browser/api/web_request/extension_web_request_event_router.h
+@@ -53,7 +53,8 @@ inline constexpr int kWebRequestFilterValidSchemes =
+     URLPattern::SCHEME_HTTP | URLPattern::SCHEME_HTTPS |
+     URLPattern::SCHEME_FTP | URLPattern::SCHEME_FILE |
+     URLPattern::SCHEME_EXTENSION | URLPattern::SCHEME_WS |
+-    URLPattern::SCHEME_WSS | URLPattern::SCHEME_UUID_IN_PACKAGE;
++    URLPattern::SCHEME_WSS | URLPattern::SCHEME_UUID_IN_PACKAGE |
++    URLPattern::SCHEME_ELECTRON_OTHER;
+ 
+ class WebRequestEventRouter : public KeyedService {
+  public:
+diff --git a/extensions/common/extension.cc b/extensions/common/extension.cc
+index 0e0152871689c51d4e00f39f6ad607da90e6c9be..4092c07b75c7fcaab7483dece0fe562f3d8c6906 100644
+--- a/extensions/common/extension.cc
++++ b/extensions/common/extension.cc
+@@ -220,7 +220,7 @@ const int Extension::kValidHostPermissionSchemes =
+     URLPattern::SCHEME_CHROMEUI | URLPattern::SCHEME_HTTP |
+     URLPattern::SCHEME_HTTPS | URLPattern::SCHEME_FILE |
+     URLPattern::SCHEME_FTP | URLPattern::SCHEME_WS | URLPattern::SCHEME_WSS |
+-    URLPattern::SCHEME_UUID_IN_PACKAGE;
++    URLPattern::SCHEME_UUID_IN_PACKAGE | URLPattern::SCHEME_ELECTRON_OTHER;
+ 
+ //
+ // Extension
+diff --git a/extensions/common/url_pattern.cc b/extensions/common/url_pattern.cc
+index d4328ca22fdeefd3dca88bfe959dfb849705b109..27278300ddd806c46f131f19256a381047941d9e 100644
+--- a/extensions/common/url_pattern.cc
++++ b/extensions/common/url_pattern.cc
+@@ -133,8 +133,18 @@ std::string_view CanonicalizeHostForMatching(std::string_view host_piece) {
+ 
+ }  // namespace
+ 
++bool URLPattern::enable_extensions_on_all_protocols_ = false;
++
++// static
++void URLPattern::EnableExtensionsOnAllProtocols() {
++  enable_extensions_on_all_protocols_ = true;
++}
++
+ // static
+ bool URLPattern::IsValidSchemeForExtensions(std::string_view scheme) {
++  if (enable_extensions_on_all_protocols_) {
++    return true;
++  }
+   for (auto* valid_scheme : kValidSchemes) {
+     if (scheme == valid_scheme) {
+       return true;
+@@ -145,6 +155,9 @@ bool URLPattern::IsValidSchemeForExtensions(std::string_view scheme) {
+ 
+ // static
+ int URLPattern::GetValidSchemeMaskForExtensions() {
++  if (enable_extensions_on_all_protocols_) {
++    return SCHEME_ALL;
++  }
+   int result = 0;
+   for (int valid_scheme_mask : kValidSchemeMasks) {
+     result |= valid_scheme_mask;
+@@ -401,6 +414,10 @@ bool URLPattern::IsValidScheme(std::string_view scheme) const {
+     }
+   }
+ 
++  if (enable_extensions_on_all_protocols_) {
++    return valid_schemes_ & URLPattern::SCHEME_ELECTRON_OTHER;
++  }
++
+   return false;
+ }
+ 
+diff --git a/extensions/common/url_pattern.h b/extensions/common/url_pattern.h
+index 4d09251b0160644d86682ad3db7c41b50f360e6f..cda8558b176e807c8cf77900d22ba90e2f8ad3fb 100644
+--- a/extensions/common/url_pattern.h
++++ b/extensions/common/url_pattern.h
+@@ -64,6 +64,9 @@ class URLPattern {
+     SCHEME_DATA = 1 << 9,
+     SCHEME_UUID_IN_PACKAGE = 1 << 10,
+ 
++    // Represents all other schemes that are not mentioned above.
++    SCHEME_ELECTRON_OTHER = 1 << 11,
++
+     // IMPORTANT!
+     // SCHEME_ALL will match every scheme, including chrome://, chrome-
+     // extension://, about:, etc. Because this has lots of security
+@@ -96,6 +99,8 @@ class URLPattern {
+   // Returns the mask for all schemes considered valid for extensions.
+   static int GetValidSchemeMaskForExtensions();
+ 
++  static void EnableExtensionsOnAllProtocols();
++
+   explicit URLPattern(int valid_schemes);
+ 
+   // Convenience to construct a URLPattern from a string. If the string is not
+@@ -251,6 +256,9 @@ class URLPattern {
+   // Get an error string for a ParseResult.
+   static const char* GetParseResultString(URLPattern::ParseResult parse_result);
+ 
++ protected:
++  static bool enable_extensions_on_all_protocols_;
++
+  private:
+   // Returns true if any of the `schemes` items matches our scheme.
+   bool MatchesAnyScheme(const std::vector<std::string>& schemes) const;
+diff --git a/extensions/common/user_script.cc b/extensions/common/user_script.cc
+index f680ef4d31d580a285abe51387e3df043d4458f1..15714b79ef49a90b13e5534e25e6492e01c00447 100644
+--- a/extensions/common/user_script.cc
++++ b/extensions/common/user_script.cc
+@@ -69,7 +69,8 @@ enum {
+   kValidUserScriptSchemes = URLPattern::SCHEME_CHROMEUI |
+                             URLPattern::SCHEME_HTTP | URLPattern::SCHEME_HTTPS |
+                             URLPattern::SCHEME_FILE | URLPattern::SCHEME_FTP |
+-                            URLPattern::SCHEME_UUID_IN_PACKAGE
++                            URLPattern::SCHEME_UUID_IN_PACKAGE |
++                            URLPattern::SCHEME_ELECTRON_OTHER
+ };
+ 
+ // static

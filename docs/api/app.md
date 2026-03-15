@@ -1560,6 +1560,20 @@ Enables full sandbox mode on the app. This means that all renderers will be laun
 
 This method can only be called before app is ready.
 
+### `app.enableExtensionsOnAllProtocols()`
+
+Enables Chrome extensions on all protocols.
+
+By default, Chrome extensions are enabled only for a select number of protocols
+such as `http`, `https`, and `file`. Calling this function will enable Chrome extensions
+on all protocols, including [custom protocols](protocol.md).
+
+This can have security implications, so enable carefully (e.g., only during development).
+
+Once enabled, the feature cannot be disabled again until the app is restarted.
+
+This method can only be called before app is ready.
+
 ### `app.isInApplicationsFolder()` _macOS_
 
 Returns `boolean` - Whether the application is currently running from the
