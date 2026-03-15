@@ -425,11 +425,11 @@ describe('asar package', function () {
 
       itremote('returns information of root with stats as bigint', function () {
         const p = path.join(asarDir, 'a.asar');
-        const stats = fs.lstatSync(p, { bigint: false });
+        const stats = fs.lstatSync(p, { bigint: true });
         expect(stats.isFile()).to.be.false();
         expect(stats.isDirectory()).to.be.true();
         expect(stats.isSymbolicLink()).to.be.false();
-        expect(stats.size).to.equal(0);
+        expect(stats.size).to.equal(0n);
       });
 
       itremote('returns information of a normal file', function () {
@@ -522,11 +522,11 @@ describe('asar package', function () {
 
       itremote('returns information of root with stats as bigint', async function () {
         const p = path.join(asarDir, 'a.asar');
-        const stats = await promisify(fs.lstat)(p, { bigint: false });
+        const stats = await promisify(fs.lstat)(p, { bigint: true });
         expect(stats.isFile()).to.be.false();
         expect(stats.isDirectory()).to.be.true();
         expect(stats.isSymbolicLink()).to.be.false();
-        expect(stats.size).to.equal(0);
+        expect(stats.size).to.equal(0n);
       });
 
       itremote('returns information of a normal file', async function () {
