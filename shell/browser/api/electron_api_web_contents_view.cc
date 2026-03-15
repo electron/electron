@@ -83,17 +83,13 @@ void WebContentsView::ApplyBorderRadius() {
 
 int WebContentsView::NonClientHitTest(const gfx::Point& point) {
   if (api_web_contents_) {
-    auto* iwc = api_web_contents_->inspectable_web_contents();
-    if (!iwc)
-      return HTNOWHERE;
     // Convert the point to the contents view's coordinate space rather than
     // the InspectableWebContentsView's coordinate space, because the draggable
     // region is relative to the web content area. When DevTools is docked
     // (e.g. to the left), the contents view is offset within the parent,
     // so we need to account for that offset.
-    auto* inspectable_view = iwc->GetView();
-    if (!inspectable_view)
-      return HTNOWHERE;
+    auto* inspectable_view =
+        api_web_contents_->inspectable_web_contents()->GetView();
     auto* contents_view = inspectable_view->GetContentsView();
     gfx::Point local_point(point);
     views::View::ConvertPointFromWidget(contents_view, &local_point);

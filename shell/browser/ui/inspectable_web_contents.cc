@@ -343,10 +343,6 @@ InspectableWebContents::InspectableWebContents(
 }
 
 InspectableWebContents::~InspectableWebContents() {
-  // Explicitly destroy the view first to ensure that any callbacks triggered
-  // during view teardown (like NonClientHitTest) does not access a
-  // partially-destroyed view.
-  view_.reset();
   // Unsubscribe from devtools and Clean up resources.
   if (GetDevToolsWebContents())
     WebContentsDestroyed();
