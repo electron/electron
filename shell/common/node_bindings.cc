@@ -414,6 +414,7 @@ bool IsAllowedOption(const std::string_view option) {
           "--inspect-port",
           "--inspect-publish-uid",
           "--experimental-network-inspection",
+          "--experimental-inspector-network-resource",
           "--experimental-transform-types",
       });
 
