@@ -140,24 +140,10 @@ NativeWindow::~NativeWindow() {
 
 void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   // Setup window from options.
-  if (int x, y; options.Get(options::kX, &x) && options.Get(options::kY, &y)) {
-    SetPosition(gfx::Point{x, y});
-
-#if BUILDFLAG(IS_WIN)
-    // FIXME(felixrieseberg): Dirty, dirty workaround for
-    // https://github.com/electron/electron/issues/10862
-    // Somehow, we need to call `SetBounds` twice to get
-    // usable results. The root cause is still unknown.
-    SetPosition(gfx::Point{x, y});
-#endif
-  } else if (bool center; options.Get(options::kCenter, &center) && center) {
-    Center();
-  }
-
   const bool use_content_size =
       options.ValueOrDefault(options::kUseContentSize, false);
 
-  // On Linux and Window we may already have maximum size defined.
+  // On Linux and Windows we may already have minimum and maximum size defined.
   extensions::SizeConstraints size_constraints(
       use_content_size ? GetContentSizeConstraints() : GetSizeConstraints());
 
@@ -184,9 +170,31 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     size_constraints.set_maximum_size(gfx::Size(max_width, max_height));
 
   if (use_content_size) {
+    gfx::Size clamped = size_constraints.ClampSize(GetContentSize());
+    if (clamped != GetContentSize()) {
+      SetContentSize(clamped);
+    }
     SetContentSizeConstraints(size_constraints);
   } else {
+    gfx::Size clamped = size_constraints.ClampSize(GetSize());
+    if (clamped != GetSize()) {
+      SetSize(clamped);
+    }
     SetSizeConstraints(size_constraints);
+  }
+
+  if (int x, y; options.Get(options::kX, &x) && options.Get(options::kY, &y)) {
+    SetPosition(gfx::Point{x, y});
+
+#if BUILDFLAG(IS_WIN)
+    // FIXME(felixrieseberg): Dirty, dirty workaround for
+    // https://github.com/electron/electron/issues/10862
+    // Somehow, we need to call `SetBounds` twice to get
+    // usable results. The root cause is still unknown.
+    SetPosition(gfx::Point{x, y});
+#endif
+  } else {
+    Center();
   }
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
   if (bool val; options.Get(options::kClosable, &val))
