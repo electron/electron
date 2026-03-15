@@ -6,6 +6,8 @@
 
 #include <algorithm>
 
+#include "base/command_line.h"
+#include "components/cdm/renderer/key_system_support_update.h"
 #include "content/public/renderer/render_frame.h"
 #include "electron/fuses.h"
 #include "net/http/http_request_headers.h"
@@ -79,6 +81,15 @@ void ElectronRendererClient::RunScriptsAtDocumentEnd(
 void ElectronRendererClient::UndeferLoad(content::RenderFrame* render_frame) {
   render_frame->GetWebFrame()->GetDocumentLoader()->SetDefersLoading(
       blink::LoaderFreezeMode::kNone);
+}
+
+std::unique_ptr<media::KeySystemSupportRegistration>
+ElectronRendererClient::GetSupportedKeySystems(
+    content::RenderFrame* render_frame,
+    media::GetSupportedKeySystemsCB cb) {
+  return cdm::GetSupportedKeySystemsUpdates(render_frame,
+                                            /*can_persist_data=*/true,
+                                            std::move(cb));
 }
 
 void ElectronRendererClient::DidCreateScriptContext(
