@@ -28,7 +28,10 @@ added:
 * `window` [BaseWindow](base-window.md) (optional)
 * `options` Object
   * `title` string (optional)
-  * `defaultPath` string (optional)
+  * `defaultPath` string (optional) - Absolute directory path, absolute file
+    path, or file name to use by default. If not provided, the dialog will
+    default to the user's Downloads folder, or their home directory if Downloads
+    doesn't exist.
   * `buttonLabel` string (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
   * `filters` [FileFilter[]](structures/file-filter.md) (optional)
@@ -109,7 +112,10 @@ changes:
 * `window` [BaseWindow](base-window.md) (optional)
 * `options` Object
   * `title` string (optional)
-  * `defaultPath` string (optional)
+  * `defaultPath` string (optional) - Absolute directory path, absolute file
+    path, or file name to use by default. If not provided, the dialog will
+    default to the user's Downloads folder, or their home directory if Downloads
+    doesn't exist.
   * `buttonLabel` string (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
   * `filters` [FileFilter[]](structures/file-filter.md) (optional)
@@ -198,7 +204,9 @@ added:
 * `options` Object
   * `title` string (optional) - The dialog title. Cannot be displayed on some _Linux_ desktop environments.
   * `defaultPath` string (optional) - Absolute directory path, absolute file
-    path, or file name to use by default.
+    path, or file name to use by default. If not provided, the dialog will
+    default to the user's Downloads folder, or their home directory if Downloads
+    doesn't exist.
   * `buttonLabel` string (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
   * `filters` [FileFilter[]](structures/file-filter.md) (optional)
@@ -238,7 +246,9 @@ changes:
 * `options` Object
   * `title` string (optional) - The dialog title. Cannot be displayed on some _Linux_ desktop environments.
   * `defaultPath` string (optional) - Absolute directory path, absolute file
-    path, or file name to use by default.
+    path, or file name to use by default. If not provided, the dialog will
+    default to the user's Downloads folder, or their home directory if Downloads
+    doesn't exist.
   * `buttonLabel` string (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
   * `filters` [FileFilter[]](structures/file-filter.md) (optional)
