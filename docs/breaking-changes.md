@@ -30,6 +30,27 @@ Developers had to manually calculate the correct size using `screen.getPrimaryDi
 to the primary display's scale factor (preserving the old behavior). Starting from Electron 42, the default will change to a constant value of `1.0`
 for more consistent output sizes.
 
+### Behavior Changed: `NativeImage.toBitmap()` now normalizes color space
+
+`NativeImage.toBitmap()` (and its deprecated alias `NativeImage.getBitmap()`) now normalizes pixel data to sRGB by default. Previously, raw pixel data was returned without color space conversion, which meant pixel values from images with different embedded color profiles (e.g., Display P3 on macOS) could differ for the same visual color.
+
+You can pass a `colorSpace` option to convert to a specific color space:
+
+```js
+const image = nativeImage.createFromPath('photo.png');
+// New default: normalized to sRGB
+const srgbBitmap = image.toBitmap();
+// Convert to Display P3
+const p3Bitmap = image.toBitmap({
+  colorSpace: {
+    primaries: 'p3',
+    transfer: 'srgb',
+    matrix: 'rgb',
+    range: 'full'
+  }
+});
+```
+
 ### Behavior Changed: `electron` no longer downloads itself via `postinstall` script
 
 Previously, the `electron` npm package would download the Electron binary from the repository's
