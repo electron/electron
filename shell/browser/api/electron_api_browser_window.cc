@@ -191,6 +191,7 @@ void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
   if (rwhv)
     rwhv->SetActive(is_key);
   window()->SetActive(is_key);
+  BaseWindow::OnWindowIsKeyChanged(is_key);
 #endif
 }
 
