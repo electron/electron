@@ -593,8 +593,10 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
       [menu removeItem:item];
   }
 
-  if (model_)
+  if (model_) {
     model_->MenuWillShow();
+    [self refreshMenuTree:menu_ ? menu_ : menu];
+  }
 }
 
 - (void)menuDidClose:(NSMenu*)menu {
