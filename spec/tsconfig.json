@@ -1,8 +1,4 @@
 {
   "extends": "../tsconfig.json",
-  "compilerOptions": {
-    "module": "node20",
-    "moduleResolution": "node16"
-  },
   "include": [".", "../typings"]
 }

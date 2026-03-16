@@ -36,7 +36,7 @@
     "eslint-plugin-promise": "^6.6.0",
     "events": "^3.2.0",
     "folder-hash": "^4.1.2",
-    "got": "^11.8.5",
+    "got": "^14.6.6",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.0",
     "markdownlint-cli2": "^0.18.0",
@@ -59,6 +59,7 @@
     "yaml": "^2.8.1"
   },
   "private": true,
+  "type": "commonjs",
   "scripts": {
     "asar": "asar",
     "generate-version-json": "node script/generate-version-json.js",
