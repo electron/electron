@@ -1553,7 +1553,7 @@ limits of 300% and 50% of original size, respectively. The formula for this is
 > [!NOTE]
 > The zoom policy at the Chromium level is same-origin by default, meaning that
 > the zoom level for a specific domain propagates across all instances of windows
-> with the same domain. To use per-tab zoom instead, set the zoom mode to
+> with the same domain. To use per-webContents zoom instead, set the zoom mode to
 > `'isolated'` via [`contents.setZoomMode('isolated')`](#contentssetzoommodemode).
 
 #### `contents.getZoomLevel()`
@@ -1574,13 +1574,13 @@ added:
 Sets the zoom mode for this web contents.
 
 * `default` - Zoom changes are handled automatically on a per-origin basis.
-  Other tabs navigated to the same origin will share the same zoom level.
-* `isolated` - Zoom changes are handled automatically but on a per-tab basis.
-  This tab will not be affected by zoom changes in other tabs, and vice versa.
+  Other webContents navigated to the same origin will share the same zoom level.
+* `isolated` - Zoom changes are handled automatically but on a per-webContents basis.
+  This webContents will not be affected by zoom changes in other webContents, and vice versa.
 * `manual` - Automatic zoom handling is disabled. The `zoom-changed` event
   will still be dispatched, but the page will not actually be zoomed.
   The zoom level can be managed manually by the application.
-* `disabled` - All zooming in this tab is disabled. The tab will revert
+* `disabled` - All zooming in this webContents is disabled. The webContents will revert
   to the default zoom level and all zoom changes will be ignored.
 
 The `isolated` and `manual` zoom modes persist across navigations.
