@@ -68,7 +68,7 @@ class BrowserWindow : public BaseWindow,
   void OnWindowShow() override;
   void OnWindowHide() override;
   void Show() override;
-  void ShowInactive() override;
+  void ShowInactive(gin::Arguments* args) override;
 
   // BrowserWindow APIs.
   void FocusOnWebView();
