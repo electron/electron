@@ -77,7 +77,7 @@ jobs:
         cp $(which node) /mnt/runner-externals/node24/bin/
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'win' }}
-      uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238
+      uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
       with:
         node-version: 22.21.x
     - name: Add TCC permissions on macOS
@@ -214,6 +214,7 @@ jobs:
 
     - name: Run Electron Tests
       shell: bash
+      timeout-minutes: 40
       env:
         MOCHA_REPORTER: mocha-multi-reporters
         MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
@@ -283,6 +284,19 @@ jobs:
             
           fi
         fi
+    - name: Take screenshot on timeout or cancellation
+      if: ${{ inputs.target-platform != 'linux' && (cancelled() || failure()) }}
+      shell: bash
+      run: |
+        screenshot_dir="src/electron/spec/artifacts"
+        mkdir -p "$screenshot_dir"
+        screenshot_file="$screenshot_dir/screenshot-timeout-$(date +%Y%m%d%H%M%S).png"
+        if [ "${{ inputs.target-platform }}" = "macos" ]; then
+          screencapture -x "$screenshot_file" || true
+        elif [ "${{ inputs.target-platform }}" = "win" ]; then
+          powershell -command "Add-Type -AssemblyName System.Windows.Forms; \$screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; \$bitmap = New-Object System.Drawing.Bitmap(\$screen.Width, \$screen.Height); \$graphics = [System.Drawing.Graphics]::FromImage(\$bitmap); \$graphics.CopyFromScreen(\$screen.Location, [System.Drawing.Point]::Empty, \$screen.Size); \$bitmap.Save('$screenshot_file')" || true
+        fi
+
     - name: Upload Test results to Datadog
       env:
         DD_ENV: ci
@@ -298,7 +312,7 @@ jobs:
         fi
       if: always() && !cancelled()
     - name: Upload Test Artifacts
-      if: always() && !cancelled()
+      if: always()
       uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
       with:
         name: ${{ inputs.target-platform == 'linux' && format('test_artifacts_{0}_{1}_{2}', env.ARTIFACT_KEY, inputs.display-server, matrix.shard) || format('test_artifacts_{0}_{1}', env.ARTIFACT_KEY, matrix.shard) }}

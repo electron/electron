@@ -8,110 +8,96 @@
 
 #include <memory>
 
-#include "base/i18n/rtl.h"
-#include "shell/browser/linux/x11_util.h"
-#include "shell/browser/native_window_views.h"
-#include "shell/browser/ui/electron_desktop_window_tree_host_linux.h"
+#include "base/memory/raw_ptr.h"
 #include "third_party/skia/include/core/SkRRect.h"
-#include "ui/base/ozone_buildflags.h"
-#include "ui/gfx/canvas.h"
-#include "ui/gfx/geometry/insets.h"
-#include "ui/linux/linux_ui.h"
+#include "ui/gfx/shadow_value.h"
 #include "ui/linux/window_frame_provider.h"
+
+namespace gfx {
+class Insets;
+class Rect;
+}  // namespace gfx
 
 namespace electron {
 
 class NativeWindowViews;
 
-// Shared helper for CSD layout and frame painting on Linux (shadows, resize
-// regions, titlebars, etc.). Also helps views determine insets and perform
-// bounds conversions between widget and logical coordinates.
+// Shared helper for CSD layout on Linux (shadows, resize regions, titlebars,
+// etc.). Also helps views determine insets and perform bounds conversions
+// between widget and logical coordinates.
+//
+// The base class is concrete and suitable as-is for the undecorated case (X11,
+// translucent windows, or windows without shadows). CSD subclasses override
+// the methods that differ.
 class LinuxFrameLayout {
  public:
-  virtual ~LinuxFrameLayout() = default;
+  enum class CSDStyle {
+    kNativeFrame,
+    kCustom,
+  };
+
+  explicit LinuxFrameLayout(NativeWindowViews* window);
+  virtual ~LinuxFrameLayout();
 
   static std::unique_ptr<LinuxFrameLayout> Create(NativeWindowViews* window,
-                                                  bool wants_shadow);
+                                                  bool wants_shadow,
+                                                  CSDStyle csd_style);
 
-  // Insets from the transparent widget border to the opaque part of the window
-  virtual gfx::Insets RestoredFrameBorderInsets() const = 0;
-  // Insets for parts of the surface that should be counted for user input
-  virtual gfx::Insets GetInputInsets() const = 0;
+  // Insets from the transparent widget border to the opaque part of the window.
+  virtual gfx::Insets RestoredFrameBorderInsets() const;
+  // Insets for parts of the surface that should be counted for user input.
+  virtual gfx::Insets GetInputInsets() const;
+  // Insets to use for non-client resize hit-testing.
+  gfx::Insets GetResizeBorderInsets() const;
 
-  virtual bool SupportsClientFrameShadow() const = 0;
+  bool IsShowingShadow() const;
+  bool SupportsClientFrameShadow() const;
 
-  virtual bool tiled() const = 0;
-  virtual void set_tiled(bool tiled) = 0;
+  bool tiled() const;
+  void set_tiled(bool tiled);
 
-  virtual void PaintWindowFrame(gfx::Canvas* canvas,
-                                gfx::Rect local_bounds,
-                                gfx::Rect titlebar_bounds,
-                                bool active) = 0;
+  // The logical bounds of the window interior.
+  gfx::Rect GetWindowBounds() const;
+  // The logical window bounds as a rounded rect with corner radii applied.
+  SkRRect GetRoundedWindowBounds() const;
+  // The corner radius of the top corners of the window, in DIPs.
+  virtual float GetTopCornerRadiusDip() const;
 
-  // The logical bounds of the window
-  virtual gfx::Rect GetWindowContentBounds() const = 0;
-  // The logical bounds as a rounded rect with corner radii applied
-  virtual SkRRect GetRoundedWindowContentBounds() const = 0;
+  int GetTranslucentTopAreaHeight() const;
 
-  virtual int GetTranslucentTopAreaHeight() const = 0;
+ protected:
+  gfx::Insets NormalizeBorderInsets(const gfx::Insets& frame_insets,
+                                    const gfx::Insets& input_insets) const;
 
-  virtual ui::WindowFrameProvider* GetFrameProvider() const = 0;
-};
-
-// Client-side decoration (CSD) Linux frame layout implementation.
-class LinuxCSDFrameLayout : public LinuxFrameLayout {
- public:
-  explicit LinuxCSDFrameLayout(NativeWindowViews* window);
-  ~LinuxCSDFrameLayout() override = default;
-
-  gfx::Insets RestoredFrameBorderInsets() const override;
-  gfx::Insets GetInputInsets() const override;
-  bool SupportsClientFrameShadow() const override;
-  bool tiled() const override;
-  void set_tiled(bool tiled) override;
-  void PaintWindowFrame(gfx::Canvas* canvas,
-                        gfx::Rect local_bounds,
-                        gfx::Rect titlebar_bounds,
-                        bool active) override;
-  gfx::Rect GetWindowContentBounds() const override;
-  SkRRect GetRoundedWindowContentBounds() const override;
-  int GetTranslucentTopAreaHeight() const override;
-  ui::WindowFrameProvider* GetFrameProvider() const override;
-
- private:
   raw_ptr<NativeWindowViews> window_;
   bool tiled_ = false;
   bool host_supports_client_frame_shadow_ = false;
 };
 
-// No-decoration Linux frame layout implementation.
-//
-// Intended for cases where we do not allocate a transparent inset area around
-// the window (e.g. X11 / server-side decorations, or when insets are disabled).
-// All inset math returns 0 and frame painting is skipped.
-class LinuxUndecoratedFrameLayout : public LinuxFrameLayout {
+// CSD strategy that uses the GTK window frame provider for metrics.
+class LinuxCSDNativeFrameLayout : public LinuxFrameLayout {
  public:
-  explicit LinuxUndecoratedFrameLayout(NativeWindowViews* window);
-  ~LinuxUndecoratedFrameLayout() override = default;
+  explicit LinuxCSDNativeFrameLayout(NativeWindowViews* window);
+  ~LinuxCSDNativeFrameLayout() override;
 
   gfx::Insets RestoredFrameBorderInsets() const override;
   gfx::Insets GetInputInsets() const override;
-  bool SupportsClientFrameShadow() const override;
-  bool tiled() const override;
-  void set_tiled(bool tiled) override;
-  void PaintWindowFrame(gfx::Canvas* canvas,
-                        gfx::Rect local_bounds,
-                        gfx::Rect titlebar_bounds,
-                        bool active) override;
-  gfx::Rect GetWindowContentBounds() const override;
-  SkRRect GetRoundedWindowContentBounds() const override;
-  int GetTranslucentTopAreaHeight() const override;
-  ui::WindowFrameProvider* GetFrameProvider() const override;
-
- private:
-  raw_ptr<NativeWindowViews> window_;
-  bool tiled_ = false;
+  float GetTopCornerRadiusDip() const override;
+  ui::WindowFrameProvider* GetFrameProvider() const;
 };
+
+// CSD strategy that uses custom metrics, similar to those used in Chromium.
+class LinuxCSDCustomFrameLayout : public LinuxFrameLayout {
+ public:
+  explicit LinuxCSDCustomFrameLayout(NativeWindowViews* window);
+  ~LinuxCSDCustomFrameLayout() override;
+
+  gfx::Insets RestoredFrameBorderInsets() const override;
+  gfx::Insets GetInputInsets() const override;
+};
+
+gfx::ShadowValues GetFrameShadowValuesLinux(bool active);
+
 }  // namespace electron
 
 #endif  // ELECTRON_SHELL_BROWSER_UI_VIEWS_LINUX_FRAME_LAYOUT_H_

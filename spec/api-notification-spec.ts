@@ -15,6 +15,75 @@ describe('Notification module', () => {
     expect(Notification.isSupported()).to.be.a('boolean');
   });
 
+  ifit(process.platform === 'darwin')('inits and gets id property', () => {
+    const n = new Notification({
+      id: 'my-custom-id',
+      title: 'title',
+      body: 'body'
+    });
+
+    expect(n.id).to.equal('my-custom-id');
+  });
+
+  ifit(process.platform === 'darwin')('id is read-only', () => {
+    const n = new Notification({
+      id: 'my-custom-id',
+      title: 'title',
+      body: 'body'
+    });
+
+    expect(() => { (n as any).id = 'new-id'; }).to.throw();
+  });
+
+  ifit(process.platform === 'darwin')('defaults id to a UUID when not provided', () => {
+    const n = new Notification({
+      title: 'title',
+      body: 'body'
+    });
+
+    expect(n.id).to.be.a('string').and.not.be.empty();
+    expect(n.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+  });
+
+  ifit(process.platform === 'darwin')('defaults id to a UUID when empty string is provided', () => {
+    const n = new Notification({
+      id: '',
+      title: 'title',
+      body: 'body'
+    });
+
+    expect(n.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+  });
+
+  ifit(process.platform === 'darwin')('inits and gets groupId property', () => {
+    const n = new Notification({
+      title: 'title',
+      body: 'body',
+      groupId: 'E017VKL2N8H|C07RBMNS9EK'
+    });
+
+    expect(n.groupId).to.equal('E017VKL2N8H|C07RBMNS9EK');
+  });
+
+  ifit(process.platform === 'darwin')('groupId is read-only', () => {
+    const n = new Notification({
+      title: 'title',
+      body: 'body',
+      groupId: 'E017VKL2N8H|C07RBMNS9EK'
+    });
+
+    expect(() => { (n as any).groupId = 'new-group'; }).to.throw();
+  });
+
+  ifit(process.platform === 'darwin')('defaults groupId to empty string when not provided', () => {
+    const n = new Notification({
+      title: 'title',
+      body: 'body'
+    });
+
+    expect(n.groupId).to.equal('');
+  });
+
   it('inits, gets and sets basic string properties correctly', () => {
     const n = new Notification({
       title: 'title',
@@ -125,6 +194,45 @@ describe('Notification module', () => {
 
   ifit(process.platform === 'darwin')('emits show and close events', async () => {
     const n = new Notification({
+      title: 'test notification',
+      body: 'test body',
+      silent: true
+    });
+    {
+      const e = once(n, 'show');
+      n.show();
+      await e;
+    }
+    {
+      const e = once(n, 'close');
+      n.close();
+      await e;
+    }
+  });
+
+  ifit(process.platform === 'darwin')('emits show and close events with custom id', async () => {
+    const n = new Notification({
+      id: 'test-custom-id',
+      title: 'test notification',
+      body: 'test body',
+      silent: true
+    });
+    {
+      const e = once(n, 'show');
+      n.show();
+      await e;
+    }
+    {
+      const e = once(n, 'close');
+      n.close();
+      await e;
+    }
+  });
+
+  ifit(process.platform === 'darwin')('emits show and close events with custom id and groupId', async () => {
+    const n = new Notification({
+      id: 'E017VKL2N8H|C07RBMNS9EK|1772656675.039',
+      groupId: 'E017VKL2N8H|C07RBMNS9EK',
       title: 'test notification',
       body: 'test body',
       silent: true

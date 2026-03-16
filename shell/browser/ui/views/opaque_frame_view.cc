@@ -5,22 +5,24 @@
 #include "shell/browser/ui/views/opaque_frame_view.h"
 
 #include "base/containers/adapters.h"
-#include "base/i18n/rtl.h"
+#include "chrome/browser/ui/views/frame/browser_frame_view_paint_utils_linux.h"  // nogncheck
 #include "chrome/browser/ui/views/frame/opaque_browser_frame_view_layout.h"  // nogncheck
 #include "chrome/grit/generated_resources.h"
 #include "components/strings/grit/components_strings.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/caption_button_placeholder_container.h"
+#include "third_party/skia/include/core/SkRRect.h"
 #include "ui/base/hit_test.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/compositor/layer.h"
 #include "ui/gfx/font_list.h"
-#include "ui/linux/linux_ui.h"
+#include "ui/gfx/geometry/insets_f.h"
+#include "ui/gfx/geometry/skia_conversions.h"
 #include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/background.h"
 #include "ui/views/widget/widget.h"
-#include "ui/views/widget/widget_delegate.h"
+#include "ui/views/window/frame_background.h"
 #include "ui/views/window/frame_caption_button.h"
 #include "ui/views/window/vector_icons/vector_icons.h"
 
@@ -55,12 +57,14 @@ const int kCaptionButtonBottomPadding = 3;
 // The content edge images have a shadow built into them.
 const int OpaqueFrameView::kContentEdgeShadowThickness = 2;
 
-OpaqueFrameView::OpaqueFrameView() = default;
+OpaqueFrameView::OpaqueFrameView()
+    : frame_background_(std::make_unique<views::FrameBackground>()) {}
 OpaqueFrameView::~OpaqueFrameView() = default;
 
 void OpaqueFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
   FramelessView::Init(window, frame);
-  linux_frame_layout_ = LinuxFrameLayout::Create(window, window->HasShadow());
+  linux_frame_layout_ = LinuxFrameLayout::Create(
+      window, window->HasShadow(), LinuxFrameLayout::CSDStyle::kCustom);
 
   // Unretained() is safe because the subscription is saved into an instance
   // member and thus will be cancelled upon the instance's destruction.
@@ -98,9 +102,8 @@ void OpaqueFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
 }
 
 int OpaqueFrameView::ResizingBorderHitTest(const gfx::Point& point) {
-  auto insets = RestoredFrameBorderInsets();
   return ResizingBorderHitTestImpl(
-      point, insets.IsEmpty() ? linux_frame_layout_->GetInputInsets() : insets);
+      point, linux_frame_layout_->GetResizeBorderInsets());
 }
 
 void OpaqueFrameView::InvalidateCaptionButtons() {
@@ -200,14 +203,31 @@ void OpaqueFrameView::OnPaint(gfx::Canvas* canvas) {
   if (frame()->IsFullscreen())
     return;
 
-  // Titlebar height must be at least the frame border insets to avoid
-  // a negative height calculation in the GTK frame provider. We add 1 to
-  // ensure it's always positive even when insets are 0.
-  int top_area_height = RestoredFrameBorderInsets().top() + 1;
+  const bool active = ShouldPaintAsActive();
+  const gfx::Insets border = RestoredFrameBorderInsets();
+  const bool showing_shadow = linux_frame_layout_->IsShowingShadow();
+  gfx::RectF bounds_dip(GetLocalBounds());
+  if (showing_shadow) {
+    bounds_dip.Inset(gfx::InsetsF(border));
+  }
 
-  linux_frame_layout_->PaintWindowFrame(
-      canvas, GetLocalBounds(), gfx::Rect(0, 0, width(), top_area_height),
-      ShouldPaintAsActive());
+  // TODO: support roundedCorners.
+  float radius_dip = 0;
+  SkVector radii[4]{{radius_dip, radius_dip}, {radius_dip, radius_dip}, {}, {}};
+  SkRRect clip;
+  clip.setRectRadii(gfx::RectFToSkRect(bounds_dip), radii);
+
+  frame_background_->set_frame_color(GetFrameColor());
+  frame_background_->set_use_custom_frame(true);
+  frame_background_->set_is_active(active);
+  frame_background_->set_top_area_height(GetTopAreaHeight());
+
+  const bool draw_shadow = showing_shadow && !linux_frame_layout_->tiled();
+  auto shadow_values =
+      draw_shadow ? GetFrameShadowValuesLinux(active) : gfx::ShadowValues();
+  ::PaintRestoredFrameBorderLinux(*canvas, *this, frame_background_.get(), clip,
+                                  showing_shadow, active, border, shadow_values,
+                                  linux_frame_layout_->tiled());
 
   if (!window()->IsWindowControlsOverlayEnabled())
     return;

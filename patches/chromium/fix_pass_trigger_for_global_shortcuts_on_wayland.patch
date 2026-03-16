@@ -9,7 +9,7 @@ values requested by Electron apps, instead of requiring user input.
 This patch should be submitted upstream.
 
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
-index a5bb1271231bb092c5e35fcf0cc99f0a18164147..1f02bf54fc6a3c0feb37b51dd6c9be9615073bcf 100644
+index 37faffac6fbb00d356c7cc4e685441f7c4d32481..31bd60c4638e48e91c95b5df8c943ca13c3bc134 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
 @@ -15,6 +15,7 @@
@@ -111,8 +111,8 @@ index a5bb1271231bb092c5e35fcf0cc99f0a18164147..1f02bf54fc6a3c0feb37b51dd6c9be96
 +
  }  // namespace
  
- GlobalAcceleratorListenerLinux::GlobalAcceleratorListenerLinux(
-@@ -253,6 +339,12 @@ void GlobalAcceleratorListenerLinux::BindShortcuts(DbusShortcuts old_shortcuts,
+ GlobalAcceleratorListenerLinux::BoundCommand::BoundCommand() = default;
+@@ -292,6 +378,12 @@ void GlobalAcceleratorListenerLinux::BindShortcuts(DbusShortcuts old_shortcuts,
        new_props["description"] =
            dbus_utils::Variant::Wrap<"s">(std::move(*description));
      }
@@ -125,7 +125,7 @@ index a5bb1271231bb092c5e35fcf0cc99f0a18164147..1f02bf54fc6a3c0feb37b51dd6c9be96
      shortcuts.emplace_back(id, std::move(new_props));
    }
  
-@@ -260,6 +352,12 @@ void GlobalAcceleratorListenerLinux::BindShortcuts(DbusShortcuts old_shortcuts,
+@@ -299,6 +391,12 @@ void GlobalAcceleratorListenerLinux::BindShortcuts(DbusShortcuts old_shortcuts,
      dbus_xdg::Dictionary props;
      props["description"] = dbus_utils::Variant::Wrap<"s">(
          base::UTF16ToUTF8(bound_cmd.command.description()));

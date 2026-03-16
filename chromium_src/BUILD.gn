@@ -245,6 +245,10 @@ static_library("chrome") {
       "//chrome/browser/ui/views/dark_mode_manager_linux.cc",
       "//chrome/browser/ui/views/dark_mode_manager_linux.h",
     ]
+    sources += [
+      "//chrome/browser/ui/views/frame/browser_frame_view_paint_utils_linux.cc",
+      "//chrome/browser/ui/views/frame/browser_frame_view_paint_utils_linux.h",
+    ]
     public_deps += [ "//components/dbus" ]
   }
 
