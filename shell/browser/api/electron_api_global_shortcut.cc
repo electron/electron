@@ -15,12 +15,13 @@
 #include "electron/shell/browser/electron_browser_context.h"
 #include "electron/shell/common/electron_constants.h"
 #include "extensions/common/command.h"
-#include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
+#include "gin/persistent.h"
 #include "shell/browser/api/electron_api_system_preferences.h"
 #include "shell/browser/browser.h"
 #include "shell/common/gin_converters/accelerator_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "v8/include/cppgc/allocation.h"
@@ -62,7 +63,7 @@ GlobalShortcut::~GlobalShortcut() {
   if (instance && instance->IsRegistrationHandledExternally()) {
     // Eagerly cancel callbacks so PruneStaleCommands() can clear them before
     // the WeakPtrFactory destructor runs.
-    weak_ptr_factory_.InvalidateWeakPtrs();
+    weak_factory_.Invalidate();
     instance->PruneStaleCommands();
   }
 
@@ -114,11 +115,14 @@ bool GlobalShortcut::RegisterAll(
 
 bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
                               const base::RepeatingClosure& callback) {
+  v8::Isolate* const isolate = JavascriptEnvironment::GetIsolate();
+
   if (!electron::Browser::Get()->is_ready()) {
-    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
-        .ThrowError("globalShortcut cannot be used before the app is ready");
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "globalShortcut cannot be used before the app is ready");
     return false;
   }
+
 #if BUILDFLAG(IS_MAC)
   if (accelerator.IsMediaKey()) {
     if (RegisteringMediaKeyForUntrustedClient(accelerator))
@@ -172,16 +176,19 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
     const std::string fake_extension_id = command_str + "+" + profile_id;
     instance->OnCommandsChanged(
         fake_extension_id, profile_id, commands, gfx::kNullAcceleratedWidget,
-        base::BindRepeating(&GlobalShortcut::ExecuteCommand,
-                            weak_ptr_factory_.GetWeakPtr()));
+        base::BindRepeating(
+            &GlobalShortcut::ExecuteCommand,
+            gin::WrapPersistent(weak_factory_.GetWeakCell(
+                isolate->GetCppHeap()->GetAllocationHandle()))));
     command_callback_map_[command_str] = callback;
     return true;
-  } else {
-    if (instance->RegisterAccelerator(accelerator, this)) {
-      accelerator_callback_map_[accelerator] = callback;
-      return true;
-    }
   }
+
+  if (instance->RegisterAccelerator(accelerator, this)) {
+    accelerator_callback_map_[accelerator] = callback;
+    return true;
+  }
+
   return false;
 }
 
