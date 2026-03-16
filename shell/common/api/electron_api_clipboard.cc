@@ -6,6 +6,7 @@
 
 #include <map>
 
+#include "base/containers/flat_set.h"
 #include "base/containers/to_vector.h"
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
@@ -30,6 +31,25 @@ namespace {
   return args->GetNext(&type) && type == "selection"
              ? ui::ClipboardBuffer::kSelection
              : ui::ClipboardBuffer::kCopyPaste;
+}
+
+bool IsFormatAvailable(ui::Clipboard* clipboard,
+                       const ui::ClipboardFormatType& format,
+                       ui::ClipboardBuffer buffer) {
+  base::flat_set<ui::ClipboardFormatType> formats;
+  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
+  clipboard->GetAllAvailableFormats(
+      buffer, /* data_dst = */ std::nullopt,
+      base::BindOnce(
+          [](base::flat_set<ui::ClipboardFormatType>* out,
+             base::OnceClosure quit,
+             base::flat_set<ui::ClipboardFormatType> result) {
+            *out = std::move(result);
+            std::move(quit).Run();
+          },
+          &formats, run_loop.QuitClosure()));
+  run_loop.Run();
+  return formats.contains(format);
 }
 
 }  // namespace
@@ -64,8 +84,7 @@ bool Clipboard::Has(const std::string& format_string,
       ui::ClipboardFormatType::CustomPlatformType(format_string);
   if (format.GetName().empty())
     format = ui::ClipboardFormatType::CustomPlatformType(format_string);
-  return clipboard->IsFormatAvailable(format, GetClipboardBuffer(args),
-                                      /* data_dst = */ nullptr);
+  return IsFormatAvailable(clipboard, format, GetClipboardBuffer(args));
 }
 
 std::string Clipboard::Read(const std::string& format_string) {
@@ -73,12 +92,12 @@ std::string Clipboard::Read(const std::string& format_string) {
   // Prefer raw platform format names
   ui::ClipboardFormatType rawFormat(
       ui::ClipboardFormatType::CustomPlatformType(format_string));
-  bool rawFormatAvailable = clipboard->IsFormatAvailable(
-      rawFormat, ui::ClipboardBuffer::kCopyPaste, /* data_dst = */ nullptr);
+  bool rawFormatAvailable =
+      IsFormatAvailable(clipboard, rawFormat, ui::ClipboardBuffer::kCopyPaste);
 #if BUILDFLAG(IS_LINUX)
   if (!rawFormatAvailable) {
-    rawFormatAvailable = clipboard->IsFormatAvailable(
-        rawFormat, ui::ClipboardBuffer::kSelection, /* data_dst = */ nullptr);
+    rawFormatAvailable = IsFormatAvailable(clipboard, rawFormat,
+                                           ui::ClipboardBuffer::kSelection);
   }
 #endif
   if (rawFormatAvailable) {
@@ -210,8 +229,8 @@ std::u16string Clipboard::ReadText(gin::Arguments* const args) {
   std::u16string data;
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   auto type = GetClipboardBuffer(args);
-  if (clipboard->IsFormatAvailable(ui::ClipboardFormatType::PlainTextType(),
-                                   type, /* data_dst = */ nullptr)) {
+  if (IsFormatAvailable(clipboard, ui::ClipboardFormatType::PlainTextType(),
+                        type)) {
     base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
     clipboard->ReadText(type,
                         /* data_dst = */ std::nullopt,
@@ -225,9 +244,8 @@ std::u16string Clipboard::ReadText(gin::Arguments* const args) {
     run_loop.Run();
   } else {
 #if BUILDFLAG(IS_WIN)
-    if (clipboard->IsFormatAvailable(ui::ClipboardFormatType::PlainTextAType(),
-                                     type,
-                                     /* data_dst = */ nullptr)) {
+    if (IsFormatAvailable(clipboard, ui::ClipboardFormatType::PlainTextAType(),
+                          type)) {
       std::string result;
       base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
       clipboard->ReadAsciiText(
