@@ -72,7 +72,8 @@ GlobalShortcut::~GlobalShortcut() {
 
 void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
   if (auto* cb = base::FindOrNull(accelerator_callback_map_, accelerator)) {
-    cb->Run();
+    auto callback = *cb;
+    callback.Run();
   } else {
     // This should never occur, because if it does,
     // ui::GlobalAcceleratorListener notifies us with wrong accelerator.
@@ -83,7 +84,8 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
 void GlobalShortcut::ExecuteCommand(const extensions::ExtensionId& extension_id,
                                     const std::string& command_id) {
   if (auto* cb = base::FindOrNull(command_callback_map_, command_id)) {
-    cb->Run();
+    auto callback = *cb;
+    callback.Run();
   } else {
     // This should never occur, because if it does, GlobalAcceleratorListener
     // notifies us with wrong command.
