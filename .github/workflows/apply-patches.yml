@@ -26,7 +26,7 @@ jobs:
     # Use dorny/paths-filter instead of the path filter under the on: pull_request: block
     # so that the output can be used to conditionally run the apply-patches job, which lets
     # the job be marked as a required status check (conditional skip counts as a success).
-    - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+    - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
       id: filter
       with:
         filters: |
