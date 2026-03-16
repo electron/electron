@@ -175,9 +175,7 @@ void CocoaNotification::Show(const NotificationOptions& options) {
 void CocoaNotification::ScheduleNotification(
     UNMutableNotificationContent* content) {
   NSString* identifier =
-      [NSString stringWithFormat:@"%@:notification:%@",
-                                 [[NSBundle mainBundle] bundleIdentifier],
-                                 [[NSUUID UUID] UUIDString]];
+      base::SysUTF8ToNSString(notification_id());
 
   UNNotificationRequest* request =
       [UNNotificationRequest requestWithIdentifier:identifier

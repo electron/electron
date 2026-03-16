@@ -83,6 +83,7 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
   void Close();
 
   // Prop Getters
+  const std::string& id() const { return id_; }
   const std::u16string& title() const { return title_; }
   const std::u16string& subtitle() const { return subtitle_; }
   const std::u16string& body() const { return body_; }
@@ -99,6 +100,7 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
   const std::u16string& toast_xml() const { return toast_xml_; }
 
   // Prop Setters
+  void SetId(const std::string& new_id);
   void SetTitle(const std::u16string& new_title);
   void SetSubtitle(const std::u16string& new_subtitle);
   void SetBody(const std::u16string& new_body);
@@ -113,6 +115,7 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
   void SetToastXml(const std::u16string& new_toast_xml);
 
  private:
+  std::string id_;
   std::u16string title_;
   std::u16string subtitle_;
   std::u16string body_;
