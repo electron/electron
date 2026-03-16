@@ -244,7 +244,7 @@ void UtilityProcessWrapper::OnServiceProcessLaunch(
   EmitWithoutEvent("spawn");
 }
 
-void UtilityProcessWrapper::HandleTermination(uint64_t exit_code) {
+void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
   // HandleTermination is called from multiple callsites,
   // we need to ensure we only process it for the first callsite.
   if (terminated_)
@@ -291,7 +291,7 @@ void UtilityProcessWrapper::OnServiceProcessTerminatedNormally(
       info.GetProcess().Pid() != pid_)
     return;
 
-  HandleTermination(static_cast<uint32_t>(info.exit_code()));
+  HandleTermination(info.exit_code());
 }
 
 void UtilityProcessWrapper::OnServiceProcessCrashed(
@@ -300,7 +300,7 @@ void UtilityProcessWrapper::OnServiceProcessCrashed(
       info.GetProcess().Pid() != pid_)
     return;
 
-  HandleTermination(static_cast<uint32_t>(info.exit_code()));
+  HandleTermination(info.exit_code());
 }
 
 void UtilityProcessWrapper::CloseConnectorPort() {
@@ -312,7 +312,7 @@ void UtilityProcessWrapper::CloseConnectorPort() {
   }
 }
 
-void UtilityProcessWrapper::Shutdown(uint64_t exit_code) {
+void UtilityProcessWrapper::Shutdown(uint32_t exit_code) {
   node_service_remote_.reset();
   HandleTermination(exit_code);
 }
