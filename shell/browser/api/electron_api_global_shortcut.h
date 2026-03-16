@@ -11,6 +11,7 @@
 #include "base/functional/callback_forward.h"
 #include "base/memory/weak_ptr.h"
 #include "extensions/common/extension_id.h"
+#include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
 #include "ui/base/accelerators/accelerator.h"
@@ -60,8 +61,9 @@ class GlobalShortcut final : private ui::GlobalAcceleratorListener::Observer,
   AcceleratorCallbackMap accelerator_callback_map_;
   CommandCallbackMap command_callback_map_;
 
+  gin::WeakCellFactory<GlobalShortcut> weak_factory_{this};
+
   gin_helper::SelfKeepAlive<GlobalShortcut> keep_alive_{this};
-  base::WeakPtrFactory<GlobalShortcut> weak_ptr_factory_{this};
 };
 
 }  // namespace electron::api
