@@ -50,7 +50,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index c9811ba7835ed8f96dbde412543e86dc3b5ab13b..2786fa35b0ccf210af0e2ba4b423952211676614 100644
+index 7ab4379d92fdaa2e7047100c18df204265656cf1..1590dd3ae2ee86daff32edb14281589bb34df3df 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1082,6 +1082,7 @@ component("base") {
@@ -129,10 +129,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index 275d6dbe1b05f806278c14e2ec5df5d550be787b..750ba56ec139679b994aec04938858c064c76d69 100644
+index 1f8256fdf364c34406fd5639057acca8d52cb474..2df7110c18569323199ec227891362c248237b2f 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -972,6 +972,7 @@ if (is_clang_or_gcc) {
+@@ -974,6 +974,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -974,7 +974,7 @@ index 2f1fcace77c403c0e136ae2fc40633cccccce038..9ce9c1771310e81b18ba6fe4569544ff
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 3913f68ccd32442c16b50b7a48a1876da3061f3b..013b1ba6cffa8ad0040b7939289199a5dfd4563d 100644
+index 6c20db955545b37cb1fd6fcc9b280aa1c7a14ae9..c5b6e15d3e6826f31b4237668e38449f31663639 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -362,6 +362,7 @@ source_set("browser") {
@@ -1095,10 +1095,10 @@ index 29fe3bd4d8a63c5bd51536a904d191fef0c4e4a1..a36dd07237392e537c389628b5814e20
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 5487c3756c60389a3442c2e59a08c91890fb6f87..f17ed8c3485102ac63f34239b3b31a3a322088f9 100644
+index 691fb357cb6865cc0b47d37a509a440b52475493..3377fbe048b4e6945ca4790aa2dadde7dd9f47ea 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -279,6 +279,7 @@ source_set("common") {
+@@ -280,6 +280,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -1189,10 +1189,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index be65cd3d0696c7df1fa7548e6b0461f81f505287..29e30240e271fc7cad600de7ce5895ef2ff9ba46 100644
+index ce7596c707fea72a6cf90b851c411e21999fdadd..707885fc25831eb012efb902211f198a585e2817 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -700,6 +700,7 @@ static_library("test_support") {
+@@ -701,6 +701,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -1200,7 +1200,7 @@ index be65cd3d0696c7df1fa7548e6b0461f81f505287..29e30240e271fc7cad600de7ce5895ef
    ]
  
    data_deps = [
-@@ -1175,6 +1176,8 @@ static_library("browsertest_support") {
+@@ -1176,6 +1177,8 @@ static_library("browsertest_support") {
    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
    # enable the diagnostic by removing this line.
    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -1209,7 +1209,7 @@ index be65cd3d0696c7df1fa7548e6b0461f81f505287..29e30240e271fc7cad600de7ce5895ef
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2072,6 +2075,7 @@ test("content_browsertests") {
+@@ -2075,6 +2078,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1217,7 +1217,7 @@ index be65cd3d0696c7df1fa7548e6b0461f81f505287..29e30240e271fc7cad600de7ce5895ef
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3423,6 +3427,7 @@ test("content_unittests") {
+@@ -3426,6 +3430,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1378,7 +1378,7 @@ index 3a079b0fc34031d062045510fe0e2444792ff942..1be75833d46aaa124e5467904f68e46c
  }  // namespace
  #endif
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index d8509119f1c9e527d2a89faad239e13dead54257..7d55ecc59bcd535599ed37c7dd684ae571258c9a 100644
+index aa3411b03b674479df96af0d182ffa8e35c9f3be..79167ca3638a13aeb0f3e07b064afaa88cad3b2c 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
 @@ -207,6 +207,8 @@ source_set("dns") {
@@ -1789,10 +1789,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 66ed65def5c45d87f2e6357228cfcafdd784ed9a..0ad8271d301d91b2b24b5efed01242426e48aa5b 100644
+index 9b399ad326a19af7fd5e717bf8940ec562338f6d..96cc912489ab4423e0592d9c90c3d38f57131087 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -439,6 +439,7 @@ component("core") {
+@@ -444,6 +444,7 @@ component("core") {
      "//ui/gfx/geometry",
      "//ui/gfx/geometry:geometry_skia",
      "//ui/strings",
@@ -1801,10 +1801,10 @@ index 66ed65def5c45d87f2e6357228cfcafdd784ed9a..0ad8271d301d91b2b24b5efed0124242
  
    if (is_mac) {
 diff --git a/third_party/blink/renderer/core/editing/build.gni b/third_party/blink/renderer/core/editing/build.gni
-index 4f04476e9175bae9e89eb9ea4316bffe49a9eb91..e77615c7b26518f4930ac1b004b413173fa0f46b 100644
+index cb1c907e6244cc5955edcc251db292198ba01e42..82df6d9e5c71e9e1b098fc4747b072e85e68114a 100644
 --- a/third_party/blink/renderer/core/editing/build.gni
 +++ b/third_party/blink/renderer/core/editing/build.gni
-@@ -362,10 +362,14 @@ blink_core_sources_editing = [
+@@ -368,10 +368,14 @@ blink_core_sources_editing = [
  if (is_mac) {
    blink_core_sources_editing += [
      "commands/smart_replace_cf.cc",
