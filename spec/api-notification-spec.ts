@@ -15,7 +15,7 @@ describe('Notification module', () => {
     expect(Notification.isSupported()).to.be.a('boolean');
   });
 
-  ifit(process.platform === 'darwin')('inits, gets and sets id property', () => {
+  ifit(process.platform === 'darwin')('inits and gets id property', () => {
     const n = new Notification({
       id: 'my-custom-id',
       title: 'title',
@@ -23,20 +23,39 @@ describe('Notification module', () => {
     });
 
     expect(n.id).to.equal('my-custom-id');
-    n.id = 'new-id';
-    expect(n.id).to.equal('new-id');
   });
 
-  ifit(process.platform === 'darwin')('defaults id to empty string when not provided', () => {
+  ifit(process.platform === 'darwin')('id is read-only', () => {
+    const n = new Notification({
+      id: 'my-custom-id',
+      title: 'title',
+      body: 'body'
+    });
+
+    expect(() => { (n as any).id = 'new-id'; }).to.throw();
+  });
+
+  ifit(process.platform === 'darwin')('defaults id to a UUID when not provided', () => {
     const n = new Notification({
       title: 'title',
       body: 'body'
     });
 
-    expect(n.id).to.equal('');
+    expect(n.id).to.be.a('string').and.not.be.empty();
+    expect(n.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 
-  ifit(process.platform === 'darwin')('inits, gets and sets groupId property', () => {
+  ifit(process.platform === 'darwin')('defaults id to a UUID when empty string is provided', () => {
+    const n = new Notification({
+      id: '',
+      title: 'title',
+      body: 'body'
+    });
+
+    expect(n.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+  });
+
+  ifit(process.platform === 'darwin')('inits and gets groupId property', () => {
     const n = new Notification({
       title: 'title',
       body: 'body',
@@ -44,8 +63,16 @@ describe('Notification module', () => {
     });
 
     expect(n.groupId).to.equal('E017VKL2N8H|C07RBMNS9EK');
-    n.groupId = 'new-group';
-    expect(n.groupId).to.equal('new-group');
+  });
+
+  ifit(process.platform === 'darwin')('groupId is read-only', () => {
+    const n = new Notification({
+      title: 'title',
+      body: 'body',
+      groupId: 'E017VKL2N8H|C07RBMNS9EK'
+    });
+
+    expect(() => { (n as any).groupId = 'new-group'; }).to.throw();
   });
 
   ifit(process.platform === 'darwin')('defaults groupId to empty string when not provided', () => {
