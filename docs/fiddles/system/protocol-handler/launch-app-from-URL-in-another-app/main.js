@@ -3,6 +3,11 @@ const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron/main')
 const path = require('node:path')
 
 let mainWindow
+let deeplinkingUrl
+
+const findDeepLink = (argv) => {
+  return argv.find((arg) => arg.startsWith('electron-fiddle://'))
+}
 
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
@@ -17,23 +22,32 @@ const gotTheLock = app.requestSingleInstanceLock()
 if (!gotTheLock) {
   app.quit()
 } else {
-  app.on('second-instance', (event, commandLine, workingDirectory) => {
+  app.on('second-instance', (event, commandLine) => {
     // Someone tried to run a second instance, we should focus our window.
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore()
       mainWindow.focus()
     }
 
-    dialog.showErrorBox('Welcome Back', `You arrived from: ${commandLine.pop().slice(0, -1)}`)
+    deeplinkingUrl = findDeepLink(commandLine)
+    if (deeplinkingUrl) {
+      dialog.showErrorBox('Welcome Back', `You arrived from: ${deeplinkingUrl}`)
+    }
+  })
+
+  app.on('open-url', (event, url) => {
+    event.preventDefault()
+    dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`)
   })
 
   // Create mainWindow, load the rest of the app, etc...
   app.whenReady().then(() => {
     createWindow()
-  })
 
-  app.on('open-url', (event, url) => {
-    dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`)
+    deeplinkingUrl = findDeepLink(process.argv)
+    if (deeplinkingUrl) {
+      dialog.showErrorBox('Welcome Back', `You arrived from: ${deeplinkingUrl}`)
+    }
   })
 }
 
