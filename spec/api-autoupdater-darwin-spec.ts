@@ -19,6 +19,7 @@ import { ifdescribe, ifit } from './lib/spec-helpers';
 // We can only test the auto updater on darwin non-component builds
 ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
   this.timeout(120000);
+  this.retries(0);
 
   let identity = '';
 
@@ -63,6 +64,8 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
     try {
       fn();
     } catch (err) {
+      console.log('Error during:', what);
+      console.log('error was:', err);
       console.error(what);
       throw err;
     }
