@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 16 Mar 2026 18:57:00 +0100
+Subject: fix: restore sdk_inputs cross-toolchain deps for macOS
+
+The change in CL:7652975 restricted sdk_inputs public_deps
+to iOS only, to avoid setting up Xcode symlinks for the Linux
+toolchain when cross-building chrome/linux on Mac. However, this
+also broke cross-arch macOS builds (e.g. ffmpeg with target_cpu=x64)
+where the mig target in the clang_arm64 toolchain depends on
+sdk_inputs from the default clang_x64 toolchain.
+
+Add target_os == \"mac\" alongside the existing iOS check to preserve
+the original intent while restoring the cross-toolchain dependency
+for macOS builds.
+
+We should try to upstream this.
+
+diff --git a/build/config/mac/BUILD.gn b/build/config/mac/BUILD.gn
+index 56238a14ae8fb0a8fc9bba6553b99c199080e7af..22c628c3b4a3d1072b382ffc0fd0ce5bb85de9b5 100644
+--- a/build/config/mac/BUILD.gn
++++ b/build/config/mac/BUILD.gn
+@@ -120,7 +120,8 @@ if (mac_use_xcode_symlinks && current_toolchain == default_toolchain) {
+   }
+ } else {
+   group("sdk_inputs") {
+-    if (current_toolchain != default_toolchain && target_os == "ios") {
++    if (current_toolchain != default_toolchain &&
++        (target_os == "ios" || target_os == "mac")) {
+       public_deps = [ ":sdk_inputs($default_toolchain)" ]
+     }
+   }
