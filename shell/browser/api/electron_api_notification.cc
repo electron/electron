@@ -74,6 +74,8 @@ Notification::Notification(gin::Arguments* args) {
 
   gin::Dictionary opts(nullptr);
   if (args->GetNext(&opts)) {
+    opts.Get("id", &id_);
+    opts.Get("groupId", &group_id_);
     opts.Get("title", &title_);
     opts.Get("subtitle", &subtitle_);
     opts.Get("body", &body_);
@@ -88,6 +90,9 @@ Notification::Notification(gin::Arguments* args) {
     opts.Get("closeButtonText", &close_button_text_);
     opts.Get("toastXml", &toast_xml_);
   }
+
+  if (id_.empty())
+    id_ = base::Uuid::GenerateRandomV4().AsLowercaseString();
 }
 
 Notification::~Notification() {
@@ -236,8 +241,7 @@ void Notification::Close() {
 void Notification::Show() {
   Close();
   if (presenter_) {
-    notification_ = presenter_->CreateNotification(
-        this, base::Uuid::GenerateRandomV4().AsLowercaseString());
+    notification_ = presenter_->CreateNotification(this, id_);
     if (notification_) {
       electron::NotificationOptions options;
       options.title = title_;
@@ -254,6 +258,7 @@ void Notification::Show() {
       options.close_button_text = close_button_text_;
       options.urgency = urgency_;
       options.toast_xml = toast_xml_;
+      options.group_id = group_id_;
       notification_->Show(options);
     }
   }
@@ -342,6 +347,8 @@ void Notification::FillObjectTemplate(v8::Isolate* isolate,
   gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
       .SetMethod("show", &Notification::Show)
       .SetMethod("close", &Notification::Close)
+      .SetProperty("id", &Notification::id)
+      .SetProperty("groupId", &Notification::group_id)
       .SetProperty("title", &Notification::title, &Notification::SetTitle)
       .SetProperty("subtitle", &Notification::subtitle,
                    &Notification::SetSubtitle)
