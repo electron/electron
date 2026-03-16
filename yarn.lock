@@ -857,9 +857,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@electron/packager@npm:^19.0.5":
-  version: 19.0.5
-  resolution: "@electron/packager@npm:19.0.5"
+"@electron/packager@npm:^19.1.0":
+  version: 19.1.0
+  resolution: "@electron/packager@npm:19.1.0"
   dependencies:
     "@electron/asar": "npm:^4.0.1"
     "@electron/get": "npm:^4.0.2"
@@ -883,7 +883,7 @@ __metadata:
     yargs-parser: "npm:^22.0.0"
   bin:
     electron-packager: bin/electron-packager.mjs
-  checksum: 10c0/065749f34ffcc33a265221ee14c712fad25d2cffd85c65931809123fcd70fd6cd2afb0de9ce7a88384e0db44751c632fc772c18d1dfe4094dd2779153b7fd85c
+  checksum: 10c0/dea449268fd711791f9fdbfb7f7172778cb19bb942117eef0753b2142b76b0f3c7c30dcd1ec2570e838c146c79e2516ab27a56e4f2c83940f20a94cf0ff2c493
   languageName: node
   linkType: hard
 
@@ -4845,7 +4845,7 @@ __metadata:
     "@electron-ci/osr-gpu": "npm:*"
     "@electron-ci/uv-dlopen": "npm:*"
     "@electron/fuses": "npm:^2.1.0"
-    "@electron/packager": "npm:^19.0.5"
+    "@electron/packager": "npm:^19.1.0"
     "@types/basic-auth": "npm:^1.1.8"
     "@types/busboy": "npm:^1.5.4"
     "@types/chai": "npm:^4.3.19"

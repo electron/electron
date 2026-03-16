@@ -1,6 +1,6 @@
 import { getRawHeader } from '@electron/asar';
 import { flipFuses, FuseV1Config, FuseV1Options, FuseVersion } from '@electron/fuses';
-import { resedit } from '@electron/packager/dist/resedit';
+import { resedit } from '@electron/packager/resedit';
 
 import { expect } from 'chai';
 import * as originalFs from 'node:original-fs';

@@ -13,7 +13,7 @@
     "@electron-ci/osr-gpu": "*",
     "@electron-ci/uv-dlopen": "*",
     "@electron/fuses": "^2.1.0",
-    "@electron/packager": "^19.0.5",
+    "@electron/packager": "^19.1.0",
     "@types/basic-auth": "^1.1.8",
     "@types/busboy": "^1.5.4",
     "@types/chai": "^4.3.19",
