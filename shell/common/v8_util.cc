@@ -43,7 +43,21 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
       : isolate_(isolate), serializer_(isolate, this) {}
   ~V8Serializer() override = default;
 
+  v8::Maybe<uint32_t> GetSharedArrayBufferId(
+      v8::Isolate* isolate,
+      v8::Local<v8::SharedArrayBuffer> shared_array_buffer) override {
+    auto backing_store = shared_array_buffer->GetBackingStore();
+    for (uint32_t i = 0; i < out_->shared_array_buffers_contents.size(); ++i) {
+      if (out_->shared_array_buffers_contents[i].get() == backing_store.get())
+        return v8::Just(i);
+    }
+    out_->shared_array_buffers_contents.push_back(std::move(backing_store));
+    return v8::Just(static_cast<uint32_t>(
+        out_->shared_array_buffers_contents.size() - 1));
+  }
+
   bool Serialize(v8::Local<v8::Value> value, blink::CloneableMessage* out) {
+    out_ = out;
     v8::MicrotasksScope microtasks_scope(
         isolate_->GetCurrentContext(),
         v8::MicrotasksScope::kDoNotRunMicrotasks);
@@ -126,6 +140,7 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
   raw_ptr<v8::Isolate> isolate_;
   std::vector<uint8_t> data_;
   v8::ValueSerializer serializer_;
+  raw_ptr<blink::CloneableMessage> out_ = nullptr;
 };
 
 class V8Deserializer : public v8::ValueDeserializer::Delegate {
@@ -134,7 +149,19 @@ class V8Deserializer : public v8::ValueDeserializer::Delegate {
       : isolate_(isolate),
         deserializer_(isolate, data.data(), data.size(), this) {}
   V8Deserializer(v8::Isolate* isolate, const blink::CloneableMessage& message)
-      : V8Deserializer(isolate, message.encoded_message) {}
+      : V8Deserializer(isolate, message.encoded_message) {
+    in_ = &message;
+  }
+
+  v8::MaybeLocal<v8::SharedArrayBuffer> GetSharedArrayBufferFromId(
+      v8::Isolate* isolate,
+      uint32_t id) override {
+    if (in_ && id < in_->shared_array_buffers_contents.size()) {
+      auto backing_store = in_->shared_array_buffers_contents[id];
+      return v8::SharedArrayBuffer::New(isolate, std::move(backing_store));
+    }
+    return v8::MaybeLocal<v8::SharedArrayBuffer>();
+  }
 
   v8::Local<v8::Value> Deserialize() {
     v8::EscapableHandleScope scope(isolate_);
@@ -232,6 +259,7 @@ class V8Deserializer : public v8::ValueDeserializer::Delegate {
 
   raw_ptr<v8::Isolate> isolate_;
   v8::ValueDeserializer deserializer_;
+  raw_ptr<const blink::CloneableMessage> in_ = nullptr;
 };
 
 bool SerializeV8Value(v8::Isolate* isolate,
