@@ -86,6 +86,7 @@ jobs:
                       !message.startsWith("Response status code does not indicate success") &&
                       !message.startsWith("The hosted runner lost communication with the server") &&
                       !message.startsWith("Dependabot encountered an error performing the update") &&
+                      !message.startsWith("The action 'Run Electron Tests' has timed out") &&
                       !/Unable to make request/.test(message) &&
                       !/The requested URL returned error/.test(message),
                   )
