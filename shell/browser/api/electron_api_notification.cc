@@ -90,6 +90,9 @@ Notification::Notification(gin::Arguments* args) {
     opts.Get("closeButtonText", &close_button_text_);
     opts.Get("toastXml", &toast_xml_);
   }
+
+  if (id_.empty())
+    id_ = base::Uuid::GenerateRandomV4().AsLowercaseString();
 }
 
 Notification::~Notification() {
@@ -109,14 +112,6 @@ gin_helper::Handle<Notification> Notification::New(
 }
 
 // Setters
-void Notification::SetId(const std::string& new_id) {
-  id_ = new_id;
-}
-
-void Notification::SetGroupId(const std::string& new_group_id) {
-  group_id_ = new_group_id;
-}
-
 void Notification::SetTitle(const std::u16string& new_title) {
   title_ = new_title;
 }
@@ -246,9 +241,7 @@ void Notification::Close() {
 void Notification::Show() {
   Close();
   if (presenter_) {
-    std::string notification_id =
-        id_.empty() ? base::Uuid::GenerateRandomV4().AsLowercaseString() : id_;
-    notification_ = presenter_->CreateNotification(this, notification_id);
+    notification_ = presenter_->CreateNotification(this, id_);
     if (notification_) {
       electron::NotificationOptions options;
       options.title = title_;
@@ -354,9 +347,8 @@ void Notification::FillObjectTemplate(v8::Isolate* isolate,
   gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
       .SetMethod("show", &Notification::Show)
       .SetMethod("close", &Notification::Close)
-      .SetProperty("id", &Notification::id, &Notification::SetId)
-      .SetProperty("groupId", &Notification::group_id,
-                   &Notification::SetGroupId)
+      .SetProperty("id", &Notification::id)
+      .SetProperty("groupId", &Notification::group_id)
       .SetProperty("title", &Notification::title, &Notification::SetTitle)
       .SetProperty("subtitle", &Notification::subtitle,
                    &Notification::SetSubtitle)
