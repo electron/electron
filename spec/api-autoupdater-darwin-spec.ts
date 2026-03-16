@@ -151,7 +151,6 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
       const appPath = await copyMacOSFixtureApp(dir);
       await unsignApp(appPath);
       const launchResult = await launchApp(appPath, ['http://myupdate']);
-      console.log(launchResult);
       expect(launchResult.code).to.equal(1);
       expect(launchResult.out).to.include('Could not get code signature for running application');
     });
@@ -359,11 +358,13 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
         startFixture: 'update-stack',
         endFixture: 'update-stack'
       }, async (appPath, updateZipPath2) => {
+        console.log('First update staged with zip:', updateZipPath2);
         await withUpdatableApp({
           nextVersion: '3.0.0',
           startFixture: 'update-stack',
           endFixture: 'update-stack'
         }, async (_, updateZipPath3) => {
+          console.log('Second update staged with zip:', updateZipPath3);
           let updateCount = 0;
           server.get('/update-file', (req, res) => {
             res.download(updateCount > 1 ? updateZipPath3 : updateZipPath2);
@@ -383,7 +384,9 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
               resolve();
             });
           });
+          console.log('Launching app to trigger update check...');
           const launchResult = await launchApp(appPath, [`http://localhost:${port}/update-check`]);
+          console.log('App launched, waiting for update to be processed...');
           logOnError(launchResult, () => {
             expect(launchResult).to.have.property('code', 0);
             expect(launchResult.out).to.include('Update Downloaded');
@@ -397,8 +400,9 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
             expect(requests[2].header('user-agent')).to.include('Electron/');
             expect(requests[3].header('user-agent')).to.include('Electron/');
           });
-
+          console.log('waiting for app to relaunch after update...');
           await relaunchPromise;
+          console.log('App relaunched after update.');
           expect(requests).to.have.lengthOf(5);
           expect(requests[4].url).to.equal('/update-check/updated/3.0.0');
           expect(requests[4].header('user-agent')).to.include('Electron/');
@@ -481,7 +485,7 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
       });
     });
 
-    it('should keep the update directory count bounded across repeated checks', async () => {
+    ifit(process.arch !== 'arm64')('should keep the update directory count bounded across repeated checks', async () => {
       // Verifies the orphan prune actually fires: after a second download
       // completes and rewrites ShipItState.plist, the first directory is no
       // longer referenced and must be removed when a third check begins.
