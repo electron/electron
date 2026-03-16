@@ -194,7 +194,9 @@ Returns:
 
 * `event` Event
 
-Emitted when the window becomes the key window. On macOS, this is distinct from
+Emitted when the window becomes the [key window](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/WinPanel/Concepts/ChangingMainKeyWindow.html).
+The key window receives keyboard and other non-touch-related events, and only
+one window at a time may be the key window. On macOS, this is distinct from
 `focus` because a window can become key without becoming main (focused). This is
 useful for floating panels, overlays, or Spotlight-like interfaces using
 `NSPanel`.
@@ -205,10 +207,12 @@ Returns:
 
 * `event` Event
 
-Emitted when the window resigns key window status. On macOS, this is distinct
-from `blur` because a window can lose key status without losing main status.
-This is useful for floating panels, overlays, or Spotlight-like interfaces using
-`NSPanel`.
+Emitted when the window resigns [key window](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/WinPanel/Concepts/ChangingMainKeyWindow.html)
+status. The key window receives keyboard and other non-touch-related events, and
+only one window at a time may be the key window. On macOS, this is distinct from
+`blur` because a window can lose key status without losing main status. This is
+useful for floating panels, overlays,
+or Spotlight-like interfaces using `NSPanel`.
 
 #### Event: 'show'
 
