@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Antigravity <antigravity@google.com>
+Date: Tue, 17 Mar 2026 00:30:00 +0530
+Subject: feat: add SharedArrayBuffer support to CloneableMessage
+
+This patch adds support for passing SharedArrayBuffer backing stores
+through CloneableMessage, which is used by Electron's IPC.
+
+diff --git a/third_party/blink/public/common/messaging/cloneable_message.h b/third_party/blink/public/common/messaging/cloneable_message.h
+index 1234567890abcdef1234567890abcdef12345678..890abcdef1234567890abcdef1234567890abcdef 100644
+--- a/third_party/blink/public/common/messaging/cloneable_message.h
++++ b/third_party/blink/public/common/messaging/cloneable_message.h
+@@ -10,6 +10,7 @@
+ #include "third_party/blink/public/common/common_export.h"
+ #include "third_party/blink/public/common/messaging/message_port_channel.h"
+ #include "third_party/skia/include/core/SkBitmap.h"
++#include "v8/include/v8.h"
+ 
+ namespace blink {
+ 
+@@ -23,6 +24,7 @@ struct BLINK_COMMON_EXPORT CloneableMessage {
+   std::vector<uint8_t> encoded_message;
+   std::vector<SkBitmap> blobs;
+   std::optional<base::UnguessableToken> sender_agent_cluster_id;
++  std::vector<std::shared_ptr<v8::BackingStore>> shared_array_buffers_contents;
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/public/mojom/messaging/cloneable_message.mojom b/third_party/blink/public/mojom/messaging/cloneable_message.mojom
+index abcdef1234567890abcdef1234567890abcdef12..1234567890abcdef1234567890abcdef12345678 100644
+--- a/third_party/blink/public/mojom/messaging/cloneable_message.mojom
++++ b/third_party/blink/public/mojom/messaging/cloneable_message.mojom
+@@ -14,4 +14,5 @@ struct CloneableMessage {
+   array<uint8> encoded_message;
+   array<skia.mojom.BitmapN32> blobs;
+   mojo_base.mojom.UnguessableToken? sender_agent_cluster_id;
++  [RuntimeFeature=SharedArrayBufferIPC] array<handle<shared_buffer>>? shared_array_buffers;
+ };
