@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index 461819ce0fa732048e4365c40a86ef55d984c35f..fa55c980a9c4f373723a867fd41276d67b0b9413 100644
+index 461819ce0fa732048e4365c40a86ef55d984c35f..f1c85e94cf526d0255f47c003664680d26413ec3 100644
 --- a/deps/ncrypto/ncrypto.cc
 +++ b/deps/ncrypto/ncrypto.cc
 @@ -11,6 +11,7 @@
@@ -28,38 +28,6 @@ index 461819ce0fa732048e4365c40a86ef55d984c35f..fa55c980a9c4f373723a867fd41276d6
  #if OPENSSL_VERSION_MAJOR >= 3
  #include <openssl/core_names.h>
  #include <openssl/params.h>
-@@ -1130,7 +1131,9 @@ int64_t X509View::getValidToTime() const {
-   return tp;
- #else
-   struct tm tp;
--  ASN1_TIME_to_tm(X509_get0_notAfter(cert_), &tp);
-+#ifndef OPENSSL_IS_BORINGSSL
-+   ASN1_TIME_to_tm(X509_get0_notAfter(cert_), &tp);
-+#endif
-   return PortableTimeGM(&tp);
- #endif
- }
-@@ -1142,7 +1145,9 @@ int64_t X509View::getValidFromTime() const {
-   return tp;
- #else
-   struct tm tp;
-+#ifndef OPENSSL_IS_BORINGSSL
-   ASN1_TIME_to_tm(X509_get0_notBefore(cert_), &tp);
-+#endif
-   return PortableTimeGM(&tp);
- #endif
- }
-@@ -2886,10 +2891,6 @@ std::optional<uint32_t> SSLPointer::verifyPeerCertificate() const {
- const char* SSLPointer::getClientHelloAlpn() const {
-   if (ssl_ == nullptr) return {};
- #ifndef OPENSSL_IS_BORINGSSL
--  const unsigned char* buf;
--  size_t len;
--  size_t rem;
--
-   if (!SSL_client_hello_get0_ext(
-           get(),
-           TLSEXT_TYPE_application_layer_protocol_negotiation,
 @@ -3090,9 +3091,11 @@ const Cipher Cipher::AES_256_GCM = Cipher::FromNid(NID_aes_256_gcm);
  const Cipher Cipher::AES_128_KW = Cipher::FromNid(NID_id_aes128_wrap);
  const Cipher Cipher::AES_192_KW = Cipher::FromNid(NID_id_aes192_wrap);
