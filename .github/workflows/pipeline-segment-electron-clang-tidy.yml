@@ -126,7 +126,7 @@ jobs:
         cd src/electron
         git pack-refs
     - name: Download Out Gen Artifacts
-      uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
         name: out_gen_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./src/out/${{ env.ELECTRON_OUT_DIR }}/gen
