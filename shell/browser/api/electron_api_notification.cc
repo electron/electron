@@ -75,6 +75,7 @@ Notification::Notification(gin::Arguments* args) {
   gin::Dictionary opts(nullptr);
   if (args->GetNext(&opts)) {
     opts.Get("id", &id_);
+    opts.Get("groupId", &group_id_);
     opts.Get("title", &title_);
     opts.Get("subtitle", &subtitle_);
     opts.Get("body", &body_);
@@ -110,6 +111,10 @@ gin_helper::Handle<Notification> Notification::New(
 // Setters
 void Notification::SetId(const std::string& new_id) {
   id_ = new_id;
+}
+
+void Notification::SetGroupId(const std::string& new_group_id) {
+  group_id_ = new_group_id;
 }
 
 void Notification::SetTitle(const std::u16string& new_title) {
@@ -260,6 +265,7 @@ void Notification::Show() {
       options.close_button_text = close_button_text_;
       options.urgency = urgency_;
       options.toast_xml = toast_xml_;
+      options.group_id = group_id_;
       notification_->Show(options);
     }
   }
@@ -349,6 +355,8 @@ void Notification::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("show", &Notification::Show)
       .SetMethod("close", &Notification::Close)
       .SetProperty("id", &Notification::id, &Notification::SetId)
+      .SetProperty("groupId", &Notification::group_id,
+                   &Notification::SetGroupId)
       .SetProperty("title", &Notification::title, &Notification::SetTitle)
       .SetProperty("subtitle", &Notification::subtitle,
                    &Notification::SetSubtitle)
