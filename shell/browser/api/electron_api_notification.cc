@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_notification.h"
 
 #include "base/functional/bind.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/uuid.h"
 #include "build/build_config.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -13,10 +14,12 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/common/gin_converters/image_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "url/gurl.h"
 
@@ -72,27 +75,29 @@ Notification::Notification(gin::Arguments* args) {
   presenter_ = static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
                    ->GetNotificationPresenter();
 
-  gin::Dictionary opts(nullptr);
-  if (args->GetNext(&opts)) {
-    opts.Get("id", &id_);
-    opts.Get("groupId", &group_id_);
-    opts.Get("title", &title_);
-    opts.Get("subtitle", &subtitle_);
-    opts.Get("body", &body_);
-    opts.Get("icon", &icon_);
-    opts.Get("silent", &silent_);
-    opts.Get("replyPlaceholder", &reply_placeholder_);
-    opts.Get("urgency", &urgency_);
-    opts.Get("hasReply", &has_reply_);
-    opts.Get("timeoutType", &timeout_type_);
-    opts.Get("actions", &actions_);
-    opts.Get("sound", &sound_);
-    opts.Get("closeButtonText", &close_button_text_);
-    opts.Get("toastXml", &toast_xml_);
-  }
+  if (args) {
+    gin::Dictionary opts(nullptr);
+    if (args->GetNext(&opts)) {
+      opts.Get("id", &id_);
+      opts.Get("groupId", &group_id_);
+      opts.Get("title", &title_);
+      opts.Get("subtitle", &subtitle_);
+      opts.Get("body", &body_);
+      opts.Get("icon", &icon_);
+      opts.Get("silent", &silent_);
+      opts.Get("replyPlaceholder", &reply_placeholder_);
+      opts.Get("urgency", &urgency_);
+      opts.Get("hasReply", &has_reply_);
+      opts.Get("timeoutType", &timeout_type_);
+      opts.Get("actions", &actions_);
+      opts.Get("sound", &sound_);
+      opts.Get("closeButtonText", &close_button_text_);
+      opts.Get("toastXml", &toast_xml_);
+    }
 
-  if (id_.empty())
-    id_ = base::Uuid::GenerateRandomV4().AsLowercaseString();
+    if (id_.empty())
+      id_ = base::Uuid::GenerateRandomV4().AsLowercaseString();
+  }
 }
 
 Notification::~Notification() {
@@ -342,6 +347,61 @@ void Notification::HandleActivation(v8::Isolate* isolate,
 }
 #endif
 
+// static
+v8::Local<v8::Promise> Notification::GetHistory(v8::Isolate* isolate) {
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  auto* presenter =
+      static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
+          ->GetNotificationPresenter();
+  if (!presenter) {
+    promise.Resolve(v8::Array::New(isolate));
+    return handle;
+  }
+
+  presenter->GetDeliveredNotifications(base::BindOnce(
+      [](gin_helper::Promise<v8::Local<v8::Value>> promise,
+         electron::NotificationPresenter* presenter,
+         std::vector<electron::NotificationInfo> notifications) {
+        v8::Isolate* isolate = promise.isolate();
+        v8::HandleScope handle_scope(isolate);
+
+        v8::Local<v8::Array> result =
+            v8::Array::New(isolate, notifications.size());
+        for (size_t i = 0; i < notifications.size(); i++) {
+          const auto& info = notifications[i];
+
+          // Create a live Notification object for each delivered notification.
+          auto* notif = new Notification(/*args=*/nullptr);
+          notif->id_ = info.id;
+          notif->group_id_ = info.group_id;
+          notif->title_ = base::UTF8ToUTF16(info.title);
+          notif->subtitle_ = base::UTF8ToUTF16(info.subtitle);
+          notif->body_ = base::UTF8ToUTF16(info.body);
+
+          // Register with the presenter so click/reply events route here.
+          if (presenter) {
+            notif->notification_ =
+                presenter->CreateNotification(notif, notif->id_);
+            if (notif->notification_)
+              notif->notification_->Restore();
+          }
+
+          auto handle = gin_helper::CreateHandle(isolate, notif);
+          result
+              ->Set(isolate->GetCurrentContext(), static_cast<uint32_t>(i),
+                    handle.ToV8())
+              .Check();
+        }
+
+        promise.Resolve(result.As<v8::Value>());
+      },
+      std::move(promise), presenter));
+
+  return handle;
+}
+
 void Notification::FillObjectTemplate(v8::Isolate* isolate,
                                       v8::Local<v8::ObjectTemplate> templ) {
   gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
@@ -395,6 +455,7 @@ void Initialize(v8::Local<v8::Object> exports,
 #if BUILDFLAG(IS_WIN)
   dict.SetMethod("handleActivation", &Notification::HandleActivation);
 #endif
+  dict.SetMethod("getHistory", &Notification::GetHistory);
 }
 
 }  // namespace
