@@ -80,7 +80,7 @@ index 39fa45f0a0f9076bd7ac0be6f455dd540a276512..3d0381d463eed73470b28085830f2a23
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index f47a1155907d92146dabd72b5c7e8120a2b71c77..9122edca238bffc3b0949d71a217f2e6414d3fa9 100644
+index 8899a3216052582e35c5c046e1e0baee48052452..461cb574dc1083fae0bc96e53ed94ba117f7691d 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -2288,7 +2288,8 @@ bool Browser::IsWebContentsCreationOverridden(
