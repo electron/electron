@@ -50,10 +50,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 7ab4379d92fdaa2e7047100c18df204265656cf1..1590dd3ae2ee86daff32edb14281589bb34df3df 100644
+index bc18a7ef68c23614b3bbdd9968139e63a8e81f44..95f40f43451a103cb19de86e632e1679e36fda3f 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1082,6 +1082,7 @@ component("base") {
+@@ -1084,6 +1084,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -869,7 +869,7 @@ index 15c81d1f61c5dd994f24a194665de639b6355460..e74be476326c22821087939060ff744b
  
  void NativeWidgetNSWindowBridge::SetColorMode(
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 7aab80076a041fac6cd81f477456a6c9169c3cb5..cbdc5064414818b8320ecf3ff1e3439d52adee08 100644
+index dcdb614b91a773273e4785aff92a44b3bba6cf59..4ed0b92bd84e0bd97ebd0c6336d92191cc7bb8e8 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -390,6 +390,7 @@ viz_component("service") {
@@ -880,7 +880,7 @@ index 7aab80076a041fac6cd81f477456a6c9169c3cb5..cbdc5064414818b8320ecf3ff1e3439d
    }
  
    if (is_ios) {
-@@ -717,6 +718,7 @@ viz_source_set("unit_tests") {
+@@ -720,6 +721,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -940,7 +940,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 2f1fcace77c403c0e136ae2fc40633cccccce038..9ce9c1771310e81b18ba6fe4569544ff58730c73 100644
+index 26e72978755365e99feef34c4210b35e0a1d0790..c83b38bf9d392301924805a1083079dc3dd0b27f 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -33,6 +33,7 @@
@@ -951,7 +951,7 @@ index 2f1fcace77c403c0e136ae2fc40633cccccce038..9ce9c1771310e81b18ba6fe4569544ff
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2209,15 +2210,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2233,15 +2234,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -2416,10 +2416,10 @@ index aa73ba06160c983189dd214529344a8bcf9fbe98..79eece0dfff27b4fdb6beb895271e419
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 16d4bc1c96c8bb18f13fd66b12588c9f929c5c9a..03caee9409869b7009750cc68e1d1503b9719b76 100644
+index 56caa43bcaaa536c66aa5734ec07cf95f99a95b3..96678f5de2a0b67cd338012fb84b9ea7ff904084 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -21,6 +21,7 @@
+@@ -22,6 +22,7 @@
  #include "components/remote_cocoa/browser/ns_view_ids.h"
  #include "components/remote_cocoa/browser/window.h"
  #include "components/remote_cocoa/common/native_widget_ns_window.mojom.h"
@@ -2427,7 +2427,7 @@ index 16d4bc1c96c8bb18f13fd66b12588c9f929c5c9a..03caee9409869b7009750cc68e1d1503
  #include "mojo/public/cpp/bindings/self_owned_associated_receiver.h"
  #include "ui/accelerated_widget_mac/window_resize_helper_mac.h"
  #include "ui/accessibility/accessibility_features.h"
-@@ -372,8 +373,12 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -376,8 +377,12 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    if (in_process_ns_window_bridge_) {
      return gfx::NativeViewAccessible(in_process_ns_window_bridge_->ns_view());
    }
@@ -2440,7 +2440,7 @@ index 16d4bc1c96c8bb18f13fd66b12588c9f929c5c9a..03caee9409869b7009750cc68e1d1503
  }
  
  gfx::NativeViewAccessible
-@@ -389,8 +394,12 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -393,8 +398,12 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
          [in_process_ns_window_bridge_->ns_view() window]);
    }
  
@@ -2453,7 +2453,7 @@ index 16d4bc1c96c8bb18f13fd66b12588c9f929c5c9a..03caee9409869b7009750cc68e1d1503
  }
  
  remote_cocoa::mojom::NativeWidgetNSWindow*
-@@ -1500,9 +1509,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1505,9 +1514,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // for PWAs. However this breaks accessibility on in-process windows,
    // so set it back to NO when a local window gains focus. See
    // https://crbug.com/41485830.
@@ -2465,7 +2465,7 @@ index 16d4bc1c96c8bb18f13fd66b12588c9f929c5c9a..03caee9409869b7009750cc68e1d1503
    // Explicitly set the keyboard accessibility state on regaining key
    // window status.
    if (is_key && is_content_first_responder) {
-@@ -1655,17 +1666,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1660,17 +1671,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -2486,7 +2486,7 @@ index 16d4bc1c96c8bb18f13fd66b12588c9f929c5c9a..03caee9409869b7009750cc68e1d1503
    *pid = getpid();
    id element_id = GetNativeViewAccessible();
  
-@@ -1678,6 +1692,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1683,6 +1697,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    }
  
    *token = ui::RemoteAccessibility::GetTokenForLocalElement(element_id);
