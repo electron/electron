@@ -290,10 +290,11 @@ describe('Notification module', () => {
       expect(() => Notification.removeAll()).to.not.throw();
     });
 
-    ifit(process.platform === 'darwin')('getHistory returns delivered notifications', async () => {
+    ifit(process.platform === 'darwin')('getHistory returns Notification instances with correct properties', async () => {
       const n = new Notification({
         id: 'history-test-id',
         title: 'history test',
+        subtitle: 'history subtitle',
         body: 'history body',
         groupId: 'history-group',
         silent: true
@@ -309,12 +310,40 @@ describe('Notification module', () => {
       if (history.length > 0) {
         const found = history.find((item: any) => item.id === 'history-test-id');
         expect(found).to.not.be.undefined();
+        expect(found).to.be.an.instanceOf(Notification);
         expect(found.title).to.equal('history test');
+        expect(found.subtitle).to.equal('history subtitle');
         expect(found.body).to.equal('history body');
         expect(found.groupId).to.equal('history-group');
       }
 
       n.close();
+    });
+
+    ifit(process.platform === 'darwin')('getHistory returned notifications can be shown and closed', async () => {
+      const n = new Notification({
+        id: 'history-show-close',
+        title: 'show close test',
+        body: 'body',
+        silent: true
+      });
+
+      const shown = once(n, 'show');
+      n.show();
+      await shown;
+
+      const history = await Notification.getHistory();
+      if (history.length > 0) {
+        const found = history.find((item: any) => item.id === 'history-show-close');
+        expect(found).to.not.be.undefined();
+        // Calling show() and close() on a restored notification should not throw
+        expect(() => {
+          found.show();
+          found.close();
+        }).to.not.throw();
+      }
+
+      Notification.removeAll();
     });
 
     ifit(process.platform === 'darwin')('remove removes a notification by id', async () => {
@@ -391,6 +420,14 @@ describe('Notification module', () => {
       const history = await Notification.getHistory();
       const found = history.find((item: any) => item.id === 'remove-all-test');
       expect(found).to.be.undefined();
+    });
+
+    ifit(process.platform === 'darwin')('remove does not throw with an empty array', () => {
+      expect(() => Notification.remove([])).to.not.throw();
+    });
+
+    ifit(process.platform === 'darwin')('remove does not throw with an empty string', () => {
+      expect(() => Notification.remove('')).to.not.throw();
     });
 
     ifit(process.platform === 'darwin')('removeGroup does not throw', () => {

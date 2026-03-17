@@ -90,6 +90,11 @@ class Notification {
   // as can happen on some platforms including Windows.
   virtual void Remove() {}
 
+  // Restores a previously delivered notification for event handling without
+  // re-showing it. Sets up platform state so interaction events (click, reply,
+  // etc.) route to this object.
+  virtual void Restore() {}
+
   // Should be called by derived classes.
   void NotificationClicked();
   void NotificationDismissed(bool should_destroy = true,

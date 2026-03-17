@@ -118,7 +118,7 @@ declare namespace NodeJS {
 
   interface NotificationBinding {
     isSupported(): boolean;
-    getHistory(): Promise<Electron.NotificationHistoryInfo[]>;
+    getHistory(): Promise<Electron.Notification[]>;
     remove(id: string | string[]): void;
     removeAll(): void;
     removeGroup(groupId: string): void;
