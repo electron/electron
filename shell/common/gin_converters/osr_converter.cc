@@ -31,6 +31,8 @@ std::string OsrVideoPixelFormatToString(media::VideoPixelFormat format) {
       return "rgba";
     case media::PIXEL_FORMAT_RGBAF16:
       return "rgbaf16";
+    case media::PIXEL_FORMAT_NV12:
+      return "nv12";
     default:
       NOTREACHED();
   }
