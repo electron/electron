@@ -2664,6 +2664,82 @@ describe('webContents module', () => {
 
       w.webContents.setBackgroundThrottling(false);
     });
+
+    it('renders correctly after restore with background throttling disabled while minimized', async () => {
+      // Regression test: after minimize + setBackgroundThrottling(false) + restore,
+      // the window should still render its content (white video) and not appear black.
+      const videoPath = path.join(fixturesPath, 'assets', 'white.webm');
+      const pagePath = path.join(fixturesPath, 'pages', 'video-full-frame-black-background.html');
+
+      const server = http.createServer((req, res) => {
+        if (req.url === '/video.webm') {
+          const stat = fs.statSync(videoPath);
+          res.writeHead(200, {
+            'Content-Type': 'video/webm',
+            'Content-Length': stat.size
+          });
+          fs.createReadStream(videoPath).pipe(res);
+        } else {
+          const html = fs.readFileSync(pagePath, 'utf-8');
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end(html);
+        }
+      });
+      const { url: serverUrl } = await listen(server);
+
+      try {
+        const w = new BrowserWindow({
+          show: true,
+          width: 400,
+          height: 300,
+          webPreferences: { contextIsolation: true }
+        });
+
+        await w.loadURL(serverUrl);
+
+        // Wait for video to start playing and render white frames
+        await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+          const video = document.querySelector('video');
+          if (video.readyState >= 3) return resolve();
+          video.addEventListener('canplay', resolve, { once: true });
+          video.addEventListener('error', reject, { once: true });
+          setTimeout(() => reject(new Error('video canplay timed out after 3s')), 3000);
+        })`);
+        await setTimeout(1000);
+
+        const minimized = once(w, 'minimize');
+        w.minimize();
+        await minimized;
+
+        w.webContents.setBackgroundThrottling(false);
+
+        await setTimeout(500);
+
+        const restored = once(w, 'restore');
+        w.restore();
+        await restored;
+
+        await setTimeout(500);
+
+        const image = await w.webContents.capturePage();
+        expect(image.isEmpty()).to.be.false('captured image should not be empty');
+
+        const size = image.getSize();
+        const centerPixel = image.crop({
+          x: Math.floor(size.width / 2),
+          y: Math.floor(size.height / 2),
+          width: 1,
+          height: 1
+        });
+        const [b, g, r] = centerPixel.toBitmap();
+
+        expect(r).to.be.greaterThan(200, `expected red channel > 200 but got ${r}`);
+        expect(g).to.be.greaterThan(200, `expected green channel > 200 but got ${g}`);
+        expect(b).to.be.greaterThan(200, `expected blue channel > 200 but got ${b}`);
+      } finally {
+        server.close();
+      }
+    });
   });
 
   describe('getBackgroundThrottling()', () => {
