@@ -782,7 +782,11 @@ WebContents.prototype._init = function () {
   const originCounts = new Map<string, number>();
   const openDialogs = new Set<AbortController>();
   this.on('-run-dialog', async (info, callback) => {
-    const originUrl = new URL(info.frame.url);
+    // Guard against unparseable frame URLs (e.g. empty string from a
+    // window opened via `javascript:` URL before a navigation commits).
+    // Fall back to about:blank so the dialog can still be shown.
+    const frameUrl = info.frame.url;
+    const originUrl = URL.canParse(frameUrl) ? new URL(frameUrl) : new URL('about:blank');
     const origin = originUrl.protocol === 'file:' ? originUrl.href : originUrl.origin;
     if ((originCounts.get(origin) ?? 0) < 0) return callback(false, '');
 
