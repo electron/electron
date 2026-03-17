@@ -116,7 +116,7 @@ index 932658273154ef2e022358e493a8e7c00c86e732..57bbfb5cde62c9496c351c861880a189
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index f5bdcb8176a94705a3710ba5dbc536a96b35fed9..657a0e059f954a72d4f8654d1a8938ff255ec193 100644
+index f5bdcb8176a94705a3710ba5dbc536a96b35fed9..6a0bc186a97863f6e701d4ae6fd0190b25cb1a5d 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -2502,6 +2502,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
