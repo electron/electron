@@ -55,7 +55,7 @@ class ServiceWorkerContext final
   void DidStartWorkerForScope(
       std::shared_ptr<gin_helper::Promise<v8::Local<v8::Value>>> shared_promise,
       int64_t version_id,
-      int process_id,
+      content::ChildProcessId process_id,
       int thread_id,
       const blink::ServiceWorkerToken& token);
   void DidFailToStartWorkerForScope(
