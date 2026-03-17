@@ -72,7 +72,7 @@ This code will be different in Windows and Linux compared to macOS. On Windows a
 
 #### Windows and Linux code:
 
-```js @ts-type={mainWindow:Electron.BrowserWindow} @ts-type={createWindow:()=>void}
+```js @ts-type={mainWindow:Electron.BrowserWindow} @ts-type={createWindow:()=>void} @ts-type={findDeepLink:(argv:string[])=>string|undefined}
 let deeplinkingUrl
 
 const gotTheLock = app.requestSingleInstanceLock()
