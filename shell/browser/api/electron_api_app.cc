@@ -96,6 +96,7 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include "base/no_destructor.h"
 #include "content/browser/mac_helpers.h"
+#include "shell/browser/electron_child_process_host_flags.h"
 #include "shell/browser/ui/cocoa/electron_bundle_mover.h"
 #include "shell/common/process_util.h"
 #endif
@@ -924,7 +925,7 @@ bool App::IsPackaged() {
       "electron helper" +
       base::ToLowerASCII(content::kMacHelperSuffix_renderer));
   static const base::NoDestructor<std::string> plugin_helper(
-      "electron helper" + base::ToLowerASCII(content::kMacHelperSuffix_plugin));
+      "electron helper" + base::ToLowerASCII(kElectronMacHelperSuffixPlugin));
   if (IsRendererProcess()) {
     return base_name != *renderer_helper;
   } else if (IsUtilityProcess()) {

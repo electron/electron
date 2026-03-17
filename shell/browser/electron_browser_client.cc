@@ -86,6 +86,7 @@
 #include "shell/browser/electron_autofill_driver_factory.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
+#include "shell/browser/electron_child_process_host_flags.h"
 #include "shell/browser/electron_navigation_throttle.h"
 #include "shell/browser/electron_plugin_info_host_impl.h"
 #include "shell/browser/electron_speech_recognition_manager_delegate.h"
@@ -500,8 +501,9 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
         content::ChildProcessHost::CHILD_RENDERER);
     auto gpu_child_path = content::ChildProcessHost::GetChildPath(
         content::ChildProcessHost::CHILD_GPU);
-    auto plugin_child_path = content::ChildProcessHost::GetChildPath(
-        content::ChildProcessHost::CHILD_PLUGIN);
+    auto plugin_child_path =
+        content::ChildProcessHost::GetChildPath(static_cast<int>(
+            ElectronChildProcessHostFlags::kChildProcessHelperPlugin));
     if (program != renderer_child_path && program != gpu_child_path &&
         program != plugin_child_path) {
       child_path = content::ChildProcessHost::GetChildPath(
@@ -1808,6 +1810,15 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
 }
 
 #if BUILDFLAG(IS_MAC)
+std::string ElectronBrowserClient::GetChildProcessSuffix(int child_flags) {
+  if (child_flags ==
+      static_cast<int>(
+          ElectronChildProcessHostFlags::kChildProcessHelperPlugin)) {
+    return kElectronMacHelperSuffixPlugin;
+  }
+  NOTREACHED() << "Unsupported child process flags: " << child_flags;
+}
+
 device::GeolocationSystemPermissionManager*
 ElectronBrowserClient::GetGeolocationSystemPermissionManager() {
   return device::GeolocationSystemPermissionManager::GetInstance();

@@ -23,6 +23,7 @@
 #include "services/network/public/cpp/originating_process_id.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/electron_child_process_host_flags.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -186,7 +187,8 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 #endif
 #if BUILDFLAG(IS_MAC)
           .WithChildFlags(use_plugin_helper
-                              ? content::ChildProcessHost::CHILD_PLUGIN
+                              ? static_cast<int>(ElectronChildProcessHostFlags::
+                                                     kChildProcessHelperPlugin)
                               : content::ChildProcessHost::CHILD_NORMAL)
           .WithDisclaimResponsibility(disclaim_responsibility)
 #endif
