@@ -179,6 +179,7 @@ auto_filenames = {
     "lib/common/define-properties.ts",
     "lib/common/deprecate.ts",
     "lib/common/ipc-messages.ts",
+    "lib/common/timers-shim.ts",
     "lib/common/web-view-methods.ts",
     "lib/common/webpack-globals-provider.ts",
     "lib/renderer/api/context-bridge.ts",
