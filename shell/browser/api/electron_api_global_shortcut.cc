@@ -285,6 +285,11 @@ gin::ObjectTemplateBuilder GlobalShortcut::GetObjectTemplateBuilder(
       .SetMethod("isSuspended", &GlobalShortcut::IsSuspended);
 }
 
+void GlobalShortcut::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<GlobalShortcut>::Trace(visitor);
+  visitor->Trace(weak_factory_);
+}
+
 const gin::WrapperInfo* GlobalShortcut::wrapper_info() const {
   return &kWrapperInfo;
 }
