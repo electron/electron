@@ -268,7 +268,7 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
     gin_helper::Promise<gin_helper::Dictionary> dialog_promise(isolate);
     auto dialog_callback = base::BindOnce(
         &ElectronDownloadManagerDelegate::OnDownloadSaveDialogDone,
-        base::Unretained(this), download_guid, std::move(callback));
+        weak_ptr_factory_.GetWeakPtr(), download_guid, std::move(callback));
 
     std::ignore = dialog_promise.Then(std::move(dialog_callback));
     file_dialog::ShowSaveDialog(settings, std::move(dialog_promise));

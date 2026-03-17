@@ -1485,6 +1485,11 @@ mainWindow.webContents.setWindowOpenHandler((details) => {
       const browserView = new BrowserView(options)
       mainWindow.addBrowserView(browserView)
       browserView.setBounds({ x: 0, y: 0, width: 640, height: 480 })
+      // For `background-tab` disposition (e.g., when middle-clicking or ctrl/cmd-clicking a link),
+      // `options.webContents` is undefined because its creation can be deferred. So load the URL manually.
+      if (details.disposition === 'background-tab') {
+        browserView.webContents.loadURL(details.url)
+      }
       return browserView.webContents
     }
   }
@@ -2248,6 +2253,16 @@ Setting the WebRTC UDP Port Range allows you to restrict the udp port range used
 Returns `string` - The identifier of a WebContents stream. This identifier can be used
 with `navigator.mediaDevices.getUserMedia` using a `chromeMediaSource` of `tab`.
 The identifier is restricted to the web contents that it is registered to and is only valid for 10 seconds.
+
+#### `contents.getOrCreateDevToolsTargetId()`
+
+Returns `string` - The Chrome DevTools Protocol
+[TargetID](https://chromedevtools.github.io/devtools-protocol/tot/Target/#type-TargetID)
+associated with this WebContents. This is the reverse of
+[`webContents.fromDevToolsTargetId()`](#webcontentsfromdevtoolstargetidtargetid).
+
+> [!NOTE]
+> This method creates a new DevTools agent for this WebContents if one does not already exist.
 
 #### `contents.getOSProcessId()`
 

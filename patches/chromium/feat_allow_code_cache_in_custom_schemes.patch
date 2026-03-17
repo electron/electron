@@ -262,7 +262,7 @@ index 68a3095a49caf472c83b93b5cef66e5549a2d7cc..aa371ba5576f9fbaf5558e39704f7eb8
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index ffc684ad1e2dfbf148bb01b4d185a44619a2dceb..39b15dd921539c17e1038fabc64bf20b0974e20a 100644
+index a255629cbe33e132709689533fd23a7502f7a73e..ce503f82cdbc6c8f4da3ae11d6bed3ba16f7e1f5 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
 @@ -4,6 +4,7 @@
@@ -400,7 +400,7 @@ index 225e017909b8869231b870eaaf161a0b5e93e2a0..846a5251429630b8528a84a3d67ed56c
    if (schemes.allow_non_standard_schemes_in_origins)
      url::EnableNonStandardSchemesForAndroidWebView();
 diff --git a/content/public/common/content_client.h b/content/public/common/content_client.h
-index 33e2ff42e4d9da442d522b959a4a21c2f7032b6b..a0d81212327fc17e1f4704e78803c1d7d82b2016 100644
+index 3b17b8c52c364272f7aee02581922649229662e1..1db5e9868ab7c6bb07eb6211886542dcc0d7a0e4 100644
 --- a/content/public/common/content_client.h
 +++ b/content/public/common/content_client.h
 @@ -139,6 +139,9 @@ class CONTENT_EXPORT ContentClient {
@@ -414,10 +414,10 @@ index 33e2ff42e4d9da442d522b959a4a21c2f7032b6b..a0d81212327fc17e1f4704e78803c1d7
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index c0b42521519d0d13e79c5b4bf67446f006209419..a2727e8450429e1f07824ecb0785fb3c717d56d7 100644
+index 0ec8bea97ce124721909768290f7a79876f10c75..1ee0feaad9be437914b101195e862965fcaccff4 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
-@@ -131,6 +131,9 @@ struct SchemeRegistry {
+@@ -132,6 +132,9 @@ struct SchemeRegistry {
        kMaterializedViewScheme,
    };
  
@@ -427,7 +427,7 @@ index c0b42521519d0d13e79c5b4bf67446f006209419..a2727e8450429e1f07824ecb0785fb3c
    // Schemes with a predefined default custom handler.
    std::vector<SchemeWithHandler> predefined_handler_schemes;
  
-@@ -666,6 +669,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
+@@ -667,6 +670,15 @@ const std::vector<std::string>& GetEmptyDocumentSchemes() {
    return GetSchemeRegistry().empty_document_schemes;
  }
  
@@ -444,7 +444,7 @@ index c0b42521519d0d13e79c5b4bf67446f006209419..a2727e8450429e1f07824ecb0785fb3c
                                  std::string_view handler) {
    DoAddSchemeWithHandler(
 diff --git a/url/url_util.h b/url/url_util.h
-index 1f9304c7ea5488a1c50891e3dabfa3a61af97b7b..f965c1dbd47781748d3091209d140a128ca7192f 100644
+index 4af5e6e9e4ec0642d8788c4323aaf07bc27acfb3..6906dd1c903209f3bb6d9ca346e845f1dfeef050 100644
 --- a/url/url_util.h
 +++ b/url/url_util.h
 @@ -115,6 +115,15 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCSPBypassingSchemes();

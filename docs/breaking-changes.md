@@ -14,6 +14,14 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (42.0)
 
+### Behavior Changed: macOS notifications now use `UNNotification` API
+
+Electron has migrated from the deprecated `NSUserNotification` API to the
+[`UNNotification`](https://developer.apple.com/documentation/usernotifications)
+API on macOS. The new API requires that an application be code-signed in order
+for notifications to be displayed. If an application is not code-signed,
+notifications will emit a `failed` event on the `Notification` object.
+
 ### Behavior Changed: Offscreen rendering will use `1.0` as default device scale factor.
 
 Previously, OSR used the primary display's device scale factor for rendering, which made the output frame size vary across users.
@@ -21,8 +29,6 @@ Developers had to manually calculate the correct size using `screen.getPrimaryDi
 `webPreferences.offscreen.deviceScaleFactor` to specify a custom value when creating an OSR window. At first, if the property is not set, it defaults
 to the primary display's scale factor (preserving the old behavior). Starting from Electron 42, the default will change to a constant value of `1.0`
 for more consistent output sizes.
-
-## Planned Breaking API Changes (41.0)
 
 ### Behavior Changed: `electron` no longer downloads itself via `postinstall` script
 
@@ -53,6 +59,25 @@ npm install electron --save-dev --ignore-scripts
 npx install-electron --no
 ```
 
+If you need to test changes across platforms or architectures, you should now use the
+`ELECTRON_INSTALL_ARCH` and `ELECTRON_INSTALL_PLATFORM` environment variables.
+
+```sh
+# before: pass npm config flag on install command
+npm install --platform=mas electron --save-dev
+# after: add env var when you first run the Electron command
+npm install electron --save-dev
+ELECTRON_INSTALL_PLATFORM=mas npx electron . --no
+```
+
+### Removed: `quotas` object from `Session.clearStorageData(options)`
+
+When calling `Session.clearStorageData(options)`, the `options.quotas` object is no longer supported because it has been
+[removed](https://chromium-review.googlesource.com/c/chromium/src/+/7596126)
+from upstream Chromium.
+
+## Planned Breaking API Changes (41.0)
+
 ### Behavior Changed: PDFs no longer create a separate WebContents
 
 Previously, PDF resources created a separate guest [WebContents](https://www.electronjs.org/docs/latest/api/web-contents) for rendering. Now, PDFs are rendered within the same WebContents instead. If you have code to detect PDF resources, use the [frame tree](https://www.electronjs.org/docs/latest/api/web-frame-main) instead of WebContents.
@@ -79,6 +104,12 @@ your preload script and expose it using the [contextBridge](https://www.electron
 
 Debug symbols for MacOS (dSYM) now use xz compression in order to handle larger file sizes. `dsym.zip` files are now
 `dsym.tar.xz` files. End users using debug symbols may need to update their zip utilities.
+
+### Deprecated: `showHiddenFiles` in Dialogs on Linux
+
+This property will still be honored on macOS and Windows, but support on Linux
+will be removed in Electron 42. GTK intends for this to be a user choice rather
+than an app choice and has removed the API to do this programmatically.
 
 ## Planned Breaking API Changes (39.0)
 

@@ -128,6 +128,11 @@ def format_patch(repo, since):
         os.path.dirname(os.path.realpath(__file__)),
         'electron.gitattributes',
     ),
+    # Pin rename/copy detection to git's default so that patch output is
+    # deterministic regardless of local or system-level diff.renames config
+    # (e.g. 'copies', which would encode similar new files as copies).
+    '-c',
+    'diff.renames=true',
     # Ensure it is not possible to match anything
     # Disabled for now as we have consistent chunk headers
     # '-c',

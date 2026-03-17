@@ -20,10 +20,10 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 26f508b259cab776d32c95731900b30cc8df649f..3b25ba24e81c7b5b27e65f30ea7a2c174c397efa 100644
+index 2f6fbe5270245ddb1ef82f097ac1258781acb66e..727b73a37a3258aa44643d66dceba79017d9dbc8 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -552,7 +552,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -554,7 +554,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::LOCAL_NETWORK;
      case PermissionType::LOOPBACK_NETWORK:
        return ContentSettingsType::LOOPBACK_NETWORK;
@@ -66,10 +66,10 @@ index 8acf00d2618d9a0552750f0f8e1d734b52f790b1..d2ea06fa66c07baaf741382af40de154
    }
    NOTREACHED();
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
-index 0d873c13f1463d37e0fcdeacf68a84817b6524ca..19b8fa4b094b646ad6a5864c5e14a2f125fb7880 100644
+index 9c1b4762fe932618ec85a86a8367dce706d23c0b..a818b0b9a0eb3efdf8b2d851a6b51fccbfdad0fe 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
-@@ -108,7 +108,10 @@ std::string GetPermissionString(PermissionType permission) {
+@@ -110,7 +110,10 @@ std::string GetPermissionString(PermissionType permission) {
        return "LocalNetwork";
      case PermissionType::LOOPBACK_NETWORK:
        return "LoopbackNetwork";
@@ -81,7 +81,7 @@ index 0d873c13f1463d37e0fcdeacf68a84817b6524ca..19b8fa4b094b646ad6a5864c5e14a2f1
        NOTREACHED();
    }
    NOTREACHED();
-@@ -189,6 +192,7 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
+@@ -191,6 +194,7 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
      case PermissionType::NOTIFICATIONS:
      case PermissionType::KEYBOARD_LOCK:
      case PermissionType::POINTER_LOCK:
@@ -103,7 +103,7 @@ index b124d53fdd245f055f57ad00250112e2637e1cd1..31158388db2df745af999adc9d07fc92
    NUM,
    MIN_VALUE = MIDI_SYSEX,
 diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
-index 699f6dfd43f0f6f8ab2b717e75ad74fa9dca0789..8a2e1ec60c337d4fb40292b53ee8949e0ce2b8a4 100644
+index 7e5ab8bcc4756d3cf16594b69bd25d3df709e7cc..a25299b7222d43b6c4b4a5c18085171dbc322ec1 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
 @@ -47,7 +47,7 @@ enum PermissionName {

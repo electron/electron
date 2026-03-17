@@ -12,10 +12,10 @@ See:
 https://chromium-review.googlesource.com/c/v8/v8/+/6826001
 
 diff --git a/test/fixtures/test-runner/output/describe_it.snapshot b/test/fixtures/test-runner/output/describe_it.snapshot
-index 67d4af7f1b9f45d48b35c930cb1490ee019d0bdf..21d8744340c5a4c002d8c91266f46c2b66591b6e 100644
+index cae467f6487ffef4fbe94da229e30c2537fe9e95..f1240a6a99dafc18ad51d413719df58b757893ab 100644
 --- a/test/fixtures/test-runner/output/describe_it.snapshot
 +++ b/test/fixtures/test-runner/output/describe_it.snapshot
-@@ -690,6 +690,8 @@ not ok 54 - timeouts
+@@ -726,6 +726,8 @@ not ok 60 - timeouts
        code: 'ERR_TEST_FAILURE'
        stack: |-
          *
@@ -23,8 +23,8 @@ index 67d4af7f1b9f45d48b35c930cb1490ee019d0bdf..21d8744340c5a4c002d8c91266f46c2b
 +        *
        ...
      1..2
- not ok 55 - successful thenable
-@@ -712,6 +714,7 @@ not ok 56 - rejected thenable
+ not ok 61 - successful thenable
+@@ -748,6 +750,7 @@ not ok 62 - rejected thenable
    code: 'ERR_TEST_FAILURE'
    stack: |-
      *

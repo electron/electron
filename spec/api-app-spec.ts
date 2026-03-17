@@ -15,7 +15,7 @@ import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers';
-import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
+import { ifdescribe, ifit, isWayland, listen, waitUntil } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -587,7 +587,7 @@ describe('app module', () => {
     });
 
     // FIXME: re-enable this test on win32.
-    ifit(process.platform !== 'win32')('should emit render-process-gone event when renderer crashes', async () => {
+    ifit(process.platform !== 'win32' && !isWayland)('should emit render-process-gone event when renderer crashes', async () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -1437,7 +1437,7 @@ describe('app module', () => {
 
   describe('getApplicationNameForProtocol()', () => {
     // TODO: Linux CI doesn't have registered http & https handlers
-    ifit(!(process.env.CI && process.platform === 'linux'))('returns application names for common protocols', function () {
+    ifit(!(process.env.CI && process.platform === 'linux') && !isWayland)('returns application names for common protocols', function () {
       // We can't expect particular app names here, but these protocols should
       // at least have _something_ registered. Except on our Linux CI
       // environment apparently.
@@ -1475,6 +1475,29 @@ describe('app module', () => {
   describe('isDefaultProtocolClient()', () => {
     it('returns false for a bogus protocol', () => {
       expect(app.isDefaultProtocolClient('bogus-protocol://')).to.equal(false);
+    });
+  });
+
+  describe('protocol scheme validation', () => {
+    it('rejects empty protocol names', () => {
+      expect(app.setAsDefaultProtocolClient('')).to.equal(false);
+      expect(app.isDefaultProtocolClient('')).to.equal(false);
+      expect(app.removeAsDefaultProtocolClient('')).to.equal(false);
+    });
+
+    it('rejects non-conformant protocol names ', () => {
+      // Starting with a digit.
+      expect(app.setAsDefaultProtocolClient('0badscheme')).to.equal(false);
+      // Starting with a hyphen.
+      expect(app.setAsDefaultProtocolClient('-badscheme')).to.equal(false);
+      // Containing backslashes.
+      expect(app.setAsDefaultProtocolClient('http\\shell\\open\\command')).to.equal(false);
+      // Containing forward slashes.
+      expect(app.setAsDefaultProtocolClient('bad/protocol')).to.equal(false);
+      // Containing spaces.
+      expect(app.setAsDefaultProtocolClient('bad protocol')).to.equal(false);
+      // Containing colons.
+      expect(app.setAsDefaultProtocolClient('bad:protocol')).to.equal(false);
     });
   });
 
@@ -1773,6 +1796,31 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'darwin')('app isActive API', () => {
+    describe('app.isActive', () => {
+      afterEach(closeAllWindows);
+
+      it('returns true when the app becomes active', async () => {
+        expect(app.isActive()).to.equal(false);
+
+        const w = new BrowserWindow({
+          width: 200,
+          height: 200,
+          show: false
+        });
+
+        w.show();
+
+        await expect(
+          waitUntil(() => app.isActive())
+        ).to.eventually.be.fulfilled();
+
+        w.close();
+        app.hide();
+      });
+    });
+  });
+
   ifdescribe(process.platform === 'darwin')('app hide and show API', () => {
     describe('app.isHidden', () => {
       it('returns true when the app is hidden', async () => {
@@ -1825,15 +1873,13 @@ describe('app module', () => {
       });
 
       it('should return a positive number for informational type', () => {
-        const appHasFocus = !!BrowserWindow.getFocusedWindow();
-        if (!appHasFocus) {
+        if (!app.isActive()) {
           expect(app.dock?.bounce('informational')).to.be.at.least(0);
         }
       });
 
       it('should return a positive number for critical type', () => {
-        const appHasFocus = !!BrowserWindow.getFocusedWindow();
-        if (!appHasFocus) {
+        if (!app.isActive()) {
           expect(app.dock?.bounce('critical')).to.be.at.least(0);
         }
       });

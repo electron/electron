@@ -93,6 +93,40 @@ gfx::Insets ElectronDesktopWindowTreeHostLinux::CalculateInsetsInDIP(
   return insets;
 }
 
+// Electron treats min/max constraints as the logical window size, but Chromium
+// expects widget bounds including CSD insets (WaylandToplevelWindow::
+// SetSizeConstraints). So we inflate constraints by insets to avoid double
+// subtraction. This is still OK for SSD frames or X11 where the insets are 0.
+std::optional<gfx::Size>
+ElectronDesktopWindowTreeHostLinux::GetMinimumSizeForWindow() const {
+  auto min_size = views::DesktopWindowTreeHostLinux::GetMinimumSizeForWindow();
+  if (min_size.has_value()) {
+    auto* const layout = native_window_view_->GetLinuxFrameLayout();
+    if (layout) {
+      gfx::Insets insets = layout->RestoredFrameBorderInsets();
+      min_size->Enlarge(insets.width(), insets.height());
+    }
+  }
+  return min_size;
+}
+
+std::optional<gfx::Size>
+ElectronDesktopWindowTreeHostLinux::GetMaximumSizeForWindow() const {
+  auto max_size = views::DesktopWindowTreeHostLinux::GetMaximumSizeForWindow();
+  if (max_size.has_value()) {
+    auto* const layout = native_window_view_->GetLinuxFrameLayout();
+    if (layout) {
+      gfx::Insets insets = layout->RestoredFrameBorderInsets();
+      // 0 means no constraint, so don't inflate.
+      if (max_size->width() > 0)
+        max_size->set_width(max_size->width() + insets.width());
+      if (max_size->height() > 0)
+        max_size->set_height(max_size->height() + insets.height());
+    }
+  }
+  return max_size;
+}
+
 void ElectronDesktopWindowTreeHostLinux::OnBoundsChanged(
     const BoundsChange& change) {
   views::DesktopWindowTreeHostLinux::OnBoundsChanged(change);
@@ -209,8 +243,8 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
         // The opaque region is a list of rectangles that contain only fully
         // opaque pixels of the window.  We need to convert the clipping
         // rounded-rect into this format.
-        SkRRect rrect = layout->GetRoundedWindowContentBounds();
-        gfx::RectF rectf(layout->GetWindowContentBounds());
+        SkRRect rrect = layout->GetRoundedWindowBounds();
+        gfx::RectF rectf(layout->GetWindowBounds());
         rectf.Scale(scale);
         // It is acceptable to omit some pixels that are opaque, but the region
         // must not include any translucent pixels.  Therefore, we must

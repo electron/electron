@@ -134,6 +134,10 @@ class Browser : private WindowListObserver {
   void SetAppUserModelID(const std::wstring& name);
 #endif
 
+  // Validate that a protocol scheme conforms to RFC 3986:
+  // scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+  static bool IsValidProtocolScheme(const std::string& scheme);
+
   // Remove the default protocol handler registry key
   bool RemoveAsDefaultProtocolClient(const std::string& protocol,
                                      gin::Arguments* args);
@@ -164,6 +168,9 @@ class Browser : private WindowListObserver {
 #if BUILDFLAG(IS_MAC)
   // Set the handler which decides whether to shutdown.
   void SetShutdownHandler(base::RepeatingCallback<bool()> handler);
+
+  // Returns whether the application is active.
+  bool IsActive();
 
   // Hide the application.
   void Hide();

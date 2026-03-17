@@ -484,6 +484,7 @@ void SimpleURLLoaderWrapper::Clone(
 
 void SimpleURLLoaderWrapper::Cancel() {
   loader_.reset();
+  url_loader_factory_.reset();
   pinned_wrapper_.Reset();
   pinned_chunk_pipe_getter_.Reset();
   // This ensures that no further callbacks will be called, so there's no need
@@ -495,9 +496,6 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
     return URLLoaderBundle::GetInstance()->GetSharedURLLoaderFactory();
 
   CHECK(browser_context_);
-  // Explicitly handle intercepted protocols here, even though
-  // ProxyingURLLoaderFactory would handle them later on, so that we can
-  // correctly intercept file:// scheme URLs.
   if (const bool bypass = request_options_ & kBypassCustomProtocolHandlers;
       !bypass) {
     const std::string_view scheme = url.scheme();
@@ -505,26 +503,20 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
         ProtocolRegistry::FromBrowserContext(browser_context_);
 
     if (const auto* const protocol_handler =
-            protocol_registry->FindIntercepted(scheme)) {
-      return network::SharedURLLoaderFactory::Create(
-          std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-              ElectronURLLoaderFactory::Create(protocol_handler->first,
-                                               protocol_handler->second)));
-    }
-
-    if (const auto* const protocol_handler =
             protocol_registry->FindRegistered(scheme)) {
-      return network::SharedURLLoaderFactory::Create(
-          std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-              ElectronURLLoaderFactory::Create(protocol_handler->first,
-                                               protocol_handler->second)));
+      return browser_context_->InterceptURLLoaderFactory(
+          network::SharedURLLoaderFactory::Create(
+              std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+                  ElectronURLLoaderFactory::Create(protocol_handler->first,
+                                                   protocol_handler->second))));
     }
   }
 
   if (url.SchemeIsFile()) {
-    return network::SharedURLLoaderFactory::Create(
-        std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-            AsarURLLoaderFactory::Create()));
+    return browser_context_->InterceptURLLoaderFactory(
+        network::SharedURLLoaderFactory::Create(
+            std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+                AsarURLLoaderFactory::Create())));
   }
 
   return browser_context_->GetURLLoaderFactory();
@@ -750,6 +742,7 @@ void SimpleURLLoaderWrapper::OnComplete(bool success) {
   // we would perform cleanup of the wrapper and we should bail out below.
   if (self) {
     loader_.reset();
+    url_loader_factory_.reset();
     pinned_wrapper_.Reset();
     pinned_chunk_pipe_getter_.Reset();
   }

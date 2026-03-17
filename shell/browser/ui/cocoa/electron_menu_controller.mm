@@ -351,10 +351,10 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   // If the menu item has an icon, set it.
   ui::ImageModel icon = model->GetIconAt(index);
   if (icon.IsImage())
-    [item setImage:icon.GetImage().ToNSImage()];
+    item.image = icon.GetImage().ToNSImage();
 
   std::u16string toolTip = model->GetToolTipAt(index);
-  [item setToolTip:base::SysUTF16ToNSString(toolTip)];
+  item.toolTip = base::SysUTF16ToNSString(toolTip);
 
   if (role == u"services") {
     std::u16string title = u"Services";
@@ -499,6 +499,25 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   item.hidden = !model->IsVisibleAt(index);
   item.state = model->IsItemCheckedAt(index) ? NSControlStateValueOn
                                              : NSControlStateValueOff;
+  std::u16string label16 = model->GetLabelAt(index);
+  NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
+  item.title = label;
+
+  std::u16string rawSecondaryLabel = model->GetSecondaryLabelAt(index);
+  if (!rawSecondaryLabel.empty()) {
+    if (@available(macOS 14.4, *)) {
+      NSString* secondary_label =
+          l10n_util::FixUpWindowsStyleLabel(rawSecondaryLabel);
+      item.subtitle = secondary_label;
+    }
+  }
+
+  ui::ImageModel icon = model->GetIconAt(index);
+  if (icon.IsImage()) {
+    item.image = icon.GetImage().ToNSImage();
+  } else {
+    item.image = nil;
+  }
 }
 
 - (void)refreshMenuTree:(NSMenu*)menu {
@@ -583,17 +602,24 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   if (!isMenuOpen_)
     return;
 
-  isMenuOpen_ = NO;
-
   // There are two scenarios where we should emit menu-did-close:
   // 1. It's a popup and the top level menu is closed.
   // 2. It's an application menu, and the current menu's supermenu
   //    is the top-level menu.
   bool has_close_cb = !popupCloseCallback.is_null();
+  bool should_emit_close = true;
   if (menu != menu_) {
-    if (has_close_cb || menu.supermenu != menu_)
-      return;
+    should_emit_close = !has_close_cb && menu.supermenu == menu_;
   }
+
+  [self refreshMenuTree:menu];
+
+  // Submenu's close event arrives before the top-level menu closes.
+  // Don't change isMenuOpen_ until the top-level one receives the close event.
+  if (!should_emit_close)
+    return;
+
+  isMenuOpen_ = NO;
 
   if (model_)
     model_->MenuWillClose();

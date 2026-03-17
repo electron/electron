@@ -24,6 +24,7 @@
 #include "net/base/filename_util.h"
 #include "net/http/http_request_headers.h"
 #include "net/http/http_status_code.h"
+#include "net/http/http_util.h"
 #include "net/url_request/redirect_util.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
@@ -138,13 +139,17 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
   base::DictValue headers;
   if (dict.Get("headers", &headers)) {
     for (const auto iter : headers) {
+      if (!net::HttpUtil::IsValidHeaderName(iter.first))
+        continue;
       if (iter.second.is_string()) {
         // key, value
-        head->headers->AddHeader(iter.first, iter.second.GetString());
+        if (net::HttpUtil::IsValidHeaderValue(iter.second.GetString()))
+          head->headers->AddHeader(iter.first, iter.second.GetString());
       } else if (iter.second.is_list()) {
         // key: [values...]
         for (const auto& item : iter.second.GetList()) {
-          if (item.is_string())
+          if (item.is_string() &&
+              net::HttpUtil::IsValidHeaderValue(item.GetString()))
             head->headers->AddHeader(iter.first, item.GetString());
         }
       } else {

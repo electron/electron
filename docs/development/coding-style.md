@@ -39,7 +39,7 @@ etc.
 
 ## Documentation
 
-* Write [remark](https://github.com/remarkjs/remark) markdown style.
+* Write prose according to our [documentation style guide](./style-guide.md).
 
 You can run `npm run lint:docs` to ensure that your documentation changes are
 formatted correctly.

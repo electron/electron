@@ -11,7 +11,7 @@ We can fix this by allowing the C++ implementation of legacyMainResolve to use
 a fileExists function that does take Asar into account.
 
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 8dc8bbfe8d73e2d11edc261d6fe9f37aaa81e4cd..9c965f21918b8170ca2c2d6efee067b52537698e 100644
+index 81799fc159cf20344aac64cd7129240deb9a4fe8..12b476ff97603718186dd25b1f435d377841bd89 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -28,14 +28,13 @@ const { BuiltinModule } = require('internal/bootstrap/realm');

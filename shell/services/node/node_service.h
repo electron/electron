@@ -65,6 +65,8 @@ class NodeService : public node::mojom::NodeService {
   void Initialize(node::mojom::NodeServiceParamsPtr params,
                   mojo::PendingRemote<node::mojom::NodeServiceClient>
                       client_pending_remote) override;
+  void UpdateURLLoaderFactory(
+      node::mojom::URLLoaderFactoryParamsPtr params) override;
 
  private:
   // This needs to be initialized first so that it can be destroyed last

@@ -6,7 +6,7 @@ Subject: feat: add support for embedder snapshot validation
 IsValid is not exposed despite being commented as for embedders, this exposes something that works for us.
 
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index e63c8e92e3d8ae1ff0bec37e614ca8ed989b21e4..743b785e7effe57b8c55fd2e6d779353226f807e 100644
+index aef4af8ce2a3352535a1ea2f4777e839c4811817..d5d861292c399a18ec0af66e2d726619c939875e 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
 @@ -76,11 +76,23 @@ bool GenerateEntropy(unsigned char* buffer, size_t amount) {

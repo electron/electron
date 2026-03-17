@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index 461819ce0fa732048e4365c40a86ef55d984c35f..fa55c980a9c4f373723a867fd41276d67b0b9413 100644
+index 461819ce0fa732048e4365c40a86ef55d984c35f..f1c85e94cf526d0255f47c003664680d26413ec3 100644
 --- a/deps/ncrypto/ncrypto.cc
 +++ b/deps/ncrypto/ncrypto.cc
 @@ -11,6 +11,7 @@
@@ -28,38 +28,6 @@ index 461819ce0fa732048e4365c40a86ef55d984c35f..fa55c980a9c4f373723a867fd41276d6
  #if OPENSSL_VERSION_MAJOR >= 3
  #include <openssl/core_names.h>
  #include <openssl/params.h>
-@@ -1130,7 +1131,9 @@ int64_t X509View::getValidToTime() const {
-   return tp;
- #else
-   struct tm tp;
--  ASN1_TIME_to_tm(X509_get0_notAfter(cert_), &tp);
-+#ifndef OPENSSL_IS_BORINGSSL
-+   ASN1_TIME_to_tm(X509_get0_notAfter(cert_), &tp);
-+#endif
-   return PortableTimeGM(&tp);
- #endif
- }
-@@ -1142,7 +1145,9 @@ int64_t X509View::getValidFromTime() const {
-   return tp;
- #else
-   struct tm tp;
-+#ifndef OPENSSL_IS_BORINGSSL
-   ASN1_TIME_to_tm(X509_get0_notBefore(cert_), &tp);
-+#endif
-   return PortableTimeGM(&tp);
- #endif
- }
-@@ -2886,10 +2891,6 @@ std::optional<uint32_t> SSLPointer::verifyPeerCertificate() const {
- const char* SSLPointer::getClientHelloAlpn() const {
-   if (ssl_ == nullptr) return {};
- #ifndef OPENSSL_IS_BORINGSSL
--  const unsigned char* buf;
--  size_t len;
--  size_t rem;
--
-   if (!SSL_client_hello_get0_ext(
-           get(),
-           TLSEXT_TYPE_application_layer_protocol_negotiation,
 @@ -3090,9 +3091,11 @@ const Cipher Cipher::AES_256_GCM = Cipher::FromNid(NID_aes_256_gcm);
  const Cipher Cipher::AES_128_KW = Cipher::FromNid(NID_id_aes128_wrap);
  const Cipher Cipher::AES_192_KW = Cipher::FromNid(NID_id_aes192_wrap);
@@ -94,7 +62,7 @@ index 175ec8ba0f2a908ffad2ce48434aeed573b09c90..3218590ddce1e92c2a9d776f20f9fb01
    Cipher() = default;
    Cipher(const EVP_CIPHER* cipher) : cipher_(cipher) {}
 diff --git a/node.gni b/node.gni
-index e2407027ab05e59b2f0f1c213b98ea469db7a91b..c64761b730e61edcdc0e46a48699f2fd5bb1c0a6 100644
+index 156fee33b3813fe4d94a1c9585f217a99dbfbd5f..8239967653fee7791800ee3292e77b91bffaaef9 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -11,7 +11,7 @@ declare_args() {
@@ -298,7 +266,7 @@ index 3ab33341806ad6c0b06b982a30a57b7b5399e38f..754ddf7b331465c56081db05d6fd2a45
    // We declare another alias here to avoid having to include crypto_util.h
    using EVPMDPointer = DeleteFnPtr<EVP_MD, EVP_MD_free>;
 diff --git a/src/node_metadata.h b/src/node_metadata.h
-index d9c533f100d25aeab1fe8589932a8ddead431258..2acab8786a8a752b17961445edeb872c2b08fdeb 100644
+index 7f6268a1d83d3182b318bc95fd2ee119a2df8dea..f2ee335aa98a2465f63dafa33664197acc6f79b1 100644
 --- a/src/node_metadata.h
 +++ b/src/node_metadata.h
 @@ -8,7 +8,7 @@

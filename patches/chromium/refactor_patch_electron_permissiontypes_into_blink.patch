@@ -6,10 +6,10 @@ Subject: refactor: patch electron PermissionTypes into blink
 6387077: [PermissionOptions] Generalize PermissionRequestDescription | https://chromium-review.googlesource.com/c/chromium/src/+/6387077
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 3b25ba24e81c7b5b27e65f30ea7a2c174c397efa..f0503f0502a5b4bf2fe3b22ccde42acece395e6a 100644
+index 727b73a37a3258aa44643d66dceba79017d9dbc8..b3d872be603b68bb7aa2af267f05212ae7efd46c 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -552,9 +552,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -554,9 +554,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::LOCAL_NETWORK;
      case PermissionType::LOOPBACK_NETWORK:
        return ContentSettingsType::LOOPBACK_NETWORK;
@@ -90,10 +90,10 @@ index d2ea06fa66c07baaf741382af40de154068a7d6b..3397e741fbc52ce45cd62dd3fe12e73b
    NOTREACHED();
  }
 diff --git a/third_party/blink/common/permissions/permission_utils.cc b/third_party/blink/common/permissions/permission_utils.cc
-index 19b8fa4b094b646ad6a5864c5e14a2f125fb7880..9728d674902d84f99fd93f258a8868ab811a8707 100644
+index a818b0b9a0eb3efdf8b2d851a6b51fccbfdad0fe..de25e8cf94b84c1c0c7b353f49070603b0f78370 100644
 --- a/third_party/blink/common/permissions/permission_utils.cc
 +++ b/third_party/blink/common/permissions/permission_utils.cc
-@@ -108,11 +108,21 @@ std::string GetPermissionString(PermissionType permission) {
+@@ -110,11 +110,21 @@ std::string GetPermissionString(PermissionType permission) {
        return "LocalNetwork";
      case PermissionType::LOOPBACK_NETWORK:
        return "LoopbackNetwork";
@@ -119,7 +119,7 @@ index 19b8fa4b094b646ad6a5864c5e14a2f125fb7880..9728d674902d84f99fd93f258a8868ab
    }
    NOTREACHED();
  }
-@@ -192,7 +202,15 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
+@@ -194,7 +204,15 @@ PermissionTypeToPermissionsPolicyFeature(PermissionType permission) {
      case PermissionType::NOTIFICATIONS:
      case PermissionType::KEYBOARD_LOCK:
      case PermissionType::POINTER_LOCK:
@@ -135,7 +135,7 @@ index 19b8fa4b094b646ad6a5864c5e14a2f125fb7880..9728d674902d84f99fd93f258a8868ab
        return std::nullopt;
  
      case PermissionType::NUM:
-@@ -368,6 +386,21 @@ std::optional<PermissionType> PermissionDescriptorInfoToPermissionType(
+@@ -372,6 +390,21 @@ std::optional<PermissionType> PermissionDescriptorInfoToPermissionType(
        return PermissionType::WEB_PRINTING;
      case PermissionName::SMART_CARD:
        return PermissionType::SMART_CARD;
@@ -182,7 +182,7 @@ index 31158388db2df745af999adc9d07fc9272a2d6f8..fed5994c8563792405838d8923d3502a
    MIN_VALUE = MIDI_SYSEX,
  };
 diff --git a/third_party/blink/public/mojom/permissions/permission.mojom b/third_party/blink/public/mojom/permissions/permission.mojom
-index 8a2e1ec60c337d4fb40292b53ee8949e0ce2b8a4..e5d9922b15ccd8c08e4dd0b2656d606c8e896b66 100644
+index a25299b7222d43b6c4b4a5c18085171dbc322ec1..eb98bc0dad9a0448ef3f6222a604032d93a487bc 100644
 --- a/third_party/blink/public/mojom/permissions/permission.mojom
 +++ b/third_party/blink/public/mojom/permissions/permission.mojom
 @@ -47,8 +47,16 @@ enum PermissionName {

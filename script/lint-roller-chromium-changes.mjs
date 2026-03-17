@@ -124,7 +124,7 @@ async function main () {
   // Get the merge base with the target branch
   let mergeBase;
   try {
-    mergeBase = execSync(`git merge-base ${currentBranch} origin/${targetBranch}`, {
+    mergeBase = execSync(`git merge-base HEAD origin/${targetBranch}`, {
       cwd: ELECTRON_DIR,
       encoding: 'utf8'
     }).trim();

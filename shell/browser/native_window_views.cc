@@ -788,10 +788,9 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   if (!IsFullScreenable())
     return;
 
+  bool leaving_fullscreen = IsFullscreen() && !fullscreen;
 #if BUILDFLAG(IS_WIN)
   // There is no native fullscreen state on Windows.
-  bool leaving_fullscreen = IsFullscreen() && !fullscreen;
-
   if (fullscreen) {
     last_window_state_ = ui::mojom::WindowShowState::kFullscreen;
     NotifyWindowEnterFullScreen();
@@ -830,7 +829,13 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   // Note: the following must be after "widget()->SetFullscreen(fullscreen);"
   if (leaving_fullscreen && !IsVisible())
     FlipWindowStyle(GetAcceleratedWidget(), true, WS_VISIBLE);
-
+#else
+  if (IsVisible())
+    widget()->SetFullscreen(fullscreen);
+  else if (fullscreen)
+    widget()->native_widget_private()->Show(
+        ui::mojom::WindowShowState::kFullscreen, gfx::Rect());
+#endif
   // Auto-hide menubar when in fullscreen.
   if (fullscreen) {
     menu_bar_visible_before_fullscreen_ = IsMenuBarVisible();
@@ -841,6 +846,9 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
     // `menu_bar_visible_before_fullscreen_` is always false on the
     //  second call which results in `SetMenuBarVisibility(false)` no
     // matter what. We check `leaving_fullscreen` to avoid this.
+    //
+    // Additionally, simply calling `win.setFullscreen(false)`
+    // when not in fullscreen should do nothing.
     if (!leaving_fullscreen)
       return;
 
@@ -848,23 +856,6 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
                          menu_bar_visible_before_fullscreen_);
     menu_bar_visible_before_fullscreen_ = false;
   }
-#else
-  if (IsVisible())
-    widget()->SetFullscreen(fullscreen);
-  else if (fullscreen)
-    widget()->native_widget_private()->Show(
-        ui::mojom::WindowShowState::kFullscreen, gfx::Rect());
-
-  // Auto-hide menubar when in fullscreen.
-  if (fullscreen) {
-    menu_bar_visible_before_fullscreen_ = IsMenuBarVisible();
-    SetMenuBarVisibility(false);
-  } else {
-    SetMenuBarVisibility(!IsMenuBarAutoHide() &&
-                         menu_bar_visible_before_fullscreen_);
-    menu_bar_visible_before_fullscreen_ = false;
-  }
-#endif
 }
 
 bool NativeWindowViews::IsFullscreen() const {
@@ -931,8 +922,10 @@ void NativeWindowViews::SetContentSizeConstraints(
   // of this to determine whether native widget has initialized.
   if (widget() && widget()->widget_delegate())
     widget()->OnSizeConstraintsChanged();
+#if BUILDFLAG(IS_LINUX)
   if (resizable_)
-    old_size_constraints_ = size_constraints;
+    old_size_constraints_ = GetSizeConstraints();
+#endif
 }
 
 #if BUILDFLAG(IS_WIN)
@@ -963,14 +956,18 @@ void NativeWindowViews::SetResizable(bool resizable) {
     resizable_ = resizable;
     // On Linux there is no "resizable" property of a window, we have to set
     // both the minimum and maximum size to the window size to achieve it.
+    // On Windows, the constraints don't directly enforce resizability, but
+    // changing them triggers the styling to be applied in Chromium
+    // (SizeConstraintsChanged).
     if (resizable) {
-      SetContentSizeConstraints(old_size_constraints_);
+      SetSizeConstraints(old_size_constraints_);
     } else {
-      old_size_constraints_ = GetContentSizeConstraints();
-      gfx::Size content_size = GetContentSize();
-      SetContentSizeConstraints(
-          extensions::SizeConstraints(content_size, content_size));
+      old_size_constraints_ = GetSizeConstraints();
+      gfx::Size window_size = GetSize();
+      SetSizeConstraints(extensions::SizeConstraints(window_size, window_size));
     }
+    if (widget() && widget()->widget_delegate())
+      widget()->OnSizeConstraintsChanged();
 #if BUILDFLAG(IS_WIN)
     UpdateThickFrame();
 #endif
@@ -1021,17 +1018,13 @@ void NativeWindowViews::MoveTop() {
 
 bool NativeWindowViews::CanResize() const {
 #if BUILDFLAG(IS_WIN)
-  return resizable_ && thick_frame_;
+  return has_frame() ? resizable_ && thick_frame_ : resizable_;
 #else
   return resizable_;
 #endif
 }
 
 bool NativeWindowViews::IsResizable() const {
-#if BUILDFLAG(IS_WIN)
-  if (has_frame())
-    return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME;
-#endif
   return CanResize();
 }
 
@@ -1934,8 +1927,10 @@ std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
 
 #if BUILDFLAG(IS_LINUX)
 LinuxFrameLayout* NativeWindowViews::GetLinuxFrameLayout() {
-  auto* view = views::AsViewClass<FramelessView>(
-      widget()->non_client_view()->frame_view());
+  auto* ncv = widget()->non_client_view();
+  if (!ncv)
+    return nullptr;
+  auto* view = views::AsViewClass<FramelessView>(ncv->frame_view());
   return view ? view->GetLinuxFrameLayout() : nullptr;
 }
 #endif

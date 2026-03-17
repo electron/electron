@@ -41,7 +41,7 @@ jobs:
     permissions:
       contents: read
     container:
-      image: ghcr.io/electron/build:a82b87d7a4f5ff0cab61405f8151ac4cf4942aeb
+      image: ghcr.io/electron/build:eac3529546ea8f3aa356d31e345715eef342233b
       options: --user root
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
@@ -71,3 +71,11 @@ jobs:
       uses: ./src/electron/.github/actions/checkout
       with:
         target-platform: linux
+    - name: Upload Patch Conflict Fix
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      with:
+        name: update-patches
+        path: patches/update-patches.patch
+        if-no-files-found: ignore
+        archive: false

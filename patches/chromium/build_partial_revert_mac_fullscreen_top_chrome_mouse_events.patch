@@ -11,7 +11,7 @@ solution is put in place.
 This reverts commit 8c004781dde7d42d9a3fed8cafcaa4929943dd69.
 
 diff --git a/components/remote_cocoa/app_shim/bridged_content_view.mm b/components/remote_cocoa/app_shim/bridged_content_view.mm
-index 8f4ba0a9644bff955b91e373a9b81778ee079e5a..eac83e955aeb82dc10312363ac54bc9d1677cc90 100644
+index c8e9717e6612291256d0c12613d5d1cf927b890b..7359eb46eb40933d2ec9bd664ec87139af5260df 100644
 --- a/components/remote_cocoa/app_shim/bridged_content_view.mm
 +++ b/components/remote_cocoa/app_shim/bridged_content_view.mm
 @@ -305,14 +305,6 @@ - (NSView*)hitTest:(NSPoint)point {

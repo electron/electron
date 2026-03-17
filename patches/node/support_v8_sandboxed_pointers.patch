@@ -121,10 +121,10 @@ index b30297eac08ad9587642b723f91d7e3b954294d4..4c5427596d1c90d3a413cdd9ff4f1151
    auto backing = ArrayBuffer::NewBackingStore(
        mem->data,
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index ddee7b7e40c3ee4054b2b15b75154607aa6431ed..decc3c8c966c2322f22d6bdd871514bb53882a29 100644
+index e1bee00825d140232456d6dc2337420fde6bda17..04edc4ca3c0e7c2284d2822fe9f5de66ff64fda2 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
-@@ -1420,7 +1420,7 @@ inline size_t CheckNumberToSize(Local<Value> number) {
+@@ -1443,7 +1443,7 @@ inline size_t CheckNumberToSize(Local<Value> number) {
    CHECK(value >= 0 && value < maxSize);
    size_t size = static_cast<size_t>(value);
  #ifdef V8_ENABLE_SANDBOX
@@ -133,6 +133,41 @@ index ddee7b7e40c3ee4054b2b15b75154607aa6431ed..decc3c8c966c2322f22d6bdd871514bb
  #endif
    return size;
  }
+@@ -1466,6 +1466,26 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
+       env->isolate_data()->is_building_snapshot()) {
+     buf = ArrayBuffer::New(isolate, size);
+   } else {
++#if defined(V8_ENABLE_SANDBOX)
++    // When the V8 sandbox is enabled, all array buffers must be allocated
++    // within the V8 memory cage via the V8 allocator.
++    std::unique_ptr<ArrayBuffer::Allocator> allocator(
++        ArrayBuffer::Allocator::NewDefaultAllocator());
++    void* data = allocator->AllocateUninitialized(size);
++    if (!data) [[unlikely]] {
++      THROW_ERR_MEMORY_ALLOCATION_FAILED(env);
++      return;
++    }
++    std::unique_ptr<BackingStore> store = ArrayBuffer::NewBackingStore(
++        data,
++        size,
++        [](void* data, size_t length, void*) {
++          std::unique_ptr<ArrayBuffer::Allocator> allocator(
++              ArrayBuffer::Allocator::NewDefaultAllocator());
++          allocator->Free(data, length);
++        },
++        nullptr);
++#else
+     std::unique_ptr<BackingStore> store = ArrayBuffer::NewBackingStore(
+         isolate,
+         size,
+@@ -1476,6 +1496,7 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
+       THROW_ERR_MEMORY_ALLOCATION_FAILED(env);
+       return;
+     }
++#endif
+ 
+     buf = ArrayBuffer::New(isolate, std::move(store));
+   }
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
 index 3c4f419aa29470b3280174b58680b9421b0340b5..3b24ad2a2316f89d98b067e2c13988f87a9a00d2 100644
 --- a/src/node_i18n.cc

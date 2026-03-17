@@ -35,6 +35,41 @@ int ScopedDisableResize::disable_resize_ = 0;
 
 typedef void (*MouseDownImpl)(id, SEL, NSEvent*);
 
+// Work around an Apple bug where the visual tab picker's
+// grid animation creates NSLayoutConstraints against nil layout anchors,
+// crashing in NSVisualTabPickerShadowTileView. This happens when a new tabbed
+// window is created while the tab picker is open — the "+" tile (and possibly
+// others) have broken internal state. Rather than patching individual tile
+// animation methods, short-circuit the entire grid animation by swizzling
+// NSVisualTabPickerGridView's -startGridAnimation:completionHandler: to
+// immediately invoke the completion handler without running the animation.
+typedef void (*StartGridAnimationIMP)(id, SEL, id, id);
+static StartGridAnimationIMP g_orig_startGridAnimation = nullptr;
+
+static void Patched_startGridAnimation(id self,
+                                       SEL _cmd,
+                                       id animation,
+                                       void (^completionHandler)(void)) {
+  if (completionHandler)
+    completionHandler();
+}
+
+static void SwizzleTabPickerGridAnimation() {
+  static dispatch_once_t onceToken;
+  dispatch_once(&onceToken, ^{
+    Class cls = NSClassFromString(@"NSVisualTabPickerGridView");
+    if (!cls)
+      return;
+    SEL sel = @selector(startGridAnimation:completionHandler:);
+    Method method = class_getInstanceMethod(cls, sel);
+    if (!method)
+      return;
+    g_orig_startGridAnimation =
+        (StartGridAnimationIMP)method_getImplementation(method);
+    method_setImplementation(method, (IMP)Patched_startGridAnimation);
+  });
+}
+
 namespace {
 MouseDownImpl g_nsthemeframe_mousedown;
 MouseDownImpl g_nsnextstepframe_mousedown;
@@ -125,6 +160,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 
 - (id)initWithShell:(electron::NativeWindowMac*)shell
           styleMask:(NSUInteger)styleMask {
+  SwizzleTabPickerGridAnimation();
   if ((self = [super initWithContentRect:ui::kWindowSizeDeterminedLater
                                styleMask:styleMask
                                  backing:NSBackingStoreBuffered

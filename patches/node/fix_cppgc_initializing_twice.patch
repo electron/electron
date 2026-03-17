@@ -12,10 +12,10 @@ This can be removed/refactored once Node.js upgrades to a version of V8
 containing the above CL.
 
 diff --git a/src/node.cc b/src/node.cc
-index 8791119956ff93d65163d2ef424a8d821ebbdfad..ae082f2d0498e0e694e427da71078ca19086e275 100644
+index 0bc086ccd1ff449c0f3fb08a972a0c45d3178f1c..b9d35e60f39d1edd910cd0fc1e57157458db93f5 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -1248,7 +1248,7 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+@@ -1244,7 +1244,7 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
      result->platform_ = per_process::v8_platform.Platform();
    }
  

@@ -28,7 +28,7 @@ describe('node feature', () => {
         expect(msg).to.equal('message');
       });
 
-      it('Has its module searth paths restricted', async () => {
+      it('Has its module search paths restricted', async () => {
         const child = childProcess.fork(path.join(fixtures, 'module', 'module-paths.js'));
         const [msg] = await once(child, 'message');
         expect(msg.length).to.equal(2);

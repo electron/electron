@@ -203,7 +203,7 @@ static_library("chrome") {
 
   deps = [
     "//chrome/app/vector_icons",
-    "//chrome/browser:resource_prefetch_predictor_proto",
+    "//chrome/browser/predictors:resource_prefetch_predictor_proto",
     "//chrome/browser/resource_coordinator:mojo_bindings",
     "//chrome/browser/task_manager/common:impl",
     "//chrome/browser/ui/webui/tab_search:mojo_bindings",
@@ -244,6 +244,10 @@ static_library("chrome") {
     sources += [
       "//chrome/browser/ui/views/dark_mode_manager_linux.cc",
       "//chrome/browser/ui/views/dark_mode_manager_linux.h",
+    ]
+    sources += [
+      "//chrome/browser/ui/views/frame/browser_frame_view_paint_utils_linux.cc",
+      "//chrome/browser/ui/views/frame/browser_frame_view_paint_utils_linux.h",
     ]
     public_deps += [ "//components/dbus" ]
   }
