@@ -26,6 +26,7 @@ class GlobalShortcut final : private ui::GlobalAcceleratorListener::Observer,
 
   // gin::Wrappable
   static const gin::WrapperInfo kWrapperInfo;
+  void Trace(cppgc::Visitor* visitor) const override;
   const gin::WrapperInfo* wrapper_info() const override;
   const char* GetHumanReadableName() const override;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
