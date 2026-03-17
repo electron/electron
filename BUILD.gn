@@ -1017,7 +1017,17 @@ if (is_mac) {
     }
   }
 
-  foreach(helper_params, content_mac_helpers) {
+  # Electron defines its own plugin helper (using CHILD_EMBEDDER_FIRST + 1) to
+  # allow loading of unsigned or third-party-signed libraries.
+  _electron_plugin_helper_params = [
+    "plugin",
+    ".plugin",
+    " (Plugin)",
+  ]
+  electron_mac_helpers =
+      content_mac_helpers + [ _electron_plugin_helper_params ]
+
+  foreach(helper_params, electron_mac_helpers) {
     _helper_target = helper_params[0]
     _helper_bundle_id = helper_params[1]
     _helper_suffix = helper_params[2]
@@ -1070,7 +1080,7 @@ if (is_mac) {
       ":stripped_squirrel_framework",
     ]
 
-    foreach(helper_params, content_mac_helpers) {
+    foreach(helper_params, electron_mac_helpers) {
       sources +=
           [ "$root_out_dir/${electron_helper_name}${helper_params[2]}.app" ]
       public_deps += [ ":electron_helper_app_${helper_params[0]}" ]
@@ -1174,7 +1184,7 @@ if (is_mac) {
       deps = [ ":electron_framework" ]
     }
 
-    foreach(helper_params, content_mac_helpers) {
+    foreach(helper_params, electron_mac_helpers) {
       _helper_target = helper_params[0]
       _helper_bundle_id = helper_params[1]
       _helper_suffix = helper_params[2]
@@ -1226,7 +1236,7 @@ if (is_mac) {
         deps += [ ":crashpad_handler_syms" ]
       }
 
-      foreach(helper_params, content_mac_helpers) {
+      foreach(helper_params, electron_mac_helpers) {
         _helper_target = helper_params[0]
         deps += [ ":electron_helper_syms_${_helper_target}" ]
       }
