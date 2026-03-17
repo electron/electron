@@ -132,10 +132,10 @@ index 59a95a74f542eea6b1a1ee85f77b6f8c124ebcad..6a6ab6dec5d9496380c876c1aef70ee7
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index aab09ddf368a72f16eb57c831d4ff3e44da97756..3d49a5a8ae680516ba36ac03b9dc9a7514f801c1 100644
+index b9be661d5723388aebd68037612ac2ac91377912..8737ab0c93639074341863f323e61c03e3abb622 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-@@ -4191,6 +4191,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
+@@ -4193,6 +4193,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
    return PositionTryFallback(scoped_name, tactic_list);
  }
  
@@ -314,7 +314,7 @@ index 18f283e625101318ee14b50e6e765dfd1c9a1a44..44a3a55974c9e4b9e715574075f25661
  
    auto DrawAsSinglePath = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 1a32adb98fdfbd9d8d04d8678ee4e1285f3d958f..094cb31a195965584f98f52e3f6cd86cdd3ba427 100644
+index 3c89773a5ac4d27a6802cdb2ea2c78c5e8688b12..301634f4adab9e105df463b3d191528fc6b75103 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -214,6 +214,10 @@
