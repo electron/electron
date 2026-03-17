@@ -122,11 +122,24 @@ const { Notification } = require('electron')
 Notification.removeAll()
 ```
 
+#### `Notification.removeGroup(groupId)` _macOS_
+
+* `groupId` string - The group identifier of the notifications to remove. This corresponds to the `groupId` value set in the [`Notification` constructor](#new-notificationoptions).
+
+Removes all delivered notifications with the given `groupId` from Notification Center.
+
+```js
+const { Notification } = require('electron')
+
+// Remove all notifications in the 'chat-thread-1' group
+Notification.removeGroup('chat-thread-1')
+```
+
 ### `new Notification([options])`
 
 * `options` Object (optional)
   * `id` string (optional) _macOS_ - A unique identifier for the notification, mapping to `UNNotificationRequest`'s [`identifier`](https://developer.apple.com/documentation/usernotifications/unnotificationrequest/identifier) property. Defaults to a random UUID if not provided or if an empty string is passed. Use this identifier with [`Notification.remove()`](#notificationremoveid-macos) to remove specific delivered notifications, or with [`Notification.getHistory()`](#notificationgethistory-macos) to identify them.
-  * `groupId` string (optional) _macOS_ - A string identifier used to visually group notifications together in Notification Center. Maps to `UNNotificationContent`'s [`threadIdentifier`](https://developer.apple.com/documentation/usernotifications/unnotificationcontent/threadidentifier) property.
+  * `groupId` string (optional) _macOS_ - A string identifier used to visually group notifications together in Notification Center. Maps to `UNNotificationContent`'s [`threadIdentifier`](https://developer.apple.com/documentation/usernotifications/unnotificationcontent/threadidentifier) property. Use this identifier with [`Notification.removeGroup()`](#notificationremovegroupgroupid-macos) to remove all notifications in a group.
   * `title` string (optional) - A title for the notification, which will be displayed at the top of the notification window when it is shown.
   * `subtitle` string (optional) _macOS_ - A subtitle for the notification, which will be displayed below the title.
   * `body` string (optional) - The body text of the notification, which will be displayed below the title or subtitle.

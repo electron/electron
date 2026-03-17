@@ -37,6 +37,8 @@ class NotificationPresenter {
   virtual void RemoveDeliveredNotifications(
       const std::vector<std::string>& identifiers);
   virtual void RemoveAllDeliveredNotifications();
+  virtual void RemoveDeliveredNotificationsByGroupId(
+      const std::string& group_id);
 
   std::set<Notification*> notifications() const { return notifications_; }
 

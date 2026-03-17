@@ -132,4 +132,25 @@ void NotificationPresenterMac::RemoveAllDeliveredNotifications() {
       removeAllDeliveredNotifications];
 }
 
+void NotificationPresenterMac::RemoveDeliveredNotificationsByGroupId(
+    const std::string& group_id) {
+  NSString* target_group = base::SysUTF8ToNSString(group_id);
+  UNUserNotificationCenter* center =
+      [UNUserNotificationCenter currentNotificationCenter];
+
+  [center getDeliveredNotificationsWithCompletionHandler:^(
+              NSArray<UNNotification*>* _Nonnull notifications) {
+    NSMutableArray* matching_ids = [NSMutableArray array];
+    for (UNNotification* notification in notifications) {
+      if ([notification.request.content.threadIdentifier
+              isEqualToString:target_group]) {
+        [matching_ids addObject:notification.request.identifier];
+      }
+    }
+    if (matching_ids.count > 0) {
+      [center removeDeliveredNotificationsWithIdentifiers:matching_ids];
+    }
+  }];
+}
+
 }  // namespace electron

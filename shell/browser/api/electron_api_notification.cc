@@ -428,6 +428,17 @@ void Notification::RemoveAll() {
   presenter->RemoveAllDeliveredNotifications();
 }
 
+// static
+void Notification::RemoveGroup(const std::string& group_id) {
+  auto* presenter =
+      static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
+          ->GetNotificationPresenter();
+  if (!presenter)
+    return;
+
+  presenter->RemoveDeliveredNotificationsByGroupId(group_id);
+}
+
 void Notification::FillObjectTemplate(v8::Isolate* isolate,
                                       v8::Local<v8::ObjectTemplate> templ) {
   gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
@@ -484,6 +495,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("getHistory", &Notification::GetHistory);
   dict.SetMethod("remove", &Notification::Remove);
   dict.SetMethod("removeAll", &Notification::RemoveAll);
+  dict.SetMethod("removeGroup", &Notification::RemoveGroup);
 }
 
 }  // namespace

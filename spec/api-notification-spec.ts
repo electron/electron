@@ -392,5 +392,55 @@ describe('Notification module', () => {
       const found = history.find((item: any) => item.id === 'remove-all-test');
       expect(found).to.be.undefined();
     });
+
+    ifit(process.platform === 'darwin')('removeGroup does not throw', () => {
+      expect(() => Notification.removeGroup('nonexistent-group')).to.not.throw();
+    });
+
+    ifit(process.platform === 'darwin')('removeGroup removes notifications by groupId', async () => {
+      const n1 = new Notification({
+        id: 'group-keep',
+        title: 'keep',
+        body: 'body',
+        groupId: 'group-a',
+        silent: true
+      });
+      const n2 = new Notification({
+        id: 'group-remove-1',
+        title: 'remove 1',
+        body: 'body',
+        groupId: 'group-b',
+        silent: true
+      });
+      const n3 = new Notification({
+        id: 'group-remove-2',
+        title: 'remove 2',
+        body: 'body',
+        groupId: 'group-b',
+        silent: true
+      });
+
+      for (const n of [n1, n2, n3]) {
+        const shown = once(n, 'show');
+        n.show();
+        await shown;
+      }
+
+      Notification.removeGroup('group-b');
+
+      // Give the notification center a moment to fetch and remove
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const history = await Notification.getHistory();
+      // In code-signed builds, group-a notification should remain
+      // while group-b notifications should be gone
+      const foundB1 = history.find((item: any) => item.id === 'group-remove-1');
+      const foundB2 = history.find((item: any) => item.id === 'group-remove-2');
+      expect(foundB1).to.be.undefined();
+      expect(foundB2).to.be.undefined();
+
+      // Clean up
+      Notification.removeAll();
+    });
   });
 });

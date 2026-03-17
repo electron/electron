@@ -59,4 +59,9 @@ void NotificationPresenter::RemoveAllDeliveredNotifications() {
   // Default: no-op. Overridden on macOS.
 }
 
+void NotificationPresenter::RemoveDeliveredNotificationsByGroupId(
+    const std::string& group_id) {
+  // Default: no-op. Overridden on macOS.
+}
+
 }  // namespace electron

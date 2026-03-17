@@ -121,6 +121,7 @@ declare namespace NodeJS {
     getHistory(): Promise<Electron.NotificationHistoryInfo[]>;
     remove(id: string | string[]): void;
     removeAll(): void;
+    removeGroup(groupId: string): void;
     Notification: typeof Electron.Notification;
     // Windows-only callback for cold-start notification activation
     handleActivation?: (callback: (details: ActivationArgumentsInternal) => void) => void;

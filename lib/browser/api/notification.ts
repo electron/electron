@@ -5,6 +5,7 @@ ElectronNotification.isSupported = binding.isSupported;
 ElectronNotification.getHistory = binding.getHistory;
 ElectronNotification.remove = binding.remove;
 ElectronNotification.removeAll = binding.removeAll;
+ElectronNotification.removeGroup = binding.removeGroup;
 
 if (process.platform === 'win32' && binding.handleActivation) {
   ElectronNotification.handleActivation = binding.handleActivation;
