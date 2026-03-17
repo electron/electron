@@ -146,12 +146,11 @@ The extra privileges granted to the `file://` protocol by this fuse are incomple
 The `wasmTrapHandlers` fuse controls whether V8 will use signal handlers to trap Out of Bounds memory
 access from WebAssembly. The feature works by surrounding the WebAssembly memory with large guard regions
 and then installing a signal handler that traps attempt to access memory in the guard region. The feature
-is only supported on the following 64-bit systems.
+is only supported on the following 64-bit systems:
 
-* Linux. MacOS, Windows - x86_64
-* Linux, MacOS - aarch64
+* Linux, macOS, Windows - x86_64
+* Linux, macOS - aarch64
 
-```
 | Guard Pages | WASM heap | Guard Pages |
 |-----8GB-----|           |-----8GB-----|
 ```
