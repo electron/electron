@@ -5,9 +5,9 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_GLOBAL_SHORTCUT_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_GLOBAL_SHORTCUT_H_
 
-#include <map>
 #include <vector>
 
+#include "base/containers/flat_map.h"
 #include "base/functional/callback_forward.h"
 #include "base/memory/weak_ptr.h"
 #include "extensions/common/extension_id.h"
@@ -43,10 +43,6 @@ class GlobalShortcut final
   ~GlobalShortcut() override;
 
  private:
-  typedef std::map<ui::Accelerator, base::RepeatingClosure>
-      AcceleratorCallbackMap;
-  typedef std::map<std::string, base::RepeatingClosure> CommandCallbackMap;
-
   bool RegisterAll(const std::vector<ui::Accelerator>& accelerators,
                    const base::RepeatingClosure& callback);
   bool Register(const ui::Accelerator& accelerator,
@@ -61,8 +57,9 @@ class GlobalShortcut final
   void ExecuteCommand(const extensions::ExtensionId& extension_id,
                       const std::string& command_id) override;
 
-  AcceleratorCallbackMap accelerator_callback_map_;
-  CommandCallbackMap command_callback_map_;
+  base::flat_map<ui::Accelerator, base::RepeatingClosure>
+      accelerator_callback_map_;
+  base::flat_map<std::string, base::RepeatingClosure> command_callback_map_;
 
   base::WeakPtrFactory<GlobalShortcut> weak_ptr_factory_{this};
 };
