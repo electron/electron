@@ -184,13 +184,12 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
                 isolate->GetCppHeap()->GetAllocationHandle()))));
     command_callback_map_[command_str] = callback;
     return true;
+  } else {
+    if (instance->RegisterAccelerator(accelerator, this)) {
+      accelerator_callback_map_[accelerator] = callback;
+      return true;
+    }
   }
-
-  if (instance->RegisterAccelerator(accelerator, this)) {
-    accelerator_callback_map_[accelerator] = callback;
-    return true;
-  }
-
   return false;
 }
 
