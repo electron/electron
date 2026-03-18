@@ -1458,8 +1458,7 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
 void ElectronBrowserClient::RegisterAssociatedInterfaceBindersForServiceWorker(
     const content::ServiceWorkerVersionBaseInfo& service_worker_version_info,
     blink::AssociatedInterfaceRegistry& associated_registry) {
-  CHECK(service_worker_version_info.process_id !=
-        content::ChildProcessHost::kInvalidUniqueID);
+  CHECK(service_worker_version_info.process_id);
   associated_registry.AddInterface<mojom::ElectronApiIPC>(
       base::BindRepeating(&ElectronApiSWIPCHandlerImpl::BindReceiver,
                           service_worker_version_info.process_id,
@@ -1468,11 +1467,11 @@ void ElectronBrowserClient::RegisterAssociatedInterfaceBindersForServiceWorker(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   associated_registry.AddInterface<extensions::mojom::RendererHost>(
       base::BindRepeating(&extensions::RendererStartupHelper::BindForRenderer,
-                          content::ChildProcessId::FromUnsafeValue(
-                              service_worker_version_info.process_id)));
-  associated_registry.AddInterface<extensions::mojom::ServiceWorkerHost>(
-      base::BindRepeating(&extensions::ServiceWorkerHost::BindReceiver,
                           service_worker_version_info.process_id));
+  associated_registry.AddInterface<extensions::mojom::ServiceWorkerHost>(
+      base::BindRepeating(
+          &extensions::ServiceWorkerHost::BindReceiver,
+          service_worker_version_info.process_id.GetUnsafeValue()));
 #endif
 }
 
