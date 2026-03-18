@@ -24,6 +24,7 @@
 #include <windows.h>
 
 #include "base/no_destructor.h"
+#include "base/strings/utf_string_conversions.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/notifications/win/windows_toast_activator.h"
 #endif
@@ -100,6 +101,12 @@ Notification::~Notification() {
     notification_->set_delegate(nullptr);
 }
 
+namespace {
+// Windows toast Tag/Group limits (in wchar_t units)
+constexpr size_t kMaxIdLength = 64;
+constexpr size_t kMaxGroupIdLength = 64;
+}  // namespace
+
 // static
 gin_helper::Handle<Notification> Notification::New(
     gin_helper::ErrorThrower thrower,
@@ -108,6 +115,34 @@ gin_helper::Handle<Notification> Notification::New(
     thrower.ThrowError("Cannot create Notification before app is ready");
     return {};
   }
+
+#if BUILDFLAG(IS_WIN)
+  // Validate id and groupId length before constructing.
+  // Windows toast API has limits on Tag (64) and Group (64) lengths.
+  // Check the UTF-16 length since that's what Windows uses.
+  gin::Dictionary opts(nullptr);
+  if (args->PeekNext().IsEmpty() || args->PeekNext()->IsUndefined() ||
+      gin::ConvertFromV8(thrower.isolate(), args->PeekNext(), &opts)) {
+    std::string id;
+    std::string group_id;
+    opts.Get("id", &id);
+    opts.Get("groupId", &group_id);
+
+    if (!id.empty() && base::UTF8ToWide(id).length() > kMaxIdLength) {
+      thrower.ThrowError("Notification id must be " +
+                         std::to_string(kMaxIdLength) + " characters or less");
+      return {};
+    }
+    if (!group_id.empty() &&
+        base::UTF8ToWide(group_id).length() > kMaxGroupIdLength) {
+      thrower.ThrowError("Notification groupId must be " +
+                         std::to_string(kMaxGroupIdLength) +
+                         " characters or less");
+      return {};
+    }
+  }
+#endif
+
   return gin_helper::CreateHandle(thrower.isolate(), new Notification(args));
 }
 
