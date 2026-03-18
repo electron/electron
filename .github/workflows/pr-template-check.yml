@@ -3,6 +3,8 @@ name: PR Template Check
 on:
   pull_request_target:
     types: [opened, edited]
+    branches:
+      - main
 
 permissions: {}
 
