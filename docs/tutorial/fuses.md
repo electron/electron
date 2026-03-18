@@ -148,11 +148,13 @@ access from WebAssembly. The feature works by surrounding the WebAssembly memory
 and then installing a signal handler that traps attempt to access memory in the guard region. The feature
 is only supported on the following 64-bit systems.
 
-Linux. MacOS, Windows - x86_64
-Linux, MacOS - aarch64
+* Linux. MacOS, Windows - x86_64
+* Linux, MacOS - aarch64
 
+```
 | Guard Pages | WASM heap | Guard Pages |
 |-----8GB-----|           |-----8GB-----|
+```
 
 When the fuse is disabled V8 will use explicit bound checks in the generated WebAssembly code to ensure
 memory safety. However, this method has some downsides
