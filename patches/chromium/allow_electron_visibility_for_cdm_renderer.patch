@@ -19,5 +19,5 @@ index fbe2ec2264cd170fe9c5ec9bcedf9fdd4732a2a0..614bb127acc01f119077f98858bd74e4
      "//fuchsia_web/*",
 +    "//electron/*",
    ]
-
+ 
    sources = [
