@@ -404,7 +404,9 @@ describe('Notification module', () => {
       // skip the content assertions if Notification Center is empty.
       if (history.length > 0) {
         const found = history.find((item: any) => item.id === 'history-test-id');
-        expect(found).to.not.be.undefined();
+        if (!found) {
+          expect.fail('Expected to find notification with id "history-test-id" in history');
+        }
         expect(found).to.be.an.instanceOf(Notification);
         expect(found.title).to.equal('history test');
         expect(found.subtitle).to.equal('history subtitle');
@@ -430,7 +432,9 @@ describe('Notification module', () => {
       const history = await Notification.getHistory();
       if (history.length > 0) {
         const found = history.find((item: any) => item.id === 'history-show-close');
-        expect(found).to.not.be.undefined();
+        if (!found) {
+          expect.fail('Expected to find notification with id "history-show-close" in history');
+        }
         // Calling show() and close() on a restored notification should not throw
         expect(() => {
           found.show();
