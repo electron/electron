@@ -281,8 +281,8 @@ void WindowsToastNotification::CreateToastNotificationOnBackgroundThread(
   ComPtr<ABI::Windows::UI::Notifications::IToastNotification>
       toast_notification;
   if (!CreateToastNotification(toast_xml, options, notification_id,
-                               weak_notification, ui_task_runner,
-                               &toast_notification)) {
+                               options.group_id, weak_notification,
+                               ui_task_runner, &toast_notification)) {
     return;  // Error already posted to UI thread
   }
 
@@ -292,7 +292,7 @@ void WindowsToastNotification::CreateToastNotificationOnBackgroundThread(
   ui_runner->PostTask(
       FROM_HERE,
       base::BindOnce(&WindowsToastNotification::SetupAndShowOnUIThread,
-                     weak_notification, toast_notification));
+                     weak_notification, toast_notification, options.group_id));
 }
 
 // Creates the toast XML document on the background thread. Returns true on
@@ -352,6 +352,7 @@ bool WindowsToastNotification::CreateToastNotification(
     ComPtr<ABI::Windows::Data::Xml::Dom::IXmlDocument> toast_xml,
     const NotificationOptions& options,
     const std::string& notification_id,
+    const std::string& group_id,
     base::WeakPtr<Notification> weak_notification,
     scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner,
     ComPtr<ABI::Windows::UI::Notifications::IToastNotification>*
@@ -398,7 +399,12 @@ bool WindowsToastNotification::CreateToastNotification(
     return false;
   }
 
-  ScopedHString group(kGroup);
+  // Use provided group_id if non-empty, otherwise fall back to default
+  std::wstring group_str =
+      group_id.empty() ? kGroup : base::UTF8ToWide(group_id);
+  ScopedHString group(group_str);
+  DebugLog(base::StrCat({"Setting group: ", base::WideToUTF8(group_str),
+                         group_id.empty() ? " (default)" : " (custom)"}));
   hr = toast2->put_Group(group);
   if (FAILED(hr)) {
     std::string err = base::StrCat(
@@ -408,7 +414,10 @@ bool WindowsToastNotification::CreateToastNotification(
     return false;
   }
 
-  ScopedHString tag(GetTag(notification_id));
+  std::wstring tag_str = GetTag(notification_id);
+  ScopedHString tag(tag_str);
+  DebugLog(base::StrCat({"Setting tag: ", base::WideToUTF8(tag_str),
+                         " (from id: ", notification_id, ")"}));
   hr = toast2->put_Tag(tag);
   if (FAILED(hr)) {
     std::string err = base::StrCat(
@@ -447,7 +456,8 @@ bool WindowsToastNotification::CreateToastNotification(
 // does not allow calls from background threads.
 void WindowsToastNotification::SetupAndShowOnUIThread(
     base::WeakPtr<Notification> weak_notification,
-    ComPtr<ABI::Windows::UI::Notifications::IToastNotification> notification) {
+    ComPtr<ABI::Windows::UI::Notifications::IToastNotification> notification,
+    const std::string& group_id) {
   auto* notif = static_cast<WindowsToastNotification*>(weak_notification.get());
   if (!notif)
     return;
@@ -463,6 +473,7 @@ void WindowsToastNotification::SetupAndShowOnUIThread(
   }
 
   notif->toast_notification_ = notification;
+  notif->group_id_ = group_id;
 
   // Show notification on UI thread (must be called on UI thread)
   hr = (*toast_notifier_)->Show(notification.Get());
@@ -538,8 +549,14 @@ void WindowsToastNotification::Remove() {
   if (!GetAppUserModelID(&app_id))
     return;
 
-  ScopedHString group(kGroup);
-  ScopedHString tag(GetTag(notification_id()));
+  // Use stored group_id if set, otherwise fall back to default
+  std::wstring group_str =
+      group_id_.empty() ? kGroup : base::UTF8ToWide(group_id_);
+  ScopedHString group(group_str);
+  std::wstring tag_str = GetTag(notification_id());
+  ScopedHString tag(tag_str);
+  DebugLog(base::StrCat({"Removing with group: ", base::WideToUTF8(group_str),
+                         ", tag: ", base::WideToUTF8(tag_str)}));
   notification_history->RemoveGroupedTagWithId(tag, group, app_id);
 }
 
