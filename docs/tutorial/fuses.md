@@ -151,6 +151,7 @@ is only supported on the following 64-bit systems:
 * Linux, macOS, Windows - x86_64
 * Linux, macOS - aarch64
 
+```text
 | Guard Pages | WASM heap | Guard Pages |
 |-----8GB-----|           |-----8GB-----|
 ```
