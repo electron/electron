@@ -10,6 +10,7 @@
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_process_host_observer.h"
+#include "content/public/common/child_process_id.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "shell/common/gin_helper/event.h"
@@ -39,7 +40,7 @@ class ElectronApiSWIPCHandlerImpl : public mojom::ElectronApiIPC,
       mojo::PendingAssociatedReceiver<mojom::ElectronApiIPC> receiver);
 
   static void BindReceiver(
-      int render_process_id,
+      content::ChildProcessId render_process_id,
       int64_t version_id,
       mojo::PendingAssociatedReceiver<mojom::ElectronApiIPC> receiver);
 
