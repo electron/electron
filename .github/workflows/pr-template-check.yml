@@ -1,0 +1,53 @@
+name: PR Template Check
+
+on:
+  pull_request_target:
+    types: [opened, edited]
+
+permissions: {}
+
+jobs:
+  check-pr-template:
+    name: Check PR Template
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          sparse-checkout: .github/PULL_REQUEST_TEMPLATE.md
+          sparse-checkout-cone-mode: false
+      - name: Check for required sections
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+            const template = fs.readFileSync('.github/PULL_REQUEST_TEMPLATE.md', 'utf8');
+            const requiredSections = [...template.matchAll(/^(#{1,4} .+)$/gm)].map(
+              (m) => m[1],
+            );
+            if (requiredSections.length === 0) {
+              console.log('No heading sections found in PR template');
+              return;
+            }
+            const body = context.payload.pull_request.body || '';
+            const missingSections = requiredSections.filter(
+              (section) => !body.includes(section),
+            );
+            if (missingSections.length > 0) {
+              const list = missingSections.map((s) => `- \`${s}\``).join('\n');
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: `This PR was automatically closed because the PR template was not properly filled out. The following required sections are missing:\n\n${list}\n\nPlease update your PR description to include all required sections and reopen the PR.`,
+              });
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.payload.pull_request.number,
+                state: 'closed',
+              });
+            }
