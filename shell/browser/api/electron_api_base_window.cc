@@ -317,6 +317,12 @@ void BaseWindow::OnWindowSheetEnd() {
   Emit("sheet-end");
 }
 
+void BaseWindow::OnWindowIsKeyChanged(bool is_key) {
+#if BUILDFLAG(IS_MAC)
+  window()->SetActive(is_key);
+#endif
+}
+
 void BaseWindow::OnWindowEnterHtmlFullScreen() {
   Emit("enter-html-full-screen");
 }
