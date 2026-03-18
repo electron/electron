@@ -31,10 +31,10 @@ index 2ded9daa5611d3121677f4d67d19fcdbbcc68d26..d5a9f43850d3d7c3a73873ebb24bf2cc
  // In the storage service we allow some overage to
  // accommodate concurrent writes from different clients
 diff --git a/third_party/blink/public/mojom/dom_storage/storage_area.mojom b/third_party/blink/public/mojom/dom_storage/storage_area.mojom
-index 2552cc9cfab2c54caf584b14944324b92ae22171..f6e9a4a998f13d55b4d213a8bae2d50b090f138a 100644
+index 535d618c6cb99fea8116baf69f8056d40a15bbdd..d01c79fbc67cfb8e668a2282cb4c4ae48d71e3a3 100644
 --- a/third_party/blink/public/mojom/dom_storage/storage_area.mojom
 +++ b/third_party/blink/public/mojom/dom_storage/storage_area.mojom
-@@ -50,7 +50,8 @@ struct KeyValue {
+@@ -67,7 +67,8 @@ struct KeyValue {
  interface StorageArea {
    // The quota for each storage area.
    // This value is enforced in renderer processes and the browser process.
