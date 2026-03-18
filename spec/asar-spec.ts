@@ -1307,24 +1307,28 @@ describe('asar package', function () {
     describe('fs.exists', function () {
       itremote('handles an existing file', async function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
+        // eslint-disable-next-line n/no-deprecated-api
         const exists = await new Promise(resolve => fs.exists(p, resolve));
         expect(exists).to.be.true();
       });
 
       itremote('handles a non-existent file', async function () {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
+        // eslint-disable-next-line n/no-deprecated-api
         const exists = await new Promise(resolve => fs.exists(p, resolve));
         expect(exists).to.be.false();
       });
 
       itremote('promisified version handles an existing file', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
+        // eslint-disable-next-line n/no-deprecated-api
         const exists = await require('node:util').promisify(fs.exists)(p);
         expect(exists).to.be.true();
       });
 
       itremote('promisified version handles a non-existent file', async function () {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
+        // eslint-disable-next-line n/no-deprecated-api
         const exists = await require('node:util').promisify(fs.exists)(p);
         expect(exists).to.be.false();
       });
