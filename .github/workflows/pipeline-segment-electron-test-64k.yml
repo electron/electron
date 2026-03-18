@@ -1,0 +1,67 @@
+name: Pipeline Segment - Electron Test on Linux ARM64 64k
+
+on:
+  workflow_call:
+    inputs:
+      test-runs-on:
+        type: string
+        description: 'What host to run the tests on'
+        required: true
+      test-container:
+        type: string
+        description: 'JSON container information for aks runs-on'
+        required: false
+        default: '{"image":null}'
+
+concurrency:
+  group: electron-test-linux-64k-${{ github.ref_protected == true && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref_protected != true }}
+
+permissions: {}
+
+env:
+  ELECTRON_OUT_DIR: Default
+
+jobs:
+  test-linux-arm64-64k:
+    env:
+      BUILD_TYPE: linux
+      TARGET_ARCH: arm64      
+    defaults:
+      run:
+        shell: bash
+    runs-on: ${{ inputs.test-runs-on }}
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        path: src/electron
+        fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Download Generated Artifacts
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+      with:
+        name: generated_artifacts_linux_arm64
+        path: ./generated_artifacts_linux_arm64
+    - name: Restore Generated Artifacts
+      run: ./src/electron/script/actions/restore-artifacts.sh
+    - name: Unzip Dist
+      run: |
+        cd src/out/Default
+        unzip -:o dist.zip
+
+    - name: Run Electron Tests in QEMU 64k Container
+      shell: bash
+      env:
+        MOCHA_REPORTER: mocha-multi-reporters
+        MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
+        ELECTRON_DISABLE_SECURITY_WARNINGS: 1
+        DISPLAY: ':99.0'
+      run: |
+        container=$(echo '${{ inputs.test-container }}' | jq -r '.image')
+        src/electron/script/run-qemu-64k.sh --container $container --testfiles "`pwd`/src"
+        
