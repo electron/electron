@@ -5,7 +5,7 @@ import { expect } from 'chai';
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
 
-import { ifdescribe, ifit } from './lib/spec-helpers';
+import { ifit } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 function getSourceTypes (): ('window' | 'screen')[] {
@@ -15,7 +15,7 @@ function getSourceTypes (): ('window' | 'screen')[] {
   return ['window', 'screen'];
 }
 
-ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('desktopCapturer', () => {
+describe('desktopCapturer', () => {
   it('should return a non-empty array of sources', async () => {
     const sources = await desktopCapturer.getSources({ types: getSourceTypes() });
     expect(sources).to.be.an('array').that.is.not.empty();
