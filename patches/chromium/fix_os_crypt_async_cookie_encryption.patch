@@ -17,7 +17,7 @@ Revert "Reland "Port net::CookieCryptoDelegate to os_crypt async""
 This reverts commit f01b115c7e21a09cc762f65bf7fd9c6ea9d9d0f8.
 
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 0862aa96c2a7b496338ac0593f84fcfa21f25572..aed5a316bd3d97df715f779273ae4c283cd29c92 100644
+index 1a861ff7867f19935178c8368a9a720230fee026..b1ca947122f4ea715be18a0fd4e75b30fffc5a3c 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
 @@ -714,6 +714,8 @@ static_library("browser") {
