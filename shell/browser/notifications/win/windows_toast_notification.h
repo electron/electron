@@ -69,7 +69,9 @@ class WindowsToastNotification : public Notification {
       const bool silent,
       const std::vector<NotificationAction>& actions,
       bool has_reply,
-      const std::u16string& reply_placeholder);
+      const std::u16string& reply_placeholder,
+      const std::string& group_id,
+      const std::u16string& group_title);
   static HRESULT XmlDocumentFromString(
       const wchar_t* xmlString,
       ABI::Windows::Data::Xml::Dom::IXmlDocument** doc);

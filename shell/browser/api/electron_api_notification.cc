@@ -77,6 +77,7 @@ Notification::Notification(gin::Arguments* args) {
   if (args->GetNext(&opts)) {
     opts.Get("id", &id_);
     opts.Get("groupId", &group_id_);
+    opts.Get("groupTitle", &group_title_);
     opts.Get("title", &title_);
     opts.Get("subtitle", &subtitle_);
     opts.Get("body", &body_);
@@ -294,6 +295,7 @@ void Notification::Show() {
       options.urgency = urgency_;
       options.toast_xml = toast_xml_;
       options.group_id = group_id_;
+      options.group_title = group_title_;
       notification_->Show(options);
     }
   }
@@ -384,6 +386,7 @@ void Notification::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("close", &Notification::Close)
       .SetProperty("id", &Notification::id)
       .SetProperty("groupId", &Notification::group_id)
+      .SetProperty("groupTitle", &Notification::group_title)
       .SetProperty("title", &Notification::title, &Notification::SetTitle)
       .SetProperty("subtitle", &Notification::subtitle,
                    &Notification::SetSubtitle)
