@@ -71,7 +71,7 @@ void DebugLog(std::string_view log_msg) {
 }
 
 std::wstring GetTag(const std::string_view notification_id) {
-  return base::NumberToWString(base::FastHash(notification_id));
+  return base::UTF8ToWide(notification_id);
 }
 
 // See https://www.hresult.info for HRESULT error codes.
@@ -659,9 +659,9 @@ std::u16string WindowsToastNotification::GetToastXml(
         // <action>
         xml_writer.StartElement(kAction);
         xml_writer.AddAttribute(kActivationType, kActivationTypeForeground);
-        std::string args = base::StrCat(
-            {"type=action&action=", base::NumberToString(i),
-             "&tag=", base::NumberToString(base::FastHash(notification_id))});
+        std::string args =
+            base::StrCat({"type=action&action=", base::NumberToString(i),
+                          "&tag=", notification_id});
         xml_writer.AddAttribute(kArguments, args.c_str());
         xml_writer.AddAttribute(kContent, base::UTF16ToUTF8(act.text));
         xml_writer.EndElement();  // <action>
@@ -683,9 +683,9 @@ std::u16string WindowsToastNotification::GetToastXml(
         // The button that submits the selection.
         xml_writer.StartElement(kAction);
         xml_writer.AddAttribute(kActivationType, kActivationTypeForeground);
-        std::string args = base::StrCat(
-            {"type=action&action=", base::NumberToString(i),
-             "&tag=", base::NumberToString(base::FastHash(notification_id))});
+        std::string args =
+            base::StrCat({"type=action&action=", base::NumberToString(i),
+                          "&tag=", notification_id});
         xml_writer.AddAttribute(kArguments, args.c_str());
         xml_writer.AddAttribute(
             kContent,
@@ -699,9 +699,7 @@ std::u16string WindowsToastNotification::GetToastXml(
       // <action>
       xml_writer.StartElement(kAction);
       xml_writer.AddAttribute(kActivationType, kActivationTypeForeground);
-      std::string args =
-          base::StrCat({"type=reply&tag=",
-                        base::NumberToString(base::FastHash(notification_id))});
+      std::string args = base::StrCat({"type=reply&tag=", notification_id});
       xml_writer.AddAttribute(kArguments, args.c_str());
       // TODO(codebytere): we should localize this.
       xml_writer.AddAttribute(kContent, "Reply");
@@ -817,10 +815,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
   }
 
   std::string notif_id;
-  std::string notif_hash;
   if (notification_) {
     notif_id = notification_->notification_id();
-    notif_hash = base::NumberToString(base::FastHash(notif_id));
   }
 
   bool structured = arguments_w.find(L"&tag=") != std::wstring::npos ||
