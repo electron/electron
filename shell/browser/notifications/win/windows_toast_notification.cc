@@ -431,8 +431,8 @@ bool WindowsToastNotification::CreateToastNotification(
 
     hr = toast4->put_Priority(priority);
     if (FAILED(hr)) {
-      std::string err = base::StrCat(
-          {"WinAPI: Setting priority failed, ERROR ", FailureResultToString(hr)});
+      std::string err = base::StrCat({"WinAPI: Setting priority failed, ERROR ",
+                                      FailureResultToString(hr)});
       DebugLog(err);
       PostNotificationFailedToUIThread(weak_notification, err, ui_task_runner);
       return false;
