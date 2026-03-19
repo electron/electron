@@ -45,6 +45,8 @@
 #include "ui/gl/gpu_switching_manager.h"
 #include "ui/views/background.h"
 #include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
+#include "ui/views/view_targeter.h"
+#include "ui/views/view_targeter_delegate.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/native_frame_view_mac.h"
 
@@ -111,6 +113,43 @@ struct Converter<electron::NativeWindowMac::VisualEffectState> {
 };
 
 }  // namespace gin
+
+namespace {
+
+// A ViewTargeterDelegate installed on content_view_ to make it event-
+// transparent when no children cover the target point.
+//
+// In BrowserWindow, the WebContentsView is added as a sibling of content_view_
+// at a lower Z-order (behind it) so that user-added child views paint above
+// the web content. However, views::ViewTargeterDelegate::TargetForRect
+// iterates children front-to-back and returns the first child whose
+// HitTestRect() is true. content_view_ covers the full window area, so the
+// WebContentsView (and its NativeViewHost) is never reached.
+//
+// Chromium's BridgedContentView::hitTest: uses GetHitTestResult() to classify
+// the result: NativeViewHost → kSubView (routes to RenderWidgetHostViewCocoa);
+// anything else non-null → kRootView (BridgedContentView absorbs the event,
+// breaking all web content interaction with loadURL); null → kOther (falls
+// through to [super hitTest:] which finds RenderWidgetHostViewCocoa directly).
+//
+// By returning nullptr instead of root when no children cover the target rect,
+// GetEventHandlerForPoint propagates null up the chain → GetHitTestResult
+// returns kOther → hitTest: falls through to [super hitTest:] → NSView walk
+// finds RenderWidgetHostViewCocoa → web content interaction works correctly.
+class ContentViewTargeterDelegate : public views::ViewTargeterDelegate {
+ public:
+  views::View* TargetForRect(views::View* root,
+                             const gfx::Rect& rect) override {
+    views::View* result =
+        views::ViewTargeterDelegate::TargetForRect(root, rect);
+    // The default TargetForRect returns |root| when no children cover |rect|.
+    // Return nullptr instead so event routing falls through to the sibling
+    // WebContentsView and finds RenderWidgetHostViewCocoa.
+    return result == root ? nullptr : result;
+  }
+};
+
+}  // namespace
 
 namespace electron {
 
@@ -315,7 +354,7 @@ NativeWindowMac::NativeWindowMac(const int32_t base_window_id,
   // by calls to other APIs.
   SetMaximizable(maximizable);
 
-  // Default content view.
+  // Default content view (replaced by BaseWindow::SetContentView).
   SetContentView(new views::View());
   AddContentViewLayers();
 
@@ -329,6 +368,17 @@ void NativeWindowMac::SetContentView(views::View* view) {
     root_view->RemoveChildView(content_view());
 
   set_content_view(view);
+
+  // Install event-transparent targeting on content_view_. In BrowserWindow,
+  // content_view_ sits in front of the sibling WebContentsView (higher Z-order)
+  // so user-added child views paint above web content. This targeter makes
+  // content_view_ event-transparent when no children cover the target point,
+  // returning nullptr instead of itself so GetHitTestResult produces kOther
+  // and BridgedContentView::hitTest: falls through to [super hitTest:] which
+  // finds RenderWidgetHostViewCocoa for web content mouse events.
+  view->SetEventTargeter(std::make_unique<views::ViewTargeter>(
+      std::make_unique<ContentViewTargeterDelegate>()));
+
   root_view->AddChildViewRaw(content_view());
 
   root_view->DeprecatedLayoutImmediately();
