@@ -129,6 +129,22 @@ describe('utilityProcess module', () => {
       expect(code).to.equal(exitCode);
     });
 
+    ifit(process.platform === 'win32')('emits correct exit code when high bit is set on Windows', async () => {
+      // NTSTATUS code with high bit set should not be mangled by sign extension.
+      const exitCode = 0xC0000005;
+      const child = utilityProcess.fork(path.join(fixturesPath, 'custom-exit.js'), [`--exitCode=${exitCode}`]);
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(exitCode);
+    });
+
+    ifit(process.platform !== 'win32')('emits correct exit code when child process crashes on posix', async () => {
+      // Crash exit codes should not be sign-extended to large 64-bit values.
+      const child = utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
+      const [code] = await once(child, 'exit');
+      expect(code).to.not.equal(0);
+      expect(code).to.be.lessThanOrEqual(0xFFFFFFFF);
+    });
+
     it('does not run JS after process.exit is called', async () => {
       const file = path.join(os.tmpdir(), `no-js-after-exit-log-${Math.random()}`);
       const child = utilityProcess.fork(path.join(fixturesPath, 'no-js-after-exit.js'), [`--testPath=${file}`]);
