@@ -33,10 +33,10 @@ index 4b1fd316496e33f9e805aec89a91062587e6ee16..1b6fce9e2780a37e1e8bf3f8a62dc6bc
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 37f3a6b1d9457b04bd1d0c85ce585418d5dd7cb2..e411e434a4e1c5dc610984395eeb769aa6077a53 100644
+index df2684e42664fd32e6084a72366e0c032ccfd3b3..30398b5f7c977a196a34d572dc274fcdd8806c6d 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4561,7 +4561,7 @@ static_library("browser") {
+@@ -4533,7 +4533,7 @@ static_library("browser") {
        ]
      }
  
@@ -46,7 +46,7 @@ index 37f3a6b1d9457b04bd1d0c85ce585418d5dd7cb2..e411e434a4e1c5dc610984395eeb769a
        # than here in :chrome_dll.
        deps += [ "//chrome:packed_resources_integrity_header" ]
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 1c6ed791b83c6cb70c57fb14cd7e3d8b22736895..607b2eb775c37fc8e967a74acaca36b7b793596d 100644
+index 9c1623d0e8d656f4990d5c1a8943b033d05bd6c6..0c6d3b764281780d093c1ab0906aa3400a454fec 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -7772,9 +7772,12 @@ test("unit_tests") {
@@ -63,7 +63,7 @@ index 1c6ed791b83c6cb70c57fb14cd7e3d8b22736895..607b2eb775c37fc8e967a74acaca36b7
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:win_unit_tests",
-@@ -8771,6 +8774,10 @@ test("unit_tests") {
+@@ -8772,6 +8775,10 @@ test("unit_tests") {
        "../browser/performance_manager/policies/background_tab_loading_policy_unittest.cc",
      ]
  
@@ -74,7 +74,7 @@ index 1c6ed791b83c6cb70c57fb14cd7e3d8b22736895..607b2eb775c37fc8e967a74acaca36b7
      sources += [
        # The importer code is not used on Android.
        "../common/importer/firefox_importer_utils_unittest.cc",
-@@ -8828,7 +8835,6 @@ test("unit_tests") {
+@@ -8829,7 +8836,6 @@ test("unit_tests") {
      # TODO(crbug.com/417513088): Maybe merge with the non-android `deps` declaration above?
      deps += [
        "../browser/screen_ai:screen_ai_install_state",
