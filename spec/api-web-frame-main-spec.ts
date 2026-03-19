@@ -598,7 +598,10 @@ describe('webFrameMain module', () => {
       clipboard.clear();
     });
 
-    it('copies video frame in main frame', async () => {
+    // TODO: Re-enable on Windows CI once Chromium fixes the intermittent
+    // backwards-time DCHECK hit while copying video frames:
+    // DCHECK failed: !delta.is_negative().
+    ifit(!(process.platform === 'win32' && process.env.CI))('copies video frame in main frame', async () => {
       const w = new BrowserWindow({ show: false });
       await w.webContents.loadFile(path.join(fixtures, 'blank.html'));
       await insertVideoInFrame(w.webContents.mainFrame);
@@ -606,7 +609,7 @@ describe('webFrameMain module', () => {
       await waitUntil(() => clipboard.availableFormats().includes('image/png'));
     });
 
-    it('copies video frame in subframe', async () => {
+    ifit(!(process.platform === 'win32' && process.env.CI))('copies video frame in subframe', async () => {
       const w = new BrowserWindow({ show: false });
       await w.webContents.loadFile(path.join(subframesPath, 'frame-with-frame.html'));
       const subframe = w.webContents.mainFrame.frames[0];
