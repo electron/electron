@@ -2,14 +2,13 @@ name: PR Template Check
 
 on:
   pull_request_target:
-    types: [opened, edited]
-    branches:
-      - main
+    types: [opened, ready_for_review]
 
 permissions: {}
 
 jobs:
   check-pr-template:
+    if: ${{ github.event.pull_request.head.repo.fork && !github.event.pull_request.draft && !startsWith(github.head_ref, 'roller/') }}
     name: Check PR Template
     runs-on: ubuntu-slim
     permissions:
