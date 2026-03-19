@@ -8,7 +8,7 @@ permissions: {}
 
 jobs:
   check-pr-template:
-    if: ${{ github.event.pull_request.head.repo.fork && !github.event.pull_request.draft && !startsWith(github.head_ref, 'roller/') }}
+    if: ${{ github.event.pull_request.head.repo.fork && !github.event.pull_request.draft && !startsWith(github.head_ref, 'roller/') && github.actor != 'dependabot[bot]' }}
     name: Check PR Template
     runs-on: ubuntu-slim
     permissions:
