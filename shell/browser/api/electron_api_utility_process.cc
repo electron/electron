@@ -293,7 +293,7 @@ void UtilityProcessWrapper::OnServiceProcessTerminatedNormally(
       info.GetProcess().Pid() != pid_)
     return;
 
-  HandleTermination(info.exit_code());
+  HandleTermination(static_cast<uint32_t>(info.exit_code()));
 }
 
 void UtilityProcessWrapper::OnServiceProcessCrashed(
@@ -302,7 +302,7 @@ void UtilityProcessWrapper::OnServiceProcessCrashed(
       info.GetProcess().Pid() != pid_)
     return;
 
-  HandleTermination(info.exit_code());
+  HandleTermination(static_cast<uint32_t>(info.exit_code()));
 }
 
 void UtilityProcessWrapper::CloseConnectorPort() {
