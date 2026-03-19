@@ -32,7 +32,8 @@ async function main () {
   }));
   const hitRate = stats.CacheHit / (stats.Remote + stats.CacheHit + stats.LocalFallback);
 
-  console.log(`Effective cache hit rate: ${(hitRate * 100).toFixed(2)}%`);
+  const messagePrefix = process.env.GITHUB_ACTIONS ? '::notice title=Build Stats::' : '';
+  console.log(`${messagePrefix}Effective cache hit rate: ${(hitRate * 100).toFixed(2)}%`);
 
   if (uploadStats) {
     if (!process.env.DD_API_KEY) {
