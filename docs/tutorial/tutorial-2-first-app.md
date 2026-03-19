@@ -83,17 +83,6 @@ dependency.
 npm install electron --save-dev
 ```
 
-:::warning
-
-If you are installing Electron v41.x or below, you need to ensure that its `postinstall` lifecycle
-script is able to run. This means avoiding the `--ignore-scripts` flag on npm and allowlisting
-`electron` to run build scripts on other package managers.
-
-This has changed with Electron v42. See
-[electron/rfcs#22](https://github.com/electron/rfcs/pull/22) for more details.
-
-:::
-
 Your package.json file should look something like this after initializing your package
 and installing Electron. You should also now have a `node_modules` folder containing
 the Electron executable, as well as a `package-lock.json` lockfile that specifies
