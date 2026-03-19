@@ -163,13 +163,16 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
         shell_->has_frame() ? NSMakeSize(0, titleBarHeight) : NSZeroSize;
     if (!NSEqualSizes(minSize, zeroSize)) {
       double minWidthForAspectRatio =
-          (minSize.height - titleBarHeight) * aspectRatio;
+          (minSize.height - extraHeightPlusFrame) * aspectRatio +
+          extraWidthPlusFrame;
       bool atMinHeight =
           minSize.height > zeroSize.height && newSize.height <= minSize.height;
       newSize.width = atMinHeight ? minWidthForAspectRatio
                                   : std::max(newSize.width, minSize.width);
 
-      double minHeightForAspectRatio = minSize.width / aspectRatio;
+      double minHeightForAspectRatio =
+          (minSize.width - extraWidthPlusFrame) / aspectRatio +
+          extraHeightPlusFrame;
       bool atMinWidth =
           minSize.width > zeroSize.width && newSize.width <= minSize.width;
       newSize.height = atMinWidth ? minHeightForAspectRatio
@@ -179,13 +182,17 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
     // Clamp to maximum width/height while ensuring aspect ratio remains.
     NSSize maxSize = [window maxSize];
     if (!NSEqualSizes(maxSize, NSMakeSize(FLT_MAX, FLT_MAX))) {
-      double maxWidthForAspectRatio = maxSize.height * aspectRatio;
+      double maxWidthForAspectRatio =
+          (maxSize.height - extraHeightPlusFrame) * aspectRatio +
+          extraWidthPlusFrame;
       bool atMaxHeight =
           maxSize.height < FLT_MAX && newSize.height >= maxSize.height;
       newSize.width = atMaxHeight ? maxWidthForAspectRatio
                                   : std::min(newSize.width, maxSize.width);
 
-      double maxHeightForAspectRatio = maxSize.width / aspectRatio;
+      double maxHeightForAspectRatio =
+          (maxSize.width - extraWidthPlusFrame) / aspectRatio +
+          extraHeightPlusFrame;
       bool atMaxWidth =
           maxSize.width < FLT_MAX && newSize.width >= maxSize.width;
       newSize.height = atMaxWidth ? maxHeightForAspectRatio
