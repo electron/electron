@@ -44,6 +44,7 @@ runs:
       run: |
         GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"${{ inputs.target-arch }}\" use_v8_context_snapshot=true target_os=\"win\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
+        echo "ELECTRON_BUILD_TOOLS_MAIN_STAR=`pwd`/src/electron/build/siso/main.star" >> $GITHUB_ENV
     - name: Add Clang problem matcher
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
