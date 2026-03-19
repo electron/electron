@@ -85,11 +85,11 @@ npm install electron --save-dev
 
 :::warning
 
-In order to correctly install Electron, you need to ensure that its `postinstall` lifecycle
+If you are installing Electron v41.x or below, you need to ensure that its `postinstall` lifecycle
 script is able to run. This means avoiding the `--ignore-scripts` flag on npm and allowlisting
 `electron` to run build scripts on other package managers.
 
-This is likely to change in a future version of Electron. See
+This has changed with Electron v42. See
 [electron/rfcs#22](https://github.com/electron/rfcs/pull/22) for more details.
 
 :::
