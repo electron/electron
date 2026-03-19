@@ -365,6 +365,18 @@ jobs:
       generate-symbols: false
       upload-to-storage: '0'
     secrets: inherit
+    
+  test-linux-arm64-64k:
+    uses: ./.github/workflows/pipeline-segment-electron-test-64k.yml
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    needs: [checkout-linux, linux-arm64]
+    with:
+      test-runs-on: ubuntu-22.04-arm
+      test-container: '{"image":"ghcr.io/electron/test:arm64v8-${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
+    secrets: inherit
 
   windows-x64:
     permissions:
