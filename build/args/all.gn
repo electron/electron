@@ -72,6 +72,3 @@ enable_linux_installer = false
 
 # Disable "Save to Drive" feature in PDF viewer
 enable_pdf_save_to_drive = false
-
-# try this for cross compile
-extra_win_toolchain_ldflags = "/SAFESEH:NO"
