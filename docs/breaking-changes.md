@@ -70,6 +70,9 @@ npm install electron --save-dev
 ELECTRON_INSTALL_PLATFORM=mas npx electron . --no
 ```
 
+This also means the `ELECTRON_SKIP_BINARY_DOWNLOAD` environment variable is no
+longer supported, as its primary purpose was to prevent the `postinstall` script from running.
+
 ### Removed: `quotas` object from `Session.clearStorageData(options)`
 
 When calling `Session.clearStorageData(options)`, the `options.quotas` object is no longer supported because it has been
