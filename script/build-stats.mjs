@@ -208,7 +208,9 @@ async function main () {
 
       const changeRate = inputFiles.length > 0 ? changedCount / inputFiles.length : 0;
       console.log(`${messagePrefix}Object change rate: ${(changeRate * 100).toFixed(2)}%`);
-      console.log(`${messagePrefix}New object count: ${newObjectCount}`);
+      if (newObjectCount > 0) {
+        console.log(`${messagePrefix}New object count: ${newObjectCount}`);
+      }
       console.log(`${messagePrefix}Cumulative changed object sizes: ${changedSize.toLocaleString()} bytes`);
 
       objectChangeStats['change-rate'] = changeRate;
