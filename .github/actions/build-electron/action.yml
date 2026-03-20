@@ -96,7 +96,7 @@ runs:
         else
           echo "Skipping build-stats.mjs upload because DD_API_KEY is not set"
         fi
-        npx node electron/script/build-stats.mjs $BUILD_STATS_ARGS || true
+        node electron/script/build-stats.mjs $BUILD_STATS_ARGS || true
     - name: Build Electron (Windows) ${{ inputs.step-suffix }}
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
@@ -125,7 +125,7 @@ runs:
           Write-Host "Skipping build-stats.mjs upload because DD_API_KEY is not set"
         }
         try {
-          & npx node electron\script\build-stats.mjs @statsArgs ; $LASTEXITCODE = 0
+          & node electron\script\build-stats.mjs @statsArgs ; $LASTEXITCODE = 0
         } catch {
           Write-Host "Build stats failed, continuing..."
         }
