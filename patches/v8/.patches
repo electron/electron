@@ -1,2 +1,3 @@
 chore_allow_customizing_microtask_policy_per_context.patch
 build_warn_instead_of_abort_on_builtin_pgo_profile_mismatch.patch
+chore_update_mksnapshot_to_work_for_windows_cross_compile.patch
