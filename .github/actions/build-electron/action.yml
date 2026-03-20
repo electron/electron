@@ -49,10 +49,10 @@ runs:
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Download previous object checksums
       uses: dawidd6/action-download-artifact@09b07ec687d10771279a426c79925ee415c12906 # v17
-      if: ${{ inputs.is-asan != 'true' }}
+      if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request') && inputs.is-asan != 'true' }}
       with:
         name: object_checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
-        commit: ${{ github.event.push.before }}
+        commit: ${{ case(github.event_name == 'push', github.event.push.before, github.event.pull_request.base.sha) }}
         path: src
         if_no_artifact_found: ignore
     - name: Move previous object checksums
