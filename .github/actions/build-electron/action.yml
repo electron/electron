@@ -49,6 +49,7 @@ runs:
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Download previous object checksums
       uses: dawidd6/action-download-artifact@09b07ec687d10771279a426c79925ee415c12906 # v17
+      if: ${{ inputs.is-asan != 'true' }}
       with:
         name: object_checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
         commit: ${{ github.event.push.before }}
@@ -313,7 +314,7 @@ runs:
         name: out_gen_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./src/out/Default/gen
     - name: Upload Object Checksums ${{ inputs.step-suffix }}
-      if: always() && !cancelled()
+      if: ${{ always() && !cancelled() && inputs.is-asan != 'true' }}
       uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       with:
         name: object_checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
