@@ -1,0 +1,178 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <kleinschmidtorama@gmail.com>
+Date: Fri, 20 Mar 2026 16:19:44 -0400
+Subject: chore: update mksnapshot to work for windows cross compile
+
+This patch makes mksnapshot work properly for windows cross compile
+
+diff --git a/src/diagnostics/unwinding-info-win64.cc b/src/diagnostics/unwinding-info-win64.cc
+index 1312609e5b648fdca187373c374126282c7afa77..e14984b4cd0d423043c94d2f723c64de65b9fdc5 100644
+--- a/src/diagnostics/unwinding-info-win64.cc
++++ b/src/diagnostics/unwinding-info-win64.cc
+@@ -40,12 +40,14 @@ bool RegisterUnwindInfoForExceptionHandlingOnly() {
+ #endif
+ }
+ 
++#if defined(V8_OS_WIN64)
+ v8::UnhandledExceptionCallback unhandled_exception_callback_g = nullptr;
+ 
+ void SetUnhandledExceptionCallback(
+     v8::UnhandledExceptionCallback unhandled_exception_callback) {
+   unhandled_exception_callback_g = unhandled_exception_callback;
+ }
++#endif  // V8_OS_WIN64
+ 
+ // This function is registered as exception handler for V8-generated code as
+ // part of the registration of unwinding info. It is referenced by
+diff --git a/src/diagnostics/unwinding-info-win64.h b/src/diagnostics/unwinding-info-win64.h
+index bb32f49e5d8966bafc079d274ad9600f75f85759..b0a58acc5d78932dc0e83bef1ad04b71868669f3 100644
+--- a/src/diagnostics/unwinding-info-win64.h
++++ b/src/diagnostics/unwinding-info-win64.h
+@@ -11,8 +11,11 @@
+ #include "include/v8config.h"
+ #include "src/common/globals.h"
+ 
++#if defined(V8_OS_WIN64) || \
++    (defined(V8_TARGET_OS_WIN) && defined(V8_TARGET_ARCH_X64))
+ #if defined(V8_OS_WIN64)
+ #include "src/base/win32-headers.h"
++#endif
+ 
+ namespace v8 {
+ namespace internal {
+@@ -45,8 +48,10 @@ bool CanRegisterUnwindInfoForNonABICompliantCodeRange();
+ /**
+  * Registers a custom exception handler for exceptions in V8-generated code.
+  */
++#if defined(V8_OS_WIN64)
+ void SetUnhandledExceptionCallback(
+     v8::UnhandledExceptionCallback unhandled_exception_callback);
++#endif  // V8_OS_WIN64
+ 
+ void RegisterNonABICompliantCodeRange(void* start, size_t size_in_bytes);
+ void UnregisterNonABICompliantCodeRange(void* start);
+@@ -61,7 +66,8 @@ void UnregisterNonABICompliantCodeRange(void* start);
+  */
+ static const uint32_t kDefaultRuntimeFunctionCount = 1;
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN_X64) || \
++    (defined(V8_TARGET_OS_WIN) && defined(V8_TARGET_ARCH_X64))
+ 
+ static const int kPushRbpInstructionLength = 1;
+ static const int kMovRbpRspInstructionLength = 3;
+@@ -182,6 +188,6 @@ class XdataEncoder {
+ }  // namespace internal
+ }  // namespace v8
+ 
+-#endif  // V8_OS_WIN64
++#endif  // V8_OS_WIN64 || (V8_TARGET_OS_WIN && V8_TARGET_ARCH_X64)
+ 
+ #endif  // V8_DIAGNOSTICS_UNWINDING_INFO_WIN64_H_
+diff --git a/src/snapshot/embedded/platform-embedded-file-writer-win.cc b/src/snapshot/embedded/platform-embedded-file-writer-win.cc
+index bf76435717cf63f6f7be288c9b7e963c14b29425..69a6c4e6e186485cf41a991107bc1f9b6b1794c8 100644
+--- a/src/snapshot/embedded/platform-embedded-file-writer-win.cc
++++ b/src/snapshot/embedded/platform-embedded-file-writer-win.cc
+@@ -8,13 +8,81 @@
+ 
+ #include "src/common/globals.h"  // For V8_OS_WIN64
+ 
+-#if defined(V8_OS_WIN64)
++#if defined(V8_OS_WIN64) || \
++    (defined(V8_TARGET_OS_WIN) && defined(V8_TARGET_ARCH_X64))
+ #include "src/builtins/builtins.h"
+ #include "src/diagnostics/unwinding-info-win64.h"
+ #include "src/snapshot/embedded/embedded-data-inl.h"
+ #include "src/snapshot/embedded/embedded-file-writer.h"
+ #endif  // V8_OS_WIN64
+ 
++// When cross-compiling for Windows on a non-Windows host, the implementations
++// of CanEmitUnwindInfoForBuiltins() and GetUnwindInfoForBuiltinFunctions()
++// from unwinding-info-win64.cc are not available (that file only compiles on
++// Windows). Provide host-compatible implementations here for mksnapshot.
++#if !defined(V8_OS_WIN64) && defined(V8_TARGET_OS_WIN) && \
++    defined(V8_TARGET_ARCH_X64)
++#include "src/flags/flags.h"
++namespace v8 {
++namespace internal {
++namespace win64_unwindinfo {
++
++bool CanEmitUnwindInfoForBuiltins() { return v8_flags.win64_unwinding_info; }
++
++std::vector<uint8_t> GetUnwindInfoForBuiltinFunctions() {
++  // Reproduce the V8UnwindData struct from unwinding-info-win64.cc using
++  // platform-independent types. The layout matches the Windows UNWIND_INFO
++  // and UNWIND_CODE structures (packed).
++  static constexpr int kRbpCode = 5;  // x64 rbp register code
++  static constexpr uint8_t kUNW_FLAG_EHANDLER = 0x01;
++  static constexpr int kOpPushNonvol = 0;
++  static constexpr int kOpSetFPReg = 3;
++
++#pragma pack(push, 1)
++  struct UNWIND_CODE {
++    uint8_t CodeOffset;
++    uint8_t UnwindOpAndOpInfo;  // UnwindOp:4, OpInfo:4
++  };
++
++  struct UNWIND_INFO {
++    uint8_t VersionAndFlags;  // Version:3, Flags:5
++    uint8_t SizeOfProlog;
++    uint8_t CountOfCodes;
++    uint8_t FrameRegisterAndOffset;  // FrameRegister:4, FrameOffset:4
++  };
++
++  struct V8UnwindData {
++    UNWIND_INFO unwind_info;
++    UNWIND_CODE unwind_codes[kRbpPrefixCodes];
++  };
++#pragma pack(pop)
++
++  V8UnwindData xdata;
++  xdata.unwind_info.VersionAndFlags =
++      1 | (kUNW_FLAG_EHANDLER << 3);  // Version=1, Flags=UNW_FLAG_EHANDLER
++  xdata.unwind_info.SizeOfProlog = kRbpPrefixLength;
++  xdata.unwind_info.CountOfCodes = kRbpPrefixCodes;
++  xdata.unwind_info.FrameRegisterAndOffset =
++      kRbpCode;  // FrameRegister=rbp, FrameOffset=0
++
++  xdata.unwind_codes[0].CodeOffset = kRbpPrefixLength;  // movq rbp, rsp
++  xdata.unwind_codes[0].UnwindOpAndOpInfo = kOpSetFPReg;  // OpInfo=0
++
++  xdata.unwind_codes[1].CodeOffset =
++      kPushRbpInstructionLength;  // push rbp
++  xdata.unwind_codes[1].UnwindOpAndOpInfo =
++      kOpPushNonvol | (kRbpCode << 4);  // OpInfo=rbp
++
++  return std::vector<uint8_t>(reinterpret_cast<uint8_t*>(&xdata),
++                              reinterpret_cast<uint8_t*>(&xdata) +
++                                  sizeof(xdata));
++}
++
++}  // namespace win64_unwindinfo
++}  // namespace internal
++}  // namespace v8
++#endif  // !V8_OS_WIN64 && V8_TARGET_OS_WIN && V8_TARGET_ARCH_X64
++
+ // V8_CC_MSVC is true for both MSVC and clang on windows. clang can handle
+ // __asm__-style inline assembly but MSVC cannot, and thus we need a more
+ // precise compiler detection that can distinguish between the two. clang on
+@@ -59,7 +127,8 @@ namespace internal {
+ 
+ namespace {
+ 
+-#if defined(V8_OS_WIN_X64)
++#if defined(V8_OS_WIN_X64) || \
++    (defined(V8_TARGET_OS_WIN) && defined(V8_TARGET_ARCH_X64))
+ 
+ void WriteUnwindInfoEntry(PlatformEmbeddedFileWriterWin* w,
+                           const char* unwind_info_symbol,
+@@ -324,7 +393,8 @@ void PlatformEmbeddedFileWriterWin::MaybeEmitUnwindData(
+   }
+ #endif  // V8_OS_WIN_ARM64
+ 
+-#if defined(V8_OS_WIN64)
++#if defined(V8_OS_WIN64) || \
++    (defined(V8_TARGET_OS_WIN) && defined(V8_TARGET_ARCH_X64))
+   if (win64_unwindinfo::CanEmitUnwindInfoForBuiltins()) {
+     EmitUnwindData(this, unwind_info_symbol, embedded_blob_data_symbol, blob,
+                    reinterpret_cast<const win64_unwindinfo::BuiltinUnwindInfo*>(
