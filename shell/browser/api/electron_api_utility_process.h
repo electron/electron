@@ -57,7 +57,7 @@ class UtilityProcessWrapper final
   static gin_helper::Handle<UtilityProcessWrapper> Create(gin::Arguments* args);
   static raw_ptr<UtilityProcessWrapper> FromProcessId(base::ProcessId pid);
 
-  void Shutdown(uint64_t exit_code);
+  void Shutdown(uint32_t exit_code);
 
   // gin_helper::Wrappable
   static gin::DeprecatedWrapperInfo kWrapperInfo;
@@ -77,7 +77,7 @@ class UtilityProcessWrapper final
   void OnServiceProcessLaunch(const base::Process& process);
   void CloseConnectorPort();
 
-  void HandleTermination(uint64_t exit_code);
+  void HandleTermination(uint32_t exit_code);
 
   void PostMessage(gin::Arguments* args);
   bool Kill();
