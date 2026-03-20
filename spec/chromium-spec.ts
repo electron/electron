@@ -993,6 +993,8 @@ describe('chromium features', () => {
     let w: BrowserWindow | null = null;
 
     afterEach(() => {
+      ipcMain.removeAllListeners('did-create-file-handle');
+      ipcMain.removeAllListeners('did-create-directory-handle');
       session.defaultSession.setPermissionRequestHandler(null);
       closeAllWindows();
     });
