@@ -11,7 +11,7 @@ process.on('unhandledRejection', (reason) => {
 });
 
 app.on('browser-window-created', (_, window) => {
-  window.webContents.once('did-frame-navigate', (__, ___) => {
+  window.webContents.once('did-frame-navigate', () => {
     process.exit(0);
   });
 });
