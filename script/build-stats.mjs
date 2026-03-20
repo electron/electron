@@ -70,8 +70,8 @@ async function uploadObjectChangeStats (stats) {
   if (stats['previous-chromium-version']) tags.push(`previous-chromium-version:${stats['previous-chromium-version']}`);
   if (stats['chromium-version']) tags.push(`chromium-version:${stats['chromium-version']}`);
 
-  if (stats['previous-chromium-version'] && stats['chromium-version'] && stats['previous-chromium-version'] !== stats['chromium-version']) {
-    tags.push('chromium-version-changed:true');
+  if (stats['previous-chromium-version'] && stats['chromium-version']) {
+    tags.push(`chromium-version-changed:${stats['previous-chromium-version'] !== stats['chromium-version']}`);
   }
 
   const series = [
