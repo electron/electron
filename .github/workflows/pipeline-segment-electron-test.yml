@@ -313,7 +313,7 @@ jobs:
       if: always() && !cancelled()
     - name: Upload Test Artifacts
       if: always()
-      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
       with:
         name: ${{ inputs.target-platform == 'linux' && format('test_artifacts_{0}_{1}_{2}', env.ARTIFACT_KEY, inputs.display-server, matrix.shard) || format('test_artifacts_{0}_{1}', env.ARTIFACT_KEY, matrix.shard) }}
         path: src/electron/spec/artifacts

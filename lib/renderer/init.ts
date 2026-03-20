@@ -124,7 +124,9 @@ if (nodeIntegration) {
       delete (global as any).setImmediate;
       delete (global as any).clearImmediate;
       delete (global as any).global;
+      // eslint-disable-next-line n/no-deprecated-api
       delete (global as any).root;
+      // eslint-disable-next-line n/no-deprecated-api
       delete (global as any).GLOBAL;
     });
   }

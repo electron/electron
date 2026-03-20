@@ -114,4 +114,18 @@ void RegisterPathProvider() {
                                       PATH_END);
 }
 
+base::FilePath GetDefaultPath() {
+  base::FilePath path;
+
+  ScopedAllowBlockingForElectron allow_blocking;
+  if (base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &path) &&
+      base::DirectoryExists(path))
+    return path;
+
+  if (base::PathService::Get(base::DIR_HOME, &path))
+    return path;
+
+  return base::FilePath();
+}
+
 }  // namespace electron
