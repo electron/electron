@@ -42,7 +42,7 @@ runs:
       shell: bash
       if: ${{ inputs.target-platform == 'win' }}
       run: |
-        GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"${{ inputs.target-arch }}\" use_v8_context_snapshot=true target_os=\"win\""
+        GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"${{ inputs.target-arch }}\" use_v8_context_snapshot=true target_os=\"win\" v8_target_embedded_unwind=\"win\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
         echo "ELECTRON_BUILD_TOOLS_MAIN_STAR=`pwd`/src/electron/build/siso/main.star" >> $GITHUB_ENV
     - name: Add Clang problem matcher
