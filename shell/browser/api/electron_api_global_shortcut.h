@@ -11,6 +11,7 @@
 #include "base/functional/callback_forward.h"
 #include "base/memory/weak_ptr.h"
 #include "extensions/common/extension_id.h"
+#include "gin/per_isolate_data.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
@@ -20,6 +21,7 @@
 namespace electron::api {
 
 class GlobalShortcut final : private ui::GlobalAcceleratorListener::Observer,
+                             public gin::PerIsolateData::DisposeObserver,
                              public gin::Wrappable<GlobalShortcut> {
  public:
   static GlobalShortcut* Create(v8::Isolate* isolate);
@@ -32,8 +34,13 @@ class GlobalShortcut final : private ui::GlobalAcceleratorListener::Observer,
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
 
+  // gin::PerIsolateData::DisposeObserver
+  void OnBeforeDispose(v8::Isolate* isolate) override {}
+  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
+  void OnDisposed() override {}
+
   // Make public for cppgc::MakeGarbageCollected.
-  GlobalShortcut();
+  explicit GlobalShortcut(v8::Isolate* isolate);
   ~GlobalShortcut() override;
 
   // disable copy
@@ -45,6 +52,7 @@ class GlobalShortcut final : private ui::GlobalAcceleratorListener::Observer,
       AcceleratorCallbackMap;
   typedef std::map<std::string, base::RepeatingClosure> CommandCallbackMap;
 
+  void Dispose();
   bool RegisterAll(const std::vector<ui::Accelerator>& accelerators,
                    const base::RepeatingClosure& callback);
   bool Register(const ui::Accelerator& accelerator,
@@ -53,6 +61,7 @@ class GlobalShortcut final : private ui::GlobalAcceleratorListener::Observer,
   void Unregister(const ui::Accelerator& accelerator);
   void UnregisterSome(const std::vector<ui::Accelerator>& accelerators);
   void UnregisterAll();
+  void UnregisterAllInternal();
   void SetSuspended(bool suspend);
   bool IsSuspended();
 
@@ -63,6 +72,7 @@ class GlobalShortcut final : private ui::GlobalAcceleratorListener::Observer,
 
   AcceleratorCallbackMap accelerator_callback_map_;
   CommandCallbackMap command_callback_map_;
+  bool is_disposed_ = false;
 
   gin::WeakCellFactory<GlobalShortcut> weak_factory_{this};
 
