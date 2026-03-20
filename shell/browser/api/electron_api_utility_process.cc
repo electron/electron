@@ -259,7 +259,7 @@ void UtilityProcessWrapper::OnServiceProcessLaunch(
   EmitWithoutEvent("spawn");
 }
 
-void UtilityProcessWrapper::HandleTermination(uint64_t exit_code) {
+void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
   // HandleTermination is called from multiple callsites,
   // we need to ensure we only process it for the first callsite.
   if (terminated_)
@@ -327,7 +327,7 @@ void UtilityProcessWrapper::CloseConnectorPort() {
   }
 }
 
-void UtilityProcessWrapper::Shutdown(uint64_t exit_code) {
+void UtilityProcessWrapper::Shutdown(uint32_t exit_code) {
   node_service_remote_.reset();
   HandleTermination(exit_code);
 }
