@@ -10,8 +10,8 @@ process.on('unhandledRejection', (reason) => {
   process.exit(1);
 });
 
-app.on('browser-window-created', (ev, window) => {
-  window.webContents.once('did-frame-navigate', (ev, url) => {
+app.on('browser-window-created', (_, window) => {
+  window.webContents.once('did-frame-navigate', (__, ___) => {
     process.exit(0);
   });
 });
