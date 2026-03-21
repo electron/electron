@@ -38,6 +38,16 @@ list where possible, for convenience. For full control and better ergonomics,
 consider using `webContents.setWindowOpenHandler` to customize the
 BrowserWindow creation.
 
+More specifically:
+
+* Electron forwards parsed key-value pairs to the underlying [`BrowserWindowConstructorOptions`](structures/browser-window-options.md).
+* Numeric browser-style position and size keys are normalized: `top` and `left` become `y` and `x`, and `innerWidth` and `innerHeight` are also accepted.
+* The following numeric keys are parsed as numbers: `x`, `y`, `width`, `height`, `minWidth`, `maxWidth`, `minHeight`, `maxHeight`, and `opacity`.
+* The `resizable` feature is ignored, since `window.open()` windows are always resizable per the browser spec.
+* Only a limited subset of [`WebPreferences`](structures/web-preferences.md) can be set directly from the feature string, described below.
+
+If you need to set options beyond those basic parsed values, or want precise control over how renderer-provided features map to BrowserWindow options, use `webContents.setWindowOpenHandler()`.
+
 A subset of [`WebPreferences`](structures/web-preferences.md) can be set directly,
 unnested, from the features string: `zoomFactor`, `nodeIntegration`, `javascript`,
 `contextIsolation`, and `webviewTag`.
