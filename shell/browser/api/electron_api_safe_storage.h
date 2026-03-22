@@ -10,7 +10,6 @@
 
 #include "build/build_config.h"
 #include "components/os_crypt/async/common/encryptor.h"
-#include "shell/browser/browser_observer.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
@@ -37,8 +36,7 @@ class Handle;
 namespace electron::api {
 
 class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage>,
-                          public gin_helper::EventEmitterMixin<SafeStorage>,
-                          private BrowserObserver {
+                          public gin_helper::EventEmitterMixin<SafeStorage> {
  public:
   static gin_helper::Handle<SafeStorage> Create(v8::Isolate* isolate);
 
@@ -57,14 +55,16 @@ class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage>,
   ~SafeStorage() override;
 
  private:
-  // BrowserObserver:
-  void OnFinishLaunching(base::DictValue launch_info) override;
+  // Lazily request the async encryptor on first use. ESM named imports
+  // eagerly evaluate all electron module getters, so requesting in the
+  // constructor would touch the OS keychain even when safeStorage is unused.
+  void EnsureAsyncEncryptorRequested();
 
   void OnOsCryptReady(os_crypt_async::Encryptor encryptor);
 
   bool IsEncryptionAvailable();
 
-  bool IsAsyncEncryptionAvailable();
+  v8::Local<v8::Promise> IsAsyncEncryptionAvailable(v8::Isolate* isolate);
 
   void SetUsePasswordV10(bool use);
 
@@ -85,6 +85,7 @@ class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage>,
 
   bool use_password_v10_ = false;
 
+  bool encryptor_requested_ = false;
   bool is_available_ = false;
 
   std::optional<os_crypt_async::Encryptor> encryptor_;
@@ -114,6 +115,8 @@ class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage>,
     std::string ciphertext;
   };
   std::vector<PendingDecrypt> pending_decrypts_;
+
+  std::vector<gin_helper::Promise<bool>> pending_availability_checks_;
 };
 
 }  // namespace electron::api
