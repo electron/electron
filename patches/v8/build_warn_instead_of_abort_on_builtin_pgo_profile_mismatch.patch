@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <sattard@anthropic.com>
+Date: Sun, 22 Mar 2026 10:51:26 +0000
+Subject: build: warn instead of abort on builtin PGO profile mismatch
+
+Electron sets v8_enable_javascript_promise_hooks = true which adds
+conditional branches to builtins-microtask-queue-gen.cc, changing the
+RunMicrotasks builtin's control-flow graph hash. This invalidates V8's
+pre-generated PGO profile for that builtin (built with Chrome defaults).
+
+Rather than disabling builtins PGO entirely, warn and skip mismatched
+builtins so all other builtins still benefit from PGO.
+
+diff --git a/BUILD.gn b/BUILD.gn
+index 078b63b2bdbb3f952bd0f579e84fb691e308fb64..985f946d5f87b4e6eb32a011ac47a0073248e5f2 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -2803,9 +2803,11 @@ template("run_mksnapshot") {
+         "--turbo-profiling-input",
+         rebase_path(v8_builtins_profiling_log_file, root_build_dir),
+ 
+-        # Replace this with --warn-about-builtin-profile-data to see the full
+-        # list of builtins with incompatible profiles.
+-        "--abort-on-bad-builtin-profile-data",
++        # Electron: Use warn instead of abort so that builtins whose control
++        # flow is changed by Electron's build flags (e.g. RunMicrotasks via
++        # v8_enable_javascript_promise_hooks) are skipped rather than failing
++        # the build. All other builtins still receive PGO.
++        "--warn-about-builtin-profile-data",
+       ]
+ 
+       if (!v8_enable_builtins_profiling && v8_enable_builtins_reordering) {
