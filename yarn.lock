@@ -658,6 +658,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@electron-ci/print-handler@workspace:spec/fixtures/native-addon/print-handler":
+  version: 0.0.0-use.local
+  resolution: "@electron-ci/print-handler@workspace:spec/fixtures/native-addon/print-handler"
+  languageName: unknown
+  linkType: soft
+
 "@electron-ci/uv-dlopen@npm:*, @electron-ci/uv-dlopen@workspace:spec/fixtures/native-addon/uv-dlopen":
   version: 0.0.0-use.local
   resolution: "@electron-ci/uv-dlopen@workspace:spec/fixtures/native-addon/uv-dlopen"

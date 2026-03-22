@@ -1,0 +1,9 @@
+{
+  "name": "@electron-ci/print-handler",
+  "version": "0.0.1",
+  "main": "./index.js",
+  "private": true,
+  "scripts": {
+    "install": "node-gyp configure && node-gyp build"
+  }
+}

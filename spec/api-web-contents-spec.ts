@@ -326,6 +326,75 @@ describe('webContents module', () => {
         });
       }).to.not.throw();
     });
+
+    ifdescribe(process.platform !== 'linux')('print dialog', () => {
+      const printHandler = require('./fixtures/native-addon/print-handler');
+
+      beforeEach(async () => {
+        w = new BrowserWindow({ show: false });
+        await w.loadURL('data:text/html,<h1>Print Test</h1>');
+        w.show();
+      });
+
+      afterEach(() => {
+        printHandler.stopWatching();
+        closeAllWindows();
+      });
+
+      it('can cancel the print dialog', async () => {
+        // Arm the watcher BEFORE print() — the modal dialog blocks the
+        // JS event loop, so the watcher must already be running.
+        printHandler.startWatching('cancel');
+
+        const { success } = await new Promise<{ success: boolean; reason: string }>((resolve) => {
+          w.webContents.print({}, (success, reason) => {
+            resolve({ success, reason });
+          });
+        });
+
+        expect(printHandler.stopWatching()).to.equal(true);
+        expect(success).to.equal(false);
+      });
+
+      it('can show the print dialog with default options', async () => {
+        printHandler.startWatching('cancel');
+
+        const { success } = await new Promise<{ success: boolean; reason: string }>((resolve) => {
+          w.webContents.print({ silent: false }, (success, reason) => {
+            resolve({ success, reason });
+          });
+        });
+
+        expect(printHandler.stopWatching()).to.equal(true);
+        expect(success).to.equal(false);
+      });
+
+      it('can show the print dialog with custom options', async () => {
+        printHandler.startWatching('cancel');
+
+        const { success } = await new Promise<{ success: boolean; reason: string }>((resolve) => {
+          w.webContents.print({
+            silent: false,
+            copies: 2,
+            landscape: true,
+            color: false
+          }, (success, reason) => {
+            resolve({ success, reason });
+          });
+        });
+
+        expect(printHandler.stopWatching()).to.equal(true);
+        expect(success).to.equal(false);
+      });
+
+      it('can cancel the print dialog from window.print()', async () => {
+        printHandler.startWatching('cancel');
+
+        await w.webContents.executeJavaScript('window.print()');
+
+        expect(printHandler.stopWatching()).to.equal(true);
+      });
+    });
   });
 
   describe('webContents.executeJavaScript', () => {
