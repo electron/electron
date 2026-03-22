@@ -96,6 +96,7 @@ auto_filenames = {
     "docs/api/structures/file-filter.md",
     "docs/api/structures/file-path-with-headers.md",
     "docs/api/structures/filesystem-permission-request.md",
+    "docs/api/structures/glass-effect-region.md",
     "docs/api/structures/gpu-feature-status.md",
     "docs/api/structures/hid-device.md",
     "docs/api/structures/input-event.md",

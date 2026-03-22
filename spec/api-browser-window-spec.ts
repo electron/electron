@@ -1,4 +1,5 @@
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, systemPreferences, WebContents, WebFrameMain } from 'electron/main';
+import { nativeImage } from 'electron/common';
 
 import { expect } from 'chai';
 
@@ -2988,6 +2989,81 @@ describe('BrowserWindow module', () => {
       const w = new BrowserWindow({ show: false });
       expect(() => {
         w.setVibrancy('i-am-not-a-valid-vibrancy-type' as any);
+      }).to.not.throw();
+    });
+  });
+
+  ifdescribe(process.platform === 'darwin')('BrowserWindow glass effect', () => {
+    afterEach(closeAllWindows);
+
+    it('reports whether glass effect is supported', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(w.isGlassEffectSupported()).to.be.a('boolean');
+    });
+
+    it('allows setting, changing, and removing the window glass effect', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(() => {
+        w.setGlassEffect({ style: 'regular', cornerRadius: 16 });
+        w.setGlassEffect({ style: 'clear', tintColor: '#ff00ff80' });
+        w.setGlassEffect(null);
+        w.setGlassEffect({ style: 'regular' });
+        w.setGlassEffect(null);
+      }).to.not.throw();
+    });
+
+    it('allows setting and clearing glass effect regions', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(() => {
+        w.setGlassEffectRegions([
+          { x: 10, y: 10, width: 200, height: 60, cornerRadius: 30, style: 'regular' },
+          { x: 10, y: 80, width: 100, height: 100, cornerRadius: 20, style: 'clear', tintColor: '#00ff00' }
+        ]);
+        w.setGlassEffectRegions([
+          { x: 0, y: 0, width: 50, height: 50, cornerRadius: 25 }
+        ]);
+        w.setGlassEffectRegions([]);
+        w.setGlassEffectRegions(null);
+      }).to.not.throw();
+    });
+
+    it('accepts the glassEffect constructor option', () => {
+      expect(() => {
+        const w = new BrowserWindow({
+          show: false,
+          glassEffect: { style: 'regular', cornerRadius: 12 }
+        });
+        w.close();
+      }).to.not.throw();
+    });
+
+    it('accepts a contentImage on glass effect regions', () => {
+      const w = new BrowserWindow({ show: false });
+      const img = nativeImage.createFromNamedImage('NSFolder');
+      expect(() => {
+        w.setGlassEffectRegions([
+          { x: 0, y: 0, width: 60, height: 60, cornerRadius: 30, contentImage: img }
+        ]);
+        // Re-apply with the image removed to exercise contentView teardown.
+        w.setGlassEffectRegions([
+          { x: 0, y: 0, width: 60, height: 60, cornerRadius: 30 }
+        ]);
+        w.setGlassEffectRegions(null);
+      }).to.not.throw();
+    });
+
+    it('allows window glass and region glass to coexist', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(() => {
+        w.setGlassEffect({ style: 'regular' });
+        w.setGlassEffectRegions([
+          { x: 10, y: 10, width: 50, height: 50, cornerRadius: 10, style: 'clear' }
+        ]);
+        // Toggle each independently.
+        w.setGlassEffect(null);
+        w.setGlassEffect({ style: 'clear' });
+        w.setGlassEffectRegions(null);
+        w.setGlassEffect(null);
       }).to.not.throw();
     });
   });

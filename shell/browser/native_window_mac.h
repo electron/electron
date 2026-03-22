@@ -129,6 +129,9 @@ class NativeWindowMac : public NativeWindow,
   bool IsVisibleOnAllWorkspaces() const override;
   void SetAutoHideCursor(bool auto_hide) override;
   void SetVibrancy(const std::string& type, int duration) override;
+  void SetGlassEffect(std::optional<GlassEffectRegion> options) override;
+  void SetGlassEffectRegions(std::vector<GlassEffectRegion> regions) override;
+  bool IsGlassEffectSupported() const override;
   void SetWindowButtonVisibility(bool visible) override;
   bool GetWindowButtonVisibility() const override;
   void SetWindowButtonPosition(std::optional<gfx::Point> position) override;
@@ -185,6 +188,8 @@ class NativeWindowMac : public NativeWindow,
   void SetBorderless(bool borderless);
 
   void UpdateVibrancyRadii(bool fullscreen);
+
+  void UpdateGlassEffectFrames();
 
   void UpdateWindowOriginalFrame();
 
@@ -316,6 +321,17 @@ class NativeWindowMac : public NativeWindow,
 
   // A views::NativeViewHost wrapping the vibrant view. Owned by the root view.
   raw_ptr<views::NativeViewHost> vibrant_native_view_host_ = nullptr;
+
+  // Full-window NSGlassEffectView inserted at the bottom of the NSWindow's
+  // content view so its backdrop captures the desktop, not the web content.
+  NSView* __strong glass_effect_view_ = nil;
+
+  // NSGlassEffectContainerView holding overlay glass regions placed above the
+  // web content. Typed as NSView* to avoid availability-annotated member.
+  NSView* __strong glass_region_container_ = nil;
+  std::vector<NSView*> glass_region_views_;
+  // Only bounds are retained; style/tint/image are baked into the NSViews.
+  std::vector<gfx::Rect> glass_region_bounds_;
 
   // The presentation options before entering simple fullscreen mode.
   NSApplicationPresentationOptions simple_fullscreen_options_;
