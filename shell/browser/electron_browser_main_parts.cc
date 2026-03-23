@@ -127,6 +127,10 @@
 #include "shell/common/plugin_info.h"
 #endif  // BUILDFLAG(ENABLE_PLUGINS)
 
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "components/printing/common/print_dialog_linux_factory.h"
+#endif
+
 namespace electron {
 
 namespace {
@@ -414,6 +418,10 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   dark_mode_manager_ = std::make_unique<ui::DarkModeManagerLinux>();
 
   ui::LinuxUi::SetInstance(linux_ui);
+
+#if BUILDFLAG(ENABLE_PRINTING)
+  print_dialog_factory_ = std::make_unique<printing::PrintDialogLinuxFactory>();
+#endif
 
   // Cursor theme changes are tracked by LinuxUI (via a CursorThemeManager
   // implementation). Start observing them once it's initialized.
