@@ -20,9 +20,9 @@
 
 namespace electron::api {
 
-class GlobalShortcut final : private ui::GlobalAcceleratorListener::Observer,
-                             public gin::PerIsolateData::DisposeObserver,
-                             public gin::Wrappable<GlobalShortcut> {
+class GlobalShortcut final : public gin::Wrappable<GlobalShortcut>,
+                             private ui::GlobalAcceleratorListener::Observer,
+                             public gin::PerIsolateData::DisposeObserver {
  public:
   static GlobalShortcut* Create(v8::Isolate* isolate);
 

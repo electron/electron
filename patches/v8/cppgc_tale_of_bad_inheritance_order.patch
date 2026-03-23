@@ -1,0 +1,320 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Tue, 24 Mar 2026 08:52:10 +0900
+Subject: cppgc: tale of bad inheritance order
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Some background on certain V8 concepts needed to understand the
+crux of this issue.
+
+1) cppgc HeapObjectHeader
+
+When a C++ object is allocated on cppgc's managed heap via
+MakeGarbageCollected<T>(), a HeapObjectHeader (8 bytes) is placed
+immediately before the object's payload in memory:
+
+  [4 bytes padding][encoded_high: gc_info_index + fully_constructed bit]
+                   [encoded_low: size + mark_bit]
+  [payload...]
+
+The gc_info_index points into a global GCInfo table containing
+callbacks (trace, finalize, name) for each registered cppgc type.
+When the sweeper frees an object, it overwrites the header with a
+free-list entry (gc_info_index = 0). IsFree() checks this atomically.
+
+2) JSObject ↔ cppgc bindings
+
+When a cppgc object is associated with a JSObject (via gin::Wrappable
+or v8::Object::Wrap), two references are created:
+
+  - cppgc → JSObject: TracedReference<v8::Object>, traced by cppgc's
+    Trace() method. Keeps the JSObject alive while the cppgc object
+    is alive.
+  - JSObject → cppgc: a CppHeapPointer in the JSObject's embedder
+    slot. This is NOT a GC root — it does not keep the cppgc object
+    alive on its own.
+
+In the unified heap, V8 and cppgc mark together. When the marker
+visits a JSObject with a CppHeapPointer slot, VisitCppHeapPointer
+reads the pointer and calls MarkAndPush to mark the cppgc object.
+
+3) CppHeapPointerTable (V8_COMPRESS_POINTERS)
+
+With pointer compression enabled, JSObject embedder slots do not
+store raw pointers. Instead, a CppHeapPointerHandle (uint32_t) is
+stored at the embedder slot, which indexes into the Isolate's
+CppHeapPointerTable — a flat array of 8-byte entries at a virtual
+address reservation (base_).
+
+JSObject layout for JSAPIObjectWithEmbedderSlots:
+
+  Raw offset  Field
+  0x0         map (compressed tagged)
+  0x4         properties_or_hash (compressed tagged)
+  0x8         elements (compressed tagged)
+  0xc         CppHeapPointerHandle (uint32_t)
+
+The handle is converted to a table index via:
+  index = handle >> kCppHeapPointerIndexShift (6 on desktop)
+
+Each 8-byte table entry encodes:
+  bits 63-16: cppgc object payload address
+  bits 15-1:  type tag
+  bit 0:      mark bit (for table GC)
+
+During marking, VisitCppHeapPointer:
+  1. Loads the handle from the JSObject
+  2. Calls table->Mark() to set the entry's mark bit
+  3. Calls table->Get() to decode the cppgc pointer (payload >> 16)
+  4. Calls MarkAndPush on the cppgc object
+
+During sweep, CppHeapPointerTable::SweepAndCompact frees unmarked
+entries and clears the mark bit on live entries.
+
+The crash symptoms:
+
+Two crash scenarios were observed during cppgc migration of Electron
+API globalshortcut module
+
+Scenario 1 — concurrent marker (V8Worker thread):
+  Header at 0x12402000ec0: gc_info_index=308, size=0
+  Stack: ConcurrentMarking::RunMajor → VisitJSObjectSubclass
+         <JSAPIObjectWithEmbedderSlots> → MarkAndPush → V8_Fatal
+  The concurrent marker reads a CppHeapPointer from a JSObject,
+  follows it to freed memory, interprets garbage as a header.
+
+Scenario 2 — atomic pause (CrBrowserMain thread):
+  Header at 0x12402000ec0: gc_info_index=324, size=0, mark_bit=1
+  Stack: MarkNotFullyConstructedObjects → TraceConservatively
+         → ObjectView → V8_Fatal (page->is_large() DCHECK)
+
+Investigation:
+
+Since the marker and tracer were crashing on a
+cppgc object with size 0 which shouldn't be possible for a live object,
+started with adding GCInfo trace callback validation at three
+processing points — CppMarkingState::MarkAndPush, MarkerBase::
+MarkNotFullyConstructedObjects, and MutatorMarkingState::
+FlushNotFullyConstructedObjects. Checking gc_info.trace != nullptr
+before processing reliably detected stale headers because the GCInfo
+table is global and valid for any index. This stopped the crashes.
+
+However, this was treating symptoms. To find the root cause, we need
+to trace the stale pointer backwards from the crash site to its
+origin in the CppHeapPointerTable.
+
+From the Scenario 1 crash backtrace:
+
+  frame #0: CppMarkingState::MarkAndPush(header=0x12402000ec0)
+  frame #1: IterateJSAPIObjectWithEmbedderSlotsHeader(...)
+  frame #2: ConcurrentMarking::RunMajor(...)
+
+Register read in frame #0 (MarkAndPush) showed x19 = 0x12402000ec0
+— the HeapObjectHeader* argument. To trace how this value was
+computed, disassembling the caller in frame #1
+(IterateJSAPIObjectWithEmbedderSlotsHeader, which inlines
+VisitCppHeapPointer) revealed the instruction sequence:
+
+  +72:  ldr w21, [x20]              ← load handle from JSObject+0xc
+  +80:  ldr x22, [x19, #0x68]      ← CppHeapPointerTable* from visitor
+  +120: ldr x8, [x22]              ← table base_ (first field)
+  +132: ldr x20, [x8, x9, lsl #3] ← entry = base_[handle >> 6]
+  +148: lsr x8, x20, #16           ← decode: cppgc_ptr = payload >> 16
+  +168: sub x1, x8, #0x8           ← header = cppgc_ptr - 8
+  +188: b   MarkAndPush             ← tail call with stale header
+
+Reading the actual values:
+
+  Handle:     0x00080380 (from JSObject embedder slot at raw+0xc)
+  Index:      0x00080380 >> 6 = 8206
+  Table base: 0x0000000320000000 (visitor+0x68 → table ptr → base_)
+  Entry:      base_[8206] = 0x012402000ec810e1
+  Decoded:    0x012402000ec810e1 >> 16 = 0x12402000ec8 (payload addr)
+  Header:     0x12402000ec8 - 8 = 0x12402000ec0
+
+This exactly matched x19 in the crash frame. The header at
+0x12402000ec0 had encoded_low=0x0000 (freed memory), confirming
+the table entry was pointing to some garbage cppgc object.
+
+Theory: Stale table entries
+
+VisitCppHeapPointer calls table->Mark() unconditionally before
+validating the cppgc object, which could preserve stale
+entries across GC cycles. Moving table->Mark() after an IsFree()
+check stopped the crashes in the marker thread.
+But this was still treating symptoms — it did not explain how the table entry
+became stale and we still saw the DCHECK during atomic pause
+on the main thread.
+
+All that's left is to trace what headers are being pushed
+into the not_fully_constructed_worklist and using hardware
+watchpoint identify if a valid header is being written to a non header
+value.
+
+With debug traps at all three push sites to the
+not_fully_constructed_worklist (MarkAndPush in marking-state.h,
+ProcessWeakContainer in marking-state.h, and WriteBarrierForObject
+in marker.h), found that the write barrier was the active push
+path. The trap fired during:
+
+  CppHeap::WriteBarrier
+    ← v8::Object::Wrap
+      ← gin::WrappableBase::AssociateWithWrapper
+        ← electron::api::GlobalShortcut::Create
+
+At this point reading the register state revealed that the write barrier
+was pushing header 0xec0 to the worklist (didn't require any watchpoint).
+But the real GlobalShortcut header was at 0xea0 (with payload at 0xea8 and
+size 0x88 = 136 bytes). Address 0xec0 fell inside the GlobalShortcut
+payload — 0x20 bytes past the real header. It was not a header at
+all, but interior object data misinterpreted as one.
+
+Same address in both crashes — in Scenario 1 the concurrent marker
+read it via CppHeapPointerTable; in Scenario 2 the atomic pause
+read it from the not_fully_constructed_worklist. Both interpret
+interior object data at 0xec0 as a HeapObjectHeader,
+yielding different garbage gc_info_index values.
+
+Root cause: multiple inheritance base class ordering
+
+Tracing the call chain revealed the source of the incorrect header
+address:
+
+  gin::WrappableBase::AssociateWithWrapper calls:
+    v8::Object::Wrap(isolate, wrapper, this, tag)
+
+  v8::Object::Wrap stores the pointer in the CppHeapPointerTable via:
+    CppHeapObjectWrapper::SetCppHeapWrappable(isolate, wrappable, tag)
+
+  The write barrier fires inside SetCppHeapWrappable:
+    WriteBarrier::ForCppHeapPointer(host, slot, value)
+      → MarkingSlowFromCppHeapWrappable(heap, host, slot, object)
+        → CppHeap::WriteBarrier(object)
+          → HeapObjectHeader::FromObject(object)
+              = *(object - 8)  ← WRONG when object is interior
+
+  CppHeap::WriteBarrier computes:
+    HeapObjectHeader::FromObject(object)  →  object - 8
+
+  This assumes `object` points to the cppgc allocation base. But in
+  AssociateWithWrapper, `this` is a WrappableBase* — the gin::Wrappable
+  subobject within GlobalShortcut. Due to multiple inheritance, this
+  subobject sat at offset +0x20 from the cppgc allocation base.
+
+GlobalShortcut's original declaration was:
+
+  class GlobalShortcut final
+      : private ui::GlobalAcceleratorListener::Observer,  // offset 0
+        public gin::PerIsolateData::DisposeObserver,      // offset +X
+        public gin::Wrappable<GlobalShortcut> {            // offset +0x20
+
+  gin::Wrappable<GlobalShortcut>
+    → gin::WrappableBase
+      → v8::Object::Wrappable
+        → cppgc::GarbageCollected<Wrappable>
+
+With the cppgc object allocated at 0xea8 (header at 0xea0), the
+gin::Wrappable subobject sat at 0xea8 + 0x20 = 0xec8. This 0xec8
+was stored in the CppHeapPointerTable. When the write barrier called
+HeapObjectHeader::FromObject(0xec8), it computed 0xec8 - 8 = 0xec0
+— a location inside the GlobalShortcut payload, not the real header
+at 0xea0.
+
+The cppgc documentation in garbage-collected.h explicitly requires:
+
+  "Must be inherited from as left-most base class."
+
+GlobalShortcut violated this by placing Observer and DisposeObserver
+before Wrappable. It was the only Electron API class with this
+ordering — all others had gin::Wrappable as the first base by coincidence.
+
+The fix
+
+1. Reorder GlobalShortcut's base classes so gin::Wrappable is first:
+
+     class GlobalShortcut final
+         : public gin::Wrappable<GlobalShortcut>,
+           private ui::GlobalAcceleratorListener::Observer,
+           public gin::PerIsolateData::DisposeObserver {
+
+   This ensures the WrappableBase* stored in the CppHeapPointerTable
+   coincides with the cppgc allocation base, so FromObject() computes
+   the correct header.
+
+2. Add a CPPGC_DCHECK in MakeGarbageCollectedTrait::Call() that
+   verifies GarbageCollected<U> is at offset zero in T:
+
+     CPPGC_DCHECK_MSG(
+         reinterpret_cast<void*>(object) ==
+             reinterpret_cast<void*>(
+                 static_cast<ParentMostGarbageCollectedType*>(object)),
+         "GarbageCollected must be the left-most base of T, "
+         "otherwise incorrect HeapObjectHeader will be "
+         "computed for the object.");
+
+   This catches the violation at construction time in debug builds,
+   before it can manifest as a GC crash.
+
+With the DCHECK we now get the following message at runtime during
+object construction:
+
+----- Native stack trace -----
+
+ 1: 0x11bbd05fc node::NodePlatform::GetStackTracePrinter()::$_0::__invoke() [/Users/demohan/github/electron-oss/src/out/Testing/Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework]
+ 2: 0x123626290 V8_Fatal(char const*, int, char const*, ...) [/Users/demohan/github/electron-oss/src/out/Testing/Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework]
+ 3: 0x123625d84 v8::base::SetFatalFunction(void (*)(char const*, int, char const*)) [/Users/demohan/github/electron-oss/src/out/Testing/Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework]
+ 4: 0x11b7f2768 electron::api::GlobalShortcut* cppgc::MakeGarbageCollectedTrait<electron::api::GlobalShortcut>::Call<v8::Isolate*&>(cppgc::AllocationHandle&, v8::Isolate*&) [/Users/demohan/github/electron-oss/src/out/Testing/Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework]
+ 5: 0x11b7f063c electron::api::GlobalShortcut::Create(v8::Isolate*) [/Users/demohan/github/electron-oss/src/out/Testing/Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework]
+ 6: 0x11b7928e8 base::RepeatingCallback<v8::Local<v8::Value> (v8::Isolate*)>::Run(v8::Isolate*) const & [/Users/demohan/github/electron-oss/src/out/Testing/Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework]
+ 7: 0x11b7f159c void gin_helper::Invoker<std::__Cr::integer_sequence<unsigned long, 0ul>, v8::Isolate*>::DispatchToCallback<electron::api::GlobalShortcut*>(base::RepeatingCallback<electron::api::GlobalShortcut* (v8::Isolate*)>) [/Users/demohan/github/electron-oss/src/out/Testing/Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework]
+ 8: 0x11b7f1390 gin_helper::Dispatcher<electron::api::GlobalShortcut* (v8::Isolate*)>::DispatchToCallbackImpl(gin::Arguments*) [/Users/demohan/github/electron-oss/src/out/Testing/Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework]
+ 9: 0x11b7f128c gin_helper::Dispatcher<electron::api::GlobalShortcut* (v8::Isolate*)>::DispatchToCallback(v8::FunctionCallbackInfo<v8::Value> const&) [/Users/demohan/github/electron-oss/src/out/Testing/Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework]
+
+diff --git a/include/cppgc/allocation.h b/include/cppgc/allocation.h
+index 450db00479e87a8a460289f7e717296f431c3c40..5762d737de9ef460b1a447a457dd373ac08e24e8 100644
+--- a/include/cppgc/allocation.h
++++ b/include/cppgc/allocation.h
+@@ -15,6 +15,7 @@
+ #include "cppgc/custom-space.h"
+ #include "cppgc/internal/api-constants.h"
+ #include "cppgc/internal/gc-info.h"
++#include "cppgc/internal/logging.h"
+ #include "cppgc/type-traits.h"
+ #include "v8config.h"  // NOLINT(build/include_directory)
+ 
+@@ -237,6 +238,18 @@ class MakeGarbageCollectedTrait : public MakeGarbageCollectedTraitBase<T> {
+     void* memory =
+         MakeGarbageCollectedTraitBase<T>::Allocate(handle, sizeof(T));
+     T* object = ::new (memory) T(std::forward<Args>(args)...);
++    // Verify GarbageCollected<U> is the left-most base class of T, as
++    // required by cppgc. If it isn't, HeapObjectHeader::FromObject() will
++    // compute the wrong header address for any pointer obtained via
++    // static_cast to a non-first base (e.g. through multiple inheritance).
++    CPPGC_DCHECK_MSG(
++        static_cast<const void*>(object) ==
++            static_cast<const void*>(static_cast<typename std::remove_const_t<
++                                         T>::ParentMostGarbageCollectedType*>(
++                const_cast<std::remove_const_t<T>*>(object))),
++        "GarbageCollected must be the left-most base of T, "
++        "otherwise incorrect HeapObjectHeader will be "
++        "computed for the object.");
+     MakeGarbageCollectedTraitBase<T>::MarkObjectAsFullyConstructed(object);
+     return object;
+   }
+@@ -247,6 +260,14 @@ class MakeGarbageCollectedTrait : public MakeGarbageCollectedTraitBase<T> {
+     void* memory = MakeGarbageCollectedTraitBase<T>::Allocate(
+         handle, sizeof(T) + additional_bytes.value);
+     T* object = ::new (memory) T(std::forward<Args>(args)...);
++    CPPGC_DCHECK_MSG(
++        static_cast<const void*>(object) ==
++            static_cast<const void*>(static_cast<typename std::remove_const_t<
++                                         T>::ParentMostGarbageCollectedType*>(
++                const_cast<std::remove_const_t<T>*>(object))),
++        "GarbageCollected must be the left-most base of T, "
++        "otherwise incorrect HeapObjectHeader will be "
++        "computed for the object.");
+     MakeGarbageCollectedTraitBase<T>::MarkObjectAsFullyConstructed(object);
+     return object;
+   }
