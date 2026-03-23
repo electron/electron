@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <title>RTL Input Test</title>
+  </head>
+  <body>
+    <!--
+      Simple RTL input fixture used by spec/rtl-input-select-all-spec.ts to
+      reproduce the bug where pressing Cmd+A followed by an RTL character
+      results in a Latin letter being inserted instead of the RTL glyph.
+    -->
+    <input
+      id="rtl-input"
+      type="text"
+      dir="rtl"
+      lang="he"
+      style="font-size: 20px; width: 400px;"
+      placeholder="Type Hebrew here"
+    />
+  </body>
+</html>
