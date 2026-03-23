@@ -120,10 +120,6 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
                             content::PermissionResult result);
 
   // content::PermissionControllerDelegate:
-  void RequestPermissions(
-      content::RenderFrameHost* render_frame_host,
-      const content::PermissionRequestDescription& request_description,
-      StatusesCallback callback) override;
   void ResetPermission(blink::PermissionType permission,
                        const GURL& requesting_origin,
                        const GURL& embedding_origin) override;
