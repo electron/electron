@@ -12,6 +12,34 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (43.0)
+
+### Behavior Changed: Dialog methods default to Downloads directory
+
+The `defaultPath` option for the following methods now defaults to the user's Downloads folder (or their home directory if Downloads doesn't exist) when not explicitly provided:
+
+* `dialog.showOpenDialog`
+* `dialog.showOpenDialogSync`
+* `dialog.showSaveDialog`
+* `dialog.showSaveDialogSync`
+
+Previously, when no `defaultPath` was provided, the underlying OS file dialog would determine the initial directory — typically remembering the last directory the user navigated to, or falling back to an OS-specific default. Now, Electron explicitly sets the initial directory to Downloads, which also means the OS will no longer track and restore the last-used directory between dialog invocations.
+
+To preserve the old behavior, you can track the last-used directory yourself and pass it as `defaultPath`:
+
+```js
+const path = require('node:path')
+
+let lastUsedPath
+const result = await dialog.showOpenDialog({
+  defaultPath: lastUsedPath
+})
+
+if (!result.canceled && result.filePaths.length > 0) {
+  lastUsedPath = path.dirname(result.filePaths[0])
+}
+```
+
 ## Planned Breaking API Changes (42.0)
 
 ### Behavior Changed: macOS notifications now use `UNNotification` API

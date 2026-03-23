@@ -210,23 +210,6 @@ void ElectronPermissionManager::RequestPermissionWithDetails(
                      std::move(response_callback)));
 }
 
-void ElectronPermissionManager::RequestPermissions(
-    content::RenderFrameHost* render_frame_host,
-    const content::PermissionRequestDescription& request_description,
-    StatusesCallback callback) {
-  if (render_frame_host->IsNestedWithinFencedFrame()) {
-    std::move(callback).Run(std::vector<content::PermissionResult>(
-        request_description.permissions.size(),
-        content::PermissionResult(
-            blink::mojom::PermissionStatus::DENIED,
-            content::PermissionStatusSource::UNSPECIFIED)));
-    return;
-  }
-
-  RequestPermissionsWithDetails(render_frame_host, request_description, {},
-                                std::move(callback));
-}
-
 void ElectronPermissionManager::RequestPermissionsWithDetails(
     content::RenderFrameHost* render_frame_host,
     const content::PermissionRequestDescription& request_description,

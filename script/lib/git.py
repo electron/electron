@@ -12,6 +12,7 @@ import posixpath
 import re
 import subprocess
 import sys
+import threading
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(SCRIPT_DIR)
@@ -51,7 +52,8 @@ def get_repo_root(path):
 
 
 def am(repo, patch_data, threeway=False, directory=None, exclude=None,
-    committer_name=None, committer_email=None, keep_cr=True):
+    committer_name=None, committer_email=None, keep_cr=True,
+    output_prefix=None):
   # --keep-non-patch prevents stripping leading bracketed strings on the subject line
   args = ['--keep-non-patch']
   if threeway:
@@ -72,9 +74,42 @@ def am(repo, patch_data, threeway=False, directory=None, exclude=None,
   if committer_email is not None:
     root_args += ['-c', 'user.email=' + committer_email]
   root_args += ['-c', 'commit.gpgsign=false']
+  # git am rewrites the index 2-3x per patch. In large repos (Chromium's
+  # index is ~70MB / ~500K files) this dominates wall time. skipHash
+  # avoids recomputing the trailing SHA over the full index on every
+  # write, and index v4 roughly halves the on-disk size via path prefix
+  # compression. Also skip per-object fsync and auto-gc since a crashed
+  # apply is simply re-run from a clean reset.
+  root_args += [
+    '-c', 'index.skipHash=true',
+    '-c', 'index.version=4',
+    '-c', 'core.fsync=none',
+    '-c', 'gc.auto=0',
+  ]
   command = ['git'] + root_args + ['am'] + args
-  with subprocess.Popen(command, stdin=subprocess.PIPE) as proc:
-    proc.communicate(patch_data.encode('utf-8'))
+  popen_kwargs = {'stdin': subprocess.PIPE}
+  if output_prefix is not None:
+    popen_kwargs['stdout'] = subprocess.PIPE
+    popen_kwargs['stderr'] = subprocess.STDOUT
+  with subprocess.Popen(command, **popen_kwargs) as proc:
+    def feed_stdin():
+      proc.stdin.write(patch_data.encode('utf-8'))
+      proc.stdin.close()
+    if output_prefix is not None:
+      writer = threading.Thread(target=feed_stdin)
+      writer.start()
+      for line in proc.stdout:
+        try:
+          sys.stdout.write(
+            f'{output_prefix}{line.decode("utf-8", "replace")}')
+          sys.stdout.flush()
+        except BrokenPipeError:
+          pass
+      writer.join()
+      proc.wait()
+    else:
+      feed_stdin()
+      proc.wait()
     if proc.returncode != 0:
       raise RuntimeError(f"Command {command} returned {proc.returncode}")
 
@@ -83,6 +118,12 @@ def import_patches(repo, ref=UPSTREAM_HEAD, **kwargs):
   """same as am(), but we save the upstream HEAD so we can refer to it when we
   later export patches"""
   update_ref(repo=repo, ref=ref, newvalue='HEAD')
+  # Upgrade to index v4 before applying so every intermediate index write
+  # during am benefits from path-prefix compression (roughly halves index
+  # size in large repos).
+  subprocess.call(
+    ['git', '-C', repo, 'update-index', '--index-version', '4'],
+    stderr=subprocess.DEVNULL)
   am(repo=repo, **kwargs)
 
 
