@@ -59,7 +59,12 @@ On Windows, returns true once the app has emitted the `ready` event.
 
 ### `safeStorage.isAsyncEncryptionAvailable()`
 
-Returns `Promise<Boolean>` - Whether encryption is available for asynchronous safeStorage operations.
+Returns `Promise<boolean>` - Resolves with whether encryption is available for
+asynchronous safeStorage operations.
+
+The asynchronous encryptor is initialized lazily the first time this method,
+`encryptStringAsync`, or `decryptStringAsync` is called after the app is ready.
+The returned promise resolves once initialization completes.
 
 ### `safeStorage.encryptString(plainText)`
 
