@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <sattard@anthropic.com>
+Date: Sun, 22 Mar 2026 19:21:45 +0000
+Subject: fix: use fresh LazyNow for OnEndWorkItemImpl after DidRunTask
+
+DidRunTask can cache the LazyNow early (via RecordTaskEnd in
+BrowserUIThreadScheduler::OnTaskCompleted) before running task observers.
+If a task observer's DidProcessTask triggers nested pump activity (nested
+RunLoop, sync IPC, etc.), TimeKeeper's last_phase_end_ advances past the
+cached value. The subsequent OnEndWorkItemImpl then computes a negative
+delta and hits DCHECK(!delta.is_negative()) in RecordTimeInPhase.
+
+Using a fresh LazyNow for OnEndWorkItemImpl samples the time after all
+observers have run, which matches the existing comment's intent that
+microtasks are extensions of the RunTask and the work item ends after them.
+
+This is upstreamable: the bug exists whenever any TaskObserver::DidProcessTask
+triggers nested pump activity, which is not forbidden by the contract.
+
+diff --git a/base/task/sequence_manager/thread_controller_with_message_pump_impl.cc b/base/task/sequence_manager/thread_controller_with_message_pump_impl.cc
+index bde51725102f40ece338cf3d6686a8a10a9dad36..fdfec684bd384bbe43eac74cfe7e7a0b2c6b56b1 100644
+--- a/base/task/sequence_manager/thread_controller_with_message_pump_impl.cc
++++ b/base/task/sequence_manager/thread_controller_with_message_pump_impl.cc
+@@ -484,15 +484,22 @@ std::optional<WakeUp> ThreadControllerWithMessagePumpImpl::DoWorkImpl(
+     // `PendingTask` reference dangling.
+     selected_task.reset();
+ 
+-    LazyNow lazy_now_after_run_task(time_source_);
+-    main_thread_only().task_source->DidRunTask(lazy_now_after_run_task);
++    {
++      LazyNow lazy_now_did_run_task(time_source_);
++      main_thread_only().task_source->DidRunTask(lazy_now_did_run_task);
++    }
+     // End the work item scope after DidRunTask() as it can process microtasks
+-    // (which are extensions of the RunTask).
++    // (which are extensions of the RunTask). Use a fresh LazyNow here because
++    // DidRunTask may cache the LazyNow (via RecordTaskEnd) before running task
++    // observers, and those observers may trigger nested pump activity that
++    // advances TimeKeeper's last_phase_end_ past the cached value, resulting
++    // in a negative delta in RecordTimeInPhase.
++    LazyNow lazy_now_after_run_task(time_source_);
+     OnEndWorkItemImpl(lazy_now_after_run_task, run_depth);
+ 
+-    // If DidRunTask() read the clock (lazy_now_after_run_task.has_value()) or
+-    // if |batch_duration| > 0, store the clock value in `recent_time` so it can
+-    // be reused by SelectNextTask() at the next loop iteration.
++    // If OnEndWorkItemImpl() read the clock (lazy_now_after_run_task.has_value())
++    // or if |batch_duration| > 0, store the clock value in `recent_time` so it
++    // can be reused by SelectNextTask() at the next loop iteration.
+     if (lazy_now_after_run_task.has_value() || !batch_duration.is_zero()) {
+       recent_time = lazy_now_after_run_task.Now();
+     } else {
