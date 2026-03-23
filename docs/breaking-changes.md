@@ -116,9 +116,9 @@ from upstream Chromium.
 You can pass a `colorSpace` option to convert to a specific color space:
 
 ```js
-const image = nativeImage.createFromPath('photo.png');
+const image = nativeImage.createFromPath('photo.png')
 // New default: normalized to sRGB
-const srgbBitmap = image.toBitmap();
+const srgbBitmap = image.toBitmap()
 // Convert to Display P3
 const p3Bitmap = image.toBitmap({
   colorSpace: {
@@ -127,7 +127,7 @@ const p3Bitmap = image.toBitmap({
     matrix: 'rgb',
     range: 'full'
   }
-});
+})
 ```
 
 ### Behavior Changed: PDFs no longer create a separate WebContents
