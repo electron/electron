@@ -167,9 +167,8 @@ v8::Local<v8::Promise> SafeStorage::IsAsyncEncryptionAvailable(
   }
 
 #if BUILDFLAG(IS_LINUX)
-  if (use_password_v10_ &&
-      static_cast<BrowserProcessImpl*>(g_browser_process)
-              ->linux_storage_backend() == "basic_text") {
+  if (use_password_v10_ && static_cast<BrowserProcessImpl*>(g_browser_process)
+                                   ->linux_storage_backend() == "basic_text") {
     promise.Resolve(true);
     return handle;
   }
