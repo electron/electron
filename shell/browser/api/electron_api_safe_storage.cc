@@ -91,6 +91,10 @@ void SafeStorage::OnOsCryptReady(os_crypt_async::Encryptor encryptor) {
   encryptor_ = std::move(encryptor);
   is_available_ = true;
 
+  // This callback may fire from a posted task without an active V8 scope.
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
   for (auto& pending : pending_availability_checks_) {
     pending.Resolve(true);
   }
@@ -101,8 +105,7 @@ void SafeStorage::OnOsCryptReady(os_crypt_async::Encryptor encryptor) {
     bool encrypted = encryptor_->EncryptString(pending.plaintext, &ciphertext);
     if (encrypted) {
       pending.promise.Resolve(
-          electron::Buffer::Copy(pending.promise.isolate(), ciphertext)
-              .ToLocalChecked());
+          electron::Buffer::Copy(isolate, ciphertext).ToLocalChecked());
     } else {
       pending.promise.RejectWithErrorMessage(
           "Error while encrypting the text provided to "
@@ -118,8 +121,6 @@ void SafeStorage::OnOsCryptReady(os_crypt_async::Encryptor encryptor) {
         encryptor_->DecryptString(pending.ciphertext, &plaintext, &flags);
 
     if (decrypted) {
-      v8::Isolate* isolate = pending.promise.isolate();
-      v8::HandleScope handle_scope(isolate);
       auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
 
       dict.Set("shouldReEncrypt", flags.should_reencrypt);
