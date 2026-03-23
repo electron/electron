@@ -1,0 +1,298 @@
+From 074d472db745f01cf3dd3cc2225d51650e56f808 Mon Sep 17 00:00:00 2001
+From: Mikel Astiz <mastiz@chromium.org>
+Date: Tue, 10 Mar 2026 13:22:17 -0700
+Subject: [PATCH] [M146][base] Fix UAF in base::OnceCallbackList on re-entrant Notify()
+
+Before this patch, `base::OnceCallbackList` was susceptible to a
+heap-use-after-free when `Notify()` was called re-entrantly.
+
+The UAF occurred because `OnceCallbackList::RunCallback()` immediately
+spliced executed nodes out of `callbacks_` and into `null_callbacks_`.
+If a nested `Notify()` executed a node that an outer `Notify()` loop was
+already holding an iterator to, and that node's subscription was
+subsequently destroyed during the re-entrant cycle, the node would be
+physically erased from `null_callbacks_`. When control returned to the
+outer loop, it would attempt to evaluate the now-dangling iterator.
+
+This CL fixes the bug by deferring list mutations until the outermost
+iteration completes:
+1. `RunCallback()` no longer splices nodes during iteration.
+2. Cancellation logic is pushed down to the subclasses via a new
+   `CancelCallback()` hook, which is an extension to the pre-existing
+   `CancelNullCallback()` with increased responsibilities and clearer
+   semantics.
+3. If a subscription is destroyed while `is_iterating` is true,
+   `OnceCallbackList` resets the node and stashes its iterator in
+   `pending_erasures_`.
+4. A new `CleanUpNullCallbacksPostIteration()` phase runs at the end
+   of the outermost `Notify()`, which safely splices executed nodes
+   into `null_callbacks_` and physically erases the pending dead nodes.
+
+As a side effect, the type-trait hack in `Notify()` based on
+`is_instantiation<CallbackType, OnceCallback>` can be removed, because
+this information is exposed directly by
+`OnceCallbackList::CleanUpNullCallbacksPostIteration()`.
+
+The newly-added unit-test
+CallbackListTest.OnceCallbackListCancelDuringReentrantNotify reproduces
+the scenario and crashed before this patch.
+
+(cherry picked from commit 36acd49636845be2419269acbe9a5137da3d5d96)
+
+Change-Id: I6b1e2bcb97be1bc8d6a15e5ca7511992e00e1772
+Fixed: 489381399
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7627506
+Commit-Queue: Mikel Astiz <mastiz@chromium.org>
+Reviewed-by: Gabriel Charette <gab@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1594520}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7653916
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7680@{#2287}
+Cr-Branched-From: 76b7d80e5cda23fe6537eed26d68c92e995c7f39-refs/heads/main@{#1582197}
+---
+
+diff --git a/base/callback_list.h b/base/callback_list.h
+index 82cb11d..d5f99cf6 100644
+--- a/base/callback_list.h
++++ b/base/callback_list.h
+@@ -9,6 +9,7 @@
+ #include <list>
+ #include <memory>
+ #include <utility>
++#include <vector>
+ 
+ #include "base/auto_reset.h"
+ #include "base/base_export.h"
+@@ -16,7 +17,6 @@
+ #include "base/functional/bind.h"
+ #include "base/functional/callback.h"
+ #include "base/memory/weak_ptr.h"
+-#include "base/types/is_instantiation.h"
+ 
+ // OVERVIEW:
+ //
+@@ -240,17 +240,14 @@
+ 
+     // Any null callbacks remaining in the list were canceled due to
+     // Subscription destruction during iteration, and can safely be erased now.
+-    const size_t erased_callbacks =
+-        std::erase_if(callbacks_, [](const auto& cb) { return cb.is_null(); });
++    const bool any_callbacks_erased = static_cast<CallbackListImpl*>(this)
++                                          ->CleanUpNullCallbacksPostIteration();
+ 
+-    // Run |removal_callback_| if any callbacks were canceled. Note that we
+-    // cannot simply compare list sizes before and after iterating, since
+-    // notification may result in Add()ing new callbacks as well as canceling
+-    // them. Also note that if this is a OnceCallbackList, the OnceCallbacks
+-    // that were executed above have all been removed regardless of whether
+-    // they're counted in |erased_callbacks_|.
+-    if (removal_callback_ &&
+-        (erased_callbacks || is_instantiation<CallbackType, OnceCallback>)) {
++    // Run |removal_callback_| if any callbacks were canceled or executed. Note
++    // that simply comparing list sizes before and after iterating cannot be
++    // done, since notification may result in Add()ing new callbacks as well as
++    // canceling them.
++    if (removal_callback_ && any_callbacks_erased) {
+       removal_callback_.Run();  // May delete |this|!
+     }
+   }
+@@ -264,21 +261,9 @@
+  private:
+   // Cancels the callback pointed to by |it|, which is guaranteed to be valid.
+   void CancelCallback(const typename Callbacks::iterator& it) {
+-    if (static_cast<CallbackListImpl*>(this)->CancelNullCallback(it)) {
+-      return;
+-    }
+-
+-    if (iterating_) {
+-      // Calling erase() here is unsafe, since the loop in Notify() may be
+-      // referencing this same iterator, e.g. if adjacent callbacks'
+-      // Subscriptions are both destroyed when the first one is Run().  Just
+-      // reset the callback and let Notify() clean it up at the end.
+-      it->Reset();
+-    } else {
+-      callbacks_.erase(it);
+-      if (removal_callback_) {
+-        removal_callback_.Run();  // May delete |this|!
+-      }
++    if (static_cast<CallbackListImpl*>(this)->CancelCallback(it, iterating_) &&
++        removal_callback_) {
++      removal_callback_.Run();  // May delete |this|!
+     }
+   }
+ 
+@@ -304,23 +289,71 @@
+   // Runs the current callback, which may cancel it or any other callbacks.
+   template <typename... RunArgs>
+   void RunCallback(typename Traits::Callbacks::iterator it, RunArgs&&... args) {
+-    // OnceCallbacks still have Subscriptions with outstanding iterators;
+-    // splice() removes them from |callbacks_| without invalidating those.
+-    null_callbacks_.splice(null_callbacks_.end(), this->callbacks_, it);
++    // Do not splice here. Splicing during iteration breaks re-entrant Notify()
++    // by invalidating the outer loop's iterator. Splicing is deferred to
++    // CleanUpNullCallbacksPostIteration(), which is called when the outermost
++    // Notify() finishes.
+ 
+     // NOTE: Intentionally does not call std::forward<RunArgs>(args)...; see
+     // comments in Notify().
+     std::move(*it).Run(args...);
+   }
+ 
+-  // If |it| refers to an already-canceled callback, does any necessary cleanup
+-  // and returns true.  Otherwise returns false.
+-  bool CancelNullCallback(const typename Traits::Callbacks::iterator& it) {
+-    if (it->is_null()) {
+-      null_callbacks_.erase(it);
+-      return true;
++  // Called during subscription destruction to cancel the callback. Returns true
++  // if the callback was removed from the active list and the generic removal
++  // callback should be executed. Returns false if the callback was already
++  // executed, or if the erasure is deferred due to active iteration.
++  bool CancelCallback(const typename Traits::Callbacks::iterator& it,
++                      bool is_iterating) {
++    if (is_iterating) {
++      // During iteration, nodes cannot be safely erased from |callbacks_|
++      // without invalidating iterators. They also cannot be spliced into
++      // |null_callbacks_| right now. Thus, the node is reset and tracked for
++      // erasure in CleanUpNullCallbacksPostIteration().
++      it->Reset();
++      pending_erasures_.push_back(it);
++      return false;
+     }
+-    return false;
++
++    if (it->is_null()) {
++      // The callback already ran, so it's safely sitting in |null_callbacks_|.
++      null_callbacks_.erase(it);
++      return false;
++    }
++
++    // The callback hasn't run yet, so it's still in |callbacks_|.
++    this->callbacks_.erase(it);
++    return true;
++  }
++
++  // Performs post-iteration cleanup. Successfully executed callbacks (which
++  // become null) are spliced into |null_callbacks_| to keep their
++  // Subscriptions' iterators valid. Callbacks explicitly canceled during
++  // iteration (tracked in |pending_erasures_|) are erased. Returns true if any
++  // callbacks were erased or spliced out.
++  bool CleanUpNullCallbacksPostIteration() {
++    bool any_spliced = false;
++    for (auto it = this->callbacks_.begin(); it != this->callbacks_.end();) {
++      if (it->is_null()) {
++        any_spliced = true;
++        auto next = std::next(it);
++        null_callbacks_.splice(null_callbacks_.end(), this->callbacks_, it);
++        it = next;
++      } else {
++        ++it;
++      }
++    }
++
++    bool any_erased = !pending_erasures_.empty();
++    for (auto pending_it : pending_erasures_) {
++      // Note: `pending_it` was originally an iterator into `callbacks_`, but
++      // the node it points to has just been spliced into `null_callbacks_`. The
++      // iterator itself remains valid and can now be used for erasure from
++      // `null_callbacks_`.
++      null_callbacks_.erase(pending_it);
++    }
++    pending_erasures_.clear();
++    return any_spliced || any_erased;
+   }
+ 
+   // Holds null callbacks whose Subscriptions are still alive, so the
+@@ -328,6 +361,11 @@
+   // OnceCallbacks, since RepeatingCallbacks are not canceled except by
+   // Subscription destruction.
+   typename Traits::Callbacks null_callbacks_;
++
++  // Holds iterators for callbacks canceled during iteration.
++  // Erasure is deferred to CleanUpNullCallbacksPostIteration() when iteration
++  // completes to prevent invalidating iterators that an outer loop might hold.
++  std::vector<typename Traits::Callbacks::iterator> pending_erasures_;
+ };
+ 
+ template <typename Signature>
+@@ -344,14 +382,29 @@
+     it->Run(args...);
+   }
+ 
+-  // If |it| refers to an already-canceled callback, does any necessary cleanup
+-  // and returns true.  Otherwise returns false.
+-  bool CancelNullCallback(const typename Traits::Callbacks::iterator& it) {
+-    // Because at most one Subscription can point to a given callback, and
+-    // RepeatingCallbacks are only reset by CancelCallback(), no one should be
+-    // able to request cancellation of a canceled RepeatingCallback.
+-    DCHECK(!it->is_null());
+-    return false;
++  // Called during subscription destruction to cancel the callback. Returns true
++  // if the callback was removed from the active list and the generic removal
++  // callback should be executed. Returns false if the callback was already
++  // executed, or if the erasure is deferred due to active iteration.
++  bool CancelCallback(const typename Traits::Callbacks::iterator& it,
++                      bool is_iterating) {
++    if (is_iterating) {
++      // During iteration, nodes cannot be safely erased from |callbacks_|
++      // without invalidating iterators. The node is reset and will be swept up
++      // by CleanUpNullCallbacksPostIteration().
++      it->Reset();
++      return false;
++    }
++
++    this->callbacks_.erase(it);
++    return true;
++  }
++
++  // Performs post-iteration cleanup by erasing all canceled callbacks. Returns
++  // true if any callbacks were erased.
++  bool CleanUpNullCallbacksPostIteration() {
++    return std::erase_if(this->callbacks_,
++                         [](const auto& cb) { return cb.is_null(); }) > 0;
+   }
+ };
+ 
+diff --git a/base/callback_list_unittest.cc b/base/callback_list_unittest.cc
+index 7474278..a855443f 100644
+--- a/base/callback_list_unittest.cc
++++ b/base/callback_list_unittest.cc
+@@ -10,6 +10,7 @@
+ #include "base/functional/bind.h"
+ #include "base/functional/callback_helpers.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/test/bind.h"
+ #include "base/test/test_future.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ 
+@@ -577,6 +578,30 @@
+   EXPECT_EQ(1, d.total());
+ }
+ 
++// Regression test for crbug.com/489381399: Verifies Notify() can be called
++// reentrantly for OnceCallbackList even if a callback is canceled during the
++// reentrant notification.
++TEST(CallbackListTest, OnceCallbackListCancelDuringReentrantNotify) {
++  OnceClosureList cb_reg;
++  CallbackListSubscription sub_a, sub_b;
++
++  auto cb_a = base::BindLambdaForTesting([&]() {
++    // Re-entrant notification.
++    cb_reg.Notify();
++    // After re-entrant notification returns, sub_b has been run. Destroying it
++    // now should be a no-op.
++    sub_b = {};
++  });
++
++  auto cb_b = base::DoNothing();
++
++  sub_a = cb_reg.Add(std::move(cb_a));
++  sub_b = cb_reg.Add(std::move(cb_b));
++
++  // This should not crash.
++  cb_reg.Notify();
++}
++
+ TEST(CallbackListTest, ClearPreventsInvocation) {
+   Listener listener;
+   RepeatingClosureList cb_reg;
