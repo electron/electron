@@ -1,7 +1,7 @@
-From 50b057660b4d37e050269c23c017e303e6104506 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Kai Ninomiya <kainino@chromium.org>
 Date: Wed, 11 Mar 2026 14:52:44 -0700
-Subject: [PATCH] [M146] Increment WebGL context generation number on context restore
+Subject: [M146] Increment WebGL context generation number on context restore
 
 Objects created while the context is lost should not be valid to use
 after the context is restored.
@@ -29,13 +29,12 @@ Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/7680@{#2370}
 Cr-Branched-From: 76b7d80e5cda23fe6537eed26d68c92e995c7f39-refs/heads/main@{#1582197}
----
 
 diff --git a/third_party/blink/renderer/modules/webgl/webgl_context_object_support.cc b/third_party/blink/renderer/modules/webgl/webgl_context_object_support.cc
-index 05553e1..141c6b8 100644
+index 6a3b1416354e7993e7a9ebd25c4ca08593105d9a..83941f8163a5e9425f2df8fd3bb98e1fd37537ad 100644
 --- a/third_party/blink/renderer/modules/webgl/webgl_context_object_support.cc
 +++ b/third_party/blink/renderer/modules/webgl/webgl_context_object_support.cc
-@@ -24,7 +24,10 @@
+@@ -22,7 +22,10 @@ WebGLContextObjectSupport::WebGLContextObjectSupport(
  
  void WebGLContextObjectSupport::OnContextLost() {
    DCHECK(!is_lost_);
@@ -47,7 +46,7 @@ index 05553e1..141c6b8 100644
    is_lost_ = true;
    gles2_interface_ = nullptr;
    extensions_enabled_.reset();
-@@ -33,6 +36,8 @@
+@@ -31,6 +34,8 @@ void WebGLContextObjectSupport::OnContextLost() {
  void WebGLContextObjectSupport::OnContextRestored(
      gpu::gles2::GLES2Interface* gl) {
    DCHECK(is_lost_);
@@ -57,10 +56,10 @@ index 05553e1..141c6b8 100644
    gles2_interface_ = gl;
  }
 diff --git a/third_party/blink/renderer/modules/webgl/webgl_context_object_support.h b/third_party/blink/renderer/modules/webgl/webgl_context_object_support.h
-index f61cf9c2..79cfde2 100644
+index 907866bb21acf9647d1c0ecd791e642e96b734fc..ba8b79f8bb9db12058614982a625baaff5546af7 100644
 --- a/third_party/blink/renderer/modules/webgl/webgl_context_object_support.h
 +++ b/third_party/blink/renderer/modules/webgl/webgl_context_object_support.h
-@@ -36,10 +36,10 @@
+@@ -33,10 +33,10 @@ class MODULES_EXPORT WebGLContextObjectSupport : public ScriptWrappable {
    bool IsWebGL2() const { return is_webgl2_; }
    bool IsLost() const { return is_lost_; }
  
@@ -75,7 +74,7 @@ index f61cf9c2..79cfde2 100644
  
    bool ExtensionEnabled(WebGLExtensionName name) const {
      return extensions_enabled_.test(name);
-@@ -68,7 +68,7 @@
+@@ -65,7 +65,7 @@ class MODULES_EXPORT WebGLContextObjectSupport : public ScriptWrappable {
    std::bitset<kWebGLExtensionNameCount> extensions_enabled_ = {};
    raw_ptr<gpu::gles2::GLES2Interface> gles2_interface_ = nullptr;
  
@@ -85,10 +84,10 @@ index f61cf9c2..79cfde2 100644
    bool is_webgl2_;
  };
 diff --git a/third_party/blink/renderer/modules/webgl/webgl_object.cc b/third_party/blink/renderer/modules/webgl/webgl_object.cc
-index 9d984de..07e0a9a 100644
+index 9d984de0073796f23a5038bfc0a51ec676179765..07e0a9a4aa3406a1298a677a3159edadc5f2cbb5 100644
 --- a/third_party/blink/renderer/modules/webgl/webgl_object.cc
 +++ b/third_party/blink/renderer/modules/webgl/webgl_object.cc
-@@ -33,9 +33,9 @@
+@@ -33,9 +33,9 @@ namespace blink {
  
  WebGLObject::WebGLObject(WebGLContextObjectSupport* context)
      : context_(context),
@@ -100,7 +99,7 @@ index 9d984de..07e0a9a 100644
    }
  }
  
-@@ -46,7 +46,7 @@
+@@ -46,7 +46,7 @@ bool WebGLObject::Validate(const WebGLContextObjectSupport* context) const {
    // the objects they ever created, so there's no way to invalidate them
    // eagerly during context loss. The invalidation is discovered lazily.
    return (context == context_ && context_ != nullptr &&
@@ -109,7 +108,7 @@ index 9d984de..07e0a9a 100644
  }
  
  void WebGLObject::SetObject(GLuint object) {
-@@ -71,7 +71,7 @@
+@@ -71,7 +71,7 @@ void WebGLObject::DeleteObject(gpu::gles2::GLES2Interface* gl) {
      return;
    }
  
@@ -119,10 +118,10 @@ index 9d984de..07e0a9a 100644
      return;
    }
 diff --git a/third_party/blink/renderer/modules/webgl/webgl_object.h b/third_party/blink/renderer/modules/webgl/webgl_object.h
-index bb56df0..97caa90 100644
+index bb56df0f99e8e8432e03442feb9302b8dde27d01..97caa90e34288911b1a827e60c2569544d2b8f69 100644
 --- a/third_party/blink/renderer/modules/webgl/webgl_object.h
 +++ b/third_party/blink/renderer/modules/webgl/webgl_object.h
-@@ -123,9 +123,9 @@
+@@ -123,9 +123,9 @@ class WebGLObject : public ScriptWrappable {
  
    GLuint object_ = 0;
  
@@ -136,10 +135,10 @@ index bb56df0..97caa90 100644
    unsigned attachment_count_ = 0;
  
 diff --git a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.h b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.h
-index 30d910ed..89229956 100644
+index 48b5dd8f3baffed5ae898e029f7dd187ddf20ce3..33554fe5b9cdbbd703b6e02d6131104a4e591f4e 100644
 --- a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.h
 +++ b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.h
-@@ -2121,8 +2121,6 @@
+@@ -2064,8 +2064,6 @@ class MODULES_EXPORT WebGLRenderingContextBase
  
    bool has_been_drawn_to_ = false;
  
