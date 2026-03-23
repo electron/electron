@@ -113,7 +113,8 @@ from upstream Chromium.
 
 `NativeImage.toBitmap()` (and its deprecated alias `NativeImage.getBitmap()`) now normalizes pixel data to sRGB by default. Previously, raw pixel data was returned without color space conversion, which meant pixel values from images with different embedded color profiles (e.g., Display P3 on macOS) could differ for the same visual color.
 
-You can pass a `colorSpace` option to convert to a specific color space:
+To preserve the previous behavior, pass the image's original color space in the `colorSpace`
+option. You can also pass `colorSpace` to convert to any other specific color space:
 
 ```js
 const image = nativeImage.createFromPath('photo.png')
