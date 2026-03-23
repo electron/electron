@@ -10,6 +10,12 @@ import { closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
+const INPUT_ID = 'rtl-input';
+// Small delay between individual char events to allow the renderer to process each one.
+const CHAR_INPUT_DELAY_MS = 30;
+// Longer delay after key combos (e.g. Cmd+A) to allow IME / selection state to settle.
+const IME_PROCESSING_DELAY_MS = 100;
+
 // Regression test for: after pressing Cmd+A (select all) in a text input that
 // contains RTL text, the *next* character typed should remain in the active RTL
 // input language and must NOT be coerced to English/Latin.
@@ -33,7 +39,7 @@ describe('RTL input: Cmd+A followed by RTL character', () => {
     await w.loadFile(path.join(fixturesPath, 'pages', 'rtl-input.html'));
 
     // Focus the input element.
-    await w.webContents.executeJavaScript("document.getElementById('rtl-input').focus()");
+    await w.webContents.executeJavaScript(`document.getElementById('${INPUT_ID}').focus()`);
 
     // Simulate typing a few Hebrew characters via char events.
     // 'ש', 'ל', 'ו' are Hebrew characters that map to the keys a, l, v on a
@@ -41,28 +47,28 @@ describe('RTL input: Cmd+A followed by RTL character', () => {
     const hebrewChars = ['ש', 'ל', 'ו', 'ם'];
     for (const char of hebrewChars) {
       w.webContents.sendInputEvent({ type: 'char', keyCode: char });
-      await setTimeout(30);
+      await setTimeout(CHAR_INPUT_DELAY_MS);
     }
 
     // Verify initial RTL text was entered correctly.
     const initialValue = await w.webContents.executeJavaScript(
-      "document.getElementById('rtl-input').value"
+      `document.getElementById('${INPUT_ID}').value`
     );
     expect(initialValue).to.equal(hebrewChars.join(''), 'initial RTL characters should be in the input');
 
     // Press Cmd+A (select all) — this is the trigger for the bug.
     w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'a', modifiers: ['meta'] });
     w.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'a', modifiers: ['meta'] });
-    await setTimeout(100);
+    await setTimeout(IME_PROCESSING_DELAY_MS);
 
     // Now type one more Hebrew character after the select-all.
     // 'ש' is the Hebrew letter Shin, typed with the 'a' key in Hebrew layout.
     const nextHebrewChar = 'ש';
     w.webContents.sendInputEvent({ type: 'char', keyCode: nextHebrewChar });
-    await setTimeout(100);
+    await setTimeout(IME_PROCESSING_DELAY_MS);
 
     const valueAfterSelectAllAndType = await w.webContents.executeJavaScript(
-      "document.getElementById('rtl-input').value"
+      `document.getElementById('${INPUT_ID}').value`
     );
 
     // After Cmd+A, typing replaces the selection. The resulting value must be
