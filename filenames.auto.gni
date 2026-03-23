@@ -1,6 +1,7 @@
 # THIS FILE IS AUTO-GENERATED, PLEASE DO NOT EDIT BY HAND
 auto_filenames = {
   api_docs = [
+    "docs/api/.view.md.swp",
     "docs/api/app.md",
     "docs/api/auto-updater.md",
     "docs/api/base-window.md",

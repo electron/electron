@@ -269,7 +269,7 @@ Returns `Buffer` - A [Buffer][buffer] that contains the image's `JPEG` encoded d
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/48178
-    description: "Pixel data is now normalized to sRGB by default. Previously, raw pixel data was returned without color space conversion, which meant pixel values from images with different embedded color profiles (e.g., Display P3) could differ. Pass the image's original color space to preserve the previous behavior."
+    description: "Normalized `NativeImage.toBitmap()` pixel data to sRGB by default."
     breaking-changes-header: behavior-changed-nativeimagetobitmap-now-normalizes-color-space
 ```
 -->
@@ -277,8 +277,8 @@ changes:
 * `options` Object (optional)
   * `scaleFactor` Number (optional) - Defaults to 1.0.
   * `colorSpace` [ColorSpace](structures/color-space.md) (optional) - The target color space
-    for the output pixel data. Defaults to sRGB. Pass a different color space to get pixel
-    values in that space.
+    for the output pixel data. Defaults to sRGB. Pass the image's original color space to
+    preserve the previous behavior, or another color space to get pixel values in that space.
 
 Returns `Buffer` - A [Buffer][buffer] that contains a copy of the image's raw bitmap pixel
 data.
@@ -305,7 +305,7 @@ Returns `string` - The [Data URL][data-url] of the image.
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/48178
-    description: "Pixel data is now normalized to sRGB by default. Previously, raw pixel data was returned without color space conversion, which meant pixel values from images with different embedded color profiles (e.g., Display P3) could differ. Pass the image's original color space to preserve the previous behavior."
+    description: "Normalized `NativeImage.toBitmap()` pixel data to sRGB by default."
     breaking-changes-header: behavior-changed-nativeimagetobitmap-now-normalizes-color-space
 ```
 -->
@@ -313,8 +313,8 @@ changes:
 * `options` Object (optional)
   * `scaleFactor` Number (optional) - Defaults to 1.0.
   * `colorSpace` [ColorSpace](structures/color-space.md) (optional) - The target color space
-    for the output pixel data. Defaults to sRGB. Pass a different color space to get pixel
-    values in that space.
+    for the output pixel data. Defaults to sRGB. Pass the image's original color space to
+    preserve the previous behavior, or another color space to get pixel values in that space.
 
 Legacy alias for `image.toBitmap()`.
 
