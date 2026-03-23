@@ -262,7 +262,7 @@ index 68a3095a49caf472c83b93b5cef66e5549a2d7cc..aa371ba5576f9fbaf5558e39704f7eb8
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index a255629cbe33e132709689533fd23a7502f7a73e..ce503f82cdbc6c8f4da3ae11d6bed3ba16f7e1f5 100644
+index f8116beacc48d144e4ca62b2b05ce456b34ab72b..8c2dac5d7aa6d7d199e5a69ba9a14ea7cc10e6b6 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
 @@ -4,6 +4,7 @@
@@ -290,7 +290,7 @@ index a255629cbe33e132709689533fd23a7502f7a73e..ce503f82cdbc6c8f4da3ae11d6bed3ba
 +}
 +
  bool CheckSecurityForAccessingCodeCacheData(const GURL& resource_url,
-                                             int render_process_id,
+                                             ChildProcessId render_process_id,
                                              Operation operation) {
 @@ -67,42 +73,56 @@ bool CheckSecurityForAccessingCodeCacheData(const GURL& resource_url,
        ChildProcessSecurityPolicyImpl::GetInstance()->GetProcessLock(
@@ -372,7 +372,7 @@ index a255629cbe33e132709689533fd23a7502f7a73e..ce503f82cdbc6c8f4da3ae11d6bed3ba
    }
  
    if (operation == Operation::kWrite) {
-@@ -180,6 +200,7 @@ std::optional<GURL> GetOriginLock(int render_process_id) {
+@@ -180,6 +200,7 @@ std::optional<GURL> GetOriginLock(ChildProcessId render_process_id) {
        process_lock.MatchesScheme(url::kHttpsScheme) ||
        process_lock.MatchesScheme(content::kChromeUIScheme) ||
        process_lock.MatchesScheme(content::kChromeUIUntrustedScheme) ||
