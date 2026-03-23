@@ -39,7 +39,7 @@ index 6c7ec195fa64e3a1a718811192c9f6fdbf9463c6..c11744d2246c3df138cdb91f1d4459c6
    // event before sending it to the renderer. See enum for details on return
    // value.
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 1e3a09e4293b8925512f64ad2a78bccce2c83fca..30ff1afa505be3d2a2c94526e96f6cd6a566a605 100644
+index e3fa1bdc048a59dd64dae19b2372119335686643..b5ceb81ecc4d0274a411267e975ea413fe75a222 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -1555,6 +1555,10 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(

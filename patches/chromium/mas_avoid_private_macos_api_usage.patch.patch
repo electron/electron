@@ -50,10 +50,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index bc18a7ef68c23614b3bbdd9968139e63a8e81f44..95f40f43451a103cb19de86e632e1679e36fda3f 100644
+index 17b0a948c762996026885cbb63d66cbd0ab94981..a1a18ffa59d45518cb171efb08cf24d1648de425 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1084,6 +1084,7 @@ component("base") {
+@@ -1085,6 +1085,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -940,7 +940,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 26e72978755365e99feef34c4210b35e0a1d0790..c83b38bf9d392301924805a1083079dc3dd0b27f 100644
+index 664e12c07204feeb5be16581fe51e8adc4b898dd..38159d146cdf71f84611d58e2983418a1a365911 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -33,6 +33,7 @@
@@ -974,10 +974,10 @@ index 26e72978755365e99feef34c4210b35e0a1d0790..c83b38bf9d392301924805a1083079dc
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6c20db955545b37cb1fd6fcc9b280aa1c7a14ae9..c5b6e15d3e6826f31b4237668e38449f31663639 100644
+index 29104a461b7a3e04dc86baab0521288f974750a8..ea54cab0a72e931299871968afab7701e21547e4 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -362,6 +362,7 @@ source_set("browser") {
+@@ -363,6 +363,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -1020,7 +1020,7 @@ index 367834e678f44d6e71c4218d293e11c3569daf2b..c97fb8f0411b45c1a01e4fab8dc40cc3
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 29fe3bd4d8a63c5bd51536a904d191fef0c4e4a1..a36dd07237392e537c389628b5814e205c1f979f 100644
+index 1ada527ecd9e0603e6e7111f32b103da398bd0ca..2375ed828ee173932754c49299ccb6e5b0521a1c 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -53,6 +53,7 @@
@@ -1067,7 +1067,7 @@ index 29fe3bd4d8a63c5bd51536a904d191fef0c4e4a1..a36dd07237392e537c389628b5814e20
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2295,20 +2302,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2300,20 +2307,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -1189,7 +1189,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index ce7596c707fea72a6cf90b851c411e21999fdadd..707885fc25831eb012efb902211f198a585e2817 100644
+index 3235936853681da70e93a31d51a7f6a91be698b0..a3c78319d97fe84621c29d778e354a6384f8583f 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -701,6 +701,7 @@ static_library("test_support") {
@@ -1209,7 +1209,7 @@ index ce7596c707fea72a6cf90b851c411e21999fdadd..707885fc25831eb012efb902211f198a
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2075,6 +2078,7 @@ test("content_browsertests") {
+@@ -2076,6 +2079,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1217,7 +1217,7 @@ index ce7596c707fea72a6cf90b851c411e21999fdadd..707885fc25831eb012efb902211f198a
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3426,6 +3430,7 @@ test("content_unittests") {
+@@ -3428,6 +3432,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1801,10 +1801,10 @@ index 9b399ad326a19af7fd5e717bf8940ec562338f6d..96cc912489ab4423e0592d9c90c3d38f
  
    if (is_mac) {
 diff --git a/third_party/blink/renderer/core/editing/build.gni b/third_party/blink/renderer/core/editing/build.gni
-index cb1c907e6244cc5955edcc251db292198ba01e42..82df6d9e5c71e9e1b098fc4747b072e85e68114a 100644
+index 17156d5016d4c83e231f9ab8e232cabb7f803724..4627add0cf959e654e8ea3a98bceeb2c94f5a2df 100644
 --- a/third_party/blink/renderer/core/editing/build.gni
 +++ b/third_party/blink/renderer/core/editing/build.gni
-@@ -368,10 +368,14 @@ blink_core_sources_editing = [
+@@ -370,10 +370,14 @@ blink_core_sources_editing = [
  if (is_mac) {
    blink_core_sources_editing += [
      "commands/smart_replace_cf.cc",
@@ -2140,7 +2140,7 @@ index ef031ba14e4c649f6f3a5718ac521e6b424d64cb..38e528450196b4dbd5fa6a25b96baa10
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 341216ac373f158442803ab13f184535a3a8ead6..7ccb8a82b1f3e68d1f74a2763d648475ca623057 100644
+index 7cdab4235dca2ebdbdf77c6324df14f3094750d4..053221860b3fe6cae8e9d8505b7decacaf12e8ea 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -355,6 +355,13 @@ component("base") {
