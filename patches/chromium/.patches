@@ -151,3 +151,4 @@ fix_update_dbus_signal_signature_for_xdg_globalshortcuts_portal.patch
 patch_osr_control_screen_info.patch
 cherry-pick-12f932985275.patch
 fix_mac_high_res_icons.patch
+cherry-pick-074d472db745.patch
