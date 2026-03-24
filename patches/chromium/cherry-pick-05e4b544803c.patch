@@ -34,16 +34,8 @@ Commit-Queue: Anders Hartvoll Ruud <andruud@chromium.org>
 Reviewed-by: Steinar H Gunderson <sesse@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1590041}
 
----
- .../cssom/cross_thread_style_value_test.cc    |  5 ++-
- .../core/css/cssom/css_unparsed_value.cc      | 35 +++++++++++--------
- .../core/css/cssom/css_unparsed_value.h       | 10 ++----
- .../paint_worklet_style_property_map_test.cc  |  6 ++--
- .../css/properties/computed_style_utils.cc    |  2 +-
- 5 files changed, 29 insertions(+), 29 deletions(-)
-
 diff --git a/third_party/blink/renderer/core/css/cssom/cross_thread_style_value_test.cc b/third_party/blink/renderer/core/css/cssom/cross_thread_style_value_test.cc
-index dcc2eccbc84e6..86d42c87a6bd1 100644
+index dcc2eccbc84e6cd5710ab51cee2dab49661467c1..86d42c87a6bd10838a3e059c9227868e5bfc0798 100644
 --- a/third_party/blink/renderer/core/css/cssom/cross_thread_style_value_test.cc
 +++ b/third_party/blink/renderer/core/css/cssom/cross_thread_style_value_test.cc
 @@ -19,12 +19,12 @@
@@ -71,7 +63,7 @@ index dcc2eccbc84e6..86d42c87a6bd1 100644
  
  TEST_F(CrossThreadStyleValueTest, PassKeywordValueCrossThread) {
 diff --git a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
-index 67a4afde452f9..9c6bb62d044f8 100644
+index 67a4afde452f94ffb9ecbaeea104a3997c65b7b3..9c6bb62d044f804b0ce7bc8df398d77695cf950c 100644
 --- a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
 +++ b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
 @@ -124,16 +124,26 @@ IndexedPropertySetterResult CSSUnparsedValue::AnonymousIndexedSetter(
@@ -138,7 +130,7 @@ index 67a4afde452f9..9c6bb62d044f8 100644
    HeapHashSet<Member<const CSSUnparsedValue>> values_on_stack;
    if (AppendUnparsedString(builder, values_on_stack)) {
 diff --git a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
-index 5d1961b170f14..ec7e3ed708f40 100644
+index 5d1961b170f14ae21ca8f69b3c3cd8af28f4478a..ec7e3ed708f406d7a61fdb370b2eed8a8297cffb 100644
 --- a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
 +++ b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
 @@ -67,15 +67,9 @@ class CORE_EXPORT CSSUnparsedValue final : public CSSStyleValue {
@@ -160,7 +152,7 @@ index 5d1961b170f14..ec7e3ed708f40 100644
    bool AppendUnparsedString(
        StringBuilder&,
 diff --git a/third_party/blink/renderer/core/css/cssom/paint_worklet_style_property_map_test.cc b/third_party/blink/renderer/core/css/cssom/paint_worklet_style_property_map_test.cc
-index f81fa39423a92..2ee4dd7e59109 100644
+index f81fa39423a9235bc58e1600ca7a250affd3d9bb..2ee4dd7e591095b8460ca559b29b78e37ab71729 100644
 --- a/third_party/blink/renderer/core/css/cssom/paint_worklet_style_property_map_test.cc
 +++ b/third_party/blink/renderer/core/css/cssom/paint_worklet_style_property_map_test.cc
 @@ -5,6 +5,7 @@
@@ -198,7 +190,7 @@ index f81fa39423a92..2ee4dd7e59109 100644
    }
  
 diff --git a/third_party/blink/renderer/core/css/properties/computed_style_utils.cc b/third_party/blink/renderer/core/css/properties/computed_style_utils.cc
-index 1db0fd72478d7..b52d8065c770a 100644
+index 1db0fd72478d708008f1b95a6aff206b28f60a6a..b52d8065c770aba822e9977c251c540643972629 100644
 --- a/third_party/blink/renderer/core/css/properties/computed_style_utils.cc
 +++ b/third_party/blink/renderer/core/css/properties/computed_style_utils.cc
 @@ -4872,7 +4872,7 @@ ComputedStyleUtils::CrossThreadStyleValueFromCSSStyleValue(
@@ -210,6 +202,3 @@ index 1db0fd72478d7..b52d8065c770a 100644
      default:
        return std::make_unique<CrossThreadUnsupportedValue>(
            style_value->toString());
--- 
-2.47.0
-

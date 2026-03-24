@@ -30,16 +30,8 @@ Reviewed-by: Steinar H Gunderson <sesse@chromium.org>
 Commit-Queue: Anders Hartvoll Ruud <andruud@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1590110}
 
----
- .../core/css/templates/cssom_types.cc.tmpl    |  5 ++-
- .../core/css/cssom/css_unparsed_value.cc      | 42 +++++++++++++++++--
- .../core/css/cssom/css_unparsed_value.h       |  9 ++++
- .../set-invalid-untyped-value-crash.html      | 39 +++++++++++++++++
- 4 files changed, 89 insertions(+), 6 deletions(-)
- create mode 100644 third_party/blink/web_tests/external/wpt/css/css-typed-om/set-invalid-untyped-value-crash.html
-
 diff --git a/third_party/blink/renderer/build/scripts/core/css/templates/cssom_types.cc.tmpl b/third_party/blink/renderer/build/scripts/core/css/templates/cssom_types.cc.tmpl
-index edfa73a57d30e..4442ba0872ca4 100644
+index edfa73a57d30ebd4f9a7147702df42b836f7d82b..4442ba0872ca4c739596b546e6d3b600c5a31598 100644
 --- a/third_party/blink/renderer/build/scripts/core/css/templates/cssom_types.cc.tmpl
 +++ b/third_party/blink/renderer/build/scripts/core/css/templates/cssom_types.cc.tmpl
 @@ -11,6 +11,7 @@
@@ -62,7 +54,7 @@ index edfa73a57d30e..4442ba0872ca4 100644
  
    switch (id) {
 diff --git a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
-index 9c6bb62d044f8..17a86e1292d76 100644
+index 9c6bb62d044f804b0ce7bc8df398d77695cf950c..17a86e1292d76ff0b0c74b701750c0e972b4d885 100644
 --- a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
 +++ b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
 @@ -4,11 +4,13 @@
@@ -136,7 +128,7 @@ index 9c6bb62d044f8..17a86e1292d76 100644
  
  String CSSUnparsedValue::ToStringInternal() const {
 diff --git a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
-index ec7e3ed708f40..7fd66aed677e3 100644
+index ec7e3ed708f406d7a61fdb370b2eed8a8297cffb..7fd66aed677e31046a1bd206854b2cbeac07c25b 100644
 --- a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
 +++ b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
 @@ -48,6 +48,14 @@ class CORE_EXPORT CSSUnparsedValue final : public CSSStyleValue {
@@ -164,7 +156,7 @@ index ec7e3ed708f40..7fd66aed677e3 100644
    // Return 'false' if there is a cycle in the serialization.
 diff --git a/third_party/blink/web_tests/external/wpt/css/css-typed-om/set-invalid-untyped-value-crash.html b/third_party/blink/web_tests/external/wpt/css/css-typed-om/set-invalid-untyped-value-crash.html
 new file mode 100644
-index 0000000000000..ce618bf38fe65
+index 0000000000000000000000000000000000000000..ce618bf38fe651297b969ffdc16e212dee6a3688
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/css/css-typed-om/set-invalid-untyped-value-crash.html
 @@ -0,0 +1,39 @@
@@ -207,6 +199,3 @@ index 0000000000000..ce618bf38fe65
 +    target.offsetTop;
 +  }
 +</script>
--- 
-2.47.0
-

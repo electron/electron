@@ -17,13 +17,8 @@ Commit-Queue: Anders Hartvoll Ruud <andruud@chromium.org>
 Reviewed-by: Steinar H Gunderson <sesse@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1590040}
 
----
- .../core/css/cssom/css_unparsed_value.cc      | 40 +++++++++----------
- .../core/css/cssom/css_unparsed_value.h       | 20 +++++-----
- 2 files changed, 30 insertions(+), 30 deletions(-)
-
 diff --git a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
-index 3d43306dd902b..67a4afde452f9 100644
+index 3d43306dd902b3071637e5d5d0af26e5ee47f141..67a4afde452f94ffb9ecbaeea104a3997c65b7b3 100644
 --- a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
 +++ b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
 @@ -24,12 +24,12 @@ String FindVariableName(CSSParserTokenStream& stream) {
@@ -146,7 +141,7 @@ index 3d43306dd902b..67a4afde452f9 100644
      }
    }
 diff --git a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
-index c9dab7a0b3ffe..5d1961b170f14 100644
+index c9dab7a0b3ffeaeb6b5d2ab50d876d40c38a760e..5d1961b170f14ae21ca8f69b3c3cd8af28f4478a 100644
 --- a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
 +++ b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
 @@ -26,8 +26,8 @@ class CORE_EXPORT CSSUnparsedValue final : public CSSStyleValue {
@@ -202,6 +197,3 @@ index c9dab7a0b3ffe..5d1961b170f14 100644
  
    FRIEND_TEST_ALL_PREFIXES(CSSUnparsedDeclarationValueTest, MixedList);
  };
--- 
-2.47.0
-
