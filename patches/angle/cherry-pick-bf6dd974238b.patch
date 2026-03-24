@@ -12,32 +12,45 @@ Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7568089
 Commit-Queue: Geoff Lang <geofflang@chromium.org>
 Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
 ---
+ include/GLSLANG/ShaderLang.h                  | 17 ++++++-
+ include/platform/autogen/FeaturesGL_autogen.h |  6 +++
+ include/platform/gl_features.json             |  8 +++
+ src/compiler/translator/Compiler.cpp          |  8 ++-
+ src/compiler/translator/ParseContext.cpp      | 49 +++++++++++++++++++
+ src/compiler/translator/ParseContext.h        |  6 +++
+ src/compiler/translator/ShaderLang.cpp        |  6 +++
+ src/libANGLE/Compiler.cpp                     |  7 +++
+ src/libANGLE/renderer/gl/ShaderGL.cpp         |  5 ++
+ src/libANGLE/renderer/gl/renderergl_utils.cpp |  4 ++
+ util/autogen/angle_features_autogen.cpp       |  1 +
+ util/autogen/angle_features_autogen.h         |  1 +
+ 12 files changed, 116 insertions(+), 2 deletions(-)
 
 diff --git a/include/GLSLANG/ShaderLang.h b/include/GLSLANG/ShaderLang.h
-index 6e7768b..ab3d49f 100644
+index a4d90d43b6..c87dfa42d6 100644
 --- a/include/GLSLANG/ShaderLang.h
 +++ b/include/GLSLANG/ShaderLang.h
 @@ -26,7 +26,7 @@
  
  // Version number for shader translation API.
  // It is incremented every time the API changes.
--#define ANGLE_SH_VERSION 398
-+#define ANGLE_SH_VERSION 399
+-#define ANGLE_SH_VERSION 382
++#define ANGLE_SH_VERSION 383
  
  enum ShShaderSpec
  {
-@@ -384,7 +384,9 @@
-     // VK_EXT_depth_clip_control is supported, this code is not generated, saving a uniform look up.
-     uint64_t addVulkanDepthCorrection : 1;
+@@ -388,6 +388,10 @@ struct ShCompileOptions
  
--    uint64_t unused2 : 1;
+     uint64_t forceShaderPrecisionHighpToMediump : 1;
+ 
 +    // Validate that the count of uniform blocks is within the GL_MAX_*_UNIFORM_BLOCKS limits. These
 +    // limits must be supplied in the BuiltinResources.
 +    uint64_t validatePerStageMaxUniformBlocks : 1;
- 
++
      // Ask compiler to generate Vulkan transform feedback emulation support code.
      uint64_t addVulkanXfbEmulationSupportCode : 1;
-@@ -586,6 +588,12 @@
+ 
+@@ -587,6 +591,12 @@ struct ShBuiltInResources
      int MinProgramTexelOffset;
      int MaxProgramTexelOffset;
  
@@ -50,7 +63,7 @@ index 6e7768b..ab3d49f 100644
      // Extension constants.
  
      // Value of GL_MAX_DUAL_SOURCE_DRAW_BUFFERS_EXT for OpenGL ES output context.
-@@ -703,6 +711,9 @@
+@@ -704,6 +714,9 @@ struct ShBuiltInResources
      // maximum point size (higher limit from ALIASED_POINT_SIZE_RANGE)
      float MaxPointSize;
  
@@ -59,16 +72,8 @@ index 6e7768b..ab3d49f 100644
 +
      // EXT_geometry_shader constants
      int MaxGeometryUniformComponents;
-     int MaxGeometryInputComponents;
-@@ -714,6 +725,7 @@
-     int MaxGeometryAtomicCounters;
-     int MaxGeometryShaderInvocations;
-     int MaxGeometryImageUniforms;
-+    int MaxGeometryUniformBlocks;
- 
-     // EXT_tessellation_shader constants
-     int MaxTessControlInputComponents;
-@@ -724,6 +736,7 @@
+     int MaxGeometryUniformBlocks;
+@@ -727,6 +740,7 @@ struct ShBuiltInResources
      int MaxTessControlImageUniforms;
      int MaxTessControlAtomicCounters;
      int MaxTessControlAtomicCounterBuffers;
@@ -76,19 +81,19 @@ index 6e7768b..ab3d49f 100644
  
      int MaxTessPatchComponents;
      int MaxPatchVertices;
-@@ -736,6 +749,7 @@
+@@ -739,6 +753,7 @@ struct ShBuiltInResources
      int MaxTessEvaluationImageUniforms;
      int MaxTessEvaluationAtomicCounters;
      int MaxTessEvaluationAtomicCounterBuffers;
 +    int MaxTessEvaluationUniformBlocks;
  
-     // APPLE_clip_distance / EXT_clip_cull_distance / ANGLE_clip_cull_distance constants
-     int MaxClipDistances;
+     // Subpixel bits used in rasterization.
+     int SubPixelBits;
 diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
-index 09d4aa2..c0c00f1 100644
+index c5fb020f74..c492b8287a 100644
 --- a/include/platform/autogen/FeaturesGL_autogen.h
 +++ b/include/platform/autogen/FeaturesGL_autogen.h
-@@ -662,6 +662,12 @@
+@@ -632,6 +632,12 @@ struct FeaturesGL : FeatureSetBase
          &members,
      };
  
@@ -102,13 +107,13 @@ index 09d4aa2..c0c00f1 100644
  
  inline FeaturesGL::FeaturesGL()  = default;
 diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
-index 94d86bd..a78b0d4 100644
+index f694261548..656133772e 100644
 --- a/include/platform/gl_features.json
 +++ b/include/platform/gl_features.json
-@@ -860,6 +860,14 @@
-                 "Use ARB_shader_viewport_layer_array or NV_viewport_array2 to implement multiview"
+@@ -820,6 +820,14 @@
+                 "Some Adreno drivers assume incorrect glSampleCoverage if new FBO is bound with different sample count"
              ],
-             "issue": "http://anglebug.com/42260809"
+             "issue": "https://crbug.com/408364831"
 +        },
 +        {
 +            "name": "validate_max_per_stage_uniform_blocks_at_compile_time",
@@ -121,10 +126,10 @@ index 94d86bd..a78b0d4 100644
      ]
  }
 diff --git a/src/compiler/translator/Compiler.cpp b/src/compiler/translator/Compiler.cpp
-index 2af7dbe..318b861 100644
+index bd5e6990fb..f966774d4e 100644
 --- a/src/compiler/translator/Compiler.cpp
 +++ b/src/compiler/translator/Compiler.cpp
-@@ -1493,6 +1493,8 @@
+@@ -1633,6 +1633,8 @@ void TCompiler::setResourceString()
          << ":MaxFragmentInputVectors:" << mResources.MaxFragmentInputVectors
          << ":MinProgramTexelOffset:" << mResources.MinProgramTexelOffset
          << ":MaxProgramTexelOffset:" << mResources.MaxProgramTexelOffset
@@ -133,23 +138,15 @@ index 2af7dbe..318b861 100644
          << ":MaxDualSourceDrawBuffers:" << mResources.MaxDualSourceDrawBuffers
          << ":MaxViewsOVR:" << mResources.MaxViewsOVR
          << ":NV_draw_buffers:" << mResources.NV_draw_buffers
-@@ -1542,6 +1544,7 @@
+@@ -1682,6 +1684,7 @@ void TCompiler::setResourceString()
          << ":MaxFragmentAtomicCounterBuffers:" << mResources.MaxFragmentAtomicCounterBuffers
          << ":MaxCombinedAtomicCounterBuffers:" << mResources.MaxCombinedAtomicCounterBuffers
          << ":MaxAtomicCounterBufferSize:" << mResources.MaxAtomicCounterBufferSize
 +        << ":MaxComputeUnformBlocks:" << mResources.MaxComputeUniformBlocks
          << ":MaxGeometryUniformComponents:" << mResources.MaxGeometryUniformComponents
+         << ":MaxGeometryUniformBlocks:" << mResources.MaxGeometryUniformBlocks
          << ":MaxGeometryInputComponents:" << mResources.MaxGeometryInputComponents
-         << ":MaxGeometryOutputComponents:" << mResources.MaxGeometryOutputComponents
-@@ -1552,6 +1555,7 @@
-         << ":MaxGeometryAtomicCounters:" << mResources.MaxGeometryAtomicCounters
-         << ":MaxGeometryShaderInvocations:" << mResources.MaxGeometryShaderInvocations
-         << ":MaxGeometryImageUniforms:" << mResources.MaxGeometryImageUniforms
-+        << ":MaxGeometryUniformBlocks:" << mResources.MaxGeometryUniformBlocks
-         << ":MaxClipDistances" << mResources.MaxClipDistances
-         << ":MaxCullDistances" << mResources.MaxCullDistances
-         << ":MaxCombinedClipAndCullDistances" << mResources.MaxCombinedClipAndCullDistances
-@@ -1563,6 +1567,7 @@
+@@ -1705,6 +1708,7 @@ void TCompiler::setResourceString()
          << ":MaxTessControlImageUniforms:" << mResources.MaxTessControlImageUniforms
          << ":MaxTessControlAtomicCounters:" << mResources.MaxTessControlAtomicCounters
          << ":MaxTessControlAtomicCounterBuffers:" << mResources.MaxTessControlAtomicCounterBuffers
@@ -157,7 +154,7 @@ index 2af7dbe..318b861 100644
          << ":MaxTessPatchComponents:" << mResources.MaxTessPatchComponents
          << ":MaxPatchVertices:" << mResources.MaxPatchVertices
          << ":MaxTessGenLevel:" << mResources.MaxTessGenLevel
-@@ -1572,7 +1577,9 @@
+@@ -1714,7 +1718,9 @@ void TCompiler::setResourceString()
          << ":MaxTessEvaluationUniformComponents:" << mResources.MaxTessEvaluationUniformComponents
          << ":MaxTessEvaluationImageUniforms:" << mResources.MaxTessEvaluationImageUniforms
          << ":MaxTessEvaluationAtomicCounters:" << mResources.MaxTessEvaluationAtomicCounters
@@ -169,12 +166,12 @@ index 2af7dbe..318b861 100644
  
      mBuiltInResourcesString = strstream.str();
 diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
-index 839c59a..b95cb49 100644
+index de788456a2..53a3f79a93 100644
 --- a/src/compiler/translator/ParseContext.cpp
 +++ b/src/compiler/translator/ParseContext.cpp
-@@ -429,6 +429,37 @@
-     // overestimated).
-     return isStd140 ? kVec4Size : type->getNominalSize() * sizeof(float);
+@@ -250,6 +250,37 @@ bool IsSamplerOrStructWithOnlySamplers(const TType *type)
+ {
+     return IsSampler(type->getBasicType()) || type->isStructureContainingOnlySamplers();
  }
 +
 +unsigned int GetMaxUniformBlocksForShaderType(sh::GLenum shaderType,
@@ -210,16 +207,16 @@ index 839c59a..b95cb49 100644
  }  // namespace
  
  // This tracks each binding point's current default offset for inheritance of subsequent
-@@ -500,6 +531,8 @@
-       mComputeShaderLocalSizeDeclared(false),
-       mComputeShaderLocalSize(-1),
-       mNumViews(-1),
+@@ -341,6 +372,8 @@ TParseContext::TParseContext(TSymbolTable &symt,
+       mMaxAtomicCounterBufferSize(resources.MaxAtomicCounterBufferSize),
+       mMaxShaderStorageBufferBindings(resources.MaxShaderStorageBufferBindings),
+       mMaxPixelLocalStoragePlanes(resources.MaxPixelLocalStoragePlanes),
 +      mMaxUniformBlocks(GetMaxUniformBlocksForShaderType(mShaderType, options, resources)),
 +      mNumUniformBlocks(0),
        mDeclaringFunction(false),
        mDeclaringMain(false),
-       mMainFunction(nullptr),
-@@ -6316,6 +6349,22 @@
+       mIsMainDeclared(false),
+@@ -5080,6 +5113,22 @@ TIntermDeclaration *TParseContext::addInterfaceBlock(
          error(arraySizesLine, "geometry shader input blocks must be an array", "");
      }
  
@@ -243,12 +240,12 @@ index 839c59a..b95cb49 100644
  
      if (mShaderVersion < 310)
 diff --git a/src/compiler/translator/ParseContext.h b/src/compiler/translator/ParseContext.h
-index 828eebb..cc43abe 100644
+index 5f6800df8c..fb13198d49 100644
 --- a/src/compiler/translator/ParseContext.h
 +++ b/src/compiler/translator/ParseContext.h
-@@ -884,6 +884,12 @@
-     // Keep track of number of views declared in layout.
-     int mNumViews;
+@@ -798,6 +798,12 @@ class TParseContext : angle::NonCopyable
+     int mMaxShaderStorageBufferBindings;
+     int mMaxPixelLocalStoragePlanes;
  
 +    // Maximum number of uniform blocks allowed to be declared in this shader. Taken from the
 +    // built-in resources and resolved to this shader type.
@@ -256,14 +253,14 @@ index 828eebb..cc43abe 100644
 +    // Current count of declared uniform blocks.
 +    unsigned int mNumUniformBlocks;
 +
-     // Keeps track of whether any of the built-ins that can be redeclared (see
-     // IsRedeclarableBuiltIn()) has been marked as invariant/precise before the possible
-     // redeclaration.
+     // keeps track whether we are declaring / defining a function
+     bool mDeclaringFunction;
+ 
 diff --git a/src/compiler/translator/ShaderLang.cpp b/src/compiler/translator/ShaderLang.cpp
-index a5bfbbc..7304d2e 100644
+index fa67c01cc5..56bd95a724 100644
 --- a/src/compiler/translator/ShaderLang.cpp
 +++ b/src/compiler/translator/ShaderLang.cpp
-@@ -262,6 +262,8 @@
+@@ -254,6 +254,8 @@ void InitBuiltInResources(ShBuiltInResources *resources)
      resources->MaxFragmentInputVectors = 15;
      resources->MinProgramTexelOffset   = -8;
      resources->MaxProgramTexelOffset   = 7;
@@ -272,24 +269,16 @@ index a5bfbbc..7304d2e 100644
  
      // Extensions constants.
      resources->MaxDualSourceDrawBuffers = 0;
-@@ -322,6 +324,8 @@
+@@ -314,6 +316,8 @@ void InitBuiltInResources(ShBuiltInResources *resources)
      resources->MaxUniformBufferBindings       = 32;
      resources->MaxShaderStorageBufferBindings = 4;
  
 +    resources->MaxComputeUniformBlocks = 12;
 +
      resources->MaxGeometryUniformComponents     = 1024;
+     resources->MaxGeometryUniformBlocks         = 12;
      resources->MaxGeometryInputComponents       = 64;
-     resources->MaxGeometryOutputComponents      = 64;
-@@ -332,6 +336,7 @@
-     resources->MaxGeometryAtomicCounters        = 0;
-     resources->MaxGeometryShaderInvocations     = 32;
-     resources->MaxGeometryImageUniforms         = 0;
-+    resources->MaxGeometryUniformBlocks         = 12;
- 
-     resources->MaxTessControlInputComponents       = 64;
-     resources->MaxTessControlOutputComponents      = 64;
-@@ -341,6 +346,7 @@
+@@ -335,6 +339,7 @@ void InitBuiltInResources(ShBuiltInResources *resources)
      resources->MaxTessControlImageUniforms         = 0;
      resources->MaxTessControlAtomicCounters        = 0;
      resources->MaxTessControlAtomicCounterBuffers  = 0;
@@ -297,19 +286,19 @@ index a5bfbbc..7304d2e 100644
  
      resources->MaxTessPatchComponents = 120;
      resources->MaxPatchVertices       = 32;
-@@ -353,6 +359,7 @@
+@@ -347,6 +352,7 @@ void InitBuiltInResources(ShBuiltInResources *resources)
      resources->MaxTessEvaluationImageUniforms        = 0;
      resources->MaxTessEvaluationAtomicCounters       = 0;
      resources->MaxTessEvaluationAtomicCounterBuffers = 0;
 +    resources->MaxTessEvaluationUniformBlocks        = 12;
  
-     resources->MaxSamples = 4;
- }
+     resources->SubPixelBits = 8;
+ 
 diff --git a/src/libANGLE/Compiler.cpp b/src/libANGLE/Compiler.cpp
-index 81a8cef..9c3fc31 100644
+index 00684c8ed0..1893b6bddb 100644
 --- a/src/libANGLE/Compiler.cpp
 +++ b/src/libANGLE/Compiler.cpp
-@@ -167,6 +167,8 @@
+@@ -169,6 +169,8 @@ Compiler::Compiler(rx::GLImplFactory *implFactory, const State &state, egl::Disp
      mResources.MaxFragmentInputVectors = caps.maxFragmentInputComponents / 4;
      mResources.MinProgramTexelOffset   = caps.minProgramTexelOffset;
      mResources.MaxProgramTexelOffset   = caps.maxProgramTexelOffset;
@@ -318,7 +307,7 @@ index 81a8cef..9c3fc31 100644
  
      // EXT_blend_func_extended
      mResources.EXT_blend_func_extended  = extensions.blendFuncExtendedEXT;
-@@ -209,6 +211,7 @@
+@@ -211,6 +213,7 @@ Compiler::Compiler(rx::GLImplFactory *implFactory, const State &state, egl::Disp
      mResources.MaxCombinedImageUniforms         = caps.maxCombinedImageUniforms;
      mResources.MaxCombinedShaderOutputResources = caps.maxCombinedShaderOutputResources;
      mResources.MaxUniformLocations              = caps.maxUniformLocations;
@@ -326,15 +315,7 @@ index 81a8cef..9c3fc31 100644
  
      for (size_t index = 0u; index < 3u; ++index)
      {
-@@ -261,6 +264,7 @@
-     mResources.MaxGeometryAtomicCounters      = caps.maxShaderAtomicCounters[ShaderType::Geometry];
-     mResources.MaxGeometryShaderInvocations   = caps.maxGeometryShaderInvocations;
-     mResources.MaxGeometryImageUniforms       = caps.maxShaderImageUniforms[ShaderType::Geometry];
-+    mResources.MaxGeometryUniformBlocks = caps.maxShaderUniformBlocks[gl::ShaderType::Geometry];
- 
-     // Tessellation Shader constants
-     mResources.EXT_tessellation_shader        = extensions.tessellationShaderEXT;
-@@ -276,6 +280,8 @@
+@@ -280,6 +283,8 @@ Compiler::Compiler(rx::GLImplFactory *implFactory, const State &state, egl::Disp
      mResources.MaxTessControlAtomicCounters = caps.maxShaderAtomicCounters[ShaderType::TessControl];
      mResources.MaxTessControlAtomicCounterBuffers =
          caps.maxShaderAtomicCounterBuffers[ShaderType::TessControl];
@@ -343,20 +324,20 @@ index 81a8cef..9c3fc31 100644
  
      mResources.MaxTessPatchComponents = caps.maxTessPatchComponents;
      mResources.MaxPatchVertices       = caps.maxPatchVertices;
-@@ -293,6 +299,8 @@
+@@ -297,6 +302,8 @@ Compiler::Compiler(rx::GLImplFactory *implFactory, const State &state, egl::Disp
          caps.maxShaderAtomicCounters[ShaderType::TessEvaluation];
      mResources.MaxTessEvaluationAtomicCounterBuffers =
          caps.maxShaderAtomicCounterBuffers[ShaderType::TessEvaluation];
 +    mResources.MaxTessEvaluationUniformBlocks =
 +        caps.maxShaderUniformBlocks[gl::ShaderType::TessEvaluation];
- }
  
- Compiler::~Compiler() = default;
+     // Subpixel bits.
+     mResources.SubPixelBits = static_cast<int>(caps.subPixelBits);
 diff --git a/src/libANGLE/renderer/gl/ShaderGL.cpp b/src/libANGLE/renderer/gl/ShaderGL.cpp
-index 9004ef8..ffa4fb0 100644
+index bef2feaee0..6b66d4e529 100644
 --- a/src/libANGLE/renderer/gl/ShaderGL.cpp
 +++ b/src/libANGLE/renderer/gl/ShaderGL.cpp
-@@ -266,6 +266,11 @@
+@@ -272,6 +272,11 @@ std::shared_ptr<ShaderTranslateTask> ShaderGL::compile(const gl::Context *contex
          options->pls = contextGL->getNativePixelLocalStorageOptions();
      }
  
@@ -369,13 +350,13 @@ index 9004ef8..ffa4fb0 100644
          new ShaderTranslateTaskGL(functions, mShaderID, contextGL->hasNativeParallelCompile()));
  }
 diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
-index 8bdbd1a..29abdf4 100644
+index b8b328b050..aaa928d6e5 100644
 --- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
 +++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
-@@ -2751,6 +2751,10 @@
-     // IMG GL drivers crash in glClearTexImage on various format/type combinations such as packed
-     // types, LUMA and depth stencil.
-     ANGLE_FEATURE_CONDITION(features, disableClearTexImageForRobustInit, IsPowerVR(vendor));
+@@ -2707,6 +2707,10 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     // number of samples in currently bound FBO and require to reset sample
+     // coverage each time FBO changes.
+     ANGLE_FEATURE_CONDITION(features, resetSampleCoverageOnFBOChange, isQualcomm);
 +
 +    // IMG GL drivers crash while compiling shaders with more than the limit of uniform blocks.
 +    ANGLE_FEATURE_CONDITION(features, validateMaxPerStageUniformBlocksAtCompileTime,
@@ -383,90 +364,11 @@ index 8bdbd1a..29abdf4 100644
  }
  
  void InitializeFrontendFeatures(const FunctionsGL *functions, angle::FrontendFeatures *features)
-diff --git a/src/tests/gl_tests/GLSLValidationTest.cpp b/src/tests/gl_tests/GLSLValidationTest.cpp
-index be02d55..bf80afa 100644
---- a/src/tests/gl_tests/GLSLValidationTest.cpp
-+++ b/src/tests/gl_tests/GLSLValidationTest.cpp
-@@ -7288,6 +7288,61 @@
-     validateSuccess(GL_FRAGMENT_SHADER, kShader);
- }
- 
-+class GLSLValidationTest_ES3_ValidateUniformBlocks : public GLSLValidationTest_ES3
-+{};
-+
-+// Test the validate_max_per_stage_uniform_blocks_at_compile_time feature which validates the
-+// uniform block count at compile time instead of link time.
-+TEST_P(GLSLValidationTest_ES3_ValidateUniformBlocks,
-+       MaxPerStageUniformBlockLimitsValidatedByCompile)
-+{
-+    GLint maxVertexUniformBlocks, maxFragmentUniformBlocks;
-+    glGetIntegerv(GL_MAX_VERTEX_UNIFORM_BLOCKS, &maxVertexUniformBlocks);
-+    glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_BLOCKS, &maxFragmentUniformBlocks);
-+
-+    // Test with one large array that is larger than the limit
-+    std::ostringstream vsStream;
-+    vsStream << R"(#version 300 es
-+precision mediump float;
-+#define BLOCK_COUNT )"
-+             << maxVertexUniformBlocks + 1 << R"(
-+layout(std140) uniform MyBlock {
-+    float x;
-+} blocks[BLOCK_COUNT];
-+
-+void main() {
-+    gl_Position = vec4(blocks[BLOCK_COUNT - 1].x);
-+})";
-+
-+    const std::string vertexShader = vsStream.str();
-+    validateError(GL_VERTEX_SHADER, vertexShader.c_str(),
-+                  "uniform block count greater than per stage maximum uniform blocks");
-+
-+    // Test with one array that reaches the limit and a single block which overflows the limit
-+    std::ostringstream fsStream;
-+    fsStream << R"(#version 300 es
-+precision mediump float;
-+#define BLOCK_COUNT )"
-+             << maxFragmentUniformBlocks + 1 << R"(
-+layout(std140) uniform MyBlock0 {
-+    float x;
-+} blocks0[BLOCK_COUNT - 1];
-+
-+layout(std140) uniform MyBlock1 {
-+    float x;
-+} block1;
-+
-+out vec4 fragColor;
-+
-+void main() {
-+    fragColor = vec4(blocks0[BLOCK_COUNT-2].x, block1.x, 0.0, 1.0);
-+})";
-+
-+    const std::string fragmentShader = fsStream.str();
-+    validateError(GL_FRAGMENT_SHADER, fragmentShader.c_str(),
-+                  "uniform block count greater than per stage maximum uniform blocks");
-+}
-+
- }  // namespace
- 
- ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(GLSLValidationTest);
-@@ -7296,6 +7351,12 @@
- GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(GLSLValidationTest_ES3);
- ANGLE_INSTANTIATE_TEST_ES3(GLSLValidationTest_ES3);
- 
-+GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(GLSLValidationTest_ES3_ValidateUniformBlocks);
-+ANGLE_INSTANTIATE_TEST(
-+    GLSLValidationTest_ES3_ValidateUniformBlocks,
-+    ES3_OPENGL().enable(Feature::ValidateMaxPerStageUniformBlocksAtCompileTime),
-+    ES3_OPENGLES().enable(Feature::ValidateMaxPerStageUniformBlocksAtCompileTime));
-+
- GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(GLSLValidationTest_ES31);
- ANGLE_INSTANTIATE_TEST_ES31(GLSLValidationTest_ES31);
- 
 diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
-index d902086..bbb75e7 100644
+index 7ff616edd4..f56164ad97 100644
 --- a/util/autogen/angle_features_autogen.cpp
 +++ b/util/autogen/angle_features_autogen.cpp
-@@ -491,6 +491,7 @@
+@@ -473,6 +473,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
      {Feature::UseVkEventForBufferBarrier, "useVkEventForBufferBarrier"},
      {Feature::UseVkEventForImageBarrier, "useVkEventForImageBarrier"},
      {Feature::UseVmaForImageSuballocation, "useVmaForImageSuballocation"},
@@ -475,10 +377,10 @@ index d902086..bbb75e7 100644
      {Feature::VerifyPipelineCacheInBlobCache, "verifyPipelineCacheInBlobCache"},
      {Feature::VertexIDDoesNotIncludeBaseVertex, "vertexIDDoesNotIncludeBaseVertex"},
 diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
-index 2277a3c..556c8c0 100644
+index fd19b2b8f4..55bf1b418c 100644
 --- a/util/autogen/angle_features_autogen.h
 +++ b/util/autogen/angle_features_autogen.h
-@@ -491,6 +491,7 @@
+@@ -473,6 +473,7 @@ enum class Feature
      UseVkEventForBufferBarrier,
      UseVkEventForImageBarrier,
      UseVmaForImageSuballocation,
@@ -486,3 +388,6 @@ index 2277a3c..556c8c0 100644
      VaryingsRequireMatchingPrecisionInSpirv,
      VerifyPipelineCacheInBlobCache,
      VertexIDDoesNotIncludeBaseVertex,
+-- 
+2.50.1 (Apple Git-155)
+
