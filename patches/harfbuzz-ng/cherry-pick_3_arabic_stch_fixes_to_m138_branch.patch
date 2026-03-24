@@ -1,0 +1,150 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tiago Vignatti <vignatti@google.com>
+Date: Fri, 20 Mar 2026 13:19:22 +0000
+Subject: Cherry-pick 3 Arabic, stch fixes to M138 branch.
+
+[arabic] Cap stch expansion per run (#5823)
+
+Cap each stch run to at most 256 output glyphs.
+
+This keeps pathological stretch runs from expanding to unbounded
+sizes, and switches the repeat-count math to 64-bit intermediates so
+the cap is applied before 32-bit arithmetic can wrap.
+
+The existing checked accumulation and buffer growth logic stays in
+place, covering both the per-run overflow and multi-run accumulation
+cases reported in the recent stch advisories.
+
+Tested: meson test -C build --suite shape
+Assisted-by: OpenAI Codex
+
+[arabic] Improve stch measurement pass (#5808)
+
+Use checked arithmetic when calculating the number of extra glyphs
+needed during stch processing. Includes a new hb_unsigned_add_overflows
+helper in hb-algs.hh.
+
+Co-authored-by: Codex (AI assistant)
+Co-authored-by: Gemini (AI assistant)
+
+[arabic] Change a couple enum values
+
+No semantic change.
+
+Bug: 491516670
+Change-Id: I721974ff5792006655e19a0dad1567a5268ad6a2
+Fixed: 493132380
+
+diff --git a/src/hb-algs.hh b/src/hb-algs.hh
+index 7dfa9769699f79a135dcef2df7bcd8b0e0caac3a..85b2e6bdfbb9d54c497c7e5ae22c27825aef5d80 100644
+--- a/src/hb-algs.hh
++++ b/src/hb-algs.hh
+@@ -1154,6 +1154,21 @@ hb_unsigned_mul_overflows (unsigned int count, unsigned int size, unsigned *resu
+   return (size > 0) && (count >= ((unsigned int) -1) / size);
+ }
+ 
++static inline bool
++hb_unsigned_add_overflows (unsigned int a, unsigned int b, unsigned *result = nullptr)
++{
++#if hb_has_builtin(__builtin_add_overflow)
++  unsigned stack_result;
++  if (!result)
++    result = &stack_result;
++  return __builtin_add_overflow (a, b, result);
++#endif
++
++  if (result)
++    *result = a + b;
++  return b > (unsigned int) -1 - a;
++}
++
+ 
+ /*
+  * Sort and search.
+diff --git a/src/hb-ot-shaper-arabic.cc b/src/hb-ot-shaper-arabic.cc
+index c5104c94890aa491284889444c60b476d4f5e0cb..2a05af1462efe3305bbf55a1ff941b328f9e4b14 100644
+--- a/src/hb-ot-shaper-arabic.cc
++++ b/src/hb-ot-shaper-arabic.cc
+@@ -77,8 +77,8 @@ enum hb_arabic_joining_type_t {
+   JOINING_GROUP_DALATH_RISH	= 5,
+   NUM_STATE_MACHINE_COLS	= 6,
+ 
+-  JOINING_TYPE_T = 7,
+-  JOINING_TYPE_X = 8  /* means: use general-category to choose between U or T. */
++  JOINING_TYPE_T = 6,
++  JOINING_TYPE_X = 7  /* means: use general-category to choose between U or T. */
+ };
+ 
+ #include "hb-ot-shaper-arabic-table.hh"
+@@ -561,20 +561,29 @@ apply_stch (const hb_ot_shape_plan_t *plan HB_UNUSED,
+       DEBUG_MSG (ARABIC, nullptr, "fixed tiles:     count=%d width=%" PRId32, n_fixed, w_fixed);
+       DEBUG_MSG (ARABIC, nullptr, "repeating tiles: count=%d width=%" PRId32, n_repeating, w_repeating);
+ 
++      static constexpr unsigned STCH_MAX_GLYPHS = 256;
++
+       /* Number of additional times to repeat each repeating tile. */
+-      int n_copies = 0;
++      unsigned int n_copies = 0;
+ 
+-      hb_position_t w_remaining = w_total - w_fixed;
+-      if (sign * w_remaining > sign * w_repeating && sign * w_repeating > 0)
+-	n_copies = (sign * w_remaining) / (sign * w_repeating) - 1;
++      int64_t w_remaining_signed = (int64_t) w_total - w_fixed;
++      int64_t w_repeating_signed = w_repeating;
++      if (sign < 0)
++      {
++	w_remaining_signed = -w_remaining_signed;
++	w_repeating_signed = -w_repeating_signed;
++      }
++      hb_position_t w_remaining = (hb_position_t) (w_total - w_fixed);
++      if (w_remaining_signed > w_repeating_signed && w_repeating_signed > 0)
++	n_copies = w_remaining_signed / w_repeating_signed - 1;
+ 
+       /* See if we can improve the fit by adding an extra repeat and squeezing them together a bit. */
+       hb_position_t extra_repeat_overlap = 0;
+-      hb_position_t shortfall = sign * w_remaining - sign * w_repeating * (n_copies + 1);
++      int64_t shortfall = w_remaining_signed - w_repeating_signed * (n_copies + 1);
+       if (shortfall > 0 && n_repeating > 0)
+       {
+ 	++n_copies;
+-	hb_position_t excess = (n_copies + 1) * sign * w_repeating - sign * w_remaining;
++	int64_t excess = (n_copies + 1) * w_repeating_signed - w_remaining_signed;
+ 	if (excess > 0)
+ 	{
+ 	  extra_repeat_overlap = excess / (n_copies * n_repeating);
+@@ -582,10 +591,22 @@ apply_stch (const hb_ot_shape_plan_t *plan HB_UNUSED,
+ 	}
+       }
+ 
++      unsigned int max_copies = 0;
++      if (n_repeating > 0)
++      {
++	unsigned int base_glyphs = n_fixed + n_repeating;
++	if (base_glyphs < STCH_MAX_GLYPHS)
++	  max_copies = (STCH_MAX_GLYPHS - base_glyphs) / n_repeating;
++      }
++      n_copies = hb_min (n_copies, max_copies);
++
+       if (step == MEASURE)
+       {
+-	extra_glyphs_needed += n_copies * n_repeating;
+-	DEBUG_MSG (ARABIC, nullptr, "will add extra %d copies of repeating tiles", n_copies);
++	unsigned int added_glyphs = 0;
++	if (unlikely (hb_unsigned_mul_overflows (n_copies, n_repeating, &added_glyphs) ||
++		      hb_unsigned_add_overflows (extra_glyphs_needed, added_glyphs, &extra_glyphs_needed)))
++	  break;
++	DEBUG_MSG (ARABIC, nullptr, "will add extra %u copies of repeating tiles", n_copies);
+       }
+       else
+       {
+@@ -629,7 +650,9 @@ apply_stch (const hb_ot_shape_plan_t *plan HB_UNUSED,
+ 
+     if (step == MEASURE)
+     {
+-      if (unlikely (!buffer->ensure (count + extra_glyphs_needed)))
++      unsigned int total_glyphs = 0;
++      if (unlikely (hb_unsigned_add_overflows (count, extra_glyphs_needed, &total_glyphs) ||
++		    !buffer->ensure (total_glyphs)))
+ 	break;
+     }
+     else
