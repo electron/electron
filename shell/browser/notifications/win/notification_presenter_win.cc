@@ -72,7 +72,8 @@ std::wstring NotificationPresenterWin::SaveIconToFilesystem(
 
   std::string filename;
   if (origin.is_valid()) {
-    filename = base::SHA1HashString(origin.spec()) + ".png";
+    const auto hash = base::SHA1HashString(origin.spec());
+    filename = base::HexEncode(hash.data(), hash.size()) + ".png";
   } else {
     const int64_t now_usec = base::Time::Now().since_origin().InMicroseconds();
     filename = base::NumberToString(now_usec) + ".png";
