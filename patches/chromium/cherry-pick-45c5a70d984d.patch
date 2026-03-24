@@ -1,0 +1,206 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anders Hartvoll Ruud <andruud@chromium.org>
+Date: Wed, 25 Feb 2026 03:24:19 -0800
+Subject: [PATCH] Describe a vector of segments as "segments", not "tokens"
+
+The specification uses the term "tokens" to refer to a sequence
+of V8CSSUnparsedSegment objects, and CSSUnparsedValue has adopted
+this terminology. While it is usually a good idea for Blink
+to mirror the language used in specifications, "tokens" is very
+confusing here, since it always means CSSParserTokens in every other
+place in the style code.
+
+Bug: 487117772
+Change-Id: I2dc132c4e618e398e1f8bdabc03a8d2ab6c118e7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7606599
+Commit-Queue: Anders Hartvoll Ruud <andruud@chromium.org>
+Reviewed-by: Steinar H Gunderson <sesse@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1590040}
+---
+ .../core/css/cssom/css_unparsed_value.cc      | 40 +++++++++----------
+ .../core/css/cssom/css_unparsed_value.h       | 20 +++++-----
+ 2 files changed, 30 insertions(+), 30 deletions(-)
+
+diff --git a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
+index 486e9d10c1e0a..567d4fad7436c 100644
+--- a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
++++ b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
+@@ -28,12 +28,12 @@ String FindVariableName(CSSParserTokenStream& stream) {
+ 
+ V8CSSUnparsedSegment* VariableReferenceValue(
+     const StringView& variable_name,
+-    const HeapVector<Member<V8CSSUnparsedSegment>>& tokens) {
++    const HeapVector<Member<V8CSSUnparsedSegment>>& segments) {
+   CSSUnparsedValue* unparsed_value;
+-  if (tokens.size() == 0) {
++  if (segments.size() == 0) {
+     unparsed_value = nullptr;
+   } else {
+-    unparsed_value = CSSUnparsedValue::Create(tokens);
++    unparsed_value = CSSUnparsedValue::Create(segments);
+   }
+ 
+   CSSStyleVariableReferenceValue* variable_reference =
+@@ -50,13 +50,13 @@ V8CSSUnparsedSegment* VariableReferenceValue(
+ HeapVector<Member<V8CSSUnparsedSegment>> ParserTokenStreamToTokens(
+     CSSParserTokenStream& stream) {
+   int nesting_level = 0;
+-  HeapVector<Member<V8CSSUnparsedSegment>> tokens;
++  HeapVector<Member<V8CSSUnparsedSegment>> segments;
+   StringBuilder builder;
+   while (stream.Peek().GetType() != kEOFToken) {
+     if (stream.Peek().FunctionId() == CSSValueID::kVar ||
+         stream.Peek().FunctionId() == CSSValueID::kEnv) {
+       if (!builder.empty()) {
+-        tokens.push_back(MakeGarbageCollected<V8CSSUnparsedSegment>(
++        segments.push_back(MakeGarbageCollected<V8CSSUnparsedSegment>(
+             builder.ReleaseString()));
+       }
+ 
+@@ -71,7 +71,7 @@ HeapVector<Member<V8CSSUnparsedSegment>> ParserTokenStreamToTokens(
+       if (!ref) {
+         break;
+       }
+-      tokens.push_back(ref);
++      segments.push_back(ref);
+     } else {
+       if (stream.Peek().GetBlockType() == CSSParserToken::kBlockStart) {
+         ++nesting_level;
+@@ -86,10 +86,10 @@ HeapVector<Member<V8CSSUnparsedSegment>> ParserTokenStreamToTokens(
+     }
+   }
+   if (!builder.empty()) {
+-    tokens.push_back(
++    segments.push_back(
+         MakeGarbageCollected<V8CSSUnparsedSegment>(builder.ReleaseString()));
+   }
+-  return tokens;
++  return segments;
+ }
+ 
+ }  // namespace
+@@ -109,8 +109,8 @@ CSSUnparsedValue* CSSUnparsedValue::FromCSSVariableData(
+ V8CSSUnparsedSegment* CSSUnparsedValue::AnonymousIndexedGetter(
+     uint32_t index,
+     ExceptionState& exception_state) const {
+-  if (index < tokens_.size()) {
+-    return tokens_[index].Get();
++  if (index < segments_.size()) {
++    return segments_[index].Get();
+   }
+   return nullptr;
+ }
+@@ -119,20 +119,20 @@ IndexedPropertySetterResult CSSUnparsedValue::AnonymousIndexedSetter(
+     uint32_t index,
+     V8CSSUnparsedSegment* segment,
+     ExceptionState& exception_state) {
+-  if (index < tokens_.size()) {
+-    tokens_[index] = segment;
++  if (index < segments_.size()) {
++    segments_[index] = segment;
+     return IndexedPropertySetterResult::kIntercepted;
+   }
+ 
+-  if (index == tokens_.size()) {
+-    tokens_.push_back(segment);
++  if (index == segments_.size()) {
++    segments_.push_back(segment);
+     return IndexedPropertySetterResult::kIntercepted;
+   }
+ 
+   exception_state.ThrowRangeError(
+       ExceptionMessages::IndexOutsideRange<unsigned>(
+-          "index", index, 0, ExceptionMessages::kInclusiveBound, tokens_.size(),
+-          ExceptionMessages::kInclusiveBound));
++          "index", index, 0, ExceptionMessages::kInclusiveBound,
++          segments_.size(), ExceptionMessages::kInclusiveBound));
+   return IndexedPropertySetterResult::kIntercepted;
+ }
+ 
+@@ -195,14 +195,14 @@ bool CSSUnparsedValue::AppendUnparsedString(
+     return false;  // Cycle.
+   }
+   values_on_stack.insert(this);
+-  for (unsigned i = 0; i < tokens_.size(); i++) {
++  for (unsigned i = 0; i < segments_.size(); i++) {
+     if (i) {
+       builder.Append("/**/");
+     }
+-    switch (tokens_[i]->GetContentType()) {
++    switch (segments_[i]->GetContentType()) {
+       case V8CSSUnparsedSegment::ContentType::kCSSVariableReferenceValue: {
+         const auto* reference_value =
+-            tokens_[i]->GetAsCSSVariableReferenceValue();
++            segments_[i]->GetAsCSSVariableReferenceValue();
+         builder.Append("var(");
+         builder.Append(reference_value->variable());
+         if (reference_value->fallback()) {
+@@ -216,7 +216,7 @@ bool CSSUnparsedValue::AppendUnparsedString(
+         break;
+       }
+       case V8CSSUnparsedSegment::ContentType::kString:
+-        builder.Append(tokens_[i]->GetAsString());
++        builder.Append(segments_[i]->GetAsString());
+         break;
+     }
+   }
+diff --git a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
+index c9dab7a0b3ffe..5d1961b170f14 100644
+--- a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
++++ b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
+@@ -26,8 +26,8 @@ class CORE_EXPORT CSSUnparsedValue final : public CSSStyleValue {
+ 
+  public:
+   static CSSUnparsedValue* Create(
+-      const HeapVector<Member<V8CSSUnparsedSegment>>& tokens) {
+-    return MakeGarbageCollected<CSSUnparsedValue>(tokens);
++      const HeapVector<Member<V8CSSUnparsedSegment>>& segments) {
++    return MakeGarbageCollected<CSSUnparsedValue>(segments);
+   }
+ 
+   // Blink-internal constructor
+@@ -37,14 +37,14 @@ class CORE_EXPORT CSSUnparsedValue final : public CSSStyleValue {
+   static CSSUnparsedValue* FromCSSValue(const CSSUnparsedDeclarationValue&);
+   static CSSUnparsedValue* FromCSSVariableData(const CSSVariableData&);
+   static CSSUnparsedValue* FromString(const String& string) {
+-    HeapVector<Member<V8CSSUnparsedSegment>> tokens;
+-    tokens.push_back(MakeGarbageCollected<V8CSSUnparsedSegment>(string));
+-    return Create(tokens);
++    HeapVector<Member<V8CSSUnparsedSegment>> segments;
++    segments.push_back(MakeGarbageCollected<V8CSSUnparsedSegment>(string));
++    return Create(segments);
+   }
+ 
+   explicit CSSUnparsedValue(
+-      const HeapVector<Member<V8CSSUnparsedSegment>>& tokens)
+-      : tokens_(tokens) {}
++      const HeapVector<Member<V8CSSUnparsedSegment>>& segments)
++      : segments_(segments) {}
+   CSSUnparsedValue(const CSSUnparsedValue&) = delete;
+   CSSUnparsedValue& operator=(const CSSUnparsedValue&) = delete;
+ 
+@@ -60,10 +60,10 @@ class CORE_EXPORT CSSUnparsedValue final : public CSSStyleValue {
+       V8CSSUnparsedSegment* segment,
+       ExceptionState& exception_state);
+ 
+-  wtf_size_t length() const { return tokens_.size(); }
++  wtf_size_t length() const { return segments_.size(); }
+ 
+   void Trace(Visitor* visitor) const override {
+-    visitor->Trace(tokens_);
++    visitor->Trace(segments_);
+     CSSStyleValue::Trace(visitor);
+   }
+ 
+@@ -81,7 +81,7 @@ class CORE_EXPORT CSSUnparsedValue final : public CSSStyleValue {
+       StringBuilder&,
+       HeapHashSet<Member<const CSSUnparsedValue>>& values_on_stack) const;
+ 
+-  HeapVector<Member<V8CSSUnparsedSegment>> tokens_;
++  HeapVector<Member<V8CSSUnparsedSegment>> segments_;
+ 
+   FRIEND_TEST_ALL_PREFIXES(CSSUnparsedDeclarationValueTest, MixedList);
+ };
+-- 
+2.47.0
+
