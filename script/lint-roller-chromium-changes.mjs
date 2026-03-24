@@ -5,12 +5,11 @@ import * as fs from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { compareVersions } from './lib/utils.js';
+import { compareVersions, getChromiumVersionFromDEPS } from './lib/utils.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ELECTRON_DIR = resolve(__dirname, '..');
 
-const DEPS_REGEX = /chromium_version':\n +'(.+?)',/m;
 const CL_REGEX = /https:\/\/chromium-review\.googlesource\.com\/c\/(?:chromium\/src|v8\/v8)\/\+\/(\d+)(#\S+)?/g;
 const ROLLER_BRANCH_PATTERN = /^roller\/chromium\/(.+)$/;
 
@@ -140,12 +139,12 @@ async function main () {
       cwd: ELECTRON_DIR,
       encoding: 'utf8'
     });
-    baseVersion = DEPS_REGEX.exec(baseDepsContent)?.[1] ?? null;
+    baseVersion = getChromiumVersionFromDEPS(baseDepsContent);
   } catch {
     // baseVersion remains null
   }
   const depsContent = await fs.readFile(resolve(ELECTRON_DIR, 'DEPS'), 'utf8');
-  const newVersion = DEPS_REGEX.exec(depsContent)?.[1] ?? null;
+  const newVersion = getChromiumVersionFromDEPS(depsContent);
 
   if (!baseVersion || !newVersion) {
     console.error('Could not determine Chromium version range');
