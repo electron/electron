@@ -155,3 +155,4 @@ cherry-pick-50b057660b4d.patch
 cherry-pick-074d472db745.patch
 validate_uniform_block_count_limits_at_compile_time_on_img.patch
 feat_plumb_node_integration_in_worker_through_workersettings.patch
+cherry-pick-45c5a70d984d.patch
