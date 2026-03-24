@@ -274,10 +274,6 @@ inline constexpr base::cstring_view kAppPath = "app-path";
 // The command line switch versions of the options.
 inline constexpr base::cstring_view kScrollBounce = "scroll-bounce";
 
-// Command switch passed to renderer process to control nodeIntegration.
-inline constexpr base::cstring_view kNodeIntegrationInWorker =
-    "node-integration-in-worker";
-
 // Widevine options
 // Path to Widevine CDM binaries.
 inline constexpr base::cstring_view kWidevineCdmPath = "widevine-cdm-path";

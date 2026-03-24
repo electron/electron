@@ -153,3 +153,4 @@ cherry-pick-e045399a1ecb.patch
 loaf_add_feature_to_enable_sourceurl_for_all_protocols.patch
 cherry-pick-074d472db745.patch
 validate_uniform_block_count_limits_at_compile_time_on_img.patch
+feat_plumb_node_integration_in_worker_through_workersettings.patch
