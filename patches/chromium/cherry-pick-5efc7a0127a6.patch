@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Anders Hartvoll Ruud <andruud@chromium.org>
 Date: Wed, 25 Feb 2026 06:21:21 -0800
-Subject: [PATCH] Validate CSSUnparsedValues upon assignment
+Subject: Validate CSSUnparsedValues upon assignment
 
 CSS Typed OM has a concept of a value "matching a grammar" (or not)
 upon assignment to a property [1]. For CSSUnparsedValues, we currently
@@ -29,18 +29,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7595347
 Reviewed-by: Steinar H Gunderson <sesse@chromium.org>
 Commit-Queue: Anders Hartvoll Ruud <andruud@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1590110}
----
- .../core/css/templates/cssom_types.cc.tmpl    |  5 ++-
- .../core/css/cssom/css_unparsed_value.cc      | 42 +++++++++++++++++--
- .../core/css/cssom/css_unparsed_value.h       |  9 ++++
- ...sing-variable-in-unparsed-value-crash.html | 12 ------
- .../set-invalid-untyped-value-crash.html      | 39 +++++++++++++++++
- 5 files changed, 89 insertions(+), 18 deletions(-)
- delete mode 100644 third_party/blink/web_tests/external/wpt/css/css-typed-om/missing-variable-in-unparsed-value-crash.html
- create mode 100644 third_party/blink/web_tests/external/wpt/css/css-typed-om/set-invalid-untyped-value-crash.html
 
 diff --git a/third_party/blink/renderer/build/scripts/core/css/templates/cssom_types.cc.tmpl b/third_party/blink/renderer/build/scripts/core/css/templates/cssom_types.cc.tmpl
-index edfa73a57d30e..4442ba0872ca4 100644
+index edfa73a57d30ebd4f9a7147702df42b836f7d82b..4442ba0872ca4c739596b546e6d3b600c5a31598 100644
 --- a/third_party/blink/renderer/build/scripts/core/css/templates/cssom_types.cc.tmpl
 +++ b/third_party/blink/renderer/build/scripts/core/css/templates/cssom_types.cc.tmpl
 @@ -11,6 +11,7 @@
@@ -63,7 +54,7 @@ index edfa73a57d30e..4442ba0872ca4 100644
  
    switch (id) {
 diff --git a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
-index 12d70ed096cb1..5f9d6a39effe2 100644
+index 12d70ed096cb1c509a2acf14b7f421273d833d0e..5f9d6a39effe207e44dd84cececebdb6c666f011 100644
 --- a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
 +++ b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
 @@ -4,11 +4,13 @@
@@ -137,7 +128,7 @@ index 12d70ed096cb1..5f9d6a39effe2 100644
  
  String CSSUnparsedValue::ToStringInternal() const {
 diff --git a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
-index ec7e3ed708f40..7fd66aed677e3 100644
+index ec7e3ed708f406d7a61fdb370b2eed8a8297cffb..7fd66aed677e31046a1bd206854b2cbeac07c25b 100644
 --- a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
 +++ b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
 @@ -48,6 +48,14 @@ class CORE_EXPORT CSSUnparsedValue final : public CSSStyleValue {
@@ -165,7 +156,7 @@ index ec7e3ed708f40..7fd66aed677e3 100644
    // Return 'false' if there is a cycle in the serialization.
 diff --git a/third_party/blink/web_tests/external/wpt/css/css-typed-om/missing-variable-in-unparsed-value-crash.html b/third_party/blink/web_tests/external/wpt/css/css-typed-om/missing-variable-in-unparsed-value-crash.html
 deleted file mode 100644
-index b92bd62deb71f..0000000000000
+index b92bd62deb71f2623b0265bed099d739cd1fce3a..0000000000000000000000000000000000000000
 --- a/third_party/blink/web_tests/external/wpt/css/css-typed-om/missing-variable-in-unparsed-value-crash.html
 +++ /dev/null
 @@ -1,12 +0,0 @@
@@ -183,7 +174,7 @@ index b92bd62deb71f..0000000000000
 -<p>PASS if no crash</p>
 diff --git a/third_party/blink/web_tests/external/wpt/css/css-typed-om/set-invalid-untyped-value-crash.html b/third_party/blink/web_tests/external/wpt/css/css-typed-om/set-invalid-untyped-value-crash.html
 new file mode 100644
-index 0000000000000..ce618bf38fe65
+index 0000000000000000000000000000000000000000..ce618bf38fe651297b969ffdc16e212dee6a3688
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/css/css-typed-om/set-invalid-untyped-value-crash.html
 @@ -0,0 +1,39 @@
@@ -226,6 +217,3 @@ index 0000000000000..ce618bf38fe65
 +    target.offsetTop;
 +  }
 +</script>
--- 
-2.47.0
-

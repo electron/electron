@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Anders Hartvoll Ruud <andruud@chromium.org>
 Date: Wed, 25 Feb 2026 03:24:19 -0800
-Subject: [PATCH] Describe a vector of segments as "segments", not "tokens"
+Subject: Describe a vector of segments as "segments", not "tokens"
 
 The specification uses the term "tokens" to refer to a sequence
 of V8CSSUnparsedSegment objects, and CSSUnparsedValue has adopted
@@ -16,13 +16,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7606599
 Commit-Queue: Anders Hartvoll Ruud <andruud@chromium.org>
 Reviewed-by: Steinar H Gunderson <sesse@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1590040}
----
- .../core/css/cssom/css_unparsed_value.cc      | 40 +++++++++----------
- .../core/css/cssom/css_unparsed_value.h       | 20 +++++-----
- 2 files changed, 30 insertions(+), 30 deletions(-)
 
 diff --git a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
-index 486e9d10c1e0a..567d4fad7436c 100644
+index 486e9d10c1e0a682ec239f4df696f4133300eebb..567d4fad7436c24d4c42bc36ebfd7ee3641e3b90 100644
 --- a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
 +++ b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
 @@ -28,12 +28,12 @@ String FindVariableName(CSSParserTokenStream& stream) {
@@ -145,7 +141,7 @@ index 486e9d10c1e0a..567d4fad7436c 100644
      }
    }
 diff --git a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
-index c9dab7a0b3ffe..5d1961b170f14 100644
+index c9dab7a0b3ffeaeb6b5d2ab50d876d40c38a760e..5d1961b170f14ae21ca8f69b3c3cd8af28f4478a 100644
 --- a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
 +++ b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
 @@ -26,8 +26,8 @@ class CORE_EXPORT CSSUnparsedValue final : public CSSStyleValue {
@@ -201,6 +197,3 @@ index c9dab7a0b3ffe..5d1961b170f14 100644
  
    FRIEND_TEST_ALL_PREFIXES(CSSUnparsedDeclarationValueTest, MixedList);
  };
--- 
-2.47.0
-
