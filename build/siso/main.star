@@ -1,4 +1,5 @@
 load("@builtin//encoding.star", "json")
+load("@builtin//lib/gn.star", "gn")
 load("@builtin//path.star", "path")
 load("@builtin//runtime.star", "runtime")
 load("@builtin//struct.star", "module")
@@ -57,6 +58,33 @@ def init(ctx):
           "clang-cl_large": step_config["platforms"]["default"],
           "lld-link": step_config["platforms"]["default"],
       })
+
+    # When cross-compiling for Windows using wine, mksnapshot.exe is run via
+    # wine64 on the local machine. The remote execution service cannot handle
+    # this, so force mksnapshot to run locally. The wine64 prefix also changes
+    # the command so the upstream v8/mksnapshot rule's command_prefix won't
+    # match — add an explicit rule for the wine-prefixed command.
+    if "args.gn" in ctx.metadata:
+      gn_args = gn.args(ctx)
+      if gn_args.get("v8_win_cross_compile_using_wine", "").strip('"') == "true":
+        # Force the existing v8/mksnapshot rule to run locally
+        for rule in step_config["rules"]:
+          if rule.get("name") == "v8/mksnapshot":
+            rule["remote"] = False
+
+        # Add a rule that matches the wine64-prefixed mksnapshot command.
+        # With wine, GN emits: python3 ../../v8/tools/run.py <wine_path> ./mksnapshot.exe
+        # The upstream command_prefix ("python3 ...run.py ./mksnapshot") won't
+        # match because wine_path appears before ./mksnapshot.exe.
+        wine_path = gn_args.get("v8_wine_path", "").strip('"')
+        if wine_path:
+          step_config["rules"].insert(0, {
+            "name": "v8/mksnapshot_wine",
+            "command_prefix": "python3 ../../v8/tools/run.py " + wine_path,
+            "remote": False,
+            "timeout": "2m",
+            "output_local": True,
+          })
 
     return module(
       "config",
