@@ -152,3 +152,4 @@ ozone_wayland_treat_dnd_drop_performed_with_none_action_as_a.patch
 cherry-pick-e045399a1ecb.patch
 loaf_add_feature_to_enable_sourceurl_for_all_protocols.patch
 cherry-pick-074d472db745.patch
+feat_plumb_node_integration_in_worker_through_workersettings.patch
