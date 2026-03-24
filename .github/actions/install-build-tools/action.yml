@@ -15,7 +15,7 @@ runs:
         git config --global core.preloadindex true
         git config --global core.longpaths true
       fi
-      export BUILD_TOOLS_SHA=e9fd2e8700a3d6b47a0e6cafa7b354729b555ebe
+      export BUILD_TOOLS_SHA=1aa9dce0b3fa9353c38a6c3d4aac0249f0f68973
       npm i -g @electron/build-tools
       # Update depot_tools to ensure python
       e d update_depot_tools
