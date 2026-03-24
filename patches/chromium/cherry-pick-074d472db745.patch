@@ -1,7 +1,7 @@
-From 074d472db745f01cf3dd3cc2225d51650e56f808 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Mikel Astiz <mastiz@chromium.org>
 Date: Tue, 10 Mar 2026 13:22:17 -0700
-Subject: [PATCH] [M146][base] Fix UAF in base::OnceCallbackList on re-entrant Notify()
+Subject: [M146][base] Fix UAF in base::OnceCallbackList on re-entrant Notify()
 
 Before this patch, `base::OnceCallbackList` was susceptible to a
 heap-use-after-free when `Notify()` was called re-entrantly.
@@ -49,10 +49,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7653916
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/7680@{#2287}
 Cr-Branched-From: 76b7d80e5cda23fe6537eed26d68c92e995c7f39-refs/heads/main@{#1582197}
----
 
 diff --git a/base/callback_list.h b/base/callback_list.h
-index 82cb11d..d5f99cf6 100644
+index 82cb11dc0ee02906b009cc383c41a056861199d0..d5f99cf685486f1ea74718b4e6b228a5d83f0c29 100644
 --- a/base/callback_list.h
 +++ b/base/callback_list.h
 @@ -9,6 +9,7 @@
@@ -71,15 +70,13 @@ index 82cb11d..d5f99cf6 100644
  
  // OVERVIEW:
  //
-@@ -240,17 +240,14 @@
+@@ -240,17 +240,14 @@ class CallbackListBase {
  
      // Any null callbacks remaining in the list were canceled due to
      // Subscription destruction during iteration, and can safely be erased now.
 -    const size_t erased_callbacks =
 -        std::erase_if(callbacks_, [](const auto& cb) { return cb.is_null(); });
-+    const bool any_callbacks_erased = static_cast<CallbackListImpl*>(this)
-+                                          ->CleanUpNullCallbacksPostIteration();
- 
+-
 -    // Run |removal_callback_| if any callbacks were canceled. Note that we
 -    // cannot simply compare list sizes before and after iterating, since
 -    // notification may result in Add()ing new callbacks as well as canceling
@@ -88,6 +85,9 @@ index 82cb11d..d5f99cf6 100644
 -    // they're counted in |erased_callbacks_|.
 -    if (removal_callback_ &&
 -        (erased_callbacks || is_instantiation<CallbackType, OnceCallback>)) {
++    const bool any_callbacks_erased = static_cast<CallbackListImpl*>(this)
++                                          ->CleanUpNullCallbacksPostIteration();
++
 +    // Run |removal_callback_| if any callbacks were canceled or executed. Note
 +    // that simply comparing list sizes before and after iterating cannot be
 +    // done, since notification may result in Add()ing new callbacks as well as
@@ -96,7 +96,7 @@ index 82cb11d..d5f99cf6 100644
        removal_callback_.Run();  // May delete |this|!
      }
    }
-@@ -264,21 +261,9 @@
+@@ -264,21 +261,9 @@ class CallbackListBase {
   private:
    // Cancels the callback pointed to by |it|, which is guaranteed to be valid.
    void CancelCallback(const typename Callbacks::iterator& it) {
@@ -121,7 +121,7 @@ index 82cb11d..d5f99cf6 100644
      }
    }
  
-@@ -304,23 +289,71 @@
+@@ -304,23 +289,71 @@ class OnceCallbackList
    // Runs the current callback, which may cancel it or any other callbacks.
    template <typename... RunArgs>
    void RunCallback(typename Traits::Callbacks::iterator it, RunArgs&&... args) {
@@ -141,9 +141,6 @@ index 82cb11d..d5f99cf6 100644
 -  // If |it| refers to an already-canceled callback, does any necessary cleanup
 -  // and returns true.  Otherwise returns false.
 -  bool CancelNullCallback(const typename Traits::Callbacks::iterator& it) {
--    if (it->is_null()) {
--      null_callbacks_.erase(it);
--      return true;
 +  // Called during subscription destruction to cancel the callback. Returns true
 +  // if the callback was removed from the active list and the generic removal
 +  // callback should be executed. Returns false if the callback was already
@@ -158,14 +155,15 @@ index 82cb11d..d5f99cf6 100644
 +      it->Reset();
 +      pending_erasures_.push_back(it);
 +      return false;
++    }
++
+     if (it->is_null()) {
++      // The callback already ran, so it's safely sitting in |null_callbacks_|.
+       null_callbacks_.erase(it);
+-      return true;
++      return false;
      }
 -    return false;
-+
-+    if (it->is_null()) {
-+      // The callback already ran, so it's safely sitting in |null_callbacks_|.
-+      null_callbacks_.erase(it);
-+      return false;
-+    }
 +
 +    // The callback hasn't run yet, so it's still in |callbacks_|.
 +    this->callbacks_.erase(it);
@@ -203,7 +201,7 @@ index 82cb11d..d5f99cf6 100644
    }
  
    // Holds null callbacks whose Subscriptions are still alive, so the
-@@ -328,6 +361,11 @@
+@@ -328,6 +361,11 @@ class OnceCallbackList
    // OnceCallbacks, since RepeatingCallbacks are not canceled except by
    // Subscription destruction.
    typename Traits::Callbacks null_callbacks_;
@@ -215,7 +213,7 @@ index 82cb11d..d5f99cf6 100644
  };
  
  template <typename Signature>
-@@ -344,14 +382,29 @@
+@@ -344,14 +382,29 @@ class RepeatingCallbackList
      it->Run(args...);
    }
  
@@ -254,7 +252,7 @@ index 82cb11d..d5f99cf6 100644
  };
  
 diff --git a/base/callback_list_unittest.cc b/base/callback_list_unittest.cc
-index 7474278..a855443f 100644
+index 7474278525e5efecc0de903809a54d366896d524..a855443fbae862befbc3a2a484ea335632136e94 100644
 --- a/base/callback_list_unittest.cc
 +++ b/base/callback_list_unittest.cc
 @@ -10,6 +10,7 @@
@@ -265,7 +263,7 @@ index 7474278..a855443f 100644
  #include "base/test/test_future.h"
  #include "testing/gtest/include/gtest/gtest.h"
  
-@@ -577,6 +578,30 @@
+@@ -577,6 +578,30 @@ TEST(CallbackListTest, ReentrantNotify) {
    EXPECT_EQ(1, d.total());
  }
  
