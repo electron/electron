@@ -42,9 +42,81 @@ runs:
       shell: bash
       if: ${{ inputs.target-platform == 'win' }}
       run: |
-        GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"${{ inputs.target-arch }}\" use_v8_context_snapshot=true target_os=\"win\""
+        GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"${{ inputs.target-arch }}\" use_v8_context_snapshot=true v8_win_cross_compile_using_wine=true target_os=\"win\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
         echo "ELECTRON_BUILD_TOOLS_MAIN_STAR=`pwd`/src/electron/build/siso/main.star" >> $GITHUB_ENV
+    - name: Install wine for Windows builds on non-Windows hosts
+      shell: bash
+      if: ${{ inputs.target-platform == 'win' && runner.os != 'Windows' }}
+      run: |
+        sudo dpkg --add-architecture amd64
+        sudo apt-get update
+        # apt-get may return non-zero from post-install triggers (e.g. man-db)
+        # even when the package installs successfully, so tolerate that and
+        # verify the binary exists afterward.
+        sudo apt-get install -y --no-install-recommends wine64 || true
+        # Debug: show where wine64 binary was actually installed
+        echo "=== wine64 package file list (bin entries) ==="
+        dpkg -L wine64 2>/dev/null | grep bin || echo "(no bin entries found)"
+        echo "=== /usr/bin/wine* ==="
+        ls -la /usr/bin/wine* 2>/dev/null || echo "(no wine binaries in /usr/bin/)"
+        echo "=== dpkg status ==="
+        dpkg -s wine64 2>/dev/null | head -5 || echo "(wine64 package not found)"
+        # Find wine64 - check known path first, then fall back to PATH lookup,
+        # then search via dpkg/find in case it was installed elsewhere.
+        if [ -x /usr/bin/wine64 ]; then
+          WINE64_PATH=/usr/bin/wine64
+        elif command -v wine64 >/dev/null 2>&1; then
+          WINE64_PATH=$(command -v wine64)
+        else
+          echo "wine64 not at /usr/bin/wine64 or in PATH, searching..."
+          WINE64_PATH=$(dpkg -L wine64 2>/dev/null | grep -m1 'bin/wine64$' || true)
+          if [ ! -x "$WINE64_PATH" ]; then
+            WINE64_PATH=$(find /usr -name 'wine64' -executable 2>/dev/null | head -1)
+          fi
+          if [ -z "$WINE64_PATH" ] || [ ! -x "$WINE64_PATH" ]; then
+            echo "ERROR: wine64 binary not found anywhere after install"
+            exit 1
+          fi
+        fi
+        echo "Found wine64 at: $WINE64_PATH"
+        export WINEPREFIX="$HOME/.wine"
+        mkdir -p "$WINEPREFIX"
+        echo "WINEPREFIX=$WINEPREFIX" >> $GITHUB_ENV
+        # Initialize wine prefix to avoid first-run delays during build
+        "$WINE64_PATH" wineboot --init 2>/dev/null || true
+        # Pass wine64 path to GN so siso can find it regardless of PATH
+        GN_APPENDED_ARGS="$GN_EXTRA_ARGS v8_wine_path=\"$WINE64_PATH\""
+        echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV        
+    # - name: Download mksnapshot.zip
+    #   shell: bash
+    #   if: ${{ inputs.target-platform == 'win' }}
+    #   run: |
+    #     # Download mksnapshot.zip from https://electronbuildtools.blob.core.windows.net/windows-toolchains/mksnapshot.zip
+    #     curl -L -o mksnapshot.zip https://electronbuildtools.blob.core.windows.net/windows-toolchains/mksnapshot.zip
+    #     if [ $? -ne 0 ]; then
+    #       echo "Failed to download mksnapshot.zip"
+    #       exit 1
+    #     fi
+    #     if [ -f mksnapshot.zip ]; then
+    #       echo "Successfully downloaded mksnapshot.zip"
+    #     else
+    #       echo "mksnapshot.zip not found after download"
+    #       exit 1
+    #     fi
+    #     if [ -f mksnapshot.zip ]; then
+    #       unzip mksnapshot.zip -d mksnapshot
+    #       PREBUILT_MKSNAPSHOT="$(pwd)/mksnapshot/mksnapshot.exe"
+    #       if [ -f "$PREBUILT_MKSNAPSHOT" ]; then
+    #         GN_APPENDED_ARGS="$GN_EXTRA_ARGS v8_prebuilt_mksnapshot=\"$PREBUILT_MKSNAPSHOT\""
+    #         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
+    #         echo "Using pre-built mksnapshot at $PREBUILT_MKSNAPSHOT"
+    #       else
+    #         echo "mksnapshot binary not found in mksnapshot.zip, will build from source"
+    #       fi
+    #     else
+    #       echo "mksnapshot.zip not found, skipping unzip and PATH update"
+    #     fi        
     - name: Add Clang problem matcher
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
