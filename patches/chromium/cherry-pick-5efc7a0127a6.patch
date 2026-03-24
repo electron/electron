@@ -1,0 +1,219 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anders Hartvoll Ruud <andruud@chromium.org>
+Date: Wed, 25 Feb 2026 06:21:21 -0800
+Subject: Validate CSSUnparsedValues upon assignment
+
+CSS Typed OM has a concept of a value "matching a grammar" (or not)
+upon assignment to a property [1]. For CSSUnparsedValues, we currently
+don't perform any significant validation, and as a consequence
+we allow "invalid" CSSUnparsedDeclarationValues to be created
+(causing DCHECKs later in the pipeline).
+
+This CL makes sure values can be parsed using CSSVariableParser::
+ConsumeUnparsedDeclaration before assignment.
+
+We're still not handling the value in the context of the destination
+property, which we probably should. This is also a problem with
+current state of things, however, so for now the goal is primarily
+to avoid the DCHECKs in Issue 484751092.
+
+Finally, I opened an issue against the specification [2], which
+currently doesn't define any of this.
+
+[1] https://drafts.css-houdini.org/css-typed-om-1/#create-an-internal-representation
+[2] https://github.com/w3c/csswg-drafts/issues/13547
+
+Fixed: 484751092
+Change-Id: Id7f888a6df8c02ade24910900f5d01909cb2dfad
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7595347
+Reviewed-by: Steinar H Gunderson <sesse@chromium.org>
+Commit-Queue: Anders Hartvoll Ruud <andruud@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1590110}
+
+diff --git a/third_party/blink/renderer/build/scripts/core/css/templates/cssom_types.cc.tmpl b/third_party/blink/renderer/build/scripts/core/css/templates/cssom_types.cc.tmpl
+index edfa73a57d30ebd4f9a7147702df42b836f7d82b..4442ba0872ca4c739596b546e6d3b600c5a31598 100644
+--- a/third_party/blink/renderer/build/scripts/core/css/templates/cssom_types.cc.tmpl
++++ b/third_party/blink/renderer/build/scripts/core/css/templates/cssom_types.cc.tmpl
+@@ -11,6 +11,7 @@
+ #include "third_party/blink/renderer/core/css/cssom/css_keyword_value.h"
+ #include "third_party/blink/renderer/core/css/cssom/css_numeric_value.h"
+ #include "third_party/blink/renderer/core/css/cssom/css_style_value.h"
++#include "third_party/blink/renderer/core/css/cssom/css_unparsed_value.h"
+ #include "third_party/blink/renderer/core/css/cssom/css_unsupported_style_value.h"
+ #include "third_party/blink/renderer/core/css/cssom/cssom_keywords.h"
+ #include "third_party/blink/renderer/core/css/properties/css_property.h"
+@@ -105,8 +106,8 @@ bool CSSOMTypes::PropertyCanTake(CSSPropertyID id,
+                     : CSSPropertyName(id);
+     return unsupported_style_value->IsValidFor(name);
+   }
+-  if (value.GetType() == CSSStyleValue::kUnparsedType) {
+-    return true;
++  if (auto* unparsed_value = DynamicTo<CSSUnparsedValue>(value)) {
++    return unparsed_value->IsValidDeclarationValue();
+   }
+ 
+   switch (id) {
+diff --git a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
+index 12d70ed096cb1c509a2acf14b7f421273d833d0e..5f9d6a39effe207e44dd84cececebdb6c666f011 100644
+--- a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
++++ b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
+@@ -4,11 +4,13 @@
+ 
+ #include "third_party/blink/renderer/core/css/cssom/css_unparsed_value.h"
+ 
++#include "css_style_value.h"
+ #include "third_party/blink/renderer/core/css/css_unparsed_declaration_value.h"
+ #include "third_party/blink/renderer/core/css/css_variable_data.h"
+ #include "third_party/blink/renderer/core/css/cssom/css_style_variable_reference_value.h"
+ #include "third_party/blink/renderer/core/css/parser/css_parser_token_stream.h"
+ #include "third_party/blink/renderer/core/css/parser/css_tokenizer.h"
++#include "third_party/blink/renderer/core/css/parser/css_variable_parser.h"
+ #include "third_party/blink/renderer/core/css_value_keywords.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_messages.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+@@ -136,6 +138,10 @@ IndexedPropertySetterResult CSSUnparsedValue::AnonymousIndexedSetter(
+   return IndexedPropertySetterResult::kIntercepted;
+ }
+ 
++bool CSSUnparsedValue::IsValidDeclarationValue() const {
++  return IsValidDeclarationValue(ToStringInternal());
++}
++
+ const CSSValue* CSSUnparsedValue::ToCSSValue() const {
+   String unparsed_string = ToStringInternal();
+ 
+@@ -144,12 +150,40 @@ const CSSValue* CSSUnparsedValue::ToCSSValue() const {
+         MakeGarbageCollected<CSSVariableData>());
+   }
+ 
++  CHECK(IsValidDeclarationValue(unparsed_string));
++  // The call to IsValidDeclarationValue() above also creates a CSSVariableData
++  // to carry out its check. It would be nice to use that here, but WPTs
++  // expect leading whitespace to be preserved, even though it's not possible
++  // to create such declaration values normally.
++  CSSVariableData* variable_data =
++      CSSVariableData::Create(unparsed_string,
++                              /*is_animation_tainted=*/false,
++                              /*is_attr_tainted=*/false,
++                              /*needs_variable_resolution=*/false);
++
+   // TODO(crbug.com/985028): We should probably propagate the CSSParserContext
+   // to here.
+-  return MakeGarbageCollected<CSSUnparsedDeclarationValue>(
+-      CSSVariableData::Create(unparsed_string, false /* is_animation_tainted */,
+-                              false /* is_attr_tainted */,
+-                              false /* needs_variable_resolution */));
++  return MakeGarbageCollected<CSSUnparsedDeclarationValue>(variable_data);
++}
++
++bool CSSUnparsedValue::IsValidDeclarationValue(const String& string) {
++  CSSParserTokenStream stream(string);
++  bool important_unused;
++  // This checks that the value does not violate the "argument grammar" [1]
++  // of any substitution functions, and that it is a valid <declaration-value>
++  // otherwise.
++  //
++  // [1] https://drafts.csswg.org/css-values-5/#argument-grammar
++  //
++  // TODO(andruud): 'restricted_value' depends on the destination property.
++  return CSSVariableParser::ConsumeUnparsedDeclaration(
++      stream,
++      /*allow_important_annotation=*/false,
++      /*is_animation_tainted=*/false,
++      /*must_contain_variable_reference=*/false,
++      /*restricted_value=*/false,
++      /*comma_ends_declaration=*/false, important_unused,
++      *StrictCSSParserContext(SecureContextMode::kInsecureContext));
+ }
+ 
+ String CSSUnparsedValue::ToStringInternal() const {
+diff --git a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
+index ec7e3ed708f406d7a61fdb370b2eed8a8297cffb..7fd66aed677e31046a1bd206854b2cbeac07c25b 100644
+--- a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
++++ b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
+@@ -48,6 +48,14 @@ class CORE_EXPORT CSSUnparsedValue final : public CSSStyleValue {
+   CSSUnparsedValue(const CSSUnparsedValue&) = delete;
+   CSSUnparsedValue& operator=(const CSSUnparsedValue&) = delete;
+ 
++  // True if this CSSUnparsedValue can be converted into
++  // a CSSUnparsedDeclarationValue.
++  //
++  // We may want to ban some invalid values earlier, see:
++  // https://github.com/w3c/csswg-drafts/issues/13547
++  bool IsValidDeclarationValue() const;
++
++  // Requires IsValidDeclarationValue()==true.
+   const CSSValue* ToCSSValue() const override;
+ 
+   StyleValueType GetType() const override { return kUnparsedType; }
+@@ -68,6 +76,7 @@ class CORE_EXPORT CSSUnparsedValue final : public CSSStyleValue {
+   }
+ 
+  private:
++  static bool IsValidDeclarationValue(const String&);
+   String ToStringInternal() const;
+   String SerializeSegments() const;
+   // Return 'false' if there is a cycle in the serialization.
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-typed-om/missing-variable-in-unparsed-value-crash.html b/third_party/blink/web_tests/external/wpt/css/css-typed-om/missing-variable-in-unparsed-value-crash.html
+deleted file mode 100644
+index b92bd62deb71f2623b0265bed099d739cd1fce3a..0000000000000000000000000000000000000000
+--- a/third_party/blink/web_tests/external/wpt/css/css-typed-om/missing-variable-in-unparsed-value-crash.html
++++ /dev/null
+@@ -1,12 +0,0 @@
+-<!DOCTYPE html>
+-<title>Crash Test: Missing variable name in CSSUnparsedValue</title>
+-<link rel="help" href="https://issues.chromium.org/issues/484811719">
+-<div id="div"></div>
+-<script>
+-  for (let i = 0; i < 5000; ++i) {
+-    const bad = new CSSUnparsedValue(['var(,)']);
+-    div.attributeStyleMap.set('--x', bad);
+-    div.attributeStyleMap.get('--x');
+-  }
+-</script>
+-<p>PASS if no crash</p>
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-typed-om/set-invalid-untyped-value-crash.html b/third_party/blink/web_tests/external/wpt/css/css-typed-om/set-invalid-untyped-value-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..ce618bf38fe651297b969ffdc16e212dee6a3688
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-typed-om/set-invalid-untyped-value-crash.html
+@@ -0,0 +1,39 @@
++<!DOCTYPE html>
++<title>Crash when setting invalid CSSUnparsedValue</title>
++<link rel="help" href="https://github.com/w3c/csswg-drafts/issues/13547">
++<div id=target></div>
++<script>
++  let examples = [
++    'var()',
++    'var(,)',
++    'var(0)',
++    'env()',
++    'env(,)',
++    'env(0)',
++    'attr()',
++    'attr(,)',
++    'attr(0)',
++    'if()',
++    'if(,)',
++    'if(0)',
++    '--f()',
++    '--f(,)',
++    '--f(0)',
++    'thing!!!',
++    'var(--x) !important',
++  ];
++  // Some of the above cases may be valid. That's fine; just don't crash.
++
++  for (let e of examples) {
++    try {
++      let value = new CSSUnparsedValue([e]);
++      target.attributeStyleMap.set('width', value);
++      // One of the two above statements should likely throw an exception.
++      // If they don't, then we should at least not crash on get():
++      target.attributeStyleMap.get('width');
++    } catch (e) {
++      // Intentionally empty.
++    }
++    target.offsetTop;
++  }
++</script>
