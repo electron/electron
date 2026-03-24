@@ -31,7 +31,7 @@ jobs:
           org: electron
       - name: Set status
         if: ${{ steps.check-for-blocked-labels.outputs.NOT_BLOCKED }}
-        uses: dsanders11/project-actions/edit-item@2134fe7cc71c58b7ae259c82a8e63c6058255678 # v1.7.0
+        uses: dsanders11/project-actions/edit-item@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
         with:
           token: ${{ steps.generate-token.outputs.token }}
           project-number: 90

@@ -20,7 +20,7 @@ jobs:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
           org: electron
       - name: Add to Issue Triage
-        uses: dsanders11/project-actions/add-item@2134fe7cc71c58b7ae259c82a8e63c6058255678 # v1.7.0
+        uses: dsanders11/project-actions/add-item@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
         with:
           field: Reporter
           field-value: ${{ github.event.issue.user.login }}
