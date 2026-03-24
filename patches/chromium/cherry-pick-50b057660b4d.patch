@@ -1,0 +1,149 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kai Ninomiya <kainino@chromium.org>
+Date: Wed, 11 Mar 2026 14:52:44 -0700
+Subject: [M146] Increment WebGL context generation number on context restore
+
+Objects created while the context is lost should not be valid to use
+after the context is restored.
+- Replace number_of_context_losses_ with a "context generation number"
+  which increments on both context loss and context restore.
+  - Technically, it would make sense to increment it only on context
+    restore, but just in case any logic is relying on the current
+    behavior, increment it in both places.
+  - It's uint64_t just in case someone figures out how to increment it 4
+    billion times.
+- Remove unused WebGLRenderingContextBase::number_of_context_losses_,
+  left over from before it was moved into WebGLContextObjectSupport.
+
+(cherry picked from commit c1433740f3ea902fd6b15d63c4865ad60a3761f9)
+
+Bug: 485935305
+Change-Id: I1007217c8e69cfb8de4f117e0b7845ca574579c4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7630664
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Kai Ninomiya <kainino@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1593726}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7658823
+Auto-Submit: Kai Ninomiya <kainino@chromium.org>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7680@{#2370}
+Cr-Branched-From: 76b7d80e5cda23fe6537eed26d68c92e995c7f39-refs/heads/main@{#1582197}
+
+diff --git a/third_party/blink/renderer/modules/webgl/webgl_context_object_support.cc b/third_party/blink/renderer/modules/webgl/webgl_context_object_support.cc
+index 6a3b1416354e7993e7a9ebd25c4ca08593105d9a..83941f8163a5e9425f2df8fd3bb98e1fd37537ad 100644
+--- a/third_party/blink/renderer/modules/webgl/webgl_context_object_support.cc
++++ b/third_party/blink/renderer/modules/webgl/webgl_context_object_support.cc
+@@ -22,7 +22,10 @@ WebGLContextObjectSupport::WebGLContextObjectSupport(
+ 
+ void WebGLContextObjectSupport::OnContextLost() {
+   DCHECK(!is_lost_);
+-  number_of_context_losses_++;
++  // Invalidate all past objects.
++  // (It may not be strictly necessary to do this here, since it's also done in
++  // OnContextRestored, but we did it historically, and there's no harm in it.)
++  context_generation_++;
+   is_lost_ = true;
+   gles2_interface_ = nullptr;
+   extensions_enabled_.reset();
+@@ -31,6 +34,8 @@ void WebGLContextObjectSupport::OnContextLost() {
+ void WebGLContextObjectSupport::OnContextRestored(
+     gpu::gles2::GLES2Interface* gl) {
+   DCHECK(is_lost_);
++  // Invalidate all past objects.
++  context_generation_++;
+   is_lost_ = false;
+   gles2_interface_ = gl;
+ }
+diff --git a/third_party/blink/renderer/modules/webgl/webgl_context_object_support.h b/third_party/blink/renderer/modules/webgl/webgl_context_object_support.h
+index 907866bb21acf9647d1c0ecd791e642e96b734fc..ba8b79f8bb9db12058614982a625baaff5546af7 100644
+--- a/third_party/blink/renderer/modules/webgl/webgl_context_object_support.h
++++ b/third_party/blink/renderer/modules/webgl/webgl_context_object_support.h
+@@ -33,10 +33,10 @@ class MODULES_EXPORT WebGLContextObjectSupport : public ScriptWrappable {
+   bool IsWebGL2() const { return is_webgl2_; }
+   bool IsLost() const { return is_lost_; }
+ 
+-  // How many context losses there were, to check whether a WebGLObject was
+-  // created since the last context resoration or before that (and hence invalid
+-  // to use).
+-  uint32_t NumberOfContextLosses() const { return number_of_context_losses_; }
++  // Which "generation" the context is on (essentially, how many times it has
++  // been restored), to check whether a WebGLObject was created since the last
++  // context restoration, or before that (and hence invalid to use).
++  uint64_t GetContextGeneration() const { return context_generation_; }
+ 
+   bool ExtensionEnabled(WebGLExtensionName name) const {
+     return extensions_enabled_.test(name);
+@@ -65,7 +65,7 @@ class MODULES_EXPORT WebGLContextObjectSupport : public ScriptWrappable {
+   std::bitset<kWebGLExtensionNameCount> extensions_enabled_ = {};
+   raw_ptr<gpu::gles2::GLES2Interface> gles2_interface_ = nullptr;
+ 
+-  uint32_t number_of_context_losses_ = 0;
++  uint64_t context_generation_ = 0;
+   bool is_lost_ = true;
+   bool is_webgl2_;
+ };
+diff --git a/third_party/blink/renderer/modules/webgl/webgl_object.cc b/third_party/blink/renderer/modules/webgl/webgl_object.cc
+index 9d984de0073796f23a5038bfc0a51ec676179765..07e0a9a4aa3406a1298a677a3159edadc5f2cbb5 100644
+--- a/third_party/blink/renderer/modules/webgl/webgl_object.cc
++++ b/third_party/blink/renderer/modules/webgl/webgl_object.cc
+@@ -33,9 +33,9 @@ namespace blink {
+ 
+ WebGLObject::WebGLObject(WebGLContextObjectSupport* context)
+     : context_(context),
+-      cached_number_of_context_losses_(std::numeric_limits<uint32_t>::max()) {
++      context_generation_at_creation_(std::numeric_limits<uint64_t>::max()) {
+   if (context_) {
+-    cached_number_of_context_losses_ = context->NumberOfContextLosses();
++    context_generation_at_creation_ = context->GetContextGeneration();
+   }
+ }
+ 
+@@ -46,7 +46,7 @@ bool WebGLObject::Validate(const WebGLContextObjectSupport* context) const {
+   // the objects they ever created, so there's no way to invalidate them
+   // eagerly during context loss. The invalidation is discovered lazily.
+   return (context == context_ && context_ != nullptr &&
+-          cached_number_of_context_losses_ == context->NumberOfContextLosses());
++          context_generation_at_creation_ == context->GetContextGeneration());
+ }
+ 
+ void WebGLObject::SetObject(GLuint object) {
+@@ -71,7 +71,7 @@ void WebGLObject::DeleteObject(gpu::gles2::GLES2Interface* gl) {
+     return;
+   }
+ 
+-  if (context_->NumberOfContextLosses() != cached_number_of_context_losses_) {
++  if (context_->GetContextGeneration() != context_generation_at_creation_) {
+     // This object has been invalidated.
+     return;
+   }
+diff --git a/third_party/blink/renderer/modules/webgl/webgl_object.h b/third_party/blink/renderer/modules/webgl/webgl_object.h
+index bb56df0f99e8e8432e03442feb9302b8dde27d01..97caa90e34288911b1a827e60c2569544d2b8f69 100644
+--- a/third_party/blink/renderer/modules/webgl/webgl_object.h
++++ b/third_party/blink/renderer/modules/webgl/webgl_object.h
+@@ -123,9 +123,9 @@ class WebGLObject : public ScriptWrappable {
+ 
+   GLuint object_ = 0;
+ 
+-  // This was the number of context losses of the object's associated
+-  // WebGLContext at the time this object was created.
+-  uint32_t cached_number_of_context_losses_;
++  // The context generation number of the associated WebGLContext when the
++  // object was created, to prevent reuse in later generations.
++  uint64_t context_generation_at_creation_;
+ 
+   unsigned attachment_count_ = 0;
+ 
+diff --git a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.h b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.h
+index 48b5dd8f3baffed5ae898e029f7dd187ddf20ce3..33554fe5b9cdbbd703b6e02d6131104a4e591f4e 100644
+--- a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.h
++++ b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.h
+@@ -2064,8 +2064,6 @@ class MODULES_EXPORT WebGLRenderingContextBase
+ 
+   bool has_been_drawn_to_ = false;
+ 
+-  uint32_t number_of_context_losses_ = 0;
+-
+   // Tracks if the context has ever called glBeginPixelLocalStorageANGLE. If it
+   // has, we need to start using the pixel local storage interrupt mechanism
+   // when we take over the client's context.
