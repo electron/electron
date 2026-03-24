@@ -1,0 +1,81 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: HWND aspect ratio handling for resizable windows
+
+Allows SetAspectRatio to accept 0 as valid input, which resets the
+stored aspect ratio to null. Electron's BrowserWindow.setAspectRatio(0)
+relies on this to clear a previously-set ratio constraint.
+
+Also adds the native frame border size to the min/max window sizes in
+SizeWindowToAspectRatio when the widget reports its size as client
+size. Without this adjustment, windows with both an aspect ratio and a
+max width/height cannot be enlarged to the correct dimensions and
+trigger a DCHECK on resize.
+
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+index c9edcfeb4df4a52dd744b43f04ff1675f566a620..31060227432ab705c4f2c4c52233f2f23d860124 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+@@ -638,7 +638,7 @@ void DesktopWindowTreeHostWin::SetOpacity(float opacity) {
+ void DesktopWindowTreeHostWin::SetAspectRatio(
+     const gfx::SizeF& aspect_ratio,
+     const gfx::Size& excluded_margin) {
+-  DCHECK(!aspect_ratio.IsEmpty());
++  DCHECK_NE(aspect_ratio.height(), 0);
+   message_handler_->SetAspectRatio(aspect_ratio.width() / aspect_ratio.height(),
+                                    excluded_margin);
+ }
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index 6a4f780c6921d901e9f954d1f7ba18c40d8847b9..cc86c89d5670fd53eb3eea2aa31f054475b47b4b 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -1047,8 +1047,11 @@ void HWNDMessageHandler::SetFullscreen(bool fullscreen,
+ 
+ void HWNDMessageHandler::SetAspectRatio(float aspect_ratio,
+                                         const gfx::Size& excluded_margin) {
+-  // If the aspect ratio is not in the valid range, do nothing.
+-  DCHECK_GT(aspect_ratio, 0.0f);
++  // If the aspect ratio is 0, reset it to null.
++  if (aspect_ratio == 0.0f) {
++    aspect_ratio_.reset();
++    return;
++  }
+ 
+   aspect_ratio_ = aspect_ratio;
+   excluded_margin_dip_ = excluded_margin;
+@@ -3857,17 +3860,30 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
+   delegate_->GetMinMaxSize(&min_window_size, &max_window_size);
+   min_window_size = delegate_->DIPToScreenSize(min_window_size);
+   max_window_size = delegate_->DIPToScreenSize(max_window_size);
++  // Add the native frame border size to the minimum and maximum size if the
++  // view reports its size as the client size.
++  if (delegate_->WidgetSizeIsClientSize()) {
++    RECT client_rect, rect;
++    GetClientRect(hwnd(), &client_rect);
++    GetWindowRect(hwnd(), &rect);
++    CR_DEFLATE_RECT(&rect, &client_rect);
++    min_window_size.Enlarge(rect.right - rect.left,
++                            rect.bottom - rect.top);
++    // Either axis may be zero, so enlarge them independently.
++    if (max_window_size.width())
++      max_window_size.Enlarge(rect.right - rect.left, 0);
++    if (max_window_size.height())
++      max_window_size.Enlarge(0, rect.bottom - rect.top);
++  }
+ 
+   std::optional<gfx::Size> max_size_param;
+   if (!max_window_size.IsEmpty()) {
+     max_size_param = max_window_size;
+   }
+ 
+-  gfx::Size excluded_margin = delegate_->DIPToScreenSize(excluded_margin_dip_);
+-
+-  gfx::SizeRectToAspectRatioWithExcludedMargin(
++  gfx::SizeRectToAspectRatio(
+       GetWindowResizeEdge(param), aspect_ratio_.value(), min_window_size,
+-      max_size_param, excluded_margin, *window_rect);
++      max_size_param, window_rect);
+ }
+ 
+ POINT HWNDMessageHandler::GetCursorPos() const {

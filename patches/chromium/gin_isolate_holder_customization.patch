@@ -1,0 +1,201 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:47:44 -0700
+Subject: feat: customize gin::IsolateHolder for Node platform integration
+
+Adds hooks to gin::IsolateHolder needed for Node.js integration:
+a create_v8_platform flag to skip gin's V8 platform init (Electron
+uses Node's platform instead); an optional pre-allocated isolate so
+NodePlatform can register it between v8::Isolate::Allocate and
+::Initialize (Initialize calls GetForegroundTaskRunner which requires
+prior RegisterIsolate, but gin leaves no gap to do so); and
+microtasks-runner lifecycle signals used to avoid UAF in second-pass
+finalization callbacks on shutdown. The last can be removed once
+gin::Wrappable migrates to Oilpan (electron/electron#47922).
+
+diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
+index 646647b6e257ecc5ff0934fe8204db74651c1510..7c640559dc7a09730f0053be8798d10bc8ac1a1c 100644
+--- a/gin/isolate_holder.cc
++++ b/gin/isolate_holder.cc
+@@ -35,6 +35,8 @@ v8::ArrayBuffer::Allocator* g_array_buffer_allocator = nullptr;
+ const intptr_t* g_reference_table = nullptr;
+ v8::FatalErrorCallback g_fatal_error_callback = nullptr;
+ v8::OOMErrorCallback g_oom_error_callback = nullptr;
++bool g_initialized_microtasks_runner = false;
++bool g_destroyed_microtasks_runner = false;
+ 
+ std::unique_ptr<v8::Isolate::CreateParams> getModifiedIsolateParams(
+     std::unique_ptr<v8::Isolate::CreateParams> params,
+@@ -81,7 +83,8 @@ IsolateHolder::IsolateHolder(
+     v8::AddHistogramSampleCallback add_histogram_sample_callback,
+     scoped_refptr<base::SingleThreadTaskRunner> user_visible_task_runner,
+     scoped_refptr<base::SingleThreadTaskRunner> best_effort_task_runner,
+-    std::unique_ptr<v8::CppHeap> cpp_heap)
++    std::unique_ptr<v8::CppHeap> cpp_heap,
++    v8::Isolate* isolate)
+     : IsolateHolder(std::move(task_runner),
+                     access_mode,
+                     isolate_type,
+@@ -92,7 +95,8 @@ IsolateHolder::IsolateHolder(
+                                              std::move(cpp_heap)),
+                     isolate_creation_mode,
+                     std::move(user_visible_task_runner),
+-                    std::move(best_effort_task_runner)) {}
++                    std::move(best_effort_task_runner),
++                    isolate) {}
+ 
+ IsolateHolder::IsolateHolder(
+     scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+@@ -101,7 +105,8 @@ IsolateHolder::IsolateHolder(
+     std::unique_ptr<v8::Isolate::CreateParams> params,
+     IsolateCreationMode isolate_creation_mode,
+     scoped_refptr<base::SingleThreadTaskRunner> user_visible_task_runner,
+-    scoped_refptr<base::SingleThreadTaskRunner> best_effort_task_runner)
++    scoped_refptr<base::SingleThreadTaskRunner> best_effort_task_runner,
++    v8::Isolate* isolate)
+     : access_mode_(access_mode), isolate_type_(isolate_type) {
+   CHECK(Initialized())
+       << "You need to invoke gin::IsolateHolder::Initialize first";
+@@ -112,7 +117,7 @@ IsolateHolder::IsolateHolder(
+   v8::ArrayBuffer::Allocator* allocator = params->array_buffer_allocator;
+   DCHECK(allocator);
+ 
+-  isolate_ = v8::Isolate::Allocate();
++  isolate_ = isolate ? isolate : v8::Isolate::Allocate();
+   isolate_data_ = std::make_unique<PerIsolateData>(
+       isolate_, allocator, access_mode_, task_runner,
+       std::move(user_visible_task_runner), std::move(best_effort_task_runner));
+@@ -162,11 +167,13 @@ void IsolateHolder::Initialize(ScriptMode mode,
+                                std::string js_command_line_flags,
+                                bool disallow_v8_feature_flag_overrides,
+                                v8::FatalErrorCallback fatal_error_callback,
+-                               v8::OOMErrorCallback oom_error_callback) {
++                               v8::OOMErrorCallback oom_error_callback,
++                               bool create_v8_platform) {
+   CHECK(allocator);
+   V8Initializer::Initialize(mode, js_command_line_flags,
+                             disallow_v8_feature_flag_overrides,
+-                            oom_error_callback);
++                            oom_error_callback,
++                            create_v8_platform);
+   g_array_buffer_allocator = allocator;
+   g_reference_table = reference_table;
+   g_fatal_error_callback = fatal_error_callback;
+@@ -199,10 +206,26 @@ IsolateHolder::getDefaultIsolateParams() {
+   return params;
+ }
+ 
++// static
++bool IsolateHolder::DestroyedMicrotasksRunner() {
++  return g_initialized_microtasks_runner &&
++         g_destroyed_microtasks_runner;
++}
++
+ void IsolateHolder::EnableIdleTasks(
+     std::unique_ptr<V8IdleTaskRunner> idle_task_runner) {
+   DCHECK(isolate_data_.get());
+   isolate_data_->EnableIdleTasks(std::move(idle_task_runner));
+ }
+ 
++void IsolateHolder::WillCreateMicrotasksRunner() {
++  DCHECK(!g_initialized_microtasks_runner);
++  g_initialized_microtasks_runner = true;
++}
++
++void IsolateHolder::WillDestroyMicrotasksRunner() {
++  DCHECK(g_initialized_microtasks_runner);
++  g_destroyed_microtasks_runner = true;
++}
++
+ }  // namespace gin
+diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
+index 3909e70dc1425c2cb02624f4b3017784a2ae6c9d..d0de06b55937d36848664c3817d098182c67f570 100644
+--- a/gin/public/isolate_holder.h
++++ b/gin/public/isolate_holder.h
+@@ -89,7 +89,8 @@ class GIN_EXPORT IsolateHolder {
+           nullptr,
+       scoped_refptr<base::SingleThreadTaskRunner> best_effort_task_runner =
+           nullptr,
+-      std::unique_ptr<v8::CppHeap> cpp_heap = {});
++      std::unique_ptr<v8::CppHeap> cpp_heap = {},
++      v8::Isolate* isolate = nullptr);
+   IsolateHolder(
+       scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+       AccessMode access_mode,
+@@ -99,7 +100,8 @@ class GIN_EXPORT IsolateHolder {
+       scoped_refptr<base::SingleThreadTaskRunner> user_visible_task_runner =
+           nullptr,
+       scoped_refptr<base::SingleThreadTaskRunner> best_effort_task_runner =
+-          nullptr);
++          nullptr,
++      v8::Isolate* isolate = nullptr);
+   IsolateHolder(const IsolateHolder&) = delete;
+   IsolateHolder& operator=(const IsolateHolder&) = delete;
+   ~IsolateHolder();
+@@ -120,7 +122,8 @@ class GIN_EXPORT IsolateHolder {
+                          std::string js_command_line_flags = {},
+                          bool disallow_v8_feature_flag_overrides = false,
+                          v8::FatalErrorCallback fatal_error_callback = nullptr,
+-                         v8::OOMErrorCallback oom_error_callback = nullptr);
++                         v8::OOMErrorCallback oom_error_callback = nullptr,
++                         bool create_v8_platform = true);
+ 
+   // Returns whether `Initialize` has already been invoked in the process.
+   // Initialization is a one-way operation (i.e., this method cannot return
+@@ -130,6 +133,8 @@ class GIN_EXPORT IsolateHolder {
+   // Should only be called after v8::IsolateHolder::Initialize() is invoked.
+   static std::unique_ptr<v8::Isolate::CreateParams> getDefaultIsolateParams();
+ 
++  static bool DestroyedMicrotasksRunner();
++
+   v8::Isolate* isolate() { return isolate_; }
+ 
+   // This method returns if v8::Locker is needed to access isolate.
+@@ -143,6 +148,9 @@ class GIN_EXPORT IsolateHolder {
+ 
+   void EnableIdleTasks(std::unique_ptr<V8IdleTaskRunner> idle_task_runner);
+ 
++  void WillCreateMicrotasksRunner();
++  void WillDestroyMicrotasksRunner();
++
+   // This method returns V8IsolateMemoryDumpProvider of this isolate, used for
+   // testing.
+   V8IsolateMemoryDumpProvider* isolate_memory_dump_provider_for_testing()
+diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
+index 6146bd47bf3203b97084438ab51f96d515c74b55..136e728c4c7981c9180304a43d75b2f003161664 100644
+--- a/gin/v8_initializer.cc
++++ b/gin/v8_initializer.cc
+@@ -529,7 +529,8 @@ void SetFeatureFlags() {
+ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
+                                const std::string& js_command_line_flags,
+                                bool disallow_v8_feature_flag_overrides,
+-                               v8::OOMErrorCallback oom_error_callback) {
++                               v8::OOMErrorCallback oom_error_callback,
++                               bool create_v8_platform) {
+   static bool v8_is_initialized = false;
+   if (v8_is_initialized)
+     return;
+@@ -544,7 +545,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
+   }
+   SetFlags(mode, js_command_line_flags);
+ 
+-  v8::V8::InitializePlatform(V8Platform::Get());
++  if (create_v8_platform)
++    v8::V8::InitializePlatform(V8Platform::Get());
+ 
+   // Set this as early as possible in order to ensure OOM errors are reported
+   // correctly.
+diff --git a/gin/v8_initializer.h b/gin/v8_initializer.h
+index 1341b77198431e1c426bff043bdb2bbcf202c8ca..ec64afd9dd91b292604ca834a91b9cfbd52eb853 100644
+--- a/gin/v8_initializer.h
++++ b/gin/v8_initializer.h
+@@ -32,7 +32,8 @@ class GIN_EXPORT V8Initializer {
+   static void Initialize(IsolateHolder::ScriptMode mode,
+                          const std::string& js_command_line_flags,
+                          bool disallow_v8_feature_flag_overrides,
+-                         v8::OOMErrorCallback oom_error_callback);
++                         v8::OOMErrorCallback oom_error_callback,
++                         bool create_v8_platform = true);
+ 
+   // Get address and size information for currently loaded snapshot.
+   // If no snapshot is loaded, the return values are null for addresses

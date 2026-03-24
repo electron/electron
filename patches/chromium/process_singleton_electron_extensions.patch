@@ -1,0 +1,540 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Raymond Zhao <raymondzhao@microsoft.com>
+Date: Wed, 18 Aug 2021 08:24:10 -0700
+Subject: feat: extend ProcessSingleton for app.requestSingleInstanceLock
+
+Extends ProcessSingleton to support app.requestSingleInstanceLock:
+
+1. Adds an additional_data parameter so a second instance can pass
+   arbitrary serialized data to the first instance, surfaced to apps
+   via the 'second-instance' event.
+2. Makes the Windows mutex name program-dependent so separate Electron
+   apps don't share a single-instance lock.
+3. Shortens the socket path on sandboxed macOS apps to fit sun_path.
+4. Calls ChangeWindowMessageFilterEx on Windows so unelevated second
+   instances can notify a primary instance running elevated.
+5. Disables Chrome's profile-in-use/hung-browser dialogs.
+
+diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
+index e11ccd361a0837eef71869b65f510830171c3a29..a03d99f929e2d354cdba969567d781561656261d 100644
+--- a/chrome/browser/process_singleton.h
++++ b/chrome/browser/process_singleton.h
+@@ -18,7 +18,8 @@
+ #include "base/functional/callback.h"
+ #include "base/memory/scoped_refptr.h"
+ #include "base/process/process.h"
+-
++#include "base/containers/span.h"
++#include "base/memory/raw_span.h"
+ #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_ANDROID)
+ #include "base/files/scoped_temp_dir.h"
+ #endif
+@@ -99,10 +100,20 @@ class ProcessSingleton {
+   // should handle it (i.e., because the current process is shutting down).
+   using NotificationCallback =
+       base::RepeatingCallback<bool(base::CommandLine command_line,
+-                                   const base::FilePath& current_directory)>;
++                                   const base::FilePath& current_directory,
++                                   const std::vector<uint8_t> additional_data)>;
+ 
++#if BUILDFLAG(IS_WIN)
++  ProcessSingleton(const std::string& program_name,
++                   const base::FilePath& user_data_dir,
++                   const base::raw_span<const uint8_t> additional_data,
++                   bool is_sandboxed,
++                   const NotificationCallback& notification_callback);
++#else
+   ProcessSingleton(const base::FilePath& user_data_dir,
++                   const base::raw_span<const uint8_t> additional_data,
+                    const NotificationCallback& notification_callback);
++#endif
+ 
+   ProcessSingleton(const ProcessSingleton&) = delete;
+   ProcessSingleton& operator=(const ProcessSingleton&) = delete;
+@@ -170,11 +181,16 @@ class ProcessSingleton {
+ #endif
+ 
+  private:
++  // A callback to run when the first instance receives data from the second.
+   NotificationCallback notification_callback_;  // Handler for notifications.
++  // Custom data to pass to the other instance during notify.
++  base::raw_span<const uint8_t> additional_data_;
+ 
+ #if BUILDFLAG(IS_WIN)
+   bool EscapeVirtualization(const base::FilePath& user_data_dir);
+ 
++  std::string program_name_; // Used for mutexName.
++  bool is_app_sandboxed_; // Whether the Electron app is sandboxed.
+   HWND remote_window_;  // The HWND_MESSAGE of another browser.
+   base::win::MessageWindow window_;  // The message-only window.
+   bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
+diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
+index f36983753ab7bdf2ecd332408f1f3d9c01f87a62..1204affca14f73d84b57c1b3092079464a4d5430 100644
+--- a/chrome/browser/process_singleton_posix.cc
++++ b/chrome/browser/process_singleton_posix.cc
+@@ -55,6 +55,7 @@
+ #include <memory>
+ #include <set>
+ #include <string>
++#include <tuple>
+ #include <type_traits>
+ 
+ #include "base/base_paths.h"
+@@ -86,6 +87,7 @@
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/task/sequenced_task_runner_helpers.h"
+ #include "base/task/single_thread_task_runner.h"
++#include "base/threading/thread_restrictions.h"
+ #include "base/threading/platform_thread.h"
+ #include "base/time/time.h"
+ #include "base/timer/timer.h"
+@@ -102,7 +104,7 @@
+ #include "ui/base/l10n/l10n_util.h"
+ #include "ui/base/resource/scoped_startup_resource_bundle.h"
+ 
+-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
++#if 0
+ #include "chrome/browser/ui/process_singleton_dialog_linux.h"
+ #endif
+ 
+@@ -353,6 +355,8 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
+ bool DisplayProfileInUseError(const base::FilePath& lock_path,
+                               const std::string& hostname,
+                               int pid) {
++  return true;
++#if 0
+   // Ensure there is an instance of ResourceBundle that is initialized for
+   // localized string resource accesses.
+   ui::ScopedStartupResourceBundle ensure_startup_resource_bundle;
+@@ -375,6 +379,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
+ #else
+   NOTREACHED();
+ #endif
++#endif
+ }
+ 
+ bool IsChromeProcess(pid_t pid) {
+@@ -387,6 +392,21 @@ bool IsChromeProcess(pid_t pid) {
+               base::FilePath(chrome::kBrowserProcessExecutableName));
+ }
+ 
++bool IsAppSandboxed() {
++#if BUILDFLAG(IS_MAC)
++  // NB: There is no sane API for this, we have to just guess by
++  // reading tea leaves
++  base::FilePath home_dir;
++  if (!base::PathService::Get(base::DIR_HOME, &home_dir)) {
++    return false;
++  }
++
++  return home_dir.value().find("Library/Containers") != std::string::npos;
++#else
++  return false;
++#endif  // BUILDFLAG(IS_MAC)
++}
++
+ // A helper class to hold onto a socket.
+ class ScopedSocket {
+  public:
+@@ -599,6 +619,7 @@ class ProcessSingleton::LinuxWatcher
+   // |reader| is for sending back ACK message.
+   void HandleMessage(const std::string& current_dir,
+                      const std::vector<std::string>& argv,
++                     const std::vector<uint8_t> additional_data,
+                      SocketReader* reader);
+ 
+   // Called when the ProcessSingleton that owns this class is about to be
+@@ -658,13 +679,17 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
+ }
+ 
+ void ProcessSingleton::LinuxWatcher::HandleMessage(
+-    const std::string& current_dir, const std::vector<std::string>& argv,
++    const std::string& current_dir,
++    const std::vector<std::string>& argv,
++    const std::vector<uint8_t> additional_data,
+     SocketReader* reader) {
+   DCHECK(ui_task_runner_->BelongsToCurrentThread());
+   DCHECK(reader);
+ 
+   if (parent_ && parent_->notification_callback_.Run(
+-                     base::CommandLine(argv), base::FilePath(current_dir))) {
++                     base::CommandLine(argv),
++                     base::FilePath(current_dir),
++                     std::move(additional_data))) {
+     // Send back "ACK" message to prevent the client process from starting up.
+     reader->FinishWithACK(kACKToken);
+   } else {
+@@ -694,7 +719,8 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+   bytes_read_ += ReadFromSocketWithTimeout(
+       fd_, base::span(buf_).subspan(bytes_read_), base::Seconds(0));
+ 
+-  // Validate the message.  The shortest message is kStartToken\0x\0x
++  // Validate the message.  The shortest message kStartToken\0\00
++  // The shortest message with additional data is kStartToken\0\00\00\0.
+   const size_t kMinMessageLength = kStartToken.length() + 4;
+   if (bytes_read_ < kMinMessageLength) {
+     buf_[bytes_read_] = 0;
+@@ -725,10 +751,45 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+   tokens.erase(tokens.begin());
+   tokens.erase(tokens.begin());
+ 
++  size_t num_args;
++  if (!base::StringToSizeT(tokens[0], &num_args) ||
++      num_args > tokens.size() - 1) {
++    LOG(ERROR) << "Invalid num_args in socket message";
++    CleanupAndDeleteSelf();
++    return;
++  }
++  std::vector<std::string> command_line(tokens.begin() + 1,
++                                        tokens.begin() + 1 + num_args);
++
++  std::vector<uint8_t> additional_data;
++  // After consuming [num_args, argv...], two more tokens are needed for
++  // additional data: [size, payload]. Subtract to avoid overflow when
++  // num_args is large.
++  if (tokens.size() - 1 - num_args >= 2) {
++    size_t additional_data_size;
++    if (!base::StringToSizeT(tokens[1 + num_args], &additional_data_size)) {
++      LOG(ERROR) << "Invalid additional_data_size in socket message";
++      CleanupAndDeleteSelf();
++      return;
++    }
++    std::string remaining_args = base::JoinString(
++        base::span(tokens).subspan(2 + num_args),
++        std::string(1, kTokenDelimiter));
++    if (additional_data_size > remaining_args.size()) {
++      LOG(ERROR) << "additional_data_size exceeds payload length";
++      CleanupAndDeleteSelf();
++      return;
++    }
++    const auto adspan =
++        base::as_byte_span(remaining_args).first(additional_data_size);
++    additional_data.assign(adspan.begin(), adspan.end());
++  }
++
+   // Return to the UI thread to handle opening a new browser tab.
+   ui_task_runner_->PostTask(
+       FROM_HERE, base::BindOnce(&ProcessSingleton::LinuxWatcher::HandleMessage,
+-                                parent_, current_dir, tokens, this));
++                                parent_, current_dir, command_line,
++                                std::move(additional_data), this));
+   fd_watch_controller_.reset();
+ 
+   // LinuxWatcher::HandleMessage() is in charge of destroying this SocketReader
+@@ -757,8 +818,10 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
+ //
+ ProcessSingleton::ProcessSingleton(
+     const base::FilePath& user_data_dir,
++    const base::raw_span<const uint8_t> additional_data,
+     const NotificationCallback& notification_callback)
+     : notification_callback_(notification_callback),
++      additional_data_(additional_data),
+       current_pid_(base::GetCurrentProcId()) {
+   socket_path_ = user_data_dir.Append(chrome::kSingletonSocketFilename);
+   lock_path_ = user_data_dir.Append(chrome::kSingletonLockFilename);
+@@ -773,6 +836,10 @@ ProcessSingleton::~ProcessSingleton() {
+   if (watcher_) {
+     watcher_->OnEminentProcessSingletonDestruction();
+   }
++  // Manually free resources with IO explicitly allowed.
++  base::ScopedAllowBlocking allow_blocking;
++  watcher_ = nullptr;
++  std::ignore = socket_dir_.Delete();
+ }
+ 
+ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+@@ -875,7 +942,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+              sizeof(socket_timeout));
+ 
+   // Found another process, prepare our command line
+-  // format is "START\0<current dir>\0<argv[0]>\0...\0<argv[n]>".
++  // format is "START\0<current-dir>\0<n-args>\0<argv[0]>\0...\0<argv[n]>
++  // \0<additional-data-length>\0<additional-data>".
+   std::string to_send(kStartToken);
+   to_send.push_back(kTokenDelimiter);
+ 
+@@ -885,11 +953,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+   to_send.append(current_dir.value());
+ 
+   const std::vector<std::string>& argv = cmd_line.argv();
++  to_send.push_back(kTokenDelimiter);
++  to_send.append(base::NumberToString(argv.size()));
+   for (auto it = argv.begin(); it != argv.end(); ++it) {
+     to_send.push_back(kTokenDelimiter);
+     to_send.append(*it);
+   }
+ 
++  size_t data_to_send_size = additional_data_.size_bytes();
++  if (data_to_send_size) {
++    to_send.push_back(kTokenDelimiter);
++    to_send.append(base::NumberToString(data_to_send_size));
++    to_send.push_back(kTokenDelimiter);
++    to_send.append(reinterpret_cast<const char*>(additional_data_.data()), data_to_send_size);
++  }
++
+   // Send the message
+   if (!WriteToSocket(socket.fd(), to_send)) {
+     // Try to kill the other process, because it might have been dead.
+@@ -1045,11 +1123,32 @@ bool ProcessSingleton::Create() {
+   // Create the socket file somewhere in /tmp which is usually mounted as a
+   // normal filesystem. Some network filesystems (notably AFS) are screwy and
+   // do not support Unix domain sockets.
+-  if (!socket_dir_.CreateUniqueTempDir(/*prefix=*/FILE_PATH_LITERAL(""))) {
+-    LOG(ERROR) << "Failed to create socket directory.";
++  base::FilePath tmp_dir;
++  if (!base::GetTempDir(&tmp_dir)) {
++    LOG(ERROR) << "Failed to get temporary directory.";
+     return false;
+   }
+ 
++  if (IsAppSandboxed()) {
++    // For sandboxed applications, the tmp dir could be too long to fit
++    // addr->sun_path, so we need to make it as short as possible.
++    if (!socket_dir_.Set(tmp_dir.Append("S"))) {
++      LOG(ERROR) << "Failed to set socket directory.";
++      return false;
++    }
++  } else {
++    // Create the socket file somewhere in /tmp which is usually mounted as a
++    // normal filesystem. Some network filesystems (notably AFS) are screwy and
++    // do not support Unix domain sockets.
++    // Prefer CreateUniqueTempDirUnderPath rather than CreateUniqueTempDir as
++    // the latter will calculate unique paths based on bundle ids which can
++    // increase the socket path length than what is allowed.
++    if (!socket_dir_.CreateUniqueTempDirUnderPath(tmp_dir)) {
++      LOG(ERROR) << "Failed to create socket directory.";
++      return false;
++    }
++  }
++
+   // Check that the directory was created with the correct permissions.
+   int dir_mode = 0;
+   CHECK(base::GetPosixFilePermissions(socket_dir_.GetPath(), &dir_mode) &&
+diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
+index ff44618efa8f8082b5da2c416802b781290c6cac..274887d62ff8d008bb86815a11205fcaa5f2c2ff 100644
+--- a/chrome/browser/process_singleton_win.cc
++++ b/chrome/browser/process_singleton_win.cc
+@@ -9,6 +9,7 @@
+ #include <shellapi.h>
+ #include <stddef.h>
+ 
++#include "base/base64.h"
+ #include "base/base_paths.h"
+ #include "base/command_line.h"
+ #include "base/files/file_path.h"
+@@ -29,7 +30,9 @@
+ #include "base/win/wmi.h"
+ #include "chrome/browser/process_singleton_internal.h"
+ #include "chrome/browser/shell_integration.h"
++#if 0
+ #include "chrome/browser/ui/simple_message_box.h"
++#endif
+ #include "chrome/browser/win/chrome_process_finder.h"
+ #include "chrome/common/chrome_constants.h"
+ #include "chrome/common/chrome_paths.h"
+@@ -79,10 +82,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
+ 
+ bool ParseCommandLine(const COPYDATASTRUCT* cds,
+                       base::CommandLine* parsed_command_line,
+-                      base::FilePath* current_directory) {
++                      base::FilePath* current_directory,
++                      std::vector<uint8_t>* parsed_additional_data) {
+   // We should have enough room for the shortest command (min_message_size)
+   // and also be a multiple of wchar_t bytes. The shortest command
+-  // possible is L"START\0\0" (empty current directory and command line).
++  // possible is L"START\0\0" (empty command line, current directory,
++  // and additional data).
+   static const int min_message_size = 7;
+   if (cds->cbData < min_message_size * sizeof(wchar_t) ||
+       cds->cbData % sizeof(wchar_t) != 0) {
+@@ -132,6 +137,25 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
+     const std::wstring cmd_line =
+         msg.substr(second_null + 1, third_null - second_null);
+     *parsed_command_line = base::CommandLine::FromString(cmd_line);
++
++    const std::wstring::size_type fourth_null =
++        msg.find_first_of(L'\0', third_null + 1);
++    if (fourth_null == std::wstring::npos ||
++        fourth_null == msg.length()) {
++      // No additional data was provided.
++      return true;
++    }
++
++    // Get the actual additional data. It is base64-encoded so it can
++    // safely traverse the null-delimited wchar_t buffer.
++    const std::wstring encoded_w =
++        msg.substr(third_null + 1, fourth_null - third_null - 1);
++    std::string encoded = base::WideToASCII(encoded_w);
++    std::optional<std::vector<uint8_t>> decoded = base::Base64Decode(encoded);
++    if (decoded) {
++      *parsed_additional_data = std::move(*decoded);
++    }
++
+     return true;
+   }
+   return false;
+@@ -153,17 +177,19 @@ bool ProcessLaunchNotification(
+ 
+   base::CommandLine parsed_command_line(base::CommandLine::NO_PROGRAM);
+   base::FilePath current_directory;
+-  if (!ParseCommandLine(cds, &parsed_command_line, &current_directory)) {
++  std::vector<uint8_t> additional_data;
++  if (!ParseCommandLine(cds, &parsed_command_line, &current_directory, &additional_data)) {
+     *result = TRUE;
+     return true;
+   }
+ 
+-  *result = notification_callback.Run(parsed_command_line, current_directory) ?
+-      TRUE : FALSE;
++  *result = notification_callback.Run(parsed_command_line,
++      current_directory, std::move(additional_data)) ? TRUE : FALSE;
+   return true;
+ }
+ 
+ bool DisplayShouldKillMessageBox() {
++#if 0
+   TRACE_EVENT0("startup", "ProcessSingleton:DisplayShouldKillMessageBox");
+ 
+   // Ensure there is an instance of ResourceBundle that is initialized for
+@@ -174,6 +200,10 @@ bool DisplayShouldKillMessageBox() {
+              NULL, l10n_util::GetStringUTF16(IDS_PRODUCT_NAME),
+              l10n_util::GetStringUTF16(IDS_BROWSER_HUNGBROWSER_MESSAGE)) !=
+          chrome::MESSAGE_BOX_RESULT_NO;
++#endif
++  // This is called when the secondary process can't ping the primary
++  // process.
++  return false;
+ }
+ 
+ // Function was copied from Process::Terminate.
+@@ -256,9 +286,15 @@ bool ProcessSingleton::EscapeVirtualization(
+ }
+ 
+ ProcessSingleton::ProcessSingleton(
++    const std::string& program_name,
+     const base::FilePath& user_data_dir,
++    const base::raw_span<const uint8_t> additional_data,
++    bool is_app_sandboxed,
+     const NotificationCallback& notification_callback)
+     : notification_callback_(notification_callback),
++      additional_data_(additional_data),
++      program_name_(program_name),
++      is_app_sandboxed_(is_app_sandboxed),
+       is_virtualized_(false),
+       lock_file_(INVALID_HANDLE_VALUE),
+       user_data_dir_(user_data_dir),
+@@ -283,7 +319,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+     return PROCESS_NONE;
+   }
+ 
+-  switch (AttemptToNotifyRunningChrome(remote_window_)) {
++  switch (AttemptToNotifyRunningChrome(remote_window_, additional_data_)) {
+     case NotifyChromeResult::kSuccess:
+       return PROCESS_NOTIFIED;
+     case NotifyChromeResult::kFailed:
+@@ -381,7 +417,7 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
+ bool ProcessSingleton::Create() {
+   TRACE_EVENT0("startup", "ProcessSingleton::Create");
+ 
+-  static const wchar_t kMutexName[] = L"Local\\ChromeProcessSingletonStartup!";
++  std::wstring mutexName = base::UTF8ToWide("Local\\" + program_name_ + "ProcessSingletonStartup");
+ 
+   remote_window_ = FindRunningChromeWindow(user_data_dir_);
+   if (!remote_window_ && !EscapeVirtualization(user_data_dir_)) {
+@@ -390,7 +426,7 @@ bool ProcessSingleton::Create() {
+     // access. As documented, it's clearer to NOT request ownership on creation
+     // since it isn't guaranteed we will get it. It is better to create it
+     // without ownership and explicitly get the ownership afterward.
+-    base::win::ScopedHandle only_me(::CreateMutex(NULL, FALSE, kMutexName));
++    base::win::ScopedHandle only_me(::CreateMutex(NULL, FALSE, mutexName.c_str()));
+     if (!only_me.is_valid()) {
+       DPLOG(FATAL) << "CreateMutex failed";
+       return false;
+@@ -429,6 +465,17 @@ bool ProcessSingleton::Create() {
+             window_.CreateNamed(base::BindRepeating(&ProcessLaunchNotification,
+                                                     notification_callback_),
+                                 user_data_dir_.value());
++
++        // When the app is sandboxed, firstly, the app should not be in
++        // admin mode, and even if it somehow is, messages from an unelevated
++        // instance should not be able to be sent to it.
++        if (!is_app_sandboxed_) {
++          // NB: Ensure that if the primary app gets started as elevated
++          // admin inadvertently, secondary windows running not as elevated
++          // will still be able to send messages.
++          ::ChangeWindowMessageFilterEx(window_.hwnd(), WM_COPYDATA, MSGFLT_ALLOW,
++                                        NULL);
++        }
+         CHECK(result && window_.hwnd());
+       }
+     }
+diff --git a/chrome/browser/win/chrome_process_finder.cc b/chrome/browser/win/chrome_process_finder.cc
+index 594f3bc08a4385c177fb488123cef79448e94850..28e5a18a19718b2e748ada6882341413a1ab0705 100644
+--- a/chrome/browser/win/chrome_process_finder.cc
++++ b/chrome/browser/win/chrome_process_finder.cc
+@@ -11,6 +11,7 @@
+ #include <string>
+ #include <string_view>
+ 
++#include "base/base64.h"
+ #include "base/check.h"
+ #include "base/command_line.h"
+ #include "base/files/file_path.h"
+@@ -39,7 +40,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
+   return base::win::MessageWindow::FindWindow(user_data_dir.value());
+ }
+ 
+-NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
++NotifyChromeResult AttemptToNotifyRunningChrome(
++    HWND remote_window,
++    const base::raw_span<const uint8_t> additional_data) {
+   TRACE_EVENT0("startup", "AttemptToNotifyRunningChrome");
+ 
+   DCHECK(remote_window);
+@@ -70,12 +73,22 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
+     new_command_line.AppendSwitch(switches::kSourceAppId);
+   }
+   // Send the command line to the remote chrome window.
+-  // Format is "START\0<<<current directory>>>\0<<<commandline>>>".
++  // Format is
++  // "START\0<current-directory>\0<command-line>\0<additional-data>".
+   std::wstring to_send = base::StrCat(
+       {std::wstring_view{L"START\0", 6}, cur_dir.value(),
+        std::wstring_view{L"\0", 1}, new_command_line.GetCommandLineString(),
+        std::wstring_view{L"\0", 1}});
+ 
++  if (!additional_data.empty()) {
++    // Base64-encode so the payload survives the null-delimited wchar_t
++    // framing; raw serialized bytes can contain 0x0000 sequences which
++    // would otherwise terminate the field early.
++    std::string encoded = base::Base64Encode(additional_data);
++    to_send.append(base::ASCIIToWide(encoded));
++    to_send.append(L"\0", 1);  // Null separator.
++  }
++
+   // Allow the current running browser window to make itself the foreground
+   // window (otherwise it will just flash in the taskbar).
+   ::AllowSetForegroundWindow(process_id);
+diff --git a/chrome/browser/win/chrome_process_finder.h b/chrome/browser/win/chrome_process_finder.h
+index 62e232f41189a557534e0b01d912469b2ca26148..3a4dfb027cdc690ee7561fc8b632f35cb6b8f4be 100644
+--- a/chrome/browser/win/chrome_process_finder.h
++++ b/chrome/browser/win/chrome_process_finder.h
+@@ -7,6 +7,7 @@
+ 
+ #include <windows.h>
+ 
++#include "base/memory/raw_span.h"
+ #include "base/time/time.h"
+ 
+ namespace base {
+@@ -25,7 +26,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir);
+ // Attempts to send the current command line to an already running instance of
+ // Chrome via a WM_COPYDATA message.
+ // Returns true if a running Chrome is found and successfully notified.
+-NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window);
++NotifyChromeResult AttemptToNotifyRunningChrome(
++    HWND remote_window,
++    const base::raw_span<const uint8_t> additional_data);
+ 
+ // Changes the notification timeout to |new_timeout|, returns the old timeout.
+ base::TimeDelta SetNotificationTimeoutForTesting(base::TimeDelta new_timeout);

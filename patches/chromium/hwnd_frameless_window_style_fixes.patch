@@ -1,0 +1,151 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Raymond Zhao <7199958+rzhao271@users.noreply.github.com>
+Date: Wed, 17 Aug 2022 13:49:40 -0700
+Subject: fix: HWND style handling for frameless and Mica windows
+
+Adjusts HWNDMessageHandler's window style and NC-message handling to
+support Electron's frameless, transparent, and Mica/Acrylic windows.
+
+Electron retains WS_CAPTION on opaque frameless windows (removing it
+causes a Windows 7 frame glitch on startup) but must strip it for
+transparent and popup windows, so OnCreate conditions the removal on
+is_translucent_/WS_POPUP rather than !HasFrame(). For translucent
+windows using Windows 11 backdrop materials, WM_NCACTIVATE must reach
+DefWindowProc (with lParam=-1 to suppress NC painting), the Glic-
+specific !is_translucent_ resize restriction is dropped so these
+windows can maximize, and ResetWindowRegion skips the custom region
+path to avoid a white title bar when maximized. A SetIsTranslucent
+accessor is added to DesktopWindowTreeHostWin so backgroundMaterial
+can be changed at runtime.
+
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+index ceb6e3ad0e60b1aaee47c24564ca9fd8b3c2e71f..35433949e2933e0c886c1e05dd54ce4b5b6cbe71 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+@@ -167,6 +167,10 @@ void DesktopWindowTreeHostWin::FinishTouchDrag(gfx::Point screen_point) {
+   }
+ }
+ 
++void DesktopWindowTreeHostWin::SetIsTranslucent(bool is_translucent) {
++  message_handler_->set_is_translucent(is_translucent);
++}
++
+ // DesktopWindowTreeHostWin, DesktopWindowTreeHost implementation:
+ 
+ void DesktopWindowTreeHostWin::Init(const Widget::InitParams& params) {
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
+index e8acd2828ed05deefa335ce2bb461f0c3be8d7b7..32377f112337e4f2f9dd17410eaffe089fda1368 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
+@@ -93,6 +93,8 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+   // false.
+   void FinishTouchDrag(gfx::Point screen_point);
+ 
++  void SetIsTranslucent(bool is_translucent);
++
+  protected:
+   // Overridden from DesktopWindowTreeHost:
+   void Init(const Widget::InitParams& params) override;
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index b1950dade1cc98a82c75b4b242a34338b2ba741c..43132e8040059296373f121b6fb2863023eb3a57 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -986,13 +986,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
+ 
+ void HWNDMessageHandler::PaintAsActiveChanged() {
+   if (!delegate_->HasNonClientView() || !delegate_->CanActivate() ||
+-      !delegate_->HasFrame() ||
++      (!delegate_->HasFrame() && !is_translucent_) ||
+       (delegate_->GetFrameMode() == FrameMode::CUSTOM_DRAWN)) {
+     return;
+   }
+ 
+   DefWindowProcWithRedrawLock(WM_NCACTIVATE, delegate_->ShouldPaintAsActive(),
+-                              0);
++                              delegate_->HasFrame() ? 0 : -1);
+ }
+ 
+ void HWNDMessageHandler::SetWindowIcons(const gfx::ImageSkia& window_icon,
+@@ -1078,7 +1078,14 @@ void HWNDMessageHandler::SizeConstraintsChanged() {
+   //   allowing ui::GetResizableFrameThickness() to be used consistently when
+   //   removing the visible system frame.
+   const bool had_caption_on_init = window_style() & WS_CAPTION;
+-  const bool can_resize = !is_translucent_ && delegate_->CanResize();
++
++  // In Chromium, the !is_translucent_ check was introduced for Glic-specific
++  // behavior. Since Electron does not use Glic, this restriction can be safely
++  // removed. Keeping the is_translucent_ check disables maximization for
++  // translucent framed windows. Original code: !is_translucent_ &&
++  // delegate_->CanResize() See:
++  // https://chromium-review.googlesource.com/c/chromium/src/+/6372329
++  const bool can_resize = delegate_->CanResize();
+   const bool can_maximize = can_resize && delegate_->CanMaximize();
+ 
+   auto set_style_func = [&style](LONG bit, bool should_set) {
+@@ -1679,11 +1686,16 @@ void HWNDMessageHandler::ResetWindowRegion(bool force, bool redraw) {
+   // through, but that isn't the case when using Direct3D to draw transparent
+   // windows. So we route translucent windows throught to the delegate to
+   // allow for a custom hit mask.
+-  if (!is_translucent_ && !custom_window_region_.is_valid() &&
++  // patch: fix_resolve_dynamic_background_material_update_issue_on_windows_11
++  // Our translucent windows use the native frame by default, and we should not
++  // set a custom region when the window is maximized; otherwise, it will cause
++  // a white title bar to appear under Windows 11.
++  if (!custom_window_region_.is_valid() &&
+       (IsFrameSystemDrawn() || !delegate_->HasNonClientView())) {
+     if (force) {
+       SetWindowRgn(hwnd(), nullptr, redraw);
+     }
++
+     return;
+   }
+ 
+@@ -1857,7 +1869,23 @@ LRESULT HWNDMessageHandler::OnCreate(CREATESTRUCT* create_struct) {
+   ::SendMessage(hwnd(), WM_CHANGEUISTATE, MAKELPARAM(UIS_CLEAR, UISF_HIDEFOCUS),
+                 0);
+ 
+-  if (!delegate_->HasFrame()) {
++  LONG is_popup =
++      ::GetWindowLong(hwnd(), GWL_STYLE) & static_cast<LONG>(WS_POPUP);
++
++  // For transparent windows, Electron removes the WS_CAPTION style,
++  // so we continue to remove it here. If we didn't, an opaque rectangle
++  // would show up.
++  // For non-transparent windows, Electron keeps the WS_CAPTION style,
++  // so we don't remove it in that case. If we did, a Windows 7 frame
++  // would show up.
++  // We also need this block for frameless popup windows. When the user opens
++  // a dropdown in an Electron app, the internal popup menu from
++  // third_party/blink/renderer/core/html/forms/internal_popup_menu.h
++  // is rendered. That menu is actually an HTML page inside of a frameless popup window.
++  // A new popup window is created every time the user opens the dropdown,
++  // and this code path is run. The code block below runs SendFrameChanged,
++  // which gives the dropdown options the proper layout.
++  if (!delegate_->HasFrame() && (is_translucent_ || is_popup)) {
+     ::SetWindowLong(hwnd(), GWL_STYLE,
+                     ::GetWindowLong(hwnd(), GWL_STYLE) & ~WS_CAPTION);
+     SendFrameChanged();
+@@ -2420,17 +2448,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
+     delegate_->SchedulePaint();
+   }
+ 
+-  // Calling DefWindowProc is only necessary if there's a system frame being
+-  // drawn. Otherwise it can draw an incorrect title bar and cause visual
+-  // corruption.
+-  if (!delegate_->HasFrame() ||
++  // If the window is translucent, it may have the Mica background.
++  // In that case, it's necessary to call |DefWindowProc|, but we can
++  // pass -1 in the lParam to prevent any non-client area elements from
++  // being displayed.
++  if ((!delegate_->HasFrame() && !is_translucent_) ||
+       delegate_->GetFrameMode() == FrameMode::CUSTOM_DRAWN) {
+     SetMsgHandled(TRUE);
+     return TRUE;
+   }
+ 
+   return DefWindowProcWithRedrawLock(WM_NCACTIVATE, paint_as_active || active,
+-                                     0);
++                                     delegate_->HasFrame() ? 0 : -1);
+ }
+ 
+ LRESULT HWNDMessageHandler::OnNCCalcSize(BOOL mode, LPARAM l_param) {

@@ -1,0 +1,136 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Tue, 25 Feb 2020 13:28:30 -0800
+Subject: feat: customize spellchecker for Electron (URL override, observers,
+ sync)
+
+Adds SpellcheckHunspellDictionary::SetBaseDownloadURL so embedders can
+override the Hunspell dictionary download host (the existing
+testing-only setter does not append the dictionary filename and is
+unsuitable for production). Adds SpellcheckService::SetHunspellObserver
+so embedders can receive dictionary load/download events, used to
+implement Electron's spellcheck-dictionary-* session events. Also
+re-adds a synchronous FillSuggestionList call on Windows that was
+removed upstream in CL 6109477; this hunk can be dropped once Electron
+exposes an async spellcheck API. Unlikely to be upstreamed as the
+changes live in //chrome.
+
+diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
+index cf981e70ee4c43fd4f9a195c7839c9e3cb7fc956..c00068a963d66a07a726ec562e5f8327b2c3faeb 100644
+--- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
++++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
+@@ -55,6 +55,8 @@ GURL& GetDownloadUrlForTesting() {
+   return *download_url_for_testing;
+ }
+ 
++base::NoDestructor<GURL> g_base_download_url_override;
++
+ // Close the file.
+ void CloseDictionary(base::File file) {
+   base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
+@@ -269,6 +271,10 @@ void SpellcheckHunspellDictionary::SetDownloadURLForTesting(const GURL url) {
+   GetDownloadUrlForTesting() = url;
+ }
+ 
++void SpellcheckHunspellDictionary::SetBaseDownloadURL(const GURL url) {
++  *g_base_download_url_override = url;
++}
++
+ GURL SpellcheckHunspellDictionary::GetDictionaryURL() {
+   if (GetDownloadUrlForTesting() != GURL()) {
+     return GetDownloadUrlForTesting();
+@@ -277,6 +283,9 @@ GURL SpellcheckHunspellDictionary::GetDictionaryURL() {
+   std::string bdict_file = dictionary_file_.path.BaseName().MaybeAsASCII();
+   DCHECK(!bdict_file.empty());
+ 
++  if (*g_base_download_url_override != GURL())
++    return GURL(g_base_download_url_override->spec() + base::ToLowerASCII(bdict_file));
++
+   static const char kDownloadServerUrl[] =
+       "https://redirector.gvt1.com/edgedl/chrome/dict/";
+ 
+diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
+index 4e608a6c0147c6f41e12f16fee7c87d0db2f1733..5962abf8dbd5998f11e828ec70b3a6a8b1758f65 100644
+--- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
++++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
+@@ -97,6 +97,8 @@ class SpellcheckHunspellDictionary : public SpellcheckDictionary {
+   // Tests use this method to set a custom URL for downloading dictionaries.
+   static void SetDownloadURLForTesting(const GURL url);
+ 
++  static void SetBaseDownloadURL(const GURL url);
++
+  private:
+   // Dictionary download status.
+   enum DownloadStatus {
+diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
+index 8b781e4bf202481abb754b93d9b978c4f9294275..779bdd17641c1808ff2c707b3de5f6c9b331ca2d 100644
+--- a/chrome/browser/spellchecker/spellcheck_service.cc
++++ b/chrome/browser/spellchecker/spellcheck_service.cc
+@@ -484,6 +484,8 @@ void SpellcheckService::LoadDictionaries() {
+         std::make_unique<SpellcheckHunspellDictionary>(
+             dictionary, platform_spellcheck_language, context_, this));
+     hunspell_dictionaries_.back()->AddObserver(this);
++    if (hunspell_observer_)
++      hunspell_dictionaries_.back()->AddObserver(hunspell_observer_);
+     hunspell_dictionaries_.back()->Load();
+   }
+ 
+@@ -534,6 +536,20 @@ bool SpellcheckService::IsSpellcheckEnabled() const {
+          (!hunspell_dictionaries_.empty() || enable_if_uninitialized);
+ }
+ 
++void SpellcheckService::SetHunspellObserver(SpellcheckHunspellDictionary::Observer* observer) {
++  if (hunspell_observer_) {
++    for (auto& dict : hunspell_dictionaries_) {
++      dict->RemoveObserver(hunspell_observer_);
++    }
++  }
++  if (observer) {
++    for (auto& dict : hunspell_dictionaries_) {
++      dict->AddObserver(observer);
++    }
++  }
++  hunspell_observer_ = observer;
++}
++
+ void SpellcheckService::OnRenderProcessHostCreated(
+     content::RenderProcessHost* host) {
+   InitForRenderer(host);
+diff --git a/chrome/browser/spellchecker/spellcheck_service.h b/chrome/browser/spellchecker/spellcheck_service.h
+index 00e613bb4ca4346eb0b0e65b9b818d817ac724d9..1b40931b8654b80e9a5fd0f170217b4b008eaae9 100644
+--- a/chrome/browser/spellchecker/spellcheck_service.h
++++ b/chrome/browser/spellchecker/spellcheck_service.h
+@@ -135,6 +135,8 @@ class SpellcheckService : public KeyedService,
+   // dictionaries available.
+   bool IsSpellcheckEnabled() const;
+ 
++  void SetHunspellObserver(SpellcheckHunspellDictionary::Observer* observer);
++
+   // content::RenderProcessHostCreationObserver implementation.
+   void OnRenderProcessHostCreated(content::RenderProcessHost* host) override;
+ 
+@@ -299,6 +301,8 @@ class SpellcheckService : public KeyedService,
+   // A pointer to the BrowserContext which this service refers to.
+   raw_ptr<content::BrowserContext> context_;
+ 
++  raw_ptr<SpellcheckHunspellDictionary::Observer> hunspell_observer_ = nullptr;
++
+   std::unique_ptr<SpellCheckHostMetrics> metrics_;
+ 
+   std::unique_ptr<SpellcheckCustomDictionary> custom_dictionary_;
+diff --git a/components/spellcheck/browser/windows_spell_checker.cc b/components/spellcheck/browser/windows_spell_checker.cc
+index 319029fc962eb73f0dcf8604ccd342b0e381496e..eff60d66c3762722e56743abba60e1aafa19b774 100644
+--- a/components/spellcheck/browser/windows_spell_checker.cc
++++ b/components/spellcheck/browser/windows_spell_checker.cc
+@@ -241,6 +241,11 @@ std::vector<SpellCheckResult> BackgroundHelper::RequestTextCheckForAllLanguages(
+             (action == CORRECTIVE_ACTION_GET_SUGGESTIONS ||
+              action == CORRECTIVE_ACTION_REPLACE)) {
+           std::vector<std::u16string> suggestions;
++          // TODO (vertedinde): Perform the synchronous operation of retrieving
++          // suggestions for all misspelled words while performing a text check.
++          FillSuggestionList(it->first,
++            text.substr(start_index, error_length),
++            &suggestions);
+           result_map[std::tuple<ULONG, ULONG>(start_index, error_length)]
+               .push_back(suggestions);
+         }

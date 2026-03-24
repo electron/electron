@@ -1,0 +1,327 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Heilig Benedek <benecene@gmail.com>
+Date: Sat, 10 Aug 2019 00:41:50 +0200
+Subject: feat: adapt Picture-in-Picture for Electron (no //chrome deps)
+
+Electron reuses Chromium's Picture-in-Picture overlay window
+implementation from //chrome, but must excise dependencies on
+Chrome-only infrastructure that does not exist in our build:
+Profile, Browser, MediaEngagementService, live caption UI, the
+auto-PiP content-settings helper, and Chrome-branded vector icons.
+This patch guards those pieces behind GOOGLE_CHROME_BRANDING or
+#if 0 and swaps in a generic views close icon so the PiP window
+compiles and functions without pulling in //chrome UI layers.
+
+diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
+index cccf164d978761dac8148d11fbddfbeb9ecfb048..295a16cd4f1e369c78d34b4da24ea3c830ce20e4 100644
+--- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
++++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
+@@ -6,6 +6,7 @@
+ 
+ #include "base/memory/raw_ptr.h"
+ #include "base/numerics/safe_conversions.h"
++#include "build/branding_buildflags.h"
+ #include "chrome/browser/picture_in_picture/picture_in_picture_bounds_cache.h"
+ #include "chrome/browser/ui/browser_navigator_params.h"
+ #include "content/public/browser/document_picture_in_picture_window_controller.h"
+@@ -31,8 +32,10 @@
+ #include "base/task/sequenced_task_runner.h"
+ // TODO(crbug.com/421608904): include auto_picture_in_picture_tab_helper for
+ // Android when supporting document PiP.
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "chrome/browser/picture_in_picture/auto_picture_in_picture_tab_helper.h"
+ #include "chrome/browser/picture_in_picture/auto_pip_setting_overlay_view.h"
++#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker.h"
+ #include "chrome/browser/picture_in_picture/picture_in_picture_window.h"
+ #include "media/base/media_switches.h"
+@@ -71,6 +74,7 @@ constexpr double kMaxWindowSizeRatio = 0.8;
+ // `kMaxWindowSizeRatio`.
+ constexpr double kMaxSiteRequestedWindowSizeRatio = 0.25;
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ // Returns true if a document picture-in-picture window should be focused upon
+ // opening it.
+ bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
+@@ -87,6 +91,7 @@ bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
+   // AutoPictureInPictureTabHelper.
+   return !auto_picture_in_picture_tab_helper->IsInAutoPictureInPicture();
+ }
++#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ 
+ // Returns the maximum area in pixels that the site can request a
+ // picture-in-picture window to be.
+@@ -220,7 +225,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
+     return false;
+   }
+ 
+-#if !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   // The user manually closed the pip window, so let the tab helper know in case
+   // the auto-pip permission dialog was visible.
+   if (auto* tab_helper = AutoPictureInPictureTabHelper::FromWebContents(
+@@ -572,7 +577,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
+ 
+ // static
+ void PictureInPictureWindowManager::SetWindowParams(NavigateParams& params) {
+-#if !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   // Always show document picture-in-picture in a new window. When this is
+   // not opened via the AutoPictureInPictureTabHelper, focus the window.
+   params.window_action =
+@@ -681,6 +686,7 @@ PictureInPictureWindowManager::GetOverlayView(
+     return nullptr;
+   }
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   // It would be nice to create this in `EnterPictureInPicture*`, but detecting
+   // auto-pip while pip is in the process of opening doesn't work.
+   //
+@@ -719,6 +725,8 @@ PictureInPictureWindowManager::GetOverlayView(
+   }
+ 
+   return overlay_view;
++#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
++  return nullptr;
+ }
+ 
+ PictureInPictureOcclusionTracker*
+diff --git a/chrome/browser/ui/views/overlay/close_image_button.cc b/chrome/browser/ui/views/overlay/close_image_button.cc
+index a7a637438116a1c7846194dea4412100a45c9331..bb3877d546bfea141d3d6ebb396b88faab6ee34e 100644
+--- a/chrome/browser/ui/views/overlay/close_image_button.cc
++++ b/chrome/browser/ui/views/overlay/close_image_button.cc
+@@ -4,9 +4,12 @@
+ 
+ #include "chrome/browser/ui/views/overlay/close_image_button.h"
+ 
++#include "build/branding_buildflags.h"
+ #include "chrome/browser/ui/color/chrome_color_id.h"
+ #include "chrome/grit/generated_resources.h"
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "components/vector_icons/vector_icons.h"
++#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "ui/base/l10n/l10n_util.h"
+ #include "ui/base/metadata/metadata_impl_macros.h"
+ #include "ui/base/models/image_model.h"
+@@ -27,7 +30,10 @@ CloseImageButton::CloseImageButton(PressedCallback callback)
+     : OverlayWindowImageButton(std::move(callback)) {
+   SetSize(gfx::Size(kCloseButtonSize, kCloseButtonSize));
+ 
+-  auto* icon = &vector_icons::kCloseChromeRefreshIcon;
++  auto* icon = &views::kIcCloseIcon;
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
++  icon = &vector_icons::kCloseChromeRefreshIcon;
++#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   SetImageModel(views::Button::STATE_NORMAL,
+                 ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
+                                                kCloseButtonIconSize));
+diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
+index 69b2fbfbcbabda336021c5b4935f6d6e4cdd1a7e..7981a2517b9bd0b0863e7e2bb8511f40f45d9a21 100644
+--- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
++++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
+@@ -18,12 +18,16 @@
+ #include "base/time/time.h"
+ #include "base/timer/timer.h"
+ #include "build/build_config.h"
++#if 0
+ #include "chrome/browser/media/media_engagement_service.h"
++#endif
+ #include "chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker.h"
+ #include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
++#if 0
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/ui/browser.h"
+ #include "chrome/browser/ui/browser_finder.h"
++#endif
+ #include "chrome/browser/ui/color/chrome_color_id.h"
+ #include "chrome/browser/ui/views/overlay/back_to_tab_button.h"
+ #include "chrome/browser/ui/views/overlay/back_to_tab_label_button.h"
+@@ -32,8 +36,10 @@
+ #include "chrome/browser/ui/views/overlay/hang_up_button.h"
+ #include "chrome/browser/ui/views/overlay/minimize_button.h"
+ #include "chrome/browser/ui/views/overlay/overlay_controls_fade_animation.h"
++#if 0
+ #include "chrome/browser/ui/views/overlay/overlay_window_live_caption_button.h"
+ #include "chrome/browser/ui/views/overlay/overlay_window_live_caption_dialog.h"
++#endif
+ #include "chrome/browser/ui/views/overlay/playback_image_button.h"
+ #include "chrome/browser/ui/views/overlay/resize_handle_button.h"
+ #include "chrome/browser/ui/views/overlay/simple_overlay_window_image_button.h"
+@@ -80,7 +86,7 @@
+ #include "ui/aura/window.h"
+ #endif
+ 
+-#if BUILDFLAG(IS_WIN)
++#if 0
+ #include "chrome/browser/shell_integration_win.h"
+ #include "content/public/browser/render_widget_host_view.h"
+ #include "ui/aura/window.h"
+@@ -402,7 +408,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+   overlay_window->Init(std::move(params));
+   overlay_window->OnRootViewReady();
+ 
+-#if BUILDFLAG(IS_WIN)
++#if 0
+   std::wstring app_user_model_id;
+   Browser* browser = chrome::FindBrowserWithTab(controller->GetWebContents());
+   if (browser) {
+@@ -438,11 +444,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+ 
+ #endif  // BUILDFLAG(IS_WIN)
+ 
++#if 0
+   PictureInPictureOcclusionTracker* tracker =
+       PictureInPictureWindowManager::GetInstance()->GetOcclusionTracker();
+   if (tracker) {
+     tracker->OnPictureInPictureWidgetOpened(overlay_window.get());
+   }
++#endif
+ 
+   return overlay_window;
+ }
+@@ -704,6 +712,7 @@ void VideoOverlayWindowViews::OnMouseEvent(ui::MouseEvent* event) {
+     }
+ 
+     case ui::EventType::kMousePressed:
++#if 0
+       // Hide the live caption dialog if it's visible and the user clicks
+       // outside of it.
+       if (live_caption_dialog_ && live_caption_dialog_->GetVisible() &&
+@@ -712,6 +721,7 @@ void VideoOverlayWindowViews::OnMouseEvent(ui::MouseEvent* event) {
+         SetLiveCaptionDialogVisibility(false);
+         return;
+       }
++#endif
+       break;
+ 
+     default:
+@@ -747,11 +757,11 @@ bool VideoOverlayWindowViews::HideLiveCaptionDialogForGestureIfNecessary(
+   if (event->type() != ui::EventType::kGestureTap) {
+     return false;
+   }
+-
++#if 0
+   if (!live_caption_dialog_->GetVisible()) {
+     return false;
+   }
+-
++#endif
+   if (!GetLiveCaptionDialogBounds().Contains(event->location())) {
+     SetLiveCaptionDialogVisibility(false);
+     event->SetHandled();
+@@ -1237,6 +1247,7 @@ void VideoOverlayWindowViews::SetUpViews() {
+   timestamp->SetBackgroundColor(SK_ColorTRANSPARENT);
+   timestamp->SetHorizontalAlignment(gfx::ALIGN_LEFT);
+ 
++#if 0
+   auto live_status = std::make_unique<views::Label>(
+       l10n_util::GetStringUTF16(IDS_PICTURE_IN_PICTURE_LIVE_STATUS_TEXT),
+       views::style::CONTEXT_LABEL, views::style::STYLE_CAPTION_BOLD);
+@@ -1256,6 +1267,7 @@ void VideoOverlayWindowViews::SetUpViews() {
+       Profile::FromBrowserContext(
+           controller_->GetWebContents()->GetBrowserContext()));
+   live_caption_dialog->SetVisible(false);
++#endif
+ 
+   auto toggle_microphone_button =
+       std::make_unique<ToggleMicrophoneButton>(base::BindRepeating(
+@@ -1378,13 +1390,15 @@ void VideoOverlayWindowViews::SetUpViews() {
+ 
+   timestamp_ =
+       playback_controls_container_view_->AddChildView(std::move(timestamp));
++
++#if 0
+   live_status_ =
+       playback_controls_container_view_->AddChildView(std::move(live_status));
+-
+   live_caption_button_ = playback_controls_container_view_->AddChildView(
+       std::move(live_caption_button));
+   live_caption_dialog_ =
+       controls_container_view_->AddChildView(std::move(live_caption_dialog));
++#endif
+ 
+   toggle_camera_button_ = vc_controls_container_view_->AddChildView(
+       std::move(toggle_camera_button));
+@@ -1663,6 +1677,7 @@ void VideoOverlayWindowViews::OnUpdateControlsBounds() {
+   timestamp_->SetSize({max_timestamp_width, kTimestampHeight});
+   timestamp_->SetVisible(!is_live_);
+ 
++#if 0
+   live_status_->SetPosition(timestamp_position);
+   live_status_->SetMaximumWidthSingleLine(max_timestamp_width);
+   live_status_->SetSize(
+@@ -1670,7 +1685,6 @@ void VideoOverlayWindowViews::OnUpdateControlsBounds() {
+            .width(),
+        kTimestampHeight});
+   live_status_->SetVisible(is_live_);
+-
+   gfx::Rect live_caption_button_bounds(
+       bottom_controls_bounds.right() - kBottomControlsHorizontalMargin -
+           kActionButtonSize.width(),
+@@ -1683,7 +1697,7 @@ void VideoOverlayWindowViews::OnUpdateControlsBounds() {
+   live_caption_dialog_->SetPosition(
+       {live_caption_button_bounds.right() - live_caption_dialog_->width(),
+        live_caption_button_bounds.y() - live_caption_dialog_->height()});
+-
++#endif
+   // The play/pause button and replay/forward 10 seconds buttons should not be
+   // visible while dragging the progress bar or for live media.
+   const bool is_dragging_progress_bar =
+@@ -2096,18 +2110,25 @@ gfx::Rect VideoOverlayWindowViews::GetProgressViewBounds() {
+ }
+ 
+ gfx::Rect VideoOverlayWindowViews::GetLiveCaptionButtonBounds() {
++#if 0
+   return live_caption_button_->GetMirroredBounds();
++#endif
++  return gfx::Rect();
+ }
+ 
+ gfx::Rect VideoOverlayWindowViews::GetLiveCaptionDialogBounds() {
++#if 0
+   if (!live_caption_dialog_->GetVisible()) {
+     return gfx::Rect();
+   }
+   return live_caption_dialog_->GetMirroredBounds();
++#endif
++  return gfx::Rect();
+ }
+ 
+ bool VideoOverlayWindowViews::HasHighMediaEngagement(
+     const url::Origin& origin) const {
++#if 0
+   MediaEngagementService* service =
+       MediaEngagementService::Get(Profile::FromBrowserContext(
+           GetController()->GetWebContents()->GetBrowserContext()));
+@@ -2116,6 +2137,8 @@ bool VideoOverlayWindowViews::HasHighMediaEngagement(
+   }
+ 
+   return service->HasHighEngagement(origin);
++#endif
++  return true;
+ }
+ 
+ bool VideoOverlayWindowViews::IsTrustedForMediaPlayback() const {
+@@ -2377,11 +2400,14 @@ void VideoOverlayWindowViews::UpdateTimestampLabel(base::TimeDelta current_time,
+ }
+ 
+ void VideoOverlayWindowViews::OnLiveCaptionButtonPressed() {
++#if 0
+   SetLiveCaptionDialogVisibility(!live_caption_dialog_->GetVisible());
++#endif
+ }
+ 
+ void VideoOverlayWindowViews::SetLiveCaptionDialogVisibility(
+     bool wanted_visibility) {
++#if 0
+   if (wanted_visibility == live_caption_dialog_->GetVisible()) {
+     return;
+   }
+@@ -2404,6 +2430,7 @@ void VideoOverlayWindowViews::SetLiveCaptionDialogVisibility(
+   for (auto* control : controls_to_be_disabled_when_live_caption_is_open) {
+     control->SetEnabled(!wanted_visibility);
+   }
++#endif
+ }
+ 
+ void VideoOverlayWindowViews::OnFaviconReceived(const SkBitmap& image) {

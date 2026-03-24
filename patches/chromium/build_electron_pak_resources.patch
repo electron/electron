@@ -1,0 +1,126 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Thu, 20 Sep 2018 17:48:59 -0700
+Subject: build: configure resource packing for Electron's .pak layout
+
+Electron generates its own .pak files via //electron:packed_resources
+rather than using chrome_paks(). This patch (1) swaps the //chrome
+packed_resources target for a proxy group pointing at Electron's when
+is_electron_build, avoiding GN duplicate-output errors on the hardcoded
+chrome_*.pak paths on Win/Linux; (2) drops deps on the
+packed_resources_integrity_header target, which is only produced by the
+chrome_paks template we never invoke; and (3) registers
+electron_resources.grd in resource_ids.spec so GRIT assigns Electron's
+strings/includes non-colliding IDs. Not upstreamable; removable if we
+ever align our .pak generation with Chrome's.
+
+diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
+index d8f51269f5edb6fa698bc40abb3900a551f2ab0d..a0d74156745c0d22a332b2547c59b98d1ae8a7c5 100644
+--- a/chrome/BUILD.gn
++++ b/chrome/BUILD.gn
+@@ -201,11 +201,16 @@ if (!is_android && !is_mac) {
+         "common/crash_keys.h",
+       ]
+ 
++      if (!is_electron_build) {
++        deps = [
++          ":packed_resources_integrity_header",
++        ]
++      }
++
+       deps += [
+         ":chrome_dll",
+         ":chrome_exe_version",
+         ":copy_first_run",
+-        ":packed_resources_integrity_header",
+         ":visual_elements_resources",
+         "//base",
+         "//build:branding_buildflags",
+@@ -1550,7 +1555,7 @@ if (is_chrome_branded && !is_android) {
+   }
+ }
+ 
+-if (!is_android) {
++if (!is_android && !is_electron_build) {
+   chrome_paks("packed_resources") {
+     if (is_mac) {
+       output_dir = "$root_gen_dir/repack"
+@@ -1596,6 +1601,12 @@ repack("browser_tests_pak") {
+   deps = [ "//chrome/test/data/webui:resources" ]
+ }
+ 
++if (is_electron_build) {
++  group("packed_resources") {
++    public_deps = [ "//electron:packed_resources" ]
++  }
++}
++
+ group("strings") {
+   public_deps = [
+     "//chrome/app:branded_strings",
+diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
+index f195e70c33b1a88e44f8ad51be6573d609d91b7f..a9195e0149385e7ffc95eb809bc30256683861d7 100644
+--- a/chrome/browser/BUILD.gn
++++ b/chrome/browser/BUILD.gn
+@@ -4532,7 +4532,7 @@ static_library("browser") {
+       ]
+     }
+ 
+-    if (!is_win) {
++    if (!is_win && !is_electron_build) {
+       # On Windows, the hashes are embedded in //chrome:chrome_initial rather
+       # than here in :chrome_dll.
+       deps += [ "//chrome:packed_resources_integrity_header" ]
+diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
+index cf7e31b7b1b8eab0e82a669902dc37020f74195a..dfeb9048a85ab2076259c01687d30c2c7f36d8b0 100644
+--- a/chrome/test/BUILD.gn
++++ b/chrome/test/BUILD.gn
+@@ -7770,9 +7770,12 @@ test("unit_tests") {
+       "//chrome/notification_helper",
+     ]
+ 
++    if (!is_electron_build) {
++      deps += [ "//chrome:packed_resources_integrity_header" ]
++    }
++
+     deps += [
+       "//chrome:other_version",
+-      "//chrome:packed_resources_integrity_header",
+       "//chrome//services/util_win:unit_tests",
+       "//chrome/app:chrome_dll_resources",
+       "//chrome/app:win_unit_tests",
+@@ -8771,6 +8774,10 @@ test("unit_tests") {
+       "../browser/performance_manager/policies/background_tab_loading_policy_unittest.cc",
+     ]
+ 
++    if (!is_electron_build) {
++      deps += [ "//chrome:packed_resources_integrity_header" ]
++    }
++
+     sources += [
+       # The importer code is not used on Android.
+       "../common/importer/firefox_importer_utils_unittest.cc",
+@@ -8828,7 +8835,6 @@ test("unit_tests") {
+     # TODO(crbug.com/417513088): Maybe merge with the non-android `deps` declaration above?
+     deps += [
+       "../browser/screen_ai:screen_ai_install_state",
+-      "//chrome:packed_resources_integrity_header",
+       "//chrome/browser/apps:icon_standardizer",
+       "//chrome/browser/apps/app_service",
+       "//chrome/browser/apps/app_service:app_registry_cache_waiter",
+diff --git a/tools/gritsettings/resource_ids.spec b/tools/gritsettings/resource_ids.spec
+index bc4d99704dcdb1f2d688fb6d847304ac7a45d3a8..5087a431bb9bd1fba7779f01c738c9d19cbfb63c 100644
+--- a/tools/gritsettings/resource_ids.spec
++++ b/tools/gritsettings/resource_ids.spec
+@@ -1661,6 +1661,11 @@
+     "includes": [12000],
+   },
+ 
++  "electron/build/electron_resources.grd": {
++    "messages": [31750],
++    "includes": [31950],
++  }
++
+   # END "everything else" section.
+   # Everything but chrome/, components/, content/, and ios/
+ 

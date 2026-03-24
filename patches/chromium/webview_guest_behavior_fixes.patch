@@ -1,0 +1,120 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anonymous <anonymous@electronjs.org>
+Date: Thu, 20 Sep 2018 17:47:04 -0700
+Subject: fix: adapt guest view behavior for Electron <webview>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Adapts Chromium's guest view handling for Electron's <webview> tag.
+
+Propagates fullscreen state from a <webview> to its embedder frame
+when Element.requestFullscreen() is called — Chromium does this for
+iframes but not for inner-delegate main frames. Also routes the ESC
+key through the chain of outer WebContents so fullscreen can be
+exited, and relaxes DCHECKs that assume the fullscreen element is an
+<iframe> or that the guest WebContents is focused.
+
+Additionally bypasses the SiteInstanceGroup check in IsValidDragTarget
+to allow drag-and-drop between separate <webview> tags.
+
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 222cf1b2bbc98aa5e271426478a774f8a48e693d..865df1914009165ef0b0ea0e812e9e53535551bb 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -9190,6 +9190,17 @@ void RenderFrameHostImpl::EnterFullscreen(
+     }
+   }
+ 
++  // Entering fullscreen from webview should also notify its outer frame.
++  if (frame_tree_node()->render_manager()->IsMainFrameForInnerDelegate()) {
++    RenderFrameProxyHost* outer_proxy =
++        frame_tree_node()->render_manager()->GetProxyToOuterDelegate();
++    DCHECK(outer_proxy);
++    if (outer_proxy->is_render_frame_proxy_live()) {
++      outer_proxy->GetAssociatedRemoteFrame()->WillEnterFullscreen(
++          options.Clone());
++    }
++  }
++
+   // Focus the window if another frame may have delegated the capability.
+   if (had_fullscreen_token && !GetView()->HasFocus()) {
+     GetView()->Focus();
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 68128b098d5b195ca34746bfd77290b0fc6c14ee..afb060d27384204565995d10d3f44ca46b4a301b 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -4495,21 +4495,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
+     const input::NativeWebKeyboardEvent& event) {
+   OPTIONAL_TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("content.verbose"),
+                         "WebContentsImpl::PreHandleKeyboardEvent");
+-  auto* outermost_contents = GetOutermostWebContents();
+-  // TODO(wjmaclean): Generalize this to forward all key events to the outermost
+-  // delegate's handler.
+-  if (outermost_contents != this && IsFullscreen() &&
+-      event.windows_key_code == ui::VKEY_ESCAPE) {
+-    // When an inner WebContents has focus and is fullscreen, redirect <esc>
+-    // key events to the outermost WebContents so it can be handled by that
+-    // WebContents' delegate.
+-    if (outermost_contents->PreHandleKeyboardEvent(event) ==
+-        KeyboardEventProcessingResult::HANDLED) {
+-      return KeyboardEventProcessingResult::HANDLED;
+-    }
+-  }
+-  return delegate_ ? delegate_->PreHandleKeyboardEvent(this, event)
++
++  auto handled = delegate_ ? delegate_->PreHandleKeyboardEvent(this, event)
+                    : KeyboardEventProcessingResult::NOT_HANDLED;
++
++  if (IsFullscreen() && event.windows_key_code == ui::VKEY_ESCAPE) {
++    if (handled == KeyboardEventProcessingResult::HANDLED)
++       return KeyboardEventProcessingResult::HANDLED;
++
++    // When an inner WebContents has focus and is fullscreen, traverse through
++    // containing webcontents to any that may handle the escape key.
++    while (auto* outer_web_contents = GetOuterWebContents()) {
++      auto result = outer_web_contents->PreHandleKeyboardEvent(event);
++      if (result == KeyboardEventProcessingResult::HANDLED) {
++        return KeyboardEventProcessingResult::HANDLED;
++      }
++    }
++  }
++
++  return handled;
+ }
+ 
+ bool WebContentsImpl::HandleMouseEvent(const blink::WebMouseEvent& event) {
+@@ -4682,7 +4686,7 @@ void WebContentsImpl::EnterFullscreenMode(
+   OPTIONAL_TRACE_EVENT0("content", "WebContentsImpl::EnterFullscreenMode");
+   DCHECK(CanEnterFullscreenMode(requesting_frame));
+   DCHECK(requesting_frame->IsActive());
+-  DCHECK(ContainsOrIsFocusedWebContents());
++  DCHECK(ContainsOrIsFocusedWebContents() || IsGuest());
+   // Ensure the window is made active to take input focus. The window may be
+   // inactive when sites request fullscreen via capability delegation, consume
+   // transient activation from a gesture made before another window was focused,
+diff --git a/content/browser/web_contents/web_contents_view_drag_security_info.cc b/content/browser/web_contents/web_contents_view_drag_security_info.cc
+index bf24f4e2ccff56a2a92c4f11c9318644ea59daff..c54e6717144e618b3034e8f5a96fd6d85d207f30 100644
+--- a/content/browser/web_contents/web_contents_view_drag_security_info.cc
++++ b/content/browser/web_contents/web_contents_view_drag_security_info.cc
+@@ -66,7 +66,7 @@ bool WebContentsViewDragSecurityInfo::IsValidDragTarget(
+   // browser-side checks only have local tree fragment (potentially with
+   // multiple origins) granularity at best, but a drag operation eventually
+   // targets one single frame in that local tree fragment.
+-  return target_rwh->GetSiteInstanceGroup()->GetId() == site_instance_group_id_;
++  return true;
+ }
+ 
+ }  // namespace content
+diff --git a/third_party/blink/renderer/core/fullscreen/fullscreen.cc b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
+index c533c80eb4eea180a2ef89a225d7c75390d40225..4c81dea15346b35a9a43c92fb3b778367888a6ca 100644
+--- a/third_party/blink/renderer/core/fullscreen/fullscreen.cc
++++ b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
+@@ -105,7 +105,6 @@ void FullscreenElementChanged(Document& document,
+     // is the iframe element for the out-of-process frame that contains the
+     // fullscreen element. Hence, it must match :-webkit-full-screen-ancestor.
+     if (new_request_type & FullscreenRequestType::kForCrossProcessDescendant) {
+-      DCHECK(IsA<HTMLIFrameElement>(new_element));
+       new_element->SetContainsFullScreenElement(true);
+     }
+     new_element->SetContainsFullScreenElementOnAncestorsCrossingFrameBoundaries(

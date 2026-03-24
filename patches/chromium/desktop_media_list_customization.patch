@@ -1,0 +1,169 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 18 Oct 2018 17:07:01 -0700
+Subject: feat: customize DesktopMediaList for desktopCapturer API
+
+Adapts DesktopMediaList for Electron's desktopCapturer.getSources(),
+which does a one-shot Update() rather than Chrome's continuous
+StartUpdating() picker flow:
+* Adds refresh_thumbnails param to Update() so one-shot callers can
+  request thumbnails
+* Adds skip_next_refresh_ counter to skip the initial no-op callbacks
+  from the macOS SCK thumbnail capturer
+* Releases the capturer after thumbnail capture to free OS screen
+  capture resources held by the one-shot path
+* Ensures the refresh callback fires even when the source list is empty
+* Disables the remote_cocoa ScopedCGWindowID path on macOS pending
+  https://github.com/electron/electron/issues/30682
+
+Long term, desktopCapturer should be rewritten to use StartUpdating and
+handle events, which would remove most of this patch.
+
+diff --git a/chrome/browser/media/webrtc/desktop_media_list.h b/chrome/browser/media/webrtc/desktop_media_list.h
+index 9a4e06d24b829ba51bf5c925e7a7290da6fad4f0..b1189cebeabe49971c0d0d4d013e6fe26e7df5a5 100644
+--- a/chrome/browser/media/webrtc/desktop_media_list.h
++++ b/chrome/browser/media/webrtc/desktop_media_list.h
+@@ -108,7 +108,8 @@ class DesktopMediaList {
+   // once per DesktopMediaList instance.  It should not be called after
+   // StartUpdating(), and StartUpdating() should not be called until |callback|
+   // has been called.
+-  virtual void Update(UpdateCallback callback) = 0;
++  virtual void Update(UpdateCallback callback,
++                      bool refresh_thumbnails = false) = 0;
+ 
+   virtual int GetSourceCount() const = 0;
+   virtual const Source& GetSource(int index) const = 0;
+@@ -148,6 +149,8 @@ class DesktopMediaList {
+   // source lists that need to be displayed independently from when the
+   // DesktopMediaList gains focus.
+   virtual void ShowDelegatedList() = 0;
++
++  int skip_next_refresh_ = 0;
+ };
+ 
+ #endif  // CHROME_BROWSER_MEDIA_WEBRTC_DESKTOP_MEDIA_LIST_H_
+diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
+index 1f25e8321301b0a5cd8703b8a4e9ec840fc0331b..9e1eb8423969e75d5ece0056690f651c1bb901cd 100644
+--- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
++++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
+@@ -70,12 +70,12 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
+   Refresh(true);
+ }
+ 
+-void DesktopMediaListBase::Update(UpdateCallback callback) {
++void DesktopMediaListBase::Update(UpdateCallback callback, bool refresh_thumbnails) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+   DCHECK(sources_.empty());
+   DCHECK(!refresh_callback_);
+   refresh_callback_ = std::move(callback);
+-  Refresh(false);
++  Refresh(refresh_thumbnails);
+ }
+ 
+ int DesktopMediaListBase::GetSourceCount() const {
+@@ -232,7 +232,11 @@ uint32_t DesktopMediaListBase::GetImageHash(const gfx::Image& image) {
+ void DesktopMediaListBase::OnRefreshComplete() {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+   DCHECK(refresh_callback_);
+-  std::move(refresh_callback_).Run();
++  if (skip_next_refresh_ > 0) {
++    skip_next_refresh_--;
++  } else {
++    std::move(refresh_callback_).Run();
++  }
+ }
+ 
+ void DesktopMediaListBase::ScheduleNextRefresh() {
+diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.h b/chrome/browser/media/webrtc/desktop_media_list_base.h
+index de56c9b94f92e9abf69b1d4894e5d386cad6d3cd..f8955ef7cc43b1854b29841ed65260a1966a4b19 100644
+--- a/chrome/browser/media/webrtc/desktop_media_list_base.h
++++ b/chrome/browser/media/webrtc/desktop_media_list_base.h
+@@ -39,7 +39,7 @@ class DesktopMediaListBase : public DesktopMediaList {
+   void SetThumbnailSize(const gfx::Size& thumbnail_size) override;
+   void SetViewDialogWindowId(content::DesktopMediaID dialog_id) override;
+   void StartUpdating(DesktopMediaListObserver* observer) override;
+-  void Update(UpdateCallback callback) override;
++  void Update(UpdateCallback callback, bool refresh_thumbnails) override;
+   int GetSourceCount() const override;
+   const Source& GetSource(int index) const override;
+   DesktopMediaList::Type GetMediaListType() const override;
+diff --git a/chrome/browser/media/webrtc/fake_desktop_media_list.cc b/chrome/browser/media/webrtc/fake_desktop_media_list.cc
+index cea6af048e682e33b5d93e4a3bfb4072840ca4fe..1c98d2275fa73a9e105bbd8928e05b48a4a05c14 100644
+--- a/chrome/browser/media/webrtc/fake_desktop_media_list.cc
++++ b/chrome/browser/media/webrtc/fake_desktop_media_list.cc
+@@ -79,7 +79,8 @@ void FakeDesktopMediaList::StartUpdating(DesktopMediaListObserver* observer) {
+   thumbnail_ = gfx::ImageSkia::CreateFrom1xBitmap(bitmap);
+ }
+ 
+-void FakeDesktopMediaList::Update(UpdateCallback callback) {
++void FakeDesktopMediaList::Update(UpdateCallback callback,
++                                  bool refresh_thumbnails) {
+   std::move(callback).Run();
+ }
+ 
+diff --git a/chrome/browser/media/webrtc/fake_desktop_media_list.h b/chrome/browser/media/webrtc/fake_desktop_media_list.h
+index 786c526588d81b8b5b1b5dd3760719a53e005995..f66b7d0b4dfcbb8ed3dde5a9ff463ae2c8818d27 100644
+--- a/chrome/browser/media/webrtc/fake_desktop_media_list.h
++++ b/chrome/browser/media/webrtc/fake_desktop_media_list.h
+@@ -40,7 +40,8 @@ class FakeDesktopMediaList : public DesktopMediaList {
+   void SetThumbnailSize(const gfx::Size& thumbnail_size) override;
+   void SetViewDialogWindowId(content::DesktopMediaID dialog_id) override;
+   void StartUpdating(DesktopMediaListObserver* observer) override;
+-  void Update(UpdateCallback callback) override;
++  void Update(UpdateCallback callback,
++              bool refresh_thumbnails = false) override;
+   int GetSourceCount() const override;
+   const Source& GetSource(int index) const override;
+   DesktopMediaList::Type GetMediaListType() const override;
+diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
+index 7c72345e20589fe078169426d9b5b5a0ae81bae8..2c86b75c43651bd78d5ff7eeb54aa366ee3228bc 100644
+--- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
++++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
+@@ -216,9 +216,13 @@ content::DesktopMediaID::Id GetUpdatedWindowId(
+     }
+   }
+ #elif BUILDFLAG(IS_MAC)
++#if 0
++  // Should be re-enabled when addressing
++  // https://github.com/electron/electron/issues/30682
+   if (remote_cocoa::ScopedCGWindowID::Get(desktop_media_id.id)) {
+     window_id = desktop_media_id.id;
+   }
++#endif
+ #endif
+ 
+   return window_id;
+@@ -321,7 +325,7 @@ class NativeDesktopMediaList::Worker
+   base::WeakPtr<NativeDesktopMediaList> media_list_;
+ 
+   DesktopMediaID::Type source_type_;
+-  const std::unique_ptr<ThumbnailCapturer> capturer_;
++  std::unique_ptr<ThumbnailCapturer> capturer_;
+   const ThumbnailCapturer::FrameDeliveryMethod frame_delivery_method_;
+   const bool add_current_process_windows_;
+   const bool auto_show_delegated_source_list_;
+@@ -603,6 +607,12 @@ void NativeDesktopMediaList::Worker::RefreshNextThumbnail() {
+       FROM_HERE,
+       base::BindOnce(&NativeDesktopMediaList::UpdateNativeThumbnailsFinished,
+                      media_list_));
++
++  // This call is necessary to release underlying OS screen capture mechanisms.
++  // Skip if the source list is delegated, as the source list window will be active.
++  if (!capturer_->GetDelegatedSourceListController()) {
++    capturer_.reset();
++  }
+ }
+ 
+ void NativeDesktopMediaList::Worker::OnCaptureResult(
+@@ -1009,6 +1019,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
+         FROM_HERE, base::BindOnce(&Worker::RefreshThumbnails,
+                                   base::Unretained(worker_.get()),
+                                   std::move(native_ids), thumbnail_size_));
++  } else {
++#if defined(USE_AURA)
++    pending_native_thumbnail_capture_ = true;
++#endif
++    UpdateNativeThumbnailsFinished();
+   }
+ }
+ 

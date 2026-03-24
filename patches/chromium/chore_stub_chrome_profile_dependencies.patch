@@ -1,0 +1,283 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 18 Oct 2018 17:07:12 -0700
+Subject: chore: stub out //chrome Profile dependencies
+
+Electron's BrowserContext does not derive from //chrome's Profile
+class, so code we reuse from //chrome that calls
+Profile::FromBrowserContext or queries Profile-type state (incognito,
+guest, system profile) will not compile. This guards out those call
+sites in ProxyConfigMonitor, ProfileKeyedServiceFactory,
+ProfileSelections, the spellchecker service, PDF viewer utilities, and
+the Windows titlebar config so Electron can link the surrounding code.
+The long-term fix is to componentize the affected //chrome code so it
+accepts a content::BrowserContext or PrefService directly.
+
+diff --git a/chrome/browser/net/proxy_config_monitor.cc b/chrome/browser/net/proxy_config_monitor.cc
+index 50e7a07af841ff55cd24c0a79eef5dcc68807933..ed40ecdb91ddd7139f8f463809594ddfca793fcc 100644
+--- a/chrome/browser/net/proxy_config_monitor.cc
++++ b/chrome/browser/net/proxy_config_monitor.cc
+@@ -11,7 +11,9 @@
+ #include "build/chromeos_buildflags.h"
+ #include "chrome/browser/browser_process.h"
+ #include "chrome/browser/net/proxy_service_factory.h"
++#if 0
+ #include "chrome/browser/profiles/profile.h"
++#endif
+ #include "components/proxy_config/pref_proxy_config_tracker_impl.h"
+ #include "content/public/browser/browser_thread.h"
+ #include "mojo/public/cpp/bindings/pending_remote.h"
+@@ -21,12 +23,13 @@
+ #include "chrome/browser/ash/profiles/profile_helper.h"
+ #endif  // BUILDFLAG(IS_CHROMEOS)
+ 
+-#if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
++#if 0
+ #include "chrome/browser/extensions/api/proxy/proxy_api.h"
+ #endif // BUILDFLAG(ENABLE_EXTENSIONS_CORE)
+ 
+ using content::BrowserThread;
+ 
++#if 0
+ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+   DCHECK(profile);
+@@ -57,6 +60,7 @@ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
+ 
+   proxy_config_service_->AddObserver(this);
+ }
++#endif
+ 
+ ProxyConfigMonitor::ProxyConfigMonitor(PrefService* local_state) {
+   DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI) ||
+@@ -135,8 +139,10 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
+ void ProxyConfigMonitor::OnPACScriptError(int32_t line_number,
+                                           const std::string& details) {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
++#if 0
+   extensions::ProxyEventRouter::GetInstance()->OnPACScriptError(
+       profile_, line_number, base::UTF8ToUTF16(details));
++#endif
+ }
+ 
+ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
+@@ -151,7 +157,9 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
+     return;
+   }
+ 
++#if 0
+   extensions::ProxyEventRouter::GetInstance()->OnProxyError(profile_,
+                                                             net_error);
++#endif
+ }
+ #endif  // BUILDFLAG(ENABLE_EXTENSIONS_CORE)
+diff --git a/chrome/browser/net/proxy_config_monitor.h b/chrome/browser/net/proxy_config_monitor.h
+index 6c060b52d25799c6a7c4e4ee86ed7490060560d6..c81481a4451ff50b6ace5372a68b8615819affb3 100644
+--- a/chrome/browser/net/proxy_config_monitor.h
++++ b/chrome/browser/net/proxy_config_monitor.h
+@@ -40,11 +40,12 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
+ 
+ {
+  public:
++#if 0
+   // Creates a ProxyConfigMonitor that gets proxy settings from |profile| and
+   // watches for changes. The created ProxyConfigMonitor must be destroyed
+   // before |profile|.
+   explicit ProxyConfigMonitor(Profile* profile);
+-
++#endif
+   // Creates a ProxyConfigMonitor that gets proxy settings from the
+   // |local_state|, for use with NetworkContexts not
+   // associated with a profile. Must be destroyed before |local_state|.
+@@ -94,7 +95,7 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
+ 
+ #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
+   mojo::ReceiverSet<network::mojom::ProxyErrorClient> error_receiver_set_;
+-  raw_ptr<Profile> profile_ = nullptr;
++  // raw_ptr<Profile> profile_ = nullptr;
+ #endif  // BUILDFLAG(ENABLE_EXTENSIONS_CORE)
+ };
+ 
+diff --git a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
+index 21d5ab99800c0830cc31ec4ebb24e3f05cd904d8..3f8f514519d6e4a0abe3690f5df35de8ffae6fd4 100644
+--- a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
++++ b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
+@@ -45,6 +45,7 @@ namespace {
+ // hierarchy is: enterprise policy > user choice > finch experiment.
+ bool ShouldEnableSkiaRenderer(content::WebContents* contents) {
+   CHECK(contents);
++#if 0
+   const PrefService* prefs =
+       Profile::FromBrowserContext(contents->GetBrowserContext())->GetPrefs();
+ 
+@@ -52,6 +53,7 @@ bool ShouldEnableSkiaRenderer(content::WebContents* contents) {
+   if (prefs->IsManagedPreference(prefs::kPdfUseSkiaRendererEnabled)) {
+     return prefs->GetBoolean(prefs::kPdfUseSkiaRendererEnabled);
+   }
++#endif
+ 
+   //  When the enterprise policy is not set, use finch/feature flag choice.
+   return base::FeatureList::IsEnabled(
+@@ -63,6 +65,7 @@ bool ShouldEnableSkiaRenderer(content::WebContents* contents) {
+ // priority hierarchy is: enterprise policy > user choice > finch experiment.
+ bool ShouldEnableXfaForms(content::WebContents* contents) {
+   CHECK(contents);
++#if 0
+   const PrefService* prefs =
+       Profile::FromBrowserContext(contents->GetBrowserContext())->GetPrefs();
+ 
+@@ -70,6 +73,7 @@ bool ShouldEnableXfaForms(content::WebContents* contents) {
+   if (prefs->IsManagedPreference(prefs::kPdfXfaFormsEnabled)) {
+     return prefs->GetBoolean(prefs::kPdfXfaFormsEnabled);
+   }
++#endif
+ 
+   //  When the enterprise policy is not set, use finch/feature flag choice.
+   return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfXfaSupport);
+diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
+index 6f0d11aaf59d1f84b24a5cf33690035b84288f55..64d41eb402b0199d99ec6e37747a1a1a05733052 100644
+--- a/chrome/browser/pdf/pdf_extension_util.cc
++++ b/chrome/browser/pdf/pdf_extension_util.cc
+@@ -256,10 +256,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
+ 
+ #if BUILDFLAG(ENABLE_PDF_INK2)
+ bool IsPdfAnnotationsEnabledByPolicy(content::BrowserContext* context) {
++# if 0
+   PrefService* prefs =
+       context ? Profile::FromBrowserContext(context)->GetPrefs() : nullptr;
+   return !prefs || !prefs->IsManagedPreference(prefs::kPdfAnnotationsEnabled) ||
+          prefs->GetBoolean(prefs::kPdfAnnotationsEnabled);
++#endif
++  return true;
+ }
+ 
+ bool IsPdfInk2AnnotationsEnabled(content::BrowserContext* context) {
+@@ -452,6 +455,7 @@ void DispatchShouldUpdateViewportEvent(content::RenderFrameHost* embedder_host,
+ }
+ 
+ bool ShouldShowGlicSummarizeButton(content::BrowserContext* context) {
++#if 0
+   Profile* profile = Profile::FromBrowserContext(context);
+   if (!glic::GlicEnabling::IsEnabledForProfile(profile)) {
+     return false;
+@@ -465,6 +469,9 @@ bool ShouldShowGlicSummarizeButton(content::BrowserContext* context) {
+   }
+ 
+   return base::FeatureList::IsEnabled(features::kPdfGlicSummarize);
++#else
++  return false;
++#endif
+ }
+ 
+ }  // namespace pdf_extension_util
+diff --git a/chrome/browser/profiles/profile_keyed_service_factory.cc b/chrome/browser/profiles/profile_keyed_service_factory.cc
+index 30a7e6a641e7b17a47fb5c66fb44d3d5899b9e78..85764a533585df0abe398758e4fd510c711de375 100644
+--- a/chrome/browser/profiles/profile_keyed_service_factory.cc
++++ b/chrome/browser/profiles/profile_keyed_service_factory.cc
+@@ -22,6 +22,9 @@ ProfileKeyedServiceFactory::~ProfileKeyedServiceFactory() = default;
+ 
+ content::BrowserContext* ProfileKeyedServiceFactory::GetBrowserContextToUse(
+     content::BrowserContext* context) const {
++  return context;
++#if 0
+   Profile* profile = Profile::FromBrowserContext(context);
+   return profile_selections_.ApplyProfileSelection(profile);
++#endif
+ }
+diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
+index 25b15408665dc95702e7f1382fb8e7c0bb493599..6b77c57fccc4619a1df3b4ed661d2bdd60960228 100644
+--- a/chrome/browser/profiles/profile_selections.cc
++++ b/chrome/browser/profiles/profile_selections.cc
+@@ -13,6 +13,7 @@
+ #endif  // BUILDFLAG(IS_CHROMEOS)
+ 
+ bool AreKeyedServicesDisabledForProfileByDefault(const Profile* profile) {
++#if 0
+   // By default disable all services for System Profile.
+   // Even though having no services is also the default value for Guest Profile,
+   // this is not really the case in practice because a lot of Service Factories
+@@ -20,7 +21,7 @@ bool AreKeyedServicesDisabledForProfileByDefault(const Profile* profile) {
+   if (profile && profile->IsSystemProfile()) {
+     return true;
+   }
+-
++#endif
+   return false;
+ }
+ 
+@@ -104,6 +105,7 @@ ProfileSelections ProfileSelections::BuildRedirectedInIncognito() {
+ }
+ 
+ Profile* ProfileSelections::ApplyProfileSelection(Profile* profile) const {
++#if 0
+   CHECK(profile);
+ 
+   ProfileSelection selection = GetProfileSelection(profile);
+@@ -119,6 +121,9 @@ Profile* ProfileSelections::ApplyProfileSelection(Profile* profile) const {
+     case ProfileSelection::kOffTheRecordOnly:
+       return profile->IsOffTheRecord() ? profile : nullptr;
+   }
++#else
++  return nullptr;
++#endif
+ }
+ 
+ ProfileSelection ProfileSelections::GetProfileSelection(
+@@ -132,6 +137,7 @@ ProfileSelection ProfileSelections::GetProfileSelection(
+   }
+ #endif  // BUILDFLAG(IS_CHROMEOS)
+ 
++#if 0
+   // Treat other off the record profiles as Incognito (primary otr) Profiles.
+   if (profile->IsRegularProfile() || profile->IsIncognitoProfile() ||
+       profile_metrics::GetBrowserProfileType(profile) ==
+@@ -148,6 +154,8 @@ ProfileSelection ProfileSelections::GetProfileSelection(
+   }
+ 
+   NOTREACHED();
++#endif
++  return ProfileSelection::kNone;
+ }
+ 
+ void ProfileSelections::SetProfileSelectionForRegular(
+diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
+index c138bc5b0021f323fbd842a0e6af35962e6037ce..8b781e4bf202481abb754b93d9b978c4f9294275 100644
+--- a/chrome/browser/spellchecker/spellcheck_service.cc
++++ b/chrome/browser/spellchecker/spellcheck_service.cc
+@@ -20,8 +20,10 @@
+ #include "base/synchronization/waitable_event.h"
+ #include "base/values.h"
+ #include "build/build_config.h"
++#if 0
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/profiles/profiles_state.h"
++#endif
+ #include "chrome/browser/spellchecker/spellcheck_factory.h"
+ #include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
+ #include "components/language/core/browser/pref_names.h"
+@@ -67,7 +69,10 @@ SpellcheckService::SpellCheckerBinder& GetSpellCheckerBinderOverride() {
+ // Only record spelling-configuration metrics for profiles in which the user
+ // can configure spelling.
+ bool RecordSpellingConfigurationMetrics(content::BrowserContext* context) {
++#if 0
+   return profiles::IsRegularUserProfile(Profile::FromBrowserContext(context));
++#endif
++  return true;
+ }
+ 
+ }  // namespace
+diff --git a/chrome/browser/win/titlebar_config.cc b/chrome/browser/win/titlebar_config.cc
+index 7898ea88ca529660e52c1f9e2517d6f016b740a5..114046912999f4ca9d21f7d5859d14ecaaab9f56 100644
+--- a/chrome/browser/win/titlebar_config.cc
++++ b/chrome/browser/win/titlebar_config.cc
+@@ -12,8 +12,10 @@
+ 
+ bool ShouldBrowserCustomDrawTitlebar(BrowserView* browser_view) {
+   return !ShouldDefaultThemeUseMicaTitlebar() ||
++#if 0
+          !ThemeServiceFactory::GetForProfile(browser_view->GetProfile())
+               ->UsingSystemTheme() ||
++#endif
+          (!browser_view->browser()->is_type_normal() &&
+           !browser_view->browser()->is_type_popup() &&
+           !browser_view->browser()->is_type_devtools());
