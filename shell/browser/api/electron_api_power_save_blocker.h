@@ -9,21 +9,17 @@
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/wake_lock.mojom.h"
+#include "shell/common/gc_plugin.h"
 
 namespace gin {
 class ObjectTemplateBuilder;
 }  // namespace gin
 
-namespace gin_helper {
-template <typename T>
-class Handle;
-}  // namespace gin_helper
-
 namespace electron::api {
 
 class PowerSaveBlocker final : public gin::Wrappable<PowerSaveBlocker> {
  public:
-  static gin_helper::Handle<PowerSaveBlocker> Create(v8::Isolate* isolate);
+  static PowerSaveBlocker* Create(v8::Isolate* isolate);
 
   // gin::Wrappable
   static const gin::WrapperInfo kWrapperInfo;
@@ -57,6 +53,8 @@ class PowerSaveBlocker final : public gin::Wrappable<PowerSaveBlocker> {
   // Map from id to the corresponding blocker type for each request.
   base::flat_map<int, device::mojom::WakeLockType> wake_lock_types_;
 
+  GC_PLUGIN_IGNORE(
+      "Context tracking of remote is not needed in the browser process.")
   mojo::Remote<device::mojom::WakeLock> wake_lock_;
 };
 

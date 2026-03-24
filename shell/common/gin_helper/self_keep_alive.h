@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_SELF_KEEP_ALIVE_H_
 
 #include "gin/weak_cell.h"
+#include "shell/common/gc_plugin.h"
 
 namespace gin_helper {
 
@@ -28,6 +29,7 @@ class SelfKeepAlive final {
   explicit operator bool() const { return keep_alive_; }
 
  private:
+  GC_PLUGIN_IGNORE("Allowed to keep a Persistent to itself.")
   cppgc::Persistent<Self> keep_alive_;
 };
 

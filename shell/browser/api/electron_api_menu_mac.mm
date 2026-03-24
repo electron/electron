@@ -15,6 +15,7 @@
 #include "content/app_shim_remote_cocoa/render_widget_host_view_cocoa.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_mac.h"  // nogncheck
 #include "content/public/browser/browser_task_traits.h"
+#include "gin/persistent.h"
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/native_window.h"
@@ -57,6 +58,11 @@ MenuMac::~MenuMac() {
   RemoveModelObserver();
 }
 
+void MenuMac::Trace(cppgc::Visitor* visitor) const {
+  Menu::Trace(visitor);
+  visitor->Trace(weak_cell_factory_);
+}
+
 void MenuMac::PopupAt(BaseWindow* window,
                       std::optional<WebFrameMain*> frame,
                       int x,
@@ -77,10 +83,13 @@ void MenuMac::PopupAt(BaseWindow* window,
   // has run.
   base::OnceClosure callback_with_ref = BindSelfToClosure(std::move(callback));
 
-  auto popup = base::BindOnce(&MenuMac::PopupOnUI, weak_factory_.GetWeakPtr(),
-                              native_window->GetWeakPtr(), weak_frame,
-                              window->weak_map_id(), x, y, positioning_item,
-                              std::move(callback_with_ref));
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  auto popup = base::BindOnce(
+      &MenuMac::PopupOnUI,
+      gin::WrapPersistent(weak_cell_factory_.GetWeakCell(
+          isolate->GetCppHeap()->GetAllocationHandle())),
+      native_window->GetWeakPtr(), weak_frame, window->weak_map_id(), x, y,
+      positioning_item, std::move(callback_with_ref));
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(FROM_HERE,
                                                            std::move(popup));
 }
@@ -121,9 +130,12 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
     return;
   NSWindow* nswindow = native_window->GetNativeWindow().GetNativeNSWindow();
 
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
   base::OnceClosure close_callback =
-      base::BindOnce(&MenuMac::OnClosed, weak_factory_.GetWeakPtr(), window_id,
-                     std::move(callback));
+      base::BindOnce(&MenuMac::OnClosed,
+                     gin::WrapPersistent(weak_cell_factory_.GetWeakCell(
+                         isolate->GetCppHeap()->GetAllocationHandle())),
+                     window_id, std::move(callback));
   popup_controllers_[window_id] =
       [[ElectronMenuController alloc] initWithModel:model()
                               useDefaultAccelerator:NO];
@@ -204,8 +216,12 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
 }
 
 void MenuMac::ClosePopupAt(int32_t window_id) {
-  auto close_popup = base::BindOnce(&MenuMac::ClosePopupOnUI,
-                                    weak_factory_.GetWeakPtr(), window_id);
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  auto close_popup =
+      base::BindOnce(&MenuMac::ClosePopupOnUI,
+                     gin::WrapPersistent(weak_cell_factory_.GetWeakCell(
+                         isolate->GetCppHeap()->GetAllocationHandle())),
+                     window_id);
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, std::move(close_popup));
 }

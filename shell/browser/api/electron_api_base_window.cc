@@ -732,10 +732,10 @@ bool BaseWindow::IsFocusable() const {
 
 void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   auto context = isolate->GetCurrentContext();
-  gin_helper::Handle<Menu> menu;
+  Menu* menu = nullptr;
   v8::Local<v8::Object> object;
   if (value->IsObject() && value->ToObject(context).ToLocal(&object) &&
-      gin::ConvertFromV8(isolate, value, &menu) && !menu.IsEmpty()) {
+      gin::ConvertFromV8(isolate, value, &menu) && menu) {
     // We only want to update the menu if the menu has a non-zero item count,
     // or we risk crashes.
     if (menu->model()->GetItemCount() == 0) {
@@ -744,7 +744,7 @@ void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
       window_->SetMenu(menu->model());
     }
 
-    menu_.Reset(isolate, menu.ToV8());
+    menu_ = menu;
   } else if (value->IsNull()) {
     RemoveMenu();
   } else {
@@ -754,7 +754,7 @@ void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
 }
 
 void BaseWindow::RemoveMenu() {
-  menu_.Reset();
+  menu_.Clear();
   window_->SetMenu(nullptr);
 }
 
