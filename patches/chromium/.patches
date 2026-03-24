@@ -159,3 +159,4 @@ cherry-pick-5efc7a0127a6.patch
 feat_plumb_node_integration_in_worker_through_workersettings.patch
 cherry-pick-fbfb27470bf6.patch
 fix_fire_menu_popup_start_for_dynamically_created_aria_menus.patch
+fix_out-of-bounds_read_in_diff_rulesets.patch

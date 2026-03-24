@@ -1,0 +1,104 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "Steinar H. Gunderson" <sesse@chromium.org>
+Date: Mon, 16 Mar 2026 03:53:51 -0700
+Subject: Fix out-of-bounds read in diff rulesets.
+
+When merging diff rulesets, if Add() failed (due to a deliberate hash
+collision, causing RobinHoodMap to refuse the insertion), we would
+call NewlyAddedFromDifferentRuleSet() twice on the same RuleData,
+causing us to potentially read data past the end of the Bloom filter
+backing.
+
+In addition to actually fixing the issue, we mark Add() as [[nodiscard]]
+so that it cannot happen again, and we also spanify
+MovedToDifferentRuleSet() so that a similar error would cause a CHECK
+failure instead of reading out-of-bounds.
+
+(cherry picked from commit 2bfa338165eef94983c6cd35e281450d994d2215)
+
+Fixed: 488188166
+Change-Id: I38974eaa150c7c1e32482febea632b8371731aae
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7623313
+Commit-Queue: Steinar H Gunderson <sesse@chromium.org>
+Reviewed-by: Anders Hartvoll Ruud <andruud@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1592383}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7665929
+Auto-Submit: Steinar H Gunderson <sesse@chromium.org>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7680@{#2646}
+Cr-Branched-From: 76b7d80e5cda23fe6537eed26d68c92e995c7f39-refs/heads/main@{#1582197}
+
+diff --git a/third_party/blink/renderer/core/css/rule_set.cc b/third_party/blink/renderer/core/css/rule_set.cc
+index 9a9368dc0e1bf305749fb7b1b9f2f0100e79d78f..9a06fa33fb32649e1439ab5e5a312c011fe33dd6 100644
+--- a/third_party/blink/renderer/core/css/rule_set.cc
++++ b/third_party/blink/renderer/core/css/rule_set.cc
+@@ -215,9 +215,8 @@ void RuleData::MovedToDifferentRuleSet(const Vector<uint16_t>& old_backing,
+                                        Vector<uint16_t>& new_backing,
+                                        unsigned new_position) {
+   unsigned new_pos = new_backing.size();
+-  new_backing.insert(new_backing.size(),
+-                     UNSAFE_TODO(old_backing.data() + bloom_hash_pos_),
+-                     bloom_hash_size_);
++  new_backing.AppendSpan(
++      base::span(old_backing).subspan(bloom_hash_pos_, bloom_hash_size_));
+   bloom_hash_pos_ = new_pos;
+   position_ = new_position;
+ }
+@@ -1496,10 +1495,19 @@ void RuleMap::AddFilteredRulesFromOtherSet(
+       Seeker<StyleScope> scope_seeker(old_rule_set.scope_intervals_);
+       for (const RuleData& rule_data : other.GetRulesFromExtent(extent)) {
+         if (only_include.Contains(const_cast<StyleRule*>(rule_data.Rule()))) {
+-          Add(key, rule_data);
++          RuleData* new_rule_data;
++          if (Add(key, rule_data)) {
++            new_rule_data = &backing.back();
++          } else {
++            // See comment in AddToBucket().
++            new_rule_set.universal_rules_.push_back(rule_data);
++            new_rule_data = &new_rule_set.universal_rules_.back();
++            UnmarkAsCoveredByBucketing(new_rule_data->MutableSelector());
++            new_rule_data->ComputeEntirelyCoveredByBucketing();
++          }
+           new_rule_set.NewlyAddedFromDifferentRuleSet(
+               rule_data, scope_seeker.Seek(rule_data.GetPosition()),
+-              old_rule_set, backing.back());
++              old_rule_set, *new_rule_data);
+         }
+       }
+     }
+@@ -1517,10 +1525,19 @@ void RuleMap::AddFilteredRulesFromOtherSet(
+       const unsigned bucket_number = other.bucket_number_[i];
+       const RuleData& rule_data = other.backing[i];
+       if (only_include.Contains(const_cast<StyleRule*>(rule_data.Rule()))) {
+-        Add(*keys[bucket_number], rule_data);
++        RuleData* new_rule_data;
++        if (Add(*keys[bucket_number], rule_data)) {
++          new_rule_data = &backing.back();
++        } else {
++          // See comment in AddToBucket().
++          new_rule_set.universal_rules_.push_back(rule_data);
++          new_rule_data = &new_rule_set.universal_rules_.back();
++          UnmarkAsCoveredByBucketing(new_rule_data->MutableSelector());
++          new_rule_data->ComputeEntirelyCoveredByBucketing();
++        }
+         new_rule_set.NewlyAddedFromDifferentRuleSet(
+             rule_data, scope_seeker.Seek(rule_data.GetPosition()), old_rule_set,
+-            backing.back());
++            *new_rule_data);
+       }
+     }
+   }
+diff --git a/third_party/blink/renderer/core/css/rule_set.h b/third_party/blink/renderer/core/css/rule_set.h
+index dd15abf39e7208996af6867541aae0d15fb3eda2..ed265c43bd7b386847405e59176548ac282ae60a 100644
+--- a/third_party/blink/renderer/core/css/rule_set.h
++++ b/third_party/blink/renderer/core/css/rule_set.h
+@@ -269,7 +269,7 @@ class RuleMap {
+ 
+  public:
+   // Returns false on failure (which should be very rare).
+-  bool Add(const AtomicString& key, const RuleData& rule_data);
++  [[nodiscard]] bool Add(const AtomicString& key, const RuleData& rule_data);
+   void AddFilteredRulesFromOtherSet(
+       const RuleMap& other,
+       const HeapHashSet<Member<StyleRule>>& only_include,
