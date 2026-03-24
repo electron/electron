@@ -6,11 +6,14 @@
 
 #include <vector>
 
+#include "shell/common/gc_plugin.h"
+
 #import <ApplicationServices/ApplicationServices.h>
 #import <Cocoa/Cocoa.h>
 
 @interface MacLockMonitor : NSObject {
  @private
+  GC_PLUGIN_IGNORE("ObjC class cannot participate in cppgc tracing")
   std::vector<electron::api::PowerMonitor*> emitters;
 }
 

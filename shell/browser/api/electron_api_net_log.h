@@ -8,8 +8,8 @@
 #include <optional>
 
 #include "base/memory/raw_ptr.h"
-#include "base/memory/weak_ptr.h"
 #include "base/values.h"
+#include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "net/log/net_log_capture_mode.h"
@@ -56,6 +56,7 @@ class NetLog final : public gin::Wrappable<NetLog> {
       v8::Isolate* isolate) override;
   const gin::WrapperInfo* wrapper_info() const override;
   const char* GetHumanReadableName() const override;
+  void Trace(cppgc::Visitor*) const override;
 
   v8::Local<v8::Promise> StartLogging(base::FilePath log_path,
                                       gin::Arguments* args);
@@ -80,7 +81,7 @@ class NetLog final : public gin::Wrappable<NetLog> {
 
   scoped_refptr<base::TaskRunner> file_task_runner_;
 
-  base::WeakPtrFactory<NetLog> weak_ptr_factory_{this};
+  gin::WeakCellFactory<NetLog> weak_factory_{this};
 };
 
 }  // namespace api
