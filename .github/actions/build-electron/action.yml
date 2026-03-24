@@ -87,6 +87,7 @@ runs:
           BUILD_STATS_ARGS="out/Default/siso.exe.INFO --out-dir out/Default --output-object-checksums object-checksums.${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json"
         else
           BUILD_STATS_ARGS="out/Default/siso.INFO --out-dir out/Default --output-object-checksums object-checksums.${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json"
+        fi
         if [ -f previous-object-checksums.json ]; then
           BUILD_STATS_ARGS="$BUILD_STATS_ARGS --input-object-checksums previous-object-checksums.json"
         fi
