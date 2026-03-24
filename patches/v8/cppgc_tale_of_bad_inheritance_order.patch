@@ -259,7 +259,6 @@ The fix
 
 With the DCHECK we now get the following message at runtime during
 object construction:
-
 ----- Native stack trace -----
 
  1: 0x11bbd05fc node::NodePlatform::GetStackTracePrinter()::$_0::__invoke() [/Users/demohan/github/electron-oss/src/out/Testing/Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework]
