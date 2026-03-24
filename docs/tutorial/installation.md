@@ -25,16 +25,6 @@ included in the `electron` package:
 npx install-electron --no
 ```
 
-If you want to install your project's dependencies but don't need to use
-Electron functionality, you can set the `ELECTRON_SKIP_BINARY_DOWNLOAD` environment
-variable to prevent the binary from being downloaded. For instance, this feature can
-be useful in continuous integration environments when running unit tests that mock
-out the `electron` module.
-
-```sh
-ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm install
-```
-
 ## Running Electron ad-hoc
 
 If you're in a pinch and would prefer to not use `npm install` in your local

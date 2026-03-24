@@ -11,10 +11,6 @@ const path = require('path');
 
 const { version } = require('./package');
 
-if (process.env.ELECTRON_SKIP_BINARY_DOWNLOAD) {
-  process.exit(0);
-}
-
 const platformPath = getPlatformPath();
 
 if (isInstalled()) {
