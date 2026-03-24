@@ -18,7 +18,7 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
-#include "shell/common/options_switches.h"
+#include "shell/common/v8_util.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/web_worker_observer.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
@@ -26,6 +26,8 @@
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 #include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"  // nogncheck
+#include "third_party/blink/renderer/core/workers/worker_global_scope.h"  // nogncheck
+#include "third_party/blink/renderer/core/workers/worker_settings.h"  // nogncheck
 
 #if BUILDFLAG(IS_LINUX) && (defined(ARCH_CPU_X86_64) || defined(ARCH_CPU_ARM64))
 #define ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX
@@ -207,44 +209,54 @@ void ElectronRendererClient::WillReleaseScriptContext(
   electron_bindings_->EnvironmentDestroyed(env);
 }
 
-void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
-    v8::Local<v8::Context> context) {
+namespace {
+
+bool WorkerHasNodeIntegration(blink::ExecutionContext* ec) {
   // We do not create a Node.js environment in service or shared workers
   // owing to an inability to customize sandbox policies in these workers
   // given that they're run out-of-process.
   // Also avoid creating a Node.js environment for worklet global scope
   // created on the main thread.
-  auto* ec = blink::ExecutionContext::From(context);
   if (ec->IsServiceWorkerGlobalScope() || ec->IsSharedWorkerGlobalScope() ||
       ec->IsMainThreadWorkletGlobalScope())
+    return false;
+
+  auto* wgs = blink::DynamicTo<blink::WorkerGlobalScope>(ec);
+  if (!wgs)
+    return false;
+
+  // Read the nodeIntegrationInWorker preference from the worker's settings,
+  // which were copied from the initiating frame's WebPreferences at worker
+  // creation time. This ensures that in-process child windows with different
+  // webPreferences get the correct per-frame value rather than a process-wide
+  // value.
+  auto* worker_settings = wgs->GetWorkerSettings();
+  return worker_settings && worker_settings->NodeIntegrationInWorker();
+}
+
+}  // namespace
+
+void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
+    v8::Local<v8::Context> context) {
+  auto* ec = blink::ExecutionContext::From(context);
+  if (!WorkerHasNodeIntegration(ec))
     return;
 
-  // This won't be correct for in-process child windows with webPreferences
-  // that have a different value for nodeIntegrationInWorker
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kNodeIntegrationInWorker)) {
-    auto* current = WebWorkerObserver::GetCurrent();
-    if (current)
-      return;
-    WebWorkerObserver::Create()->WorkerScriptReadyForEvaluation(context);
-  }
+  auto* current = WebWorkerObserver::GetCurrent();
+  if (current)
+    return;
+  WebWorkerObserver::Create()->WorkerScriptReadyForEvaluation(context);
 }
 
 void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
     v8::Local<v8::Context> context) {
   auto* ec = blink::ExecutionContext::From(context);
-  if (ec->IsServiceWorkerGlobalScope() || ec->IsSharedWorkerGlobalScope() ||
-      ec->IsMainThreadWorkletGlobalScope())
+  if (!WorkerHasNodeIntegration(ec))
     return;
 
-  // TODO(loc): Note that this will not be correct for in-process child windows
-  // with webPreferences that have a different value for nodeIntegrationInWorker
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kNodeIntegrationInWorker)) {
-    auto* current = WebWorkerObserver::GetCurrent();
-    if (current)
-      current->ContextWillDestroy(context);
-  }
+  auto* current = WebWorkerObserver::GetCurrent();
+  if (current)
+    current->ContextWillDestroy(context);
 }
 
 void ElectronRendererClient::SetUpWebAssemblyTrapHandler() {
