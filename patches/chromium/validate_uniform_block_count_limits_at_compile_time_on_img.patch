@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <vertedinde@electronjs.org>
+Date: Mon, 23 Mar 2026 18:27:45 -0700
+Subject: Validate uniform block count limits at compile time on IMG.
+
+Normally these limits are validated at link time but the IMG compiler
+has issues when these limits are exceeded. Validate at compile time
+instead.
+
+Bug: chromium:475877320
+Change-Id: Ieeed6914b8cdd2b5e50242d06facae62badddefd
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7568129
+Auto-Submit: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Kyle Charbonneau <kylechar@chromium.org>
+Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1586673}
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index 02078983a7b10588c7d68f5a3affa5536edb29d5..a7131ef3a34e86d44ce5af5bb8bfab8853c32a50 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -3664,6 +3664,9 @@ bool GLES2DecoderImpl::InitializeShaderTranslator() {
+     driver_bug_workarounds.dontUseLoopsToInitializeVariables = true;
+   if (workarounds().remove_dynamic_indexing_of_swizzled_vector)
+     driver_bug_workarounds.removeDynamicIndexingOfSwizzledVector = true;
++  if (workarounds().validate_max_per_stage_uniform_blocks_at_compile_time) {
++    driver_bug_workarounds.validatePerStageMaxUniformBlocks = true;
++  }
+ 
+   // Initialize uninitialized locals by default
+   driver_bug_workarounds.initializeUninitializedLocals = true;
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index deeb8fb1ea810a87bb19bcb85cc352fe802361ac..900b5fa1decf4c1895f32eb5ab05fd54a806669c 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3772,6 +3772,17 @@
+       "features": [
+         "disable_d3d12_av1_multi_ref_encoding"
+       ]
++    },
++    {
++      "id": 472,
++      "description": "Validate GL_MAX_*_UNIFORM_BLOCKS at compile time instead of link time to work around compiler bugs.",
++      "os": {
++        "type": "android"
++      },
++      "gl_vendor": "Imagination.*",
++      "features": [
++        "validate_max_per_stage_uniform_blocks_at_compile_time"
++      ]
+     }
+   ]
+ }
+diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
+index 32b7797c2f19b3e597963d1d2c78da6066ff3bd3..300586499f496d25c571adcb90cb066b4e778899 100644
+--- a/gpu/config/gpu_workaround_list.txt
++++ b/gpu/config/gpu_workaround_list.txt
+@@ -127,6 +127,7 @@ use_first_valid_ref_for_av1_invalid_ref
+ use_gpu_driver_workaround_for_testing
+ use_non_zero_size_for_client_side_stream_buffers
+ use_virtualized_gl_contexts
++validate_max_per_stage_uniform_blocks_at_compile_time
+ wake_up_gpu_before_drawing
+ webgl_or_caps_max_texture_size_limit_4096
+ webgl_or_caps_max_texture_size_limit_8192
