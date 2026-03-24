@@ -1,0 +1,215 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anders Hartvoll Ruud <andruud@chromium.org>
+Date: Wed, 25 Feb 2026 03:25:14 -0800
+Subject: Stringify CSSUnparsedValues via toString, as normal
+
+CSSUnparsedValue exposes a special stringification function
+ToUnparsedString() in addition to the regular toString().
+The documentation says it returns "tokens without substituting
+variables", but it's not clear what this means; we don't substitute
+any variables in CSSStyleValue::toString() either.
+
+This CL makes ToUnparsedString() private (and renames it).
+Clients needing to serialize a CSSUnparsedValue can do so via
+the normal toString() function. (If ToUnparsedString() existed
+for performance reasons, that should have been documented.)
+
+Also, the /**/-"fixup" pass over the value has been folded into
+ToStringInternal(). This is to make it easy to find the canonical string
+representation of this value within CSSUnparsedValue (without going
+through a CSSValue).
+
+The main point of this CL is to prepare for validating
+the "argument grammar" of the value during the StyleValue-to-CSSValue
+conversion in StylePropertyMap (which requires item (2) above).
+
+We now jump through additional hoops to ultimately get a string
+from the outside of CSSUnparsedValue, but there should otherwise
+be no behavior change.
+
+Bug: 484751092
+Change-Id: I5db45ad85f780c67a2ea3ba8482c390ebab10068
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7600415
+Commit-Queue: Anders Hartvoll Ruud <andruud@chromium.org>
+Reviewed-by: Steinar H Gunderson <sesse@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1590041}
+
+---
+ .../cssom/cross_thread_style_value_test.cc    |  5 ++-
+ .../core/css/cssom/css_unparsed_value.cc      | 35 +++++++++++--------
+ .../core/css/cssom/css_unparsed_value.h       | 10 ++----
+ .../paint_worklet_style_property_map_test.cc  |  6 ++--
+ .../css/properties/computed_style_utils.cc    |  2 +-
+ 5 files changed, 29 insertions(+), 29 deletions(-)
+
+diff --git a/third_party/blink/renderer/core/css/cssom/cross_thread_style_value_test.cc b/third_party/blink/renderer/core/css/cssom/cross_thread_style_value_test.cc
+index dcc2eccbc84e6..86d42c87a6bd1 100644
+--- a/third_party/blink/renderer/core/css/cssom/cross_thread_style_value_test.cc
++++ b/third_party/blink/renderer/core/css/cssom/cross_thread_style_value_test.cc
+@@ -19,12 +19,12 @@
+ #include "third_party/blink/renderer/core/css/cssom/css_keyword_value.h"
+ #include "third_party/blink/renderer/core/css/cssom/css_style_value.h"
+ #include "third_party/blink/renderer/core/css/cssom/css_unit_value.h"
+-#include "third_party/blink/renderer/core/css/cssom/css_unparsed_value.h"
+ #include "third_party/blink/renderer/core/css/cssom/css_unsupported_color.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/non_main_thread.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_copier_std.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
++#include "third_party/blink/renderer/platform/wtf/wtf.h"
+ 
+ namespace blink {
+ 
+@@ -152,8 +152,7 @@ TEST_F(CrossThreadStyleValueTest, CrossThreadUnparsedValueToCSSStyleValue) {
+   CSSStyleValue* style_value = value->ToCSSStyleValue();
+   EXPECT_EQ(style_value->GetType(),
+             CSSStyleValue::StyleValueType::kUnparsedType);
+-  EXPECT_EQ(static_cast<CSSUnparsedValue*>(style_value)->ToUnparsedString(),
+-            "Unparsed");
++  EXPECT_EQ(style_value->toString(), "Unparsed");
+ }
+ 
+ TEST_F(CrossThreadStyleValueTest, PassKeywordValueCrossThread) {
+diff --git a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
+index 67a4afde452f9..9c6bb62d044f8 100644
+--- a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
++++ b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.cc
+@@ -124,16 +124,26 @@ IndexedPropertySetterResult CSSUnparsedValue::AnonymousIndexedSetter(
+ }
+ 
+ const CSSValue* CSSUnparsedValue::ToCSSValue() const {
+-  String unparsed_string = ToUnparsedString();
+-  CSSParserTokenStream stream(unparsed_string);
++  String unparsed_string = ToStringInternal();
+ 
+-  if (stream.AtEnd()) {
++  if (unparsed_string.IsNull()) {
+     return MakeGarbageCollected<CSSUnparsedDeclarationValue>(
+         MakeGarbageCollected<CSSVariableData>());
+   }
+ 
+-  // The string we just parsed has /**/ inserted between every token
+-  // to make sure we get back the correct sequence of tokens.
++  // TODO(crbug.com/985028): We should probably propagate the CSSParserContext
++  // to here.
++  return MakeGarbageCollected<CSSUnparsedDeclarationValue>(
++      CSSVariableData::Create(unparsed_string, false /* is_animation_tainted */,
++                              false /* is_attr_tainted */,
++                              false /* needs_variable_resolution */));
++}
++
++String CSSUnparsedValue::ToStringInternal() const {
++  String serialized = SerializeSegments();
++
++  // The serialization above defensively inserted /**/ between segments
++  // to make sure that e.g. ['foo', 'bar'] does not collapse into 'foobar'.
+   // The spec mentions nothing of the sort:
+   // https://drafts.css-houdini.org/css-typed-om-1/#unparsedvalue-serialization
+   //
+@@ -147,6 +157,10 @@ const CSSValue* CSSUnparsedValue::ToCSSValue() const {
+   // the original contents of any comments will be lost, but Typed OM does
+   // not have anywhere to store that kind of data, so it is expected.
+   StringBuilder builder;
++  CSSParserTokenStream stream(serialized);
++  if (stream.AtEnd()) {
++    return g_null_atom;
++  }
+   CSSParserToken token = stream.ConsumeRaw();
+   token.Serialize(builder);
+   while (!stream.Peek().IsEOF()) {
+@@ -156,17 +170,10 @@ const CSSValue* CSSUnparsedValue::ToCSSValue() const {
+     token = stream.ConsumeRaw();
+     token.Serialize(builder);
+   }
+-  String original_text = builder.ReleaseString();
+-
+-  // TODO(crbug.com/985028): We should probably propagate the CSSParserContext
+-  // to here.
+-  return MakeGarbageCollected<CSSUnparsedDeclarationValue>(
+-      CSSVariableData::Create(original_text, false /* is_animation_tainted */,
+-                              false /* is_attr_tainted */,
+-                              false /* needs_variable_resolution */));
++  return builder.ReleaseString();
+ }
+ 
+-String CSSUnparsedValue::ToUnparsedString() const {
++String CSSUnparsedValue::SerializeSegments() const {
+   StringBuilder builder;
+   HeapHashSet<Member<const CSSUnparsedValue>> values_on_stack;
+   if (AppendUnparsedString(builder, values_on_stack)) {
+diff --git a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
+index 5d1961b170f14..ec7e3ed708f40 100644
+--- a/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
++++ b/third_party/blink/renderer/core/css/cssom/css_unparsed_value.h
+@@ -67,15 +67,9 @@ class CORE_EXPORT CSSUnparsedValue final : public CSSStyleValue {
+     CSSStyleValue::Trace(visitor);
+   }
+ 
+-  // Unlike CSSStyleValue::toString(), this returns tokens without
+-  // substituting variables. There are extra /**/ inserted between
+-  // every token to ensure there are no ambiguities, which is fine
+-  // because this value is never presented directly to the user
+-  // (ToCSSValue() will parse to a token range and then re-serialize
+-  // using extra /**/ only where needed).
+-  String ToUnparsedString() const;
+-
+  private:
++  String ToStringInternal() const;
++  String SerializeSegments() const;
+   // Return 'false' if there is a cycle in the serialization.
+   bool AppendUnparsedString(
+       StringBuilder&,
+diff --git a/third_party/blink/renderer/core/css/cssom/paint_worklet_style_property_map_test.cc b/third_party/blink/renderer/core/css/cssom/paint_worklet_style_property_map_test.cc
+index f81fa39423a92..2ee4dd7e59109 100644
+--- a/third_party/blink/renderer/core/css/cssom/paint_worklet_style_property_map_test.cc
++++ b/third_party/blink/renderer/core/css/cssom/paint_worklet_style_property_map_test.cc
+@@ -5,6 +5,7 @@
+ #include "third_party/blink/renderer/core/css/cssom/paint_worklet_style_property_map.h"
+ 
+ #include <memory>
++
+ #include "base/synchronization/waitable_event.h"
+ #include "base/task/single_thread_task_runner.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+@@ -13,7 +14,6 @@
+ #include "third_party/blink/renderer/core/css/cssom/css_keyword_value.h"
+ #include "third_party/blink/renderer/core/css/cssom/css_paint_worklet_input.h"
+ #include "third_party/blink/renderer/core/css/cssom/css_unit_value.h"
+-#include "third_party/blink/renderer/core/css/cssom/css_unparsed_value.h"
+ #include "third_party/blink/renderer/core/css/cssom/css_unsupported_color.h"
+ #include "third_party/blink/renderer/core/css/properties/longhands/custom_property.h"
+ #include "third_party/blink/renderer/core/dom/element.h"
+@@ -23,6 +23,7 @@
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
++#include "third_party/blink/renderer/platform/wtf/wtf.h"
+ 
+ namespace blink {
+ 
+@@ -66,8 +67,7 @@ class PaintWorkletStylePropertyMapTest : public PageTestBase {
+     CSSStyleValue* style_value = data.at("--x")->ToCSSStyleValue();
+     EXPECT_EQ(style_value->GetType(),
+               CSSStyleValue::StyleValueType::kUnparsedType);
+-    EXPECT_EQ(static_cast<CSSUnparsedValue*>(style_value)->ToUnparsedString(),
+-              "50");
++    EXPECT_EQ(style_value->toString(), "50");
+     waitable_event->Signal();
+   }
+ 
+diff --git a/third_party/blink/renderer/core/css/properties/computed_style_utils.cc b/third_party/blink/renderer/core/css/properties/computed_style_utils.cc
+index 1db0fd72478d7..b52d8065c770a 100644
+--- a/third_party/blink/renderer/core/css/properties/computed_style_utils.cc
++++ b/third_party/blink/renderer/core/css/properties/computed_style_utils.cc
+@@ -4872,7 +4872,7 @@ ComputedStyleUtils::CrossThreadStyleValueFromCSSStyleValue(
+           To<CSSUnsupportedColor>(style_value)->Value());
+     case CSSStyleValue::StyleValueType::kUnparsedType:
+       return std::make_unique<CrossThreadUnparsedValue>(
+-          To<CSSUnparsedValue>(style_value)->ToUnparsedString());
++          To<CSSUnparsedValue>(style_value)->toString());
+     default:
+       return std::make_unique<CrossThreadUnsupportedValue>(
+           style_value->toString());
+-- 
+2.47.0
+
