@@ -186,6 +186,39 @@ describe('webContents.setWindowOpenHandler', () => {
       await once(browserWindow.webContents, 'did-create-window');
     });
 
+    it('reuses an existing window when window.open is called with the same frame name', async () => {
+      let handlerCallCount = 0;
+      browserWindow.webContents.setWindowOpenHandler(() => {
+        handlerCallCount++;
+        return { action: 'allow' };
+      });
+
+      const didCreateWindow = once(browserWindow.webContents, 'did-create-window') as Promise<[BrowserWindow, Electron.DidCreateWindowDetails]>;
+      await browserWindow.webContents.executeJavaScript("window.open('about:blank?one', 'named-target', 'show=no') && true");
+      const [childWindow] = await didCreateWindow;
+      expect(handlerCallCount).to.equal(1);
+      expect(childWindow.webContents.getURL()).to.equal('about:blank?one');
+
+      browserWindow.webContents.on('did-create-window', () => {
+        assert.fail('did-create-window should not fire when reusing a named window');
+      });
+
+      const didNavigate = once(childWindow.webContents, 'did-navigate');
+      const sameWindow = await browserWindow.webContents.executeJavaScript(`
+        (() => {
+          const first = window.open('about:blank?one', 'named-target', 'show=no');
+          const second = window.open('about:blank?two', 'named-target', 'show=no');
+          return first === second;
+        })()
+      `);
+      await didNavigate;
+
+      expect(sameWindow).to.be.true('window.open with matching frame name should return the same window proxy');
+      expect(handlerCallCount).to.equal(1, 'setWindowOpenHandler should not be called when Blink resolves the named target');
+      expect(childWindow.webContents.getURL()).to.equal('about:blank?two');
+      expect(BrowserWindow.getAllWindows()).to.have.lengthOf(2);
+    });
+
     it('can change webPreferences of child windows', async () => {
       browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { defaultFontSize: 30 } } }));
 
