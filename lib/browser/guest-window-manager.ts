@@ -17,11 +17,6 @@ export type WindowOpenArgs = {
   features: string,
 }
 
-const frameNamesToWindow = new Map<string, WebContents>();
-const registerFrameNameToGuestWindow = (name: string, webContents: WebContents) => frameNamesToWindow.set(name, webContents);
-const unregisterFrameName = (name: string) => frameNamesToWindow.delete(name);
-const getGuestWebContentsByFrameName = (name: string) => frameNamesToWindow.get(name);
-
 /**
  * `openGuestWindow` is called to create and setup event handling for the new
  * window.
@@ -47,20 +42,6 @@ export function openGuestWindow ({ embedder, guest, referrer, disposition, postD
     ...overrideBrowserWindowOptions
   };
 
-  // To spec, subsequent window.open calls with the same frame name (`target` in
-  // spec parlance) will reuse the previous window.
-  // https://html.spec.whatwg.org/multipage/window-object.html#apis-for-creating-and-navigating-browsing-contexts-by-name
-  const existingWebContents = getGuestWebContentsByFrameName(frameName);
-  if (existingWebContents) {
-    if (existingWebContents.isDestroyed()) {
-      // FIXME(t57ser): The webContents is destroyed for some reason, unregister the frame name
-      unregisterFrameName(frameName);
-    } else {
-      existingWebContents.loadURL(url);
-      return;
-    }
-  }
-
   if (createWindow) {
     const webContents = createWindow({
       webContents: guest,
@@ -72,7 +53,7 @@ export function openGuestWindow ({ embedder, guest, referrer, disposition, postD
         throw new Error('Invalid webContents. Created window should be connected to webContents passed with options object.');
       }
 
-      handleWindowLifecycleEvents({ embedder, frameName, guest, outlivesOpener });
+      handleWindowLifecycleEvents({ embedder, guest, outlivesOpener });
     }
 
     return;
@@ -96,7 +77,7 @@ export function openGuestWindow ({ embedder, guest, referrer, disposition, postD
     });
   }
 
-  handleWindowLifecycleEvents({ embedder, frameName, guest: window.webContents, outlivesOpener });
+  handleWindowLifecycleEvents({ embedder, guest: window.webContents, outlivesOpener });
 
   embedder.emit('did-create-window', window, { url, frameName, options: browserWindowOptions, disposition, referrer, postData });
 }
@@ -107,10 +88,9 @@ export function openGuestWindow ({ embedder, guest, referrer, disposition, postD
  * too is the guest destroyed; this is Electron convention and isn't based in
  * browser behavior.
  */
-const handleWindowLifecycleEvents = function ({ embedder, guest, frameName, outlivesOpener }: {
+const handleWindowLifecycleEvents = function ({ embedder, guest, outlivesOpener }: {
   embedder: WebContents,
   guest: WebContents,
-  frameName: string,
   outlivesOpener: boolean
 }) {
   const closedByEmbedder = function () {
@@ -128,13 +108,6 @@ const handleWindowLifecycleEvents = function ({ embedder, guest, frameName, outl
     embedder.once('current-render-view-deleted' as any, closedByEmbedder);
   }
   guest.once('destroyed', closedByUser);
-
-  if (frameName) {
-    registerFrameNameToGuestWindow(frameName, guest);
-    guest.once('destroyed', function () {
-      unregisterFrameName(frameName);
-    });
-  }
 };
 
 // Security options that child windows will always inherit from parent windows
