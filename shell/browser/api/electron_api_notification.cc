@@ -382,6 +382,7 @@ v8::Local<v8::Promise> Notification::GetHistory(v8::Isolate* isolate) {
           notif->title_ = base::UTF8ToUTF16(info.title);
           notif->subtitle_ = base::UTF8ToUTF16(info.subtitle);
           notif->body_ = base::UTF8ToUTF16(info.body);
+          notif->is_restored_ = true;
 
           // Register with the presenter so click/reply events route here.
           if (presenter) {
