@@ -96,9 +96,8 @@ Notification::Notification(gin::Arguments* args) {
     opts.Get("toastXml", &toast_xml_);
   }
 
-    if (id_.empty())
-      id_ = base::Uuid::GenerateRandomV4().AsLowercaseString();
-  }
+  if (id_.empty())
+    id_ = base::Uuid::GenerateRandomV4().AsLowercaseString();
 }
 
 Notification::Notification(const NotificationInfo& info)
