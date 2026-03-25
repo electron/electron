@@ -1,2 +1,2 @@
-cherry-pick-a08731cf6d70.patch
-cherry-pick-bf6dd974238b.patch
+m144_vulkan_avoid_overflow_in_texture_size_calculation.patch
+optionally_validate_gl_max_uniform_blocks_at_compile_time.patch

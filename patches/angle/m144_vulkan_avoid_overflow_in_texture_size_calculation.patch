@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Thu, 26 Feb 2026 10:38:11 -0500
+Subject: M144: Vulkan: Avoid overflow in texture size calculation
+
+Bug: chromium:485622239
+Change-Id: I0dac469a7493196ac25a399310e7ea7046d07162
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7613247
+Reviewed-by: Cody Northrop <cnorthrop@google.com>
+
+diff --git a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+index 8f80e03f37bca9a1dc285aec38ba7228a5fd952e..3d87d1a64750aa63325ca1a5d79af6ba25bb3366 100644
+--- a/src/libANGLE/renderer/vulkan/TextureVk.cpp
++++ b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+@@ -3076,8 +3076,17 @@ angle::Result TextureVk::reinitImageAsRenderable(ContextVk *contextVk, const vk:
+         // invalidate must be called after wait for finish.
+         ANGLE_TRY(srcBuffer->invalidate(renderer));
+ 
+-        size_t dstBufferSize = sourceBox.width * sourceBox.height * sourceBox.depth *
+-                               dstFormat.pixelBytes * layerCount;
++        // Use size_t calculations to avoid 32-bit overflows.  Note that the dimensions are bound by
++        // the maximums specified in Constants.h, and that gl::Box members are signed 32-bit
++        // integers.
++        static_assert(gl::IMPLEMENTATION_MAX_2D_TEXTURE_SIZE *
++                          gl::IMPLEMENTATION_MAX_2D_TEXTURE_SIZE <
++                      std::numeric_limits<int32_t>::max());
++        size_t dstBufferSize = sourceBox.width * sourceBox.height;
++        static_assert(gl::IMPLEMENTATION_MAX_3D_TEXTURE_SIZE *
++                          gl::IMPLEMENTATION_MAX_2D_ARRAY_TEXTURE_LAYERS * 16 <
++                      std::numeric_limits<int32_t>::max());
++        dstBufferSize *= sourceBox.depth * dstFormat.pixelBytes * layerCount;
+ 
+         // Allocate memory in the destination texture for the copy/conversion.
+         uint8_t *dstData = nullptr;
