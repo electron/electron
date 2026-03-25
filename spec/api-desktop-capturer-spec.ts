@@ -255,3 +255,63 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     }
   });
 });
+
+// Linux doesn't return any window sources.
+ifdescribe(process.platform !== 'linux')('desktopCapturer window', function () {
+  // Tests are sequentially dependent
+  this.bail(true);
+
+  let w: BrowserWindow;
+  let testSource: any;
+  let appIcon: any;
+
+  before(async () => {
+    w = new BrowserWindow({
+      width: 200,
+      height: 200,
+      show: true,
+      title: 'desktop-capturer-test-window'
+    });
+    await w.loadURL('about:blank');
+
+    const sources = await desktopCapturer.getSources({
+      types: ['window'],
+      fetchWindowIcons: true
+    });
+
+    testSource = sources.find(
+      s => s.name === 'desktop-capturer-test-window'
+    );
+    appIcon = testSource?.appIcon;
+  });
+
+  after(() => {
+    if (w) w.destroy();
+  });
+
+  it('verifies the window was captured in the source list', () => {
+    expect(testSource, `The ${w.title} window was not found by desktopCapturer`).to.exist();
+  });
+
+  it('verifies the app icon was fetched and is not null', () => {
+    expect(appIcon, 'appIcon property is null or undefined').to.exist();
+  });
+
+  it('icon should not be empty', () => {
+    expect(appIcon.isEmpty()).to.be.false();
+  });
+
+  it('icon should be a valid data URL', () => {
+    const url = appIcon.toDataURL();
+    expect(url).to.be.a('string');
+    // This is header 'data:image/png;base64,' lenght;
+    expect(url.length).to.be.greaterThan(22);
+    expect(url.startsWith('data:image/png;base64,')).to.be.true();
+  });
+
+  it('icons should be larger than 0x0px', () => {
+    const { width, height } = appIcon.getSize();
+    expect(width).to.be.greaterThan(0);
+    expect(height).to.be.greaterThan(0);
+  });
+});
