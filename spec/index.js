@@ -13,7 +13,7 @@ process.on('uncaughtException', (err) => {
 });
 
 // Tell ts-node which tsconfig to use
-process.env.TS_NODE_PROJECT = path.resolve(__dirname, '../tsconfig.spec.json');
+process.env.TS_NODE_PROJECT = path.resolve(__dirname, './tsconfig.json');
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 
 // Some Linux machines have broken hardware acceleration support.
