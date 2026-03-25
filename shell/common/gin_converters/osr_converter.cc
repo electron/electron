@@ -153,9 +153,12 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
   root.Set("textureInfo", ConvertToV8(isolate, dict));
   auto root_local = ConvertToV8(isolate, root);
 
-  // Create a persistent reference of the object, so that we can check the
-  // monitor again when GC collects this object.
-  auto* tex_persistent = monitor->CreatePersistent(isolate, root_local);
+  // Create a weak persistent that tracks the release function rather than the
+  // texture object. The release function holds a raw pointer to |monitor| via
+  // its v8::External data, so |monitor| must outlive it. Since the texture
+  // keeps |release| alive via its property, this also covers the case where
+  // the texture itself is leaked without calling release().
+  auto* tex_persistent = monitor->CreatePersistent(isolate, releaser);
   tex_persistent->SetWeak(
       monitor,
       [](const v8::WeakCallbackInfo<OffscreenReleaseHolderMonitor>& data) {
