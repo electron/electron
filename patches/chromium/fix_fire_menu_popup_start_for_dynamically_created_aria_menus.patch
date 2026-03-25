@@ -24,16 +24,41 @@ MENU_POPUP_END for deleted menus is already handled by
 AXTreeManager::OnNodeWillBeDeleted, which fires the event directly
 on the menu node before destruction.
 
+The change is behind the DynamicMenuPopupEvents feature flag, disabled
+by default, to allow stabilization before enabling by default. Enable
+with --enable-features=DynamicMenuPopupEvents.
+
 This patch can be removed when a CL containing the fix is accepted
 into Chromium.
 
 Bug: 40794596
 
 diff --git a/ui/accessibility/ax_event_generator.cc b/ui/accessibility/ax_event_generator.cc
-index 8fe1cacc274c543e6a5f13bb9b3712639f8bbda5..56a062aa0ed971a541e42335bed68feccfd470b8 100644
+index 8fe1cacc274c543e6a5f13bb9b3712639f8bbda5..c87c47f34a5f47e9cb7cec04d703335a57f250cd 100644
 --- a/ui/accessibility/ax_event_generator.cc
 +++ b/ui/accessibility/ax_event_generator.cc
-@@ -1011,12 +1011,30 @@ void AXEventGenerator::OnAtomicUpdateFinished(
+@@ -4,6 +4,7 @@
+ 
+ #include "ui/accessibility/ax_event_generator.h"
+ 
++#include "base/feature_list.h"
+ #include "base/no_destructor.h"
+ #include "ui/accessibility/ax_enums.mojom.h"
+ #include "ui/accessibility/ax_event.h"
+@@ -12,6 +13,12 @@
+ 
+ namespace ui {
+ 
++// Feature flag for firing MENU_POPUP_START for dynamically created ARIA menus.
++// Disabled by default to allow stabilization before enabling globally.
++BASE_FEATURE(kDynamicMenuPopupEvents,
++             "DynamicMenuPopupEvents",
++             base::FEATURE_DISABLED_BY_DEFAULT);
++
+ namespace {
+ 
+ bool HasEvent(const std::set<AXEventGenerator::EventParams>& node_events,
+@@ -1011,12 +1018,31 @@ void AXEventGenerator::OnAtomicUpdateFinished(
                               /*new_value*/ true);
      }
  
@@ -54,7 +79,8 @@ index 8fe1cacc274c543e6a5f13bb9b3712639f8bbda5..56a062aa0ed971a541e42335bed68fec
 +    // element itself is created on the fly.
 +    // Only fire if the menu has at least one menuitem child, to avoid false
 +    // positives from elements that misuse role="menu".
-+    if (change.node->GetRole() == ax::mojom::Role::kMenu &&
++    if (base::FeatureList::IsEnabled(kDynamicMenuPopupEvents) &&
++        change.node->GetRole() == ax::mojom::Role::kMenu &&
 +        !change.node->IsInvisibleOrIgnored()) {
 +      for (auto iter = change.node->UnignoredChildrenBegin();
 +           iter != change.node->UnignoredChildrenEnd(); ++iter) {
