@@ -92,7 +92,9 @@ The returned notifications have their `id`, `groupId`, `title`, `subtitle`, and 
 > [!NOTE]
 > Unlike notifications created with `new Notification()`, notifications returned
 > by `getHistory()` will remain visible in Notification Center when the object
-> is garbage collected.
+> is garbage collected. Calling `show()` on a restored notification will remove
+> the original from Notification Center and post a new one with the same
+> properties.
 
 ```js
 const { Notification, app } = require('electron')
@@ -328,6 +330,10 @@ call this method before the OS will display it.
 
 If the notification has been shown before, this method will dismiss the previously
 shown notification and create a new one with identical properties.
+
+On macOS, calling `show()` on a notification returned by `Notification.getHistory()` will
+remove the original notification from Notification Center and post a new one with the same
+properties.
 
 ```js
 const { Notification, app } = require('electron')

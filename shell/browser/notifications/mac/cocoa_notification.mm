@@ -237,7 +237,7 @@ void CocoaNotification::ScheduleNotification(
 }
 
 void CocoaNotification::Dismiss() {
-  if (notification_request_)
+  if (notification_request_ && !is_restored_)
     [[UNUserNotificationCenter currentNotificationCenter]
         removeDeliveredNotificationsWithIdentifiers:@[
           notification_request_.identifier
