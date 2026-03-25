@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 55832bf73e134f21948821fbe13dd0642661e8d3..1fcf11cf90206270c6b0131b687ae668a8a12f83 100644
+index 504a8d0cd8bbc7b5e597e784d26d9fd905ba43da..9b7b17abed8d2220065e7b6130c77196f88dc825 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -171,6 +171,11 @@
@@ -134,7 +134,7 @@ index 55832bf73e134f21948821fbe13dd0642661e8d3..1fcf11cf90206270c6b0131b687ae668
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -1036,6 +1146,13 @@ void NetworkContext::SetClient(
+@@ -1044,6 +1154,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -148,7 +148,7 @@ index 55832bf73e134f21948821fbe13dd0642661e8d3..1fcf11cf90206270c6b0131b687ae668
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2723,6 +2840,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2733,6 +2850,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      cert_verifier = std::make_unique<net::CachingCertVerifier>(
          std::make_unique<net::CoalescingCertVerifier>(
              std::move(cert_verifier)));
@@ -160,7 +160,7 @@ index 55832bf73e134f21948821fbe13dd0642661e8d3..1fcf11cf90206270c6b0131b687ae668
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index f4bc2b75bc833dc7a47e1fa178f5542824843b36..bb00a6ba93c522b484dc525ba204f1bd537e6285 100644
+index 3e95a8a8c8c8e4d43cc461ce1c13589cc881b09e..d76159ac97c9c51fc73692e8f76f868259152d00 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -119,6 +119,7 @@ class SimpleUrlPatternMatcher;
@@ -180,7 +180,7 @@ index f4bc2b75bc833dc7a47e1fa178f5542824843b36..bb00a6ba93c522b484dc525ba204f1bd
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -970,6 +973,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -971,6 +974,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
@@ -190,10 +190,10 @@ index f4bc2b75bc833dc7a47e1fa178f5542824843b36..bb00a6ba93c522b484dc525ba204f1bd
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 116ecc87549d02fa20ef9fd8068b3410590a2879..099e103c8e17ff640270744903585d4c76cdd6a7 100644
+index 47134ad9365ce50035d5a305418e36a41fc917c9..63d410dd356594a5928ed2f84b05b403bf3367f0 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -324,6 +324,17 @@ struct SocketBrokerRemotes {
+@@ -325,6 +325,17 @@ struct SocketBrokerRemotes {
    pending_remote<SocketBroker> server;
  };
  
@@ -211,7 +211,7 @@ index 116ecc87549d02fa20ef9fd8068b3410590a2879..099e103c8e17ff640270744903585d4c
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // The user agent string.
-@@ -980,6 +991,9 @@ interface NetworkContext {
+@@ -977,6 +988,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  
@@ -222,7 +222,7 @@ index 116ecc87549d02fa20ef9fd8068b3410590a2879..099e103c8e17ff640270744903585d4c
    CreateURLLoaderFactory(
        pending_receiver<URLLoaderFactory> url_loader_factory,
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index 817b69f7b36f996a5f3f068649a997fdf67afd1b..9d9e1f63fa138e3393c0395334049d10e8d1329f 100644
+index beb1c3dba14fcc504886f100b1568768231a4f2d..bc26f449109b3be84490fbb3569e36aa4aca8c4b 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
 @@ -63,6 +63,8 @@ class TestNetworkContext : public mojom::NetworkContext {
