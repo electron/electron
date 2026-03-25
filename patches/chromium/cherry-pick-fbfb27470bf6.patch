@@ -16,18 +16,16 @@ Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1586673}
 
 diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-index 895266f5988e2446eadf3d3e1d5c4919416cba76..f552b6a130f1cc7dfe2aea30052a3bc3234f3538 100644
+index 895266f5988e2446eadf3d3e1d5c4919416cba76..aeafafece78faa6ece837386fe170592589d1b10 100644
 --- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
 +++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-@@ -3678,6 +3678,11 @@ bool GLES2DecoderImpl::InitializeShaderTranslator() {
+@@ -3678,6 +3678,9 @@ bool GLES2DecoderImpl::InitializeShaderTranslator() {
      driver_bug_workarounds.dontUseLoopsToInitializeVariables = true;
    if (workarounds().remove_dynamic_indexing_of_swizzled_vector)
      driver_bug_workarounds.removeDynamicIndexingOfSwizzledVector = true;
-+#if ANGLE_SH_VERSION >= 383
 +  if (workarounds().validate_max_per_stage_uniform_blocks_at_compile_time) {
 +    driver_bug_workarounds.validatePerStageMaxUniformBlocks = true;
 +  }
-+#endif
  
    // Initialize uninitialized locals by default
    driver_bug_workarounds.initializeUninitializedLocals = true;
