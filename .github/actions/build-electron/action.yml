@@ -70,9 +70,12 @@ runs:
         echo "WINEPREFIX=$WINEPREFIX" >> $GITHUB_ENV
         # Initialize wine prefix to avoid first-run delays during build
         "$WINE_PATH" wineboot --init 2>/dev/null || true
-        "$WINE_PATH" regedit /S configuration.reg
-        # Pass wine path to GN so siso can find it regardless of PATH
-        GN_APPENDED_ARGS="$GN_EXTRA_ARGS v8_wine_path=\"xvfb-run $WINE_PATH\""
+        # Create a wrapper script so v8_wine_path is a single path without spaces
+        # (GN_EXTRA_ARGS is split on spaces, so a value like "xvfb-run /usr/bin/wine" breaks GN arg parsing)
+        WINE_WRAPPER="/usr/local/bin/xvfb-wine"
+        printf '#!/bin/sh\nexec xvfb-run %s "$@"\n' "$WINE_PATH" | sudo tee "$WINE_WRAPPER" > /dev/null
+        sudo chmod +x "$WINE_WRAPPER"
+        GN_APPENDED_ARGS="$GN_EXTRA_ARGS v8_wine_path=\"$WINE_WRAPPER\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
         echo "GN APPENDED_ARGS set with wine path: $GN_APPENDED_ARGS"
         export XDG_RUNTIME_DIR=/tmp/runtime-$(whoami)
