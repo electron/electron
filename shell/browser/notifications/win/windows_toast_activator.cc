@@ -116,7 +116,9 @@ void EnsureCLSIDRegistry() {
   server_key.WriteValue(nullptr, exe.c_str());
 }
 
-bool ExistingShortcutValid(const base::FilePath& lnk_path, PCWSTR aumid) {
+bool ExistingShortcutValid(const base::FilePath& lnk_path,
+                           PCWSTR aumid,
+                           const std::wstring& exe_path) {
   if (!base::PathExists(lnk_path))
     return false;
   Microsoft::WRL::ComPtr<IShellLink> existing;
@@ -128,6 +130,17 @@ bool ExistingShortcutValid(const base::FilePath& lnk_path, PCWSTR aumid) {
       FAILED(pf->Load(lnk_path.value().c_str(), STGM_READ))) {
     return false;
   }
+
+  // After an auto-update the .lnk may still have the correct AUMID/CLSID but
+  // point at an old install path; treat that as invalid so we rewrite it.
+  wchar_t target_path[MAX_PATH];
+  if (FAILED(existing->GetPath(target_path, MAX_PATH, nullptr, SLGP_RAWPATH)))
+    return false;
+  if (base::FilePath(exe_path).CompareIgnoreCase(base::FilePath(target_path)) !=
+      0) {
+    return false;
+  }
+
   Microsoft::WRL::ComPtr<IPropertyStore> store;
   if (FAILED(existing.As(&store)))
     return false;
@@ -195,7 +208,7 @@ void EnsureShortcut() {
     }
   }
 
-  if (ExistingShortcutValid(lnk_path, aumid))
+  if (ExistingShortcutValid(lnk_path, aumid, exe))
     return;
 
   Microsoft::WRL::ComPtr<IShellLink> shell_link;
