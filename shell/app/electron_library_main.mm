@@ -7,10 +7,10 @@
 #include "shell/app/electron_library_main.h"
 
 #include "base/apple/bundle_locations.h"
-#include "base/compiler_specific.h"
 #include "base/apple/scoped_nsautorelease_pool.h"
 #include "base/at_exit.h"
 #include "base/command_line.h"
+#include "base/compiler_specific.h"
 #include "base/i18n/icu_util.h"
 #include "base/notreached.h"
 #include "content/public/app/content_main.h"
