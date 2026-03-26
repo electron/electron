@@ -6,6 +6,10 @@ on:
   issue_comment:
     types: [created]
 
+# SECURITY: This workflow uses pull_request_target and has access to secrets.
+# Do NOT checkout or run code from the PR head. All code execution must use
+# the base branch only. Adding a ref to PR head would expose secrets to
+# untrusted code.
 permissions: {}
 
 jobs:
