@@ -52,7 +52,7 @@ runs:
       if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request') && inputs.is-asan != 'true' }}
       with:
         name: object_checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
-        commit: ${{ case(github.event_name == 'push', github.event.push.before, github.event.pull_request.base.sha) }}
+        commit: ${{ case(github.event_name == 'push', github.event.before, github.event.pull_request.base.sha) }}
         path: src
         if_no_artifact_found: ignore
     - name: Move previous object checksums
