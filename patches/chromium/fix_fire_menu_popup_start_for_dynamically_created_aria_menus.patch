@@ -1,0 +1,95 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <khammond@slack-corp.com>
+Date: Thu, 19 Mar 2026 00:34:37 -0700
+Subject: fix: fire MENU_POPUP_START for dynamically created ARIA menus
+
+When an ARIA menu element is dynamically created (e.g. via appendChild)
+rather than being shown by toggling visibility, the AXMenuOpened event
+was not fired. The OnIgnoredChanged path handles the visibility toggle
+case, but OnAtomicUpdateFinished did not fire MENU_POPUP_START for
+newly created menu nodes.
+
+Previous attempts to fix this (crbug.com/1254875) were reverted because
+they fired the event too eagerly in OnNodeCreated (before the tree was
+fully formed) and without filtering, causing regressions with screen
+readers on pages that misused role="menu".
+
+This fix addresses both issues:
+1. Fires MENU_POPUP_START in OnAtomicUpdateFinished (after the tree
+   update is complete) rather than in OnNodeCreated.
+2. Only fires if the menu has at least one menuitem child, filtering
+   out false positives from misused role="menu" elements.
+
+MENU_POPUP_END for deleted menus is already handled by
+AXTreeManager::OnNodeWillBeDeleted, which fires the event directly
+on the menu node before destruction.
+
+The change is behind the DynamicMenuPopupEvents feature flag, disabled
+by default, to allow stabilization before enabling by default. Enable
+with --enable-features=DynamicMenuPopupEvents.
+
+This patch can be removed when a CL containing the fix is accepted
+into Chromium.
+
+Bug: 40794596
+
+diff --git a/ui/accessibility/ax_event_generator.cc b/ui/accessibility/ax_event_generator.cc
+index 597b68bccc041a6431e35817669450e38fd56153..396820b148be04b91207e2359f9e441d331ccc10 100644
+--- a/ui/accessibility/ax_event_generator.cc
++++ b/ui/accessibility/ax_event_generator.cc
+@@ -5,6 +5,7 @@
+ #include "ui/accessibility/ax_event_generator.h"
+ 
+ #include "base/containers/contains.h"
++#include "base/feature_list.h"
+ #include "base/no_destructor.h"
+ #include "ui/accessibility/ax_enums.mojom.h"
+ #include "ui/accessibility/ax_event.h"
+@@ -13,6 +14,12 @@
+ 
+ namespace ui {
+ 
++// Feature flag for firing MENU_POPUP_START for dynamically created ARIA menus.
++// Disabled by default to allow stabilization before enabling globally.
++BASE_FEATURE(kDynamicMenuPopupEvents,
++             "DynamicMenuPopupEvents",
++             base::FEATURE_DISABLED_BY_DEFAULT);
++
+ namespace {
+ 
+ bool HasEvent(const std::set<AXEventGenerator::EventParams>& node_events,
+@@ -907,12 +914,31 @@ void AXEventGenerator::OnAtomicUpdateFinished(
+                              /*new_value*/ true);
+     }
+ 
+-    if (IsAlert(change.node->GetRole()))
++    if (IsAlert(change.node->GetRole())) {
+       AddEvent(change.node, Event::ALERT);
+-    else if (change.node->data().IsActiveLiveRegionRoot())
++    } else if (change.node->data().IsActiveLiveRegionRoot()) {
+       AddEvent(change.node, Event::LIVE_REGION_CREATED);
+-    else if (change.node->data().IsContainedInActiveLiveRegion())
++    } else if (change.node->data().IsContainedInActiveLiveRegion()) {
+       FireLiveRegionEvents(change.node, /* is_removal */ false);
++    }
++
++    // Fire MENU_POPUP_START when a menu is dynamically created (e.g. via
++    // appendChild). The OnIgnoredChanged path handles menus that already exist
++    // in the DOM and are shown/hidden. This handles the case where the menu
++    // element itself is created on the fly.
++    // Only fire if the menu has at least one menuitem child, to avoid false
++    // positives from elements that misuse role="menu".
++    if (base::FeatureList::IsEnabled(kDynamicMenuPopupEvents) &&
++        change.node->GetRole() == ax::mojom::Role::kMenu &&
++        !change.node->IsInvisibleOrIgnored()) {
++      for (auto iter = change.node->UnignoredChildrenBegin();
++           iter != change.node->UnignoredChildrenEnd(); ++iter) {
++        if (IsMenuItem(iter->GetRole())) {
++          AddEvent(change.node, Event::MENU_POPUP_START);
++          break;
++        }
++      }
++    }
+   }
+ 
+   FireActiveDescendantEvents();
