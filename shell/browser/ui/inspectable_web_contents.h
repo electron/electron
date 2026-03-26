@@ -281,11 +281,6 @@ class InspectableWebContents
   // origin -> script
   base::flat_map<std::string, std::string> extensions_api_;
 
-  // Contains the set of synced settings.
-  // The DevTools frontend *must* call `Register` for each setting prior to
-  // use, which guarantees that this set must not be persisted.
-  base::flat_set<std::string> synced_setting_names_;
-
   SEQUENCE_CHECKER(sequence_checker_);
 
   base::WeakPtrFactory<InspectableWebContents> weak_factory_{this};

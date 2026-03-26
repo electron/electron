@@ -53,15 +53,6 @@ ZoomLevelDelegate::ZoomLevelDelegate(PrefService* pref_service,
 
 ZoomLevelDelegate::~ZoomLevelDelegate() = default;
 
-void ZoomLevelDelegate::SetDefaultZoomLevelPref(double level) {
-  if (blink::ZoomValuesEqual(level, host_zoom_map_->GetDefaultZoomLevel()))
-    return;
-
-  ScopedDictPrefUpdate update(pref_service_, kPartitionDefaultZoomLevel);
-  update->Set(partition_key_, level);
-  host_zoom_map_->SetDefaultZoomLevel(level);
-}
-
 double ZoomLevelDelegate::GetDefaultZoomLevelPref() const {
   const base::DictValue& default_zoom_level_dictionary =
       pref_service_->GetDict(kPartitionDefaultZoomLevel);
