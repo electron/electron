@@ -34,18 +34,18 @@ into Chromium.
 Bug: 40794596
 
 diff --git a/ui/accessibility/ax_event_generator.cc b/ui/accessibility/ax_event_generator.cc
-index 8fe1cacc274c543e6a5f13bb9b3712639f8bbda5..c87c47f34a5f47e9cb7cec04d703335a57f250cd 100644
+index 597b68bccc041a6431e35817669450e38fd56153..396820b148be04b91207e2359f9e441d331ccc10 100644
 --- a/ui/accessibility/ax_event_generator.cc
 +++ b/ui/accessibility/ax_event_generator.cc
-@@ -4,6 +4,7 @@
- 
+@@ -5,6 +5,7 @@
  #include "ui/accessibility/ax_event_generator.h"
  
+ #include "base/containers/contains.h"
 +#include "base/feature_list.h"
  #include "base/no_destructor.h"
  #include "ui/accessibility/ax_enums.mojom.h"
  #include "ui/accessibility/ax_event.h"
-@@ -12,6 +13,12 @@
+@@ -13,6 +14,12 @@
  
  namespace ui {
  
@@ -58,7 +58,7 @@ index 8fe1cacc274c543e6a5f13bb9b3712639f8bbda5..c87c47f34a5f47e9cb7cec04d703335a
  namespace {
  
  bool HasEvent(const std::set<AXEventGenerator::EventParams>& node_events,
-@@ -1011,12 +1018,31 @@ void AXEventGenerator::OnAtomicUpdateFinished(
+@@ -907,12 +914,31 @@ void AXEventGenerator::OnAtomicUpdateFinished(
                               /*new_value*/ true);
      }
  
