@@ -96,6 +96,21 @@ std::wstring GetExecutablePath() {
   return std::wstring(path, len);
 }
 
+// Installers sometimes put the running app in a versioned subfolder and ship a
+// stub with the same filename one directory up. Point the Start Menu shortcut
+// at the stub when it exists so toast activation and updates keep a stable
+// launch path.
+std::wstring GetShortcutTargetPath(const std::wstring& exe_path) {
+  if (exe_path.empty())
+    return L"";
+  base::FilePath exe_fp(exe_path);
+  base::FilePath stub_candidate =
+      exe_fp.DirName().DirName().Append(exe_fp.BaseName());
+  if (base::PathExists(stub_candidate))
+    return stub_candidate.value();
+  return exe_path;
+}
+
 void EnsureCLSIDRegistry() {
   std::wstring exe = GetExecutablePath();
   if (exe.empty())
@@ -118,7 +133,8 @@ void EnsureCLSIDRegistry() {
 
 bool ExistingShortcutValid(const base::FilePath& lnk_path,
                            PCWSTR aumid,
-                           const std::wstring& exe_path) {
+                           const std::wstring& expected_target_path,
+                           const std::wstring& expected_working_dir) {
   if (!base::PathExists(lnk_path))
     return false;
   Microsoft::WRL::ComPtr<IShellLink> existing;
@@ -136,8 +152,22 @@ bool ExistingShortcutValid(const base::FilePath& lnk_path,
   wchar_t target_path[MAX_PATH];
   if (FAILED(existing->GetPath(target_path, MAX_PATH, nullptr, SLGP_RAWPATH)))
     return false;
-  if (base::FilePath(exe_path).CompareIgnoreCase(base::FilePath(target_path)) !=
-      0) {
+  if (base::FilePath::CompareIgnoreCase(
+          base::FilePath(expected_target_path).value(),
+          base::FilePath(target_path).value()) != 0) {
+    return false;
+  }
+
+  wchar_t work_dir[MAX_PATH];
+  work_dir[0] = L'\0';
+  if (FAILED(existing->GetWorkingDirectory(work_dir, MAX_PATH)))
+    return false;
+  base::FilePath expected_cwd =
+      base::FilePath(expected_working_dir).NormalizePathSeparators();
+  base::FilePath actual_cwd =
+      base::FilePath(work_dir).NormalizePathSeparators();
+  if (base::FilePath::CompareIgnoreCase(expected_cwd.value(),
+                                        actual_cwd.value()) != 0) {
     return false;
   }
 
@@ -170,6 +200,7 @@ void EnsureShortcut() {
   std::wstring exe = GetExecutablePath();
   if (exe.empty())
     return;
+  std::wstring shortcut_target = GetShortcutTargetPath(exe);
 
   PWSTR programs_path = nullptr;
   if (FAILED(
@@ -208,18 +239,20 @@ void EnsureShortcut() {
     }
   }
 
-  if (ExistingShortcutValid(lnk_path, aumid, exe))
+  const std::wstring expected_working_dir =
+      base::FilePath(exe).DirName().value();
+  if (ExistingShortcutValid(lnk_path, aumid, shortcut_target,
+                            expected_working_dir))
     return;
 
   Microsoft::WRL::ComPtr<IShellLink> shell_link;
   if (FAILED(CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER,
                               IID_PPV_ARGS(&shell_link))))
     return;
-  shell_link->SetPath(exe.c_str());
+  shell_link->SetPath(shortcut_target.c_str());
   shell_link->SetArguments(L"");
   shell_link->SetDescription(product_name.c_str());
-  shell_link->SetWorkingDirectory(
-      base::FilePath(exe).DirName().value().c_str());
+  shell_link->SetWorkingDirectory(expected_working_dir.c_str());
 
   Microsoft::WRL::ComPtr<IPropertyStore> prop_store;
   if (SUCCEEDED(shell_link.As(&prop_store))) {
