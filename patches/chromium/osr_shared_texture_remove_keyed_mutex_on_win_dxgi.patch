@@ -36,10 +36,10 @@ index 6f31a20329a7bc7cafb6384c3b8ec9ed7a11e64e..3bf92efa5c0ad0212096e61383b53095
    Microsoft::WRL::ComPtr<ID3D11Texture2D> d3d11_texture;
  
 diff --git a/media/video/renderable_mappable_shared_image_video_frame_pool.cc b/media/video/renderable_mappable_shared_image_video_frame_pool.cc
-index 36ed797edc58a6cf094a0b720bf949b3f6379890..36a4a080da38cddad645d42e5c53c840e211105e 100644
+index 6b1abdebe1fb0043f535e731d0bd14a6d3e3c083..cde2239a516133fedb46dc4bd06b791a1a4d12aa 100644
 --- a/media/video/renderable_mappable_shared_image_video_frame_pool.cc
 +++ b/media/video/renderable_mappable_shared_image_video_frame_pool.cc
-@@ -211,6 +211,24 @@ bool FrameResources::Initialize(VideoPixelFormat format,
+@@ -212,6 +212,24 @@ bool FrameResources::Initialize(VideoPixelFormat format,
    const gfx::Size coded_size =
        GetCodedSizeForVideoPixelFormat(format, visible_size_);
  
