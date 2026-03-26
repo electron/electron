@@ -1469,9 +1469,8 @@ void ElectronBrowserClient::RegisterAssociatedInterfaceBindersForServiceWorker(
       base::BindRepeating(&extensions::RendererStartupHelper::BindForRenderer,
                           service_worker_version_info.process_id));
   associated_registry.AddInterface<extensions::mojom::ServiceWorkerHost>(
-      base::BindRepeating(
-          &extensions::ServiceWorkerHost::BindReceiver,
-          service_worker_version_info.process_id.GetUnsafeValue()));
+      base::BindRepeating(&extensions::ServiceWorkerHost::BindReceiver,
+                          service_worker_version_info.process_id));
 #endif
 }
 

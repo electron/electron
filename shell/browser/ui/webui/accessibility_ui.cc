@@ -474,22 +474,26 @@ void ElectronAccessibilityUIMessageHandler::RegisterMessages() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   web_ui()->RegisterMessageCallback(
+      "initialize",
+      base::BindRepeating(&AccessibilityUIMessageHandler::HandleInitialize,
+                          base::Unretained(this)));
+  web_ui()->RegisterMessageCallback(
       "toggleAccessibility",
-      base::BindRepeating(
-          &AccessibilityUIMessageHandler::ToggleAccessibilityForWebContents,
-          base::Unretained(this)));
+      base::BindRepeating(&AccessibilityUIMessageHandler::
+                              HandleToggleAccessibilityForWebContents,
+                          base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
       "setGlobalFlag",
-      base::BindRepeating(&AccessibilityUIMessageHandler::SetGlobalFlag,
+      base::BindRepeating(&AccessibilityUIMessageHandler::HandleSetGlobalFlag,
                           base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
       "setGlobalString",
-      base::BindRepeating(&AccessibilityUIMessageHandler::SetGlobalString,
+      base::BindRepeating(&AccessibilityUIMessageHandler::HandleSetGlobalString,
                           base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
       "requestWebContentsTree",
       base::BindRepeating(
-          &AccessibilityUIMessageHandler::RequestWebContentsTree,
+          &AccessibilityUIMessageHandler::HandleRequestWebContentsTree,
           base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
       "requestNativeUITree",
@@ -499,13 +503,14 @@ void ElectronAccessibilityUIMessageHandler::RegisterMessages() {
 #if defined(USE_AURA)
   web_ui()->RegisterMessageCallback(
       "requestWidgetsTree",
-      base::BindRepeating(&AccessibilityUIMessageHandler::RequestWidgetsTree,
-                          base::Unretained(this)));
+      base::BindRepeating(
+          &AccessibilityUIMessageHandler::HandleRequestWidgetsTree,
+          base::Unretained(this)));
 #endif
   web_ui()->RegisterMessageCallback(
       "requestAccessibilityEvents",
       base::BindRepeating(
-          &AccessibilityUIMessageHandler::RequestAccessibilityEvents,
+          &AccessibilityUIMessageHandler::HandleRequestAccessibilityEvents,
           base::Unretained(this)));
 
   auto* web_contents = web_ui()->GetWebContents();

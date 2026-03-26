@@ -10,10 +10,10 @@ on Windows.  We should refactor our code so that this patch isn't
 necessary.
 
 diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
-index 8dcd23b01d299057ce13c1a4d9016c1f3a4331b6..804b4e3a3c63c6302f92f9ba6738966957eb42c8 100644
+index f11731797c7063b837e3d9396b84d02881754894..9f90a2b1c9849aa37f711cab9fb0006ba3e3dd12 100644
 --- a/testing/variations/fieldtrial_testing_config.json
 +++ b/testing/variations/fieldtrial_testing_config.json
-@@ -21965,6 +21965,21 @@
+@@ -22324,6 +22324,21 @@
              ]
          }
      ],
@@ -36,10 +36,10 @@ index 8dcd23b01d299057ce13c1a4d9016c1f3a4331b6..804b4e3a3c63c6302f92f9ba67389669
          {
              "platforms": [
 diff --git a/ui/views/views_features.cc b/ui/views/views_features.cc
-index d033e4924e4646665840db11e988d430523cd65a..2c89de182d1bff0904762b88f6e16eec5839469d 100644
+index c74cf661f64e60ad6740e011f372e53426ce0c4d..77ce34e4f47a54f7ecabbd6e6d4d19555af248ff 100644
 --- a/ui/views/views_features.cc
 +++ b/ui/views/views_features.cc
-@@ -34,6 +34,14 @@ BASE_FEATURE(kEnableClickjackingProtection, base::FEATURE_DISABLED_BY_DEFAULT);
+@@ -34,6 +34,14 @@ BASE_FEATURE(kEnableInputProtection, base::FEATURE_DISABLED_BY_DEFAULT);
  // crbug.com/370856871.
  BASE_FEATURE(kEnableTouchDragCursorSync, base::FEATURE_ENABLED_BY_DEFAULT);
  
@@ -55,12 +55,12 @@ index d033e4924e4646665840db11e988d430523cd65a..2c89de182d1bff0904762b88f6e16eec
  // to kKeyboardAccessibleTooltip in //ui/base/ui_base_features.cc.
  BASE_FEATURE(kKeyboardAccessibleTooltipInViews,
 diff --git a/ui/views/views_features.h b/ui/views/views_features.h
-index 78d8585e83bb12acb9e95867dfb586299c511277..838b40eb0aa31e12d6527f39a673f71af7ffa851 100644
+index 092e51509d4adccb8adbe2481909068e3e6836aa..5093a4c08bf6675ed1e5cb944c1bcb8251bdb033 100644
 --- a/ui/views/views_features.h
 +++ b/ui/views/views_features.h
 @@ -16,6 +16,7 @@ VIEWS_EXPORT BASE_DECLARE_FEATURE(kAnnounceTextAdditionalAttributes);
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kApplyInitialUrlToWebContents);
- VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableClickjackingProtection);
+ VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableInputProtection);
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableTouchDragCursorSync);
 +VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableTransparentHwndEnlargement);
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kKeyboardAccessibleTooltipInViews);

@@ -11,7 +11,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ELECTRON_DIR = resolve(__dirname, '..');
 
 const DEPS_REGEX = /chromium_version':\n +'(.+?)',/m;
-const CL_REGEX = /https:\/\/chromium-review\.googlesource\.com\/c\/(?:chromium\/src|v8\/v8)\/\+\/(\d+)(#\S+)?/g;
+const CL_REGEX = /https:\/\/chromium-review\.googlesource\.com\/c\/(chromium\/src|devtools\/devtools-frontend|v8\/v8)\/\+\/(\d+)(#\S+)?/g;
 const ROLLER_BRANCH_PATTERN = /^roller\/chromium\/(.+)$/;
 
 function getCurrentBranch () {
@@ -177,8 +177,9 @@ async function main () {
 
     const cls = [...commit.message.matchAll(CL_REGEX)].map((match) => ({
       url: match[0],
-      clNumber: match[1],
-      fragment: match[2] ?? null
+      fullRepo: match[1],
+      clNumber: match[2],
+      fragment: match[3] ?? null
     }));
 
     if (cls.length === 0) {
@@ -207,9 +208,7 @@ async function main () {
         continue;
       }
 
-      // Determine repo from URL
-      const isV8 = cl.url.startsWith('https://chromium-review.googlesource.com/c/v8/v8/');
-      const repo = isV8 ? 'v8' : 'chromium';
+      const repo = cl.fullRepo.split('/')[0];
 
       // Fetch Gerrit details to get commit SHA
       const gerritDetails = await getGerritPatchDetails(cl.url);
@@ -243,9 +242,9 @@ async function main () {
         continue;
       }
 
-      // For V8 CLs, we need to find the corresponding Chromium commit
+      // For non-Chromium CLs, we need to find the corresponding Chromium commit
       let chromiumVersion = clEarliestVersion;
-      if (isV8 && dashDetails.relations) {
+      if (repo !== 'chromium' && dashDetails.relations) {
         const chromiumRelation = dashDetails.relations.find(
           (rel) => rel.from_commit === gerritDetails.commitSha
         );
