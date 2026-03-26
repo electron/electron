@@ -49,44 +49,30 @@ runs:
       shell: bash
       if: ${{ inputs.target-platform == 'win' && runner.os != 'Windows' }}
       run: |
-        sudo dpkg --add-architecture amd64
-        sudo apt-get update
-        # apt-get may return non-zero from post-install triggers (e.g. man-db)
-        # even when the package installs successfully, so tolerate that and
-        # verify the binary exists afterward.
-        sudo apt-get install -y --no-install-recommends wine64 || true
-        # Debug: show where wine64 binary was actually installed
-        echo "=== wine64 package file list (bin entries) ==="
-        dpkg -L wine64 2>/dev/null | grep bin || echo "(no bin entries found)"
-        echo "=== /usr/bin/wine* ==="
-        ls -la /usr/bin/wine* 2>/dev/null || echo "(no wine binaries in /usr/bin/)"
-        echo "=== dpkg status ==="
-        dpkg -s wine64 2>/dev/null | head -5 || echo "(wine64 package not found)"
-        # Find wine64 - check known path first, then fall back to PATH lookup,
-        # then search via dpkg/find in case it was installed elsewhere.
-        if [ -x /usr/bin/wine64 ]; then
-          WINE64_PATH=/usr/bin/wine64
-        elif command -v wine64 >/dev/null 2>&1; then
-          WINE64_PATH=$(command -v wine64)
-        else
-          echo "wine64 not at /usr/bin/wine64 or in PATH, searching..."
-          WINE64_PATH=$(dpkg -L wine64 2>/dev/null | grep -m1 'bin/wine64$' || true)
-          if [ ! -x "$WINE64_PATH" ]; then
-            WINE64_PATH=$(find /usr -name 'wine64' -executable 2>/dev/null | head -1)
-          fi
-          if [ -z "$WINE64_PATH" ] || [ ! -x "$WINE64_PATH" ]; then
-            echo "ERROR: wine64 binary not found anywhere after install"
-            exit 1
-          fi
+        sudo mkdir -pm755 /etc/apt/keyrings
+        wget -O - https://dl.winehq.org/wine-builds/winehq.key | sudo gpg --dearmor -o /etc/apt/keyrings/winehq-archive.key -
+        sudo dpkg --add-architecture i386
+        sudo wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/jammy/winehq-jammy.sources
+        sudo apt-get update  
+        sudo apt install -y --install-recommends winehq-stable
+        if [ -x /usr/bin/wine ]; then
+          WINE_PATH=/usr/bin/wine
+        elif command -v wine >/dev/null 2>&1; then
+          WINE_PATH=$(command -v wine)
         fi
-        echo "Found wine64 at: $WINE64_PATH"
+        if [ -z "$WINE_PATH" ] || [ ! -x "$WINE_PATH" ]; then
+          echo "ERROR: wine binary not found anywhere after install"
+          exit 1
+        fi
+        echo "Found wine at: $WINE_PATH"
         export WINEPREFIX="$HOME/.wine"
         mkdir -p "$WINEPREFIX"
         echo "WINEPREFIX=$WINEPREFIX" >> $GITHUB_ENV
         # Initialize wine prefix to avoid first-run delays during build
-        "$WINE64_PATH" wineboot --init 2>/dev/null || true
-        # Pass wine64 path to GN so siso can find it regardless of PATH
-        GN_APPENDED_ARGS="$GN_EXTRA_ARGS v8_wine_path=\"$WINE64_PATH\""
+        "$WINE_PATH" wineboot --init 2>/dev/null || true
+        "$WINE_PATH" regedit /S configuration.reg
+        # Pass wine path to GN so siso can find it regardless of PATH
+        GN_APPENDED_ARGS="$GN_EXTRA_ARGS v8_wine_path=\"$WINE_PATH\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV        
     # - name: Download mksnapshot.zip
     #   shell: bash
