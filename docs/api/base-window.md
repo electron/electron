@@ -373,6 +373,15 @@ Calling `event.preventDefault()` will prevent the menu from being displayed.
 
 To convert `point` to DIP, use [`screen.screenToDipPoint(point)`](./screen.md#screenscreentodippointpoint-windows-linux).
 
+#### Event: 'restored-persisted-state'
+
+Emitted after the persisted window state has been restored.
+
+Window state includes the window bounds (x, y, height, width) and display mode (maximized, fullscreen, kiosk).
+
+> [!NOTE]
+> This event is only emitted when [windowStatePersistence](structures/window-state-persistence.md) is enabled in [BaseWindowConstructorOptions](structures/base-window-options.md) or in [BrowserWindowConstructorOptions](structures/browser-window-options.md).
+
 ### Static Methods
 
 The `BaseWindow` class has the following static methods:
@@ -391,13 +400,13 @@ Returns `BaseWindow | null` - The window that is focused in this application, ot
 
 Returns `BaseWindow | null` - The window with the given `id`.
 
-#### `BaseWindow.clearWindowState(windowName)`
+#### `BaseWindow.clearPersistedState(name)`
 
-* `windowName` string - The window `name` to clear state for (see [BaseWindowConstructorOptions](structures/base-window-options.md)).
+* `name` string - The window `name` to clear state for (see [BaseWindowConstructorOptions](structures/base-window-options.md)).
 
 Clears the saved state for a window with the given name. This removes all persisted window bounds, display mode, and work area information that was previously saved when `windowStatePersistence` was enabled.
 
-If the window name is empty or the window state doesn't exist, the method will log a warning.
+If the window `name` is empty or the window state doesn't exist, the method will log a warning.
 
 ### Instance Properties
 
