@@ -10,7 +10,7 @@ DidCreateScriptContext is called, not all JS APIs are available in the
 context, which can cause some preload scripts to trip.
 
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index 8077ed85e45e56d6cccb691223216c1f6a94b5ee..dd4cee346f16df703d414bf206bbe6c9f4b1f796 100644
+index 7deb2e8a6e1a35e9251783e923523bb65ca95b81..947b0c722a5d8e08a3f458c8b938d5723f2faa90 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
 @@ -141,6 +141,8 @@ class CONTENT_EXPORT RenderFrameObserver {
@@ -23,10 +23,10 @@ index 8077ed85e45e56d6cccb691223216c1f6a94b5ee..dd4cee346f16df703d414bf206bbe6c9
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 280091edd7aa92c3cbc9e4b442cba91cb5bd2aa4..92272d5177cc47839169066b860577194cbc5d47 100644
+index e782c9a3b2d74fc027812e19a07ff1bea0c4b5bc..e324a981e10b6a1347bd447c60f072e6ca177736 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4744,6 +4744,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4745,6 +4745,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -40,10 +40,10 @@ index 280091edd7aa92c3cbc9e4b442cba91cb5bd2aa4..92272d5177cc47839169066b86057719
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 8bdb45a481f16096fa0509570872745531495eb3..0062c466fbe4c625669d3a334fc9b9d8c49837f2 100644
+index 915d041494318fca09459d8501a1ba6b5b8cd5dc..ade7e17dba4e21b787ce5ecf855051ad701ecbe2 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -606,6 +606,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -607,6 +607,8 @@ class CONTENT_EXPORT RenderFrameImpl
    void DidObserveLayoutShift(double score, bool after_input_or_scroll) override;
    void DidCreateScriptContext(v8::Local<v8::Context> context,
                                int world_id) override;
@@ -53,10 +53,10 @@ index 8bdb45a481f16096fa0509570872745531495eb3..0062c466fbe4c625669d3a334fc9b9d8
                                  int world_id) override;
    void DidChangeScrollOffset() override;
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index 7e5f1d80ff5395ea11eb558acabe63ccc3e5a17e..d241042fc37ffe4a2afecbc3c02e89f18e990929 100644
+index 0f218d3f96f0c3a3a5773937e50ba9e8d7df0498..27b21f02d2dbfd60cb64f09be393b0e50928756f 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
-@@ -674,6 +674,9 @@ class BLINK_EXPORT WebLocalFrameClient {
+@@ -675,6 +675,9 @@ class BLINK_EXPORT WebLocalFrameClient {
    virtual void DidCreateScriptContext(v8::Local<v8::Context>,
                                        int32_t world_id) {}
  
@@ -79,10 +79,10 @@ index d293c49e6774de889fa9959234c82b41a4b1efe1..0787bc8a602c60e5b42933813baa6b9d
    if (World().IsMainWorld()) {
      probe::DidCreateMainWorldContext(GetFrame());
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client.h b/third_party/blink/renderer/core/frame/local_frame_client.h
-index 52cc48e0099ded3686c6fc056514b6446afcae5d..a6331653b0aaf30cedba6ff6df787aa944142ac4 100644
+index a68832975b5d359f7eddaf2326bd47ff1e7e18df..ae565a4d3fdc2d02e2c7a27312d8296bbdf61e0b 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client.h
 +++ b/third_party/blink/renderer/core/frame/local_frame_client.h
-@@ -309,6 +309,8 @@ class CORE_EXPORT LocalFrameClient : public FrameClient {
+@@ -310,6 +310,8 @@ class CORE_EXPORT LocalFrameClient : public FrameClient {
  
    virtual void DidCreateScriptContext(v8::Local<v8::Context>,
                                        int32_t world_id) = 0;
@@ -92,7 +92,7 @@ index 52cc48e0099ded3686c6fc056514b6446afcae5d..a6331653b0aaf30cedba6ff6df787aa9
                                          int32_t world_id) = 0;
    virtual bool AllowScriptExtensions() = 0;
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-index ebf1c82da02efbe73f1bb7b20cb1011c1bd7a335..26410fc221baf1fadb6220eb653c651b47fb3da7 100644
+index 88f1fcaec73abb0908b483ab894f4330ebfe068b..f9bcbc186d7cf75e3fa2d71e488f06c86c4111e5 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 @@ -301,6 +301,13 @@ void LocalFrameClientImpl::DidCreateScriptContext(
@@ -110,7 +110,7 @@ index ebf1c82da02efbe73f1bb7b20cb1011c1bd7a335..26410fc221baf1fadb6220eb653c651b
      v8::Local<v8::Context> context,
      int32_t world_id) {
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.h b/third_party/blink/renderer/core/frame/local_frame_client_impl.h
-index 9bdfacfc0270bf4ac3a965f6308e4cfc19193f4f..ea9e16b6dd6c96333c653fc602edfbd84cd9e5de 100644
+index b00211cf215fb820b3fe49139b8ef95be6a10d21..cc593168947e469b599794260692e1deb9b5f1a5 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.h
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.h
 @@ -78,6 +78,8 @@ class CORE_EXPORT LocalFrameClientImpl final : public LocalFrameClient {

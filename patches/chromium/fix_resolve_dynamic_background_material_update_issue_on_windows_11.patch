@@ -8,7 +8,7 @@ such as the background turning black when maximizing the window and
 dynamic background material settings not taking effect.
 
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 1f66f36c028b97f018e116ae41a8d9b078620757..e19955df73a287fcade8e6c90ed02558e45d210b 100644
+index d1e06b675b19226cf3b78e1aada8d8f2d684fada..ce810555b8501797643987916a728cad8f5adaa5 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 @@ -184,6 +184,10 @@ void DesktopWindowTreeHostWin::FinishTouchDrag(gfx::Point screen_point) {
@@ -23,7 +23,7 @@ index 1f66f36c028b97f018e116ae41a8d9b078620757..e19955df73a287fcade8e6c90ed02558
  
  void DesktopWindowTreeHostWin::Init(const Widget::InitParams& params) {
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index 0cd07fd5fb55dcc0d972de4c027fcb895d156592..0f4d335e1d54b5e92fc217080d86513db94d4122 100644
+index a40bd9f25fa07a553c011cf19f155f8158f4ae5f..ae2baec731b5fcd8be97f2177d23b860d67ab8bc 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 @@ -93,6 +93,8 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
@@ -36,7 +36,7 @@ index 0cd07fd5fb55dcc0d972de4c027fcb895d156592..0f4d335e1d54b5e92fc217080d86513d
    // Overridden from DesktopWindowTreeHost:
    void Init(const Widget::InitParams& params) override;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 5f483e5271facd23f50ebda981a7bce9e7f20791..43132e8040059296373f121b6fb2863023eb3a57 100644
+index 3f2c0e96358d0f8cd1af36c3448c762feb1d4e08..5c4701502d4b3cbdefdd03fcc768ce4ccf16a7fd 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -986,13 +986,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
@@ -89,7 +89,7 @@ index 5f483e5271facd23f50ebda981a7bce9e7f20791..43132e8040059296373f121b6fb28630
      return;
    }
  
-@@ -2436,17 +2448,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
+@@ -2437,17 +2449,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
      delegate_->SchedulePaint();
    }
  

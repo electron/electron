@@ -11,10 +11,10 @@ This patch can (and should) be removed when we can prevent those symbols
 from being stripped in the release build.
 
 diff --git a/build/config/compiler/compiler.gni b/build/config/compiler/compiler.gni
-index beb5213714e1ab6260ed735099b0bcac90cdab66..fcbf88740deea6335ec70ab61795f501f4b432ce 100644
+index 5a827a22a51749e3de375698f4d3fe3920c130eb..9636a376c8becb5c1ecf00b2c6189e97d9243c34 100644
 --- a/build/config/compiler/compiler.gni
 +++ b/build/config/compiler/compiler.gni
-@@ -113,7 +113,7 @@ declare_args() {
+@@ -149,7 +149,7 @@ declare_args() {
    # Chrome's clang. crbug.com/1033839
    use_thin_lto =
        is_cfi || (is_clang && is_official_build && chrome_pgo_phase != 1 &&
