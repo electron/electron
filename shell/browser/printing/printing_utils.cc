@@ -59,6 +59,8 @@ gfx::Size GetDefaultPrinterDPI(const std::u16string& device_name) {
   GtkPrintSettings* print_settings = gtk_print_settings_new();
   int dpi = gtk_print_settings_get_resolution(print_settings);
   g_object_unref(print_settings);
+  if (dpi <= 0)
+    dpi = printing::kDefaultPdfDpi;
   return {dpi, dpi};
 #endif
 }
