@@ -17,7 +17,7 @@ which removed range-requests-supported on non-http protocols. See https://issues
 for more information.
 
 diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
-index d1565bfe05342915d516d9c46eb7c4922c361b22..a5f35e7782c047b147458e569924de0fd30db7ce 100644
+index f697f85d7e3e9eeeab249a6d4e8ef8383c5c0d72..a5f35e7782c047b147458e569924de0fd30db7ce 100644
 --- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 +++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 @@ -11,8 +11,10 @@
@@ -61,7 +61,7 @@ index d1565bfe05342915d516d9c46eb7c4922c361b22..a5f35e7782c047b147458e569924de0f
  
  bool MultiBufferDataSource::AssumeFullyBuffered() const {
    DCHECK(url_data_);
--  return !url_data_->url().ProtocolIsInHTTPFamily();
+-  return !url_data_->url().ProtocolIsInHttpFamily();
 +
 +  const std::string scheme = url_data_->url().Protocol().Ascii();
 +  for (const std::string& streaming_scheme : *GetStreamingSchemes()) {
@@ -104,7 +104,7 @@ index 5100bd21163f9ceadb728ed5306dcf8320e528a8..c2ee03ca6a75a2fef1ce778e663a74bd
    using InitializeCB = base::OnceCallback<void(bool)>;
    void Initialize(InitializeCB init_cb) override;
 diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
-index 4beb963ecd1c42b1d236cbfdafa9daf27ac61c06..68175244b3496f7b999ae4a3a3e14b5f2b7e659d 100644
+index 61b798d0b37588dbdaaced0cd88f6ed36fbaffa5..95cc5bde18ed79f2a4e6fc1d0d1138b0c41bd5d5 100644
 --- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
 +++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
 @@ -8,6 +8,7 @@

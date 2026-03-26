@@ -437,6 +437,14 @@ WebContents.prototype.loadURL = function (url, options) {
   return p;
 };
 
+WebContents.prototype.copyVideoFrameAt = function (x: number, y: number) {
+  this.mainFrame.copyVideoFrameAt(x, y);
+};
+
+WebContents.prototype.saveVideoFrameAs = function (x: number, y: number) {
+  this.mainFrame.saveVideoFrameAs(x, y);
+};
+
 WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electron.HandlerDetails) => Electron.WindowOpenHandlerResponse) {
   this._windowOpenHandler = handler;
 };
@@ -782,8 +790,7 @@ WebContents.prototype._init = function () {
   const originCounts = new Map<string, number>();
   const openDialogs = new Set<AbortController>();
   this.on('-run-dialog', async (info, callback) => {
-    const originUrl = new URL(info.frame.url);
-    const origin = originUrl.protocol === 'file:' ? originUrl.href : originUrl.origin;
+    const origin = info.frame.origin === 'file://' ? info.frame.url : info.frame.origin;
     if ((originCounts.get(origin) ?? 0) < 0) return callback(false, '');
 
     const prefs = this.getLastWebPreferences();

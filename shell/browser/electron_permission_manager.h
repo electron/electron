@@ -86,6 +86,8 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   bool HasPermissionRequestHandler() const;
   bool HasPermissionCheckHandler() const;
 
+  void CancelPendingRequests(content::WebContents* web_contents);
+
   void CheckBluetoothDevicePair(gin_helper::Dictionary details,
                                 PairCallback pair_callback) const;
 
@@ -118,10 +120,6 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
                             content::PermissionResult result);
 
   // content::PermissionControllerDelegate:
-  void RequestPermissions(
-      content::RenderFrameHost* render_frame_host,
-      const content::PermissionRequestDescription& request_description,
-      StatusesCallback callback) override;
   void ResetPermission(blink::PermissionType permission,
                        const GURL& requesting_origin,
                        const GURL& embedding_origin) override;

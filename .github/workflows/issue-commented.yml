@@ -33,7 +33,7 @@ jobs:
           ISSUE_URL: ${{ github.event.issue.html_url }}
         run: |
           gh issue edit $ISSUE_URL --remove-label 'blocked/need-repro','blocked/need-info ❌'
-
+  
   pr-reviewer-requested:
     name: Maintainer requested reviewer on PR
     if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/request-review') && github.event.comment.user.type != 'Bot' }}

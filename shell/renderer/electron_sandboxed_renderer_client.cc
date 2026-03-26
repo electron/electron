@@ -199,7 +199,8 @@ void ElectronSandboxedRendererClient::
         v8::Local<v8::Context> context,
         int64_t service_worker_version_id,
         const GURL& service_worker_scope,
-        const GURL& script_url) {
+        const GURL& script_url,
+        const blink::ServiceWorkerToken& service_worker_token) {
   if (service_worker_data) {
     DCHECK_EQ(service_worker_version_id,
               service_worker_data->service_worker_version_id());
@@ -208,7 +209,8 @@ void ElectronSandboxedRendererClient::
   }
 
   RendererClientBase::WillDestroyServiceWorkerContextOnWorkerThread(
-      context, service_worker_version_id, service_worker_scope, script_url);
+      context, service_worker_version_id, service_worker_scope, script_url,
+      service_worker_token);
 }
 
 }  // namespace electron

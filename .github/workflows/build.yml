@@ -61,7 +61,7 @@ jobs:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         ref: ${{ github.event.pull_request.head.sha }}
-    - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+    - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
       id: filter
       with:
         filters: |
@@ -365,6 +365,18 @@ jobs:
       generate-symbols: false
       upload-to-storage: '0'
     secrets: inherit
+    
+  test-linux-arm64-64k:
+    uses: ./.github/workflows/pipeline-segment-electron-test-64k.yml
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    needs: [checkout-linux, linux-arm64]
+    with:
+      test-runs-on: ubuntu-22.04-arm
+      test-container: '{"image":"ghcr.io/electron/test:arm64v8-${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
+    secrets: inherit
 
   windows-x64:
     permissions:
@@ -434,3 +446,30 @@ jobs:
     - name: GitHub Actions Jobs Done
       run: |
         echo "All GitHub Actions Jobs are done"
+
+  check-signed-commits:
+    name: Check signed commits in green PR
+    needs: gha-done
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'needs-signed-commits')}}
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Check signed commits in PR
+        uses: 1Password/check-signed-commits-action@ed2885f3ed2577a4f5d3c3fe895432a557d23d52 # v1
+        with:
+          comment: |
+            ⚠️ This PR contains unsigned commits. This repository enforces [commit signatures](https://docs.github.com/en/authentication/managing-commit-signature-verification) 
+            for all incoming PRs. To get your PR merged, please sign those commits 
+            (`git rebase --exec 'git commit -S --amend --no-edit -n' @{upstream}`) and force push them to this branch 
+            (`git push --force-with-lease`)
+
+            For more information on signing commits, see GitHub's documentation on [Telling Git about your signing key](https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key).
+
+      - name: Remove needs-signed-commits label
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh pr edit $PR_URL --remove-label needs-signed-commits

@@ -178,11 +178,6 @@ ContentVerifier* ElectronExtensionSystem::content_verifier() {
   return nullptr;
 }
 
-std::unique_ptr<ExtensionSet> ElectronExtensionSystem::GetDependentExtensions(
-    const Extension* extension) {
-  return std::make_unique<ExtensionSet>();
-}
-
 void ElectronExtensionSystem::InstallUpdate(
     const std::string& extension_id,
     const std::string& public_key,

@@ -122,7 +122,6 @@ class WebContentsPreferences
   std::optional<std::string> default_encoding_;
   bool is_webview_;
   std::vector<std::string> custom_args_;
-  std::vector<std::string> custom_switches_;
   std::optional<std::string> enable_blink_features_;
   std::optional<std::string> disable_blink_features_;
   bool disable_popups_;

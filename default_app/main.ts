@@ -111,7 +111,10 @@ async function loadApplicationPackage (packagePath: string) {
         app.name = packageJson.name;
       }
 
-      app.setDesktopName(packageJson.desktopName || `${app.name}.desktop`);
+      // Set application's desktop name (Linux). These usually match the executable name,
+      // so use it as the default to ensure the app gets the correct icon in the taskbar and application switcher.
+      const desktopName = packageJson.desktopName || `${path.basename(process.execPath)}.desktop`;
+      app.setDesktopName(desktopName);
 
       // Set v8 flags, deliberately lazy load so that apps that do not use this
       // feature do not pay the price
@@ -253,7 +256,7 @@ async function startRepl () {
 if (option.file && !option.webdriver) {
   const file = option.file;
   // eslint-disable-next-line n/no-deprecated-api
-  const protocol = url.parse(file).protocol;
+  const protocol = URL.canParse(file) ? new URL(file).protocol : null;
   const extension = path.extname(file);
   if (protocol === 'http:' || protocol === 'https:' || protocol === 'file:' || protocol === 'chrome:') {
     await loadApplicationByURL(file);

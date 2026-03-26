@@ -10,10 +10,10 @@ on Windows.  We should refactor our code so that this patch isn't
 necessary.
 
 diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
-index bd61eea7a13781f79036732c5f0366f9c4d65be2..3af8a931f779ace4dfe7143a99983b69a8fa0de1 100644
+index 8dcd23b01d299057ce13c1a4d9016c1f3a4331b6..804b4e3a3c63c6302f92f9ba6738966957eb42c8 100644
 --- a/testing/variations/fieldtrial_testing_config.json
 +++ b/testing/variations/fieldtrial_testing_config.json
-@@ -26370,6 +26370,21 @@
+@@ -21965,6 +21965,21 @@
              ]
          }
      ],
@@ -36,10 +36,10 @@ index bd61eea7a13781f79036732c5f0366f9c4d65be2..3af8a931f779ace4dfe7143a99983b69
          {
              "platforms": [
 diff --git a/ui/views/views_features.cc b/ui/views/views_features.cc
-index 9ecf5330bb9b3a5a7b12f3b9bb76192ea1694d07..202d3e3df60ec8d23b4cbd3e5814c3fce1b07871 100644
+index d033e4924e4646665840db11e988d430523cd65a..2c89de182d1bff0904762b88f6e16eec5839469d 100644
 --- a/ui/views/views_features.cc
 +++ b/ui/views/views_features.cc
-@@ -22,6 +22,14 @@ BASE_FEATURE(kAnnounceTextAdditionalAttributes,
+@@ -34,6 +34,14 @@ BASE_FEATURE(kEnableClickjackingProtection, base::FEATURE_DISABLED_BY_DEFAULT);
  // crbug.com/370856871.
  BASE_FEATURE(kEnableTouchDragCursorSync, base::FEATURE_ENABLED_BY_DEFAULT);
  
@@ -55,22 +55,22 @@ index 9ecf5330bb9b3a5a7b12f3b9bb76192ea1694d07..202d3e3df60ec8d23b4cbd3e5814c3fc
  // to kKeyboardAccessibleTooltip in //ui/base/ui_base_features.cc.
  BASE_FEATURE(kKeyboardAccessibleTooltipInViews,
 diff --git a/ui/views/views_features.h b/ui/views/views_features.h
-index 5f5ea15678bd76399fdbbb8904fe155657f49335..a67c124878fb710599fed5d9714bfa723d0d67a5 100644
+index 78d8585e83bb12acb9e95867dfb586299c511277..838b40eb0aa31e12d6527f39a673f71af7ffa851 100644
 --- a/ui/views/views_features.h
 +++ b/ui/views/views_features.h
-@@ -14,6 +14,7 @@ namespace views::features {
- // Please keep alphabetized.
- VIEWS_EXPORT BASE_DECLARE_FEATURE(kAnnounceTextAdditionalAttributes);
+@@ -16,6 +16,7 @@ VIEWS_EXPORT BASE_DECLARE_FEATURE(kAnnounceTextAdditionalAttributes);
+ VIEWS_EXPORT BASE_DECLARE_FEATURE(kApplyInitialUrlToWebContents);
+ VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableClickjackingProtection);
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableTouchDragCursorSync);
 +VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableTransparentHwndEnlargement);
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kKeyboardAccessibleTooltipInViews);
- VIEWS_EXPORT BASE_DECLARE_FEATURE(kApplyInitialUrlToWebContents);
  
+ }  // namespace views::features
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index ca91b370065b91f12764e188bb786b54ea45bcf3..fd3b1960cd567c7361effa0516782a5c2283526d 100644
+index ceb6e3ad0e60b1aaee47c24564ca9fd8b3c2e71f..1f66f36c028b97f018e116ae41a8d9b078620757 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -84,6 +84,23 @@ namespace {
+@@ -85,6 +85,23 @@ namespace {
  // This constant controls how many pixels wide that border is.
  const int kMouseCaptureRegionBorder = 5;
  
@@ -94,7 +94,7 @@ index ca91b370065b91f12764e188bb786b54ea45bcf3..fd3b1960cd567c7361effa0516782a5c
  // Updates the cursor clip region. Used for mouse locking.
  void UpdateMouseLockRegion(aura::Window* window, bool locked) {
    if (!locked) {
-@@ -334,9 +351,14 @@ bool DesktopWindowTreeHostWin::IsVisible() const {
+@@ -342,9 +359,14 @@ bool DesktopWindowTreeHostWin::IsVisible() const {
  }
  
  void DesktopWindowTreeHostWin::SetSize(const gfx::Size& size) {
@@ -111,7 +111,7 @@ index ca91b370065b91f12764e188bb786b54ea45bcf3..fd3b1960cd567c7361effa0516782a5c
  }
  
  void DesktopWindowTreeHostWin::StackAbove(aura::Window* window) {
-@@ -351,30 +373,40 @@ void DesktopWindowTreeHostWin::StackAtTop() {
+@@ -359,30 +381,40 @@ void DesktopWindowTreeHostWin::StackAtTop() {
  }
  
  void DesktopWindowTreeHostWin::CenterWindow(const gfx::Size& size) {
@@ -154,7 +154,7 @@ index ca91b370065b91f12764e188bb786b54ea45bcf3..fd3b1960cd567c7361effa0516782a5c
    return display::win::GetScreenWin()->ScreenToDIPRect(GetHWND(), pixel_bounds);
  }
  
-@@ -682,37 +714,44 @@ void DesktopWindowTreeHostWin::HideImpl() {
+@@ -701,37 +733,44 @@ void DesktopWindowTreeHostWin::HideImpl() {
  // other get/set methods work in DIP.
  
  gfx::Rect DesktopWindowTreeHostWin::GetBoundsInPixels() const {
@@ -219,7 +219,7 @@ index ca91b370065b91f12764e188bb786b54ea45bcf3..fd3b1960cd567c7361effa0516782a5c
  }
  
  gfx::Rect
-@@ -924,18 +963,26 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
+@@ -943,18 +982,26 @@ int DesktopWindowTreeHostWin::GetNonClientComponent(
  
  void DesktopWindowTreeHostWin::GetWindowMask(const gfx::Size& size_px,
                                               SkPath* path) {

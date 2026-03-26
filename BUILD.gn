@@ -321,12 +321,33 @@ grit("resources") {
     "grit/electron_resources.h",
     "electron_resources.pak",
   ]
+  if (translate_genders) {
+    outputs += [
+      "electron_resources_MASCULINE.pak",
+      "electron_resources_FEMININE.pak",
+      "electron_resources_NEUTER.pak",
+    ]
+  }
+
+  foreach(locale, all_chrome_locales) {
+    outputs += [ "electron_strings_$locale.pak" ]
+    if (translate_genders) {
+      outputs += [
+        "electron_strings_${locale}_MASCULINE.pak",
+        "electron_strings_${locale}_FEMININE.pak",
+        "electron_strings_${locale}_NEUTER.pak",
+      ]
+    }
+  }
 
   # Mojo manifest overlays are generated.
   grit_flags = [
     "-E",
     "target_gen_dir=" + rebase_path(target_gen_dir, root_build_dir),
   ]
+  if (translate_genders) {
+    grit_flags += [ "--translate-genders" ]
+  }
 
   deps = [ ":copy_shell_devtools_discovery_page" ]
 
@@ -450,6 +471,7 @@ source_set("electron_lib") {
     "//chrome:strings",
     "//chrome/app:command_ids",
     "//chrome/app/resources:platform_locale_settings",
+    "//chrome/common/notifications",
     "//components/autofill/core/common:features",
     "//components/certificate_transparency",
     "//components/compose:buildflags",
@@ -619,6 +641,7 @@ source_set("electron_lib") {
       "SecurityInterface.framework",
       "ServiceManagement.framework",
       "StoreKit.framework",
+      "UserNotifications.framework",
     ]
 
     weak_frameworks = [ "QuickLookThumbnailing.framework" ]
@@ -994,7 +1017,17 @@ if (is_mac) {
     }
   }
 
-  foreach(helper_params, content_mac_helpers) {
+  # Electron defines its own plugin helper (using CHILD_EMBEDDER_FIRST + 1) to
+  # allow loading of unsigned or third-party-signed libraries.
+  _electron_plugin_helper_params = [
+    "plugin",
+    ".plugin",
+    " (Plugin)",
+  ]
+  electron_mac_helpers =
+      content_mac_helpers + [ _electron_plugin_helper_params ]
+
+  foreach(helper_params, electron_mac_helpers) {
     _helper_target = helper_params[0]
     _helper_bundle_id = helper_params[1]
     _helper_suffix = helper_params[2]
@@ -1047,7 +1080,7 @@ if (is_mac) {
       ":stripped_squirrel_framework",
     ]
 
-    foreach(helper_params, content_mac_helpers) {
+    foreach(helper_params, electron_mac_helpers) {
       sources +=
           [ "$root_out_dir/${electron_helper_name}${helper_params[2]}.app" ]
       public_deps += [ ":electron_helper_app_${helper_params[0]}" ]
@@ -1151,7 +1184,7 @@ if (is_mac) {
       deps = [ ":electron_framework" ]
     }
 
-    foreach(helper_params, content_mac_helpers) {
+    foreach(helper_params, electron_mac_helpers) {
       _helper_target = helper_params[0]
       _helper_bundle_id = helper_params[1]
       _helper_suffix = helper_params[2]
@@ -1203,7 +1236,7 @@ if (is_mac) {
         deps += [ ":crashpad_handler_syms" ]
       }
 
-      foreach(helper_params, content_mac_helpers) {
+      foreach(helper_params, electron_mac_helpers) {
         _helper_target = helper_params[0]
         deps += [ ":electron_helper_syms_${_helper_target}" ]
       }

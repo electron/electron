@@ -2,7 +2,7 @@ import { expect } from 'chai';
 
 import * as path from 'node:path';
 
-import { startRemoteControlApp } from './lib/spec-helpers';
+import { ifdescribe, isTestingBindingAvailable, startRemoteControlApp } from './lib/spec-helpers';
 
 describe('cpp heap', () => {
   describe('app module', () => {
@@ -74,6 +74,191 @@ describe('cpp heap', () => {
       }, path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
       path.join(__dirname, 'lib', 'heapsnapshot-helpers.js'));
       expect(result).to.equal(true);
+    });
+  });
+
+  ifdescribe(isTestingBindingAvailable())('SafeV8Function callback conversion', () => {
+    const gcTestArgv = ['--js-flags=--expose-gc'];
+
+    it('retains repeating callback while held, allows multiple invocations, then releases', async () => {
+      const { remotely } = await startRemoteControlApp(gcTestArgv);
+      const result = await remotely(async () => {
+        const testingBinding = (process as any)._linkedBinding('electron_common_testing');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const waitForGC = async (fn: () => boolean) => {
+          for (let i = 0; i < 30; ++i) {
+            await new Promise(resolve => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+            if (fn()) return true;
+          }
+          return false;
+        };
+
+        let callCount = 0;
+        let repeating: any = () => { callCount++; };
+        const repeatingWeakRef = new WeakRef(repeating);
+        testingBinding.holdRepeatingCallbackForTesting(repeating);
+        repeating = null;
+
+        const invoked0 = testingBinding.invokeHeldRepeatingCallbackForTesting();
+        const invoked1 = testingBinding.invokeHeldRepeatingCallbackForTesting();
+        const invoked2 = testingBinding.invokeHeldRepeatingCallbackForTesting();
+
+        testingBinding.clearHeldCallbacksForTesting();
+        const releasedAfterClear = await waitForGC(() => repeatingWeakRef.deref() === undefined);
+
+        return { invoked0, invoked1, invoked2, callCount, releasedAfterClear };
+      });
+
+      expect(result.invoked0).to.equal(true, 'first invocation should succeed');
+      expect(result.invoked1).to.equal(true, 'second invocation should succeed');
+      expect(result.invoked2).to.equal(true, 'third invocation should succeed');
+      expect(result.callCount).to.equal(3, 'callback should have been called 3 times');
+      expect(result.releasedAfterClear).to.equal(true, 'callback should be released after clear');
+    });
+
+    it('consumes once callback on first invoke and releases it', async () => {
+      const { remotely } = await startRemoteControlApp(gcTestArgv);
+      const result = await remotely(async () => {
+        const testingBinding = (process as any)._linkedBinding('electron_common_testing');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const waitForGC = async (fn: () => boolean) => {
+          for (let i = 0; i < 30; ++i) {
+            await new Promise(resolve => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+            if (fn()) return true;
+          }
+          return false;
+        };
+
+        let callCount = 0;
+        let once: any = () => { callCount++; };
+        const onceWeakRef = new WeakRef(once);
+        testingBinding.holdOnceCallbackForTesting(once);
+        once = null;
+
+        const first = testingBinding.invokeHeldOnceCallbackForTesting();
+        const second = testingBinding.invokeHeldOnceCallbackForTesting();
+
+        testingBinding.clearHeldCallbacksForTesting();
+        const released = await waitForGC(() => onceWeakRef.deref() === undefined);
+
+        return { first, second, callCount, released };
+      });
+
+      expect(result.first).to.equal(true, 'first invoke should succeed');
+      expect(result.second).to.equal(false, 'second invoke should fail (consumed)');
+      expect(result.callCount).to.equal(1, 'callback should have been called once');
+      expect(result.released).to.equal(true, 'callback should be released after consume + clear');
+    });
+
+    it('releases replaced repeating callback while keeping latest callback alive', async () => {
+      const { remotely } = await startRemoteControlApp(gcTestArgv);
+      const result = await remotely(async () => {
+        const testingBinding = (process as any)._linkedBinding('electron_common_testing');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const waitForGC = async (fn: () => boolean) => {
+          for (let i = 0; i < 30; ++i) {
+            await new Promise(resolve => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+            if (fn()) return true;
+          }
+          return false;
+        };
+
+        let callbackA: any = () => {};
+        const weakA = new WeakRef(callbackA);
+        testingBinding.holdRepeatingCallbackForTesting(callbackA);
+        callbackA = null;
+
+        let callbackB: any = () => {};
+        const weakB = new WeakRef(callbackB);
+        testingBinding.holdRepeatingCallbackForTesting(callbackB);
+        callbackB = null;
+
+        const releasedA = await waitForGC(() => weakA.deref() === undefined);
+
+        testingBinding.clearHeldCallbacksForTesting();
+        const releasedB = await waitForGC(() => weakB.deref() === undefined);
+
+        return { releasedA, releasedB };
+      });
+
+      expect(result.releasedA).to.equal(true, 'replaced callback A should be released');
+      expect(result.releasedB).to.equal(true, 'callback B should be released after clear');
+    });
+
+    it('keeps callback alive while copied holder exists and releases after all copies clear', async () => {
+      const { remotely } = await startRemoteControlApp(gcTestArgv);
+      const result = await remotely(async () => {
+        const testingBinding = (process as any)._linkedBinding('electron_common_testing');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const waitForGC = async (fn: () => boolean) => {
+          for (let i = 0; i < 30; ++i) {
+            await new Promise(resolve => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+            if (fn()) return true;
+          }
+          return false;
+        };
+
+        let repeating: any = () => {};
+        const weakRef = new WeakRef(repeating);
+        testingBinding.holdRepeatingCallbackForTesting(repeating);
+        repeating = null;
+
+        const copied = testingBinding.copyHeldRepeatingCallbackForTesting();
+        const countAfterCopy = testingBinding.getHeldRepeatingCallbackCountForTesting();
+        testingBinding.clearPrimaryHeldRepeatingCallbackForTesting();
+
+        const invokedViaCopy = testingBinding.invokeCopiedRepeatingCallbackForTesting();
+
+        testingBinding.clearHeldCallbacksForTesting();
+        const releasedAfterClear = await waitForGC(() => weakRef.deref() === undefined);
+
+        return { copied, countAfterCopy, invokedViaCopy, releasedAfterClear };
+      });
+
+      expect(result.copied).to.equal(true, 'copy should succeed');
+      expect(result.countAfterCopy).to.equal(2, 'should have 2 holders after copy');
+      expect(result.invokedViaCopy).to.equal(true, 'invoke via copy should succeed');
+      expect(result.releasedAfterClear).to.equal(true, 'callback should be released after all copies clear');
+    });
+
+    it('does not leak repeating callback when callback throws during invocation', async () => {
+      const { remotely } = await startRemoteControlApp(gcTestArgv);
+      const result = await remotely(async () => {
+        const testingBinding = (process as any)._linkedBinding('electron_common_testing');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const waitForGC = async (fn: () => boolean) => {
+          for (let i = 0; i < 30; ++i) {
+            await new Promise(resolve => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+            if (fn()) return true;
+          }
+          return false;
+        };
+
+        let throwing: any = () => { throw new Error('expected test throw'); };
+        const weakRef = new WeakRef(throwing);
+        testingBinding.holdRepeatingCallbackForTesting(throwing);
+        throwing = null;
+
+        const invokeResult = testingBinding.invokeHeldRepeatingCallbackForTesting();
+
+        testingBinding.clearHeldCallbacksForTesting();
+        const releasedAfterClear = await waitForGC(() => weakRef.deref() === undefined);
+
+        return { invokeResult, releasedAfterClear };
+      });
+
+      expect(result.invokeResult).to.equal(false, 'invoke should fail (callback throws)');
+      expect(result.releasedAfterClear).to.equal(true, 'throwing callback should be released after clear');
     });
   });
 

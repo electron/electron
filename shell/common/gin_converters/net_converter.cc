@@ -19,6 +19,7 @@
 #include "net/cert/x509_certificate.h"
 #include "net/cert/x509_util.h"
 #include "net/http/http_response_headers.h"
+#include "net/http/http_util.h"
 #include "net/http/http_version.h"
 #include "net/url_request/redirect_info.h"
 #include "services/network/public/cpp/data_element.h"
@@ -198,6 +199,10 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
     }
     std::string value;
     gin::ConvertFromV8(isolate, localStrVal, &value);
+    if (!net::HttpUtil::IsValidHeaderName(key) ||
+        !net::HttpUtil::IsValidHeaderValue(value)) {
+      return false;
+    }
     out->AddHeader(key, value);
     return true;
   };

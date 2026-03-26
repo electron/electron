@@ -9,10 +9,10 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 5a331960133112c3dd78af932012946f97e423a1..460d85342ce6caaf0a36cdd33b480f84bc379282 100644
+index 16c4c2f73643314a9b8287e13a6472dff2671652..859643e7796440bf1966007c598effffba7e47c9 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4192,6 +4192,13 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
+@@ -4203,6 +4203,13 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
        params.main_frame_name, GetOpener(), primary_main_frame_policy,
        base::UnguessableToken::Create());
  
@@ -26,7 +26,7 @@ index 5a331960133112c3dd78af932012946f97e423a1..460d85342ce6caaf0a36cdd33b480f84
    std::unique_ptr<WebContentsViewDelegate> delegate =
        GetContentClient()->browser()->GetWebContentsViewDelegate(this);
  
-@@ -4202,6 +4209,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
+@@ -4213,6 +4220,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
      view_ = CreateWebContentsView(this, std::move(delegate),
                                    &render_view_host_delegate_view_);
    }
@@ -35,10 +35,10 @@ index 5a331960133112c3dd78af932012946f97e423a1..460d85342ce6caaf0a36cdd33b480f84
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 78776430d970d73d3c92f94c26764a3e94ee0013..cce0d7df8ea6608a4fdb84d5eefbfb252a0031db 100644
+index a02a9134feae75d4fe95f2d8163983bdec447b2b..055302c00a625f4570c57243be3bd0ae02a73347 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -129,11 +129,14 @@ class PrerenderHandle;
+@@ -130,11 +130,14 @@ class PrerenderHandle;
  class RenderFrameHost;
  class RenderViewHost;
  class RenderWidgetHost;
@@ -53,7 +53,7 @@ index 78776430d970d73d3c92f94c26764a3e94ee0013..cce0d7df8ea6608a4fdb84d5eefbfb25
  class WebUI;
  struct DropData;
  struct GlobalRenderFrameHostId;
-@@ -291,6 +294,10 @@ class WebContents : public PageNavigator, public base::SupportsUserData {
+@@ -296,6 +299,10 @@ class WebContents : public PageNavigator, public base::SupportsUserData {
      network::mojom::WebSandboxFlags starting_sandbox_flags =
          network::mojom::WebSandboxFlags::kNone;
  

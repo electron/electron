@@ -210,7 +210,7 @@ void ElectronApiSWIPCHandlerImpl::RenderProcessExited(
 
 // static
 void ElectronApiSWIPCHandlerImpl::BindReceiver(
-    int render_process_id,
+    content::ChildProcessId render_process_id,
     int64_t version_id,
     mojo::PendingAssociatedReceiver<mojom::ElectronApiIPC> receiver) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);

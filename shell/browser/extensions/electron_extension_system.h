@@ -73,8 +73,6 @@ class ElectronExtensionSystem : public ExtensionSystem {
   const base::OneShotEvent& ready() const override;
   bool is_ready() const override;
   ContentVerifier* content_verifier() override;
-  std::unique_ptr<ExtensionSet> GetDependentExtensions(
-      const Extension* extension) override;
   void InstallUpdate(const std::string& extension_id,
                      const std::string& public_key,
                      const base::FilePath& temp_dir,

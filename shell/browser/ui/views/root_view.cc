@@ -9,7 +9,6 @@
 #include "components/input/native_web_keyboard_event.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/views/menu_bar.h"
-#include "ui/events/keycodes/dom/keycode_converter.h"
 #include "ui/views/layout/box_layout.h"
 
 namespace electron {
@@ -22,19 +21,7 @@ bool IsAltKey(const input::NativeWebKeyboardEvent& event) {
 
 bool IsAltModifier(const input::NativeWebKeyboardEvent& event) {
   using Mods = input::NativeWebKeyboardEvent::Modifiers;
-
-  // AltGraph (AltGr) should not be treated as a single Alt keypress for
-  // menu-bar toggling.
-  if (event.windows_key_code == ui::VKEY_ALTGR ||
-      ui::KeycodeConverter::DomKeyToKeyString(event.dom_key) == "AltGraph") {
-    return false;
-  }
-
   return (event.GetModifiers() & Mods::kKeyModifiers) == Mods::kAltKey;
-}
-
-bool IsSingleAltKey(const input::NativeWebKeyboardEvent& event) {
-  return IsAltKey(event) && IsAltModifier(event);
 }
 
 }  // namespace
@@ -111,7 +98,7 @@ void RootView::HandleKeyEvent(const input::NativeWebKeyboardEvent& event) {
     return;
 
   // Show accelerator when "Alt" is pressed.
-  if (menu_bar_visible_ && IsSingleAltKey(event))
+  if (menu_bar_visible_ && IsAltKey(event))
     menu_bar_->SetAcceleratorVisibility(
         event.GetType() == blink::WebInputEvent::Type::kRawKeyDown);
 
@@ -134,11 +121,11 @@ void RootView::HandleKeyEvent(const input::NativeWebKeyboardEvent& event) {
 
   // Toggle the menu bar only when a single Alt is released.
   if (event.GetType() == blink::WebInputEvent::Type::kRawKeyDown &&
-      IsSingleAltKey(event)) {
+      IsAltKey(event)) {
     // When a single Alt is pressed:
     menu_bar_alt_pressed_ = true;
   } else if (event.GetType() == blink::WebInputEvent::Type::kKeyUp &&
-             IsSingleAltKey(event) && menu_bar_alt_pressed_) {
+             IsAltKey(event) && menu_bar_alt_pressed_) {
     // When a single Alt is released right after a Alt is pressed:
     menu_bar_alt_pressed_ = false;
     if (menu_bar_autohide_)

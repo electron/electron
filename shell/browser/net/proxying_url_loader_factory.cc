@@ -22,7 +22,7 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/mojom/early_hints.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
-#include "shell/browser/net/asar/asar_url_loader.h"
+#include "shell/browser/net/asar/asar_url_loader_factory.h"
 #include "shell/common/options_switches.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "url/origin.h"
@@ -36,6 +36,7 @@ ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
 
 ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
     ProxyingURLLoaderFactory* factory,
+    mojo::Remote<network::mojom::URLLoaderFactory> override_target_factory,
     uint64_t web_request_id,
     int32_t frame_routing_id,
     int32_t network_service_request_id,
@@ -45,6 +46,7 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
     mojo::PendingReceiver<network::mojom::URLLoader> loader_receiver,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client)
     : factory_(factory),
+      override_target_factory_(std::move(override_target_factory)),
       request_(request),
       original_initiator_(request.request_initiator),
       request_id_(web_request_id),
@@ -238,7 +240,11 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveResponse(
     // Set-Cookie if it existed.
     auto saved_headers = current_response_->headers;
     current_response_ = std::move(head);
-    current_response_->headers = saved_headers;
+    // If this response is from a file or handler, OnHeadersReceived will not
+    // be called before OnReceiveResponse, so make sure the saved headers exist
+    // before setting them.
+    if (saved_headers)
+      current_response_->headers = saved_headers;
     ContinueToResponseStarted(net::OK);
   } else {
     current_response_ = std::move(head);
@@ -493,7 +499,12 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToStartRequest(
     return;
   }
 
-  if (!target_loader_.is_bound() && factory_->target_factory_.is_bound()) {
+  if (!target_loader_.is_bound()) {
+    auto& target_factory = override_target_factory_.is_bound()
+                               ? override_target_factory_
+                               : factory_->target_factory_;
+    if (!target_factory.is_bound())
+      return;
     // No extensions have cancelled us up to this point, so it's now OK to
     // initiate the real network request.
     uint32_t options = options_;
@@ -501,7 +512,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToStartRequest(
     // might, so we need to set the option on the loader.
     if (has_any_extra_headers_listeners_)
       options |= network::mojom::kURLLoadOptionUseHeaderClient;
-    factory_->target_factory_->CreateLoaderAndStart(
+    target_factory->CreateLoaderAndStart(
         target_loader_.BindNewPipeAndPassReceiver(),
         network_service_request_id_, options, request_,
         proxied_client_receiver_.BindNewPipeAndPassRemote(),
@@ -794,23 +805,16 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
     request.load_flags |= net::LOAD_IGNORE_LIMITS;
   }
 
+  mojo::Remote<network::mojom::URLLoaderFactory> override_target_factory;
+
   // Check if user has intercepted this scheme.
   bool bypass_custom_protocol_handlers =
       options & kBypassCustomProtocolHandlers;
   if (!bypass_custom_protocol_handlers) {
     auto it = intercepted_handlers_->find(request.url.scheme());
     if (it != intercepted_handlers_->end()) {
-      mojo::PendingRemote<network::mojom::URLLoaderFactory> loader_remote;
-      this->Clone(loader_remote.InitWithNewPipeAndPassReceiver());
-
-      // <scheme, <type, handler>>
-      it->second.second.Run(
-          request,
-          base::BindOnce(&ElectronURLLoaderFactory::StartLoading,
-                         std::move(loader), request_id, options, request,
-                         std::move(client), traffic_annotation,
-                         std::move(loader_remote), it->second.first));
-      return;
+      override_target_factory.Bind(ElectronURLLoaderFactory::Create(
+          it->second.first, it->second.second));
     }
   }
 
@@ -818,18 +822,19 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   // Chromium does not provide a way to override this behavior. So in order to
   // make ServiceWorker work with file:// URLs, we have to intercept its
   // requests here.
-  if (IsForServiceWorkerScript() && request.url.SchemeIsFile()) {
-    asar::CreateAsarURLLoader(
-        request, std::move(loader), std::move(client),
-        base::MakeRefCounted<net::HttpResponseHeaders>(""));
-    return;
+  if (IsForServiceWorkerScript() && request.url.SchemeIsFile() &&
+      !override_target_factory.is_bound()) {
+    override_target_factory.Bind(AsarURLLoaderFactory::Create());
   }
 
   if (!web_request_->HasListener()) {
     // Pass-through to the original factory.
-    target_factory_->CreateLoaderAndStart(std::move(loader), request_id,
-                                          options, request, std::move(client),
-                                          traffic_annotation);
+    auto& target_factory = override_target_factory.is_bound()
+                               ? override_target_factory
+                               : target_factory_;
+    target_factory->CreateLoaderAndStart(std::move(loader), request_id, options,
+                                         request, std::move(client),
+                                         traffic_annotation);
     return;
   }
 
@@ -849,8 +854,9 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   auto result = requests_.emplace(
       web_request_id,
       std::make_unique<InProgressRequest>(
-          this, web_request_id, frame_routing_id_, request_id, options, request,
-          traffic_annotation, std::move(loader), std::move(client)));
+          this, std::move(override_target_factory), web_request_id,
+          frame_routing_id_, request_id, options, request, traffic_annotation,
+          std::move(loader), std::move(client)));
   result.first->second->Restart();
 }
 

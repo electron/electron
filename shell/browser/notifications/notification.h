@@ -45,10 +45,11 @@ struct NotificationOptions {
   std::u16string timeout_type;
   std::u16string reply_placeholder;
   std::u16string sound;
-  std::u16string urgency;  // Linux
+  std::u16string urgency;  // Linux/Windows
   std::vector<NotificationAction> actions;
   std::u16string close_button_text;
   std::u16string toast_xml;
+  std::string group_id;
 
   NotificationOptions();
   NotificationOptions(const NotificationOptions&);
@@ -76,7 +77,8 @@ class Notification {
 
   // Should be called by derived classes.
   void NotificationClicked();
-  void NotificationDismissed(bool should_destroy = true);
+  void NotificationDismissed(bool should_destroy = true,
+                             const std::string& close_reason = "");
   void NotificationFailed(const std::string& error = "");
 
   // delete this.

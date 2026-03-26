@@ -127,6 +127,22 @@ patches/{target}/*.patch  →  [e sync --3]  →  target repo commits
 2. Create a git commit
 3. Run `e patches <target>` to export
 
+**Fixing patch conflicts on an existing PR:**
+
+If asked to fix a patch conflict on a branch that already has an open PR, check the PR's failed **Apply Patches** CI run for an `update-patches` artifact before running `e sync` locally. CI has already performed the 3-way merge and exported the resolved patch diff — applying it is much faster than a full local sync.
+
+```bash
+# Find the failed Apply Patches run for the PR and download the artifact
+gh run list --repo electron/electron --branch <pr-branch> --workflow "Apply Patches" --limit 1
+gh run download <run-id> --repo electron/electron --name update-patches
+
+# Apply the CI-generated fix, then push
+git am update-patches.patch
+git push
+```
+
+If no artifact exists (e.g. the 3-way merge itself failed), fall back to `e sync --3` and resolve manually.
+
 ## Testing
 
 **Test location:** `spec/` directory
@@ -159,6 +175,29 @@ When working on the `roller/chromium/main` branch to upgrade Chromium activate t
 
 PR bodies must always include a `Notes:` section as the **last line** of the body. This is a consumer-facing release note for Electron app developers — describe the user-visible fix or change, not internal implementation details. Use `Notes: none` if there is no user-facing change.
 
+### PR Labeling (write-access only)
+
+When the user has write access to `electron/electron`, add these labels when creating PRs:
+
+**Semver label** — one of:
+
+- `semver/none` — build changes, refactors, CI, or anything with no end-user impact
+- `semver/patch` — backwards-compatible bug fixes
+- `semver/minor` — backwards-compatible new functionality
+- `semver/major` — incompatible API changes
+
+**Backport target labels** — add `target/{N}-x-y` for each supported release branch the change should land on. Default policy:
+
+- **Bug fixes** — backport to all active release lines _except the oldest_
+- **Security fixes** — backport to all active release lines _including the oldest_
+- **Features (semver/minor) and breaking changes (semver/major)** — no backport labels; main-only by default
+
+To find which release branches are active, check label colors — active `target/*` labels use color `#ad244f`, older/EOL ones use `#ededed`:
+
+```bash
+gh label list --repo electron/electron --search target/ --json name,color --jq '.[] | select(.color == "ad244f") | .name'
+```
+
 ## Code Style
 
 **C++:** Follows Chromium style, enforced by clang-format
@@ -169,6 +208,7 @@ PR bodies must always include a `Notes:` section as the **last line** of the bod
 ```bash
 npm run lint              # Run all linters
 npm run lint:clang-format # C++ formatting
+npm run lint:api-history  # Validate API history YAML blocks in docs
 ```
 
 ## Key Files

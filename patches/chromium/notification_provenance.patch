@@ -79,7 +79,7 @@ index 89edc47028e80170bcc0f11a0f27d30067d1ef6c..313bbe4f1815c7e2042d4a4600f92203
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index 8ccff8edf6c45a96978fea0b02a8d7ebd8768578..264af7461226718ff300faa22ba4587594b79ae4 100644
+index 6e0a316a22753e6fd437739d5d9769c438b82e31..bd14d2f98d35ff85f71c03e7d05f0b6d20cad774 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
 @@ -135,7 +135,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
@@ -133,10 +133,10 @@ index 9bf238e64af483294ae3c3f18a4e9aed49a8658d..b9b2a4c8c387b8e8b4eb1f02fc0f891c
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 429d4168b1f8c110494dfe1f364a46441840c517..ce32116e41b3f3a71069baa3e6d05dd02d4a7460 100644
+index c160b8ad92ad648dd7657fc3b94d2cc6c72c3824..23ddb2009a6118aad1f9629c7cd7a6d566b3bcc6 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2359,7 +2359,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2375,7 +2375,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      case RenderProcessHost::NotificationServiceCreatorType::kSharedWorker:
      case RenderProcessHost::NotificationServiceCreatorType::kDedicatedWorker: {
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
@@ -145,7 +145,7 @@ index 429d4168b1f8c110494dfe1f364a46441840c517..ce32116e41b3f3a71069baa3e6d05dd0
            creator_type, std::move(receiver));
        break;
      }
-@@ -2367,7 +2367,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2383,7 +2383,7 @@ void RenderProcessHostImpl::CreateNotificationService(
        CHECK(rfh);
  
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(

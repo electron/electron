@@ -169,6 +169,23 @@ bool ElectronPermissionManager::HasPermissionCheckHandler() const {
   return !check_handler_.is_null();
 }
 
+void ElectronPermissionManager::CancelPendingRequests(
+    content::WebContents* web_contents) {
+  std::vector<int> ids_to_remove;
+  for (PendingRequestsMap::iterator iter(&pending_requests_); !iter.IsAtEnd();
+       iter.Advance()) {
+    auto* pending_request = iter.GetCurrentValue();
+    content::RenderFrameHost* rfh = pending_request->GetRenderFrameHost();
+    if (!rfh ||
+        content::WebContents::FromRenderFrameHost(rfh) == web_contents) {
+      ids_to_remove.push_back(iter.GetCurrentKey());
+    }
+  }
+  for (int id : ids_to_remove) {
+    pending_requests_.Remove(id);
+  }
+}
+
 void ElectronPermissionManager::RequestPermissionWithDetails(
     blink::mojom::PermissionDescriptorPtr permission,
     content::RenderFrameHost* render_frame_host,
@@ -191,23 +208,6 @@ void ElectronPermissionManager::RequestPermissionWithDetails(
       std::move(details),
       base::BindOnce(PermissionRequestResponseCallbackWrapper,
                      std::move(response_callback)));
-}
-
-void ElectronPermissionManager::RequestPermissions(
-    content::RenderFrameHost* render_frame_host,
-    const content::PermissionRequestDescription& request_description,
-    StatusesCallback callback) {
-  if (render_frame_host->IsNestedWithinFencedFrame()) {
-    std::move(callback).Run(std::vector<content::PermissionResult>(
-        request_description.permissions.size(),
-        content::PermissionResult(
-            blink::mojom::PermissionStatus::DENIED,
-            content::PermissionStatusSource::UNSPECIFIED)));
-    return;
-  }
-
-  RequestPermissionsWithDetails(render_frame_host, request_description, {},
-                                std::move(callback));
 }
 
 void ElectronPermissionManager::RequestPermissionsWithDetails(

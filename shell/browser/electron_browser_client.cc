@@ -47,6 +47,7 @@
 #include "content/public/browser/tts_platform.h"
 #include "content/public/browser/url_loader_request_interceptor.h"
 #include "content/public/browser/weak_document_ptr.h"
+#include "content/public/common/child_process_id.h"
 #include "content/public/common/content_descriptors.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
@@ -85,6 +86,7 @@
 #include "shell/browser/electron_autofill_driver_factory.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
+#include "shell/browser/electron_child_process_host_flags.h"
 #include "shell/browser/electron_navigation_throttle.h"
 #include "shell/browser/electron_plugin_info_host_impl.h"
 #include "shell/browser/electron_speech_recognition_manager_delegate.h"
@@ -499,8 +501,9 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
         content::ChildProcessHost::CHILD_RENDERER);
     auto gpu_child_path = content::ChildProcessHost::GetChildPath(
         content::ChildProcessHost::CHILD_GPU);
-    auto plugin_child_path = content::ChildProcessHost::GetChildPath(
-        content::ChildProcessHost::CHILD_PLUGIN);
+    auto plugin_child_path =
+        content::ChildProcessHost::GetChildPath(static_cast<int>(
+            ElectronChildProcessHostFlags::kChildProcessHelperPlugin));
     if (program != renderer_child_path && program != gpu_child_path &&
         program != plugin_child_path) {
       child_path = content::ChildProcessHost::GetChildPath(
@@ -1455,8 +1458,7 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
 void ElectronBrowserClient::RegisterAssociatedInterfaceBindersForServiceWorker(
     const content::ServiceWorkerVersionBaseInfo& service_worker_version_info,
     blink::AssociatedInterfaceRegistry& associated_registry) {
-  CHECK(service_worker_version_info.process_id !=
-        content::ChildProcessHost::kInvalidUniqueID);
+  CHECK(service_worker_version_info.process_id);
   associated_registry.AddInterface<mojom::ElectronApiIPC>(
       base::BindRepeating(&ElectronApiSWIPCHandlerImpl::BindReceiver,
                           service_worker_version_info.process_id,
@@ -1467,8 +1469,9 @@ void ElectronBrowserClient::RegisterAssociatedInterfaceBindersForServiceWorker(
       base::BindRepeating(&extensions::RendererStartupHelper::BindForRenderer,
                           service_worker_version_info.process_id));
   associated_registry.AddInterface<extensions::mojom::ServiceWorkerHost>(
-      base::BindRepeating(&extensions::ServiceWorkerHost::BindReceiver,
-                          service_worker_version_info.process_id));
+      base::BindRepeating(
+          &extensions::ServiceWorkerHost::BindReceiver,
+          service_worker_version_info.process_id.GetUnsafeValue()));
 #endif
 }
 
@@ -1540,7 +1543,8 @@ void ElectronBrowserClient::
           &render_frame_host));
 #endif
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  int render_process_id = render_frame_host.GetProcess()->GetDeprecatedID();
+  content::ChildProcessId render_process_id =
+      render_frame_host.GetProcess()->GetID();
   associated_registry.AddInterface<extensions::mojom::EventRouter>(
       base::BindRepeating(&extensions::EventRouter::BindForRenderer,
                           render_process_id));
@@ -1639,7 +1643,7 @@ void ElectronBrowserClient::ExposeInterfacesToRenderer(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   associated_registry->AddInterface<extensions::mojom::RendererHost>(
       base::BindRepeating(&extensions::RendererStartupHelper::BindForRenderer,
-                          render_process_host->GetDeprecatedID()));
+                          render_process_host->GetID()));
 #endif
 }
 
@@ -1805,6 +1809,15 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
 }
 
 #if BUILDFLAG(IS_MAC)
+std::string ElectronBrowserClient::GetChildProcessSuffix(int child_flags) {
+  if (child_flags ==
+      static_cast<int>(
+          ElectronChildProcessHostFlags::kChildProcessHelperPlugin)) {
+    return kElectronMacHelperSuffixPlugin;
+  }
+  NOTREACHED() << "Unsupported child process flags: " << child_flags;
+}
+
 device::GeolocationSystemPermissionManager*
 ElectronBrowserClient::GetGeolocationSystemPermissionManager() {
   return device::GeolocationSystemPermissionManager::GetInstance();

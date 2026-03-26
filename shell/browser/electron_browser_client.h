@@ -118,6 +118,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   content::WebAuthenticationDelegate* GetWebAuthenticationDelegate() override;
 
 #if BUILDFLAG(IS_MAC)
+  std::string GetChildProcessSuffix(int child_flags) override;
   device::GeolocationSystemPermissionManager*
   GetGeolocationSystemPermissionManager() override;
 #endif

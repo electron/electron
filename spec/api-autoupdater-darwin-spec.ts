@@ -12,7 +12,7 @@ import { AddressInfo } from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { copyMacOSFixtureApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn } from './lib/codesign-helpers';
+import { copyMacOSFixtureApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn, unsignApp } from './lib/codesign-helpers';
 import { withTempDirectory } from './lib/fs-helpers';
 import { ifdescribe, ifit } from './lib/spec-helpers';
 
@@ -146,10 +146,40 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
   ifit(process.arch !== 'arm64')('should fail to set the feed URL when the app is not signed', async () => {
     await withTempDirectory(async (dir) => {
       const appPath = await copyMacOSFixtureApp(dir);
+      await unsignApp(appPath);
       const launchResult = await launchApp(appPath, ['http://myupdate']);
       console.log(launchResult);
       expect(launchResult.code).to.equal(1);
       expect(launchResult.out).to.include('Could not get code signature for running application');
+    });
+  });
+
+  ifit(process.arch !== 'arm64')('should fail with code signature error when serverType is default and app is unsigned', async () => {
+    await withTempDirectory(async (dir) => {
+      const appPath = await copyMacOSFixtureApp(dir);
+      await unsignApp(appPath);
+      const launchResult = await launchApp(appPath, ['', 'default']);
+      expect(launchResult.code).to.equal(1);
+      expect(launchResult.out).to.include('Could not get code signature for running application');
+    });
+  });
+
+  ifit(process.arch !== 'arm64')('should fail with code signature error when serverType is json and app is unsigned', async () => {
+    await withTempDirectory(async (dir) => {
+      const appPath = await copyMacOSFixtureApp(dir);
+      await unsignApp(appPath);
+      const launchResult = await launchApp(appPath, ['', 'json']);
+      expect(launchResult.code).to.equal(1);
+      expect(launchResult.out).to.include('Could not get code signature for running application');
+    });
+  });
+
+  ifit(process.arch !== 'arm64')('should fail with serverType error when an invalid serverType is provided', async () => {
+    await withTempDirectory(async (dir) => {
+      const appPath = await copyMacOSFixtureApp(dir);
+      const launchResult = await launchApp(appPath, ['', 'weow']);
+      expect(launchResult.code).to.equal(1);
+      expect(launchResult.out).to.include("Expected serverType to be 'default' or 'json'");
     });
   });
 
@@ -373,7 +403,7 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
       });
     });
 
-    it('should clean up old staged update directories when a new update is downloaded', async () => {
+    it('should preserve the staged update directory and prune orphaned ones when a new update is downloaded', async () => {
       // Clean up any existing update directories before the test
       await cleanSquirrelCache();
 
@@ -389,16 +419,23 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
         }, async (_, updateZipPath3) => {
           let updateCount = 0;
           let downloadCount = 0;
-          let directoriesDuringSecondDownload: string[] = [];
+          let dirsDuringFirstDownload: string[] = [];
+          let dirsDuringSecondDownload: string[] = [];
 
           server.get('/update-file', async (req, res) => {
             downloadCount++;
-            // When the second download request arrives, Squirrel has already
-            // called uniqueTemporaryDirectoryForUpdate which (with our patch)
-            // cleans up old directories before creating the new one.
-            // Without the patch, both directories would exist at this point.
-            if (downloadCount === 2) {
-              directoriesDuringSecondDownload = await getUpdateDirectoriesInCache();
+            // Snapshot update directories at the moment each download begins.
+            // By this point uniqueTemporaryDirectoryForUpdate has already run
+            // (prune + mkdtemp). We want to verify:
+            //   1st download: 1 dir (nothing to preserve, nothing to prune)
+            //   2nd download: 2 dirs (staged dir from 1st check is preserved
+            //                 so quitAndInstall stays safe, + new temp dir)
+            // The count never exceeds 2 across repeated checks — orphaned dirs
+            // (no longer referenced by ShipItState.plist) get pruned.
+            if (downloadCount === 1) {
+              dirsDuringFirstDownload = await getUpdateDirectoriesInCache();
+            } else if (downloadCount === 2) {
+              dirsDuringSecondDownload = await getUpdateDirectoriesInCache();
             }
             res.download(updateCount > 1 ? updateZipPath3 : updateZipPath2);
           });
@@ -425,12 +462,178 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
 
           await relaunchPromise;
 
-          // During the second download, the old staged update directory should
-          // have been cleaned up. With our patch, there should be exactly 1
-          // directory (the new one). Without the patch, there would be 2.
-          expect(directoriesDuringSecondDownload).to.have.lengthOf(1,
-            `Expected 1 update directory during second download but found ${directoriesDuringSecondDownload.length}: ${directoriesDuringSecondDownload.join(', ')}`);
+          // First download: exactly one temp dir (the first update).
+          expect(dirsDuringFirstDownload).to.have.lengthOf(1,
+            `Expected 1 update directory during first download but found ${dirsDuringFirstDownload.length}: ${dirsDuringFirstDownload.join(', ')}`);
+
+          // Second download: exactly two — the staged one preserved + the new
+          // one. Crucially the first download's directory must still be present,
+          // otherwise a mid-download quitAndInstall would find a dangling
+          // ShipItState.plist.
+          expect(dirsDuringSecondDownload).to.have.lengthOf(2,
+            `Expected 2 update directories during second download (staged + new) but found ${dirsDuringSecondDownload.length}: ${dirsDuringSecondDownload.join(', ')}`);
+          expect(dirsDuringSecondDownload).to.include(dirsDuringFirstDownload[0],
+            'The staged update directory from the first download must be preserved during the second download');
         });
+      });
+    });
+
+    it('should keep the update directory count bounded across repeated checks', async () => {
+      // Verifies the orphan prune actually fires: after a second download
+      // completes and rewrites ShipItState.plist, the first directory is no
+      // longer referenced and must be removed when a third check begins.
+      // Without this, directories would accumulate forever.
+      await cleanSquirrelCache();
+
+      await withUpdatableApp({
+        nextVersion: '2.0.0',
+        startFixture: 'update-triple-stack',
+        endFixture: 'update-triple-stack'
+      }, async (appPath, updateZipPath2) => {
+        await withUpdatableApp({
+          nextVersion: '3.0.0',
+          startFixture: 'update-triple-stack',
+          endFixture: 'update-triple-stack'
+        }, async (_, updateZipPath3) => {
+          await withUpdatableApp({
+            nextVersion: '4.0.0',
+            startFixture: 'update-triple-stack',
+            endFixture: 'update-triple-stack'
+          }, async (__, updateZipPath4) => {
+            let downloadCount = 0;
+            const dirsPerDownload: string[][] = [];
+
+            server.get('/update-file', async (req, res) => {
+              downloadCount++;
+              // Snapshot after prune+mkdtemp but before the payload transfers.
+              dirsPerDownload.push(await getUpdateDirectoriesInCache());
+              const zips = [updateZipPath2, updateZipPath3, updateZipPath4];
+              res.download(zips[Math.min(downloadCount, zips.length) - 1]);
+            });
+            server.get('/update-check', (req, res) => {
+              res.json({
+                url: `http://localhost:${port}/update-file`,
+                name: 'My Release Name',
+                notes: 'Theses are some release notes innit',
+                pub_date: (new Date()).toString()
+              });
+            });
+            const relaunchPromise = new Promise<void>((resolve) => {
+              server.get('/update-check/updated/:version', (req, res) => {
+                res.status(204).send();
+                resolve();
+              });
+            });
+
+            const launchResult = await launchApp(appPath, [`http://localhost:${port}/update-check`]);
+            logOnError(launchResult, () => {
+              expect(launchResult).to.have.property('code', 0);
+              expect(launchResult.out).to.include('Update Downloaded');
+            });
+
+            await relaunchPromise;
+            expect(requests[requests.length - 1].url).to.equal('/update-check/updated/4.0.0');
+
+            expect(dirsPerDownload).to.have.lengthOf(3);
+
+            // 1st: fresh cache, 1 dir.
+            expect(dirsPerDownload[0]).to.have.lengthOf(1,
+              `1st download: ${dirsPerDownload[0].join(', ')}`);
+
+            // 2nd: staged (1st) preserved + new = 2 dirs.
+            expect(dirsPerDownload[1]).to.have.lengthOf(2,
+              `2nd download: ${dirsPerDownload[1].join(', ')}`);
+            expect(dirsPerDownload[1]).to.include(dirsPerDownload[0][0]);
+
+            // 3rd: 1st is now orphaned (plist points to 2nd) — must be pruned.
+            // Staged (2nd) preserved + new = still 2 dirs. Bounded.
+            expect(dirsPerDownload[2]).to.have.lengthOf(2,
+              `3rd download: ${dirsPerDownload[2].join(', ')}`);
+            expect(dirsPerDownload[2]).to.not.include(dirsPerDownload[0][0],
+              'The first (now orphaned) update directory must be pruned on the third check');
+            const secondDir = dirsPerDownload[1].find(d => d !== dirsPerDownload[0][0]);
+            expect(dirsPerDownload[2]).to.include(secondDir,
+              'The second (currently staged) update directory must be preserved on the third check');
+          });
+        });
+      });
+    });
+
+    // Regression test for https://github.com/electron/electron/issues/50200
+    //
+    // When checkForUpdates() is called again after an update has been staged,
+    // Squirrel creates a new temporary directory and prunes old ones. If the
+    // prune removes the directory that ShipItState.plist references while the
+    // second download is still in flight, a subsequent quitAndInstall() will
+    // fail with ENOENT and the app will never relaunch.
+    it('should install the staged update when quitAndInstall is called while a second check is in flight', async () => {
+      await cleanSquirrelCache();
+
+      await withUpdatableApp({
+        nextVersion: '2.0.0',
+        startFixture: 'update-race',
+        endFixture: 'update-race'
+      }, async (appPath, updateZipPath) => {
+        let downloadCount = 0;
+        let stalledResponse: express.Response | null = null;
+
+        server.get('/update-file', (req, res) => {
+          downloadCount++;
+          if (downloadCount === 1) {
+            // First download completes normally and stages the update.
+            res.download(updateZipPath);
+          } else {
+            // Second download: stall indefinitely to simulate a slow
+            // network. This keeps the second check "in progress" when
+            // quitAndInstall() fires. Hold onto the response so we can
+            // clean it up later.
+            stalledResponse = res;
+          }
+        });
+        server.get('/update-check', (req, res) => {
+          res.json({
+            url: `http://localhost:${port}/update-file`,
+            name: 'My Release Name',
+            notes: 'Theses are some release notes innit',
+            pub_date: (new Date()).toString()
+          });
+        });
+        const relaunchPromise = new Promise<void>((resolve) => {
+          server.get('/update-check/updated/:version', (req, res) => {
+            res.status(204).send();
+            resolve();
+          });
+        });
+
+        const launchResult = await launchApp(appPath, [`http://localhost:${port}/update-check`]);
+        logOnError(launchResult, () => {
+          expect(launchResult).to.have.property('code', 0);
+          expect(launchResult.out).to.include('Update Downloaded');
+          expect(launchResult.out).to.include('Calling quitAndInstall mid-download');
+          // First check + first download + second check + stalled second download.
+          expect(requests).to.have.lengthOf(4);
+          expect(requests[0]).to.have.property('url', '/update-check');
+          expect(requests[1]).to.have.property('url', '/update-file');
+          expect(requests[2]).to.have.property('url', '/update-check');
+          expect(requests[3]).to.have.property('url', '/update-file');
+          // The second download must have been in flight (never completed)
+          // when quitAndInstall was called.
+          expect(launchResult.out).to.not.include('Unexpected second download completion');
+        });
+
+        // Unblock the stalled response now that the initial app has exited
+        // so the express server can shut down cleanly.
+        if (stalledResponse) {
+          (stalledResponse as express.Response).status(500).end();
+        }
+
+        // The originally staged update (2.0.0) must have been applied and
+        // the app must relaunch, proving the staged update directory was
+        // not pruned out from under ShipItState.plist.
+        await relaunchPromise;
+        expect(requests).to.have.lengthOf(5);
+        expect(requests[4].url).to.equal('/update-check/updated/2.0.0');
+        expect(requests[4].header('user-agent')).to.include('Electron/');
       });
     });
 

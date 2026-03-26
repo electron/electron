@@ -142,8 +142,12 @@ notification away.
 
 ### macOS
 
-Notifications are straightforward on macOS, but you should be aware of
-[Apple's Human Interface guidelines regarding notifications][apple-notification-guidelines].
+For notifications on macOS, your application will need to be code-signed in order
+for notification events to emit correctly. This requirement stems from the underlying
+UNNotification API provided by Apple. Unsigned binaries will emit a `failed` event
+when notification APIs are called.
+
+Additionally, you should be aware of [Apple's Human Interface guidelines regarding notifications][apple-notification-guidelines].
 
 Note that notifications are limited to 256 bytes in size and will be truncated
 if you exceed that limit.

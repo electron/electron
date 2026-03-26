@@ -280,8 +280,9 @@ void WindowsToastNotification::CreateToastNotificationOnBackgroundThread(
   // Continue to create the toast notification
   ComPtr<ABI::Windows::UI::Notifications::IToastNotification>
       toast_notification;
-  if (!CreateToastNotification(toast_xml, notification_id, weak_notification,
-                               ui_task_runner, &toast_notification)) {
+  if (!CreateToastNotification(toast_xml, options, notification_id,
+                               weak_notification, ui_task_runner,
+                               &toast_notification)) {
     return;  // Error already posted to UI thread
   }
 
@@ -349,6 +350,7 @@ bool WindowsToastNotification::CreateToastXmlDocument(
 // returns the created notification via out parameter.
 bool WindowsToastNotification::CreateToastNotification(
     ComPtr<ABI::Windows::Data::Xml::Dom::IXmlDocument> toast_xml,
+    const NotificationOptions& options,
     const std::string& notification_id,
     base::WeakPtr<Notification> weak_notification,
     scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner,
@@ -414,6 +416,27 @@ bool WindowsToastNotification::CreateToastNotification(
     DebugLog(err);
     PostNotificationFailedToUIThread(weak_notification, err, ui_task_runner);
     return false;
+  }
+
+  ComPtr<winui::Notifications::IToastNotification4> toast4;
+  hr = (*toast_notification)->QueryInterface(IID_PPV_ARGS(&toast4));
+  if (SUCCEEDED(hr)) {
+    winui::Notifications::ToastNotificationPriority priority =
+        winui::Notifications::ToastNotificationPriority::
+            ToastNotificationPriority_Default;
+    if (options.urgency == u"critical") {
+      priority = winui::Notifications::ToastNotificationPriority::
+          ToastNotificationPriority_High;
+    }
+
+    hr = toast4->put_Priority(priority);
+    if (FAILED(hr)) {
+      std::string err = base::StrCat({"WinAPI: Setting priority failed, ERROR ",
+                                      FailureResultToString(hr)});
+      DebugLog(err);
+      PostNotificationFailedToUIThread(weak_notification, err, ui_task_runner);
+      return false;
+    }
   }
 
   return true;
@@ -800,9 +823,24 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
 IFACEMETHODIMP ToastEventHandler::Invoke(
     winui::Notifications::IToastNotification* sender,
     winui::Notifications::IToastDismissedEventArgs* e) {
+  winui::Notifications::ToastDismissalReason reason;
+  std::string reason_string;
+  if (SUCCEEDED(e->get_Reason(&reason))) {
+    switch (reason) {
+      case winui::Notifications::ToastDismissalReason_UserCanceled:
+        reason_string = "userCanceled";
+        break;
+      case winui::Notifications::ToastDismissalReason_ApplicationHidden:
+        reason_string = "applicationHidden";
+        break;
+      case winui::Notifications::ToastDismissalReason_TimedOut:
+        reason_string = "timedOut";
+        break;
+    }
+  }
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE, base::BindOnce(&Notification::NotificationDismissed,
-                                notification_, false));
+                                notification_, false, reason_string));
   DebugLog("Notification dismissed");
   return S_OK;
 }

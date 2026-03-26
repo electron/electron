@@ -96,6 +96,7 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include "base/no_destructor.h"
 #include "content/browser/mac_helpers.h"
+#include "shell/browser/electron_child_process_host_flags.h"
 #include "shell/browser/ui/cocoa/electron_bundle_mover.h"
 #include "shell/common/process_util.h"
 #endif
@@ -924,7 +925,7 @@ bool App::IsPackaged() {
       "electron helper" +
       base::ToLowerASCII(content::kMacHelperSuffix_renderer));
   static const base::NoDestructor<std::string> plugin_helper(
-      "electron helper" + base::ToLowerASCII(content::kMacHelperSuffix_plugin));
+      "electron helper" + base::ToLowerASCII(kElectronMacHelperSuffixPlugin));
   if (IsRendererProcess()) {
     return base_name != *renderer_helper;
   } else if (IsUtilityProcess()) {
@@ -1873,6 +1874,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("isEmojiPanelSupported",
                  base::BindRepeating(&Browser::IsEmojiPanelSupported, browser))
 #if BUILDFLAG(IS_MAC)
+      .SetMethod("isActive", base::BindRepeating(&Browser::IsActive, browser))
       .SetMethod("hide", base::BindRepeating(&Browser::Hide, browser))
       .SetMethod("isHidden", base::BindRepeating(&Browser::IsHidden, browser))
       .SetMethod("show", base::BindRepeating(&Browser::Show, browser))

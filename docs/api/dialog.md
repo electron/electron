@@ -18,10 +18,20 @@ The `dialog` module has the following methods:
 
 ### `dialog.showOpenDialogSync([window, ]options)`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/16973
+```
+-->
+
 * `window` [BaseWindow](base-window.md) (optional)
 * `options` Object
   * `title` string (optional)
-  * `defaultPath` string (optional)
+  * `defaultPath` string (optional) - Absolute directory path, absolute file
+    path, or file name to use by default. If not provided, the dialog will
+    default to the user's Downloads folder, or their home directory if Downloads
+    doesn't exist.
   * `buttonLabel` string (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
   * `filters` [FileFilter[]](structures/file-filter.md) (optional)
@@ -90,10 +100,22 @@ dialog.showOpenDialogSync(mainWindow, {
 
 ### `dialog.showOpenDialog([window, ]options)`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/16973
+    description: "This method now returns a Promise instead of using a callback function."
+    breaking-changes-header: api-changed-callback-based-versions-of-promisified-apis
+```
+-->
+
 * `window` [BaseWindow](base-window.md) (optional)
 * `options` Object
   * `title` string (optional)
-  * `defaultPath` string (optional)
+  * `defaultPath` string (optional) - Absolute directory path, absolute file
+    path, or file name to use by default. If not provided, the dialog will
+    default to the user's Downloads folder, or their home directory if Downloads
+    doesn't exist.
   * `buttonLabel` string (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
   * `filters` [FileFilter[]](structures/file-filter.md) (optional)
@@ -171,11 +193,20 @@ dialog.showOpenDialog(mainWindow, {
 
 ### `dialog.showSaveDialogSync([window, ]options)`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/17054
+```
+-->
+
 * `window` [BaseWindow](base-window.md) (optional)
 * `options` Object
   * `title` string (optional) - The dialog title. Cannot be displayed on some _Linux_ desktop environments.
   * `defaultPath` string (optional) - Absolute directory path, absolute file
-    path, or file name to use by default.
+    path, or file name to use by default. If not provided, the dialog will
+    default to the user's Downloads folder, or their home directory if Downloads
+    doesn't exist.
   * `buttonLabel` string (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
   * `filters` [FileFilter[]](structures/file-filter.md) (optional)
@@ -202,11 +233,22 @@ The `filters` specifies an array of file types that can be displayed, see
 
 ### `dialog.showSaveDialog([window, ]options)`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/17054
+    description: "This method now returns a Promise instead of using a callback function."
+    breaking-changes-header: api-changed-callback-based-versions-of-promisified-apis
+```
+-->
+
 * `window` [BaseWindow](base-window.md) (optional)
 * `options` Object
   * `title` string (optional) - The dialog title. Cannot be displayed on some _Linux_ desktop environments.
   * `defaultPath` string (optional) - Absolute directory path, absolute file
-    path, or file name to use by default.
+    path, or file name to use by default. If not provided, the dialog will
+    default to the user's Downloads folder, or their home directory if Downloads
+    doesn't exist.
   * `buttonLabel` string (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
   * `filters` [FileFilter[]](structures/file-filter.md) (optional)
@@ -239,6 +281,13 @@ The `filters` specifies an array of file types that can be displayed, see
 > expanding and collapsing the dialog.
 
 ### `dialog.showMessageBoxSync([window, ]options)`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/17298
+```
+-->
 
 * `window` [BaseWindow](base-window.md) (optional)
 * `options` Object
@@ -282,6 +331,19 @@ The `window` argument allows the dialog to attach itself to a parent window, mak
 If `window` is not shown dialog will not be attached to it. In such case it will be displayed as an independent window.
 
 ### `dialog.showMessageBox([window, ]options)`
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/17298
+    description: "This method now returns a Promise instead of using a callback function."
+    breaking-changes-header: api-changed-callback-based-versions-of-promisified-apis
+  - pr-url: https://github.com/electron/electron/pull/26102
+    description: "Added the `signal` option."
+  - pr-url: https://github.com/electron/electron/pull/30474
+    description: "Added the `textWidth` option."
+```
+-->
 
 * `window` [BaseWindow](base-window.md) (optional)
 * `options` Object
@@ -348,6 +410,17 @@ before the app `ready` event on Linux, the message will be emitted to stderr,
 and no GUI dialog will appear.
 
 ### `dialog.showCertificateTrustDialog([window, ]options)` _macOS_ _Windows_
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/9099
+changes:
+  - pr-url: https://github.com/electron/electron/pull/17181
+    description: "This method now returns a Promise instead of using a callback function."
+    breaking-changes-header: api-changed-callback-based-versions-of-promisified-apis
+```
+-->
 
 * `window` [BaseWindow](base-window.md) (optional)
 * `options` Object

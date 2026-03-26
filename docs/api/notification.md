@@ -8,6 +8,12 @@ Process: [Main](../glossary.md#main-process)
 > If you want to show notifications from a renderer process you should use the
 > [web Notifications API](../tutorial/notifications.md)
 
+> [!NOTE]
+> On MacOS, notifications use the UNNotification API as their underlying framework.
+> This API requires an application to be code-signed in order for notifications
+> to appear. Unsigned binaries will emit a `failed` event when notifications
+> are called.
+
 ## Class: Notification
 
 > Create OS desktop notifications
@@ -30,9 +36,51 @@ The `Notification` class has the following static methods:
 
 Returns `boolean` - Whether or not desktop notifications are supported on the current system
 
+#### `Notification.handleActivation(callback)` _Windows_
+
+* `callback` Function
+  * `details` [ActivationArguments](structures/activation-arguments.md) - Details about the notification activation.
+
+Registers a callback to handle all notification activations. The callback is invoked whenever a
+notification is clicked, replied to, or has an action button pressed - regardless of whether
+the original `Notification` object is still in memory.
+
+This method handles timing automatically:
+
+* If an activation already occurred before calling this method, the callback is invoked immediately
+  with those details.
+* For all subsequent activations, the callback is invoked when they occur.
+
+The callback remains registered until replaced by another call to `handleActivation`.
+
+This provides a centralized way to handle notification interactions that works in all scenarios:
+
+* Cold start (app launched from notification click)
+* Notifications persisted in AC that have no in-memory representation after app re-start
+* Notification object was garbage collected
+* Notification object is still in memory (callback is invoked in addition to instance events)
+
+```js
+const { Notification, app } = require('electron')
+
+app.whenReady().then(() => {
+  // Register handler for all notification activations
+  Notification.handleActivation((details) => {
+    console.log('Notification activated:', details.type)
+    if (details.type === 'reply') {
+      console.log('User reply:', details.reply)
+    } else if (details.type === 'action') {
+      console.log('Action index:', details.actionIndex)
+    }
+  })
+})
+```
+
 ### `new Notification([options])`
 
 * `options` Object (optional)
+  * `id` string (optional) _macOS_ - A unique identifier for the notification, mapping to `UNNotificationRequest`'s [`identifier`](https://developer.apple.com/documentation/usernotifications/unnotificationrequest/identifier) property. Defaults to a random UUID if not provided or if an empty string is passed. This can be used to remove or update previously delivered notifications.
+  * `groupId` string (optional) _macOS_ - A string identifier used to visually group notifications together in Notification Center. Maps to `UNNotificationContent`'s [`threadIdentifier`](https://developer.apple.com/documentation/usernotifications/unnotificationcontent/threadidentifier) property.
   * `title` string (optional) - A title for the notification, which will be displayed at the top of the notification window when it is shown.
   * `subtitle` string (optional) _macOS_ - A subtitle for the notification, which will be displayed below the title.
   * `body` string (optional) - The body text of the notification, which will be displayed below the title or subtitle.
@@ -42,10 +90,14 @@ Returns `boolean` - Whether or not desktop notifications are supported on the cu
   * `timeoutType` string (optional) _Linux_ _Windows_ - The timeout duration of the notification. Can be 'default' or 'never'.
   * `replyPlaceholder` string (optional) _macOS_ - The placeholder to write in the inline reply input field.
   * `sound` string (optional) _macOS_ - The name of the sound file to play when the notification is shown.
-  * `urgency` string (optional) _Linux_ - The urgency level of the notification. Can be 'normal', 'critical', or 'low'.
+  * `urgency` string (optional) _Linux_ _Windows_ - The urgency level of the notification. Can be 'normal', 'critical', or 'low'.
   * `actions` [NotificationAction[]](structures/notification-action.md) (optional) _macOS_ - Actions to add to the notification. Please read the available actions and limitations in the `NotificationAction` documentation.
   * `closeButtonText` string (optional) _macOS_ - A custom title for the close button of an alert. An empty string will cause the default localized text to be used.
   * `toastXml` string (optional) _Windows_ - A custom description of the Notification on Windows superseding all properties above. Provides full customization of design and behavior of the notification.
+
+> [!NOTE]
+> On Windows, `urgency` type 'critical' sorts the notification higher in Action Center (above default priority notifications), but does not prevent auto-dismissal. To prevent auto-dismissal, you should also set
+> `timeoutType` to 'never'.
 
 ### Instance Events
 
@@ -111,7 +163,8 @@ app.whenReady().then(() => {
 
 Returns:
 
-* `event` Event
+* `details` Event\<\>
+  * `reason` _Windows_ string (optional) - The reason the notification was closed. This can be 'userCanceled', 'applicationHidden', or 'timedOut'.
 
 Emitted when the notification is closed by manual intervention from the user.
 
@@ -275,6 +328,14 @@ app.whenReady().then(() => {
 ```
 
 ### Instance Properties
+
+#### `notification.id` _macOS_ _Readonly_
+
+A `string` property representing the unique identifier of the notification. This is set at construction time — either from the `id` option or as a generated UUID if none was provided.
+
+#### `notification.groupId` _macOS_ _Readonly_
+
+A `string` property representing the group identifier of the notification. Notifications with the same `groupId` will be visually grouped together in Notification Center.
 
 #### `notification.title`
 

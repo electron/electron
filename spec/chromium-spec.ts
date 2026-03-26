@@ -759,6 +759,8 @@ describe('chromium features', () => {
         let file = new URL(request.url).pathname!;
         if (file[0] === '/' && process.platform === 'win32') file = file.slice(1);
 
+        file = file.replace('service-worker.js', 'service-worker-intercepted.js');
+
         const content = fs.readFileSync(path.normalize(file));
         const ext = path.extname(file);
         let type = 'text/html';
@@ -781,13 +783,34 @@ describe('chromium features', () => {
         } else if (channel === 'error') {
           done(`unexpected error : ${message}`);
         } else if (channel === 'response') {
-          expect(message).to.equal('Hello from serviceWorker!');
+          expect(message).to.equal('Hello from serviceWorker intercepted!');
           customSession.clearStorageData({
             storages: ['serviceworkers']
           }).then(() => {
             customSession.protocol.uninterceptProtocol('file');
             done();
           });
+        }
+      });
+      w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
+      w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
+    });
+
+    it('should trigger webRequest handlers when loaded as a file', (done) => {
+      const customSession = session.fromPartition('sw-file-scheme-webRequest');
+      customSession.webRequest.onBeforeRequest((details, cb) => {
+        if (details.url.endsWith('service-worker.js')) {
+          done(); // Service worker triggered webRequest handler.
+        }
+        cb({});
+      });
+
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          session: customSession,
+          contextIsolation: false
         }
       });
       w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
@@ -970,6 +993,8 @@ describe('chromium features', () => {
     let w: BrowserWindow | null = null;
 
     afterEach(() => {
+      ipcMain.removeAllListeners('did-create-file-handle');
+      ipcMain.removeAllListeners('did-create-directory-handle');
       session.defaultSession.setPermissionRequestHandler(null);
       closeAllWindows();
     });
@@ -1087,6 +1112,7 @@ describe('chromium features', () => {
       w.webContents.once('did-finish-load', () => {
         // @ts-expect-error Undocumented testing method.
         clipboard._writeFilesForTesting([testFile]);
+        w.webContents.focus();
         w.webContents.paste();
       });
     });
@@ -1138,6 +1164,7 @@ describe('chromium features', () => {
       w.webContents.once('did-finish-load', () => {
         // @ts-expect-error Undocumented testing method.
         clipboard._writeFilesForTesting([testFile]);
+        w.webContents.focus();
         w.webContents.paste();
       });
     });
@@ -1189,6 +1216,7 @@ describe('chromium features', () => {
       w.webContents.once('did-finish-load', () => {
         // @ts-expect-error Undocumented testing method.
         clipboard._writeFilesForTesting([testFile]);
+        w.webContents.focus();
         w.webContents.paste();
       });
     });
@@ -1235,6 +1263,7 @@ describe('chromium features', () => {
       w.webContents.once('did-finish-load', () => {
         // @ts-expect-error Undocumented testing method.
         clipboard._writeFilesForTesting([testDir]);
+        w.webContents.focus();
         w.webContents.paste();
       });
     });
@@ -1282,6 +1311,7 @@ describe('chromium features', () => {
       w.webContents.once('did-finish-load', () => {
         // @ts-expect-error Undocumented testing method.
         clipboard._writeFilesForTesting([testDir]);
+        w.webContents.focus();
         w.webContents.paste();
       });
     });
@@ -1339,6 +1369,7 @@ describe('chromium features', () => {
       w.webContents.on('did-finish-load', () => {
         // @ts-expect-error Undocumented testing method.
         clipboard._writeFilesForTesting([testFile]);
+        w.webContents.focus();
         w.webContents.paste();
       });
     });
@@ -1436,6 +1467,89 @@ describe('chromium features', () => {
       w.loadURL(`file://${fixturesPath}/pages/worker.html`);
       const [, data] = await once(ipcMain, 'worker-result');
       expect(data).to.equal('object function object function');
+    });
+
+    it('Worker does not have node integration when nodeIntegrationInWorker is disabled via setWindowOpenHandler', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          nodeIntegrationInWorker: true,
+          contextIsolation: false
+        }
+      });
+
+      w.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          show: false,
+          webPreferences: {
+            nodeIntegration: false,
+            nodeIntegrationInWorker: false,
+            contextIsolation: true
+          }
+        }
+      }));
+
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const childCreated = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
+      w.webContents.executeJavaScript(`window.open(${JSON.stringify(`file://${fixturesPath}/pages/blank.html`)}); void 0;`);
+      const [, child] = await childCreated;
+      await once(child.webContents, 'did-finish-load');
+
+      const data = await child.webContents.executeJavaScript(`
+        const worker = new Worker('../workers/worker_node.js');
+        new Promise((resolve) => { worker.onmessage = e => resolve(e.data); })
+      `);
+      expect(data).to.equal('undefined undefined undefined undefined');
+    });
+
+    it('Worker has node integration when nodeIntegrationInWorker is enabled via setWindowOpenHandler', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          nodeIntegrationInWorker: false,
+          contextIsolation: false
+        }
+      });
+
+      w.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            nodeIntegrationInWorker: true,
+            contextIsolation: false
+          }
+        }
+      }));
+
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+
+      // Parent's workers should NOT have node integration.
+      const parentData = await w.webContents.executeJavaScript(`
+        new Promise((resolve) => {
+          const worker = new Worker('../workers/worker_node.js');
+          worker.onmessage = e => resolve(e.data);
+        })
+      `);
+      expect(parentData).to.equal('undefined undefined undefined undefined');
+
+      const childCreated = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
+      w.webContents.executeJavaScript(`window.open(${JSON.stringify(`file://${fixturesPath}/pages/blank.html`)}); void 0;`);
+      const [, child] = await childCreated;
+      await once(child.webContents, 'did-finish-load');
+
+      // Child's workers should have node integration.
+      const childData = await child.webContents.executeJavaScript(`
+        new Promise((resolve) => {
+          const worker = new Worker('../workers/worker_node.js');
+          worker.onmessage = e => resolve(e.data);
+        })
+      `);
+      expect(childData).to.equal('object function object function');
     });
 
     it('Worker has access to fetch-dependent interfaces with nodeIntegrationInWorker', async () => {

@@ -12,7 +12,43 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (43.0)
+
+### Behavior Changed: Dialog methods default to Downloads directory
+
+The `defaultPath` option for the following methods now defaults to the user's Downloads folder (or their home directory if Downloads doesn't exist) when not explicitly provided:
+
+* `dialog.showOpenDialog`
+* `dialog.showOpenDialogSync`
+* `dialog.showSaveDialog`
+* `dialog.showSaveDialogSync`
+
+Previously, when no `defaultPath` was provided, the underlying OS file dialog would determine the initial directory — typically remembering the last directory the user navigated to, or falling back to an OS-specific default. Now, Electron explicitly sets the initial directory to Downloads, which also means the OS will no longer track and restore the last-used directory between dialog invocations.
+
+To preserve the old behavior, you can track the last-used directory yourself and pass it as `defaultPath`:
+
+```js
+const path = require('node:path')
+
+let lastUsedPath
+const result = await dialog.showOpenDialog({
+  defaultPath: lastUsedPath
+})
+
+if (!result.canceled && result.filePaths.length > 0) {
+  lastUsedPath = path.dirname(result.filePaths[0])
+}
+```
+
 ## Planned Breaking API Changes (42.0)
+
+### Behavior Changed: macOS notifications now use `UNNotification` API
+
+Electron has migrated from the deprecated `NSUserNotification` API to the
+[`UNNotification`](https://developer.apple.com/documentation/usernotifications)
+API on macOS. The new API requires that an application be code-signed in order
+for notifications to be displayed. If an application is not code-signed,
+notifications will emit a `failed` event on the `Notification` object.
 
 ### Behavior Changed: Offscreen rendering will use `1.0` as default device scale factor.
 
@@ -21,8 +57,6 @@ Developers had to manually calculate the correct size using `screen.getPrimaryDi
 `webPreferences.offscreen.deviceScaleFactor` to specify a custom value when creating an OSR window. At first, if the property is not set, it defaults
 to the primary display's scale factor (preserving the old behavior). Starting from Electron 42, the default will change to a constant value of `1.0`
 for more consistent output sizes.
-
-## Planned Breaking API Changes (41.0)
 
 ### Behavior Changed: `electron` no longer downloads itself via `postinstall` script
 
@@ -52,6 +86,28 @@ which contains the exact same code from the former `postinstall` script.
 npm install electron --save-dev --ignore-scripts
 npx install-electron --no
 ```
+
+If you need to test changes across platforms or architectures, you should now use the
+`ELECTRON_INSTALL_ARCH` and `ELECTRON_INSTALL_PLATFORM` environment variables.
+
+```sh
+# before: pass npm config flag on install command
+npm install --platform=mas electron --save-dev
+# after: add env var when you first run the Electron command
+npm install electron --save-dev
+ELECTRON_INSTALL_PLATFORM=mas npx electron . --no
+```
+
+This also means the `ELECTRON_SKIP_BINARY_DOWNLOAD` environment variable is no
+longer supported, as its primary purpose was to prevent the `postinstall` script from running.
+
+### Removed: `quotas` object from `Session.clearStorageData(options)`
+
+When calling `Session.clearStorageData(options)`, the `options.quotas` object is no longer supported because it has been
+[removed](https://chromium-review.googlesource.com/c/chromium/src/+/7596126)
+from upstream Chromium.
+
+## Planned Breaking API Changes (41.0)
 
 ### Behavior Changed: PDFs no longer create a separate WebContents
 

@@ -19,6 +19,8 @@ Do not stop until these criteria are met.
 
 **CRITICAL** Do not delete or skip patches unless 100% certain the patch is no longer needed. Complicated conflicts or hard to resolve issues should be presented to the user after you have exhausted all other options. Do not delete the patch just because you can't solve it.
 
+**CRITICAL** Never use `git am --skip` and then manually recreate a patch by making a new commit. This destroys the original patch's authorship, commit message, and position in the series. If `git am --continue` reports "No changes", investigate why — the changes were likely absorbed by a prior conflict resolution's 3-way merge. Present this situation to the user rather than skipping and recreating.
+
 ## Context
 
 The `roller/chromium/main` branch is created by automation to update Electron's Chromium dependency SHA. No work has been done to handle breaking changes between the old and new versions.
@@ -84,6 +86,7 @@ Fix existing patches 99% of the time rather than creating new ones.
 1. **Preserve authorship**: Keep original author in TODO comments (from patch `From:` field)
 2. **Never change TODO assignees**: `TODO(name)` must retain original name
 3. **Update descriptions**: If upstream changed (e.g., `DCHECK` → `CHECK_IS_TEST`), update patch commit message to reflect current state
+4. **Never skip-and-recreate a patch**: If `git am --continue` says "No changes — did you forget to use 'git add'?", do NOT run `git am --skip` and create a replacement commit. The patch's changes were already absorbed by a prior 3-way merge resolution. This means an earlier conflict resolution pulled in too many changes. Present the situation to the user for guidance — the correct fix may require re-doing an earlier resolution more carefully to keep each patch's changes separate.
 
 # Electron Chromium Upgrade: Phase Two
 

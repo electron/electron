@@ -54,17 +54,9 @@ gin_helper::Handle<SafeStorage> SafeStorage::Create(v8::Isolate* isolate) {
   return gin_helper::CreateHandle(isolate, new SafeStorage(isolate));
 }
 
-SafeStorage::SafeStorage(v8::Isolate* isolate) {
-  if (electron::Browser::Get()->is_ready()) {
-    OnFinishLaunching({});
-  } else {
-    Browser::Get()->AddObserver(this);
-  }
-}
+SafeStorage::SafeStorage(v8::Isolate* isolate) {}
 
-SafeStorage::~SafeStorage() {
-  Browser::Get()->RemoveObserver(this);
-}
+SafeStorage::~SafeStorage() = default;
 
 gin::ObjectTemplateBuilder SafeStorage::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
@@ -85,7 +77,11 @@ gin::ObjectTemplateBuilder SafeStorage::GetObjectTemplateBuilder(
       ;
 }
 
-void SafeStorage::OnFinishLaunching(base::DictValue launch_info) {
+void SafeStorage::EnsureAsyncEncryptorRequested() {
+  DCHECK(electron::Browser::Get()->is_ready());
+  if (encryptor_requested_)
+    return;
+  encryptor_requested_ = true;
   g_browser_process->os_crypt_async()->GetInstance(
       base::BindOnce(&SafeStorage::OnOsCryptReady, base::Unretained(this)),
       os_crypt_async::Encryptor::Option::kEncryptSyncCompat);
@@ -95,13 +91,21 @@ void SafeStorage::OnOsCryptReady(os_crypt_async::Encryptor encryptor) {
   encryptor_ = std::move(encryptor);
   is_available_ = true;
 
+  // This callback may fire from a posted task without an active V8 scope.
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  for (auto& pending : pending_availability_checks_) {
+    pending.Resolve(true);
+  }
+  pending_availability_checks_.clear();
+
   for (auto& pending : pending_encrypts_) {
     std::string ciphertext;
     bool encrypted = encryptor_->EncryptString(pending.plaintext, &ciphertext);
     if (encrypted) {
       pending.promise.Resolve(
-          electron::Buffer::Copy(pending.promise.isolate(), ciphertext)
-              .ToLocalChecked());
+          electron::Buffer::Copy(isolate, ciphertext).ToLocalChecked());
     } else {
       pending.promise.RejectWithErrorMessage(
           "Error while encrypting the text provided to "
@@ -117,8 +121,6 @@ void SafeStorage::OnOsCryptReady(os_crypt_async::Encryptor encryptor) {
         encryptor_->DecryptString(pending.ciphertext, &plaintext, &flags);
 
     if (decrypted) {
-      v8::Isolate* isolate = pending.promise.isolate();
-      v8::HandleScope handle_scope(isolate);
       auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
 
       dict.Set("shouldReEncrypt", flags.should_reencrypt);
@@ -155,16 +157,33 @@ bool SafeStorage::IsEncryptionAvailable() {
 #endif
 }
 
-bool SafeStorage::IsAsyncEncryptionAvailable() {
-  if (!electron::Browser::Get()->is_ready())
-    return false;
+v8::Local<v8::Promise> SafeStorage::IsAsyncEncryptionAvailable(
+    v8::Isolate* isolate) {
+  gin_helper::Promise<bool> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  if (!electron::Browser::Get()->is_ready()) {
+    promise.Resolve(false);
+    return handle;
+  }
+
 #if BUILDFLAG(IS_LINUX)
-  return is_available_ || (use_password_v10_ &&
-                           static_cast<BrowserProcessImpl*>(g_browser_process)
-                                   ->linux_storage_backend() == "basic_text");
-#else
-  return is_available_;
+  if (use_password_v10_ && static_cast<BrowserProcessImpl*>(g_browser_process)
+                                   ->linux_storage_backend() == "basic_text") {
+    promise.Resolve(true);
+    return handle;
+  }
 #endif
+
+  EnsureAsyncEncryptorRequested();
+
+  if (is_available_) {
+    promise.Resolve(true);
+    return handle;
+  }
+
+  pending_availability_checks_.push_back(std::move(promise));
+  return handle;
 }
 
 void SafeStorage::SetUsePasswordV10(bool use) {
@@ -270,6 +289,8 @@ v8::Local<v8::Promise> SafeStorage::encryptStringAsync(
     return handle;
   }
 
+  EnsureAsyncEncryptorRequested();
+
   if (is_available_) {
     std::string ciphertext;
     bool encrypted = encryptor_->EncryptString(plaintext, &ciphertext);
@@ -317,6 +338,8 @@ v8::Local<v8::Promise> SafeStorage::decryptStringAsync(
     promise.Resolve(dict);
     return handle;
   }
+
+  EnsureAsyncEncryptorRequested();
 
   if (is_available_) {
     std::string plaintext;

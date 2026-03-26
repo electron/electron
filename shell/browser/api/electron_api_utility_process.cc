@@ -23,6 +23,7 @@
 #include "services/network/public/cpp/originating_process_id.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/electron_child_process_host_flags.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -186,7 +187,8 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 #endif
 #if BUILDFLAG(IS_MAC)
           .WithChildFlags(use_plugin_helper
-                              ? content::ChildProcessHost::CHILD_PLUGIN
+                              ? static_cast<int>(ElectronChildProcessHostFlags::
+                                                     kChildProcessHelperPlugin)
                               : content::ChildProcessHost::CHILD_NORMAL)
           .WithDisclaimResponsibility(disclaim_responsibility)
 #endif
@@ -244,7 +246,7 @@ void UtilityProcessWrapper::OnServiceProcessLaunch(
   EmitWithoutEvent("spawn");
 }
 
-void UtilityProcessWrapper::HandleTermination(uint64_t exit_code) {
+void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
   // HandleTermination is called from multiple callsites,
   // we need to ensure we only process it for the first callsite.
   if (terminated_)
@@ -312,7 +314,7 @@ void UtilityProcessWrapper::CloseConnectorPort() {
   }
 }
 
-void UtilityProcessWrapper::Shutdown(uint64_t exit_code) {
+void UtilityProcessWrapper::Shutdown(uint32_t exit_code) {
   node_service_remote_.reset();
   HandleTermination(exit_code);
 }
@@ -428,7 +430,7 @@ UtilityProcessWrapper::CreateURLLoaderFactoryParams() {
   mojo::PendingRemote<network::mojom::URLLoaderFactory> url_loader_factory;
   network::mojom::URLLoaderFactoryParamsPtr loader_params =
       network::mojom::URLLoaderFactoryParams::New();
-  loader_params->process_id = network::OriginatingProcess::browser();
+  loader_params->process_id = network::OriginatingProcessId::browser();
   loader_params->is_orb_enabled = false;
   loader_params->is_trusted = true;
   if (create_network_observer_) {

@@ -10,6 +10,7 @@
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "content/browser/mac_helpers.h"
+#include "shell/browser/electron_child_process_host_flags.h"
 
 namespace electron {
 
@@ -31,7 +32,7 @@ base::FilePath MainApplicationBundlePath() {
   // Up to Contents.
   if (!HasMainProcessKey() &&
       (path.value().ends_with(" Helper") ||
-       path.value().ends_with(content::kMacHelperSuffix_plugin) ||
+       path.value().ends_with(kElectronMacHelperSuffixPlugin) ||
        path.value().ends_with(content::kMacHelperSuffix_renderer) ||
        path.value().ends_with(content::kMacHelperSuffix_gpu))) {
     // The running executable is the helper. Go up five steps:

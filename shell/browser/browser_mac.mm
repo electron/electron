@@ -146,6 +146,10 @@ void Browser::Focus(gin::Arguments* args) {
   [[AtomApplication sharedApplication] activateIgnoringOtherApps:steal_focus];
 }
 
+bool Browser::IsActive() {
+  return [[AtomApplication sharedApplication] isActive];
+}
+
 void Browser::Hide() {
   [[AtomApplication sharedApplication] hide:nil];
 }
@@ -233,7 +237,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
                                          gin::Arguments* args) {
-  if (protocol.empty())
+  if (!IsValidProtocolScheme(protocol))
     return false;
 
   NSString* identifier = [base::apple::MainBundle() bundleIdentifier];
@@ -249,7 +253,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
                                       gin::Arguments* args) {
-  if (protocol.empty())
+  if (!IsValidProtocolScheme(protocol))
     return false;
 
   NSString* identifier = [base::apple::MainBundle() bundleIdentifier];

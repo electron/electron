@@ -14,7 +14,7 @@ jobs:
     permissions: {}
     steps:
       - name: Trigger Slack workflow
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
         with:
           webhook: ${{ secrets.BACKPORT_REQUESTED_SLACK_WEBHOOK_URL }} 
           webhook-type: webhook-trigger
@@ -38,7 +38,7 @@ jobs:
           creds: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
           org: electron
       - name: Set status
-        uses: dsanders11/project-actions/edit-item@2134fe7cc71c58b7ae259c82a8e63c6058255678 # v1.7.0
+        uses: dsanders11/project-actions/edit-item@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
         with:
           token: ${{ steps.generate-token.outputs.token }}
           project-number: 94
@@ -56,7 +56,7 @@ jobs:
       with:
         creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
     - name: Create comment
-      uses: actions-cool/issues-helper@71b62d7da76e59ff7b193904feb6e77d4dbb2777 # v3.7.6
+      uses: actions-cool/issues-helper@200c78641dbf33838311e5a1e0c31bbdb92d7cf0 # v3.8.0
       with:
         actions: 'create-comment'
         token: ${{ steps.generate-token.outputs.token }}

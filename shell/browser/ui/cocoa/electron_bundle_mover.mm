@@ -270,34 +270,10 @@ void Relaunch(NSString* destinationPath) {
 }
 
 bool Trash(NSString* path) {
-  bool result = false;
-
-  if (floor(NSAppKitVersionNumber) >= NSAppKitVersionNumber10_8) {
-    result = [[NSFileManager defaultManager]
-          trashItemAtURL:[NSURL fileURLWithPath:path]
-        resultingItemURL:nil
-                   error:nil];
-  }
-
-  // As a last resort try trashing with AppleScript.
-  // This allows us to trash the app in macOS Sierra even when the app is
-  // running inside an app translocation image.
-  if (!result) {
-    auto* code = R"str(
-set theFile to POSIX file "%@"
-tell application "Finder"
-move theFile to trash
-end tell
-)str";
-    NSAppleScript* appleScript = [[NSAppleScript alloc]
-        initWithSource:[NSString stringWithFormat:@(code), path]];
-    NSDictionary* errorDict = nil;
-    NSAppleEventDescriptor* scriptResult =
-        [appleScript executeAndReturnError:&errorDict];
-    result = (scriptResult != nil);
-  }
-
-  return result;
+  return [[NSFileManager defaultManager]
+        trashItemAtURL:[NSURL fileURLWithPath:path]
+      resultingItemURL:nil
+                 error:nil];
 }
 
 bool DeleteOrTrash(NSString* path) {

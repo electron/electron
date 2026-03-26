@@ -51,6 +51,10 @@ static_assert(PATH_START < PATH_END, "invalid PATH boundaries");
 // Register the path provider with the base::PathService.
 void RegisterPathProvider();
 
+// Returns a default directory for file dialogs when no default path is
+// provided.
+base::FilePath GetDefaultPath();
+
 }  // namespace electron
 
 #endif  // ELECTRON_SHELL_COMMON_ELECTRON_PATHS_H_
