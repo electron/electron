@@ -50,7 +50,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 17b0a948c762996026885cbb63d66cbd0ab94981..a1a18ffa59d45518cb171efb08cf24d1648de425 100644
+index aacecd4fbfa237ed17e8264abd37cce969dfa331..17af90379af2b07c7f7645adc2955df22afb32dc 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1085,6 +1085,7 @@ component("base") {
@@ -974,7 +974,7 @@ index 664e12c07204feeb5be16581fe51e8adc4b898dd..38159d146cdf71f84611d58e2983418a
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 29104a461b7a3e04dc86baab0521288f974750a8..ea54cab0a72e931299871968afab7701e21547e4 100644
+index 6fb162e7f477fabde5a83de7bf68b87f1708f274..c276641783fc8a88f09fe7e0e6c48a937b69fead 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -363,6 +363,7 @@ source_set("browser") {
@@ -1189,7 +1189,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 3235936853681da70e93a31d51a7f6a91be698b0..a3c78319d97fe84621c29d778e354a6384f8583f 100644
+index 457752f9e929414b6d5afd1fa58b3916939157af..3227168bb01fa03c24f2496fd3848699ed3f8c8e 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -701,6 +701,7 @@ static_library("test_support") {
@@ -1378,7 +1378,7 @@ index 3a079b0fc34031d062045510fe0e2444792ff942..1be75833d46aaa124e5467904f68e46c
  }  // namespace
  #endif
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index 012632a440f5078a71cbb327b04990654f282141..8e47b039b63fe74d3de441b8d21e7a9c4ec974f5 100644
+index 5be47a39edb9c5f3b05a13d10732b772d30cc2d7..a455b220b1e16770888bb02daeb88bfc4fa86fbd 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
 @@ -223,6 +223,8 @@ source_set("dns") {
@@ -1789,7 +1789,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 9b399ad326a19af7fd5e717bf8940ec562338f6d..96cc912489ab4423e0592d9c90c3d38f57131087 100644
+index 7b4ad32dfe88c07b8b82fbd58e7eb2da98cc86d7..b769dd1db63d6cf2f52d7b241237aa9601042b93 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -444,6 +444,7 @@ component("core") {
@@ -2359,10 +2359,10 @@ index bbe355cf69f160866188216cc274d75bd35603db..06ee100d7ea2e892dbf3c0b1adc96c50
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 5c0cad2640d84193e396ac1faff7d61230ab388c..edaf2a169d67cfa7903c56989801b1563ecf7af3 100644
+index 82c365a68444028440a3147193c49047ea1737d3..d338b652ebbe84891c5a5678ed5295fc907d0974 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -732,6 +732,8 @@ component("views") {
+@@ -734,6 +734,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -2371,7 +2371,7 @@ index 5c0cad2640d84193e396ac1faff7d61230ab388c..edaf2a169d67cfa7903c56989801b156
    }
  
    if (is_win) {
-@@ -1161,6 +1163,8 @@ source_set("test_support") {
+@@ -1163,6 +1165,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  

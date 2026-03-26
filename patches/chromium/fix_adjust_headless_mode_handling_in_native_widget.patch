@@ -139,10 +139,10 @@ index 96678f5de2a0b67cd338012fb84b9ea7ff904084..afc4c3030d15eeb7a270ca6d3cc29e64
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index e62f180fd782f29c25cf47a4e6be0cce46c99b17..b65d050fee7a607658efa6914c35186d9452f26f 100644
+index e02d00c5928f02791f71f348048bda50a7800eac..e73037b52ef2f81738ed7eeb5cb6f3b199b23249 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
-@@ -223,6 +223,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
+@@ -224,6 +224,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
    }
  }
  
@@ -161,7 +161,7 @@ index e62f180fd782f29c25cf47a4e6be0cce46c99b17..b65d050fee7a607658efa6914c35186d
  void Widget::InitParams::SetParent(Widget* parent_widget) {
    SetParent(parent_widget->GetNativeView());
  }
-@@ -470,6 +482,7 @@ void Widget::Init(InitParams params) {
+@@ -471,6 +483,7 @@ void Widget::Init(InitParams params) {
  
    params.child |= (params.type == InitParams::TYPE_CONTROL);
    is_top_level_ = !params.child;
