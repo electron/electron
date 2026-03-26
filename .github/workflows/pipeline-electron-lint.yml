@@ -46,7 +46,7 @@ jobs:
       shell: bash
       run: |
         chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
-        if [[ ! "$chromium_revision" =~ ^[a-f0-9]+$ ]]; then
+        if [[ ! "$chromium_revision" =~ ^[a-zA-Z0-9._-]+$ ]]; then
           echo "::error::Invalid chromium_revision: $chromium_revision"
           exit 1
         fi
@@ -64,7 +64,7 @@ jobs:
       shell: bash
       run: |
         chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
-        if [[ ! "$chromium_revision" =~ ^[a-f0-9]+$ ]]; then
+        if [[ ! "$chromium_revision" =~ ^[a-zA-Z0-9._-]+$ ]]; then
           echo "::error::Invalid chromium_revision: $chromium_revision"
           exit 1
         fi
