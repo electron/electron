@@ -23,17 +23,19 @@ jobs:
       - name: Setting Up Dig Site
         run: |
           echo "remote: ${{ github.event.pull_request.head.repo.clone_url }}"
-          echo "sha ${{ github.event.pull_request.head.sha }}"
+          echo "sha ${PR_HEAD_SHA}"
           echo "base ref ${{ github.event.pull_request.base.ref }}"
           git clone https://github.com/electron/electron.git electron          
           cd electron
           mkdir -p artifacts
           git remote add fork ${{ github.event.pull_request.head.repo.clone_url }} && git fetch fork
-          git checkout  ${{ github.event.pull_request.head.sha }}
+          git checkout  ${PR_HEAD_SHA}
           git merge-base origin/${{ github.event.pull_request.base.ref }} HEAD > .dig-old
-          echo  ${{ github.event.pull_request.head.sha }} > .dig-new
+          echo  ${PR_HEAD_SHA} > .dig-new
           cp .dig-old artifacts
 
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       - name: Generating Types for SHA in .dig-new
         uses: ./.github/actions/generate-types
         with:
