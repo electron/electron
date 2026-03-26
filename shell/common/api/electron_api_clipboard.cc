@@ -266,7 +266,11 @@ gfx::Image Clipboard::ReadImage(gin::Arguments* const args) {
           [](std::optional<gfx::Image>* image, base::RepeatingClosure cb,
              const std::vector<uint8_t>& result) {
             SkBitmap bitmap = gfx::PNGCodec::Decode(result);
-            image->emplace(gfx::Image::CreateFrom1xBitmap(bitmap));
+            if (bitmap.isNull()) {
+              image->emplace();
+            } else {
+              image->emplace(gfx::Image::CreateFrom1xBitmap(bitmap));
+            }
             std::move(cb).Run();
           },
           &image, std::move(callback)));
