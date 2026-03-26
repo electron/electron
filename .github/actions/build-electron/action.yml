@@ -54,7 +54,7 @@ runs:
         sudo dpkg --add-architecture i386
         sudo wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/jammy/winehq-jammy.sources
         sudo apt-get update  
-        sudo apt install -y --install-recommends winehq-stable
+        sudo apt install -y --install-recommends winehq-stable libgcc-s1:i386 libgcc-s1
         if [ -x /usr/bin/wine ]; then
           WINE_PATH=/usr/bin/wine
         elif command -v wine >/dev/null 2>&1; then
@@ -72,8 +72,12 @@ runs:
         "$WINE_PATH" wineboot --init 2>/dev/null || true
         "$WINE_PATH" regedit /S configuration.reg
         # Pass wine path to GN so siso can find it regardless of PATH
-        GN_APPENDED_ARGS="$GN_EXTRA_ARGS v8_wine_path=\"$WINE_PATH\""
-        echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV        
+        GN_APPENDED_ARGS="$GN_EXTRA_ARGS v8_wine_path=\"xvfb-run $WINE_PATH\""
+        echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
+        echo "GN APPENDED_ARGS set with wine path: $GN_APPENDED_ARGS"
+        export XDG_RUNTIME_DIR=/tmp/runtime-$(whoami)
+        mkdir -p "$XDG_RUNTIME_DIR"
+        echo "DISPLAY=:99.0" >> $GITHUB_ENV
     # - name: Download mksnapshot.zip
     #   shell: bash
     #   if: ${{ inputs.target-platform == 'win' }}
