@@ -46,6 +46,10 @@ jobs:
       shell: bash
       run: |
         chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
+        if [[ ! "$chromium_revision" =~ ^[a-f0-9]+$ ]]; then
+          echo "::error::Invalid chromium_revision: $chromium_revision"
+          exit 1
+        fi
         gn_version="$(curl -sL -b ~/.gitcookies "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/DEPS?format=TEXT" | base64 -d | grep gn_version | head -n1 | cut -d\' -f4)"
 
         cipd ensure -ensure-file - -root . <<-CIPD
@@ -60,6 +64,10 @@ jobs:
       shell: bash
       run: |
         chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
+        if [[ ! "$chromium_revision" =~ ^[a-f0-9]+$ ]]; then
+          echo "::error::Invalid chromium_revision: $chromium_revision"
+          exit 1
+        fi
 
         mkdir -p src/buildtools
         curl -sL -b ~/.gitcookies "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/buildtools/DEPS?format=TEXT" | base64 -d > src/buildtools/DEPS

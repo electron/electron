@@ -22,30 +22,50 @@ runs:
   steps:
     - name: Delete wrong ${{ inputs.dependency }}
       shell: bash
+      env:
+        CIPD_ROOT_PREFIX: ${{ inputs.cipd-root-prefix-path }}
+        INSTALLATION_DIR: ${{ inputs.installation-dir }}
       run : |
-        rm -rf ${{ inputs.cipd-root-prefix-path }}${{ inputs.installation-dir }}
+        rm -rf "${CIPD_ROOT_PREFIX}${INSTALLATION_DIR}"
     - name: Create ensure file for ${{ inputs.dependency }}
       if: ${{ inputs.dependency-version == '' }}
       shell: bash
+      env:
+        PACKAGE: ${{ inputs.package }}
+        DEPS_FILE: ${{ inputs.deps-file }}
+        INSTALLATION_DIR: ${{ inputs.installation-dir }}
+        DEPENDENCY: ${{ inputs.dependency }}
       run: |
-        echo '${{ inputs.package }}' `e d gclient getdep --deps-file=${{ inputs.deps-file }} -r '${{ inputs.installation-dir }}:${{ inputs.package }}'` > ${{ inputs.dependency }}_ensure_file
-        cat ${{ inputs.dependency }}_ensure_file
+        echo "$PACKAGE" $(e d gclient getdep --deps-file="$DEPS_FILE" -r "${INSTALLATION_DIR}:${PACKAGE}") > "${DEPENDENCY}_ensure_file"
+        cat "${DEPENDENCY}_ensure_file"
 
     - name: Create ensure file for ${{ inputs.dependency }} from dependency-version
       if: ${{ inputs.dependency-version != '' }}
       shell: bash
+      env:
+        PACKAGE: ${{ inputs.package }}
+        DEPENDENCY_VERSION: ${{ inputs.dependency-version }}
+        DEPENDENCY: ${{ inputs.dependency }}
       run: |
-        echo '${{ inputs.package }} ${{ inputs.dependency-version }}'  > ${{ inputs.dependency }}_ensure_file
-        cat ${{ inputs.dependency }}_ensure_file
+        echo "$PACKAGE $DEPENDENCY_VERSION" > "${DEPENDENCY}_ensure_file"
+        cat "${DEPENDENCY}_ensure_file"
     - name: CIPD installation of ${{ inputs.dependency }} (macOS)
       if: ${{ inputs.target-platform != 'win' }}
       shell: bash
+      env:
+        CIPD_ROOT_PREFIX: ${{ inputs.cipd-root-prefix-path }}
+        INSTALLATION_DIR: ${{ inputs.installation-dir }}
+        DEPENDENCY: ${{ inputs.dependency }}
       run: |
-        echo "ensuring ${{ inputs.dependency }}"
-        e d cipd ensure --root ${{ inputs.cipd-root-prefix-path }}${{ inputs.installation-dir }} -ensure-file ${{ inputs.dependency }}_ensure_file
+        echo "ensuring $DEPENDENCY"
+        e d cipd ensure --root "${CIPD_ROOT_PREFIX}${INSTALLATION_DIR}" -ensure-file "${DEPENDENCY}_ensure_file"
     - name: CIPD installation of ${{ inputs.dependency }} (Windows)
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
+      env:
+        CIPD_ROOT_PREFIX: ${{ inputs.cipd-root-prefix-path }}
+        INSTALLATION_DIR: ${{ inputs.installation-dir }}
+        DEPENDENCY: ${{ inputs.dependency }}
       run: |
-        echo "ensuring ${{ inputs.dependency }} on Windows"
-        e d cipd ensure --root ${{ inputs.cipd-root-prefix-path }}${{ inputs.installation-dir }} -ensure-file ${{ inputs.dependency }}_ensure_file
+        echo "ensuring $env:DEPENDENCY on Windows"
+        e d cipd ensure --root "$env:CIPD_ROOT_PREFIX$env:INSTALLATION_DIR" -ensure-file "$($env:DEPENDENCY)_ensure_file"
