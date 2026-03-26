@@ -34,30 +34,6 @@ jobs:
         run: |
           gh issue edit $ISSUE_URL --remove-label 'blocked/need-repro','blocked/need-info ❌'
   
-  pr-needs-signed-commits-commented:
-    name: Remove needs-signed-commits on comment
-    if: ${{ github.event.issue.pull_request && (contains(github.event.issue.labels.*.name, 'needs-signed-commits')) && (github.event.comment.user.login == github.event.issue.user.login) }}
-    runs-on: ubuntu-slim
-    steps:
-      - name: Get author association
-        id: get-author-association
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: *get-author-association
-      - name: Generate GitHub App token
-        uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
-        if: ${{ !contains(fromJSON('["MEMBER", "OWNER", "COLLABORATOR"]'), steps.get-author-association.outputs.author_association) }}
-        id: generate-token
-        with:
-          creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
-      - name: Remove label
-        if: ${{ !contains(fromJSON('["MEMBER", "OWNER", "COLLABORATOR"]'), steps.get-author-association.outputs.author_association) }}
-        env:
-          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
-          ISSUE_URL: ${{ github.event.issue.html_url }}
-        run: |
-          gh issue edit $ISSUE_URL --remove-label 'needs-signed-commits'
-  
   pr-reviewer-requested:
     name: Maintainer requested reviewer on PR
     if: ${{ github.event.issue.pull_request && startsWith(github.event.comment.body, '/request-review') && github.event.comment.user.type != 'Bot' }}
