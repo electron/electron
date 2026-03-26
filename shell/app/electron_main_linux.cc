@@ -5,6 +5,7 @@
 #include <cstdlib>
 
 #include "base/at_exit.h"
+#include "base/compiler_specific.h"
 #include "base/command_line.h"
 #include "base/i18n/icu_util.h"
 #include "base/strings/cstring_view.h"
@@ -31,7 +32,7 @@ int main(int argc, char* argv[]) {
 
   // Chromium expects the original argv in its original memory location
   // to update /proc/<pid>/cmdline.
-  const char** original_argv = const_cast<const char**>(argv);
+  const char** original_argv = UNSAFE_BUFFERS(const_cast<const char**>(argv));
   argv = uv_setup_args(argc, argv);
   base::CommandLine::Init(argc, argv);
   electron::ElectronCommandLine::Init(argc, argv);
