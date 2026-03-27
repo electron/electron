@@ -2947,13 +2947,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ansi-regex@npm:^3.0.0":
-  version: 3.0.1
-  resolution: "ansi-regex@npm:3.0.1"
-  checksum: 10c0/d108a7498b8568caf4a46eea4f1784ab4e0dfb2e3f3938c697dee21443d622d765c958f2b7e2b9f6b9e55e2e2af0584eaa9915d51782b89a841c28e744e7a167
-  languageName: node
-  linkType: hard
-
 "ansi-regex@npm:^5.0.1":
   version: 5.0.1
   resolution: "ansi-regex@npm:5.0.1"
@@ -4816,7 +4809,7 @@ __metadata:
     graceful-fs: "npm:^4.1.15"
     mkdirp: "npm:^0.5.1"
     mocha: "npm:^10.0.0"
-    mocha-junit-reporter: "npm:^1.18.0"
+    mocha-junit-reporter: "npm:^2.2.1"
     mocha-multi-reporters: "npm:^1.1.7"
     pdfjs-dist: "npm:4.2.67"
     ps-list: "npm:^7.0.0"
@@ -8803,7 +8796,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"md5@npm:^2.1.0":
+"md5@npm:^2.3.0":
   version: 2.3.0
   resolution: "md5@npm:2.3.0"
   dependencies:
@@ -9559,29 +9552,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mkdirp@npm:~0.5.1":
-  version: 0.5.6
-  resolution: "mkdirp@npm:0.5.6"
-  dependencies:
-    minimist: "npm:^1.2.6"
+"mkdirp@npm:^3.0.0":
+  version: 3.0.1
+  resolution: "mkdirp@npm:3.0.1"
   bin:
-    mkdirp: bin/cmd.js
-  checksum: 10c0/e2e2be789218807b58abced04e7b49851d9e46e88a2f9539242cc8a92c9b5c3a0b9bab360bd3014e02a140fc4fbc58e31176c408b493f8a2a6f4986bd7527b01
+    mkdirp: dist/cjs/src/bin.js
+  checksum: 10c0/9f2b975e9246351f5e3a40dcfac99fcd0baa31fbfab615fe059fb11e51f10e4803c63de1f384c54d656e4db31d000e4767e9ef076a22e12a641357602e31d57d
   languageName: node
   linkType: hard
 
-"mocha-junit-reporter@npm:^1.18.0":
-  version: 1.23.3
-  resolution: "mocha-junit-reporter@npm:1.23.3"
+"mocha-junit-reporter@npm:^2.2.1":
+  version: 2.2.1
+  resolution: "mocha-junit-reporter@npm:2.2.1"
   dependencies:
-    debug: "npm:^2.2.0"
-    md5: "npm:^2.1.0"
-    mkdirp: "npm:~0.5.1"
-    strip-ansi: "npm:^4.0.0"
-    xml: "npm:^1.0.0"
+    debug: "npm:^4.3.4"
+    md5: "npm:^2.3.0"
+    mkdirp: "npm:^3.0.0"
+    strip-ansi: "npm:^6.0.1"
+    xml: "npm:^1.0.1"
   peerDependencies:
     mocha: ">=2.2.5"
-  checksum: 10c0/e87c8988e7933dd6acbdfe5fc0ad0972907724a6c497552c5164e0b301537106f75b7f564b190157954eb841fa38fbb3a930c302aad71d0e030b22e75b5ecd62
+  checksum: 10c0/365a7a3f2f442864e0b75fa5bda2f7b0594e3056dc8db440445c9eb9a2f2b00b70c0ec4220ade61f441eeeeee5fa2a76465fa58fb7f7f914c6e9cbd02d76fba2
   languageName: node
   linkType: hard
 
@@ -12281,15 +12272,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"strip-ansi@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "strip-ansi@npm:4.0.0"
-  dependencies:
-    ansi-regex: "npm:^3.0.0"
-  checksum: 10c0/d75d9681e0637ea316ddbd7d4d3be010b1895a17e885155e0ed6a39755ae0fd7ef46e14b22162e66a62db122d3a98ab7917794e255532ab461bb0a04feb03e7d
-  languageName: node
-  linkType: hard
-
 "strip-ansi@npm:^7.0.1, strip-ansi@npm:^7.1.0":
   version: 7.1.0
   resolution: "strip-ansi@npm:7.1.0"
@@ -13720,7 +13702,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"xml@npm:^1.0.0":
+"xml@npm:^1.0.1":
   version: 1.0.1
   resolution: "xml@npm:1.0.1"
   checksum: 10c0/04bcc9b8b5e7b49392072fbd9c6b0f0958bd8e8f8606fee460318e43991349a68cbc5384038d179ff15aef7d222285f69ca0f067f53d071084eb14c7fdb30411
