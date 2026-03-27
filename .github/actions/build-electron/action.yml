@@ -71,12 +71,13 @@ runs:
         # Start a persistent Xvfb server for wine (xvfb-run per-invocation hangs
         # because wineserver keeps the X connection alive)
         export XDG_RUNTIME_DIR=/tmp/runtime-$(whoami)
+        echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> $GITHUB_ENV
         mkdir -p "$XDG_RUNTIME_DIR"
         Xvfb :99 -screen 0 1024x768x24 &
         export DISPLAY=:99.0
         echo "DISPLAY=:99.0" >> $GITHUB_ENV
         # Initialize wine prefix to avoid first-run delays during build
-        "$WINE_PATH" wineboot --init 2>/dev/null || true
+        "$WINE_PATH" wineboot --init
         # Pass wine path to GN so siso can find it regardless of PATH
         GN_APPENDED_ARGS="$GN_EXTRA_ARGS v8_wine_path=\"$WINE_PATH\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
