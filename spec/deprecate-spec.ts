@@ -1,46 +1,10 @@
 import { expect } from 'chai';
 
+import { expectDeprecationMessages } from './lib/warning-helpers';
 import * as deprecate from '../lib/common/deprecate';
 
 describe('deprecate', () => {
-  let throwing: boolean;
-
-  beforeEach(() => {
-    throwing = process.throwDeprecation;
-    deprecate.setHandler(null);
-    process.throwDeprecation = true;
-  });
-
-  afterEach(() => {
-    process.throwDeprecation = throwing;
-  });
-
-  it('allows a deprecation handler function to be specified', () => {
-    const messages: string[] = [];
-
-    deprecate.setHandler(message => {
-      messages.push(message);
-    });
-
-    deprecate.log('this is deprecated');
-    expect(messages).to.deep.equal(['this is deprecated']);
-  });
-
-  it('returns a deprecation handler after one is set', () => {
-    const messages = [];
-
-    deprecate.setHandler(message => {
-      messages.push(message);
-    });
-
-    deprecate.log('this is deprecated');
-    expect(deprecate.getHandler()).to.be.a('function');
-  });
-
-  it('renames a property', () => {
-    let msg;
-    deprecate.setHandler(m => { msg = m; });
-
+  it('renames a property', async () => {
     const oldProp = 'dingyOldName';
     const newProp = 'shinyNewName';
 
@@ -50,134 +14,200 @@ describe('deprecate', () => {
     expect(o).to.have.property(newProp).that.is.a('number');
 
     deprecate.renameProperty(o, oldProp, newProp);
-    o[oldProp] = ++value;
 
-    expect(msg).to.be.a('string');
-    expect(msg).to.include(oldProp);
-    expect(msg).to.include(newProp);
+    await expectDeprecationMessages(
+      () => {
+        o[oldProp] = ++value;
+      },
+      `'${oldProp}' is deprecated and will be removed. Please use '${newProp}' instead.`
+    );
 
     expect(o).to.have.property(newProp).that.is.equal(value);
     expect(o).to.have.property(oldProp).that.is.equal(value);
   });
 
-  it('doesn\'t deprecate a property not on an object', () => {
-    const o: any = {};
+  describe('removeProperty', () => {
+    it('doesn\'t deprecate a property not on an object', async () => {
+      const prop = 'iDoNotExist';
+      const o: any = {};
 
-    expect(() => {
-      deprecate.removeProperty(o, 'iDoNotExist');
-    }).to.throw(/iDoNotExist/);
+      await expectDeprecationMessages(
+        () => {
+          deprecate.removeProperty(o, prop);
+        },
+        `Unable to remove property '${prop}' from an object that lacks it.`
+      );
+    });
+
+    it('doesn\'t deprecate a property without getter / setter', async () => {
+      const prop = 'itMustGo';
+      const o = { [prop]: 0 };
+
+      await expectDeprecationMessages(
+        () => {
+          deprecate.removeProperty(o, prop);
+        },
+        `Unable to remove property '${prop}' from an object does not have a getter / setter`
+      );
+    });
+
+    it('deprecates a property of an object', async () => {
+      const prop = 'itMustGo';
+      const o = {
+        get [prop] () { return 0; },
+        set [prop] (_thing) {}
+      };
+
+      deprecate.removeProperty(o, prop);
+
+      const temp = await expectDeprecationMessages(
+        () => {
+          return o[prop];
+        },
+        `'${prop}' is deprecated and will be removed.`
+      );
+
+      expect(temp).to.equal(0);
+    });
+
+    it('deprecates a property of an object but retains the existing accessors and setters', async () => {
+      const prop = 'itMustGo';
+      let i = 1;
+      const o = {
+        get [prop] () {
+          return i;
+        },
+        set [prop] (thing) {
+          i = thing + 1;
+        }
+      };
+
+      deprecate.removeProperty(o, prop);
+
+      await expectDeprecationMessages(
+        () => {
+          expect(o[prop]).to.equal(1);
+        },
+        `'${prop}' is deprecated and will be removed.`
+      );
+
+      o[prop] = 2;
+      expect(o[prop]).to.equal(3);
+    });
+
+    it('deprecates a property of an object but only warns on setting specific values with onlyForValues', async () => {
+      const prop = 'itMustGo';
+      let i = 1;
+      const o = {
+        get [prop] () {
+          return i;
+        },
+        set [prop] (thing) {
+          i = thing;
+        }
+      };
+
+      deprecate.removeProperty(o, prop, [42]);
+
+      await expectDeprecationMessages(
+        () => {
+          o[prop] = 2;
+        }
+        // Expect no deprecation message
+      );
+
+      await expectDeprecationMessages(
+        () => {
+          o[prop] = 42;
+        },
+        `'${prop}' is deprecated and will be removed.`
+      );
+    });
+
+    it('warns only once per item', async () => {
+      const key = 'foo';
+      const val = 'bar';
+      const o = {
+        get [key] () {
+          return val;
+        },
+        set [key] (_thing) {}
+      };
+      deprecate.removeProperty(o, key);
+
+      await expectDeprecationMessages(
+        () => {
+          for (let i = 0; i < 3; ++i) {
+            expect(o[key]).to.equal(val);
+          }
+        },
+        `'${key}' is deprecated and will be removed.`
+      );
+    });
   });
 
-  it('deprecates a property of an object', () => {
-    let msg;
-    deprecate.setHandler(m => { msg = m; });
-
-    const prop = 'itMustGo';
-    const o = { [prop]: 0 };
-
-    deprecate.removeProperty(o, prop);
-
-    const temp = o[prop];
-
-    expect(temp).to.equal(0);
-    expect(msg).to.be.a('string');
-    expect(msg).to.include(prop);
-  });
-
-  it('deprecates a property of an but retains the existing accessors and setters', () => {
-    let msg;
-    deprecate.setHandler(m => { msg = m; });
-
-    const prop = 'itMustGo';
-    let i = 1;
-    const o = {
-      get itMustGo () {
-        return i;
-      },
-      set itMustGo (thing) {
-        i = thing + 1;
-      }
-    };
-
-    deprecate.removeProperty(o, prop);
-
-    expect(o[prop]).to.equal(1);
-    expect(msg).to.be.a('string');
-    expect(msg).to.include(prop);
-    o[prop] = 2;
-    expect(o[prop]).to.equal(3);
-  });
-
-  it('warns exactly once when a function is deprecated with no replacement', () => {
-    let msg;
-    deprecate.setHandler(m => { msg = m; });
-
+  it('warns exactly once when a function is deprecated with no replacement', async () => {
     function oldFn () { return 'hello'; }
     const deprecatedFn = deprecate.removeFunction(oldFn, 'oldFn');
-    deprecatedFn();
 
-    expect(msg).to.be.a('string');
-    expect(msg).to.include('oldFn');
+    await expectDeprecationMessages(
+      () => {
+        deprecatedFn();
+        deprecatedFn();
+        deprecatedFn();
+      },
+      "'oldFn function' is deprecated and will be removed."
+    );
   });
 
-  it('warns exactly once when a function is deprecated with a replacement', () => {
-    let msg;
-    deprecate.setHandler(m => { msg = m; });
-
+  it('warns exactly once when a function is deprecated with a replacement', async () => {
     function oldFn () { return 'hello'; }
     const deprecatedFn = deprecate.renameFunction(oldFn, 'newFn');
-    deprecatedFn();
 
-    expect(msg).to.be.a('string');
-    expect(msg).to.include('oldFn');
-    expect(msg).to.include('newFn');
+    await expectDeprecationMessages(
+      () => {
+        deprecatedFn();
+        deprecatedFn();
+        deprecatedFn();
+      },
+      "'oldFn function' is deprecated and will be removed. Please use 'newFn function' instead."
+    );
   });
 
-  it('warns only once per item', () => {
-    const messages: string[] = [];
-    deprecate.setHandler(message => messages.push(message));
-
-    const key = 'foo';
-    const val = 'bar';
-    const o = { [key]: val };
-    deprecate.removeProperty(o, key);
-
-    for (let i = 0; i < 3; ++i) {
-      expect(o[key]).to.equal(val);
-      expect(messages).to.have.length(1);
-    }
-  });
-
-  it('warns if deprecated property is already set', () => {
-    let msg;
-    deprecate.setHandler(m => { msg = m; });
-
+  it('warns if deprecated property is already set', async () => {
     const oldProp = 'dingyOldName';
     const newProp = 'shinyNewName';
 
     const o: Record<string, number> = { [oldProp]: 0 };
-    deprecate.renameProperty(o, oldProp, newProp);
 
-    expect(msg).to.be.a('string');
-    expect(msg).to.include(oldProp);
-    expect(msg).to.include(newProp);
+    await expectDeprecationMessages(
+      () => {
+        deprecate.renameProperty(o, oldProp, newProp);
+      },
+      `'${oldProp}' is deprecated and will be removed. Please use '${newProp}' instead.`
+    );
   });
 
-  it('throws an exception if no deprecation handler is specified', () => {
-    expect(() => {
-      deprecate.log('this is deprecated');
-    }).to.throw(/this is deprecated/);
+  it('does not warn if process.noDeprecation is true', async () => {
+    process.noDeprecation = true;
+
+    try {
+      function oldFn () { return 'hello'; }
+      const deprecatedFn = deprecate.removeFunction(oldFn, 'oldFn');
+
+      await expectDeprecationMessages(
+        () => {
+          deprecatedFn();
+        }
+        // Expect no deprecation message
+      );
+    } finally {
+      process.noDeprecation = false;
+    }
   });
 
   describe('moveAPI', () => {
-    beforeEach(() => {
-      deprecate.setHandler(null);
-    });
-
     it('should call the original method', () => {
-      const warnings = [];
-      deprecate.setHandler(warning => warnings.push(warning));
-
       let called = false;
       const fn = () => {
         called = true;
@@ -187,16 +217,16 @@ describe('deprecate', () => {
       expect(called).to.equal(true);
     });
 
-    it('should log the deprecation warning once', () => {
-      const warnings: string[] = [];
-      deprecate.setHandler(warning => warnings.push(warning));
-
+    it('should log the deprecation warning once', async () => {
       const deprecated = deprecate.moveAPI(() => null, 'old', 'new');
-      deprecated();
-      expect(warnings).to.have.lengthOf(1);
-      deprecated();
-      expect(warnings).to.have.lengthOf(1);
-      expect(warnings[0]).to.equal('\'old\' is deprecated and will be removed. Please use \'new\' instead.');
+
+      await expectDeprecationMessages(
+        () => {
+          deprecated();
+          deprecated();
+        },
+        "'old' is deprecated and will be removed. Please use 'new' instead."
+      );
     });
   });
 });
