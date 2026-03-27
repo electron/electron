@@ -268,6 +268,9 @@ inline constexpr base::cstring_view kStreamingSchemes = "streaming-schemes";
 // Register schemes as supporting V8 code cache.
 inline constexpr base::cstring_view kCodeCacheSchemes = "code-cache-schemes";
 
+// Register schemes as supporting extensions.
+inline constexpr base::cstring_view kExtensionSchemes = "extension-schemes";
+
 // The browser process app model ID
 inline constexpr base::cstring_view kAppUserModelId = "app-user-model-id";
 
