@@ -29,6 +29,9 @@ namespace {
 int main(int argc, char* argv[]) {
   FixStdioStreams();
 
+  // Chromium expects the original argv in its original memory location
+  // to update /proc/<pid>/cmdline.
+  const char** original_argv = const_cast<const char**>(argv);
   argv = uv_setup_args(argc, argv);
   base::CommandLine::Init(argc, argv);
   electron::ElectronCommandLine::Init(argc, argv);
@@ -40,5 +43,8 @@ int main(int argc, char* argv[]) {
   }
 
   electron::ElectronMainDelegate delegate;
-  return content::ContentMain(content::ContentMainParams{&delegate});
+  content::ContentMainParams params{&delegate};
+  params.argc = argc;
+  params.argv = original_argv;
+  return content::ContentMain(std::move(params));
 }
