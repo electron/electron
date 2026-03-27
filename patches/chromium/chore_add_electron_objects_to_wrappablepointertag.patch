@@ -8,10 +8,10 @@ electron objects that extend gin::Wrappable and gets
 allocated on the cpp heap
 
 diff --git a/gin/public/wrappable_pointer_tags.h b/gin/public/wrappable_pointer_tags.h
-index fee622ebde42211de6f702b754cfa38595df5a1c..6b524632ebb405e473cf4fe8e253bd13bf7b67e5 100644
+index fee622ebde42211de6f702b754cfa38595df5a1c..3bdcd3f3f0a36314694495ca7361be14d95da911 100644
 --- a/gin/public/wrappable_pointer_tags.h
 +++ b/gin/public/wrappable_pointer_tags.h
-@@ -77,7 +77,20 @@ enum WrappablePointerTag : uint16_t {
+@@ -77,7 +77,21 @@ enum WrappablePointerTag : uint16_t {
    kWebAXObjectProxy,             // content::WebAXObjectProxy
    kWrappedExceptionHandler,      // extensions::WrappedExceptionHandler
    kIndigoContext,                // indigo::IndigoContext
@@ -20,6 +20,7 @@ index fee622ebde42211de6f702b754cfa38595df5a1c..6b524632ebb405e473cf4fe8e253bd13
 +  kElectronDataPipeHolder,              // electron::api::DataPipeHolder
 +  kElectronDebugger,                    // electron::api::Debugger
 +  kElectronEvent,                       // gin_helper::internal::Event
++  kElectronGlobalShortcut,              // electron::api::GlobalShortcut
 +  kElectronMenu,                        // electron::api::Menu
 +  kElectronNetLog,                      // electron::api::NetLog
 +  kElectronPowerMonitor,                // electron::api::PowerMonitor
