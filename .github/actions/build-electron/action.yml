@@ -55,6 +55,10 @@ runs:
         sudo wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/jammy/winehq-jammy.sources
         sudo apt-get update  
         sudo apt install -y --install-recommends winehq-stable libgcc-s1:i386 libgcc-s1
+        # Increase virtual memory limits for Wine's VirtualAlloc (V8 sandbox
+        # reserves a very large contiguous region that fails under default limits)
+        sudo sysctl -w vm.max_map_count=1048576
+        sudo sysctl -w vm.overcommit_memory=1
         if [ -x /usr/bin/wine ]; then
           WINE_PATH=/usr/bin/wine
         elif command -v wine >/dev/null 2>&1; then
