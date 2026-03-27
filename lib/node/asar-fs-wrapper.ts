@@ -1,5 +1,5 @@
 import { Buffer } from 'buffer';
-import { Dirent, constants } from 'fs';
+import { type Dirent, constants } from 'fs';
 import * as path from 'path';
 import * as util from 'util';
 
@@ -123,27 +123,39 @@ const fileTypeToMode = new Map<AsarFileType, number>([
   [AsarFileType.kLink, constants.S_IFLNK]
 ]);
 
-const asarStatsToFsStats = function (stats: NodeJS.AsarFileStat) {
-  const { Stats } = require('fs');
+const asarStatsToFsStats = function (filePath: string, stats: NodeJS.AsarFileStat, options?: any) {
+  const { lstatSync } = require('fs');
 
+  const nStats = lstatSync(path.dirname(filePath), options);
   const mode = constants.S_IROTH | constants.S_IRGRP | constants.S_IRUSR | constants.S_IWUSR | fileTypeToMode.get(stats.type)!;
+  const timeMs = fakeTime.getTime();
+  const timeNs = BigInt(timeMs) * 1_000_000n;
 
-  return new Stats(
-    1, // dev
-    mode, // mode
-    1, // nlink
+  Object.entries({
+    dev: 1,
+    mode,
+    nlink: 1,
     uid,
     gid,
-    0, // rdev
-    undefined, // blksize
-    ++nextInode, // ino
-    stats.size,
-    undefined, // blocks,
-    fakeTime.getTime(), // atim_msec
-    fakeTime.getTime(), // mtim_msec
-    fakeTime.getTime(), // ctim_msec
-    fakeTime.getTime() // birthtim_msec
-  );
+    rdev: 0,
+    blksize: undefined,
+    ino: ++nextInode,
+    blocks: undefined,
+    atimeMs: timeMs,
+    mtimeMs: timeMs,
+    ctimeMs: timeMs,
+    birthtimeMs: timeMs,
+    atimeNs: timeNs,
+    mtimeNs: timeNs,
+    ctimeNs: timeNs,
+    birthtimeNs: timeNs
+  }).forEach(([key, value]) => {
+    if (key in nStats) {
+      nStats[key] = (options?.bigint === true && typeof value === 'number') ? BigInt(value) : value;
+    }
+  });
+
+  return nStats;
 };
 
 const enum AsarError {
@@ -299,14 +311,6 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     fs.writeSync(logFDs.get(asarPath), `${offset}: ${filePath}\n`);
   };
 
-  const shouldThrowStatError = (options: any) => {
-    if (options && typeof options === 'object' && options.throwIfNoEntry === false) {
-      return false;
-    }
-
-    return true;
-  };
-
   const { lstatSync } = fs;
   fs.lstatSync = (pathArgument: string, options: any) => {
     const pathInfo = splitPath(pathArgument);
@@ -315,7 +319,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
     const archive = getOrCreateArchive(asarPath);
     if (!archive) {
-      if (shouldThrowStatError(options)) {
+      if (options?.throwIfNoEntry !== false) {
         throw createError(AsarError.INVALID_ARCHIVE, { asarPath });
       };
       return null;
@@ -323,13 +327,13 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
     const stats = archive.stat(filePath);
     if (!stats) {
-      if (shouldThrowStatError(options)) {
+      if (options?.throwIfNoEntry !== false) {
         throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
       };
       return null;
     }
 
-    return asarStatsToFsStats(stats);
+    return asarStatsToFsStats(filePath, stats, options);
   };
 
   const { lstat } = fs;
@@ -356,7 +360,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       return;
     }
 
-    const fsStats = asarStatsToFsStats(stats);
+    const fsStats = asarStatsToFsStats(filePath, stats, options);
     nextTick(callback, [null, fsStats]);
   };
 
