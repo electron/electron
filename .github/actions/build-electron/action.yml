@@ -75,10 +75,25 @@ runs:
         export XDG_RUNTIME_DIR=/tmp/runtime-$(whoami)
         echo "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> $GITHUB_ENV
         mkdir -p "$XDG_RUNTIME_DIR"
+        echo "Starting Xvfb on :99 with 1024x768x24 resolution"
         Xvfb :99 -screen 0 1024x768x24 &
-        sleep 2   # give Xvfb a moment to start
-        WINEDEBUG=+all wineboot --init 2>&1 | tail -100
-        
+        echo "Wait for Xvfb to be ready"
+        # Wait for Xvfb to be ready (up to 5 seconds)
+        for i in $(seq 1 10); do
+          if xdpyinfo -display :99 >/dev/null 2>&1; then
+            echo "Xvfb is running on :99"
+            break
+          fi
+          echo "xvfb not ready yet, waiting..."
+          sleep 0.5
+        done
+        if ! xdpyinfo -display :99 >/dev/null 2>&1; then
+          echo "ERROR: Xvfb failed to start"
+          exit 1
+        fi
+        echo "Xvfb is ready; about to run wineboot"
+        wineboot --init
+        echo "Done running wineboot"
         #export WINEDEBUG=-all,err+all
         #echo "WINEDEBUG=$WINEDEBUG" >> $GITHUB_ENV
         # Initialize wine prefix to avoid first-run delays during build
@@ -87,6 +102,7 @@ runs:
         GN_APPENDED_ARGS="$GN_EXTRA_ARGS v8_wine_path=\"$WINE_PATH\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
         echo "GN APPENDED_ARGS set with wine path: $GN_APPENDED_ARGS"
+        echo "Wine setup complete"
     # - name: Download mksnapshot.zip
     #   shell: bash
     #   if: ${{ inputs.target-platform == 'win' }}
