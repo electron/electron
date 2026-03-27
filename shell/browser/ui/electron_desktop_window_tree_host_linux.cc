@@ -239,7 +239,9 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
     if (ui::OzonePlatform::GetInstance()->IsWindowCompositingSupported()) {
       // Set the opaque region.
       std::vector<gfx::Rect> opaque_region;
-      if (IsShowingFrame(window_state)) {
+      if (native_window_view_->IsTranslucent()) {
+        // Leave opaque_region empty.
+      } else if (IsShowingFrame(window_state)) {
         // The opaque region is a list of rectangles that contain only fully
         // opaque pixels of the window.  We need to convert the clipping
         // rounded-rect into this format.
