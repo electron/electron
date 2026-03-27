@@ -7,6 +7,7 @@
     "node-gyp-install": "node-gyp install"
   },
   "devDependencies": {
+    "@electron-ci/dialog-helper": "*",
     "@electron-ci/echo": "*",
     "@electron-ci/external-ab": "*",
     "@electron-ci/is-valid-window": "*",

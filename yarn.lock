@@ -616,6 +616,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@electron-ci/dialog-helper@npm:*, @electron-ci/dialog-helper@workspace:spec/fixtures/native-addon/dialog-helper":
+  version: 0.0.0-use.local
+  resolution: "@electron-ci/dialog-helper@workspace:spec/fixtures/native-addon/dialog-helper"
+  languageName: unknown
+  linkType: soft
+
 "@electron-ci/echo@npm:*, @electron-ci/echo@workspace:spec/fixtures/native-addon/echo":
   version: 0.0.0-use.local
   resolution: "@electron-ci/echo@workspace:spec/fixtures/native-addon/echo"
@@ -4741,6 +4747,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "electron-test-main@workspace:spec"
   dependencies:
+    "@electron-ci/dialog-helper": "npm:*"
     "@electron-ci/echo": "npm:*"
     "@electron-ci/external-ab": "npm:*"
     "@electron-ci/is-valid-window": "npm:*"
