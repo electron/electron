@@ -389,7 +389,7 @@ jobs:
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: windows-latest
-      build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-windows.outputs.build-image-sha }}","options":"--user root --device /dev/fuse --cap-add SYS_ADMIN --sysctl vm.mmap_min_addr=0 --sysctl vm.max_map_count=262144 --privileged","volumes":["/mnt/win-cache:/mnt/win-cache"]}'
+      build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-windows.outputs.build-image-sha }}","options":"--user root --device /dev/fuse --cap-add SYS_ADMIN","volumes":["/mnt/win-cache:/mnt/win-cache"]}'
       target-platform: win
       target-arch: x64
       is-release: false
@@ -409,7 +409,7 @@ jobs:
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: windows-latest
-      build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-windows.outputs.build-image-sha }}","options":"--user root --device /dev/fuse --cap-add SYS_ADMIN --sysctl vm.mmap_min_addr=0 --sysctl vm.max_map_count=262144 --privileged","volumes":["/mnt/win-cache:/mnt/win-cache"]}'
+      build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-windows.outputs.build-image-sha }}","options":"--user root --device /dev/fuse --cap-add SYS_ADMIN","volumes":["/mnt/win-cache:/mnt/win-cache"]}'
       target-platform: win
       target-arch: x86
       is-release: false
@@ -429,7 +429,7 @@ jobs:
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: windows-11-arm
-      build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-windows.outputs.build-image-sha }}","options":"--user root --device /dev/fuse --cap-add SYS_ADMIN --sysctl vm.mmap_min_addr=0 --sysctl vm.max_map_count=262144 --privileged","volumes":["/mnt/win-cache:/mnt/win-cache"]}'
+      build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-windows.outputs.build-image-sha }}","options":"--user root --device /dev/fuse --cap-add SYS_ADMIN","volumes":["/mnt/win-cache:/mnt/win-cache"]}'
       target-platform: win
       target-arch: arm64
       is-release: false
