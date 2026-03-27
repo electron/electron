@@ -57,8 +57,12 @@ runs:
         sudo apt install -y --install-recommends winehq-stable libgcc-s1:i386 libgcc-s1
         # Increase virtual memory limits for Wine's VirtualAlloc (V8 sandbox
         # reserves a very large contiguous region that fails under default limits)
+        sudo sysctl vm.mmap_min_addr
+        sudo sysctl -w vm.mmap_min_addr=65536
         sudo sysctl -w vm.max_map_count=1048576
         sudo sysctl -w vm.overcommit_memory=1
+        sudo sysctl -w kernel.randomize_va_space=0
+        sudo ulimit -v unlimited
         if [ -x /usr/bin/wine ]; then
           WINE_PATH=/usr/bin/wine
         elif command -v wine >/dev/null 2>&1; then
@@ -110,35 +114,35 @@ runs:
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
         echo "GN APPENDED_ARGS set with wine path: $GN_APPENDED_ARGS"
         echo "Wine setup complete"
-    - name: Download mksnapshot.zip
-      shell: bash
-      if: ${{ inputs.target-platform == 'win' }}
-      run: |
-        # Download mksnapshot.zip from https://electronbuildtools.blob.core.windows.net/windows-toolchains/mksnapshot.zip
-        curl -L -o mksnapshot.zip https://electronbuildtools.blob.core.windows.net/windows-toolchains/mksnapshot.zip
-        if [ $? -ne 0 ]; then
-          echo "Failed to download mksnapshot.zip"
-          exit 1
-        fi
-        if [ -f mksnapshot.zip ]; then
-          echo "Successfully downloaded mksnapshot.zip"
-        else
-          echo "mksnapshot.zip not found after download"
-          exit 1
-        fi
-        if [ -f mksnapshot.zip ]; then
-          unzip mksnapshot.zip -d mksnapshot || true
-          PREBUILT_MKSNAPSHOT="$(pwd)/mksnapshot/mksnapshot.exe"
-          if [ -f "$PREBUILT_MKSNAPSHOT" ]; then
-            GN_APPENDED_ARGS="$GN_EXTRA_ARGS v8_prebuilt_mksnapshot=\"$PREBUILT_MKSNAPSHOT\""
-            echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
-            echo "Using pre-built mksnapshot at $PREBUILT_MKSNAPSHOT"
-          else
-            echo "mksnapshot binary not found in mksnapshot.zip, will build from source"
-          fi
-        else
-          echo "mksnapshot.zip not found, skipping unzip and PATH update"
-        fi        
+    # - name: Download mksnapshot.zip
+    #   shell: bash
+    #   if: ${{ inputs.target-platform == 'win' }}
+    #   run: |
+    #     # Download mksnapshot.zip from https://electronbuildtools.blob.core.windows.net/windows-toolchains/mksnapshot.zip
+    #     curl -L -o mksnapshot.zip https://electronbuildtools.blob.core.windows.net/windows-toolchains/mksnapshot.zip
+    #     if [ $? -ne 0 ]; then
+    #       echo "Failed to download mksnapshot.zip"
+    #       exit 1
+    #     fi
+    #     if [ -f mksnapshot.zip ]; then
+    #       echo "Successfully downloaded mksnapshot.zip"
+    #     else
+    #       echo "mksnapshot.zip not found after download"
+    #       exit 1
+    #     fi
+    #     if [ -f mksnapshot.zip ]; then
+    #       unzip mksnapshot.zip -d mksnapshot || true
+    #       PREBUILT_MKSNAPSHOT="$(pwd)/mksnapshot/mksnapshot.exe"
+    #       if [ -f "$PREBUILT_MKSNAPSHOT" ]; then
+    #         GN_APPENDED_ARGS="$GN_EXTRA_ARGS v8_prebuilt_mksnapshot=\"$PREBUILT_MKSNAPSHOT\""
+    #         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
+    #         echo "Using pre-built mksnapshot at $PREBUILT_MKSNAPSHOT"
+    #       else
+    #         echo "mksnapshot binary not found in mksnapshot.zip, will build from source"
+    #       fi
+    #     else
+    #       echo "mksnapshot.zip not found, skipping unzip and PATH update"
+    #     fi        
     - name: Add Clang problem matcher
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
