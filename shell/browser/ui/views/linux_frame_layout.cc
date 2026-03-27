@@ -112,7 +112,7 @@ void LinuxFrameLayout::set_tiled(bool tiled) {
 
 gfx::Rect LinuxFrameLayout::GetWindowBounds() const {
   gfx::Rect bounds = window_->widget()->GetWindowBoundsInScreen();
-  bounds.Inset(RestoredFrameBorderInsets());
+  bounds.Inset(FrameBorderInsets(false));
   return bounds;
 }
 
