@@ -24,6 +24,7 @@
 #include <windows.h>
 
 #include "base/no_destructor.h"
+#include "base/strings/utf_string_conversions.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/notifications/win/windows_toast_activator.h"
 #endif
@@ -76,6 +77,7 @@ Notification::Notification(gin::Arguments* args) {
   if (args->GetNext(&opts)) {
     opts.Get("id", &id_);
     opts.Get("groupId", &group_id_);
+    opts.Get("groupTitle", &group_title_);
     opts.Get("title", &title_);
     opts.Get("subtitle", &subtitle_);
     opts.Get("body", &body_);
@@ -108,6 +110,37 @@ gin_helper::Handle<Notification> Notification::New(
     thrower.ThrowError("Cannot create Notification before app is ready");
     return {};
   }
+
+#if BUILDFLAG(IS_WIN)
+  // Validate id and groupId length before constructing.
+  // Windows toast API has limits on Tag (64) and Group (64) lengths.
+  // Check the UTF-16 length since that's what Windows uses.
+  constexpr size_t kMaxIdLength = 64;
+  constexpr size_t kMaxGroupIdLength = 64;
+
+  gin::Dictionary opts(nullptr);
+  if (args->PeekNext().IsEmpty() || args->PeekNext()->IsUndefined() ||
+      gin::ConvertFromV8(thrower.isolate(), args->PeekNext(), &opts)) {
+    std::string id;
+    std::string group_id;
+    opts.Get("id", &id);
+    opts.Get("groupId", &group_id);
+
+    if (!id.empty() && base::UTF8ToWide(id).length() > kMaxIdLength) {
+      thrower.ThrowError("Notification id must be " +
+                         std::to_string(kMaxIdLength) + " characters or less");
+      return {};
+    }
+    if (!group_id.empty() &&
+        base::UTF8ToWide(group_id).length() > kMaxGroupIdLength) {
+      thrower.ThrowError("Notification groupId must be " +
+                         std::to_string(kMaxGroupIdLength) +
+                         " characters or less");
+      return {};
+    }
+  }
+#endif
+
   return gin_helper::CreateHandle(thrower.isolate(), new Notification(args));
 }
 
@@ -259,6 +292,7 @@ void Notification::Show() {
       options.urgency = urgency_;
       options.toast_xml = toast_xml_;
       options.group_id = group_id_;
+      options.group_title = group_title_;
       notification_->Show(options);
     }
   }
@@ -349,6 +383,7 @@ void Notification::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("close", &Notification::Close)
       .SetProperty("id", &Notification::id)
       .SetProperty("groupId", &Notification::group_id)
+      .SetProperty("groupTitle", &Notification::group_title)
       .SetProperty("title", &Notification::title, &Notification::SetTitle)
       .SetProperty("subtitle", &Notification::subtitle,
                    &Notification::SetSubtitle)

@@ -79,8 +79,9 @@ app.whenReady().then(() => {
 ### `new Notification([options])`
 
 * `options` Object (optional)
-  * `id` string (optional) _macOS_ - A unique identifier for the notification, mapping to `UNNotificationRequest`'s [`identifier`](https://developer.apple.com/documentation/usernotifications/unnotificationrequest/identifier) property. Defaults to a random UUID if not provided or if an empty string is passed. This can be used to remove or update previously delivered notifications.
-  * `groupId` string (optional) _macOS_ - A string identifier used to visually group notifications together in Notification Center. Maps to `UNNotificationContent`'s [`threadIdentifier`](https://developer.apple.com/documentation/usernotifications/unnotificationcontent/threadidentifier) property.
+  * `id` string (optional) _macOS_ _Windows_ - A unique identifier for the notification. On macOS, maps to `UNNotificationRequest`'s [`identifier`](https://developer.apple.com/documentation/usernotifications/unnotificationrequest/identifier) property. On Windows, maps to the toast notification's Tag property. Defaults to a random UUID if not provided or if an empty string is passed. This can be used to remove or update previously delivered notifications.
+  * `groupId` string (optional) _macOS_ _Windows_ - A string identifier used to visually group notifications together in Notification Center / Action Center. On macOS, maps to `UNNotificationContent`'s [`threadIdentifier`](https://developer.apple.com/documentation/usernotifications/unnotificationcontent/threadidentifier) property. On Windows, maps to the toast notification's Group property.
+  * `groupTitle` string (optional) _Windows_ - A title for the notification group header. When both `groupId` and `groupTitle` are specified, Windows will display a header above the notification that groups related notifications together. Maps to the toast notification's [`header`](https://learn.microsoft.com/en-us/windows/apps/design/shell/tiles-and-notifications/toast-headers) element.
   * `title` string (optional) - A title for the notification, which will be displayed at the top of the notification window when it is shown.
   * `subtitle` string (optional) _macOS_ - A subtitle for the notification, which will be displayed below the title.
   * `body` string (optional) - The body text of the notification, which will be displayed below the title or subtitle.
@@ -329,13 +330,17 @@ app.whenReady().then(() => {
 
 ### Instance Properties
 
-#### `notification.id` _macOS_ _Readonly_
+#### `notification.id` _macOS_ _Windows_ _Readonly_
 
 A `string` property representing the unique identifier of the notification. This is set at construction time — either from the `id` option or as a generated UUID if none was provided.
 
-#### `notification.groupId` _macOS_ _Readonly_
+#### `notification.groupId` _macOS_ _Windows_ _Readonly_
 
-A `string` property representing the group identifier of the notification. Notifications with the same `groupId` will be visually grouped together in Notification Center.
+A `string` property representing the group identifier of the notification. Notifications with the same `groupId` will be visually grouped together in Notification Center (macOS) or Action Center (Windows).
+
+#### `notification.groupTitle` _Windows_ _Readonly_
+
+A `string` property representing the title of the notification group header.
 
 #### `notification.title`
 

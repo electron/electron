@@ -50,6 +50,7 @@ struct NotificationOptions {
   std::u16string close_button_text;
   std::u16string toast_xml;
   std::string group_id;
+  std::u16string group_title;
 
   NotificationOptions();
   NotificationOptions(const NotificationOptions&);
