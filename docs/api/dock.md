@@ -56,6 +56,9 @@ Returns `string` - The badge string of the dock.
 
 Hides the dock icon.
 
+> [!IMPORTANT]
+> **Known issue:** Calling `dock.hide()` within one second of a previous call will have no effect. As a workaround, ensure at least one second has elapsed between calls — for example, by deferring with a `setTimeout` of 1100ms or more after a previous call.
+
 #### `dock.show()` _macOS_
 
 Returns `Promise<void>` - Resolves when the dock icon is shown.
