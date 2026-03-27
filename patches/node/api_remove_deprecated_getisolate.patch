@@ -533,10 +533,10 @@ index 55a0c986c5b6989ee9ce277bb6a9778abb2ad2ee..809d88f21e5572807e38132d40ee7587
    READONLY_PROPERTY(target, "exitCodes", exit_codes);
  
 diff --git a/src/node_file.cc b/src/node_file.cc
-index ba6ffc2b6565dea500bc8dd4818c8fcb7648694a..e834325a763f7ea8f53210145b5edd134d6b67e6 100644
+index 96aac2d86695732bf6805f2ad2168a62241b5045..547455bb5011677719a8de1f98cb447561bce6aa 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -3843,7 +3843,7 @@ void BindingData::Deserialize(Local<Context> context,
+@@ -3850,7 +3850,7 @@ void BindingData::Deserialize(Local<Context> context,
                                int index,
                                InternalFieldInfoBase* info) {
    DCHECK_IS_SNAPSHOT_SLOT(index);
@@ -686,7 +686,7 @@ index d33ee3c26c111e53edf27e6368ca8f64ff30a349..f1c53c44f201b295888e7932c5e3e2b1
  
    Environment* env = Environment::GetCurrent(isolate);
 diff --git a/src/node_url.cc b/src/node_url.cc
-index 9d1e8ec05161570db11f7b662395509774668d78..9b91f83d879ea02fd3d61913c8dfd35b3bf1ac31 100644
+index 9b676a0156ab8ef47f62627be953c23d4fcbf4f4..6294cd03667980e2ad23cae9e7961262369efb62 100644
 --- a/src/node_url.cc
 +++ b/src/node_url.cc
 @@ -70,7 +70,7 @@ void BindingData::Deserialize(Local<Context> context,
