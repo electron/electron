@@ -608,6 +608,9 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
       const std::string* file = dict.FindString("filePath");
       if (!file)
         return false;
+      if (std::any_of(file->begin(), file->end(),
+                      [](char c) { return c >= 0 && c < 0x20; }))
+        return false;
       double modification_time =
           dict.FindDouble("modificationTime").value_or(0.0);
       int offset = dict.FindInt("offset").value_or(0);
