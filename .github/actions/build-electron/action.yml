@@ -92,10 +92,14 @@ runs:
           exit 1
         fi
         echo "Xvfb is ready; about to run wineboot"
+
+        export WINEDEBUG=-all
+        echo "WINEDEBUG=$WINEDEBUG" >> $GITHUB_ENV
+        export WINEARCH=win64
+        echo "WINEARCH=$WINEARCH" >> $GITHUB_ENV
         wineboot --init
         echo "Done running wineboot"
-        #export WINEDEBUG=-all,err+all
-        #echo "WINEDEBUG=$WINEDEBUG" >> $GITHUB_ENV
+        
         # Initialize wine prefix to avoid first-run delays during build
         #"$WINE_PATH" wineboot --init 2>/dev/null || true
         # Pass wine path to GN so siso can find it regardless of PATH
