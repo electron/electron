@@ -162,6 +162,11 @@ RendererClientBase::RendererClientBase() {
       ParseSchemesCLISwitch(command_line, switches::kSecureSchemes);
   for (const std::string& scheme : secure_schemes_list)
     url::AddSecureScheme(scheme.data());
+  // Parse --extension-schemes=scheme1,scheme2
+  std::vector<std::string> extension_schemes_list =
+      ParseSchemesCLISwitch(command_line, switches::kExtensionSchemes);
+  for (const std::string& scheme : extension_schemes_list)
+    url::AddExtensionScheme(scheme.c_str());
   // We rely on the unique process host id which is notified to the
   // renderer process via command line switch from the content layer,
   // if this switch is removed from the content layer for some reason,
