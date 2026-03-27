@@ -40,7 +40,6 @@ class ZoomLevelDelegate : public content::ZoomLevelDelegate {
   ZoomLevelDelegate(const ZoomLevelDelegate&) = delete;
   ZoomLevelDelegate& operator=(const ZoomLevelDelegate&) = delete;
 
-  void SetDefaultZoomLevelPref(double level);
   double GetDefaultZoomLevelPref() const;
 
   // content::ZoomLevelDelegate:
