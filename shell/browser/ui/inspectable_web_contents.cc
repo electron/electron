@@ -58,6 +58,7 @@
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
+#include "url/url_util.h"
 #include "v8/include/v8.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -869,6 +870,13 @@ void InspectableWebContents::GetSyncInformation(DispatchCallback callback) {
 
 void InspectableWebContents::GetHostConfig(DispatchCallback callback) {
   base::DictValue response_dict;
+
+  base::ListValue extension_schemes;
+  for (const std::string& scheme : url::GetExtensionSchemes())
+    extension_schemes.Append(scheme + ":");
+  response_dict.Set("devToolsExtensionSchemes",
+                    base::Value(std::move(extension_schemes)));
+
   base::Value response = base::Value(std::move(response_dict));
   std::move(callback).Run(&response);
 }
