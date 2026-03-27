@@ -10,7 +10,7 @@ host. This avoids needing source-level cross-compile patches for the
 unwinding info code paths.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 985f946d5f87b4e6eb32a011ac47a0073248e5f2..fc24800d3334b74debe84f9ac8b348b4fdba63af 100644
+index 985f946d5f87b4e6eb32a011ac47a0073248e5f2..229c6e53e6608793d0fc6d34f31625e4bc862fc8 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -2681,7 +2681,11 @@ template("run_mksnapshot") {
@@ -26,23 +26,26 @@ index 985f946d5f87b4e6eb32a011ac47a0073248e5f2..fc24800d3334b74debe84f9ac8b348b4
      if (v8_verify_deterministic_mksnapshot) {
        # We archive the snapshot executable when verifying snapshot
        # determinism to ease debugging.
-@@ -2735,10 +2739,23 @@ template("run_mksnapshot") {
+@@ -2735,10 +2739,26 @@ template("run_mksnapshot") {
        data += [ "$root_out_dir/mksnapshot_output${suffix}.log" ]
      }
  
-+    _mksnapshot_dir = get_label_info(":mksnapshot($v8_snapshot_toolchain)",
-+                                     "root_out_dir")
 +    if (v8_prebuilt_mksnapshot != "") {
 +      _mksnapshot_bin = v8_prebuilt_mksnapshot
-+    } else if (v8_win_cross_compile_using_wine) {
-+      _mksnapshot_bin = _mksnapshot_dir + "/mksnapshot.exe"
 +    } else {
-+      _mksnapshot_bin = _mksnapshot_dir + "/mksnapshot"
++      _mksnapshot_dir =
++          get_label_info(":mksnapshot($v8_snapshot_toolchain)", "root_out_dir")
++      if (v8_win_cross_compile_using_wine) {
++        _mksnapshot_bin = _mksnapshot_dir + "/mksnapshot.exe"
++      } else {
++        _mksnapshot_bin = _mksnapshot_dir + "/mksnapshot"
++      }
 +    }
 +
 +    if (v8_win_cross_compile_using_wine) {
-+      assert(v8_wine_path != "",
-+             "v8_wine_path must be set when v8_win_cross_compile_using_wine is true")
++      assert(
++          v8_wine_path != "",
++          "v8_wine_path must be set when v8_win_cross_compile_using_wine is true")
 +      args += [ v8_wine_path ]
 +    }
      args += [
