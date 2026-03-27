@@ -17,6 +17,7 @@ index fee622ebde42211de6f702b754cfa38595df5a1c..6b524632ebb405e473cf4fe8e253bd13
    kIndigoContext,                // indigo::IndigoContext
 -  kLastPointerTag = kIndigoContext,
 +  kElectronApp,                         // electron::api::App
++  kElectronConnectionCostMonitor,       // electron::api::ConnectionCostMonitor
 +  kElectronDataPipeHolder,              // electron::api::DataPipeHolder
 +  kElectronDebugger,                    // electron::api::Debugger
 +  kElectronEvent,                       // gin_helper::internal::Event
