@@ -71,6 +71,11 @@ Menu::~Menu() {
   RemoveModelObserver();
 }
 
+void Menu::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<Menu>::Trace(visitor);
+  visitor->Trace(parent_);
+}
+
 void Menu::RemoveModelObserver() {
   if (model_) {
     model_->RemoveObserver(this);

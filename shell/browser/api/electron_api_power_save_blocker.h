@@ -14,16 +14,11 @@ namespace gin {
 class ObjectTemplateBuilder;
 }  // namespace gin
 
-namespace gin_helper {
-template <typename T>
-class Handle;
-}  // namespace gin_helper
-
 namespace electron::api {
 
 class PowerSaveBlocker final : public gin::Wrappable<PowerSaveBlocker> {
  public:
-  static gin_helper::Handle<PowerSaveBlocker> Create(v8::Isolate* isolate);
+  static PowerSaveBlocker* Create(v8::Isolate* isolate);
 
   // gin::Wrappable
   static const gin::WrapperInfo kWrapperInfo;

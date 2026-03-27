@@ -147,6 +147,17 @@ config("branding") {
 
 config("electron_lib_config") {
   include_dirs = [ "." ]
+  cflags = []
+  if (is_clang && clang_use_chrome_plugins) {
+    # The plugin is built directly into clang, so there's no need to load it
+    # dynamically.
+    cflags += [
+      "-Xclang",
+      "-add-plugin",
+      "-Xclang",
+      "blink-gc-plugin",
+    ]
+  }
 }
 
 # We generate the definitions twice here, once in //electron/electron.d.ts
