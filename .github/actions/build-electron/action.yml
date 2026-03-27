@@ -127,7 +127,7 @@ runs:
           exit 1
         fi
         if [ -f mksnapshot.zip ]; then
-          unzip mksnapshot.zip -d mksnapshot
+          unzip mksnapshot.zip -d mksnapshot || true
           PREBUILT_MKSNAPSHOT="$(pwd)/mksnapshot/mksnapshot.exe"
           if [ -f "$PREBUILT_MKSNAPSHOT" ]; then
             GN_APPENDED_ARGS="$GN_EXTRA_ARGS v8_prebuilt_mksnapshot=\"$PREBUILT_MKSNAPSHOT\""
