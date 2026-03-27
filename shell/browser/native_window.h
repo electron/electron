@@ -22,6 +22,8 @@
 #include "extensions/browser/app_window/size_constraints.h"
 #include "shell/browser/native_window_observer.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
+#include "ui/gfx/geometry/rect.h"
+#include "ui/gfx/image/image.h"
 #include "ui/views/widget/widget_delegate.h"
 
 class SkRegion;
@@ -53,6 +55,26 @@ class BackgroundThrottlingSource;
 using NativeWindowHandle = gfx::NativeView;
 #else
 using NativeWindowHandle = gfx::AcceleratedWidget;
+#endif
+
+#if BUILDFLAG(IS_MAC)
+enum class GlassEffectStyle { kRegular, kClear };
+
+struct GlassEffectRegion {
+  GlassEffectRegion();
+  GlassEffectRegion(const GlassEffectRegion&);
+  GlassEffectRegion(GlassEffectRegion&&);
+  GlassEffectRegion& operator=(const GlassEffectRegion&);
+  GlassEffectRegion& operator=(GlassEffectRegion&&);
+  ~GlassEffectRegion();
+
+  GlassEffectStyle style = GlassEffectStyle::kRegular;
+  float corner_radius = 0.f;
+  std::optional<SkColor> tint_color;
+  // Region-only fields — ignored by SetGlassEffect.
+  gfx::Rect bounds;
+  gfx::Image content_image;
+};
 #endif
 
 class NativeWindow : public views::WidgetDelegate {
@@ -233,6 +255,22 @@ class NativeWindow : public views::WidgetDelegate {
   }
 
   virtual void SetBackgroundMaterial(const std::string& type);
+
+#if BUILDFLAG(IS_MAC)
+  // Liquid Glass API (macOS 26+).
+  //
+  // SetGlassEffect places a single NSGlassEffectView behind the web content,
+  // covering the full content area. Transparent page regions reveal the glass
+  // surface underneath. Pass std::nullopt to remove the effect.
+  //
+  // SetGlassEffectRegions places one NSGlassEffectView per region above the
+  // web content. Each glass view captures the web content behind it as its
+  // backdrop and renders the refraction/highlight effect. Mouse events pass
+  // through to the web content. Pass an empty vector to remove all regions.
+  virtual void SetGlassEffect(std::optional<GlassEffectRegion> options);
+  virtual void SetGlassEffectRegions(std::vector<GlassEffectRegion> regions);
+  virtual bool IsGlassEffectSupported() const;
+#endif
 
   // Traffic Light API
 #if BUILDFLAG(IS_MAC)
@@ -439,6 +477,12 @@ class NativeWindow : public views::WidgetDelegate {
     titlebar_overlay_height_ = height;
   }
 
+#if BUILDFLAG(IS_MAC)
+  void set_has_glass_effect(bool has_glass_effect) {
+    has_glass_effect_ = has_glass_effect;
+  }
+#endif
+
   [[nodiscard]] bool has_client_frame() const { return has_client_frame_; }
 
   [[nodiscard]] bool transparent() const { return transparent_; }
@@ -549,6 +593,10 @@ class NativeWindow : public views::WidgetDelegate {
 
   std::string vibrancy_;
   std::string background_material_;
+
+#if BUILDFLAG(IS_MAC)
+  bool has_glass_effect_ = false;
+#endif
 
   gfx::Rect overlay_rect_;
 

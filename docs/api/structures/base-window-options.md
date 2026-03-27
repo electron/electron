@@ -116,6 +116,13 @@
 * `backgroundMaterial` string (optional) _Windows_ - Set the window's
   system-drawn background material, including behind the non-client area.
   Can be `auto`, `none`, `mica`, `acrylic` or `tabbed`. See [win.setBackgroundMaterial](../browser-window.md#winsetbackgroundmaterialmaterial-windows) for more information.
+* `glassEffect` Object (optional) _macOS_ _Experimental_ - Apply a native
+  Liquid Glass effect behind the window content area. Requires macOS 26.0 or
+  later. See [win.setGlassEffect](../base-window.md#winsetglasseffectoptions-macos-experimental)
+  for more information.
+  * `style` string (optional) - The glass style. Can be `regular` or `clear`. Defaults to `regular`.
+  * `cornerRadius` number (optional) - Corner radius of the glass shape. Defaults to `0`.
+  * `tintColor` string (optional) - CSS color used to tint the glass.
 * `zoomToPageWidth` boolean (optional) _macOS_ - Controls the behavior on
   macOS when option-clicking the green stoplight button on the toolbar or by
   clicking the Window > Zoom menu item. If `true`, the window will grow to

@@ -220,6 +220,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
   [super windowDidResize:notification];
   shell_->NotifyWindowResize();
   shell_->RedrawTrafficLights();
+  shell_->UpdateGlassEffectFrames();
   // When reduce motion is enabled windowDidResize is only called once after
   // a resize and windowDidEndLiveResize is not called. So we need to call
   // handleZoomEnd here as well.

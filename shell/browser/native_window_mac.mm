@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/apple/foundation_util.h"
 #include "base/apple/scoped_cftyperef.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
@@ -86,6 +87,28 @@
   NSRectFill(rect);
 }
 
+@end
+
+// Subclasses that ignore mouse events so clicks fall through to the web
+// content underneath. Used for overlay glass regions.
+API_AVAILABLE(macos(26.0))
+@interface ElectronPassthroughGlassView : NSGlassEffectView
+@end
+
+@implementation ElectronPassthroughGlassView
+- (NSView*)hitTest:(NSPoint)point {
+  return nil;
+}
+@end
+
+API_AVAILABLE(macos(26.0))
+@interface ElectronPassthroughGlassContainerView : NSGlassEffectContainerView
+@end
+
+@implementation ElectronPassthroughGlassContainerView
+- (NSView*)hitTest:(NSPoint)point {
+  return nil;
+}
 @end
 
 namespace gin {
@@ -214,6 +237,11 @@ NativeWindowMac::NativeWindowMac(const int32_t base_window_id,
     styleMask |= NSWindowStyleMaskTexturedBackground;
   }
 #pragma clang diagnostic pop
+
+  // Set before IsTranslucent() is read for widget opacity. SetGlassEffect
+  // re-sets this in InitFromOptions, but that runs after widget init.
+  set_has_glass_effect(options.Has(options::kGlassEffect) &&
+                       IsGlassEffectSupported());
 
   // Create views::Widget and assign window_ with it.
   // TODO(zcbenz): Get rid of the window_ in future.
@@ -1509,6 +1537,152 @@ void NativeWindowMac::SetVibrancy(const std::string& type, int duration) {
     }
 
     [vibrantView setMaterial:vibrancyType];
+  }
+}
+
+namespace {
+
+API_AVAILABLE(macos(26.0))
+void ConfigureGlassEffectView(NSGlassEffectView* view,
+                              const GlassEffectRegion& opts) {
+  view.style = opts.style == GlassEffectStyle::kClear
+                   ? NSGlassEffectViewStyleClear
+                   : NSGlassEffectViewStyleRegular;
+  view.cornerRadius = opts.corner_radius;
+  view.tintColor =
+      opts.tint_color ? skia::SkColorToSRGBNSColor(*opts.tint_color) : nil;
+
+  if (!opts.content_image.IsEmpty()) {
+    NSImageView* imageView =
+        base::apple::ObjCCast<NSImageView>(view.contentView);
+    if (!imageView) {
+      imageView = [[NSImageView alloc] initWithFrame:view.bounds];
+      imageView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+      imageView.imageScaling = NSImageScaleProportionallyDown;
+      imageView.imageAlignment = NSImageAlignCenter;
+      view.contentView = imageView;
+    }
+    imageView.image = opts.content_image.ToNSImage();
+  } else if (view.contentView) {
+    view.contentView = nil;
+  }
+}
+
+}  // namespace
+
+bool NativeWindowMac::IsGlassEffectSupported() const {
+  if (@available(macOS 26.0, *)) {
+    return true;
+  }
+  return false;
+}
+
+void NativeWindowMac::SetGlassEffect(std::optional<GlassEffectRegion> options) {
+  if (@available(macOS 26.0, *)) {
+    NativeWindow::SetGlassEffect(options);
+
+    NSView* contentView = [window_ contentView];
+
+    if (!options) {
+      [glass_effect_view_ removeFromSuperview];
+      glass_effect_view_ = nil;
+      return;
+    }
+
+    if (!glass_effect_view_) {
+      NSGlassEffectView* glass =
+          [[NSGlassEffectView alloc] initWithFrame:[contentView bounds]];
+      [glass setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+      glass_effect_view_ = glass;
+
+      // Insert directly at the bottom of the NSWindow's content view so the
+      // CABackdropLayer only captures the desktop behind the window, not the
+      // web content. Using NativeViewHost here places the glass above the web
+      // CALayerHost in the actual NSView z-order, which makes the glass
+      // refract the page instead of the desktop.
+      [contentView addSubview:glass positioned:NSWindowBelow relativeTo:nil];
+    }
+
+    ConfigureGlassEffectView(
+        static_cast<NSGlassEffectView*>(glass_effect_view_), *options);
+  }
+}
+
+void NativeWindowMac::SetGlassEffectRegions(
+    std::vector<GlassEffectRegion> regions) {
+  if (@available(macOS 26.0, *)) {
+    NSView* contentView = [window_ contentView];
+
+    if (regions.empty()) {
+      [glass_region_container_ removeFromSuperview];
+      glass_region_container_ = nil;
+      glass_region_views_.clear();
+      glass_region_bounds_.clear();
+      return;
+    }
+
+    NSGlassEffectContainerView* container =
+        static_cast<NSGlassEffectContainerView*>(glass_region_container_);
+    if (!container) {
+      container = [[ElectronPassthroughGlassContainerView alloc]
+          initWithFrame:[contentView bounds]];
+      [container setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+      NSView* inner = [[NSView alloc] initWithFrame:[contentView bounds]];
+      [inner setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+      container.contentView = inner;
+      // Add as the topmost subview of the window content view so the glass
+      // layers capture the web content below as their backdrop. The
+      // passthrough subclass ensures mouse events fall through to the web
+      // content.
+      [contentView addSubview:container
+                   positioned:NSWindowAbove
+                   relativeTo:nil];
+      glass_region_container_ = container;
+    }
+
+    NSView* inner = container.contentView;
+
+    while (glass_region_views_.size() > regions.size()) {
+      [glass_region_views_.back() removeFromSuperview];
+      glass_region_views_.pop_back();
+    }
+    while (glass_region_views_.size() < regions.size()) {
+      ElectronPassthroughGlassView* glass =
+          [[ElectronPassthroughGlassView alloc] initWithFrame:NSZeroRect];
+      [inner addSubview:glass];
+      glass_region_views_.push_back(glass);
+    }
+
+    glass_region_bounds_.clear();
+    glass_region_bounds_.reserve(regions.size());
+    for (size_t i = 0; i < regions.size(); ++i) {
+      ConfigureGlassEffectView(
+          static_cast<NSGlassEffectView*>(glass_region_views_[i]), regions[i]);
+      glass_region_bounds_.push_back(regions[i].bounds);
+    }
+
+    UpdateGlassEffectFrames();
+  }
+}
+
+void NativeWindowMac::UpdateGlassEffectFrames() {
+  if (@available(macOS 26.0, *)) {
+    if (!glass_region_container_)
+      return;
+
+    DCHECK_EQ(glass_region_bounds_.size(), glass_region_views_.size());
+
+    NSGlassEffectContainerView* container =
+        static_cast<NSGlassEffectContainerView*>(glass_region_container_);
+    CGFloat containerHeight = container.contentView.bounds.size.height;
+
+    for (size_t i = 0; i < glass_region_bounds_.size(); ++i) {
+      const gfx::Rect& b = glass_region_bounds_[i];
+      // Convert from Electron's top-left origin to Cocoa's bottom-left.
+      [glass_region_views_[i]
+          setFrame:NSMakeRect(b.x(), containerHeight - b.bottom(), b.width(),
+                              b.height())];
+    }
   }
 }
 

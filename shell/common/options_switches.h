@@ -113,6 +113,9 @@ inline constexpr std::string_view kVibrancyType = "vibrancy";
 // Add a vibrancy effect to the browser window.
 inline constexpr std::string_view kBackgroundMaterial = "backgroundMaterial";
 
+// Add a native Liquid Glass effect to the browser window (macOS 26+).
+inline constexpr std::string_view kGlassEffect = "glassEffect";
+
 // Specify how the material appearance should reflect window activity state on
 // macOS.
 inline constexpr std::string_view kVisualEffectState = "visualEffectState";

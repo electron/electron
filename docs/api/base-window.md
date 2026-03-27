@@ -1501,6 +1501,54 @@ See the [Windows documentation](https://learn.microsoft.com/en-us/windows/win32/
 > [!NOTE]
 > This method is only supported on Windows 11 22H2 and up.
 
+#### `win.setGlassEffect(options)` _macOS_ _Experimental_
+
+* `options` Object | null
+  * `style` string (optional) - The glass style. Can be `regular` or `clear`. Defaults to `regular`.
+  * `cornerRadius` number (optional) - Corner radius of the glass shape. Defaults to `0`.
+  * `tintColor` string (optional) - CSS color used to tint the glass. Defaults to no tint.
+
+Applies a native Liquid Glass effect behind the entire window content area
+using [NSGlassEffectView][glass-docs]. The web contents render above the glass
+surface, so any transparent regions in the page reveal the glass underneath.
+Passing `null` removes the effect.
+
+> [!NOTE]
+> This method requires macOS 26.0 or later and has no effect on earlier
+> releases. Use `win.isGlassEffectSupported()` to check availability.
+
+#### `win.setGlassEffectRegions(regions)` _macOS_ _Experimental_
+
+* `regions` [GlassEffectRegion](structures/glass-effect-region.md)[] | null
+
+Places native Liquid Glass overlays above the web contents at the specified
+rectangles. Each glass view captures the web content behind it as its backdrop
+and renders the refraction and highlight effects on top. Mouse events pass
+through to the web content.
+
+Because each overlay sits above the web contents, any content the page
+renders inside a region's bounds appears underneath the glass and is
+refracted along with the rest of the backdrop. Edge distortion is
+pronounced while the center stays readable with a soft frosted look. For
+crisp, unrefracted content on top of the glass, provide a
+[`contentImage`](structures/glass-effect-region.md) per region.
+
+Call this method with the on-screen bounds of the elements you want to
+glassify, and call it again whenever the layout changes (for example,
+from a `ResizeObserver`). Glass regions stack in array order: the last
+region in the array renders on top.
+
+Passing `null` or an empty array removes all glass regions.
+
+> [!NOTE]
+> This method requires macOS 26.0 or later and has no effect on earlier
+> releases. Use `win.isGlassEffectSupported()` to check availability.
+
+#### `win.isGlassEffectSupported()` _macOS_
+
+Returns `boolean` - Whether the native Liquid Glass effect is available on
+this system (macOS 26.0 or later).
+
 #### `win.setWindowButtonPosition(position)` _macOS_
 
 * `position` [Point](structures/point.md) | null
@@ -1538,6 +1586,7 @@ On Linux, the `symbolColor` is automatically calculated to have minimum accessib
 
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
 [vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc
+[glass-docs]: https://developer.apple.com/documentation/appkit/nsglasseffectview?preferredLanguage=objc
 [window-levels]: https://developer.apple.com/documentation/appkit/nswindow/level
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
 [window-session-end-event]:../api/structures/window-session-end-event.md
