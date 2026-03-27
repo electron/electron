@@ -57,7 +57,7 @@ index 985f946d5f87b4e6eb32a011ac47a0073248e5f2..229c6e53e6608793d0fc6d34f31625e4
        "--turbo-always-optimize-spills",
  
 diff --git a/gni/snapshot_toolchain.gni b/gni/snapshot_toolchain.gni
-index 37ed262640d048a6fa5923279ae0388c1c0ae766..d9830914f0abd919143f0cf8b3069c5a3f70516e 100644
+index 37ed262640d048a6fa5923279ae0388c1c0ae766..b837ef1f841f6bf77f60b85f8cfd831d806d8058 100644
 --- a/gni/snapshot_toolchain.gni
 +++ b/gni/snapshot_toolchain.gni
 @@ -32,6 +32,21 @@ declare_args() {
@@ -82,21 +82,23 @@ index 37ed262640d048a6fa5923279ae0388c1c0ae766..d9830914f0abd919143f0cf8b3069c5a
  }
  
  # Try to infer the appropriate snapshot toolchain for the v8_current_cpu
-@@ -69,7 +84,12 @@ if (v8_snapshot_toolchain == "") {
+@@ -69,7 +84,14 @@ if (v8_snapshot_toolchain == "") {
      # Cross-build from same ISA on one OS to another. For example:
      # * targeting win/x64 on a linux/x64 host
      # * targeting win/arm64 on a mac/arm64 host
 -    v8_snapshot_toolchain = host_toolchain
 +    if (v8_win_cross_compile_using_wine && is_win && host_os != "win") {
-+      # Build mksnapshot as a Windows .exe and run it via Wine.
-+      v8_snapshot_toolchain = current_toolchain
++      # Build mksnapshot as a Windows .exe and run it via Wine. Use the
++      # system allocator variant because PartitionAlloc's VirtualAlloc/
++      # VirtualFree usage is incompatible with Wine's memory management.
++      v8_snapshot_toolchain = current_toolchain + "_with_system_allocator"
 +    } else {
 +      v8_snapshot_toolchain = host_toolchain
 +    }
    } else if (host_cpu == "arm64" && current_cpu == "x64") {
      # Cross-build from arm64 to intel (likely on an Apple Silicon mac).
      v8_snapshot_toolchain =
-@@ -119,7 +139,13 @@ assert(v8_snapshot_toolchain != "",
+@@ -119,7 +141,13 @@ assert(v8_snapshot_toolchain != "",
  # We reuse the snapshot toolchain for building torque and other generators to
  # avoid building v8_libbase on the host more than once. On mips with big endian,
  # the snapshot toolchain is the target toolchain and, hence, can't be used.
