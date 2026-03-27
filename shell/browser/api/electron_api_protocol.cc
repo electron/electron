@@ -38,6 +38,7 @@ struct SchemeOptions {
   bool corsEnabled = false;
   bool stream = false;
   bool codeCache = false;
+  bool allowExtensions = false;
 };
 
 struct CustomScheme {
@@ -70,6 +71,7 @@ struct Converter<CustomScheme> {
       opt.Get("corsEnabled", &(out->options.corsEnabled));
       opt.Get("stream", &(out->options.stream));
       opt.Get("codeCache", &(out->options.codeCache));
+      opt.Get("allowExtensions", &(out->options.allowExtensions));
     }
     return true;
   }
@@ -124,7 +126,7 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
   }
 
   std::vector<std::string> secure_schemes, cspbypassing_schemes, fetch_schemes,
-      service_worker_schemes, cors_schemes;
+      service_worker_schemes, cors_schemes, extension_schemes;
   for (const auto& custom_scheme : custom_schemes) {
     // Register scheme to privileged list (https, wss, data, chrome-extension)
     if (custom_scheme.options.standard) {
@@ -160,6 +162,10 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
       GetCodeCacheSchemes().push_back(custom_scheme.scheme);
       url::AddCodeCacheScheme(custom_scheme.scheme.c_str());
     }
+    if (custom_scheme.options.allowExtensions) {
+      extension_schemes.push_back(custom_scheme.scheme);
+      url::AddExtensionScheme(custom_scheme.scheme.c_str());
+    }
   }
 
   const auto AppendSchemesToCmdLine = [](const std::string_view switch_name,
@@ -179,6 +185,8 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
   AppendSchemesToCmdLine(electron::switches::kFetchSchemes, fetch_schemes);
   AppendSchemesToCmdLine(electron::switches::kServiceWorkerSchemes,
                          service_worker_schemes);
+  AppendSchemesToCmdLine(electron::switches::kExtensionSchemes,
+                         extension_schemes);
   AppendSchemesToCmdLine(electron::switches::kStandardSchemes,
                          GetStandardSchemes());
   AppendSchemesToCmdLine(electron::switches::kStreamingSchemes,
