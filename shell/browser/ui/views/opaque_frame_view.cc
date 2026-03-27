@@ -341,9 +341,7 @@ views::Button* OpaqueFrameView::CreateButton(
 }
 
 gfx::Insets OpaqueFrameView::FrameBorderInsets(bool restored) const {
-  return !restored && IsFrameCondensed()
-             ? gfx::Insets()
-             : linux_frame_layout_->RestoredFrameBorderInsets();
+  return linux_frame_layout_->FrameBorderInsets(restored);
 }
 
 int OpaqueFrameView::FrameTopBorderThickness(bool restored) const {

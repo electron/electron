@@ -83,6 +83,12 @@ gfx::Insets LinuxFrameLayout::RestoredFrameBorderInsets() const {
   return gfx::Insets();
 }
 
+gfx::Insets LinuxFrameLayout::FrameBorderInsets(bool restored) const {
+  return !restored && (window_->IsMaximized() || window_->IsFullscreen())
+             ? gfx::Insets()
+             : RestoredFrameBorderInsets();
+}
+
 gfx::Insets LinuxFrameLayout::GetInputInsets() const {
   return gfx::Insets(kResizeInsideBoundsSize);
 }
