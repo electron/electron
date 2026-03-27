@@ -62,7 +62,6 @@ runs:
         sudo sysctl -w vm.max_map_count=1048576
         sudo sysctl -w vm.overcommit_memory=1
         sudo sysctl -w kernel.randomize_va_space=0
-        sudo ulimit -v unlimited
         if [ -x /usr/bin/wine ]; then
           WINE_PATH=/usr/bin/wine
         elif command -v wine >/dev/null 2>&1; then
@@ -109,6 +108,11 @@ runs:
         echo "Done running wineboot"
         # Initialize wine prefix to avoid first-run delays during build
         #"$WINE_PATH" wineboot --init 2>/dev/null || true
+        WINE_WRAPPER="/usr/local/bin/xvfb-wine"
+        printf '#!/bin/sh\nsetarch x86_64 -R %s "$@"\n' "$WINE_PATH" | sudo tee "$WINE_WRAPPER" > /dev/null
+        sudo chmod +x "$WINE_WRAPPER"
+        GN_APPENDED_ARGS="$GN_EXTRA_ARGS v8_wine_path=\"$WINE_WRAPPER\""
+
         # Pass wine path to GN so siso can find it regardless of PATH
         GN_APPENDED_ARGS="$GN_EXTRA_ARGS v8_wine_path=\"$WINE_PATH\""
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
