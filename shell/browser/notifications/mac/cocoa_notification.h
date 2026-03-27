@@ -24,6 +24,7 @@ class CocoaNotification : public Notification {
   // Notification:
   void Show(const NotificationOptions& options) override;
   void Dismiss() override;
+  void Restore() override;
 
   void NotificationDisplayed();
   void NotificationReplied(const std::string& reply);
@@ -38,6 +39,7 @@ class CocoaNotification : public Notification {
   void LogAction(const char* action);
   void ScheduleNotification(UNMutableNotificationContent* content);
 
+  bool is_restored_ = false;
   UNNotificationRequest* __strong notification_request_;
 };
 
