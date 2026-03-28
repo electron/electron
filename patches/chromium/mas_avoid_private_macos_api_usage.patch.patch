@@ -50,10 +50,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 0777ba1fcab7c2324bd3e2de50350608a0b66847..c3d45941c2d4adc7d3be18ab6dfe02e4f55e8f94 100644
+index ae599a3d3d4848f904de93344b40dd59e12ad631..28d18fd426e4ceec1b65714200bdb5d445225901 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1087,6 +1087,7 @@ component("base") {
+@@ -1086,6 +1086,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -974,7 +974,7 @@ index 664e12c07204feeb5be16581fe51e8adc4b898dd..38159d146cdf71f84611d58e2983418a
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 7bddd5f1a6321d69bdd79d0c50bc396487eba6a9..7b1f297b0ec5cd3138934543050ce571fd43647a 100644
+index 431c4151c4c76f99ea2ec21b9f019e6bf123df79..9f9d8feff59b03b15e289e6fbc9474920d89a12c 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -363,6 +363,7 @@ source_set("browser") {
@@ -1189,7 +1189,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 52861a7b6420d3410f62bdf540f50cebb3cc074b..29eadfe08c903339f6938abe1ed5dcb4a7989954 100644
+index fc808a4a52383001885031035efe3d5ab898ba7f..46766e561e1e6ff14c0ece100386fcd5ce9df49a 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -701,6 +701,7 @@ static_library("test_support") {
@@ -1217,7 +1217,7 @@ index 52861a7b6420d3410f62bdf540f50cebb3cc074b..29eadfe08c903339f6938abe1ed5dcb4
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3428,6 +3432,7 @@ test("content_unittests") {
+@@ -3430,6 +3434,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1308,7 +1308,7 @@ index 03a74b7d29f12be3a5d208b43beaa13f47a8e4a6..d36254ca28c1a3a4ef2b15cfbb327212
      if (is_ios) {
        sources += [ "image_transport_surface_ios.mm" ]
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index 8b7a675d95ad36cbb9528bc5bc7ef05e5124e5a3..ed6a9a326b82b177059317dc4bc54b102f9bcc78 100644
+index c2fd68d54df18eb544f9167870054aabbcc91623..915536753b3f3f61f370eee233c579cd14e4c19c 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
 @@ -8,6 +8,7 @@
@@ -1943,7 +1943,7 @@ index 0f8a6f75b7f01029adc2f5fd23559bacce19cf72..cf66c2f4f02a8e21cc83c3b7389fc515
  }
  
 diff --git a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h
-index d5f35d2ccfb21b231e235dbfae3eee96a488eb20..14592180823131ca87bc95300c8d9a82451e6628 100644
+index 8542a74f1b0e90cd32c0220ef2e82c7763b1ee97..52c989796a2251b52615a04028fece3903e75151 100644
 --- a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h
 +++ b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h
 @@ -8,13 +8,16 @@
@@ -1963,7 +1963,7 @@ index d5f35d2ccfb21b231e235dbfae3eee96a488eb20..14592180823131ca87bc95300c8d9a82
  @class CALayer;
  @protocol MTLDevice;
  
-@@ -119,7 +122,9 @@ class ACCELERATED_WIDGET_MAC_EXPORT CALayerTreeCoordinator {
+@@ -120,7 +123,9 @@ class ACCELERATED_WIDGET_MAC_EXPORT CALayerTreeCoordinator {
    // both the current tree and the pending trees.
    size_t presented_ca_layer_trees_max_length_ = 2;
  
@@ -1974,7 +1974,7 @@ index d5f35d2ccfb21b231e235dbfae3eee96a488eb20..14592180823131ca87bc95300c8d9a82
    // The root CALayer to display the current frame. This does not change
    // over the lifetime of the object.
 diff --git a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
-index 5e50feb42b4a49b03a75b510bb3ddc269282aa2f..1519401a362530b7107eab17c28b63486e7455ff 100644
+index 3195cdaa3ff8310d01b37ceaedff9118cf8dbf22..4b086551497a2fcc6eef4c69f0ea5982b2ea0629 100644
 --- a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 +++ b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 @@ -10,6 +10,7 @@
@@ -1985,15 +1985,15 @@ index 5e50feb42b4a49b03a75b510bb3ddc269282aa2f..1519401a362530b7107eab17c28b6348
  #include "ui/accelerated_widget_mac/ca_renderer_layer_tree.h"
  #include "ui/base/cocoa/animation_utils.h"
  #include "ui/base/cocoa/remote_layer_api.h"
-@@ -37,6 +38,7 @@
-       buffer_presented_callback_(buffer_presented_callback),
+@@ -39,6 +40,7 @@
        gl_make_current_callback_(gl_make_current_callback),
-       metal_device_(metal_device) {
+       metal_device_(metal_device),
+       no_post_task_for_callback_(no_post_task_for_callback) {
 +#if !IS_MAS_BUILD()
    if (allow_remote_layers_) {
      root_ca_layer_ = [[CALayer alloc] init];
  #if BUILDFLAG(IS_MAC)
-@@ -65,6 +67,7 @@
+@@ -67,6 +69,7 @@
  #endif
      ca_context_.layer = root_ca_layer_;
    }
@@ -2001,7 +2001,7 @@ index 5e50feb42b4a49b03a75b510bb3ddc269282aa2f..1519401a362530b7107eab17c28b6348
  }
  
  CALayerTreeCoordinator::~CALayerTreeCoordinator() = default;
-@@ -207,9 +210,13 @@
+@@ -209,9 +212,13 @@
      TRACE_EVENT_INSTANT2("test_gpu", "SwapBuffers", TRACE_EVENT_SCOPE_THREAD,
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
