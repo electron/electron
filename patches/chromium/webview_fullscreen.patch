@@ -15,10 +15,10 @@ Note that we also need to manually update embedder's
 `api::WebContents::IsFullscreenForTabOrPending` value.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index a45def519b4b7fc0bac8f7aa158225e183e75be4..cd9e31aa83c007b45c10ae80187f76bc27c863fe 100644
+index bc76d15ff66eb6535ad86cc306bdf46094603161..7572473a01f59cdd983a1783cc5ed2c952435d6e 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -9209,6 +9209,17 @@ void RenderFrameHostImpl::EnterFullscreen(
+@@ -9207,6 +9207,17 @@ void RenderFrameHostImpl::EnterFullscreen(
      }
    }
  
@@ -37,7 +37,7 @@ index a45def519b4b7fc0bac8f7aa158225e183e75be4..cd9e31aa83c007b45c10ae80187f76bc
    if (had_fullscreen_token && !GetView()->HasFocus()) {
      GetView()->Focus();
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ce52257eb2a1bb7c71ca83c8eec52e1dbd74b5d1..b0de6f8ea109eec4bfa726d944d0924833513881 100644
+index 051227b64624cd04afbec8eb9e07b2dda1bb23ef..28fdacb530b2403e01d927685bf12e649f494eb4 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4606,21 +4606,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
@@ -90,10 +90,10 @@ index ce52257eb2a1bb7c71ca83c8eec52e1dbd74b5d1..b0de6f8ea109eec4bfa726d944d09248
    // inactive when sites request fullscreen via capability delegation, consume
    // transient activation from a gesture made before another window was focused,
 diff --git a/third_party/blink/renderer/core/fullscreen/fullscreen.cc b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
-index c533c80eb4eea180a2ef89a225d7c75390d40225..4c81dea15346b35a9a43c92fb3b778367888a6ca 100644
+index a4e56d13651cea6cd41a52e0e6e1488a7b6ab07a..833e45754841f4e10d8d3fbace7e05d41b28036c 100644
 --- a/third_party/blink/renderer/core/fullscreen/fullscreen.cc
 +++ b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
-@@ -105,7 +105,6 @@ void FullscreenElementChanged(Document& document,
+@@ -106,7 +106,6 @@ void FullscreenElementChanged(Document& document,
      // is the iframe element for the out-of-process frame that contains the
      // fullscreen element. Hence, it must match :-webkit-full-screen-ancestor.
      if (new_request_type & FullscreenRequestType::kForCrossProcessDescendant) {

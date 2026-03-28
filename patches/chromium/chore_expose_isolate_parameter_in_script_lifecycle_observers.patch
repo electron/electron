@@ -127,10 +127,10 @@ index c2a6eb257469647183167dad78f1ea42fa3922bb..3423e3a8315c5fc5958ec75adf3a844f
        int64_t service_worker_version_id,
        const GURL& service_worker_scope,
 diff --git a/extensions/renderer/extension_frame_helper.cc b/extensions/renderer/extension_frame_helper.cc
-index 89515878024756de8263622e054e50a9ad284232..f1e94fd2583d18641ab91d9d598ad94a4fd607e0 100644
+index 1ab0e8afc84b8e14f3a7f241f8d24ceac0abf188..2d1dbc6f57a0c6ba91194dde5da4de9d0bd5d383 100644
 --- a/extensions/renderer/extension_frame_helper.cc
 +++ b/extensions/renderer/extension_frame_helper.cc
-@@ -450,6 +450,7 @@ void ExtensionFrameHelper::DidCreateScriptContext(
+@@ -449,6 +449,7 @@ void ExtensionFrameHelper::DidCreateScriptContext(
  }
  
  void ExtensionFrameHelper::WillReleaseScriptContext(
@@ -245,10 +245,10 @@ index cc593168947e469b599794260692e1deb9b5f1a5..6b360ad1c123f5e6fef9b127ae559684
  
    // Returns true if we should allow register V8 extensions to be added.
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index f762722e2e2a27db2488aae25d78e79598f6a4b4..477a22d283796e60762d3be2a951bca58bfce182 100644
+index 5a0f42b4b7e5eb67d476c948caa201ee6fc7b3ca..1a0562ad9ccfd414d6295b597b9d8094df384ff5 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
-@@ -424,7 +424,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
+@@ -427,7 +427,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
                                int32_t world_id) override {}
    void DidInstallConditionalFeatures(v8::Local<v8::Context>,
                                       int32_t world_id) override {}

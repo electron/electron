@@ -49,10 +49,10 @@ index 31fb318fc098a2ac4f3b4ea89caced757d520210..34545e9f2c2fc383344710e78c590411
      mojo::PendingRemote<mojom::CookieAccessObserver> cookie_observer;
      mojo::PendingRemote<mojom::TrustTokenAccessObserver> trust_token_observer;
 diff --git a/services/network/public/cpp/url_request_mojom_traits.cc b/services/network/public/cpp/url_request_mojom_traits.cc
-index f258e06019ecaccc8e342c0fb5a54c400109f668..c883c93fa94666ab27092c5622e9db089175cc4b 100644
+index a3bcf32e94618b99831c58111d77fd0f0e87259a..5922056ed6c7ac584dc3050739e9d58180ae2a5d 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.cc
 +++ b/services/network/public/cpp/url_request_mojom_traits.cc
-@@ -67,6 +67,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
+@@ -66,6 +66,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
    out->allow_cookies_from_browser = data.allow_cookies_from_browser();
    out->include_request_cookies_with_response =
        data.include_request_cookies_with_response();
