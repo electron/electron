@@ -69,7 +69,7 @@ v8::Local<v8::Value> ServiceWorkerRunningInfoToDict(
   return gin::DataObjectBuilder(isolate)
       .Set("scriptUrl", info.script_url.spec())
       .Set("scope", info.scope.spec())
-      .Set("renderProcessId", info.render_process_id)
+      .Set("renderProcessId", info.render_process_id.GetUnsafeValue())
       .Build();
 }
 

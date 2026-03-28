@@ -16,9 +16,11 @@ jobs:
     steps:
       - name: Check for any blocked labels
         id: check-for-blocked-labels
+        env:
+          LABELS_JSON: ${{ toJSON(github.event.issue.labels.*.name) }}
         run: |
           set -eo pipefail
-          BLOCKED_LABEL_COUNT=$(echo '${{ toJSON(github.event.issue.labels.*.name) }}' | jq '[ .[] | select(startswith("blocked/")) ] | length')
+          BLOCKED_LABEL_COUNT=$(echo "$LABELS_JSON" | jq '[ .[] | select(startswith("blocked/")) ] | length')
           if [[ $BLOCKED_LABEL_COUNT -eq 0 ]]; then
             echo "NOT_BLOCKED=1" >> "$GITHUB_OUTPUT"
           fi

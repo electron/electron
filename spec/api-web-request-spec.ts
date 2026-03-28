@@ -13,7 +13,7 @@ import * as qs from 'node:querystring';
 import { ReadableStream } from 'node:stream/web';
 import * as url from 'node:url';
 
-import { listen, defer } from './lib/spec-helpers';
+import { listen, defer, startRemoteControlApp } from './lib/spec-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -171,6 +171,107 @@ describe('webRequest module', () => {
       expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
       expect((await ajax(`${defaultURL}filter/test`)).data).to.equal('/filter/test');
       expect((await ajax(`${defaultURL}exclude/test`)).data).to.equal('/exclude/test');
+    });
+
+    // allowExtensions changes how URLPattern works, so we add extra tests that ensure that filters still work as expected.
+    describe('with protocol.registerSchemesAsPrivileged() and allowExtensions', () => {
+      it('will filter http URLs properly', async () => {
+        const rc = await startRemoteControlApp(['--boot-eval="protocol.registerSchemesAsPrivileged([{ scheme: \'custom\', privileges: { allowExtensions: true } }]);"']);
+        const called = await rc.remotely(async (url: string) => {
+          const { BrowserWindow, session } = require('electron/main');
+
+          let called = false;
+
+          session.defaultSession.webRequest.onBeforeRequest({ urls: ['http://*/*'] }, (_: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) => {
+            called = true;
+            callback({ cancel: true });
+          });
+
+          const w = new BrowserWindow({ show: false });
+          await w.loadURL('about:blank');
+
+          await w.webContents.executeJavaScript(`fetch("${url}").then(() => true, () => false)`);
+
+          global.setTimeout(() => require('electron').app.quit());
+
+          return called;
+        }, defaultURL);
+        expect(called).to.be.true();
+      });
+
+      it('will not call webRequest.onBeforeRequest for non-custom protocol URLs that do not match the filter', async () => {
+        const rc = await startRemoteControlApp(['--boot-eval="protocol.registerSchemesAsPrivileged([{ scheme: \'custom\', privileges: { allowExtensions: true } }]);"']);
+        const called = await rc.remotely(async (url: string) => {
+          const { BrowserWindow, session } = require('electron/main');
+
+          let called = false;
+
+          session.defaultSession.webRequest.onBeforeRequest({ urls: ['https://*/*'] }, (_: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) => {
+            called = true;
+            callback({ cancel: true });
+          });
+
+          const w = new BrowserWindow({ show: false });
+          await w.loadURL('about:blank');
+
+          await w.webContents.executeJavaScript(`fetch("${url}").then(() => true, () => false)`);
+
+          global.setTimeout(() => require('electron').app.quit());
+
+          return called;
+        }, defaultURL);
+        expect(called).to.be.false();
+      });
+
+      it('will call webRequest.onBeforeRequest for custom protocol URLs with <all_urls> filter', async () => {
+        const rc = await startRemoteControlApp(['--boot-eval="protocol.registerSchemesAsPrivileged([{ scheme: \'custom\', privileges: { allowExtensions: true } }]);"']);
+        const { called, responseText } = await rc.remotely(async () => {
+          const { net, protocol, session } = require('electron/main');
+
+          protocol.handle('custom', () => new Response('success'));
+
+          let called = false;
+
+          session.defaultSession.webRequest.onBeforeRequest({ urls: ['<all_urls>'] }, (_: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) => {
+            called = true;
+            callback({ cancel: false });
+          });
+
+          const response = await net.fetch('custom://app/test');
+          const responseText = await response.text();
+
+          global.setTimeout(() => require('electron').app.quit());
+
+          return { called, responseText };
+        });
+        expect(responseText).to.equal('success');
+        expect(called).to.be.true();
+      });
+
+      it('will not call webRequest.onBeforeRequest for custom protocol URLs that do not match the filter', async () => {
+        const rc = await startRemoteControlApp(['--boot-eval="protocol.registerSchemesAsPrivileged([{ scheme: \'custom\', privileges: { allowExtensions: true } }]);"']);
+        const { called, responseText } = await rc.remotely(async () => {
+          const { net, protocol, session } = require('electron/main');
+
+          protocol.handle('custom', () => new Response('success'));
+
+          let called = false;
+
+          session.defaultSession.webRequest.onBeforeRequest({ urls: ['http://*/*'] }, (_: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) => {
+            called = true;
+            callback({ cancel: false });
+          });
+
+          const response = await net.fetch('custom://app/test');
+          const responseText = await response.text();
+
+          global.setTimeout(() => require('electron').app.quit());
+
+          return { called, responseText };
+        });
+        expect(responseText).to.equal('success');
+        expect(called).to.be.false();
+      });
     });
 
     it('receives details object', async () => {

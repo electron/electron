@@ -1,0 +1,10 @@
+{
+  "name": "@electron-ci/dialog-helper",
+  "version": "0.0.1",
+  "main": "./lib/index.js",
+  "private": true,
+  "licenses": "MIT",
+  "scripts": {
+    "install": "node-gyp configure && node-gyp build"
+  }
+}
