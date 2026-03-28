@@ -37,7 +37,7 @@ index bc76d15ff66eb6535ad86cc306bdf46094603161..7572473a01f59cdd983a1783cc5ed2c9
    if (had_fullscreen_token && !GetView()->HasFocus()) {
      GetView()->Focus();
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 051227b64624cd04afbec8eb9e07b2dda1bb23ef..28fdacb530b2403e01d927685bf12e649f494eb4 100644
+index 45ace061cfd6e1ea58fe3ef5f2d5f30b65372e4d..a5ee18ca614737289102db206870e0b11d5caf91 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4606,21 +4606,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
@@ -80,15 +80,6 @@ index 051227b64624cd04afbec8eb9e07b2dda1bb23ef..28fdacb530b2403e01d927685bf12e64
  }
  
  bool WebContentsImpl::HandleMouseEvent(const blink::WebMouseEvent& event) {
-@@ -4799,7 +4803,7 @@ void WebContentsImpl::EnterFullscreenMode(
-   OPTIONAL_TRACE_EVENT0("content", "WebContentsImpl::EnterFullscreenMode");
-   DCHECK(CanEnterFullscreenMode(requesting_frame));
-   DCHECK(requesting_frame->IsActive());
--  DCHECK(ContainsOrIsFocusedWebContents());
-+  DCHECK(ContainsOrIsFocusedWebContents() || IsGuest());
-   // Ensure the window is made active to take input focus. The window may be
-   // inactive when sites request fullscreen via capability delegation, consume
-   // transient activation from a gesture made before another window was focused,
 diff --git a/third_party/blink/renderer/core/fullscreen/fullscreen.cc b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
 index a4e56d13651cea6cd41a52e0e6e1488a7b6ab07a..833e45754841f4e10d8d3fbace7e05d41b28036c 100644
 --- a/third_party/blink/renderer/core/fullscreen/fullscreen.cc
