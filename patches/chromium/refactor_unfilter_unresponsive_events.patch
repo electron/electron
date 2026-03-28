@@ -15,10 +15,10 @@ This CL removes these filters so the unresponsive event can still be
 accessed from our JS event. The filtering is moved into Electron's code.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index fbbf29ce1ca7f58bac3e3ebeec5ffc21b25f3392..05df24b0e6c43813eeb3789f0750d4c40f50d27a 100644
+index a10a56827e0d277dfcc5bc8e72f90f7539ed50fd..396b6dfe5f0d447b8f5642db639cc77d98cd6a9e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -10574,25 +10574,13 @@ void WebContentsImpl::RendererUnresponsive(
+@@ -10585,25 +10585,13 @@ void WebContentsImpl::RendererUnresponsive(
      base::RepeatingClosure hang_monitor_restarter) {
    OPTIONAL_TRACE_EVENT1("content", "WebContentsImpl::RendererUnresponsive",
                          "render_widget_host", render_widget_host);

@@ -20,7 +20,7 @@ index d64fef6bfc37264dcdc1bbea22eb5c4e099553dd..41d40326505c4ced9837df7f03b791c9
        int64_t service_worker_version_id,
        const GURL& service_worker_scope,
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index 947b0c722a5d8e08a3f458c8b938d5723f2faa90..501a0a5891a6f75d88f927acb30dca2362aa784f 100644
+index 1d03dc809d4c18f24314d94811e0bf527aa7b5b4..16030bcecb2e39b8870144ce7c3d11dd4c7fb15e 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
 @@ -143,7 +143,8 @@ class CONTENT_EXPORT RenderFrameObserver {
@@ -34,10 +34,10 @@ index 947b0c722a5d8e08a3f458c8b938d5723f2faa90..501a0a5891a6f75d88f927acb30dca23
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index e324a981e10b6a1347bd447c60f072e6ca177736..e10577f30748554b5296d1aa42929815d0f35490 100644
+index f28214d369138eb854a556165f0a946c07cfdb9c..7fb428cfdda42d1aac6922f2ed6f37369d4979e2 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4751,10 +4751,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4737,10 +4737,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
      observer.DidInstallConditionalFeatures(context, world_id);
  }
  
@@ -52,7 +52,7 @@ index e324a981e10b6a1347bd447c60f072e6ca177736..e10577f30748554b5296d1aa42929815
  
  void RenderFrameImpl::DidChangeScrollOffset() {
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index ade7e17dba4e21b787ce5ecf855051ad701ecbe2..58d89396182640bce0d5f0768ed762d36452daf6 100644
+index 2ce05bce0a02338aba018c18f0a808a4eb392ff4..2736b65de7f0a6e4cd2d56970d35687da8fcab6b 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
 @@ -609,7 +609,8 @@ class CONTENT_EXPORT RenderFrameImpl
@@ -66,10 +66,10 @@ index ade7e17dba4e21b787ce5ecf855051ad701ecbe2..58d89396182640bce0d5f0768ed762d3
    void DidChangeScrollOffset() override;
    blink::WebMediaStreamDeviceObserver* MediaStreamDeviceObserver() override;
 diff --git a/content/renderer/service_worker/service_worker_context_client.cc b/content/renderer/service_worker/service_worker_context_client.cc
-index 4ccae569b496608901a3c634a3ac41de5d0bf3e8..332f2d2bc690de8f5e9787ba22ad268a21781b95 100644
+index b708018b7061eaf610758d6c9230cff1c4e272ef..79cec0d0c508e590f6e5ad481c9e26f91ab68da9 100644
 --- a/content/renderer/service_worker/service_worker_context_client.cc
 +++ b/content/renderer/service_worker/service_worker_context_client.cc
-@@ -319,6 +319,7 @@ void ServiceWorkerContextClient::WorkerContextStarted(
+@@ -318,6 +318,7 @@ void ServiceWorkerContextClient::WorkerContextStarted(
  }
  
  void ServiceWorkerContextClient::WillEvaluateScript(
@@ -77,7 +77,7 @@ index 4ccae569b496608901a3c634a3ac41de5d0bf3e8..332f2d2bc690de8f5e9787ba22ad268a
      v8::Local<v8::Context> v8_context) {
    DCHECK(worker_task_runner_->RunsTasksInCurrentSequence());
    start_timing_->script_evaluation_start_time = base::TimeTicks::Now();
-@@ -337,8 +338,8 @@ void ServiceWorkerContextClient::WillEvaluateScript(
+@@ -336,8 +337,8 @@ void ServiceWorkerContextClient::WillEvaluateScript(
  
    DCHECK(proxy_);
    GetContentClient()->renderer()->WillEvaluateServiceWorkerOnWorkerThread(
@@ -214,7 +214,7 @@ index ae565a4d3fdc2d02e2c7a27312d8296bbdf61e0b..f54cc6c10a957a2218258f72de2b92a2
    virtual bool AllowScriptExtensions() = 0;
  
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-index f9bcbc186d7cf75e3fa2d71e488f06c86c4111e5..e508147a1b52630d52067b68defdeba07da8b096 100644
+index aaf03855e53d5529bb51d70cd9b4355d68fed48c..a889202f30bc4a3b6bc7dc3fc7b4fc5058684bcb 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 @@ -309,10 +309,11 @@ void LocalFrameClientImpl::DidInstallConditionalFeatures(

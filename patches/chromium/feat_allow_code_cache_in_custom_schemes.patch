@@ -262,7 +262,7 @@ index 68a3095a49caf472c83b93b5cef66e5549a2d7cc..aa371ba5576f9fbaf5558e39704f7eb8
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index f8116beacc48d144e4ca62b2b05ce456b34ab72b..8c2dac5d7aa6d7d199e5a69ba9a14ea7cc10e6b6 100644
+index 2b75860754f8192141f61aa78c2ab5008eb795f1..d94d681e42948324a4eb179977a56862b7119d70 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
 @@ -4,6 +4,7 @@
@@ -372,7 +372,7 @@ index f8116beacc48d144e4ca62b2b05ce456b34ab72b..8c2dac5d7aa6d7d199e5a69ba9a14ea7
    }
  
    if (operation == Operation::kWrite) {
-@@ -180,6 +200,7 @@ std::optional<GURL> GetOriginLock(ChildProcessId render_process_id) {
+@@ -190,6 +210,7 @@ std::optional<GURL> GetOriginLock(ChildProcessId render_process_id) {
        process_lock.MatchesScheme(url::kHttpsScheme) ||
        process_lock.MatchesScheme(content::kChromeUIScheme) ||
        process_lock.MatchesScheme(content::kChromeUIUntrustedScheme) ||

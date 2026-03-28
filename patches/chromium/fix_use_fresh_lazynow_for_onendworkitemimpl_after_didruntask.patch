@@ -18,10 +18,10 @@ This is upstreamable: the bug exists whenever any TaskObserver::DidProcessTask
 triggers nested pump activity, which is not forbidden by the contract.
 
 diff --git a/base/task/sequence_manager/thread_controller_with_message_pump_impl.cc b/base/task/sequence_manager/thread_controller_with_message_pump_impl.cc
-index 22531da10152e482a4fb3c1953ef7272c0fed8de..444df8a63755b27d4d1eed31da35cad18c144f27 100644
+index bb09c99ea0b37a139440d0fe98c7f2f5e9c147e0..d27c34f8090ff54d20d8339c0ad56d37d6d61ab2 100644
 --- a/base/task/sequence_manager/thread_controller_with_message_pump_impl.cc
 +++ b/base/task/sequence_manager/thread_controller_with_message_pump_impl.cc
-@@ -486,15 +486,22 @@ std::optional<WakeUp> ThreadControllerWithMessagePumpImpl::DoWorkImpl(
+@@ -481,15 +481,22 @@ std::optional<WakeUp> ThreadControllerWithMessagePumpImpl::DoWorkImpl(
      // `PendingTask` reference dangling.
      selected_task.reset();
  

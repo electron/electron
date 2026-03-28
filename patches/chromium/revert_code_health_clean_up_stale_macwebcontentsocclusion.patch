@@ -245,10 +245,10 @@ index 1ef2c9052262eccdbc40030746a858b7f30ac469..c7101b0d71826b05f61bfe0e74429d92
  }
  
 diff --git a/content/common/features.cc b/content/common/features.cc
-index c47bf2d9e7c1a9d408f2edebb6ab07c98bab72a9..95e358706176e86f775ac7bf1b7c6a1eef78411c 100644
+index 1272f3f588e00162a2b8665b23a4d23ef06e8ede..ff1a27d1928e4d1af10b46d570a13519a42f62d8 100644
 --- a/content/common/features.cc
 +++ b/content/common/features.cc
-@@ -396,6 +396,14 @@ BASE_FEATURE(kInterestGroupUpdateIfOlderThan, base::FEATURE_ENABLED_BY_DEFAULT);
+@@ -395,6 +395,14 @@ BASE_FEATURE(kInterestGroupUpdateIfOlderThan, base::FEATURE_ENABLED_BY_DEFAULT);
  BASE_FEATURE(kIOSurfaceCapturer, base::FEATURE_ENABLED_BY_DEFAULT);
  #endif
  
