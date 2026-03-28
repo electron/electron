@@ -193,7 +193,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     // usable results. The root cause is still unknown.
     SetPosition(gfx::Point{x, y});
 #endif
-  } else {
+  } else if (bool center; options.Get(options::kCenter, &center) && center) {
     Center();
   }
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
