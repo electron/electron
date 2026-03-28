@@ -33,14 +33,29 @@ because it is invoked in the main process.
 Returns [`Window`](https://developer.mozilla.org/en-US/docs/Web/API/Window) | null
 
 `features` is a comma-separated key-value list, following the standard format of
-the browser. Electron will parse [`BrowserWindowConstructorOptions`](structures/browser-window-options.md) out of this
-list where possible, for convenience. For full control and better ergonomics,
-consider using `webContents.setWindowOpenHandler` to customize the
-BrowserWindow creation.
+the browser. Electron parses this string into
+[`BrowserWindowConstructorOptions`](structures/browser-window-options.md) with a
+few important limitations:
+
+* Only top-level keys are parsed. Nested objects (for example
+  `webPreferences.preload`) are not supported.
+* Boolean conversion follows `window.open()` conventions:
+  * `name`, `name=yes`, `name=true`, and `name=1` are interpreted as `true`.
+  * `name=no`, `name=false`, and `name=0` are interpreted as `false`.
+* The following keys are parsed as numbers: `top`, `left`, `x`, `y`, `width`,
+  `height`, `innerWidth`, `innerHeight`, `minWidth`, `maxWidth`, `minHeight`,
+  `maxHeight`, and `opacity`.
+* `top` and `left` are aliases for `y` and `x`, respectively.
+* `resizable` in the feature string is ignored because Chromium treats windows
+  opened by `window.open()` as resizable.
 
 A subset of [`WebPreferences`](structures/web-preferences.md) can be set directly,
 unnested, from the features string: `zoomFactor`, `nodeIntegration`, `javascript`,
 `contextIsolation`, and `webviewTag`.
+
+For full control and better ergonomics, use
+`webContents.setWindowOpenHandler` from the main process to customize window
+creation.
 
 For example:
 
