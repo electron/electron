@@ -258,23 +258,6 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
   // FileSystemAccessPermissionGrant:
   PermissionStatus GetStatus() override {
     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-
-    auto* permission_manager =
-        static_cast<electron::ElectronPermissionManager*>(
-            context_->browser_context()->GetPermissionControllerDelegate());
-    if (permission_manager && permission_manager->HasPermissionCheckHandler()) {
-      base::DictValue details;
-      details.Set("filePath", base::FilePathToValue(path_info_.path));
-      details.Set("isDirectory", handle_type_ == HandleType::kDirectory);
-      details.Set("fileAccessType",
-                  type_ == GrantType::kWrite ? "writable" : "readable");
-
-      bool granted = permission_manager->CheckPermissionWithDetails(
-          blink::PermissionType::FILE_SYSTEM, nullptr, origin_.GetURL(),
-          std::move(details));
-      return granted ? PermissionStatus::GRANTED : PermissionStatus::DENIED;
-    }
-
     return status_;
   }
 
