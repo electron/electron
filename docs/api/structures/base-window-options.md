@@ -29,7 +29,7 @@
   stop interacting with wm, so the window will always stay on top in all
   workspaces.
 * `alwaysOnTop` boolean (optional) - Whether the window should always stay on top of
-  other windows. Default is `false`.
+  other windows. Default is `false`. Not supported on Wayland (Linux).
 * `fullscreen` boolean (optional) - Whether the window should show in fullscreen. When
   explicitly set to `false` the fullscreen button will be hidden or disabled
   on macOS. Default is `false`.
