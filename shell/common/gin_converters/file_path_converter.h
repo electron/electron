@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_FILE_PATH_CONVERTER_H_
 #define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_FILE_PATH_CONVERTER_H_
 
+#include <algorithm>
+
 #include "base/files/file_path.h"
 #include "gin/converter.h"
 #include "shell/common/gin_converters/std_converter.h"
@@ -30,6 +32,11 @@ struct Converter<base::FilePath> {
 
     base::FilePath::StringType path;
     if (Converter<base::FilePath::StringType>::FromV8(isolate, val, &path)) {
+      bool has_control_chars = std::any_of(
+          path.begin(), path.end(),
+          [](base::FilePath::CharType c) { return c >= 0 && c < 0x20; });
+      if (has_control_chars)
+        return false;
       *out = base::FilePath(path);
       return true;
     } else {
