@@ -86,7 +86,7 @@ This property can be dynamically changed.
 
 #### `menuItem.accessibleLabel` _macOS_
 
-A `string` indicating the item's accessibility label, if set.
+A `string` indicating the item's accessibility label (used by assistive technology), if set.
 
 This property can be dynamically changed.
 
