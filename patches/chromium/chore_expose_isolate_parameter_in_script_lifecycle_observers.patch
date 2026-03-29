@@ -34,10 +34,10 @@ index dd4cee346f16df703d414bf206bbe6c9f4b1f796..5565f5a9259bd7da0722080bf01b3415
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 40d1f104794795dba6cd59518819e98a4cdbfc44..8352f70c6c11af2890a03a2fae1729d27fc8da1f 100644
+index 92272d5177cc47839169066b860577194cbc5d47..776e097dda38e920430ea49b15069dd908c6268e 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4775,10 +4775,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4750,10 +4750,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
      observer.DidInstallConditionalFeatures(context, world_id);
  }
  
@@ -52,7 +52,7 @@ index 40d1f104794795dba6cd59518819e98a4cdbfc44..8352f70c6c11af2890a03a2fae1729d2
  
  void RenderFrameImpl::DidChangeScrollOffset() {
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index ced097d57cec93b3d3062a6d7d9f7d037a355e6c..c08b9323175e5ec62203fa74d93a307aa35f3616 100644
+index 0062c466fbe4c625669d3a334fc9b9d8c49837f2..e4939464a5bc4908fe83799c1920b8f294b4de84 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
 @@ -608,7 +608,8 @@ class CONTENT_EXPORT RenderFrameImpl

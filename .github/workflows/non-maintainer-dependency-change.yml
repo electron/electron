@@ -10,6 +10,10 @@ on:
       - '.yarn/**'
       - '.yarnrc.yml'
 
+# SECURITY: This workflow uses pull_request_target and has access to secrets.
+# Do NOT checkout or run code from the PR head. All code execution must use
+# the base branch only. Adding a ref to PR head would expose secrets to
+# untrusted code.
 permissions: {}
 
 jobs:
@@ -45,5 +49,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
-          printf "<!-- disallowed-non-maintainer-change -->\n\nHello @${{ github.event.pull_request.user.login }}! It looks like this pull request touches one of our dependency or CI files, and per [our contribution policy](https://github.com/electron/electron/blob/main/CONTRIBUTING.md#dependencies-upgrades-policy) we do not accept these types of changes in PRs." | gh pr review $PR_URL -r --body-file=-
+          cat <<'REVIEW_EOF' | sed "s/%AUTHOR%/$PR_AUTHOR/g" | gh pr review $PR_URL -r --body-file=-
+          <!-- disallowed-non-maintainer-change -->
+
+          Hello @%AUTHOR%! It looks like this pull request touches one of our dependency or CI files, and per [our contribution policy](https://github.com/electron/electron/blob/main/CONTRIBUTING.md#dependencies-upgrades-policy) we do not accept these types of changes in PRs.
+
+          To move this PR forward, please:
+
+          1. Revert the dependency/CI file changes from your branch. (e.g. `yarn.lock`, `.yarn/`, `.yarnrc.yml`, `.github/workflows/`, `.github/actions/`)
+          2. Ensure your branch [allows maintainer commits](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/allowing-changes-to-a-pull-request-branch-created-from-a-fork) so a maintainer can push the necessary dependency changes on your behalf.
+          3. Leave a comment letting reviewers know the dependency change is still needed.
+
+          <details>
+          <summary>For maintainers</summary>
+
+          To land this PR, push a verified commit to the contributor's branch with the required dependency/CI changes, then dismiss this review.
+
+          </details>
+          REVIEW_EOF

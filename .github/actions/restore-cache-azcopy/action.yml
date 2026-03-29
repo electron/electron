@@ -8,14 +8,14 @@ runs:
   steps:
   - name: Obtain SAS Key
     continue-on-error: true
-    uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+    uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
     with:
       path: sas-token
       key: sas-key-${{ inputs.target-platform }}-${{ github.run_number }}-1
       enableCrossOsArchive: true
   - name: Obtain SAS Key
     continue-on-error: true
-    uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+    uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
     with:
       path: sas-token
       key: sas-key-${{ inputs.target-platform }}-${{ github.run_number }}-${{ github.run_attempt }}
@@ -24,7 +24,7 @@ runs:
     # The cache will always exist here as a result of the checkout job
     # Either it was uploaded to Azure in the checkout job for this commit
     # or it was uploaded in the checkout job for a previous commit.
-    uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3.0.0
+    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     with:
       timeout_minutes: 30
       max_attempts: 3
@@ -101,7 +101,7 @@ runs:
 
   - name: Move Src Cache (Windows)
     if: ${{ inputs.target-platform == 'win' }}
-    uses: nick-fields/retry@7152eba30c6575329ac0576536151aca5a72780e # v3.0.0
+    uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     with:
       timeout_minutes: 30
       max_attempts: 3

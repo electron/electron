@@ -6,16 +6,23 @@ on:
   issue_comment:
     types: [created]
 
+# SECURITY: This workflow uses pull_request_target and has access to secrets.
+# Do NOT checkout or run code from the PR head. All code execution must use
+# the base branch only. Adding a ref to PR head would expose secrets to
+# untrusted code.
 permissions: {}
 
 jobs:
   set-needs-review:
     name: Set status to Needs Review
     if: >-
-      (github.event_name == 'pull_request_target' && github.event.action == 'synchronize')
-      || (github.event_name == 'pull_request_target' && github.event.action == 'review_requested')
+      (github.event_name == 'pull_request_target'
+        && github.event.pull_request.draft != true
+        && !contains(github.event.pull_request.labels.*.name, 'wip ⚒')
+        && (github.event.action == 'synchronize' || github.event.action == 'review_requested'))
       || (github.event_name == 'issue_comment'
           && github.event.issue.pull_request
+          && !contains(github.event.issue.labels.*.name, 'wip ⚒')
           && github.event.comment.user.login == github.event.issue.user.login)
     runs-on: ubuntu-slim
     permissions:
@@ -28,7 +35,7 @@ jobs:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
           org: electron
       - name: Set status to Needs Review
-        uses: dsanders11/project-actions/edit-item@2134fe7cc71c58b7ae259c82a8e63c6058255678 # v1.7.0
+        uses: dsanders11/project-actions/edit-item@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
         with:
           token: ${{ steps.generate-token.outputs.token }}
           project-number: 118

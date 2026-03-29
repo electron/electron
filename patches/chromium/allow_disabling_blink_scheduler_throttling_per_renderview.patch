@@ -6,7 +6,7 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl_unittest.cc b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-index c33775220e161d38e41efe8fea897815737341f8..e9636b69a8eb748aaa493466c3190ec602e16449 100644
+index 29d5b174e122cbd140554687548106ead8f8e8d9..da74da96c3fe35a0f3838f04bca08846f7b41abe 100644
 --- a/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 @@ -168,6 +168,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
@@ -116,10 +116,10 @@ index 932658273154ef2e022358e493a8e7c00c86e732..57bbfb5cde62c9496c351c861880a189
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 6e86be68d08cec8bcfc0221ef8d702e4a9ab0b28..beeae11dbf256443ceb3d6eb56afa6386eb32f30 100644
+index b74b9ce6c4e100e095fe7050cd8bc397b682d056..4aa7a851d7280411009ed8a50fd04c78f9cb41cd 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -2502,6 +2502,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
+@@ -2471,6 +2471,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
    TRACE_EVENT2("navigation", "WebViewImpl::SetPageLifecycleStateInternal",
                 "old_state", old_state, "new_state", new_state);
  
@@ -130,7 +130,7 @@ index 6e86be68d08cec8bcfc0221ef8d702e4a9ab0b28..beeae11dbf256443ceb3d6eb56afa638
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -4182,10 +4186,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -4151,10 +4155,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -155,7 +155,7 @@ index 6e86be68d08cec8bcfc0221ef8d702e4a9ab0b28..beeae11dbf256443ceb3d6eb56afa638
    // Do not throttle if the page should be painting.
    bool is_visible =
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index ff153875857fe718676389ee4f0096ca41407cf3..8b354c18c9d74432f85847d58e7aafc389c6b03c 100644
+index 645ac2435db59cb76878de87cdd3e54d0958fce1..654f2ccfdff54742af06450aafe62cdf6e6157f6 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -446,6 +446,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,

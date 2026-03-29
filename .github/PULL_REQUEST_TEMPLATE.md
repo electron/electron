@@ -5,6 +5,8 @@ Thank you for your Pull Request. Please provide a description above and review
 the requirements below.
 
 Contributors guide: https://github.com/electron/electron/blob/main/CONTRIBUTING.md
+
+NOTE: PRS submitted without this template will be automatically closed.
 -->
 
 #### Checklist

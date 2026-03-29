@@ -10,10 +10,10 @@ on Windows.  We should refactor our code so that this patch isn't
 necessary.
 
 diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
-index 00ca9b81e6417f39d197f6c4e330fffa0dd8be86..8ff082655f23410dc1611524ded025471ec206fb 100644
+index f11731797c7063b837e3d9396b84d02881754894..9f90a2b1c9849aa37f711cab9fb0006ba3e3dd12 100644
 --- a/testing/variations/fieldtrial_testing_config.json
 +++ b/testing/variations/fieldtrial_testing_config.json
-@@ -21961,6 +21961,21 @@
+@@ -22324,6 +22324,21 @@
              ]
          }
      ],
@@ -36,10 +36,10 @@ index 00ca9b81e6417f39d197f6c4e330fffa0dd8be86..8ff082655f23410dc1611524ded02547
          {
              "platforms": [
 diff --git a/ui/views/views_features.cc b/ui/views/views_features.cc
-index 9ecf5330bb9b3a5a7b12f3b9bb76192ea1694d07..202d3e3df60ec8d23b4cbd3e5814c3fce1b07871 100644
+index c74cf661f64e60ad6740e011f372e53426ce0c4d..77ce34e4f47a54f7ecabbd6e6d4d19555af248ff 100644
 --- a/ui/views/views_features.cc
 +++ b/ui/views/views_features.cc
-@@ -22,6 +22,14 @@ BASE_FEATURE(kAnnounceTextAdditionalAttributes,
+@@ -34,6 +34,14 @@ BASE_FEATURE(kEnableInputProtection, base::FEATURE_DISABLED_BY_DEFAULT);
  // crbug.com/370856871.
  BASE_FEATURE(kEnableTouchDragCursorSync, base::FEATURE_ENABLED_BY_DEFAULT);
  
@@ -55,17 +55,17 @@ index 9ecf5330bb9b3a5a7b12f3b9bb76192ea1694d07..202d3e3df60ec8d23b4cbd3e5814c3fc
  // to kKeyboardAccessibleTooltip in //ui/base/ui_base_features.cc.
  BASE_FEATURE(kKeyboardAccessibleTooltipInViews,
 diff --git a/ui/views/views_features.h b/ui/views/views_features.h
-index 5f5ea15678bd76399fdbbb8904fe155657f49335..a67c124878fb710599fed5d9714bfa723d0d67a5 100644
+index 092e51509d4adccb8adbe2481909068e3e6836aa..5093a4c08bf6675ed1e5cb944c1bcb8251bdb033 100644
 --- a/ui/views/views_features.h
 +++ b/ui/views/views_features.h
-@@ -14,6 +14,7 @@ namespace views::features {
- // Please keep alphabetized.
- VIEWS_EXPORT BASE_DECLARE_FEATURE(kAnnounceTextAdditionalAttributes);
+@@ -16,6 +16,7 @@ VIEWS_EXPORT BASE_DECLARE_FEATURE(kAnnounceTextAdditionalAttributes);
+ VIEWS_EXPORT BASE_DECLARE_FEATURE(kApplyInitialUrlToWebContents);
+ VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableInputProtection);
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableTouchDragCursorSync);
 +VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableTransparentHwndEnlargement);
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kKeyboardAccessibleTooltipInViews);
- VIEWS_EXPORT BASE_DECLARE_FEATURE(kApplyInitialUrlToWebContents);
  
+ }  // namespace views::features
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 index ceb6e3ad0e60b1aaee47c24564ca9fd8b3c2e71f..1f66f36c028b97f018e116ae41a8d9b078620757 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc

@@ -18,6 +18,7 @@
 #include "shell/common/process_util.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/clipboard/clipboard_format_type.h"
+#include "ui/base/clipboard/clipboard_url_info.h"
 #include "ui/base/clipboard/file_info.h"
 #include "ui/base/clipboard/scoped_clipboard_writer.h"
 #include "ui/gfx/codec/png_codec.h"
@@ -210,7 +211,8 @@ void Clipboard::Write(const gin_helper::Dictionary& data,
     writer.WriteText(text);
 
     if (data.Get("bookmark", &bookmark))
-      writer.WriteBookmark(bookmark, base::UTF16ToUTF8(text));
+      writer.WriteURL(
+          ui::ClipboardUrlInfo{.url = GURL(text), .title = bookmark});
   }
 
   if (data.Get("rtf", &text)) {
@@ -333,13 +335,13 @@ v8::Local<v8::Value> Clipboard::ReadBookmark(v8::Isolate* const isolate) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
 
   base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-  clipboard->ReadBookmark(
+  clipboard->ReadURL(
       /* data_dst = */ std::nullopt,
       base::BindOnce(
           [](std::u16string* out_title, GURL* out_url, base::OnceClosure quit,
-             std::u16string title, GURL url) {
-            *out_title = std::move(title);
-            *out_url = std::move(url);
+             ui::ClipboardUrlInfo url_info) {
+            *out_title = std::move(url_info.title);
+            *out_url = std::move(url_info.url);
             std::move(quit).Run();
           },
           &title, &url, run_loop.QuitClosure()));
@@ -354,7 +356,7 @@ void Clipboard::WriteBookmark(const std::u16string& title,
                               const std::string& url,
                               gin::Arguments* const args) {
   ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
-  writer.WriteBookmark(title, url);
+  writer.WriteURL(ui::ClipboardUrlInfo{.url = GURL(url), .title = title});
 }
 
 gfx::Image Clipboard::ReadImage(gin::Arguments* const args) {
@@ -378,7 +380,11 @@ gfx::Image Clipboard::ReadImage(gin::Arguments* const args) {
           [](std::optional<gfx::Image>* image, base::RepeatingClosure cb,
              const std::vector<uint8_t>& result) {
             SkBitmap bitmap = gfx::PNGCodec::Decode(result);
-            image->emplace(gfx::Image::CreateFrom1xBitmap(bitmap));
+            if (bitmap.isNull()) {
+              image->emplace();
+            } else {
+              image->emplace(gfx::Image::CreateFrom1xBitmap(bitmap));
+            }
             std::move(cb).Run();
           },
           &image, std::move(callback)));

@@ -47,6 +47,20 @@ runs:
     - name: Add Clang problem matcher
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
+    - name: Download previous object checksums
+      uses: dawidd6/action-download-artifact@09b07ec687d10771279a426c79925ee415c12906 # v17
+      if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request') && inputs.is-asan != 'true' }}
+      with:
+        name: object_checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
+        commit: ${{ case(github.event_name == 'push', github.event.before, github.event.pull_request.base.sha) }}
+        path: src
+        if_no_artifact_found: ignore
+    - name: Move previous object checksums
+      shell: bash
+      run: |
+        if [ -f src/object-checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json ]; then
+          mv src/object-checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json src/previous-object-checksums.json
+        fi
     - name: Build Electron ${{ inputs.step-suffix }}
       if: ${{ inputs.target-platform != 'win' }}
       shell: bash
@@ -72,12 +86,17 @@ runs:
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
 
-        # Upload build stats to Datadog
-        if ! [ -z $DD_API_KEY ]; then
-          npx node electron/script/build-stats.mjs out/Default/siso.INFO --upload-stats || true          
+        # Build stats and object checksums
+        BUILD_STATS_ARGS="out/Default/siso.INFO --out-dir out/Default --output-object-checksums object-checksums.${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json"
+        if [ -f previous-object-checksums.json ]; then
+          BUILD_STATS_ARGS="$BUILD_STATS_ARGS --input-object-checksums previous-object-checksums.json"
+        fi
+        if ! [ -z "$DD_API_KEY" ]; then
+          BUILD_STATS_ARGS="$BUILD_STATS_ARGS --upload-stats"
         else
           echo "Skipping build-stats.mjs upload because DD_API_KEY is not set"
         fi
+        node electron/script/build-stats.mjs $BUILD_STATS_ARGS || true
     - name: Build Electron (Windows) ${{ inputs.step-suffix }}
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
@@ -95,15 +114,20 @@ runs:
         Copy-Item out\Default\.ninja_log out\electron_ninja_log
         node electron\script\check-symlinks.js
 
-        # Upload build stats to Datadog
+        # Build stats and object checksums
+        $statsArgs = @("out\Default\siso.exe.INFO", "--out-dir", "out\Default", "--output-object-checksums", "object-checksums.${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json")
+        if (Test-Path previous-object-checksums.json) {
+          $statsArgs += @("--input-object-checksums", "previous-object-checksums.json")
+        }
         if ($env:DD_API_KEY) {
-          try {
-            npx node electron\script\build-stats.mjs out\Default\siso.exe.INFO --upload-stats ; $LASTEXITCODE = 0
-          } catch {
-            Write-Host "Build stats upload failed, continuing..."
-          }
+          $statsArgs += "--upload-stats"
         } else {
           Write-Host "Skipping build-stats.mjs upload because DD_API_KEY is not set"
+        }
+        try {
+          & node electron\script\build-stats.mjs @statsArgs ; $LASTEXITCODE = 0
+        } catch {
+          Write-Host "Build stats failed, continuing..."
         }
     - name: Verify dist.zip ${{ inputs.step-suffix }}
       shell: bash
@@ -128,6 +152,9 @@ runs:
         fi
         sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
+        sed $SEDOPTION '/--reorder-builtins/d' out/Default/mksnapshot_args
+        sed $SEDOPTION '/--warn-about-builtin-profile-data/d' out/Default/mksnapshot_args
+        sed $SEDOPTION '/--abort-on-bad-builtin-profile-data/d' out/Default/mksnapshot_args
 
         if [ "${{ inputs.target-platform }}" = "win" ]; then
           cd out/Default
@@ -274,18 +301,25 @@ runs:
       run: ./src/electron/script/actions/move-artifacts.sh
     - name: Upload Generated Artifacts ${{ inputs.step-suffix }}
       if: always() && !cancelled()
-      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
       with:
         name: generated_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./generated_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
     - name: Upload Src Artifacts ${{ inputs.step-suffix }}
-      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
       with:
         name: src_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./src_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
     - name: Upload Out Gen Artifacts ${{ inputs.step-suffix }}
       if: ${{ inputs.upload-out-gen-artifacts == 'true' }}
-      uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
       with:
         name: out_gen_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./src/out/Default/gen
+    - name: Upload Object Checksums ${{ inputs.step-suffix }}
+      if: ${{ always() && !cancelled() && inputs.is-asan != 'true' }}
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      with:
+        name: object_checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
+        path: ./src/object-checksums.${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json
+        archive: false

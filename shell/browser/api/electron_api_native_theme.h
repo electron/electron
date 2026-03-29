@@ -56,6 +56,9 @@ class NativeTheme final : public gin_helper::DeprecatedWrappable<NativeTheme>,
   bool ShouldUseInvertedColorScheme();
   bool InForcedColorsMode();
   bool GetPrefersReducedTransparency();
+#if BUILDFLAG(IS_MAC)
+  bool ShouldDifferentiateWithoutColor();
+#endif
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* theme) override;
