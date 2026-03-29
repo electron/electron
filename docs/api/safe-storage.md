@@ -24,6 +24,16 @@ same userspace.
 security semantics of content protected via the `safeStorage` API vary between window managers and secret stores.
   * Note that not all Linux setups have an available secret store. If no secret store is available, items stored in using the `safeStorage` API will be unprotected as they are encrypted via hardcoded plaintext password. You can detect when this happens when `safeStorage.getSelectedStorageBackend()` returns `basic_text`.
 
+> [!IMPORTANT]
+> On macOS, the `safeStorage` API stores encryption keys in the system Keychain under
+> an entry scoped to your app's bundle ID. If your app is not **code signed**, the
+> Keychain entry is associated with an unsigned identity, which means every time the
+> app is rebuilt or reinstalled, the OS treats it as a different app and the user must
+> re-grant Keychain access. **Notarization is not required** for `safeStorage` to work,
+> but code signing is strongly recommended to avoid this regression on each update.
+> See [Apple's documentation on code signing](https://developer.apple.com/documentation/security/code_signing_services)
+> for details.
+
 Note that on macOS, access to the system Keychain is required and
 these calls can block the current thread to collect user input.
 The same is true for Linux, if a password management tool is available.
