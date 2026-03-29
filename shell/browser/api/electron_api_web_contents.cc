@@ -2203,6 +2203,7 @@ void WebContents::DidFinishNavigation(
     frame_process_id = frame_host->GetProcess()->GetID().GetUnsafeValue();
     frame_routing_id = frame_host->GetRoutingID();
   }
+  auto weak_this = GetWeakPtr();
   if (!navigation_handle->IsErrorPage()) {
     // FIXME: All the Emit() calls below could potentially result in |this|
     // being destroyed (by JS listening for the event and calling
@@ -2212,6 +2213,8 @@ void WebContents::DidFinishNavigation(
     if (is_same_document) {
       Emit("did-navigate-in-page", url, is_main_frame, frame_process_id,
            frame_routing_id);
+      if (!weak_this)
+        return;
     } else {
       const net::HttpResponseHeaders* http_response =
           navigation_handle->GetResponseHeaders();
@@ -2223,8 +2226,12 @@ void WebContents::DidFinishNavigation(
       }
       Emit("did-frame-navigate", url, http_response_code, http_status_text,
            is_main_frame, frame_process_id, frame_routing_id);
+      if (!weak_this)
+        return;
       if (is_main_frame) {
         Emit("did-navigate", url, http_response_code, http_status_text);
+        if (!weak_this)
+          return;
       }
 
       content::NavigationEntry* entry = navigation_handle->GetNavigationEntry();
@@ -2238,7 +2245,7 @@ void WebContents::DidFinishNavigation(
           (entry->GetTransitionType() & ui::PAGE_TRANSITION_FORWARD_BACK))
         WebContents::TitleWasSet(entry);
     }
-    if (is_guest())
+    if (weak_this && is_guest())
       Emit("load-commit", url, is_main_frame);
   } else {
     auto url = navigation_handle->GetURL();
@@ -2247,12 +2254,17 @@ void WebContents::DidFinishNavigation(
     Emit("did-fail-provisional-load", code, description, url, is_main_frame,
          frame_process_id, frame_routing_id);
 
+    if (!weak_this)
+      return;
+
     // Do not emit "did-fail-load" for canceled requests.
     if (code != net::ERR_ABORTED) {
       util::EmitWarning(
           base::StrCat({"Failed to load URL: ", url.possibly_invalid_spec(),
                         " with error: ", description}),
           "electron");
+      if (!weak_this)
+        return;
       Emit("did-fail-load", code, description, url, is_main_frame,
            frame_process_id, frame_routing_id);
     }

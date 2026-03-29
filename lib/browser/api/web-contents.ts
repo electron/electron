@@ -210,9 +210,8 @@ function parsePageSize (pageSize: string | ElectronInternal.PageSize) {
   }
 }
 
-// Translate the options of printToPDF.
+const pendingPrintToPDF = new WeakMap<Electron.WebContents, Promise<any>>();
 
-let pendingPromise: Promise<any> | undefined;
 WebContents.prototype.printToPDF = async function (options) {
   const margins = checkType(options.margins ?? {}, 'object', 'margins');
   const pageSize = parsePageSize(options.pageSize ?? 'letter');
@@ -245,12 +244,11 @@ WebContents.prototype.printToPDF = async function (options) {
   };
 
   if (this._printToPDF) {
-    if (pendingPromise) {
-      pendingPromise = pendingPromise.then(() => this._printToPDF(printSettings));
-    } else {
-      pendingPromise = this._printToPDF(printSettings);
-    }
-    return pendingPromise;
+    const lastPromise = pendingPrintToPDF.get(this) || Promise.resolve();
+    // Use .finally style .then/.catch to ensure the chain continues even if a previous print failed.
+    const promise = lastPromise.then(() => this._printToPDF(printSettings), () => this._printToPDF(printSettings));
+    pendingPrintToPDF.set(this, promise);
+    return promise;
   } else {
     throw new Error('Printing feature is disabled');
   }
