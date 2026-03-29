@@ -687,7 +687,11 @@ pooled sockets using previous proxy from being reused by future requests.
       come from DNS, MulticastDNS, HOSTS file, etc
     * `system` - Results will only be retrieved from the system or OS, e.g. via
       the `getaddrinfo()` system call
-    * `dns` - Results will only come from DNS queries
+    * `dns` - Results will only come from DNS queries. Use this value when you
+      have configured DNS-over-HTTPS via
+      [`ses.configureHostResolver()`](#sescconfigurehostresolveroptions) to
+      ensure the query is routed through your DoH servers rather than falling
+      back to the system resolver or another source.
     * `mdns` - Results will only come from Multicast DNS queries
     * `localOnly` - No external sources will be used. Results will only come
       from fast local sources that are available no matter the source setting,
