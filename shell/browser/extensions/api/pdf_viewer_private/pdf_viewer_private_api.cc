@@ -19,7 +19,7 @@
 #include "components/pdf/common/constants.h"
 #include "components/prefs/pref_service.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
-#include "extensions/browser/mime_handler/stream_container.h"
+#include "extensions/browser/mime_handler/stream_container.h"  // nogncheck
 #include "pdf/buildflags.h"
 #include "url/url_constants.h"
 
