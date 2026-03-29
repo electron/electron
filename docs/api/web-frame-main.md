@@ -161,6 +161,17 @@ otherwise unable to be collected, it will return `undefined`.
 This can be useful to determine why the frame is unresponsive in cases where there's long-running JavaScript.
 For more information, see the [proposed Crash Reporting API.](https://wicg.github.io/crash-reporting/)
 
+> [!NOTE]
+> Two conditions must both be met for this API to work:
+>
+> 1. The app must enable the feature flag at startup:
+>    `app.commandLine.appendSwitch('enable-features', 'DocumentPolicyIncludeJSCallStacksInCrashReports')`
+> 2. The page being loaded must opt in by sending the following HTTP response header:
+>    `Document-Policy: include-js-call-stacks-in-crash-reports`
+>
+> If the response header is absent, `collectJavaScriptCallStack()` resolves with the message
+> `"Website owner has not opted in for JS call stacks in crash reports"`.
+
 ```js
 const { app } = require('electron')
 
