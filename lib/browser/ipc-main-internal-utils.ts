@@ -1,3 +1,4 @@
+import { webContents } from 'electron/main';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 
 type IPCHandler = (event: ElectronInternal.IpcMainInternalEvent, ...args: any[]) => any
@@ -18,20 +19,26 @@ export function invokeInWebContents<T> (sender: Electron.WebContents, command: s
   return new Promise<T>((resolve, reject) => {
     const requestId = ++nextId;
     const channel = `${command}_RESPONSE_${requestId}`;
-    ipcMainInternal.on(channel, function handler (event, error: Error, result: any) {
+    const cleanup = () => {
+      (ipcMainInternal as any).removeListener(channel, handler);
+    };
+    function handler (event: any, error: Error, result: any) {
       if (event.type !== 'frame' || event.sender !== sender) {
         console.error(`Reply to ${command} sent by unexpected sender`);
         return;
       }
 
-      ipcMainInternal.removeListener(channel, handler);
+      cleanup();
+      sender.removeListener('destroyed' as any, cleanup);
 
       if (error) {
         reject(error);
       } else {
         resolve(result);
       }
-    });
+    }
+    ipcMainInternal.on(channel, handler);
+    sender.once('destroyed' as any, cleanup);
 
     sender._sendInternal(command, requestId, ...args);
   });
@@ -41,21 +48,33 @@ export function invokeInWebFrameMain<T> (sender: Electron.WebFrameMain, command:
   return new Promise<T>((resolve, reject) => {
     const requestId = ++nextId;
     const channel = `${command}_RESPONSE_${requestId}`;
-    const frameTreeNodeId = sender.frameTreeNodeId;
-    ipcMainInternal.on(channel, function handler (event, error: Error, result: any) {
+    const frameTreeNodeId = (sender as any).frameTreeNodeId;
+    const cleanup = () => {
+      (ipcMainInternal as any).removeListener(channel, handler);
+    };
+    function handler (event: any, error: Error, result: any) {
       if (event.type !== 'frame' || event.frameTreeNodeId !== frameTreeNodeId) {
         console.error(`Reply to ${command} sent by unexpected sender`);
         return;
       }
 
-      ipcMainInternal.removeListener(channel, handler);
+      cleanup();
+      const contents = webContents.fromFrame(sender);
+      if (contents) {
+        contents.removeListener('destroyed' as any, cleanup);
+      }
 
       if (error) {
         reject(error);
       } else {
         resolve(result);
       }
-    });
+    }
+    ipcMainInternal.on(channel, handler);
+    const contents = webContents.fromFrame(sender);
+    if (contents) {
+      contents.once('destroyed' as any, cleanup);
+    }
 
     sender._sendInternal(command, requestId, ...args);
   });
