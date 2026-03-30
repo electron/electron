@@ -71,3 +71,11 @@ jobs:
       uses: ./src/electron/.github/actions/checkout
       with:
         target-platform: linux
+    - name: Upload Patch Conflict Fix
+      if: ${{ failure() }}
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      with:
+        name: update-patches
+        path: patches/update-patches.patch
+        if-no-files-found: ignore
+        archive: false
