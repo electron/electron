@@ -86,7 +86,7 @@ void ShowSaveDialog(const DialogSettings& settings,
 #if BUILDFLAG(IS_LINUX)
 // Rewrite of SelectFileDialogLinuxPortal equivalent functions with primary
 // difference being that dbus_thread_linux::GetSharedSessionBus is not used
-// so that version detection can be initiated and compeleted on the dbus thread
+// so that version detection can be initiated and completed on the dbus thread
 // Refs https://github.com/electron/electron/issues/46652
 void StartPortalAvailabilityTestInBackground();
 bool IsPortalAvailable();

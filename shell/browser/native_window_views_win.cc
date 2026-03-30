@@ -642,7 +642,7 @@ void NativeWindowViews::ResetWindowControls() {
 // Windows with |backgroundMaterial| expand to the same dimensions and
 // placement as the display to approximate maximization - unless we remove
 // rounded corners there will be a gap between the window and the display
-// at the corners noticable to users.
+// at the corners noticeable to users.
 void NativeWindowViews::SetRoundedCorners(bool rounded) {
   // DWMWA_WINDOW_CORNER_PREFERENCE is supported after Windows 11 Build 22000.
   if (base::win::GetVersion() < base::win::Version::WIN11)
