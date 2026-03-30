@@ -192,7 +192,7 @@ async function createWindow () {
     window.showDirectoryPicker({
       id: 'electron-demo',
       mode: 'readwrite',
-      startIn: 'downloads',
+      starting: 'downloads',
     }).catch(e => {
       console.log(e)
     })`, true

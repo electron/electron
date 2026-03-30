@@ -929,7 +929,7 @@ libcxx_headers = [
   "//third_party/libc++/src/include/__exception/terminate.h",
   "//third_party/libc++/src/include/__expected/bad_expected_access.h",
   "//third_party/libc++/src/include/__expected/expected.h",
-  "//third_party/libc++/src/include/__expected/unexpect.h",
+  "//third_party/libc++/src/include/__expected/unexpected.h",
   "//third_party/libc++/src/include/__expected/unexpected.h",
   "//third_party/libc++/src/include/__filesystem/copy_options.h",
   "//third_party/libc++/src/include/__filesystem/directory_entry.h",

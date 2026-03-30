@@ -285,7 +285,7 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
     params.shadow_type = InitParams::ShadowType::kNone;
 
   if (bool val; options.Get(options::kFocusable, &val) && !val)
-    params.activatable = InitParams::Activatable::kNo;
+    params.activatable = InitParams::Activatable::know;
 
 #if BUILDFLAG(IS_WIN)
   if (parent)
@@ -1145,7 +1145,7 @@ void NativeWindowViews::SetAlwaysOnTop(ui::ZOrderLevel z_order,
   behind_task_bar_ = false;
   if (z_order != ui::ZOrderLevel::kNormal) {
     // On macOS the window is placed behind the Dock for the following levels.
-    // Re-use the same names on Windows to make it easier for the user.
+    // Reuse the same names on Windows to make it easier for the user.
     static constexpr auto levels = base::MakeFixedFlatSet<std::string_view>(
         {"floating", "torn-off-menu", "modal-panel", "main-menu", "status"});
     behind_task_bar_ = levels.contains(level);

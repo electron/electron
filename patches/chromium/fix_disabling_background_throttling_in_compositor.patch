@@ -7,7 +7,7 @@ Subject: allow disabling throttling in the `viz::DisplayScheduler` per
 In Chromium when the `viz::DisplayScheduler` is invisible it throttles
 its work by dropping frame draws and swaps.
 
-This patch allows disbling this throttling by preventing transition to
+This patch allows disabling this throttling by preventing transition to
 invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 

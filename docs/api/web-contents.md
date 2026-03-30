@@ -569,7 +569,7 @@ app.whenReady().then(() => {
         x: 632.359375,
         y: 480.6875,
         globalX: 168.359375,
-        globalY: 193.6875
+        globally: 193.6875
       }
       */
       event.preventDefault()

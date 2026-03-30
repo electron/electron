@@ -18,7 +18,7 @@ struct Converter<base::RepeatingCallback<Sig>> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const base::RepeatingCallback<Sig>& val) {
     // We don't use CreateFunctionTemplate here because it creates a new
-    // FunctionTemplate everytime, which is cached by V8 and causes leaks.
+    // FunctionTemplate every time, which is cached by V8 and causes leaks.
     auto translator =
         base::BindRepeating(&gin_helper::NativeFunctionInvoker<Sig>::Go, val);
     // To avoid memory leak, we ensure that the callback can only be called

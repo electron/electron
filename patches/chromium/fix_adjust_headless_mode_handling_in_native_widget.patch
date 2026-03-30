@@ -4,11 +4,11 @@ Date: Mon, 22 Jul 2024 16:23:13 +0200
 Subject: fix: adjust headless mode handling in native widget
 
 We need this method as we create window in headless mode and we
-switch it back to normal mode only after inital paint is done in
+switch it back to normal mode only after initial paint is done in
 order to get some events like WebContents.beginFrameSubscription.
 If we don't set `is_headless_` to false then some child windows
 e.g. autofill popups will be created in headless mode leading to
-ui problems (like dissapearing popup during typing in html's
+ui problems (like disappearing popup during typing in html's
 input list).
 
 We also need to ensure that an initial paint is scheduled when

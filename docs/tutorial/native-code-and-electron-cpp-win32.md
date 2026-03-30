@@ -18,7 +18,7 @@ Just like our [general introduction to Native Code and Electron](./native-code-a
 
 ## 1) Creating a package
 
-You can re-use the package we created in our [Native Code and Electron](./native-code-and-electron.md) tutorial. This tutorial will not be repeating the steps described there. Let's first setup our basic addon folder structure:
+You can reuse the package we created in our [Native Code and Electron](./native-code-and-electron.md) tutorial. This tutorial will not be repeating the steps described there. Let's first setup our basic addon folder structure:
 
 ```txt
 my-native-win32-addon/

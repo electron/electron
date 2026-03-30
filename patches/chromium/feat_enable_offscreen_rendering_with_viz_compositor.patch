@@ -323,7 +323,7 @@ index 0000000000000000000000000000000000000000..601e646c293ac18e692663642f540577
 +    gfx::FrameData data) {
 +  DCHECK(swap_ack_callback_.is_null());
 +
-+  // We aren't waiting on DrawAck() and can immediately run the callback.
++  // We aren't waiting on drawback() and can immediately run the callback.
 +  if (!waiting_on_draw_ack_) {
 +    task_runner_->PostTask(
 +        FROM_HERE,
@@ -385,14 +385,14 @@ index 0000000000000000000000000000000000000000..601e646c293ac18e692663642f540577
 +    return;
 +
 +  layered_window_updater_->Draw(
-+      damage_rect, base::BindOnce(&SoftwareOutputDeviceProxy::DrawAck,
++      damage_rect, base::BindOnce(&SoftwareOutputDeviceProxy::drawback,
 +                                  base::Unretained(this)));
 +  waiting_on_draw_ack_ = true;
 +
 +  TRACE_EVENT_ASYNC_BEGIN0("viz", "SoftwareOutputDeviceProxy::Draw", this);
 +}
 +
-+void SoftwareOutputDeviceProxy::DrawAck() {
++void SoftwareOutputDeviceProxy::drawback() {
 +  DCHECK(waiting_on_draw_ack_);
 +  DCHECK(!swap_ack_callback_.is_null());
 +
@@ -491,7 +491,7 @@ index 0000000000000000000000000000000000000000..e1a22ee881c0fd679ac2d2d4d11a3c93
 +
 + private:
 +  // Runs |swap_ack_callback_| after draw has happened.
-+  void DrawAck();
++  void drawback();
 +
 +  mojo::Remote<mojom::LayeredWindowUpdater> layered_window_updater_;
 +
@@ -517,7 +517,7 @@ index b5154321105f08335b67ad2d552afa61337a4976..cb28230d9a8da6bd2259ef0c89801329
  
 -  layered_window_updater_->Draw(base::BindOnce(
 +  layered_window_updater_->Draw(damage_rect, base::BindOnce(
-       &SoftwareOutputDeviceWinProxy::DrawAck, base::Unretained(this)));
+       &SoftwareOutputDeviceWinProxy::drawback, base::Unretained(this)));
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc

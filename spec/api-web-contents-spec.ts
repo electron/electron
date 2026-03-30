@@ -1232,7 +1232,7 @@ describe('webContents module', () => {
           x: opts.x,
           y: opts.y,
           globalX: opts.globalX,
-          globalY: opts.globalY,
+          globally: opts.globally,
           clickCount: opts.clickCount
         });
         const [, input] = await p;
@@ -1242,7 +1242,7 @@ describe('webContents module', () => {
         expect(input.x).to.equal(opts.x);
         expect(input.y).to.equal(opts.y);
         expect(input.globalX).to.equal(opts.globalX);
-        expect(input.globalY).to.equal(opts.globalY);
+        expect(input.globally).to.equal(opts.globally);
         expect(input.clickCount).to.equal(opts.clickCount);
       };
       await testBeforeMouse({
@@ -1251,7 +1251,7 @@ describe('webContents module', () => {
         x: 100,
         y: 100,
         globalX: 200,
-        globalY: 200,
+        globally: 200,
         clickCount: 1
       });
       await testBeforeMouse({
@@ -1260,7 +1260,7 @@ describe('webContents module', () => {
         x: 150,
         y: 150,
         globalX: 250,
-        globalY: 250,
+        globally: 250,
         clickCount: 2
       });
       await testBeforeMouse({
@@ -1269,7 +1269,7 @@ describe('webContents module', () => {
         x: 200,
         y: 200,
         globalX: 300,
-        globalY: 300,
+        globally: 300,
         clickCount: 0
       });
     });

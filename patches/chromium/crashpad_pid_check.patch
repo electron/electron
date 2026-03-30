@@ -8,7 +8,7 @@ the API may return the PID of browser process as real_pid, which is different
 from the PID of renderer process.
 
 This is caused by the crashReporter getting started after the sanbox, after
-we redesign crashReporter's API to make it alwasy start before the
+we redesign crashReporter's API to make it always start before the
 sanbox, we can remove this patch.
 
 See following links for more:

@@ -198,7 +198,7 @@ index 7a6d2d086fa02fbb0dd97d89967a196a4ebb739e..aca6125a965328163c2012514157c96d
  
 -    if (@available(macOS 14.0, *)) {
 +    if (@available(macOS 15.0, *)) {
-       // Update the content size. This step is neccessary when used together
+       // Update the content size. This step is necessary when used together
        // with SCContentSharingPicker. If the Chrome picker is used, it will
        // change to retina resolution if applicable.
 @@ -392,6 +472,9 @@ void CreateStream(SCContentFilter* filter) {

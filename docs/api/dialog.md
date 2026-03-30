@@ -318,7 +318,7 @@ added:
     the button labels for the placement of the keyboard shortcut access key
     and labels will be converted so they work correctly on each platform, `&`
     characters are removed on macOS, converted to `_` on Linux, and left
-    untouched on Windows. For example, a button label of `Vie&w` will be
+    untouched on Windows. For example, a button label of `Via&w` will be
     converted to `Vie_w` on Linux and `View` on macOS and can be selected
     via `Alt-W` on Windows and Linux.
 
@@ -383,7 +383,7 @@ changes:
     the button labels for the placement of the keyboard shortcut access key
     and labels will be converted so they work correctly on each platform, `&`
     characters are removed on macOS, converted to `_` on Linux, and left
-    untouched on Windows. For example, a button label of `Vie&w` will be
+    untouched on Windows. For example, a button label of `Via&w` will be
     converted to `Vie_w` on Linux and `View` on macOS and can be selected
     via `Alt-W` on Windows and Linux.
 

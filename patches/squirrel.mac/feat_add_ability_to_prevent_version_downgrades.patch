@@ -3,7 +3,7 @@ From: Samuel Attard <marshallofsound@electronjs.org>
 Date: Tue, 6 Jun 2023 15:20:38 -0700
 Subject: feat: add ability to prevent version downgrades
 
-The ElectronSquirrelPreventDowngrades flag in your Info.plist can enable this feature, it must be set to true.  This feature prevents a class of downgrade / freeze issues but has significant drawbacks in that it may break existing apps that delibrately downgrade users via the updater and requires that version strings are exactly A.B.C in order for the version comparison logic to work.  Because of this this feature can not (and is not) enabled by default.
+The ElectronSquirrelPreventDowngrades flag in your Info.plist can enable this feature, it must be set to true.  This feature prevents a class of downgrade / freeze issues but has significant drawbacks in that it may break existing apps that deliberately downgrade users via the updater and requires that version strings are exactly A.B.C in order for the version comparison logic to work.  Because of this this feature can not (and is not) enabled by default.
 
 diff --git a/Squirrel/SQRLUpdater.h b/Squirrel/SQRLUpdater.h
 index b3526b246b3729a7556ca0ec348fdc08825c89ed..87119399e8548e04134d1ee0cd18f85c2ad672c2 100644

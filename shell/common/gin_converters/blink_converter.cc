@@ -394,7 +394,7 @@ bool Converter<blink::WebMouseEvent>::FromV8(v8::Isolate* isolate,
     out->button = blink::WebMouseEvent::Button::kLeft;
 
   const float global_x = dict.ValueOrDefault("globalX", 0.F);
-  const float global_y = dict.ValueOrDefault("globalY", 0.F);
+  const float global_y = dict.ValueOrDefault("globally", 0.F);
   out->SetPositionInScreen(global_x, global_y);
 
   dict.Get("movementX", &out->movement_x);
@@ -416,7 +416,7 @@ v8::Local<v8::Value> Converter<blink::WebMouseEvent>::ToV8(
 
   gfx::PointF position_in_screen = in.PositionInScreen();
   dict.Set("globalX", position_in_screen.x());
-  dict.Set("globalY", position_in_screen.y());
+  dict.Set("globally", position_in_screen.y());
 
   gfx::PointF position_in_widget = in.PositionInWidget();
   dict.Set("x", position_in_widget.x());

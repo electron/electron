@@ -12,7 +12,7 @@ Subject: feat: configure launch options for service process
 - Mac:
   Allows configuring base::LaunchOptions::disclaim_responsibility when launching the child process.
 - All:
-  Allows configuring base::LauncOptions::current_directory, base::LaunchOptions::enviroment
+  Allows configuring base::LauncOptions::current_directory, base::LaunchOptions::environment
   and base::LaunchOptions::clear_environment.
 
 An example use of this option, UtilityProcess API allows reading the output From
@@ -360,7 +360,7 @@ index dfdcb66d65f07f4543703396eb529a6ec02b3f4a..96c0cadf5caf5bf27f2a767c43f0f1da
 +    // If not empty, change to this directory before executing the new process.
 +    base::FilePath current_directory_;
 +
-+    // Inherit enviroment from parent process.
++    // Inherit environment from parent process.
 +    bool inherit_environment_ = true;
 +
 +#if BUILDFLAG(IS_WIN)

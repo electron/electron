@@ -454,7 +454,7 @@ describe('node feature', () => {
       const crypto = require('node:crypto');
       const data = 'lG9E+/g4JmRmedDAnihtBD4Dfaha/GFOjd+xUOQI05UtfVX3DjUXvrS98p7kZQwY3LNhdiFo7MY5rGft8yBuDhKuNNag9vRx/44IuClDhdQ=';
       const key = 'q90K9yBqhWZnAMCMTOJfPQ==';
-      const cipherText = '{"error_code":114,"error_message":"Tham số không hợp lệ","data":null}';
+      const cipherText = '{"error_code":114,"error_message":"Than số không hợp lệ","data":null}';
       for (let i = 0; i < 10000; ++i) {
         const iv = Buffer.from('0'.repeat(32), 'hex');
         const input = Buffer.from(data, 'base64');

@@ -4,7 +4,7 @@
 
 #include <windows.h>  // windows.h must be included first
 
-#include <atlbase.h>  // ensures that ATL statics like `_AtlWinModule` are initialized (it's an issue in static debug build)
+#include <atlbase.h>  // ensures that ATL statistics like `_AtlWinModule` are initialized (it's an issue in static debug build)
 #include <shellapi.h>
 #include <shellscalingapi.h>
 #include <tchar.h>

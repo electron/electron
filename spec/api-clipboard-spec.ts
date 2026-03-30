@@ -48,7 +48,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
 
   describe('clipboard.readRTF', () => {
     it('returns rtf text correctly', () => {
-      const rtf = '{\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard\nThis is some {\\b bold} text.\\par\n}';
+      const rtf = '{\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\part\nThis is some {\\b bold} text.\\par\n}';
       clipboard.writeRTF(rtf);
       expect(clipboard.readRTF()).to.equal(rtf);
     });

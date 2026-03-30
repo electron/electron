@@ -160,7 +160,7 @@ describe('<webview> tag', function () {
   });
 
   // FIXME(deepak1556): Ch69 follow up.
-  xdescribe('document.visibilityState/hidden', () => {
+  describe('document.visibilityState/hidden', () => {
     afterEach(() => {
       ipcMain.removeAllListeners('pong');
     });
@@ -2124,7 +2124,7 @@ describe('<webview> tag', function () {
     });
 
     // FIXME: This test is flaking constantly on Linux and macOS.
-    xdescribe('<webview>.capturePage()', () => {
+    describe('<webview>.capturePage()', () => {
       it('returns a Promise with a NativeImage', async function () {
         this.retries(5);
 
@@ -2157,7 +2157,7 @@ describe('<webview> tag', function () {
     });
 
     // FIXME(zcbenz): Disabled because of moving to OOPIF webview.
-    xdescribe('setDevToolsWebContents() API', () => {
+    describe('setDevToolsWebContents() API', () => {
       /*
       it('sets webContents of webview as devtools', async () => {
         const webview2 = new WebView();

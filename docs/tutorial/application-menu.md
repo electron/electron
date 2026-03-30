@@ -145,7 +145,7 @@ Menu.setApplicationMenu(menu)
 
 ### Using standard OS menu roles
 
-Defining each submenu explicitly can get very verbose. If you want to re-use default submenus
+Defining each submenu explicitly can get very verbose. If you want to reuse default submenus
 in your app, you can use various submenu-related roles provided by Electron.
 
 ```js title='Using default roles for each submenu' @ts-expect-error=[26]

@@ -19,7 +19,7 @@ export function containsRetainingPath (snapshot, retainingPath, options) {
     }
     root = newRoot;
   }
-  return options?.occurrances
-    ? root.length === options.occurrances
+  return options?.occurrences
+    ? root.length === options.occurrences
     : true;
 }

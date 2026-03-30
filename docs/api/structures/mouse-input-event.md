@@ -6,7 +6,7 @@
 * `y` Integer
 * `button` string (optional) - The button pressed, can be `left`, `middle`, `right`.
 * `globalX` Integer (optional)
-* `globalY` Integer (optional)
+* `globally` Integer (optional)
 * `movementX` Integer (optional)
 * `movementY` Integer (optional)
 * `clickCount` Integer (optional)

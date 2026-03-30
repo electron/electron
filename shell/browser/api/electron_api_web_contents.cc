@@ -2531,7 +2531,7 @@ void WebContents::LoadURL(const GURL& url,
   if (web_contents()->NeedToFireBeforeUnloadOrUnloadEvents())
     pending_unload_url_ = url;
 
-  // Discard non-committed entries to ensure we don't re-use a pending entry.
+  // Discard non-committed entries to ensure we don't reuse a pending entry.
   web_contents()->GetController().DiscardNonCommittedEntries();
   web_contents()->GetController().LoadURLWithParams(params);
 

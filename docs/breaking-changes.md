@@ -176,7 +176,7 @@ Electron's `desktopCapturer` will create a dead audio stream if the new permissi
 To restore previous behavior:
 
 ```js
-// main.js (right beneath your require/import statments)
+// main.js (right beneath your require/import statements)
 app.commandLine.appendSwitch(
   'disable-features',
   'MacCatapLoopbackAudioForScreenShare'

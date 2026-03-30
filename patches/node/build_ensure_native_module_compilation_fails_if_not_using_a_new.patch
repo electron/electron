@@ -38,7 +38,7 @@ index d9eb9527e3cbb3b101274ab19e6d6ace42f0e022..a1243ad39b8fcf564285ace0b51b1482
 +          'USING_ELECTRON_CONFIG_GYPI',
 +        ],
 +      }],
-       # The defines bellow must include all things from the external_v8_defines
+       # The defines below must include all things from the external_v8_defines
        # list in v8/BUILD.gn.
        ['v8_enable_v8_checks == 1', {
 diff --git a/configure.py b/configure.py

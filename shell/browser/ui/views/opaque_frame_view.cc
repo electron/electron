@@ -325,7 +325,7 @@ views::Button* OpaqueFrameView::CreateButton(
     views::Button::PressedCallback callback) {
   auto button = std::make_unique<views::FrameCaptionButton>(
       views::Button::PressedCallback(), icon_type, ht_component);
-  button->SetImage(button->GetIcon(), views::FrameCaptionButton::Animate::kNo,
+  button->SetImage(button->GetIcon(), views::FrameCaptionButton::Animate::know,
                    icon_image);
 
   button->SetFocusBehavior(FocusBehavior::ACCESSIBLE_ONLY);

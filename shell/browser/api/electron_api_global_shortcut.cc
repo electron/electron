@@ -135,7 +135,7 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
     auto* context = ElectronBrowserContext::GetDefaultBrowserContext();
     PrefService* prefs = context->prefs();
 
-    // Need a unique profile id. Set one if not generated yet, otherwise re-use
+    // Need a unique profile id. Set one if not generated yet, otherwise reuse
     // the same so that the session for the globalShortcuts is able to get
     // already registered shortcuts from the previous session. This will be used
     // by GlobalAcceleratorListenerLinux as a session key.

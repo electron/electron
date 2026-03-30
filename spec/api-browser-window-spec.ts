@@ -6645,7 +6645,7 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  // TODO (jkleinsc) renable these tests on mas arm64
+  // TODO (jkleinsc) re-enable these tests on mas arm64
   ifdescribe(!process.mas || process.arch !== 'arm64')('contextIsolation option with and without sandbox option', () => {
     const expectedContextData = {
       preloadContext: {

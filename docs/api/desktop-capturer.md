@@ -126,7 +126,7 @@ PipeWire supports a single capture for both screens and windows. If you request 
 `desktopCapturer`. If instead you are running Electron from another program like a terminal or IDE
 then that parent program must contain the Info.plist key.
 
-This is in order to facillitate use of Apple's new [CoreAudio Tap API](https://developer.apple.com/documentation/CoreAudio/capturing-system-audio-with-core-audio-taps#Configure-the-sample-code-project) by Chromium.
+This is in order to facilitate use of Apple's new [CoreAudio Tap API](https://developer.apple.com/documentation/CoreAudio/capturing-system-audio-with-core-audio-taps#Configure-the-sample-code-project) by Chromium.
 
 > [!WARNING]
 > Failure of `desktopCapturer` to start an audio stream due to `NSAudioCaptureUsageDescription`
@@ -142,7 +142,7 @@ on macOS versions 14.2 and later, you can apply a Chromium feature flag to force
 permissions system:
 
 ```js
-// main.js (right beneath your require/import statments)
+// main.js (right beneath your require/import statements)
 app.commandLine.appendSwitch('disable-features', 'MacCatapLoopbackAudioForScreenShare')
 ```
 

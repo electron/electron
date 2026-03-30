@@ -86,7 +86,7 @@ void CocoaNotification::Show(const NotificationOptions& options) {
       NSString* actionText = action.text.empty()
                                  ? showText
                                  : base::SysUTF16ToNSString(action.text);
-      // Action indicies are stored in the action identifier
+      // Action indices are stored in the action identifier
       UNNotificationAction* notificationAction = [UNNotificationAction
           actionWithIdentifier:[NSString stringWithFormat:@"ACTION_%d", i]
                          title:actionText

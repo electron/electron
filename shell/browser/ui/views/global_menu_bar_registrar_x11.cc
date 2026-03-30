@@ -110,7 +110,7 @@ void GlobalMenuBarRegistrarX11::OnProxyCreated(GObject* source,
 
   // TODO(erg): Mozilla's implementation has a workaround for GDBus
   // cancellation here. However, it's marked as fixed. If there's weird
-  // problems with cancelation, look at how they fixed their issues.
+  // problems with cancellation, look at how they fixed their issues.
   that->SetRegistrarProxy(proxy);
 
   that->OnNameOwnerChanged(nullptr, nullptr);

@@ -383,7 +383,7 @@ void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
                 std::max(current_bounds.height(), bounds.height()));
 
   // if the view's size is smaller than the target size, we need to set the
-  // view's bounds immediatley to the new size (not position) and set the
+  // view's bounds immediately to the new size (not position) and set the
   // layer's clip rect to animate from there.
   if (view_->width() < bounds.width() || view_->height() < bounds.height()) {
     view_->SetBoundsRect(max_size);

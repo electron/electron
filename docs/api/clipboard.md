@@ -120,11 +120,11 @@ Returns `string` - The content in the clipboard as RTF.
 ```js
 const { clipboard } = require('electron')
 
-clipboard.writeRTF('{\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard\nThis is some {\\b bold} text.\\par\n}')
+clipboard.writeRTF('{\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\part\nThis is some {\\b bold} text.\\par\n}')
 
 const rtf = clipboard.readRTF()
 console.log(rtf)
-// {\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard\nThis is some {\\b bold} text.\\par\n}
+// {\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\part\nThis is some {\\b bold} text.\\par\n}
 ```
 
 ### `clipboard.writeRTF(text[, type])`
@@ -137,7 +137,7 @@ Writes the `text` into the clipboard in RTF.
 ```js
 const { clipboard } = require('electron')
 
-const rtf = '{\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard\nThis is some {\\b bold} text.\\par\n}'
+const rtf = '{\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\part\nThis is some {\\b bold} text.\\par\n}'
 clipboard.writeRTF(rtf)
 ```
 

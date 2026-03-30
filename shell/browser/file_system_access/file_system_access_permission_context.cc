@@ -568,7 +568,7 @@ FileSystemAccessPermissionContext::GetReadPermissionGrant(
 
   if (existing_grant && existing_grant->handle_type() != handle_type) {
     // |path| changed from being a directory to being a file or vice versa,
-    // don't just re-use the existing grant but revoke the old grant before
+    // don't just reuse the existing grant but revoke the old grant before
     // creating a new grant.
     existing_grant->SetStatus(PermissionStatus::DENIED);
     existing_grant = nullptr;
@@ -626,7 +626,7 @@ FileSystemAccessPermissionContext::GetWritePermissionGrant(
 
   if (existing_grant && existing_grant->handle_type() != handle_type) {
     // |path| changed from being a directory to being a file or vice versa,
-    // don't just re-use the existing grant but revoke the old grant before
+    // don't just reuse the existing grant but revoke the old grant before
     // creating a new grant.
     existing_grant->SetStatus(PermissionStatus::DENIED);
     existing_grant = nullptr;

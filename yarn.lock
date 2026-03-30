@@ -4659,9 +4659,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"devlop@npm:^1.0.0, devlop@npm:^1.1.0":
+"develop@npm:^1.0.0, develop@npm:^1.1.0":
   version: 1.1.0
-  resolution: "devlop@npm:1.1.0"
+  resolution: "develop@npm:1.1.0"
   dependencies:
     dequal: "npm:^2.0.0"
   checksum: 10c0/e0928ab8f94c59417a2b8389c45c55ce0a02d9ac7fd74ef62d01ba48060129e1d594501b77de01f3eeafc7cb00773819b0df74d96251cf20b31c5b3071f45c0e
@@ -7083,7 +7083,7 @@ __metadata:
   resolution: "hast-util-from-html@npm:2.0.1"
   dependencies:
     "@types/hast": "npm:^3.0.0"
-    devlop: "npm:^1.1.0"
+    develop: "npm:^1.1.0"
     hast-util-from-parse5: "npm:^8.0.0"
     parse5: "npm:^7.0.0"
     vfile: "npm:^6.0.0"
@@ -7098,7 +7098,7 @@ __metadata:
   dependencies:
     "@types/hast": "npm:^3.0.0"
     "@types/unist": "npm:^3.0.0"
-    devlop: "npm:^1.0.0"
+    develop: "npm:^1.0.0"
     hastscript: "npm:^8.0.0"
     property-information: "npm:^6.0.0"
     vfile: "npm:^6.0.0"
@@ -8834,7 +8834,7 @@ __metadata:
     "@types/mdast": "npm:^4.0.0"
     "@types/unist": "npm:^3.0.0"
     decode-named-character-reference: "npm:^1.0.0"
-    devlop: "npm:^1.0.0"
+    develop: "npm:^1.0.0"
     mdast-util-to-string: "npm:^4.0.0"
     micromark: "npm:^4.0.0"
     micromark-util-decode-numeric-character-reference: "npm:^2.0.0"
@@ -8920,7 +8920,7 @@ __metadata:
   resolution: "micromark-core-commonmark@npm:2.0.3"
   dependencies:
     decode-named-character-reference: "npm:^1.0.0"
-    devlop: "npm:^1.0.0"
+    develop: "npm:^1.0.0"
     micromark-factory-destination: "npm:^2.0.0"
     micromark-factory-label: "npm:^2.0.0"
     micromark-factory-space: "npm:^2.0.0"
@@ -8943,7 +8943,7 @@ __metadata:
   version: 4.0.0
   resolution: "micromark-extension-directive@npm:4.0.0"
   dependencies:
-    devlop: "npm:^1.0.0"
+    develop: "npm:^1.0.0"
     micromark-factory-space: "npm:^2.0.0"
     micromark-factory-whitespace: "npm:^2.0.0"
     micromark-util-character: "npm:^2.0.0"
@@ -8970,7 +8970,7 @@ __metadata:
   version: 2.1.0
   resolution: "micromark-extension-gfm-footnote@npm:2.1.0"
   dependencies:
-    devlop: "npm:^1.0.0"
+    develop: "npm:^1.0.0"
     micromark-core-commonmark: "npm:^2.0.0"
     micromark-factory-space: "npm:^2.0.0"
     micromark-util-character: "npm:^2.0.0"
@@ -8986,7 +8986,7 @@ __metadata:
   version: 2.1.1
   resolution: "micromark-extension-gfm-table@npm:2.1.1"
   dependencies:
-    devlop: "npm:^1.0.0"
+    develop: "npm:^1.0.0"
     micromark-factory-space: "npm:^2.0.0"
     micromark-util-character: "npm:^2.0.0"
     micromark-util-symbol: "npm:^2.0.0"
@@ -9000,7 +9000,7 @@ __metadata:
   resolution: "micromark-extension-math@npm:3.1.0"
   dependencies:
     "@types/katex": "npm:^0.16.0"
-    devlop: "npm:^1.0.0"
+    develop: "npm:^1.0.0"
     katex: "npm:^0.16.0"
     micromark-factory-space: "npm:^2.0.0"
     micromark-util-character: "npm:^2.0.0"
@@ -9025,7 +9025,7 @@ __metadata:
   version: 2.0.0
   resolution: "micromark-factory-label@npm:2.0.0"
   dependencies:
-    devlop: "npm:^1.0.0"
+    develop: "npm:^1.0.0"
     micromark-util-character: "npm:^2.0.0"
     micromark-util-symbol: "npm:^2.0.0"
     micromark-util-types: "npm:^2.0.0"
@@ -9175,7 +9175,7 @@ __metadata:
   version: 2.0.1
   resolution: "micromark-util-subtokenize@npm:2.0.1"
   dependencies:
-    devlop: "npm:^1.0.0"
+    develop: "npm:^1.0.0"
     micromark-util-chunked: "npm:^2.0.0"
     micromark-util-symbol: "npm:^2.0.0"
     micromark-util-types: "npm:^2.0.0"
@@ -9211,7 +9211,7 @@ __metadata:
     "@types/debug": "npm:^4.0.0"
     debug: "npm:^4.0.0"
     decode-named-character-reference: "npm:^1.0.0"
-    devlop: "npm:^1.0.0"
+    develop: "npm:^1.0.0"
     micromark-core-commonmark: "npm:^2.0.0"
     micromark-factory-space: "npm:^2.0.0"
     micromark-util-character: "npm:^2.0.0"
@@ -9236,7 +9236,7 @@ __metadata:
     "@types/debug": "npm:^4.0.0"
     debug: "npm:^4.0.0"
     decode-named-character-reference: "npm:^1.0.0"
-    devlop: "npm:^1.0.0"
+    develop: "npm:^1.0.0"
     micromark-core-commonmark: "npm:^2.0.0"
     micromark-factory-space: "npm:^2.0.0"
     micromark-util-character: "npm:^2.0.0"
@@ -13042,7 +13042,7 @@ __metadata:
   dependencies:
     "@types/unist": "npm:^3.0.0"
     css-selector-parser: "npm:^3.0.0"
-    devlop: "npm:^1.1.0"
+    develop: "npm:^1.1.0"
     nth-check: "npm:^2.0.0"
     zwitch: "npm:^2.0.0"
   checksum: 10c0/2be09c8c146d92f606d7383faa3df0f905b67c0618ac8128f99f8b02cf980f0ee1035b12c598a79fe5aebfef9e10f1e9eb8eb26d605fc65122946f56332bd257
