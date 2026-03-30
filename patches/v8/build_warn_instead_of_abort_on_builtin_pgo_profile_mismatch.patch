@@ -3,10 +3,13 @@ From: Sam Attard <sattard@anthropic.com>
 Date: Sun, 22 Mar 2026 10:51:26 +0000
 Subject: build: warn instead of abort on builtin PGO profile mismatch
 
-Electron sets v8_enable_javascript_promise_hooks = true which adds
-conditional branches to builtins-microtask-queue-gen.cc, changing the
-RunMicrotasks builtin's control-flow graph hash. This invalidates V8's
-pre-generated PGO profile for that builtin (built with Chrome defaults).
+Electron sets v8_enable_javascript_promise_hooks = true to support
+Node.js async_hooks (see node/src/env.cc SetPromiseHooks usage:
+https://github.com/nodejs/node/blob/abff716eaccd0c4f4949d1315cb057a45979649d/src/env.cc#L223-L236).
+This flag adds conditional branches to builtins-microtask-queue-gen.cc
+and promise-misc.tq, changing the control-flow graph hash of several
+Promise/async builtins. This invalidates V8's pre-generated PGO profile
+for those builtins (built with Chrome defaults where the flag is off).
 
 Rather than disabling builtins PGO entirely, warn and skip mismatched
 builtins so all other builtins still benefit from PGO.
