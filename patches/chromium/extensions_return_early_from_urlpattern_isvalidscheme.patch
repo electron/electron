@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Niklas Wenzel <dev@nikwen.de>
+Date: Tue, 31 Mar 2026 00:11:27 +0200
+Subject: [Extensions] Return early from URLPattern::IsValidScheme()
+
+|scheme| will match at most one entry in |kValidSchemes|. No need to
+iterate through the remaining ones.
+
+Change-Id: I1f37383faccaddc775faabb797aea2851d93382f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7639311
+Commit-Queue: Andrea Orru <andreaorru@chromium.org>
+Reviewed-by: Andrea Orru <andreaorru@chromium.org>
+Reviewed-by: Devlin Cronin <rdevlin.cronin@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1594934}
+
+diff --git a/extensions/common/url_pattern.cc b/extensions/common/url_pattern.cc
+index 8975a936d6c18c4cc53a35bf680ca2d935f29071..daf5182643b7639bb47d932ddcc3f4dbdd093197 100644
+--- a/extensions/common/url_pattern.cc
++++ b/extensions/common/url_pattern.cc
+@@ -397,8 +397,8 @@ bool URLPattern::IsValidScheme(std::string_view scheme) const {
+   }
+ 
+   for (size_t i = 0; i < std::size(kValidSchemes); ++i) {
+-    if (scheme == kValidSchemes[i] && (valid_schemes_ & kValidSchemeMasks[i])) {
+-      return true;
++    if (scheme == kValidSchemes[i]) {
++      return valid_schemes_ & kValidSchemeMasks[i];
+     }
+   }
+ 
