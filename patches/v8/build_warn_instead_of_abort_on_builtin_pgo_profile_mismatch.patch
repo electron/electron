@@ -15,10 +15,10 @@ Rather than disabling builtins PGO entirely, warn and skip mismatched
 builtins so all other builtins still benefit from PGO.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 078b63b2bdbb3f952bd0f579e84fb691e308fb64..985f946d5f87b4e6eb32a011ac47a0073248e5f2 100644
+index 1bb7fc93c104805a3733280929a6759bacd399b4..874d6c94b258ab9e85ca13495912f2b7cb01189e 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -2803,9 +2803,11 @@ template("run_mksnapshot") {
+@@ -2649,9 +2649,11 @@ template("run_mksnapshot") {
          "--turbo-profiling-input",
          rebase_path(v8_builtins_profiling_log_file, root_build_dir),
  
