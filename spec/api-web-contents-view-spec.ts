@@ -3,6 +3,7 @@ import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen }
 import { expect } from 'chai';
 
 import { once } from 'node:events';
+import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
 
 import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers';
 import { defer, ifdescribe, waitUntil } from './lib/spec-helpers';
@@ -308,6 +309,94 @@ describe('WebContentsView', () => {
         visibilityState = await v.webContents.executeJavaScript('new Promise(resolve => document.visibilityState === "visible" ? resolve("visible") : document.addEventListener("visibilitychange", () => resolve(document.visibilityState)))');
       }
       expect(visibilityState).to.equal('visible');
+    });
+
+    it('tracks visibility for multiple child WebContentsViews', async () => {
+      const w = new BaseWindow({ show: false });
+      const cv = new View();
+      w.setContentView(cv);
+
+      const v1 = new WebContentsView();
+      const v2 = new WebContentsView();
+      cv.addChildView(v1);
+      cv.addChildView(v2);
+      v1.setBounds({ x: 0, y: 0, width: 400, height: 300 });
+      v2.setBounds({ x: 0, y: 300, width: 400, height: 300 });
+
+      await v1.webContents.loadURL('about:blank');
+      await v2.webContents.loadURL('about:blank');
+
+      await expect(waitUntil(async () => await haveVisibilityState(v1, 'hidden'))).to.eventually.be.fulfilled();
+      await expect(waitUntil(async () => await haveVisibilityState(v2, 'hidden'))).to.eventually.be.fulfilled();
+
+      w.show();
+
+      await expect(waitUntil(async () => await haveVisibilityState(v1, 'visible'))).to.eventually.be.fulfilled();
+      await expect(waitUntil(async () => await haveVisibilityState(v2, 'visible'))).to.eventually.be.fulfilled();
+
+      w.hide();
+
+      await expect(waitUntil(async () => await haveVisibilityState(v1, 'hidden'))).to.eventually.be.fulfilled();
+      await expect(waitUntil(async () => await haveVisibilityState(v2, 'hidden'))).to.eventually.be.fulfilled();
+    });
+
+    it('tracks visibility independently when a child WebContentsView is hidden via setVisible', async () => {
+      const w = new BaseWindow();
+      const cv = new View();
+      w.setContentView(cv);
+
+      const v1 = new WebContentsView();
+      const v2 = new WebContentsView();
+      cv.addChildView(v1);
+      cv.addChildView(v2);
+      v1.setBounds({ x: 0, y: 0, width: 400, height: 300 });
+      v2.setBounds({ x: 0, y: 300, width: 400, height: 300 });
+
+      await v1.webContents.loadURL('about:blank');
+      await v2.webContents.loadURL('about:blank');
+
+      await expect(waitUntil(async () => await haveVisibilityState(v1, 'visible'))).to.eventually.be.fulfilled();
+      await expect(waitUntil(async () => await haveVisibilityState(v2, 'visible'))).to.eventually.be.fulfilled();
+
+      v1.setVisible(false);
+
+      await expect(waitUntil(async () => await haveVisibilityState(v1, 'hidden'))).to.eventually.be.fulfilled();
+      // v2 should remain visible while v1 is hidden
+      expect(await v2.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
+
+      v1.setVisible(true);
+
+      await expect(waitUntil(async () => await haveVisibilityState(v1, 'visible'))).to.eventually.be.fulfilled();
+    });
+
+    it('fires a single visibilitychange event per show/hide transition', async () => {
+      const w = new BaseWindow({ show: false });
+      const v = new WebContentsView();
+      w.setContentView(v);
+      await v.webContents.loadURL('about:blank');
+
+      await v.webContents.executeJavaScript(`
+        window.__visChanges = [];
+        document.addEventListener('visibilitychange', () => {
+          window.__visChanges.push(document.visibilityState);
+        });
+      `);
+
+      w.show();
+      await expect(waitUntil(async () => await haveVisibilityState(v, 'visible'))).to.eventually.be.fulfilled();
+
+      // Give any delayed/queued occlusion updates time to fire.
+      await setTimeoutAsync(1500);
+
+      w.hide();
+      await expect(waitUntil(async () => await haveVisibilityState(v, 'hidden'))).to.eventually.be.fulfilled();
+
+      await setTimeoutAsync(1500);
+
+      const changes = await v.webContents.executeJavaScript('window.__visChanges');
+      // Expect exactly one 'visible' followed by one 'hidden'. Extra events
+      // would indicate the occlusion checker is causing spurious transitions.
+      expect(changes).to.deep.equal(['visible', 'hidden']);
     });
   });
 

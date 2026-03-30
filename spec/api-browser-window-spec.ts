@@ -1254,6 +1254,24 @@ describe('BrowserWindow module', () => {
         await hidden;
         expect(w.isVisible()).to.equal(false);
       });
+      ifit(process.platform === 'darwin')('emits show/hide once per transition', async () => {
+        let showCount = 0;
+        let hideCount = 0;
+        w.on('show', () => showCount++);
+        w.on('hide', () => hideCount++);
+
+        w.show();
+        // Give the macOS occlusion checker time to run and potentially
+        // fire duplicate events.
+        await setTimeout(500);
+        expect(showCount).to.equal(1);
+        expect(hideCount).to.equal(0);
+
+        w.hide();
+        await setTimeout(500);
+        expect(showCount).to.equal(1);
+        expect(hideCount).to.equal(1);
+      });
     });
 
     describe('BrowserWindow.minimize()', () => {
