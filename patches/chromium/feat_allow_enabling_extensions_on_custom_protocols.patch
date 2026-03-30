@@ -44,10 +44,10 @@ index 57ed3cf54b2921df09ad84906b3da7527c6080bb..ffe3a0894c612adaa429a783827c8503
  class WebRequestEventRouter : public KeyedService {
   public:
 diff --git a/extensions/common/extension.cc b/extensions/common/extension.cc
-index 0e0152871689c51d4e00f39f6ad607da90e6c9be..f365d0582d03a1432159a7ee6c8fde2de4c79634 100644
+index 731994059b8900e7cec46acfb9d17f18c3b8ed89..c32aee04fa1788ae26a0f9a0c5b9d2afb94c84c6 100644
 --- a/extensions/common/extension.cc
 +++ b/extensions/common/extension.cc
-@@ -220,7 +220,8 @@ const int Extension::kValidHostPermissionSchemes =
+@@ -222,7 +222,8 @@ const int Extension::kValidHostPermissionSchemes =
      URLPattern::SCHEME_CHROMEUI | URLPattern::SCHEME_HTTP |
      URLPattern::SCHEME_HTTPS | URLPattern::SCHEME_FILE |
      URLPattern::SCHEME_FTP | URLPattern::SCHEME_WS | URLPattern::SCHEME_WSS |
