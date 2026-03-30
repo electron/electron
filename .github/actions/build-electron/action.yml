@@ -125,6 +125,9 @@ runs:
         fi
         sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
+        sed $SEDOPTION '/--reorder-builtins/d' out/Default/mksnapshot_args
+        sed $SEDOPTION '/--warn-about-builtin-profile-data/d' out/Default/mksnapshot_args
+        sed $SEDOPTION '/--abort-on-bad-builtin-profile-data/d' out/Default/mksnapshot_args
 
         if [ "${{ inputs.target-platform }}" = "win" ]; then
           cd out/Default
