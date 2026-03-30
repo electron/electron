@@ -87,13 +87,6 @@ void InitializeFeatureList() {
       std::string(",") + sandbox::policy::features::kNetworkServiceSandbox.name;
 #endif
 
-#if BUILDFLAG(IS_MAC)
-  disable_features +=
-      // MacWebContentsOcclusion is causing some odd visibility
-      // issues with multiple web contents
-      std::string(",") + features::kMacWebContentsOcclusion.name;
-#endif
-
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   // Enable window.showSaveFilePicker api for saving pdf files.
   // Refs https://issues.chromium.org/issues/373852607
