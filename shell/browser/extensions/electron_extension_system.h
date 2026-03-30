@@ -26,7 +26,6 @@ class BrowserContext;
 namespace extensions {
 
 class ElectronExtensionLoader;
-class ValueStoreFactory;
 
 // A simplified version of ExtensionSystem for app_shell. Allows
 // app_shell to skip initialization of services it doesn't need.

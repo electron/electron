@@ -75,8 +75,6 @@ class AutofillPopup : private views::ViewObserver {
   static constexpr int kRowHeight = 24;
   static constexpr int kSmallerFontSizeDelta = -1;
 
-  int selected_index_;
-
   // Popup location
   gfx::Rect popup_bounds_;
 

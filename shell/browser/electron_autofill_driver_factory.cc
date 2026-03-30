@@ -91,16 +91,6 @@ AutofillDriver* AutofillDriverFactory::DriverForFrame(
   return driver.get();
 }
 
-void AutofillDriverFactory::AddDriverForFrame(
-    content::RenderFrameHost* render_frame_host,
-    CreationCallback factory_method) {
-  auto insertion_result = driver_map_.try_emplace(render_frame_host, nullptr);
-  // This can be called twice for the key representing the main frame.
-  if (insertion_result.second) {
-    insertion_result.first->second = std::move(factory_method).Run();
-  }
-}
-
 void AutofillDriverFactory::DeleteDriverForFrame(
     content::RenderFrameHost* render_frame_host) {
   driver_map_.erase(render_frame_host);

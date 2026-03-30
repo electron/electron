@@ -82,8 +82,6 @@ class FramelessView : public views::FrameView {
   // Not owned.
   raw_ptr<NativeWindowViews> window_ = nullptr;
   raw_ptr<views::Widget> frame_ = nullptr;
-
-  friend class NativeWindowsViews;
 };
 
 }  // namespace electron

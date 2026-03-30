@@ -36,16 +36,6 @@ const char* GetCancelLabel() {
   return cancel;
 }
 
-const char* GetOpenLabel() {
-  static const char* open = GtkGettext("_Open");
-  return open;
-}
-
-const char* GetSaveLabel() {
-  static const char* save = GtkGettext("_Save");
-  return save;
-}
-
 const char* GetOkLabel() {
   static const char* ok = GtkGettext("_Ok");
   return ok;
