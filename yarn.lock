@@ -584,7 +584,7 @@ __metadata:
     "@hurdlegroup/robotjs": "npm:^0.12.3"
     "@octokit/rest": "npm:^20.1.2"
     "@primer/octicons": "npm:^10.0.0"
-    "@sentry/cli": "npm:1.70.0"
+    "@sentry/cli": "npm:1.72.0"
     "@types/minimist": "npm:^1.2.5"
     "@types/node": "npm:^24.9.0"
     "@types/semver": "npm:^7.5.8"
@@ -1732,9 +1732,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/cli@npm:1.70.0":
-  version: 1.70.0
-  resolution: "@sentry/cli@npm:1.70.0"
+"@sentry/cli@npm:1.72.0":
+  version: 1.72.0
+  resolution: "@sentry/cli@npm:1.72.0"
   dependencies:
     https-proxy-agent: "npm:^5.0.0"
     mkdirp: "npm:^0.5.5"
@@ -1744,7 +1744,7 @@ __metadata:
     proxy-from-env: "npm:^1.1.0"
   bin:
     sentry-cli: bin/sentry-cli
-  checksum: 10c0/7f6356211a64e7ff0bc04b3436a86ee7646af237482de121e9e6c7e69de6d6dd62aef0e2253dc7d07b1b69bd01d2d100601a06e9d3a9acc7b7d99572a09503ce
+  checksum: 10c0/ef850dc9938c009dec485224222c272c1765ee59da04ef0c334de214cf79afe49a456671f465f98c9b48ff4dfa8738f92e7d9988dea0df0e318fba6969e4c0a7
   languageName: node
   linkType: hard
 
