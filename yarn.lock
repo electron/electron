@@ -584,6 +584,7 @@ __metadata:
     "@hurdlegroup/robotjs": "npm:^0.12.3"
     "@octokit/rest": "npm:^20.1.2"
     "@primer/octicons": "npm:^10.0.0"
+    "@sentry/cli": "npm:1.62.0"
     "@types/minimist": "npm:^1.2.5"
     "@types/node": "npm:^24.9.0"
     "@types/semver": "npm:^7.5.8"
@@ -627,6 +628,8 @@ __metadata:
     wrapper-webpack-plugin: "npm:^2.2.0"
     yaml: "npm:^2.8.1"
   dependenciesMeta:
+    "@sentry/cli":
+      built: true
     abstract-socket:
       built: true
   languageName: unknown
@@ -1726,6 +1729,21 @@ __metadata:
   version: 0.4.1
   resolution: "@sec-ant/readable-stream@npm:0.4.1"
   checksum: 10c0/64e9e9cf161e848067a5bf60cdc04d18495dc28bb63a8d9f8993e4dd99b91ad34e4b563c85de17d91ffb177ec17a0664991d2e115f6543e73236a906068987af
+  languageName: node
+  linkType: hard
+
+"@sentry/cli@npm:1.62.0":
+  version: 1.62.0
+  resolution: "@sentry/cli@npm:1.62.0"
+  dependencies:
+    https-proxy-agent: "npm:^5.0.0"
+    mkdirp: "npm:^0.5.5"
+    node-fetch: "npm:^2.6.0"
+    progress: "npm:^2.0.3"
+    proxy-from-env: "npm:^1.1.0"
+  bin:
+    sentry-cli: bin/sentry-cli
+  checksum: 10c0/4200dc99b4c0d66c7f06064732b647e0d4c6bf933b62a07682fa009998795750c98b65f25dcc8209fded0d894df490b32317ba2e7f9f1bf7d7db07374af38506
   languageName: node
   linkType: hard
 
@@ -9550,16 +9568,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mkdirp@npm:^1.0.3":
-  version: 1.0.4
-  resolution: "mkdirp@npm:1.0.4"
-  bin:
-    mkdirp: bin/cmd.js
-  checksum: 10c0/46ea0f3ffa8bc6a5bc0c7081ffc3907777f0ed6516888d40a518c5111f8366d97d2678911ad1a6882bf592fa9de6c784fea32e1687bb94e1f4944170af48a5cf
-  languageName: node
-  linkType: hard
-
-"mkdirp@npm:~0.5.1":
+"mkdirp@npm:^0.5.5, mkdirp@npm:~0.5.1":
   version: 0.5.6
   resolution: "mkdirp@npm:0.5.6"
   dependencies:
@@ -9567,6 +9576,15 @@ __metadata:
   bin:
     mkdirp: bin/cmd.js
   checksum: 10c0/e2e2be789218807b58abced04e7b49851d9e46e88a2f9539242cc8a92c9b5c3a0b9bab360bd3014e02a140fc4fbc58e31176c408b493f8a2a6f4986bd7527b01
+  languageName: node
+  linkType: hard
+
+"mkdirp@npm:^1.0.3":
+  version: 1.0.4
+  resolution: "mkdirp@npm:1.0.4"
+  bin:
+    mkdirp: bin/cmd.js
+  checksum: 10c0/46ea0f3ffa8bc6a5bc0c7081ffc3907777f0ed6516888d40a518c5111f8366d97d2678911ad1a6882bf592fa9de6c784fea32e1687bb94e1f4944170af48a5cf
   languageName: node
   linkType: hard
 
@@ -9728,6 +9746,20 @@ __metadata:
   dependencies:
     node-gyp: "npm:latest"
   checksum: 10c0/20eb231362cc07c62d9839164473744d985be5d82685214f3750d990d9f61ef366e0ba112a766c925d640ed29b2a500b83568e895dc2444dcd5db01e615aac2b
+  languageName: node
+  linkType: hard
+
+"node-fetch@npm:^2.6.0":
+  version: 2.7.0
+  resolution: "node-fetch@npm:2.7.0"
+  dependencies:
+    whatwg-url: "npm:^5.0.0"
+  peerDependencies:
+    encoding: ^0.1.0
+  peerDependenciesMeta:
+    encoding:
+      optional: true
+  checksum: 10c0/b55786b6028208e6fbe594ccccc213cab67a72899c9234eb59dba51062a299ea853210fcf526998eaa2867b0963ad72338824450905679ff0fa304b8c5093ae8
   languageName: node
   linkType: hard
 

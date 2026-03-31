@@ -15,6 +15,7 @@
     "@hurdlegroup/robotjs": "^0.12.3",
     "@octokit/rest": "^20.1.2",
     "@primer/octicons": "^10.0.0",
+    "@sentry/cli": "1.62.0",
     "@types/minimist": "^1.2.5",
     "@types/node": "^24.9.0",
     "@types/semver": "^7.5.8",
@@ -153,6 +154,9 @@
     "spec/fixtures/native-addon/*"
   ],
   "dependenciesMeta": {
+    "@sentry/cli": {
+      "built": true
+    },
     "abstract-socket": {
       "built": true
     }
