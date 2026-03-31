@@ -132,6 +132,36 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
     });
   });
 
+  describe('getTraceBufferUsage', function () {
+    this.timeout(10e3);
+
+    it('does not crash and returns valid usage data', async () => {
+      await app.whenReady();
+      await contentTracing.startRecording({
+        categoryFilter: '*',
+        traceOptions: 'record-until-full'
+      });
+
+      // Yield to the event loop so the JS HandleScope from this tick is gone.
+      // When the Mojo response arrives it fires OnTraceBufferUsageAvailable
+      // as a plain Chromium task — if that callback lacks its own HandleScope
+      // the process will crash with "Cannot create a handle without a HandleScope".
+      const result = await contentTracing.getTraceBufferUsage();
+
+      expect(result).to.have.property('percentage').that.is.a('number');
+      expect(result).to.have.property('value').that.is.a('number');
+
+      await contentTracing.stopRecording();
+    });
+
+    it('returns zero usage when no trace is active', async () => {
+      await app.whenReady();
+      const result = await contentTracing.getTraceBufferUsage();
+      expect(result).to.have.property('percentage').that.is.a('number');
+      expect(result.percentage).to.equal(0);
+    });
+  });
+
   describe('captured events', () => {
     it('include V8 samples from the main process', async function () {
       this.timeout(60000);
