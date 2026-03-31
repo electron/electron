@@ -802,6 +802,65 @@ describe('webContents module', () => {
       });
     });
 
+    describe('navigationHistory.goToIndex(index) API', () => {
+      beforeEach(async () => {
+        await w.loadURL(urlPage1);
+        await w.loadURL(urlPage2);
+        await w.loadURL(urlPage3);
+
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(2);
+      });
+
+      it('should be able to go to a valid earlier index', async () => {
+        w.webContents.navigationHistory.goToIndex(0);
+
+        await waitUntil(() => w.webContents.navigationHistory.getActiveIndex() === 0);
+        await waitUntil(() => w.webContents.getTitle() === 'Page 1');
+      });
+
+      it('should be able to go to a valid later index', async () => {
+        w.webContents.navigationHistory.goToIndex(0);
+        await waitUntil(() => w.webContents.navigationHistory.getActiveIndex() === 0);
+        await waitUntil(() => w.webContents.getTitle() === 'Page 1');
+
+        w.webContents.navigationHistory.goToIndex(2);
+
+        await waitUntil(() => w.webContents.navigationHistory.getActiveIndex() === 2);
+        await waitUntil(() => w.webContents.getTitle() === 'Page 3');
+      });
+
+      const expectNoEffect = async (fn: () => void) => {
+        const activeIndex = w.webContents.navigationHistory.getActiveIndex();
+        const title = w.webContents.getTitle();
+        let didStartNavigationCount = 0;
+        let didFinishLoadCount = 0;
+
+        w.webContents.on('did-start-navigation', () => didStartNavigationCount++);
+        w.webContents.on('did-finish-load', () => didFinishLoadCount++);
+
+        fn();
+
+        await setTimeout();
+
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(activeIndex);
+        expect(w.webContents.getTitle()).to.equal(title);
+        expect(didStartNavigationCount).to.equal(0);
+        expect(didFinishLoadCount).to.equal(0);
+      };
+
+      it('should do nothing when given the current active index', async () => {
+        const activeIndex = w.webContents.navigationHistory.getActiveIndex();
+        await expectNoEffect(() => w.webContents.navigationHistory.goToIndex(activeIndex));
+      });
+
+      it('should do nothing when given an invalid index', async () => {
+        await expectNoEffect(() => {
+          w.webContents.navigationHistory.goToIndex(-1);
+          w.webContents.navigationHistory.goToIndex(w.webContents.navigationHistory.length());
+        });
+      });
+    });
+
     describe('navigationHistory.clear API', () => {
       it('should be able clear history', async () => {
         await w.loadURL(urlPage1);
