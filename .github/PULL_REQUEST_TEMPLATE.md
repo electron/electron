@@ -14,9 +14,9 @@ NOTE: PRs submitted that do not follow this template will be automatically close
 #### Checklist
 <!-- Remove items that do not apply. For completed items, change [ ] to [x]. -->
 
-- [ ] built and tested
-- [ ] PR description filled out
-- [ ] [reviewed and verified the changes](https://github.com/electron/governance/blob/main/policy/ai.md)
+- [ ] I have built and tested this change
+- [ ] I have filled out the PR description
+- [ ] [I have reviewed and verified the changes](https://github.com/electron/governance/blob/main/policy/ai.md)
 - [ ] `npm test` passes
 - [ ] tests are [changed or added](https://github.com/electron/electron/blob/main/docs/development/testing.md)
 - [ ] relevant API documentation, tutorials, and examples are updated and follow the [documentation style guide](https://github.com/electron/electron/blob/main/docs/development/style-guide.md)
