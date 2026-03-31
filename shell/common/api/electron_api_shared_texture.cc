@@ -49,32 +49,85 @@ bool IsBrowserProcess() {
 gpu::ContextSupport* GetContextSupport() {
   if (IsBrowserProcess()) {
     auto* factory = content::ImageTransportFactory::GetInstance();
-    return factory->GetContextFactory()
-        ->SharedMainThreadRasterContextProvider()
-        ->ContextSupport();
+    if (!factory) {
+      LOG(ERROR) << "ImageTransportFactory is null";
+      return nullptr;
+    }
+
+    auto* context_factory = factory->GetContextFactory();
+    if (!context_factory) {
+      LOG(ERROR) << "ContextFactory is null";
+      return nullptr;
+    }
+
+    scoped_refptr<viz::RasterContextProvider> provider =
+        context_factory->SharedMainThreadRasterContextProvider();
+    if (!provider) {
+      LOG(ERROR) << "RasterContextProvider is null";
+      return nullptr;
+    }
+
+    return provider->ContextSupport();
   } else {
-    return blink::SharedGpuContext::ContextProviderWrapper()
-        ->ContextProvider()
-        .ContextSupport();
+    base::WeakPtr<blink::WebGraphicsContext3DProviderWrapper> wrapper =
+        blink::SharedGpuContext::ContextProviderWrapper();
+    if (!wrapper) {
+      LOG(ERROR) << "ContextProviderWrapper is null, GPU context unavailable";
+      return nullptr;
+    }
+
+    auto& context_provider = wrapper->ContextProvider();
+    if (context_provider.IsContextLost()) {
+      LOG(ERROR) << "ContextProvider context is lost";
+      return nullptr;
+    }
+
+    return context_provider.ContextSupport();
   }
 }
 
 gpu::SharedImageInterface* GetSharedImageInterface() {
   if (IsBrowserProcess()) {
     auto* factory = content::ImageTransportFactory::GetInstance();
-    return factory->GetContextFactory()
-        ->SharedMainThreadRasterContextProvider()
-        ->SharedImageInterface();
+    if (!factory) {
+      LOG(ERROR) << "ImageTransportFactory is null";
+      return nullptr;
+    }
+
+    auto* context_factory = factory->GetContextFactory();
+    if (!context_factory) {
+      LOG(ERROR) << "ContextFactory is null";
+      return nullptr;
+    }
+
+    scoped_refptr<viz::RasterContextProvider> provider =
+        context_factory->SharedMainThreadRasterContextProvider();
+    if (!provider) {
+      LOG(ERROR) << "RasterContextProvider is null";
+      return nullptr;
+    }
+
+    return provider->SharedImageInterface();
   } else {
-    return blink::SharedGpuContext::SharedImageInterfaceProvider()
-        ->SharedImageInterface();
+    auto* provider = blink::SharedGpuContext::SharedImageInterfaceProvider();
+    if (!provider) {
+      LOG(ERROR)
+          << "SharedImageInterfaceProvider is null, GPU context unavailable";
+      return nullptr;
+    }
+
+    return provider->SharedImageInterface();
   }
 }
 
 std::string GetBase64StringFromSyncToken(gpu::SyncToken& sync_token) {
   if (!sync_token.verified_flush()) {
     auto* sii = GetSharedImageInterface();
-    sii->VerifySyncToken(sync_token);
+    if (sii) {
+      sii->VerifySyncToken(sync_token);
+    } else {
+      LOG(ERROR) << "Failed to verify sync token, SharedImageInterface is null";
+    }
   }
 
   auto sync_token_data = base::Base64Encode(UNSAFE_BUFFERS(
@@ -151,7 +204,7 @@ struct ImportedSharedTexture
 
   // Texture id for printing warnings like GC check.
   std::string id;
-
+  
   void UpdateReleaseSyncToken(const gpu::SyncToken& token);
   void SetupReleaseSyncTokenCallback();
 
@@ -310,6 +363,12 @@ void ImportedSharedTexture::UpdateReleaseSyncToken(
   base::AutoLock locker(release_sync_token_lock_);
 
   auto* sii = GetSharedImageInterface();
+  if (!sii) {
+    LOG(WARNING)
+        << "Cannot update release sync token, SharedImageInterface is null";
+    return;
+  }
+
   if (release_sync_token.HasData()) {
     // If we already have a release sync token, we need to wait for it
     // to be signaled before we can set the new one.
@@ -324,6 +383,12 @@ void ImportedSharedTexture::SetupReleaseSyncTokenCallback() {
   base::AutoLock locker(release_sync_token_lock_);
 
   auto* sii = GetSharedImageInterface();
+  if (!sii) {
+    LOG(WARNING)
+        << "Cannot setup release sync token, SharedImageInterface is null";
+    return;
+  }
+
   if (!release_sync_token.HasData()) {
     release_sync_token = sii->GenUnverifiedSyncToken();
   }
@@ -331,8 +396,14 @@ void ImportedSharedTexture::SetupReleaseSyncTokenCallback() {
   client_shared_image->UpdateDestructionSyncToken(release_sync_token);
 
   if (release_callback) {
-    GetContextSupport()->SignalSyncToken(release_sync_token,
-                                         std::move(release_callback));
+    auto* context_support = GetContextSupport();
+    if (context_support) {
+      context_support->SignalSyncToken(release_sync_token,
+                                       std::move(release_callback));
+    } else {
+      LOG(WARNING)
+          << "ContextSupport is null, release callback will not be executed";
+    }
   }
 }
 
@@ -718,6 +789,12 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
   }
 
   auto* sii = GetSharedImageInterface();
+  if (!sii) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Failed to get SharedImageInterface, GPU context unavailable");
+    return v8::Null(isolate);
+  }
+
   gpu::SharedImageUsageSet shared_image_usage =
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_APPLE)
       gpu::SHARED_IMAGE_USAGE_GLES2_READ | gpu::SHARED_IMAGE_USAGE_GLES2_WRITE |
@@ -785,6 +862,12 @@ v8::Local<v8::Value> FinishTransferSharedTexture(v8::Isolate* isolate,
                                                                     &message);
 
   auto* sii = GetSharedImageInterface();
+  if (!sii) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Failed to get SharedImageInterface, GPU context unavailable");
+    return v8::Null(isolate);
+  }
+
   auto si = sii->ImportSharedImage(std::move(exported));
 
   auto source_st = GetSyncTokenFromBase64String(sync_token_data);
