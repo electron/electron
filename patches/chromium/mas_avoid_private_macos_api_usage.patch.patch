@@ -1342,10 +1342,10 @@ index d3ceb8cfbfe1fb63804232c3fd62bafcd90752bd..a82ca8b52a4b8f96ccb013abd5c0bf7c
  
    if (is_ios) {
 diff --git a/media/audio/apple/audio_low_latency_input.cc b/media/audio/apple/audio_low_latency_input.cc
-index 3a079b0fc34031d062045510fe0e2444792ff942..1be75833d46aaa124e5467904f68e46cce22ead8 100644
+index 75178516b53665c82195f795c5e4498c588e51c9..10e453a18813d3078dc4f01ab040acc66bf12bec 100644
 --- a/media/audio/apple/audio_low_latency_input.cc
 +++ b/media/audio/apple/audio_low_latency_input.cc
-@@ -27,6 +27,7 @@
+@@ -26,6 +26,7 @@
  #include "base/strings/sys_string_conversions.h"
  #include "base/time/time.h"
  #include "base/trace_event/trace_event.h"
@@ -1353,7 +1353,7 @@ index 3a079b0fc34031d062045510fe0e2444792ff942..1be75833d46aaa124e5467904f68e46c
  #include "media/audio/apple/audio_manager_apple.h"
  #include "media/audio/apple/scoped_audio_unit.h"
  #include "media/base/audio_bus.h"
-@@ -40,19 +41,23 @@
+@@ -39,19 +40,23 @@
  
  namespace {
  extern "C" {
