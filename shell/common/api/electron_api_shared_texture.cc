@@ -445,7 +445,7 @@ void ImportedTextureStartTransferSharedTexture(
   auto* sii = GetSharedImageInterface();
   if (!sii) {
     gin_helper::ErrorThrower(isolate).ThrowError(
-        "Failed to get SharedImageInterface, GPU context unavailable");
+        "Failed to start shared texture transfer: GPU is not available");
     return;
   }
 
@@ -467,7 +467,7 @@ void ImportedTextureRelease(const v8::FunctionCallbackInfo<v8::Value>& info) {
   if (!sii) {
     auto* isolate = info.GetIsolate();
     gin_helper::ErrorThrower(isolate).ThrowError(
-        "Failed to get SharedImageInterface, GPU context unavailable");
+        "Failed to release shared texture: GPU is not available");
     return;
   }
 
@@ -475,7 +475,7 @@ void ImportedTextureRelease(const v8::FunctionCallbackInfo<v8::Value>& info) {
   if (!context_support) {
     auto* isolate = info.GetIsolate();
     gin_helper::ErrorThrower(isolate).ThrowError(
-        "Failed to get ContextSupport, GPU context unavailable");
+        "Failed to release shared texture: GPU is not available");
     return;
   }
 
@@ -501,7 +501,7 @@ void ImportedTextureGetFrameCreationSyncToken(
   auto* sii = GetSharedImageInterface();
   if (!sii) {
     gin_helper::ErrorThrower(isolate).ThrowError(
-        "Failed to get SharedImageInterface, GPU context unavailable");
+        "Failed to get frame creation sync token: GPU is not available");
     return;
   }
 
@@ -530,7 +530,7 @@ void ImportedTextureSetReleaseSyncToken(
   auto* sii = GetSharedImageInterface();
   if (!sii) {
     gin_helper::ErrorThrower(isolate).ThrowError(
-        "Failed to get SharedImageInterface, GPU context unavailable");
+        "Failed to set release sync token: GPU is not available");
     return;
   }
 
@@ -809,7 +809,7 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
   auto* sii = GetSharedImageInterface();
   if (!sii) {
     gin_helper::ErrorThrower(isolate).ThrowError(
-        "Failed to get SharedImageInterface, GPU context unavailable");
+        "Failed to import shared texture: GPU is not available");
     return v8::Null(isolate);
   }
 
@@ -882,7 +882,7 @@ v8::Local<v8::Value> FinishTransferSharedTexture(v8::Isolate* isolate,
   auto* sii = GetSharedImageInterface();
   if (!sii) {
     gin_helper::ErrorThrower(isolate).ThrowError(
-        "Failed to get SharedImageInterface, GPU context unavailable");
+        "Failed to finish shared texture transfer: GPU is not available");
     return v8::Null(isolate);
   }
 
