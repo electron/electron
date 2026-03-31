@@ -64,16 +64,12 @@ gpu::ContextSupport* GetContextSupport() {
   } else {
     base::WeakPtr<blink::WebGraphicsContext3DProviderWrapper> wrapper =
         blink::SharedGpuContext::ContextProviderWrapper();
-    if (!wrapper) {
-      LOG(ERROR) << "ContextProviderWrapper is null, GPU context unavailable";
+    if (!wrapper)
       return nullptr;
-    }
 
     auto& context_provider = wrapper->ContextProvider();
-    if (context_provider.IsContextLost()) {
-      LOG(ERROR) << "ContextProvider context is lost";
+    if (context_provider.IsContextLost())
       return nullptr;
-    }
 
     return context_provider.ContextSupport();
   }
