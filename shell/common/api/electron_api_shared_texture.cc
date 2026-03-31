@@ -49,23 +49,16 @@ bool IsBrowserProcess() {
 gpu::ContextSupport* GetContextSupport() {
   if (IsBrowserProcess()) {
     auto* factory = content::ImageTransportFactory::GetInstance();
-    if (!factory) {
-      LOG(ERROR) << "ImageTransportFactory is null";
+    if (!auto* factory = content::ImageTransportFactory::GetInstance())
       return nullptr;
-    }
-
-    auto* context_factory = factory->GetContextFactory();
-    if (!context_factory) {
-      LOG(ERROR) << "ContextFactory is null";
+ 
+    if (!auto* context_factory = factory->GetContextFactory())
       return nullptr;
-    }
 
     scoped_refptr<viz::RasterContextProvider> provider =
         context_factory->SharedMainThreadRasterContextProvider();
-    if (!provider) {
-      LOG(ERROR) << "RasterContextProvider is null";
+    if (!provider)
       return nullptr;
-    }
 
     return provider->ContextSupport();
   } else {
