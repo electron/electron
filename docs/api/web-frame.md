@@ -206,6 +206,13 @@ Set the security origin, content security policy and name of the isolated world.
 
 ### `webFrame.getIsolatedWorlds()`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/50633
+```
+-->
+
 Returns `Integer[]` - The IDs of isolated worlds that currently exist for this
 frame. This does not include the main world (ID `0`) or Electron's preload world (ID `999`).
 
@@ -317,6 +324,13 @@ is spelled correctly, the result will be empty.
 ## Events
 
 ### Event: 'isolated-world-created'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/50633
+```
+-->
 
 Returns:
 
