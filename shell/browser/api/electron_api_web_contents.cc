@@ -2458,10 +2458,6 @@ base::ProcessId WebContents::GetOSProcessID() const {
   return base::GetProcId(process_handle);
 }
 
-bool WebContents::Equal(const WebContents* web_contents) const {
-  return ID() == web_contents->ID();
-}
-
 GURL WebContents::GetURL() const {
   return web_contents()->GetLastCommittedURL();
 }
@@ -4588,7 +4584,6 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
                  &WebContents::SetBackgroundThrottling)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("getOSProcessId", &WebContents::GetOSProcessID)
-      .SetMethod("equal", &WebContents::Equal)
       .SetMethod("_loadURL", &WebContents::LoadURL)
       .SetMethod("reload", &WebContents::Reload)
       .SetMethod("reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
