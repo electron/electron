@@ -1,0 +1,401 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alvin Ji <alvinji@chromium.org>
+Date: Wed, 18 Mar 2026 21:55:14 -0700
+Subject: WebUSB: Strengthen control transfer protection for protected classes
+
+Strengthens control transfer permissions to block requests targeting
+protected interface classes like HID or Mass Storage. Requests are now
+scrutinized for protected interfaces via the wIndex field regardless of
+recipient. Standard requests for device-level management remain allowed.
+This behavior is gated by the kWebUsbProtectedClassControlTransferBlock
+feature flag.
+
+Bug: 489711638
+Change-Id: Ic69c88f81e2a10abcaa80832b330d3789493f3b2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7677820
+Reviewed-by: Reilly Grant <reillyg@chromium.org>
+Commit-Queue: Alvin Ji <alvinji@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1601756}
+
+diff --git a/services/device/public/cpp/device_features.cc b/services/device/public/cpp/device_features.cc
+index 1d0a69a971aabf1cb85b39f7473a1e70d46f8082..bb97dee5e38913b2b3ca9817b62ee00c04ed8b98 100644
+--- a/services/device/public/cpp/device_features.cc
++++ b/services/device/public/cpp/device_features.cc
+@@ -29,6 +29,12 @@ BASE_FEATURE(kWebUsbBlocklist,
+              "WebUSBBlocklist",
+              base::FEATURE_ENABLED_BY_DEFAULT);
+ 
++// When enabled, WebUSB control transfers are blocked if they target a
++// protected interface class, even if the recipient is not set to interface
++// or endpoint. This protects devices which ignore this field.
++BASE_FEATURE(kWebUsbProtectedClassControlTransferBlock,
++             base::FEATURE_ENABLED_BY_DEFAULT);
++
+ // When enabled, accessing the navigator.hid attribute does not prevent the
+ // frame from entering the back forward cache.
+ BASE_FEATURE(kWebHidAttributeAllowsBackForwardCache,
+diff --git a/services/device/public/cpp/device_features.h b/services/device/public/cpp/device_features.h
+index b4f746b84669b97fc06e39585574aefb7099f1fb..f8431812e27fd4270c57cb15b5c31b356f275657 100644
+--- a/services/device/public/cpp/device_features.h
++++ b/services/device/public/cpp/device_features.h
+@@ -22,6 +22,8 @@ namespace features {
+ DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(kGenericSensorExtraClasses);
+ DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(kSerialPortConnected);
+ DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(kWebUsbBlocklist);
++DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(
++    kWebUsbProtectedClassControlTransferBlock);
+ DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(
+     kWebHidAttributeAllowsBackForwardCache);
+ #if BUILDFLAG(IS_WIN)
+diff --git a/services/device/usb/mojo/BUILD.gn b/services/device/usb/mojo/BUILD.gn
+index d2398c6ea481ca072af68a562c1be616d97c2427..5c2f1aba2f640f0af6ac037a3922123514f6e03b 100644
+--- a/services/device/usb/mojo/BUILD.gn
++++ b/services/device/usb/mojo/BUILD.gn
+@@ -17,6 +17,7 @@ source_set("mojo") {
+   deps = [
+     "//mojo/public/cpp/bindings",
+     "//net",
++    "//services/device/public/cpp:device_features",
+     "//services/device/public/cpp/usb",
+     "//services/device/public/mojom:usb",
+     "//services/device/public/mojom:usb_test",
+diff --git a/services/device/usb/mojo/device_impl.cc b/services/device/usb/mojo/device_impl.cc
+index 3accd45371fc5e36a20c7837d6cd8b40b39bc1e7..2c6967bbca6f874f046c445598ce9c27ac1dfbc6 100644
+--- a/services/device/usb/mojo/device_impl.cc
++++ b/services/device/usb/mojo/device_impl.cc
+@@ -19,6 +19,7 @@
+ #include "base/memory/ptr_util.h"
+ #include "base/memory/ref_counted_memory.h"
+ #include "base/strings/stringprintf.h"
++#include "services/device/public/cpp/device_features.h"
+ #include "services/device/public/cpp/usb/usb_utils.h"
+ #include "services/device/usb/usb_device.h"
+ #include "third_party/blink/public/common/features.h"
+@@ -155,31 +156,75 @@ void DeviceImpl::CloseHandle() {
+ }
+ 
+ bool DeviceImpl::HasControlTransferPermission(
++    mojom::UsbControlTransferType type,
+     UsbControlTransferRecipient recipient,
+     uint16_t index) {
+   DCHECK(device_handle_);
+ 
+-  if (recipient != UsbControlTransferRecipient::INTERFACE &&
+-      recipient != UsbControlTransferRecipient::ENDPOINT) {
++  // STANDARD requests to the DEVICE or OTHER recipients (e.g. GET_DESCRIPTOR)
++  // are fundamental for device discovery and management. These requests are
++  // always permitted because the USB 2.0 spec (Section 9.3) defines the usage
++  // of the `index` field (wIndex in the spec) for these types as either 0 or a
++  // Language ID. Since they are not used for interface-based routing, they
++  // are always allowed.
++  if (type == mojom::UsbControlTransferType::STANDARD &&
++      (recipient == UsbControlTransferRecipient::DEVICE ||
++       recipient == UsbControlTransferRecipient::OTHER)) {
+     return true;
+   }
+ 
+   const mojom::UsbConfigurationInfo* config = device_->GetActiveConfiguration();
+-  if (!config)
++  if (!config) {
+     return false;
++  }
+ 
++  // Identify the interface targeted by this request.
+   const mojom::UsbInterfaceInfo* interface = nullptr;
+   if (recipient == UsbControlTransferRecipient::ENDPOINT) {
++    // For the ENDPOINT recipient, the low byte of `index` is the endpoint
++    // address. We look up the interface that owns this endpoint.
+     interface = device_handle_->FindInterfaceByEndpoint(index & 0xff);
+   } else {
++    // For the INTERFACE recipient, the low byte of `index` is the interface
++    // number.
++    // For DEVICE and OTHER recipients, the USB spec allows `index` to be used
++    // arbitrarily by the vendor/class. We treat the low byte of `index` as a
++    // candidate interface ID to prevent routing bypasses.
+     auto interface_it =
+         std::ranges::find(config->interfaces, index & 0xff,
+                           &mojom::UsbInterfaceInfo::interface_number);
+-    if (interface_it != config->interfaces.end())
++    if (interface_it != config->interfaces.end()) {
+       interface = interface_it->get();
++    }
+   }
+ 
+-  return interface != nullptr;
++  // If the request targets a protected interface class (e.g. HID, Mass
++  // Storage), it must be blocked. This prevents a site from communicating
++  // with a protected interface,
++  // 1. by explicitly targeting an INTERFACE or ENDPOINT recipient, or
++  // 2. VENDOR or CLASS requests to the DEVICE or OTHER recipient where
++  //    index looks like an interface number in case the device will
++  //    respond to these requests despite an incorrectly set recipient.
++  if (interface && base::FeatureList::IsEnabled(
++                       features::kWebUsbProtectedClassControlTransferBlock)) {
++    for (const auto& alternate : interface->alternates) {
++      if (blocked_interface_classes_.contains(alternate->class_code)) {
++        return false;
++      }
++    }
++  }
++
++  // For requests explicitly targeting an INTERFACE or ENDPOINT, the interface
++  // must actually exist in the current configuration.
++  if (recipient == UsbControlTransferRecipient::INTERFACE ||
++      recipient == UsbControlTransferRecipient::ENDPOINT) {
++    return interface != nullptr;
++  }
++
++  // For DEVICE and OTHER recipients, if we reached here, it means either no
++  // interface was identified by wIndex, or the interface it identified is
++  // not protected. These requests are allowed for device-level management.
++  return true;
+ }
+ 
+ // static
+@@ -342,7 +387,8 @@ void DeviceImpl::ControlTransferIn(UsbControlTransferParamsPtr params,
+     return;
+   }
+ 
+-  if (HasControlTransferPermission(params->recipient, params->index)) {
++  if (HasControlTransferPermission(params->type, params->recipient,
++                                   params->index)) {
+     auto buffer = base::MakeRefCounted<base::RefCountedBytes>(length);
+     device_handle_->ControlTransfer(
+         UsbTransferDirection::INBOUND, params->type, params->recipient,
+@@ -365,7 +411,8 @@ void DeviceImpl::ControlTransferOut(UsbControlTransferParamsPtr params,
+     return;
+   }
+ 
+-  if (HasControlTransferPermission(params->recipient, params->index) &&
++  if (HasControlTransferPermission(params->type, params->recipient,
++                                   params->index) &&
+       (allow_security_key_requests_ ||
+        !IsAndroidSecurityKeyRequest(params, data))) {
+     auto buffer = base::MakeRefCounted<base::RefCountedBytes>(data);
+diff --git a/services/device/usb/mojo/device_impl.h b/services/device/usb/mojo/device_impl.h
+index ddcd3b49e6ae2ec8e08dbbd41c193db4d8a21434..8651ece839b6da653bcb7a7aba238ff37d15095e 100644
+--- a/services/device/usb/mojo/device_impl.h
++++ b/services/device/usb/mojo/device_impl.h
+@@ -51,6 +51,7 @@ class DeviceImpl : public mojom::UsbDevice, public device::UsbDevice::Observer {
+ 
+   // Checks interface permissions for control transfers.
+   bool HasControlTransferPermission(
++      mojom::UsbControlTransferType type,
+       mojom::UsbControlTransferRecipient recipient,
+       uint16_t index);
+ 
+diff --git a/services/device/usb/mojo/device_impl_unittest.cc b/services/device/usb/mojo/device_impl_unittest.cc
+index 99a5d149f8464839f55067c20f10832d6b8b66dc..ea2d6bce5bbabe3cfd9a967850213b581384611a 100644
+--- a/services/device/usb/mojo/device_impl_unittest.cc
++++ b/services/device/usb/mojo/device_impl_unittest.cc
+@@ -26,11 +26,13 @@
+ #include "base/strings/stringprintf.h"
+ #include "base/task/sequenced_task_runner.h"
+ #include "base/test/bind.h"
++#include "base/test/scoped_feature_list.h"
+ #include "base/test/task_environment.h"
+ #include "base/test/test_future.h"
+ #include "mojo/public/cpp/bindings/receiver.h"
+ #include "mojo/public/cpp/bindings/remote.h"
+ #include "mojo/public/cpp/test_support/test_utils.h"
++#include "services/device/public/cpp/device_features.h"
+ #include "services/device/usb/mock_usb_device.h"
+ #include "services/device/usb/mock_usb_device_handle.h"
+ #include "services/device/usb/usb_descriptors.h"
+@@ -813,7 +815,7 @@ TEST_F(USBDeviceImplTest, ClaimProtectedInterface) {
+ 
+   // The second interface implements a class which has been blocked above.
+   AddMockConfig(
+-      ConfigBuilder(/*value=*/1)
++      ConfigBuilder(/*configuration_value=*/1)
+           .AddInterface(/*interface_number=*/0, /*alternate_setting=*/0,
+                         /*class_code=*/1, /*subclass_code=*/0,
+                         /*protocol_code=*/0)
+@@ -975,6 +977,187 @@ TEST_F(USBDeviceImplTest, ControlTransfer) {
+   EXPECT_CALL(mock_handle(), Close());
+ }
+ 
++// Test control transfers to an interface with a protected class only work for
++// STANDARD type, not VENDOR or CLASS.
++TEST_F(USBDeviceImplTest, ControlTransferProtectedClassBlock) {
++  // Block interface class 2.
++  mojo::Remote<mojom::UsbDevice> device =
++      GetMockDeviceProxyWithBlockedInterfaces(base::span_from_ref(uint8_t{2}));
++
++  EXPECT_CALL(mock_device(), OpenInternal(_));
++
++  {
++    base::test::TestFuture<mojom::UsbOpenDeviceResultPtr> future;
++    device->Open(future.GetCallback());
++    EXPECT_TRUE(future.Get()->is_success());
++  }
++
++  // Interface 7 has class 2 (blocked).
++  AddMockConfig(ConfigBuilder(/*configuration_value=*/1)
++                    .AddInterface(/*interface_number=*/7,
++                                  /*alternate_setting=*/0,
++                                  /*class_code=*/2, /*subclass_code=*/0,
++                                  /*protocol_code=*/0)
++                    .Build());
++
++  EXPECT_CALL(mock_handle(), SetConfigurationInternal(1, _));
++
++  {
++    base::RunLoop loop;
++    device->SetConfiguration(
++        1, base::BindOnce(&ExpectResultAndThen, true, loop.QuitClosure()));
++    loop.Run();
++  }
++
++  {
++    // A VENDOR request to the DEVICE with index 7 (targeting the blocked
++    // interface) should be blocked.
++    auto params = mojom::UsbControlTransferParams::New();
++    params->type = UsbControlTransferType::VENDOR;
++    params->recipient = UsbControlTransferRecipient::DEVICE;
++    params->request = 5;
++    params->value = 6;
++    params->index = 7;
++    base::RunLoop loop;
++    device->ControlTransferIn(
++        std::move(params), 8, 0,
++        base::BindOnce(&ExpectTransferInAndThen,
++                       mojom::UsbTransferStatus::PERMISSION_DENIED,
++                       std::vector<uint8_t>(), loop.QuitClosure()));
++    loop.Run();
++  }
++
++  {
++    // A CLASS request to the DEVICE with index 7 (targeting the blocked
++    // interface) should be blocked.
++    auto params = mojom::UsbControlTransferParams::New();
++    params->type = UsbControlTransferType::CLASS;
++    params->recipient = UsbControlTransferRecipient::DEVICE;
++    params->request = 5;
++    params->value = 6;
++    params->index = 7;
++    base::RunLoop loop;
++    device->ControlTransferIn(
++        std::move(params), 8, 0,
++        base::BindOnce(&ExpectTransferInAndThen,
++                       mojom::UsbTransferStatus::PERMISSION_DENIED,
++                       std::vector<uint8_t>(), loop.QuitClosure()));
++    loop.Run();
++  }
++
++  {
++    // A STANDARD request to the DEVICE with index 7 should still be allowed
++    // even if index 7 matches a blocked interface.
++    std::vector<uint8_t> fake_data = {1, 2, 3};
++    AddMockInboundData(fake_data);
++
++    EXPECT_CALL(mock_handle(),
++                ControlTransferInternal(UsbTransferDirection::INBOUND,
++                                        UsbControlTransferType::STANDARD,
++                                        UsbControlTransferRecipient::DEVICE, 5,
++                                        6, 7, _, 0, _));
++
++    auto params = mojom::UsbControlTransferParams::New();
++    params->type = UsbControlTransferType::STANDARD;
++    params->recipient = UsbControlTransferRecipient::DEVICE;
++    params->request = 5;
++    params->value = 6;
++    params->index = 7;
++    base::RunLoop loop;
++    device->ControlTransferIn(
++        std::move(params), static_cast<uint32_t>(fake_data.size()), 0,
++        base::BindOnce(&ExpectTransferInAndThen,
++                       mojom::UsbTransferStatus::COMPLETED, fake_data,
++                       loop.QuitClosure()));
++    loop.Run();
++  }
++
++  {
++    // A STANDARD request to the INTERFACE with index 7 (targeting the blocked
++    // interface) should be blocked.
++    auto params = mojom::UsbControlTransferParams::New();
++    params->type = UsbControlTransferType::STANDARD;
++    params->recipient = UsbControlTransferRecipient::INTERFACE;
++    params->request = 5;
++    params->value = 6;
++    params->index = 7;
++    base::RunLoop loop;
++    device->ControlTransferIn(
++        std::move(params), 8, 0,
++        base::BindOnce(&ExpectTransferInAndThen,
++                       mojom::UsbTransferStatus::PERMISSION_DENIED,
++                       std::vector<uint8_t>(), loop.QuitClosure()));
++    loop.Run();
++  }
++
++  EXPECT_CALL(mock_handle(), Close());
++}
++
++TEST_F(USBDeviceImplTest, ControlTransferProtectedClassBlockDisabled) {
++  base::test::ScopedFeatureList feature_list;
++  feature_list.InitAndDisableFeature(
++      features::kWebUsbProtectedClassControlTransferBlock);
++
++  // Block interface class 2.
++  mojo::Remote<mojom::UsbDevice> device =
++      GetMockDeviceProxyWithBlockedInterfaces(base::span_from_ref(uint8_t{2}));
++
++  EXPECT_CALL(mock_device(), OpenInternal(_));
++
++  {
++    base::test::TestFuture<mojom::UsbOpenDeviceResultPtr> future;
++    device->Open(future.GetCallback());
++    EXPECT_TRUE(future.Get()->is_success());
++  }
++
++  // Interface 7 has class 2 (blocked).
++  AddMockConfig(ConfigBuilder(/*configuration_value=*/1)
++                    .AddInterface(/*interface_number=*/7,
++                                  /*alternate_setting=*/0,
++                                  /*class_code=*/2, /*subclass_code=*/0,
++                                  /*protocol_code=*/0)
++                    .Build());
++
++  EXPECT_CALL(mock_handle(), SetConfigurationInternal(1, _));
++
++  {
++    base::RunLoop loop;
++    device->SetConfiguration(
++        1, base::BindOnce(&ExpectResultAndThen, true, loop.QuitClosure()));
++    loop.Run();
++  }
++
++  {
++    // A VENDOR request to the DEVICE with index 7 targeting the blocked
++    // interface should be ALLOWED because
++    // `kWebUsbProtectedClassControlTransferBlock` is disabled.
++    std::vector<uint8_t> fake_data = {1, 2, 3};
++    AddMockInboundData(fake_data);
++
++    EXPECT_CALL(mock_handle(),
++                ControlTransferInternal(UsbTransferDirection::INBOUND,
++                                        UsbControlTransferType::VENDOR,
++                                        UsbControlTransferRecipient::DEVICE, 5,
++                                        6, 7, _, 0, _));
++
++    auto params = mojom::UsbControlTransferParams::New();
++    params->type = UsbControlTransferType::VENDOR;
++    params->recipient = UsbControlTransferRecipient::DEVICE;
++    params->request = 5;
++    params->value = 6;
++    params->index = 7;
++    base::RunLoop loop;
++    device->ControlTransferIn(
++        std::move(params), static_cast<uint32_t>(fake_data.size()), 0,
++        base::BindOnce(&ExpectTransferInAndThen,
++                       mojom::UsbTransferStatus::COMPLETED, fake_data,
++                       loop.QuitClosure()));
++    loop.Run();
++  }
++
++  EXPECT_CALL(mock_handle(), Close());
++}
++
+ TEST_F(USBDeviceImplTest, GenericTransfer) {
+   mojo::Remote<mojom::UsbDevice> device = GetMockDeviceProxy();
+ 
