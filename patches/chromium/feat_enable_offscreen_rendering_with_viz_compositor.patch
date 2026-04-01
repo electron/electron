@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 4ed0b92bd84e0bd97ebd0c6336d92191cc7bb8e8..901f6a4f446ba615a0d0d259735fcc055aeafe93 100644
+index 2aa6ad756b0a146f35516930d4452358d0f8dd07..2e2d9ac683a72de4b0e6f6f95c4ccd99319109f8 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -176,6 +176,8 @@ viz_component("service") {
@@ -584,10 +584,10 @@ index 59a7d48453bc4d317c5760f57ad3bf84d5a81106..6b03be074cfd1ef113394debbfeeb646
        compositor_data.display_client->GetBoundRemote(resize_task_runner_);
    mojo::AssociatedRemote<viz::mojom::ExternalBeginFrameController>
 diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
-index 00bd84b857fbd5915edf9e45c805e06a3a76a467..18c4391ba498f0379a1ce4204f72c35baa3dd4ec 100644
+index 8d943f9733af969906382e0f8e0988a50356dade..1219bb98872c01852687d5f4b96aa08e7fc09a09 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
-@@ -130,7 +130,6 @@ interface DisplayClient {
+@@ -129,7 +129,6 @@ interface DisplayClient {
  
    // Creates a LayeredWindowUpdater implementation to draw into a layered
    // window.
@@ -596,7 +596,7 @@ index 00bd84b857fbd5915edf9e45c805e06a3a76a467..18c4391ba498f0379a1ce4204f72c35b
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index 454c1872d6c247687a73391c57007f8ca74725ea..20e57d92fbcfaddbc0826de8820efb7cd96db56e 100644
+index a0e993a64d6f4e033910951d193e63bc71ed5ffe..a822611b5fc966ee76b958d0cd923e0b40782653 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 @@ -40,6 +40,7 @@ struct RootCompositorFrameSinkParams {

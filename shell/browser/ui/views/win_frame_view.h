@@ -29,8 +29,6 @@ class WinFrameView : public FramelessView {
   void Init(NativeWindowViews* window, views::Widget* frame) override;
   void InvalidateCaptionButtons() override;
 
-  SkColor GetReadableFeatureColor(SkColor background_color);
-
   // views::FrameView:
   gfx::Rect GetWindowBoundsForClientBounds(
       const gfx::Rect& client_bounds) const override;

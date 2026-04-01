@@ -238,7 +238,10 @@ const std::string InclusionStatusToString(net::CookieInclusionStatus status) {
             "The cookie is unpartitioned and being accessed from an anonymous "
             "context."},
            {Reason::EXCLUDE_INVALID_PATH,
-            "The cookie was set with an invalid Path attribute."}});
+            "The cookie was set with an invalid Path attribute."},
+           {Reason::EXCLUDE_AMBIGUOUS_SERIALIZATION,
+            "Cookie was rejected in parsing due to having an ambiguous "
+            "serialization."}});
   static_assert(
       Reasons.size() ==
           net::CookieInclusionStatus::ExclusionReasonBitset::kValueCount,

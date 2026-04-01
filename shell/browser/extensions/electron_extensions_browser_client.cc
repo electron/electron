@@ -46,7 +46,6 @@
 #include "shell/browser/extensions/electron_extensions_api_client.h"
 #include "shell/browser/extensions/electron_extensions_browser_api_provider.h"
 #include "shell/browser/extensions/electron_kiosk_delegate.h"
-#include "shell/browser/extensions/electron_navigation_ui_data.h"
 #include "shell/browser/extensions/electron_process_manager_delegate.h"
 #include "ui/base/resource/resource_bundle.h"
 
