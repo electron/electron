@@ -118,7 +118,6 @@ declare namespace Electron {
     _getHistory(): Electron.NavigationEntry[];
     _restoreHistory(index: number, entries: Electron.NavigationEntry[]): void
     _clearHistory():void
-    canGoToIndex(index: number): boolean;
     destroy(): void;
     // <webview>
     attachToIframe(embedderWebContents: Electron.WebContents, embedderFrameToken: string): void;
