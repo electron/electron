@@ -212,7 +212,6 @@ class WebContents final : public ExclusiveAccessContext,
   void GoForward();
   bool CanGoToOffset(int offset) const;
   void GoToOffset(int offset);
-  bool CanGoToIndex(int index) const;
   void GoToIndex(int index);
   int GetActiveIndex() const;
   content::NavigationEntry* GetNavigationEntryAtIndex(int index) const;
@@ -783,6 +782,8 @@ class WebContents final : public ExclusiveAccessContext,
       const content::ContextMenuParams& params,
       content::GlobalRenderFrameHostId render_frame_host_id,
       std::vector<std::u16string> types);
+
+  [[nodiscard]] bool CanGoToIndex(int index) const;
 
   cppgc::Persistent<api::Session> session_;
   v8::Global<v8::Value> devtools_web_contents_;
