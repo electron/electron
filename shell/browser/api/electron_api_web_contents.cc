@@ -4605,7 +4605,6 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("_goForward", &WebContents::GoForward)
       .SetMethod("_canGoToOffset", &WebContents::CanGoToOffset)
       .SetMethod("_goToOffset", &WebContents::GoToOffset)
-      .SetMethod("canGoToIndex", &WebContents::CanGoToIndex)
       .SetMethod("_goToIndex", &WebContents::GoToIndex)
       .SetMethod("_getActiveIndex", &WebContents::GetActiveIndex)
       .SetMethod("_getNavigationEntryAtIndex",
