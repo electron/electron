@@ -674,6 +674,33 @@ describe('chrome extensions', () => {
             w.loadURL(url);
           });
 
+          it('discovers extension isolated worlds before document_start scripts run', async () => {
+            await closeWindow(w);
+            w = new BrowserWindow({
+              show: false,
+              width: 400,
+              height: 400,
+              webPreferences: {
+                contextIsolation: contextIsolationEnabled,
+                sandbox: sandboxEnabled,
+                preload: path.join(fixtures, 'extensions', 'content-script-world-discovery', 'preload.js')
+              }
+            });
+
+            await addExtension('content-script-world-discovery');
+            await w.loadURL(url);
+
+            const discoveryResult = await w.webContents.executeJavaScript(
+              'document.documentElement.dataset.worldDiscovered'
+            );
+            expect(discoveryResult).to.equal('yes');
+
+            const isolatedWorlds = once(ipcMain, 'isolated-worlds');
+            w.webContents.send('get-isolated-worlds');
+            const [, worldIds] = await isolatedWorlds;
+            expect((worldIds as number[]).some(worldId => worldId >= (1 << 20))).to.equal(true);
+          });
+
           it('should run content script at document_idle', async () => {
             await addExtension('content-script-document-idle');
             w.loadURL(url);

@@ -75,6 +75,31 @@ describe('webFrame module', () => {
     expect(callbackDefined).to.be.true();
   });
 
+  it('clears isolated world discovery after navigation', async () => {
+    const win = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        contextIsolation: false,
+        nodeIntegration: true
+      }
+    });
+    defer(() => win.close());
+
+    await win.loadURL('about:blank');
+    const worldsBeforeNavigation = await win.webContents.executeJavaScript(`
+      const { webFrame } = require('electron');
+      webFrame.executeJavaScriptInIsolatedWorld(1234, [{ code: 'void 0' }])
+        .then(() => webFrame.getIsolatedWorlds());
+    `);
+    expect(worldsBeforeNavigation).to.include(1234);
+
+    await win.loadURL('data:text/html,<h1>after</h1>');
+    const worldsAfterNavigation = await win.webContents.executeJavaScript(`
+      require('electron').webFrame.getIsolatedWorlds();
+    `);
+    expect(worldsAfterNavigation).to.deep.equal([]);
+  });
+
   describe('api', () => {
     let w: WebContents;
     let win: BrowserWindow;
@@ -264,6 +289,48 @@ describe('webFrame module', () => {
       it('executeJavaScript(InIsolatedWorld) can be used without a callback', async () => {
         expect(await w.executeJavaScript('webFrame.executeJavaScript(\'1 + 1\')')).to.equal(2);
         expect(await w.executeJavaScript('webFrame.executeJavaScriptInIsolatedWorld(999, [{code: \'1 + 1\'}])')).to.equal(2);
+      });
+    });
+
+    describe('isolated world discovery', () => {
+      it('getIsolatedWorlds() tracks worlds per frame', async () => {
+        const { mainWorlds, childWorlds } = await w.executeJavaScript(`
+          childFrame.executeJavaScriptInIsolatedWorld(1104, [{ code: 'void 0' }]).then(() => ({
+            mainWorlds: webFrame.getIsolatedWorlds(),
+            childWorlds: childFrame.getIsolatedWorlds()
+          }))
+        `);
+
+        expect(mainWorlds).to.not.include(1104);
+        expect(childWorlds).to.include(1104);
+      });
+
+      it('emits isolated-world-created when a world is created', async () => {
+        const createdWorld = await w.executeJavaScript(`new Promise(resolve => {
+          webFrame.once('isolated-world-created', (worldId) => resolve(worldId));
+          webFrame.executeJavaScriptInIsolatedWorld(1105, [{ code: 'void 0' }]);
+        })`);
+
+        expect(createdWorld).to.equal(1105);
+      });
+
+      it('emits isolated-world-created on child frames', async () => {
+        const createdWorld = await w.executeJavaScript(`new Promise(resolve => {
+          childFrame.once('isolated-world-created', (worldId) => resolve(worldId));
+          childFrame.executeJavaScriptInIsolatedWorld(1106, [{ code: 'void 0' }]);
+        })`);
+
+        expect(createdWorld).to.equal(1106);
+      });
+
+      it('does not include main world (0) and Electron isolated world (999)', async () => {
+        const worlds = await w.executeJavaScript(`
+          webFrame.executeJavaScriptInIsolatedWorld(999, [{ code: 'void 0' }]).then(() =>
+            webFrame.getIsolatedWorlds()
+          )
+        `);
+        expect(worlds).to.not.include(0);
+        expect(worlds).to.not.include(999);
       });
     });
   });
