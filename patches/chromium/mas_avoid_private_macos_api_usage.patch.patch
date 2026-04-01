@@ -129,10 +129,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index 1f8256fdf364c34406fd5639057acca8d52cb474..2df7110c18569323199ec227891362c248237b2f 100644
+index 5c058b320fb0655db4eeb807b56547de83baa59a..ac397a51a961886e374bcf732fd5731ccfaf687e 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -974,6 +974,7 @@ if (is_clang_or_gcc) {
+@@ -978,6 +978,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -869,7 +869,7 @@ index d58c5eff9f8fbca96d0912ab9a19d06974fd8016..94ee727830545ff1576685722c0fd0dd
  
  void NativeWidgetNSWindowBridge::SetColorMode(
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index e3e8dc95624d9ad2d1428986694ca562f5fd6d64..2aa6ad756b0a146f35516930d4452358d0f8dd07 100644
+index 42a96534b0d6ec220626b888bfc97f382dfc1210..3f9d9afc88b7622c28ba2167c305e2a54affb8d3 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -390,6 +390,7 @@ viz_component("service") {
@@ -974,7 +974,7 @@ index 664e12c07204feeb5be16581fe51e8adc4b898dd..38159d146cdf71f84611d58e2983418a
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 431c4151c4c76f99ea2ec21b9f019e6bf123df79..9f9d8feff59b03b15e289e6fbc9474920d89a12c 100644
+index 4a344a37440ff8d68b47e9366a9f8f01d2bf4084..66d4028d3ab037e2a58c968e7d1031985447f13d 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -363,6 +363,7 @@ source_set("browser") {
@@ -986,18 +986,18 @@ index 431c4151c4c76f99ea2ec21b9f019e6bf123df79..9f9d8feff59b03b15e289e6fbc947492
  
    public_deps = [
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index 60de2c2d1d9120796c5df0751a54d09b1e507147..92c8d47448681322d122807d5fadccdb3d91a603 100644
+index d4320df856533ef75f943deeac82119c746f5e20..c6e9cc8fd3b3e152493086a6f401d1c6ce318725 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
-@@ -24,6 +24,7 @@
+@@ -25,6 +25,7 @@
  #include "content/browser/renderer_host/text_input_manager.h"
  #include "content/common/content_export.h"
  #include "content/common/render_widget_host_ns_view.mojom.h"
 +#include "electron/mas.h"
  #include "mojo/public/cpp/bindings/associated_receiver.h"
  #include "mojo/public/cpp/bindings/associated_remote.h"
- #include "third_party/blink/public/mojom/webshare/webshare.mojom.h"
-@@ -54,7 +55,9 @@ class CursorManager;
+ #include "third_party/blink/public/common/page/content_to_visible_time_request.h"
+@@ -55,7 +56,9 @@ class CursorManager;
  
  @protocol RenderWidgetHostViewMacDelegate;
  
@@ -1020,7 +1020,7 @@ index 60de2c2d1d9120796c5df0751a54d09b1e507147..92c8d47448681322d122807d5fadccdb
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 1ed8918ae793301197c456bb20dd9e82a50d1e4e..0747a20b283151a75c524dc0fa74c7b799725e54 100644
+index cd04e53b3b33bbeea56c1d4b0743c720b5f125bf..e6fd4c4485ad9476ad9d8a96dd4bf6176b170226 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -53,6 +53,7 @@
@@ -1031,7 +1031,7 @@ index 1ed8918ae793301197c456bb20dd9e82a50d1e4e..0747a20b283151a75c524dc0fa74c7b7
  #include "media/base/media_switches.h"
  #include "skia/ext/platform_canvas.h"
  #include "skia/ext/skia_utils_mac.h"
-@@ -293,8 +294,10 @@
+@@ -292,8 +293,10 @@
  void RenderWidgetHostViewMac::MigrateNSViewBridge(
      remote_cocoa::mojom::Application* remote_cocoa_application,
      uint64_t parent_ns_view_id) {
@@ -1042,7 +1042,7 @@ index 1ed8918ae793301197c456bb20dd9e82a50d1e4e..0747a20b283151a75c524dc0fa74c7b7
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1717,10 +1720,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1715,10 +1718,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -1055,7 +1055,7 @@ index 1ed8918ae793301197c456bb20dd9e82a50d1e4e..0747a20b283151a75c524dc0fa74c7b7
    return gfx::NativeViewAccessible([GetInProcessNSView() window]);
  }
  
-@@ -1772,9 +1777,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1770,9 +1775,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -1067,7 +1067,7 @@ index 1ed8918ae793301197c456bb20dd9e82a50d1e4e..0747a20b283151a75c524dc0fa74c7b7
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2304,20 +2311,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2302,20 +2309,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -1189,7 +1189,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index fc808a4a52383001885031035efe3d5ab898ba7f..46766e561e1e6ff14c0ece100386fcd5ce9df49a 100644
+index c9b21263a2422ada732b9a8adf09d41cdf5396df..b4086c71dc1ed931f851d268dfbbb41edecca769 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -701,6 +701,7 @@ static_library("test_support") {
@@ -1209,7 +1209,7 @@ index fc808a4a52383001885031035efe3d5ab898ba7f..46766e561e1e6ff14c0ece100386fcd5
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2076,6 +2079,7 @@ test("content_browsertests") {
+@@ -2077,6 +2080,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1217,7 +1217,7 @@ index fc808a4a52383001885031035efe3d5ab898ba7f..46766e561e1e6ff14c0ece100386fcd5
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3430,6 +3434,7 @@ test("content_unittests") {
+@@ -3439,6 +3443,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1378,7 +1378,7 @@ index 75178516b53665c82195f795c5e4498c588e51c9..10e453a18813d3078dc4f01ab040acc6
  }  // namespace
  #endif
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index 5be47a39edb9c5f3b05a13d10732b772d30cc2d7..a455b220b1e16770888bb02daeb88bfc4fa86fbd 100644
+index fe250ad7f81a503f2db084e6b55dafc06e35e2fb..23ae43042df5cd5bf08db5d1c736be6daee96e06 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
 @@ -223,6 +223,8 @@ source_set("dns") {
@@ -2140,7 +2140,7 @@ index ef031ba14e4c649f6f3a5718ac521e6b424d64cb..38e528450196b4dbd5fa6a25b96baa10
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 7cdab4235dca2ebdbdf77c6324df14f3094750d4..053221860b3fe6cae8e9d8505b7decacaf12e8ea 100644
+index e4b9053c9333598ec0347ec84a4d898d8eedca6a..f08d8343a6bb665be57c9e6766476c71efa47143 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -355,6 +355,13 @@ component("base") {
@@ -2359,7 +2359,7 @@ index bbe355cf69f160866188216cc274d75bd35603db..06ee100d7ea2e892dbf3c0b1adc96c50
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index de9338902104daacef1d05858354724a6fa198cc..775d317346a77cf54c4cfb3c3723e5e990f50bb3 100644
+index 7e8ea85ec8505f52ac99a85ac317fb819a09e516..741dc4bc2767b03aae322fa995e6c53ffdf4cf9a 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -734,6 +734,8 @@ component("views") {

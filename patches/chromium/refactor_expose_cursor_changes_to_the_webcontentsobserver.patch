@@ -30,10 +30,10 @@ index 4dad6bbade99a00b5ae0f45d4de34d866918545c..6c7ec195fa64e3a1a718811192c9f6fd
    // RenderWidgetHost on the primary main frame, and false otherwise.
    virtual bool IsWidgetForPrimaryMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 5e7d992ba2144d32f8eb1c6fa5233c68954318e1..4ff55ddc2286fff096a7e2bcdfb87d8795d7ce1c 100644
+index 287d1b1c695e0df4eba5479c07c8f48c852df49a..56b527ada42b90c571a49de103c02e616daf0537 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -2059,6 +2059,9 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
+@@ -2058,6 +2058,9 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
    if (view_) {
      view_->UpdateCursor(cursor);
    }
@@ -44,10 +44,10 @@ index 5e7d992ba2144d32f8eb1c6fa5233c68954318e1..4ff55ddc2286fff096a7e2bcdfb87d87
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d40eb3c0670a9b3053db7773cef229adae8ecbec..e70e2ecc3d0c5563a47f7b8a38a4face1d78d6d5 100644
+index dd5e4d1f48c3b16333a5c4624a99e79776ab70da..ea9f76a1b7c9740e3d4048b2edb1ca0294a51115 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -6338,6 +6338,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -6335,6 +6335,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -60,7 +60,7 @@ index d40eb3c0670a9b3053db7773cef229adae8ecbec..e70e2ecc3d0c5563a47f7b8a38a4face
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 3dd4d3cec135acf089f4a8ed981e917a332a3184..bc95997724b0a6733e2b1917d47c7e23e35f6a06 100644
+index 882e90f435780d0e298e3a778d4f029115de8980..48cbaff6b6adf2b0ead49e2a85302165291f4182 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1205,6 +1205,7 @@ class CONTENT_EXPORT WebContentsImpl
