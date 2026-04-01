@@ -1097,7 +1097,8 @@ public:
     Napi::Function func = DefineClass(env, "CppLinuxAddon", {
       InstanceMethod("helloWorld", &CppAddon::HelloWorld),
       InstanceMethod("helloGui", &CppAddon::HelloGui),
-      InstanceMethod("on", &CppAddon::On)
+      InstanceMethod("on", &CppAddon::On),
+      InstanceMethod("destroy", &CppAddon::Destroy)
     });
 
     Napi::FunctionReference *constructor = new Napi::FunctionReference();
@@ -1139,11 +1140,12 @@ private:
 
 Here, we create a C++ class that inherits from `Napi::ObjectWrap<CppAddon>`:
 
-`static Napi::Object Init` defines our JavaScript interface with three methods:
+`static Napi::Object Init` defines our JavaScript interface with four methods:
 
 * `helloWorld`: A simple function to test the bridge
 * `helloGui`: The function to launch our GTK3 UI
 * `on`: A method to register event callbacks
+* `destroy`: A method to release all persistent references before app quit
 
 The constructor initializes:
 
@@ -1354,7 +1356,8 @@ public:
     Napi::Function func = DefineClass(env, "CppLinuxAddon", {
       InstanceMethod("helloWorld", &CppAddon::HelloWorld),
       InstanceMethod("helloGui", &CppAddon::HelloGui),
-      InstanceMethod("on", &CppAddon::On)
+      InstanceMethod("on", &CppAddon::On),
+      InstanceMethod("destroy", &CppAddon::Destroy)
     });
 
     Napi::FunctionReference *constructor = new Napi::FunctionReference();
@@ -1497,6 +1500,20 @@ private:
     callbacks.Value().Set(info[0].As<Napi::String>(), info[1].As<Napi::Function>());
     return env.Undefined();
   }
+
+  Napi::Value Destroy(const Napi::CallbackInfo &info)
+  {
+    callbacks.Reset();
+    emitter.Reset();
+
+    if (tsfn_ != nullptr)
+    {
+      napi_release_threadsafe_function(tsfn_, napi_tsfn_abort);
+      tsfn_ = nullptr;
+    }
+
+    return info.Env().Undefined();
+  }
 };
 
 Napi::Object Init(Napi::Env env, Napi::Object exports)
@@ -1547,6 +1564,10 @@ class CppLinuxAddon extends EventEmitter {
     return this.addon.helloGui()
   }
 
+  destroy() {
+    this.addon.destroy()
+  }
+
   // Parse JSON and convert date to JavaScript Date object
   parse(payload) {
     const parsed = JSON.parse(payload)
@@ -1569,7 +1590,11 @@ This wrapper:
 * Only loads on Linux platforms
 * Forwards events from C++ to JavaScript
 * Provides clean methods to call into C++
+* Provides a `destroy()` method to release native resources
 * Converts JSON data into proper JavaScript objects
+
+> [!IMPORTANT]
+> You must call `destroy()` before the app quits (e.g. in the `will-quit` or `before-quit` event handler). Without this, persistent references to callbacks and the threadsafe function will prevent the native addon's destructor from running, causing Electron to hang on quit.
 
 ## 7) Building and testing the addon
 
