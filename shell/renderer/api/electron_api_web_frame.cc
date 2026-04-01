@@ -4,11 +4,13 @@
 
 #include <limits>
 #include <memory>
+#include <set>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
 
+#include "base/functional/callback.h"
 #include "base/containers/span.h"
 #include "base/memory/memory_pressure_listener_registry.h"
 #include "base/no_destructor.h"
@@ -41,6 +43,7 @@
 #include "shell/renderer/api/context_bridge/object_cache.h"
 #include "shell/renderer/api/electron_api_context_bridge.h"
 #include "shell/renderer/api/electron_api_spell_check_client.h"
+#include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
@@ -370,8 +373,11 @@ class WebFrameRenderer final
         .SetMethod("executeJavaScript", &WebFrameRenderer::ExecuteJavaScript)
         .SetMethod("executeJavaScriptInIsolatedWorld",
                    &WebFrameRenderer::ExecuteJavaScriptInIsolatedWorld)
+        .SetMethod("getIsolatedWorlds", &WebFrameRenderer::GetIsolatedWorlds)
         .SetMethod("setIsolatedWorldInfo",
                    &WebFrameRenderer::SetIsolatedWorldInfo)
+        .SetMethod("_setIsolatedWorldCreationCallback",
+                   &WebFrameRenderer::SetIsolatedWorldCreationCallback)
         .SetMethod("getResourceUsage", &WebFrameRenderer::GetResourceUsage)
         .SetMethod("clearCache", &WebFrameRenderer::ClearCache)
         .SetMethod("setSpellCheckProvider",
@@ -753,6 +759,29 @@ class WebFrameRenderer final
         blink::mojom::PromiseResultOption::kDoNotWait);
 
     return handle;
+  }
+
+  std::vector<int> GetIsolatedWorlds(v8::Isolate* isolate) {
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(isolate, "getIsolatedWorlds", &render_frame))
+      return {};
+
+    auto* observer = ElectronRenderFrameObserver::Get(render_frame);
+    return observer ? observer->GetIsolatedWorlds() : std::vector<int>{};
+  }
+
+  void SetIsolatedWorldCreationCallback(
+      v8::Isolate* isolate,
+      base::RepeatingCallback<void(int)> callback) {
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(isolate, "_setIsolatedWorldCreationCallback",
+                             &render_frame)) {
+      return;
+    }
+
+    auto* observer = ElectronRenderFrameObserver::Get(render_frame);
+    if (observer)
+      observer->SetIsolatedWorldCreatedCallback(std::move(callback));
   }
 
   void SetIsolatedWorldInfo(v8::Isolate* isolate,

@@ -4,6 +4,9 @@
 
 #include "shell/renderer/electron_render_frame_observer.h"
 
+#include <utility>
+#include <vector>
+
 #include "base/memory/ref_counted_memory.h"
 #include "base/trace_event/trace_event.h"
 #include "content/public/renderer/render_frame.h"
@@ -55,13 +58,29 @@ ElectronRenderFrameObserver::ElectronRenderFrameObserver(
     content::RenderFrame* frame,
     RendererClientBase* renderer_client)
     : content::RenderFrameObserver(frame),
+      content::RenderFrameObserverTracker<ElectronRenderFrameObserver>(frame),
       render_frame_(frame),
       renderer_client_(renderer_client) {
   // Initialise resource for directory listing.
   net::NetModule::SetResourceProvider(NetResourceProvider);
 }
 
+ElectronRenderFrameObserver::~ElectronRenderFrameObserver() = default;
+
+std::vector<int> ElectronRenderFrameObserver::GetIsolatedWorlds() const {
+  return {isolated_worlds_.begin(), isolated_worlds_.end()};
+}
+
+void ElectronRenderFrameObserver::SetIsolatedWorldCreatedCallback(
+    IsolatedWorldCreatedCallback isolated_world_created_callback) {
+  isolated_world_created_callbacks_.push_back(
+      std::move(isolated_world_created_callback));
+}
+
 void ElectronRenderFrameObserver::DidClearWindowObject() {
+  isolated_worlds_.clear();
+  isolated_world_created_callbacks_.clear();
+
   // Do a delayed Node.js initialization for child window.
   // Check DidInstallConditionalFeatures below for the background.
   auto* web_frame =
@@ -84,6 +103,17 @@ void ElectronRenderFrameObserver::DidClearWindowObject() {
 void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
     v8::Local<v8::Context> context,
     int world_id) {
+  if (!electron::is_main_world(world_id) &&
+      !electron::is_isolated_world(world_id)) {
+    const auto [_, inserted] = isolated_worlds_.insert(world_id);
+    if (inserted) {
+      for (const auto& callback : isolated_world_created_callbacks_) {
+        if (!callback.is_null())
+          callback.Run(world_id);
+      }
+    }
+  }
+
   // When a child window is created with window.open, its WebPreferences will
   // be copied from its parent, and Chromium will initialize JS context in it
   // immediately.
@@ -145,6 +175,16 @@ void ElectronRenderFrameObserver::WillReleaseScriptContext(
     v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     int world_id) {
+  if (!electron::is_main_world(world_id) &&
+      !electron::is_isolated_world(world_id)) {
+    isolated_worlds_.erase(world_id);
+  }
+
+  if (electron::is_main_world(world_id)) {
+    isolated_worlds_.clear();
+    isolated_world_created_callbacks_.clear();
+  }
+
   if (ShouldNotifyClient(world_id))
     renderer_client_->WillReleaseScriptContext(isolate, context, render_frame_);
 }
