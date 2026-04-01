@@ -1,0 +1,73 @@
+From d8b01057f740d3bb0ec880b34372da63147c2521 Mon Sep 17 00:00:00 2001
+From: Steinar H. Gunderson <sesse@chromium.org>
+Date: Fri, 20 Mar 2026 07:22:02 -0700
+Subject: [PATCH] Fix another use-after-free with lazy style attributes.
+
+This is a similar problem as regular attribute checks, just for
+the special case of input type="" (which is a similar but separate
+path).
+
+Style perftest and Speedometer3 are neutral.
+
+Fixed: 493952652
+Change-Id: I264503545c345325e6d21afa0726f524bb9394b8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7686835
+Reviewed-by: Anders Hartvoll Ruud <andruud@chromium.org>
+Commit-Queue: Steinar H Gunderson <sesse@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1602570}
+---
+
+diff --git a/third_party/blink/renderer/core/css/element_rule_collector.cc b/third_party/blink/renderer/core/css/element_rule_collector.cc
+index 901a258..64198a33 100644
+--- a/third_party/blink/renderer/core/css/element_rule_collector.cc
++++ b/third_party/blink/renderer/core/css/element_rule_collector.cc
+@@ -957,11 +957,14 @@
+     if (const AtomicString& input_type =
+             element.getAttribute(html_names::kTypeAttr);
+         !input_type.IsNull()) {
++      // Do not use input_type in the loop; the reference
++      // may be dangling if CollectMatchingRulesForList()
++      // adds lazy attributes.
++      AtomicString input_type_lower = input_type.ToAsciiLower();
+       for (const auto bundle : match_request.RuleSetsWithInputRules()) {
+         if (CollectMatchingRulesForList<stop_at_first_match>(
+-                bundle.rule_set->InputRules(input_type.ToAsciiLower()),
+-                match_request, bundle.rule_set, bundle.style_sheet_index,
+-                checker, context) &&
++                bundle.rule_set->InputRules(input_type_lower), match_request,
++                bundle.rule_set, bundle.style_sheet_index, checker, context) &&
+             stop_at_first_match) {
+           return true;
+         }
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-values/crashtests/chrome-bug-493952652.html b/third_party/blink/web_tests/external/wpt/css/css-values/crashtests/chrome-bug-493952652.html
+new file mode 100644
+index 0000000..a9c96ec5
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-values/crashtests/chrome-bug-493952652.html
+@@ -0,0 +1,26 @@
++<!DOCTYPE html>
++<head>
++  <link rel="help" href="https://crbug.com/493952652">
++  <style>
++    /*
++       Evaluation of [style] will add a new attribute to the element,
++       as lazy style gets synchronized. However, the bucketing will be
++       on input type, so we do not synchronize the attributes _before_
++       iteration.
++     */
++    input[style][type="text"] {}
++  </style>
++  <style>
++    /*
++       For the second stylesheet, when checking the type="" value string,
++       we must not use a reference into the old attributes.
++     */
++    input[style][type="text"] {}
++  </style>
++</head>
++<body>
++  <input id="target" type="text"></input>
++  <script>
++    document.getElementById('target').style.color = 'red';
++  </script>
++</body>
