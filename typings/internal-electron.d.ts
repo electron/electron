@@ -93,7 +93,6 @@ declare namespace Electron {
     getLastWebPreferences(): Electron.WebPreferences | null;
     _getProcessMemoryInfo(): Electron.ProcessMemoryInfo;
     _getPreloadScript(): Electron.PreloadScript | null;
-    equal(other: WebContents): boolean;
     browserWindowOptions: BrowserWindowConstructorOptions;
     _windowOpenHandler: ((details: Electron.HandlerDetails) => any) | null;
     _callWindowOpenHandler(event: any, details: Electron.HandlerDetails): {browserWindowConstructorOptions: Electron.BrowserWindowConstructorOptions | null, outlivesOpener: boolean, createWindow?: Electron.CreateWindowFunction};
