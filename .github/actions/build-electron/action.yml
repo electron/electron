@@ -48,22 +48,28 @@ runs:
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Download previous object checksums
-      uses: dawidd6/action-download-artifact@09b07ec687d10771279a426c79925ee415c12906 # v17
-      if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request') && inputs.is-asan != 'true' }}
-      with:
-        name: object-checksums.${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json
-        branch: ${{ case(github.event_name == 'push', github.ref_name, github.event.pull_request.base.ref) }}
-        path: src
-        search_artifacts: true
-        skip_unpack: true
-        if_no_artifact_found: ignore
-    - name: Move previous object checksums
       shell: bash
+      if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request') && inputs.is-asan != 'true' }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+        ARTIFACT_NAME: object-checksums.${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json
+        SEARCH_BRANCH: ${{ case(github.event_name == 'push', github.ref_name, github.event.pull_request.base.ref) }}
+        REPO: ${{ github.repository }}
       run: |
-        # NOTE: the .zip file extension is inaccurate as dawidd6/action-download-artifact isn't aware of non-archived artifacts
-        if [ -f src/object-checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json.zip ]; then
-          mv src/object-checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json.zip src/previous-object-checksums.json
-        fi
+        echo "Searching for artifact '${ARTIFACT_NAME}' on branch '${SEARCH_BRANCH}'..."
+
+        RUN_IDS=$(gh run list --repo "${REPO}" --branch "${SEARCH_BRANCH}" --workflow Build --status completed --event push --limit 20 --json databaseId --jq '.[].databaseId')
+        for RUN_ID in $RUN_IDS; do
+          ARTIFACT_ID=$(gh api "/repos/${REPO}/actions/runs/${RUN_ID}/artifacts?name=${ARTIFACT_NAME}" --jq '.artifacts[0].id // empty' 2>/dev/null || true)
+          if [ -n "$ARTIFACT_ID" ]; then
+            echo "Found artifact in run ${RUN_ID} (artifact ID: ${ARTIFACT_ID}), downloading..."
+            gh api "/repos/${REPO}/actions/artifacts/${ARTIFACT_ID}/zip" > src/previous-object-checksums.json
+            echo "Downloaded previous object checksums successfully"
+            exit 0
+          fi
+        done
+
+        echo "No previous object checksums found in last 20 runs, continuing without them"
     - name: Build Electron ${{ inputs.step-suffix }}
       if: ${{ inputs.target-platform != 'win' }}
       shell: bash
