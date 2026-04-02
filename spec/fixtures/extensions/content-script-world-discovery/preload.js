@@ -12,12 +12,22 @@ const injectIntoWorld = (worldId) => {
   }]);
 };
 
-for (const worldId of webFrame.getIsolatedWorlds()) {
+const startupWorlds = webFrame.getIsolatedWorlds();
+const createdWorlds = [];
+
+for (const worldId of startupWorlds) {
   injectIntoWorld(worldId);
 }
 
-webFrame.on('isolated-world-created', injectIntoWorld);
+webFrame.on('isolated-world-created', (worldId) => {
+  createdWorlds.push(worldId);
+  injectIntoWorld(worldId);
+});
 
-ipcRenderer.on('get-isolated-worlds', (event) => {
-  event.sender.send('isolated-worlds', webFrame.getIsolatedWorlds());
+ipcRenderer.on('get-world-discovery-state', (event) => {
+  event.sender.send('world-discovery-state', {
+    startupWorlds,
+    createdWorlds,
+    isolatedWorlds: webFrame.getIsolatedWorlds()
+  });
 });
