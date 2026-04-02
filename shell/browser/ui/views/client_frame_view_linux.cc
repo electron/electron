@@ -163,7 +163,7 @@ int ClientFrameViewLinux::ResizingBorderHitTest(const gfx::Point& point) {
 gfx::Rect ClientFrameViewLinux::GetBoundsForClientView() const {
   gfx::Rect client_bounds = bounds();
   if (!frame_->IsFullscreen()) {
-    client_bounds.Inset(RestoredFrameBorderInsets());
+    client_bounds.Inset(linux_frame_layout_->FrameBorderInsets(false));
     client_bounds.Inset(
         gfx::Insets::TLBR(GetTitlebarBounds().height(), 0, 0, 0));
   }
@@ -236,11 +236,38 @@ void ClientFrameViewLinux::Layout(PassKey) {
 }
 
 void ClientFrameViewLinux::OnPaint(gfx::Canvas* canvas) {
+  if (frame_->IsFullscreen()) {
+    return;
+  }
+
+  if (frame_->IsMaximized()) {
+    // Some GTK themes (Breeze) still render shadow/border assets when
+    // maximized, and we don't need a border when maximized anyway. Chromium
+    // switches on this too: OpaqueBrowserFrameView::PaintMaximizedFrameBorder.
+    PaintMaximizedFrameBorder(canvas);
+  } else {
+    PaintRestoredFrameBorder(canvas);
+  }
+}
+
+void ClientFrameViewLinux::PaintRestoredFrameBorder(gfx::Canvas* canvas) {
   if (auto* frame_provider = linux_frame_layout_->GetFrameProvider()) {
     frame_provider->PaintWindowFrame(
         canvas, GetLocalBounds(), GetTitlebarBounds().bottom(),
         ShouldPaintAsActive(), linux_frame_layout_->GetInputInsets());
   }
+}
+
+void ClientFrameViewLinux::PaintMaximizedFrameBorder(gfx::Canvas* canvas) {
+  ui::NativeTheme::FrameTopAreaExtraParams frame_top_area;
+  frame_top_area.use_custom_frame = true;
+  frame_top_area.is_active = ShouldPaintAsActive();
+  frame_top_area.default_background_color = SK_ColorTRANSPARENT;
+  ui::NativeTheme::ExtraParams params(frame_top_area);
+  GetNativeTheme()->Paint(
+      canvas->sk_canvas(), GetColorProvider(), ui::NativeTheme::kFrameTopArea,
+      ui::NativeTheme::kNormal,
+      gfx::Rect(0, 0, width(), GetTitlebarBounds().bottom()), params);
 }
 
 void ClientFrameViewLinux::PaintAsActiveChanged() {
@@ -251,23 +278,15 @@ void ClientFrameViewLinux::UpdateThemeValues() {
   gtk::GtkCssContext window_context =
       gtk::AppendCssNodeToStyleContext({}, "window.background.csd");
   gtk::GtkCssContext headerbar_context = gtk::AppendCssNodeToStyleContext(
-      {}, "headerbar.default-decoration.titlebar");
+      window_context, "headerbar.default-decoration.titlebar");
   gtk::GtkCssContext title_context =
       gtk::AppendCssNodeToStyleContext(headerbar_context, "label.title");
-  gtk::GtkCssContext button_context = gtk::AppendCssNodeToStyleContext(
-      headerbar_context, "button.image-button");
-
-  gtk_style_context_set_parent(headerbar_context, window_context);
-  gtk_style_context_set_parent(title_context, headerbar_context);
-  gtk_style_context_set_parent(button_context, headerbar_context);
-
   // ShouldPaintAsActive asks the widget, so assume active if the widget is not
   // set yet.
   if (GetWidget() != nullptr && !ShouldPaintAsActive()) {
     gtk_style_context_set_state(window_context, GTK_STATE_FLAG_BACKDROP);
     gtk_style_context_set_state(headerbar_context, GTK_STATE_FLAG_BACKDROP);
     gtk_style_context_set_state(title_context, GTK_STATE_FLAG_BACKDROP);
-    gtk_style_context_set_state(button_context, GTK_STATE_FLAG_BACKDROP);
   }
 
   theme_values_.window_border_radius =
@@ -280,10 +299,6 @@ void ClientFrameViewLinux::UpdateThemeValues() {
 
   theme_values_.title_color = gtk::GtkStyleContextGetColor(title_context);
   theme_values_.title_padding = gtk::GtkStyleContextGetPadding(title_context);
-
-  gtk::GtkStyleContextGet(button_context, "min-height",
-                          &theme_values_.button_min_size, nullptr);
-  theme_values_.button_padding = gtk::GtkStyleContextGetPadding(button_context);
 
   title_->SetEnabledColor(theme_values_.title_color);
 
@@ -299,8 +314,9 @@ ClientFrameViewLinux::GetButtonTypeToSkip() const {
 }
 
 void ClientFrameViewLinux::UpdateButtonImages() {
-  nav_button_provider_->RedrawImages(theme_values_.button_min_size,
-                                     frame_->IsMaximized(),
+  int top_area_height = theme_values_.titlebar_min_height +
+                        theme_values_.titlebar_padding.height();
+  nav_button_provider_->RedrawImages(top_area_height, frame_->IsMaximized(),
                                      ShouldPaintAsActive());
 
   ui::NavButtonProvider::FrameButtonDisplayType skip_type =
@@ -368,7 +384,14 @@ void ClientFrameViewLinux::LayoutButtonsOnSide(
 
     button->button->SetVisible(true);
 
-    int button_width = theme_values_.button_min_size;
+    // CSS min-size/height/width is not enough to determine the actual size of
+    // the buttons, so we sample the rendered image. See Chromium's
+    // BrowserFrameViewLinuxNative::MaybeUpdateCachedFrameButtonImages.
+    int button_width =
+        nav_button_provider_
+            ->GetImage(button->type,
+                       ui::NavButtonProvider::ButtonState::kNormal)
+            .width();
     int next_button_offset =
         button_width + nav_button_provider_->GetInterNavButtonSpacing();
 
@@ -404,7 +427,7 @@ gfx::Rect ClientFrameViewLinux::GetTitlebarBounds() const {
       std::max(font_height, theme_values_.titlebar_min_height) +
       GetTitlebarContentInsets().height();
 
-  gfx::Insets decoration_insets = RestoredFrameBorderInsets();
+  gfx::Insets decoration_insets = linux_frame_layout_->FrameBorderInsets(false);
 
   // We add the inset height here, so the .Inset() that follows won't reduce it
   // to be too small.
