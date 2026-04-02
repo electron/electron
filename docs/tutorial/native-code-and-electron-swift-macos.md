@@ -752,7 +752,8 @@ public:
         Napi::Function func = DefineClass(env, "SwiftAddon", {
             InstanceMethod("helloWorld", &SwiftAddon::HelloWorld),
             InstanceMethod("helloGui", &SwiftAddon::HelloGui),
-            InstanceMethod("on", &SwiftAddon::On)
+            InstanceMethod("on", &SwiftAddon::On),
+            InstanceMethod("destroy", &SwiftAddon::Destroy)
         });
 
         Napi::FunctionReference* constructor = new Napi::FunctionReference();
@@ -770,7 +771,7 @@ This first part:
 
 1. Defines a C++ class that inherits from `Napi::ObjectWrap`
 2. Creates a static `Init` method to register our class with Node.js
-3. Defines three methods: `helloWorld`, `helloGui`, and `on`
+3. Defines four methods: `helloWorld`, `helloGui`, `on`, and `destroy`
 
 ### Callback Mechanism
 
@@ -919,6 +920,18 @@ private:
         callbacks.Value().Set(info[0].As<Napi::String>(), info[1].As<Napi::Function>());
         return env.Undefined();
     }
+
+    Napi::Value Destroy(const Napi::CallbackInfo& info) {
+        callbacks.Reset();
+        emitter.Reset();
+
+        if (tsfn_ != nullptr) {
+            napi_release_threadsafe_function(tsfn_, napi_tsfn_abort);
+            tsfn_ = nullptr;
+        }
+
+        return info.Env().Undefined();
+    }
 };
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
@@ -934,7 +947,8 @@ This final part does multiple things:
 2. The HelloWorld method implementation takes a string input from JavaScript, passes it to the Swift code, and returns the processed result back to the JavaScript environment.
 3. The `HelloGui` method implementation provides a simple wrapper that calls the Swift UI creation function to display the native macOS window.
 4. The `On` method implementation allows JavaScript code to register callback functions that will be invoked when specific events occur in the native Swift code.
-5. The code sets up the module initialization process that registers the addon with Node.js and makes its functionality available to JavaScript.
+5. The `Destroy` method releases all persistent references (callbacks and emitter) and aborts the threadsafe function. This must be called before the app quits to allow the destructor to run and prevent the process from hanging.
+6. The code sets up the module initialization process that registers the addon with Node.js and makes its functionality available to JavaScript.
 
 The final and full `src/swift_addon.mm` should look like:
 
@@ -949,7 +963,8 @@ public:
         Napi::Function func = DefineClass(env, "SwiftAddon", {
             InstanceMethod("helloWorld", &SwiftAddon::HelloWorld),
             InstanceMethod("helloGui", &SwiftAddon::HelloGui),
-            InstanceMethod("on", &SwiftAddon::On)
+            InstanceMethod("on", &SwiftAddon::On),
+            InstanceMethod("destroy", &SwiftAddon::Destroy)
         });
 
         Napi::FunctionReference* constructor = new Napi::FunctionReference();
@@ -1074,6 +1089,18 @@ private:
         callbacks.Value().Set(info[0].As<Napi::String>(), info[1].As<Napi::Function>());
         return env.Undefined();
     }
+
+    Napi::Value Destroy(const Napi::CallbackInfo& info) {
+        callbacks.Reset();
+        emitter.Reset();
+
+        if (tsfn_ != nullptr) {
+            napi_release_threadsafe_function(tsfn_, napi_tsfn_abort);
+            tsfn_ = nullptr;
+        }
+
+        return info.Env().Undefined();
+    }
 };
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
@@ -1122,6 +1149,10 @@ class SwiftAddon extends EventEmitter {
     this.addon.helloGui()
   }
 
+  destroy () {
+    this.addon.destroy()
+  }
+
   parse (payload) {
     const parsed = JSON.parse(payload)
 
@@ -1143,7 +1174,11 @@ This wrapper:
 3. Loads the native addon
 4. Sets up event listeners and forwards them
 5. Provides a clean API for our functions
-6. Parses JSON payloads and converts timestamps to JavaScript Date objects
+6. Provides a `destroy()` method to release native resources
+7. Parses JSON payloads and converts timestamps to JavaScript Date objects
+
+> [!IMPORTANT]
+> You must call `destroy()` before the app quits (e.g. in the `will-quit` or `before-quit` event handler). Without this, persistent references to callbacks and the threadsafe function will prevent the native addon's destructor from running, causing Electron to hang on quit.
 
 ## 7) Building and Testing the Addon
 
