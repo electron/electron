@@ -675,7 +675,7 @@ index ac2f719be566020d9f41364560c12e6d6d0fe3d8..16d758a6936f66148a196761cfb875f6
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 60b5e83a8bc1ed07970be4cdfdc19962698bd754..1320f3b10b07b2cee90f39f406604176c7575796 100644
+index 60b5e83a8bc1ed07970be4cdfdc19962698bd754..dd83b6cfb6e3f916e60f50402014cd931a4d8850 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -54,6 +54,7 @@
@@ -799,7 +799,7 @@ index 60b5e83a8bc1ed07970be4cdfdc19962698bd754..1320f3b10b07b2cee90f39f406604176
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2394,29 +2415,43 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2394,29 +2415,47 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
@@ -835,8 +835,12 @@ index 60b5e83a8bc1ed07970be4cdfdc19962698bd754..1320f3b10b07b2cee90f39f406604176
 -                      : mojom::PrintScalingOption::kSourceSize;
 -  RecordDebugEvent(settings.params->printed_doc_type ==
 +  bool silent = new_settings.FindBool("silent").value_or(false);
-+  if (silent) {
-+    settings->params->print_scaling_option = mojom::PrintScalingOption::kFitToPrintableArea;
++  int margins_type = new_settings.FindInt(kSettingMarginsType)
++      .value_or(static_cast<int>(mojom::MarginType::kDefaultMargins));
++  if (silent &&
++      margins_type == static_cast<int>(mojom::MarginType::kDefaultMargins)) {
++    settings->params->print_scaling_option =
++        mojom::PrintScalingOption::kFitToPrintableArea;
 +  } else {
 +    settings->params->print_scaling_option =
 +        center_on_paper ? mojom::PrintScalingOption::kCenterShrinkToFitPaper
