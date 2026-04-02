@@ -28,6 +28,7 @@
 #include "extensions/common/error_utils.h"
 #include "extensions/common/file_util.h"
 #include "extensions/common/manifest_constants.h"
+#include "extensions/common/manifest_handlers/background_info.h"
 
 namespace extensions {
 
@@ -146,14 +147,16 @@ void ElectronExtensionLoader::FinishExtensionLoad(
   if (extension) {
     ExtensionPrefs* extension_prefs = ExtensionPrefs::Get(browser_context_);
 
-    // Tell Chromium that it needs to start the extension's service worker.
-    // Chromium usually does this only when an extension is first installed
-    // because Chrome will restart the service worker when the browser
-    // relaunches. In Electron, we make a fresh install on every app start,
-    // so we need to run the fresh install logic again.
-    extension_prefs->UpdateExtensionPref(
-        extension.get()->id(), extensions::kPrefHasStartedServiceWorker,
-        base::Value(false));
+    if (BackgroundInfo::IsServiceWorkerBased(extension.get())) {
+      // Tell Chromium that it needs to start the extension's service worker.
+      // Chromium usually does this only when an extension is first installed
+      // because Chrome will restart the service worker when the browser
+      // relaunches. In Electron, we make a fresh install on every app start,
+      // so we need to run the fresh install logic again.
+      extension_prefs->UpdateExtensionPref(
+          extension.get()->id(), extensions::kPrefHasStartedServiceWorker,
+          base::Value(false));
+    }
 
     extension_registrar_->AddExtension(extension);
 
