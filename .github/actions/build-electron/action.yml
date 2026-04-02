@@ -51,9 +51,10 @@ runs:
       uses: dawidd6/action-download-artifact@09b07ec687d10771279a426c79925ee415c12906 # v17
       if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request') && inputs.is-asan != 'true' }}
       with:
-        name: object-checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json
+        name: object-checksums.${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json
         branch: ${{ case(github.event_name == 'push', github.ref_name, github.event.pull_request.base.ref) }}
         path: src
+        search_artifacts: true
         if_no_artifact_found: ignore
     - name: Move previous object checksums
       shell: bash
