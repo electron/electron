@@ -270,10 +270,6 @@ std::u16string Menu::GetAcceleratorTextAtForTesting(int index) const {
   return accelerator.GetShortcutText();
 }
 
-bool Menu::IsVisibleAt(int index) const {
-  return model_->IsVisibleAt(index);
-}
-
 void Menu::OnMenuWillClose() {
   keep_alive_.Clear();
   Emit("menu-will-close");
@@ -298,7 +294,6 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setCustomType", &Menu::SetCustomType)
       .SetMethod("clear", &Menu::Clear)
       .SetMethod("getItemCount", &Menu::GetItemCount)
-      .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
       .SetMethod("popupAt", &Menu::PopupAt)
       .SetMethod("closePopupAt", &Menu::ClosePopupAt)
       .SetMethod("_getAcceleratorTextAt", &Menu::GetAcceleratorTextAtForTesting)
