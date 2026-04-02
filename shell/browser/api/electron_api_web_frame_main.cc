@@ -418,9 +418,12 @@ std::string WebFrameMain::FrameToken() const {
 base::ProcessId WebFrameMain::OSProcessID() const {
   if (!CheckRenderFrame())
     return -1;
-  base::ProcessHandle process_handle =
-      render_frame_host()->GetProcess()->GetProcess().Handle();
-  return base::GetProcId(process_handle);
+
+  const auto& process = render_frame_host()->GetProcess()->GetProcess();
+  if (!process.IsValid())
+    return -1;
+
+  return process.Pid();
 }
 
 int32_t WebFrameMain::ProcessID() const {
