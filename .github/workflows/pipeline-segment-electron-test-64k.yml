@@ -61,7 +61,8 @@ jobs:
         MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         DISPLAY: ':99.0'
+        TEST_CONTAINER: ${{ inputs.test-container }}
       run: |
-        container=$(echo '${{ inputs.test-container }}' | jq -r '.image')
-        src/electron/script/run-qemu-64k.sh --container $container --testfiles "`pwd`/src"
+        container=$(echo "$TEST_CONTAINER" | jq -r '.image')
+        src/electron/script/run-qemu-64k.sh --container "$container" --testfiles "`pwd`/src"
         
