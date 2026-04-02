@@ -7,6 +7,7 @@ name: Clean Source Cache
 on:
   schedule:
     - cron: "0 0 * * *"
+  workflow_dispatch:
 
 permissions: {}
 
@@ -71,15 +72,15 @@ jobs:
       run: |
         TIMESTAMP=$(date +%s)
 
-        CROSS_FREE_BEFORE_GB=$(echo "scale=2; $CROSS_FREE_BEFORE / 1024 / 1024" | bc)
-        CROSS_FREE_AFTER_GB=$(echo "scale=2; $CROSS_FREE_AFTER / 1024 / 1024" | bc)
-        CROSS_FREED_GB=$(echo "scale=2; ($CROSS_FREE_AFTER - $CROSS_FREE_BEFORE) / 1024 / 1024" | bc)
-        CROSS_TOTAL_GB=$(echo "scale=2; $CROSS_TOTAL / 1024 / 1024" | bc)
+        CROSS_FREE_BEFORE_GB=$(awk "BEGIN {printf \"%.2f\", $CROSS_FREE_BEFORE / 1024 / 1024}")
+        CROSS_FREE_AFTER_GB=$(awk "BEGIN {printf \"%.2f\", $CROSS_FREE_AFTER / 1024 / 1024}")
+        CROSS_FREED_GB=$(awk "BEGIN {printf \"%.2f\", ($CROSS_FREE_AFTER - $CROSS_FREE_BEFORE) / 1024 / 1024}")
+        CROSS_TOTAL_GB=$(awk "BEGIN {printf \"%.2f\", $CROSS_TOTAL / 1024 / 1024}")
 
-        WIN_FREE_BEFORE_GB=$(echo "scale=2; $WIN_FREE_BEFORE / 1024 / 1024" | bc)
-        WIN_FREE_AFTER_GB=$(echo "scale=2; $WIN_FREE_AFTER / 1024 / 1024" | bc)
-        WIN_FREED_GB=$(echo "scale=2; ($WIN_FREE_AFTER - $WIN_FREE_BEFORE) / 1024 / 1024" | bc)
-        WIN_TOTAL_GB=$(echo "scale=2; $WIN_TOTAL / 1024 / 1024" | bc)
+        WIN_FREE_BEFORE_GB=$(awk "BEGIN {printf \"%.2f\", $WIN_FREE_BEFORE / 1024 / 1024}")
+        WIN_FREE_AFTER_GB=$(awk "BEGIN {printf \"%.2f\", $WIN_FREE_AFTER / 1024 / 1024}")
+        WIN_FREED_GB=$(awk "BEGIN {printf \"%.2f\", ($WIN_FREE_AFTER - $WIN_FREE_BEFORE) / 1024 / 1024}")
+        WIN_TOTAL_GB=$(awk "BEGIN {printf \"%.2f\", $WIN_TOTAL / 1024 / 1024}")
 
         echo "cross-instance-cache: free before=${CROSS_FREE_BEFORE_GB}GB, after=${CROSS_FREE_AFTER_GB}GB, freed=${CROSS_FREED_GB}GB, total=${CROSS_TOTAL_GB}GB"
         echo "win-cache: free before=${WIN_FREE_BEFORE_GB}GB, after=${WIN_FREE_AFTER_GB}GB, freed=${WIN_FREED_GB}GB, total=${WIN_TOTAL_GB}GB"
