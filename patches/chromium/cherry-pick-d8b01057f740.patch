@@ -17,10 +17,10 @@ Commit-Queue: Steinar H Gunderson <sesse@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1602570}
 
 diff --git a/third_party/blink/renderer/core/css/element_rule_collector.cc b/third_party/blink/renderer/core/css/element_rule_collector.cc
-index 4086ccbfaa68f6bad0d50ad3629d497758ccc90a..e1c3d54e746c956d3bb564420dfa3ef41d40dc00 100644
+index 9c472ed289a51b828bc7718ffada1df1a68aec30..ebefc123c4fc0d511126b8bf223b34b7e15d6a3e 100644
 --- a/third_party/blink/renderer/core/css/element_rule_collector.cc
 +++ b/third_party/blink/renderer/core/css/element_rule_collector.cc
-@@ -952,11 +952,14 @@ DISABLE_CFI_PERF bool ElementRuleCollector::CollectMatchingRulesInternal(
+@@ -941,10 +941,14 @@ DISABLE_CFI_PERF bool ElementRuleCollector::CollectMatchingRulesInternal(
      if (const AtomicString& input_type =
              element.getAttribute(html_names::kTypeAttr);
          !input_type.IsNull()) {
@@ -32,9 +32,8 @@ index 4086ccbfaa68f6bad0d50ad3629d497758ccc90a..e1c3d54e746c956d3bb564420dfa3ef4
          if (CollectMatchingRulesForList<stop_at_first_match>(
 -                bundle.rule_set->InputRules(input_type.LowerASCII()),
 -                match_request, bundle.rule_set, bundle.style_sheet_index,
--                checker, context) &&
 +                bundle.rule_set->InputRules(input_type_lower), match_request,
-+                bundle.rule_set, bundle.style_sheet_index, checker, context) &&
++                bundle.rule_set, bundle.style_sheet_index,
+                 checker, context.context) &&
              stop_at_first_match) {
            return true;
-         }
