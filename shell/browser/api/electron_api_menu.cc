@@ -264,10 +264,6 @@ int Menu::GetItemCount() const {
   return model_->GetItemCount();
 }
 
-std::u16string Menu::GetLabelAt(int index) const {
-  return model_->GetLabelAt(index);
-}
-
 std::u16string Menu::GetSublabelAt(int index) const {
   return model_->GetSecondaryLabelAt(index);
 }
@@ -318,7 +314,6 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setCustomType", &Menu::SetCustomType)
       .SetMethod("clear", &Menu::Clear)
       .SetMethod("getItemCount", &Menu::GetItemCount)
-      .SetMethod("getLabelAt", &Menu::GetLabelAt)
       .SetMethod("getSublabelAt", &Menu::GetSublabelAt)
       .SetMethod("getToolTipAt", &Menu::GetToolTipAt)
       .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
