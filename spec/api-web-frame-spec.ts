@@ -3,12 +3,35 @@ import { BrowserWindow, ipcMain, WebContents } from 'electron/main';
 import { expect } from 'chai';
 
 import { once } from 'node:events';
+import * as http from 'node:http';
 import * as path from 'node:path';
 
-import { defer } from './lib/spec-helpers';
+import { defer, listen } from './lib/spec-helpers';
 
 describe('webFrame module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
+
+  const createServer = async () => {
+    const server = http.createServer((req, res) => {
+      if (req.url === '/one') {
+        res.end('<h1>one</h1>');
+        return;
+      }
+
+      if (req.url === '/two') {
+        res.end('<h1>two</h1>');
+        return;
+      }
+
+      res.end('<h1>after</h1>');
+    });
+    const serverUrl = (await listen(server)).url;
+    return {
+      server,
+      url: serverUrl,
+      crossOriginUrl: serverUrl.replace('127.0.0.1', 'localhost')
+    };
+  };
 
   it('can use executeJavaScript', async () => {
     const w = new BrowserWindow({
@@ -75,7 +98,54 @@ describe('webFrame module', () => {
     expect(callbackDefined).to.be.true();
   });
 
-  it('clears isolated world discovery after navigation', async () => {
+  it('recreates isolated world discovery after same-renderer navigation', async () => {
+    const { server, url } = await createServer();
+    defer(() => server.close());
+
+    const win = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        contextIsolation: false,
+        nodeIntegration: true,
+        preload: path.join(fixtures, 'pages', 'isolated-world-navigation-preload.js')
+      }
+    });
+    defer(() => win.close());
+
+    await win.loadURL(`${url}/one`);
+    const pidBeforeNavigation = win.webContents.getOSProcessId();
+    const worldsBeforeNavigation = await win.webContents.executeJavaScript(`
+      const { webFrame } = require('electron');
+      webFrame.executeJavaScriptInIsolatedWorld(1234, [{ code: 'window.__marker = "page-one"' }])
+        .then(() => webFrame.getIsolatedWorlds());
+    `);
+    expect(worldsBeforeNavigation).to.include(1234);
+
+    await win.loadURL(`${url}/two`);
+    expect(win.webContents.getOSProcessId()).to.equal(pidBeforeNavigation);
+
+    const navigationState = once(ipcMain, 'isolated-world-navigation-state');
+    win.webContents.send('get-isolated-world-navigation-state');
+    const [, state] = await navigationState as [unknown, {
+      startupWorlds: number[];
+      createdWorlds: number[];
+      isolatedWorlds: number[];
+    }];
+
+    expect(state.startupWorlds).to.deep.equal([]);
+    expect(state.createdWorlds).to.include(1234);
+    expect(state.isolatedWorlds).to.include(1234);
+
+    const valueAfterNavigation = await win.webContents.executeJavaScript(`
+      require('electron').webFrame.executeJavaScriptInIsolatedWorld(1234, [{ code: 'window.__marker' }]);
+    `);
+    expect(valueAfterNavigation).to.equal(undefined);
+  });
+
+  it('clears isolated world discovery after renderer-swap navigation', async () => {
+    const { server, url, crossOriginUrl } = await createServer();
+    defer(() => server.close());
+
     const win = new BrowserWindow({
       show: false,
       webPreferences: {
@@ -85,7 +155,8 @@ describe('webFrame module', () => {
     });
     defer(() => win.close());
 
-    await win.loadURL('about:blank');
+    await win.loadURL(`${url}/one`);
+    const frameTokenBeforeNavigation = win.webContents.mainFrame.frameToken;
     const worldsBeforeNavigation = await win.webContents.executeJavaScript(`
       const { webFrame } = require('electron');
       webFrame.executeJavaScriptInIsolatedWorld(1234, [{ code: 'void 0' }])
@@ -93,7 +164,9 @@ describe('webFrame module', () => {
     `);
     expect(worldsBeforeNavigation).to.include(1234);
 
-    await win.loadURL('data:text/html,<h1>after</h1>');
+    await win.loadURL(`${crossOriginUrl}/two`);
+    expect(win.webContents.mainFrame.frameToken).to.not.equal(frameTokenBeforeNavigation);
+
     const worldsAfterNavigation = await win.webContents.executeJavaScript(`
       require('electron').webFrame.getIsolatedWorlds();
     `);
