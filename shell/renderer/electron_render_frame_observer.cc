@@ -78,9 +78,6 @@ void ElectronRenderFrameObserver::SetIsolatedWorldCreatedCallback(
 }
 
 void ElectronRenderFrameObserver::DidClearWindowObject() {
-  isolated_worlds_.clear();
-  isolated_world_created_callbacks_.clear();
-
   // Do a delayed Node.js initialization for child window.
   // Check DidInstallConditionalFeatures below for the background.
   auto* web_frame =
@@ -103,6 +100,13 @@ void ElectronRenderFrameObserver::DidClearWindowObject() {
 void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
     v8::Local<v8::Context> context,
     int world_id) {
+  if (electron::is_main_world(world_id)) {
+    // Start each document with a clean slate before preload has a chance to
+    // subscribe for current-document isolated world creation.
+    isolated_worlds_.clear();
+    isolated_world_created_callbacks_.clear();
+  }
+
   if (!electron::is_main_world(world_id) &&
       !electron::is_isolated_world(world_id)) {
     const auto [_, inserted] = isolated_worlds_.insert(world_id);
@@ -175,16 +179,6 @@ void ElectronRenderFrameObserver::WillReleaseScriptContext(
     v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     int world_id) {
-  if (!electron::is_main_world(world_id) &&
-      !electron::is_isolated_world(world_id)) {
-    isolated_worlds_.erase(world_id);
-  }
-
-  if (electron::is_main_world(world_id)) {
-    isolated_worlds_.clear();
-    isolated_world_created_callbacks_.clear();
-  }
-
   if (ShouldNotifyClient(world_id))
     renderer_client_->WillReleaseScriptContext(isolate, context, render_frame_);
 }
