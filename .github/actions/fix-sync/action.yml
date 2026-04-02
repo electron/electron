@@ -94,9 +94,11 @@ runs:
     - name: Fix dsymutil (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       shell: bash
+      env:
+        TARGET_PLATFORM: ${{ inputs.target-platform }}
       run : |
         # Fix dsymutil
-        if [ "${{ inputs.target-platform }}" = "macos" ]; then
+        if [ "$TARGET_PLATFORM" = "macos" ]; then
           if  [ "${{ env.TARGET_ARCH }}" == "arm64" ]; then
             DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.arm64.sha1
           else

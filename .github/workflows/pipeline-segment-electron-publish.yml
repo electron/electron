@@ -144,16 +144,20 @@ jobs:
         run: brew install azcopy
       - name: Set GN_EXTRA_ARGS for Linux
         if: ${{ inputs.target-platform == 'linux' }}
+        env:
+          TARGET_ARCH: ${{ inputs.target-arch }}
+          IS_RELEASE: ${{ inputs.is-release }}
+          IS_ASAN: ${{ inputs.is-asan }}
         run: >
-          if [ "${{ inputs.target-arch  }}" = "arm" ]; then
-            if [ "${{ inputs.is-release  }}" = true ]; then
+          if [ "$TARGET_ARCH" = "arm" ]; then
+            if [ "$IS_RELEASE" = true ]; then
               GN_EXTRA_ARGS='target_cpu="arm" build_tflite_with_xnnpack=false symbol_level=1'
             else
               GN_EXTRA_ARGS='target_cpu="arm" build_tflite_with_xnnpack=false'
             fi
-          elif [ "${{ inputs.target-arch }}" = "arm64" ]; then
+          elif [ "$TARGET_ARCH" = "arm64" ]; then
             GN_EXTRA_ARGS='target_cpu="arm64" fatal_linker_warnings=false enable_linux_installer=false'
-          elif [ "${{ inputs.is-asan }}" = true ]; then
+          elif [ "$IS_ASAN" = true ]; then
             GN_EXTRA_ARGS='is_asan=true'
           fi
 
@@ -190,10 +194,12 @@ jobs:
         env:
           ELECTRON_DEPOT_TOOLS_DISABLE_LOG: true
       - name: Init Build Tools
+        env:
+          GN_BUILD_TYPE: ${{ inputs.gn-build-type }}
+          TARGET_ARCH: ${{ inputs.target-arch }}
         run: >
-          e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }}
-          --import ${{ inputs.gn-build-type }} --target-cpu ${{
-          inputs.target-arch }} --remote-build siso
+          e init -f --root=$(pwd) --out=Default "$GN_BUILD_TYPE"
+          --import "$GN_BUILD_TYPE" --target-cpu "$TARGET_ARCH" --remote-build siso
       - name: Run Electron Only Hooks
         run: |
           e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"

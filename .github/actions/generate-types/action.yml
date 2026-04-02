@@ -12,17 +12,20 @@ runs:
   steps:
   - name: Generating Types for SHA in ${{ inputs.sha-file }}
     shell: bash
+    env:
+      SHA_FILE: ${{ inputs.sha-file }}
+      FILENAME: ${{ inputs.filename }}
     run: |
       export ELECTRON_DIR=$(pwd)
-      if [ "${{ inputs.sha-file }}" == ".dig-old" ]; then
+      if [ "$SHA_FILE" == ".dig-old" ]; then
         cd /tmp
         git clone https://github.com/electron/electron.git
         cd electron
       fi
-      git checkout $(cat $ELECTRON_DIR/${{ inputs.sha-file }})
+      git checkout "$(cat "$ELECTRON_DIR/$SHA_FILE")"
       node script/yarn.js install --immutable
       echo "#!/usr/bin/env node\nglobal.x=1" > node_modules/typescript/bin/tsc
       node node_modules/.bin/electron-docs-parser --dir=./ --outDir=./ --moduleVersion=0.0.0-development
       node node_modules/.bin/electron-typescript-definitions --api=electron-api.json --outDir=artifacts
-      mv artifacts/electron.d.ts $ELECTRON_DIR/artifacts/${{ inputs.filename }}
+      mv artifacts/electron.d.ts "$ELECTRON_DIR/artifacts/$FILENAME"
     working-directory: ./electron

@@ -75,13 +75,16 @@ jobs:
             - '!docs/**'
     - name: Set Outputs for Build Image SHA & Docs Only
       id: set-output
+      env:
+        BUILD_IMAGE_SHA: ${{ inputs.build-image-sha }}
+        DOCS_ONLY: ${{ steps.filter.outputs.docs == 'true' && steps.filter.outputs.src == 'false' }}
       run: |
-        if [ -z "${{ inputs.build-image-sha }}" ]; then
+        if [ -z "$BUILD_IMAGE_SHA" ]; then
           echo "build-image-sha=eac3529546ea8f3aa356d31e345715eef342233b" >> "$GITHUB_OUTPUT"
         else
-          echo "build-image-sha=${{ inputs.build-image-sha }}" >> "$GITHUB_OUTPUT"
+          echo "build-image-sha=$BUILD_IMAGE_SHA" >> "$GITHUB_OUTPUT"
         fi
-        echo "docs-only=${{ steps.filter.outputs.docs == 'true' && steps.filter.outputs.src == 'false' }}" >> "$GITHUB_OUTPUT"
+        echo "docs-only=$DOCS_ONLY" >> "$GITHUB_OUTPUT"
 
   # Lint Jobs
   lint:
