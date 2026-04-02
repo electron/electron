@@ -55,12 +55,14 @@ runs:
         branch: ${{ case(github.event_name == 'push', github.ref_name, github.event.pull_request.base.ref) }}
         path: src
         search_artifacts: true
+        skip_unpack: true
         if_no_artifact_found: ignore
     - name: Move previous object checksums
       shell: bash
       run: |
-        if [ -f src/object-checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json ]; then
-          mv src/object-checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json src/previous-object-checksums.json
+        # NOTE: the .zip file extension is inaccurate as dawidd6/action-download-artifact isn't aware of non-archived artifacts
+        if [ -f src/object-checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json.zip ]; then
+          mv src/object-checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json.zip src/previous-object-checksums.json
         fi
     - name: Build Electron ${{ inputs.step-suffix }}
       if: ${{ inputs.target-platform != 'win' }}
