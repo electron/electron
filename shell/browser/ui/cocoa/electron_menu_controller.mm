@@ -478,7 +478,6 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 
   if (![represented
           isKindOfClass:[WeakPtrToElectronMenuModelAsNSObject class]]) {
-    NSLog(@"representedObject is not a WeakPtrToElectronMenuModelAsNSObject");
     return;
   }
 
