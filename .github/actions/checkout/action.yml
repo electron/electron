@@ -26,12 +26,14 @@ runs:
     uses: ./src/electron/.github/actions/install-build-tools
   - name: Generate DEPS Hash
     shell: bash
+    env:
+      TARGET_PLATFORM: ${{ inputs.target-platform }}
     run: |
       node src/electron/script/generate-deps-hash.js
       DEPSHASH="v1-src-cache-$(cat src/electron/.depshash)"
       echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
       echo "CACHE_FILE=$DEPSHASH.tar" >> $GITHUB_ENV
-      if [ "${{ inputs.target-platform }}" = "win" ]; then
+      if [ "$TARGET_PLATFORM" = "win" ]; then
         echo "CACHE_DRIVE=/mnt/win-cache" >> $GITHUB_ENV
       else
         echo "CACHE_DRIVE=/mnt/cross-instance-cache" >> $GITHUB_ENV
@@ -39,8 +41,10 @@ runs:
   - name: Generate SAS Key
     if: ${{ inputs.generate-sas-token == 'true' }}
     shell: bash
+    env:
+      TARGET_PLATFORM: ${{ inputs.target-platform }}
     run: |
-      curl --unix-socket /var/run/sas/sas.sock --fail "http://foo/$CACHE_FILE?platform=${{ inputs.target-platform }}&getAccountName=true" > sas-token
+      curl --unix-socket /var/run/sas/sas.sock --fail "http://foo/$CACHE_FILE?platform=$TARGET_PLATFORM&getAccountName=true" > sas-token
   - name: Save SAS Key
     if: ${{ inputs.generate-sas-token == 'true' }}
     uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
@@ -51,8 +55,10 @@ runs:
   - name: Check If Cache Exists
     id: check-cache
     shell: bash
+    env:
+      USE_CACHE: ${{ inputs.use-cache }}
     run: |
-      if [[ "${{ inputs.use-cache }}" == "false" ]]; then
+      if [[ "$USE_CACHE" == "false" ]]; then
         echo "Not using cache this time..."
         echo "cache_exists=false" >> $GITHUB_OUTPUT
       else

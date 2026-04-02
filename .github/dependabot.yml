@@ -11,6 +11,8 @@ updates:
       - "no-backport"
       - "semver/none"
     target-branch: main
+    cooldown:
+      default-days: 7
   - package-ecosystem: npm
     directories:
       - /
@@ -22,6 +24,8 @@ updates:
       - "no-backport"
     open-pull-requests-limit: 2
     target-branch: main
+    cooldown:
+      default-days: 7
   - package-ecosystem: npm
     directories:
       - /
@@ -33,6 +37,8 @@ updates:
       - "backport-check-skip"
     open-pull-requests-limit: 0
     target-branch: 33-x-y
+    cooldown:
+      default-days: 7
   - package-ecosystem: npm
     directories:
       - /
@@ -44,6 +50,8 @@ updates:
       - "backport-check-skip"
     open-pull-requests-limit: 0
     target-branch: 32-x-y
+    cooldown:
+      default-days: 7
   - package-ecosystem: npm
     directories:
       - /
@@ -55,6 +63,8 @@ updates:
       - "backport-check-skip"
     open-pull-requests-limit: 0
     target-branch: 31-x-y
+    cooldown:
+      default-days: 7
   - package-ecosystem: npm
     directories:
       - /
@@ -66,3 +76,5 @@ updates:
       - "backport-check-skip"
     open-pull-requests-limit: 0
     target-branch: 30-x-y
+    cooldown:
+      default-days: 7

@@ -170,8 +170,11 @@ jobs:
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
     - name: Load ASan specific environment variables
       if: ${{ inputs.is-asan == true }}
+      env:
+        BUILD_TYPE: ${{ matrix.build-type }}
+        TARGET_ARCH: ${{ inputs.target-arch }}
       run: |
-        echo "ARTIFACT_KEY=${{ matrix.build-type }}_${{ inputs.target-arch }}_asan" >> $GITHUB_ENV
+        echo "ARTIFACT_KEY=${BUILD_TYPE}_${TARGET_ARCH}_asan" >> $GITHUB_ENV
         echo "DISABLE_CRASH_REPORTER_TESTS=true" >> $GITHUB_ENV
         echo "IS_ASAN=true" >> $GITHUB_ENV
     - name: Download Generated Artifacts
@@ -223,12 +226,18 @@ jobs:
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         DISPLAY: ':99.0'
         NPM_CONFIG_MSVS_VERSION: '2022'
+        SHARD: ${{ matrix.shard }}
+        SHARD_TOTAL: ${{ case(inputs.display-server == 'wayland', 1, inputs.target-platform == 'linux', 3, 2) }}
+        DISPLAY_SERVER: ${{ inputs.display-server }}
+        TARGET_PLATFORM: ${{ inputs.target-platform }}
+        TARGET_ARCH: ${{ inputs.target-arch }}
+        IS_ASAN: ${{ inputs.is-asan }}
       run: |
         cd src/electron
         export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
         # Get which tests are on this shard
-        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ case(inputs.display-server == 'wayland', 1, inputs.target-platform == 'linux', 3, 2) }})
-        if [ "${{ inputs.display-server }}" = "wayland" ]; then
+        tests_files=$(node script/split-tests "$SHARD" "$SHARD_TOTAL")
+        if [ "$DISPLAY_SERVER" = "wayland" ]; then
           allowlist_file=script/wayland-test-allowlist.txt
           filtered_tests=""
           for test_file in $tests_files; do
@@ -245,13 +254,13 @@ jobs:
         fi
 
         # Run tests
-        if [ "${{ inputs.target-platform }}" != "linux" ]; then
+        if [ "$TARGET_PLATFORM" != "linux" ]; then
           echo "About to start tests"
-          if [ "${{ inputs.target-platform }}" = "win" ]; then
-            if [ "${{ inputs.target-arch }}" = "x86" ]; then
+          if [ "$TARGET_PLATFORM" = "win" ]; then
+            if [ "$TARGET_ARCH" = "x86" ]; then
               export npm_config_arch="ia32"
             fi
-            if [ "${{ inputs.target-arch }}" = "arm64" ]; then
+            if [ "$TARGET_ARCH" = "arm64" ]; then
               export ELECTRON_FORCE_TEST_SUITE_EXIT="true"
             fi
           fi
@@ -261,7 +270,7 @@ jobs:
           chown -R :builduser . && chmod -R g+w .
           chmod 4755 ../out/Default/chrome-sandbox
           runuser -u builduser -- git config --global --add safe.directory $(pwd)
-          if [ "${{ inputs.is-asan }}" == "true" ]; then
+          if [ "$IS_ASAN" == "true" ]; then
             cd ..
             ASAN_SYMBOLIZE="$PWD/tools/valgrind/asan/asan_symbolize.py --executable-path=$PWD/out/Default/electron"
             export ASAN_OPTIONS="symbolize=0 handle_abort=1"
@@ -274,28 +283,30 @@ jobs:
             cd electron
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
           else
-            if [ "${{ inputs.target-arch }}" = "arm" ]; then
+            if [ "$TARGET_ARCH" = "arm" ]; then
               runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --skipYarnInstall --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
-            else 
-              if [ "${{ inputs.display-server }}" = "wayland" ]; then
+            else
+              if [ "$DISPLAY_SERVER" = "wayland" ]; then
                 runuser -u builduser -- script/actions/run-tests-wayland.sh script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
               else
                 runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
               fi
             fi
-            
+
           fi
         fi
     - name: Take screenshot on timeout or cancellation
       if: ${{ inputs.target-platform != 'linux' && (cancelled() || failure()) }}
       shell: bash
+      env:
+        TARGET_PLATFORM: ${{ inputs.target-platform }}
       run: |
         screenshot_dir="src/electron/spec/artifacts"
         mkdir -p "$screenshot_dir"
         screenshot_file="$screenshot_dir/screenshot-timeout-$(date +%Y%m%d%H%M%S).png"
-        if [ "${{ inputs.target-platform }}" = "macos" ]; then
+        if [ "$TARGET_PLATFORM" = "macos" ]; then
           screencapture -x "$screenshot_file" || true
-        elif [ "${{ inputs.target-platform }}" = "win" ]; then
+        elif [ "$TARGET_PLATFORM" = "win" ]; then
           powershell -command "Add-Type -AssemblyName System.Windows.Forms; \$screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds; \$bitmap = New-Object System.Drawing.Bitmap(\$screen.Width, \$screen.Height); \$graphics = [System.Drawing.Graphics]::FromImage(\$bitmap); \$graphics.CopyFromScreen(\$screen.Location, [System.Drawing.Point]::Empty, \$screen.Size); \$bitmap.Save('$screenshot_file')" || true
         fi
 
