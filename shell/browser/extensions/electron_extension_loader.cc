@@ -20,6 +20,7 @@
 #include "base/time/time.h"
 #include "content/public/browser/browser_context.h"
 #include "extensions/browser/extension_file_task_runner.h"
+#include "extensions/browser/extension_pref_names.h"
 #include "extensions/browser/extension_prefs.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/pref_names.h"
@@ -27,6 +28,7 @@
 #include "extensions/common/error_utils.h"
 #include "extensions/common/file_util.h"
 #include "extensions/common/manifest_constants.h"
+#include "extensions/common/manifest_handlers/background_info.h"
 
 namespace extensions {
 
@@ -143,6 +145,19 @@ void ElectronExtensionLoader::FinishExtensionLoad(
     std::pair<scoped_refptr<const Extension>, std::string> result) {
   scoped_refptr<const Extension> extension = result.first;
   if (extension) {
+    ExtensionPrefs* extension_prefs = ExtensionPrefs::Get(browser_context_);
+
+    if (BackgroundInfo::IsServiceWorkerBased(extension.get())) {
+      // Tell Chromium that it needs to start the extension's service worker.
+      // Chromium usually does this only when an extension is first installed
+      // because Chrome will restart the service worker when the browser
+      // relaunches. In Electron, we make a fresh install on every app start,
+      // so we need to run the fresh install logic again.
+      extension_prefs->UpdateExtensionPref(
+          extension.get()->id(), extensions::kPrefHasStartedServiceWorker,
+          base::Value(false));
+    }
+
     extension_registrar_->AddExtension(extension);
 
     // Write extension install time to ExtensionPrefs.
@@ -152,7 +167,6 @@ void ElectronExtensionLoader::FinishExtensionLoad(
     // Implementation for writing the pref was based on
     // PreferenceAPIBase::SetExtensionControlledPref.
     {
-      ExtensionPrefs* extension_prefs = ExtensionPrefs::Get(browser_context_);
       ExtensionPrefs::ScopedDictionaryUpdate update(
           extension_prefs, extension.get()->id(),
           extensions::pref_names::kPrefPreferences);
