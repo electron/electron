@@ -17,7 +17,7 @@ Commit-Queue: Steinar H Gunderson <sesse@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1602570}
 
 diff --git a/third_party/blink/renderer/core/css/element_rule_collector.cc b/third_party/blink/renderer/core/css/element_rule_collector.cc
-index 4086ccbfaa68f6bad0d50ad3629d497758ccc90a..e1c3d54e746c956d3bb564420dfa3ef41d40dc00 100644
+index 7b5f0db29c47fe347f90ec61cca5aeb2315fd12f..c111354fece839440e625e9845f6688f9b889165 100644
 --- a/third_party/blink/renderer/core/css/element_rule_collector.cc
 +++ b/third_party/blink/renderer/core/css/element_rule_collector.cc
 @@ -952,11 +952,14 @@ DISABLE_CFI_PERF bool ElementRuleCollector::CollectMatchingRulesInternal(
