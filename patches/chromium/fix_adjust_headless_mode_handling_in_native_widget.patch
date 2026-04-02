@@ -139,7 +139,7 @@ index a258b94a8122c74b6f98f4b88b710371291fcfe4..2bcee4b775a2a39fbbe3c070a5db6081
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index 5bfe4c6e5d49d9c2a8363474cf622f310d231e2b..c6ac7643bbe671dd9db656af9956960d3d735afb 100644
+index 75a82bc82ebe8e7b5b51b760cf4258cfd65a2df5..4b29c955c3347e2907c0d064834d917cc95ac546 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
 @@ -238,6 +238,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
@@ -170,7 +170,7 @@ index 5bfe4c6e5d49d9c2a8363474cf622f310d231e2b..c6ac7643bbe671dd9db656af9956960d
  
    if (params.opacity == views::Widget::InitParams::WindowOpacity::kInferred &&
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index 6c7508f383ccf0fdaa0b262f143bea4e9bf67509..a4bb3d96b91b33051011fcc9e354df9be47ded8a 100644
+index 9741a329a96db439d074c1d9013558a51f18ed86..c95b315a30994b539fdd2429bab53674823ff5b5 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
 @@ -324,6 +324,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
@@ -185,7 +185,7 @@ index 6c7508f383ccf0fdaa0b262f143bea4e9bf67509..a4bb3d96b91b33051011fcc9e354df9b
      // Returns the z-order level, based on the overriding |z_order| but also
      // taking into account special levels due to |type|.
      ui::ZOrderLevel EffectiveZOrderLevel() const;
-@@ -504,6 +509,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -501,6 +506,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
      // If true then the widget uses software compositing.
      bool force_software_compositing = false;
  
@@ -195,7 +195,7 @@ index 6c7508f383ccf0fdaa0b262f143bea4e9bf67509..a4bb3d96b91b33051011fcc9e354df9b
      // If set, the window size will follow the content preferred size.
      bool autosize = false;
  
-@@ -1297,6 +1305,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1295,6 +1303,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // with it. TYPE_CONTROL and TYPE_TOOLTIP is not considered top level.
    bool is_top_level() const { return is_top_level_; }
  

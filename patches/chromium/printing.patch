@@ -512,7 +512,7 @@ index aa79c324af2cec50019bca3bccff5d420fb30ffd..0b85598f87673537eccdd0b310e8462e
      scoped_refptr<base::RefCountedMemory> print_data,
      const gfx::Size& page_size,
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index cdd25ff24507cc49684454820c7d385b8c67259e..d4dc7e8e0cd604a6418f76e2e387985d847ce0be 100644
+index db3b04ba3353831ec766f48450b6dce40909bc59..d6fd0d304dffa71be42547a3f6ee6cdb7546de8b 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -46,6 +46,8 @@ namespace printing {

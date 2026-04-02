@@ -33,7 +33,7 @@ index 26619daf25f3cc455d2dba7b5f16c9449e6103c1..387fca1b54b818a5af435e96bf8f435e
      client->PostSandboxInitialized();
    }
 diff --git a/content/public/gpu/content_gpu_client.h b/content/public/gpu/content_gpu_client.h
-index e5389b44df98ab1a5c976524a66a26c763e5c436..4a183b4959fae18e6875440e6570b8ada6823d81 100644
+index ad511f0966c29e46a1e4c07e09c3172b38c7c906..ca3a35d213147c6fcb9fbbbe118c15a3075875fa 100644
 --- a/content/public/gpu/content_gpu_client.h
 +++ b/content/public/gpu/content_gpu_client.h
 @@ -36,6 +36,10 @@ class CONTENT_EXPORT ContentGpuClient {
