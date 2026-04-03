@@ -287,8 +287,9 @@ async function mergeShasums (pkgVersion: string) {
     );
   }
 
-  const blobServiceClient =
-    BlobServiceClient.fromConnectionString(connectionString);
+  const blobServiceClient = connectionString.startsWith('https://')
+    ? new BlobServiceClient(connectionString)
+    : BlobServiceClient.fromConnectionString(connectionString);
   const containerClient = blobServiceClient.getContainerClient(
     'checksums-scratchpad'
   );

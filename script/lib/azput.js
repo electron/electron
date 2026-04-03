@@ -11,7 +11,9 @@ if (!ELECTRON_ARTIFACTS_BLOB_STORAGE) {
   process.exit(1);
 }
 
-const blobServiceClient = BlobServiceClient.fromConnectionString(ELECTRON_ARTIFACTS_BLOB_STORAGE);
+const blobServiceClient = ELECTRON_ARTIFACTS_BLOB_STORAGE.startsWith('https://')
+  ? new BlobServiceClient(ELECTRON_ARTIFACTS_BLOB_STORAGE)
+  : BlobServiceClient.fromConnectionString(ELECTRON_ARTIFACTS_BLOB_STORAGE);
 
 const args = minimist(process.argv.slice(2));
 

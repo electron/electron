@@ -4,20 +4,22 @@ import * as url from 'node:url';
 
 const HASHER_FUNCTION_HOST = 'electron-hasher.azurewebsites.net';
 const HASHER_FUNCTION_ROUTE = '/api/hashRemoteAsset';
+const HASHER_URL_OVERRIDE = process.env.ELECTRON_HASHER_URL;
 
 export async function getUrlHash (targetUrl: string, algorithm = 'sha256', attempts = 3) {
-  const options = {
-    code: process.env.ELECTRON_HASHER_FUNCTION_KEY!,
-    targetUrl,
-    algorithm
-  };
-  const search = new url.URLSearchParams(options);
-  const functionUrl = url.format({
-    protocol: 'https:',
-    hostname: HASHER_FUNCTION_HOST,
-    pathname: HASHER_FUNCTION_ROUTE,
-    search: search.toString()
-  });
+  const search = new url.URLSearchParams({ targetUrl, algorithm });
+  let functionUrl: string;
+  if (HASHER_URL_OVERRIDE) {
+    functionUrl = `${HASHER_URL_OVERRIDE.replace(/\/$/, '')}${HASHER_FUNCTION_ROUTE}?${search.toString()}`;
+  } else {
+    search.set('code', process.env.ELECTRON_HASHER_FUNCTION_KEY!);
+    functionUrl = url.format({
+      protocol: 'https:',
+      hostname: HASHER_FUNCTION_HOST,
+      pathname: HASHER_FUNCTION_ROUTE,
+      search: search.toString()
+    });
+  }
   try {
     const resp = await got(functionUrl, {
       throwHttpErrors: false
