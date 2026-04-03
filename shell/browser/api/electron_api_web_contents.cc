@@ -2889,8 +2889,8 @@ v8::Local<v8::Promise> WebContents::SavePage(
     return handle;
   }
 
-  auto* handler = new SavePageHandler(web_contents(), std::move(promise));
-  handler->Handle(full_file_path, save_type);
+  auto* handler = new SavePageHandler{std::move(promise)};
+  handler->Handle(full_file_path, save_type, web_contents());
 
   return handle;
 }
