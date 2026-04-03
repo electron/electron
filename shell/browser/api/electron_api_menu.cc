@@ -264,10 +264,6 @@ int Menu::GetItemCount() const {
   return model_->GetItemCount();
 }
 
-std::u16string Menu::GetSublabelAt(int index) const {
-  return model_->GetSecondaryLabelAt(index);
-}
-
 std::u16string Menu::GetAcceleratorTextAtForTesting(int index) const {
   ui::Accelerator accelerator;
   model_->GetAcceleratorAtWithParams(index, true, &accelerator);
@@ -310,7 +306,6 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setCustomType", &Menu::SetCustomType)
       .SetMethod("clear", &Menu::Clear)
       .SetMethod("getItemCount", &Menu::GetItemCount)
-      .SetMethod("getSublabelAt", &Menu::GetSublabelAt)
       .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
