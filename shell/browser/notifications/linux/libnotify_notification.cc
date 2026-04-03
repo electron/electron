@@ -6,6 +6,7 @@
 
 #include <dlfcn.h>
 
+#include <array>
 #include <string>
 
 #include "base/containers/flat_set.h"
@@ -55,19 +56,6 @@ bool NotifierSupportsActions() {
 
 using GetActivationTokenFunc = const char* (*)(NotifyNotification*);
 GetActivationTokenFunc g_get_activation_token = nullptr;
-bool g_activation_token_checked = false;
-
-void EnsureActivationTokenFunc() {
-  if (g_activation_token_checked)
-    return;
-  g_activation_token_checked = true;
-
-  void* handle = dlopen("libnotify.so.4", RTLD_LAZY);
-  if (handle) {
-    g_get_activation_token = reinterpret_cast<GetActivationTokenFunc>(
-        dlsym(handle, "notify_notification_get_activation_token"));
-  }
-}
 
 void log_and_clear_error(GError* error, const char* context) {
   LOG(ERROR) << context << ": domain=" << error->domain
@@ -80,19 +68,40 @@ void log_and_clear_error(GError* error, const char* context) {
 
 // static
 bool LibnotifyNotification::Initialize() {
-  if (!GetLibNotifyLoader().Load("libnotify.so.4") &&  // most common one
-      !GetLibNotifyLoader().Load("libnotify.so.5") &&
-      !GetLibNotifyLoader().Load("libnotify.so.1") &&
-      !GetLibNotifyLoader().Load("libnotify.so")) {
+  constexpr std::array kLibnotifySonames = {
+      "libnotify.so.4",
+      "libnotify.so.5",
+      "libnotify.so.1",
+      "libnotify.so",
+  };
+
+  const char* loaded_soname = nullptr;
+  for (const char* soname : kLibnotifySonames) {
+    if (GetLibNotifyLoader().Load(soname)) {
+      loaded_soname = soname;
+      break;
+    }
+  }
+
+  if (!loaded_soname) {
     LOG(WARNING) << "Unable to find libnotify; notifications disabled";
     return false;
   }
+
   if (!GetLibNotifyLoader().notify_is_initted() &&
       !GetLibNotifyLoader().notify_init(GetApplicationName().c_str())) {
     LOG(WARNING) << "Unable to initialize libnotify; notifications disabled";
     return false;
   }
-  EnsureActivationTokenFunc();
+
+  // Safe to cache the symbol after dlclose(handle) because libnotify remains
+  // loaded via GetLibNotifyLoader() for the process lifetime.
+  if (void* handle = dlopen(loaded_soname, RTLD_LAZY)) {
+    g_get_activation_token = reinterpret_cast<GetActivationTokenFunc>(
+        dlsym(handle, "notify_notification_get_activation_token"));
+    dlclose(handle);
+  }
+
   return true;
 }
 
