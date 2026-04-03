@@ -1,7 +1,7 @@
-From 89b42d2d3326ebad6e0494009d5d92f2dbaf12ef Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Alvin Ji <alvinji@chromium.org>
 Date: Wed, 18 Mar 2026 21:55:14 -0700
-Subject: [PATCH] WebUSB: Strengthen control transfer protection for protected classes
+Subject: WebUSB: Strengthen control transfer protection for protected classes
 
 Strengthens control transfer permissions to block requests targeting
 protected interface classes like HID or Mass Storage. Requests are now
@@ -16,13 +16,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7677820
 Reviewed-by: Reilly Grant <reillyg@chromium.org>
 Commit-Queue: Alvin Ji <alvinji@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1601756}
----
 
 diff --git a/services/device/public/cpp/device_features.cc b/services/device/public/cpp/device_features.cc
-index 036a7c5..0cd4b3f 100644
+index 1345a85271139e702dd371f72f35f5e466630169..c290276590ec50535533d3569cd38c5710b42252 100644
 --- a/services/device/public/cpp/device_features.cc
 +++ b/services/device/public/cpp/device_features.cc
-@@ -34,6 +34,12 @@
+@@ -34,6 +34,12 @@ BASE_FEATURE(kWebUsbBlocklist,
               "WebUSBBlocklist",
               base::FEATURE_ENABLED_BY_DEFAULT);
  
@@ -36,23 +35,23 @@ index 036a7c5..0cd4b3f 100644
  // frame from entering the back forward cache.
  BASE_FEATURE(kWebHidAttributeAllowsBackForwardCache,
 diff --git a/services/device/public/cpp/device_features.h b/services/device/public/cpp/device_features.h
-index 5663293..91ae0c2 100644
+index af05fafcbfdfb00e5a150e6c813e42f5903c270d..e69af38b0913b07cd23ed401183a3569164c852d 100644
 --- a/services/device/public/cpp/device_features.h
 +++ b/services/device/public/cpp/device_features.h
-@@ -25,6 +25,8 @@
+@@ -23,6 +23,8 @@ DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(
+ DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(kGenericSensorExtraClasses);
  DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(kSerialPortConnected);
  DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(kWebUsbBlocklist);
- DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(
-+    kWebUsbProtectedClassControlTransferBlock);
 +DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(
++    kWebUsbProtectedClassControlTransferBlock);
+ DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(
      kWebHidAttributeAllowsBackForwardCache);
  #if BUILDFLAG(IS_WIN)
- DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(kWinSystemLocationPermission);
 diff --git a/services/device/usb/mojo/BUILD.gn b/services/device/usb/mojo/BUILD.gn
-index d2398c6e..5c2f1ab 100644
+index d2398c6ea481ca072af68a562c1be616d97c2427..5c2f1aba2f640f0af6ac037a3922123514f6e03b 100644
 --- a/services/device/usb/mojo/BUILD.gn
 +++ b/services/device/usb/mojo/BUILD.gn
-@@ -17,6 +17,7 @@
+@@ -17,6 +17,7 @@ source_set("mojo") {
    deps = [
      "//mojo/public/cpp/bindings",
      "//net",
@@ -61,10 +60,10 @@ index d2398c6e..5c2f1ab 100644
      "//services/device/public/mojom:usb",
      "//services/device/public/mojom:usb_test",
 diff --git a/services/device/usb/mojo/device_impl.cc b/services/device/usb/mojo/device_impl.cc
-index 3accd453..2c6967bb 100644
+index fb11f7ff5eae436acf45001e656374f882c22708..bf18dbc6ca0f456046b2f2ea6636587bfceb3071 100644
 --- a/services/device/usb/mojo/device_impl.cc
 +++ b/services/device/usb/mojo/device_impl.cc
-@@ -19,6 +19,7 @@
+@@ -20,6 +20,7 @@
  #include "base/memory/ptr_util.h"
  #include "base/memory/ref_counted_memory.h"
  #include "base/strings/stringprintf.h"
@@ -72,7 +71,7 @@ index 3accd453..2c6967bb 100644
  #include "services/device/public/cpp/usb/usb_utils.h"
  #include "services/device/usb/usb_device.h"
  #include "third_party/blink/public/common/features.h"
-@@ -155,31 +156,75 @@
+@@ -156,31 +157,75 @@ void DeviceImpl::CloseHandle() {
  }
  
  bool DeviceImpl::HasControlTransferPermission(
@@ -153,7 +152,7 @@ index 3accd453..2c6967bb 100644
  }
  
  // static
-@@ -342,7 +387,8 @@
+@@ -343,7 +388,8 @@ void DeviceImpl::ControlTransferIn(UsbControlTransferParamsPtr params,
      return;
    }
  
@@ -163,7 +162,7 @@ index 3accd453..2c6967bb 100644
      auto buffer = base::MakeRefCounted<base::RefCountedBytes>(length);
      device_handle_->ControlTransfer(
          UsbTransferDirection::INBOUND, params->type, params->recipient,
-@@ -365,7 +411,8 @@
+@@ -366,7 +412,8 @@ void DeviceImpl::ControlTransferOut(UsbControlTransferParamsPtr params,
      return;
    }
  
@@ -174,10 +173,10 @@ index 3accd453..2c6967bb 100644
         !IsAndroidSecurityKeyRequest(params, data))) {
      auto buffer = base::MakeRefCounted<base::RefCountedBytes>(data);
 diff --git a/services/device/usb/mojo/device_impl.h b/services/device/usb/mojo/device_impl.h
-index ddcd3b4..8651ece 100644
+index ddcd3b49e6ae2ec8e08dbbd41c193db4d8a21434..8651ece839b6da653bcb7a7aba238ff37d15095e 100644
 --- a/services/device/usb/mojo/device_impl.h
 +++ b/services/device/usb/mojo/device_impl.h
-@@ -51,6 +51,7 @@
+@@ -51,6 +51,7 @@ class DeviceImpl : public mojom::UsbDevice, public device::UsbDevice::Observer {
  
    // Checks interface permissions for control transfers.
    bool HasControlTransferPermission(
@@ -186,10 +185,10 @@ index ddcd3b4..8651ece 100644
        uint16_t index);
  
 diff --git a/services/device/usb/mojo/device_impl_unittest.cc b/services/device/usb/mojo/device_impl_unittest.cc
-index 99a5d149..ea2d6bc 100644
+index 403de59eb1d8bf2fe19a21e3b0c7ee9c172bd323..984a64f9242e0bca91efb5549f6c02e7206b0d89 100644
 --- a/services/device/usb/mojo/device_impl_unittest.cc
 +++ b/services/device/usb/mojo/device_impl_unittest.cc
-@@ -26,11 +26,13 @@
+@@ -27,11 +27,13 @@
  #include "base/strings/stringprintf.h"
  #include "base/task/sequenced_task_runner.h"
  #include "base/test/bind.h"
@@ -203,7 +202,7 @@ index 99a5d149..ea2d6bc 100644
  #include "services/device/usb/mock_usb_device.h"
  #include "services/device/usb/mock_usb_device_handle.h"
  #include "services/device/usb/usb_descriptors.h"
-@@ -813,7 +815,7 @@
+@@ -814,7 +816,7 @@ TEST_F(USBDeviceImplTest, ClaimProtectedInterface) {
  
    // The second interface implements a class which has been blocked above.
    AddMockConfig(
@@ -212,7 +211,7 @@ index 99a5d149..ea2d6bc 100644
            .AddInterface(/*interface_number=*/0, /*alternate_setting=*/0,
                          /*class_code=*/1, /*subclass_code=*/0,
                          /*protocol_code=*/0)
-@@ -975,6 +977,187 @@
+@@ -976,6 +978,187 @@ TEST_F(USBDeviceImplTest, ControlTransfer) {
    EXPECT_CALL(mock_handle(), Close());
  }
  
