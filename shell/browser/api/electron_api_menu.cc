@@ -264,10 +264,6 @@ int Menu::GetItemCount() const {
   return model_->GetItemCount();
 }
 
-int Menu::GetCommandIdAt(int index) const {
-  return model_->GetCommandIdAt(index);
-}
-
 std::u16string Menu::GetLabelAt(int index) const {
   return model_->GetLabelAt(index);
 }
@@ -323,7 +319,6 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("clear", &Menu::Clear)
       .SetMethod("getIndexOfCommandId", &Menu::GetIndexOfCommandId)
       .SetMethod("getItemCount", &Menu::GetItemCount)
-      .SetMethod("getCommandIdAt", &Menu::GetCommandIdAt)
       .SetMethod("getLabelAt", &Menu::GetLabelAt)
       .SetMethod("getSublabelAt", &Menu::GetSublabelAt)
       .SetMethod("getToolTipAt", &Menu::GetToolTipAt)
