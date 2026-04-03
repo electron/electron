@@ -2450,12 +2450,9 @@ int32_t WebContents::GetProcessID() const {
 }
 
 base::ProcessId WebContents::GetOSProcessID() const {
-  base::ProcessHandle process_handle = web_contents()
-                                           ->GetPrimaryMainFrame()
-                                           ->GetProcess()
-                                           ->GetProcess()
-                                           .Handle();
-  return base::GetProcId(process_handle);
+  const auto& process =
+      web_contents()->GetPrimaryMainFrame()->GetProcess()->GetProcess();
+  return process.IsValid() ? process.Pid() : base::kNullProcessId;
 }
 
 GURL WebContents::GetURL() const {
