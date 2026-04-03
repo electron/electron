@@ -393,11 +393,11 @@ std::string WebFrameMain::FrameToken() const {
 
 base::ProcessId WebFrameMain::OSProcessID() const {
   if (!CheckRenderFrame())
-    return -1;
+    return base::kNullProcessId;
 
   const auto& process = render_frame_host()->GetProcess()->GetProcess();
   if (!process.IsValid())
-    return -1;
+    return base::kNullProcessId;
 
   return process.Pid();
 }
