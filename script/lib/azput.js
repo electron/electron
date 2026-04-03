@@ -1,6 +1,6 @@
 /* eslint-disable camelcase */
 
-const { BlobServiceClient } = require('@azure/storage-blob');
+const { BlobServiceClient, ContainerClient } = require('@azure/storage-blob');
 const minimist = require('minimist');
 
 const path = require('node:path');
@@ -11,9 +11,19 @@ if (!ELECTRON_ARTIFACTS_BLOB_STORAGE) {
   process.exit(1);
 }
 
-const blobServiceClient = ELECTRON_ARTIFACTS_BLOB_STORAGE.startsWith('https://')
-  ? new BlobServiceClient(ELECTRON_ARTIFACTS_BLOB_STORAGE)
-  : BlobServiceClient.fromConnectionString(ELECTRON_ARTIFACTS_BLOB_STORAGE);
+let getContainerClient;
+if (ELECTRON_ARTIFACTS_BLOB_STORAGE.startsWith('{')) {
+  const containerUrls = JSON.parse(ELECTRON_ARTIFACTS_BLOB_STORAGE);
+  getContainerClient = (name) => {
+    if (!containerUrls[name]) throw new Error(`No SAS URL provided for container '${name}'`);
+    return new ContainerClient(containerUrls[name]);
+  };
+} else {
+  const blobServiceClient = ELECTRON_ARTIFACTS_BLOB_STORAGE.startsWith('https://')
+    ? new BlobServiceClient(ELECTRON_ARTIFACTS_BLOB_STORAGE)
+    : BlobServiceClient.fromConnectionString(ELECTRON_ARTIFACTS_BLOB_STORAGE);
+  getContainerClient = (name) => blobServiceClient.getContainerClient(name);
+}
 
 const args = minimist(process.argv.slice(2));
 
@@ -36,7 +46,7 @@ function next (done) {
   const blobKey = keyPath.join('/');
   console.log(`Uploading '${file}' to container '${containerName}' with key '${blobKey}'...`);
 
-  const containerClient = blobServiceClient.getContainerClient(containerName);
+  const containerClient = getContainerClient(containerName);
   const blockBlobClient = containerClient.getBlockBlobClient(blobKey);
   blockBlobClient.uploadFile(file)
     .then((uploadBlobResponse) => {
