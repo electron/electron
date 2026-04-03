@@ -187,8 +187,7 @@ struct ImportedSharedTexture
   // Texture id for printing warnings like GC check.
   std::string id;
 
-  void UpdateReleaseSyncToken(gpu::SharedImageInterface* sii,
-                              const gpu::SyncToken& token);
+  void UpdateReleaseSyncToken(const gpu::SyncToken& token);
   void SetupReleaseSyncTokenCallback();
 
   // Transfer to other Chromium processes.
@@ -214,8 +213,7 @@ struct ImportedSharedTexture
   // object is safe to do the further release. If set, users can call
   // `release()` on the source object without worrying the target object
   // didn't finish acquiring the resource at gpu process.
-  void SetReleaseSyncToken(gpu::SharedImageInterface* sii,
-                           v8::Isolate* isolate,
+  void SetReleaseSyncToken(v8::Isolate* isolate,
                            v8::Local<v8::Value> options);
 
   // The cleanup happens at destructor.
@@ -262,10 +260,7 @@ void ImportedSharedTextureWrapper::ReleaseReference() {
 void OnVideoFrameMailboxReleased(
     const scoped_refptr<ImportedSharedTexture>& ist,
     const gpu::SyncToken& sync_token) {
-  auto* sii = GetSharedImageInterface();
-  if (!sii)
-    return;
-  ist->UpdateReleaseSyncToken(sii, sync_token);
+  ist->UpdateReleaseSyncToken(sync_token);
 }
 
 v8::Local<v8::Value> ImportedSharedTextureWrapper::CreateVideoFrame(
@@ -337,7 +332,6 @@ v8::Local<v8::Value> ImportedSharedTexture::GetFrameCreationSyncToken(
 }
 
 void ImportedSharedTexture::SetReleaseSyncToken(
-    gpu::SharedImageInterface* sii,
     v8::Isolate* isolate,
     v8::Local<v8::Value> options) {
   std::string sync_token_data;
@@ -345,7 +339,7 @@ void ImportedSharedTexture::SetReleaseSyncToken(
   dict.Get("syncToken", &sync_token_data);
 
   auto sync_token = GetSyncTokenFromBase64String(sync_token_data);
-  UpdateReleaseSyncToken(sii, sync_token);
+  UpdateReleaseSyncToken(sync_token);
 }
 
 ImportedSharedTexture::~ImportedSharedTexture() {
@@ -357,11 +351,11 @@ ImportedSharedTexture::~ImportedSharedTexture() {
 }
 
 void ImportedSharedTexture::UpdateReleaseSyncToken(
-    gpu::SharedImageInterface* sii,
     const gpu::SyncToken& token) {
   base::AutoLock locker(release_sync_token_lock_);
 
-  if (release_sync_token.HasData()) {
+  auto* sii = GetSharedImageInterface();
+  if (sii && release_sync_token.HasData()) {
     // If we already have a release sync token, we need to wait for it
     // to be signaled before we can set the new one.
     sii->WaitSyncToken(release_sync_token);
@@ -471,22 +465,6 @@ void ImportedTextureRelease(const v8::FunctionCallbackInfo<v8::Value>& info) {
     gin::ConvertFromV8(isolate, cb, &wrapper->ist->release_callback);
   }
 
-  auto* sii = GetSharedImageInterface();
-  if (!sii) {
-    auto* isolate = info.GetIsolate();
-    gin_helper::ErrorThrower(isolate).ThrowError(
-        "Failed to release shared texture: GPU is not available");
-    return;
-  }
-
-  auto* context_support = GetContextSupport();
-  if (!context_support) {
-    auto* isolate = info.GetIsolate();
-    gin_helper::ErrorThrower(isolate).ThrowError(
-        "Failed to release shared texture: GPU is not available");
-    return;
-  }
-
   // Release the shared texture, so that future frames can be generated.
   wrapper->ReleaseReference();
 
@@ -544,7 +522,7 @@ void ImportedTextureSetReleaseSyncToken(
     return;
   }
 
-  wrapper->ist->SetReleaseSyncToken(sii, isolate, info[0].As<v8::Object>());
+  wrapper->ist->SetReleaseSyncToken(isolate, info[0].As<v8::Object>());
 }
 
 v8::Local<v8::Value> CreateImportedSharedTextureFromSharedImage(
