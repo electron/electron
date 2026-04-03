@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Niklas Wenzel <dev@nikwen.de>
+Date: Wed, 25 Feb 2026 16:23:07 +0100
+Subject: feat: allow enabling extension panels on custom protocols
+
+This allows us to show Chrome extension panels on pages served over
+custom protocols.
+
+diff --git a/front_end/core/root/Runtime.ts b/front_end/core/root/Runtime.ts
+index a66d4b57af461db0426bd4216d5134490240d697..5e1f465adde1668cbb645f5ff55cd62382a10890 100644
+--- a/front_end/core/root/Runtime.ts
++++ b/front_end/core/root/Runtime.ts
+@@ -575,6 +575,7 @@ export type HostConfig = Platform.TypeScriptUtilities.RecursivePartial<{
+    * or guest mode, rather than a "normal" profile.
+    */
+   isOffTheRecord: boolean,
++  devToolsExtensionSchemes: readonly string[],
+   devToolsEnableOriginBoundCookies: HostConfigEnableOriginBoundCookies,
+   devToolsAnimationStylesInStylesTab: HostConfigAnimationStylesInStylesTab,
+   thirdPartyCookieControls: HostConfigThirdPartyCookieControls,
+diff --git a/front_end/panels/common/ExtensionServer.ts b/front_end/panels/common/ExtensionServer.ts
+index 5fd87f637a0141788951997742c6fe8712c29ceb..8e26d9592f50615ef28382a44f0917b18f91b6f8 100644
+--- a/front_end/panels/common/ExtensionServer.ts
++++ b/front_end/panels/common/ExtensionServer.ts
+@@ -12,6 +12,7 @@ import * as Host from '../../core/host/host.js';
+ import * as i18n from '../../core/i18n/i18n.js';
+ import * as Platform from '../../core/platform/platform.js';
+ import * as _ProtocolClient from '../../core/protocol_client/protocol_client.js';  // eslint-disable-line @typescript-eslint/no-unused-vars
++import * as Root from '../../core/root/root.js';
+ import * as SDK from '../../core/sdk/sdk.js';
+ import type * as Protocol from '../../generated/protocol.js';
+ import * as Bindings from '../../models/bindings/bindings.js';
+@@ -1603,7 +1604,8 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper<EventTyp
+       return false;
+     }
+ 
+-    if (!kPermittedSchemes.includes(parsedURL.protocol)) {
++    if (!kPermittedSchemes.includes(parsedURL.protocol) &&
++        !Root.Runtime.hostConfig.devToolsExtensionSchemes?.includes(parsedURL.protocol)) {
+       return false;
+     }
+ 
