@@ -268,10 +268,6 @@ std::u16string Menu::GetSublabelAt(int index) const {
   return model_->GetSecondaryLabelAt(index);
 }
 
-std::u16string Menu::GetToolTipAt(int index) const {
-  return model_->GetToolTipAt(index);
-}
-
 std::u16string Menu::GetAcceleratorTextAtForTesting(int index) const {
   ui::Accelerator accelerator;
   model_->GetAcceleratorAtWithParams(index, true, &accelerator);
@@ -315,7 +311,6 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("clear", &Menu::Clear)
       .SetMethod("getItemCount", &Menu::GetItemCount)
       .SetMethod("getSublabelAt", &Menu::GetSublabelAt)
-      .SetMethod("getToolTipAt", &Menu::GetToolTipAt)
       .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
