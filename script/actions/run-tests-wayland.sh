@@ -2,6 +2,8 @@
 set -euo pipefail
 
 export XDG_SESSION_TYPE=wayland
+# On a Wayland desktop, the tests will use your active display and compositor.
+# To run headlessly in weston like in CI, set WAYLAND_DISPLAY=wayland-99.
 export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-99}"
 
 if [[ -z "${XDG_RUNTIME_DIR:-}" ]]; then

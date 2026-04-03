@@ -17,7 +17,7 @@ import * as nodeUrl from 'node:url';
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
 import { randomString } from './lib/net-helpers';
 import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
-import { ifit, ifdescribe, defer, listen, waitUntil } from './lib/spec-helpers';
+import { ifit, ifdescribe, defer, listen, waitUntil, isWayland } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 
 const fixtures = path.resolve(__dirname, 'fixtures');
@@ -1204,7 +1204,45 @@ describe('BrowserWindow module', () => {
     });
   }
 
-  describe('focus and visibility', () => {
+  describe('visibility', () => {
+    let w: BrowserWindow;
+    beforeEach(() => {
+      w = new BrowserWindow({ show: false });
+    });
+    afterEach(async () => {
+      await closeWindow(w);
+      w = null as unknown as BrowserWindow;
+    });
+
+    describe('BrowserWindow.show()', () => {
+      it('should make the window visible', async () => {
+        const show = once(w, 'show');
+        w.show();
+        await show;
+        expect(w.isVisible()).to.equal(true);
+      });
+    });
+
+    describe('BrowserWindow.hide()', () => {
+      it('should make the window not visible', () => {
+        w.show();
+        w.hide();
+        expect(w.isVisible()).to.equal(false);
+      });
+      it('emits when window is hidden', async () => {
+        const shown = once(w, 'show');
+        w.show();
+        await shown;
+        const hidden = once(w, 'hide');
+        w.hide();
+        await hidden;
+        expect(w.isVisible()).to.equal(false);
+      });
+    });
+  });
+
+  // Wayland does not allow focus and z-order to be controlled without user input
+  ifdescribe(!isWayland)('focus, blur, and z-order', () => {
     let w: BrowserWindow;
     beforeEach(() => {
       w = new BrowserWindow({ show: false });
@@ -1221,16 +1259,10 @@ describe('BrowserWindow module', () => {
         await p;
         expect(w.isFocused()).to.equal(true);
       });
-      it('should make the window visible', async () => {
+      it('emits focus event and makes the window visible', async () => {
         const p = once(w, 'focus');
         w.show();
         await p;
-        expect(w.isVisible()).to.equal(true);
-      });
-      it('emits when window is shown', async () => {
-        const show = once(w, 'show');
-        w.show();
-        await show;
         expect(w.isVisible()).to.equal(true);
       });
     });
@@ -1239,20 +1271,6 @@ describe('BrowserWindow module', () => {
       it('should defocus on window', () => {
         w.hide();
         expect(w.isFocused()).to.equal(false);
-      });
-      it('should make the window not visible', () => {
-        w.show();
-        w.hide();
-        expect(w.isVisible()).to.equal(false);
-      });
-      it('emits when window is hidden', async () => {
-        const shown = once(w, 'show');
-        w.show();
-        await shown;
-        const hidden = once(w, 'hide');
-        w.hide();
-        await hidden;
-        expect(w.isVisible()).to.equal(false);
       });
     });
 
@@ -1626,6 +1644,20 @@ describe('BrowserWindow module', () => {
         await closeWindow(w2, { assertNotWindows: false });
       });
     });
+
+    describe('window.webContents.focus()', () => {
+      afterEach(closeAllWindows);
+      it('focuses window', async () => {
+        const w1 = new BrowserWindow({ x: 100, y: 300, width: 300, height: 200 });
+        w1.loadURL('about:blank');
+        const w2 = new BrowserWindow({ x: 300, y: 300, width: 300, height: 200 });
+        w2.loadURL('about:blank');
+        const w1Focused = once(w1, 'focus');
+        w1.webContents.focus();
+        await w1Focused;
+        expect(w1.webContents.isFocused()).to.be.true('focuses window');
+      });
+    });
   });
 
   describe('sizing', () => {
@@ -1814,7 +1846,8 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    describe('BrowserWindow.setContentBounds(bounds)', () => {
+    // Windows cannot be programmatically moved on Wayland
+    ifdescribe(!isWayland)('BrowserWindow.setContentBounds(bounds)', () => {
       it('sets the content size and position', async () => {
         const bounds = { x: 10, y: 10, width: 250, height: 250 };
         const resize = once(w, 'resize');
@@ -3285,6 +3318,19 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  // On Wayland, hidden windows may not have mapped surfaces or finalized geometry
+  // until shown. Tests that depend on real geometry or frame events may need
+  // to show the window first.
+  const showWindowForWayland = async (w: BrowserWindow) => {
+    if (!isWayland || w.isVisible()) {
+      return;
+    }
+
+    const shown = once(w, 'show');
+    w.show();
+    await shown;
+  };
+
   describe('"titleBarStyle" option', () => {
     const testWindowsOverlay = async (style: any) => {
       const w = new BrowserWindow({
@@ -3304,8 +3350,10 @@ describe('BrowserWindow module', () => {
       } else {
         const overlayReady = once(ipcMain, 'geometrychange');
         await w.loadFile(overlayHTML);
+        await showWindowForWayland(w);
         await overlayReady;
       }
+
       const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
       expect(overlayEnabled).to.be.true('overlayEnabled');
       const overlayRect = await w.webContents.executeJavaScript('getJSOverlayProperties()');
@@ -3418,6 +3466,7 @@ describe('BrowserWindow module', () => {
       } else {
         const overlayReady = once(ipcMain, 'geometrychange');
         await w.loadFile(overlayHTML);
+        await showWindowForWayland(w);
         await overlayReady;
       }
 
@@ -3491,6 +3540,7 @@ describe('BrowserWindow module', () => {
         const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
         const overlayReady = once(ipcMain, 'geometrychange');
         await w.loadFile(overlayHTML);
+        await showWindowForWayland(w);
         if (firstRun) {
           await overlayReady;
         }
@@ -4771,7 +4821,9 @@ describe('BrowserWindow module', () => {
       const w = new BrowserWindow({ show: false });
       let called = false;
       w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'));
-      w.webContents.on('dom-ready', () => {
+      w.webContents.on('dom-ready', async () => {
+        await showWindowForWayland(w);
+
         w.webContents.beginFrameSubscription(function () {
           // This callback might be called twice.
           if (called) return;
@@ -4791,7 +4843,9 @@ describe('BrowserWindow module', () => {
       const w = new BrowserWindow({ show: false });
       let called = false;
       w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'));
-      w.webContents.on('dom-ready', () => {
+      w.webContents.on('dom-ready', async () => {
+        await showWindowForWayland(w);
+
         w.webContents.beginFrameSubscription(function (data) {
           // This callback might be called twice.
           if (called) return;
@@ -4815,7 +4869,9 @@ describe('BrowserWindow module', () => {
       let called = false;
       let gotInitialFullSizeFrame = false;
       const [contentWidth, contentHeight] = w.getContentSize();
-      w.webContents.on('did-finish-load', () => {
+      w.webContents.on('did-finish-load', async () => {
+        await showWindowForWayland(w);
+
         w.webContents.beginFrameSubscription(true, (image, rect) => {
           if (image.isEmpty()) {
             // Chromium sometimes sends a 0x0 frame at the beginning of the
@@ -5396,55 +5452,57 @@ describe('BrowserWindow module', () => {
         await createTwo();
       });
 
-      ifit(process.platform !== 'darwin')('can disable and enable a window', () => {
-        const w = new BrowserWindow({ show: false });
-        w.setEnabled(false);
-        expect(w.isEnabled()).to.be.false('w.isEnabled()');
-        w.setEnabled(true);
-        expect(w.isEnabled()).to.be.true('!w.isEnabled()');
-      });
+      ifdescribe(process.platform !== 'darwin' && !isWayland)('disabling parent windows', () => {
+        it('can disable and enable a window', () => {
+          const w = new BrowserWindow({ show: false });
+          w.setEnabled(false);
+          expect(w.isEnabled()).to.be.false('w.isEnabled()');
+          w.setEnabled(true);
+          expect(w.isEnabled()).to.be.true('!w.isEnabled()');
+        });
 
-      ifit(process.platform !== 'darwin')('disables parent window', () => {
-        const w = new BrowserWindow({ show: false });
-        const c = new BrowserWindow({ show: false, parent: w, modal: true });
-        expect(w.isEnabled()).to.be.true('w.isEnabled');
-        c.show();
-        expect(w.isEnabled()).to.be.false('w.isEnabled');
-      });
+        it('disables parent window', () => {
+          const w = new BrowserWindow({ show: false });
+          const c = new BrowserWindow({ show: false, parent: w, modal: true });
+          expect(w.isEnabled()).to.be.true('w.isEnabled');
+          c.show();
+          expect(w.isEnabled()).to.be.false('w.isEnabled');
+        });
 
-      ifit(process.platform !== 'darwin')('re-enables an enabled parent window when closed', async () => {
-        const w = new BrowserWindow({ show: false });
-        const c = new BrowserWindow({ show: false, parent: w, modal: true });
-        const closed = once(c, 'closed');
-        c.show();
-        c.close();
-        await closed;
-        expect(w.isEnabled()).to.be.true('w.isEnabled');
-      });
+        it('re-enables an enabled parent window when closed', async () => {
+          const w = new BrowserWindow({ show: false });
+          const c = new BrowserWindow({ show: false, parent: w, modal: true });
+          const closed = once(c, 'closed');
+          c.show();
+          c.close();
+          await closed;
+          expect(w.isEnabled()).to.be.true('w.isEnabled');
+        });
 
-      ifit(process.platform !== 'darwin')('does not re-enable a disabled parent window when closed', async () => {
-        const w = new BrowserWindow({ show: false });
-        const c = new BrowserWindow({ show: false, parent: w, modal: true });
-        const closed = once(c, 'closed');
-        w.setEnabled(false);
-        c.show();
-        c.close();
-        await closed;
-        expect(w.isEnabled()).to.be.false('w.isEnabled');
-      });
+        it('does not re-enable a disabled parent window when closed', async () => {
+          const w = new BrowserWindow({ show: false });
+          const c = new BrowserWindow({ show: false, parent: w, modal: true });
+          const closed = once(c, 'closed');
+          w.setEnabled(false);
+          c.show();
+          c.close();
+          await closed;
+          expect(w.isEnabled()).to.be.false('w.isEnabled');
+        });
 
-      ifit(process.platform !== 'darwin')('disables parent window recursively', () => {
-        const w = new BrowserWindow({ show: false });
-        const c = new BrowserWindow({ show: false, parent: w, modal: true });
-        const c2 = new BrowserWindow({ show: false, parent: w, modal: true });
-        c.show();
-        expect(w.isEnabled()).to.be.false('w.isEnabled');
-        c2.show();
-        expect(w.isEnabled()).to.be.false('w.isEnabled');
-        c.destroy();
-        expect(w.isEnabled()).to.be.false('w.isEnabled');
-        c2.destroy();
-        expect(w.isEnabled()).to.be.true('w.isEnabled');
+        it('disables parent window recursively', () => {
+          const w = new BrowserWindow({ show: false });
+          const c = new BrowserWindow({ show: false, parent: w, modal: true });
+          const c2 = new BrowserWindow({ show: false, parent: w, modal: true });
+          c.show();
+          expect(w.isEnabled()).to.be.false('w.isEnabled');
+          c2.show();
+          expect(w.isEnabled()).to.be.false('w.isEnabled');
+          c.destroy();
+          expect(w.isEnabled()).to.be.false('w.isEnabled');
+          c2.destroy();
+          expect(w.isEnabled()).to.be.true('w.isEnabled');
+        });
       });
     });
   });
@@ -5684,7 +5742,7 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    ifdescribe(process.platform !== 'win32')('visibleOnAllWorkspaces state', () => {
+    ifdescribe(process.platform !== 'win32' && !isWayland)('visibleOnAllWorkspaces state', () => {
       describe('with properties', () => {
         it('can be changed', () => {
           const w = new BrowserWindow({ show: false });
@@ -6832,20 +6890,6 @@ describe('BrowserWindow module', () => {
       `);
 
       expect(JSON.stringify(entries)).to.eq('{}');
-    });
-  });
-
-  describe('window.webContents.focus()', () => {
-    afterEach(closeAllWindows);
-    it('focuses window', async () => {
-      const w1 = new BrowserWindow({ x: 100, y: 300, width: 300, height: 200 });
-      w1.loadURL('about:blank');
-      const w2 = new BrowserWindow({ x: 300, y: 300, width: 300, height: 200 });
-      w2.loadURL('about:blank');
-      const w1Focused = once(w1, 'focus');
-      w1.webContents.focus();
-      await w1Focused;
-      expect(w1.webContents.isFocused()).to.be.true('focuses window');
     });
   });
 
