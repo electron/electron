@@ -138,7 +138,6 @@ class Menu : public gin::Wrappable<Menu>,
   bool IsItemCheckedAt(int index) const;
   bool IsEnabledAt(int index) const;
   bool IsVisibleAt(int index) const;
-  bool WorksWhenHiddenAt(int index) const;
 
   gin_helper::SelfKeepAlive<Menu> keep_alive_{this};
 };

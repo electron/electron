@@ -298,10 +298,6 @@ bool Menu::IsVisibleAt(int index) const {
   return model_->IsVisibleAt(index);
 }
 
-bool Menu::WorksWhenHiddenAt(int index) const {
-  return model_->WorksWhenHiddenAt(index);
-}
-
 void Menu::OnMenuWillClose() {
   keep_alive_.Clear();
   Emit("menu-will-close");
@@ -333,7 +329,6 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("getToolTipAt", &Menu::GetToolTipAt)
       .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
-      .SetMethod("worksWhenHiddenAt", &Menu::WorksWhenHiddenAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
       .SetMethod("popupAt", &Menu::PopupAt)
       .SetMethod("closePopupAt", &Menu::ClosePopupAt)
