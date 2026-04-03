@@ -317,7 +317,6 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setRole", &Menu::SetRole)
       .SetMethod("setCustomType", &Menu::SetCustomType)
       .SetMethod("clear", &Menu::Clear)
-      .SetMethod("getIndexOfCommandId", &Menu::GetIndexOfCommandId)
       .SetMethod("getItemCount", &Menu::GetItemCount)
       .SetMethod("getLabelAt", &Menu::GetLabelAt)
       .SetMethod("getSublabelAt", &Menu::GetSublabelAt)
