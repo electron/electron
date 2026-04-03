@@ -323,17 +323,18 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
                           fromModel:(electron::ElectronMenuModel*)model {
   std::u16string label16 = model->GetLabelAt(index);
   auto rawSecondaryLabel = model->GetSecondaryLabelAt(index);
-  std::u16string accessible_label16 = model->GetAccessibleLabelAt(index);
+  std::u16string accessibility_label16 = model->GetAccessibilityLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
-  NSString* accessible_label = base::SysUTF16ToNSString(accessible_label16);
+  NSString* accessibility_label =
+      base::SysUTF16ToNSString(accessibility_label16);
 
   NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:label
                                                 action:@selector(itemSelected:)
                                          keyEquivalent:@""];
-  if (!accessible_label16.empty()) {
-    item.accessibilityLabel = accessible_label;
+  if (!accessibility_label16.empty()) {
+    item.accessibilityLabel = accessibility_label;
   }
-  
+
   if (!rawSecondaryLabel.empty()) {
     if (@available(macOS 14.4, *)) {
       NSString* secondary_label =
@@ -504,12 +505,13 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   item.state = model->IsItemCheckedAt(index) ? NSControlStateValueOn
                                              : NSControlStateValueOff;
   std::u16string label16 = model->GetLabelAt(index);
-  std::u16string accessible_label16 = model->GetAccessibleLabelAt(index);
+  std::u16string accessibility_label16 = model->GetAccessibilityLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
-  NSString* accessible_label = base::SysUTF16ToNSString(accessible_label16);
+  NSString* accessibility_label =
+      base::SysUTF16ToNSString(accessibility_label16);
   item.title = label;
-  if (!accessible_label16.empty()) {
-    item.accessibilityLabel = accessible_label;
+  if (!accessibility_label16.empty()) {
+    item.accessibilityLabel = accessibility_label;
   }
 
   std::u16string rawSecondaryLabel = model->GetSecondaryLabelAt(index);

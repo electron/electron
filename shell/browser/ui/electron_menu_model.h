@@ -49,7 +49,7 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
 
     virtual bool ShouldCommandIdWorkWhenHidden(int command_id) const = 0;
 
-    virtual std::u16string GetAccessibleLabelForCommandId(
+    virtual std::u16string GetAccessibilityLabelForCommandId(
         int command_id) const = 0;
 
 #if BUILDFLAG(IS_MAC)
@@ -89,7 +89,7 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   std::u16string GetToolTipAt(size_t index);
   void SetCustomType(size_t index, const std::u16string& customType);
   std::u16string GetCustomTypeAt(size_t index);
-  std::u16string GetAccessibleLabelAt(size_t index) const;
+  std::u16string GetAccessibilityLabelAt(size_t index) const;
   void SetRole(size_t index, const std::u16string& role);
   std::u16string GetRoleAt(size_t index);
   std::u16string GetLabelAt(size_t index) const override;

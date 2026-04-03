@@ -31,7 +31,7 @@ See [`Menu`](menu.md) for examples.
     * `header` - Only available on macOS 14 and up.
     * `palette` - Only available on macOS 14 and up.
   * `label` string (optional)
-  * `accessibleLabel` string (optional) _macOS_
+  * `accessibilityLabel` string (optional) _macOS_
   * `sublabel` string (optional) _macOS_ - Available in macOS >= 14.4
   * `toolTip` string (optional) _macOS_ - Hover text for this menu item.
   * `accelerator` string (optional) - An [Accelerator](../tutorial/keyboard-shortcuts.md#accelerators) string.
@@ -84,7 +84,7 @@ A `string` indicating the item's visible label.
 
 This property can be dynamically changed.
 
-#### `menuItem.accessibleLabel` _macOS_
+#### `menuItem.accessibilityLabel` _macOS_
 
 A `string` indicating the item's accessibility label (used by assistive technology), if set.
 
