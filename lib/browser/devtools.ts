@@ -8,29 +8,30 @@ import * as fs from 'fs';
 
 const convertToMenuTemplate = function (items: ContextMenuItem[], handler: (id: number) => void) {
   return items.map(function (item) {
-    const transformed: Electron.MenuItemConstructorOptions = item.type === 'subMenu'
-      ? {
-          type: 'submenu',
-          label: item.label,
-          enabled: item.enabled,
-          submenu: convertToMenuTemplate(item.subItems, handler)
-        }
-      : item.type === 'separator'
+    const transformed: Electron.MenuItemConstructorOptions =
+      item.type === 'subMenu'
         ? {
-            type: 'separator'
+            type: 'submenu',
+            label: item.label,
+            enabled: item.enabled,
+            submenu: convertToMenuTemplate(item.subItems, handler)
           }
-        : item.type === 'checkbox'
+        : item.type === 'separator'
           ? {
-              type: 'checkbox',
-              label: item.label,
-              enabled: item.enabled,
-              checked: item.checked
+              type: 'separator'
             }
-          : {
-              type: 'normal',
-              label: item.label,
-              enabled: item.enabled
-            };
+          : item.type === 'checkbox'
+            ? {
+                type: 'checkbox',
+                label: item.label,
+                enabled: item.enabled,
+                checked: item.checked
+              }
+            : {
+                type: 'normal',
+                label: item.label,
+                enabled: item.enabled
+              };
 
     if (item.id != null) {
       transformed.click = () => handler(item.id);
@@ -67,18 +68,21 @@ const assertChromeDevTools = function (contents: Electron.WebContents, api: stri
   }
 };
 
-ipcMainInternal.handle(IPC_MESSAGES.INSPECTOR_CONTEXT_MENU, function (event, items: ContextMenuItem[], isEditMenu: boolean) {
-  return new Promise<number | void>(resolve => {
-    if (event.type !== 'frame') return;
-    assertChromeDevTools(event.sender, 'window.InspectorFrontendHost.showContextMenuAtPoint()');
+ipcMainInternal.handle(
+  IPC_MESSAGES.INSPECTOR_CONTEXT_MENU,
+  function (event, items: ContextMenuItem[], isEditMenu: boolean) {
+    return new Promise<number | void>((resolve) => {
+      if (event.type !== 'frame') return;
+      assertChromeDevTools(event.sender, 'window.InspectorFrontendHost.showContextMenuAtPoint()');
 
-    const template = isEditMenu ? getEditMenuItems() : convertToMenuTemplate(items, resolve);
-    const menu = Menu.buildFromTemplate(template);
-    const window = event.sender.getOwnerBrowserWindow()!;
+      const template = isEditMenu ? getEditMenuItems() : convertToMenuTemplate(items, resolve);
+      const menu = Menu.buildFromTemplate(template);
+      const window = event.sender.getOwnerBrowserWindow()!;
 
-    menu.popup({ window, callback: () => resolve() });
-  });
-});
+      menu.popup({ window, callback: () => resolve() });
+    });
+  }
+);
 
 ipcMainInternal.handle(IPC_MESSAGES.INSPECTOR_SELECT_FILE, async function (event) {
   if (event.type !== 'frame') return [];
@@ -93,17 +97,20 @@ ipcMainInternal.handle(IPC_MESSAGES.INSPECTOR_SELECT_FILE, async function (event
   return [path, data];
 });
 
-ipcMainUtils.handleSync(IPC_MESSAGES.INSPECTOR_CONFIRM, async function (event, message: string = '', title: string = '') {
-  if (event.type !== 'frame') return;
-  assertChromeDevTools(event.sender, 'window.confirm()');
+ipcMainUtils.handleSync(
+  IPC_MESSAGES.INSPECTOR_CONFIRM,
+  async function (event, message: string = '', title: string = '') {
+    if (event.type !== 'frame') return;
+    assertChromeDevTools(event.sender, 'window.confirm()');
 
-  const options = {
-    message: String(message),
-    title: String(title),
-    buttons: ['OK', 'Cancel'],
-    cancelId: 1
-  };
-  const window = event.sender.getOwnerBrowserWindow()!;
-  const { response } = await dialog.showMessageBox(window, options);
-  return response === 0;
-});
+    const options = {
+      message: String(message),
+      title: String(title),
+      buttons: ['OK', 'Cancel'],
+      cancelId: 1
+    };
+    const window = event.sender.getOwnerBrowserWindow()!;
+    const { response } = await dialog.showMessageBox(window, options);
+    return response === 0;
+  }
+);

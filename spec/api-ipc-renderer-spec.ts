@@ -61,14 +61,17 @@ describe('ipcRenderer module', () => {
     });
 
     it('throws when sending objects with DOM class prototypes', async () => {
-      await expect(w.webContents.executeJavaScript(`{
+      await expect(
+        w.webContents.executeJavaScript(`{
         const { ipcRenderer } = require('electron')
         ipcRenderer.send('message', document.location)
-      }`)).to.eventually.be.rejected();
+      }`)
+      ).to.eventually.be.rejected();
     });
 
     it('does not crash when sending external objects', async () => {
-      await expect(w.webContents.executeJavaScript(`{
+      await expect(
+        w.webContents.executeJavaScript(`{
         const { ipcRenderer } = require('electron')
         const http = require('node:http')
 
@@ -76,7 +79,8 @@ describe('ipcRenderer module', () => {
         const stream = request.agent.sockets['127.0.0.1:5000:'][0]._handle._externalStream
 
         ipcRenderer.send('message', stream)
-      }`)).to.eventually.be.rejected();
+      }`)
+      ).to.eventually.be.rejected();
     });
 
     it('can send objects that both reference the same object', async () => {
@@ -181,20 +185,22 @@ describe('ipcRenderer module', () => {
 
   describe('after context is released', () => {
     it('throws an exception', async () => {
-      const error = await w.webContents.executeJavaScript(`(${() => {
-        const child = window.open('', 'child', 'show=no,nodeIntegration=yes')! as any;
-        const childIpc = child.require('electron').ipcRenderer;
-        child.close();
-        return new Promise(resolve => {
-          setInterval(() => {
-            try {
-              childIpc.send('hello');
-            } catch (e) {
-              resolve(e);
-            }
-          }, 16);
-        });
-      }})()`);
+      const error = await w.webContents.executeJavaScript(
+        `(${() => {
+          const child = window.open('', 'child', 'show=no,nodeIntegration=yes')! as any;
+          const childIpc = child.require('electron').ipcRenderer;
+          child.close();
+          return new Promise((resolve) => {
+            setInterval(() => {
+              try {
+                childIpc.send('hello');
+              } catch (e) {
+                resolve(e);
+              }
+            }, 16);
+          });
+        }})()`
+      );
       expect(error).to.have.property('message', 'IPC method called after context was released');
     });
   });

@@ -2,7 +2,10 @@ import { parseArgs } from 'node:util';
 
 import { runReleaseCIJobs } from '../run-release-ci-jobs';
 
-const { values: { ghRelease, job, arch, ci, newVersion }, positionals } = parseArgs({
+const {
+  values: { ghRelease, job, arch, ci, newVersion },
+  positionals
+} = parseArgs({
   options: {
     ghRelease: {
       type: 'boolean'

@@ -12,7 +12,7 @@ import * as notes from '../script/release/notes/notes';
 class Commit {
   sha1: string;
   subject: string;
-  constructor (sha1: string, subject: string) {
+  constructor(sha1: string, subject: string) {
     this.sha1 = sha1;
     this.subject = subject;
   }
@@ -20,19 +20,19 @@ class Commit {
 
 class GitFake {
   branches: {
-    [key: string]: Commit[],
+    [key: string]: Commit[];
   };
 
-  constructor () {
+  constructor() {
     this.branches = {};
   }
 
-  setBranch (name: string, commits: Array<Commit>): void {
+  setBranch(name: string, commits: Array<Commit>): void {
     this.branches[name] = commits;
   }
 
   // find the newest shared commit between branches a and b
-  mergeBase (a: string, b:string): string {
+  mergeBase(a: string, b: string): string {
     for (const commit of [...this.branches[a].reverse()]) {
       if (this.branches[b].map((commit: Commit) => commit.sha1).includes(commit.sha1)) {
         return commit.sha1;
@@ -43,7 +43,7 @@ class GitFake {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  exec (command: string, args: string[], options?: any): SpawnSyncReturns<string> {
+  exec(command: string, args: string[], options?: any): SpawnSyncReturns<string> {
     let stdout = '';
     const stderr = '';
     const status = 0;
@@ -60,7 +60,7 @@ class GitFake {
     } else if (args.length > 1 && args[0] === 'log' && args.includes('--format=%H,%s')) {
       // expected form: `git log --format=%H,%s sha1..branchName
       const [start, branch] = args[args.length - 1].split('..');
-      const lines : string[] = [];
+      const lines: string[] = [];
       let started = false;
       for (const commit of this.branches[branch]) {
         started = started || commit.sha1 === start;
@@ -69,11 +69,13 @@ class GitFake {
         }
       }
       stdout = lines.join('\n');
-    } else if (args.length === 6 &&
-               args[0] === 'branch' &&
-               args[1] === '--all' &&
-               args[2] === '--contains' &&
-               args[3].endsWith('-x-y')) {
+    } else if (
+      args.length === 6 &&
+      args[0] === 'branch' &&
+      args[1] === '--all' &&
+      args[2] === '--contains' &&
+      args[3].endsWith('-x-y')
+    ) {
       // "what branch is this tag in?"
       // git branch --all --contains ${ref} --sort version:refname
       stdout = args[3];
@@ -94,22 +96,43 @@ describe('release notes', () => {
 
   // commits shared by both oldBranch and newBranch
   const sharedHistory = [
-    new Commit('2abea22b4bffa1626a521711bacec7cd51425818', "fix: explicitly cancel redirects when mode is 'error' (#20686)"),
+    new Commit(
+      '2abea22b4bffa1626a521711bacec7cd51425818',
+      "fix: explicitly cancel redirects when mode is 'error' (#20686)"
+    ),
     new Commit('467409458e716c68b35fa935d556050ca6bed1c4', 'build: add support for automated minor releases (#20620)') // merge-base
   ];
 
   // these commits came after newBranch was created
-  const newBreaking = new Commit('2fad53e66b1a2cb6f7dad88fe9bb62d7a461fe98', 'refactor: use v8 serialization for ipc (#20214)');
-  const newFeat = new Commit('89eb309d0b22bd4aec058ffaf983e81e56a5c378', 'feat: allow GUID parameter to avoid systray demotion on Windows  (#21891)');
-  const newFix = new Commit('0600420bac25439fc2067d51c6aaa4ee11770577', "fix: don't allow window to go behind menu bar on mac (#22828)");
+  const newBreaking = new Commit(
+    '2fad53e66b1a2cb6f7dad88fe9bb62d7a461fe98',
+    'refactor: use v8 serialization for ipc (#20214)'
+  );
+  const newFeat = new Commit(
+    '89eb309d0b22bd4aec058ffaf983e81e56a5c378',
+    'feat: allow GUID parameter to avoid systray demotion on Windows  (#21891)'
+  );
+  const newFix = new Commit(
+    '0600420bac25439fc2067d51c6aaa4ee11770577',
+    "fix: don't allow window to go behind menu bar on mac (#22828)"
+  );
   const oldFix = new Commit('f77bd19a70ac2d708d17ddbe4dc12745ca3a8577', 'fix: prevent menu gc during popup (#20785)');
 
   // a bug that's fixed in both branches by separate PRs
-  const newTropFix = new Commit('a6ff42c190cb5caf8f3e217748e49183a951491b', 'fix: workaround for hang when preventDefault-ing nativeWindowOpen (#22750)');
-  const oldTropFix = new Commit('8751f485c5a6c8c78990bfd55a4350700f81f8cd', 'fix: workaround for hang when preventDefault-ing nativeWindowOpen (#22749)');
+  const newTropFix = new Commit(
+    'a6ff42c190cb5caf8f3e217748e49183a951491b',
+    'fix: workaround for hang when preventDefault-ing nativeWindowOpen (#22750)'
+  );
+  const oldTropFix = new Commit(
+    '8751f485c5a6c8c78990bfd55a4350700f81f8cd',
+    'fix: workaround for hang when preventDefault-ing nativeWindowOpen (#22749)'
+  );
 
   // a PR that has unusual note formatting
-  const sublist = new Commit('61dc1c88fd34a3e8fff80c80ed79d0455970e610', 'fix: client area inset calculation when maximized for frameless windows (#25052) (#25216)');
+  const sublist = new Commit(
+    '61dc1c88fd34a3e8fff80c80ed79d0455970e610',
+    'fix: client area inset calculation when maximized for frameless windows (#25052) (#25216)'
+  );
 
   before(() => {
     // location of release-notes' octokit reply cache
@@ -182,12 +205,15 @@ describe('release notes', () => {
       const results: any = await notes.get(oldBranch, newBranch, version);
       const rendered: any = await notes.render(results);
 
-      expect(rendered).to.include([
-        '* Fixed the following issues for frameless when maximized on Windows:',
-        '  * fix unreachable task bar when auto hidden with position top',
-        '  * fix 1px extending to secondary monitor',
-        '  * fix 1px overflowing into taskbar at certain resolutions',
-        '  * fix white line on top of window under 4k resolutions. [#25216]'].join('\n'));
+      expect(rendered).to.include(
+        [
+          '* Fixed the following issues for frameless when maximized on Windows:',
+          '  * fix unreachable task bar when auto hidden with position top',
+          '  * fix 1px extending to secondary monitor',
+          '  * fix 1px overflowing into taskbar at certain resolutions',
+          '  * fix white line on top of window under 4k resolutions. [#25216]'
+        ].join('\n')
+      );
     });
   });
   // test that when you feed in different semantic commit types,
@@ -228,7 +254,10 @@ describe('release notes', () => {
     const version = 'v28.0.0';
 
     it('with different major versions', async function () {
-      const mostRecentCommit = new Commit('9d0e6d09f0be0abbeae46dd3d66afd96d2daacaa', 'chore: bump chromium to 119.0.6043.0');
+      const mostRecentCommit = new Commit(
+        '9d0e6d09f0be0abbeae46dd3d66afd96d2daacaa',
+        'chore: bump chromium to 119.0.6043.0'
+      );
 
       const sharedChromiumHistory = [
         new Commit('029127a8b6f7c511fca4612748ad5b50e43aadaa', 'chore: bump chromium to 118.0.5993.0') // merge-base
@@ -247,7 +276,10 @@ describe('release notes', () => {
       expect(results.other[0].hash).to.equal(mostRecentCommit.sha1);
     });
     it('with different build versions', async function () {
-      const mostRecentCommit = new Commit('8f7a48879ef8633a76279803637cdee7f7c6cd4f', 'chore: bump chromium to 119.0.6045.0');
+      const mostRecentCommit = new Commit(
+        '8f7a48879ef8633a76279803637cdee7f7c6cd4f',
+        'chore: bump chromium to 119.0.6045.0'
+      );
 
       const sharedChromiumHistory = [
         new Commit('029127a8b6f7c511fca4612748ad5b50e43aadaa', 'chore: bump chromium to 118.0.5993.0') // merge-base

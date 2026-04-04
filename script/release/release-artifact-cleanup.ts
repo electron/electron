@@ -9,7 +9,7 @@ import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from '
 const pass = chalk.green('✓');
 const fail = chalk.red('✗');
 
-async function deleteDraft (releaseId: string, targetRepo: ElectronReleaseRepo) {
+async function deleteDraft(releaseId: string, targetRepo: ElectronReleaseRepo) {
   const octokit = new Octokit({
     authStrategy: createGitHubTokenStrategy(targetRepo)
   });
@@ -38,7 +38,7 @@ async function deleteDraft (releaseId: string, targetRepo: ElectronReleaseRepo) 
   }
 }
 
-async function deleteTag (tag: string, targetRepo: ElectronReleaseRepo) {
+async function deleteTag(tag: string, targetRepo: ElectronReleaseRepo) {
   const octokit = new Octokit({
     authStrategy: createGitHubTokenStrategy(targetRepo)
   });
@@ -58,9 +58,9 @@ async function deleteTag (tag: string, targetRepo: ElectronReleaseRepo) {
 type CleanOptions = {
   releaseID?: string;
   tag: string;
-}
+};
 
-export async function cleanReleaseArtifacts ({ releaseID, tag }: CleanOptions) {
+export async function cleanReleaseArtifacts({ releaseID, tag }: CleanOptions) {
   const releaseId = releaseID && releaseID.length > 0 ? releaseID : null;
   const isNightly = tag.includes('nightly');
 
@@ -79,10 +79,7 @@ export async function cleanReleaseArtifacts ({ releaseID, tag }: CleanOptions) {
       }
     }
   } else {
-    await Promise.all([
-      deleteTag(tag, ELECTRON_REPO),
-      deleteTag(tag, NIGHTLY_REPO)
-    ]);
+    await Promise.all([deleteTag(tag, ELECTRON_REPO), deleteTag(tag, NIGHTLY_REPO)]);
   }
 
   console.log(`${pass} failed release artifact cleanup complete`);

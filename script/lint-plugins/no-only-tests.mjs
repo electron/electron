@@ -5,9 +5,9 @@ export default {
   rules: {
     'no-only-tests': {
       meta: { type: 'problem' },
-      create (context) {
+      create(context) {
         return {
-          MemberExpression (node) {
+          MemberExpression(node) {
             if (
               node.property.type === 'Identifier' &&
               node.property.name === 'only' &&

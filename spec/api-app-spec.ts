@@ -66,7 +66,7 @@ describe('app module', () => {
     secureUrl = (await listen(server)).url;
   });
 
-  after(done => {
+  after((done) => {
     server.close(() => done());
   });
 
@@ -189,7 +189,9 @@ describe('app module', () => {
 
       appProcess = cp.spawn(electronPath, [appPath]);
       if (appProcess && appProcess.stdout) {
-        appProcess.stdout.on('data', data => { output += data; });
+        appProcess.stdout.on('data', (data) => {
+          output += data;
+        });
       }
       const [code] = await once(appProcess, 'exit');
 
@@ -262,7 +264,7 @@ describe('app module', () => {
       expect(code).to.equal(0);
     });
 
-    async function testArgumentPassing (testArgs: SingleInstanceLockTestArgs) {
+    async function testArgumentPassing(testArgs: SingleInstanceLockTestArgs) {
       const appPath = path.join(fixturesPath, 'api', 'singleton-data');
       const first = cp.spawn(process.execPath, [appPath, ...testArgs.args]);
       const firstExited = once(first, 'exit');
@@ -289,11 +291,12 @@ describe('app module', () => {
 
       // Ensure secondInstanceArgs is a subset of secondInstanceArgsReceived
       for (const arg of secondInstanceArgs) {
-        expect(secondInstanceArgsReceived).to.include(arg,
-          `argument ${arg} is missing from received second args`);
+        expect(secondInstanceArgsReceived).to.include(arg, `argument ${arg} is missing from received second args`);
       }
-      expect(secondInstanceDataReceived).to.be.deep.equal(testArgs.expectedAdditionalData,
-        `received data ${JSON.stringify(secondInstanceDataReceived)} is not equal to expected data ${JSON.stringify(testArgs.expectedAdditionalData)}.`);
+      expect(secondInstanceDataReceived).to.be.deep.equal(
+        testArgs.expectedAdditionalData,
+        `received data ${JSON.stringify(secondInstanceDataReceived)} is not equal to expected data ${JSON.stringify(testArgs.expectedAdditionalData)}.`
+      );
     }
 
     it('passes arguments to the second-instance event no additional data', async () => {
@@ -363,7 +366,13 @@ describe('app module', () => {
     it('cannot send or receive undefined data', async () => {
       try {
         await testArgumentPassing({
-          args: ['--send-ack', '--ack-content="undefined"', '--prevent-default', '--send-data', '--data-content="undefined"'],
+          args: [
+            '--send-ack',
+            '--ack-content="undefined"',
+            '--prevent-default',
+            '--send-data',
+            '--data-content="undefined"'
+          ],
           expectedAdditionalData: undefined
         });
         assert(false);
@@ -413,9 +422,10 @@ describe('app module', () => {
 
   describe('app.relaunch', () => {
     let server: net.Server | null = null;
-    const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-app-relaunch' : '/tmp/electron-app-relaunch';
+    const socketPath =
+      process.platform === 'win32' ? '\\\\.\\pipe\\electron-app-relaunch' : '/tmp/electron-app-relaunch';
 
-    beforeEach(done => {
+    beforeEach((done) => {
       fs.unlink(socketPath, () => {
         server = net.createServer();
         server.listen(socketPath);
@@ -437,9 +447,9 @@ describe('app module', () => {
       this.timeout(120000);
 
       let state = 'none';
-      server!.once('error', error => done(error));
-      server!.on('connection', client => {
-        client.once('data', data => {
+      server!.once('error', (error) => done(error));
+      server!.on('connection', (client) => {
+        client.once('data', (data) => {
           if (String(data) === '--first' && state === 'none') {
             state = 'first-launch';
           } else if (String(data) === '--second' && state === 'first-launch') {
@@ -553,7 +563,9 @@ describe('app module', () => {
     let w: BrowserWindow = null as any;
 
     afterEach(() => {
-      closeWindow(w).then(() => { w = null as any; });
+      closeWindow(w).then(() => {
+        w = null as any;
+      });
     });
 
     it('should emit browser-window-focus event when window is focused', async () => {
@@ -587,33 +599,39 @@ describe('app module', () => {
     });
 
     // FIXME: re-enable this test on win32.
-    ifit(process.platform !== 'win32' && !isWayland)('should emit render-process-gone event when renderer crashes', async () => {
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true,
-          contextIsolation: false
-        }
-      });
-      await w.loadURL('about:blank');
+    ifit(process.platform !== 'win32' && !isWayland)(
+      'should emit render-process-gone event when renderer crashes',
+      async () => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+          }
+        });
+        await w.loadURL('about:blank');
 
-      const emitted = once(app, 'render-process-gone') as Promise<[any, WebContents, Electron.RenderProcessGoneDetails]>;
-      w.webContents.executeJavaScript('process.crash()');
+        const emitted = once(app, 'render-process-gone') as Promise<
+          [any, WebContents, Electron.RenderProcessGoneDetails]
+        >;
+        w.webContents.executeJavaScript('process.crash()');
 
-      const [, webContents, details] = await emitted;
-      expect(webContents).to.equal(w.webContents);
-      expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
-    });
+        const [, webContents, details] = await emitted;
+        expect(webContents).to.equal(w.webContents);
+        expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
+      }
+    );
   });
 
   describe('app.badgeCount', () => {
     const platformIsNotSupported =
-      (process.platform === 'win32') ||
-      (process.platform === 'linux' && !app.isUnityRunning());
+      process.platform === 'win32' || (process.platform === 'linux' && !app.isUnityRunning());
 
     const expectedBadgeCount = 42;
 
-    after(() => { app.badgeCount = 0; });
+    after(() => {
+      app.badgeCount = 0;
+    });
 
     ifdescribe(!platformIsNotSupported)('on supported platform', () => {
       describe('with properties', () => {
@@ -653,14 +671,18 @@ describe('app module', () => {
     });
   });
 
-  ifdescribe(process.platform !== 'linux' && !process.mas && (process.platform !== 'darwin' || process.arch === 'arm64'))('app.get/setLoginItemSettings API', function () {
+  ifdescribe(
+    process.platform !== 'linux' && !process.mas && (process.platform !== 'darwin' || process.arch === 'arm64')
+  )('app.get/setLoginItemSettings API', function () {
     const isMac = process.platform === 'darwin';
     const isWin = process.platform === 'win32';
 
     const updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe');
     const processStartArgs = [
-      '--processStart', `"${path.basename(process.execPath)}"`,
-      '--process-start-args', '"--hidden"'
+      '--processStart',
+      `"${path.basename(process.execPath)}"`,
+      '--process-start-args',
+      '"--hidden"'
     ];
     const regAddArgs = [
       'ADD',
@@ -708,13 +730,15 @@ describe('app module', () => {
         wasOpenedAsHidden: false,
         restoreState: false,
         executableWillLaunchAtLogin: true,
-        launchItems: [{
-          name: 'electron.app.Electron',
-          path: process.execPath,
-          args: [],
-          scope: 'user',
-          enabled: true
-        }]
+        launchItems: [
+          {
+            name: 'electron.app.Electron',
+            path: process.execPath,
+            args: [],
+            scope: 'user',
+            enabled: true
+          }
+        ]
       });
 
       app.setLoginItemSettings({ openAtLogin: false });
@@ -726,13 +750,15 @@ describe('app module', () => {
         wasOpenedAsHidden: false,
         restoreState: false,
         executableWillLaunchAtLogin: false,
-        launchItems: [{
-          name: 'electron.app.Electron',
-          path: process.execPath,
-          args: [],
-          scope: 'user',
-          enabled: false
-        }]
+        launchItems: [
+          {
+            name: 'electron.app.Electron',
+            path: process.execPath,
+            args: [],
+            scope: 'user',
+            enabled: false
+          }
+        ]
       });
     });
 
@@ -759,13 +785,15 @@ describe('app module', () => {
         wasOpenedAsHidden: false,
         restoreState: false,
         executableWillLaunchAtLogin: true,
-        launchItems: [{
-          name: 'electron.app.Electron',
-          path: process.execPath,
-          args: [],
-          scope: 'user',
-          enabled: true
-        }]
+        launchItems: [
+          {
+            name: 'electron.app.Electron',
+            path: process.execPath,
+            args: [],
+            scope: 'user',
+            enabled: true
+          }
+        ]
       });
     });
 
@@ -888,19 +916,22 @@ describe('app module', () => {
         wasOpenedAsHidden: false,
         restoreState: false,
         executableWillLaunchAtLogin: true,
-        launchItems: [{
-          name: 'additionalEntry',
-          path: process.execPath,
-          args: [],
-          scope: 'user',
-          enabled: false
-        }, {
-          name: 'electron.app.Electron',
-          path: process.execPath,
-          args: [],
-          scope: 'user',
-          enabled: true
-        }]
+        launchItems: [
+          {
+            name: 'additionalEntry',
+            path: process.execPath,
+            args: [],
+            scope: 'user',
+            enabled: false
+          },
+          {
+            name: 'electron.app.Electron',
+            path: process.execPath,
+            args: [],
+            scope: 'user',
+            enabled: true
+          }
+        ]
       });
 
       app.setLoginItemSettings({ openAtLogin: false, name: 'additionalEntry' });
@@ -911,13 +942,15 @@ describe('app module', () => {
         wasOpenedAsHidden: false,
         restoreState: false,
         executableWillLaunchAtLogin: true,
-        launchItems: [{
-          name: 'electron.app.Electron',
-          path: process.execPath,
-          args: [],
-          scope: 'user',
-          enabled: true
-        }]
+        launchItems: [
+          {
+            name: 'electron.app.Electron',
+            path: process.execPath,
+            args: [],
+            scope: 'user',
+            enabled: true
+          }
+        ]
       });
     });
 
@@ -931,19 +964,22 @@ describe('app module', () => {
         wasOpenedAsHidden: false,
         restoreState: false,
         executableWillLaunchAtLogin: true,
-        launchItems: [{
-          name: 'additionalEntry',
-          path: process.execPath,
-          args: ['arg2'],
-          scope: 'user',
-          enabled: false
-        }, {
-          name: 'electron.app.Electron',
-          path: process.execPath,
-          args: ['arg1'],
-          scope: 'user',
-          enabled: true
-        }]
+        launchItems: [
+          {
+            name: 'additionalEntry',
+            path: process.execPath,
+            args: ['arg2'],
+            scope: 'user',
+            enabled: false
+          },
+          {
+            name: 'electron.app.Electron',
+            path: process.execPath,
+            args: ['arg1'],
+            scope: 'user',
+            enabled: true
+          }
+        ]
       });
     });
 
@@ -955,20 +991,34 @@ describe('app module', () => {
         wasOpenedAsHidden: false,
         restoreState: false,
         executableWillLaunchAtLogin: true,
-        launchItems: [{
-          name: 'additionalEntry',
-          path: 'C:\\electron\\myapp.exe',
-          args: ['arg1'],
-          scope: 'user',
-          enabled: true
-        }]
+        launchItems: [
+          {
+            name: 'additionalEntry',
+            path: 'C:\\electron\\myapp.exe',
+            args: ['arg1'],
+            scope: 'user',
+            enabled: true
+          }
+        ]
       };
 
-      app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: true, path: 'C:\\electron\\myapp.exe', args: ['arg1'] });
+      app.setLoginItemSettings({
+        openAtLogin: true,
+        name: 'additionalEntry',
+        enabled: true,
+        path: 'C:\\electron\\myapp.exe',
+        args: ['arg1']
+      });
       expect(app.getLoginItemSettings({ path: '"C:\\electron\\MYAPP.exe"' })).to.deep.equal(expectation);
 
       app.setLoginItemSettings({ openAtLogin: false, name: 'additionalEntry' });
-      app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: true, path: '"C:\\electron\\MYAPP.exe"', args: ['arg1'] });
+      app.setLoginItemSettings({
+        openAtLogin: true,
+        name: 'additionalEntry',
+        enabled: true,
+        path: '"C:\\electron\\MYAPP.exe"',
+        args: ['arg1']
+      });
       expect(app.getLoginItemSettings({ path: 'C:\\electron\\myapp.exe' })).to.deep.equal({
         ...expectation,
         launchItems: [
@@ -994,13 +1044,15 @@ describe('app module', () => {
         wasOpenedAsHidden: false,
         restoreState: false,
         executableWillLaunchAtLogin: false,
-        launchItems: [{
-          name: 'additionalEntry',
-          path: process.execPath,
-          args: ['arg1'],
-          scope: 'user',
-          enabled: false
-        }]
+        launchItems: [
+          {
+            name: 'additionalEntry',
+            path: process.execPath,
+            args: ['arg1'],
+            scope: 'user',
+            enabled: false
+          }
+        ]
       });
     });
 
@@ -1012,13 +1064,15 @@ describe('app module', () => {
         wasOpenedAsHidden: false,
         restoreState: false,
         executableWillLaunchAtLogin: true,
-        launchItems: [{
-          name: 'additionalEntry',
-          path: process.execPath,
-          args: ['arg1'],
-          scope: 'user',
-          enabled: true
-        }]
+        launchItems: [
+          {
+            name: 'additionalEntry',
+            path: process.execPath,
+            args: ['arg1'],
+            scope: 'user',
+            enabled: true
+          }
+        ]
       };
 
       app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: false, args: ['arg1'] });
@@ -1037,7 +1091,9 @@ describe('app module', () => {
     it('is mutable', () => {
       const values = [false, true, false];
       const setters: Array<(arg: boolean) => void> = [
-        (value) => { app.accessibilitySupportEnabled = value; },
+        (value) => {
+          app.accessibilitySupportEnabled = value;
+        },
         (value) => app.setAccessibilitySupportEnabled(value)
       ];
       const getters: Array<() => boolean> = [
@@ -1076,7 +1132,7 @@ describe('app module', () => {
 
       const boolEnabled = app.isAccessibilitySupportEnabled();
       if (boolEnabled) {
-        expect(enabled.some(f => values.includes(f))).to.equal(true);
+        expect(enabled.some((f) => values.includes(f))).to.equal(true);
       }
     });
 
@@ -1090,12 +1146,7 @@ describe('app module', () => {
       const afterSubsetA = app.getAccessibilitySupportFeatures();
       expect(afterSubsetA).to.deep.equal(subsetA);
 
-      const subsetB = [
-        'nativeAPIs',
-        'webContents',
-        'inlineTextBoxes',
-        'extendedProperties'
-      ];
+      const subsetB = ['nativeAPIs', 'webContents', 'inlineTextBoxes', 'extendedProperties'];
       app.setAccessibilitySupportFeatures(subsetB);
       const afterSubsetB = app.getAccessibilitySupportFeatures();
       expect(afterSubsetB).to.deep.equal(subsetB);
@@ -1125,21 +1176,23 @@ describe('app module', () => {
         app.setJumpList([
           { type: 'frequent' },
           {
-            items: [{
-              type: 'task',
-              title: 'New Project',
-              program: process.execPath,
-              args: '--new-project',
-              description: 'Create a new project.'
-            },
-            { type: 'separator' },
-            {
-              type: 'task',
-              title: 'Recover Project',
-              program: process.execPath,
-              args: '--recover-project',
-              description: 'Recover Project'
-            }]
+            items: [
+              {
+                type: 'task',
+                title: 'New Project',
+                program: process.execPath,
+                args: '--new-project',
+                description: 'Create a new project.'
+              },
+              { type: 'separator' },
+              {
+                type: 'task',
+                title: 'Recover Project',
+                program: process.execPath,
+                args: '--recover-project',
+                description: 'Recover Project'
+              }
+            ]
           }
         ]);
       }).to.not.throw();
@@ -1240,7 +1293,9 @@ describe('app module', () => {
       app.setPath('music', badPath);
       expect(fs.existsSync(badPath)).to.be.false();
 
-      expect(() => { app.getPath(badPath as any); }).to.throw();
+      expect(() => {
+        app.getPath(badPath as any);
+      }).to.throw();
     });
 
     describe('sessionData', () => {
@@ -1249,13 +1304,7 @@ describe('app module', () => {
       const userDataPath = path.join(app.getPath('appData'), appName);
       const tempBrowserDataPath = path.join(app.getPath('temp'), appName);
 
-      const sessionFiles = [
-        'Preferences',
-        'Code Cache',
-        'Local Storage',
-        'IndexedDB',
-        'Service Worker'
-      ];
+      const sessionFiles = ['Preferences', 'Code Cache', 'Local Storage', 'IndexedDB', 'Service Worker'];
       const hasSessionFiles = (dir: string) => {
         for (const file of sessionFiles) {
           if (!fs.existsSync(path.join(dir, file))) {
@@ -1306,7 +1355,9 @@ describe('app module', () => {
     let w: BrowserWindow;
 
     before(function () {
-      session.fromPartition('empty-certificate').setCertificateVerifyProc((req, cb) => { cb(0); });
+      session.fromPartition('empty-certificate').setCertificateVerifyProc((req, cb) => {
+        cb(0);
+      });
     });
 
     beforeEach(() => {
@@ -1319,7 +1370,11 @@ describe('app module', () => {
       });
     });
 
-    afterEach(() => closeWindow(w).then(() => { w = null as any; }));
+    afterEach(() =>
+      closeWindow(w).then(() => {
+        w = null as any;
+      })
+    );
 
     after(() => session.fromPartition('empty-certificate').setCertificateVerifyProc(null));
 
@@ -1338,8 +1393,10 @@ describe('app module', () => {
     const protocol = 'electron-test';
     const updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe');
     const processStartArgs = [
-      '--processStart', `"${path.basename(process.execPath)}"`,
-      '--process-start-args', '"--hidden"'
+      '--processStart',
+      `"${path.basename(process.execPath)}"`,
+      '--process-start-args',
+      '"--hidden"'
     ];
 
     let Winreg: any;
@@ -1399,8 +1456,8 @@ describe('app module', () => {
     it('creates a registry entry for the protocol class', async () => {
       app.setAsDefaultProtocolClient(protocol);
 
-      const keys = await promisify(classesKey.keys).call(classesKey) as any[];
-      const exists = keys.some(key => key.key.includes(protocol));
+      const keys = (await promisify(classesKey.keys).call(classesKey)) as any[];
+      const exists = keys.some((key) => key.key.includes(protocol));
       expect(exists).to.equal(true);
     });
 
@@ -1408,8 +1465,8 @@ describe('app module', () => {
       app.setAsDefaultProtocolClient(protocol);
       app.removeAsDefaultProtocolClient(protocol);
 
-      const keys = await promisify(classesKey.keys).call(classesKey) as any[];
-      const exists = keys.some(key => key.key.includes(protocol));
+      const keys = (await promisify(classesKey.keys).call(classesKey)) as any[];
+      const exists = keys.some((key) => key.key.includes(protocol));
       expect(exists).to.equal(false);
     });
 
@@ -1424,8 +1481,8 @@ describe('app module', () => {
       await promisify(protocolKey.set).call(protocolKey, 'test-value', 'REG_BINARY', '123');
       app.removeAsDefaultProtocolClient(protocol);
 
-      const keys = await promisify(classesKey.keys).call(classesKey) as any[];
-      const exists = keys.some(key => key.key.includes(protocol));
+      const keys = (await promisify(classesKey.keys).call(classesKey)) as any[];
+      const exists = keys.some((key) => key.key.includes(protocol));
       expect(exists).to.equal(true);
     });
 
@@ -1437,18 +1494,18 @@ describe('app module', () => {
 
   describe('getApplicationNameForProtocol()', () => {
     // TODO: Linux CI doesn't have registered http & https handlers
-    ifit(!(process.env.CI && process.platform === 'linux') && !isWayland)('returns application names for common protocols', function () {
-      // We can't expect particular app names here, but these protocols should
-      // at least have _something_ registered. Except on our Linux CI
-      // environment apparently.
-      const protocols = [
-        'http://',
-        'https://'
-      ];
-      for (const protocol of protocols) {
-        expect(app.getApplicationNameForProtocol(protocol)).to.not.equal('');
+    ifit(!(process.env.CI && process.platform === 'linux') && !isWayland)(
+      'returns application names for common protocols',
+      function () {
+        // We can't expect particular app names here, but these protocols should
+        // at least have _something_ registered. Except on our Linux CI
+        // environment apparently.
+        const protocols = ['http://', 'https://'];
+        for (const protocol of protocols) {
+          expect(app.getApplicationNameForProtocol(protocol)).to.not.equal('');
+        }
       }
-    });
+    );
 
     it('returns an empty string for a bogus protocol', () => {
       expect(app.getApplicationNameForProtocol('bogus-protocol://')).to.equal('');
@@ -1457,9 +1514,7 @@ describe('app module', () => {
 
   ifdescribe(process.platform !== 'linux')('getApplicationInfoForProtocol()', () => {
     it('returns promise rejection for a bogus protocol', async function () {
-      await expect(
-        app.getApplicationInfoForProtocol('bogus-protocol://')
-      ).to.eventually.be.rejectedWith(
+      await expect(app.getApplicationInfoForProtocol('bogus-protocol://')).to.eventually.be.rejectedWith(
         'Unable to retrieve installation path to app'
       );
     });
@@ -1666,15 +1721,10 @@ describe('app module', () => {
     };
     const verifyBasicGPUInfo = async (gpuInfo: any) => {
       // Devices information is always present in the available info.
-      expect(gpuInfo).to.have.ownProperty('gpuDevice')
-        .that.is.an('array')
-        .and.does.not.equal([]);
+      expect(gpuInfo).to.have.ownProperty('gpuDevice').that.is.an('array').and.does.not.equal([]);
 
       const device = gpuInfo.gpuDevice[0];
-      expect(device).to.be.an('object')
-        .and.to.have.property('deviceId')
-        .that.is.a('number')
-        .not.lessThan(0);
+      expect(device).to.be.an('object').and.to.have.property('deviceId').that.is.a('number').not.lessThan(0);
     };
 
     it('succeeds with basic GPUInfo', async () => {
@@ -1691,10 +1741,10 @@ describe('app module', () => {
         expect(completeInfo).to.deep.equal(basicInfo);
       } else {
         // Gl version is present in the complete info.
-        expect(completeInfo).to.have.ownProperty('auxAttributes')
-          .that.is.an('object');
+        expect(completeInfo).to.have.ownProperty('auxAttributes').that.is.an('object');
         if (completeInfo.gpuDevice.active) {
-          expect(completeInfo.auxAttributes).to.have.ownProperty('glVersion')
+          expect(completeInfo.auxAttributes)
+            .to.have.ownProperty('glVersion')
             .that.is.a('string')
             .and.does.not.equal([]);
         }
@@ -1708,85 +1758,93 @@ describe('app module', () => {
     });
   });
 
-  ifdescribe(!(process.platform === 'linux' && (process.arch === 'arm64' || process.arch === 'arm')))('sandbox options', () => {
-    let appProcess: cp.ChildProcess = null as any;
-    let server: net.Server = null as any;
-    const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox';
+  ifdescribe(!(process.platform === 'linux' && (process.arch === 'arm64' || process.arch === 'arm')))(
+    'sandbox options',
+    () => {
+      let appProcess: cp.ChildProcess = null as any;
+      let server: net.Server = null as any;
+      const socketPath =
+        process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox';
 
-    beforeEach(function (done) {
-      fs.unlink(socketPath, () => {
-        server = net.createServer();
-        server.listen(socketPath);
-        done();
-      });
-    });
-
-    afterEach(done => {
-      if (appProcess != null) appProcess.kill();
-
-      if (server) {
-        server.close(() => {
-          if (process.platform === 'win32') {
-            done();
-          } else {
-            fs.unlink(socketPath, () => done());
-          }
+      beforeEach(function (done) {
+        fs.unlink(socketPath, () => {
+          server = net.createServer();
+          server.listen(socketPath);
+          done();
         });
-      } else {
-        done();
-      }
-    });
+      });
 
-    describe('when app.enableSandbox() is called', () => {
-      it('adds --enable-sandbox to all renderer processes', done => {
-        const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-        appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox'], { stdio: 'inherit' });
+      afterEach((done) => {
+        if (appProcess != null) appProcess.kill();
 
-        server.once('error', error => { done(error); });
+        if (server) {
+          server.close(() => {
+            if (process.platform === 'win32') {
+              done();
+            } else {
+              fs.unlink(socketPath, () => done());
+            }
+          });
+        } else {
+          done();
+        }
+      });
 
-        server.on('connection', client => {
-          client.once('data', (data) => {
-            const argv = JSON.parse(data.toString());
-            expect(argv.sandbox).to.include('--enable-sandbox');
-            expect(argv.sandbox).to.not.include('--no-sandbox');
+      describe('when app.enableSandbox() is called', () => {
+        it('adds --enable-sandbox to all renderer processes', (done) => {
+          const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
+          appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox'], { stdio: 'inherit' });
 
-            expect(argv.noSandbox).to.include('--enable-sandbox');
-            expect(argv.noSandbox).to.not.include('--no-sandbox');
+          server.once('error', (error) => {
+            done(error);
+          });
 
-            expect(argv.noSandboxDevtools).to.equal(true);
-            expect(argv.sandboxDevtools).to.equal(true);
+          server.on('connection', (client) => {
+            client.once('data', (data) => {
+              const argv = JSON.parse(data.toString());
+              expect(argv.sandbox).to.include('--enable-sandbox');
+              expect(argv.sandbox).to.not.include('--no-sandbox');
 
-            done();
+              expect(argv.noSandbox).to.include('--enable-sandbox');
+              expect(argv.noSandbox).to.not.include('--no-sandbox');
+
+              expect(argv.noSandboxDevtools).to.equal(true);
+              expect(argv.sandboxDevtools).to.equal(true);
+
+              done();
+            });
           });
         });
       });
-    });
 
-    describe('when the app is launched with --enable-sandbox', () => {
-      it('adds --enable-sandbox to all renderer processes', done => {
-        const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-        appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox'], { stdio: 'inherit' });
+      describe('when the app is launched with --enable-sandbox', () => {
+        it('adds --enable-sandbox to all renderer processes', (done) => {
+          const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
+          appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox'], { stdio: 'inherit' });
 
-        server.once('error', error => { done(error); });
+          server.once('error', (error) => {
+            done(error);
+          });
 
-        server.on('connection', client => {
-          client.once('data', data => {
-            const argv = JSON.parse(data.toString());
-            expect(argv.sandbox).to.include('--enable-sandbox');
-            expect(argv.sandbox).to.not.include('--no-sandbox');
+          server.on('connection', (client) => {
+            client.once('data', (data) => {
+              const argv = JSON.parse(data.toString());
+              expect(argv.sandbox).to.include('--enable-sandbox');
+              expect(argv.sandbox).to.not.include('--no-sandbox');
 
-            expect(argv.noSandbox).to.include('--enable-sandbox');
-            expect(argv.noSandbox).to.not.include('--no-sandbox');
+              expect(argv.noSandbox).to.include('--enable-sandbox');
+              expect(argv.noSandbox).to.not.include('--no-sandbox');
 
-            expect(argv.noSandboxDevtools).to.equal(true);
-            expect(argv.sandboxDevtools).to.equal(true);
+              expect(argv.noSandboxDevtools).to.equal(true);
+              expect(argv.sandboxDevtools).to.equal(true);
 
-            done();
+              done();
+            });
           });
         });
       });
-    });
-  });
+    }
+  );
 
   describe('disableDomainBlockingFor3DAPIs() API', () => {
     it('throws when called after app is ready', () => {
@@ -1811,9 +1869,7 @@ describe('app module', () => {
 
         w.show();
 
-        await expect(
-          waitUntil(() => app.isActive())
-        ).to.eventually.be.fulfilled();
+        await expect(waitUntil(() => app.isActive())).to.eventually.be.fulfilled();
 
         w.close();
         app.hide();
@@ -1825,15 +1881,11 @@ describe('app module', () => {
     describe('app.isHidden', () => {
       it('returns true when the app is hidden', async () => {
         app.hide();
-        await expect(
-          waitUntil(() => app.isHidden())
-        ).to.eventually.be.fulfilled();
+        await expect(waitUntil(() => app.isHidden())).to.eventually.be.fulfilled();
       });
       it('returns false when the app is shown', async () => {
         app.show();
-        await expect(
-          waitUntil(() => !app.isHidden())
-        ).to.eventually.be.fulfilled();
+        await expect(waitUntil(() => !app.isHidden())).to.eventually.be.fulfilled();
       });
     });
   });
@@ -2054,14 +2106,18 @@ describe('app module', () => {
 
     it('affects dns lookup behavior', async () => {
       // 1. resolve a domain name to check that things are working
-      await expect(new Promise((resolve, reject) => {
-        electronNet.request({
-          method: 'HEAD',
-          url: 'https://www.electronjs.org'
-        }).on('response', resolve)
-          .on('error', reject)
-          .end();
-      })).to.eventually.be.fulfilled();
+      await expect(
+        new Promise((resolve, reject) => {
+          electronNet
+            .request({
+              method: 'HEAD',
+              url: 'https://www.electronjs.org'
+            })
+            .on('response', resolve)
+            .on('error', reject)
+            .end();
+        })
+      ).to.eventually.be.fulfilled();
       // 2. change the host resolver configuration to something that will
       // always fail
       app.configureHostResolver({
@@ -2069,16 +2125,20 @@ describe('app module', () => {
         secureDnsServers: ['https://127.0.0.1:1234']
       });
       // 3. check that resolving domain names now fails
-      await expect(new Promise((resolve, reject) => {
-        electronNet.request({
-          method: 'HEAD',
-          // Needs to be a slightly different domain to above, otherwise the
-          // response will come from the cache.
-          url: 'https://electronjs.org'
-        }).on('response', resolve)
-          .on('error', reject)
-          .end();
-      })).to.eventually.be.rejectedWith(/ERR_NAME_NOT_RESOLVED/);
+      await expect(
+        new Promise((resolve, reject) => {
+          electronNet
+            .request({
+              method: 'HEAD',
+              // Needs to be a slightly different domain to above, otherwise the
+              // response will come from the cache.
+              url: 'https://electronjs.org'
+            })
+            .on('response', resolve)
+            .on('error', reject)
+            .end();
+        })
+      ).to.eventually.be.rejectedWith(/ERR_NAME_NOT_RESOLVED/);
     });
   });
 
@@ -2277,7 +2337,7 @@ describe('default behavior', () => {
 
     it('should omit closed windows from getAllWindows', async () => {
       const w = new BrowserWindow({ show: false });
-      const len = new Promise(resolve => {
+      const len = new Promise((resolve) => {
         app.on('window-all-closed', () => {
           resolve(BrowserWindow.getAllWindows().length);
         });
@@ -2321,9 +2381,7 @@ describe('default behavior', () => {
         if (request.headers.authorization) {
           return response.end('ok');
         }
-        response
-          .writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' })
-          .end();
+        response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
       });
 
       serverUrl = (await listen(server)).url;
@@ -2336,7 +2394,7 @@ describe('default behavior', () => {
     it('should emit a login event on app when a WebContents hits a 401', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL(serverUrl);
-      const [, webContents] = await once(app, 'login') as [any, WebContents];
+      const [, webContents] = (await once(app, 'login')) as [any, WebContents];
       expect(webContents).to.equal(w.webContents);
     });
   });
@@ -2355,13 +2413,15 @@ describe('default behavior', () => {
   });
 });
 
-async function runTestApp (name: string, ...args: any[]) {
+async function runTestApp(name: string, ...args: any[]) {
   const appPath = path.join(fixturesPath, 'api', name);
   const electronPath = process.execPath;
   const appProcess = cp.spawn(electronPath, [appPath, ...args]);
 
   let output = '';
-  appProcess.stdout.on('data', (data) => { output += data; });
+  appProcess.stdout.on('data', (data) => {
+    output += data;
+  });
 
   await once(appProcess.stdout, 'end');
 

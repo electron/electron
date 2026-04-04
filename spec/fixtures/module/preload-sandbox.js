@@ -5,7 +5,7 @@
   window.setImmediate = setImmediate;
   window.require = require;
 
-  function invoke (code) {
+  function invoke(code) {
     try {
       return code();
     } catch {
@@ -28,7 +28,7 @@
         creationTime: invoke(() => process.getCreationTime()),
         heapStatistics: invoke(() => process.getHeapStatistics()),
         blinkMemoryInfo: invoke(() => process.getBlinkMemoryInfo()),
-        processMemoryInfo: invoke(() => process.getProcessMemoryInfo() ? {} : null),
+        processMemoryInfo: invoke(() => (process.getProcessMemoryInfo() ? {} : null)),
         systemMemoryInfo: invoke(() => process.getSystemMemoryInfo()),
         systemVersion: invoke(() => process.getSystemVersion()),
         cpuUsage: invoke(() => process.getCPUUsage()),

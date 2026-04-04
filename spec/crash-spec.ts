@@ -26,7 +26,7 @@ const runFixtureAndEnsureCleanExit = async (args: string[], customEnv: NodeJS.Pr
     out += chunk.toString();
   });
 
-  type CodeAndSignal = {code: number | null, signal: NodeJS.Signals | null};
+  type CodeAndSignal = { code: number | null; signal: NodeJS.Signals | null };
   const { code, signal } = await new Promise<CodeAndSignal>((resolve) => {
     child.on('exit', (code, signal) => {
       resolve({ code, signal });
@@ -35,7 +35,7 @@ const runFixtureAndEnsureCleanExit = async (args: string[], customEnv: NodeJS.Pr
   if (code !== 0 || signal !== null) {
     console.error(out);
   }
-  children = children.filter(c => c !== child);
+  children = children.filter((c) => c !== child);
 
   expect(signal).to.equal(null, 'exit signal should be null');
   expect(code).to.equal(0, 'should have exited with code 0');
@@ -45,14 +45,14 @@ const shouldRunCase = (crashCase: string) => {
   switch (crashCase) {
     // TODO(jkleinsc) fix this flaky test on Windows 32-bit
     case 'quit-on-crashed-event': {
-      return (process.platform !== 'win32' || process.arch !== 'ia32');
+      return process.platform !== 'win32' || process.arch !== 'ia32';
     }
     // TODO(jkleinsc) fix this test on Linux on arm/arm64 and 32bit windows
     case 'js-execute-iframe': {
       if (process.platform === 'win32') {
         return process.arch !== 'ia32';
       } else {
-        return (process.platform !== 'linux' || (process.arch !== 'arm64' && process.arch !== 'arm'));
+        return process.platform !== 'linux' || (process.arch !== 'arm64' && process.arch !== 'arm');
       }
     }
     default: {
@@ -66,7 +66,7 @@ describe('crash cases', () => {
     for (const child of children) {
       child.kill();
     }
-    await waitUntil(() => (children.length === 0));
+    await waitUntil(() => children.length === 0);
     children.length = 0;
   });
   const cases = fs.readdirSync(fixturePath);

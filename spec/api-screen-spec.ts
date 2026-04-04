@@ -25,10 +25,10 @@ describe('screen module', () => {
     });
 
     it('returns displays with IDs matching desktopCapturer source display IDs', async () => {
-      const displayIds = screen.getAllDisplays().map(d => `${d.id}`);
+      const displayIds = screen.getAllDisplays().map((d) => `${d.id}`);
 
       const sources = await desktopCapturer.getSources({ types: ['screen'] });
-      const sourceIds = sources.map(s => s.display_id);
+      const sourceIds = sources.map((s) => s.display_id);
 
       expect(displayIds).to.have.length(sources.length);
       expect(displayIds).to.have.same.members(sourceIds);

@@ -3,7 +3,7 @@ import { app } from 'electron/main';
 enum Test {
   A,
   B,
-  C,
+  C
 }
 
 console.log(Test.A);

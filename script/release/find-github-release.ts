@@ -15,17 +15,17 @@ const octokit = new Octokit({
   authStrategy: createGitHubTokenStrategy(targetRepo)
 });
 
-function findRepo (): ElectronReleaseRepo {
+function findRepo(): ElectronReleaseRepo {
   return version.indexOf('nightly') > 0 ? NIGHTLY_REPO : ELECTRON_REPO;
 }
 
-async function findRelease () {
+async function findRelease() {
   const releases = await octokit.repos.listReleases({
     owner: ELECTRON_ORG,
     repo: targetRepo
   });
 
-  const targetRelease = releases.data.find(release => release.tag_name === version);
+  const targetRelease = releases.data.find((release) => release.tag_name === version);
   let returnObject = {};
 
   if (targetRelease) {
@@ -43,8 +43,7 @@ async function findRelease () {
   console.log(JSON.stringify(returnObject));
 }
 
-findRelease()
-  .catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
+findRelease().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
