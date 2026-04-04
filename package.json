@@ -34,6 +34,7 @@
     "minimist": "^1.2.8",
     "node-gyp": "^11.4.2",
     "null-loader": "^4.0.1",
+    "oxfmt": "^0.42.0",
     "oxlint": "^1.57.0",
     "pre-flight": "^2.0.0",
     "process": "^0.11.10",
@@ -54,8 +55,10 @@
   "scripts": {
     "asar": "asar",
     "generate-version-json": "node script/generate-version-json.js",
-    "lint": "node ./script/lint.js && npm run lint:docs && npm run lint:chromium-roller",
+    "lint": "node ./script/lint.js && npm run lint:fmt && npm run lint:docs && npm run lint:chromium-roller",
     "lint:js": "node ./script/lint.js --js",
+    "lint:fmt": "oxfmt --check \"{lib,spec,script,build,default_app,npm}/**/*.{js,ts,mjs,cjs}\"",
+    "format": "oxfmt --write \"{lib,spec,script,build,default_app,npm}/**/*.{js,ts,mjs,cjs}\"",
     "lint:clang-format": "python3 script/run-clang-format.py -r -c shell/ || (echo \"\\nCode not formatted correctly.\" && exit 1)",
     "lint:clang-tidy": "ts-node ./script/run-clang-tidy.ts",
     "lint:cpp": "node ./script/lint.js --cc",
@@ -96,8 +99,12 @@
     "*": [
       "npm run lint:chromium-roller"
     ],
+    "*.{js,ts,mjs,cjs}": [
+      "oxfmt --write"
+    ],
     "*.{js,ts}": [
-      "node script/lint.js --js --fix --only --"
+      "node script/lint.js --js --fix --only --",
+      "oxfmt --write"
     ],
     "*.{js,ts,d.ts}": [
       "ts-node script/gen-filenames.ts"
