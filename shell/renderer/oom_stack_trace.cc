@@ -66,6 +66,17 @@ void CaptureStackOnInterrupt(v8::Isolate* isolate, void* data) {
     return;
   }
 
+  v8::HeapStatistics stats;
+  isolate->GetHeapStatistics(&stats);
+  // CurrentStackTrace allocates on the V8 managed heap. If the 20 MB bump
+  // has been partially consumed, these allocations could trigger a secondary
+  // OOM. Use addition form to avoid unsigned underflow.
+  constexpr size_t kMinHeadroom = 2 * 1024 * 1024;  // 2 MB
+  if (stats.used_heap_size() + kMinHeadroom > stats.heap_size_limit()) {
+    LOG(ERROR) << "Skipping JS stack capture: insufficient heap headroom";
+    return;
+  }
+
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::StackTrace> stack =
       v8::StackTrace::CurrentStackTrace(isolate, 10);
