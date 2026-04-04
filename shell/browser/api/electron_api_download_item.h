@@ -78,7 +78,6 @@ class DownloadItem final : public gin_helper::DeprecatedWrappable<DownloadItem>,
   const GURL& GetURL() const;
   v8::Local<v8::Value> GetURLChain() const;
   download::DownloadItem::DownloadState GetState() const;
-  bool IsDone() const;
   void SetSaveDialogOptions(const file_dialog::DialogSettings& options);
   std::string GetLastModifiedTime() const;
   std::string GetETag() const;

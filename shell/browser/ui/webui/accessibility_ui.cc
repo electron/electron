@@ -101,13 +101,13 @@ base::DictValue BuildTargetDescriptor(
     int process_id,
     int routing_id,
     ui::AXMode accessibility_mode,
-    base::ProcessHandle handle = base::kNullProcessHandle) {
+    base::ProcessId pid = base::kNullProcessId) {
   base::DictValue target_data;
   target_data.Set(kProcessIdField, process_id);
   target_data.Set(kRoutingIdField, routing_id);
   target_data.Set(kUrlField, url.spec());
   target_data.Set(kNameField, base::EscapeForHTML(name));
-  target_data.Set(kPidField, static_cast<int>(base::GetProcId(handle)));
+  target_data.Set(kPidField, static_cast<int>(pid));
   target_data.Set(kFaviconUrlField, favicon_url.spec());
   target_data.Set(kAccessibilityModeField,
                   static_cast<int>(accessibility_mode.flags()));
@@ -138,9 +138,12 @@ base::DictValue BuildTargetDescriptor(content::RenderViewHost* rvh) {
     accessibility_mode = web_contents->GetAccessibilityMode();
   }
 
+  const auto& process = rvh->GetProcess()->GetProcess();
+  const auto pid = process.IsValid() ? process.Pid() : base::kNullProcessId;
+
   return BuildTargetDescriptor(url, title, favicon_url,
                                rvh->GetProcess()->GetDeprecatedID(),
-                               rvh->GetRoutingID(), accessibility_mode);
+                               rvh->GetRoutingID(), accessibility_mode, pid);
 }
 
 base::DictValue BuildTargetDescriptor(electron::NativeWindow* window) {
