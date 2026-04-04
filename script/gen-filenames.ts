@@ -60,12 +60,25 @@ const main = async () => {
     };
   }));
 
+  // The typecheck step runs tsgo over tsconfig.electron.json which includes
+  // the whole lib/ + typings/ trees. For GN dependency tracking, list the
+  // union of every bundle's dependency set (lib files) plus typings, and
+  // dedupe.
+  const typecheckSources = Array.from(new Set([
+    ...targetsWithDeps.flatMap(t => t.dependencies),
+    ...typingFiles
+  ])).sort();
+
   fs.writeFileSync(
     gniPath,
     `# THIS FILE IS AUTO-GENERATED, PLEASE DO NOT EDIT BY HAND
 auto_filenames = {
   api_docs = [
 ${allDocs.map(doc => `    "${doc}",`).join('\n')}
+  ]
+
+  typecheck_sources = [
+${typecheckSources.map(src => `    "${src}",`).join('\n')}
   ]
 
 ${targetsWithDeps.map(target => `  ${target.name} = [

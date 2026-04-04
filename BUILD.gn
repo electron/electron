@@ -162,6 +162,12 @@ npm_action("build_electron_definitions") {
   outputs = [ "$target_gen_dir/tsc/typings/electron.d.ts" ]
 }
 
+typescript_check("electron_lib_typecheck") {
+  deps = [ ":build_electron_definitions" ]
+  tsconfig = "//electron/tsconfig.electron.json"
+  sources = auto_filenames.typecheck_sources
+}
+
 esbuild_build("electron_browser_bundle") {
   deps = [ ":build_electron_definitions" ]
 
@@ -238,6 +244,7 @@ action("electron_js2c") {
   deps = [
     ":electron_browser_bundle",
     ":electron_isolated_renderer_bundle",
+    ":electron_lib_typecheck",
     ":electron_node_bundle",
     ":electron_preload_realm_bundle",
     ":electron_renderer_bundle",

@@ -52,20 +52,20 @@ const {
   getValidatedPath,
   getOptions,
   getDirent
-} = __non_webpack_require__('internal/fs/utils') as typeof import('@node/lib/internal/fs/utils');
+} = __non_webpack_require__('internal/fs/utils');
 
 const {
   assignFunctionName
-} = __non_webpack_require__('internal/util') as typeof import('@node/lib/internal/util');
+} = __non_webpack_require__('internal/util');
 
 const {
   validateBoolean,
   validateFunction
-} = __non_webpack_require__('internal/validators') as typeof import('@node/lib/internal/validators');
+} = __non_webpack_require__('internal/validators');
 
 // In the renderer node internals use the node global URL but we do not set that to be
-// the global URL instance.  We need to do instanceof checks against the internal URL impl
-const { URL: NodeURL } = __non_webpack_require__('internal/url') as typeof import('@node/lib/internal/url');
+// the global URL instance.  We need to do instanceof checks against the internal URL impl.
+const { URL: NodeURL } = __non_webpack_require__('internal/url');
 
 // Separate asar package's path from full path.
 const splitPath = (archivePathOrBuffer: string | Buffer | URL) => {

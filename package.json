@@ -23,6 +23,7 @@
     "@types/temp": "^0.9.4",
     "@typescript-eslint/eslint-plugin": "^8.32.1",
     "@typescript-eslint/parser": "^8.7.0",
+    "@typescript/native-preview": "^7.0.0-dev.20260324.1",
     "@xmldom/xmldom": "^0.8.11",
     "buffer": "^6.0.3",
     "chalk": "^4.1.0",
@@ -89,7 +90,8 @@
     "repl": "node ./script/start.js --interactive",
     "start": "node ./script/start.js",
     "test": "node ./script/spec-runner.js",
-    "tsc": "tsc",
+    "tsc": "tsgo",
+    "tsc-check": "node script/typecheck.js",
     "bundle": "node build/esbuild/bundle.js"
   },
   "license": "MIT",

@@ -1,6 +1,6 @@
-import * as minimist from 'minimist';
-import * as streamChain from 'stream-chain';
-import * as streamJson from 'stream-json';
+import minimist = require('minimist');
+import streamChain = require('stream-chain');
+import streamJson = require('stream-json');
 import { ignore as streamJsonIgnore } from 'stream-json/filters/Ignore';
 import { streamArray as streamJsonStreamArray } from 'stream-json/streamers/StreamArray';
 

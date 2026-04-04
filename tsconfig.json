@@ -10,14 +10,12 @@
     "sourceMap": true,
     "experimentalDecorators": true,
     "strict": true,
-    "baseUrl": ".",
     "allowJs": true,
     "noUnusedLocals": true,
     "outDir": "ts-gen",
     "typeRoots" : ["./node_modules/@types", "./spec/node_modules/@types"],
     "paths": {
-      "@electron/internal/*": ["lib/*"],
-      "@node/*": ["../third_party/electron_node/*"]
+      "@electron/internal/*": ["./lib/*"]
     }
   },
   "exclude": [

@@ -3,8 +3,34 @@ declare const BUILDFLAG: (flag: boolean) => boolean;
 // esbuild build/esbuild/bundle.js rewrites calls to this identifier into
 // literal `require()` calls so that consumers can reach Node internal modules
 // (e.g. 'internal/modules/helpers') without the bundler trying to resolve
-// them. It must therefore be declared as a bare function.
-declare const __non_webpack_require__: (id: any) => unknown;
+// them. Overloads below pin the known internal-module IDs to narrow types;
+// the final catch-all signature keeps less-common paths usable at the cost
+// of no static type information.
+interface NodeInternalModules {
+  'internal/modules/helpers': {
+    makeRequireFunction: (mod: NodeModule) => NodeRequire;
+  };
+  'internal/modules/run_main': {
+    runEntryPointWithESMLoader: (cb: (cascadedLoader: any) => any) => Promise<void>;
+  };
+  'internal/fs/utils': {
+    getValidatedPath: (path: any, ...args: any[]) => string;
+    getOptions: (options: any, defaultOptions?: any) => any;
+    getDirent: (path: string, name: string | Buffer, type: number, callback?: Function) => any;
+  };
+  'internal/util': {
+    assignFunctionName: (name: string | symbol, fn: Function) => Function;
+  };
+  'internal/validators': {
+    validateBoolean: (value: unknown, name: string) => asserts value is boolean;
+    validateFunction: (value: unknown, name: string) => void;
+  };
+  'internal/url': {
+    URL: typeof URL;
+  };
+}
+declare function __non_webpack_require__<K extends keyof NodeInternalModules>(id: K): NodeInternalModules[K];
+declare function __non_webpack_require__(id: string): unknown;
 
 declare namespace NodeJS {
   interface ModuleInternal extends NodeJS.Module {
@@ -286,7 +312,7 @@ declare namespace NodeJS {
   }
 }
 
-declare module NodeJS {
+declare namespace NodeJS {
   interface Global {
     require: NodeRequire;
     module: NodeModule;
