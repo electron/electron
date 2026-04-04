@@ -154,8 +154,10 @@ size_t NearHeapLimitCallback(void* data,
       "electron.v8-oom.heap.detached_contexts",
       base::NumberToString(stats.number_of_detached_contexts()));
 
-  double utilization = static_cast<double>(stats.used_heap_size()) /
-                       stats.heap_size_limit() * 100.0;
+  double utilization = stats.heap_size_limit() > 0
+                           ? static_cast<double>(stats.used_heap_size()) /
+                                 stats.heap_size_limit() * 100.0
+                           : 100.0;
   crash_keys::SetCrashKey("electron.v8-oom.heap.utilization_pct",
                           absl::StrFormat("%.1f", utilization));
 
@@ -194,6 +196,8 @@ size_t NearHeapLimitCallback(void* data,
 
 #ifdef V8_COMPRESS_POINTERS
   constexpr size_t kCageLimit = v8::internal::kPtrComprCageReservationSize;
+  static_assert(kCageLimit == size_t{1} << 32,
+                "Cage size changed; review heap bump logic");
 #else
   constexpr size_t kCageLimit = std::numeric_limits<size_t>::max();
 #endif
