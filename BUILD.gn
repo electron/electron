@@ -18,12 +18,12 @@ import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/gni/snapshot_toolchain.gni")
 import("build/asar.gni")
 import("build/electron_paks.gni")
+import("build/esbuild/esbuild.gni")
 import("build/extract_symbols.gni")
 import("build/js2c_toolchain.gni")
 import("build/npm.gni")
 import("build/templated_file.gni")
 import("build/tsc.gni")
-import("build/webpack/webpack.gni")
 import("buildflags/buildflags.gni")
 import("filenames.auto.gni")
 import("filenames.gni")
@@ -162,75 +162,75 @@ npm_action("build_electron_definitions") {
   outputs = [ "$target_gen_dir/tsc/typings/electron.d.ts" ]
 }
 
-webpack_build("electron_browser_bundle") {
+esbuild_build("electron_browser_bundle") {
   deps = [ ":build_electron_definitions" ]
 
   inputs = auto_filenames.browser_bundle_deps
 
-  config_file = "//electron/build/webpack/webpack.config.browser.js"
+  config_file = "//electron/build/esbuild/configs/browser.js"
   out_file = "$target_gen_dir/js2c/browser_init.js"
 }
 
-webpack_build("electron_renderer_bundle") {
+esbuild_build("electron_renderer_bundle") {
   deps = [ ":build_electron_definitions" ]
 
   inputs = auto_filenames.renderer_bundle_deps
 
-  config_file = "//electron/build/webpack/webpack.config.renderer.js"
+  config_file = "//electron/build/esbuild/configs/renderer.js"
   out_file = "$target_gen_dir/js2c/renderer_init.js"
 }
 
-webpack_build("electron_worker_bundle") {
+esbuild_build("electron_worker_bundle") {
   deps = [ ":build_electron_definitions" ]
 
   inputs = auto_filenames.worker_bundle_deps
 
-  config_file = "//electron/build/webpack/webpack.config.worker.js"
+  config_file = "//electron/build/esbuild/configs/worker.js"
   out_file = "$target_gen_dir/js2c/worker_init.js"
 }
 
-webpack_build("electron_sandboxed_renderer_bundle") {
+esbuild_build("electron_sandboxed_renderer_bundle") {
   deps = [ ":build_electron_definitions" ]
 
   inputs = auto_filenames.sandbox_bundle_deps
 
-  config_file = "//electron/build/webpack/webpack.config.sandboxed_renderer.js"
+  config_file = "//electron/build/esbuild/configs/sandboxed_renderer.js"
   out_file = "$target_gen_dir/js2c/sandbox_bundle.js"
 }
 
-webpack_build("electron_isolated_renderer_bundle") {
+esbuild_build("electron_isolated_renderer_bundle") {
   deps = [ ":build_electron_definitions" ]
 
   inputs = auto_filenames.isolated_bundle_deps
 
-  config_file = "//electron/build/webpack/webpack.config.isolated_renderer.js"
+  config_file = "//electron/build/esbuild/configs/isolated_renderer.js"
   out_file = "$target_gen_dir/js2c/isolated_bundle.js"
 }
 
-webpack_build("electron_node_bundle") {
+esbuild_build("electron_node_bundle") {
   deps = [ ":build_electron_definitions" ]
 
   inputs = auto_filenames.node_bundle_deps
 
-  config_file = "//electron/build/webpack/webpack.config.node.js"
+  config_file = "//electron/build/esbuild/configs/node.js"
   out_file = "$target_gen_dir/js2c/node_init.js"
 }
 
-webpack_build("electron_utility_bundle") {
+esbuild_build("electron_utility_bundle") {
   deps = [ ":build_electron_definitions" ]
 
   inputs = auto_filenames.utility_bundle_deps
 
-  config_file = "//electron/build/webpack/webpack.config.utility.js"
+  config_file = "//electron/build/esbuild/configs/utility.js"
   out_file = "$target_gen_dir/js2c/utility_init.js"
 }
 
-webpack_build("electron_preload_realm_bundle") {
+esbuild_build("electron_preload_realm_bundle") {
   deps = [ ":build_electron_definitions" ]
 
   inputs = auto_filenames.preload_realm_bundle_deps
 
-  config_file = "//electron/build/webpack/webpack.config.preload_realm.js"
+  config_file = "//electron/build/esbuild/configs/preload_realm.js"
   out_file = "$target_gen_dir/js2c/preload_realm_bundle.js"
 }
 

@@ -175,13 +175,14 @@ auto_filenames = {
   ]
 
   sandbox_bundle_deps = [
+    "build/esbuild/shims/browser-globals-shim.js",
+    "build/esbuild/shims/promise-shim.js",
     "lib/common/api/native-image.ts",
     "lib/common/define-properties.ts",
     "lib/common/deprecate.ts",
     "lib/common/ipc-messages.ts",
     "lib/common/timers-shim.ts",
     "lib/common/web-view-methods.ts",
-    "lib/common/webpack-globals-provider.ts",
     "lib/renderer/api/context-bridge.ts",
     "lib/renderer/api/crash-reporter.ts",
     "lib/renderer/api/ipc-renderer.ts",
@@ -216,6 +217,8 @@ auto_filenames = {
   ]
 
   isolated_bundle_deps = [
+    "build/esbuild/shims/browser-globals-shim.js",
+    "build/esbuild/shims/promise-shim.js",
     "lib/common/web-view-methods.ts",
     "lib/isolated_renderer/init.ts",
     "lib/renderer/web-view/web-view-attributes.ts",
@@ -230,6 +233,7 @@ auto_filenames = {
   ]
 
   browser_bundle_deps = [
+    "build/esbuild/shims/promise-shim.js",
     "lib/browser/api/app.ts",
     "lib/browser/api/auto-updater.ts",
     "lib/browser/api/auto-updater/auto-updater-msix.ts",
@@ -300,8 +304,8 @@ auto_filenames = {
     "lib/common/deprecate.ts",
     "lib/common/init.ts",
     "lib/common/ipc-messages.ts",
+    "lib/common/timers-shim.ts",
     "lib/common/web-view-methods.ts",
-    "lib/common/webpack-globals-provider.ts",
     "package.json",
     "tsconfig.electron.json",
     "tsconfig.json",
@@ -310,6 +314,8 @@ auto_filenames = {
   ]
 
   renderer_bundle_deps = [
+    "build/esbuild/shims/node-globals-shim.js",
+    "build/esbuild/shims/promise-shim.js",
     "lib/common/api/module-list.ts",
     "lib/common/api/native-image.ts",
     "lib/common/api/shell.ts",
@@ -317,8 +323,8 @@ auto_filenames = {
     "lib/common/deprecate.ts",
     "lib/common/init.ts",
     "lib/common/ipc-messages.ts",
+    "lib/common/timers-shim.ts",
     "lib/common/web-view-methods.ts",
-    "lib/common/webpack-provider.ts",
     "lib/renderer/api/clipboard.ts",
     "lib/renderer/api/context-bridge.ts",
     "lib/renderer/api/crash-reporter.ts",
@@ -352,6 +358,8 @@ auto_filenames = {
   ]
 
   worker_bundle_deps = [
+    "build/esbuild/shims/node-globals-shim.js",
+    "build/esbuild/shims/promise-shim.js",
     "lib/common/api/module-list.ts",
     "lib/common/api/native-image.ts",
     "lib/common/api/shell.ts",
@@ -359,7 +367,7 @@ auto_filenames = {
     "lib/common/deprecate.ts",
     "lib/common/init.ts",
     "lib/common/ipc-messages.ts",
-    "lib/common/webpack-provider.ts",
+    "lib/common/timers-shim.ts",
     "lib/renderer/api/clipboard.ts",
     "lib/renderer/api/context-bridge.ts",
     "lib/renderer/api/crash-reporter.ts",
@@ -381,6 +389,7 @@ auto_filenames = {
   ]
 
   node_bundle_deps = [
+    "build/esbuild/shims/promise-shim.js",
     "lib/node/asar-fs-wrapper.ts",
     "lib/node/init.ts",
     "package.json",
@@ -391,6 +400,7 @@ auto_filenames = {
   ]
 
   utility_bundle_deps = [
+    "build/esbuild/shims/promise-shim.js",
     "lib/browser/api/net-fetch.ts",
     "lib/browser/api/system-preferences.ts",
     "lib/browser/message-port-main.ts",
@@ -398,7 +408,7 @@ auto_filenames = {
     "lib/common/define-properties.ts",
     "lib/common/deprecate.ts",
     "lib/common/init.ts",
-    "lib/common/webpack-globals-provider.ts",
+    "lib/common/timers-shim.ts",
     "lib/utility/api/exports/electron.ts",
     "lib/utility/api/module-list.ts",
     "lib/utility/api/net.ts",
@@ -412,10 +422,11 @@ auto_filenames = {
   ]
 
   preload_realm_bundle_deps = [
+    "build/esbuild/shims/browser-globals-shim.js",
+    "build/esbuild/shims/promise-shim.js",
     "lib/common/api/native-image.ts",
     "lib/common/define-properties.ts",
     "lib/common/ipc-messages.ts",
-    "lib/common/webpack-globals-provider.ts",
     "lib/preload_realm/api/exports/electron.ts",
     "lib/preload_realm/api/module-list.ts",
     "lib/preload_realm/init.ts",

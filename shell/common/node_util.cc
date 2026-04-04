@@ -53,7 +53,8 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
       context, v8::Null(isolate), arguments->size(), arguments->data());
 
   // This will only be caught when something has gone terrible wrong as all
-  // electron scripts are wrapped in a try {} catch {} by webpack
+  // electron scripts are wrapped in a try {} catch {} by the esbuild bundler
+  // (see build/esbuild/bundle.js applyWrappers).
   if (try_catch.HasCaught()) {
     std::string msg = "no error message";
     if (!try_catch.Message().IsEmpty()) {

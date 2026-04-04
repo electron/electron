@@ -5,18 +5,20 @@ import type { ClientRequestConstructorOptions, IncomingMessage } from 'electron/
 
 const { isOnline, resolveHost } = process._linkedBinding('electron_common_net');
 
-export function request (options: ClientRequestConstructorOptions | string, callback?: (message: IncomingMessage) => void) {
+function request (options: ClientRequestConstructorOptions | string, callback?: (message: IncomingMessage) => void) {
   return new ClientRequest(options, callback);
 }
 
-export function fetch (input: RequestInfo, init?: RequestInit): Promise<Response> {
+function fetch (input: RequestInfo, init?: RequestInit): Promise<Response> {
   return fetchWithSession(input, init, undefined, request);
 }
 
-exports.resolveHost = resolveHost;
-
-exports.isOnline = isOnline;
-
-Object.defineProperty(exports, 'online', {
-  get: () => isOnline()
-});
+module.exports = {
+  request,
+  fetch,
+  resolveHost,
+  isOnline,
+  get online () {
+    return isOnline();
+  }
+};

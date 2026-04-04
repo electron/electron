@@ -1,9 +1,9 @@
 import("../npm.gni")
 
-template("webpack_build") {
-  assert(defined(invoker.config_file), "Need webpack config file to run")
+template("esbuild_build") {
+  assert(defined(invoker.config_file), "Need esbuild config file to run")
   assert(defined(invoker.out_file), "Need output file to run")
-  assert(defined(invoker.inputs), "Need webpack inputs to run")
+  assert(defined(invoker.inputs), "Need esbuild inputs to run")
 
   npm_action(target_name) {
     forward_variables_from(invoker,
@@ -11,11 +11,14 @@ template("webpack_build") {
                              "deps",
                              "public_deps",
                            ])
-    script = "webpack"
+    script = "bundle"
 
     inputs = [
                invoker.config_file,
-               "//electron/build/webpack/webpack.config.base.js",
+               "//electron/build/esbuild/bundle.js",
+               "//electron/build/esbuild/shims/node-globals-shim.js",
+               "//electron/build/esbuild/shims/browser-globals-shim.js",
+               "//electron/build/esbuild/shims/promise-shim.js",
                "//electron/tsconfig.json",
                "//electron/yarn.lock",
                "//electron/typings/internal-ambient.d.ts",
@@ -34,10 +37,10 @@ template("webpack_build") {
       get_path_info(invoker.out_file, "file"),
       "--output-path",
       rebase_path(get_path_info(invoker.out_file, "dir")),
-      "--env",
-      "buildflags=" + rebase_path("$target_gen_dir/buildflags/buildflags.h"),
-      "--env",
-      "mode=" + mode,
+      "--buildflags",
+      rebase_path("$target_gen_dir/buildflags/buildflags.h"),
+      "--mode",
+      mode,
     ]
     deps += [ "//electron/buildflags" ]
 

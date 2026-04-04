@@ -1,6 +1,5 @@
 import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
-import * as os from 'node:os';
 import * as path from 'node:path';
 
 const rootPath = path.resolve(__dirname, '..');
@@ -16,52 +15,24 @@ const allDocs = fs.readdirSync(path.resolve(__dirname, '../docs/api'))
 const typingFiles = fs.readdirSync(path.resolve(__dirname, '../typings')).map(child => `typings/${child}`);
 
 const main = async () => {
-  const webpackTargets = [
-    {
-      name: 'sandbox_bundle_deps',
-      config: 'webpack.config.sandboxed_renderer.js'
-    },
-    {
-      name: 'isolated_bundle_deps',
-      config: 'webpack.config.isolated_renderer.js'
-    },
-    {
-      name: 'browser_bundle_deps',
-      config: 'webpack.config.browser.js'
-    },
-    {
-      name: 'renderer_bundle_deps',
-      config: 'webpack.config.renderer.js'
-    },
-    {
-      name: 'worker_bundle_deps',
-      config: 'webpack.config.worker.js'
-    },
-    {
-      name: 'node_bundle_deps',
-      config: 'webpack.config.node.js'
-    },
-    {
-      name: 'utility_bundle_deps',
-      config: 'webpack.config.utility.js'
-    },
-    {
-      name: 'preload_realm_bundle_deps',
-      config: 'webpack.config.preload_realm.js'
-    }
+  const bundleTargets = [
+    { name: 'sandbox_bundle_deps', config: 'sandboxed_renderer.js' },
+    { name: 'isolated_bundle_deps', config: 'isolated_renderer.js' },
+    { name: 'browser_bundle_deps', config: 'browser.js' },
+    { name: 'renderer_bundle_deps', config: 'renderer.js' },
+    { name: 'worker_bundle_deps', config: 'worker.js' },
+    { name: 'node_bundle_deps', config: 'node.js' },
+    { name: 'utility_bundle_deps', config: 'utility.js' },
+    { name: 'preload_realm_bundle_deps', config: 'preload_realm.js' }
   ];
 
-  const webpackTargetsWithDeps = await Promise.all(webpackTargets.map(async webpackTarget => {
-    const tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-filenames-'));
+  const targetsWithDeps = await Promise.all(bundleTargets.map(async bundleTarget => {
     const child = cp.spawn('node', [
-      './node_modules/webpack-cli/bin/cli.js',
-      '--config', `./build/webpack/${webpackTarget.config}`,
-      '--stats', 'errors-only',
-      '--output-path', tmpDir,
-      '--output-filename', `${webpackTarget.name}.measure.js`,
-      '--env', 'PRINT_WEBPACK_GRAPH'
+      './build/esbuild/bundle.js',
+      '--config', `./build/esbuild/configs/${bundleTarget.config}`,
+      '--print-graph'
     ], {
-      cwd: path.resolve(__dirname, '..')
+      cwd: rootPath
     });
     let output = '';
     child.stdout.on('data', chunk => {
@@ -71,30 +42,22 @@ const main = async () => {
     await new Promise<void>((resolve, reject) => child.on('exit', (code) => {
       if (code !== 0) {
         console.error(output);
-        return reject(new Error(`Failed to list webpack dependencies for entry: ${webpackTarget.name}`));
+        return reject(new Error(`Failed to list bundle dependencies for entry: ${bundleTarget.name}`));
       }
 
       resolve();
     }));
 
-    const webpackTargetWithDeps = {
-      ...webpackTarget,
+    return {
+      ...bundleTarget,
       dependencies: (JSON.parse(output) as string[])
-        // Remove whitespace
         .map(line => line.trim())
-        // Get the relative path
-        .map(line => path.relative(rootPath, line).replace(/\\/g, '/'))
-        // Only care about files in //electron
+        .map(line => path.relative(rootPath, path.resolve(rootPath, line)).replace(/\\/g, '/'))
         .filter(line => !line.startsWith('..'))
-        // Only care about our own files
         .filter(line => !line.startsWith('node_modules'))
-        // All webpack builds depend on the tsconfig  and package json files
         .concat(['tsconfig.json', 'tsconfig.electron.json', 'package.json', ...typingFiles])
-        // Make the generated list easier to read
         .sort()
     };
-    await fs.promises.rm(tmpDir, { force: true, recursive: true });
-    return webpackTargetWithDeps;
   }));
 
   fs.writeFileSync(
@@ -105,7 +68,7 @@ auto_filenames = {
 ${allDocs.map(doc => `    "${doc}",`).join('\n')}
   ]
 
-${webpackTargetsWithDeps.map(target => `  ${target.name} = [
+${targetsWithDeps.map(target => `  ${target.name} = [
 ${target.dependencies.map(dep => `    "${dep}",`).join('\n')}
   ]`).join('\n\n')}
 }

@@ -29,8 +29,9 @@ Module._load = function (request: string) {
 // code with JavaScript.
 //
 // Note 3: We provide the equivalent extra variables internally through the
-// webpack ProvidePlugin in webpack.config.base.js.  If you add any extra
-// variables to this wrapper please ensure to update that plugin as well.
+// esbuild inject shim in build/esbuild/shims/node-globals-shim.js.  If you
+// add any extra variables to this wrapper please ensure to update that shim
+// as well.
 Module.wrapper = [
   '(function (exports, require, module, __filename, __dirname, process, global, Buffer) { ' +
   // By running the code in a new closure, it would be possible for the module

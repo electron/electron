@@ -1,4 +1,4 @@
-import timers = require('timers');
+import * as timers from 'timers';
 import * as util from 'util';
 
 import type * as stream from 'stream';
@@ -41,15 +41,15 @@ function wrap <T extends AnyFn> (func: T, wrapper: (fn: AnyFn) => T) {
 // initiatively activate the uv loop once process.nextTick and setImmediate is
 // called.
 process.nextTick = wrapWithActivateUvLoop(process.nextTick);
-global.setImmediate = timers.setImmediate = wrapWithActivateUvLoop(timers.setImmediate);
+global.setImmediate = wrapWithActivateUvLoop(timers.setImmediate);
 global.clearImmediate = timers.clearImmediate;
 
 // setTimeout needs to update the polling timeout of the event loop, when
 // called under Chromium's event loop the node's event loop won't get a chance
 // to update the timeout, so we have to force the node's event loop to
 // recalculate the timeout in the process.
-timers.setTimeout = wrapWithActivateUvLoop(timers.setTimeout);
-timers.setInterval = wrapWithActivateUvLoop(timers.setInterval);
+const wrappedSetTimeout = wrapWithActivateUvLoop(timers.setTimeout);
+const wrappedSetInterval = wrapWithActivateUvLoop(timers.setInterval);
 
 // Update the global version of the timer apis to use the above wrapper
 // only in the process that runs node event loop alongside chromium
@@ -57,8 +57,8 @@ timers.setInterval = wrapWithActivateUvLoop(timers.setInterval);
 // are deleted in these processes, see renderer/init.js for reference.
 if (process.type === 'browser' ||
     process.type === 'utility') {
-  global.setTimeout = timers.setTimeout;
-  global.setInterval = timers.setInterval;
+  global.setTimeout = wrappedSetTimeout;
+  global.setInterval = wrappedSetInterval;
 }
 
 if (process.platform === 'win32') {

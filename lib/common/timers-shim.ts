@@ -1,5 +1,5 @@
 // Drop-in replacement for timers-browserify@1.4.2.
-// Provides the Node.js 'timers' API surface for renderer/web webpack bundles
+// Provides the Node.js 'timers' API surface for renderer/web bundles
 // without relying on window.postMessage (which the newer timers-browserify 2.x
 // polyfill uses and can interfere with Electron IPC).
 

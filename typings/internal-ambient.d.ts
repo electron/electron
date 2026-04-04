@@ -1,6 +1,10 @@
-/// <reference types="webpack/module" />
-
 declare const BUILDFLAG: (flag: boolean) => boolean;
+
+// esbuild build/esbuild/bundle.js rewrites calls to this identifier into
+// literal `require()` calls so that consumers can reach Node internal modules
+// (e.g. 'internal/modules/helpers') without the bundler trying to resolve
+// them. It must therefore be declared as a bare function.
+declare const __non_webpack_require__: (id: any) => unknown;
 
 declare namespace NodeJS {
   interface ModuleInternal extends NodeJS.Module {
