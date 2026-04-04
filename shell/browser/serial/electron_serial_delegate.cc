@@ -51,8 +51,7 @@ bool ElectronSerialDelegate::CanRequestPortPermission(
   auto* web_contents = content::WebContents::FromRenderFrameHost(frame);
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
-  return permission_helper->CheckSerialAccessPermission(
-      frame->GetLastCommittedOrigin());
+  return permission_helper->CheckSerialAccessPermission(frame);
 }
 
 bool ElectronSerialDelegate::HasPortPermission(
