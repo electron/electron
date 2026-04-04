@@ -91,12 +91,11 @@ class ClientFrameViewLinux : public FramelessView,
 
     SkColor title_color;
     gfx::Insets title_padding;
-
-    int button_min_size;
-    gfx::Insets button_padding;
   };
 
   void PaintAsActiveChanged();
+  void PaintRestoredFrameBorder(gfx::Canvas* canvas);
+  void PaintMaximizedFrameBorder(gfx::Canvas* canvas);
 
   void UpdateThemeValues();
 
