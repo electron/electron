@@ -1867,6 +1867,60 @@ describe('session module', () => {
       expect(handlerDetails!.isMainFrame).to.be.false();
       expect(handlerDetails!.embeddingOrigin).to.equal('file:///');
     });
+
+    it('provides iframe origin as requestingOrigin for media check from cross-origin subFrame', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'very-temp-permission-handler-media'
+        }
+      });
+      const ses = w.webContents.session;
+      const iframeUrl = 'https://myfakesite/';
+      let capturedOrigin: string | undefined;
+      let capturedIsMainFrame: boolean | undefined;
+      let capturedRequestingUrl: string | undefined;
+      let capturedSecurityOrigin: string | undefined;
+
+      ses.protocol.interceptStringProtocol('https', (req, cb) => {
+        cb('<html><body>iframe</body></html>');
+      });
+
+      ses.setPermissionCheckHandler((wc, permission, requestingOrigin, details) => {
+        if (permission === 'media') {
+          capturedOrigin = requestingOrigin;
+          capturedIsMainFrame = details.isMainFrame;
+          capturedRequestingUrl = details.requestingUrl;
+          capturedSecurityOrigin = (details as any).securityOrigin;
+        }
+        return false;
+      });
+
+      try {
+        await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        w.webContents.executeJavaScript(`
+          var iframe = document.createElement('iframe');
+          iframe.src = '${iframeUrl}';
+          iframe.allow = 'camera; microphone';
+          document.body.appendChild(iframe);
+          null;
+        `);
+        const [,, frameProcessId, frameRoutingId] = await once(w.webContents, 'did-frame-finish-load');
+        const frame = webFrameMain.fromId(frameProcessId, frameRoutingId)!;
+        await frame.executeJavaScript(
+          'navigator.mediaDevices.enumerateDevices().then(() => {}).catch(() => {});',
+          true
+        );
+
+        expect(capturedOrigin).to.equal(iframeUrl);
+        expect(capturedIsMainFrame).to.be.false();
+        expect(capturedRequestingUrl).to.equal(iframeUrl);
+        expect(capturedSecurityOrigin).to.equal(iframeUrl);
+      } finally {
+        ses.protocol.uninterceptProtocol('https');
+        ses.setPermissionCheckHandler(null);
+      }
+    });
   });
 
   describe('ses.isPersistent()', () => {
