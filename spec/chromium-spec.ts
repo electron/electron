@@ -1040,6 +1040,64 @@ describe('chromium features', () => {
       expect(status).to.equal('granted');
     });
 
+    it('concurrent getFileHandle calls on the same file do not stall', (done) => {
+      const writablePath = path.join(fixturesPath, 'file-system', 'test-perms.html');
+      const testDir = path.join(fixturesPath, 'file-system');
+      const testFile = path.join(testDir, 'test.txt');
+
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false,
+          sandbox: false
+        }
+      });
+
+      w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
+        if (permission === 'fileSystem') {
+          const { href } = url.pathToFileURL(writablePath);
+          expect(details).to.deep.equal({
+            fileAccessType: 'readable',
+            isDirectory: false,
+            isMainFrame: true,
+            filePath: testFile,
+            requestingUrl: href
+          });
+          callback(true);
+        } else {
+          callback(false);
+        }
+      });
+
+      ipcMain.once('did-create-directory-handle', async () => {
+        const result = await w.webContents.executeJavaScript(`
+          new Promise(async (resolve, reject) => {
+            try {
+              const handles = await Promise.all([
+                handle.getFileHandle('test.txt'),
+                handle.getFileHandle('test.txt')
+              ]);
+              resolve(handles.length === 2);
+            } catch (err) {
+              reject(err.message);
+            }
+          })
+        `, true);
+        expect(result).to.be.true();
+        done();
+      });
+
+      w.loadFile(writablePath);
+
+      w.webContents.once('did-finish-load', () => {
+        // @ts-expect-error Undocumented testing method.
+        clipboard._writeFilesForTesting([testDir]);
+        w.webContents.focus();
+        w.webContents.paste();
+      });
+    });
+
     it('allows permission when trying to create a writable file handle', (done) => {
       const writablePath = path.join(fixturesPath, 'file-system', 'test-perms.html');
       const testFile = path.join(fixturesPath, 'file-system', 'test.txt');
