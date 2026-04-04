@@ -163,8 +163,6 @@ class ServiceWorkerMain final
 
   raw_ptr<content::ServiceWorkerContext> service_worker_context_;
   mojo::AssociatedRemote<mojom::ElectronRenderer> remote_;
-
-  std::unique_ptr<gin_helper::Promise<void>> start_worker_promise_;
 };
 
 }  // namespace electron::api
