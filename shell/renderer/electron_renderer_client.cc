@@ -231,6 +231,8 @@ bool WorkerHasNodeIntegration(blink::ExecutionContext* ec) {
 
 void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
     v8::Local<v8::Context> context) {
+  RendererClientBase::WorkerScriptReadyForEvaluationOnWorkerThread(context);
+
   auto* ec = blink::ExecutionContext::From(context);
   if (!WorkerHasNodeIntegration(ec))
     return;
@@ -244,12 +246,13 @@ void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
 void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
     v8::Local<v8::Context> context) {
   auto* ec = blink::ExecutionContext::From(context);
-  if (!WorkerHasNodeIntegration(ec))
-    return;
+  if (WorkerHasNodeIntegration(ec)) {
+    auto* current = WebWorkerObserver::GetCurrent();
+    if (current)
+      current->ContextWillDestroy(context);
+  }
 
-  auto* current = WebWorkerObserver::GetCurrent();
-  if (current)
-    current->ContextWillDestroy(context);
+  RendererClientBase::WillDestroyWorkerContextOnWorkerThread(context);
 }
 
 void ElectronRendererClient::SetUpWebAssemblyTrapHandler() {

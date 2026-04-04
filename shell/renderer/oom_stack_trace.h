@@ -10,6 +10,7 @@
 namespace electron {
 
 void RegisterOomStackTraceCallback(v8::Isolate* isolate);
+void UnregisterOomStackTraceCallback(v8::Isolate* isolate);
 
 }  // namespace electron
 

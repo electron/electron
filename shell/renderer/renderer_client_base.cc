@@ -543,6 +543,16 @@ void RendererClientBase::WillDestroyServiceWorkerContextOnWorkerThread(
 #endif
 }
 
+void RendererClientBase::WorkerScriptReadyForEvaluationOnWorkerThread(
+    v8::Local<v8::Context> context) {
+  RegisterOomStackTraceCallback(v8::Isolate::GetCurrent());
+}
+
+void RendererClientBase::WillDestroyWorkerContextOnWorkerThread(
+    v8::Local<v8::Context> context) {
+  UnregisterOomStackTraceCallback(v8::Isolate::GetCurrent());
+}
+
 void RendererClientBase::WebViewCreated(blink::WebView* web_view,
                                         bool was_created_by_renderer,
                                         const url::Origin* outermost_origin) {
