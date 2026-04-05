@@ -40,6 +40,8 @@ constexpr APIPermissionInfo::InitInfo permissions_to_register[] = {
      APIPermissionInfo::kFlagRequiresManagementUIWarning},
     {mojom::APIPermissionID::kScripting, "scripting",
      APIPermissionInfo::kFlagRequiresManagementUIWarning},
+    {mojom::APIPermissionID::kContextMenus, "contextMenus"},
+    {mojom::APIPermissionID::kSidePanel, "sidePanel"},
 };
 base::span<const APIPermissionInfo::InitInfo> GetPermissionInfos() {
   return base::span(permissions_to_register);
