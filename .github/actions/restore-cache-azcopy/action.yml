@@ -114,7 +114,7 @@ runs:
           Move-Item temp-cache\src src
 
           Write-Host "Deleting zip file"
-          Remove-Item -Force $src_cache
+          Remove-Item -Force "$env:DEPSHASH.tar"
         }
         if (-Not (Test-Path "src\third_party\blink")) {
           Write-Host "Cache was not correctly restored - exiting"

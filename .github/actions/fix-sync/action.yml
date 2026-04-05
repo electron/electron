@@ -20,7 +20,6 @@ runs:
   using: "composite"
   steps:
     - name: Fix llvm toolchain
-      if: ${{ inputs.target-platform != 'linux' }}
       shell: bash
       run : |
         rm -rf src/third_party/llvm-build
@@ -54,7 +53,6 @@ runs:
         cd src/third_party/devtools-frontend/src
         python3 scripts/deps/sync_rollup_libs.py
     - name: Fix rustc
-      if: ${{ inputs.target-platform != 'linux' }}
       shell: bash
       run : |
         rm -rf src/third_party/rust-toolchain
