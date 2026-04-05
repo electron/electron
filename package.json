@@ -160,5 +160,8 @@
     "abstract-socket": {
       "built": true
     }
+  },
+  "dependencies": {
+    "undici": "6.24.0"
   }
 }

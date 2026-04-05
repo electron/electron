@@ -622,6 +622,7 @@ __metadata:
     ts-loader: "npm:^8.0.2"
     ts-node: "npm:6.2.0"
     typescript: "npm:^5.8.3"
+    undici: "npm:6.24.0"
     url: "npm:^0.11.4"
     webpack: "npm:^5.104.1"
     webpack-cli: "npm:^6.0.1"
@@ -13081,6 +13082,13 @@ __metadata:
   version: 7.16.0
   resolution: "undici-types@npm:7.16.0"
   checksum: 10c0/3033e2f2b5c9f1504bdc5934646cb54e37ecaca0f9249c983f7b1fc2e87c6d18399ebb05dc7fd5419e02b2e915f734d872a65da2e3eeed1813951c427d33cc9a
+  languageName: node
+  linkType: hard
+
+"undici@npm:6.24.0":
+  version: 6.24.0
+  resolution: "undici@npm:6.24.0"
+  checksum: 10c0/a97d7f1214b34c5b2802558d06cbed97ff96a27ab6548972ba9d07c13951c69e2e9f2f01581f71c86b74755d2bf92e64091cf8f2c6eba4184f10c6d583e60388
   languageName: node
   linkType: hard
 
