@@ -75,9 +75,9 @@ runs:
         fi
 
         if [ "${{ inputs.is-release }}" = "true" ]; then
-          NINJA_SUMMARIZE_BUILD=1 e build --target electron:release_build
+          NINJA_SUMMARIZE_BUILD=1 e build --target electron:release_build -- --quiet --batch=false --heartbeat_period=30s
         else
-          NINJA_SUMMARIZE_BUILD=1 e build --target electron:testing_build
+          NINJA_SUMMARIZE_BUILD=1 e build --target electron:testing_build -- --quiet --batch=false --heartbeat_period=30s
         fi
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
@@ -102,10 +102,10 @@ runs:
         cd ..
 
         $env:NINJA_SUMMARIZE_BUILD = 1
-        if ("${{ inputs.is-release }}" -eq "true") {          
-          e build --target electron:release_build
+        if ("${{ inputs.is-release }}" -eq "true") {
+          e build --target electron:release_build -- --quiet --batch=false --heartbeat_period=30s
         } else {
-          e build --target electron:testing_build
+          e build --target electron:testing_build -- --quiet --batch=false --heartbeat_period=30s
         }
         Copy-Item out\Default\.ninja_log out\electron_ninja_log
         node electron\script\check-symlinks.js
@@ -185,7 +185,7 @@ runs:
       shell: bash
       run: |
         cd src
-        e build --target electron:electron_chromedriver_zip
+        e build --target electron:electron_chromedriver_zip -- --quiet --batch=false --heartbeat_period=30s
 
         if [ "${{ inputs.is-asan }}" != "true" ]; then
           target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
@@ -229,7 +229,7 @@ runs:
       run: |
         cd src
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true use_siso=true $GN_EXTRA_ARGS"
-        e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg
+        e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg --quiet --batch=false --heartbeat_period=30s
     - name: Remove Clang problem matcher
       shell: bash
       run: echo "::remove-matcher owner=clang::"
