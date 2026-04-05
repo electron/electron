@@ -30,7 +30,7 @@ runs:
       node src/electron/script/generate-deps-hash.js
       DEPSHASH="v2-src-cache-$(cat src/electron/.depshash)"
       echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
-      echo "CACHE_FILE=$DEPSHASH.tar.zst" >> $GITHUB_ENV
+      echo "CACHE_FILE=$DEPSHASH.tar" >> $GITHUB_ENV
       if [ "${{ inputs.target-platform }}" = "win" ]; then
         echo "CACHE_DRIVE=/mnt/win-cache" >> $GITHUB_ENV
       else
@@ -193,6 +193,8 @@ runs:
     shell: bash
     run: |
       echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
+      # Named .tar but zstd-compressed; the sas-sidecar's filename allowlist
+      # only permits .tar/.tgz so we keep the extension and decode on restore.
       tar -cf - src | zstd -T0 --long=30 -f -o $CACHE_FILE
       echo "Compressed src to $(du -sh $CACHE_FILE | cut -f1 -d' ')"
       cp ./$CACHE_FILE $CACHE_DRIVE/
