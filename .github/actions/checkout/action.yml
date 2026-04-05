@@ -30,7 +30,7 @@ runs:
       node src/electron/script/generate-deps-hash.js
       DEPSHASH="v2-src-cache-$(cat src/electron/.depshash)"
       echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
-      echo "CACHE_FILE=$DEPSHASH.tar" >> $GITHUB_ENV
+      echo "CACHE_FILE=$DEPSHASH.tar.zst" >> $GITHUB_ENV
       if [ "${{ inputs.target-platform }}" = "win" ]; then
         echo "CACHE_DRIVE=/mnt/win-cache" >> $GITHUB_ENV
       else
@@ -109,7 +109,7 @@ runs:
         echo "target_os=['$TARGET_OS']" >> ./.gclient
       fi
 
-      ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 e d gclient sync --with_branch_heads --with_tags -vv
+      ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 e d gclient sync --with_branch_heads --with_tags
       if [[ "${{ inputs.is-release }}" != "true" ]]; then
         # Re-export all the patches to check if there were changes.
         python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
@@ -193,7 +193,7 @@ runs:
     shell: bash
     run: |
       echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
-      tar -cf $CACHE_FILE src
+      tar -cf - src | zstd -T0 --long=30 -f -o $CACHE_FILE
       echo "Compressed src to $(du -sh $CACHE_FILE | cut -f1 -d' ')"
       cp ./$CACHE_FILE $CACHE_DRIVE/
   - name: Persist Src Cache
