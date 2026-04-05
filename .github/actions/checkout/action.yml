@@ -174,16 +174,10 @@ runs:
       rm -rf src/android_webview
       rm -rf src/ios/chrome
       rm -rf src/third_party/blink/perf_tests
-      find src/third_party/blink/web_tests -mindepth 1 -maxdepth 1 ! -name BUILD.gn -exec rm -rf {} +
       rm -rf src/chrome/test/data/xr/webvr_info
       rm -rf src/third_party/angle/third_party/VK-GL-CTS/src
       rm -rf src/third_party/swift-toolchain
-      rm -rf src/third_party/swiftshader/tests/regres
-      rm -rf src/third_party/jetstream
-      rm -rf src/third_party/speedometer
-      rm -rf src/third_party/catapult/tracing/test_data
-      rm -rf src/third_party/llvm-build
-      rm -rf src/third_party/rust-toolchain
+      rm -rf src/third_party/swiftshader/tests/regres/testlists
       cp src/electron/.github/actions/checkout/action.yml ./
       rm -rf src/electron
       mkdir -p src/electron/.github/actions/checkout

@@ -93,11 +93,6 @@ jobs:
       uses: ./src/electron/.github/actions/restore-cache-aks
       with:
         target-platform: ${{ inputs.target-platform }}
-    - name: Fetch toolchains
-      run: |
-        python3 src/tools/clang/scripts/update.py
-        python3 src/tools/clang/scripts/update.py --package clang-tidy
-        python3 src/tools/rust/update_rust.py
     - name: Run Electron Only Hooks
       run: |
         echo "solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]" > tmpgclient
