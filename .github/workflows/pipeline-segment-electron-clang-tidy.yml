@@ -96,6 +96,7 @@ jobs:
     - name: Fetch toolchains
       run: |
         python3 src/tools/clang/scripts/update.py
+        python3 src/tools/clang/scripts/update.py --package clang-tidy
         python3 src/tools/rust/update_rust.py
     - name: Run Electron Only Hooks
       run: |
