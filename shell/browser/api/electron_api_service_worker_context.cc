@@ -80,9 +80,12 @@ gin::DeprecatedWrapperInfo ServiceWorkerContext::kWrapperInfo = {
 
 ServiceWorkerContext::ServiceWorkerContext(
     v8::Isolate* isolate,
-    ElectronBrowserContext* browser_context) {
-  storage_partition_ = browser_context->GetDefaultStoragePartition();
-  service_worker_context_ = storage_partition_->GetServiceWorkerContext();
+    ElectronBrowserContext* browser_context)
+    : service_worker_context_{browser_context->GetDefaultStoragePartition()
+                                  ->GetServiceWorkerContext()},
+      browser_context_id_{browser_context->UniqueId()},
+      storage_partition_config_{
+          browser_context->GetDefaultStoragePartition()->GetConfig()} {
   service_worker_context_->AddObserver(this);
 }
 
@@ -93,9 +96,8 @@ ServiceWorkerContext::~ServiceWorkerContext() {
 void ServiceWorkerContext::OnRunningStatusChanged(
     int64_t version_id,
     blink::EmbeddedWorkerStatus running_status) {
-  ServiceWorkerMain* worker =
-      ServiceWorkerMain::FromVersionID(version_id, storage_partition_);
-  if (worker)
+  if (auto* worker = ServiceWorkerMain::FromVersionID(
+          browser_context_id_, storage_partition_config_, version_id))
     worker->OnRunningStatusChanged(running_status);
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -133,9 +135,8 @@ void ServiceWorkerContext::OnRegistrationCompleted(const GURL& scope) {
 
 void ServiceWorkerContext::OnVersionRedundant(int64_t version_id,
                                               const GURL& scope) {
-  ServiceWorkerMain* worker =
-      ServiceWorkerMain::FromVersionID(version_id, storage_partition_);
-  if (worker)
+  if (auto* worker = ServiceWorkerMain::FromVersionID(
+          browser_context_id_, storage_partition_config_, version_id))
     worker->OnVersionRedundant();
 }
 
@@ -206,18 +207,19 @@ v8::Local<v8::Value> ServiceWorkerContext::GetWorkerFromVersionID(
     v8::Isolate* isolate,
     int64_t version_id) {
   return ServiceWorkerMain::From(isolate, service_worker_context_,
-                                 storage_partition_, version_id)
+                                 browser_context_id_, storage_partition_config_,
+                                 version_id)
       .ToV8();
 }
 
 gin_helper::Handle<ServiceWorkerMain>
 ServiceWorkerContext::GetWorkerFromVersionIDIfExists(v8::Isolate* isolate,
                                                      int64_t version_id) {
-  ServiceWorkerMain* worker =
-      ServiceWorkerMain::FromVersionID(version_id, storage_partition_);
-  if (!worker)
-    return gin_helper::Handle<ServiceWorkerMain>();
-  return gin_helper::CreateHandle(isolate, worker);
+  if (auto* worker = ServiceWorkerMain::FromVersionID(
+          browser_context_id_, storage_partition_config_, version_id))
+    return gin_helper::CreateHandle(isolate, worker);
+
+  return {};
 }
 
 v8::Local<v8::Promise> ServiceWorkerContext::StartWorkerForScope(
