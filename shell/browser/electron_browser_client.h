@@ -30,6 +30,7 @@ class FilePath;
 
 namespace content {
 class ClientCertificateDelegate;
+class NavigationHandle;
 class PlatformNotificationService;
 class NavigationThrottleRegistry;
 class QuotaPermissionContext;
@@ -82,6 +83,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   // content::ContentBrowserClient:
   std::string GetApplicationLocale() override;
   bool ShouldEnableStrictSiteIsolation() override;
+  bool ShouldEnableSubframeZoom() override;
   void BindHostReceiverForRenderer(
       content::RenderProcessHost* render_process_host,
       mojo::GenericPendingReceiver receiver) override;
