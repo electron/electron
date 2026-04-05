@@ -944,9 +944,13 @@ Sets whether the window should show always on top of other windows. After
 setting this, the window is still a normal window, not a toolbox window which
 can not be focused on.
 
+Not supported on Wayland (Linux).
+
 #### `win.isAlwaysOnTop()`
 
 Returns `boolean` - Whether the window is always on top of other windows.
+
+Not supported on Wayland (Linux).
 
 #### `win.moveAbove(mediaSourceId)`
 
