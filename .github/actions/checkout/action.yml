@@ -174,7 +174,7 @@ runs:
       rm -rf src/android_webview
       rm -rf src/ios/chrome
       rm -rf src/third_party/blink/perf_tests
-      rm -rf src/third_party/blink/web_tests
+      find src/third_party/blink/web_tests -mindepth 1 -maxdepth 1 ! -name BUILD.gn -exec rm -rf {} +
       rm -rf src/chrome/test/data/xr/webvr_info
       rm -rf src/third_party/angle/third_party/VK-GL-CTS/src
       rm -rf src/third_party/swift-toolchain
