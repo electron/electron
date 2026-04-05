@@ -10,28 +10,28 @@ runs:
     shell: bash
     run: |
       if [ "${{ inputs.target-platform }}" = "win" ]; then
-        cache_drive=/mnt/win-cache
+        cache_path=/mnt/win-cache/$DEPSHASH.tar
       else
-        cache_drive=/mnt/cross-instance-cache
+        cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar
       fi
 
       echo "Using cache key: $DEPSHASH"
-      for s in $CACHE_SHARDS; do
-        cache_path="${cache_drive}/v2-src-cache-shard-${s}-${DEPSHASH}.tar"
-        if [ ! -f "$cache_path" ] || [ `du $cache_path | cut -f1` = "0" ]; then
-          echo "Cache shard ${s} missing or empty at $cache_path - exiting"
-          exit 1
-        fi
-        echo "Found shard ${s}: $(du -sh $cache_path | cut -f1)"
-      done
+      echo "Checking for cache in: $cache_path"
+      if [ ! -f "$cache_path" ]; then
+        echo "Cache Does Not Exist for $DEPSHASH - exiting"
+        exit 1
+      else
+        echo "Found Cache for $DEPSHASH at $cache_path"
+      fi
 
-      mkdir -p temp-cache/src/third_party
-      pids=()
-      for s in $CACHE_SHARDS; do
-        zstd -d --long=30 -c "${cache_drive}/v2-src-cache-shard-${s}-${DEPSHASH}.tar" | tar -xf - -C temp-cache &
-        pids+=($!)
-      done
-      for pid in "${pids[@]}"; do wait $pid; done
+      echo "Persisted cache is $(du -sh $cache_path | cut -f1)"
+      if [ `du  $cache_path | cut -f1` = "0" ]; then
+        echo "Cache is empty - exiting"
+        exit 1
+      fi
+
+      mkdir temp-cache
+      zstd -d --long=30 -c $cache_path | tar -xf - -C temp-cache
       echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"
 
       if [ -d "temp-cache/src" ]; then
