@@ -178,7 +178,6 @@ runs:
       rm -rf src/third_party/angle/third_party/VK-GL-CTS/src
       rm -rf src/third_party/swift-toolchain
       rm -rf src/third_party/swiftshader/tests/regres/testlists
-      rm -rf src/third_party/depot_tools/win_toolchain
       cp src/electron/.github/actions/checkout/action.yml ./
       rm -rf src/electron
       mkdir -p src/electron/.github/actions/checkout
