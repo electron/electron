@@ -10,6 +10,10 @@ on:
       - '.yarn/**'
       - '.yarnrc.yml'
 
+# SECURITY: This workflow uses pull_request_target and has access to secrets.
+# Do NOT checkout or run code from the PR head. All code execution must use
+# the base branch only. Adding a ref to PR head would expose secrets to
+# untrusted code.
 permissions: {}
 
 jobs:
@@ -45,5 +49,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
-          printf "<!-- disallowed-non-maintainer-change -->\n\nHello @${{ github.event.pull_request.user.login }}! It looks like this pull request touches one of our dependency or CI files, and per [our contribution policy](https://github.com/electron/electron/blob/main/CONTRIBUTING.md#dependencies-upgrades-policy) we do not accept these types of changes in PRs." | gh pr review $PR_URL -r --body-file=-
+          printf "<!-- disallowed-non-maintainer-change -->\n\nHello @${PR_AUTHOR}! It looks like this pull request touches one of our dependency or CI files, and per [our contribution policy](https://github.com/electron/electron/blob/main/CONTRIBUTING.md#dependencies-upgrades-policy) we do not accept these types of changes in PRs." | gh pr review $PR_URL -r --body-file=-
