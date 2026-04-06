@@ -5,17 +5,16 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SERVICE_WORKER_CONTEXT_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SERVICE_WORKER_CONTEXT_H_
 
+#include <string>
+
 #include "base/memory/raw_ptr.h"
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/service_worker_context_observer.h"
+#include "content/public/browser/storage_partition_config.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/wrappable.h"
 #include "third_party/blink/public/common/service_worker/embedded_worker_status.h"
 #include "third_party/blink/public/common/tokens/tokens.h"
-
-namespace content {
-class StoragePartition;
-}
 
 namespace gin_helper {
 template <typename T>
@@ -99,9 +98,13 @@ class ServiceWorkerContext final
 
   raw_ptr<content::ServiceWorkerContext> service_worker_context_;
 
-  // Service worker registration and versions are unique to a storage partition.
-  // Keep a reference to the storage partition to be used for lookups.
-  raw_ptr<content::StoragePartition> storage_partition_;
+  // A key identifying the owning BrowserContext.
+  // Used in ServiceWorkerMain lookups.
+  const std::string browser_context_id_;
+
+  // A key identifying a StoragePartition within a BrowserContext.
+  // Used in ServiceWorkerMain lookups.
+  const content::StoragePartitionConfig storage_partition_config_;
 
   base::WeakPtrFactory<ServiceWorkerContext> weak_ptr_factory_{this};
 };

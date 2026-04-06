@@ -7,6 +7,8 @@
 #include <string>
 #include <utility>
 
+#include "base/containers/flat_map.h"
+#include "base/containers/map_util.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
 #include "content/browser/service_worker/service_worker_context_wrapper.h"  // nogncheck
@@ -27,7 +29,6 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
-#include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 
 namespace {
 
@@ -58,27 +59,23 @@ std::optional<content::ServiceWorkerVersionBaseInfo> GetLiveVersionInfo(
 namespace electron::api {
 
 // ServiceWorkerKey -> ServiceWorkerMain*
-using VersionIdMap = absl::flat_hash_map<ServiceWorkerKey,
-                                         ServiceWorkerMain*,
-                                         ServiceWorkerKey::Hasher>;
-
-VersionIdMap& GetVersionIdMap() {
-  static base::NoDestructor<VersionIdMap> instance;
+auto& GetVersionIdMap() {
+  using Map = base::flat_map<ServiceWorkerKey, ServiceWorkerMain*>;
+  static base::NoDestructor<Map> instance;
   return *instance;
 }
 
 ServiceWorkerMain* FromServiceWorkerKey(const ServiceWorkerKey& key) {
-  VersionIdMap& version_map = GetVersionIdMap();
-  auto iter = version_map.find(key);
-  auto* service_worker = iter == version_map.end() ? nullptr : iter->second;
-  return service_worker;
+  return base::FindPtrOrNull(GetVersionIdMap(), key);
 }
 
 // static
 ServiceWorkerMain* ServiceWorkerMain::FromVersionID(
-    int64_t version_id,
-    const content::StoragePartition* storage_partition) {
-  ServiceWorkerKey key(version_id, storage_partition);
+    std::string browser_context_id,
+    content::StoragePartitionConfig storage_partition_config,
+    int64_t version_id) {
+  const ServiceWorkerKey key{std::move(browser_context_id),
+                             std::move(storage_partition_config), version_id};
   return FromServiceWorkerKey(key);
 }
 
@@ -87,8 +84,10 @@ gin::DeprecatedWrapperInfo ServiceWorkerMain::kWrapperInfo = {
 
 ServiceWorkerMain::ServiceWorkerMain(content::ServiceWorkerContext* sw_context,
                                      int64_t version_id,
-                                     const ServiceWorkerKey& key)
-    : version_id_(version_id), key_(key), service_worker_context_(sw_context) {
+                                     ServiceWorkerKey key)
+    : version_id_{version_id},
+      key_{std::move(key)},
+      service_worker_context_{sw_context} {
   GetVersionIdMap().emplace(key_, this);
   InvalidateVersionInfo();
 }
@@ -298,12 +297,14 @@ gin_helper::Handle<ServiceWorkerMain> ServiceWorkerMain::New(
 gin_helper::Handle<ServiceWorkerMain> ServiceWorkerMain::From(
     v8::Isolate* isolate,
     content::ServiceWorkerContext* sw_context,
-    const content::StoragePartition* storage_partition,
+    std::string browser_context_id,
+    content::StoragePartitionConfig storage_partition_config,
     int64_t version_id) {
-  ServiceWorkerKey service_worker_key(version_id, storage_partition);
+  ServiceWorkerKey service_worker_key{std::move(browser_context_id),
+                                      std::move(storage_partition_config),
+                                      version_id};
 
-  auto* service_worker = FromServiceWorkerKey(service_worker_key);
-  if (service_worker)
+  if (auto* service_worker = FromServiceWorkerKey(service_worker_key))
     return gin_helper::CreateHandle(isolate, service_worker);
 
   // Ensure ServiceWorkerVersion exists and is not redundant (pending deletion)
@@ -313,8 +314,8 @@ gin_helper::Handle<ServiceWorkerMain> ServiceWorkerMain::From(
   }
 
   auto handle = gin_helper::CreateHandle(
-      isolate,
-      new ServiceWorkerMain(sw_context, version_id, service_worker_key));
+      isolate, new ServiceWorkerMain{sw_context, version_id,
+                                     std::move(service_worker_key)});
 
   // Prevent garbage collection of worker until it has been deleted internally.
   handle->Pin(isolate);
