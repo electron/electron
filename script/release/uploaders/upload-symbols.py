@@ -31,9 +31,9 @@ PDB_LIST = [
 
 PDB_LIST += glob.glob(os.path.join(RELEASE_DIR, '*.dll.pdb'))
 
-NPX_CMD = "npx"
+SENTRY_CLI = os.path.join(ELECTRON_DIR, 'node_modules', '.bin', 'sentry-cli')
 if sys.platform == "win32":
-    NPX_CMD += ".cmd"
+    SENTRY_CLI += ".cmd"
 
 
 def main():
@@ -48,11 +48,8 @@ def main():
 
   for symbol_file in files:
     print("Generating Sentry src bundle for: " + symbol_file)
-    npx_env = os.environ.copy()
-    npx_env['npm_config_yes'] = 'true'
     subprocess.check_output([
-      NPX_CMD, '@sentry/cli@1.62.0', 'difutil', 'bundle-sources',
-      symbol_file], env=npx_env)
+      SENTRY_CLI, 'difutil', 'bundle-sources', symbol_file])
 
   files += glob.glob(SYMBOLS_DIR + '/*/*/*.src.zip')
 
