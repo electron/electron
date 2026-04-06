@@ -126,6 +126,8 @@ def import_patches(repo, ref=UPSTREAM_HEAD, **kwargs):
   """same as am(), but we save the upstream HEAD so we can refer to it when we
   later export patches"""
   update_ref(repo=repo, ref=ref, newvalue='HEAD')
+  if ref != _LEGACY_UPSTREAM_HEAD:
+    update_ref(repo=repo, ref=_LEGACY_UPSTREAM_HEAD, newvalue='HEAD')
   # Upgrade to index v4 before applying so every intermediate index write
   # during am benefits from path-prefix compression (roughly halves index
   # size in large repos).
