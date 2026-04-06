@@ -87,10 +87,6 @@ runs:
     if: ${{ inputs.target-platform == 'win' }}
     shell: powershell
     run: |
-      fsutil 8dot3name query C:
-      fsutil behavior query disablelastaccess
-      try { (Get-MpComputerStatus).RealTimeProtectionEnabled } catch { Write-Host "Defender not present" }
-
       $src_cache = "$env:DEPSHASH.tar"
       $cache_size = $(Get-Item $src_cache).length
       Write-Host "Downloaded cache is $cache_size"
