@@ -6,6 +6,7 @@ Everything here should be project agnostic: it shouldn't rely on project's
 structure, or make assumptions about the passed arguments or calls' outcomes.
 """
 
+import hashlib
 import io
 import os
 import posixpath
@@ -18,7 +19,14 @@ sys.path.append(SCRIPT_DIR)
 
 from patches import PATCH_FILENAME_PREFIX, is_patch_location_line
 
-UPSTREAM_HEAD='refs/patches/upstream-head'
+# In gclient-new-workdir worktrees, .git/refs is symlinked back to the source
+# checkout, so a single fixed ref name would be shared (and clobbered) across
+# worktrees. Derive a per-checkout suffix from this script's absolute path so
+# each worktree records its own upstream head in the shared refs directory.
+_LEGACY_UPSTREAM_HEAD = 'refs/patches/upstream-head'
+UPSTREAM_HEAD = (
+  _LEGACY_UPSTREAM_HEAD + '-' + hashlib.md5(SCRIPT_DIR.encode()).hexdigest()[:8]
+)
 
 def is_repo_root(path):
   path_exists = os.path.exists(path)
@@ -83,6 +91,8 @@ def import_patches(repo, ref=UPSTREAM_HEAD, **kwargs):
   """same as am(), but we save the upstream HEAD so we can refer to it when we
   later export patches"""
   update_ref(repo=repo, ref=ref, newvalue='HEAD')
+  if ref != _LEGACY_UPSTREAM_HEAD:
+    update_ref(repo=repo, ref=_LEGACY_UPSTREAM_HEAD, newvalue='HEAD')
   am(repo=repo, **kwargs)
 
 
@@ -102,19 +112,21 @@ def get_commit_count(repo, commit_range):
 
 def guess_base_commit(repo, ref):
   """Guess which commit the patches might be based on"""
-  try:
-    upstream_head = get_commit_for_ref(repo, ref)
-    num_commits = get_commit_count(repo, upstream_head + '..')
-    return [upstream_head, num_commits]
-  except subprocess.CalledProcessError:
-    args = [
-      'git',
-      '-C',
-      repo,
-      'describe',
-      '--tags',
-    ]
-    return subprocess.check_output(args).decode('utf-8').rsplit('-', 2)[0:2]
+  for candidate in (ref, _LEGACY_UPSTREAM_HEAD):
+    try:
+      upstream_head = get_commit_for_ref(repo, candidate)
+      num_commits = get_commit_count(repo, upstream_head + '..')
+      return [upstream_head, num_commits]
+    except subprocess.CalledProcessError:
+      continue
+  args = [
+    'git',
+    '-C',
+    repo,
+    'describe',
+    '--tags',
+  ]
+  return subprocess.check_output(args).decode('utf-8').rsplit('-', 2)[0:2]
 
 
 def format_patch(repo, since):
