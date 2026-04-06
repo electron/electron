@@ -10,9 +10,9 @@ runs:
     shell: bash
     run: |
       if [ "${{ inputs.target-platform }}" = "win" ]; then
-        cache_path=/mnt/win-cache/$DEPSHASH.tar
+        cache_path=/mnt/win-cache/$DEPSHASH.tar.zst
       else
-        cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar
+        cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar.zst
       fi
 
       echo "Using cache key: $DEPSHASH"
@@ -31,7 +31,7 @@ runs:
       fi
 
       mkdir temp-cache
-      tar -xf $cache_path -C temp-cache
+      zstd -d --long=30 -c $cache_path | tar -xf - -C temp-cache
       echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"
 
       if [ -d "temp-cache/src" ]; then
