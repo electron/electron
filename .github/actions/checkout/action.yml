@@ -28,7 +28,7 @@ runs:
     shell: bash
     run: |
       node src/electron/script/generate-deps-hash.js
-      DEPSHASH="v1-src-cache-$(cat src/electron/.depshash)"
+      DEPSHASH="v2-src-cache-$(cat src/electron/.depshash)"
       echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
       echo "CACHE_FILE=$DEPSHASH.tar" >> $GITHUB_ENV
       if [ "${{ inputs.target-platform }}" = "win" ]; then
@@ -174,10 +174,16 @@ runs:
       rm -rf src/android_webview
       rm -rf src/ios/chrome
       rm -rf src/third_party/blink/perf_tests
+      rm -rf src/third_party/blink/web_tests
       rm -rf src/chrome/test/data/xr/webvr_info
       rm -rf src/third_party/angle/third_party/VK-GL-CTS/src
       rm -rf src/third_party/swift-toolchain
-      rm -rf src/third_party/swiftshader/tests/regres/testlists
+      rm -rf src/third_party/swiftshader/tests/regres
+      rm -rf src/third_party/jetstream
+      rm -rf src/third_party/speedometer
+      rm -rf src/third_party/catapult/tracing/test_data
+      rm -rf src/third_party/llvm-build
+      rm -rf src/third_party/rust-toolchain
       cp src/electron/.github/actions/checkout/action.yml ./
       rm -rf src/electron
       mkdir -p src/electron/.github/actions/checkout
