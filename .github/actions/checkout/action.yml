@@ -28,7 +28,7 @@ runs:
     shell: bash
     run: |
       node src/electron/script/generate-deps-hash.js
-      DEPSHASH="v1-src-cache-$(cat src/electron/.depshash)"
+      DEPSHASH="v2-src-cache-$(cat src/electron/.depshash)"
       echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
       echo "CACHE_FILE=$DEPSHASH.tar" >> $GITHUB_ENV
       if [ "${{ inputs.target-platform }}" = "win" ]; then
@@ -109,7 +109,7 @@ runs:
         echo "target_os=['$TARGET_OS']" >> ./.gclient
       fi
 
-      ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 e d gclient sync --with_branch_heads --with_tags -vv
+      ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN=0 DEPOT_TOOLS_WIN_TOOLCHAIN=0 ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 e d gclient sync --with_branch_heads --with_tags
       if [[ "${{ inputs.is-release }}" != "true" ]]; then
         # Re-export all the patches to check if there were changes.
         python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
@@ -187,21 +187,35 @@ runs:
     shell: bash
     run: |
       echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
-      tar -cf $CACHE_FILE src
+      # Named .tar but zstd-compressed; the sas-sidecar's filename allowlist
+      # only permits .tar/.tgz so we keep the extension and decode on restore.
+      tar -cf - src | zstd -T0 --long=30 -f -o $CACHE_FILE
       echo "Compressed src to $(du -sh $CACHE_FILE | cut -f1 -d' ')"
-      cp ./$CACHE_FILE $CACHE_DRIVE/
   - name: Persist Src Cache
     if: ${{ steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache == 'true' }}
     shell: bash
     run: |
       final_cache_path=$CACHE_DRIVE/$CACHE_FILE
+      # Upload to a run-unique temp name first so concurrent readers never
+      # observe a partially-written file, and an interrupted copy can't leave
+      # a truncated file at the final path. Orphaned temp files get swept by
+      # the clean-orphaned-cache-uploads workflow.
+      tmp_cache_path=$final_cache_path.upload-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}
+      echo "Uploading to temp path: $tmp_cache_path"
+      cp ./$CACHE_FILE $tmp_cache_path
+
       echo "Using cache key: $DEPSHASH"
-      echo "Checking path: $final_cache_path"
+      if [ -f "$final_cache_path" ]; then
+        echo "Cache already persisted at $final_cache_path by a concurrent run; discarding ours"
+        rm -f $tmp_cache_path
+      else
+        mv -f $tmp_cache_path $final_cache_path
+        echo "Cache key persisted in $final_cache_path"
+      fi
+
       if [ ! -f "$final_cache_path" ]; then
         echo "Cache key not found"
         exit 1
-      else
-        echo "Cache key persisted in $final_cache_path"
       fi
   - name: Wait for active SSH sessions
     shell: bash

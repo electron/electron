@@ -90,6 +90,7 @@ export function executeSandboxedPreloadScripts (context: PreloadContext, preload
       if (contents) {
         runPreloadScript(context, contents);
       } else if (error) {
+        // eslint-disable-next-line no-throw-literal
         throw error;
       }
     } catch (error) {

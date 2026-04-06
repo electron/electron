@@ -4,6 +4,7 @@
 
 #include "shell/common/gin_helper/wrappable.h"
 
+#include "base/task/sequenced_task_runner.h"
 #include "gin/object_template_builder.h"
 #include "gin/public/isolate_holder.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -90,7 +91,22 @@ void WrappableBase::SecondWeakCallback(
   if (gin::IsolateHolder::DestroyedMicrotasksRunner()) {
     return;
   }
-  delete static_cast<WrappableBase*>(data.GetInternalField(0));
+  // Defer destruction to a posted task. V8's second-pass weak callbacks run
+  // inside a DisallowJavascriptExecutionScope (they may touch the V8 API but
+  // must not invoke JS). Several Electron Wrappables (e.g. WebContents) emit
+  // JS events from their destructors, so deleting synchronously here can
+  // crash with "Invoke in DisallowJavascriptExecutionScope" — see
+  // https://github.com/electron/electron/issues/47420. Posting via the
+  // current sequence's task runner ensures the destructor runs once V8 has
+  // left the GC scope. If no task runner is available (e.g. early/late in
+  // process lifetime), fall back to synchronous deletion.
+  auto* wrappable = static_cast<WrappableBase*>(data.GetInternalField(0));
+  if (base::SequencedTaskRunner::HasCurrentDefault()) {
+    base::SequencedTaskRunner::GetCurrentDefault()->DeleteSoon(FROM_HERE,
+                                                               wrappable);
+  } else {
+    delete wrappable;
+  }
 }
 
 DeprecatedWrappableBase::DeprecatedWrappableBase() = default;
@@ -126,9 +142,19 @@ void DeprecatedWrappableBase::SecondWeakCallback(
     const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data) {
   if (gin::IsolateHolder::DestroyedMicrotasksRunner())
     return;
+  // See WrappableBase::SecondWeakCallback for why deletion is posted: V8's
+  // second-pass weak callbacks run inside a DisallowJavascriptExecutionScope,
+  // and several Wrappables emit JS events from their destructors.
+  // https://github.com/electron/electron/issues/47420
   DeprecatedWrappableBase* wrappable = data.GetParameter();
-  if (wrappable)
+  if (!wrappable)
+    return;
+  if (base::SequencedTaskRunner::HasCurrentDefault()) {
+    base::SequencedTaskRunner::GetCurrentDefault()->DeleteSoon(FROM_HERE,
+                                                               wrappable);
+  } else {
     delete wrappable;
+  }
 }
 
 v8::MaybeLocal<v8::Object> DeprecatedWrappableBase::GetWrapperImpl(
