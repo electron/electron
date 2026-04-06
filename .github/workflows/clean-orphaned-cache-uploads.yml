@@ -1,0 +1,32 @@
+name: Clean Orphaned Cache Uploads
+
+# Description:
+# Sweeps orphaned in-flight upload temp files left on the src-cache volumes
+# by checkout/action.yml when its cp-to-share step dies before the rename.
+# A successful upload finishes in minutes, so anything older than 4h is dead.
+
+on:
+  schedule:
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  clean-orphaned-uploads:
+    if: github.repository == 'electron/electron'
+    runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
+    container:
+      image: ghcr.io/electron/build:bc2f48b2415a670de18d13605b1cf0eb5fdbaae1
+      options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+        - /mnt/win-cache:/mnt/win-cache
+    steps:
+    - name: Remove Orphaned Upload Temp Files
+      shell: bash
+      run: |
+        find /mnt/cross-instance-cache -maxdepth 1 -type f -name '*.tar.upload-*' -mmin +240 -print -delete
+        find /mnt/win-cache -maxdepth 1 -type f -name '*.tar.upload-*' -mmin +240 -print -delete
