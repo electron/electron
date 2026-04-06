@@ -27,6 +27,7 @@ runs:
         python3 src/tools/clang/scripts/update.py
         # Refs https://chromium-review.googlesource.com/c/chromium/src/+/6667681
         python3 src/tools/clang/scripts/update.py --package objdump
+        python3 src/tools/clang/scripts/update.py --package clang-tidy
     - name: Fix esbuild
       if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/cipd-install
