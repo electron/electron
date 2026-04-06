@@ -10,10 +10,6 @@
 #include "ui/gfx/geometry/insets.h"
 #include "ui/views/window/non_client_view.h"
 
-#if BUILDFLAG(IS_LINUX)
-#include "shell/browser/ui/views/linux_frame_layout.h"
-#endif
-
 namespace views {
 class Widget;
 }
@@ -43,10 +39,6 @@ class FramelessView : public views::FrameView {
   // Any insets from the (transparent) widget bounds to the logical/opaque
   // bounds of the view, used for CSD and resize targets on some platforms.
   virtual gfx::Insets RestoredFrameBorderInsets() const;
-
-#if BUILDFLAG(IS_LINUX)
-  virtual LinuxFrameLayout* GetLinuxFrameLayout() const;
-#endif
 
   NativeWindowViews* window() const { return window_; }
   views::Widget* frame() const { return frame_; }
