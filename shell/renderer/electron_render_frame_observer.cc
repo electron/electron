@@ -14,7 +14,6 @@
 #include "shell/common/options_switches.h"
 #include "shell/common/web_contents_utility.mojom.h"
 #include "shell/common/world_ids.h"
-#include "shell/renderer/oom_stack_trace.h"
 #include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
@@ -118,10 +117,6 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
       context, v8::MicrotasksScope::kDoNotRunMicrotasks);
 
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
-  // Register for every script context: when context isolation is enabled,
-  // ShouldNotifyClient may skip renderer_client_->DidCreateScriptContext for
-  // the main world, but user JS still runs there and can OOM.
-  RegisterOomStackTraceCallback(isolate);
   if (ShouldNotifyClient(world_id))
     renderer_client_->DidCreateScriptContext(isolate, context, render_frame_);
 
