@@ -171,7 +171,6 @@ gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
         if (!deprecated_warning_issued) {
           deprecated_warning_issued = true;
           util::EmitDeprecationWarning(
-              isolate_,
               "createFromNamedImage(name, hslShift) is deprecated, use "
               "createFromNamedImage(name, { hslShift }) instead.");
         }
