@@ -191,19 +191,31 @@ runs:
       # only permits .tar/.tgz so we keep the extension and decode on restore.
       tar -cf - src | zstd -T0 --long=30 -f -o $CACHE_FILE
       echo "Compressed src to $(du -sh $CACHE_FILE | cut -f1 -d' ')"
-      cp ./$CACHE_FILE $CACHE_DRIVE/
   - name: Persist Src Cache
     if: ${{ steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache == 'true' }}
     shell: bash
     run: |
       final_cache_path=$CACHE_DRIVE/$CACHE_FILE
+      # Upload to a run-unique temp name first so concurrent readers never
+      # observe a partially-written file, and an interrupted copy can't leave
+      # a truncated file at the final path. Orphaned temp files get swept by
+      # the clean-orphaned-cache-uploads workflow.
+      tmp_cache_path=$final_cache_path.upload-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}
+      echo "Uploading to temp path: $tmp_cache_path"
+      cp ./$CACHE_FILE $tmp_cache_path
+
       echo "Using cache key: $DEPSHASH"
-      echo "Checking path: $final_cache_path"
+      if [ -f "$final_cache_path" ]; then
+        echo "Cache already persisted at $final_cache_path by a concurrent run; discarding ours"
+        rm -f $tmp_cache_path
+      else
+        mv -f $tmp_cache_path $final_cache_path
+        echo "Cache key persisted in $final_cache_path"
+      fi
+
       if [ ! -f "$final_cache_path" ]; then
         echo "Cache key not found"
         exit 1
-      else
-        echo "Cache key persisted in $final_cache_path"
       fi
   - name: Wait for active SSH sessions
     shell: bash
