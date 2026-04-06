@@ -757,19 +757,21 @@ void ElectronBrowserClient::SiteInstanceGotProcessAndSite(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* browser_context =
       static_cast<ElectronBrowserContext*>(site_instance->GetBrowserContext());
-  if (!browser_context->IsOffTheRecord()) {
-    extensions::ExtensionRegistry* registry =
-        extensions::ExtensionRegistry::Get(browser_context);
-    const extensions::Extension* extension =
-        registry->enabled_extensions().GetExtensionOrAppByURL(
-            site_instance->GetSiteURL());
-    if (!extension)
-      return;
+  extensions::ExtensionRegistry* registry =
+      extensions::ExtensionRegistry::Get(browser_context);
+  const extensions::Extension* extension =
+      registry->enabled_extensions().GetExtensionOrAppByURL(
+          site_instance->GetSiteURL());
+  if (!extension)
+    return;
 
-    extensions::ProcessMap::Get(browser_context)
-        ->Insert(extension->id(),
-                 site_instance->GetProcess()->GetDeprecatedID());
-  }
+  if (browser_context->IsOffTheRecord() &&
+      extension->id() != extension_misc::kPdfExtensionId)
+    return;
+
+  extensions::ProcessMap::Get(browser_context)
+      ->Insert(extension->id(),
+               site_instance->GetProcess()->GetDeprecatedID());
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 }
 

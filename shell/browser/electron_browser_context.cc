@@ -399,12 +399,12 @@ ElectronBrowserContext::ElectronBrowserContext(
   if (!in_memory_) {
     BrowserContextDependencyManager::GetInstance()
         ->CreateBrowserContextServices(this);
-
-    auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
-        extensions::ExtensionSystem::Get(this));
-    extension_system->InitForRegularProfile(true /* extensions_enabled */);
-    extension_system->FinishInitialization();
   }
+
+  auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
+      extensions::ExtensionSystem::Get(this));
+  extension_system->InitForRegularProfile(true /* extensions_enabled */);
+  extension_system->FinishInitialization();
 #endif
 
   // Subscribe to Network Service process gone notifications to reset the
@@ -903,6 +903,12 @@ ElectronBrowserContext* ElectronBrowserContext::From(
   if (!context) {
     context.reset(new ElectronBrowserContext{std::cref(partition), in_memory,
                                              std::move(options)});
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+    // Non-persistent (in-memory) contexts redirect to the default context for
+    // shared extension services (e.g. built-in PDF extension).
+    if (in_memory && !partition.empty())
+      GetDefaultBrowserContext();
+#endif
   }
   return context.get();
 }
