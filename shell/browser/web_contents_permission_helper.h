@@ -47,9 +47,11 @@ class WebContentsPermissionHelper
                                      const GURL& url);
 
   // Synchronous Checks
-  bool CheckMediaAccessPermission(const url::Origin& security_origin,
+  bool CheckMediaAccessPermission(content::RenderFrameHost* requesting_frame,
+                                  const url::Origin& security_origin,
                                   blink::mojom::MediaStreamType type) const;
-  bool CheckSerialAccessPermission(const url::Origin& embedding_origin) const;
+  bool CheckSerialAccessPermission(
+      content::RenderFrameHost* requesting_frame) const;
 
  private:
   explicit WebContentsPermissionHelper(content::WebContents* web_contents);
@@ -61,7 +63,8 @@ class WebContentsPermissionHelper
                          bool user_gesture = false,
                          base::Value::Dict details = {});
 
-  bool CheckPermission(blink::PermissionType permission,
+  bool CheckPermission(content::RenderFrameHost* requesting_frame,
+                       blink::PermissionType permission,
                        base::Value::Dict details) const;
 
   // TODO(clavin): refactor to use the WebContents provided by the
