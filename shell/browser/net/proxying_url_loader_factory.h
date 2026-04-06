@@ -255,7 +255,6 @@ class ProxyingURLLoaderFactory
   void MaybeDeleteThis();
 
   bool ShouldIgnoreConnectionsLimit(const network::ResourceRequest& request);
-  bool ShouldPassThroughRequests() const;
 
   const cppgc::WeakPersistent<api::WebRequest> web_request_;
 
