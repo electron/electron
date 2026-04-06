@@ -790,6 +790,14 @@ bool ProxyingURLLoaderFactory::ShouldIgnoreConnectionsLimit(
   return false;
 }
 
+bool ProxyingURLLoaderFactory::ShouldPassThroughRequests() const {
+  // DevTools Fetch interception now relies on the TrustedURLLoaderHeaderClient
+  // plumbing, even when Electron has no webRequest listeners. Avoid the
+  // fast-path in that case so request bookkeeping is preserved.
+  return !web_request_->HasListener() &&
+         !url_loader_header_client_receiver_.is_bound();
+}
+
 void ProxyingURLLoaderFactory::CreateLoaderAndStart(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     int32_t request_id,
@@ -827,7 +835,7 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
     override_target_factory.Bind(AsarURLLoaderFactory::Create());
   }
 
-  if (!web_request_->HasListener()) {
+  if (ShouldPassThroughRequests()) {
     // Pass-through to the original factory.
     auto& target_factory = override_target_factory.is_bound()
                                ? override_target_factory
