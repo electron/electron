@@ -7,7 +7,6 @@
 
 #include <memory>
 
-#include "base/memory/raw_ptr.h"
 #include "gin/public/isolate_holder.h"
 #include "uv.h"  // NOLINT(build/include_directory)
 #include "v8/include/v8-locker.h"
@@ -35,7 +34,9 @@ class JavascriptEnvironment {
   void DestroyMicrotasksRunner();
 
   node::MultiIsolatePlatform* platform() const { return platform_.get(); }
-  v8::Isolate* isolate() const { return isolate_; }
+  [[nodiscard]] v8::Isolate* isolate() const {
+    return isolate_holder_->isolate();
+  }
   size_t max_young_generation_size_in_bytes() const {
     return max_young_generation_size_;
   }
@@ -49,10 +50,7 @@ class JavascriptEnvironment {
   size_t max_young_generation_size_ = 0;
   std::unique_ptr<gin::IsolateHolder> isolate_holder_;
 
-  // owned-by: isolate_holder_
-  const raw_ptr<v8::Isolate> isolate_;
-
-  // depends-on: isolate_
+  // depends-on: isolate_holder_'s isolate
   std::unique_ptr<v8::Locker> locker_;
 
   std::unique_ptr<MicrotasksRunner> microtasks_runner_;
