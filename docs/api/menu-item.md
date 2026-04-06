@@ -44,8 +44,8 @@ See [`Menu`](menu.md) for examples.
     menu items.
   * `registerAccelerator` boolean (optional) _Linux_ _Windows_ - If false, the accelerator won't be registered
     with the system, but it will still be displayed. Defaults to true.
-  * `sharingItem` SharingItem (optional) _macOS_ - The item to share when the `role` is `shareMenu`.
-  * `submenu` (MenuItemConstructorOptions[] | [Menu](menu.md)) (optional) - Should be specified
+  * `sharingItem` [SharingItem](structures/sharing-item.md) (optional) _macOS_ - The item to share when the `role` is `shareMenu`.
+  * `submenu` ([MenuItemConstructorOptions](#new-menuitemoptions)[] | [Menu](menu.md)) (optional) - Should be specified
     for `submenu` type menu items. If `submenu` is specified, the `type: 'submenu'` can be omitted.
     If the value is not a [`Menu`](menu.md) then it will be automatically converted to one using
     `Menu.buildFromTemplate`.
@@ -89,7 +89,7 @@ A `Function` that is fired when the MenuItem receives a click event.
 It can be called with `menuItem.click(event, focusedWindow, focusedWebContents)`.
 
 * `event` [KeyboardEvent](structures/keyboard-event.md)
-* `focusedWindow` [BaseWindow](browser-window.md)
+* `focusedWindow` [BaseWindow](base-window.md)
 * `focusedWebContents` [WebContents](web-contents.md)
 
 #### `menuItem.submenu`
@@ -110,11 +110,11 @@ A `string` (optional) indicating the item's role, if set. Can be `undo`, `redo`,
 
 #### `menuItem.accelerator`
 
-An `Accelerator | null` indicating the item's accelerator, if set.
+An [`Accelerator | null`](../tutorial/keyboard-shortcuts.md#accelerators) indicating the item's accelerator, if set.
 
 #### `menuItem.userAccelerator` _Readonly_ _macOS_
 
-An `Accelerator | null` indicating the item's [user-assigned accelerator](https://developer.apple.com/documentation/appkit/nsmenuitem/1514850-userkeyequivalent?language=objc) for the menu item.
+An [`Accelerator | null`](../tutorial/keyboard-shortcuts.md#accelerators) indicating the item's [user-assigned accelerator](https://developer.apple.com/documentation/appkit/nsmenuitem/1514850-userkeyequivalent?language=objc) for the menu item.
 
 > [!NOTE]
 > This property is only initialized after the `MenuItem` has been added to a `Menu`. Either via `Menu.buildFromTemplate` or via `Menu.append()/insert()`.  Accessing before initialization will just return `null`.
@@ -170,7 +170,7 @@ This property can be dynamically changed.
 
 #### `menuItem.sharingItem` _macOS_
 
-A `SharingItem` indicating the item to share when the `role` is `shareMenu`.
+A [`SharingItem`](structures/sharing-item.md) indicating the item to share when the `role` is `shareMenu`.
 
 This property can be dynamically changed.
 
