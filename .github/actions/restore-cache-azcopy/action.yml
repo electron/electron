@@ -61,9 +61,9 @@ runs:
         echo "Cache is empty - exiting"
         exit 1
       fi
-      
+
       mkdir temp-cache
-      tar -xf $DEPSHASH.tar -C temp-cache
+      zstd -d --long=30 -c $DEPSHASH.tar | tar -xf - -C temp-cache
       echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"
 
       if [ -d "temp-cache/src" ]; then
@@ -85,19 +85,17 @@ runs:
 
   - name: Unzip and Ensure Src Cache (Windows)
     if: ${{ inputs.target-platform == 'win' }}
-    shell: powershell
+    shell: bash
     run: |
-      $src_cache = "$env:DEPSHASH.tar"
-      $cache_size = $(Get-Item $src_cache).length
-      Write-Host "Downloaded cache is $cache_size"
-      if ($cache_size -eq 0) {
-        Write-Host "Cache is empty - exiting"
+      echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
+      if [ `du $DEPSHASH.tar | cut -f1` = "0" ]; then
+        echo "Cache is empty - exiting"
         exit 1
-      }
+      fi
 
-      $TEMP_DIR=New-Item -ItemType Directory -Path temp-cache
-      $TEMP_DIR_PATH = $TEMP_DIR.FullName
-      C:\ProgramData\Chocolatey\bin\7z.exe -y -snld20 x $src_cache -o"$TEMP_DIR_PATH"
+      mkdir temp-cache
+      zstd -d --long=30 -c $DEPSHASH.tar | tar -xf - -C temp-cache
+      rm -f $DEPSHASH.tar
 
   - name: Move Src Cache (Windows)
     if: ${{ inputs.target-platform == 'win' }}
@@ -112,9 +110,6 @@ runs:
           Write-Host "Relocating Cache"
           Remove-Item -Recurse -Force src
           Move-Item temp-cache\src src
-
-          Write-Host "Deleting zip file"
-          Remove-Item -Force $src_cache
         }
         if (-Not (Test-Path "src\third_party\blink")) {
           Write-Host "Cache was not correctly restored - exiting"

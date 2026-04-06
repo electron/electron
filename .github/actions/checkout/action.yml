@@ -28,7 +28,7 @@ runs:
     shell: bash
     run: |
       node src/electron/script/generate-deps-hash.js
-      DEPSHASH="v1-src-cache-$(cat src/electron/.depshash)"
+      DEPSHASH="v2-src-cache-$(cat src/electron/.depshash)"
       echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
       echo "CACHE_FILE=$DEPSHASH.tar" >> $GITHUB_ENV
       if [ "${{ inputs.target-platform }}" = "win" ]; then
@@ -109,7 +109,7 @@ runs:
         echo "target_os=['$TARGET_OS']" >> ./.gclient
       fi
 
-      ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 e d gclient sync --with_branch_heads --with_tags -vv
+      ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN=0 DEPOT_TOOLS_WIN_TOOLCHAIN=0 ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 e d gclient sync --with_branch_heads --with_tags
       if [[ "${{ inputs.is-release }}" != "true" ]]; then
         # Re-export all the patches to check if there were changes.
         python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
@@ -187,7 +187,9 @@ runs:
     shell: bash
     run: |
       echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
-      tar -cf $CACHE_FILE src
+      # Named .tar but zstd-compressed; the sas-sidecar's filename allowlist
+      # only permits .tar/.tgz so we keep the extension and decode on restore.
+      tar -cf - src | zstd -T0 --long=30 -f -o $CACHE_FILE
       echo "Compressed src to $(du -sh $CACHE_FILE | cut -f1 -d' ')"
       cp ./$CACHE_FILE $CACHE_DRIVE/
   - name: Persist Src Cache
