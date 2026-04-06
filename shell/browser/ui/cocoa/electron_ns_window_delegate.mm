@@ -42,6 +42,14 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 #pragma mark - NSWindowDelegate
 
 - (void)windowDidChangeOcclusionState:(NSNotification*)notification {
+  // Chromium's WebContentsOcclusionCheckerMac posts synthetic occlusion
+  // notifications tagged with its class name in userInfo. These reflect the
+  // checker's manual frame-intersection heuristic, not an actual macOS
+  // occlusion state change, so the real occlusionState hasn't changed and
+  // emitting show/hide in response would be spurious.
+  if (notification.userInfo[@"WebContentsOcclusionCheckerMac"] != nil)
+    return;
+
   // notification.object is the window that changed its state.
   // It's safe to use self.window instead if you don't assign one delegate to
   // many windows
