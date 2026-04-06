@@ -47,7 +47,8 @@ DialogInfo GetDialogInfo(char* handle, size_t size) {
     info.allows_multiple_selection = [panel allowsMultipleSelection];
     info.shows_hidden_files = [panel showsHiddenFiles];
     info.resolves_aliases = [panel resolvesAliases];
-    info.treats_packages_as_directories = [panel treatsFilePackagesAsDirectories];
+    info.treats_packages_as_directories =
+        [panel treatsFilePackagesAsDirectories];
     info.can_create_directories = [panel canCreateDirectories];
     return info;
   }
@@ -77,8 +78,7 @@ DialogInfo GetDialogInfo(char* handle, size_t size) {
   NSMutableArray<NSButton*>* buttons = [NSMutableArray array];
 
   // Recursively find all NSButton instances in the view hierarchy.
-  NSMutableArray<NSView*>* stack =
-      [NSMutableArray arrayWithObject:contentView];
+  NSMutableArray<NSView*>* stack = [NSMutableArray arrayWithObject:contentView];
   while ([stack count] > 0) {
     NSView* current = [stack lastObject];
     [stack removeLastObject];
@@ -153,8 +153,7 @@ DialogInfo GetDialogInfo(char* handle, size_t size) {
           NSString* title = [btn title];
           if (title && [title length] > 0) {
             info.checkbox_label = [title UTF8String];
-            info.checkbox_checked =
-                ([btn state] == NSControlStateValueOn);
+            info.checkbox_checked = ([btn state] == NSControlStateValueOn);
           }
         }
       }
@@ -180,8 +179,7 @@ bool ClickMessageBoxButton(char* handle, size_t size, int button_index) {
   NSView* contentView = [sheet contentView];
   NSMutableArray<NSButton*>* buttons = [NSMutableArray array];
 
-  NSMutableArray<NSView*>* stack =
-      [NSMutableArray arrayWithObject:contentView];
+  NSMutableArray<NSView*>* stack = [NSMutableArray arrayWithObject:contentView];
   while ([stack count] > 0) {
     NSView* current = [stack lastObject];
     [stack removeLastObject];
@@ -225,8 +223,7 @@ bool ClickCheckbox(char* handle, size_t size) {
   // Find the suppression/checkbox button — it is a non-bordered NSButton,
   // unlike the push buttons which are bordered.
   NSView* contentView = [sheet contentView];
-  NSMutableArray<NSView*>* stack =
-      [NSMutableArray arrayWithObject:contentView];
+  NSMutableArray<NSView*>* stack = [NSMutableArray arrayWithObject:contentView];
   while ([stack count] > 0) {
     NSView* current = [stack lastObject];
     [stack removeLastObject];
@@ -296,8 +293,7 @@ bool AcceptFileDialog(char* handle, size_t size, const std::string& filename) {
   NSView* contentView = [sheet contentView];
 
   // Search for the default button (key equivalent "\r") in the view hierarchy.
-  NSMutableArray<NSView*>* stack =
-      [NSMutableArray arrayWithObject:contentView];
+  NSMutableArray<NSView*>* stack = [NSMutableArray arrayWithObject:contentView];
   while ([stack count] > 0) {
     NSView* current = [stack lastObject];
     [stack removeLastObject];
@@ -315,6 +311,10 @@ bool AcceptFileDialog(char* handle, size_t size, const std::string& filename) {
 
   [NSApp endSheet:sheet returnCode:NSModalResponseOK];
   return true;
+}
+
+bool ClickMessageBoxButtonAndSendTabLater(char*, size_t, int, int) {
+  return false;
 }
 
 }  // namespace dialog_helper

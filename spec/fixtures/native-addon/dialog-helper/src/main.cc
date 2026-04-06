@@ -8,17 +8,27 @@
 namespace {
 
 // Helper: extract (char* data, size_t length) from the first Buffer argument.
-bool GetHandleArg(napi_env env, napi_callback_info info, size_t expected_argc,
-                  napi_value* args, char** data, size_t* length) {
-  size_t argc = expected_argc;
+bool GetHandleArg(napi_env env,
+                  napi_callback_info info,
+                  size_t required_argc,
+                  size_t argc_capacity,
+                  napi_value* args,
+                  char** data,
+                  size_t* length) {
+  size_t argc = argc_capacity;
   napi_status status = napi_get_cb_info(env, info, &argc, args, NULL, NULL);
-  if (status != napi_ok || argc < 1)
+  if (status != napi_ok)
     return false;
+  if (argc < required_argc) {
+    napi_throw_error(env, NULL, "Insufficient number of arguments");
+    return false;
+  }
 
   bool is_buffer;
   status = napi_is_buffer(env, args[0], &is_buffer);
   if (status != napi_ok || !is_buffer) {
-    napi_throw_error(env, NULL, "First argument must be a Buffer (native window handle)");
+    napi_throw_error(env, NULL,
+                     "First argument must be a Buffer (native window handle)");
     return false;
   }
 
@@ -30,7 +40,7 @@ napi_value GetDialogInfo(napi_env env, napi_callback_info info) {
   napi_value args[1];
   char* data;
   size_t length;
-  if (!GetHandleArg(env, info, 1, args, &data, &length))
+  if (!GetHandleArg(env, info, 1, 1, args, &data, &length))
     return NULL;
 
   dialog_helper::DialogInfo di = dialog_helper::GetDialogInfo(data, length);
@@ -44,15 +54,18 @@ napi_value GetDialogInfo(napi_env env, napi_callback_info info) {
   napi_set_named_property(env, result, "type", type_val);
 
   napi_value buttons_val;
-  napi_create_string_utf8(env, di.buttons.c_str(), di.buttons.size(), &buttons_val);
+  napi_create_string_utf8(env, di.buttons.c_str(), di.buttons.size(),
+                          &buttons_val);
   napi_set_named_property(env, result, "buttons", buttons_val);
 
   napi_value message_val;
-  napi_create_string_utf8(env, di.message.c_str(), di.message.size(), &message_val);
+  napi_create_string_utf8(env, di.message.c_str(), di.message.size(),
+                          &message_val);
   napi_set_named_property(env, result, "message", message_val);
 
   napi_value detail_val;
-  napi_create_string_utf8(env, di.detail.c_str(), di.detail.size(), &detail_val);
+  napi_create_string_utf8(env, di.detail.c_str(), di.detail.size(),
+                          &detail_val);
   napi_set_named_property(env, result, "detail", detail_val);
 
   napi_value checkbox_label_val;
@@ -66,7 +79,8 @@ napi_value GetDialogInfo(napi_env env, napi_callback_info info) {
 
   // File dialog properties
   napi_value prompt_val;
-  napi_create_string_utf8(env, di.prompt.c_str(), di.prompt.size(), &prompt_val);
+  napi_create_string_utf8(env, di.prompt.c_str(), di.prompt.size(),
+                          &prompt_val);
   napi_set_named_property(env, result, "prompt", prompt_val);
 
   napi_value panel_message_val;
@@ -119,7 +133,8 @@ napi_value GetDialogInfo(napi_env env, napi_callback_info info) {
   napi_set_named_property(env, result, "resolvesAliases", resolves_aliases_val);
 
   napi_value treats_packages_val;
-  napi_get_boolean(env, di.treats_packages_as_directories, &treats_packages_val);
+  napi_get_boolean(env, di.treats_packages_as_directories,
+                   &treats_packages_val);
   napi_set_named_property(env, result, "treatsPackagesAsDirectories",
                           treats_packages_val);
 
@@ -135,13 +150,14 @@ napi_value ClickMessageBoxButton(napi_env env, napi_callback_info info) {
   napi_value args[2];
   char* data;
   size_t length;
-  if (!GetHandleArg(env, info, 2, args, &data, &length))
+  if (!GetHandleArg(env, info, 2, 2, args, &data, &length))
     return NULL;
 
   int32_t button_index;
   napi_status status = napi_get_value_int32(env, args[1], &button_index);
   if (status != napi_ok) {
-    napi_throw_error(env, NULL, "Second argument must be a number (button index)");
+    napi_throw_error(env, NULL,
+                     "Second argument must be a number (button index)");
     return NULL;
   }
 
@@ -156,7 +172,7 @@ napi_value ClickCheckbox(napi_env env, napi_callback_info info) {
   napi_value args[1];
   char* data;
   size_t length;
-  if (!GetHandleArg(env, info, 1, args, &data, &length))
+  if (!GetHandleArg(env, info, 1, 1, args, &data, &length))
     return NULL;
 
   bool ok = dialog_helper::ClickCheckbox(data, length);
@@ -170,7 +186,7 @@ napi_value CancelFileDialog(napi_env env, napi_callback_info info) {
   napi_value args[1];
   char* data;
   size_t length;
-  if (!GetHandleArg(env, info, 1, args, &data, &length))
+  if (!GetHandleArg(env, info, 1, 1, args, &data, &length))
     return NULL;
 
   bool ok = dialog_helper::CancelFileDialog(data, length);
@@ -184,7 +200,7 @@ napi_value AcceptFileDialog(napi_env env, napi_callback_info info) {
   napi_value args[2];
   char* data;
   size_t length;
-  if (!GetHandleArg(env, info, 2, args, &data, &length))
+  if (!GetHandleArg(env, info, 1, 2, args, &data, &length))
     return NULL;
 
   std::string filename;
@@ -206,23 +222,57 @@ napi_value AcceptFileDialog(napi_env env, napi_callback_info info) {
   return result;
 }
 
+napi_value ClickMessageBoxButtonAndSendTabLater(napi_env env,
+                                                napi_callback_info info) {
+  napi_value args[3];
+  char* data;
+  size_t length;
+  if (!GetHandleArg(env, info, 3, 3, args, &data, &length))
+    return NULL;
+
+  int32_t button_index;
+  napi_status status = napi_get_value_int32(env, args[1], &button_index);
+  if (status != napi_ok) {
+    napi_throw_error(env, NULL,
+                     "Second argument must be a number (button index)");
+    return NULL;
+  }
+
+  int32_t post_close_delay_ms;
+  status = napi_get_value_int32(env, args[2], &post_close_delay_ms);
+  if (status != napi_ok) {
+    napi_throw_error(
+        env, NULL, "Third argument must be a number (post-close delay in ms)");
+    return NULL;
+  }
+
+  bool ok = dialog_helper::ClickMessageBoxButtonAndSendTabLater(
+      data, length, button_index, post_close_delay_ms);
+
+  napi_value result;
+  napi_get_boolean(env, ok, &result);
+  return result;
+}
+
 napi_value Init(napi_env env, napi_value exports) {
   napi_property_descriptor descriptors[] = {
-      {"getDialogInfo", NULL, GetDialogInfo, NULL, NULL, NULL,
-       napi_enumerable, NULL},
+      {"getDialogInfo", NULL, GetDialogInfo, NULL, NULL, NULL, napi_enumerable,
+       NULL},
       {"clickMessageBoxButton", NULL, ClickMessageBoxButton, NULL, NULL, NULL,
        napi_enumerable, NULL},
-      {"clickCheckbox", NULL, ClickCheckbox, NULL, NULL, NULL,
-       napi_enumerable, NULL},
+      {"clickCheckbox", NULL, ClickCheckbox, NULL, NULL, NULL, napi_enumerable,
+       NULL},
       {"cancelFileDialog", NULL, CancelFileDialog, NULL, NULL, NULL,
        napi_enumerable, NULL},
       {"acceptFileDialog", NULL, AcceptFileDialog, NULL, NULL, NULL,
        napi_enumerable, NULL},
+      {"clickMessageBoxButtonAndSendTabLater", NULL,
+       ClickMessageBoxButtonAndSendTabLater, NULL, NULL, NULL, napi_enumerable,
+       NULL},
   };
 
-  napi_define_properties(env, exports,
-                         sizeof(descriptors) / sizeof(*descriptors),
-                         descriptors);
+  napi_define_properties(
+      env, exports, sizeof(descriptors) / sizeof(*descriptors), descriptors);
   return exports;
 }
 

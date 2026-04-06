@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script>
+    const { ipcRenderer } = require('electron')
+
+    let unloadPrevented = false
+
+    function handleFocusChange(event) {
+      if (event.target.tagName === 'BUTTON') {
+        ipcRenderer.send('focus-changed', `${event.target.tagName}-${event.target.id}`)
+      }
+    }
+
+    addEventListener('focus', handleFocusChange, true)
+
+    window.onbeforeunload = function () {
+      if (!unloadPrevented) {
+        unloadPrevented = true
+        return false
+      }
+    }
+  </script>
+</head>
+<body>
+  <button id="element-1">Button 1</button>
+  <button id="element-2">Button 2</button>
+</body>
+</html>

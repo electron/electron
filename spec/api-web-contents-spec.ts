@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, webContents, session, app, BrowserView, WebContents, BaseWindow, WebContentsView } from 'electron/main';
+import { BrowserWindow, ipcMain, webContents, session, app, BrowserView, WebContents, BaseWindow, WebContentsView, dialog } from 'electron/main';
 
 import { assert, expect } from 'chai';
 
@@ -162,6 +162,48 @@ describe('webContents module', () => {
       const wait = once(w, 'closed');
       w.close();
       await wait;
+    });
+
+    ifit(process.platform === 'win32' && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)('restores tab focus after a synchronous message box prevents unload', async () => {
+      const dialogHelper = require('@electron-ci/dialog-helper');
+      const w = new BrowserWindow({
+        alwaysOnTop: true,
+        show: true,
+        webPreferences: {
+          contextIsolation: false,
+          nodeIntegration: true
+        }
+      });
+      const dialogTitle = `beforeunload-sync-focus-${process.pid}-${Date.now()}`;
+
+      w.webContents.once('will-prevent-unload', event => {
+        event.preventDefault();
+        dialog.showMessageBoxSync(w, {
+          buttons: ['OK'],
+          message: 'Close prevented',
+          title: dialogTitle
+        });
+      });
+
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-focus-loop.html'));
+      w.focus();
+      await waitUntil(() => w.isFocused());
+
+      expect(dialogHelper.clickMessageBoxButtonAndSendTabLater(
+        w.getNativeWindowHandle(), 0, 250)).to.be.true();
+
+      const focusChange = once(ipcMain, 'focus-changed');
+
+      w.close();
+
+      const [, focusedElementId] = await Promise.race([
+        focusChange,
+        setTimeout(3000).then(() => {
+          throw new Error('Timed out waiting for focus to return to the window after closing the sync message box');
+        })
+      ]);
+
+      expect(focusedElementId).to.equal('BUTTON-element-1');
     });
 
     it('fails loading a subsequent page after beforeunload is not prevented', async () => {
