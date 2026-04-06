@@ -3,7 +3,7 @@
 These are the style guidelines for coding in Electron.
 
 You can run `npm run lint` to show any style issues detected by `cpplint` and
-`eslint`.
+`oxlint`.
 
 ## General Code
 
