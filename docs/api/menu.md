@@ -70,7 +70,7 @@ for more information on macOS' native actions.
 
 #### `Menu.buildFromTemplate(template)`
 
-- `template` (MenuItemConstructorOptions | [MenuItem](menu-item.md))[]
+- `template` ([MenuItemConstructorOptions](menu-item.md#new-menuitemoptions) | [MenuItem](menu-item.md))[]
 
 Returns [`Menu`](menu.md)
 
@@ -162,7 +162,7 @@ Emitted when a popup is closed either manually or with `menu.closePopup()`.
 
 #### `menu.items`
 
-A `MenuItem[]` array containing the menu's items.
+A [`MenuItem[]`](menu-item.md) array containing the menu's items.
 
 Each `Menu` consists of multiple [`MenuItem`](menu-item.md) instances and each `MenuItem`
 can nest a `Menu` into its `submenu` property.
