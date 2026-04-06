@@ -225,7 +225,6 @@ runs:
         fi
     - name: Generate FFMpeg ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ inputs.is-release == 'true' }}
       run: |
         cd src
         # Reuse the hermetic mac_sdk_path that `e build` wrote for out/Default so
