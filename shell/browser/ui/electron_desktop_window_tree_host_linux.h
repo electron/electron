@@ -16,7 +16,6 @@
 #include "ui/gfx/image/image_skia.h"
 #include "ui/linux/device_scale_factor_observer.h"
 #include "ui/linux/linux_ui.h"
-#include "ui/native_theme/native_theme_observer.h"
 #include "ui/platform_window/platform_window.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
 
@@ -26,7 +25,6 @@ class NativeWindowViews;
 
 class ElectronDesktopWindowTreeHostLinux
     : public views::DesktopWindowTreeHostLinux,
-      private ui::NativeThemeObserver,
       private ui::DeviceScaleFactorObserver {
  public:
   ElectronDesktopWindowTreeHostLinux(
@@ -61,9 +59,6 @@ class ElectronDesktopWindowTreeHostLinux
                             ui::PlatformWindowState new_state) override;
   void OnWindowTiledStateChanged(ui::WindowTiledEdges new_tiled_edges) override;
 
-  // ui::NativeThemeObserver:
-  void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
-
   // views::OnDeviceScaleFactorChanged:
   void OnDeviceScaleFactorChanged() override;
 
@@ -83,8 +78,6 @@ class ElectronDesktopWindowTreeHostLinux
 
   raw_ptr<NativeWindowViews> native_window_view_;  // weak ref
 
-  base::ScopedObservation<ui::NativeTheme, ui::NativeThemeObserver>
-      theme_observation_{this};
   base::ScopedObservation<ui::LinuxUi, ui::DeviceScaleFactorObserver>
       scale_observation_{this};
   ui::PlatformWindowState window_state_ = ui::PlatformWindowState::kUnknown;

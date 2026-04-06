@@ -1,0 +1,2537 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Athul Iddya <athul@iddya.com>
+Date: Thu, 9 Apr 2026 19:44:18 -0700
+Subject: Reland "Add a client-side decorated frame view for non-browser
+ widgets on Linux"
+
+This is a reland of commit e514a815751a98f257a5587deb6e6424dc24f271
+
+The original change used a views::Label for the window title, which
+caused a duplicate NAME-CHANGED accessibility event to be emitted on
+window title changes. FrameViewLinux now paints the title text on the
+frame, matching DefaultFrameView's approach.
+
+Original change's description:
+> Add a client-side decorated frame view for non-browser widgets on Linux
+>
+> Non-browser widgets like Profile Picker and Task Manager do not get
+> native decorations on Wayland compositors that don't support server-side
+> decorations, and they fall back to DefaultFrameView. Browser widgets
+> have BrowserFrameViewLinux for toolkit-independent decorations and
+> BrowserFrameViewLinuxNative for toolkit-native drawing.
+>
+> A new view class called FrameViewLinux has been created in ui/views to
+> close this gap. This class re-implements similar logic to
+> BrowserFrameViewLinux, using Material Design styling to draw the window
+> frame, controls, and shadows. Shared logic between FrameViewLinux and
+> BrowserFrameViewLinux has been split off as utilities in
+> frame_view_utils_linux.
+>
+> FrameViewLayoutLinux handles layout of the caption buttons, title bar,
+> and client view. It is designed as an extensible base class with virtual
+> methods for frame geometry, button sizing, and layout, allowing
+> subclasses to provide native toolkit integration.
+>
+> DesktopWindowTreeHostLinux has been updated to handle native theme
+> observation and the additional responsibilities of frame insets and
+> region calculations for FrameViewLinux classes. The compositor window
+> menu has been added as a fallback when a frame lacks a context menu.
+>
+> Bug: 40275440
+> Change-Id: Id1d1fb03a6dc16ec11b2590b75a915479d22919f
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7709824
+> Auto-Submit: Athul Iddya <athul@iddya.com>
+> Reviewed-by: Thomas Anderson <thomasanderson@chromium.org>
+> Reviewed-by: Tom Lukaszewicz <tluk@chromium.org>
+> Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1612202}
+
+Bug: 40275440
+Change-Id: I65d74eed6b2782569d445a3d4ab40f7f74576b68
+
+diff --git a/chrome/browser/ui/BUILD.gn b/chrome/browser/ui/BUILD.gn
+index 08504335e8bd118006946b98f0d1811ff182a899..16800a314014b56e116593ce50749fd024917143 100644
+--- a/chrome/browser/ui/BUILD.gn
++++ b/chrome/browser/ui/BUILD.gn
+@@ -5029,8 +5029,6 @@ static_library("ui") {
+         "views/frame/browser_frame_view_linux.h",
+         "views/frame/browser_frame_view_linux_native.cc",
+         "views/frame/browser_frame_view_linux_native.h",
+-        "views/frame/browser_frame_view_paint_utils_linux.cc",
+-        "views/frame/browser_frame_view_paint_utils_linux.h",
+         "views/status_icons/status_tray_linux.cc",
+         "views/status_icons/status_tray_linux.h",
+       ]
+diff --git a/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_linux.cc b/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_linux.cc
+index fa8205e4b41bab1ff85f254fe840b21d264216c7..53816cc50e833bbb21476a767a77321031064345 100644
+--- a/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_linux.cc
++++ b/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_linux.cc
+@@ -19,19 +19,17 @@
+ #include "chrome/browser/ui/views/tabs/dragging/tab_drag_controller.h"
+ #include "chrome/browser/ui/views/tabs/tab_strip.h"
+ #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
+-#include "third_party/skia/include/core/SkRRect.h"
+ #include "ui/base/dragdrop/mojom/drag_drop_types.mojom-shared.h"
+ #include "ui/base/mojom/window_show_state.mojom.h"
+ #include "ui/base/ui_base_features.h"
+ #include "ui/gfx/geometry/rect.h"
+ #include "ui/gfx/geometry/rect_conversions.h"
+-#include "ui/gfx/geometry/skia_conversions.h"
+ #include "ui/linux/linux_ui.h"
+-#include "ui/native_theme/native_theme.h"
+ #include "ui/ozone/public/ozone_platform.h"
+ #include "ui/platform_window/extensions/wayland_extension.h"
+ #include "ui/platform_window/extensions/x11_extension.h"
+ #include "ui/platform_window/platform_window_init_properties.h"
++#include "ui/views/window/frame_view_utils_linux.h"
+ 
+ namespace {
+ 
+@@ -88,7 +86,6 @@ BrowserDesktopWindowTreeHostLinux::BrowserDesktopWindowTreeHostLinux(
+                                      ? views::Widget::FrameType::kForceCustom
+                                      : views::Widget::FrameType::kForceNative);
+ 
+-  theme_observation_.Observe(ui::NativeTheme::GetInstanceForNativeUi());
+   if (auto* linux_ui = ui::LinuxUi::instance()) {
+     scale_observation_.Observe(linux_ui);
+   }
+@@ -193,51 +190,9 @@ void BrowserDesktopWindowTreeHostLinux::UpdateFrameHints() {
+     // Set the opaque region.
+     std::vector<gfx::Rect> opaque_region;
+     if (IsShowingFrame(native_widget_->UseCustomFrame(), window_state)) {
+-      // The opaque region is a list of rectangles that contain only fully
+-      // opaque pixels of the window.  We need to convert the clipping
+-      // rounded-rect into this format.
+-      SkRRect rrect = view->GetRestoredClipRegion();
+-      gfx::RectF rectf = gfx::SkRectToRectF(rrect.rect());
+-      rectf.Scale(scale);
+-      // It is acceptable to omit some pixels that are opaque, but the region
+-      // must not include any translucent pixels.  Therefore, we must
+-      // conservatively scale to the enclosed rectangle.
+-      gfx::Rect rect = gfx::ToEnclosedRect(rectf);
+-
+-      // Create the initial region from the clipping rectangle without rounded
+-      // corners.
+-      SkRegion region(gfx::RectToSkIRect(rect));
+-
+-      // Now subtract out the small rectangles that cover the corners.
+-      struct {
+-        SkRRect::Corner corner;
+-        bool left;
+-        bool upper;
+-      } kCorners[] = {
+-          {SkRRect::kUpperLeft_Corner, true, true},
+-          {SkRRect::kUpperRight_Corner, false, true},
+-          {SkRRect::kLowerLeft_Corner, true, false},
+-          {SkRRect::kLowerRight_Corner, false, false},
+-      };
+-      for (const auto& corner : kCorners) {
+-        auto radii = rrect.radii(corner.corner);
+-        auto rx = std::ceil(scale * radii.x());
+-        auto ry = std::ceil(scale * radii.y());
+-        auto corner_rect = SkIRect::MakeXYWH(
+-            corner.left ? rect.x() : rect.right() - rx,
+-            corner.upper ? rect.y() : rect.bottom() - ry, rx, ry);
+-        region.op(corner_rect, SkRegion::kDifference_Op);
+-      }
+-
+-      auto translucent_top_area_rect = SkIRect::MakeXYWH(
+-          rect.x(), rect.y(), rect.width(),
+-          std::ceil(view->GetTranslucentTopAreaHeight() * scale - rect.y()));
+-      region.op(translucent_top_area_rect, SkRegion::kDifference_Op);
+-
+-      // Convert the region to a list of rectangles.
+-      for (SkRegion::Iterator i(region); !i.done(); i.next()) {
+-        opaque_region.push_back(gfx::SkIRectToRect(i.rect()));
+-      }
++      opaque_region =
++          views::GetRestoredOpaqueRegion(view->GetRestoredClipRegion(), scale,
++                                         view->GetTranslucentTopAreaHeight());
+     } else {
+       // The entire window except for the translucent top is opaque.
+       gfx::Rect opaque_region_dip(widget_size);
+@@ -374,6 +329,7 @@ void BrowserDesktopWindowTreeHostLinux::OnWindowTiledStateChanged(
+ 
+ void BrowserDesktopWindowTreeHostLinux::OnNativeThemeUpdated(
+     ui::NativeTheme* observed_theme) {
++  views::DesktopWindowTreeHostLinux::OnNativeThemeUpdated(observed_theme);
+   UpdateFrameHints();
+ }
+ 
+diff --git a/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_linux.h b/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_linux.h
+index 12ca597be51480e45acf4490cf6e533c23c30556..b4a7275b02cfb859b05cbb76be56ede975d90864 100644
+--- a/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_linux.h
++++ b/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_linux.h
+@@ -28,13 +28,11 @@ class DesktopNativeWidgetAura;
+ 
+ namespace ui {
+ class LinuxUi;
+-class NativeTheme;
+ }  // namespace ui
+ 
+ class BrowserDesktopWindowTreeHostLinux
+     : public BrowserDesktopWindowTreeHost,
+       public views::DesktopWindowTreeHostLinux,
+-      ui::NativeThemeObserver,
+       ui::DeviceScaleFactorObserver {
+  public:
+   BrowserDesktopWindowTreeHostLinux(
+@@ -109,8 +107,6 @@ class BrowserDesktopWindowTreeHostLinux
+   std::unique_ptr<DbusAppmenu> dbus_appmenu_;
+ #endif
+ 
+-  base::ScopedObservation<ui::NativeTheme, ui::NativeThemeObserver>
+-      theme_observation_{this};
+   base::ScopedObservation<ui::LinuxUi, ui::DeviceScaleFactorObserver>
+       scale_observation_{this};
+ };
+diff --git a/chrome/browser/ui/views/frame/browser_frame_view_layout_linux.cc b/chrome/browser/ui/views/frame/browser_frame_view_layout_linux.cc
+index 799e936e155d21ee3766fd524eb4e0e7b11d6197..bc0f645a2c98f3acde117136171fb63ce410d015 100644
+--- a/chrome/browser/ui/views/frame/browser_frame_view_layout_linux.cc
++++ b/chrome/browser/ui/views/frame/browser_frame_view_layout_linux.cc
+@@ -7,10 +7,10 @@
+ #include "base/i18n/rtl.h"
+ #include "chrome/browser/ui/layout_constants.h"
+ #include "chrome/browser/ui/views/frame/browser_frame_view_linux.h"
+-#include "chrome/browser/ui/views/frame/browser_frame_view_paint_utils_linux.h"
+ #include "chrome/browser/ui/views/frame/opaque_browser_frame_view_layout.h"
+ #include "ui/base/ui_base_features.h"
+ #include "ui/gfx/geometry/insets.h"
++#include "ui/views/window/frame_view_utils_linux.h"
+ 
+ namespace {
+ 
+@@ -62,7 +62,7 @@ gfx::Insets BrowserFrameViewLayoutLinux::RestoredFrameBorderInsets() const {
+ #endif
+   auto shadow_values =
+       tiled ? gfx::ShadowValues() : view_->GetShadowValues(true);
+-  return GetRestoredFrameBorderInsetsLinux(
++  return views::GetRestoredFrameBorderInsetsLinux(
+       delegate_->ShouldDrawRestoredFrameShadow(),
+       OpaqueBrowserFrameViewLayout::RestoredFrameBorderInsets(), shadow_values,
+       gfx::Insets(kResizeBorder));
+diff --git a/chrome/browser/ui/views/frame/browser_frame_view_layout_linux_native.cc b/chrome/browser/ui/views/frame/browser_frame_view_layout_linux_native.cc
+index 460654de1d67771573417f1de59c629fed4e328c..5390970ae87a483fd245f475e4eb0bea9e12b588 100644
+--- a/chrome/browser/ui/views/frame/browser_frame_view_layout_linux_native.cc
++++ b/chrome/browser/ui/views/frame/browser_frame_view_layout_linux_native.cc
+@@ -6,6 +6,7 @@
+ 
+ #include "chrome/browser/ui/views/frame/opaque_browser_frame_view_layout.h"
+ #include "ui/linux/nav_button_provider.h"
++#include "ui/views/window/frame_view_utils_linux.h"
+ 
+ BrowserFrameViewLayoutLinuxNative::BrowserFrameViewLayoutLinuxNative(
+     ui::NavButtonProvider* nav_button_provider,
+@@ -81,16 +82,5 @@ int BrowserFrameViewLayoutLinuxNative::GetWindowCaptionSpacing(
+ ui::NavButtonProvider::FrameButtonDisplayType
+ BrowserFrameViewLayoutLinuxNative::GetButtonDisplayType(
+     views::FrameButton button_id) const {
+-  switch (button_id) {
+-    case views::FrameButton::kMinimize:
+-      return ui::NavButtonProvider::FrameButtonDisplayType::kMinimize;
+-    case views::FrameButton::kMaximize:
+-      return delegate_->IsMaximized()
+-                 ? ui::NavButtonProvider::FrameButtonDisplayType::kRestore
+-                 : ui::NavButtonProvider::FrameButtonDisplayType::kMaximize;
+-    case views::FrameButton::kClose:
+-      return ui::NavButtonProvider::FrameButtonDisplayType::kClose;
+-    default:
+-      NOTREACHED();
+-  }
++  return views::GetFrameButtonDisplayType(button_id, delegate_->IsMaximized());
+ }
+diff --git a/chrome/browser/ui/views/frame/browser_frame_view_linux.cc b/chrome/browser/ui/views/frame/browser_frame_view_linux.cc
+index 76362d2f868155d3cef7a7719d779b77afedca87..98583549ab22425e3af36226ae63e96f205dfde9 100644
+--- a/chrome/browser/ui/views/frame/browser_frame_view_linux.cc
++++ b/chrome/browser/ui/views/frame/browser_frame_view_linux.cc
+@@ -6,17 +6,18 @@
+ 
+ #include "base/notreached.h"
+ #include "chrome/browser/ui/views/chrome_layout_provider.h"
+-#include "chrome/browser/ui/views/frame/browser_frame_view_paint_utils_linux.h"
+ #include "chrome/browser/ui/views/frame/browser_native_widget_aura_linux.h"
+ #include "chrome/browser/ui/views/frame/browser_view.h"
+ #include "ui/base/hit_test.h"
+ #include "ui/base/metadata/metadata_impl_macros.h"
++#include "ui/gfx/geometry/insets_f.h"
++#include "ui/gfx/geometry/rect_f.h"
+ #include "ui/gfx/geometry/rounded_corners_f.h"
+-#include "ui/gfx/geometry/skia_conversions.h"
+ #include "ui/gfx/shadow_value.h"
+ #include "ui/linux/linux_ui.h"
+ #include "ui/ozone/public/ozone_platform.h"
+ #include "ui/views/layout/layout_provider.h"
++#include "ui/views/window/frame_view_utils_linux.h"
+ #include "ui/views/window/window_button_order_provider.h"
+ 
+ namespace {
+@@ -51,16 +52,14 @@ gfx::Insets BrowserFrameViewLinux::GetInputInsets() const {
+ }
+ 
+ SkRRect BrowserFrameViewLinux::GetRestoredClipRegion() const {
+-  gfx::RectF bounds_dip(GetLocalBounds());
+-  if (ShouldDrawRestoredFrameShadow()) {
+-    gfx::InsetsF border(layout_->RestoredMirroredFrameBorderInsets());
+-    bounds_dip.Inset(border);
+-  }
+-  float radius_dip = GetRestoredCornerRadiusDip();
+-  SkVector radii[4]{{radius_dip, radius_dip}, {radius_dip, radius_dip}, {}, {}};
+-  SkRRect clip;
+-  clip.setRectRadii(gfx::RectFToSkRect(bounds_dip), radii);
+-  return clip;
++  gfx::InsetsF border =
++      ShouldDrawRestoredFrameShadow()
++          ? gfx::InsetsF(layout_->RestoredMirroredFrameBorderInsets())
++          : gfx::InsetsF();
++  float radius = GetRestoredCornerRadiusDip();
++  return views::GetRestoredClipRegion(
++      gfx::RectF(GetLocalBounds()), border,
++      gfx::RoundedCornersF(radius, radius, 0, 0));
+ }
+ 
+ // static
+@@ -79,7 +78,7 @@ void BrowserFrameViewLinux::PaintRestoredFrameBorder(
+ #endif
+   auto shadow_values =
+       tiled ? gfx::ShadowValues() : GetShadowValues(ShouldPaintAsActive());
+-  PaintRestoredFrameBorderLinux(
++  views::PaintRestoredFrameBorderLinux(
+       *canvas, *this, frame_background(), GetRestoredClipRegion(),
+       ShouldDrawRestoredFrameShadow(), ShouldPaintAsActive(),
+       layout_->RestoredMirroredFrameBorderInsets(), shadow_values, tiled);
+diff --git a/chrome/browser/ui/views/frame/browser_frame_view_paint_utils_linux.h b/chrome/browser/ui/views/frame/browser_frame_view_paint_utils_linux.h
+deleted file mode 100644
+index 80d7e1d1192b1c53a3206754895cea912dd7de29..0000000000000000000000000000000000000000
+--- a/chrome/browser/ui/views/frame/browser_frame_view_paint_utils_linux.h
++++ /dev/null
+@@ -1,44 +0,0 @@
+-// Copyright 2022 The Chromium Authors
+-// Use of this source code is governed by a BSD-style license that can be
+-// found in the LICENSE file.
+-
+-#ifndef CHROME_BROWSER_UI_VIEWS_FRAME_BROWSER_FRAME_VIEW_PAINT_UTILS_LINUX_H_
+-#define CHROME_BROWSER_UI_VIEWS_FRAME_BROWSER_FRAME_VIEW_PAINT_UTILS_LINUX_H_
+-
+-#include "ui/base/ui_base_types.h"
+-#include "ui/gfx/shadow_value.h"
+-
+-class SkRRect;
+-
+-namespace gfx {
+-class Canvas;
+-class Insets;
+-}  // namespace gfx
+-
+-namespace views {
+-class FrameBackground;
+-class View;
+-}  // namespace views
+-
+-// Paint the window borders, shadows and the background of the top bar area for
+-// BrowserFrameViewLinux and PictureInPictureBrowserFrameView on Linux.
+-void PaintRestoredFrameBorderLinux(gfx::Canvas& canvas,
+-                                   const views::View& view,
+-                                   views::FrameBackground* frame_background,
+-                                   const SkRRect& clip,
+-                                   bool showing_shadow,
+-                                   bool is_active,
+-                                   const gfx::Insets& border,
+-                                   const gfx::ShadowValues& shadow_values,
+-                                   bool tiled);
+-
+-// Get the insets from the native window edge to the client view when the window
+-// is restored for BrowserFrameViewLayoutLinux and
+-// PictureInPictureBrowserFrameView on Linux.
+-gfx::Insets GetRestoredFrameBorderInsetsLinux(
+-    bool showing_shadow,
+-    const gfx::Insets& default_border,
+-    const gfx::ShadowValues& shadow_values,
+-    const gfx::Insets& resize_border);
+-
+-#endif  // CHROME_BROWSER_UI_VIEWS_FRAME_BROWSER_FRAME_VIEW_PAINT_UTILS_LINUX_H_
+diff --git a/chrome/browser/ui/views/frame/picture_in_picture_browser_frame_view_linux.cc b/chrome/browser/ui/views/frame/picture_in_picture_browser_frame_view_linux.cc
+index e079148843e7700a4be044d37417daf2d017fe3b..7cca8df26548c73cc424836aa67b5f7df7a5367b 100644
+--- a/chrome/browser/ui/views/frame/picture_in_picture_browser_frame_view_linux.cc
++++ b/chrome/browser/ui/views/frame/picture_in_picture_browser_frame_view_linux.cc
+@@ -8,15 +8,15 @@
+ #include "chrome/browser/themes/theme_service_factory.h"
+ #include "chrome/browser/ui/color/chrome_color_id.h"
+ #include "chrome/browser/ui/views/chrome_layout_provider.h"
+-#include "chrome/browser/ui/views/frame/browser_frame_view_paint_utils_linux.h"
+ #include "chrome/browser/ui/views/frame/browser_native_widget_aura_linux.h"
+ #include "chrome/browser/ui/views/frame/browser_view.h"
+ #include "third_party/skia/include/core/SkRRect.h"
+ #include "ui/gfx/canvas.h"
+ #include "ui/gfx/geometry/insets.h"
+-#include "ui/gfx/geometry/skia_conversions.h"
++#include "ui/gfx/geometry/rounded_corners_f.h"
+ #include "ui/linux/linux_ui.h"
+ #include "ui/views/window/frame_background.h"
++#include "ui/views/window/frame_view_utils_linux.h"
+ 
+ namespace {
+ 
+@@ -78,12 +78,9 @@ gfx::Insets PictureInPictureBrowserFrameViewLinux::GetInputInsets() const {
+ }
+ 
+ SkRRect PictureInPictureBrowserFrameViewLinux::GetRestoredClipRegion() const {
+-  gfx::RectF bounds_dip(GetLocalBounds());
+-  if (ShouldDrawFrameShadow()) {
+-    gfx::InsetsF border(RestoredMirroredFrameBorderInsets());
+-    bounds_dip.Inset(border);
+-  }
+-
++  gfx::InsetsF border = ShouldDrawFrameShadow()
++                            ? gfx::InsetsF(RestoredMirroredFrameBorderInsets())
++                            : gfx::InsetsF();
+   float radius_dip = 0;
+   if (window_frame_provider_) {
+     radius_dip = window_frame_provider_->GetTopCornerRadiusDip();
+@@ -91,10 +88,9 @@ SkRRect PictureInPictureBrowserFrameViewLinux::GetRestoredClipRegion() const {
+     radius_dip = ChromeLayoutProvider::Get()->GetCornerRadiusMetric(
+         views::Emphasis::kHigh);
+   }
+-  SkVector radii[4]{{radius_dip, radius_dip}, {radius_dip, radius_dip}, {}, {}};
+-  SkRRect clip;
+-  clip.setRectRadii(gfx::RectFToSkRect(bounds_dip), radii);
+-  return clip;
++  return views::GetRestoredClipRegion(
++      gfx::RectF(GetLocalBounds()), border,
++      gfx::RoundedCornersF(radius_dip, radius_dip, 0, 0));
+ }
+ 
+ ///////////////////////////////////////////////////////////////////////////////
+@@ -137,7 +133,7 @@ void PictureInPictureBrowserFrameViewLinux::OnPaint(gfx::Canvas* canvas) {
+         GetBrowserView()->GetThemeOffsetFromBrowserView());
+     frame_background_->set_theme_overlay_image(GetFrameOverlayImage());
+     frame_background_->set_top_area_height(GetTopAreaHeight());
+-    PaintRestoredFrameBorderLinux(
++    views::PaintRestoredFrameBorderLinux(
+         *canvas, *this, frame_background_.get(), GetRestoredClipRegion(),
+         ShouldDrawFrameShadow(), ShouldPaintAsActive(),
+         RestoredMirroredFrameBorderInsets(), GetShadowValues(),
+@@ -170,7 +166,7 @@ gfx::Insets PictureInPictureBrowserFrameViewLinux::FrameBorderInsets() const {
+     return tiled ? gfx::Insets() : insets;
+   }
+ 
+-  return GetRestoredFrameBorderInsetsLinux(
++  return views::GetRestoredFrameBorderInsetsLinux(
+       ShouldDrawFrameShadow(), gfx::Insets(kFrameBorderThickness),
+       GetShadowValues(),
+       PictureInPictureBrowserFrameView::ResizeBorderInsets());
+diff --git a/ui/color/color_id.h b/ui/color/color_id.h
+index 2fb1c5344086227d47467f87d980b2c8f5112cad..4be6531e6f2b4b6228cee47472397151d9307e20 100644
+--- a/ui/color/color_id.h
++++ b/ui/color/color_id.h
+@@ -358,6 +358,8 @@
+   E_CPONLY(kColorFrameActive) \
+   E_CPONLY(kColorFrameActiveUnthemed) \
+   E_CPONLY(kColorFrameCaptionButtonUnfocused) \
++  E_CPONLY(kColorFrameCaptionForegroundActive) \
++  E_CPONLY(kColorFrameCaptionForegroundInactive) \
+   E_CPONLY(kColorFrameInactive) \
+   E_CPONLY(kColorHelpIconActive) \
+   E_CPONLY(kColorHelpIconInactive) \
+diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
+index 5a967fd5697a92d2acea2ea81b6c1115d41c2a48..a8578979c8438961f6354d4ba823bcb520086afa 100644
+--- a/ui/color/ui_color_mixer.cc
++++ b/ui/color/ui_color_mixer.cc
+@@ -80,6 +80,10 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
+   mixer[kColorFrameActive] = {kColorFrameActiveUnthemed};
+   mixer[kColorFrameActiveUnthemed] = {
+       dark_mode ? gfx::kGoogleGrey900 : SkColorSetRGB(0xDE, 0xE1, 0xE6)};
++  mixer[kColorFrameCaptionForegroundActive] =
++      GetColorWithMaxContrast(kColorFrameActive);
++  mixer[kColorFrameCaptionForegroundInactive] =
++      GetColorWithMaxContrast(kColorFrameInactive);
+   mixer[kColorFrameInactive] = {dark_mode ? gfx::kGoogleGrey800
+                                           : gfx::kGoogleGrey200};
+   mixer[kColorHelpIconActive] = {kColorPrimaryForeground};
+diff --git a/ui/gtk/gtk_color_mixers.cc b/ui/gtk/gtk_color_mixers.cc
+index 6a060a75f62f991d7bc2bdeeb6849bc3618bbbb1..fd2e96e37d9c3c029ed5297cffd7f396ef79b03e 100644
+--- a/ui/gtk/gtk_color_mixers.cc
++++ b/ui/gtk/gtk_color_mixers.cc
+@@ -116,6 +116,10 @@ void AddGtkNativeColorMixer(ui::ColorProvider* provider,
+       {"combobox window.background.popup ", "menu(gtk-combobox-popup-menu) ",
+        GtkCssMenuItem(), ":hover cellview"}))};
+   mixer[ui::kColorFrameActive] = {frame_color};
++  mixer[ui::kColorFrameCaptionForegroundActive] = {
++      GetFgColor(header_selector + " label.title")};
++  mixer[ui::kColorFrameCaptionForegroundInactive] = {
++      GetFgColor(header_selector_inactive + " label.title")};
+   mixer[ui::kColorFrameInactive] = {frame_color_inactive};
+   mixer[ui::kColorFocusableBorderUnfocused] = {entry_border};
+   mixer[ui::kColorHelpIconActive] = {GetFgColor("button.image-button:hover")};
+diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
+index 775d317346a77cf54c4cfb3c3723e5e990f50bb3..33cbbfe242b8212634888d88532ead71c1a2c590 100644
+--- a/ui/views/BUILD.gn
++++ b/ui/views/BUILD.gn
+@@ -657,7 +657,17 @@ component("views") {
+   if (is_linux) {
+     public_deps += [ "//ui/linux:linux_ui" ]
+     deps += [ "//ui/base/ime/linux" ]
+-    sources += [ "controls/menu/menu_config_linux.cc" ]
++    public += [
++      "window/frame_view_layout_linux.h",
++      "window/frame_view_linux.h",
++      "window/frame_view_utils_linux.h",
++    ]
++    sources += [
++      "controls/menu/menu_config_linux.cc",
++      "window/frame_view_layout_linux.cc",
++      "window/frame_view_linux.cc",
++      "window/frame_view_utils_linux.cc",
++    ]
+   }
+ 
+   if (is_chromeos) {
+@@ -1458,6 +1468,7 @@ test("views_unittests") {
+   }
+ 
+   if (is_linux) {
++    sources += [ "window/frame_view_linux_unittest.cc" ]
+     deps += [
+       "//ui/base/ime/linux",
+       "//ui/linux:test_support",
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.cc
+index 90154f1dd6fea35baf9795488a327b894b2f86e7..3f48ca5b580777f9c2a4fc39988fb70cbaa17f3d 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.cc
+@@ -24,14 +24,21 @@
+ #include "ui/display/display.h"
+ #include "ui/display/screen.h"
+ #include "ui/events/event.h"
++#include "ui/gfx/geometry/rect_conversions.h"
+ #include "ui/linux/linux_ui.h"
++#include "ui/linux/window_frame_provider.h"
++#include "ui/native_theme/native_theme.h"
+ #include "ui/platform_window/extensions/wayland_extension.h"
+ #include "ui/platform_window/extensions/x11_extension.h"
+ #include "ui/platform_window/platform_window.h"
+ #include "ui/platform_window/platform_window_init_properties.h"
+ #include "ui/platform_window/wm/wm_move_resize_handler.h"
++#include "ui/views/view_utils.h"
+ #include "ui/views/views_delegate.h"
+ #include "ui/views/widget/widget.h"
++#include "ui/views/window/frame_view_linux.h"
++#include "ui/views/window/frame_view_utils_linux.h"
++#include "ui/views/window/native_frame_view.h"
+ 
+ #if BUILDFLAG(USE_ATK)
+ #include "ui/accessibility/platform/atk_util_auralinux.h"
+@@ -93,6 +100,19 @@ DesktopWindowTreeHostLinux::DesktopWindowTreeHostLinux(
+ 
+ DesktopWindowTreeHostLinux::~DesktopWindowTreeHostLinux() = default;
+ 
++std::unique_ptr<FrameView> DesktopWindowTreeHostLinux::CreateFrameView() {
++  if (ShouldUseNativeFrame()) {
++    return std::make_unique<NativeFrameView>(GetWidget());
++  }
++
++  auto frame_view = std::make_unique<FrameViewLinux>(GetWidget());
++  frame_view->SetSupportsClientFrameShadow(
++      platform_window()->CanSetDecorationInsets() &&
++      Widget::IsWindowCompositingSupported());
++  frame_view->InitViews();
++  return frame_view;
++}
++
+ gfx::Rect DesktopWindowTreeHostLinux::GetXRootWindowOuterBounds() const {
+   // TODO(msisov): must be removed as soon as all X11 low-level bits are moved
+   // to Ozone.
+@@ -138,11 +158,113 @@ void DesktopWindowTreeHostLinux::UpdateFrameHints() {
+     platform_window()->SetInputRegion(std::optional<std::vector<gfx::Rect>>(
+         {ConvertRectToPixels(hit_test_rect_mouse_dp)}));
+   }
++
++  // Set opaque and input regions if using FrameViewLinux with client-side
++  // decorations.
++  UpdateFrameRegions();
++}
++
++gfx::Insets DesktopWindowTreeHostLinux::CalculateInsetsInDIP(
++    ui::PlatformWindowState window_state) const {
++  if (window_state == ui::PlatformWindowState::kMaximized ||
++      window_state == ui::PlatformWindowState::kFullScreen ||
++      window_state == ui::PlatformWindowState::kMinimized) {
++    return gfx::Insets();
++  }
++
++  auto* widget = GetWidget();
++  if (!widget || !widget->non_client_view()) {
++    return DesktopWindowTreeHostPlatform::CalculateInsetsInDIP(window_state);
++  }
++
++  auto* frame_view_linux = views::AsViewClass<FrameViewLinux>(
++      widget->non_client_view()->frame_view());
++  if (!frame_view_linux) {
++    return DesktopWindowTreeHostPlatform::CalculateInsetsInDIP(window_state);
++  }
++
++  return frame_view_linux->GetRestoredFrameBorderInsets();
++}
++
++void DesktopWindowTreeHostLinux::OnWindowTiledStateChanged(
++    ui::WindowTiledEdges new_tiled_edges) {
++  auto* widget = GetWidget();
++  if (!widget || !widget->non_client_view()) {
++    return;
++  }
++
++  auto* frame_view_linux = views::AsViewClass<FrameViewLinux>(
++      widget->non_client_view()->frame_view());
++  if (!frame_view_linux) {
++    return;
++  }
++
++  frame_view_linux->SetTiled(new_tiled_edges.top || new_tiled_edges.left ||
++                             new_tiled_edges.bottom || new_tiled_edges.right);
++  UpdateFrameRegions();
++}
++
++void DesktopWindowTreeHostLinux::UpdateFrameRegions() {
++  auto* widget = GetWidget();
++  if (!widget || !widget->non_client_view()) {
++    return;
++  }
++
++  auto* frame_view_linux = views::AsViewClass<FrameViewLinux>(
++      widget->non_client_view()->frame_view());
++  if (!frame_view_linux) {
++    return;
++  }
++
++  auto* window = platform_window();
++  float scale = device_scale_factor();
++  gfx::Insets frame_insets = frame_view_linux->GetFrameBorderInsets();
++
++  if (views::Widget::IsWindowCompositingSupported()) {
++    if (frame_insets.IsEmpty()) {
++      // No frame decorations, the window is maximized or fullscreen.  The
++      // entire window is opaque except for a possibly translucent top area.
++      gfx::Size widget_size = widget->GetWindowBoundsInScreen().size();
++      gfx::Rect opaque_region_dip(widget_size);
++      gfx::Insets insets;
++      insets.set_top(frame_view_linux->GetTranslucentTopAreaHeight());
++      opaque_region_dip.Inset(insets);
++      window->SetOpaqueRegion(std::vector<gfx::Rect>(
++          {gfx::ScaleToEnclosingRect(opaque_region_dip, scale)}));
++    } else {
++      window->SetOpaqueRegion(GetRestoredOpaqueRegion(
++          frame_view_linux->GetRestoredClipRegion(), scale,
++          frame_view_linux->GetTranslucentTopAreaHeight()));
++    }
++  }
++
++  // Set the input region to exclude the outer shadow while preserving
++  // the resize band.
++  if (platform_window()->CanSetDecorationInsets() &&
++      views::Widget::IsWindowCompositingSupported()) {
++    if (frame_insets.IsEmpty()) {
++      window->SetInputRegion(std::nullopt);
++    } else {
++      const gfx::Insets input_insets = frame_view_linux->GetInputInsets();
++      gfx::Size widget_size = widget->GetWindowBoundsInScreen().size();
++      gfx::Rect input_bounds(widget_size);
++      input_bounds.Inset(frame_insets - input_insets);
++      window->SetInputRegion(std::optional<std::vector<gfx::Rect>>(
++          {gfx::ScaleToEnclosingRect(input_bounds, scale)}));
++    }
++  }
++}
++
++void DesktopWindowTreeHostLinux::OnNativeThemeUpdated(
++    ui::NativeTheme* /*observed_theme*/) {
++  UpdateFrameRegions();
+ }
+ 
+ void DesktopWindowTreeHostLinux::Init(const Widget::InitParams& params) {
+   DesktopWindowTreeHostPlatform::Init(params);
+ 
++  theme_observation_.Observe(ui::NativeTheme::GetInstanceForNativeUi());
++
+   if (GetX11Extension() && GetX11Extension()->IsSyncExtensionAvailable()) {
+     compositor_observer_ = std::make_unique<SwapWithNewSizeObserverHelper>(
+         compositor(),
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h
+index c773bbe351260d958de222cd4e7942d757a53c25..d440180f99339d3d9da1468ad0e5bf07a141c220 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h
+@@ -11,10 +11,13 @@
+ 
+ #include "base/gtest_prod_util.h"
+ #include "base/memory/weak_ptr.h"
++#include "base/scoped_observation.h"
+ #include "ui/aura/scoped_window_targeter.h"
+ #include "ui/base/buildflags.h"
+ #include "ui/base/mojom/ui_base_types.mojom-shared.h"
+ #include "ui/gfx/geometry/rect.h"
++#include "ui/native_theme/native_theme.h"
++#include "ui/native_theme/native_theme_observer.h"
+ #include "ui/platform_window/extensions/x11_extension_delegate.h"
+ #include "ui/views/views_export.h"
+ #include "ui/views/widget/desktop_aura/desktop_window_tree_host_platform.h"
+@@ -29,6 +32,8 @@ class X11Extension;
+ 
+ namespace views {
+ 
++class FrameView;
++
+ class WindowEventFilterLinux;
+ using WindowEventFilterClass = WindowEventFilterLinux;
+ 
+@@ -36,7 +41,8 @@ using WindowEventFilterClass = WindowEventFilterLinux;
+ // backend.
+ class VIEWS_EXPORT DesktopWindowTreeHostLinux
+     : public DesktopWindowTreeHostPlatform,
+-      public ui::X11ExtensionDelegate {
++      public ui::X11ExtensionDelegate,
++      public ui::NativeThemeObserver {
+  public:
+   static const char kWindowKey[];
+ 
+@@ -55,6 +61,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostLinux
+   gfx::Rect GetXRootWindowOuterBounds() const;
+ 
+   // DesktopWindowTreeHostPlatform:
++  std::unique_ptr<FrameView> CreateFrameView() override;
+   void LowerWindow() override;
+   // Disables event listening to make |dialog| modal.
+   base::OnceClosure DisableEventListening();
+@@ -74,9 +81,12 @@ class VIEWS_EXPORT DesktopWindowTreeHostLinux
+       Widget::MoveLoopEscapeBehavior escape_behavior) override;
+ 
+   // PlatformWindowDelegate:
++  gfx::Insets CalculateInsetsInDIP(
++      ui::PlatformWindowState window_state) const override;
+   void DispatchEvent(ui::Event* event) override;
+   void OnClosed() override;
+   void OnBoundsChanged(const BoundsChange& change) override;
++  void OnWindowTiledStateChanged(ui::WindowTiledEdges new_tiled_edges) override;
+ 
+   ui::X11Extension* GetX11Extension();
+   const ui::X11Extension* GetX11Extension() const;
+@@ -86,6 +96,9 @@ class VIEWS_EXPORT DesktopWindowTreeHostLinux
+       const Widget::InitParams& params,
+       ui::PlatformWindowInitProperties* properties) override;
+ 
++  // ui::NativeThemeObserver:
++  void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
++
+  private:
+   FRIEND_TEST_ALL_PREFIXES(DesktopWindowTreeHostPlatformImplTestWithTouch,
+                            HitTest);
+@@ -104,6 +117,10 @@ class VIEWS_EXPORT DesktopWindowTreeHostLinux
+   void CreateNonClientEventFilter();
+   void DestroyNonClientEventFilter();
+ 
++  // Sets the opaque and input regions for the window based on
++  // FrameViewLinux decorations.
++  void UpdateFrameRegions();
++
+   // X11ExtensionDelegate overrides:
+   void OnLostMouseGrab() override;
+ #if BUILDFLAG(USE_ATK)
+@@ -126,6 +143,9 @@ class VIEWS_EXPORT DesktopWindowTreeHostLinux
+ 
+   uint32_t modal_dialog_counter_ = 0;
+ 
++  base::ScopedObservation<ui::NativeTheme, ui::NativeThemeObserver>
++      theme_observation_{this};
++
+   // The display and the native X window hosting the root window.
+   base::WeakPtrFactory<DesktopWindowTreeHostLinux> weak_factory_{this};
+ };
+diff --git a/ui/views/widget/desktop_aura/window_event_filter_linux.cc b/ui/views/widget/desktop_aura/window_event_filter_linux.cc
+index ad0b3d4c5d11c52e14f7b7744b6712d958069e35..e4e1fb785b452d8dc6b92eed9fc9c1058e7705dd 100644
+--- a/ui/views/widget/desktop_aura/window_event_filter_linux.cc
++++ b/ui/views/widget/desktop_aura/window_event_filter_linux.cc
+@@ -157,27 +157,38 @@ void WindowEventFilterLinux::OnClickedCaption(ui::MouseEvent* event,
+       MaybeToggleMaximizedState(content_window);
+       event->SetHandled();
+       break;
+-    case ui::LinuxUi::WindowFrameAction::kMenu:
++    case ui::LinuxUi::WindowFrameAction::kMenu: {
++      // Prefer the view's context menu when one is installed so that
++      // app-specific actions are available on right-click.
+       views::Widget* widget =
+           views::Widget::GetWidgetForNativeView(content_window);
+-      if (!widget) {
+-        break;
++      if (widget) {
++        views::View* view = widget->GetContentsView();
++        if (view && view->context_menu_controller()) {
++          // Controller requires locations to be in DIP, while |this| receives
++          // the location in px.
++          gfx::PointF location = desktop_window_tree_host_->GetRootTransform()
++                                     .InverseMapPoint(event->location_f())
++                                     .value_or(event->location_f());
++          gfx::Point location_in_screen = gfx::ToRoundedPoint(location);
++          views::View::ConvertPointToScreen(view, &location_in_screen);
++          view->ShowContextMenu(location_in_screen,
++                                ui::mojom::MenuSourceType::kMouse);
++          event->SetHandled();
++          break;
++        }
+       }
+-      views::View* view = widget->GetContentsView();
+-      if (!view || !view->context_menu_controller()) {
+-        break;
++      // Fall back to the compositor's window menu when no view context menu
++      // is available.
++      if (ui::OzonePlatform::GetInstance()
++              ->GetPlatformRuntimeProperties()
++              .supports_server_window_menus) {
++        desktop_window_tree_host_->ShowWindowControlsMenu(
++            display::Screen::Get()->GetCursorScreenPoint());
++        event->SetHandled();
+       }
+-      // Controller requires locations to be in DIP, while |this| receives the
+-      // location in px.
+-      gfx::PointF location = desktop_window_tree_host_->GetRootTransform()
+-                                 .InverseMapPoint(event->location_f())
+-                                 .value_or(event->location_f());
+-      gfx::Point location_in_screen = gfx::ToRoundedPoint(location);
+-      views::View::ConvertPointToScreen(view, &location_in_screen);
+-      view->ShowContextMenu(location_in_screen,
+-                            ui::mojom::MenuSourceType::kMouse);
+-      event->SetHandled();
+       break;
++    }
+   }
+ }
+ 
+diff --git a/ui/views/window/frame_view_layout_linux.cc b/ui/views/window/frame_view_layout_linux.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..cbb5445e7150c5849f0a4f90ae89fb0c424c1478
+--- /dev/null
++++ b/ui/views/window/frame_view_layout_linux.cc
+@@ -0,0 +1,397 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "ui/views/window/frame_view_layout_linux.h"
++
++#include <algorithm>
++#include <utility>
++#include <vector>
++
++#include "base/containers/adapters.h"
++#include "ui/gfx/font_list.h"
++#include "ui/gfx/shadow_value.h"
++#include "ui/views/controls/button/button.h"
++#include "ui/views/layout/layout_provider.h"
++#include "ui/views/style/typography_provider.h"
++#include "ui/views/views_delegate.h"
++#include "ui/views/widget/widget.h"
++#include "ui/views/widget/widget_delegate.h"
++#include "ui/views/window/caption_button_layout_constants.h"
++#include "ui/views/window/frame_buttons.h"
++#include "ui/views/window/frame_view_linux.h"
++#include "ui/views/window/frame_view_utils_linux.h"
++#include "ui/views/window/window_button_order_provider.h"
++
++namespace views {
++
++namespace {
++
++// The space between the title text and the caption buttons.
++constexpr int kTitleCaptionSpacing = 5;
++
++// Default vertical padding around the title text.
++constexpr int kDefaultTitlebarVerticalPadding = 4;
++
++// Default visible frame border thickness when window shadow is not drawn.
++constexpr int kDefaultFrameBorderThickness = 4;
++
++void SetButtonVisible(Button* button, const gfx::Rect& bounds) {
++  button->SetVisible(true);
++  button->SetBoundsRect(bounds);
++}
++
++}  // namespace
++
++FrameViewLayoutLinux::FrameViewLayoutLinux() = default;
++
++FrameViewLayoutLinux::~FrameViewLayoutLinux() = default;
++
++gfx::FontList FrameViewLayoutLinux::GetTitleFontList() const {
++  return TypographyProvider::Get().GetWindowTitleFontList();
++}
++
++gfx::ShadowValues FrameViewLayoutLinux::GetShadowValues(bool active) const {
++  Widget* widget = view_->GetWidget();
++  if (widget->IsMaximized() || widget->IsFullscreen() || tiled_) {
++    return gfx::ShadowValues();
++  }
++  auto* provider = LayoutProvider::Get();
++  if (!provider) {
++    return gfx::ShadowValues();
++  }
++  return gfx::ShadowValue::MakeMdShadowValues(
++      provider->GetShadowElevationMetric(active ? Emphasis::kMaximum
++                                                : Emphasis::kMedium));
++}
++
++gfx::RoundedCornersF FrameViewLayoutLinux::GetCornerRadii() const {
++  if (!supports_client_frame_shadow_ || tiled_) {
++    return gfx::RoundedCornersF();
++  }
++  auto* provider = LayoutProvider::Get();
++  if (!provider) {
++    return gfx::RoundedCornersF();
++  }
++  float radius =
++      static_cast<float>(provider->GetCornerRadiusMetric(Emphasis::kHigh));
++  return gfx::RoundedCornersF(radius, radius, 0, 0);
++}
++
++void FrameViewLayoutLinux::Layout(View* host) {
++  if (ShouldShowTitlebarAndBorder()) {
++    LayoutWindowControls();
++    LayoutTitlebar();
++  }
++
++  LayoutClientView();
++}
++
++gfx::Size FrameViewLayoutLinux::GetPreferredSize(const View* host) const {
++  return GetPreferredSize(host, {});
++}
++
++gfx::Size FrameViewLayoutLinux::GetPreferredSize(
++    const View* host,
++    const SizeBounds& available_size) const {
++  Widget* widget = view_->GetWidget();
++  return widget->non_client_view()
++      ->GetWindowBoundsForClientBounds(
++          gfx::Rect(widget->client_view()->GetPreferredSize(available_size)))
++      .size();
++}
++
++gfx::Size FrameViewLayoutLinux::GetMinimumSize(const View* host) const {
++  Widget* widget = view_->GetWidget();
++  return widget->non_client_view()
++      ->GetWindowBoundsForClientBounds(
++          gfx::Rect(widget->client_view()->GetMinimumSize()))
++      .size();
++}
++
++gfx::Insets FrameViewLayoutLinux::GetFrameBorderInsets() const {
++  Widget* widget = view_->GetWidget();
++  if (widget->IsMaximized() || widget->IsFullscreen()) {
++    return gfx::Insets();
++  }
++  return GetRestoredFrameBorderInsets();
++}
++
++gfx::Insets FrameViewLayoutLinux::GetRestoredFrameBorderInsets() const {
++  auto shadow_values = GetShadowValues(/*active=*/true);
++  return GetRestoredFrameBorderInsetsLinux(
++      supports_client_frame_shadow_, gfx::Insets(kDefaultFrameBorderThickness),
++      shadow_values, gfx::Insets(kResizeBorder));
++}
++
++gfx::Rect FrameViewLayoutLinux::GetBoundsForClientView() const {
++  return client_view_bounds_;
++}
++
++gfx::Rect FrameViewLayoutLinux::GetWindowBoundsForClientBounds(
++    const gfx::Rect& client_bounds) const {
++  gfx::Insets insets = GetFrameBorderInsets();
++  int top_offset = GetClientTopOffset();
++  return gfx::Rect(std::max(0, client_bounds.x() - insets.left()),
++                   std::max(0, client_bounds.y() - top_offset),
++                   client_bounds.width() + insets.left() + insets.right(),
++                   client_bounds.height() + top_offset + insets.bottom());
++}
++
++gfx::Insets FrameViewLayoutLinux::GetInputInsets() const {
++  Widget* widget = view_->GetWidget();
++  if (widget->IsMaximized() || widget->IsFullscreen()) {
++    return gfx::Insets();
++  }
++  // When showing shadows, the shadow border extends well beyond the resize
++  // area.  Return the resize band width so the host can exclude the
++  // shadow-only area from input.  Without shadows, the entire window
++  // receives input.
++  return gfx::Insets(supports_client_frame_shadow_ ? kResizeBorder : 0);
++}
++
++int FrameViewLayoutLinux::GetTranslucentTopAreaHeight() const {
++  return 0;
++}
++
++int FrameViewLayoutLinux::GetTopAreaHeight() const {
++  if (!ShouldShowTitlebarAndBorder()) {
++    return 0;
++  }
++
++  gfx::Insets insets = GetFrameBorderInsets();
++  int title_font_height = GetTitleFontList().GetHeight();
++  int button_height = GetDefaultButtonSize().height();
++  int content_height = std::max(
++      title_font_height + kDefaultTitlebarVerticalPadding, button_height);
++
++  return insets.top() + content_height;
++}
++
++int FrameViewLayoutLinux::GetClientTopOffset() const {
++  return GetTopAreaHeight();
++}
++
++int FrameViewLayoutLinux::CaptionButtonY() const {
++  return GetFrameBorderInsets().top() + GetTopAreaBorderInsets().top();
++}
++
++gfx::Insets FrameViewLayoutLinux::GetTopAreaBorderInsets() const {
++  return gfx::Insets();
++}
++
++FrameViewLayoutLinux::ButtonLayoutParams
++FrameViewLayoutLinux::GetButtonLayoutParams(FrameButton button_id,
++                                            Button* button) const {
++  ButtonLayoutParams params;
++  params.size = GetDefaultButtonSize();
++  int caption_y = CaptionButtonY();
++  int content_height = GetTopAreaHeight() - caption_y;
++  params.y = caption_y + (content_height - params.size.height()) / 2;
++  return params;
++}
++
++gfx::Insets FrameViewLayoutLinux::GetTopAreaSpacing() const {
++  return gfx::Insets();
++}
++
++gfx::Size FrameViewLayoutLinux::GetDefaultButtonSize() const {
++  return GetCaptionButtonLayoutSize(
++      CaptionButtonLayoutSize::kNonBrowserCaption);
++}
++
++bool FrameViewLayoutLinux::ShouldShowTitlebarAndBorder() const {
++  Widget* widget = view_->GetWidget();
++  return !widget->IsFullscreen() &&
++         !ViewsDelegate::GetInstance()->WindowManagerProvidesTitleBar(
++             widget->IsMaximized());
++}
++
++void FrameViewLayoutLinux::HideButton(FrameButton button_id) {
++  switch (button_id) {
++    case FrameButton::kMinimize:
++      if (view_->minimize_button()) {
++        SetViewVisibility(view_->minimize_button(), false);
++      }
++      break;
++    case FrameButton::kMaximize:
++      if (view_->maximize_button()) {
++        SetViewVisibility(view_->maximize_button(), false);
++      }
++      if (view_->restore_button()) {
++        SetViewVisibility(view_->restore_button(), false);
++      }
++      break;
++    case FrameButton::kClose:
++      if (view_->close_button()) {
++        SetViewVisibility(view_->close_button(), false);
++      }
++      break;
++  }
++}
++
++bool FrameViewLayoutLinux::ConfigureButton(FrameButton button_id,
++                                           bool is_leading,
++                                           bool is_first,
++                                           int& next_button_x) {
++  Widget* widget = view_->GetWidget();
++
++  switch (button_id) {
++    case FrameButton::kMinimize: {
++      if (!widget->widget_delegate()->CanMinimize()) {
++        HideButton(button_id);
++        return false;
++      }
++      break;
++    }
++    case FrameButton::kMaximize: {
++      if (!widget->widget_delegate()->CanMaximize()) {
++        HideButton(button_id);
++        return false;
++      }
++      // Hide the inactive maximize/restore button.
++      bool is_restored = !widget->IsMaximized() && !widget->IsMinimized();
++      Button* inactive_button =
++          is_restored ? view_->restore_button() : view_->maximize_button();
++      if (inactive_button) {
++        SetViewVisibility(inactive_button, false);
++      }
++      break;
++    }
++    case FrameButton::kClose:
++      break;
++  }
++
++  Button* button = view_->GetFrameButton(button_id);
++  if (!button) {
++    return false;
++  }
++
++  auto params = GetButtonLayoutParams(button_id, button);
++
++  if (is_leading) {
++    if (!is_first) {
++      next_button_x += params.inter_spacing;
++    }
++    next_button_x += params.margin.left();
++    SetButtonVisible(button,
++                     gfx::Rect(next_button_x, params.y, params.size.width(),
++                               params.size.height()));
++    next_button_x += params.size.width() + params.margin.right();
++    minimum_titlebar_x_ = std::min(view_->width(), next_button_x);
++  } else {
++    if (!is_first) {
++      next_button_x -= params.inter_spacing;
++    }
++    next_button_x -= params.margin.right() + params.size.width();
++    SetButtonVisible(button,
++                     gfx::Rect(next_button_x, params.y, params.size.width(),
++                               params.size.height()));
++    next_button_x -= params.margin.left();
++    maximum_titlebar_x_ = std::max(minimum_titlebar_x_, next_button_x);
++  }
++  return true;
++}
++
++void FrameViewLayoutLinux::LayoutWindowControls() {
++  minimum_titlebar_x_ = 0;
++  maximum_titlebar_x_ = view_->width();
++
++  if (view_->bounds().IsEmpty()) {
++    return;
++  }
++
++  // Start by assuming all buttons should be hidden. Buttons that are
++  // successfully configured will be made visible; any remaining get hidden.
++  std::vector<FrameButton> buttons_not_shown = {
++      FrameButton::kMaximize, FrameButton::kMinimize, FrameButton::kClose};
++
++  WindowButtonOrderProvider* button_order =
++      WindowButtonOrderProvider::GetInstance();
++  const std::vector<FrameButton>& leading_buttons =
++      button_order->leading_buttons();
++  const std::vector<FrameButton>& trailing_buttons =
++      button_order->trailing_buttons();
++
++  gfx::Insets insets = GetFrameBorderInsets();
++  gfx::Insets top_spacing = GetTopAreaSpacing();
++
++  // Layout leading buttons.
++  int next_button_x = insets.left() + top_spacing.left();
++  bool is_first = true;
++  for (auto frame_button : leading_buttons) {
++    if (ConfigureButton(frame_button, /*is_leading=*/true, is_first,
++                        next_button_x)) {
++      is_first = false;
++    }
++    std::erase(buttons_not_shown, frame_button);
++  }
++
++  // Layout trailing buttons right-to-left.
++  next_button_x = view_->width() - insets.right() - top_spacing.right();
++  is_first = true;
++  for (auto frame_button : base::Reversed(trailing_buttons)) {
++    if (ConfigureButton(frame_button, /*is_leading=*/false, is_first,
++                        next_button_x)) {
++      is_first = false;
++    }
++    std::erase(buttons_not_shown, frame_button);
++  }
++
++  // Hide any buttons that weren't placed.
++  for (auto button_id : buttons_not_shown) {
++    HideButton(button_id);
++  }
++}
++
++void FrameViewLayoutLinux::LayoutTitlebar() {
++  CHECK_GE(maximum_titlebar_x_, 0);
++
++  if (!view_->HasWindowTitle()) {
++    return;
++  }
++
++  gfx::Insets insets = GetFrameBorderInsets();
++  int title_height = GetTitleFontList().GetHeight();
++
++  int min_x = minimum_titlebar_x_ + kTitleCaptionSpacing;
++  int max_x = maximum_titlebar_x_ - kTitleCaptionSpacing;
++  int available_width = std::max(0, max_x - min_x);
++
++  if (available_width <= 0) {
++    view_->set_title_bounds(gfx::Rect());
++    return;
++  }
++
++  gfx::Insets titlebar_border = GetTopAreaBorderInsets();
++  int titlebar_content_top = insets.top() + titlebar_border.top();
++  int titlebar_content_height =
++      GetTopAreaHeight() - insets.top() - titlebar_border.height();
++  int title_y =
++      titlebar_content_top + (titlebar_content_height - title_height) / 2;
++
++  // Center the title across the full window width, constrained to the
++  // available space between the caption buttons.
++  int window_width = view_->width();
++  int symmetric_min = std::max(min_x, window_width - max_x);
++  int label_x = symmetric_min;
++  int label_width = std::max(0, window_width - 2 * symmetric_min);
++
++  view_->set_title_bounds(
++      gfx::Rect(label_x, title_y, label_width, title_height));
++}
++
++void FrameViewLayoutLinux::LayoutClientView() {
++  if (!ShouldShowTitlebarAndBorder()) {
++    client_view_bounds_ = gfx::Rect(view_->size());
++    return;
++  }
++
++  gfx::Insets insets = GetFrameBorderInsets();
++  int top_offset = GetClientTopOffset();
++  client_view_bounds_.SetRect(
++      insets.left(), top_offset, std::max(0, view_->width() - insets.width()),
++      std::max(0, view_->height() - top_offset - insets.bottom()));
++}
++
++}  // namespace views
+diff --git a/ui/views/window/frame_view_layout_linux.h b/ui/views/window/frame_view_layout_linux.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..be38d1c78a1b0c84c961660dd2abc27f56e6ae08
+--- /dev/null
++++ b/ui/views/window/frame_view_layout_linux.h
+@@ -0,0 +1,168 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef UI_VIEWS_WINDOW_FRAME_VIEW_LAYOUT_LINUX_H_
++#define UI_VIEWS_WINDOW_FRAME_VIEW_LAYOUT_LINUX_H_
++
++#include "base/memory/raw_ptr.h"
++#include "ui/gfx/font_list.h"
++#include "ui/gfx/geometry/insets.h"
++#include "ui/gfx/geometry/rect.h"
++#include "ui/gfx/geometry/rounded_corners_f.h"
++#include "ui/gfx/geometry/size.h"
++#include "ui/gfx/shadow_value.h"
++#include "ui/views/layout/layout_manager.h"
++#include "ui/views/views_export.h"
++#include "ui/views/window/frame_buttons.h"
++
++namespace views {
++
++class Button;
++class FrameViewLinux;
++
++// Layout manager for FrameViewLinux that handles positioning of window control
++// buttons, the titlebar, and the client view area. Subclasses may override
++// virtual methods to change frame geometry, button sizing, and layout behavior.
++class VIEWS_EXPORT FrameViewLayoutLinux : public LayoutManager {
++ public:
++  // Metrics for positioning a single caption button.
++  struct VIEWS_EXPORT ButtonLayoutParams {
++    gfx::Size size;
++    gfx::Insets margin;
++    int inter_spacing = 0;
++    int y = 0;
++  };
++
++  FrameViewLayoutLinux();
++
++  FrameViewLayoutLinux(const FrameViewLayoutLinux&) = delete;
++  FrameViewLayoutLinux& operator=(const FrameViewLayoutLinux&) = delete;
++
++  ~FrameViewLayoutLinux() override;
++
++  // Sets the back-pointer to the owning view.
++  void set_view(FrameViewLinux* view) { view_ = view; }
++
++  // Sets whether the window is snapped/tiled by the compositor.
++  void set_tiled(bool tiled) { tiled_ = tiled; }
++
++  bool tiled() const { return tiled_; }
++
++  // Sets whether the compositor supports client-drawn frame shadows.
++  void set_supports_client_frame_shadow(bool supports) {
++    supports_client_frame_shadow_ = supports;
++  }
++
++  bool supports_client_frame_shadow() const {
++    return supports_client_frame_shadow_;
++  }
++
++  // LayoutManager:
++  void Layout(View* host) override;
++  gfx::Size GetPreferredSize(const View* host) const override;
++  gfx::Size GetPreferredSize(const View* host,
++                             const SizeBounds& available_size) const override;
++  gfx::Size GetMinimumSize(const View* host) const override;
++
++  // Returns the insets of the frame border.
++  gfx::Insets GetFrameBorderInsets() const;
++
++  // Returns the frame border insets for the restored state, regardless of
++  // current widget state.
++  virtual gfx::Insets GetRestoredFrameBorderInsets() const;
++
++  // Returns the bounds of the client view area.
++  gfx::Rect GetBoundsForClientView() const;
++
++  // Returns the window bounds needed to enclose the given `client_bounds`.
++  gfx::Rect GetWindowBoundsForClientBounds(
++      const gfx::Rect& client_bounds) const;
++
++  // Returns the insets from the window edge to the input-sensitive area.
++  virtual gfx::Insets GetInputInsets() const;
++
++  // Returns the height of the translucent area at the top of the window frame.
++  virtual int GetTranslucentTopAreaHeight() const;
++
++  // Returns the height of the entire non-client top area including the frame
++  // border, titlebar padding, and titlebar content.
++  virtual int GetTopAreaHeight() const;
++
++  // Returns the Y offset where the client view's top edge starts. When this
++  // is less than GetTopAreaHeight(), the client view overlaps the titlebar
++  // area, allowing content to render behind the caption buttons.
++  virtual int GetClientTopOffset() const;
++
++  // Returns true if the titlebar and frame border should be shown.
++  virtual bool ShouldShowTitlebarAndBorder() const;
++
++  // Returns the font list used for the window title.
++  virtual gfx::FontList GetTitleFontList() const;
++
++  // Returns the shadow values for the frame border.
++  virtual gfx::ShadowValues GetShadowValues(bool active) const;
++
++  // Returns the corner radii for the frame.
++  virtual gfx::RoundedCornersF GetCornerRadii() const;
++
++  // Width of the resize-handle band.
++  static constexpr int kResizeBorder = 10;
++
++ protected:
++  // Returns the owning view.
++  FrameViewLinux* view() const { return view_; }
++
++  // Returns the Y coordinate at which caption buttons start, which is the
++  // top of the frame border.
++  int CaptionButtonY() const;
++
++  // Returns the border insets of the titlebar. Content such as buttons and
++  // title text is placed inside these borders. Defaults to empty.
++  virtual gfx::Insets GetTopAreaBorderInsets() const;
++
++  // Returns the size and positioning metrics for a caption button.
++  virtual ButtonLayoutParams GetButtonLayoutParams(FrameButton button_id,
++                                                   Button* button) const;
++
++  // Returns the padding around the top area content.
++  virtual gfx::Insets GetTopAreaSpacing() const;
++
++  // Lays out the window control buttons.
++  virtual void LayoutWindowControls();
++
++  // Lays out the title label.
++  virtual void LayoutTitlebar();
++
++  // Lays out the client view area.
++  virtual void LayoutClientView();
++
++  // Hides the button(s) corresponding to `button_id`.
++  void HideButton(FrameButton button_id);
++
++  // Configures a single caption button: checks capabilities, gets layout
++  // params via `GetButtonLayoutParams()`, and places the button. Returns
++  // true if the button was placed, false if it was hidden.
++  bool ConfigureButton(FrameButton button_id,
++                       bool is_leading,
++                       bool is_first,
++                       int& next_button_x);
++
++  // The horizontal boundaries for the titlebar layout, restricted by
++  // the space used by the leading and trailing buttons.
++  int minimum_titlebar_x_ = 0;
++  int maximum_titlebar_x_ = 0;
++
++ private:
++  gfx::Size GetDefaultButtonSize() const;
++
++  raw_ptr<FrameViewLinux> view_ = nullptr;
++
++  gfx::Rect client_view_bounds_;
++  bool tiled_ = false;
++  bool supports_client_frame_shadow_ = false;
++};
++
++}  // namespace views
++
++#endif  // UI_VIEWS_WINDOW_FRAME_VIEW_LAYOUT_LINUX_H_
+diff --git a/ui/views/window/frame_view_linux.cc b/ui/views/window/frame_view_linux.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..861a6505b0d01792acddf4a087ee779b7bb0894f
+--- /dev/null
++++ b/ui/views/window/frame_view_linux.cc
+@@ -0,0 +1,406 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "ui/views/window/frame_view_linux.h"
++
++#include <algorithm>
++#include <memory>
++#include <utility>
++
++#include "third_party/skia/include/core/SkRRect.h"
++#include "ui/base/hit_test.h"
++#include "ui/base/l10n/l10n_util.h"
++#include "ui/base/metadata/metadata_impl_macros.h"
++#include "ui/color/color_id.h"
++#include "ui/color/color_provider.h"
++#include "ui/gfx/canvas.h"
++#include "ui/gfx/geometry/insets.h"
++#include "ui/gfx/geometry/insets_f.h"
++#include "ui/gfx/geometry/rect_f.h"
++#include "ui/gfx/shadow_value.h"
++#include "ui/linux/linux_ui.h"
++#include "ui/strings/grit/ui_strings.h"
++#include "ui/views/accessibility/view_accessibility.h"
++#include "ui/views/layout/layout_provider.h"
++#include "ui/views/views_delegate.h"
++#include "ui/views/widget/widget.h"
++#include "ui/views/widget/widget_delegate.h"
++#include "ui/views/window/caption_button_types.h"
++#include "ui/views/window/client_view.h"
++#include "ui/views/window/frame_background.h"
++#include "ui/views/window/frame_caption_button.h"
++#include "ui/views/window/frame_view_layout_linux.h"
++#include "ui/views/window/frame_view_utils_linux.h"
++#include "ui/views/window/vector_icons/vector_icons.h"
++
++namespace views {
++
++namespace {
++
++// In the window corners, the resize areas don't actually expand bigger, but the
++// 16 px at the end of each edge triggers diagonal resizing.
++constexpr int kResizeAreaCornerSize = 16;
++
++// The resize border at the top of the caption area, used when frame shadows
++// are not drawn. Matches the visible frame border on the other three edges.
++constexpr int kResizeTopBorderThickness = 4;
++
++}  // namespace
++
++FrameViewLinux::FrameViewLinux(Widget* widget, FrameViewLayoutLinux* layout)
++    : widget_(widget), frame_background_(std::make_unique<FrameBackground>()) {
++  if (!layout) {
++    layout = new FrameViewLayoutLinux();
++  }
++  layout->set_view(this);
++  layout_ = SetLayoutManager(std::unique_ptr<FrameViewLayoutLinux>(layout));
++
++  paint_as_active_subscription_ =
++      widget_->RegisterPaintAsActiveChangedCallback(base::BindRepeating(
++          &FrameViewLinux::OnPaintAsActiveChanged, base::Unretained(this)));
++}
++
++void FrameViewLinux::InitViews() {
++  CreateCaptionButtons();
++
++  if (auto* linux_ui = ui::LinuxUi::instance()) {
++    button_order_observation_.Observe(linux_ui);
++    OnWindowButtonOrderingChange();
++  }
++}
++
++void FrameViewLinux::CreateCaptionButtons() {
++  auto create_button =
++      [this](Button::PressedCallback callback, CaptionButtonIcon icon,
++             int hit_test_type, const gfx::VectorIcon& image,
++             int accessibility_string_id) -> FrameCaptionButton* {
++    auto* button = AddChildView(std::make_unique<FrameCaptionButton>(
++        std::move(callback), icon, hit_test_type));
++    button->SetImage(icon, FrameCaptionButton::Animate::kNo, image);
++    button->GetViewAccessibility().SetName(
++        l10n_util::GetStringUTF16(accessibility_string_id));
++    return button;
++  };
++
++  close_button_ = create_button(
++      base::BindRepeating(&Widget::CloseWithReason, base::Unretained(widget_),
++                          Widget::ClosedReason::kCloseButtonClicked),
++      CAPTION_BUTTON_ICON_CLOSE, HTCLOSE, kWindowControlCloseIcon,
++      IDS_APP_ACCNAME_CLOSE);
++
++  minimize_button_ = create_button(
++      base::BindRepeating(&Widget::Minimize, base::Unretained(widget_)),
++      CAPTION_BUTTON_ICON_MINIMIZE, HTMINBUTTON, kWindowControlMinimizeIcon,
++      IDS_APP_ACCNAME_MINIMIZE);
++
++  maximize_button_ = create_button(
++      base::BindRepeating(&Widget::Maximize, base::Unretained(widget_)),
++      CAPTION_BUTTON_ICON_MAXIMIZE_RESTORE, HTMAXBUTTON,
++      kWindowControlMaximizeIcon, IDS_APP_ACCNAME_MAXIMIZE);
++
++  restore_button_ = create_button(
++      base::BindRepeating(&Widget::Restore, base::Unretained(widget_)),
++      CAPTION_BUTTON_ICON_MAXIMIZE_RESTORE, HTMAXBUTTON,
++      kWindowControlRestoreIcon, IDS_APP_ACCNAME_RESTORE);
++}
++
++FrameViewLinux::~FrameViewLinux() {
++  layout_->set_view(nullptr);
++}
++
++gfx::Rect FrameViewLinux::GetBoundsForClientView() const {
++  return layout_->GetBoundsForClientView();
++}
++
++gfx::Rect FrameViewLinux::GetWindowBoundsForClientBounds(
++    const gfx::Rect& client_bounds) const {
++  return layout_->GetWindowBoundsForClientBounds(client_bounds);
++}
++
++int FrameViewLinux::NonClientHitTest(const gfx::Point& point) {
++  if (!bounds().Contains(point)) {
++    return HTNOWHERE;
++  }
++
++  int frame_component = widget_->client_view()->NonClientHitTest(point);
++  if (frame_component != HTNOWHERE) {
++    return frame_component;
++  }
++
++  using Type = ui::NavButtonProvider::FrameButtonDisplayType;
++  auto check_button = [&](Type type, int hit_code) -> int {
++    auto* button = GetButtonFromType(type);
++    if (button && button->GetVisible() &&
++        button->GetMirroredBounds().Contains(point)) {
++      return hit_code;
++    }
++    return HTNOWHERE;
++  };
++
++  int result = check_button(Type::kClose, HTCLOSE);
++  if (result != HTNOWHERE) {
++    return result;
++  }
++
++  result = check_button(Type::kRestore, HTMAXBUTTON);
++  if (result != HTNOWHERE) {
++    return result;
++  }
++
++  result = check_button(Type::kMaximize, HTMAXBUTTON);
++  if (result != HTNOWHERE) {
++    return result;
++  }
++
++  result = check_button(Type::kMinimize, HTMINBUTTON);
++  if (result != HTNOWHERE) {
++    return result;
++  }
++
++  gfx::Insets resize_border = GetFrameBorderInsets();
++  int window_component = GetHTComponentForFrame(
++      point, resize_border, kResizeAreaCornerSize, kResizeAreaCornerSize,
++      widget_->widget_delegate()->CanResize());
++
++  if (window_component != HTNOWHERE) {
++    return window_component;
++  }
++
++  if (!ShouldDrawRestoredFrameShadow() && !widget_->IsMaximized() &&
++      !widget_->IsFullscreen() && widget_->widget_delegate()->CanResize() &&
++      point.y() < kResizeTopBorderThickness) {
++    return HTTOP;
++  }
++
++  return HTCAPTION;
++}
++
++void FrameViewLinux::GetWindowMask(const gfx::Size& size, SkPath* window_mask) {
++  // This class uses transparency to draw rounded corners, so a
++  // window mask is not necessary.
++}
++
++void FrameViewLinux::ResetWindowControls() {
++  using Type = ui::NavButtonProvider::FrameButtonDisplayType;
++  for (auto type : {Type::kMinimize, Type::kMaximize, Type::kRestore}) {
++    auto* button = GetButtonFromType(type);
++    if (button) {
++      button->SetState(Button::STATE_NORMAL);
++    }
++  }
++}
++
++bool FrameViewLinux::HasWindowTitle() const {
++  return widget_->widget_delegate()->ShouldShowWindowTitle();
++}
++
++bool FrameViewLinux::IsWindowTitleVisible() const {
++  return HasWindowTitle() && !title_bounds_.IsEmpty();
++}
++
++void FrameViewLinux::UpdateWindowTitle() {
++  if (HasWindowTitle()) {
++    SchedulePaintInRect(title_bounds_);
++  }
++}
++
++void FrameViewLinux::SizeConstraintsChanged() {
++  ResetWindowControls();
++  InvalidateLayout();
++}
++
++void FrameViewLinux::OnPaint(gfx::Canvas* canvas) {
++  if (!layout_->ShouldShowTitlebarAndBorder()) {
++    return;
++  }
++
++  const bool active = ShouldPaintAsActive();
++  const auto* color_provider = GetColorProvider();
++  if (!color_provider) {
++    return;
++  }
++
++  SkColor frame_color = color_provider->GetColor(
++      active ? ui::kColorFrameActive : ui::kColorFrameInactive);
++
++  frame_background_->set_frame_color(frame_color);
++  frame_background_->set_is_active(active);
++  frame_background_->set_top_area_height(layout_->GetTopAreaHeight());
++
++  UpdateButtonColors();
++
++  if (widget_->IsMaximized()) {
++    PaintMaximizedFrameBorder(canvas);
++  } else {
++    PaintRestoredFrameBorder(canvas);
++  }
++
++  PaintTitlebar(canvas);
++}
++
++void FrameViewLinux::Layout(PassKey) {
++  LayoutSuperclass<FrameView>(this);
++}
++
++gfx::Size FrameViewLinux::GetMaximumSize() const {
++  gfx::Size max_size = widget_->client_view()->GetMaximumSize();
++  gfx::Size converted_size =
++      widget_->non_client_view()
++          ->GetWindowBoundsForClientBounds(gfx::Rect(max_size))
++          .size();
++  return gfx::Size(max_size.width() == 0 ? 0 : converted_size.width(),
++                   max_size.height() == 0 ? 0 : converted_size.height());
++}
++
++gfx::Insets FrameViewLinux::GetFrameBorderInsets() const {
++  return layout_->GetFrameBorderInsets();
++}
++
++gfx::Insets FrameViewLinux::GetRestoredFrameBorderInsets() const {
++  return layout_->GetRestoredFrameBorderInsets();
++}
++
++SkRRect FrameViewLinux::GetRestoredClipRegion() const {
++  gfx::InsetsF border = ShouldDrawRestoredFrameShadow()
++                            ? gfx::InsetsF(GetRestoredFrameBorderInsets())
++                            : gfx::InsetsF();
++  return views::GetRestoredClipRegion(gfx::RectF(GetLocalBounds()), border,
++                                      GetCornerRadii());
++}
++
++void FrameViewLinux::SetSupportsClientFrameShadow(bool supports) {
++  layout_->set_supports_client_frame_shadow(supports);
++}
++
++bool FrameViewLinux::ShouldDrawRestoredFrameShadow() const {
++  return layout_->supports_client_frame_shadow();
++}
++
++void FrameViewLinux::SetTiled(bool tiled) {
++  if (layout_->tiled() == tiled) {
++    return;
++  }
++  layout_->set_tiled(tiled);
++  OnThemeOrButtonOrderChanged();
++}
++
++gfx::Insets FrameViewLinux::GetInputInsets() const {
++  return layout_->GetInputInsets();
++}
++
++int FrameViewLinux::GetTranslucentTopAreaHeight() const {
++  return layout_->GetTranslucentTopAreaHeight();
++}
++
++gfx::RoundedCornersF FrameViewLinux::GetCornerRadii() const {
++  return layout_->GetCornerRadii();
++}
++
++gfx::ShadowValues FrameViewLinux::GetShadowValues(bool active) const {
++  return layout_->GetShadowValues(active);
++}
++
++Button* FrameViewLinux::GetFrameButton(FrameButton frame_button) {
++  auto display_type = GetButtonDisplayType(frame_button);
++  return GetButtonFromType(display_type);
++}
++
++Button* FrameViewLinux::GetButtonFromType(
++    ui::NavButtonProvider::FrameButtonDisplayType type) {
++  switch (type) {
++    case ui::NavButtonProvider::FrameButtonDisplayType::kMinimize:
++      return minimize_button_;
++    case ui::NavButtonProvider::FrameButtonDisplayType::kMaximize:
++      return maximize_button_;
++    case ui::NavButtonProvider::FrameButtonDisplayType::kRestore:
++      return restore_button_;
++    case ui::NavButtonProvider::FrameButtonDisplayType::kClose:
++      return close_button_;
++  }
++}
++
++ui::NavButtonProvider::FrameButtonDisplayType
++FrameViewLinux::GetButtonDisplayType(FrameButton button_id) const {
++  return GetFrameButtonDisplayType(button_id, widget_->IsMaximized());
++}
++
++bool FrameViewLinux::IsTiled() const {
++  return layout_->tiled();
++}
++
++void FrameViewLinux::OnThemeOrButtonOrderChanged() {
++  InvalidateLayout();
++  SchedulePaint();
++}
++
++void FrameViewLinux::PaintRestoredFrameBorder(gfx::Canvas* canvas) {
++  bool showing_shadow = ShouldDrawRestoredFrameShadow();
++  auto shadow_values = showing_shadow ? GetShadowValues(ShouldPaintAsActive())
++                                      : gfx::ShadowValues();
++  gfx::Insets border = GetFrameBorderInsets();
++
++  PaintRestoredFrameBorderLinux(
++      *canvas, *this, frame_background_.get(), GetRestoredClipRegion(),
++      showing_shadow, ShouldPaintAsActive(), border, shadow_values, IsTiled());
++}
++
++void FrameViewLinux::PaintMaximizedFrameBorder(gfx::Canvas* canvas) {
++  frame_background_->PaintMaximized(canvas, this);
++}
++
++void FrameViewLinux::OnThemeChanged() {
++  FrameView::OnThemeChanged();
++  OnThemeOrButtonOrderChanged();
++}
++
++void FrameViewLinux::OnWindowButtonOrderingChange() {
++  OnThemeOrButtonOrderChanged();
++}
++
++void FrameViewLinux::OnPaintAsActiveChanged() {
++  SchedulePaint();
++}
++
++void FrameViewLinux::PaintTitlebar(gfx::Canvas* canvas) {
++  if (!widget_->widget_delegate() ||
++      !widget_->widget_delegate()->ShouldShowWindowTitle()) {
++    return;
++  }
++  const auto* color_provider = GetColorProvider();
++  if (!color_provider) {
++    return;
++  }
++  gfx::Rect rect = title_bounds_;
++  rect.set_x(GetMirroredXForRect(title_bounds_));
++  bool active = ShouldPaintAsActive();
++  canvas->DrawStringRectWithFlags(
++      widget_->widget_delegate()->GetWindowTitle(), layout_->GetTitleFontList(),
++      color_provider->GetColor(active
++                                   ? ui::kColorFrameCaptionForegroundActive
++                                   : ui::kColorFrameCaptionForegroundInactive),
++      rect, gfx::Canvas::TEXT_ALIGN_CENTER);
++}
++
++void FrameViewLinux::UpdateButtonColors() {
++  const auto* color_provider = GetColorProvider();
++  if (!color_provider) {
++    return;
++  }
++  bool active = ShouldPaintAsActive();
++  SkColor frame_color = color_provider->GetColor(
++      active ? ui::kColorFrameActive : ui::kColorFrameInactive);
++  for (Button* button : {minimize_button_.get(), maximize_button_.get(),
++                         restore_button_.get(), close_button_.get()}) {
++    if (button) {
++      auto* frame_caption_button = static_cast<FrameCaptionButton*>(button);
++      frame_caption_button->SetBackgroundColor(frame_color);
++      frame_caption_button->SetPaintAsActive(active);
++    }
++  }
++}
++
++BEGIN_METADATA(FrameViewLinux)
++END_METADATA
++
++}  // namespace views
+diff --git a/ui/views/window/frame_view_linux.h b/ui/views/window/frame_view_linux.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..5cf4ba004cda2191f5015a7535de6ba7fded3d72
+--- /dev/null
++++ b/ui/views/window/frame_view_linux.h
+@@ -0,0 +1,157 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef UI_VIEWS_WINDOW_FRAME_VIEW_LINUX_H_
++#define UI_VIEWS_WINDOW_FRAME_VIEW_LINUX_H_
++
++#include <memory>
++
++#include "base/memory/raw_ptr.h"
++#include "base/scoped_observation.h"
++#include "ui/base/metadata/metadata_header_macros.h"
++#include "ui/gfx/shadow_value.h"
++#include "ui/linux/linux_ui.h"
++#include "ui/linux/nav_button_provider.h"
++#include "ui/linux/window_button_order_observer.h"
++#include "ui/views/views_export.h"
++#include "ui/views/window/frame_buttons.h"
++#include "ui/views/window/frame_view.h"
++#include "ui/views/window/frame_view_layout_linux.h"
++
++class SkRRect;
++
++namespace gfx {
++class Canvas;
++}  // namespace gfx
++
++namespace views {
++
++class Button;
++class FrameBackground;
++class Widget;
++
++// A FrameView that provides client-side-decorated frames for non-browser
++// widgets on Linux. Uses FrameCaptionButton with vector icons by default;
++// subclasses may override to use native toolkit rendering.
++class VIEWS_EXPORT FrameViewLinux : public FrameView,
++                                    private ui::WindowButtonOrderObserver {
++  METADATA_HEADER(FrameViewLinux, FrameView)
++
++ public:
++  // If `layout` is null, a default FrameViewLayoutLinux is used.
++  explicit FrameViewLinux(Widget* widget,
++                          FrameViewLayoutLinux* layout = nullptr);
++
++  FrameViewLinux(const FrameViewLinux&) = delete;
++  FrameViewLinux& operator=(const FrameViewLinux&) = delete;
++
++  ~FrameViewLinux() override;
++
++  // Must be called after construction so that virtual dispatch works correctly.
++  void InitViews();
++
++  // FrameView:
++  gfx::Rect GetBoundsForClientView() const override;
++  gfx::Rect GetWindowBoundsForClientBounds(
++      const gfx::Rect& client_bounds) const override;
++  int NonClientHitTest(const gfx::Point& point) override;
++  void GetWindowMask(const gfx::Size& size, SkPath* window_mask) override;
++  void ResetWindowControls() override;
++  bool HasWindowTitle() const override;
++  bool IsWindowTitleVisible() const override;
++  void UpdateWindowTitle() override;
++  void SizeConstraintsChanged() override;
++
++  // View:
++  void OnPaint(gfx::Canvas* canvas) override;
++  void Layout(PassKey) override;
++  void OnThemeChanged() override;
++  gfx::Size GetMaximumSize() const override;
++
++  // Returns the insets of the frame border.
++  gfx::Insets GetFrameBorderInsets() const;
++
++  // Returns the frame border insets for the restored state, regardless of
++  // current widget state.
++  gfx::Insets GetRestoredFrameBorderInsets() const;
++
++  // Returns the clip region for a restored window, rounded at the top corners.
++  SkRRect GetRestoredClipRegion() const;
++
++  // Called by the window host when the tiled state changes.
++  void SetTiled(bool tiled);
++
++  // Sets whether the compositor supports client-drawn frame shadows.
++  void SetSupportsClientFrameShadow(bool supports);
++
++  // Returns true when the compositor supports client-drawn frame shadows.
++  bool ShouldDrawRestoredFrameShadow() const;
++
++  // Delegates to the layout manager for frame geometry.
++  gfx::Insets GetInputInsets() const;
++  int GetTranslucentTopAreaHeight() const;
++  gfx::RoundedCornersF GetCornerRadii() const;
++  gfx::ShadowValues GetShadowValues(bool active) const;
++
++  // Returns the button for `frame_button`, accounting for maximize/restore
++  // state.
++  Button* GetFrameButton(FrameButton frame_button);
++
++  // Returns the button corresponding to `type`.
++  Button* GetButtonFromType(ui::NavButtonProvider::FrameButtonDisplayType type);
++
++  ui::NavButtonProvider::FrameButtonDisplayType GetButtonDisplayType(
++      FrameButton button_id) const;
++
++  Button* minimize_button() const { return minimize_button_; }
++  Button* maximize_button() const { return maximize_button_; }
++  Button* restore_button() const { return restore_button_; }
++  Button* close_button() const { return close_button_; }
++
++  const gfx::Rect& title_bounds() const { return title_bounds_; }
++  void set_title_bounds(const gfx::Rect& bounds) { title_bounds_ = bounds; }
++
++ protected:
++  virtual void PaintRestoredFrameBorder(gfx::Canvas* canvas);
++  virtual void PaintMaximizedFrameBorder(gfx::Canvas* canvas);
++  virtual void PaintTitlebar(gfx::Canvas* canvas);
++  virtual void OnThemeOrButtonOrderChanged();
++  virtual void UpdateButtonColors();
++
++  bool IsTiled() const;
++
++  FrameViewLayoutLinux* layout() const { return layout_; }
++
++  Widget* frame_widget() { return widget_; }
++
++  FrameBackground* frame_background() { return frame_background_.get(); }
++
++  virtual void CreateCaptionButtons();
++
++  // Window controls.
++  raw_ptr<Button> minimize_button_ = nullptr;
++  raw_ptr<Button> maximize_button_ = nullptr;
++  raw_ptr<Button> restore_button_ = nullptr;
++  raw_ptr<Button> close_button_ = nullptr;
++
++ private:
++  // ui::WindowButtonOrderObserver:
++  void OnWindowButtonOrderingChange() override;
++
++  void OnPaintAsActiveChanged();
++
++  const raw_ptr<Widget> widget_;
++  raw_ptr<FrameViewLayoutLinux> layout_ = nullptr;
++  std::unique_ptr<FrameBackground> frame_background_;
++  gfx::Rect title_bounds_;
++
++  base::CallbackListSubscription paint_as_active_subscription_;
++
++  base::ScopedObservation<ui::LinuxUi, ui::WindowButtonOrderObserver>
++      button_order_observation_{this};
++};
++
++}  // namespace views
++
++#endif  // UI_VIEWS_WINDOW_FRAME_VIEW_LINUX_H_
+diff --git a/ui/views/window/frame_view_linux_unittest.cc b/ui/views/window/frame_view_linux_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..6396f28086675301dc2b0a6c15204392c50e8ca2
+--- /dev/null
++++ b/ui/views/window/frame_view_linux_unittest.cc
+@@ -0,0 +1,367 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "ui/views/window/frame_view_linux.h"
++
++#include <memory>
++#include <utility>
++#include <vector>
++
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/skia/include/core/SkRRect.h"
++#include "ui/base/hit_test.h"
++#include "ui/base/ui_base_types.h"
++#include "ui/gfx/geometry/insets.h"
++#include "ui/gfx/geometry/point.h"
++#include "ui/gfx/geometry/rect.h"
++#include "ui/gfx/geometry/rect_f.h"
++#include "ui/gfx/geometry/size.h"
++#include "ui/gfx/geometry/skia_conversions.h"
++#include "ui/views/controls/button/button.h"
++#include "ui/views/test/views_test_base.h"
++#include "ui/views/test/views_test_utils.h"
++#include "ui/views/widget/widget.h"
++#include "ui/views/widget/widget_delegate.h"
++#include "ui/views/window/frame_buttons.h"
++#include "ui/views/window/frame_caption_button.h"
++#include "ui/views/window/frame_view_layout_linux.h"
++#include "ui/views/window/window_button_order_provider.h"
++
++namespace views {
++
++namespace {
++
++constexpr int kWindowWidth = 800;
++constexpr int kWindowHeight = 600;
++
++}  // namespace
++
++class FrameViewLinuxTest : public ViewsTestBase {
++ public:
++  FrameViewLinuxTest() = default;
++  FrameViewLinuxTest(const FrameViewLinuxTest&) = delete;
++  FrameViewLinuxTest& operator=(const FrameViewLinuxTest&) = delete;
++  ~FrameViewLinuxTest() override = default;
++
++  void SetUp() override {
++    ViewsTestBase::SetUp();
++
++    widget_ = new Widget;
++    Widget::InitParams params = CreateParams(Widget::InitParams::TYPE_WINDOW);
++    widget_delegate_ = std::make_unique<WidgetDelegate>();
++    params.delegate = widget_delegate_.get();
++    params.delegate->SetCanMaximize(true);
++    params.delegate->SetCanMinimize(true);
++    params.delegate->SetCanResize(true);
++    params.delegate->SetShowTitle(true);
++    params.delegate->SetTitle(u"Test Window");
++    params.remove_standard_frame = true;
++    widget_->Init(std::move(params));
++
++    auto frame_view = std::make_unique<FrameViewLinux>(widget_);
++    frame_view->SetSupportsClientFrameShadow(true);
++    frame_view->InitViews();
++    widget_->non_client_view()->SetFrameView(std::move(frame_view));
++
++    widget_->SetBounds(gfx::Rect(0, 0, kWindowWidth, kWindowHeight));
++    widget_->Show();
++  }
++
++  void TearDown() override {
++    widget_.ExtractAsDangling()->CloseNow();
++    WindowButtonOrderProvider::GetInstance()->SetWindowButtonOrder(
++        /*leading=*/{},
++        {FrameButton::kMinimize, FrameButton::kMaximize, FrameButton::kClose});
++    ViewsTestBase::TearDown();
++  }
++
++ protected:
++  FrameViewLinux* frame_view() {
++    return static_cast<FrameViewLinux*>(
++        widget_->non_client_view()->frame_view());
++  }
++
++  void SetButtonOrder(const std::vector<FrameButton>& leading,
++                      const std::vector<FrameButton>& trailing) {
++    WindowButtonOrderProvider::GetInstance()->SetWindowButtonOrder(leading,
++                                                                   trailing);
++  }
++
++  void RunLayout() {
++    frame_view()->InvalidateLayout();
++    views::test::RunScheduledLayout(frame_view());
++  }
++
++  Widget* widget() { return widget_; }
++  WidgetDelegate* widget_delegate() { return widget_delegate_.get(); }
++
++  raw_ptr<Widget> widget_ = nullptr;
++  std::unique_ptr<WidgetDelegate> widget_delegate_;
++};
++
++// Tests button layout with mixed leading [close] and trailing [min, max].
++// This exercises the full LayoutWindowControls path including both leading
++// and trailing iteration, button ordering, visibility, and vertical centering.
++TEST_F(FrameViewLinuxTest, ButtonLayout) {
++  SetButtonOrder({FrameButton::kClose},
++                 {FrameButton::kMinimize, FrameButton::kMaximize});
++  RunLayout();
++
++  auto* min = frame_view()->minimize_button();
++  auto* max = frame_view()->maximize_button();
++  auto* close = frame_view()->close_button();
++  auto* restore = frame_view()->restore_button();
++
++  EXPECT_TRUE(min->GetVisible());
++  EXPECT_TRUE(max->GetVisible());
++  EXPECT_TRUE(close->GetVisible());
++  EXPECT_FALSE(restore->GetVisible());
++
++  // Close on the left, min/max on the right, ordered left-to-right.
++  EXPECT_LT(close->bounds().right(), kWindowWidth / 2);
++  EXPECT_GT(min->x(), kWindowWidth / 2);
++  EXPECT_LT(min->x(), max->x());
++
++  // Buttons should be vertically within the titlebar.
++  int top_area = frame_view()->GetBoundsForClientView().y();
++  for (auto* button : {min, max, close}) {
++    EXPECT_GE(button->y(), 0);
++    EXPECT_LE(button->bounds().bottom(), top_area);
++  }
++}
++
++// Tests that maximizing swaps maximize for restore.
++TEST_F(FrameViewLinuxTest, MaximizeRevealsRestoreButton) {
++  RunLayout();
++
++  EXPECT_TRUE(frame_view()->maximize_button()->GetVisible());
++  EXPECT_FALSE(frame_view()->restore_button()->GetVisible());
++
++  widget()->Maximize();
++  RunLayout();
++
++  EXPECT_FALSE(frame_view()->maximize_button()->GetVisible());
++  EXPECT_TRUE(frame_view()->restore_button()->GetVisible());
++}
++
++// Tests that CanMaximize=false hides both maximize and restore.
++TEST_F(FrameViewLinuxTest, CannotMaximizeHidesButtons) {
++  widget_delegate()->SetCanMaximize(false);
++  RunLayout();
++
++  EXPECT_FALSE(frame_view()->maximize_button()->GetVisible());
++  EXPECT_FALSE(frame_view()->restore_button()->GetVisible());
++  EXPECT_TRUE(frame_view()->minimize_button()->GetVisible());
++  EXPECT_TRUE(frame_view()->close_button()->GetVisible());
++}
++
++// Tests that CanMinimize=false hides minimize.
++TEST_F(FrameViewLinuxTest, CannotMinimizeHidesButton) {
++  widget_delegate()->SetCanMinimize(false);
++  RunLayout();
++
++  EXPECT_FALSE(frame_view()->minimize_button()->GetVisible());
++  EXPECT_TRUE(frame_view()->maximize_button()->GetVisible());
++  EXPECT_TRUE(frame_view()->close_button()->GetVisible());
++}
++
++// Tests that layout with zero-size view does not crash.
++TEST_F(FrameViewLinuxTest, EmptyBoundsSkipsLayout) {
++  widget()->SetBounds(gfx::Rect(0, 0, 0, 0));
++  RunLayout();
++  // No crash is sufficient; buttons should not be positioned.
++}
++
++// Tests hit testing for caption buttons, restore button, caption area, and
++// points outside the frame.
++TEST_F(FrameViewLinuxTest, HitTestCaptionButtonsAndArea) {
++  RunLayout();
++
++  // Outside bounds.
++  EXPECT_EQ(HTNOWHERE, frame_view()->NonClientHitTest(gfx::Point(-1, -1)));
++
++  // Caption buttons.
++  EXPECT_EQ(
++      HTCLOSE,
++      frame_view()->NonClientHitTest(
++          frame_view()->close_button()->GetMirroredBounds().CenterPoint()));
++  EXPECT_EQ(
++      HTMAXBUTTON,
++      frame_view()->NonClientHitTest(
++          frame_view()->maximize_button()->GetMirroredBounds().CenterPoint()));
++  EXPECT_EQ(
++      HTMINBUTTON,
++      frame_view()->NonClientHitTest(
++          frame_view()->minimize_button()->GetMirroredBounds().CenterPoint()));
++
++  // Restore button after maximize.
++  widget()->Maximize();
++  RunLayout();
++  EXPECT_EQ(
++      HTMAXBUTTON,
++      frame_view()->NonClientHitTest(
++          frame_view()->restore_button()->GetMirroredBounds().CenterPoint()));
++  widget()->Restore();
++  RunLayout();
++
++  // Titlebar area between buttons.
++  int top_area = frame_view()->GetBoundsForClientView().y();
++  gfx::Insets border = frame_view()->GetFrameBorderInsets();
++  gfx::Point caption_point(kWindowWidth / 2,
++                           border.top() + (top_area - border.top()) / 2);
++  EXPECT_EQ(HTCAPTION, frame_view()->NonClientHitTest(caption_point));
++}
++
++// Tests hit testing for resize edges and corners.
++TEST_F(FrameViewLinuxTest, HitTestResizeRegions) {
++  RunLayout();
++
++  gfx::Insets border = frame_view()->GetFrameBorderInsets();
++
++  // Edges.
++  EXPECT_EQ(HTLEFT, frame_view()->NonClientHitTest(
++                        gfx::Point(border.left() / 2, kWindowHeight / 2)));
++  EXPECT_EQ(HTRIGHT,
++            frame_view()->NonClientHitTest(gfx::Point(
++                kWindowWidth - border.right() / 2, kWindowHeight / 2)));
++  EXPECT_EQ(HTBOTTOM,
++            frame_view()->NonClientHitTest(gfx::Point(
++                kWindowWidth / 2, kWindowHeight - border.bottom() / 2)));
++
++  // Corners.
++  EXPECT_EQ(HTBOTTOMLEFT,
++            frame_view()->NonClientHitTest(gfx::Point(
++                border.left() / 2, kWindowHeight - border.bottom() / 2)));
++  EXPECT_EQ(HTBOTTOMRIGHT, frame_view()->NonClientHitTest(gfx::Point(
++                               kWindowWidth - border.right() / 2,
++                               kWindowHeight - border.bottom() / 2)));
++}
++
++// Tests that the top resize strip works when shadows are disabled.
++TEST_F(FrameViewLinuxTest, HitTestTopResizeNoShadow) {
++  frame_view()->SetSupportsClientFrameShadow(false);
++  RunLayout();
++
++  gfx::Insets border = frame_view()->GetFrameBorderInsets();
++  EXPECT_EQ(0, border.top());
++
++  // A point near the very top of the frame should be HTTOP.
++  EXPECT_EQ(HTTOP,
++            frame_view()->NonClientHitTest(gfx::Point(kWindowWidth / 2, 1)));
++
++  // A point further down in the titlebar should be HTCAPTION.
++  int top_area = frame_view()->GetBoundsForClientView().y();
++  EXPECT_EQ(HTCAPTION, frame_view()->NonClientHitTest(
++                           gfx::Point(kWindowWidth / 2, top_area / 2)));
++
++  // Side resize should still work.
++  EXPECT_EQ(HTLEFT, frame_view()->NonClientHitTest(
++                        gfx::Point(border.left() / 2, kWindowHeight / 2)));
++}
++
++// Tests that hidden buttons and disabled resize don't produce hit codes.
++TEST_F(FrameViewLinuxTest, HitTestDisabledCapabilities) {
++  // Hidden minimize button.
++  widget_delegate()->SetCanMinimize(false);
++  RunLayout();
++  gfx::Point where_min_was(frame_view()->minimize_button()->bounds().x() + 1,
++                           frame_view()->minimize_button()->bounds().y() + 1);
++  EXPECT_NE(HTMINBUTTON, frame_view()->NonClientHitTest(where_min_was));
++
++  // Disabled resize.
++  widget_delegate()->SetCanMinimize(true);
++  widget_delegate()->SetCanResize(false);
++  RunLayout();
++  gfx::Insets border = frame_view()->GetFrameBorderInsets();
++  EXPECT_NE(HTLEFT, frame_view()->NonClientHitTest(
++                        gfx::Point(border.left() / 2, kWindowHeight / 2)));
++}
++
++// Tests frame geometry in the restored state: shadow-based border insets,
++// rounded top corners, non-empty input and shadow values.
++TEST_F(FrameViewLinuxTest, FrameGeometryRestored) {
++  gfx::Insets border = frame_view()->GetFrameBorderInsets();
++  EXPECT_FALSE(border.IsEmpty());
++  EXPECT_GT(border.top(), 0);
++
++  EXPECT_FALSE(frame_view()->GetCornerRadii().IsEmpty());
++
++  EXPECT_FALSE(frame_view()->GetInputInsets().IsEmpty());
++  EXPECT_FALSE(frame_view()->GetShadowValues(true).empty());
++
++  SkRRect clip = frame_view()->GetRestoredClipRegion();
++  EXPECT_GT(clip.radii(SkRRect::kUpperLeft_Corner).x(), 0.0f);
++  EXPECT_EQ(0.0f, clip.radii(SkRRect::kLowerLeft_Corner).x());
++}
++
++// Tests frame geometry when tiled: no rounded corners, no shadows,
++// border still present for resize handles.
++TEST_F(FrameViewLinuxTest, FrameGeometryTiled) {
++  frame_view()->SetTiled(true);
++
++  // Shadow support is still advertised when tiled; shadows are suppressed
++  // at paint time via empty shadow values and zero corner radius.
++  EXPECT_TRUE(frame_view()->ShouldDrawRestoredFrameShadow());
++  EXPECT_TRUE(frame_view()->GetCornerRadii().IsEmpty());
++  EXPECT_TRUE(frame_view()->GetShadowValues(true).empty());
++
++  // Border insets use resize-border sizing (not the thin no-shadow border),
++  // so the compositor can hide them on tiled edges via decoration insets.
++  gfx::Insets border = frame_view()->GetFrameBorderInsets();
++  EXPECT_FALSE(border.IsEmpty());
++  EXPECT_EQ(border.left(), border.right());
++  EXPECT_EQ(border.left(), border.bottom());
++  EXPECT_EQ(border.left(), border.top());
++
++  // Untiling restores shadow values and corner radius.
++  frame_view()->SetTiled(false);
++  EXPECT_FALSE(frame_view()->GetShadowValues(true).empty());
++  EXPECT_FALSE(frame_view()->GetCornerRadii().IsEmpty());
++}
++
++// Tests frame geometry when maximized: empty borders, empty input insets,
++// empty shadows.
++TEST_F(FrameViewLinuxTest, FrameGeometryMaximized) {
++  widget()->Maximize();
++
++  EXPECT_TRUE(frame_view()->GetFrameBorderInsets().IsEmpty());
++  EXPECT_TRUE(frame_view()->GetInputInsets().IsEmpty());
++  EXPECT_TRUE(frame_view()->GetShadowValues(true).empty());
++}
++
++// Tests fallback when compositor does not support client frame shadows:
++// no rounded corners, thin border on all sides with top=0, clip region
++// covers full bounds.
++TEST_F(FrameViewLinuxTest, FrameGeometryNoShadowSupport) {
++  frame_view()->SetSupportsClientFrameShadow(false);
++
++  EXPECT_FALSE(frame_view()->ShouldDrawRestoredFrameShadow());
++  EXPECT_TRUE(frame_view()->GetCornerRadii().IsEmpty());
++  EXPECT_TRUE(frame_view()->GetInputInsets().IsEmpty());
++
++  gfx::Insets border = frame_view()->GetFrameBorderInsets();
++  EXPECT_EQ(0, border.top());
++  EXPECT_GT(border.left(), 0);
++  EXPECT_EQ(border.left(), border.right());
++  EXPECT_EQ(border.left(), border.bottom());
++
++  // Clip region should cover full bounds, not inset by border.
++  SkRRect clip = frame_view()->GetRestoredClipRegion();
++  gfx::RectF clip_rect = gfx::SkRectToRectF(clip.rect());
++  EXPECT_EQ(gfx::RectF(frame_view()->GetLocalBounds()), clip_rect);
++}
++
++// Tests title bounds positioning.
++TEST_F(FrameViewLinuxTest, TitleBounds) {
++  RunLayout();
++
++  // Title should be centered and between the button groups.
++  const gfx::Rect& title = frame_view()->title_bounds();
++  auto* min = frame_view()->minimize_button();
++  EXPECT_LT(title.x(), min->x());
++  EXPECT_FALSE(title.IsEmpty());
++  EXPECT_EQ(kWindowWidth / 2, title.x() + title.width() / 2);
++}
++
++}  // namespace views
+diff --git a/chrome/browser/ui/views/frame/browser_frame_view_paint_utils_linux.cc b/ui/views/window/frame_view_utils_linux.cc
+similarity index 52%
+rename from chrome/browser/ui/views/frame/browser_frame_view_paint_utils_linux.cc
+rename to ui/views/window/frame_view_utils_linux.cc
+index 317208d300e77e3eabacf8fd10870b3da15f2901..62d7612003d22d6a35aa2b3f7d2c50dd4a95d7ce 100644
+--- a/chrome/browser/ui/views/frame/browser_frame_view_paint_utils_linux.cc
++++ b/ui/views/window/frame_view_utils_linux.cc
+@@ -1,23 +1,31 @@
+-// Copyright 2022 The Chromium Authors
++// Copyright 2026 The Chromium Authors
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+-#include "chrome/browser/ui/views/frame/browser_frame_view_paint_utils_linux.h"
++#include "ui/views/window/frame_view_utils_linux.h"
++
++#include <cmath>
+ 
+ #include "third_party/skia/include/core/SkRRect.h"
++#include "third_party/skia/include/core/SkRegion.h"
+ #include "ui/color/color_provider.h"
+ #include "ui/gfx/color_utils.h"
++#include "ui/gfx/geometry/insets_f.h"
+ #include "ui/gfx/geometry/rect_conversions.h"
++#include "ui/gfx/geometry/rect_f.h"
++#include "ui/gfx/geometry/skia_conversions.h"
+ #include "ui/gfx/scoped_canvas.h"
+ #include "ui/gfx/skia_paint_util.h"
+ #include "ui/views/view.h"
+ #include "ui/views/window/frame_background.h"
+ 
++namespace views {
++
+ namespace {
+ 
+ constexpr int kBorderAlpha = 0x26;
+ 
+-}
++}  // namespace
+ 
+ void PaintRestoredFrameBorderLinux(gfx::Canvas& canvas,
+                                    const views::View& view,
+@@ -104,3 +112,88 @@ gfx::Insets GetRestoredFrameBorderInsetsLinux(
+   return gfx::Insets::TLBR(-frame_extents.y(), -frame_extents.x(),
+                            frame_extents.bottom(), frame_extents.right());
+ }
++
++SkRRect GetRestoredClipRegion(const gfx::RectF& bounds,
++                              const gfx::InsetsF& border,
++                              const gfx::RoundedCornersF& radii) {
++  gfx::RectF clipped_bounds = bounds;
++  clipped_bounds.Inset(border);
++  SkVector sk_radii[4]{
++      {radii.upper_left(), radii.upper_left()},
++      {radii.upper_right(), radii.upper_right()},
++      {radii.lower_right(), radii.lower_right()},
++      {radii.lower_left(), radii.lower_left()},
++  };
++  SkRRect clip;
++  clip.setRectRadii(gfx::RectFToSkRect(clipped_bounds), sk_radii);
++  return clip;
++}
++
++ui::NavButtonProvider::FrameButtonDisplayType GetFrameButtonDisplayType(
++    FrameButton button_id,
++    bool is_maximized) {
++  switch (button_id) {
++    case FrameButton::kMinimize:
++      return ui::NavButtonProvider::FrameButtonDisplayType::kMinimize;
++    case FrameButton::kMaximize:
++      return is_maximized
++                 ? ui::NavButtonProvider::FrameButtonDisplayType::kRestore
++                 : ui::NavButtonProvider::FrameButtonDisplayType::kMaximize;
++    case FrameButton::kClose:
++      return ui::NavButtonProvider::FrameButtonDisplayType::kClose;
++  }
++}
++
++std::vector<gfx::Rect> GetRestoredOpaqueRegion(
++    const SkRRect& clip_region,
++    float scale,
++    int translucent_top_area_height_dip) {
++  // The opaque region is a list of rectangles that contain only fully
++  // opaque pixels of the window.  We need to convert the clipping
++  // rounded-rect into this format.
++  gfx::RectF rectf = gfx::SkRectToRectF(clip_region.rect());
++  rectf.Scale(scale);
++  // It is acceptable to omit some pixels that are opaque, but the region
++  // must not include any translucent pixels.  Therefore, we must
++  // conservatively scale to the enclosed rectangle.
++  gfx::Rect rect = gfx::ToEnclosedRect(rectf);
++
++  // Create the initial region from the clipping rectangle without rounded
++  // corners.
++  SkRegion region(gfx::RectToSkIRect(rect));
++
++  // Now subtract out the small rectangles that cover the corners.
++  struct {
++    SkRRect::Corner corner;
++    bool left;
++    bool upper;
++  } kCorners[] = {
++      {SkRRect::kUpperLeft_Corner, true, true},
++      {SkRRect::kUpperRight_Corner, false, true},
++      {SkRRect::kLowerLeft_Corner, true, false},
++      {SkRRect::kLowerRight_Corner, false, false},
++  };
++  for (const auto& corner : kCorners) {
++    auto radii = clip_region.radii(corner.corner);
++    auto rx = std::ceil(scale * radii.x());
++    auto ry = std::ceil(scale * radii.y());
++    auto corner_rect =
++        SkIRect::MakeXYWH(corner.left ? rect.x() : rect.right() - rx,
++                          corner.upper ? rect.y() : rect.bottom() - ry, rx, ry);
++    region.op(corner_rect, SkRegion::kDifference_Op);
++  }
++
++  auto translucent_top_area_rect = SkIRect::MakeXYWH(
++      rect.x(), rect.y(), rect.width(),
++      std::ceil(translucent_top_area_height_dip * scale - rect.y()));
++  region.op(translucent_top_area_rect, SkRegion::kDifference_Op);
++
++  // Convert the region to a list of rectangles.
++  std::vector<gfx::Rect> opaque_region;
++  for (SkRegion::Iterator i(region); !i.done(); i.next()) {
++    opaque_region.push_back(gfx::SkIRectToRect(i.rect()));
++  }
++  return opaque_region;
++}
++
++}  // namespace views
+diff --git a/ui/views/window/frame_view_utils_linux.h b/ui/views/window/frame_view_utils_linux.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..3c935bd58fa701ce217357b614c69827e30eeb22
+--- /dev/null
++++ b/ui/views/window/frame_view_utils_linux.h
+@@ -0,0 +1,72 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef UI_VIEWS_WINDOW_FRAME_VIEW_UTILS_LINUX_H_
++#define UI_VIEWS_WINDOW_FRAME_VIEW_UTILS_LINUX_H_
++
++#include <vector>
++
++#include "third_party/skia/include/core/SkRRect.h"
++#include "ui/gfx/geometry/rect.h"
++#include "ui/gfx/geometry/rounded_corners_f.h"
++#include "ui/gfx/shadow_value.h"
++#include "ui/linux/nav_button_provider.h"
++#include "ui/views/views_export.h"
++#include "ui/views/window/frame_buttons.h"
++
++namespace gfx {
++class Canvas;
++class Insets;
++class InsetsF;
++class RectF;
++}  // namespace gfx
++
++namespace views {
++
++class FrameBackground;
++class View;
++
++// Returns the FrameButtonDisplayType for the given FrameButton, taking into
++// account the current maximized state of the window.
++VIEWS_EXPORT ui::NavButtonProvider::FrameButtonDisplayType
++GetFrameButtonDisplayType(FrameButton button_id, bool is_maximized);
++
++// Paint the window borders, shadows and the background of the top bar area for
++// frame views on Linux that use client-side decorations.
++VIEWS_EXPORT void PaintRestoredFrameBorderLinux(
++    gfx::Canvas& canvas,
++    const views::View& view,
++    views::FrameBackground* frame_background,
++    const SkRRect& clip,
++    bool showing_shadow,
++    bool is_active,
++    const gfx::Insets& border,
++    const gfx::ShadowValues& shadow_values,
++    bool tiled);
++
++// Get the insets from the native window edge to the client view when the window
++// is restored for frame views on Linux that use client-side decorations.
++VIEWS_EXPORT gfx::Insets GetRestoredFrameBorderInsetsLinux(
++    bool showing_shadow,
++    const gfx::Insets& default_border,
++    const gfx::ShadowValues& shadow_values,
++    const gfx::Insets& resize_border);
++
++// Build a clip region for a restored window with rounded corners.
++// `bounds` is the outer frame rect, `border` the insets to apply before
++// rounding, and `radii` the corner radii in DIPs.
++VIEWS_EXPORT SkRRect GetRestoredClipRegion(const gfx::RectF& bounds,
++                                           const gfx::InsetsF& border,
++                                           const gfx::RoundedCornersF& radii);
++
++// Computes the opaque region for a window with the given rounded clip region,
++// subtracting the rounded corners and any translucent top area.
++VIEWS_EXPORT std::vector<gfx::Rect> GetRestoredOpaqueRegion(
++    const SkRRect& clip_region,
++    float scale,
++    int translucent_top_area_height_dip);
++
++}  // namespace views
++
++#endif  // UI_VIEWS_WINDOW_FRAME_VIEW_UTILS_LINUX_H_

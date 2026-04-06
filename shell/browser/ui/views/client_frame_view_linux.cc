@@ -61,7 +61,8 @@ ui::NavButtonProvider::ButtonState ButtonStateToNavButtonProviderState(
 ClientFrameViewLinux::ClientFrameViewLinux()
     : theme_(ui::NativeTheme::GetInstanceForNativeUi()),
       nav_button_provider_(
-          ui::LinuxUiTheme::GetForProfile(nullptr)->CreateNavButtonProvider()),
+          ui::LinuxUiTheme::GetForProfile(nullptr)->CreateNavButtonProvider(
+              ui::FrameType::kDefault)),
       nav_buttons_{
           NavButton{ui::NavButtonProvider::FrameButtonDisplayType::kClose,
                     views::FrameButton::kClose, &views::Widget::Close,

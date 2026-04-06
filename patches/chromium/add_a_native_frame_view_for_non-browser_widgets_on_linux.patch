@@ -1,0 +1,2023 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Athul Iddya <athul@iddya.com>
+Date: Sat, 28 Mar 2026 20:03:20 -0700
+Subject: Add a native frame view for non-browser widgets on Linux
+
+Introduces NativeFrameViewLinux, a FrameViewLinux subclass that provides
+native client-side decorations for non-browser widgets on Linux. This
+class is preferred over FrameViewLinux for the GTK UI theme. Its
+implementation mirrors BrowserFrameViewLinuxNative, using
+WindowFrameProvider for frame decoration and NavButtonProvider for
+window control buttons.
+
+NativeFrameViewLayoutLinux similarly extends FrameViewLayoutLinux to
+override frame and button layout decisions using WindowFrameProvider and
+NavButtonProvider. Shared utilities between NativeFrameViewLinux and
+BrowserFrameViewLinuxNative are extracted into frame_view_utils_linux.
+
+WindowFrameProvider and NativeTheme gain options for non-browser frame
+rendering: top area height, padding and border APIs, and bottom border
+drawing in the top area, to match the appearance of native GTK dialogs.
+
+Bug: 396190939
+
+diff --git a/chrome/browser/ui/views/frame/browser_frame_view_factory_views.cc b/chrome/browser/ui/views/frame/browser_frame_view_factory_views.cc
+index 087a9a6ae11d93652c8fcfc59fb2c1ad0ba191d7..38e37b929c464feb59088b011f9f5de4815f34b5 100644
+--- a/chrome/browser/ui/views/frame/browser_frame_view_factory_views.cc
++++ b/chrome/browser/ui/views/frame/browser_frame_view_factory_views.cc
+@@ -26,6 +26,7 @@
+ #include "chrome/browser/ui/web_applications/app_browser_controller.h"
+ #include "ui/linux/linux_ui.h"
+ #include "ui/linux/nav_button_provider.h"
++#include "ui/linux/window_frame_provider.h"
+ #endif
+ 
+ namespace chrome {
+@@ -52,7 +53,8 @@ std::unique_ptr<OpaqueBrowserFrameView> CreateOpaqueBrowserFrameViewLinux(
+ 
+   if (linux_ui_theme && theme_service_factory->UsingSystemTheme() &&
+       !app_uses_wco_or_borderless) {
+-    auto nav_button_provider = linux_ui_theme->CreateNavButtonProvider();
++    auto nav_button_provider =
++        linux_ui_theme->CreateNavButtonProvider(ui::FrameType::kBrowser);
+     if (nav_button_provider) {
+       auto* native_widget = static_cast<BrowserNativeWidgetAuraLinux*>(
+           widget->browser_native_widget());
+@@ -63,8 +65,8 @@ std::unique_ptr<OpaqueBrowserFrameView> CreateOpaqueBrowserFrameViewLinux(
+                  ui::LinuxUiTheme* linux_ui_theme, bool tiled, bool maximized) {
+                 const bool solid_frame =
+                     !native_widget->ShouldDrawRestoredFrameShadow();
+-                return linux_ui_theme->GetWindowFrameProvider(solid_frame,
+-                                                              tiled, maximized);
++                return linux_ui_theme->GetWindowFrameProvider(
++                    ui::FrameType::kBrowser, solid_frame, tiled, maximized);
+               },
+               native_widget, linux_ui_theme));
+       return std::make_unique<BrowserFrameViewLinuxNative>(
+diff --git a/chrome/browser/ui/views/frame/browser_frame_view_layout_linux_native_unittest.cc b/chrome/browser/ui/views/frame/browser_frame_view_layout_linux_native_unittest.cc
+index fd752131322661d657c5ccf8219895ddb3f148ce..d5ea877a57ff141e62509605f0223c446ffc4be4 100644
+--- a/chrome/browser/ui/views/frame/browser_frame_view_layout_linux_native_unittest.cc
++++ b/chrome/browser/ui/views/frame/browser_frame_view_layout_linux_native_unittest.cc
+@@ -118,6 +118,8 @@ class TestNavButtonProvider : public ui::NavButtonProvider {
+ 
+   gfx::Insets GetTopAreaSpacing() const override { return kTopAreaSpacing; }
+ 
++  int GetNavButtonHeight(bool maximized) const override { return 0; }
++
+   int GetInterNavButtonSpacing() const override {
+     return kInterNavButtonSpacing;
+   }
+@@ -133,6 +135,9 @@ class TestFrameProvider : public ui::WindowFrameProvider {
+   int GetTopCornerRadiusDip() override { return 0; }
+   bool IsTopFrameTranslucent() override { return false; }
+   gfx::Insets GetFrameThicknessDip() override { return {}; }
++  int GetTopAreaMinHeightDip() override { return 24; }
++  gfx::Insets GetTopAreaPaddingDip() override { return gfx::Insets::VH(6, 0); }
++  gfx::Insets GetTopAreaBorderDip() override { return gfx::Insets(); }
+   void PaintWindowFrame(gfx::Canvas* canvas,
+                         const gfx::Rect& rect,
+                         int top_area_height,
+diff --git a/chrome/browser/ui/views/frame/browser_frame_view_linux_native.cc b/chrome/browser/ui/views/frame/browser_frame_view_linux_native.cc
+index a458bdda2fbc144abce83d8b456ebfdb3ad0f085..631dc6bedff0c08a54d3cabbb05561e03714adb0 100644
+--- a/chrome/browser/ui/views/frame/browser_frame_view_linux_native.cc
++++ b/chrome/browser/ui/views/frame/browser_frame_view_linux_native.cc
+@@ -10,34 +10,7 @@
+ #include "ui/linux/linux_ui.h"
+ #include "ui/views/controls/button/image_button.h"
+ #include "ui/views/window/frame_background.h"
+-
+-namespace {
+-
+-ui::NavButtonProvider::ButtonState ButtonStateToNavButtonProviderState(
+-    views::Button::ButtonState state) {
+-  switch (state) {
+-    case views::Button::STATE_NORMAL:
+-      return ui::NavButtonProvider::ButtonState::kNormal;
+-    case views::Button::STATE_HOVERED:
+-      return ui::NavButtonProvider::ButtonState::kHovered;
+-    case views::Button::STATE_PRESSED:
+-      return ui::NavButtonProvider::ButtonState::kPressed;
+-    case views::Button::STATE_DISABLED:
+-      return ui::NavButtonProvider::ButtonState::kDisabled;
+-
+-    case views::Button::STATE_COUNT:
+-    default:
+-      NOTREACHED();
+-  }
+-}
+-
+-}  // namespace
+-
+-bool BrowserFrameViewLinuxNative::DrawFrameButtonParams::operator==(
+-    const DrawFrameButtonParams& other) const {
+-  return top_area_height == other.top_area_height &&
+-         maximized == other.maximized && active == other.active;
+-}
++#include "ui/views/window/frame_view_utils_linux.h"
+ 
+ BrowserFrameViewLinuxNative::BrowserFrameViewLinuxNative(
+     BrowserWidget* widget,
+@@ -91,33 +64,14 @@ void BrowserFrameViewLinuxNative::PaintRestoredFrameBorder(
+ }
+ 
+ void BrowserFrameViewLinuxNative::MaybeUpdateCachedFrameButtonImages() {
+-  DrawFrameButtonParams params{
++  views::DrawFrameButtonParams params{
+       GetTopAreaHeight() - layout()->FrameEdgeInsets(!IsMaximized()).top(),
+       IsMaximized(), ShouldPaintAsActive()};
+-  if (cache_ == params) {
+-    return;
+-  }
+-  cache_ = params;
+-  nav_button_provider_->RedrawImages(params.top_area_height, params.maximized,
+-                                     params.active);
+-  for (auto type : {
+-           ui::NavButtonProvider::FrameButtonDisplayType::kMinimize,
+-           IsMaximized()
+-               ? ui::NavButtonProvider::FrameButtonDisplayType::kRestore
+-               : ui::NavButtonProvider::FrameButtonDisplayType::kMaximize,
+-           ui::NavButtonProvider::FrameButtonDisplayType::kClose,
+-       }) {
+-    for (size_t state = 0; state < views::Button::STATE_COUNT; state++) {
+-      views::Button::ButtonState button_state =
+-          static_cast<views::Button::ButtonState>(state);
+-      views::Button* button = GetButtonFromDisplayType(type);
+-      DCHECK_EQ(views::ImageButton::kViewClassName, button->GetClassName());
+-      static_cast<views::ImageButton*>(button)->SetImageModel(
+-          button_state,
+-          ui::ImageModel::FromImageSkia(nav_button_provider_->GetImage(
+-              type, ButtonStateToNavButtonProviderState(button_state))));
+-    }
+-  }
++  views::MaybeUpdateCachedFrameButtonImages(
++      nav_button_provider_.get(), params, cache_,
++      [this](ui::NavButtonProvider::FrameButtonDisplayType type) {
++        return GetButtonFromDisplayType(type);
++      });
+ }
+ 
+ views::Button* BrowserFrameViewLinuxNative::GetButtonFromDisplayType(
+diff --git a/chrome/browser/ui/views/frame/browser_frame_view_linux_native.h b/chrome/browser/ui/views/frame/browser_frame_view_linux_native.h
+index b1b307dca15d236adc6f90bff02ae05a0e3f1647..a00ae50dfe5dadff49255d326ea44f69108d0765 100644
+--- a/chrome/browser/ui/views/frame/browser_frame_view_linux_native.h
++++ b/chrome/browser/ui/views/frame/browser_frame_view_linux_native.h
+@@ -12,6 +12,7 @@
+ #include "ui/base/metadata/metadata_header_macros.h"
+ #include "ui/linux/nav_button_provider.h"
+ #include "ui/linux/window_frame_provider.h"
++#include "ui/views/window/frame_view_utils_linux.h"
+ 
+ class BrowserFrameViewLayoutLinuxNative;
+ 
+@@ -44,14 +45,6 @@ class BrowserFrameViewLinuxNative : public BrowserFrameViewLinux {
+   void PaintRestoredFrameBorder(gfx::Canvas* canvas) const override;
+ 
+  private:
+-  struct DrawFrameButtonParams {
+-    bool operator==(const DrawFrameButtonParams& other) const;
+-
+-    int top_area_height;
+-    bool maximized;
+-    bool active;
+-  };
+-
+   // Redraws the image resources associated with the minimize, maximize,
+   // restore, and close buttons.
+   virtual void MaybeUpdateCachedFrameButtonImages();
+@@ -67,7 +60,7 @@ class BrowserFrameViewLinuxNative : public BrowserFrameViewLinux {
+ 
+   // Cache the last parameters with which the caption buttons were drawn.
+   // Parameters still need to be computed even if the buttons cannot be drawn.
+-  std::optional<DrawFrameButtonParams> cache_;
++  std::optional<views::DrawFrameButtonParams> cache_;
+ };
+ 
+ #endif  // CHROME_BROWSER_UI_VIEWS_FRAME_BROWSER_FRAME_VIEW_LINUX_NATIVE_H_
+diff --git a/chrome/browser/ui/views/frame/picture_in_picture_browser_frame_view_interactive_uitest.cc b/chrome/browser/ui/views/frame/picture_in_picture_browser_frame_view_interactive_uitest.cc
+index 05976a5d9d07bf70079344e380ab8053dbc11825..275a66bf524ef584bfd0e0000046f0e897e0f6c9 100644
+--- a/chrome/browser/ui/views/frame/picture_in_picture_browser_frame_view_interactive_uitest.cc
++++ b/chrome/browser/ui/views/frame/picture_in_picture_browser_frame_view_interactive_uitest.cc
+@@ -1187,7 +1187,8 @@ class FakeLinuxUiGetter : public ui::LinuxUiGetter {
+       return ui::NativeTheme::GetInstanceForNativeUi();
+     }
+ 
+-    ui::WindowFrameProvider* GetWindowFrameProvider(bool solid_frame,
++    ui::WindowFrameProvider* GetWindowFrameProvider(ui::FrameType type,
++                                                    bool solid_frame,
+                                                     bool tiled,
+                                                     bool maximized) override {
+       // The test relies on this returning null.
+diff --git a/chrome/browser/ui/views/frame/picture_in_picture_browser_frame_view_linux.cc b/chrome/browser/ui/views/frame/picture_in_picture_browser_frame_view_linux.cc
+index 7cca8df26548c73cc424836aa67b5f7df7a5367b..13b013a962f2620116437d272a789bfdbd5bb1f0 100644
+--- a/chrome/browser/ui/views/frame/picture_in_picture_browser_frame_view_linux.cc
++++ b/chrome/browser/ui/views/frame/picture_in_picture_browser_frame_view_linux.cc
+@@ -15,6 +15,7 @@
+ #include "ui/gfx/geometry/insets.h"
+ #include "ui/gfx/geometry/rounded_corners_f.h"
+ #include "ui/linux/linux_ui.h"
++#include "ui/linux/window_frame_provider.h"
+ #include "ui/views/window/frame_background.h"
+ #include "ui/views/window/frame_view_utils_linux.h"
+ 
+@@ -45,7 +46,7 @@ PictureInPictureBrowserFrameViewLinux::PictureInPictureBrowserFrameViewLinux(
+ 
+     // This may return null, but that's handled below.
+     window_frame_provider_ = linux_ui_theme->GetWindowFrameProvider(
+-        solid_frame, /*tiled=*/false,
++        ui::FrameType::kBrowser, solid_frame, /*tiled=*/false,
+         /*maximized=*/widget->IsMaximized());
+   }
+ 
+diff --git a/ui/base/ui_base_types.h b/ui/base/ui_base_types.h
+index a87bb5c2ad8caa8c35fb1c9cc982f8f9555b6cfb..8a078d1253e6ceca386dfc1510d28313b5fe7b9f 100644
+--- a/ui/base/ui_base_types.h
++++ b/ui/base/ui_base_types.h
+@@ -164,6 +164,12 @@ enum class WindowResizePrecheckResult {
+ #endif
+ };
+ 
++// Distinguishes browser from non-browser windows for frame decoration styling.
++enum class FrameType {
++  kBrowser,
++  kDefault,
++};
++
+ }  // namespace ui
+ 
+ #endif  // UI_BASE_UI_BASE_TYPES_H_
+diff --git a/ui/gtk/gtk_color_mixers.cc b/ui/gtk/gtk_color_mixers.cc
+index fd2e96e37d9c3c029ed5297cffd7f396ef79b03e..b3e9b8d329cf609522d2454e9cab802337e600dd 100644
+--- a/ui/gtk/gtk_color_mixers.cc
++++ b/ui/gtk/gtk_color_mixers.cc
+@@ -118,8 +118,10 @@ void AddGtkNativeColorMixer(ui::ColorProvider* provider,
+   mixer[ui::kColorFrameActive] = {frame_color};
+   mixer[ui::kColorFrameCaptionForegroundActive] = {
+       GetFgColor(header_selector + " label.title")};
+-  mixer[ui::kColorFrameCaptionForegroundInactive] = {
+-      GetFgColor(header_selector_inactive + " label.title")};
++  // TODO: The :backdrop foreground color query does not work on GTK4. Replace
++  // this approximation with the actual query once a solution is found.
++  mixer[ui::kColorFrameCaptionForegroundInactive] = ui::AlphaBlend(
++      ui::kColorFrameCaptionForegroundActive, ui::kColorFrameInactive, 0x80);
+   mixer[ui::kColorFrameInactive] = {frame_color_inactive};
+   mixer[ui::kColorFocusableBorderUnfocused] = {entry_border};
+   mixer[ui::kColorHelpIconActive] = {GetFgColor("button.image-button:hover")};
+diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
+index 066dcd99651f0eda2216f19f0d818de9db4cb074..43dd02ec8f1becec7b87b8716891226d19681d5c 100644
+--- a/ui/gtk/gtk_ui.cc
++++ b/ui/gtk/gtk_ui.cc
+@@ -679,17 +679,20 @@ void GtkUi::RemoveWindowButtonOrderObserver(
+   window_button_order_observer_list_.RemoveObserver(observer);
+ }
+ 
+-std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
+-  return std::make_unique<gtk::NavButtonProviderGtk>();
++std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider(
++    ui::FrameType type) {
++  return std::make_unique<gtk::NavButtonProviderGtk>(type);
+ }
+ 
+-ui::WindowFrameProvider* GtkUi::GetWindowFrameProvider(bool solid_frame,
++ui::WindowFrameProvider* GtkUi::GetWindowFrameProvider(ui::FrameType type,
++                                                       bool solid_frame,
+                                                        bool tiled,
+                                                        bool maximized) {
+-  auto& provider = frame_providers_[solid_frame][tiled][maximized];
++  auto& provider =
++      frame_providers_[static_cast<int>(type)][solid_frame][tiled][maximized];
+   if (!provider) {
+-    provider = std::make_unique<gtk::WindowFrameProviderGtk>(solid_frame, tiled,
+-                                                             maximized);
++    provider = std::make_unique<gtk::WindowFrameProviderGtk>(type, solid_frame,
++                                                             tiled, maximized);
+   }
+   return provider.get();
+ }
+diff --git a/ui/gtk/gtk_ui.h b/ui/gtk/gtk_ui.h
+index b388fc462e0c320170e5b35550e48b6b19079f40..825c1afd2de17702c76d7fd254ee783d30e4f956 100644
+--- a/ui/gtk/gtk_ui.h
++++ b/ui/gtk/gtk_ui.h
+@@ -107,8 +107,10 @@ class GtkUi : public ui::LinuxUiAndTheme {
+   bool PreferDarkTheme() const override;
+   void SetDarkTheme(bool dark) override;
+   void SetAccentColor(std::optional<SkColor> accent_color) override;
+-  std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider() override;
+-  ui::WindowFrameProvider* GetWindowFrameProvider(bool solid_frame,
++  std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider(
++      ui::FrameType type) override;
++  ui::WindowFrameProvider* GetWindowFrameProvider(ui::FrameType type,
++                                                  bool solid_frame,
+                                                   bool tiled,
+                                                   bool maximized) override;
+ 
+@@ -198,11 +200,13 @@ class GtkUi : public ui::LinuxUiAndTheme {
+ 
+   // Paints a native window frame.  Typically only one of these will be
+   // non-null.  The exception is when the user starts or stops their compositor
+-  // while Chrome is running.  This 3D array is indexed first by whether the
+-  // frame is translucent (0) or solid(1), then by whether the frame is normal
+-  // (0) or tiled (1), then by whether the frame is maximized (0) or not (1).
++  // while Chrome is running.  This 4D array is indexed by
++  // [type][solid_frame][tiled][maximized].
+   std::array<
+-      std::array<std::array<std::unique_ptr<ui::WindowFrameProvider>, 2>, 2>,
++      std::array<
++          std::array<std::array<std::unique_ptr<ui::WindowFrameProvider>, 2>,
++                     2>,
++          2>,
+       2>
+       frame_providers_;
+ 
+diff --git a/ui/gtk/gtk_util.cc b/ui/gtk/gtk_util.cc
+index 6e5ddad561df9260ebaaad10bf7e5d0127472481..8002e0b3c9733056dc6e3b5439f7c6b910cad42b 100644
+--- a/ui/gtk/gtk_util.cc
++++ b/ui/gtk/gtk_util.cc
+@@ -668,6 +668,32 @@ GtkWidget* GetDummyWindow() {
+   return window;
+ }
+ 
++gfx::Size GetMinimumContentSize(GtkCssContext context) {
++  int min_width = 0;
++  int min_height = 0;
++  if (GtkCheckVersion(4)) {
++    // In GTK4, CSS properties like "min-width" and "min-height" are not
++    // queryable through gtk_style_context_get.  Use gtk_widget_measure to get
++    // the margin box, then subtract margin, border, and padding to recover the
++    // content area minimum size.
++    gtk_widget_measure(context.widget(), GTK_ORIENTATION_HORIZONTAL, -1,
++                       &min_width, nullptr, nullptr, nullptr);
++    gtk_widget_measure(context.widget(), GTK_ORIENTATION_VERTICAL, -1,
++                       &min_height, nullptr, nullptr, nullptr);
++    auto margin = GtkStyleContextGetMargin(context);
++    auto border = GtkStyleContextGetBorder(context);
++    auto padding = GtkStyleContextGetPadding(context);
++    min_width -= margin.width() + border.width() + padding.width();
++    min_height -= margin.height() + border.height() + padding.height();
++    min_width = std::max(0, min_width);
++    min_height = std::max(0, min_height);
++  } else {
++    GtkStyleContextGet(context, "min-width", &min_width, "min-height",
++                       &min_height, nullptr);
++  }
++  return {min_width, min_height};
++}
++
+ gfx::Size GetSeparatorSize(bool horizontal) {
+   auto widget = TakeGObject(gtk_separator_new(
+       horizontal ? GTK_ORIENTATION_HORIZONTAL : GTK_ORIENTATION_VERTICAL));
+diff --git a/ui/gtk/gtk_util.h b/ui/gtk/gtk_util.h
+index 72679e0fb557885886cd1092ab76299e1034b782..5f10b39710ff06a1d09612df8874986a81119b77 100644
+--- a/ui/gtk/gtk_util.h
++++ b/ui/gtk/gtk_util.h
+@@ -187,6 +187,10 @@ void GtkWindowDestroy(GtkWidget* widget);
+ 
+ GtkWidget* GetDummyWindow();
+ 
++// Returns the CSS min-width and min-height of the content area for the given
++// context, excluding margin, border, and padding.
++gfx::Size GetMinimumContentSize(GtkCssContext context);
++
+ gfx::Size GetSeparatorSize(bool horizontal);
+ 
+ float GetDeviceScaleFactor();
+diff --git a/ui/gtk/native_theme_gtk.cc b/ui/gtk/native_theme_gtk.cc
+index 80fb9471fb4d5a5df7311d2853e115bf202a6d5d..0d80a442fd5eeb8ac46cd3cd16bf33ea5b187b62 100644
+--- a/ui/gtk/native_theme_gtk.cc
++++ b/ui/gtk/native_theme_gtk.cc
+@@ -160,13 +160,17 @@ void NativeThemeGtk::PaintFrameTopArea(
+   GtkCssContext context = GetStyleContextFromCss(
+       extra_params.use_custom_frame ? "headerbar.header-bar.titlebar"
+                                     : "menubar");
+-  ApplyCssToContext(context, "* { border-radius: 0px; border-style: none; }");
++  ApplyCssToContext(context,
++                    extra_params.has_frame_border
++                        ? "* { border-radius: 0px; }"
++                        : "* { border-radius: 0px; border-style: none; }");
+   gtk_style_context_set_state(context, extra_params.is_active
+                                            ? GTK_STATE_FLAG_NORMAL
+                                            : GTK_STATE_FLAG_BACKDROP);
+ 
+   SkBitmap bitmap = GetWidgetBitmap(rect.size(), std::move(context),
+-                                    !extra_params.use_custom_frame, false);
++                                    !extra_params.use_custom_frame,
++                                    extra_params.has_frame_border);
+   bitmap.setImmutable();
+   canvas->drawImage(cc::PaintImage::CreateFromBitmap(std::move(bitmap)),
+                     rect.x(), rect.y());
+diff --git a/ui/gtk/nav_button_provider_gtk.cc b/ui/gtk/nav_button_provider_gtk.cc
+index b99ae10a777321a21731b98000ac3c4881092093..f2df65bea47bc74f2709edece8a3ad83b9df5293 100644
+--- a/ui/gtk/nav_button_provider_gtk.cc
++++ b/ui/gtk/nav_button_provider_gtk.cc
+@@ -5,6 +5,7 @@
+ #include "ui/gtk/nav_button_provider_gtk.h"
+ 
+ #include "base/compiler_specific.h"
++#include "base/functional/callback.h"
+ #include "base/notreached.h"
+ #include "ui/base/glib/glib_cast.h"
+ #include "ui/base/glib/scoped_gobject.h"
+@@ -144,58 +145,35 @@ gfx::Size GetMinimumWidgetSize(gfx::Size content_size,
+     widget_rect.Inset(-GtkStyleContextGetMargin(content_context));
+   }
+ 
+-  int min_width = 0;
+-  int min_height = 0;
+-  // On GTK3, get the min size from the CSS directly.
+-  if (GtkCheckVersion(3, 20) && !GtkCheckVersion(4)) {
+-    GtkStyleContextGet(widget_context, "min-width", &min_width, "min-height",
+-                       &min_height, nullptr);
+-    widget_rect.set_width(std::max(widget_rect.width(), min_width));
+-    widget_rect.set_height(std::max(widget_rect.height(), min_height));
+-  }
++  auto min_size = GetMinimumContentSize(widget_context);
++  widget_rect.set_width(std::max(widget_rect.width(), min_size.width()));
++  widget_rect.set_height(std::max(widget_rect.height(), min_size.height()));
+ 
+   widget_rect.Inset(-GtkStyleContextGetPadding(widget_context));
+   widget_rect.Inset(-GtkStyleContextGetBorder(widget_context));
+ 
+-  // On GTK4, the CSS properties are hidden, so compute the min size indirectly,
+-  // which will include the border, margin, and padding.  We can't take this
+-  // codepath on GTK3 since we only have a widget available in GTK4.
+-  if (GtkCheckVersion(4)) {
+-    gtk_widget_measure(widget_context.widget(), GTK_ORIENTATION_HORIZONTAL, -1,
+-                       &min_width, nullptr, nullptr, nullptr);
+-    gtk_widget_measure(widget_context.widget(), GTK_ORIENTATION_VERTICAL, -1,
+-                       &min_height, nullptr, nullptr, nullptr);
+-
+-    // The returned "minimum size" is the drawn size of the widget, which
+-    // doesn't include the margin.  However, GTK includes this size in its
+-    // calculation. So remove the margin, recompute the min size, then add it
+-    // back.
+-    auto margin = GtkStyleContextGetMargin(widget_context);
+-    widget_rect.Inset(-margin);
+-    widget_rect.set_width(std::max(widget_rect.width(), min_width));
+-    widget_rect.set_height(std::max(widget_rect.height(), min_height));
+-    widget_rect.Inset(margin);
+-  }
+-
+   return widget_rect.size();
+ }
+ 
+-GtkCssContext CreateHeaderContext(bool maximized) {
++GtkCssContext CreateHeaderContext(ui::FrameType type, bool maximized) {
+   std::string window_selector = "window.background.csd";
+   if (maximized) {
+     window_selector += ".maximized";
+   }
+   return AppendCssNodeToStyleContext(
+       AppendCssNodeToStyleContext({}, window_selector),
+-      "headerbar.header-bar.titlebar");
++      type == ui::FrameType::kBrowser
++          ? "headerbar.header-bar.titlebar"
++          : "headerbar.default-decoration.titlebar");
+ }
+ 
+-GtkCssContext CreateWindowControlsContext(bool maximized) {
+-  return AppendCssNodeToStyleContext(CreateHeaderContext(maximized),
++GtkCssContext CreateWindowControlsContext(ui::FrameType type, bool maximized) {
++  return AppendCssNodeToStyleContext(CreateHeaderContext(type, maximized),
+                                      "windowcontrols");
+ }
+ 
+ void CalculateUnscaledButtonSize(
++    ui::FrameType frame_type,
+     ui::NavButtonProvider::FrameButtonDisplayType type,
+     bool maximized,
+     gfx::Size* button_size,
+@@ -205,7 +183,7 @@ void CalculateUnscaledButtonSize(
+   // button for each state.  For this reason, render buttons for all
+   // states at the size of a GTK_STATE_FLAG_NORMAL button.
+   auto button_context = AppendCssNodeToStyleContext(
+-      CreateWindowControlsContext(maximized),
++      CreateWindowControlsContext(frame_type, maximized),
+       "button.titlebutton." +
+           std::string(ButtonStyleClassFromButtonType(type)));
+ 
+@@ -222,12 +200,14 @@ void CalculateUnscaledButtonSize(
+ 
+ class NavButtonImageSource : public gfx::ImageSkiaSource {
+  public:
+-  NavButtonImageSource(ui::NavButtonProvider::FrameButtonDisplayType type,
++  NavButtonImageSource(ui::FrameType frame_type,
++                       ui::NavButtonProvider::FrameButtonDisplayType type,
+                        ui::NavButtonProvider::ButtonState state,
+                        bool maximized,
+                        bool active,
+                        gfx::Size button_size)
+-      : type_(type),
++      : frame_type_(frame_type),
++        type_(type),
+         state_(state),
+         maximized_(maximized),
+         active_(active),
+@@ -245,7 +225,8 @@ class NavButtonImageSource : public gfx::ImageSkiaSource {
+     }
+ 
+     auto button_context = AppendCssNodeToStyleContext(
+-        CreateWindowControlsContext(maximized_), "button.titlebutton");
++        CreateWindowControlsContext(frame_type_, maximized_),
++        "button.titlebutton");
+     gtk_style_context_add_class(button_context,
+                                 ButtonStyleClassFromButtonType(type_));
+     GtkStateFlags button_state = GtkStateFlagsFromButtonState(state_);
+@@ -361,6 +342,7 @@ class NavButtonImageSource : public gfx::ImageSkiaSource {
+   bool HasRepresentationAtAllScales() const override { return true; }
+ 
+  private:
++  ui::FrameType frame_type_;
+   ui::NavButtonProvider::FrameButtonDisplayType type_;
+   ui::NavButtonProvider::ButtonState state_;
+   bool maximized_;
+@@ -370,14 +352,24 @@ class NavButtonImageSource : public gfx::ImageSkiaSource {
+ 
+ }  // namespace
+ 
+-NavButtonProviderGtk::NavButtonProviderGtk() = default;
++NavButtonProviderGtk::NavButtonProviderGtk(ui::FrameType frame_type)
++    : frame_type_(frame_type) {
++  GtkSettings* settings = gtk_settings_get_default();
++  auto callback = base::BindRepeating(&NavButtonProviderGtk::OnThemeChanged,
++                                      base::Unretained(this));
++  theme_name_signal_ = ScopedGSignal(settings, "notify::gtk-theme-name",
++                                     callback, G_CONNECT_AFTER);
++  prefer_dark_signal_ =
++      ScopedGSignal(settings, "notify::gtk-application-prefer-dark-theme",
++                    callback, G_CONNECT_AFTER);
++}
+ 
+ NavButtonProviderGtk::~NavButtonProviderGtk() = default;
+ 
+ void NavButtonProviderGtk::RedrawImages(int top_area_height,
+                                         bool maximized,
+                                         bool active) {
+-  auto header_context = CreateHeaderContext(maximized);
++  auto header_context = CreateHeaderContext(frame_type_, maximized);
+   auto header_padding = GtkStyleContextGetPadding(header_context);
+ 
+   double scale = 1.0f;
+@@ -392,8 +384,8 @@ void NavButtonProviderGtk::RedrawImages(int top_area_height,
+       ui::NavButtonProvider::FrameButtonDisplayType::kClose,
+   };
+   for (auto type : display_types) {
+-    CalculateUnscaledButtonSize(type, maximized, &button_sizes[type],
+-                                &button_margins[type]);
++    CalculateUnscaledButtonSize(frame_type_, type, maximized,
++                                &button_sizes[type], &button_margins[type]);
+     int button_unconstrained_height = button_sizes[type].height() +
+                                       button_margins[type].top() +
+                                       button_margins[type].bottom();
+@@ -444,7 +436,7 @@ void NavButtonProviderGtk::RedrawImages(int top_area_height,
+          }) {
+       button_images_[type][state] =
+           gfx::ImageSkia(std::make_unique<NavButtonImageSource>(
+-                             type, state, maximized, active, size),
++                             frame_type_, type, state, maximized, active, size),
+                          size);
+     }
+   }
+@@ -471,8 +463,39 @@ gfx::Insets NavButtonProviderGtk::GetTopAreaSpacing() const {
+   return top_area_spacing_;
+ }
+ 
++int NavButtonProviderGtk::GetNavButtonHeight(bool maximized) const {
++  auto& cached =
++      maximized ? nav_button_height_maximized_ : nav_button_height_restored_;
++  if (!cached.has_value()) {
++    int max_height = 0;
++    for (auto type : {
++             ui::NavButtonProvider::FrameButtonDisplayType::kMinimize,
++             maximized
++                 ? ui::NavButtonProvider::FrameButtonDisplayType::kRestore
++                 : ui::NavButtonProvider::FrameButtonDisplayType::kMaximize,
++             ui::NavButtonProvider::FrameButtonDisplayType::kClose,
++         }) {
++      gfx::Size button_size;
++      gfx::Insets button_margin;
++      CalculateUnscaledButtonSize(frame_type_, type, maximized, &button_size,
++                                  &button_margin);
++      max_height =
++          std::max(max_height, button_size.height() + button_margin.top() +
++                                   button_margin.bottom());
++    }
++    cached = max_height;
++  }
++  return *cached;
++}
++
+ int NavButtonProviderGtk::GetInterNavButtonSpacing() const {
+   return inter_button_spacing_;
+ }
+ 
++void NavButtonProviderGtk::OnThemeChanged(GtkSettings* settings,
++                                          GtkParamSpec* param) {
++  nav_button_height_restored_ = std::nullopt;
++  nav_button_height_maximized_ = std::nullopt;
++}
++
+ }  // namespace gtk
+diff --git a/ui/gtk/nav_button_provider_gtk.h b/ui/gtk/nav_button_provider_gtk.h
+index 7433dd6f47f7558b1aa3c62947d0edd5940360ca..7e65440c005652749e37583877e6e0ff76e29543 100644
+--- a/ui/gtk/nav_button_provider_gtk.h
++++ b/ui/gtk/nav_button_provider_gtk.h
+@@ -6,17 +6,23 @@
+ #define UI_GTK_NAV_BUTTON_PROVIDER_GTK_H_
+ 
+ #include <map>
++#include <optional>
+ 
+ #include "base/containers/flat_map.h"
++#include "ui/base/glib/scoped_gsignal.h"
++#include "ui/base/ui_base_types.h"
+ #include "ui/gfx/geometry/insets.h"
+ #include "ui/gfx/image/image_skia.h"
+ #include "ui/linux/nav_button_provider.h"
+ 
++typedef struct _GtkParamSpec GtkParamSpec;
++typedef struct _GtkSettings GtkSettings;
++
+ namespace gtk {
+ 
+ class NavButtonProviderGtk : public ui::NavButtonProvider {
+  public:
+-  NavButtonProviderGtk();
++  explicit NavButtonProviderGtk(ui::FrameType frame_type);
+   ~NavButtonProviderGtk() override;
+ 
+   // ui::NavButtonProvider:
+@@ -26,9 +32,14 @@ class NavButtonProviderGtk : public ui::NavButtonProvider {
+   gfx::Insets GetNavButtonMargin(
+       ui::NavButtonProvider::FrameButtonDisplayType type) const override;
+   gfx::Insets GetTopAreaSpacing() const override;
++  int GetNavButtonHeight(bool maximized) const override;
+   int GetInterNavButtonSpacing() const override;
+ 
+  private:
++  void OnThemeChanged(GtkSettings* settings, GtkParamSpec* param);
++
++  const ui::FrameType frame_type_;
++
+   std::map<ui::NavButtonProvider::FrameButtonDisplayType,
+            base::flat_map<ui::NavButtonProvider::ButtonState, gfx::ImageSkia>>
+       button_images_;
+@@ -36,6 +47,13 @@ class NavButtonProviderGtk : public ui::NavButtonProvider {
+       button_margins_;
+   gfx::Insets top_area_spacing_;
+   int inter_button_spacing_;
++
++  // Cached button height per maximized state, invalidated on theme change.
++  mutable std::optional<int> nav_button_height_restored_;
++  mutable std::optional<int> nav_button_height_maximized_;
++
++  ScopedGSignal theme_name_signal_;
++  ScopedGSignal prefer_dark_signal_;
+ };
+ 
+ }  // namespace gtk
+diff --git a/ui/gtk/window_frame_provider_gtk.cc b/ui/gtk/window_frame_provider_gtk.cc
+index ec626922284e8fe55c608bcf58a1efde6b3cb9e8..c1a9d39664d3083d6eaf0cf5372a5482c4aed3f8 100644
+--- a/ui/gtk/window_frame_provider_gtk.cc
++++ b/ui/gtk/window_frame_provider_gtk.cc
+@@ -71,17 +71,22 @@ GtkCssContext DecorationContext(bool solid_frame,
+   return context;
+ }
+ 
+-GtkCssContext HeaderContext(bool solid_frame,
++GtkCssContext HeaderContext(ui::FrameType type,
++                            bool solid_frame,
+                             bool tiled,
+                             bool maximized,
+                             bool focused) {
+   auto context = WindowContext(solid_frame, tiled, maximized, focused);
+-  context =
+-      AppendCssNodeToStyleContext(context, "headerbar.header-bar.titlebar");
++  context = AppendCssNodeToStyleContext(
++      context, type == ui::FrameType::kBrowser
++                   ? "headerbar.header-bar.titlebar"
++                   : "headerbar.default-decoration.titlebar");
+   if (!focused) {
+     gtk_style_context_set_state(context, GTK_STATE_FLAG_BACKDROP);
+   }
+-  ApplyCssToContext(context, "* { border-bottom-style: none; }");
++  if (type == ui::FrameType::kBrowser) {
++    ApplyCssToContext(context, "* { border-bottom-style: none; }");
++  }
+   return context;
+ }
+ 
+@@ -125,14 +130,14 @@ SkBitmap PaintHeaderbar(const gfx::Size& size,
+   return PaintBitmap(size, tabstrip_bounds_dip, context, scale);
+ }
+ 
+-int ComputeTopCornerRadius() {
++int ComputeTopCornerRadius(ui::FrameType type, bool tiled, bool maximized) {
+   // In GTK4, there's no way to directly obtain CSS values for a context, so we
+   // need to experimentally determine the corner radius by rendering a sample.
+   // Additionally, in GTK4, the headerbar corners get clipped by the window
+   // rather than the headerbar having its own rounded corners.
+   auto context = GtkCheckVersion(4)
+-                     ? DecorationContext(false, false, false, false)
+-                     : HeaderContext(false, false, false, false);
++                     ? DecorationContext(false, tiled, maximized, false)
++                     : HeaderContext(type, false, tiled, maximized, false);
+   ApplyCssToContext(context, R"(window, headerbar {
+     background-image: none;
+     background-color: black;
+@@ -163,10 +168,10 @@ int ComputeTopCornerRadius() {
+ // is rendering artifacts, but the consequence of a false-positive is only a
+ // slight performance penalty, so this function is intentionally conservative
+ // in deciding if the header is translucent.
+-bool HeaderIsTranslucent() {
++bool HeaderIsTranslucent(ui::FrameType type) {
+   // The arbitrary square size to render a sample header.
+   constexpr int kHeaderSize = 32;
+-  auto context = HeaderContext(false, false, false, false);
++  auto context = HeaderContext(type, false, false, false, false);
+   double opacity = GetOpacityFromContext(context);
+   if (opacity < 1.0) {
+     return true;
+@@ -200,10 +205,14 @@ WindowFrameProviderGtk::Asset& WindowFrameProviderGtk::Asset::operator=(
+ 
+ WindowFrameProviderGtk::Asset::~Asset() = default;
+ 
+-WindowFrameProviderGtk::WindowFrameProviderGtk(bool solid_frame,
++WindowFrameProviderGtk::WindowFrameProviderGtk(ui::FrameType type,
++                                               bool solid_frame,
+                                                bool tiled,
+                                                bool maximized)
+-    : solid_frame_(solid_frame), tiled_(tiled), maximized_(maximized) {
++    : type_(type),
++      solid_frame_(solid_frame),
++      tiled_(tiled),
++      maximized_(maximized) {
+   GtkSettings* settings = gtk_settings_get_default();
+   // Unretained() is safe since WindowFrameProviderGtk will own the signals.
+   auto callback = base::BindRepeating(&WindowFrameProviderGtk::OnThemeChanged,
+@@ -219,14 +228,14 @@ WindowFrameProviderGtk::~WindowFrameProviderGtk() = default;
+ 
+ int WindowFrameProviderGtk::GetTopCornerRadiusDip() {
+   if (!top_corner_radius_dip_.has_value()) {
+-    top_corner_radius_dip_ = ComputeTopCornerRadius();
++    top_corner_radius_dip_ = ComputeTopCornerRadius(type_, tiled_, maximized_);
+   }
+   return *top_corner_radius_dip_;
+ }
+ 
+ bool WindowFrameProviderGtk::IsTopFrameTranslucent() {
+   if (!top_frame_is_translucent_.has_value()) {
+-    top_frame_is_translucent_ = !solid_frame_ && HeaderIsTranslucent();
++    top_frame_is_translucent_ = !solid_frame_ && HeaderIsTranslucent(type_);
+   }
+   return *top_frame_is_translucent_;
+ }
+@@ -266,6 +275,30 @@ gfx::Insets WindowFrameProviderGtk::GetFrameThicknessDip() {
+   return *frame_thickness_dip_;
+ }
+ 
++int WindowFrameProviderGtk::GetTopAreaMinHeightDip() {
++  if (!top_area_min_height_dip_.has_value()) {
++    auto context = HeaderContext(type_, solid_frame_, tiled_, maximized_, true);
++    top_area_min_height_dip_ = GetMinimumContentSize(context).height();
++  }
++  return *top_area_min_height_dip_;
++}
++
++gfx::Insets WindowFrameProviderGtk::GetTopAreaPaddingDip() {
++  if (!top_area_padding_dip_.has_value()) {
++    auto context = HeaderContext(type_, solid_frame_, tiled_, maximized_, true);
++    top_area_padding_dip_ = GtkStyleContextGetPadding(context);
++  }
++  return *top_area_padding_dip_;
++}
++
++gfx::Insets WindowFrameProviderGtk::GetTopAreaBorderDip() {
++  if (!top_area_border_dip_.has_value()) {
++    auto context = HeaderContext(type_, solid_frame_, tiled_, maximized_, true);
++    top_area_border_dip_ = GtkStyleContextGetBorder(context);
++  }
++  return *top_area_border_dip_;
++}
++
+ void WindowFrameProviderGtk::PaintWindowFrame(gfx::Canvas* canvas,
+                                               const gfx::Rect& rect_dip,
+                                               int top_area_height_dip,
+@@ -353,7 +386,7 @@ void WindowFrameProviderGtk::PaintWindowFrame(gfx::Canvas* canvas,
+ 
+   auto header = PaintHeaderbar(
+       {client_bounds_px.width(), top_area_height_px},
+-      HeaderContext(solid_frame_, tiled_, maximized_, focused), scale);
++      HeaderContext(type_, solid_frame_, tiled_, maximized_, focused), scale);
+   image = gfx::ImageSkia::CreateFrom1xBitmap(header);
+   // In GTK4, the headerbar gets clipped by the window.
+   if (GtkCheckVersion(4)) {
+@@ -409,6 +442,9 @@ void WindowFrameProviderGtk::OnThemeChanged(GtkSettings* settings,
+   frame_thickness_dip_ = std::nullopt;
+   top_corner_radius_dip_ = std::nullopt;
+   top_frame_is_translucent_ = std::nullopt;
++  top_area_min_height_dip_ = std::nullopt;
++  top_area_padding_dip_ = std::nullopt;
++  top_area_border_dip_ = std::nullopt;
+ }
+ 
+ }  // namespace gtk
+diff --git a/ui/gtk/window_frame_provider_gtk.h b/ui/gtk/window_frame_provider_gtk.h
+index 49b8119414e42fc0730100232ee358a35c48a871..bac15be59594c30f6badc124b9ece259a1d4c6e8 100644
+--- a/ui/gtk/window_frame_provider_gtk.h
++++ b/ui/gtk/window_frame_provider_gtk.h
+@@ -20,7 +20,10 @@ namespace gtk {
+ 
+ class WindowFrameProviderGtk : public ui::WindowFrameProvider {
+  public:
+-  WindowFrameProviderGtk(bool solid_frame, bool tiled, bool maximized);
++  WindowFrameProviderGtk(ui::FrameType type,
++                         bool solid_frame,
++                         bool tiled,
++                         bool maximized);
+ 
+   WindowFrameProviderGtk(const WindowFrameProviderGtk&) = delete;
+   WindowFrameProviderGtk& operator=(const WindowFrameProviderGtk&) = delete;
+@@ -31,6 +34,9 @@ class WindowFrameProviderGtk : public ui::WindowFrameProvider {
+   int GetTopCornerRadiusDip() override;
+   bool IsTopFrameTranslucent() override;
+   gfx::Insets GetFrameThicknessDip() override;
++  int GetTopAreaMinHeightDip() override;
++  gfx::Insets GetTopAreaPaddingDip() override;
++  gfx::Insets GetTopAreaBorderDip() override;
+   void PaintWindowFrame(gfx::Canvas* canvas,
+                         const gfx::Rect& rect,
+                         int top_area_height,
+@@ -63,14 +69,18 @@ class WindowFrameProviderGtk : public ui::WindowFrameProvider {
+   void OnThemeChanged(GtkSettings* settings, GtkParamSpec* param);
+ 
+   // Input parameters used for drawing.
++  const ui::FrameType type_;
+   const bool solid_frame_;
+   const bool tiled_;
+   const bool maximized_;
+ 
+-  // Scale-independent metric calculated based on the bitmaps.
++  // Scale-independent metrics calculated based on the bitmaps or CSS.
+   std::optional<gfx::Insets> frame_thickness_dip_;
+   std::optional<int> top_corner_radius_dip_;
+   std::optional<bool> top_frame_is_translucent_;
++  std::optional<int> top_area_min_height_dip_;
++  std::optional<gfx::Insets> top_area_padding_dip_;
++  std::optional<gfx::Insets> top_area_border_dip_;
+ 
+   // Cached bitmaps and metrics.
+   base::flat_map<float, Asset> assets_;
+diff --git a/ui/linux/fake_linux_ui.cc b/ui/linux/fake_linux_ui.cc
+index fe6f24f32b2b8734c2c1d8ead6b5a62597ce3ab5..d500719f427f83fdd3a4c84afd3a5ee8e7c0f46e 100644
+--- a/ui/linux/fake_linux_ui.cc
++++ b/ui/linux/fake_linux_ui.cc
+@@ -114,11 +114,13 @@ void FakeLinuxUi::AddWindowButtonOrderObserver(
+ void FakeLinuxUi::RemoveWindowButtonOrderObserver(
+     ui::WindowButtonOrderObserver* observer) {}
+ 
+-std::unique_ptr<ui::NavButtonProvider> FakeLinuxUi::CreateNavButtonProvider() {
++std::unique_ptr<ui::NavButtonProvider> FakeLinuxUi::CreateNavButtonProvider(
++    ui::FrameType type) {
+   return nullptr;
+ }
+ 
+-ui::WindowFrameProvider* FakeLinuxUi::GetWindowFrameProvider(bool solid_frame,
++ui::WindowFrameProvider* FakeLinuxUi::GetWindowFrameProvider(FrameType type,
++                                                             bool solid_frame,
+                                                              bool tiled,
+                                                              bool maximized) {
+   return nullptr;
+diff --git a/ui/linux/fake_linux_ui.h b/ui/linux/fake_linux_ui.h
+index 922ffeba78d0995d7c94939f347a498ee9830443..a59e04531b16bd9cf814a2c3bba285fbc02a3485 100644
+--- a/ui/linux/fake_linux_ui.h
++++ b/ui/linux/fake_linux_ui.h
+@@ -62,8 +62,10 @@ class FakeLinuxUi : public LinuxUiAndTheme {
+   bool PreferDarkTheme() const override;
+   void SetDarkTheme(bool dark) override;
+   void SetAccentColor(std::optional<SkColor> accent_color) override;
+-  std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider() override;
+-  ui::WindowFrameProvider* GetWindowFrameProvider(bool solid_frame,
++  std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider(
++      FrameType type) override;
++  ui::WindowFrameProvider* GetWindowFrameProvider(FrameType type,
++                                                  bool solid_frame,
+                                                   bool tiled,
+                                                   bool maximized) override;
+ };
+diff --git a/ui/linux/fallback_linux_ui.cc b/ui/linux/fallback_linux_ui.cc
+index ce5308fbcbf56a9ad0c96e1e6fb0654427177041..c32dbb2929014bd12ebaba7294ac943f6a4ee8ae 100644
+--- a/ui/linux/fallback_linux_ui.cc
++++ b/ui/linux/fallback_linux_ui.cc
+@@ -137,12 +137,13 @@ void FallbackLinuxUi::AddWindowButtonOrderObserver(
+ void FallbackLinuxUi::RemoveWindowButtonOrderObserver(
+     ui::WindowButtonOrderObserver* observer) {}
+ 
+-std::unique_ptr<ui::NavButtonProvider>
+-FallbackLinuxUi::CreateNavButtonProvider() {
++std::unique_ptr<ui::NavButtonProvider> FallbackLinuxUi::CreateNavButtonProvider(
++    ui::FrameType type) {
+   return nullptr;
+ }
+ 
+ ui::WindowFrameProvider* FallbackLinuxUi::GetWindowFrameProvider(
++    FrameType type,
+     bool solid_frame,
+     bool tiled,
+     bool maximized) {
+diff --git a/ui/linux/fallback_linux_ui.h b/ui/linux/fallback_linux_ui.h
+index d42baec32e6c6026c85d4376f49d737684750085..3a29d8f98f47dbc0b11dd7d1b506eaf0b5c8e74e 100644
+--- a/ui/linux/fallback_linux_ui.h
++++ b/ui/linux/fallback_linux_ui.h
+@@ -65,8 +65,10 @@ class FallbackLinuxUi : public LinuxUiAndTheme {
+   bool PreferDarkTheme() const override;
+   void SetDarkTheme(bool dark) override;
+   void SetAccentColor(std::optional<SkColor> accent_color) override;
+-  std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider() override;
+-  ui::WindowFrameProvider* GetWindowFrameProvider(bool solid_frame,
++  std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider(
++      FrameType type) override;
++  ui::WindowFrameProvider* GetWindowFrameProvider(FrameType type,
++                                                  bool solid_frame,
+                                                   bool tiled,
+                                                   bool maximized) override;
+ 
+diff --git a/ui/linux/linux_ui.h b/ui/linux/linux_ui.h
+index 737739af638a50fef2a4e431847a2fb02cd46663..ea54bb162868a3a28117bcd5b183528c188677d5 100644
+--- a/ui/linux/linux_ui.h
++++ b/ui/linux/linux_ui.h
+@@ -57,6 +57,7 @@ class SelectFileDialog;
+ class SelectFilePolicy;
+ class WindowButtonOrderObserver;
+ class WindowFrameProvider;
++enum class FrameType;
+ enum class TextEditCommand;
+ 
+ // Adapter class with targets to render like different toolkits. Set by any
+@@ -319,14 +320,16 @@ class COMPONENT_EXPORT(LINUX_UI) LinuxUiTheme {
+ 
+   // Returns a new NavButtonProvider, or nullptr if the underlying
+   // toolkit does not support drawing client-side navigation buttons.
+-  virtual std::unique_ptr<NavButtonProvider> CreateNavButtonProvider() = 0;
++  virtual std::unique_ptr<NavButtonProvider> CreateNavButtonProvider(
++      FrameType type) = 0;
+ 
+   // Returns a WindowFrameProvider, or nullptr if the underlying toolkit does
+   // not support drawing client-side window decorations. |solid_frame| indicates
+   // if transparency is unsupported and the frame should be rendered opaque.
+   // The returned object is not owned by the caller and will remain alive until
+   // the process ends.
+-  virtual WindowFrameProvider* GetWindowFrameProvider(bool solid_frame,
++  virtual WindowFrameProvider* GetWindowFrameProvider(FrameType type,
++                                                      bool solid_frame,
+                                                       bool tiled,
+                                                       bool maximized) = 0;
+ 
+diff --git a/ui/linux/nav_button_provider.h b/ui/linux/nav_button_provider.h
+index 2b6d5003e7acba17be8d317263856e199b5144da..de614ccc7b462ec7305f467cb3ec78e4d546e381 100644
+--- a/ui/linux/nav_button_provider.h
++++ b/ui/linux/nav_button_provider.h
+@@ -62,6 +62,9 @@ class NavButtonProvider {
+   // inset represents the trailing spacing.
+   virtual gfx::Insets GetTopAreaSpacing() const = 0;
+ 
++  // Gets the height of the tallest nav button including its margins.
++  virtual int GetNavButtonHeight(bool maximized) const = 0;
++
+   // Gets the spacing to be used to separate buttons.
+   virtual int GetInterNavButtonSpacing() const = 0;
+ };
+diff --git a/ui/linux/window_frame_provider.h b/ui/linux/window_frame_provider.h
+index 9b7a24fa606596f3ce9eb5d28dc28cf8b4f3eec2..70acf361bd5cc31652436190c206fe4c45fbb899 100644
+--- a/ui/linux/window_frame_provider.h
++++ b/ui/linux/window_frame_provider.h
+@@ -30,6 +30,18 @@ class WindowFrameProvider {
+   // Returns the shadow and border drawn around the window in DIPs.
+   virtual gfx::Insets GetFrameThicknessDip() = 0;
+ 
++  // Returns the minimum content height of the top area as specified by the
++  // native toolkit theme.
++  virtual int GetTopAreaMinHeightDip() = 0;
++
++  // Returns the padding around the top area content as specified by the
++  // native toolkit theme.
++  virtual gfx::Insets GetTopAreaPaddingDip() = 0;
++
++  // Returns the border around the top area content as specified by the
++  // native toolkit theme.
++  virtual gfx::Insets GetTopAreaBorderDip() = 0;
++
+   // Draws a native window border and shadow.  |rect| is the bounds of the
+   // window.  The decoration will be drawn outside of that region.
+   virtual void PaintWindowFrame(gfx::Canvas* canvas,
+diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
+index 926daa45671d98344cdbfe592f7233683cc09adc..2d65244032a0ac04158facb00afc311642664660 100644
+--- a/ui/native_theme/native_theme.h
++++ b/ui/native_theme/native_theme.h
+@@ -155,6 +155,8 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+     // True when Chromium renders the titlebar.  False when the window
+     // manager renders the titlebar.
+     bool use_custom_frame = false;
++    // True when frame borders should be rendered in the custom frame.
++    bool has_frame_border = false;
+     // If the NativeTheme will paint a solid color, it should use
+     // |default_background_color|.
+     SkColor default_background_color = gfx::kPlaceholderColor;
+diff --git a/ui/qt/qt_ui.cc b/ui/qt/qt_ui.cc
+index 8eeec7c9dfe7ef23f859bad4ae40eeeb4d634f32..28545b26eb15d30dc170a7b9ac9896ecec2651ca 100644
+--- a/ui/qt/qt_ui.cc
++++ b/ui/qt/qt_ui.cc
+@@ -407,12 +407,14 @@ void QtUi::RemoveWindowButtonOrderObserver(
+   }
+ }
+ 
+-std::unique_ptr<ui::NavButtonProvider> QtUi::CreateNavButtonProvider() {
++std::unique_ptr<ui::NavButtonProvider> QtUi::CreateNavButtonProvider(
++    ui::FrameType type) {
+   // QT prefers server-side decorations.
+   return nullptr;
+ }
+ 
+-ui::WindowFrameProvider* QtUi::GetWindowFrameProvider(bool solid_frame,
++ui::WindowFrameProvider* QtUi::GetWindowFrameProvider(ui::FrameType type,
++                                                      bool solid_frame,
+                                                       bool tiled,
+                                                       bool maximized) {
+   // QT prefers server-side decorations.
+diff --git a/ui/qt/qt_ui.h b/ui/qt/qt_ui.h
+index b88428ffd3ecb5ade5789c1c95cf71b51ae8115f..bd897ab90b5958a7810e9d3f3af01a7e0c56d52e 100644
+--- a/ui/qt/qt_ui.h
++++ b/ui/qt/qt_ui.h
+@@ -81,8 +81,10 @@ class QtUi : public ui::LinuxUiAndTheme, QtInterface::Delegate {
+   bool PreferDarkTheme() const override;
+   void SetDarkTheme(bool dark) override;
+   void SetAccentColor(std::optional<SkColor>) override;
+-  std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider() override;
+-  ui::WindowFrameProvider* GetWindowFrameProvider(bool solid_frame,
++  std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider(
++      ui::FrameType type) override;
++  ui::WindowFrameProvider* GetWindowFrameProvider(ui::FrameType type,
++                                                  bool solid_frame,
+                                                   bool tiled,
+                                                   bool maximized) override;
+ 
+diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
+index 33cbbfe242b8212634888d88532ead71c1a2c590..34c34986334c91cef33f4a0453a59fc29069b844 100644
+--- a/ui/views/BUILD.gn
++++ b/ui/views/BUILD.gn
+@@ -661,12 +661,16 @@ component("views") {
+       "window/frame_view_layout_linux.h",
+       "window/frame_view_linux.h",
+       "window/frame_view_utils_linux.h",
++      "window/native_frame_view_layout_linux.h",
++      "window/native_frame_view_linux.h",
+     ]
+     sources += [
+       "controls/menu/menu_config_linux.cc",
+       "window/frame_view_layout_linux.cc",
+       "window/frame_view_linux.cc",
+       "window/frame_view_utils_linux.cc",
++      "window/native_frame_view_layout_linux.cc",
++      "window/native_frame_view_linux.cc",
+     ]
+   }
+ 
+@@ -1468,7 +1472,10 @@ test("views_unittests") {
+   }
+ 
+   if (is_linux) {
+-    sources += [ "window/frame_view_linux_unittest.cc" ]
++    sources += [
++      "window/frame_view_linux_unittest.cc",
++      "window/native_frame_view_linux_unittest.cc",
++    ]
+     deps += [
+       "//ui/base/ime/linux",
+       "//ui/linux:test_support",
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.cc
+index 3f48ca5b580777f9c2a4fc39988fb70cbaa17f3d..9636206c48ae85b621026256741e389b35fe2719 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_linux.cc
+@@ -8,8 +8,10 @@
+ #include <memory>
+ #include <optional>
+ #include <string>
++#include <utility>
+ #include <vector>
+ 
++#include "base/functional/callback.h"
+ #include "base/memory/raw_ptr.h"
+ #include "base/notimplemented.h"
+ #include "base/scoped_observation.h"
+@@ -39,6 +41,7 @@
+ #include "ui/views/window/frame_view_linux.h"
+ #include "ui/views/window/frame_view_utils_linux.h"
+ #include "ui/views/window/native_frame_view.h"
++#include "ui/views/window/native_frame_view_linux.h"
+ 
+ #if BUILDFLAG(USE_ATK)
+ #include "ui/accessibility/platform/atk_util_auralinux.h"
+@@ -105,6 +108,37 @@ std::unique_ptr<FrameView> DesktopWindowTreeHostLinux::CreateFrameView() {
+     return std::make_unique<NativeFrameView>(GetWidget());
+   }
+ 
++  auto* linux_ui_theme = ui::LinuxUiTheme::GetForWindow(GetContentWindow());
++  if (linux_ui_theme) {
++    auto nav_button_provider =
++        linux_ui_theme->CreateNavButtonProvider(ui::FrameType::kDefault);
++    if (nav_button_provider) {
++      // base::Unretained is safe: linux_ui_theme outlives this host, and the
++      // callback is stored in NativeFrameViewLinux which is destroyed before
++      // this host.
++      auto frame_provider_getter = base::BindRepeating(
++          [](ui::LinuxUiTheme* theme, DesktopWindowTreeHostLinux* host,
++             bool tiled, bool maximized) -> ui::WindowFrameProvider* {
++            // A solid frame is used when the platform doesn't support
++            // transparency.
++            const bool solid_frame = !host->ShouldWindowContentsBeTransparent();
++            return theme->GetWindowFrameProvider(ui::FrameType::kDefault,
++                                                 solid_frame, tiled, maximized);
++          },
++          base::Unretained(linux_ui_theme), base::Unretained(this));
++
++      auto frame_view = std::make_unique<NativeFrameViewLinux>(
++          GetWidget(), std::move(nav_button_provider),
++          std::move(frame_provider_getter));
++      frame_view->SetSupportsClientFrameShadow(
++          platform_window()->CanSetDecorationInsets() &&
++          Widget::IsWindowCompositingSupported());
++      frame_view->InitViews();
++      return frame_view;
++    }
++  }
++
++  // Fallback when no native toolkit is available.
+   auto frame_view = std::make_unique<FrameViewLinux>(GetWidget());
+   frame_view->SetSupportsClientFrameShadow(
+       platform_window()->CanSetDecorationInsets() &&
+diff --git a/ui/views/window/frame_view_utils_linux.cc b/ui/views/window/frame_view_utils_linux.cc
+index 62d7612003d22d6a35aa2b3f7d2c50dd4a95d7ce..151df9bec7ffe576a4ce5d7425606c0f361a69ac 100644
+--- a/ui/views/window/frame_view_utils_linux.cc
++++ b/ui/views/window/frame_view_utils_linux.cc
+@@ -6,16 +6,20 @@
+ 
+ #include <cmath>
+ 
++#include "base/notreached.h"
+ #include "third_party/skia/include/core/SkRRect.h"
+ #include "third_party/skia/include/core/SkRegion.h"
++#include "ui/base/models/image_model.h"
+ #include "ui/color/color_provider.h"
+ #include "ui/gfx/color_utils.h"
+ #include "ui/gfx/geometry/insets_f.h"
+ #include "ui/gfx/geometry/rect_conversions.h"
+ #include "ui/gfx/geometry/rect_f.h"
+ #include "ui/gfx/geometry/skia_conversions.h"
++#include "ui/gfx/image/image_skia.h"
+ #include "ui/gfx/scoped_canvas.h"
+ #include "ui/gfx/skia_paint_util.h"
++#include "ui/views/controls/button/image_button.h"
+ #include "ui/views/view.h"
+ #include "ui/views/window/frame_background.h"
+ 
+@@ -144,6 +148,61 @@ ui::NavButtonProvider::FrameButtonDisplayType GetFrameButtonDisplayType(
+   }
+ }
+ 
++bool DrawFrameButtonParams::operator==(
++    const DrawFrameButtonParams& other) const {
++  return top_area_height == other.top_area_height &&
++         maximized == other.maximized && active == other.active;
++}
++
++void MaybeUpdateCachedFrameButtonImages(
++    ui::NavButtonProvider* nav_button_provider,
++    const DrawFrameButtonParams& params,
++    std::optional<DrawFrameButtonParams>& cache,
++    base::FunctionRef<views::Button*(
++        ui::NavButtonProvider::FrameButtonDisplayType)> get_button) {
++  if (cache == params) {
++    return;
++  }
++  cache = params;
++  nav_button_provider->RedrawImages(params.top_area_height, params.maximized,
++                                    params.active);
++  for (auto type : {
++           ui::NavButtonProvider::FrameButtonDisplayType::kMinimize,
++           params.maximized
++               ? ui::NavButtonProvider::FrameButtonDisplayType::kRestore
++               : ui::NavButtonProvider::FrameButtonDisplayType::kMaximize,
++           ui::NavButtonProvider::FrameButtonDisplayType::kClose,
++       }) {
++    for (size_t state = 0; state < views::Button::STATE_COUNT; state++) {
++      views::Button::ButtonState button_state =
++          static_cast<views::Button::ButtonState>(state);
++      views::Button* button = get_button(type);
++      DCHECK_EQ(views::ImageButton::kViewClassName, button->GetClassName());
++      static_cast<views::ImageButton*>(button)->SetImageModel(
++          button_state,
++          ui::ImageModel::FromImageSkia(nav_button_provider->GetImage(
++              type, ButtonStateToNavButtonProviderState(button_state))));
++    }
++  }
++}
++
++ui::NavButtonProvider::ButtonState ButtonStateToNavButtonProviderState(
++    Button::ButtonState state) {
++  switch (state) {
++    case Button::STATE_NORMAL:
++      return ui::NavButtonProvider::ButtonState::kNormal;
++    case Button::STATE_HOVERED:
++      return ui::NavButtonProvider::ButtonState::kHovered;
++    case Button::STATE_PRESSED:
++      return ui::NavButtonProvider::ButtonState::kPressed;
++    case Button::STATE_DISABLED:
++      return ui::NavButtonProvider::ButtonState::kDisabled;
++    case Button::STATE_COUNT:
++    default:
++      NOTREACHED();
++  }
++}
++
+ std::vector<gfx::Rect> GetRestoredOpaqueRegion(
+     const SkRRect& clip_region,
+     float scale,
+diff --git a/ui/views/window/frame_view_utils_linux.h b/ui/views/window/frame_view_utils_linux.h
+index 3c935bd58fa701ce217357b614c69827e30eeb22..8259ece2390181ec6dec93e1444b21e26af4c3d9 100644
+--- a/ui/views/window/frame_view_utils_linux.h
++++ b/ui/views/window/frame_view_utils_linux.h
+@@ -5,13 +5,16 @@
+ #ifndef UI_VIEWS_WINDOW_FRAME_VIEW_UTILS_LINUX_H_
+ #define UI_VIEWS_WINDOW_FRAME_VIEW_UTILS_LINUX_H_
+ 
++#include <optional>
+ #include <vector>
+ 
++#include "base/functional/function_ref.h"
+ #include "third_party/skia/include/core/SkRRect.h"
+ #include "ui/gfx/geometry/rect.h"
+ #include "ui/gfx/geometry/rounded_corners_f.h"
+ #include "ui/gfx/shadow_value.h"
+ #include "ui/linux/nav_button_provider.h"
++#include "ui/views/controls/button/button.h"
+ #include "ui/views/views_export.h"
+ #include "ui/views/window/frame_buttons.h"
+ 
+@@ -27,6 +30,29 @@ namespace views {
+ class FrameBackground;
+ class View;
+ 
++// Parameters used for drawing frame buttons, used for caching.
++struct VIEWS_EXPORT DrawFrameButtonParams {
++  bool operator==(const DrawFrameButtonParams& other) const;
++
++  int top_area_height;
++  bool maximized;
++  bool active;
++};
++
++// Redraws the image resources associated with the minimize, maximize,
++// restore, and close buttons.
++VIEWS_EXPORT void MaybeUpdateCachedFrameButtonImages(
++    ui::NavButtonProvider* nav_button_provider,
++    const DrawFrameButtonParams& params,
++    std::optional<DrawFrameButtonParams>& cache,
++    base::FunctionRef<views::Button*(
++        ui::NavButtonProvider::FrameButtonDisplayType)> get_button);
++
++// Converts a views::Button::ButtonState to the corresponding
++// ui::NavButtonProvider::ButtonState.
++VIEWS_EXPORT ui::NavButtonProvider::ButtonState
++ButtonStateToNavButtonProviderState(Button::ButtonState state);
++
+ // Returns the FrameButtonDisplayType for the given FrameButton, taking into
+ // account the current maximized state of the window.
+ VIEWS_EXPORT ui::NavButtonProvider::FrameButtonDisplayType
+diff --git a/ui/views/window/native_frame_view_layout_linux.cc b/ui/views/window/native_frame_view_layout_linux.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..0cbba88cdae08dc9b9d3c14568875d531bea547f
+--- /dev/null
++++ b/ui/views/window/native_frame_view_layout_linux.cc
+@@ -0,0 +1,116 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "ui/views/window/native_frame_view_layout_linux.h"
++
++#include <algorithm>
++#include <utility>
++
++#include "ui/gfx/font_list.h"
++#include "ui/linux/window_frame_provider.h"
++#include "ui/views/controls/button/button.h"
++#include "ui/views/style/typography_provider.h"
++#include "ui/views/widget/widget.h"
++#include "ui/views/window/frame_view_linux.h"
++
++namespace views {
++
++NativeFrameViewLayoutLinux::NativeFrameViewLayoutLinux(
++    ui::NavButtonProvider* nav_button_provider,
++    FrameProviderGetter frame_provider_getter)
++    : nav_button_provider_(nav_button_provider),
++      frame_provider_getter_(std::move(frame_provider_getter)) {}
++
++NativeFrameViewLayoutLinux::~NativeFrameViewLayoutLinux() = default;
++
++ui::WindowFrameProvider* NativeFrameViewLayoutLinux::GetFrameProvider() const {
++  return frame_provider_getter_.Run(tiled(),
++                                    view()->GetWidget()->IsMaximized());
++}
++
++gfx::FontList NativeFrameViewLayoutLinux::GetTitleFontList() const {
++  return TypographyProvider::Get().GetWindowTitleFontList().DeriveWithWeight(
++      gfx::Font::Weight::BOLD);
++}
++
++gfx::Insets NativeFrameViewLayoutLinux::GetRestoredFrameBorderInsets() const {
++  auto* frame_provider =
++      frame_provider_getter_.Run(tiled(), /*maximized=*/false);
++  gfx::Insets insets = frame_provider->GetFrameThicknessDip();
++  if (supports_client_frame_shadow()) {
++    insets.SetToMax(gfx::Insets(kResizeBorder));
++  }
++  return insets;
++}
++
++gfx::Insets NativeFrameViewLayoutLinux::GetInputInsets() const {
++  Widget* widget = view()->GetWidget();
++  if (widget->IsMaximized() || widget->IsFullscreen()) {
++    return gfx::Insets();
++  }
++  return gfx::Insets(supports_client_frame_shadow() ? kResizeBorder : 0);
++}
++
++int NativeFrameViewLayoutLinux::GetTranslucentTopAreaHeight() const {
++  auto* provider = GetFrameProvider();
++  return (provider && provider->IsTopFrameTranslucent()) ? GetTopAreaHeight()
++                                                         : 0;
++}
++
++int NativeFrameViewLayoutLinux::GetTopAreaHeight() const {
++  if (!ShouldShowTitlebarAndBorder()) {
++    return 0;
++  }
++
++  gfx::Insets insets = GetFrameBorderInsets();
++  int title_font_height = GetTitleFontList().GetHeight();
++
++  auto* frame_provider = GetFrameProvider();
++  int titlebar_min_height = frame_provider->GetTopAreaMinHeightDip();
++  gfx::Insets titlebar_padding = frame_provider->GetTopAreaPaddingDip();
++  gfx::Insets titlebar_border = frame_provider->GetTopAreaBorderDip();
++
++  int button_content_height = nav_button_provider_->GetNavButtonHeight(
++      view()->GetWidget()->IsMaximized());
++  int content_height =
++      std::max({title_font_height, titlebar_min_height, button_content_height});
++
++  return insets.top() + titlebar_border.top() + titlebar_padding.top() +
++         content_height + titlebar_padding.bottom() + titlebar_border.bottom();
++}
++
++gfx::Insets NativeFrameViewLayoutLinux::GetTopAreaBorderInsets() const {
++  return GetFrameProvider()->GetTopAreaBorderDip();
++}
++
++gfx::ShadowValues NativeFrameViewLayoutLinux::GetShadowValues(
++    bool /*active*/) const {
++  // No-op: shadows are drawn by the WindowFrameProvider.
++  return gfx::ShadowValues();
++}
++
++gfx::RoundedCornersF NativeFrameViewLayoutLinux::GetCornerRadii() const {
++  auto* frame_provider = GetFrameProvider();
++  float radius = frame_provider ? frame_provider->GetTopCornerRadiusDip() : 0;
++  return gfx::RoundedCornersF(radius, radius, 0, 0);
++}
++
++FrameViewLayoutLinux::ButtonLayoutParams
++NativeFrameViewLayoutLinux::GetButtonLayoutParams(FrameButton button_id,
++                                                  Button* button) const {
++  auto display_type = view()->GetButtonDisplayType(button_id);
++
++  ButtonLayoutParams params;
++  params.margin = nav_button_provider_->GetNavButtonMargin(display_type);
++  params.size = button->GetPreferredSize({});
++  params.inter_spacing = nav_button_provider_->GetInterNavButtonSpacing();
++  params.y = CaptionButtonY() + params.margin.top();
++  return params;
++}
++
++gfx::Insets NativeFrameViewLayoutLinux::GetTopAreaSpacing() const {
++  return nav_button_provider_->GetTopAreaSpacing();
++}
++
++}  // namespace views
+diff --git a/ui/views/window/native_frame_view_layout_linux.h b/ui/views/window/native_frame_view_layout_linux.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..805cbe3dfcb9814f201d10347e69a27af2e8c556
+--- /dev/null
++++ b/ui/views/window/native_frame_view_layout_linux.h
+@@ -0,0 +1,65 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef UI_VIEWS_WINDOW_NATIVE_FRAME_VIEW_LAYOUT_LINUX_H_
++#define UI_VIEWS_WINDOW_NATIVE_FRAME_VIEW_LAYOUT_LINUX_H_
++
++#include "base/functional/callback.h"
++#include "base/memory/raw_ptr.h"
++#include "ui/linux/nav_button_provider.h"
++#include "ui/views/views_export.h"
++#include "ui/views/window/frame_view_layout_linux.h"
++
++namespace ui {
++class WindowFrameProvider;
++}  // namespace ui
++
++namespace views {
++
++// Layout manager for NativeFrameViewLinux that uses the native toolkit's
++// NavButtonProvider for button sizing and margins, and WindowFrameProvider
++// for frame geometry. Overrides the base class shadow-based defaults with
++// provider-based metrics.
++class VIEWS_EXPORT NativeFrameViewLayoutLinux : public FrameViewLayoutLinux {
++ public:
++  using FrameProviderGetter =
++      base::RepeatingCallback<ui::WindowFrameProvider*(bool tiled,
++                                                       bool maximized)>;
++
++  NativeFrameViewLayoutLinux(ui::NavButtonProvider* nav_button_provider,
++                             FrameProviderGetter frame_provider_getter);
++
++  NativeFrameViewLayoutLinux(const NativeFrameViewLayoutLinux&) = delete;
++  NativeFrameViewLayoutLinux& operator=(const NativeFrameViewLayoutLinux&) =
++      delete;
++
++  ~NativeFrameViewLayoutLinux() override;
++
++  // Pass nullptr before the provider is destroyed.
++  void set_nav_button_provider(ui::NavButtonProvider* provider) {
++    nav_button_provider_ = provider;
++  }
++
++  // Returns the WindowFrameProvider for the current window state.
++  ui::WindowFrameProvider* GetFrameProvider() const;
++  gfx::FontList GetTitleFontList() const override;
++  gfx::Insets GetRestoredFrameBorderInsets() const override;
++  gfx::Insets GetInputInsets() const override;
++  int GetTranslucentTopAreaHeight() const override;
++  int GetTopAreaHeight() const override;
++  gfx::Insets GetTopAreaBorderInsets() const override;
++  gfx::ShadowValues GetShadowValues(bool active) const override;
++  gfx::RoundedCornersF GetCornerRadii() const override;
++  ButtonLayoutParams GetButtonLayoutParams(FrameButton button_id,
++                                           Button* button) const override;
++  gfx::Insets GetTopAreaSpacing() const override;
++
++ private:
++  raw_ptr<ui::NavButtonProvider> nav_button_provider_;
++  FrameProviderGetter frame_provider_getter_;
++};
++
++}  // namespace views
++
++#endif  // UI_VIEWS_WINDOW_NATIVE_FRAME_VIEW_LAYOUT_LINUX_H_
+diff --git a/ui/views/window/native_frame_view_linux.cc b/ui/views/window/native_frame_view_linux.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..486edbac5bed6b50b60f69d4e95601a499bf4104
+--- /dev/null
++++ b/ui/views/window/native_frame_view_linux.cc
+@@ -0,0 +1,126 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "ui/views/window/native_frame_view_linux.h"
++
++#include <algorithm>
++#include <utility>
++
++#include "ui/base/l10n/l10n_util.h"
++#include "ui/base/metadata/metadata_impl_macros.h"
++#include "ui/color/color_id.h"
++#include "ui/color/color_provider.h"
++#include "ui/gfx/canvas.h"
++#include "ui/linux/window_frame_provider.h"
++#include "ui/native_theme/native_theme.h"
++#include "ui/strings/grit/ui_strings.h"
++#include "ui/views/accessibility/view_accessibility.h"
++#include "ui/views/controls/button/image_button.h"
++#include "ui/views/widget/widget.h"
++#include "ui/views/window/frame_view_utils_linux.h"
++#include "ui/views/window/native_frame_view_layout_linux.h"
++
++namespace views {
++
++NativeFrameViewLinux::NativeFrameViewLinux(
++    Widget* widget,
++    std::unique_ptr<ui::NavButtonProvider> nav_button_provider,
++    NativeFrameViewLayoutLinux::FrameProviderGetter frame_provider_getter,
++    NativeFrameViewLayoutLinux* layout)
++    : FrameViewLinux(widget,
++                     layout ? layout
++                            : new NativeFrameViewLayoutLinux(
++                                  nav_button_provider.get(),
++                                  std::move(frame_provider_getter))),
++      nav_button_provider_(std::move(nav_button_provider)) {}
++
++NativeFrameViewLinux::~NativeFrameViewLinux() {
++  // The layout manager is owned by View and may outlive this destructor. Clear
++  // its raw_ptr references to members we own to avoid dangling pointers.
++  native_layout()->set_nav_button_provider(nullptr);
++}
++
++void NativeFrameViewLinux::Layout(PassKey) {
++  MaybeUpdateCachedFrameButtonImages();
++  LayoutSuperclass<FrameViewLinux>(this);
++}
++
++void NativeFrameViewLinux::CreateCaptionButtons() {
++  auto make_button = [this](Button::PressedCallback callback,
++                            int accessibility_string_id) -> ImageButton* {
++    auto button = std::make_unique<ImageButton>(std::move(callback));
++    button->SetFocusBehavior(FocusBehavior::ACCESSIBLE_ONLY);
++    button->SetImageVerticalAlignment(ImageButton::ALIGN_MIDDLE);
++    button->GetViewAccessibility().SetName(
++        l10n_util::GetStringUTF16(accessibility_string_id));
++    return AddChildView(std::move(button));
++  };
++
++  close_button_ = make_button(
++      base::BindRepeating(&Widget::CloseWithReason,
++                          base::Unretained(frame_widget()),
++                          Widget::ClosedReason::kCloseButtonClicked),
++      IDS_APP_ACCNAME_CLOSE);
++  minimize_button_ = make_button(
++      base::BindRepeating(&Widget::Minimize, base::Unretained(frame_widget())),
++      IDS_APP_ACCNAME_MINIMIZE);
++  maximize_button_ = make_button(
++      base::BindRepeating(&Widget::Maximize, base::Unretained(frame_widget())),
++      IDS_APP_ACCNAME_MAXIMIZE);
++  restore_button_ = make_button(
++      base::BindRepeating(&Widget::Restore, base::Unretained(frame_widget())),
++      IDS_APP_ACCNAME_RESTORE);
++}
++
++NativeFrameViewLayoutLinux* NativeFrameViewLinux::native_layout() const {
++  return static_cast<NativeFrameViewLayoutLinux*>(layout());
++}
++
++void NativeFrameViewLinux::PaintRestoredFrameBorder(gfx::Canvas* canvas) {
++  auto* frame_provider = native_layout()->GetFrameProvider();
++  if (frame_provider) {
++    frame_provider->PaintWindowFrame(
++        canvas, GetLocalBounds(), layout()->GetTopAreaHeight(),
++        ShouldPaintAsActive(), layout()->GetInputInsets());
++  }
++}
++
++void NativeFrameViewLinux::PaintMaximizedFrameBorder(gfx::Canvas* canvas) {
++  ui::NativeTheme::FrameTopAreaExtraParams frame_top_area;
++  frame_top_area.use_custom_frame = true;
++  frame_top_area.has_frame_border = true;
++  frame_top_area.is_active = ShouldPaintAsActive();
++  ui::NativeTheme::ExtraParams params(frame_top_area);
++  GetNativeTheme()->Paint(
++      canvas->sk_canvas(), GetColorProvider(), ui::NativeTheme::kFrameTopArea,
++      ui::NativeTheme::kNormal,
++      gfx::Rect(0, 0, width(), layout()->GetTopAreaHeight()), params);
++}
++
++void NativeFrameViewLinux::OnThemeOrButtonOrderChanged() {
++  button_cache_ = std::nullopt;
++  FrameViewLinux::OnThemeOrButtonOrderChanged();
++}
++
++void NativeFrameViewLinux::UpdateButtonColors() {
++  // No-op: Native button images are provided by NavButtonProvider.
++}
++
++void NativeFrameViewLinux::MaybeUpdateCachedFrameButtonImages() {
++  int top_border_height = layout()->GetTopAreaHeight();
++  gfx::Insets border_insets = layout()->GetFrameBorderInsets();
++  gfx::Insets titlebar_border = native_layout()->GetTopAreaBorderInsets();
++  DrawFrameButtonParams params{
++      top_border_height - border_insets.top() - titlebar_border.height(),
++      frame_widget()->IsMaximized(), ShouldPaintAsActive()};
++  views::MaybeUpdateCachedFrameButtonImages(
++      nav_button_provider_.get(), params, button_cache_,
++      [this](ui::NavButtonProvider::FrameButtonDisplayType type)
++          -> views::Button* { return GetButtonFromType(type); });
++}
++
++BEGIN_METADATA(NativeFrameViewLinux)
++END_METADATA
++
++}  // namespace views
+diff --git a/ui/views/window/native_frame_view_linux.h b/ui/views/window/native_frame_view_linux.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..5f7c2a4a9f90e3870d73b2da2f783d154e92c0e3
+--- /dev/null
++++ b/ui/views/window/native_frame_view_linux.h
+@@ -0,0 +1,71 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef UI_VIEWS_WINDOW_NATIVE_FRAME_VIEW_LINUX_H_
++#define UI_VIEWS_WINDOW_NATIVE_FRAME_VIEW_LINUX_H_
++
++#include <memory>
++#include <optional>
++
++#include "ui/base/metadata/metadata_header_macros.h"
++#include "ui/linux/nav_button_provider.h"
++#include "ui/views/views_export.h"
++#include "ui/views/window/frame_view_linux.h"
++#include "ui/views/window/frame_view_utils_linux.h"
++#include "ui/views/window/native_frame_view_layout_linux.h"
++
++namespace views {
++
++class Widget;
++
++// Extends FrameViewLinux to use the native toolkit's WindowFrameProvider for
++// frame decoration rendering and NavButtonProvider for window control button
++// images.
++class VIEWS_EXPORT NativeFrameViewLinux : public FrameViewLinux {
++  METADATA_HEADER(NativeFrameViewLinux, FrameViewLinux)
++
++ public:
++  // If `layout` is null, a default NativeFrameViewLayoutLinux is created using
++  // `nav_button_provider` and `frame_provider_getter`.
++  NativeFrameViewLinux(
++      Widget* widget,
++      std::unique_ptr<ui::NavButtonProvider> nav_button_provider,
++      NativeFrameViewLayoutLinux::FrameProviderGetter frame_provider_getter,
++      NativeFrameViewLayoutLinux* layout = nullptr);
++
++  NativeFrameViewLinux(const NativeFrameViewLinux&) = delete;
++  NativeFrameViewLinux& operator=(const NativeFrameViewLinux&) = delete;
++
++  ~NativeFrameViewLinux() override;
++
++  // View:
++  void Layout(PassKey) override;
++
++  // FrameViewLinux:
++  void CreateCaptionButtons() override;
++  void PaintRestoredFrameBorder(gfx::Canvas* canvas) override;
++  void PaintMaximizedFrameBorder(gfx::Canvas* canvas) override;
++
++ protected:
++  void OnThemeOrButtonOrderChanged() override;
++  void UpdateButtonColors() override;
++
++ private:
++  friend class NativeFrameViewLinuxTest;
++
++  NativeFrameViewLayoutLinux* native_layout() const;
++
++  // Redraws the image resources associated with the minimize, maximize,
++  // restore, and close buttons.
++  void MaybeUpdateCachedFrameButtonImages();
++
++  std::unique_ptr<ui::NavButtonProvider> nav_button_provider_;
++
++  // Cache for the last parameters with which the caption buttons were drawn.
++  std::optional<DrawFrameButtonParams> button_cache_;
++};
++
++}  // namespace views
++
++#endif  // UI_VIEWS_WINDOW_NATIVE_FRAME_VIEW_LINUX_H_
+diff --git a/ui/views/window/native_frame_view_linux_unittest.cc b/ui/views/window/native_frame_view_linux_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..b1f98f9c1a7612279691848982d4ff2e0e36f451
+--- /dev/null
++++ b/ui/views/window/native_frame_view_linux_unittest.cc
+@@ -0,0 +1,322 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "ui/views/window/native_frame_view_linux.h"
++
++#include <memory>
++#include <utility>
++#include <vector>
++
++#include "base/functional/bind.h"
++#include "base/memory/raw_ptr.h"
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/skia/include/core/SkBitmap.h"
++#include "ui/gfx/canvas.h"
++#include "ui/gfx/geometry/insets.h"
++#include "ui/gfx/geometry/rect.h"
++#include "ui/gfx/geometry/size.h"
++#include "ui/gfx/image/image_skia.h"
++#include "ui/linux/nav_button_provider.h"
++#include "ui/linux/window_frame_provider.h"
++#include "ui/views/controls/button/image_button.h"
++#include "ui/views/test/views_test_base.h"
++#include "ui/views/test/views_test_utils.h"
++#include "ui/views/widget/widget.h"
++#include "ui/views/widget/widget_delegate.h"
++#include "ui/views/window/frame_buttons.h"
++#include "ui/views/window/frame_view_layout_linux.h"
++#include "ui/views/window/window_button_order_provider.h"
++
++namespace views {
++
++namespace {
++
++constexpr int kWindowWidth = 800;
++constexpr int kWindowHeight = 100;
++
++constexpr gfx::Size kCloseButtonSize = gfx::Size(2, 3);
++constexpr gfx::Size kMaximizeButtonSize = gfx::Size(5, 7);
++constexpr gfx::Size kMinimizeButtonSize = gfx::Size(11, 13);
++
++constexpr gfx::Insets kCloseButtonMargin = gfx::Insets::TLBR(17, 19, 23, 29);
++constexpr gfx::Insets kMaximizeButtonMargin = gfx::Insets::TLBR(31, 37, 41, 43);
++constexpr gfx::Insets kMinimizeButtonMargin = gfx::Insets::TLBR(47, 53, 59, 61);
++constexpr gfx::Insets kTopAreaSpacing = gfx::Insets::TLBR(67, 71, 73, 79);
++constexpr int kInterNavButtonSpacing = 83;
++
++gfx::ImageSkia GetTestImageForSize(gfx::Size size) {
++  SkBitmap bitmap;
++  bitmap.allocN32Pixels(size.width(), size.height());
++  return gfx::ImageSkia::CreateFrom1xBitmap(bitmap);
++}
++
++class TestNavButtonProvider : public ui::NavButtonProvider {
++ public:
++  TestNavButtonProvider() = default;
++  ~TestNavButtonProvider() override = default;
++
++  void RedrawImages(int top_area_height, bool maximized, bool active) override {
++    ++redraw_count;
++  }
++
++  gfx::ImageSkia GetImage(
++      ui::NavButtonProvider::FrameButtonDisplayType type,
++      ui::NavButtonProvider::ButtonState state) const override {
++    switch (type) {
++      case ui::NavButtonProvider::FrameButtonDisplayType::kClose:
++        return GetTestImageForSize(kCloseButtonSize);
++      case ui::NavButtonProvider::FrameButtonDisplayType::kMaximize:
++        return GetTestImageForSize(kMaximizeButtonSize);
++      case ui::NavButtonProvider::FrameButtonDisplayType::kRestore:
++        return GetTestImageForSize(kMaximizeButtonSize);
++      case ui::NavButtonProvider::FrameButtonDisplayType::kMinimize:
++        return GetTestImageForSize(kMinimizeButtonSize);
++    }
++  }
++
++  gfx::Insets GetNavButtonMargin(
++      ui::NavButtonProvider::FrameButtonDisplayType type) const override {
++    switch (type) {
++      case ui::NavButtonProvider::FrameButtonDisplayType::kClose:
++        return kCloseButtonMargin;
++      case ui::NavButtonProvider::FrameButtonDisplayType::kMaximize:
++      case ui::NavButtonProvider::FrameButtonDisplayType::kRestore:
++        return kMaximizeButtonMargin;
++      case ui::NavButtonProvider::FrameButtonDisplayType::kMinimize:
++        return kMinimizeButtonMargin;
++    }
++  }
++
++  gfx::Insets GetTopAreaSpacing() const override { return kTopAreaSpacing; }
++
++  int GetNavButtonHeight(bool maximized) const override { return 0; }
++
++  int GetInterNavButtonSpacing() const override {
++    return kInterNavButtonSpacing;
++  }
++
++  int redraw_count = 0;
++};
++
++class TestFrameProvider : public ui::WindowFrameProvider {
++ public:
++  TestFrameProvider() = default;
++  ~TestFrameProvider() override = default;
++
++  void set_frame_thickness(const gfx::Insets& thickness) {
++    frame_thickness_ = thickness;
++  }
++
++  int GetTopCornerRadiusDip() override { return 0; }
++  bool IsTopFrameTranslucent() override { return false; }
++  gfx::Insets GetFrameThicknessDip() override { return frame_thickness_; }
++  int GetTopAreaMinHeightDip() override { return 24; }
++  gfx::Insets GetTopAreaPaddingDip() override { return gfx::Insets::VH(6, 0); }
++  gfx::Insets GetTopAreaBorderDip() override {
++    return gfx::Insets::TLBR(0, 0, 1, 0);
++  }
++  void PaintWindowFrame(gfx::Canvas* canvas,
++                        const gfx::Rect& rect,
++                        int top_area_height,
++                        bool focused,
++                        const gfx::Insets& input_insets) override {}
++
++ private:
++  gfx::Insets frame_thickness_;
++};
++
++}  // namespace
++
++class NativeFrameViewLinuxTest : public ViewsTestBase {
++ public:
++  NativeFrameViewLinuxTest() = default;
++  NativeFrameViewLinuxTest(const NativeFrameViewLinuxTest&) = delete;
++  NativeFrameViewLinuxTest& operator=(const NativeFrameViewLinuxTest&) = delete;
++  ~NativeFrameViewLinuxTest() override = default;
++
++  void SetUp() override {
++    ViewsTestBase::SetUp();
++
++    auto nav_provider = std::make_unique<TestNavButtonProvider>();
++    nav_button_provider_ = nav_provider.get();
++    frame_provider_ = std::make_unique<TestFrameProvider>();
++
++    widget_ = new Widget;
++    Widget::InitParams params = CreateParams(Widget::InitParams::TYPE_WINDOW);
++    widget_delegate_ = std::make_unique<WidgetDelegate>();
++    params.delegate = widget_delegate_.get();
++    params.delegate->SetCanMaximize(true);
++    params.delegate->SetCanMinimize(true);
++    params.delegate->SetCanResize(true);
++    params.remove_standard_frame = true;
++    widget_->Init(std::move(params));
++
++    auto frame_view = std::make_unique<NativeFrameViewLinux>(
++        widget_, std::move(nav_provider),
++        base::BindRepeating(
++            [](TestFrameProvider* fp, bool, bool) {
++              return static_cast<ui::WindowFrameProvider*>(fp);
++            },
++            frame_provider_.get()));
++    frame_view->SetSupportsClientFrameShadow(true);
++    frame_view->InitViews();
++    widget_->non_client_view()->SetFrameView(std::move(frame_view));
++
++    widget_->SetBounds(gfx::Rect(0, 0, kWindowWidth, kWindowHeight));
++    widget_->Show();
++  }
++
++  void TearDown() override {
++    // The nav provider is owned by the frame view; clear our pointer before
++    // the widget destroys it to avoid a dangling raw_ptr.
++    nav_button_provider_ = nullptr;
++    widget_.ExtractAsDangling()->CloseNow();
++    // Reset to default trailing button order.
++    WindowButtonOrderProvider::GetInstance()->SetWindowButtonOrder(
++        /*leading=*/{},
++        {FrameButton::kMinimize, FrameButton::kMaximize, FrameButton::kClose});
++    ViewsTestBase::TearDown();
++  }
++
++ protected:
++  NativeFrameViewLinux* frame_view() {
++    return static_cast<NativeFrameViewLinux*>(
++        widget_->non_client_view()->frame_view());
++  }
++
++  ImageButton* close_button() {
++    return static_cast<ImageButton*>(frame_view()->close_button());
++  }
++  ImageButton* minimize_button() {
++    return static_cast<ImageButton*>(frame_view()->minimize_button());
++  }
++  ImageButton* maximize_button() {
++    return static_cast<ImageButton*>(frame_view()->maximize_button());
++  }
++
++  void SetButtonOrder(const std::vector<FrameButton>& leading,
++                      const std::vector<FrameButton>& trailing) {
++    WindowButtonOrderProvider::GetInstance()->SetWindowButtonOrder(leading,
++                                                                   trailing);
++  }
++
++  void RunLayout() {
++    frame_view()->InvalidateLayout();
++    views::test::RunScheduledLayout(frame_view());
++  }
++
++  bool HasButtonCache() { return frame_view()->button_cache_.has_value(); }
++
++  void ClearButtonCache() { frame_view()->button_cache_ = std::nullopt; }
++
++  Widget* widget() { return widget_; }
++
++  raw_ptr<Widget> widget_ = nullptr;
++  std::unique_ptr<WidgetDelegate> widget_delegate_;
++  raw_ptr<TestNavButtonProvider> nav_button_provider_ = nullptr;
++  std::unique_ptr<TestFrameProvider> frame_provider_;
++};
++
++// Tests that leading window control buttons are positioned according to the
++// nav button provider margins and inter-button spacing.
++TEST_F(NativeFrameViewLinuxTest, NativeNavButtonPositions) {
++  frame_provider_->set_frame_thickness(
++      gfx::Insets(FrameViewLayoutLinux::kResizeBorder));
++  SetButtonOrder(
++      {FrameButton::kClose, FrameButton::kMaximize, FrameButton::kMinimize},
++      {});
++  RunLayout();
++
++  const gfx::Insets insets = frame_view()->GetFrameBorderInsets();
++  ASSERT_EQ(FrameViewLayoutLinux::kResizeBorder, insets.top());
++  ASSERT_EQ(FrameViewLayoutLinux::kResizeBorder, insets.left());
++
++  const int frame_top = insets.top();
++  int x = insets.left() + kTopAreaSpacing.left();
++
++  EXPECT_EQ(kCloseButtonSize, close_button()->size());
++  x += kCloseButtonMargin.left();
++  EXPECT_EQ(x, close_button()->x());
++  EXPECT_EQ(frame_top + kCloseButtonMargin.top(), close_button()->y());
++
++  EXPECT_EQ(kMaximizeButtonSize, maximize_button()->size());
++  x += kCloseButtonSize.width() + kCloseButtonMargin.right() +
++       kInterNavButtonSpacing + kMaximizeButtonMargin.left();
++  EXPECT_EQ(x, maximize_button()->x());
++  EXPECT_EQ(frame_top + kMaximizeButtonMargin.top(), maximize_button()->y());
++
++  EXPECT_EQ(kMinimizeButtonSize, minimize_button()->size());
++  x += kMaximizeButtonSize.width() + kMaximizeButtonMargin.right() +
++       kInterNavButtonSpacing + kMinimizeButtonMargin.left();
++  EXPECT_EQ(x, minimize_button()->x());
++  EXPECT_EQ(frame_top + kMinimizeButtonMargin.top(), minimize_button()->y());
++}
++
++// Tests that frame border and input insets are still computed normally when
++// tiled. The frame provider getter receives the tiled state so it can return
++// a provider with appropriate metrics for tiled edges.
++TEST_F(NativeFrameViewLinuxTest, FrameInsetsWhenTiled) {
++  frame_provider_->set_frame_thickness(
++      gfx::Insets(FrameViewLayoutLinux::kResizeBorder));
++  frame_view()->SetTiled(true);
++
++  EXPECT_EQ(gfx::Insets(FrameViewLayoutLinux::kResizeBorder),
++            frame_view()->GetFrameBorderInsets());
++  EXPECT_EQ(gfx::Insets(FrameViewLayoutLinux::kResizeBorder),
++            frame_view()->GetInputInsets());
++}
++
++// Tests that GetFrameBorderInsets expands thin frame provider borders to at
++// least the resize border width, ensuring resize handles remain usable.
++TEST_F(NativeFrameViewLinuxTest, FrameBorderInsetsExpandToResizeBorder) {
++  // A frame thinner than kResizeBorder is expanded.
++  frame_provider_->set_frame_thickness(gfx::Insets(1));
++  EXPECT_EQ(gfx::Insets(FrameViewLayoutLinux::kResizeBorder),
++            frame_view()->GetFrameBorderInsets());
++
++  // A frame at least as thick as kResizeBorder is not reduced.
++  frame_provider_->set_frame_thickness(
++      gfx::Insets(FrameViewLayoutLinux::kResizeBorder + 5));
++  EXPECT_EQ(gfx::Insets(FrameViewLayoutLinux::kResizeBorder + 5),
++            frame_view()->GetFrameBorderInsets());
++}
++
++// Tests that MaybeUpdateCachedFrameButtonImages() skips RedrawImages when the
++// parameters haven't changed.
++TEST_F(NativeFrameViewLinuxTest, ButtonImageCachingPreventsRedundantRedraws) {
++  // Clear the cache to start from a known state regardless of how many
++  // internal layouts SetUp may have triggered.
++  ClearButtonCache();
++
++  // First layout with cleared cache: params differ, so RedrawImages is called.
++  frame_view()->InvalidateLayout();
++  views::test::RunScheduledLayout(frame_view());
++  ASSERT_TRUE(HasButtonCache());
++  int count = nav_button_provider_->redraw_count;
++  ASSERT_GT(count, 0);
++
++  // Immediately re-running layout with the same state: cache hit, no redraw.
++  frame_view()->InvalidateLayout();
++  views::test::RunScheduledLayout(frame_view());
++  EXPECT_EQ(count, nav_button_provider_->redraw_count);
++}
++
++// Tests that the button image cache is invalidated when the maximize state
++// changes.
++TEST_F(NativeFrameViewLinuxTest, ButtonImageCacheInvalidatedOnMaximizeChange) {
++  int count = nav_button_provider_->redraw_count;
++  ASSERT_GT(count, 0);
++
++  // Maximizing changes the cached params, causing a cache miss and redraw.
++  widget()->Maximize();
++  RunLayout();
++  EXPECT_EQ(count + 1, nav_button_provider_->redraw_count);
++
++  // Restoring changes params again, causing another cache miss and redraw.
++  widget()->Restore();
++  RunLayout();
++  EXPECT_EQ(count + 2, nav_button_provider_->redraw_count);
++}
++
++}  // namespace views
