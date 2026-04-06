@@ -48,10 +48,10 @@ index a5570988c3721d9f6bd05c402a7658d3af6f2c2c..54aaffde30c14a27068f89b6de6123ab
  
      [window setOccluded:[self isWindowOccluded:window
 diff --git a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
-index 1ef2c9052262eccdbc40030746a858b7f30ac469..34708d45274f95b5f35cdefad98ad4a1c3c28e1c 100644
+index 17d6d7d935f93afefa9123f56ef9c138c3070f93..b2814986f51524bc9201c5413e077ac08b6a0de8 100644
 --- a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
-@@ -477,7 +477,8 @@ - (void)updateWebContentsVisibility {
+@@ -483,7 +483,8 @@ - (void)updateWebContentsVisibility {
    Visibility visibility = Visibility::kVisible;
    if ([self isHiddenOrHasHiddenAncestor] || ![self window])
      visibility = Visibility::kHidden;
@@ -61,7 +61,7 @@ index 1ef2c9052262eccdbc40030746a858b7f30ac469..34708d45274f95b5f35cdefad98ad4a1
      visibility = Visibility::kOccluded;
  
    [self updateWebContentsVisibility:visibility];
-@@ -521,11 +522,12 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
+@@ -527,11 +528,12 @@ - (void)viewWillMoveToWindow:(NSWindow*)newWindow {
  }
  
  - (void)windowChangedOcclusionState:(NSNotification*)aNotification {
