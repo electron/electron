@@ -28,8 +28,9 @@ runs:
     shell: bash
     run: |
       node src/electron/script/generate-deps-hash.js
-      echo "DEPSHASH=$(cat src/electron/.depshash)" >> $GITHUB_ENV
-      echo "CACHE_SHARDS=a b c d" >> $GITHUB_ENV
+      DEPSHASH="v2-src-cache-$(cat src/electron/.depshash)"
+      echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
+      echo "CACHE_FILE=$DEPSHASH.tar" >> $GITHUB_ENV
       if [ "${{ inputs.target-platform }}" = "win" ]; then
         echo "CACHE_DRIVE=/mnt/win-cache" >> $GITHUB_ENV
       else
@@ -39,13 +40,7 @@ runs:
     if: ${{ inputs.generate-sas-token == 'true' }}
     shell: bash
     run: |
-      args='{}'
-      for s in $CACHE_SHARDS; do
-        shard_file="v2-src-cache-shard-${s}-${DEPSHASH}.tar"
-        resp=$(curl --unix-socket /var/run/sas/sas.sock --fail "http://foo/${shard_file}?platform=${{ inputs.target-platform }}&getAccountName=true")
-        args=$(jq --arg s "$s" --argjson r "$resp" '. + {($s): $r}' <<< "$args")
-      done
-      echo "$args" > sas-token
+      curl --unix-socket /var/run/sas/sas.sock --fail "http://foo/$CACHE_FILE?platform=${{ inputs.target-platform }}&getAccountName=true" > sas-token
   - name: Save SAS Key
     if: ${{ inputs.generate-sas-token == 'true' }}
     uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
@@ -61,16 +56,16 @@ runs:
         echo "Not using cache this time..."
         echo "cache_exists=false" >> $GITHUB_OUTPUT
       else
+        cache_path=$CACHE_DRIVE/$CACHE_FILE
         echo "Using cache key: $DEPSHASH"
-        cache_exists=true
-        for s in $CACHE_SHARDS; do
-          cache_path="$CACHE_DRIVE/v2-src-cache-shard-${s}-${DEPSHASH}.tar"
-          if [ ! -f "$cache_path" ] || [ `du $cache_path | cut -f1` = "0" ]; then
-            cache_exists=false
-            echo "Cache shard ${s} missing at $cache_path"
-          fi
-        done
-        echo "cache_exists=$cache_exists" >> $GITHUB_OUTPUT
+        echo "Checking for cache in: $cache_path"
+        if [ ! -f "$cache_path" ] || [ `du $cache_path | cut -f1` = "0" ]; then
+          echo "cache_exists=false" >> $GITHUB_OUTPUT
+          echo "Cache Does Not Exist for $DEPSHASH"
+        else
+          echo "cache_exists=true" >> $GITHUB_OUTPUT
+          echo "Cache Already Exists for $DEPSHASH, Skipping.."
+        fi
       fi
   - name: Check cross instance cache disk space
     if: steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache  == 'true'
@@ -194,29 +189,22 @@ runs:
       echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
       # Named .tar but zstd-compressed; the sas-sidecar's filename allowlist
       # only permits .tar/.tgz so we keep the extension and decode on restore.
-      SHARD_B_DIRS="src/third_party/dawn src/third_party/electron_node src/third_party/tflite src/third_party/devtools-frontend"
-      tar -cf - src/third_party/blink | zstd -T0 --long=30 -f -o v2-src-cache-shard-a-${DEPSHASH}.tar
-      tar -cf - $SHARD_B_DIRS | zstd -T0 --long=30 -f -o v2-src-cache-shard-b-${DEPSHASH}.tar
-      tar -cf - --exclude=src/third_party/blink $(printf -- '--exclude=%s ' $SHARD_B_DIRS) src/third_party | zstd -T0 --long=30 -f -o v2-src-cache-shard-c-${DEPSHASH}.tar
-      tar -cf - --exclude=src/third_party src | zstd -T0 --long=30 -f -o v2-src-cache-shard-d-${DEPSHASH}.tar
-      for s in $CACHE_SHARDS; do
-        f="v2-src-cache-shard-${s}-${DEPSHASH}.tar"
-        echo "Compressed shard ${s} to $(du -sh $f | cut -f1 -d' ')"
-        cp ./$f $CACHE_DRIVE/
-      done
+      tar -cf - src | zstd -T0 --long=30 -f -o $CACHE_FILE
+      echo "Compressed src to $(du -sh $CACHE_FILE | cut -f1 -d' ')"
+      cp ./$CACHE_FILE $CACHE_DRIVE/
   - name: Persist Src Cache
     if: ${{ steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache == 'true' }}
     shell: bash
     run: |
+      final_cache_path=$CACHE_DRIVE/$CACHE_FILE
       echo "Using cache key: $DEPSHASH"
-      for s in $CACHE_SHARDS; do
-        final_cache_path="$CACHE_DRIVE/v2-src-cache-shard-${s}-${DEPSHASH}.tar"
-        if [ ! -f "$final_cache_path" ]; then
-          echo "Cache shard ${s} not found at $final_cache_path"
-          exit 1
-        fi
-      done
-      echo "All cache shards persisted"
+      echo "Checking path: $final_cache_path"
+      if [ ! -f "$final_cache_path" ]; then
+        echo "Cache key not found"
+        exit 1
+      else
+        echo "Cache key persisted in $final_cache_path"
+      fi
   - name: Wait for active SSH sessions
     shell: bash
     if: always() && !cancelled()
