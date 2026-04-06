@@ -64,12 +64,15 @@
 #include "shell/browser/linux/unity_service.h"
 #include "shell/browser/linux/x11_util.h"
 #include "shell/browser/ui/electron_desktop_window_tree_host_linux.h"
-#include "shell/browser/ui/views/client_frame_view_linux.h"
 #include "shell/browser/ui/views/linux_frame_layout.h"
 #include "shell/browser/ui/views/native_frame_view.h"
+#include "shell/browser/ui/views/native_frame_view_linux.h"
 #include "shell/browser/ui/views/opaque_frame_view.h"
 #include "shell/common/platform_util.h"
+#include "ui/linux/linux_ui.h"
+#include "ui/linux/linux_ui_factory.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
+#include "ui/views/window/frame_view_linux.h"
 #include "ui/views/window/native_frame_view.h"
 
 #if BUILDFLAG(SUPPORTS_OZONE_X11)
@@ -510,9 +513,15 @@ void NativeWindowViews::SetTitleBarOverlay(
 
   // If anything was updated, ensure the overlay is repainted.
   if (updated) {
-    auto* frame_view =
-        static_cast<FramelessView*>(widget()->non_client_view()->frame_view());
-    frame_view->InvalidateCaptionButtons();
+    auto* fv = widget()->non_client_view()->frame_view();
+    if (auto* frameless = views::AsViewClass<FramelessView>(fv)) {
+      frameless->InvalidateCaptionButtons();
+#if BUILDFLAG(IS_LINUX)
+    } else if (auto* fvl = views::AsViewClass<views::FrameViewLinux>(fv)) {
+      fvl->InvalidateLayout();
+      fvl->SchedulePaint();
+#endif
+    }
   }
 }
 
@@ -885,7 +894,14 @@ gfx::Rect NativeWindowViews::GetBounds() const {
   if (IsMinimized())
     return WidgetToLogicalBounds(widget()->GetRestoredBounds());
 
-  return WidgetToLogicalBounds(widget()->GetWindowBoundsInScreen());
+  gfx::Rect bounds = widget()->GetWindowBoundsInScreen();
+#if BUILDFLAG(IS_LINUX)
+  if (auto* fvl = GetFrameViewLinux()) {
+    bounds.Inset(fvl->GetFrameBorderInsets());
+    return bounds;
+  }
+#endif
+  return WidgetToLogicalBounds(bounds);
 }
 
 gfx::Rect NativeWindowViews::GetContentBounds() const {
@@ -1275,9 +1291,11 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
   SkColor compositor_color = background_color;
 #if BUILDFLAG(IS_LINUX)
   // Widget background needs to stay transparent for CSD shadow regions.
+  auto* fvl = GetFrameViewLinux();
   LinuxFrameLayout* frame_layout = GetLinuxFrameLayout();
   const bool uses_csd =
-      frame_layout && frame_layout->SupportsClientFrameShadow();
+      (fvl && fvl->ShouldDrawRestoredFrameShadow()) ||
+      (frame_layout && frame_layout->SupportsClientFrameShadow());
   if (transparent() || uses_csd)
     compositor_color = SK_ColorTRANSPARENT;
 #endif
@@ -1502,9 +1520,13 @@ gfx::Insets NativeWindowViews::GetRestoredFrameBorderInsets() const {
   if (!frame_view)
     return gfx::Insets();
 
-  if (auto* frameless = views::AsViewClass<FramelessView>(frame_view)) {
+  if (auto* frameless = views::AsViewClass<FramelessView>(frame_view))
     return frameless->RestoredFrameBorderInsets();
-  }
+
+#if BUILDFLAG(IS_LINUX)
+  if (auto* fvl = views::AsViewClass<views::FrameViewLinux>(frame_view))
+    return fvl->GetRestoredFrameBorderInsets();
+#endif
 
   return gfx::Insets();
 }
@@ -1913,9 +1935,19 @@ std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
     return std::make_unique<NativeFrameView>(this, widget);
   } else {
     if (has_frame() && has_client_frame()) {
-      auto frame_view = std::make_unique<ClientFrameViewLinux>();
-      frame_view->Init(this, widget);
-      return frame_view;
+      auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr);
+      auto getter = base::BindRepeating(
+          [](ui::LinuxUiTheme* theme, bool tiled,
+             bool maximized) -> ui::WindowFrameProvider* {
+            return theme->GetWindowFrameProvider(ui::FrameType::kDefault,
+                                                 /*solid_frame=*/false, tiled,
+                                                 maximized);
+          },
+          base::Unretained(linux_ui_theme));
+      auto nav_button_provider =
+          linux_ui_theme->CreateNavButtonProvider(ui::FrameType::kDefault);
+      return std::make_unique<NativeFrameViewLinux>(
+          this, widget, std::move(nav_button_provider), std::move(getter));
     } else {
       auto frame_view = std::make_unique<OpaqueFrameView>();
       frame_view->Init(this, widget);
@@ -1932,6 +1964,13 @@ LinuxFrameLayout* NativeWindowViews::GetLinuxFrameLayout() {
     return nullptr;
   auto* view = views::AsViewClass<FramelessView>(ncv->frame_view());
   return view ? view->GetLinuxFrameLayout() : nullptr;
+}
+
+views::FrameViewLinux* NativeWindowViews::GetFrameViewLinux() const {
+  auto* ncv = widget()->non_client_view();
+  if (!ncv)
+    return nullptr;
+  return views::AsViewClass<views::FrameViewLinux>(ncv->frame_view());
 }
 #endif
 

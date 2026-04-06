@@ -74,6 +74,9 @@ class ElectronDesktopWindowTreeHostLinux
 
   bool IsShowingFrame(ui::PlatformWindowState window_state) const;
 
+  // Returns restored frame border insets regardless of current widget state.
+  gfx::Insets GetRestoredFrameBorderInsets() const;
+
   gfx::ImageSkia saved_window_icon_;
 
   raw_ptr<NativeWindowViews> native_window_view_;  // weak ref

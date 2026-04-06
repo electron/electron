@@ -16,7 +16,6 @@
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/draggable_region_provider.h"
-#include "shell/browser/native_window_features.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
@@ -29,6 +28,7 @@
 
 #if !BUILDFLAG(IS_MAC)
 #include "shell/browser/ui/views/frameless_view.h"
+#include "ui/views/view_utils.h"
 #endif
 
 #if BUILDFLAG(IS_WIN)
@@ -671,11 +671,13 @@ int NativeWindow::NonClientHitTest(const gfx::Point& point) {
 #if !BUILDFLAG(IS_MAC)
   // We need to ensure we account for resizing borders on Windows and Linux.
   if ((!has_frame() || has_client_frame()) && IsResizable()) {
-    auto* frame =
-        static_cast<FramelessView*>(widget()->non_client_view()->frame_view());
-    int border_hit = frame->ResizingBorderHitTest(point);
-    if (border_hit != HTNOWHERE)
-      return border_hit;
+    auto* frame = views::AsViewClass<FramelessView>(
+        widget()->non_client_view()->frame_view());
+    if (frame) {
+      int border_hit = frame->ResizingBorderHitTest(point);
+      if (border_hit != HTNOWHERE)
+        return border_hit;
+    }
   }
 #endif
 
@@ -802,7 +804,6 @@ bool NativeWindow::PlatformHasClientFrame() {
   // Ozone X11 likes to prefer custom frames,
   // but we don't need them unless on Wayland.
   static const bool has_client_frame =
-      base::FeatureList::IsEnabled(features::kWaylandWindowDecorations) &&
       !ui::OzonePlatform::GetInstance()
            ->GetPlatformRuntimeProperties()
            .supports_server_side_window_decorations;
