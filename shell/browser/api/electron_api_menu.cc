@@ -264,22 +264,6 @@ int Menu::GetItemCount() const {
   return model_->GetItemCount();
 }
 
-int Menu::GetCommandIdAt(int index) const {
-  return model_->GetCommandIdAt(index);
-}
-
-std::u16string Menu::GetLabelAt(int index) const {
-  return model_->GetLabelAt(index);
-}
-
-std::u16string Menu::GetSublabelAt(int index) const {
-  return model_->GetSecondaryLabelAt(index);
-}
-
-std::u16string Menu::GetToolTipAt(int index) const {
-  return model_->GetToolTipAt(index);
-}
-
 std::u16string Menu::GetAcceleratorTextAtForTesting(int index) const {
   ui::Accelerator accelerator;
   model_->GetAcceleratorAtWithParams(index, true, &accelerator);
@@ -296,10 +280,6 @@ bool Menu::IsEnabledAt(int index) const {
 
 bool Menu::IsVisibleAt(int index) const {
   return model_->IsVisibleAt(index);
-}
-
-bool Menu::WorksWhenHiddenAt(int index) const {
-  return model_->WorksWhenHiddenAt(index);
 }
 
 void Menu::OnMenuWillClose() {
@@ -325,15 +305,9 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setRole", &Menu::SetRole)
       .SetMethod("setCustomType", &Menu::SetCustomType)
       .SetMethod("clear", &Menu::Clear)
-      .SetMethod("getIndexOfCommandId", &Menu::GetIndexOfCommandId)
       .SetMethod("getItemCount", &Menu::GetItemCount)
-      .SetMethod("getCommandIdAt", &Menu::GetCommandIdAt)
-      .SetMethod("getLabelAt", &Menu::GetLabelAt)
-      .SetMethod("getSublabelAt", &Menu::GetSublabelAt)
-      .SetMethod("getToolTipAt", &Menu::GetToolTipAt)
       .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
-      .SetMethod("worksWhenHiddenAt", &Menu::WorksWhenHiddenAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
       .SetMethod("popupAt", &Menu::PopupAt)
       .SetMethod("closePopupAt", &Menu::ClosePopupAt)

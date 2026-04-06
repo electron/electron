@@ -4,12 +4,16 @@
 
 #include "shell/browser/notifications/linux/libnotify_notification.h"
 
+#include <dlfcn.h>
+
+#include <array>
 #include <string>
 
 #include "base/containers/flat_set.h"
 #include "base/files/file_enumerator.h"
 #include "base/functional/bind.h"
 #include "base/logging.h"
+#include "base/nix/xdg_util.h"
 #include "base/no_destructor.h"
 #include "base/process/process_handle.h"
 #include "base/strings/utf_string_conversions.h"
@@ -50,6 +54,9 @@ bool NotifierSupportsActions() {
   return HasCapability("actions");
 }
 
+using GetActivationTokenFunc = const char* (*)(NotifyNotification*);
+GetActivationTokenFunc g_get_activation_token = nullptr;
+
 void log_and_clear_error(GError* error, const char* context) {
   LOG(ERROR) << context << ": domain=" << error->domain
              << " code=" << error->code << " message=\"" << error->message
@@ -61,18 +68,40 @@ void log_and_clear_error(GError* error, const char* context) {
 
 // static
 bool LibnotifyNotification::Initialize() {
-  if (!GetLibNotifyLoader().Load("libnotify.so.4") &&  // most common one
-      !GetLibNotifyLoader().Load("libnotify.so.5") &&
-      !GetLibNotifyLoader().Load("libnotify.so.1") &&
-      !GetLibNotifyLoader().Load("libnotify.so")) {
+  constexpr std::array kLibnotifySonames = {
+      "libnotify.so.4",
+      "libnotify.so.5",
+      "libnotify.so.1",
+      "libnotify.so",
+  };
+
+  const char* loaded_soname = nullptr;
+  for (const char* soname : kLibnotifySonames) {
+    if (GetLibNotifyLoader().Load(soname)) {
+      loaded_soname = soname;
+      break;
+    }
+  }
+
+  if (!loaded_soname) {
     LOG(WARNING) << "Unable to find libnotify; notifications disabled";
     return false;
   }
+
   if (!GetLibNotifyLoader().notify_is_initted() &&
       !GetLibNotifyLoader().notify_init(GetApplicationName().c_str())) {
     LOG(WARNING) << "Unable to initialize libnotify; notifications disabled";
     return false;
   }
+
+  // Safe to cache the symbol after dlclose(handle) because libnotify remains
+  // loaded via GetLibNotifyLoader() for the process lifetime.
+  if (void* handle = dlopen(loaded_soname, RTLD_LAZY)) {
+    g_get_activation_token = reinterpret_cast<GetActivationTokenFunc>(
+        dlsym(handle, "notify_notification_get_activation_token"));
+    dlclose(handle);
+  }
+
   return true;
 }
 
@@ -192,6 +221,14 @@ void LibnotifyNotification::OnNotificationView(NotifyNotification* notification,
                                                gpointer user_data) {
   LibnotifyNotification* that = static_cast<LibnotifyNotification*>(user_data);
   DCHECK(that);
+
+  if (g_get_activation_token) {
+    const char* token = g_get_activation_token(notification);
+    if (token && *token) {
+      base::nix::SetActivationToken(std::string(token));
+    }
+  }
+
   that->NotificationClicked();
 }
 

@@ -220,12 +220,6 @@ download::DownloadItem::DownloadState DownloadItem::GetState() const {
   return download_item_->GetState();
 }
 
-bool DownloadItem::IsDone() const {
-  if (!CheckAlive())
-    return false;
-  return download_item_->IsDone();
-}
-
 void DownloadItem::SetSavePath(const base::FilePath& path) {
   save_path_ = path;
 }
@@ -289,7 +283,6 @@ gin::ObjectTemplateBuilder DownloadItem::GetObjectTemplateBuilder(
       .SetMethod("getURL", &DownloadItem::GetURL)
       .SetMethod("getURLChain", &DownloadItem::GetURLChain)
       .SetMethod("getState", &DownloadItem::GetState)
-      .SetMethod("isDone", &DownloadItem::IsDone)
       .SetMethod("setSavePath", &DownloadItem::SetSavePath)
       .SetMethod("getSavePath", &DownloadItem::GetSavePath)
       .SetProperty("savePath", &DownloadItem::GetSavePath,

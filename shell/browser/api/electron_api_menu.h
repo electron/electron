@@ -131,14 +131,9 @@ class Menu : public gin::Wrappable<Menu>,
   void Clear();
   int GetIndexOfCommandId(int command_id) const;
   int GetItemCount() const;
-  int GetCommandIdAt(int index) const;
-  std::u16string GetLabelAt(int index) const;
-  std::u16string GetSublabelAt(int index) const;
-  std::u16string GetToolTipAt(int index) const;
   bool IsItemCheckedAt(int index) const;
   bool IsEnabledAt(int index) const;
   bool IsVisibleAt(int index) const;
-  bool WorksWhenHiddenAt(int index) const;
 
   gin_helper::SelfKeepAlive<Menu> keep_alive_{this};
 };

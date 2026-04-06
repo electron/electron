@@ -86,6 +86,7 @@ JavascriptEnvironment::~JavascriptEnvironment() {
   // Otherwise cppgc::internal::Sweeper::Start will try to request a task runner
   // from the NodePlatform with an already unregistered isolate.
   locker_.reset();
+  DCHECK(!microtasks_runner_);
   isolate_holder_.reset();
 
   platform_->UnregisterIsolate(isolate_);
@@ -159,6 +160,7 @@ void JavascriptEnvironment::DestroyMicrotasksRunner() {
     gin_helper::CleanedUpAtExit::DoCleanup();
   }
   base::CurrentThread::Get()->RemoveTaskObserver(microtasks_runner_.get());
+  microtasks_runner_.reset();
 }
 
 }  // namespace electron

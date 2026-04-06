@@ -53,6 +53,26 @@ describe('session module', () => {
       }
     });
 
+    const collectCookieChanges = async (cookies: Electron.Cookies, action: () => Promise<void>, count: number) => {
+      const changes: Array<{ cause: string, cookie: Electron.Cookie, removed: boolean }> = [];
+      let listener: ((event: Electron.Event, cookie: Electron.Cookie, cause: string, removed: boolean) => void) | undefined;
+
+      const changesPromise = new Promise<typeof changes>(resolve => {
+        listener = (_event, cookie, cause, removed) => {
+          changes.push({ cause, cookie, removed });
+          if (changes.length === count) resolve(changes);
+        };
+        cookies.on('changed', listener);
+      });
+
+      try {
+        await action();
+        return await changesPromise;
+      } finally {
+        if (listener) cookies.removeListener('changed', listener);
+      }
+    };
+
     it('should get cookies', async () => {
       const server = http.createServer((req, res) => {
         res.setHeader('Set-Cookie', [`${name}=${value}`]);
@@ -221,6 +241,60 @@ describe('session module', () => {
       expect(removeEventCookie.value).to.equal(value);
       expect(removeEventCause).to.equal('explicit');
       expect(removeEventRemoved).to.equal(true);
+    });
+
+    it('emits overwrite and inserted events when a cookie is overwritten with a new value', async () => {
+      const { cookies } = session.fromPartition('cookies-overwrite-changed');
+      const name = 'foo';
+      const oldVal = 'bar';
+      const newVal = 'baz';
+      const expected = [
+        { cause: 'overwrite', name, removed: true, value: oldVal },
+        { cause: 'inserted', name, removed: false, value: newVal }
+      ];
+
+      await cookies.set({ url, name, value: oldVal });
+      const changes = await collectCookieChanges(cookies, async () => {
+        await cookies.set({ url, name, value: newVal });
+      }, 2);
+
+      const actual = changes.map(({ cookie: { name, value }, cause, removed }) => ({ cause, name, removed, value }));
+      expect(actual).to.deep.equal(expected);
+    });
+
+    it('emits inserted-no-value-change-overwrite when a cookie is overwritten with the same value', async () => {
+      const { cookies } = session.fromPartition('cookies-same-value-overwrite-changed');
+      const name = 'foo';
+      const value = 'bar';
+      const nowSec = Date.now() / 1000;
+      const expected = [
+        { cause: 'overwrite', name, removed: true, value },
+        { cause: 'inserted-no-value-change-overwrite', name, removed: false, value }
+      ];
+
+      await cookies.set({ url, name, value, expirationDate: nowSec + 120 });
+      const changes = await collectCookieChanges(cookies, async () => {
+        await cookies.set({ url, name, value, expirationDate: nowSec + 240 });
+      }, 2);
+
+      const actual = changes.map(({ cookie: { name, value }, cause, removed }) => ({ cause, name, removed, value }));
+      expect(actual).to.deep.equal(expected);
+    });
+
+    it('emits expired-overwrite when a cookie is overwritten by an already-expired cookie', async () => {
+      const { cookies } = session.fromPartition('cookies-expired-overwrite-changed');
+      const name = 'foo';
+      const value = 'bar';
+      const nowSec = Date.now() / 1000;
+      const expected = [{ cause: 'expired-overwrite', name, removed: true, value }];
+
+      await cookies.set({ url, name, value, expirationDate: nowSec + 120 });
+      const changes = await collectCookieChanges(cookies, async () => {
+        await cookies.set({ url, name, value, expirationDate: nowSec - 10 });
+      }, 1);
+
+      const actual = changes.map(({ cookie: { name, value }, cause, removed }) => ({ cause, name, removed, value }));
+      expect(actual).to.deep.equal(expected);
     });
 
     describe('ses.cookies.flushStore()', async () => {
@@ -1866,6 +1940,60 @@ describe('session module', () => {
       expect(handlerDetails!.requestingUrl).to.equal(loadUrl);
       expect(handlerDetails!.isMainFrame).to.be.false();
       expect(handlerDetails!.embeddingOrigin).to.equal('file:///');
+    });
+
+    it('provides iframe origin as requestingOrigin for media check from cross-origin subFrame', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'very-temp-permission-handler-media'
+        }
+      });
+      const ses = w.webContents.session;
+      const iframeUrl = 'https://myfakesite/';
+      let capturedOrigin: string | undefined;
+      let capturedIsMainFrame: boolean | undefined;
+      let capturedRequestingUrl: string | undefined;
+      let capturedSecurityOrigin: string | undefined;
+
+      ses.protocol.interceptStringProtocol('https', (req, cb) => {
+        cb('<html><body>iframe</body></html>');
+      });
+
+      ses.setPermissionCheckHandler((wc, permission, requestingOrigin, details) => {
+        if (permission === 'media') {
+          capturedOrigin = requestingOrigin;
+          capturedIsMainFrame = details.isMainFrame;
+          capturedRequestingUrl = details.requestingUrl;
+          capturedSecurityOrigin = (details as any).securityOrigin;
+        }
+        return false;
+      });
+
+      try {
+        await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        w.webContents.executeJavaScript(`
+          var iframe = document.createElement('iframe');
+          iframe.src = '${iframeUrl}';
+          iframe.allow = 'camera; microphone';
+          document.body.appendChild(iframe);
+          null;
+        `);
+        const [,, frameProcessId, frameRoutingId] = await once(w.webContents, 'did-frame-finish-load');
+        const frame = webFrameMain.fromId(frameProcessId, frameRoutingId)!;
+        await frame.executeJavaScript(
+          'navigator.mediaDevices.enumerateDevices().then(() => {}).catch(() => {});',
+          true
+        );
+
+        expect(capturedOrigin).to.equal(iframeUrl);
+        expect(capturedIsMainFrame).to.be.false();
+        expect(capturedRequestingUrl).to.equal(iframeUrl);
+        expect(capturedSecurityOrigin).to.equal(iframeUrl);
+      } finally {
+        ses.protocol.uninterceptProtocol('https');
+        ses.setPermissionCheckHandler(null);
+      }
     });
   });
 

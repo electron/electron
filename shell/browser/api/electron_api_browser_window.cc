@@ -264,11 +264,6 @@ void BrowserWindow::BlurWebView() {
   web_contents()->GetRenderViewHost()->GetWidget()->Blur();
 }
 
-bool BrowserWindow::IsWebViewFocused() {
-  auto* host_view = web_contents()->GetRenderViewHost()->GetWidget()->GetView();
-  return host_view && host_view->HasFocus();
-}
-
 v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
   if (web_contents_.IsEmpty())
     return v8::Null(isolate);
@@ -332,7 +327,6 @@ void BrowserWindow::BuildPrototype(v8::Isolate* isolate,
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("focusOnWebView", &BrowserWindow::FocusOnWebView)
       .SetMethod("blurWebView", &BrowserWindow::BlurWebView)
-      .SetMethod("isWebViewFocused", &BrowserWindow::IsWebViewFocused)
       .SetProperty("webContents", &BrowserWindow::GetWebContents);
 }
 
