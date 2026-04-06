@@ -29,8 +29,9 @@ Module._load = function (request: string) {
 // code with JavaScript.
 //
 // Note 3: We provide the equivalent extra variables internally through the
-// webpack ProvidePlugin in webpack.config.base.js.  If you add any extra
-// variables to this wrapper please ensure to update that plugin as well.
+// esbuild inject shim in build/esbuild/shims/node-globals-shim.js.  If you
+// add any extra variables to this wrapper please ensure to update that shim
+// as well.
 Module.wrapper = [
   '(function (exports, require, module, __filename, __dirname, process, global, Buffer) { ' +
   // By running the code in a new closure, it would be possible for the module
@@ -65,9 +66,9 @@ require('@electron/internal/renderer/common-init');
 
 if (nodeIntegration) {
   // Export node bindings to global.
-  const { makeRequireFunction } = __non_webpack_require__('internal/modules/helpers') as typeof import('@node/lib/internal/modules/helpers');
+  const { makeRequireFunction } = __non_webpack_require__('internal/modules/helpers');
   global.module = new Module('electron/js2c/renderer_init');
-  global.require = makeRequireFunction(global.module) as NodeRequire;
+  global.require = makeRequireFunction(global.module);
 
   // Set the __filename to the path of html file if it is file: protocol.
   if (window.location.protocol === 'file:') {
@@ -152,7 +153,7 @@ if (cjsPreloads.length) {
   }
 }
 if (esmPreloads.length) {
-  const { runEntryPointWithESMLoader } = __non_webpack_require__('internal/modules/run_main') as typeof import('@node/lib/internal/modules/run_main');
+  const { runEntryPointWithESMLoader } = __non_webpack_require__('internal/modules/run_main');
 
   runEntryPointWithESMLoader(async (cascadedLoader: any) => {
     // Load the preload scripts.

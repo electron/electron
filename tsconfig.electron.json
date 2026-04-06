@@ -1,7 +1,10 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "rootDir": "lib"
+    // rootDir intentionally omitted: some lib/ files pull type declarations
+    // out of ../third_party/electron_node via the `@node/*` path alias (see
+    // lib/node/asar-fs-wrapper.ts) and a rootDir of 'lib' rejects those
+    // as outside-rootDir imports.
   },
   "include": [
     "lib",

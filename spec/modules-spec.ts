@@ -284,6 +284,41 @@ describe('modules support', () => {
         expect(result).to.equal('function');
       });
     });
+
+    // Regression test for the esbuild __toCommonJS identity break: esbuild's
+    // runtime helper for `require()`-of-ESM allocates a fresh wrapper on
+    // every call (see evanw/esbuild@f4ff26d3). The bundle driver patches it
+    // with a WeakMap-memoized variant so module identity matches webpack's
+    // __webpack_require__ cache semantics. Without the patch, every getter
+    // on `require('electron')` that resolves to a non-default-exporting ESM
+    // module would yield a fresh namespace on each access.
+    describe('module identity', () => {
+      it('returns the same object for repeated require("electron") accesses in the main process', () => {
+        const electron = require('electron');
+        for (const key of Object.keys(electron)) {
+          // Touching `electron.net` before app ready throws — handled by the
+          // sandboxed-preload identity test below; everything else must be
+          // strictly equal across two reads.
+          if (key === 'net') continue;
+          expect((electron as any)[key]).to.equal((electron as any)[key],
+            `require('electron').${key} must be identity-stable across reads`);
+        }
+      });
+
+      it('returns the same object for repeated require() in a sandboxed preload', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: { sandbox: true, contextIsolation: false, preload: path.join(fixtures, 'module', 'preload-require-identity.js') }
+        });
+        const result = once(w.webContents.ipc, 'require-identity');
+        await w.loadURL('about:blank');
+        const [, identities] = await result;
+        for (const [name, same] of Object.entries(identities)) {
+          expect(same).to.equal(true, `${name} must be identity-stable in sandboxed preload`);
+        }
+        w.destroy();
+      });
+    });
   });
 
   describe('esm', () => {

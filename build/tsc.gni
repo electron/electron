@@ -1,5 +1,42 @@
 import("npm.gni")
 
+# Runs `tsgo --noEmit` over a tsconfig via the `tsc-check` npm script (which
+# wraps script/typecheck.js) and writes a stamp on success. Use this to gate
+# downstream targets on a successful typecheck without emitting JS.
+template("typescript_check") {
+  assert(defined(invoker.tsconfig), "Need tsconfig name to run")
+  assert(defined(invoker.sources), "Need tsc sources to run")
+
+  npm_action(target_name) {
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                           ])
+    script = "tsc-check"
+
+    sources = invoker.sources
+    inputs = [
+      invoker.tsconfig,
+      "//electron/tsconfig.json",
+      "//electron/yarn.lock",
+      "//electron/script/typecheck.js",
+      "//electron/typings/internal-ambient.d.ts",
+      "//electron/typings/internal-electron.d.ts",
+    ]
+
+    stamp_file = "$target_gen_dir/$target_name.stamp"
+    outputs = [ stamp_file ]
+
+    args = [
+      "--tsconfig",
+      rebase_path(invoker.tsconfig),
+      "--stamp",
+      rebase_path(stamp_file),
+    ]
+  }
+}
+
 template("typescript_build") {
   assert(defined(invoker.tsconfig), "Need tsconfig name to run")
   assert(defined(invoker.sources), "Need tsc sources to run")

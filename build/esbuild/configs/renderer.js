@@ -1,7 +1,7 @@
-module.exports = require('./webpack.config.base')({
+module.exports = {
   target: 'renderer',
   alwaysHasNode: true,
   targetDeletesNodeGlobals: true,
   wrapInitWithProfilingTimeout: true,
   wrapInitWithTryCatch: true
-});
+};
