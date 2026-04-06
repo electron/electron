@@ -50,7 +50,19 @@ jobs:
           echo "::error::Invalid chromium_revision: $chromium_revision"
           exit 1
         fi
-        gn_version="$(curl -sL -b ~/.gitcookies "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/DEPS?format=TEXT" | base64 -d | grep gn_version | head -n1 | cut -d\' -f4)"
+        for attempt in 1 2 3; do
+          deps_response="$(curl -sL -b ~/.gitcookies "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/DEPS?format=TEXT")"
+          if deps_content="$(echo "$deps_response" | base64 -d 2>/dev/null)"; then
+            gn_version="$(echo "$deps_content" | grep gn_version | head -n1 | cut -d\' -f4)"
+            break
+          fi
+          echo "::warning::base64 decode failed (attempt $attempt/3), retrying in 5s... Output for $chromium_revision was: $deps_response"
+          sleep 5
+        done
+        if [[ -z "$gn_version" ]]; then
+          echo "::error::Failed to extract gn_version from Chromium DEPS after 3 attempts"
+          exit 1
+        fi
 
         cipd ensure -ensure-file - -root . <<-CIPD
         \$ServiceURL https://chrome-infra-packages.appspot.com/
