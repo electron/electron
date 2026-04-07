@@ -44,10 +44,10 @@ index c7794d6a969b407281db12acc027a933a4a82921..382d01ab2f0ad774f7c0d1dc214dd45b
    }
    return ret;
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.h b/content/browser/renderer_host/legacy_render_widget_host_win.h
-index 185391c70440d89f96030fdb4a8d60b90d4c4ffa..9ee57fdc726a37500d44e5f52371e6a35d06cd43 100644
+index 661a8123862860c88ce1eb78eae6691f38c2bdd9..705cda18d0b669249ff4ace161b53a105db2c806 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.h
 +++ b/content/browser/renderer_host/legacy_render_widget_host_win.h
-@@ -97,6 +97,7 @@ class CONTENT_EXPORT LegacyRenderWidgetHostHWND
+@@ -101,6 +101,7 @@ class CONTENT_EXPORT LegacyRenderWidgetHostHWND
      CR_MESSAGE_HANDLER_EX(WM_NCHITTEST, OnNCHitTest)
      CR_MESSAGE_RANGE_HANDLER_EX(WM_NCMOUSEMOVE, WM_NCXBUTTONDBLCLK,
                                  OnMouseRange)

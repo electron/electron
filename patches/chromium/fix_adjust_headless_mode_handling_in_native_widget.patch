@@ -139,10 +139,10 @@ index a258b94a8122c74b6f98f4b88b710371291fcfe4..2bcee4b775a2a39fbbe3c070a5db6081
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index 15ac80346e99e6568f08123a857db68c80a76439..8f89d58119ea7cafdf600524d5affdce01aad81a 100644
+index 75a82bc82ebe8e7b5b51b760cf4258cfd65a2df5..4b29c955c3347e2907c0d064834d917cc95ac546 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
-@@ -224,6 +224,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
+@@ -238,6 +238,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
    }
  }
  
@@ -161,7 +161,7 @@ index 15ac80346e99e6568f08123a857db68c80a76439..8f89d58119ea7cafdf600524d5affdce
  void Widget::InitParams::SetParent(Widget* parent_widget) {
    SetParent(parent_widget->GetNativeView());
  }
-@@ -471,6 +483,7 @@ void Widget::Init(InitParams params) {
+@@ -494,6 +506,7 @@ void Widget::Init(InitParams params) {
  
    params.child |= (params.type == InitParams::TYPE_CONTROL);
    is_top_level_ = !params.child;
@@ -170,7 +170,7 @@ index 15ac80346e99e6568f08123a857db68c80a76439..8f89d58119ea7cafdf600524d5affdce
  
    if (params.opacity == views::Widget::InitParams::WindowOpacity::kInferred &&
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index 155ce12ba83e70810d07f92aa3dd0f915f5af438..4f26255bf89ccc77d7de69ec70028db20dfcf26e 100644
+index 9741a329a96db439d074c1d9013558a51f18ed86..c95b315a30994b539fdd2429bab53674823ff5b5 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
 @@ -324,6 +324,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
@@ -185,7 +185,7 @@ index 155ce12ba83e70810d07f92aa3dd0f915f5af438..4f26255bf89ccc77d7de69ec70028db2
      // Returns the z-order level, based on the overriding |z_order| but also
      // taking into account special levels due to |type|.
      ui::ZOrderLevel EffectiveZOrderLevel() const;
-@@ -504,6 +509,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -501,6 +506,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
      // If true then the widget uses software compositing.
      bool force_software_compositing = false;
  
@@ -195,7 +195,7 @@ index 155ce12ba83e70810d07f92aa3dd0f915f5af438..4f26255bf89ccc77d7de69ec70028db2
      // If set, the window size will follow the content preferred size.
      bool autosize = false;
  
-@@ -1297,6 +1305,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1295,6 +1303,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // with it. TYPE_CONTROL and TYPE_TOOLTIP is not considered top level.
    bool is_top_level() const { return is_top_level_; }
  
@@ -207,7 +207,7 @@ index 155ce12ba83e70810d07f92aa3dd0f915f5af438..4f26255bf89ccc77d7de69ec70028db2
    // True if the window size will follow the content preferred size.
    bool is_autosized() const { return is_autosized_; }
  
-@@ -1742,6 +1755,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1743,6 +1756,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // If true, the mouse is currently down.
    bool is_mouse_button_pressed_ = false;
  

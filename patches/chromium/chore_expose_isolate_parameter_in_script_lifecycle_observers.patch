@@ -34,7 +34,7 @@ index 1d03dc809d4c18f24314d94811e0bf527aa7b5b4..16030bcecb2e39b8870144ce7c3d11dd
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index f28214d369138eb854a556165f0a946c07cfdb9c..7fb428cfdda42d1aac6922f2ed6f37369d4979e2 100644
+index 9a881bb119f6f93ae86b2cc75f95a30cde91cfbc..540935b14c5f78b573a14414f4259db9c34d02ae 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -4737,10 +4737,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
@@ -103,7 +103,7 @@ index 8482d7fab12634e6b9a8d5f9bab6c7e428bb99ee..4f131fbfc9350352bce4430f92b9f2cf
    void WillInitializeWorkerContext() override;
    void WillDestroyWorkerContext(v8::Local<v8::Context> context) override;
 diff --git a/extensions/renderer/dispatcher.cc b/extensions/renderer/dispatcher.cc
-index df4634ffecb4b58885374199a863092bfdecf681..33e0ed7a7beae556328ec8bff5e8101acc4b3d26 100644
+index fd3960fce4c61c5c530c817bd12e1ba1698b8db6..48a159d7d5ea57b4533fdaf38fe79a74c490207a 100644
 --- a/extensions/renderer/dispatcher.cc
 +++ b/extensions/renderer/dispatcher.cc
 @@ -530,6 +530,7 @@ void Dispatcher::DidInitializeServiceWorkerContextOnWorkerThread(
@@ -259,10 +259,10 @@ index 5a0f42b4b7e5eb67d476c948caa201ee6fc7b3ca..1a0562ad9ccfd414d6295b597b9d8094
    bool AllowScriptExtensions() override { return false; }
  
 diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-index f8bcd6fada82f9f0d473fa02799d0218c0e53b0b..765f10c71c50f2d89f8cdaf06d07ce4a53ef298c 100644
+index abbabcb7e2767ddef7e5bcda7812471282474260..e9e4864dbb1433d70344c58c4aeac6a906c50e02 100644
 --- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
 +++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-@@ -182,6 +182,7 @@ void ServiceWorkerGlobalScopeProxy::WillEvaluateScript() {
+@@ -181,6 +181,7 @@ void ServiceWorkerGlobalScopeProxy::WillEvaluateScript() {
    ScriptState::Scope scope(
        WorkerGlobalScope()->ScriptController()->GetScriptState());
    Client().WillEvaluateScript(

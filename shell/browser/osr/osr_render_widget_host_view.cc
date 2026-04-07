@@ -1030,13 +1030,14 @@ void OffScreenRenderWidgetHostView::UpdateBackgroundColorFromRenderer(
 }
 
 void OffScreenRenderWidgetHostView::NotifyHostAndDelegateOnWasShown(
-    blink::mojom::RecordContentToVisibleTimeRequestPtr) {
+    std::optional<blink::RecordContentToVisibleTimeRequest>
+        visible_time_request) {
   NOTREACHED();
 }
 
 void OffScreenRenderWidgetHostView::
     RequestSuccessfulPresentationTimeFromHostOrDelegate(
-        blink::mojom::RecordContentToVisibleTimeRequestPtr) {
+        blink::RecordContentToVisibleTimeRequest visible_time_request) {
   NOTREACHED();
 }
 
