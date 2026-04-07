@@ -103,7 +103,7 @@ class Session final : public gin::Wrappable<Session>,
   ~Session() override;
 
   [[nodiscard]] ElectronBrowserContext* browser_context() const {
-    return browser_context_.get();
+    return browser_context_;
   }
 
   // gin::Wrappable
@@ -224,7 +224,7 @@ class Session final : public gin::Wrappable<Session>,
   // The client id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;
 
-  base::WeakPtr<ElectronBrowserContext> browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_;
 
   gin::WeakCellFactory<Session> weak_factory_{this};
 

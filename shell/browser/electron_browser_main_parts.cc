@@ -626,6 +626,9 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 #if BUILDFLAG(IS_LINUX)
   ui::OzonePlatform::GetInstance()->PostMainMessageLoopRun();
 #endif
+
+  browser_.reset();
+  js_env_.reset();
 }
 
 #if !BUILDFLAG(IS_MAC)
