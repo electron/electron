@@ -164,9 +164,10 @@ async function main () {
     const currentVersion = getChromiumVersionFromDEPS(depsContent);
 
     // Calculate the SHA256 for each object file under `outDir`
-    const objectFiles = await fs.readdir(outDir, { encoding: 'utf8', recursive: true });
+    const files = await fs.readdir(outDir, { encoding: 'utf8', recursive: true });
+    const objectFiles = files.filter(file => file.endsWith('.o') || file.endsWith('.obj'));
     const checksums = {};
-    for (const file of objectFiles.filter(f => f.endsWith('.o'))) {
+    for (const file of objectFiles) {
       const content = await fs.readFile(resolve(outDir, file));
       checksums[file] = createHash('sha256').update(content).digest('hex');
     }
