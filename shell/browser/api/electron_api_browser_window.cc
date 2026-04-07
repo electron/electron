@@ -192,13 +192,23 @@ void BrowserWindow::OnWindowFocus() {
 
 void BrowserWindow::OnNativeDialogWillOpen() {
 #if BUILDFLAG(IS_WIN)
-  if (api_web_contents_ && window()->IsVisible() && window()->IsFocused())
+  ++native_dialog_depth_;
+  if (native_dialog_depth_ == 1 && api_web_contents_ && window()->IsVisible() &&
+      window()->IsFocused()) {
     web_contents()->StoreFocus();
+  }
 #endif
 }
 
 void BrowserWindow::OnNativeDialogClosed() {
 #if BUILDFLAG(IS_WIN)
+  if (native_dialog_depth_ == 0)
+    return;
+  --native_dialog_depth_;
+
+  if (native_dialog_depth_ != 0)
+    return;
+
   // Some native modal dialogs do not trigger a full blur/focus cycle on
   // Windows, so restore the renderer focus explicitly when the dialog closes.
   if (window()->IsVisible() && window()->IsFocused())

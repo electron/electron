@@ -8,6 +8,7 @@
 #include <string>
 
 #include "base/cancelable_callback.h"
+#include "build/build_config.h"
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/ui/drag_util.h"
@@ -85,6 +86,9 @@ class BrowserWindow : public BaseWindow,
   bool web_contents_shown_ = false;
   v8::Global<v8::Value> web_contents_view_;
   base::WeakPtr<api::WebContents> api_web_contents_;
+#if BUILDFLAG(IS_WIN)
+  int native_dialog_depth_ = 0;
+#endif
 
   base::WeakPtrFactory<BrowserWindow> weak_factory_{this};
 };
