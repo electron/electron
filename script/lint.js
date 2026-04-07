@@ -1,10 +1,8 @@
 #!/usr/bin/env node
 
-const { ESLint } = require('eslint');
 const minimist = require('minimist');
 
 const childProcess = require('node:child_process');
-const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -72,22 +70,31 @@ function spawnAndCheckExitCode (cmd, args, opts) {
   }
 }
 
-async function runEslint (eslint, filenames, { fix, verbose }) {
-  const formatter = await eslint.loadFormatter();
-  let successCount = 0;
-  const results = await eslint.lintFiles(filenames);
-  for (const result of results) {
-    successCount += result.errorCount === 0 ? 1 : 0;
-    if (verbose && result.errorCount === 0 && result.warningCount === 0) {
-      console.log(`${result.filePath}: no errors or warnings`);
+function runOxlint (filenames, { fix } = {}) {
+  const oxlintBin = path.join(
+    ELECTRON_ROOT,
+    'node_modules',
+    '.bin',
+    IS_WINDOWS ? 'oxlint.cmd' : 'oxlint'
+  );
+  const args = [];
+  if (fix) args.push('--fix');
+  // Emit GitHub Actions annotations directly when running in CI so errors
+  // surface inline on the PR without a separate problem matcher.
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    args.push('--format=github');
+  }
+  for (const chunk of chunkFilenames(filenames)) {
+    const result = childProcess.spawnSync(oxlintBin, [...args, '--', ...chunk], {
+      stdio: 'inherit',
+      shell: IS_WINDOWS,
+      cwd: ELECTRON_ROOT
+    });
+    if (result.status !== 0) {
+      return false;
     }
   }
-  console.log(formatter.format(results));
-  if (fix) {
-    await ESLint.outputFixes(results);
-  }
-
-  return successCount === filenames.length;
+  return true;
 }
 
 function cpplint (args) {
@@ -155,15 +162,7 @@ const LINTERS = [{
   ignoreRoots: ['.github/workflows/node_modules', 'spec/node_modules', 'spec/fixtures/native-addon'],
   test: filename => filename.endsWith('.js') || filename.endsWith('.ts') || filename.endsWith('.mjs'),
   run: async (opts, filenames) => {
-    const eslint = new ESLint({
-      // Do not use the lint cache on CI builds
-      cache: !process.env.CI,
-      cacheLocation: `node_modules/.eslintcache.${crypto.createHash('md5').update(fs.readFileSync(__filename)).digest('hex')}`,
-      extensions: ['.js', '.ts'],
-      fix: opts.fix,
-      resolvePluginsRelativeTo: ELECTRON_ROOT
-    });
-    const clean = await runEslint(eslint, filenames, { fix: opts.fix, verbose: opts.verbose });
+    const clean = runOxlint(filenames, { fix: opts.fix });
     if (!clean) {
       console.error('Linting had errors');
       process.exit(1);
@@ -295,12 +294,55 @@ const LINTERS = [{
     // Run the remaining checks only in docs
     const docs = filenames.filter(filename => path.dirname(filename).split(path.sep)[0] === 'docs');
 
+    // Node.js builtin modules that should be imported with the `node:` protocol
+    // in docs code blocks. This mirrors what the old docs/.eslintrc.json
+    // enforced via `import/enforce-node-protocol-usage` (added in #42113,
+    // originally as `unicorn/prefer-node-protocol`).
+    const NODE_BUILTINS = new Set([
+      'assert', 'async_hooks', 'buffer', 'child_process', 'cluster', 'console',
+      'constants', 'crypto', 'dgram', 'diagnostics_channel', 'dns', 'domain',
+      'events', 'fs', 'http', 'http2', 'https', 'inspector', 'module', 'net',
+      'os', 'path', 'perf_hooks', 'process', 'punycode', 'querystring',
+      'readline', 'repl', 'stream', 'string_decoder', 'sys', 'timers', 'tls',
+      'trace_events', 'tty', 'url', 'util', 'v8', 'vm', 'wasi',
+      'worker_threads', 'zlib'
+    ]);
+    const NODE_IMPORT_RE = /(?:require\s*\(\s*|from\s+|import\s*\(\s*)['"]([^'"/]+)(?:\/[^'"]*)?['"]/g;
+    const BREAKING_CHANGES_MD = path.join('docs', 'breaking-changes.md');
+
+    // Strip line and block comments from a code snippet so the import check
+    // does not flag bare-specifier examples that appear inside `// ...` or
+    // `/* ... */` explanations. This is a conservative textual strip — it is
+    // not a full JS parser, but it is good enough for docs code blocks and
+    // matches the behavior of the AST-based rule it replaced.
+    const stripComments = (source) => source
+      .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+      .replace(/(^|[^:])\/\/[^\n]*/g, (_m, prefix) => prefix);
+
     for (const filename of docs) {
       const contents = fs.readFileSync(filename, 'utf8');
       const codeBlocks = await getCodeBlocks(contents);
 
+      const skipNodeProtocolCheck = path.normalize(filename).endsWith(BREAKING_CHANGES_MD);
+
       for (const codeBlock of codeBlocks) {
         const line = codeBlock.position.start.line;
+
+        // Check for bare Node.js builtin imports in JS/TS/fiddle code blocks.
+        if (!skipNodeProtocolCheck && codeBlock.lang && ['js', 'ts', 'javascript', 'typescript', 'fiddle'].includes(codeBlock.lang.toLowerCase())) {
+          const blockLines = stripComments(codeBlock.value).split('\n');
+          for (let i = 0; i < blockLines.length; i++) {
+            NODE_IMPORT_RE.lastIndex = 0;
+            let match;
+            while ((match = NODE_IMPORT_RE.exec(blockLines[i])) !== null) {
+              const mod = match[1];
+              if (NODE_BUILTINS.has(mod)) {
+                console.log(`${filename}:${line + 1 + i} Use 'node:${mod}' instead of bare '${mod}' in code blocks`);
+                errors = true;
+              }
+            }
+          }
+        }
 
         if (codeBlock.lang) {
           // Enforce all lowercase language identifiers
@@ -367,26 +409,6 @@ const LINTERS = [{
         }
       }
     }
-
-    const eslint = new ESLint({
-      // Do not use the lint cache on CI builds
-      cache: !process.env.CI,
-      cacheLocation: `node_modules/.eslintcache.${crypto.createHash('md5').update(fs.readFileSync(__filename)).digest('hex')}`,
-      fix: opts.fix,
-      overrideConfigFile: path.join(ELECTRON_ROOT, 'docs', '.eslintrc.json'),
-      resolvePluginsRelativeTo: ELECTRON_ROOT
-    });
-    const clean = await runEslint(
-      eslint,
-      docs.filter(
-        // TODO(dsanders11): Once we move to newer ESLint and the flat config,
-        // switch to using `ignorePatterns` and `warnIgnore: false` instead of
-        // explicitly filtering out this file that we don't want to lint
-        (filename) => !filename.endsWith('docs/breaking-changes.md')
-      ),
-      { fix: opts.fix, verbose: opts.verbose }
-    );
-    errors ||= !clean;
 
     if (errors) {
       process.exit(1);

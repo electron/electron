@@ -206,6 +206,7 @@ async function runRemote (type: 'skip' | 'none' | 'only', name: string, fn: Func
 
   let runFn: any = it;
   if (type === 'only') {
+    // eslint-disable-next-line no-only-tests/no-only-tests
     runFn = it.only;
   } else if (type === 'skip') {
     runFn = it.skip;

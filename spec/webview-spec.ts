@@ -1926,7 +1926,7 @@ describe('<webview> tag', function () {
           return new Promise<any>(resolve => target.addEventListener(event, resolve, { once: true }));
         }
 
-        function waitForEvents (target: EventTarget, ...events: string[]) {
+        function waitForEvents (_target: EventTarget, ...events: string[]) {
           return Promise.all(events.map(event => waitForEvent(webview, event)));
         }
 

@@ -1764,6 +1764,32 @@ describe('BrowserWindow module', () => {
         expectBoundsEqual(w.getMaximumSize(), [900, 600]);
       });
 
+      it('creates window at min size when a smaller size is requested', () => {
+        const w1 = new BrowserWindow({
+          show: false,
+          width: 200,
+          height: 200,
+          minWidth: 300,
+          minHeight: 300
+        });
+        const size = w1.getSize();
+        expect(size[0]).to.equal(300);
+        expect(size[1]).to.equal(300);
+      });
+
+      it('creates window at max size when a larger size is requested', () => {
+        const w1 = new BrowserWindow({
+          show: false,
+          width: 300,
+          height: 300,
+          maxWidth: 200,
+          maxHeight: 200
+        });
+        const size = w1.getSize();
+        expect(size[0]).to.equal(200);
+        expect(size[1]).to.equal(200);
+      });
+
       it('enforces minimum size', async () => {
         w.setMinimumSize(300, 300);
         const resize = once(w, 'resize');
