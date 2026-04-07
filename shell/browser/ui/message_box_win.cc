@@ -285,12 +285,24 @@ DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings,
 }  // namespace
 
 int ShowMessageBoxSync(const MessageBoxSettings& settings) {
-  gfx::AcceleratedWidget parent_widget =
+  const gfx::AcceleratedWidget parent_widget =
       settings.parent_window
           ? static_cast<electron::NativeWindowViews*>(settings.parent_window)
                 ->GetAcceleratedWidget()
           : nullptr;
-  DialogResult result = ShowTaskDialogUTF8(settings, parent_widget, nullptr);
+  const HWND focused_window = ::GetFocus();
+  const bool restore_focus = parent_widget && focused_window &&
+                             (focused_window == parent_widget ||
+                              ::IsChild(parent_widget, focused_window));
+
+  const DialogResult result =
+      ShowTaskDialogUTF8(settings, parent_widget, nullptr);
+
+  if (restore_focus && ::IsWindow(parent_widget)) {
+    ::SetForegroundWindow(parent_widget);
+    ::SetFocus(::IsWindow(focused_window) ? focused_window : parent_widget);
+  }
+
   return result.button_id;
 }
 
