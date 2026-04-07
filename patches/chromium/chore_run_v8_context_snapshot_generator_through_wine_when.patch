@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <kleinschmidtorama@gmail.com>
+Date: Tue, 7 Apr 2026 14:05:09 -0400
+Subject: chore: run v8_context_snapshot_generator through Wine when
+ cross-compiling
+
+When cross-compiling for Windows on Linux with Wine, the
+v8_context_snapshot_generator binary is a Windows PE executable (.exe)
+that cannot be run directly. Prepend the wine path to args and append
+.exe to the binary name, matching the approach used for mksnapshot.
+
+diff --git a/tools/v8_context_snapshot/BUILD.gn b/tools/v8_context_snapshot/BUILD.gn
+index ec2357139826613e8b295cb01be341acb03b4737..6c4171dbaf7a76cfc89d71871b73058747675811 100644
+--- a/tools/v8_context_snapshot/BUILD.gn
++++ b/tools/v8_context_snapshot/BUILD.gn
+@@ -50,12 +50,27 @@ if (use_v8_context_snapshot) {
+     output_file = "$root_build_dir/$v8_context_snapshot_filename"
+     output_path = rebase_path(output_file, root_build_dir)
+ 
+-    args = [
+-      "./" + rebase_path(
+-              get_label_info(
+-                      ":v8_context_snapshot_generator($v8_snapshot_toolchain)",
+-                      "root_out_dir") + "/v8_context_snapshot_generator",
+-              root_build_dir),
++    _generator_dir = get_label_info(
++            ":v8_context_snapshot_generator($v8_snapshot_toolchain)",
++            "root_out_dir")
++    if (v8_win_cross_compile_using_wine) {
++      _generator_bin = "./" + rebase_path(
++              _generator_dir + "/v8_context_snapshot_generator.exe",
++              root_build_dir)
++    } else {
++      _generator_bin = "./" + rebase_path(
++              _generator_dir + "/v8_context_snapshot_generator",
++              root_build_dir)
++    }
++
++    args = []
++    if (v8_win_cross_compile_using_wine) {
++      assert(v8_wine_path != "",
++             "v8_wine_path must be set when v8_win_cross_compile_using_wine is true")
++      args += [ v8_wine_path ]
++    }
++    args += [
++      _generator_bin,
+       "--snapshot_blob=$snapshot_blob_path",
+       "--output_file=$output_path",
+     ]

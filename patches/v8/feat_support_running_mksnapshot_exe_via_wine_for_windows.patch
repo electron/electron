@@ -1,0 +1,113 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <kleinschmidtorama@gmail.com>
+Date: Tue, 24 Mar 2026 16:29:55 -0400
+Subject: feat: support running mksnapshot.exe via Wine for Windows
+ cross-compile
+
+When v8_win_cross_compile_using_wine=true is set, mksnapshot is built as a
+Windows .exe using the target toolchain and executed via Wine on the Linux
+host. This avoids needing source-level cross-compile patches for the
+unwinding info code paths.
+
+diff --git a/BUILD.gn b/BUILD.gn
+index 751265ba83c04f0c545248a71b35e46034bfc90a..9ca41b06b569c729496abde7cba085518a9f0d71 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -2699,7 +2699,11 @@ template("run_mksnapshot") {
+     suffix = "_$name"
+   }
+   action("run_mksnapshot_" + name) {
+-    deps = [ ":mksnapshot($v8_snapshot_toolchain)" ]
++    if (v8_prebuilt_mksnapshot != "") {
++      deps = []
++    } else {
++      deps = [ ":mksnapshot($v8_snapshot_toolchain)" ]
++    }
+     if (v8_verify_deterministic_mksnapshot) {
+       # We archive the snapshot executable when verifying snapshot
+       # determinism to ease debugging.
+@@ -2753,10 +2757,26 @@ template("run_mksnapshot") {
+       data += [ "$root_out_dir/mksnapshot_output${suffix}.log" ]
+     }
+ 
++    if (v8_prebuilt_mksnapshot != "") {
++      _mksnapshot_bin = v8_prebuilt_mksnapshot
++    } else {
++      _mksnapshot_dir =
++          get_label_info(":mksnapshot($v8_snapshot_toolchain)", "root_out_dir")
++      if (v8_win_cross_compile_using_wine) {
++        _mksnapshot_bin = _mksnapshot_dir + "/mksnapshot.exe"
++      } else {
++        _mksnapshot_bin = _mksnapshot_dir + "/mksnapshot"
++      }
++    }
++
++    if (v8_win_cross_compile_using_wine) {
++      assert(
++          v8_wine_path != "",
++          "v8_wine_path must be set when v8_win_cross_compile_using_wine is true")
++      args += [ v8_wine_path ]
++    }
+     args += [
+-      "./" + rebase_path(get_label_info(":mksnapshot($v8_snapshot_toolchain)",
+-                                        "root_out_dir") + "/mksnapshot",
+-                         root_build_dir),
++      "./" + rebase_path(_mksnapshot_bin, root_build_dir),
+       "--turbo_instruction_scheduling",
+       "--turbo-always-optimize-spills",
+ 
+diff --git a/gni/snapshot_toolchain.gni b/gni/snapshot_toolchain.gni
+index 37ed262640d048a6fa5923279ae0388c1c0ae766..d9830914f0abd919143f0cf8b3069c5a3f70516e 100644
+--- a/gni/snapshot_toolchain.gni
++++ b/gni/snapshot_toolchain.gni
+@@ -32,6 +32,21 @@ declare_args() {
+   # toolchain that matches the bit-width of the target CPU, but runs on
+   # the host.
+   v8_snapshot_toolchain = ""
++
++  # When cross-compiling for Windows on a non-Windows host, build mksnapshot
++  # as a Windows .exe and run it via Wine instead of building a host-native
++  # mksnapshot with cross-compile patches.
++  v8_win_cross_compile_using_wine = false
++
++  # Absolute path to the wine64 binary. Required when
++  # v8_win_cross_compile_using_wine is true.
++  v8_wine_path = ""
++
++  # Path to a pre-built mksnapshot binary to use instead of building one from
++  # source. When set, run_mksnapshot will use this binary directly and skip
++  # building the mksnapshot target. The path should be absolute or relative
++  # to the source root.
++  v8_prebuilt_mksnapshot = ""
+ }
+ 
+ # Try to infer the appropriate snapshot toolchain for the v8_current_cpu
+@@ -69,7 +84,12 @@ if (v8_snapshot_toolchain == "") {
+     # Cross-build from same ISA on one OS to another. For example:
+     # * targeting win/x64 on a linux/x64 host
+     # * targeting win/arm64 on a mac/arm64 host
+-    v8_snapshot_toolchain = host_toolchain
++    if (v8_win_cross_compile_using_wine && is_win && host_os != "win") {
++      # Build mksnapshot as a Windows .exe and run it via Wine.
++      v8_snapshot_toolchain = current_toolchain
++    } else {
++      v8_snapshot_toolchain = host_toolchain
++    }
+   } else if (host_cpu == "arm64" && current_cpu == "x64") {
+     # Cross-build from arm64 to intel (likely on an Apple Silicon mac).
+     v8_snapshot_toolchain =
+@@ -119,7 +139,13 @@ assert(v8_snapshot_toolchain != "",
+ # We reuse the snapshot toolchain for building torque and other generators to
+ # avoid building v8_libbase on the host more than once. On mips with big endian,
+ # the snapshot toolchain is the target toolchain and, hence, can't be used.
+-v8_generator_toolchain = v8_snapshot_toolchain
++# When using Wine for cross-compilation, mksnapshot is built as a Windows .exe
++# but other generators (torque, etc.) must still be host-native binaries.
++if (v8_win_cross_compile_using_wine && is_win && host_os != "win") {
++  v8_generator_toolchain = host_toolchain
++} else {
++  v8_generator_toolchain = v8_snapshot_toolchain
++}
+ if (host_cpu == "x64" && v8_current_cpu == "mips64") {
+   v8_generator_toolchain = "//build/toolchain/linux:clang_x64"
+ }
