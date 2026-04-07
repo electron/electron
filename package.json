@@ -13,7 +13,7 @@
     "@electron/lint-roller": "^3.2.0",
     "@electron/typescript-definitions": "^9.1.5",
     "@hurdlegroup/robotjs": "^0.12.3",
-    "@octokit/rest": "^20.1.2",
+    "@octokit/rest": "^22.0.1",
     "@primer/octicons": "^10.0.0",
     "@sentry/cli": "1.72.0",
     "@types/minimist": "^1.2.5",
