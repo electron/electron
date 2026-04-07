@@ -15,7 +15,6 @@
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/heap_snapshot.h"
-#include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/thread_restrictions.h"
 #include "shell/common/v8_util.h"
@@ -27,6 +26,7 @@
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_message_port_converter.h"
+#include "v8/include/v8-context.h"
 
 namespace electron {
 

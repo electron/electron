@@ -19,7 +19,6 @@
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/native_window.h"
 #include "shell/common/keyboard_util.h"
-#include "shell/common/node_includes.h"
 #include "ui/base/cocoa/menu_utils.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
