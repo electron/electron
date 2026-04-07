@@ -6,7 +6,7 @@ const path = require('node:path');
 
 const BASE = path.resolve(__dirname, '../..');
 const NAN_DIR = path.resolve(BASE, 'third_party', 'nan');
-const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const NODE_GYP_BIN = path.join(NAN_DIR, 'node_modules', 'node-gyp', 'bin', 'node-gyp.js');
 
 const utils = require('./lib/utils');
 const { YARN_SCRIPT_PATH } = require('./yarn');
@@ -19,14 +19,6 @@ const args = minimist(process.argv.slice(2), {
   string: ['only']
 });
 
-const getNodeGypVersion = () => {
-  const nanPackageJSONPath = path.join(NAN_DIR, 'package.json');
-  const nanPackageJSON = JSON.parse(fs.readFileSync(nanPackageJSONPath, 'utf8'));
-  const { devDependencies } = nanPackageJSON;
-  const nodeGypVersion = devDependencies['node-gyp'];
-  return nodeGypVersion || 'latest';
-};
-
 async function main () {
   const outDir = utils.getOutDir({ shouldLog: true });
   const nodeDir = path.resolve(BASE, 'out', outDir, 'gen', 'node_headers');
@@ -34,8 +26,7 @@ async function main () {
     npm_config_msvs_version: '2022',
     ...process.env,
     npm_config_nodedir: nodeDir,
-    npm_config_arch: process.env.NPM_CONFIG_ARCH,
-    npm_config_yes: 'true'
+    npm_config_arch: process.env.NPM_CONFIG_ARCH
   };
 
   const clangDir = path.resolve(BASE, 'third_party', 'llvm-build', 'Release+Asserts', 'bin');
@@ -105,28 +96,24 @@ async function main () {
     env.LDFLAGS = ldflags;
   }
 
-  const nodeGypVersion = getNodeGypVersion();
-  const { status: buildStatus, signal } = cp.spawnSync(NPX_CMD, [`node-gyp@${nodeGypVersion}`, 'rebuild', '--verbose', '--directory', 'test', '-j', 'max'], {
+  const { status: installStatus, signal: installSignal } = cp.spawnSync(process.execPath, [YARN_SCRIPT_PATH, 'install'], {
     env,
     cwd: NAN_DIR,
-    stdio: 'inherit',
-    shell: process.platform === 'win32'
+    stdio: 'inherit'
+  });
+  if (installStatus !== 0 || installSignal != null) {
+    console.error('Failed to install nan node_modules');
+    return process.exit(installStatus !== 0 ? installStatus : installSignal);
+  }
+
+  const { status: buildStatus, signal } = cp.spawnSync(process.execPath, [NODE_GYP_BIN, 'rebuild', '--verbose', '--directory', 'test', '-j', 'max'], {
+    env,
+    cwd: NAN_DIR,
+    stdio: 'inherit'
   });
   if (buildStatus !== 0 || signal != null) {
     console.error('Failed to build nan test modules');
     return process.exit(buildStatus !== 0 ? buildStatus : signal);
-  }
-
-  const { status: installStatus, signal: installSignal } = cp.spawnSync(process.execPath, [YARN_SCRIPT_PATH, 'install'], {
-    env,
-    cwd: NAN_DIR,
-    stdio: 'inherit',
-    shell: process.platform === 'win32'
-  });
-
-  if (installStatus !== 0 || installSignal != null) {
-    console.error('Failed to install nan node_modules');
-    return process.exit(installStatus !== 0 ? installStatus : installSignal);
   }
 
   const onlyTests = args.only?.split(',');

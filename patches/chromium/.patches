@@ -163,3 +163,4 @@ fix_out-of-bounds_read_in_diff_rulesets.patch
 extensions_return_early_from_urlpattern_isvalidscheme.patch
 feat_allow_enabling_extensions_on_custom_protocols.patch
 cherry-pick-d8b01057f740.patch
+cherry-pick-89b42d2d3326.patch
