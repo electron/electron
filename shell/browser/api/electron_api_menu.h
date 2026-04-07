@@ -131,7 +131,6 @@ class Menu : public gin::Wrappable<Menu>,
   void Clear();
   int GetIndexOfCommandId(int command_id) const;
   int GetItemCount() const;
-  bool IsItemCheckedAt(int index) const;
   bool IsEnabledAt(int index) const;
   bool IsVisibleAt(int index) const;
 
