@@ -15,6 +15,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/threading/thread_local.h"
 #include "electron/mas.h"
+#include "gin/per_isolate_data.h"
 #include "shell/common/crash_keys.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "v8/include/v8-exception.h"
@@ -28,9 +29,24 @@ namespace electron {
 
 namespace {
 
-struct OomState {
+// Forward-declare so OomState can reference it.
+size_t NearHeapLimitCallback(void* data,
+                             size_t current_heap_limit,
+                             size_t initial_heap_limit);
+
+struct OomState : public gin::PerIsolateData::DisposeObserver {
   raw_ptr<v8::Isolate> isolate;
   std::atomic<bool> is_in_oom{false};
+
+  // gin::PerIsolateData::DisposeObserver:
+  void OnBeforeDispose(v8::Isolate* disposing_isolate) override {
+    if (!is_in_oom.load()) {
+      disposing_isolate->RemoveNearHeapLimitCallback(NearHeapLimitCallback, 0);
+    }
+    isolate = nullptr;
+  }
+  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* /*disposing*/) override {}
+  void OnDisposed() override {}
 };
 
 base::ThreadLocalOwnedPointer<OomState>& GetOomState() {
@@ -229,6 +245,7 @@ void RegisterOomStackTraceCallback(v8::Isolate* isolate) {
   auto state = std::make_unique<OomState>();
   state->isolate = isolate;
   OomState* raw = state.get();
+  gin::PerIsolateData::From(isolate)->AddDisposeObserver(raw);
   tls.Set(std::move(state));
   isolate->AddNearHeapLimitCallback(NearHeapLimitCallback, raw);
 }
@@ -241,6 +258,7 @@ void UnregisterOomStackTraceCallback(v8::Isolate* isolate) {
   if (!state->is_in_oom.load()) {
     isolate->RemoveNearHeapLimitCallback(NearHeapLimitCallback, 0);
   }
+  gin::PerIsolateData::From(isolate)->RemoveDisposeObserver(state);
   tls.Set(nullptr);
 }
 
