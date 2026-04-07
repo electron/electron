@@ -204,7 +204,8 @@ void WebWorkerObserver::ShareEnvironmentWithContext(
   }
 }
 
-void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
+void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context,
+                                           bool is_audio_worklet) {
   node::Environment* env = node::Environment::GetCurrent(context);
   if (!env)
     return;
@@ -252,15 +253,26 @@ void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
     // ElectronBindings is tracking node environments.
     electron_bindings_->EnvironmentDestroyed(env);
 
-    // Do NOT destroy the observer here. The worker thread may be reused
-    // for another worklet context (e.g., AudioWorklet thread pooling or
-    // PaintWorklet after page reload). Destroying the observer would
-    // force a new NodeBindings to be created, but Node.js cannot be
-    // fully reinitialized on the same thread (the allocator shim can
-    // only be loaded once). Instead, keep the observer and its
-    // NodeBindings alive so they can be reused. The environments_ set
-    // is now empty, so WorkerScriptReadyForEvaluation will call
-    // InitializeNewEnvironment on the next context.
+    // For non-AudioWorklet contexts (e.g., PaintWorklet, dedicated workers)
+    // Blink does not pool the worker thread, so tear down the observer
+    // synchronously while the worker thread is still in a clean state.
+    // Deferring teardown to the thread-exit TLS callback hangs on Windows:
+    // after set_uv_env(nullptr) the embed thread parks in
+    // GetQueuedCompletionStatus and the later WakeupEmbedThread() from
+    // ~NodeBindings can be lost, causing uv_thread_join to block forever
+    // and the renderer to deadlock during navigation.
+    //
+    // For AudioWorklet, threads are pooled (Chromium CL:5270028) and the
+    // same NodeBindings/embed thread must be reused for the next context
+    // on the thread because Node.js cannot be re-initialized on the same
+    // thread (the allocator shim can only be loaded once). In that case
+    // we keep the observer alive and let the next
+    // WorkerScriptReadyForEvaluation call InitializeNewEnvironment on the
+    // (now empty) environments_ set.
+    if (!is_audio_worklet) {
+      lazy_tls->Set(nullptr);  // destroys *this; do not access members below
+      return;
+    }
   } else {
     // Other contexts still use the shared environment. Just unassign
     // this context from the environment if it's not the primary context
