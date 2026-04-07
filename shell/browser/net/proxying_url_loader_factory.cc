@@ -904,11 +904,7 @@ void ProxyingURLLoaderFactory::OnLoaderCreated(
   }
 
   auto request_it = requests_.find(it->second);
-  if (request_it == requests_.end()) {
-    mojo::MakeSelfOwnedReceiver(std::make_unique<NoOpHeaderClient>(),
-                                std::move(receiver));
-    return;
-  }
+  DCHECK(request_it != requests_.end());
   request_it->second->OnLoaderCreated(std::move(receiver));
 }
 
