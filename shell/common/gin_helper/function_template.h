@@ -16,7 +16,6 @@
 #include "gin/public/gin_embedders.h"
 #include "shell/common/gin_helper/destroyable.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "v8/include/v8-context.h"
 #include "v8/include/v8-external.h"
 #include "v8/include/v8-microtask-queue.h"
 #include "v8/include/v8-template.h"
