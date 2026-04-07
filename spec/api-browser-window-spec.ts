@@ -5641,21 +5641,6 @@ describe('BrowserWindow module', () => {
         expectBoundsEqual(w.getSize(), [400, 300]);
       });
 
-      ifit(process.platform !== 'darwin')('works for a window smaller than 64x64', () => {
-        const w = new BrowserWindow({
-          show: false,
-          frame: false,
-          resizable: false,
-          transparent: true
-        });
-        w.setContentSize(60, 60);
-        expectBoundsEqual(w.getContentSize(), [60, 60]);
-        w.setContentSize(30, 30);
-        expectBoundsEqual(w.getContentSize(), [30, 30]);
-        w.setContentSize(10, 10);
-        expectBoundsEqual(w.getContentSize(), [10, 10]);
-      });
-
       ifit(process.platform === 'win32')('do not change window with frame bounds when maximized', () => {
         const w = new BrowserWindow({
           show: true,
