@@ -10,10 +10,10 @@ host. This avoids needing source-level cross-compile patches for the
 unwinding info code paths.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 985f946d5f87b4e6eb32a011ac47a0073248e5f2..229c6e53e6608793d0fc6d34f31625e4bc862fc8 100644
+index 751265ba83c04f0c545248a71b35e46034bfc90a..9ca41b06b569c729496abde7cba085518a9f0d71 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -2681,7 +2681,11 @@ template("run_mksnapshot") {
+@@ -2699,7 +2699,11 @@ template("run_mksnapshot") {
      suffix = "_$name"
    }
    action("run_mksnapshot_" + name) {
@@ -26,7 +26,7 @@ index 985f946d5f87b4e6eb32a011ac47a0073248e5f2..229c6e53e6608793d0fc6d34f31625e4
      if (v8_verify_deterministic_mksnapshot) {
        # We archive the snapshot executable when verifying snapshot
        # determinism to ease debugging.
-@@ -2735,10 +2739,26 @@ template("run_mksnapshot") {
+@@ -2753,10 +2757,26 @@ template("run_mksnapshot") {
        data += [ "$root_out_dir/mksnapshot_output${suffix}.log" ]
      }
  
