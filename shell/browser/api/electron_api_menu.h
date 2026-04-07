@@ -131,7 +131,6 @@ class Menu : public gin::Wrappable<Menu>,
   void Clear();
   int GetIndexOfCommandId(int command_id) const;
   int GetItemCount() const;
-  bool IsVisibleAt(int index) const;
 
   gin_helper::SelfKeepAlive<Menu> keep_alive_{this};
 };
