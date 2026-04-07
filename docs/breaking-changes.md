@@ -14,10 +14,6 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (43.0)
 
-### Behavior Changed: `setAlwaysOnTop` and `isAlwaysOnTop` not supported on Wayland
-
-The `BrowserWindow.setAlwaysOnTop()` and `BrowserWindow.isAlwaysOnTop()` APIs are not supported on Wayland (Linux), as the protocol does not provide a way for applications to control window z-order. Users can force XWayland by passing `--ozone-platform=x11`.
-
 ### Behavior Changed: Dialog methods default to Downloads directory
 
 The `defaultPath` option for the following methods now defaults to the user's Downloads folder (or their home directory if Downloads doesn't exist) when not explicitly provided:
