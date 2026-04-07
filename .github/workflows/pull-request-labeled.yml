@@ -50,7 +50,7 @@ jobs:
           field-value: ✅ Reviewed
   pull-request-labeled-ai-pr:
     name: ai-pr label added
-    if: github.event.label.name == 'ai-pr'
+    if: github.event.label.name == 'ai-pr' && github.event.pull_request.state != 'closed'
     runs-on: ubuntu-latest
     permissions: {}
     steps:
