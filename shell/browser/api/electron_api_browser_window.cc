@@ -172,17 +172,38 @@ void BrowserWindow::OnWindowBlur() {
   BaseWindow::OnWindowBlur();
 }
 
+void BrowserWindow::RestoreWebContentsFocus() {
+  if (!api_web_contents_)
+    return;
+
+  web_contents()->RestoreFocus();
+#if !BUILDFLAG(IS_MAC)
+  if (!api_web_contents_->IsDevToolsOpened())
+    web_contents()->Focus();
+#endif
+}
+
 void BrowserWindow::OnWindowFocus() {
   // focus/blur events might be emitted while closing window.
-  if (api_web_contents_) {
-    web_contents()->RestoreFocus();
-#if !BUILDFLAG(IS_MAC)
-    if (!api_web_contents_->IsDevToolsOpened())
-      web_contents()->Focus();
-#endif
-  }
+  RestoreWebContentsFocus();
 
   BaseWindow::OnWindowFocus();
+}
+
+void BrowserWindow::OnNativeDialogWillOpen() {
+#if BUILDFLAG(IS_WIN)
+  if (api_web_contents_ && window()->IsVisible() && window()->IsFocused())
+    web_contents()->StoreFocus();
+#endif
+}
+
+void BrowserWindow::OnNativeDialogClosed() {
+#if BUILDFLAG(IS_WIN)
+  // Some native modal dialogs do not trigger a full blur/focus cycle on
+  // Windows, so restore the renderer focus explicitly when the dialog closes.
+  if (window()->IsVisible() && window()->IsFocused())
+    RestoreWebContentsFocus();
+#endif
 }
 
 void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {

@@ -542,6 +542,14 @@ void NativeWindow::NotifyWindowFocus() {
   observers_.Notify(&NativeWindowObserver::OnWindowFocus);
 }
 
+void NativeWindow::NotifyNativeDialogWillOpen() {
+  observers_.Notify(&NativeWindowObserver::OnNativeDialogWillOpen);
+}
+
+void NativeWindow::NotifyNativeDialogClosed() {
+  observers_.Notify(&NativeWindowObserver::OnNativeDialogClosed);
+}
+
 void NativeWindow::NotifyWindowIsKeyChanged(bool is_key) {
   observers_.Notify(&NativeWindowObserver::OnWindowIsKeyChanged, is_key);
 }

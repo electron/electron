@@ -309,6 +309,8 @@ class NativeWindow : public views::WidgetDelegate {
   void NotifyWindowEndSession(const std::vector<std::string>& reasons);
   void NotifyWindowBlur();
   void NotifyWindowFocus();
+  void NotifyNativeDialogWillOpen();
+  void NotifyNativeDialogClosed();
   void NotifyWindowShow();
   void NotifyWindowIsKeyChanged(bool is_key);
   void NotifyWindowHide();

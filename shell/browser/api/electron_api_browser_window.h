@@ -53,6 +53,8 @@ class BrowserWindow : public BaseWindow,
   // NativeWindowObserver:
   void RequestPreferredWidth(int* width) override;
   void OnCloseButtonClicked(bool* prevent_default) override;
+  void OnNativeDialogWillOpen() override;
+  void OnNativeDialogClosed() override;
   void OnWindowIsKeyChanged(bool is_key) override;
   void UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect) override;
 
@@ -77,6 +79,7 @@ class BrowserWindow : public BaseWindow,
 
  private:
   // Helpers.
+  void RestoreWebContentsFocus();
 
   v8::Global<v8::Value> web_contents_;
   bool web_contents_shown_ = false;
