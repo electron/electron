@@ -7,14 +7,21 @@
 
 #include <memory>
 
-#include "gin/public/isolate_holder.h"
 #include "uv.h"  // NOLINT(build/include_directory)
-#include "v8/include/v8-locker.h"
+
+namespace gin {
+class IsolateHolder;
+}  // namespace gin
 
 namespace node {
 class Environment;
 class MultiIsolatePlatform;
 }  // namespace node
+
+namespace v8 {
+class Isolate;
+class Locker;
+}  // namespace v8
 
 namespace electron {
 
@@ -34,14 +41,13 @@ class JavascriptEnvironment {
   void DestroyMicrotasksRunner();
 
   node::MultiIsolatePlatform* platform() const { return platform_.get(); }
-  [[nodiscard]] v8::Isolate* isolate() const {
-    return isolate_holder_->isolate();
-  }
+
   size_t max_young_generation_size_in_bytes() const {
     return max_young_generation_size_;
   }
 
-  static v8::Isolate* GetIsolate();
+  [[nodiscard]] v8::Isolate* isolate() const;
+  [[nodiscard]] static v8::Isolate* GetIsolate();
 
  private:
   v8::Isolate* Initialize(uv_loop_t* event_loop, bool setup_wasm_streaming);
