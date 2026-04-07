@@ -85,6 +85,15 @@ def init(ctx):
             "timeout": "2m",
             "output_local": True,
           })
+          # Same treatment for v8_context_snapshot_generator which uses
+          # gn_run_binary.py instead of v8/tools/run.py.
+          step_config["rules"].insert(0, {
+            "name": "v8/context_snapshot_wine",
+            "command_prefix": "python3 ../../build/gn_run_binary.py " + wine_path,
+            "remote": False,
+            "timeout": "2m",
+            "output_local": True,
+          })
 
     return module(
       "config",
