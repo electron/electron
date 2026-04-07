@@ -775,6 +775,7 @@ source_set("electron_lib") {
       "//components/zoom",
       "//extensions/browser",
       "//extensions/browser/api:api_provider",
+      "//extensions/browser/mime_handler:stream_info",
       "//extensions/browser/updater",
       "//extensions/common",
       "//extensions/common:core_api_provider",

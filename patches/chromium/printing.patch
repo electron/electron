@@ -512,7 +512,7 @@ index aa79c324af2cec50019bca3bccff5d420fb30ffd..0b85598f87673537eccdd0b310e8462e
      scoped_refptr<base::RefCountedMemory> print_data,
      const gfx::Size& page_size,
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index cdd25ff24507cc49684454820c7d385b8c67259e..d4dc7e8e0cd604a6418f76e2e387985d847ce0be 100644
+index db3b04ba3353831ec766f48450b6dce40909bc59..d6fd0d304dffa71be42547a3f6ee6cdb7546de8b 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -46,6 +46,8 @@ namespace printing {
@@ -703,7 +703,7 @@ index ac2f719be566020d9f41364560c12e6d6d0fe3d8..16d758a6936f66148a196761cfb875f6
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 60b5e83a8bc1ed07970be4cdfdc19962698bd754..dd83b6cfb6e3f916e60f50402014cd931a4d8850 100644
+index aa6e60f15502767c592f5ebf870de974b7d72fa9..52c3b27aec427c01fca145788427856591afe852 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -54,6 +54,7 @@

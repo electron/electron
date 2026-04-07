@@ -17,7 +17,7 @@ which removed range-requests-supported on non-http protocols. See https://issues
 for more information.
 
 diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
-index f697f85d7e3e9eeeab249a6d4e8ef8383c5c0d72..a5f35e7782c047b147458e569924de0fd30db7ce 100644
+index d96ffd263cad628c3e12b0a39cf082161ea6bb58..b33f52a48f570c7aee1a3f55fb3f9a1ed3bd35c0 100644
 --- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 +++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 @@ -11,8 +11,10 @@
@@ -74,7 +74,7 @@ index f697f85d7e3e9eeeab249a6d4e8ef8383c5c0d72..a5f35e7782c047b147458e569924de0f
  
  void MultiBufferDataSource::SetReader(
 diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.h b/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
-index 5100bd21163f9ceadb728ed5306dcf8320e528a8..c2ee03ca6a75a2fef1ce778e663a74bda608acb4 100644
+index 342c690100eacf3cdde92bb60b6c08769f693e96..4980848c38703764de3c210c119f844bed508aa2 100644
 --- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
 +++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
 @@ -18,6 +18,7 @@

@@ -262,26 +262,26 @@ void RendererClientBase::RenderThreadStarted() {
       ParseSchemesCLISwitch(command_line, switches::kFetchSchemes);
   for (const std::string& scheme : fetch_enabled_schemes) {
     blink::WebSecurityPolicy::RegisterURLSchemeAsSupportingFetchAPI(
-        blink::WebString::FromASCII(scheme));
+        blink::WebString::FromUTF8(scheme));
   }
 
   std::vector<std::string> service_worker_schemes =
       ParseSchemesCLISwitch(command_line, switches::kServiceWorkerSchemes);
   for (const std::string& scheme : service_worker_schemes)
     blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers(
-        blink::WebString::FromASCII(scheme));
+        blink::WebString::FromUTF8(scheme));
 
   std::vector<std::string> csp_bypassing_schemes =
       ParseSchemesCLISwitch(command_line, switches::kBypassCSPSchemes);
   for (const std::string& scheme : csp_bypassing_schemes)
     blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
-        blink::String::FromUTF8(scheme));
+        blink::String(scheme));
 
   std::vector<std::string> code_cache_schemes_list =
       ParseSchemesCLISwitch(command_line, switches::kCodeCacheSchemes);
   for (const auto& scheme : code_cache_schemes_list) {
     blink::WebSecurityPolicy::RegisterURLSchemeAsCodeCacheWithHashing(
-        blink::WebString::FromASCII(scheme));
+        blink::WebString::FromUTF8(scheme));
   }
 
   // Allow file scheme to handle service worker by default.
