@@ -61,12 +61,12 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop,
     : isolate_holder_{CreateIsolateHolder(
           Initialize(event_loop, setup_wasm_streaming),
           &max_young_generation_size_)},
-      isolate_{isolate_holder_->isolate()},
-      locker_{std::make_unique<v8::Locker>(isolate_)} {
-  isolate_->Enter();
+      locker_{std::make_unique<v8::Locker>(isolate())} {
+  v8::Isolate* const isolate = this->isolate();
+  isolate->Enter();
 
-  v8::HandleScope scope(isolate_);
-  auto context = node::NewContext(isolate_);
+  v8::HandleScope scope{isolate};
+  auto context = node::NewContext(isolate);
   CHECK(!context.IsEmpty());
 
   context->Enter();
@@ -74,12 +74,13 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop,
 
 JavascriptEnvironment::~JavascriptEnvironment() {
   DCHECK_NE(platform_, nullptr);
+  v8::Isolate* isolate = this->isolate();
 
   {
-    v8::HandleScope scope(isolate_);
-    isolate_->GetCurrentContext()->Exit();
+    v8::HandleScope scope{isolate};
+    isolate->GetCurrentContext()->Exit();
   }
-  isolate_->Exit();
+  isolate->Exit();
   g_isolate = nullptr;
 
   // Deinit gin::IsolateHolder prior to calling NodePlatform::UnregisterIsolate.
@@ -89,7 +90,7 @@ JavascriptEnvironment::~JavascriptEnvironment() {
   DCHECK(!microtasks_runner_);
   isolate_holder_.reset();
 
-  platform_->UnregisterIsolate(isolate_);
+  platform_->UnregisterIsolate(isolate);
 }
 
 v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop,
@@ -156,7 +157,7 @@ void JavascriptEnvironment::DestroyMicrotasksRunner() {
   // parameters.
   isolate_holder_->WillDestroyMicrotasksRunner();
   {
-    v8::HandleScope scope(isolate_);
+    v8::HandleScope scope{isolate()};
     gin_helper::CleanedUpAtExit::DoCleanup();
   }
   base::CurrentThread::Get()->RemoveTaskObserver(microtasks_runner_.get());
