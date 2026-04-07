@@ -148,3 +148,34 @@ added:
 -->
 
 Unregisters all of the global shortcuts.
+
+### `globalShortcut.setSuspended(suspended)`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/50425
+```
+-->
+
+* `suspended` boolean - Whether global shortcut handling should be suspended.
+
+Suspends or resumes global shortcut handling. When suspended, all registered
+global shortcuts will stop listening for key presses. When resumed, all
+previously registered shortcuts will begin listening again. New shortcut
+registrations will fail while handling is suspended.
+
+This can be useful when you want to temporarily allow the user to press key
+combinations without your application intercepting them, for example while
+displaying a UI to rebind shortcuts.
+
+### `globalShortcut.isSuspended()`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/50425
+```
+-->
+
+Returns `boolean` - Whether global shortcut handling is currently suspended.

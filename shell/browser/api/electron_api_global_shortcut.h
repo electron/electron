@@ -55,6 +55,8 @@ class GlobalShortcut final
   void Unregister(const ui::Accelerator& accelerator);
   void UnregisterSome(const std::vector<ui::Accelerator>& accelerators);
   void UnregisterAll();
+  void SetSuspended(bool suspend);
+  bool IsSuspended();
 
   // GlobalAcceleratorListener::Observer implementation.
   void OnKeyPressed(const ui::Accelerator& accelerator) override;
