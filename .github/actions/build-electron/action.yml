@@ -174,7 +174,17 @@ runs:
       if: ${{ inputs.is-release == 'true' }}
       run: |
         cd src
-        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true use_siso=true $GN_EXTRA_ARGS"
+        # Reuse the hermetic mac_sdk_path that `e build` wrote for out/Default so
+        # out/ffmpeg builds against the same SDK instead of the runner's system Xcode.
+        # The path has to live under root_build_dir, so copy the symlink tree and
+        # rewrite Default -> ffmpeg.
+        MAC_SDK_ARG=""
+        if [ "$(uname)" = "Darwin" ]; then
+          mkdir -p out/ffmpeg
+          cp -a out/Default/xcode_links out/ffmpeg/
+          MAC_SDK_ARG=$(sed -n 's|^\(mac_sdk_path = "//out/\)Default/|\1ffmpeg/|p' out/Default/args.gn)
+        fi
+        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true use_siso=true $MAC_SDK_ARG $GN_EXTRA_ARGS"
         e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg
     - name: Remove Clang problem matcher
       shell: bash
