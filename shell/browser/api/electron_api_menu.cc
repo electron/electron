@@ -270,10 +270,6 @@ std::u16string Menu::GetAcceleratorTextAtForTesting(int index) const {
   return accelerator.GetShortcutText();
 }
 
-bool Menu::IsEnabledAt(int index) const {
-  return model_->IsEnabledAt(index);
-}
-
 bool Menu::IsVisibleAt(int index) const {
   return model_->IsVisibleAt(index);
 }
@@ -302,7 +298,6 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setCustomType", &Menu::SetCustomType)
       .SetMethod("clear", &Menu::Clear)
       .SetMethod("getItemCount", &Menu::GetItemCount)
-      .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
       .SetMethod("popupAt", &Menu::PopupAt)
       .SetMethod("closePopupAt", &Menu::ClosePopupAt)
