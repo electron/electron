@@ -550,8 +550,7 @@ gin::WrapperInfo Session::kWrapperInfo = {{gin::kEmbedderNativeGin},
 Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
     : isolate_(isolate),
       network_emulation_token_(base::UnguessableToken::Create()),
-      browser_context_{
-          raw_ref<ElectronBrowserContext>::from_ptr(browser_context)} {
+      browser_context_{browser_context->GetWeakPtr()} {
   gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
   data->AddDisposeObserver(this);
   // Observe DownloadManager to get download notifications.
@@ -584,16 +583,21 @@ Session::~Session() {
 }
 
 void Session::Dispose() {
-  if (keep_alive_) {
-    browser_context()->GetDownloadManager()->RemoveObserver(this);
+  if (!keep_alive_)
+    return;
+
+  ElectronBrowserContext* const browser_context = this->browser_context();
+  if (!browser_context)
+    return;
+
+  browser_context->GetDownloadManager()->RemoveObserver(this);
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-    if (auto* service =
-            SpellcheckServiceFactory::GetForContext(browser_context())) {
-      service->SetHunspellObserver(nullptr);
-    }
-#endif
+  if (auto* service =
+          SpellcheckServiceFactory::GetForContext(browser_context)) {
+    service->SetHunspellObserver(nullptr);
   }
+#endif
 }
 
 void Session::OnDownloadCreated(content::DownloadManager* manager,
@@ -1875,6 +1879,7 @@ void Session::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
   data->RemoveDisposeObserver(this);
   Dispose();
   weak_factory_.Invalidate();
+  browser_context_.reset();
   keep_alive_.Clear();
 }
 
