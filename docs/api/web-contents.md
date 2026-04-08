@@ -1801,6 +1801,25 @@ win.webContents.print(options, (success, errorType) => {
   if (!success) console.log(errorType)
 })
 ```
+Example:
+```js
+const { app, BrowserWindow } = require('electron');
+
+app.whenReady().then(() => {
+  const win = new BrowserWindow();
+
+  win.loadURL('https://example.com');
+
+  win.webContents.on('did-finish-load', () => {
+    win.webContents.print({}, (success, errorType) => {
+      if (!success) {
+        console.log('Print failed:', errorType);
+      } else {
+        console.log('Print successful');
+      }
+    });
+  });
+});
 
 #### `contents.printToPDF(options)`
 
