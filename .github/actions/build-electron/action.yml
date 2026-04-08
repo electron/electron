@@ -44,7 +44,6 @@ runs:
       run: |
         GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_os=\"win\" target_cpu=\"${{ inputs.target-arch }}\" use_v8_context_snapshot=true"
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
-        echo "ELECTRON_BUILD_TOOLS_MAIN_STAR=`pwd`/src/electron/build/siso/main.star" >> $GITHUB_ENV
     - name: Add Clang problem matcher
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
@@ -154,12 +153,6 @@ runs:
           fi
           electron/script/zip_manifests/check-zip-manifest.py out/Default/chromedriver.zip electron/script/zip_manifests/chromedriver_zip.$target_os.${{ inputs.target-arch }}.manifest
         fi
-    - name: Profile Windows Toolchain ${{ inputs.step-suffix }}
-      shell: bash
-      if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'win' }}
-      run: |
-        cd src
-        python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
     - name: Add msdia140.dll to Path ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' && inputs.target-platform == 'win' }}
