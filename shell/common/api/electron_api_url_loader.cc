@@ -705,8 +705,10 @@ gin_helper::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
       else  // default session
         session = Session::FromPartition(args->isolate(), "");
     }
-    if (session)
+    if (session) {
       browser_context = session->browser_context();
+      DCHECK(browser_context != nullptr);
+    }
   }
 
   auto ret = gin_helper::CreateHandle(

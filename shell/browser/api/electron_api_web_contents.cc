@@ -910,14 +910,15 @@ WebContents::WebContents(v8::Isolate* isolate,
     session = Session::FromPartition(isolate, "");
   }
   session_ = session;
+  ElectronBrowserContext* const browser_context = session->browser_context();
+  DCHECK(browser_context != nullptr);
 
   std::unique_ptr<content::WebContents> web_contents;
   if (is_guest()) {
     scoped_refptr<content::SiteInstance> site_instance =
-        content::SiteInstance::CreateForURL(session->browser_context(),
+        content::SiteInstance::CreateForURL(browser_context,
                                             GURL("chrome-guest://fake-host"));
-    content::WebContents::CreateParams params(session->browser_context(),
-                                              site_instance);
+    content::WebContents::CreateParams params{browser_context, site_instance};
     guest_delegate_ =
         std::make_unique<WebViewGuestDelegate>(embedder_->web_contents(), this);
     params.guest_delegate = guest_delegate_.get();
@@ -945,7 +946,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     SkColor bc = ParseCSSColor(background_color_str).value_or(SK_ColorWHITE);
     bool transparent = bc == SK_ColorTRANSPARENT;
 
-    content::WebContents::CreateParams params(session->browser_context());
+    content::WebContents::CreateParams params{browser_context};
     auto* view = new OffScreenWebContentsView(
         transparent, offscreen_use_shared_texture_,
         offscreen_shared_texture_pixel_format_, offscreen_device_scale_factor_,
@@ -956,13 +957,13 @@ WebContents::WebContents(v8::Isolate* isolate,
     web_contents = content::WebContents::Create(params);
     view->SetWebContents(web_contents.get());
   } else {
-    content::WebContents::CreateParams params(session->browser_context());
+    content::WebContents::CreateParams params{browser_context};
     params.initially_hidden = !initially_shown;
     web_contents = content::WebContents::Create(params);
   }
 
-  InitWithSessionAndOptions(isolate, std::move(web_contents),
-                            session->browser_context(), options);
+  InitWithSessionAndOptions(isolate, std::move(web_contents), browser_context,
+                            options);
 }
 
 void WebContents::InitZoomController(content::WebContents* web_contents,
