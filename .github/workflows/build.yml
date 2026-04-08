@@ -387,7 +387,7 @@ jobs:
     needs: checkout-windows
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: electron-arc-centralus-windows-amd64-32core
       test-runs-on: windows-latest
       target-platform: win
       target-arch: x64
@@ -406,7 +406,7 @@ jobs:
     needs: checkout-windows
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: electron-arc-centralus-windows-amd64-32core
       test-runs-on: windows-latest
       target-platform: win
       target-arch: x86
@@ -425,7 +425,7 @@ jobs:
     needs: checkout-windows
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: electron-arc-centralus-windows-amd64-32core
       test-runs-on: windows-11-arm
       target-platform: win
       target-arch: arm64
