@@ -17,12 +17,15 @@
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/initialization_util.h"
 #include "gin/array_buffer.h"
+#include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
 #include "shell/browser/microtasks_runner.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/node_includes.h"
 #include "third_party/blink/public/common/switches.h"
 #include "third_party/electron_node/src/node_wasm_web_api.h"
+#include "v8/include/v8-isolate.h"
+#include "v8/include/v8-locker.h"
 
 namespace {
 v8::Isolate* g_isolate;
@@ -135,6 +138,10 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop,
   g_isolate = isolate;
 
   return isolate;
+}
+
+v8::Isolate* JavascriptEnvironment::isolate() const {
+  return isolate_holder_->isolate();
 }
 
 // static
