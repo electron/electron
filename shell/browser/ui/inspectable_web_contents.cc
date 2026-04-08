@@ -400,7 +400,7 @@ void InspectableWebContents::SetDockState(const std::string& state) {
     can_dock_ = false;
   } else {
     can_dock_ = true;
-    dock_state_ = IsValidDockState(state) ? state : "right";
+    dock_state_ = (state.empty() || IsValidDockState(state)) ? state : "right";
   }
 }
 
