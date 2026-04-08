@@ -7,30 +7,14 @@ By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This
 to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index e795339c000cf695ca05c6d3c736678fa47df21e..9effc487dae3b4f162defbd88024f01138de82a1 100644
+index e795339c000cf695ca05c6d3c736678fa47df21e..bbcad80a8efdac88c26ececeaf4023152631b662 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -261,8 +261,29 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
+@@ -261,8 +261,13 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
  
  #endif
  
 -void LoadV8SnapshotFile(const base::CommandLine& command_line) {
-+#if defined(ADDRESS_SANITIZER)
-+NO_SANITIZE("address")
-+void AsanProcessInfoCB(const char* reason,
-+                       bool* should_exit_cleanly,
-+                       bool* should_abort) {
-+  auto* cmd_line = base::CommandLine::ForCurrentProcess();
-+#if BUILDFLAG(IS_WIN)
-+  std::string cmd_string = base::WideToUTF8(cmd_line->GetCommandLineString());
-+#else
-+  std::string cmd_string = cmd_line->GetCommandLineString();
-+#endif
-+  base::debug::AsanService::GetInstance()->Log("\nCommand line: `%s`\n",
-+                                               cmd_string.c_str());
-+}
-+#endif  // defined(ADDRESS_SANITIZER)
-+
 +void LoadV8SnapshotFile(const raw_ptr<ContentMainDelegate> delegate, const base::CommandLine& command_line) {
    const gin::V8SnapshotFileType snapshot_type = GetSnapshotType(command_line);
 +  std::string_view browser_v8_snapshot_file_name = delegate->GetBrowserV8SnapshotFilename();
@@ -41,7 +25,7 @@ index e795339c000cf695ca05c6d3c736678fa47df21e..9effc487dae3b4f162defbd88024f011
  #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
    base::FileDescriptorStore& file_descriptor_store =
        base::FileDescriptorStore::GetInstance();
-@@ -959,7 +980,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
+@@ -959,7 +964,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
  
  #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
    if (delegate_->ShouldLoadV8Snapshot(process_type)) {
