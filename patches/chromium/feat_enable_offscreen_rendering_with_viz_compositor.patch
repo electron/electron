@@ -117,10 +117,10 @@ index 7fbb05e606fc26364c674c6330b8a5eb9c016fb3..a190a42c2127011ab54aae937a3cab36
    virtual gpu::SharedImageManager* GetSharedImageManager() = 0;
    virtual gpu::SyncPointManager* GetSyncPointManager() = 0;
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 07502f4ff2afd53a43d8f0ab68d4c4c39f6c0737..20d51f86d5084edf0b05ce0ab11fcd1279ef8fa6 100644
+index 0a1c0ebd232fc7a3906cf4a98d568a36ec14a67e..f2e299992a1de56719d9843483de291b85e1dc87 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-@@ -23,6 +23,7 @@
+@@ -24,6 +24,7 @@
  #include "components/viz/service/display/display_compositor_memory_and_task_controller.h"
  #include "components/viz/service/display_embedder/skia_output_surface_dependency_impl.h"
  #include "components/viz/service/display_embedder/skia_output_surface_impl.h"
@@ -128,7 +128,7 @@ index 07502f4ff2afd53a43d8f0ab68d4c4c39f6c0737..20d51f86d5084edf0b05ce0ab11fcd12
  #include "components/viz/service/display_embedder/software_output_surface.h"
  #include "components/viz/service/gl/gpu_service_impl.h"
  #include "gpu/command_buffer/client/shared_memory_limits.h"
-@@ -30,6 +31,7 @@
+@@ -31,6 +32,7 @@
  #include "gpu/command_buffer/service/scheduler_sequence.h"
  #include "gpu/config/gpu_finch_features.h"
  #include "gpu/ipc/common/surface_handle.h"
@@ -136,7 +136,7 @@ index 07502f4ff2afd53a43d8f0ab68d4c4c39f6c0737..20d51f86d5084edf0b05ce0ab11fcd12
  #include "ui/base/ui_base_switches.h"
  
  #if BUILDFLAG(IS_WIN)
-@@ -93,7 +95,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -94,7 +96,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
      mojom::DisplayClient* display_client,
      DisplayCompositorMemoryAndTaskController* gpu_dependency,
      const RendererSettings& renderer_settings,
@@ -146,7 +146,7 @@ index 07502f4ff2afd53a43d8f0ab68d4c4c39f6c0737..20d51f86d5084edf0b05ce0ab11fcd12
  #if BUILDFLAG(IS_CHROMEOS)
    if (surface_handle == gpu::kNullSurfaceHandle)
      return std::make_unique<OutputSurfaceUnified>();
-@@ -101,7 +104,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -102,7 +105,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  
    if (!gpu_compositing) {
      return std::make_unique<SoftwareOutputSurface>(
@@ -155,7 +155,7 @@ index 07502f4ff2afd53a43d8f0ab68d4c4c39f6c0737..20d51f86d5084edf0b05ce0ab11fcd12
    } else {
      DCHECK(gpu_dependency);
  
-@@ -140,10 +143,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -141,10 +144,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  std::unique_ptr<SoftwareOutputDevice>
  OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
      gpu::SurfaceHandle surface_handle,
@@ -619,7 +619,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 97f26777528c3b21255b74ccf411ff2d3b243215..d45839ebc7b07ade2ca382e15b1d48dcf7d29106 100644
+index fbe5a8e6458970652723f91a426541220b394a18..c2e748b92103c582802af9b973ebe0c3770ba44d 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -89,6 +89,7 @@ class DisplayPrivate;
@@ -656,7 +656,7 @@ index 97f26777528c3b21255b74ccf411ff2d3b243215..d45839ebc7b07ade2ca382e15b1d48dc
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -632,6 +645,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -631,6 +644,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
        simple_begin_frame_observers_;
    std::unique_ptr<ui::HostBeginFrameObserver> host_begin_frame_observer_;
  

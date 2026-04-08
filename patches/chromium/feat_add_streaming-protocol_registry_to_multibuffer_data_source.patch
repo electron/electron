@@ -17,7 +17,7 @@ which removed range-requests-supported on non-http protocols. See https://issues
 for more information.
 
 diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
-index 0af2ad19954bd868f6b92616da869b350f088103..efc53247962f166f2b441f76c7a2c94d8ceb979a 100644
+index 99f5fc9857dc54fe07f73471c84ef99e082b1884..f16e1e18d54ca26e83551b9b005bc5504565b793 100644
 --- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 +++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 @@ -12,8 +12,10 @@
@@ -74,7 +74,7 @@ index 0af2ad19954bd868f6b92616da869b350f088103..efc53247962f166f2b441f76c7a2c94d
  
  void MultiBufferDataSource::SetReader(
 diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.h b/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
-index 470b6015dad4063375175324f49afb3548cdf0dd..61b633d65eaa76f98fd0d858d490b12077646ad2 100644
+index 3202c93b11d018efcaf1423f59e948100ac9ce21..5c3966933f9598084a6ee87f35b122800f82139c 100644
 --- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
 +++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
 @@ -19,6 +19,7 @@
@@ -94,7 +94,7 @@ index 470b6015dad4063375175324f49afb3548cdf0dd..61b633d65eaa76f98fd0d858d490b120
  // A data source capable of loading URLs and buffering the data using an
  // in-memory sliding window.
  //
-@@ -94,6 +97,8 @@ class PLATFORM_EXPORT MultiBufferDataSource
+@@ -93,6 +96,8 @@ class PLATFORM_EXPORT MultiBufferDataSource
      return url_data_->mime_type();
    }
  

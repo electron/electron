@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index ac474e220d411dec278c40448f038b25e6788d2a..e4ff8f11bed9e53f3134068492ac94b4c9bb4df2 100644
+index 5dbafbcccd1da435b7284edf55e14f6ded5a5956..0714b9422476b18b308a60ff8c2046791560feb3 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -10228,6 +10228,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10262,6 +10262,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -62,7 +62,7 @@ index 3e0c8bd308d8a947a2bd295a2d83e385e53853fb..4e91b3aeb5630476c660e8814e2fd9d9
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 444fa7009d0db33470cac9ab9cfdc23ceacec942..ab9aeb852e5ea89583284386d9a78a3e3e17a310 100644
+index a2566982ff81db5166e41243232e23af94dc3c05..ff5c410e78fb171963122f8a24802b7bf89a2b67 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -617,6 +617,10 @@ struct CreateNewWindowParams {
@@ -170,10 +170,10 @@ index 0650197909d484b8a0f48ab61b22471c71bce0e8..29c380d7845aab1a7b3417e0d3940ea0
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 5936c5eaa081abde7f7c26cc990a122622e46908..ab959e66f8841d7367863bb13d6c7a0854d0df23 100644
+index b8c30f3023081bd41697a3fe7a5b09637a43407a..89d1d7559fc226976491686cb53bd9239bdd9327 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6845,6 +6845,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6852,6 +6852,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
    params->started_by_ad =
        GetWebFrame()->IsAdFrame() || GetWebFrame()->IsAdScriptInStack();
  
