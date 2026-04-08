@@ -9,7 +9,11 @@ elif [ "`uname`" == "Darwin" ]; then
     BUILD_TYPE="mas"
   fi
 elif [ "`uname`" == "Linux" ]; then
-  BUILD_TYPE="linux"
+  if [ "$ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN" == "1" ]; then
+    BUILD_TYPE="win"
+  else
+    BUILD_TYPE="linux"
+  fi
 else
   echo "Unsupported platform"
   exit 1

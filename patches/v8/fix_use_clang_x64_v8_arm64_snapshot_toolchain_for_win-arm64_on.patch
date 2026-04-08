@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <sattard@anthropic.com>
+Date: Wed, 8 Apr 2026 03:08:36 +0000
+Subject: fix: use clang_x64_v8_arm64 snapshot toolchain for win-arm64 on
+ non-Windows hosts
+
+snapshot_toolchain.gni special-cases is_win && v8_current_cpu == arm64
+to use host_toolchain. is_win is true whenever the *target* is Windows,
+but the special case only makes sense on a Windows host (where there is
+no //build/toolchain/win:clang_x64_v8_arm64). On a Linux host,
+host_toolchain is //build/toolchain/linux:clang_x64 which has
+v8_current_cpu == x64, so mksnapshot is built with V8_TARGET_ARCH_X64
+and emits an x64 builtins blob into the win-arm64 build.
+
+Restrict the special case to host_os == win so non-Windows hosts fall
+through to clang_x64_v8_arm64 (the arm64-simulator toolchain), matching
+how every other linux->arm64 cross-compile works.
+
+diff --git a/gni/snapshot_toolchain.gni b/gni/snapshot_toolchain.gni
+index 37ed262640d048a6fa5923279ae0388c1c0ae766..c2d36dbcd5f84d9d5cf99266dca85b1f036fa215 100644
+--- a/gni/snapshot_toolchain.gni
++++ b/gni/snapshot_toolchain.gni
+@@ -83,9 +83,11 @@ if (v8_snapshot_toolchain == "") {
+       _cpus = v8_current_cpu
+     } else if (v8_current_cpu == "arm64" || v8_current_cpu == "mips64el" ||
+                v8_current_cpu == "riscv64" || v8_current_cpu == "loong64") {
+-      if (is_win && v8_current_cpu == "arm64") {
++      if (is_win && v8_current_cpu == "arm64" && host_os == "win") {
+         # set _cpus to blank for Windows ARM64 so host_toolchain could be
+-        # selected as snapshot toolchain later.
++        # selected as snapshot toolchain later. Only applies on a Windows
++        # host; a non-Windows host needs the clang_x64_v8_arm64 simulator
++        # toolchain so mksnapshot is built with V8_TARGET_ARCH_ARM64.
+         _cpus = ""
+       } else {
+         _cpus = "x64_v8_${v8_current_cpu}"
+@@ -100,7 +102,7 @@ if (v8_snapshot_toolchain == "") {
+ 
+     if (_cpus != "") {
+       v8_snapshot_toolchain = "//build/toolchain/${host_os}:clang_${_cpus}"
+-    } else if (is_win && v8_current_cpu == "arm64") {
++    } else if (is_win && v8_current_cpu == "arm64" && host_os == "win") {
+       # cross compile Windows arm64 with host toolchain.
+       v8_snapshot_toolchain = host_toolchain
+     }
