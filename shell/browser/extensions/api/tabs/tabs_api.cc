@@ -398,9 +398,7 @@ ExtensionFunction::ResponseAction TabsGetZoomFunction::Run() {
   if (!contents)
     return RespondNow(Error("No such tab"));
 
-  double zoom_level = contents->GetZoomController()->GetZoomLevel();
-  double zoom_factor = blink::ZoomLevelToZoomFactor(zoom_level);
-
+  const double zoom_factor = contents->GetZoomFactor();
   return RespondNow(ArgumentList(tabs::GetZoom::Results::Create(zoom_factor)));
 }
 
@@ -414,9 +412,9 @@ ExtensionFunction::ResponseAction TabsGetZoomSettingsFunction::Run() {
   if (!contents)
     return RespondNow(Error("No such tab"));
 
-  auto* zoom_controller = contents->GetZoomController();
-  WebContentsZoomController::ZoomMode zoom_mode =
-      contents->GetZoomController()->zoom_mode();
+  const auto* zoom_controller = contents->GetZoomController();
+  const WebContentsZoomController::ZoomMode zoom_mode =
+      zoom_controller->zoom_mode();
   tabs::ZoomSettings zoom_settings;
   ZoomModeToZoomSettings(zoom_mode, &zoom_settings);
   zoom_settings.default_zoom_factor =

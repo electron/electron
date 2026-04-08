@@ -380,7 +380,7 @@ class WebContents final : public ExclusiveAccessContext,
   content::RenderFrameHost* Opener();
   content::RenderFrameHost* FocusedFrame();
 
-  WebContentsZoomController* GetZoomController() { return zoom_controller_; }
+  [[nodiscard]] WebContentsZoomController* GetZoomController() const;
 
   void AddObserver(ExtendedWebContentsObserver* obs) {
     observers_.AddObserver(obs);
@@ -857,11 +857,6 @@ class WebContents final : public ExclusiveAccessContext,
   // dialog_manager_, so we can make sure inspectable_web_contents_ is
   // destroyed before dialog_manager_, otherwise a crash would happen.
   std::unique_ptr<InspectableWebContents> inspectable_web_contents_;
-
-  // The zoom controller for this webContents.
-  // Note: owned by inspectable_web_contents_, so declare this *after*
-  // that field to ensure the dtor destroys them in the right order.
-  raw_ptr<WebContentsZoomController> zoom_controller_ = nullptr;
 
   std::optional<GURL> pending_unload_url_ = std::nullopt;
 

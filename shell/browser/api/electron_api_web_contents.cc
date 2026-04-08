@@ -972,11 +972,12 @@ WebContents::WebContents(v8::Isolate* isolate,
 
 void WebContents::InitZoomController(content::WebContents* web_contents,
                                      const gin_helper::Dictionary& options) {
-  WebContentsZoomController::CreateForWebContents(web_contents);
-  zoom_controller_ = WebContentsZoomController::FromWebContents(web_contents);
+  WebContentsZoomController* const zoom_controller =
+      WebContentsZoomController::GetOrCreateForWebContents(web_contents);
+
   double zoom_factor;
   if (options.Get(options::kZoomFactor, &zoom_factor))
-    zoom_controller_->SetDefaultZoomFactor(zoom_factor);
+    zoom_controller->SetDefaultZoomFactor(zoom_factor);
 
   // Nothing to do with ZoomController, but this function gets called in all
   // init cases!
@@ -3867,12 +3868,16 @@ gfx::Size WebContents::GetSizeForNewRenderView(content::WebContents* wc) {
   return {};
 }
 
+WebContentsZoomController* WebContents::GetZoomController() const {
+  return WebContentsZoomController::FromWebContents(web_contents());
+}
+
 void WebContents::SetZoomLevel(double level) {
-  zoom_controller_->SetZoomLevel(level);
+  GetZoomController()->SetZoomLevel(level);
 }
 
 double WebContents::GetZoomLevel() const {
-  return zoom_controller_->GetZoomLevel();
+  return GetZoomController()->GetZoomLevel();
 }
 
 void WebContents::SetZoomFactor(gin_helper::ErrorThrower thrower,
@@ -3892,7 +3897,7 @@ double WebContents::GetZoomFactor() const {
 }
 
 void WebContents::SetTemporaryZoomLevel(double level) {
-  zoom_controller_->SetTemporaryZoomLevel(level);
+  GetZoomController()->SetTemporaryZoomLevel(level);
 }
 
 std::optional<PreloadScript> WebContents::GetPreloadScript() const {
