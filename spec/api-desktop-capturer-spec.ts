@@ -15,7 +15,7 @@ function getSourceTypes (): ('window' | 'screen')[] {
   return ['window', 'screen'];
 }
 
-ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('desktopCapturer', () => {
+describe('desktopCapturer', () => {
   it('should return a non-empty array of sources', async () => {
     const sources = await desktopCapturer.getSources({ types: getSourceTypes() });
     expect(sources).to.be.an('array').that.is.not.empty();
@@ -253,5 +253,62 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     } finally {
       destroyWindows();
     }
+  });
+
+  // Linux doesn't return any window sources.
+  ifdescribe(process.platform !== 'linux')('fetchWindowIcons', function () {
+    // Tests are sequentially dependent
+    this.bail(true);
+    let w: BrowserWindow;
+    let testSource: Electron.DesktopCapturerSource | undefined;
+    let appIcon: Electron.NativeImage | undefined;
+
+    before(async () => {
+      w = new BrowserWindow({
+        width: 200,
+        height: 200,
+        show: true,
+        title: 'desktop-capturer-test-window'
+      });
+      await w.loadURL('about:blank');
+      const sources = await desktopCapturer.getSources({
+        types: ['window'],
+        fetchWindowIcons: true
+      });
+      testSource = sources.find(
+        s => s.name === 'desktop-capturer-test-window'
+      );
+      appIcon = testSource?.appIcon;
+    });
+
+    after(() => {
+      if (w) w.destroy();
+    });
+
+    it('should find the test window in the list of captured sources', () => {
+      expect(testSource, `The ${w.getTitle()} window was not found by desktopCapturer`).to.exist();
+    });
+
+    it('should return a non-null appIcon for the captured window', () => {
+      expect(appIcon, 'appIcon property is null or undefined').to.exist();
+    });
+
+    it('should return an appIcon that is not an empty image', () => {
+      expect(appIcon?.isEmpty()).to.be.false();
+    });
+
+    it('should return an appIcon that encodes to a valid PNG data URL', () => {
+      const url = appIcon?.toDataURL();
+      expect(url).to.be.a('string');
+      // This is header 'data:image/png;base64,' length;
+      expect(url?.length).to.be.greaterThan(22);
+      expect(url?.startsWith('data:image/png;base64,')).to.be.true();
+    });
+
+    it('should return an appIcon with dimensions greater than 0x0 pixels', () => {
+      const { width, height } = appIcon?.getSize() || { width: 0, height: 0 };
+      expect(width).to.be.greaterThan(0);
+      expect(height).to.be.greaterThan(0);
+    });
   });
 });
