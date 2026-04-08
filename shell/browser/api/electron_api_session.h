@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
-#include "base/memory/raw_ref.h"
 #include "base/memory/weak_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/download_manager.h"
@@ -103,8 +102,8 @@ class Session final : public gin::Wrappable<Session>,
   Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context);
   ~Session() override;
 
-  ElectronBrowserContext* browser_context() const {
-    return &browser_context_.get();
+  [[nodiscard]] ElectronBrowserContext* browser_context() const {
+    return browser_context_;
   }
 
   // gin::Wrappable
@@ -225,7 +224,7 @@ class Session final : public gin::Wrappable<Session>,
   // The client id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;
 
-  const raw_ref<ElectronBrowserContext> browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_;
 
   gin::WeakCellFactory<Session> weak_factory_{this};
 
