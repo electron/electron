@@ -38,8 +38,8 @@ runs:
     if: ${{ runner.os == 'Windows' }}
     shell: bash
     env:
-      ELECTRON_SISO_URL: https://github.com/electron/siso/releases/download/v1.5.7-electron.1/siso-windows-amd64.exe
-      ELECTRON_SISO_SHA256: 3e5ac643e8a4c91b977c98539838815844494dfcf9412fa6a7f68f0d6927556e
+      ELECTRON_SISO_URL: https://github.com/electron/siso/releases/download/v1.5.7-electron.2/siso-windows-amd64.exe
+      ELECTRON_SISO_SHA256: 0e6b754820be3324d5ea4ca3af3634b4cfcf806d89140d78fec4e2a8ef636c9d
     run: |
       set -eo pipefail
       mkdir -p /c/electron-siso
