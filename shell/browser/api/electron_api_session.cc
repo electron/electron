@@ -550,7 +550,7 @@ gin::WrapperInfo Session::kWrapperInfo = {{gin::kEmbedderNativeGin},
 Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
     : isolate_(isolate),
       network_emulation_token_(base::UnguessableToken::Create()),
-      browser_context_{browser_context->GetWeakPtr()} {
+      browser_context_{browser_context} {
   gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
   data->AddDisposeObserver(this);
   // Observe DownloadManager to get download notifications.
@@ -1879,7 +1879,7 @@ void Session::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
   data->RemoveDisposeObserver(this);
   Dispose();
   weak_factory_.Invalidate();
-  browser_context_.reset();
+  browser_context_ = nullptr;
   keep_alive_.Clear();
 }
 
