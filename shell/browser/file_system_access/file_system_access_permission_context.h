@@ -116,10 +116,6 @@ class FileSystemAccessPermissionContext
       content::GlobalRenderFrameHostId frame_id,
       EntriesAllowedByEnterprisePolicyCallback callback) override;
 
-  enum class Access { kRead, kWrite, kReadWrite };
-
-  enum class RequestType { kNewPermission, kRestorePermissions };
-
   void RevokeActiveGrants(const url::Origin& origin,
                           const base::FilePath& file_path = base::FilePath());
 
