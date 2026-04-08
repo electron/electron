@@ -100,6 +100,10 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   std::string GetMediaDeviceIDSalt();
 
+  [[nodiscard]] base::WeakPtr<ElectronBrowserContext> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
+
   // content::BrowserContext:
   base::FilePath GetPath() const override;
   bool IsOffTheRecord() override;
