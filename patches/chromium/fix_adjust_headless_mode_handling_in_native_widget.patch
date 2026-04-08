@@ -170,7 +170,7 @@ index 75a82bc82ebe8e7b5b51b760cf4258cfd65a2df5..4b29c955c3347e2907c0d064834d917c
  
    if (params.opacity == views::Widget::InitParams::WindowOpacity::kInferred &&
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index 9741a329a96db439d074c1d9013558a51f18ed86..c95b315a30994b539fdd2429bab53674823ff5b5 100644
+index 93a47570d4854a3136fc4ac7f46d2f3d5c55db6c..78b720d556fb4f3f316baedaa70e56b1a171ab6a 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
 @@ -324,6 +324,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
@@ -195,7 +195,7 @@ index 9741a329a96db439d074c1d9013558a51f18ed86..c95b315a30994b539fdd2429bab53674
      // If set, the window size will follow the content preferred size.
      bool autosize = false;
  
-@@ -1295,6 +1303,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1285,6 +1293,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // with it. TYPE_CONTROL and TYPE_TOOLTIP is not considered top level.
    bool is_top_level() const { return is_top_level_; }
  
@@ -207,7 +207,7 @@ index 9741a329a96db439d074c1d9013558a51f18ed86..c95b315a30994b539fdd2429bab53674
    // True if the window size will follow the content preferred size.
    bool is_autosized() const { return is_autosized_; }
  
-@@ -1743,6 +1756,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1730,6 +1743,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // If true, the mouse is currently down.
    bool is_mouse_button_pressed_ = false;
  

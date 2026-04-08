@@ -10,10 +10,10 @@ on Windows.  We should refactor our code so that this patch isn't
 necessary.
 
 diff --git a/testing/variations/fieldtrial_testing_config.json b/testing/variations/fieldtrial_testing_config.json
-index d40db208ccc9955d38bab1c37e1c86a55ad7acf7..51c44e48902e44e7e1d6bda134a8f90e4bea3e81 100644
+index 988866d79a5d1dbd366ebdbff0e8eb2c0c498168..5761ac48be0a64618be0a94606149dd944e46e27 100644
 --- a/testing/variations/fieldtrial_testing_config.json
 +++ b/testing/variations/fieldtrial_testing_config.json
-@@ -22559,6 +22559,21 @@
+@@ -22626,6 +22626,21 @@
              ]
          }
      ],
@@ -36,10 +36,10 @@ index d40db208ccc9955d38bab1c37e1c86a55ad7acf7..51c44e48902e44e7e1d6bda134a8f90e
          {
              "platforms": [
 diff --git a/ui/views/views_features.cc b/ui/views/views_features.cc
-index c74cf661f64e60ad6740e011f372e53426ce0c4d..77ce34e4f47a54f7ecabbd6e6d4d19555af248ff 100644
+index 47077e16870889ef8f8c8b2adf58015bd5aff7fa..ba59e6e1609e61579bf49aca095490b083d72051 100644
 --- a/ui/views/views_features.cc
 +++ b/ui/views/views_features.cc
-@@ -34,6 +34,14 @@ BASE_FEATURE(kEnableInputProtection, base::FEATURE_DISABLED_BY_DEFAULT);
+@@ -30,6 +30,14 @@ BASE_FEATURE(kEnableInputProtection, base::FEATURE_DISABLED_BY_DEFAULT);
  // crbug.com/370856871.
  BASE_FEATURE(kEnableTouchDragCursorSync, base::FEATURE_ENABLED_BY_DEFAULT);
  
@@ -55,10 +55,10 @@ index c74cf661f64e60ad6740e011f372e53426ce0c4d..77ce34e4f47a54f7ecabbd6e6d4d1955
  // to kKeyboardAccessibleTooltip in //ui/base/ui_base_features.cc.
  BASE_FEATURE(kKeyboardAccessibleTooltipInViews,
 diff --git a/ui/views/views_features.h b/ui/views/views_features.h
-index 092e51509d4adccb8adbe2481909068e3e6836aa..5093a4c08bf6675ed1e5cb944c1bcb8251bdb033 100644
+index 888a16fb6213eceb131ae636dc643d7f2d5bcad9..6077412165081cd4abeaf0b061feb2f795ee8131 100644
 --- a/ui/views/views_features.h
 +++ b/ui/views/views_features.h
-@@ -16,6 +16,7 @@ VIEWS_EXPORT BASE_DECLARE_FEATURE(kAnnounceTextAdditionalAttributes);
+@@ -15,6 +15,7 @@ namespace views::features {
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kApplyInitialUrlToWebContents);
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableInputProtection);
  VIEWS_EXPORT BASE_DECLARE_FEATURE(kEnableTouchDragCursorSync);

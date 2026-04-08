@@ -11,10 +11,10 @@ ServiceProcessHost::Observer functions, but we need to pass the exit code to
 the observer.
 
 diff --git a/content/browser/service_host/service_process_tracker.cc b/content/browser/service_host/service_process_tracker.cc
-index fb41c8dfd147a90d7d581b49ad7f909d947cb214..ae0dce9d1dde14f1562adac7d324635983bb4c09 100644
+index c7b620b9dd25c7842470c4827bd55c81c5816e05..a5f72f8bd55e7a2a43e792f91878de52f09fb988 100644
 --- a/content/browser/service_host/service_process_tracker.cc
 +++ b/content/browser/service_host/service_process_tracker.cc
-@@ -51,7 +51,8 @@ void ServiceProcessTracker::NotifyTerminated(ServiceProcessId id) {
+@@ -67,7 +67,8 @@ void ServiceProcessTracker::NotifyTerminated(ServiceProcessId id) {
  
  void ServiceProcessTracker::NotifyCrashed(
      ServiceProcessId id,
@@ -24,22 +24,19 @@ index fb41c8dfd147a90d7d581b49ad7f909d947cb214..ae0dce9d1dde14f1562adac7d3246359
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    auto iter = processes_.find(id);
    CHECK(iter != processes_.end());
-@@ -65,7 +66,9 @@ void ServiceProcessTracker::NotifyCrashed(
-       break;
+@@ -82,6 +83,7 @@ void ServiceProcessTracker::NotifyCrashed(
    }
-   for (auto& observer : observers_) {
--    observer.OnServiceProcessCrashed(iter->second.Duplicate());
-+    auto params = iter->second.Duplicate();
-+    params.set_exit_code(exit_code);
-+    observer.OnServiceProcessCrashed(params);
+ 
+   auto info_dup = iter->second.Duplicate();
++  info_dup.set_exit_code(exit_code);
+   for (auto& obs : observers_) {
+     obs.OnServiceProcessCrashed(info_dup);
    }
-   processes_.erase(iter);
- }
 diff --git a/content/browser/service_host/service_process_tracker.h b/content/browser/service_host/service_process_tracker.h
-index 9a5179c4eeacf8bbfb2d831b4301836df490f3a8..511fc9b9d5ce14a1b5ef457a1047e40d3bb64273 100644
+index 899fa2680af1c3c491b110cdd2154abe2695bebe..bfd3a4837f361b106e46849e8be2675066387448 100644
 --- a/content/browser/service_host/service_process_tracker.h
 +++ b/content/browser/service_host/service_process_tracker.h
-@@ -36,7 +36,8 @@ class ServiceProcessTracker {
+@@ -40,7 +40,8 @@ class ServiceProcessTracker {
    void NotifyTerminated(ServiceProcessId id);
  
    void NotifyCrashed(ServiceProcessId id,
@@ -50,11 +47,11 @@ index 9a5179c4eeacf8bbfb2d831b4301836df490f3a8..511fc9b9d5ce14a1b5ef457a1047e40d
    void AddObserver(ServiceProcessHost::Observer* observer);
  
 diff --git a/content/browser/service_host/utility_process_client.cc b/content/browser/service_host/utility_process_client.cc
-index 99da7eee3cb1a09b984832211bceee385147aec2..5e4bd537d94ad26c8d309ebfb63845a8d3d11dae 100644
+index 6bb0ad536c4b8ddd32461e54b93471e8a055c5ea..c549032bd6ac0c161e05f6ace5ec0390fda95258 100644
 --- a/content/browser/service_host/utility_process_client.cc
 +++ b/content/browser/service_host/utility_process_client.cc
-@@ -40,7 +40,7 @@ void UtilityProcessClient::OnProcessTerminatedNormally() {
-       process_info_->service_process_id());
+@@ -42,7 +42,7 @@ void UtilityProcessClient::OnProcessTerminatedNormally() {
+   GetServiceProcessTracker().NotifyTerminated(*service_process_id_);
  }
  
 -void UtilityProcessClient::OnProcessCrashed(CrashType type) {
@@ -62,19 +59,19 @@ index 99da7eee3cb1a09b984832211bceee385147aec2..5e4bd537d94ad26c8d309ebfb63845a8
    // TODO(crbug.com/40654042): It is unclear how we can observe
    // |OnProcessCrashed()| without observing |OnProcessLaunched()| first, but
    // it can happen on Android. Ignore the notification in this case.
-@@ -49,6 +49,6 @@ void UtilityProcessClient::OnProcessCrashed(CrashType type) {
+@@ -50,6 +50,6 @@ void UtilityProcessClient::OnProcessCrashed(CrashType type) {
+     return;
    }
  
-   GetServiceProcessTracker().NotifyCrashed(process_info_->service_process_id(),
--                                           type);
-+                                           type, exit_code);
+-  GetServiceProcessTracker().NotifyCrashed(*service_process_id_, type);
++  GetServiceProcessTracker().NotifyCrashed(*service_process_id_, type, exit_code);
  }
  }  // namespace content
 diff --git a/content/browser/service_host/utility_process_client.h b/content/browser/service_host/utility_process_client.h
-index 2648adb1cf38ab557b66ffd0e3034b26b04d76d6..98eab587f343f6ca472efc3d4e7b31b2b8821417 100644
+index 97a0f76571caf19e39d861bf188da9173fc2f8f6..e651e9b2f9a35265da00432cf2ffdc5857c1fa08 100644
 --- a/content/browser/service_host/utility_process_client.h
 +++ b/content/browser/service_host/utility_process_client.h
-@@ -36,7 +36,7 @@ class UtilityProcessClient : public UtilityProcessHost::Client {
+@@ -39,7 +39,7 @@ class UtilityProcessClient : public UtilityProcessHost::Client {
  
    void OnProcessTerminatedNormally() override;
  
