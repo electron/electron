@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <sattard@anthropic.com>
+Date: Wed, 8 Apr 2026 05:07:17 +0000
+Subject: fix: derive v8_control_flow_integrity from target_os, not
+ arm_control_flow_integrity
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+arm_control_flow_integrity is set in //build/config/arm.gni based on
+is_linux/is_android (i.e. current_os). v8_control_flow_integrity then
+uses 'arm_control_flow_integrity != none' to decide whether the
+macro-assembler should emit pacibsp/autibsp/bti into generated code.
+
+That breaks when the snapshot toolchain's current_os differs from the
+real target — e.g. building win-arm64 on Linux, where mksnapshot is
+//build/toolchain/linux:clang_x64_v8_arm64 (current_os=linux,
+target_os=win). The snapshot toolchain sees arm_control_flow_integrity=
+standard and bakes PAC into the embedded builtins, while the win-arm64
+runtime is built with v8_control_flow_integrity=false. The runtime's
+PointerAuthentication helpers are then no-ops, a PAC-signed LR flows
+through unstripped, and the next autibsp in a code-range-copied builtin
+fast-fails with FAST_FAIL_POINTER_AUTH_INVALID_RETURN_ADDRESS.
+
+Key the non-simulator clause on target_os directly (the same OSes
+arm.gni would enable CFI for), which is global and therefore identical
+in every toolchain. No behaviour change for native Linux/Android arm64,
+mac, or native Windows-hosted win-arm64.
+
+diff --git a/BUILD.gn b/BUILD.gn
+index bf8793c24a1146d39692ef7103a9c54b8d61d509..184b43f74dc6fa3212c0915cecf5b832a34179eb 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -345,9 +345,21 @@ declare_args() {
+   # ARM64. Enable it by default for simulator builds and when native code
+   # supports it as well. On Mac, control-flow integrity does not work so we
+   # avoid enabling it when using the simulator.
+-  v8_control_flow_integrity = v8_current_cpu == "arm64" &&
+-                              ((v8_target_is_simulator && target_os != "mac") ||
+-                               arm_control_flow_integrity != "none")
++  #
++  # The non-simulator clause checks target_os directly rather than
++  # arm_control_flow_integrity (which is keyed on current_os via is_linux /
++  # is_android in //build/config/arm.gni). This keeps the value consistent
++  # between the target toolchain and the snapshot toolchain when
++  # cross-compiling — e.g. building win-arm64 on a Linux host where the
++  # snapshot toolchain (//build/toolchain/linux:clang_x64_v8_arm64) has
++  # current_os == "linux" but target_os == "win". Otherwise mksnapshot bakes
++  # pacibsp/autibsp into the embedded builtins while the runtime is built
++  # without V8_ENABLE_CONTROL_FLOW_INTEGRITY, and the resulting binary
++  # fast-fails with FAST_FAIL_POINTER_AUTH_INVALID_RETURN_ADDRESS.
++  v8_control_flow_integrity =
++      v8_current_cpu == "arm64" &&
++      ((v8_target_is_simulator && target_os != "mac") ||
++       target_os == "android" || target_os == "linux")
+ 
+   # Enable heap reservation of size 4GB. Only possible for 64bit archs.
+   cppgc_enable_caged_heap =
