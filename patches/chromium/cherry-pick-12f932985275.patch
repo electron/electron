@@ -319,7 +319,7 @@ index e441c8feae18104bc6a20810d5a8e56bb89836a7..cfae851740cf1bc46725c1db2e22186d
  #ifndef NDEBUG
      // glValidateProgram of MACOSX validates FBO unlike other platforms, so
 diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-index 02078983a7b10588c7d68f5a3affa5536edb29d5..d8084d3789d75d0b4160c0965873d9cd23910d48 100644
+index a7131ef3a34e86d44ce5af5bb8bfab8853c32a50..88e1ad8782f732c4e381410bd9c65eb7dd12fa05 100644
 --- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
 +++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
 @@ -680,6 +680,9 @@ class GLES2DecoderImpl : public GLES2Decoder,
@@ -390,7 +390,7 @@ index 02078983a7b10588c7d68f5a3affa5536edb29d5..d8084d3789d75d0b4160c0965873d9cd
      // These are NOT if the back buffer has these proprorties. They are
      // if we want the command buffer to enforce them regardless of what
      // the real backbuffer is assuming the real back buffer gives us more than
-@@ -3822,7 +3849,7 @@ void GLES2DecoderImpl::DeleteFramebuffersHelper(
+@@ -3825,7 +3852,7 @@ void GLES2DecoderImpl::DeleteFramebuffersHelper(
          if (workarounds().unbind_attachments_on_bound_render_fbo_delete)
            framebuffer->DoUnbindGLAttachmentsForWorkaround(target);
  
@@ -399,7 +399,7 @@ index 02078983a7b10588c7d68f5a3affa5536edb29d5..d8084d3789d75d0b4160c0965873d9cd
          state_.UpdateWindowRectanglesForBoundDrawFramebufferClientID(0);
          framebuffer_state_.bound_draw_framebuffer = nullptr;
          framebuffer_state_.clear_state_dirty = true;
-@@ -3830,7 +3857,7 @@ void GLES2DecoderImpl::DeleteFramebuffersHelper(
+@@ -3833,7 +3860,7 @@ void GLES2DecoderImpl::DeleteFramebuffersHelper(
        if (framebuffer == framebuffer_state_.bound_read_framebuffer.get()) {
          framebuffer_state_.bound_read_framebuffer = nullptr;
          GLenum target = GetReadFramebufferTarget();
@@ -408,7 +408,7 @@ index 02078983a7b10588c7d68f5a3affa5536edb29d5..d8084d3789d75d0b4160c0965873d9cd
        }
        OnFboChanged();
        RemoveFramebuffer(client_id);
-@@ -3978,33 +4005,32 @@ void GLES2DecoderImpl::ProcessFinishedAsyncTransfers() {
+@@ -3981,33 +4008,32 @@ void GLES2DecoderImpl::ProcessFinishedAsyncTransfers() {
    ProcessPendingReadPixels(false);
  }
  
@@ -462,7 +462,7 @@ index 02078983a7b10588c7d68f5a3affa5536edb29d5..d8084d3789d75d0b4160c0965873d9cd
    }
    OnFboChanged();
  }
-@@ -4393,6 +4419,16 @@ void GLES2DecoderImpl::OnGpuSwitched() {
+@@ -4396,6 +4422,16 @@ void GLES2DecoderImpl::OnGpuSwitched() {
    client()->OnGpuSwitched();
  }
  
@@ -479,7 +479,7 @@ index 02078983a7b10588c7d68f5a3affa5536edb29d5..d8084d3789d75d0b4160c0965873d9cd
  void GLES2DecoderImpl::Destroy(bool have_context) {
    if (!initialized())
      return;
-@@ -4442,6 +4478,13 @@ void GLES2DecoderImpl::Destroy(bool have_context) {
+@@ -4445,6 +4481,13 @@ void GLES2DecoderImpl::Destroy(bool have_context) {
        offscreen_target_frame_buffer_->Destroy();
      if (offscreen_target_color_texture_.get())
        offscreen_target_color_texture_->Destroy();
@@ -493,7 +493,7 @@ index 02078983a7b10588c7d68f5a3affa5536edb29d5..d8084d3789d75d0b4160c0965873d9cd
    } else {
      if (offscreen_target_frame_buffer_.get())
        offscreen_target_frame_buffer_->Invalidate();
-@@ -5071,13 +5114,13 @@ void GLES2DecoderImpl::RestoreFramebufferBindings() const {
+@@ -5074,13 +5117,13 @@ void GLES2DecoderImpl::RestoreFramebufferBindings() const {
            ? framebuffer_state_.bound_draw_framebuffer->service_id()
            : GetBackbufferServiceId();
    if (!SupportsSeparateFramebufferBinds()) {
@@ -510,7 +510,7 @@ index 02078983a7b10588c7d68f5a3affa5536edb29d5..d8084d3789d75d0b4160c0965873d9cd
    }
    OnFboChanged();
  }
-@@ -5218,7 +5261,7 @@ void GLES2DecoderImpl::DoBindFramebuffer(GLenum target, GLuint client_id) {
+@@ -5221,7 +5264,7 @@ void GLES2DecoderImpl::DoBindFramebuffer(GLenum target, GLuint client_id) {
      service_id = GetBackbufferServiceId();
    }
  
@@ -519,7 +519,7 @@ index 02078983a7b10588c7d68f5a3affa5536edb29d5..d8084d3789d75d0b4160c0965873d9cd
    OnFboChanged();
  }
  
-@@ -6986,8 +7029,7 @@ void GLES2DecoderImpl::ClearUnclearedAttachments(
+@@ -6989,8 +7032,7 @@ void GLES2DecoderImpl::ClearUnclearedAttachments(
      if (target == GL_READ_FRAMEBUFFER && draw_framebuffer != framebuffer) {
        // TODO(zmo): There is no guarantee that an FBO that is complete on the
        // READ attachment will be complete as a DRAW attachment.
@@ -529,7 +529,7 @@ index 02078983a7b10588c7d68f5a3affa5536edb29d5..d8084d3789d75d0b4160c0965873d9cd
      }
      state_.SetDeviceColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
      state_.SetDeviceCapabilityState(GL_SCISSOR_TEST, false);
-@@ -7034,8 +7076,7 @@ void GLES2DecoderImpl::ClearUnclearedAttachments(
+@@ -7037,8 +7079,7 @@ void GLES2DecoderImpl::ClearUnclearedAttachments(
          target == GL_READ_FRAMEBUFFER && draw_framebuffer != framebuffer) {
        // TODO(zmo): There is no guarantee that an FBO that is complete on the
        // READ attachment will be complete as a DRAW attachment.
@@ -539,7 +539,7 @@ index 02078983a7b10588c7d68f5a3affa5536edb29d5..d8084d3789d75d0b4160c0965873d9cd
      }
      state_.SetDeviceCapabilityState(GL_SCISSOR_TEST, false);
      ClearDeviceWindowRectangles();
-@@ -7053,7 +7094,7 @@ void GLES2DecoderImpl::ClearUnclearedAttachments(
+@@ -7056,7 +7097,7 @@ void GLES2DecoderImpl::ClearUnclearedAttachments(
      if (target == GL_READ_FRAMEBUFFER && draw_framebuffer != framebuffer) {
        GLuint service_id = draw_framebuffer ? draw_framebuffer->service_id() :
                                               GetBackbufferServiceId();
@@ -548,7 +548,7 @@ index 02078983a7b10588c7d68f5a3affa5536edb29d5..d8084d3789d75d0b4160c0965873d9cd
      }
    }
  
-@@ -7910,7 +7951,8 @@ void GLES2DecoderImpl::RenderbufferStorageMultisampleHelperAMD(
+@@ -7913,7 +7954,8 @@ void GLES2DecoderImpl::RenderbufferStorageMultisampleHelperAMD(
  
  bool GLES2DecoderImpl::RegenerateRenderbufferIfNeeded(
      Renderbuffer* renderbuffer) {
@@ -558,7 +558,7 @@ index 02078983a7b10588c7d68f5a3affa5536edb29d5..d8084d3789d75d0b4160c0965873d9cd
      return false;
    }
  
-@@ -12056,7 +12098,7 @@ bool GLES2DecoderImpl::ClearLevelUsingGL(Texture* texture,
+@@ -12059,7 +12101,7 @@ bool GLES2DecoderImpl::ClearLevelUsingGL(Texture* texture,
    GLenum fb_target = GetDrawFramebufferTarget();
    GLuint fb = 0;
    api()->glGenFramebuffersEXTFn(1, &fb);
@@ -567,7 +567,7 @@ index 02078983a7b10588c7d68f5a3affa5536edb29d5..d8084d3789d75d0b4160c0965873d9cd
  
    bool have_color = (channels & GLES2Util::kRGBA) != 0;
    if (have_color) {
-@@ -12099,7 +12141,7 @@ bool GLES2DecoderImpl::ClearLevelUsingGL(Texture* texture,
+@@ -12102,7 +12144,7 @@ bool GLES2DecoderImpl::ClearLevelUsingGL(Texture* texture,
    Framebuffer* framebuffer = GetFramebufferInfoForTarget(fb_target);
    GLuint fb_service_id =
        framebuffer ? framebuffer->service_id() : GetBackbufferServiceId();
@@ -576,7 +576,7 @@ index 02078983a7b10588c7d68f5a3affa5536edb29d5..d8084d3789d75d0b4160c0965873d9cd
    return result;
  }
  
-@@ -14578,8 +14620,9 @@ error::Error GLES2DecoderImpl::HandleGetRequestableExtensionsCHROMIUM(
+@@ -14581,8 +14623,9 @@ error::Error GLES2DecoderImpl::HandleGetRequestableExtensionsCHROMIUM(
        new FeatureInfo(workarounds(), group_->gpu_feature_info()));
    DisallowedFeatures disallowed_features = feature_info_->disallowed_features();
    disallowed_features.AllowExtensions();
@@ -718,15 +718,15 @@ index 043d85e7bcaf29f1e2f2803a180ddde8a03e5908..d51bdf3c8c4f4a638ed4f133f18e4dea
    bool ClearLevel(gles2::Texture* texture,
                    unsigned target,
 diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
-index deeb8fb1ea810a87bb19bcb85cc352fe802361ac..346da114dc46e882bb71b048ac859ee88601818d 100644
+index 900b5fa1decf4c1895f32eb5ab05fd54a806669c..346da114dc46e882bb71b048ac859ee88601818d 100644
 --- a/gpu/config/gpu_driver_bug_list.json
 +++ b/gpu/config/gpu_driver_bug_list.json
-@@ -3772,6 +3772,109 @@
-       "features": [
-         "disable_d3d12_av1_multi_ref_encoding"
+@@ -3774,14 +3774,106 @@
        ]
-+    },
-+    {
+     },
+     {
+-      "id": 472,
+-      "description": "Validate GL_MAX_*_UNIFORM_BLOCKS at compile time instead of link time to work around compiler bugs.",
 +      "id": 465,
 +      "cr_bugs": [394698156],
 +      "description": "Older (2020) intel iris driver seems to have an elevated crash rate when using HW accelerated video decode.",
@@ -821,18 +821,18 @@ index deeb8fb1ea810a87bb19bcb85cc352fe802361ac..346da114dc46e882bb71b048ac859ee8
 +    {
 +      "id": 471,
 +      "description": "IMG drivers can sometimes reference previously bound complete framebuffers.",
-+      "os": {
-+        "type": "android"
-+      },
-+      "gl_vendor": "Imagination.*",
-+      "features": [
+       "os": {
+         "type": "android"
+       },
+       "gl_vendor": "Imagination.*",
+       "features": [
+-        "validate_max_per_stage_uniform_blocks_at_compile_time"
 +        "ensure_previous_framebuffer_not_deleted"
-+      ]
+       ]
      }
    ]
- }
 diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
-index 32b7797c2f19b3e597963d1d2c78da6066ff3bd3..743be3385094e8869f11527ef8ef86512b16576c 100644
+index 300586499f496d25c571adcb90cb066b4e778899..c4e9766cd991f6b8e311a60555ce7fa8f6f87b8e 100644
 --- a/gpu/config/gpu_workaround_list.txt
 +++ b/gpu/config/gpu_workaround_list.txt
 @@ -79,6 +79,7 @@ dont_delete_source_texture_for_egl_image
