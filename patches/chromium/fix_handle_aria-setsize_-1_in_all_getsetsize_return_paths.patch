@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <khammond@slack-corp.com>
+Date: Thu, 19 Mar 2026 00:57:21 -0700
+Subject: fix: handle aria-setsize="-1" in all GetSetSize return paths
+
+Per the ARIA spec, aria-setsize="-1" means "the total number of items
+is unknown". GetSetSize() already filters negative values at the
+post-compute return path, but two early-return paths bypass this check:
+
+1. The cached value path returns the raw cached set_size without
+   validating. When ComputeSetSizePosInSetAndCacheHelper caches the
+   raw aria-setsize="-1" for items with hierarchical levels, subsequent
+   GetSetSize calls for sibling items return -1 unchecked.
+
+2. The combo box / popup button path returns GetIntAttribute(kSetSize)
+   directly without checking for negative values.
+
+On macOS, this -1 is boxed as NSNumber and VoiceOver interprets it as
+an unsigned value, announcing "18,446,744,073,709,551,615".
+
+This patch can be removed when a CL containing the fix is accepted
+into Chromium.
+
+Bug: 423673297
+
+diff --git a/ui/accessibility/ax_tree.cc b/ui/accessibility/ax_tree.cc
+index 91ade842fe7be1643488490fb23c5dedee641ff3..d305516eae29dab109b8b8b3af99f0ed586ca11a 100644
+--- a/ui/accessibility/ax_tree.cc
++++ b/ui/accessibility/ax_tree.cc
+@@ -3024,13 +3024,21 @@ std::optional<int> AXTree::GetSetSize(const AXNode& node) {
+        node.GetRole() == ax::mojom::Role::kPopUpButton) &&
+       node.GetUnignoredChildCount() == 0 &&
+       node.HasIntAttribute(ax::mojom::IntAttribute::kSetSize)) {
+-    return node.GetIntAttribute(ax::mojom::IntAttribute::kSetSize);
++    int32_t set_size =
++        node.GetIntAttribute(ax::mojom::IntAttribute::kSetSize);
++    if (set_size < 0)
++      return std::nullopt;
++    return set_size;
+   }
+ 
+   if (node_set_size_pos_in_set_info_map_.find(node.id()) !=
+       node_set_size_pos_in_set_info_map_.end()) {
+     // If item's id is in the cache, return stored SetSize value.
+-    return node_set_size_pos_in_set_info_map_[node.id()].set_size;
++    std::optional<int> set_size =
++        node_set_size_pos_in_set_info_map_[node.id()].set_size;
++    if (set_size.has_value() && set_size.value() < 0)
++      return std::nullopt;
++    return set_size;
+   }
+ 
+   if (GetTreeUpdateInProgressState())
