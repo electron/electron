@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <sattard@anthropic.com>
+Date: Wed, 8 Apr 2026 03:39:01 +0000
+Subject: fix: use %zu for size_t in arm64 EmitUnwindData SNPrintF
+
+The arm64 EmitUnwindData path now compiles on Linux (-Wformat strict)
+since the previous commit re-gated it on V8_TARGET_OS_WIN_ARM64.
+
+diff --git a/src/snapshot/embedded/platform-embedded-file-writer-win.cc b/src/snapshot/embedded/platform-embedded-file-writer-win.cc
+index b2319b9fea8b8ba8189ab577cbcf6982c3733bc0..6d3b3b3fe3e80d40ac71ce69682ea9a26f0d41d3 100644
+--- a/src/snapshot/embedded/platform-embedded-file-writer-win.cc
++++ b/src/snapshot/embedded/platform-embedded-file-writer-win.cc
+@@ -231,7 +231,7 @@ void EmitUnwindData(PlatformEmbeddedFileWriterWin* w,
+         // later.
+         code_chunks.push_back(allowed_chunk_len);
+         fp_adjustments.push_back(xdata_fp_adjustments[j]);
+-        base::SNPrintF(unwind_info_full_symbol, "%s_%u", unwind_info_symbol,
++        base::SNPrintF(unwind_info_full_symbol, "%s_%zu", unwind_info_symbol,
+                        code_chunks.size());
+         w->DeclareRvaToSymbol(embedded_blob_data_symbol,
+                               builtin_start_offset + chunk_start);
+@@ -248,7 +248,7 @@ void EmitUnwindData(PlatformEmbeddedFileWriterWin* w,
+   w->StartXdataSection();
+   {
+     for (size_t i = 0; i < code_chunks.size(); i++) {
+-      base::SNPrintF(unwind_info_full_symbol, "%s_%u", unwind_info_symbol,
++      base::SNPrintF(unwind_info_full_symbol, "%s_%zu", unwind_info_symbol,
+                      i + 1);
+       w->DeclareLabel(unwind_info_full_symbol.begin());
+       std::vector<uint8_t> xdata =
