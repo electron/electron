@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Tue, 24 Mar 2026 16:33:20 -0500
+Subject: fix: initialize COM on DesktopMediaListCaptureThread on Windows
+
+On Windows, the DesktopMediaListCaptureThread runs with a UI message
+pump that doesn't initialize COM. When WebRTC's window capturer
+enumerates windows, interacting with UWP/Metro windows causes twinapi.dll
+to internally call ::CoCreateInstance(), which hits Chromium's
+DCheckedCoCreateInstance hook and triggers a crash.
+
+This patch fixes the crash by ensuring COM is initialized on the
+capture thread by calling `init_com_with_mta(false)`.
+
+diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
+index fce3e30bc736ac72a42d24956d4abf9f49c8fc41..4da50698e2d7dae82c35f02dda0bf7fd0cb3361e 100644
+--- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
++++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
+@@ -786,6 +786,13 @@ NativeDesktopMediaList::NativeDesktopMediaList(
+   base::MessagePumpType thread_type = base::MessagePumpType::UI;
+ #else
+   base::MessagePumpType thread_type = base::MessagePumpType::DEFAULT;
++#endif
++#if BUILDFLAG(IS_WIN)
++  // On Windows, window enumeration via webrtc::DesktopCapturer may interact
++  // with UWP/Metro windows through twinapi.dll, which internally calls
++  // CoCreateInstance. Initialize COM on this thread to prevent crashes in
++  // Chromium's DCheckedCoCreateInstance hook.
++  thread_.init_com_with_mta(false);
+ #endif
+   thread_.StartWithOptions(base::Thread::Options(thread_type, 0));
+ 
