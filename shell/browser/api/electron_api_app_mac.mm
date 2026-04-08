@@ -8,7 +8,6 @@
 
 #include "base/path_service.h"
 #include "shell/common/electron_paths.h"
-#include "shell/common/node_includes.h"
 #include "shell/common/process_util.h"
 #include "shell/common/thread_restrictions.h"
 
