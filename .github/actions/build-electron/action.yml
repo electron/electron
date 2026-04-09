@@ -93,8 +93,27 @@ runs:
           echo "Skipping build-stats.mjs upload because DD_API_KEY is not set"
         fi
         node electron/script/build-stats.mjs $BUILD_STATS_ARGS || true
+    - name: io-repro — set up Go
+      if: ${{ inputs.target-platform == 'win' && github.ref_name == 'sam/windows-io-repro' }}
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+      with:
+        go-version: '1.26'
+        cache: false
+    - name: io-repro — gn gen then scan real out/Default subninjas
+      if: ${{ inputs.target-platform == 'win' && github.ref_name == 'sam/windows-io-repro' }}
+      shell: powershell
+      run: |
+        cd src\electron
+        git pack-refs
+        cd ..
+        e build --only-gen
+        Write-Host ".ninja files under out\Default:"
+        (Get-ChildItem -Recurse -File -Filter *.ninja out\Default | Measure-Object).Count
+        cd electron\script\windows-io-repro
+        go build -o repro.exe .
+        .\repro.exe -skip-create -dir ..\..\..\out\Default -rounds 6
     - name: Build Electron (Windows) ${{ inputs.step-suffix }}
-      if: ${{ inputs.target-platform == 'win' }}
+      if: ${{ inputs.target-platform == 'win' && github.ref_name != 'sam/windows-io-repro' }}
       shell: powershell
       run: |
         cd src\electron
@@ -125,23 +144,6 @@ runs:
         } catch {
           Write-Host "Build stats failed, continuing..."
         }
-    - name: io-repro — set up Go
-      if: ${{ inputs.target-platform == 'win' }}
-      continue-on-error: true
-      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
-      with:
-        go-version: '1.26'
-        cache: false
-    - name: io-repro — scan real out/Default subninjas
-      if: ${{ inputs.target-platform == 'win' }}
-      continue-on-error: true
-      shell: powershell
-      run: |
-        cd src/electron/script/windows-io-repro
-        go build -o repro.exe .
-        Write-Host ".ninja files under src\out\Default:"
-        (Get-ChildItem -Recurse -File -Filter *.ninja ..\..\..\out\Default | Measure-Object).Count
-        .\repro.exe -skip-create -dir ..\..\..\out\Default -rounds 6
     - name: Verify dist.zip ${{ inputs.step-suffix }}
       shell: bash
       run: |
