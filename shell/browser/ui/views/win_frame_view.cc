@@ -106,29 +106,19 @@ int WinFrameView::NonClientHitTest(const gfx::Point& point) {
     if (SUCCEEDED(DwmGetWindowAttribute(
             views::HWNDForWidget(frame()), DWMWA_CAPTION_BUTTON_BOUNDS,
             &button_bounds, sizeof(button_bounds)))) {
-      gfx::RectF button_bounds_in_dips = gfx::ConvertRectToDips(
-          gfx::Rect(button_bounds), display::win::GetDPIScale());
-      // TODO(crbug.com/1131681): GetMirroredRect() requires an integer rect,
-      // but the size in DIPs may not be an integer with a fractional device
-      // scale factor. If we want to keep using integers, the choice to use
-      // ToFlooredRectDeprecated() seems to be doing the wrong thing given the
-      // comment below about insetting 1 DIP instead of 1 physical pixel. We
-      // should probably use ToEnclosedRect() and then we could have inset 1
-      // physical pixel here.
-      gfx::Rect buttons =
-          GetMirroredRect(gfx::ToFlooredRectDeprecated(button_bounds_in_dips));
-
+      gfx::Rect button_bounds_px(button_bounds);
       // There is a small one-pixel strip right above the caption buttons in
-      // which the resize border "peeks" through.
-      constexpr int kCaptionButtonTopInset = 1;
-      // The sizing region at the window edge above the caption buttons is
-      // 1 px regardless of scale factor. If we inset by 1 before converting
-      // to DIPs, the precision loss might eliminate this region entirely. The
-      // best we can do is to inset after conversion. This guarantees we'll
-      // show the resize cursor when resizing is possible. The cost of which
-      // is also maybe showing it over the portion of the DIP that isn't the
-      // outermost pixel.
-      buttons.Inset(gfx::Insets::TLBR(0, kCaptionButtonTopInset, 0, 0));
+      // which the resize border "peeks" through. Inset in physical pixels
+      // before converting to DIPs so the resize strip remains exposed at
+      // fractional scale factors.
+      button_bounds_px.Inset(gfx::Insets::TLBR(1, 0, 0, 0));
+
+      const gfx::RectF button_bounds_in_dips =
+          gfx::ConvertRectToDips(button_bounds_px, display::win::GetDPIScale());
+      // GetMirroredRect() requires an integer rect. Use ToEnclosedRect() so
+      // the top inset is preserved (rounded up) at fractional scale factors.
+      gfx::Rect buttons =
+          GetMirroredRect(gfx::ToEnclosedRect(button_bounds_in_dips));
       if (buttons.Contains(point))
         return HTNOWHERE;
     }
