@@ -89,6 +89,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   MaybeOverrideLocalURLCrossOriginEmbedderPolicy(
       content::NavigationHandle* navigation_handle) override;
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+  bool DoesSiteRequireDedicatedProcess(content::BrowserContext* browser_context,
+                                       const GURL& effective_site_url) override;
   void BindHostReceiverForRenderer(
       content::RenderProcessHost* render_process_host,
       mojo::GenericPendingReceiver receiver) override;
@@ -112,10 +114,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 #endif
   bool IsFullscreenAllowedForUnfocusedWebContents(
       content::WebContents* unfocused_web_contents) override;
-
-  // extensions::ChromeContentBrowserClientExtensionsPart:
-  bool DoesSiteRequireDedicatedProcess(content::BrowserContext* browser_context,
-                                       const GURL& effective_site_url) override;
 
   std::string GetUserAgent() override;
   void SetUserAgent(const std::string& user_agent);

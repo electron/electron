@@ -1620,6 +1620,18 @@ ElectronBrowserClient::MaybeOverrideLocalURLCrossOriginEmbedderPolicy(
 }
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
+bool ElectronBrowserClient::DoesSiteRequireDedicatedProcess(
+    content::BrowserContext* browser_context,
+    const GURL& effective_site_url) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  return GetEnabledExtensionFromEffectiveURL(browser_context,
+                                             effective_site_url) != nullptr;
+#else
+  return content::ContentBrowserClient::DoesSiteRequireDedicatedProcess(
+      browser_context, effective_site_url);
+#endif
+}
+
 void ElectronBrowserClient::BindHostReceiverForRenderer(
     content::RenderProcessHost* render_process_host,
     mojo::GenericPendingReceiver receiver) {
@@ -1743,18 +1755,6 @@ bool ElectronBrowserClient::IsFullscreenAllowedForUnfocusedWebContents(
     content::WebContents* unfocused_web_contents) {
   return static_cast<content::WebContentsImpl*>(unfocused_web_contents)
       ->IsGuest();
-}
-
-bool ElectronBrowserClient::DoesSiteRequireDedicatedProcess(
-    content::BrowserContext* browser_context,
-    const GURL& effective_site_url) {
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  return GetEnabledExtensionFromEffectiveURL(browser_context,
-                                             effective_site_url) != nullptr;
-#else
-  return content::ContentBrowserClient::DoesSiteRequireDedicatedProcess(
-      browser_context, effective_site_url);
-#endif
 }
 
 std::unique_ptr<content::LoginDelegate>
