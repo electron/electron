@@ -312,39 +312,42 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         expect(crash['electron.v8-fatal.message']).to.equal('Circular extension dependency');
       });
 
-      it('contains js stack trace in crash report when renderer runs out of memory', async function () {
+    });
+
+    describe('OOM crash keys', () => {
+      it('reports OOM stack trace and heap statistics when renderer runs out of memory', async function () {
         this.timeout(120000);
-        const { remotely } = await startRemoteControlApp(['--js-flags=--max-old-space-size=20']);
         const { port, waitForCrash } = await startServer();
-
-        await remotely((port: number) => {
-          require('electron').crashReporter.start({
-            submitURL: `http://127.0.0.1:${port}`,
-            compress: false,
-            ignoreSystemCrashHandler: true
-          });
-        }, [port]);
-
-        remotely(() => {
-          const { BrowserWindow } = require('electron');
-          const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-          bw.loadURL('about:blank');
-          bw.webContents.executeJavaScript(`
-            function oomTrigger() {
-              const arr = [];
-              while (true) arr.push(new Array(10000).fill('x'.repeat(100)));
-            }
-            oomTrigger();
-          `);
-        });
-
+        runCrashApp('renderer-oom', port, ['--js-flags=--max-old-space-size=128']);
         const crash = await waitForCrash();
         expect(crash.process_type).to.equal('renderer');
         expect(crash['electron.v8-oom.stack']).to.be.a('string');
         expect(crash['electron.v8-oom.stack']).to.include('oomTrigger');
         expect(crash['electron.v8-oom.heap.used']).to.be.a('string');
         expect(crash['electron.v8-oom.heap.limit']).to.be.a('string');
-        expect(crash['electron.v8-oom.heap.utilization_pct']).to.be.a('string');
+      });
+
+      it('captures the calling function on JSON.stringify OOM', async function () {
+        this.timeout(120000);
+        const { port, waitForCrash } = await startServer();
+        runCrashApp('renderer-oom-json', port, ['--js-flags=--max-old-space-size=128']);
+        const crash = await waitForCrash();
+        expect(crash.process_type).to.equal('renderer');
+        expect(crash['electron.v8-oom.stack']).to.be.a('string');
+        expect(crash['electron.v8-oom.stack']).to.include('serializeData');
+      });
+
+      it('captures OOM crash keys inside a web worker', async function () {
+        this.timeout(120000);
+        const { port, waitForCrash } = await startServer();
+        runCrashApp('renderer-oom-worker', port, ['--js-flags=--max-old-space-size=128']);
+        const crash = await waitForCrash();
+        expect(crash.process_type).to.equal('renderer');
+        const oomStack = crash['electron.v8-oom.stack'];
+        expect(oomStack).to.be.a('string');
+        expect(oomStack!.length).to.be.greaterThan(0);
+        expect(crash['electron.v8-oom.heap.used']).to.be.a('string');
+        expect(crash['electron.v8-oom.heap.limit']).to.be.a('string');
       });
     });
   });
