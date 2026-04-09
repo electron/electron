@@ -30,18 +30,44 @@ import (
 
 const errnoInvalidParameter = syscall.Errno(87)
 
+// innerSema mirrors siso's fsema: the chunk-read goroutine acquires a
+// NumCPU-wide slot before doing its second open.
+var innerSema = make(chan struct{}, runtime.NumCPU())
+
+// openStdlib replicates siso's fileParser.readFile: outer os.Open + Stat,
+// then a goroutine that does a second os.Open on the same path and ReadAt,
+// with the outer handle still held until the goroutine returns.
 func openStdlib(path string) error {
 	f, err := os.Open(path)
 	if err != nil {
 		return err
 	}
-	return f.Close()
-}
-
-func openNoBackup(path string) error {
-	p, err := syscall.UTF16PtrFromString(path)
+	defer f.Close()
+	st, err := f.Stat()
 	if err != nil {
 		return err
+	}
+	buf := make([]byte, st.Size())
+	errCh := make(chan error, 1)
+	go func() {
+		innerSema <- struct{}{}
+		defer func() { <-innerSema }()
+		f2, err := os.Open(path)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		defer f2.Close()
+		_, err = f2.ReadAt(buf, 0)
+		errCh <- err
+	}()
+	return <-errCh
+}
+
+func createNoBackup(path string) (syscall.Handle, error) {
+	p, err := syscall.UTF16PtrFromString(path)
+	if err != nil {
+		return syscall.InvalidHandle, err
 	}
 	h, err := syscall.CreateFile(
 		p,
@@ -53,9 +79,31 @@ func openNoBackup(path string) error {
 		0,
 	)
 	if err != nil {
-		return &os.PathError{Op: "CreateFile", Path: path, Err: err}
+		return syscall.InvalidHandle, &os.PathError{Op: "CreateFile", Path: path, Err: err}
 	}
-	return syscall.CloseHandle(h)
+	return h, nil
+}
+
+// openNoBackup mirrors openStdlib's double-open shape but uses
+// CreateFileW without FILE_FLAG_BACKUP_SEMANTICS for both opens.
+func openNoBackup(path string) error {
+	h1, err := createNoBackup(path)
+	if err != nil {
+		return err
+	}
+	defer syscall.CloseHandle(h1)
+	errCh := make(chan error, 1)
+	go func() {
+		innerSema <- struct{}{}
+		defer func() { <-innerSema }()
+		h2, err := createNoBackup(path)
+		if err != nil {
+			errCh <- err
+			return
+		}
+		errCh <- syscall.CloseHandle(h2)
+	}()
+	return <-errCh
 }
 
 type result struct {

@@ -106,12 +106,11 @@ runs:
         cd src\electron
         git pack-refs
         cd ..
-        e build --only-gen
-        Write-Host ".ninja files under out\Default:"
-        (Get-ChildItem -Recurse -File -Filter *.ninja out\Default | Measure-Object).Count
         cd electron\script\windows-io-repro
         go build -o repro.exe .
-        .\repro.exe -skip-create -dir ..\..\..\out\Default -rounds 6
+        cd ..\..\..
+        e build --only-gen
+        electron\script\windows-io-repro\repro.exe -skip-create -dir out\Default -rounds 12
     - name: Build Electron (Windows) ${{ inputs.step-suffix }}
       if: ${{ inputs.target-platform == 'win' && github.ref_name != 'sam/windows-io-repro' }}
       shell: powershell
