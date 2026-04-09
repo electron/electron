@@ -16,6 +16,7 @@
 package main
 
 import (
+	"crypto/rand"
 	"errors"
 	"flag"
 	"fmt"
@@ -158,6 +159,7 @@ func main() {
 	workers := flag.Int("workers", runtime.NumCPU(), "concurrent openers per scan")
 	writeOnly := flag.Bool("write-only", false, "create files then exit (for cross-process write→scan mode)")
 	skipCreate := flag.Bool("skip-create", false, "scan existing files in -dir instead of creating new ones")
+	scanFirst := flag.Int("scan-first", 0, "if >0, scan only the first N files (create all, scan a subset)")
 	flag.Parse()
 
 	fmt.Printf("GOOS=%s GOARCH=%s NumCPU=%d GOMAXPROCS=%d workers=%d\n",
@@ -184,26 +186,54 @@ func main() {
 		}
 		fmt.Printf("scanning %d existing files\n", len(files))
 	} else {
-		fmt.Printf("creating %d files...\n", *nfiles)
-		payload := make([]byte, 256)
-		files = make([]string, 0, *nfiles)
+		const subdirs = 4096
+		payload := make([]byte, 512)
+		_, _ = rand.Read(payload)
+		files = make([]string, *nfiles)
 		for i := range *nfiles {
-			sub := filepath.Join(*dir, fmt.Sprintf("d%03d", i%512))
-			if i < 512 {
-				_ = os.MkdirAll(sub, 0o755)
-			}
-			p := filepath.Join(sub, fmt.Sprintf("f%06d.ninja", i))
-			if err := os.WriteFile(p, payload, 0o644); err != nil {
-				fmt.Fprintln(os.Stderr, "write:", err)
-				os.Exit(1)
-			}
-			files = append(files, p)
+			sub := filepath.Join(*dir, fmt.Sprintf("a%02d", (i/256)%16), fmt.Sprintf("b%03d", i%256))
+			files[i] = filepath.Join(sub, fmt.Sprintf("f%07d.ninja", i))
 		}
-		fmt.Printf("created %d files in %d subdirs\n", len(files), 512)
+		fmt.Printf("creating %d dirs...\n", subdirs)
+		for a := range 16 {
+			for b := range 256 {
+				_ = os.MkdirAll(filepath.Join(*dir, fmt.Sprintf("a%02d", a), fmt.Sprintf("b%03d", b)), 0o755)
+			}
+		}
+		fmt.Printf("creating %d files (%d-byte random payload, %d parallel writers)...\n", *nfiles, len(payload), *workers)
+		start := time.Now()
+		var created atomic.Int64
+		ch := make(chan string, *workers)
+		var wg sync.WaitGroup
+		for range *workers {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for p := range ch {
+					if err := os.WriteFile(p, payload, 0o644); err != nil {
+						fmt.Fprintln(os.Stderr, "write:", err)
+						os.Exit(1)
+					}
+					if n := created.Add(1); n%100000 == 0 {
+						fmt.Printf("  ... %d/%d (%s)\n", n, *nfiles, time.Since(start).Round(time.Second))
+					}
+				}
+			}()
+		}
+		for _, p := range files {
+			ch <- p
+		}
+		close(ch)
+		wg.Wait()
+		fmt.Printf("created %d files in %d subdirs in %s\n", len(files), subdirs, time.Since(start).Round(time.Second))
 	}
 	if *writeOnly {
 		fmt.Println("write-only mode; exiting")
 		return
+	}
+	if *scanFirst > 0 && *scanFirst < len(files) {
+		files = files[:*scanFirst]
+		fmt.Printf("scanning first %d of %d files\n", len(files), *nfiles)
 	}
 
 	type strat struct {
