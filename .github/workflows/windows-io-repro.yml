@@ -7,8 +7,40 @@ on:
 
 permissions: {}
 
+env:
+  BUILD_IMAGE_SHA: eac3529546ea8f3aa356d31e345715eef342233b
+
 jobs:
+  checkout-windows:
+    runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
+    container:
+      image: ghcr.io/electron/build:eac3529546ea8f3aa356d31e345715eef342233b
+      options: --user root --device /dev/fuse --cap-add SYS_ADMIN
+      volumes:
+        - /mnt/win-cache:/mnt/win-cache
+        - /var/run/sas:/var/run/sas
+    env:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True'
+      TARGET_OS: 'win'
+      ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN: '1'
+    steps:
+      - name: Checkout Electron
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          path: src/electron
+          fetch-depth: 0
+      - name: Checkout & Sync & Save
+        uses: ./src/electron/.github/actions/checkout
+        with:
+          generate-sas-token: 'true'
+          target-platform: win
+
   build:
+    needs: checkout-windows
     permissions:
       contents: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
