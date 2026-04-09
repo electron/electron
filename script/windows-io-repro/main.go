@@ -125,7 +125,7 @@ func main() {
 	var files []string
 	if *skipCreate {
 		err := filepath.WalkDir(*dir, func(p string, d os.DirEntry, err error) error {
-			if err == nil && !d.IsDir() {
+			if err == nil && !d.IsDir() && filepath.Ext(p) == ".ninja" {
 				files = append(files, p)
 			}
 			return nil
