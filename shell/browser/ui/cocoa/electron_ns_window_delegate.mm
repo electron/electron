@@ -157,45 +157,43 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
         windowSize.width() - contentSize.width() + extraSize.width();
     double extraHeightPlusFrame = titleBarHeight + extraSize.height();
 
-    newSize.width =
-        roundf((frameSize.height - extraHeightPlusFrame) * aspectRatio +
-               extraWidthPlusFrame);
-    newSize.height =
-        roundf((newSize.width - extraWidthPlusFrame) / aspectRatio +
-               extraHeightPlusFrame);
+    auto widthForHeight = [&](double h) {
+      return (h - extraHeightPlusFrame) * aspectRatio + extraWidthPlusFrame;
+    };
+    auto heightForWidth = [&](double w) {
+      return (w - extraWidthPlusFrame) / aspectRatio + extraHeightPlusFrame;
+    };
+
+    newSize.width = roundf(widthForHeight(frameSize.height));
+    newSize.height = roundf(heightForWidth(newSize.width));
 
     // Clamp to minimum width/height while ensuring aspect ratio remains.
     NSSize minSize = [window minSize];
     NSSize zeroSize =
         shell_->has_frame() ? NSMakeSize(0, titleBarHeight) : NSZeroSize;
     if (!NSEqualSizes(minSize, zeroSize)) {
-      double minWidthForAspectRatio =
-          (minSize.height - titleBarHeight) * aspectRatio;
       bool atMinHeight =
           minSize.height > zeroSize.height && newSize.height <= minSize.height;
-      newSize.width = atMinHeight ? minWidthForAspectRatio
+      newSize.width = atMinHeight ? widthForHeight(minSize.height)
                                   : std::max(newSize.width, minSize.width);
 
-      double minHeightForAspectRatio = minSize.width / aspectRatio;
       bool atMinWidth =
           minSize.width > zeroSize.width && newSize.width <= minSize.width;
-      newSize.height = atMinWidth ? minHeightForAspectRatio
+      newSize.height = atMinWidth ? heightForWidth(minSize.width)
                                   : std::max(newSize.height, minSize.height);
     }
 
     // Clamp to maximum width/height while ensuring aspect ratio remains.
     NSSize maxSize = [window maxSize];
     if (!NSEqualSizes(maxSize, NSMakeSize(FLT_MAX, FLT_MAX))) {
-      double maxWidthForAspectRatio = maxSize.height * aspectRatio;
       bool atMaxHeight =
           maxSize.height < FLT_MAX && newSize.height >= maxSize.height;
-      newSize.width = atMaxHeight ? maxWidthForAspectRatio
+      newSize.width = atMaxHeight ? widthForHeight(maxSize.height)
                                   : std::min(newSize.width, maxSize.width);
 
-      double maxHeightForAspectRatio = maxSize.width / aspectRatio;
       bool atMaxWidth =
           maxSize.width < FLT_MAX && newSize.width >= maxSize.width;
-      newSize.height = atMaxWidth ? maxHeightForAspectRatio
+      newSize.height = atMaxWidth ? heightForWidth(maxSize.width)
                                   : std::min(newSize.height, maxSize.height);
     }
   }
