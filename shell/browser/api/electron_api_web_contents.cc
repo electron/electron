@@ -3153,16 +3153,18 @@ void OnGetDeviceNameToUse(base::WeakPtr<content::WebContents> web_contents,
         .Set(printing::kSettingMediaSizeIsDefault, true);
   };
 
-  const bool use_default_size =
-      print_settings.FindBool(kUseDefaultPrinterPageSize).value_or(false);
-  std::optional<gfx::Size> paper_size;
-  if (use_default_size)
-    paper_size = GetPrinterDefaultPaperSize(base::UTF16ToUTF8(info.second));
+  if (!print_settings.Find(printing::kSettingMediaSize)) {
+    const bool use_default_size =
+        print_settings.FindBool(kUseDefaultPrinterPageSize).value_or(false);
+    std::optional<gfx::Size> paper_size;
+    if (use_default_size)
+      paper_size = GetPrinterDefaultPaperSize(base::UTF16ToUTF8(info.second));
 
-  print_settings.Set(
-      printing::kSettingMediaSize,
-      paper_size ? make_media_size(paper_size->height(), paper_size->width())
-                 : make_media_size(297000, 210000));
+    print_settings.Set(
+        printing::kSettingMediaSize,
+        paper_size ? make_media_size(paper_size->height(), paper_size->width())
+                   : make_media_size(297000, 210000));
+  }
 
   content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents.get());
   if (!rfh)
