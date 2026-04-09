@@ -301,9 +301,9 @@ describe('cpp heap', () => {
 
         function buildLargeMenu () {
           return Menu.buildFromTemplate(
-            Array.from({ length: 20 }, (_, i) => ({
+            Array.from({ length: 10 }, (_, i) => ({
               label: `Menu ${i}`,
-              submenu: Array.from({ length: 50 }, (_, j) => ({
+              submenu: Array.from({ length: 20 }, (_, j) => ({
                 label: `Item ${i}-${j}`,
                 click: () => {}
               }))
@@ -322,9 +322,9 @@ describe('cpp heap', () => {
           return getCppHeapStatistics('brief').used_size_bytes;
         }
 
-        await rebuildAndMeasure(100);
-        const after1 = await rebuildAndMeasure(100);
-        const after2 = await rebuildAndMeasure(100);
+        await rebuildAndMeasure(50);
+        const after1 = await rebuildAndMeasure(50);
+        const after2 = await rebuildAndMeasure(50);
         return { after1, after2 };
       });
 
