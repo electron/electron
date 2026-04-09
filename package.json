@@ -21,7 +21,7 @@
     "@types/semver": "^7.5.8",
     "@types/stream-json": "^1.7.8",
     "@types/temp": "^0.9.4",
-    "@xmldom/xmldom": "^0.8.11",
+    "@xmldom/xmldom": "^0.8.12",
     "buffer": "^6.0.3",
     "chalk": "^4.1.0",
     "check-for-leaks": "^1.2.1",
