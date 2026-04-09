@@ -11,6 +11,7 @@
 
 #include "base/files/file_path.h"
 #include "base/json/json_string_value_serializer.h"
+#include "base/logging.h"
 #include "base/path_service.h"
 #include "base/values.h"
 #include "chrome/common/chrome_paths.h"

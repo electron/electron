@@ -238,16 +238,17 @@ index 67d5ff67d74c107a867b39b306c6528425b87e05..5fd12a25c9e319e8e675955926271c9d
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..601e646c293ac18e692663642f540577168924d6
+index 0000000000000000000000000000000000000000..c5f45c564f015d209aee39b4b8f0fd95ce187907
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
-@@ -0,0 +1,161 @@
+@@ -0,0 +1,162 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
 +
 +#include "components/viz/service/display_embedder/software_output_device_proxy.h"
 +
++#include "base/logging.h"
 +#include "base/memory/unsafe_shared_memory_region.h"
 +#include "base/threading/thread_checker.h"
 +#include "base/trace_event/trace_event.h"

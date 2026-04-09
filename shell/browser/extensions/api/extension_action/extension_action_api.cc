@@ -8,6 +8,7 @@
 
 #include <utility>
 
+#include "base/logging.h"
 #include "base/no_destructor.h"
 #include "extensions/browser/event_router.h"
 #include "extensions/browser/extension_prefs.h"
