@@ -1600,6 +1600,26 @@ bool ElectronBrowserClient::ShouldEnableSubframeZoom() {
 #endif
 }
 
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+std::optional<network::CrossOriginEmbedderPolicy>
+ElectronBrowserClient::MaybeOverrideLocalURLCrossOriginEmbedderPolicy(
+    content::NavigationHandle* navigation_handle) {
+  if (!chrome_pdf::features::IsOopifPdfEnabled() ||
+      !navigation_handle->IsPdf()) {
+    return std::nullopt;
+  }
+
+  content::RenderFrameHost* pdf_extension = navigation_handle->GetParentFrame();
+  if (!pdf_extension) {
+    return std::nullopt;
+  }
+
+  content::RenderFrameHost* pdf_embedder = pdf_extension->GetParent();
+  CHECK(pdf_embedder);
+  return pdf_embedder->GetCrossOriginEmbedderPolicy();
+}
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+
 void ElectronBrowserClient::BindHostReceiverForRenderer(
     content::RenderProcessHost* render_process_host,
     mojo::GenericPendingReceiver receiver) {

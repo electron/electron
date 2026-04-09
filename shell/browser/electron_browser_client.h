@@ -84,6 +84,11 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::string GetApplicationLocale() override;
   bool ShouldEnableStrictSiteIsolation() override;
   bool ShouldEnableSubframeZoom() override;
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  std::optional<network::CrossOriginEmbedderPolicy>
+  MaybeOverrideLocalURLCrossOriginEmbedderPolicy(
+      content::NavigationHandle* navigation_handle) override;
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
   void BindHostReceiverForRenderer(
       content::RenderProcessHost* render_process_host,
       mojo::GenericPendingReceiver receiver) override;
