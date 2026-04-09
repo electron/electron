@@ -67,6 +67,15 @@ class Dictionary : public gin::Dictionary {
     return result.FromMaybe(false);
   }
 
+  // Convenience function for using a default value if the
+  // specified key isn't present in the dictionary.
+  template <typename T>
+  T ValueOrDefault(const std::string_view key, T default_value) const {
+    if (auto value = T{}; Get(key, &value))
+      return value;
+    return default_value;
+  }
+
   // Like normal Get but put result in an std::optional.
   template <typename T>
   bool GetOptional(const std::string_view key, std::optional<T>* out) const {
@@ -182,6 +191,16 @@ class Dictionary : public gin::Dictionary {
   }
 
   bool IsEmpty() const { return isolate() == nullptr || GetHandle().IsEmpty(); }
+
+  bool IsEmptyObject() const {
+    if (IsEmpty())
+      return true;
+
+    v8::Local<v8::Context> context = isolate()->GetCurrentContext();
+    v8::Local<v8::Array> props =
+        GetHandle()->GetOwnPropertyNames(context).ToLocalChecked();
+    return props->Length() == 0;
+  }
 
   v8::Local<v8::Object> GetHandle() const {
     return gin::ConvertToV8(isolate(),

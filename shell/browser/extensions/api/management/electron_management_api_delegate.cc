@@ -44,10 +44,6 @@ class ManagementSetEnabledFunctionInstallPromptDelegate
       const ManagementSetEnabledFunctionInstallPromptDelegate&) = delete;
   ManagementSetEnabledFunctionInstallPromptDelegate& operator=(
       const ManagementSetEnabledFunctionInstallPromptDelegate&) = delete;
-
- private:
-  base::WeakPtrFactory<ManagementSetEnabledFunctionInstallPromptDelegate>
-      weak_factory_{this};
 };
 
 class ManagementUninstallFunctionUninstallDialogDelegate
@@ -203,9 +199,8 @@ GURL ElectronManagementAPIDelegate::GetIconURL(
     ExtensionIconSet::Match match,
     bool grayscale) const {
   GURL icon_url(absl::StrFormat(
-      "%s%s/%d/%d%s", chrome::kChromeUIExtensionIconURL,
-      extension->id().c_str(), icon_size, static_cast<int>(match),
-      grayscale ? "?grayscale=true" : ""));
+      "%s%s/%d/%d%s", chrome::kChromeUIExtensionIconURL, extension->id(),
+      icon_size, static_cast<int>(match), grayscale ? "?grayscale=true" : ""));
   CHECK(icon_url.is_valid());
   return icon_url;
 }
@@ -214,7 +209,7 @@ GURL ElectronManagementAPIDelegate::GetEffectiveUpdateURL(
     const extensions::Extension& extension,
     content::BrowserContext* context) const {
   // TODO(codebytere): we do not currently support ExtensionManagement.
-  return GURL::EmptyGURL();
+  return {};
 }
 
 void ElectronManagementAPIDelegate::ShowMv2DeprecationReEnableDialog(

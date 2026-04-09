@@ -6,19 +6,28 @@ Everything here should be project agnostic: it shouldn't rely on project's
 structure, or make assumptions about the passed arguments or calls' outcomes.
 """
 
+import hashlib
 import io
 import os
 import posixpath
 import re
 import subprocess
 import sys
+import threading
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(SCRIPT_DIR)
 
 from patches import PATCH_FILENAME_PREFIX, is_patch_location_line
 
-UPSTREAM_HEAD='refs/patches/upstream-head'
+# In gclient-new-workdir worktrees, .git/refs is symlinked back to the source
+# checkout, so a single fixed ref name would be shared (and clobbered) across
+# worktrees. Derive a per-checkout suffix from this script's absolute path so
+# each worktree records its own upstream head in the shared refs directory.
+_LEGACY_UPSTREAM_HEAD = 'refs/patches/upstream-head'
+UPSTREAM_HEAD = (
+  _LEGACY_UPSTREAM_HEAD + '-' + hashlib.md5(SCRIPT_DIR.encode()).hexdigest()[:8]
+)
 
 def is_repo_root(path):
   path_exists = os.path.exists(path)
@@ -51,8 +60,10 @@ def get_repo_root(path):
 
 
 def am(repo, patch_data, threeway=False, directory=None, exclude=None,
-    committer_name=None, committer_email=None, keep_cr=True):
-  args = []
+    committer_name=None, committer_email=None, keep_cr=True,
+    output_prefix=None):
+  # --keep-non-patch prevents stripping leading bracketed strings on the subject line
+  args = ['--keep-non-patch']
   if threeway:
     args += ['--3way']
   if directory is not None:
@@ -71,9 +82,42 @@ def am(repo, patch_data, threeway=False, directory=None, exclude=None,
   if committer_email is not None:
     root_args += ['-c', 'user.email=' + committer_email]
   root_args += ['-c', 'commit.gpgsign=false']
+  # git am rewrites the index 2-3x per patch. In large repos (Chromium's
+  # index is ~70MB / ~500K files) this dominates wall time. skipHash
+  # avoids recomputing the trailing SHA over the full index on every
+  # write, and index v4 roughly halves the on-disk size via path prefix
+  # compression. Also skip per-object fsync and auto-gc since a crashed
+  # apply is simply re-run from a clean reset.
+  root_args += [
+    '-c', 'index.skipHash=true',
+    '-c', 'index.version=4',
+    '-c', 'core.fsync=none',
+    '-c', 'gc.auto=0',
+  ]
   command = ['git'] + root_args + ['am'] + args
-  with subprocess.Popen(command, stdin=subprocess.PIPE) as proc:
-    proc.communicate(patch_data.encode('utf-8'))
+  popen_kwargs = {'stdin': subprocess.PIPE}
+  if output_prefix is not None:
+    popen_kwargs['stdout'] = subprocess.PIPE
+    popen_kwargs['stderr'] = subprocess.STDOUT
+  with subprocess.Popen(command, **popen_kwargs) as proc:
+    def feed_stdin():
+      proc.stdin.write(patch_data.encode('utf-8'))
+      proc.stdin.close()
+    if output_prefix is not None:
+      writer = threading.Thread(target=feed_stdin)
+      writer.start()
+      for line in proc.stdout:
+        try:
+          sys.stdout.write(
+            f'{output_prefix}{line.decode("utf-8", "replace")}')
+          sys.stdout.flush()
+        except BrokenPipeError:
+          pass
+      writer.join()
+      proc.wait()
+    else:
+      feed_stdin()
+      proc.wait()
     if proc.returncode != 0:
       raise RuntimeError(f"Command {command} returned {proc.returncode}")
 
@@ -82,6 +126,14 @@ def import_patches(repo, ref=UPSTREAM_HEAD, **kwargs):
   """same as am(), but we save the upstream HEAD so we can refer to it when we
   later export patches"""
   update_ref(repo=repo, ref=ref, newvalue='HEAD')
+  if ref != _LEGACY_UPSTREAM_HEAD:
+    update_ref(repo=repo, ref=_LEGACY_UPSTREAM_HEAD, newvalue='HEAD')
+  # Upgrade to index v4 before applying so every intermediate index write
+  # during am benefits from path-prefix compression (roughly halves index
+  # size in large repos).
+  subprocess.call(
+    ['git', '-C', repo, 'update-index', '--index-version', '4'],
+    stderr=subprocess.DEVNULL)
   am(repo=repo, **kwargs)
 
 
@@ -101,19 +153,21 @@ def get_commit_count(repo, commit_range):
 
 def guess_base_commit(repo, ref):
   """Guess which commit the patches might be based on"""
-  try:
-    upstream_head = get_commit_for_ref(repo, ref)
-    num_commits = get_commit_count(repo, upstream_head + '..')
-    return [upstream_head, num_commits]
-  except subprocess.CalledProcessError:
-    args = [
-      'git',
-      '-C',
-      repo,
-      'describe',
-      '--tags',
-    ]
-    return subprocess.check_output(args).decode('utf-8').rsplit('-', 2)[0:2]
+  for candidate in (ref, _LEGACY_UPSTREAM_HEAD):
+    try:
+      upstream_head = get_commit_for_ref(repo, candidate)
+      num_commits = get_commit_count(repo, upstream_head + '..')
+      return [upstream_head, num_commits]
+    except subprocess.CalledProcessError:
+      continue
+  args = [
+    'git',
+    '-C',
+    repo,
+    'describe',
+    '--tags',
+  ]
+  return subprocess.check_output(args).decode('utf-8').rsplit('-', 2)[0:2]
 
 
 def format_patch(repo, since):
@@ -127,6 +181,11 @@ def format_patch(repo, since):
         os.path.dirname(os.path.realpath(__file__)),
         'electron.gitattributes',
     ),
+    # Pin rename/copy detection to git's default so that patch output is
+    # deterministic regardless of local or system-level diff.renames config
+    # (e.g. 'copies', which would encode similar new files as copies).
+    '-c',
+    'diff.renames=true',
     # Ensure it is not possible to match anything
     # Disabled for now as we have consistent chunk headers
     # '-c',

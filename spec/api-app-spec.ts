@@ -2,7 +2,6 @@ import { app, BrowserWindow, Menu, session, net as electronNet, WebContents, uti
 
 import { assert, expect } from 'chai';
 import * as semver from 'semver';
-import split = require('split')
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -11,13 +10,17 @@ import * as http from 'node:http';
 import * as https from 'node:https';
 import * as net from 'node:net';
 import * as path from 'node:path';
+import * as readline from 'node:readline';
+import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers';
-import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
+import { ifdescribe, ifit, isWayland, listen, waitUntil } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
+
+const isMacOSx64 = process.platform === 'darwin' && process.arch === 'x64';
 
 describe('electron module', () => {
   it('does not expose internal modules to require', () => {
@@ -84,7 +87,7 @@ describe('app module', () => {
   });
 
   describe('app name APIs', () => {
-    it('with properties', () => {
+    describe('with properties', () => {
       it('returns the name field of package.json', () => {
         expect(app.name).to.equal('Electron Test Main');
       });
@@ -98,7 +101,7 @@ describe('app module', () => {
       });
     });
 
-    it('with functions', () => {
+    describe('with functions', () => {
       it('returns the name field of package.json', () => {
         expect(app.getName()).to.equal('Electron Test Main');
       });
@@ -143,6 +146,20 @@ describe('app module', () => {
       const localeCountryCode = app.getLocaleCountryCode();
       expect(localeCountryCode).to.be.a('string');
       expect(localeCountryCode.length).to.be.oneOf([0, 2]);
+    });
+  });
+
+  describe('app.isHardwareAccelerationEnabled()', () => {
+    it('should be a boolean', () => {
+      expect(app.isHardwareAccelerationEnabled()).to.be.a('boolean');
+    });
+  });
+
+  ifdescribe(process.platform === 'win32')('app.setToastActivatorCLSID()', () => {
+    it('throws on invalid format', () => {
+      expect(() => {
+        app.setToastActivatorCLSID('1234567890');
+      }).to.throw(/Invalid CLSID format/);
     });
   });
 
@@ -251,11 +268,11 @@ describe('app module', () => {
       const firstExited = once(first, 'exit');
 
       // Wait for the first app to boot.
-      const firstStdoutLines = first.stdout.pipe(split());
-      while ((await once(firstStdoutLines, 'data')).toString() !== 'started') {
+      const firstStdoutLines = readline.createInterface({ input: first.stdout });
+      while ((await once(firstStdoutLines, 'line')).toString() !== 'started') {
         // wait.
       }
-      const additionalDataPromise = once(firstStdoutLines, 'data');
+      const additionalDataPromise = once(firstStdoutLines, 'line');
 
       const secondInstanceArgs = [process.execPath, appPath, ...testArgs.args, '--some-switch', 'some-arg'];
       const second = cp.spawn(secondInstanceArgs[0], secondInstanceArgs.slice(1));
@@ -353,6 +370,44 @@ describe('app module', () => {
       } catch {
         // This is expected.
       }
+    });
+  });
+
+  // GitHub Actions macOS-13 runners used for x64 seem to have a problem with this test.
+  ifdescribe(process.platform !== 'linux' && !isMacOSx64)('app.{add|get|clear}RecentDocument(s)', () => {
+    const tempFiles = [
+      path.join(fixturesPath, 'foo.txt'),
+      path.join(fixturesPath, 'bar.txt'),
+      path.join(fixturesPath, 'baz.txt')
+    ];
+
+    afterEach(() => {
+      app.clearRecentDocuments();
+      for (const file of tempFiles) {
+        fs.unlinkSync(file);
+      }
+    });
+
+    beforeEach(() => {
+      for (const file of tempFiles) {
+        fs.writeFileSync(file, 'Lorem Ipsum');
+      }
+    });
+
+    it('can add a recent document', async () => {
+      app.addRecentDocument(tempFiles[0]);
+      await setTimeout(2000);
+      expect(app.getRecentDocuments()).to.include.members([tempFiles[0]]);
+    });
+
+    it('can clear recent documents', async () => {
+      app.addRecentDocument(tempFiles[1]);
+      app.addRecentDocument(tempFiles[2]);
+      await setTimeout(2000);
+      expect(app.getRecentDocuments()).to.include.members([tempFiles[1], tempFiles[2]]);
+      app.clearRecentDocuments();
+      await setTimeout(2000);
+      expect(app.getRecentDocuments()).to.deep.equal([]);
     });
   });
 
@@ -532,7 +587,7 @@ describe('app module', () => {
     });
 
     // FIXME: re-enable this test on win32.
-    ifit(process.platform !== 'win32')('should emit render-process-gone event when renderer crashes', async () => {
+    ifit(process.platform !== 'win32' && !isWayland)('should emit render-process-gone event when renderer crashes', async () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -553,8 +608,8 @@ describe('app module', () => {
 
   describe('app.badgeCount', () => {
     const platformIsNotSupported =
-        (process.platform === 'win32') ||
-        (process.platform === 'linux' && !app.isUnityRunning());
+      (process.platform === 'win32') ||
+      (process.platform === 'linux' && !app.isUnityRunning());
 
     const expectedBadgeCount = 42;
 
@@ -978,23 +1033,78 @@ describe('app module', () => {
     });
   });
 
-  ifdescribe(process.platform !== 'linux')('accessibilitySupportEnabled property', () => {
-    it('with properties', () => {
-      it('can set accessibility support enabled', () => {
-        expect(app.accessibilitySupportEnabled).to.eql(false);
-
-        app.accessibilitySupportEnabled = true;
-        expect(app.accessibilitySupportEnabled).to.eql(true);
-      });
+  ifdescribe(process.platform !== 'linux')('accessibility support functionality', () => {
+    it('is mutable', () => {
+      const values = [false, true, false];
+      const setters: Array<(arg: boolean) => void> = [
+        (value) => { app.accessibilitySupportEnabled = value; },
+        (value) => app.setAccessibilitySupportEnabled(value)
+      ];
+      const getters: Array<() => boolean> = [
+        () => app.accessibilitySupportEnabled,
+        () => app.isAccessibilitySupportEnabled()
+      ];
+      for (const value of values) {
+        for (const set of setters) {
+          set(value);
+          for (const get of getters) expect(get()).to.eql(value);
+        }
+      }
     });
 
-    it('with functions', () => {
-      it('can set accessibility support enabled', () => {
-        expect(app.isAccessibilitySupportEnabled()).to.eql(false);
+    it('getAccessibilitySupportFeatures returns an array with accessibility properties', () => {
+      const values = [
+        'nativeAPIs',
+        'webContents',
+        'inlineTextBoxes',
+        'extendedProperties',
+        'screenReader',
+        'html',
+        'labelImages',
+        'pdfPrinting'
+      ];
 
-        app.setAccessibilitySupportEnabled(true);
-        expect(app.isAccessibilitySupportEnabled()).to.eql(true);
-      });
+      app.setAccessibilitySupportEnabled(false);
+
+      const disabled = app.getAccessibilitySupportFeatures();
+      expect(disabled).to.be.an('array');
+      expect(disabled.includes('complete')).to.equal(false);
+
+      app.setAccessibilitySupportEnabled(true);
+      const enabled = app.getAccessibilitySupportFeatures();
+      expect(enabled).to.be.an('array').with.length.greaterThan(0);
+
+      const boolEnabled = app.isAccessibilitySupportEnabled();
+      if (boolEnabled) {
+        expect(enabled.some(f => values.includes(f))).to.equal(true);
+      }
+    });
+
+    it('setAccessibilitySupportFeatures can enable a subset of features', () => {
+      app.setAccessibilitySupportEnabled(false);
+      expect(app.isAccessibilitySupportEnabled()).to.equal(false);
+      expect(app.getAccessibilitySupportFeatures()).to.be.an('array').that.is.empty();
+
+      const subsetA = ['webContents', 'html'];
+      app.setAccessibilitySupportFeatures(subsetA);
+      const afterSubsetA = app.getAccessibilitySupportFeatures();
+      expect(afterSubsetA).to.deep.equal(subsetA);
+
+      const subsetB = [
+        'nativeAPIs',
+        'webContents',
+        'inlineTextBoxes',
+        'extendedProperties'
+      ];
+      app.setAccessibilitySupportFeatures(subsetB);
+      const afterSubsetB = app.getAccessibilitySupportFeatures();
+      expect(afterSubsetB).to.deep.equal(subsetB);
+    });
+
+    it('throws when an unknown accessibility feature is requested', () => {
+      expect(() => {
+        app.setAccessibilitySupportFeatures(['unknownFeature']);
+      }).to.throw('Unknown accessibility feature: unknownFeature');
     });
   });
 
@@ -1067,6 +1177,20 @@ describe('app module', () => {
       ];
       expect(paths).to.deep.equal([true, true, true]);
     });
+
+    if (process.platform === 'darwin') {
+      it('throws an error when trying to get the assets path on macOS', () => {
+        expect(() => {
+          app.getPath('assets' as any);
+        }).to.throw(/Failed to get 'assets' path/);
+      });
+    } else {
+      it('returns an assets path that is identical to the module path', () => {
+        const assetsPath = app.getPath('assets');
+        expect(fs.existsSync(assetsPath)).to.be.true();
+        expect(assetsPath).to.equal(path.dirname(app.getPath('module')));
+      });
+    }
 
     it('throws an error when the name is invalid', () => {
       expect(() => {
@@ -1313,7 +1437,7 @@ describe('app module', () => {
 
   describe('getApplicationNameForProtocol()', () => {
     // TODO: Linux CI doesn't have registered http & https handlers
-    ifit(!(process.env.CI && process.platform === 'linux'))('returns application names for common protocols', function () {
+    ifit(!(process.env.CI && process.platform === 'linux') && !isWayland)('returns application names for common protocols', function () {
       // We can't expect particular app names here, but these protocols should
       // at least have _something_ registered. Except on our Linux CI
       // environment apparently.
@@ -1351,6 +1475,29 @@ describe('app module', () => {
   describe('isDefaultProtocolClient()', () => {
     it('returns false for a bogus protocol', () => {
       expect(app.isDefaultProtocolClient('bogus-protocol://')).to.equal(false);
+    });
+  });
+
+  describe('protocol scheme validation', () => {
+    it('rejects empty protocol names', () => {
+      expect(app.setAsDefaultProtocolClient('')).to.equal(false);
+      expect(app.isDefaultProtocolClient('')).to.equal(false);
+      expect(app.removeAsDefaultProtocolClient('')).to.equal(false);
+    });
+
+    it('rejects non-conformant protocol names ', () => {
+      // Starting with a digit.
+      expect(app.setAsDefaultProtocolClient('0badscheme')).to.equal(false);
+      // Starting with a hyphen.
+      expect(app.setAsDefaultProtocolClient('-badscheme')).to.equal(false);
+      // Containing backslashes.
+      expect(app.setAsDefaultProtocolClient('http\\shell\\open\\command')).to.equal(false);
+      // Containing forward slashes.
+      expect(app.setAsDefaultProtocolClient('bad/protocol')).to.equal(false);
+      // Containing spaces.
+      expect(app.setAsDefaultProtocolClient('bad protocol')).to.equal(false);
+      // Containing colons.
+      expect(app.setAsDefaultProtocolClient('bad:protocol')).to.equal(false);
     });
   });
 
@@ -1649,6 +1796,31 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'darwin')('app isActive API', () => {
+    describe('app.isActive', () => {
+      afterEach(closeAllWindows);
+
+      it('returns true when the app becomes active', async () => {
+        expect(app.isActive()).to.equal(false);
+
+        const w = new BrowserWindow({
+          width: 200,
+          height: 200,
+          show: false
+        });
+
+        w.show();
+
+        await expect(
+          waitUntil(() => app.isActive())
+        ).to.eventually.be.fulfilled();
+
+        w.close();
+        app.hide();
+      });
+    });
+  });
+
   ifdescribe(process.platform === 'darwin')('app hide and show API', () => {
     describe('app.isHidden', () => {
       it('returns true when the app is hidden', async () => {
@@ -1668,19 +1840,19 @@ describe('app module', () => {
 
   ifdescribe(process.platform === 'darwin')('dock APIs', () => {
     after(async () => {
-      await app.dock.show();
+      await app.dock?.show();
     });
 
     describe('dock.setMenu', () => {
       it('can be retrieved via dock.getMenu', () => {
-        expect(app.dock.getMenu()).to.equal(null);
+        expect(app.dock?.getMenu()).to.equal(null);
         const menu = new Menu();
-        app.dock.setMenu(menu);
-        expect(app.dock.getMenu()).to.equal(menu);
+        app.dock?.setMenu(menu);
+        expect(app.dock?.getMenu()).to.equal(menu);
       });
 
       it('keeps references to the menu', () => {
-        app.dock.setMenu(new Menu());
+        app.dock?.setMenu(new Menu());
         const v8Util = process._linkedBinding('electron_common_v8_util');
         v8Util.requestGarbageCollectionForTesting();
       });
@@ -1690,56 +1862,54 @@ describe('app module', () => {
       it('throws a descriptive error for a bad icon path', () => {
         const badPath = path.resolve('I', 'Do', 'Not', 'Exist');
         expect(() => {
-          app.dock.setIcon(badPath);
+          app.dock?.setIcon(badPath);
         }).to.throw(/Failed to load image from path (.+)/);
       });
     });
 
     describe('dock.bounce', () => {
       it('should return -1 for unknown bounce type', () => {
-        expect(app.dock.bounce('bad type' as any)).to.equal(-1);
+        expect(app.dock?.bounce('bad type' as any)).to.equal(-1);
       });
 
       it('should return a positive number for informational type', () => {
-        const appHasFocus = !!BrowserWindow.getFocusedWindow();
-        if (!appHasFocus) {
-          expect(app.dock.bounce('informational')).to.be.at.least(0);
+        if (!app.isActive()) {
+          expect(app.dock?.bounce('informational')).to.be.at.least(0);
         }
       });
 
       it('should return a positive number for critical type', () => {
-        const appHasFocus = !!BrowserWindow.getFocusedWindow();
-        if (!appHasFocus) {
-          expect(app.dock.bounce('critical')).to.be.at.least(0);
+        if (!app.isActive()) {
+          expect(app.dock?.bounce('critical')).to.be.at.least(0);
         }
       });
     });
 
     describe('dock.cancelBounce', () => {
       it('should not throw', () => {
-        app.dock.cancelBounce(app.dock.bounce('critical'));
+        app.dock?.cancelBounce(app.dock?.bounce('critical'));
       });
     });
 
     describe('dock.setBadge', () => {
       after(() => {
-        app.dock.setBadge('');
+        app.dock?.setBadge('');
       });
 
       it('should not throw', () => {
-        app.dock.setBadge('1');
+        app.dock?.setBadge('1');
       });
 
       it('should be retrievable via getBadge', () => {
-        app.dock.setBadge('test');
-        expect(app.dock.getBadge()).to.equal('test');
+        app.dock?.setBadge('test');
+        expect(app.dock?.getBadge()).to.equal('test');
       });
     });
 
     describe('dock.hide', () => {
       it('should not throw', () => {
-        app.dock.hide();
-        expect(app.dock.isVisible()).to.equal(false);
+        app.dock?.hide();
+        expect(app.dock?.isVisible()).to.equal(false);
       });
     });
 
@@ -1748,17 +1918,17 @@ describe('app module', () => {
     // See https://github.com/electron/electron/pull/25269 for more.
     describe('dock.show', () => {
       it('should not throw', () => {
-        return app.dock.show().then(() => {
-          expect(app.dock.isVisible()).to.equal(true);
+        return app.dock?.show().then(() => {
+          expect(app.dock?.isVisible()).to.equal(true);
         });
       });
 
       it('returns a Promise', () => {
-        expect(app.dock.show()).to.be.a('promise');
+        expect(app.dock?.show()).to.be.a('promise');
       });
 
       it('eventually fulfills', async () => {
-        await expect(app.dock.show()).to.eventually.be.fulfilled.equal(undefined);
+        await expect(app.dock?.show()).to.eventually.be.fulfilled.equal(undefined);
       });
     });
   });

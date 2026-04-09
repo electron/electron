@@ -15,11 +15,11 @@
 #include "base/values.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "net/cert/x509_certificate.h"
 #include "net/cert/x509_util.h"
 #include "net/http/http_response_headers.h"
+#include "net/http/http_util.h"
 #include "net/http/http_version.h"
 #include "net/url_request/redirect_info.h"
 #include "services/network/public/cpp/data_element.h"
@@ -32,8 +32,11 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/v8_util.h"
 
 namespace gin {
@@ -85,8 +88,7 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
   dict.Set("issuerName", val->issuer().GetDisplayName());
   dict.Set("subject", val->subject());
   dict.Set("subjectName", val->subject().GetDisplayName());
-  dict.Set("serialNumber", base::HexEncode(val->serial_number().data(),
-                                           val->serial_number().size()));
+  dict.Set("serialNumber", base::HexEncode(val->serial_number()));
   dict.Set("validStart", val->valid_start().InSecondsFSinceUnixEpoch());
   dict.Set("validExpiry", val->valid_expiry().InSecondsFSinceUnixEpoch());
   dict.Set("fingerprint",
@@ -162,16 +164,16 @@ v8::Local<v8::Value> Converter<net::CertPrincipal>::ToV8(
 v8::Local<v8::Value> Converter<net::HttpResponseHeaders*>::ToV8(
     v8::Isolate* isolate,
     net::HttpResponseHeaders* headers) {
-  base::Value::Dict response_headers;
+  base::DictValue response_headers;
   if (headers) {
     size_t iter = 0;
     std::string key;
     std::string value;
     while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
       key = base::ToLowerASCII(key);
-      base::Value::List* values = response_headers.FindList(key);
+      base::ListValue* values = response_headers.FindList(key);
       if (!values)
-        values = &response_headers.Set(key, base::Value::List())->GetList();
+        values = &response_headers.Set(key, base::ListValue())->GetList();
       values->Append(value);
     }
   }
@@ -196,6 +198,10 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
     }
     std::string value;
     gin::ConvertFromV8(isolate, localStrVal, &value);
+    if (!net::HttpUtil::IsValidHeaderName(key) ||
+        !net::HttpUtil::IsValidHeaderValue(value)) {
+      return false;
+    }
     out->AddHeader(key, value);
     return true;
   };
@@ -243,7 +249,7 @@ v8::Local<v8::Value> Converter<net::HttpRequestHeaders>::ToV8(
 bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
                                                 v8::Local<v8::Value> val,
                                                 net::HttpRequestHeaders* out) {
-  base::Value::Dict dict;
+  base::DictValue dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
   for (const auto it : dict) {
@@ -256,27 +262,28 @@ bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
 namespace {
 
 class ChunkedDataPipeReadableStream final
-    : public gin::Wrappable<ChunkedDataPipeReadableStream> {
+    : public gin_helper::DeprecatedWrappable<ChunkedDataPipeReadableStream> {
  public:
-  static gin::Handle<ChunkedDataPipeReadableStream> Create(
+  static gin_helper::Handle<ChunkedDataPipeReadableStream> Create(
       v8::Isolate* isolate,
       network::ResourceRequestBody* request,
       network::DataElementChunkedDataPipe* data_element) {
-    return gin::CreateHandle(isolate, new ChunkedDataPipeReadableStream(
-                                          isolate, request, data_element));
+    return gin_helper::CreateHandle(
+        isolate,
+        new ChunkedDataPipeReadableStream(isolate, request, data_element));
   }
 
-  // gin::Wrappable
+  // gin_helper::Wrappable
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override {
-    return gin::Wrappable<
+    return gin_helper::DeprecatedWrappable<
                ChunkedDataPipeReadableStream>::GetObjectTemplateBuilder(isolate)
         .SetMethod("read", &ChunkedDataPipeReadableStream::Read);
   }
 
   const char* GetTypeName() override { return "ChunkedDataPipeReadableStream"; }
 
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
 
  private:
   ChunkedDataPipeReadableStream(
@@ -494,7 +501,7 @@ class ChunkedDataPipeReadableStream final
   gin_helper::Promise<int> promise_;
 };
 
-gin::WrapperInfo ChunkedDataPipeReadableStream::kWrapperInfo = {
+gin::DeprecatedWrapperInfo ChunkedDataPipeReadableStream::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
 }  // namespace
@@ -524,11 +531,11 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
       }
       case network::mojom::DataElement::Tag::kBytes: {
         upload_data.Set("type", "rawData");
-        const auto& bytes = element.As<network::DataElementBytes>().bytes();
-        const char* data = reinterpret_cast<const char*>(bytes.data());
         upload_data.Set(
             "bytes",
-            node::Buffer::Copy(isolate, data, bytes.size()).ToLocalChecked());
+            electron::Buffer::Copy(
+                isolate, element.As<network::DataElementBytes>().bytes())
+                .ToLocalChecked());
         break;
       }
       case network::mojom::DataElement::Tag::kDataPipe: {
@@ -536,7 +543,7 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
         // TODO(zcbenz): After the NetworkService refactor, the old blobUUID API
         // becomes unnecessarily complex, we should deprecate the getBlobData
         // API and return the DataPipeHolder wrapper directly.
-        auto holder = electron::api::DataPipeHolder::Create(isolate, element);
+        auto* holder = electron::api::DataPipeHolder::Create(isolate, element);
         upload_data.Set("blobUUID", holder->id());
         // The lifetime of data pipe is bound to the uploadData object.
         upload_data.Set("dataPipe", holder);
@@ -585,22 +592,23 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
   base::Value list_value;
   if (!ConvertFromV8(isolate, val, &list_value) || !list_value.is_list())
     return false;
-  base::Value::List& list = list_value.GetList();
+  base::ListValue& list = list_value.GetList();
   *out = base::MakeRefCounted<network::ResourceRequestBody>();
   for (base::Value& dict_value : list) {
     if (!dict_value.is_dict())
       return false;
-    base::Value::Dict& dict = dict_value.GetDict();
+    base::DictValue& dict = dict_value.GetDict();
     std::string* type = dict.FindString("type");
     if (!type)
       return false;
     if (*type == "rawData") {
-      const base::Value::BlobStorage* bytes = dict.FindBlob("bytes");
-      (*out)->AppendBytes(reinterpret_cast<const char*>(bytes->data()),
-                          base::checked_cast<int>(bytes->size()));
+      (*out)->AppendBytes(std::move(*dict.Find("bytes")).TakeBlob());
     } else if (*type == "file") {
       const std::string* file = dict.FindString("filePath");
       if (!file)
+        return false;
+      if (std::any_of(file->begin(), file->end(),
+                      [](char c) { return c >= 0 && c < 0x20; }))
         return false;
       double modification_time =
           dict.FindDouble("modificationTime").value_or(0.0);

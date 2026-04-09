@@ -10,6 +10,7 @@ runtime that allows interacting with pages and instrumenting them.
 
 ```js
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
 
 try {
@@ -43,7 +44,7 @@ Returns:
 * `reason` string - Reason for detaching debugger.
 
 Emitted when the debugging session is terminated. This happens either when
-`webContents` is closed or devtools is invoked for the attached `webContents`.
+`webContents` is closed or DevTools is invoked for the attached `webContents`.
 
 #### Event: 'message'
 

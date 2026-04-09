@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 25 Feb 2025 11:07:25 +0000
+Subject: fix: adjust WPT and WebIDL tests for enabled Float16Array
+
+Refs https://chromium-review.googlesource.com/c/chromium/src/+/6275531
+
+This commit updates the WPT and WebIDL tests to account for the fact that
+Float16Array is now enabled by default. This can be removed once
+Node.js upgrades to a version of V8 that has Float16Array enabled by
+default.
+
+diff --git a/test/common/globals.js b/test/common/globals.js
+index 1641c4df36b92dbe29b06817d87130a94ae1b22f..34563b304f0e708ae066f8303a09e37b6bf123d6 100644
+--- a/test/common/globals.js
++++ b/test/common/globals.js
+@@ -36,6 +36,7 @@ const intrinsics = new Set([
+   'Float16Array',
+   'Uint32Array',
+   'Int32Array',
++  'Float16Array',
+   'Float32Array',
+   'Float64Array',
+   'Uint8ClampedArray',

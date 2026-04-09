@@ -22,12 +22,9 @@ In `preload.js` use the [`contextBridge`][] to inject a method `window.electron.
 
 ```js
 const { contextBridge, ipcRenderer } = require('electron')
-const path = require('node:path')
 
 contextBridge.exposeInMainWorld('electron', {
-  startDrag: (fileName) => {
-    ipcRenderer.send('ondragstart', path.join(process.cwd(), fileName))
-  }
+  startDrag: (fileName) => ipcRenderer.send('ondragstart', fileName)
 })
 ```
 
@@ -112,5 +109,11 @@ the item from the BrowserWindow onto your desktop. In this guide,
 the item is a Markdown file located in the root of the project:
 
 ![Drag and drop](../images/drag-and-drop.gif)
+
+## Dragging files into your app
+
+You can use the standard
+[Drag and Drop web API](https://developer.mozilla.org/en-US/docs/Web/API/HTML_Drag_and_Drop_API)
+for dragging and dropping files into your app.
 
 [`contextBridge`]: ../api/context-bridge.md

@@ -46,4 +46,7 @@ See: https://developer.apple.com/documentation/appkit/nsapplication/1428476-regi
 ### `pushNotifications.unregisterForAPNSNotifications()` _macOS_
 
 Unregisters the app from notifications received from APNS.
+
+Apps unregistered through this method can always reregister.
+
 See: https://developer.apple.com/documentation/appkit/nsapplication/1428747-unregisterforremotenotifications?language=objc

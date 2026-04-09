@@ -1,4 +1,4 @@
-import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
+import { ipcMain, net, protocol, session, WebContents, webContents } from 'electron/main';
 
 import { expect } from 'chai';
 import * as WebSocket from 'ws';
@@ -13,7 +13,7 @@ import * as qs from 'node:querystring';
 import { ReadableStream } from 'node:stream/web';
 import * as url from 'node:url';
 
-import { listen, defer } from './lib/spec-helpers';
+import { listen, defer, startRemoteControlApp } from './lib/spec-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -101,11 +101,47 @@ describe('webRequest module', () => {
       await expect(ajax(defaultURL)).to.eventually.be.rejected();
     });
 
+    it('matches all requests when no filters are defined', async () => {
+      ses.webRequest.onBeforeRequest(cancel);
+      await expect(ajax(`${defaultURL}nofilter/test`)).to.eventually.be.rejected();
+      await expect(ajax(`${defaultURL}nofilter2/test`)).to.eventually.be.rejected();
+    });
+
     it('can filter URLs', async () => {
       const filter = { urls: [defaultURL + 'filter/*'] };
       ses.webRequest.onBeforeRequest(filter, cancel);
       const { data } = await ajax(`${defaultURL}nofilter/test`);
       expect(data).to.equal('/nofilter/test');
+      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+    });
+
+    it('can filter all URLs with syntax <all_urls>', async () => {
+      const filter = { urls: ['<all_urls>'] };
+      ses.webRequest.onBeforeRequest(filter, cancel);
+      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+      await expect(ajax(`${defaultURL}nofilter/test`)).to.eventually.be.rejected();
+    });
+
+    it('can filter URLs with overlapping patterns of urls and excludeUrls', async () => {
+      // If filter matches both urls and excludeUrls, it should be excluded.
+      const filter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'filter/test'] };
+      ses.webRequest.onBeforeRequest(filter, cancel);
+      const { data } = await ajax(`${defaultURL}filter/test`);
+      expect(data).to.equal('/filter/test');
+    });
+
+    it('can filter URLs with multiple excludeUrls patterns', async () => {
+      const filter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'filter/exclude1/*', defaultURL + 'filter/exclude2/*'] };
+      ses.webRequest.onBeforeRequest(filter, cancel);
+      expect((await ajax(`${defaultURL}filter/exclude1/test`)).data).to.equal('/filter/exclude1/test');
+      expect((await ajax(`${defaultURL}filter/exclude2/test`)).data).to.equal('/filter/exclude2/test');
+      // expect non-excluded URL to pass filter
+      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+    });
+
+    it('can filter URLs with empty excludeUrls', async () => {
+      const filter = { urls: [defaultURL + 'filter/*'], excludeUrls: [] };
+      ses.webRequest.onBeforeRequest(filter, cancel);
       await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
     });
 
@@ -120,6 +156,122 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeRequest(filter2, cancel);
       expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
       expect((await ajax(`${defaultURL}filter/test`)).data).to.equal('/filter/test');
+    });
+
+    it('can filter URLs, excludeUrls and types', async () => {
+      const filter1: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'exclude/*'], types: ['xhr'] };
+      ses.webRequest.onBeforeRequest(filter1, cancel);
+
+      expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
+      expect((await ajax(`${defaultURL}exclude/test`)).data).to.equal('/exclude/test');
+      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+
+      const filter2: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'exclude/*'], types: ['stylesheet'] };
+      ses.webRequest.onBeforeRequest(filter2, cancel);
+      expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
+      expect((await ajax(`${defaultURL}filter/test`)).data).to.equal('/filter/test');
+      expect((await ajax(`${defaultURL}exclude/test`)).data).to.equal('/exclude/test');
+    });
+
+    // allowExtensions changes how URLPattern works, so we add extra tests that ensure that filters still work as expected.
+    describe('with protocol.registerSchemesAsPrivileged() and allowExtensions', () => {
+      it('will filter http URLs properly', async () => {
+        const rc = await startRemoteControlApp(['--boot-eval="protocol.registerSchemesAsPrivileged([{ scheme: \'custom\', privileges: { allowExtensions: true } }]);"']);
+        const called = await rc.remotely(async (url: string) => {
+          const { BrowserWindow, session } = require('electron/main');
+
+          let called = false;
+
+          session.defaultSession.webRequest.onBeforeRequest({ urls: ['http://*/*'] }, (_: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) => {
+            called = true;
+            callback({ cancel: true });
+          });
+
+          const w = new BrowserWindow({ show: false });
+          await w.loadURL('about:blank');
+
+          await w.webContents.executeJavaScript(`fetch("${url}").then(() => true, () => false)`);
+
+          global.setTimeout(() => require('electron').app.quit());
+
+          return called;
+        }, defaultURL);
+        expect(called).to.be.true();
+      });
+
+      it('will not call webRequest.onBeforeRequest for non-custom protocol URLs that do not match the filter', async () => {
+        const rc = await startRemoteControlApp(['--boot-eval="protocol.registerSchemesAsPrivileged([{ scheme: \'custom\', privileges: { allowExtensions: true } }]);"']);
+        const called = await rc.remotely(async (url: string) => {
+          const { BrowserWindow, session } = require('electron/main');
+
+          let called = false;
+
+          session.defaultSession.webRequest.onBeforeRequest({ urls: ['https://*/*'] }, (_: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) => {
+            called = true;
+            callback({ cancel: true });
+          });
+
+          const w = new BrowserWindow({ show: false });
+          await w.loadURL('about:blank');
+
+          await w.webContents.executeJavaScript(`fetch("${url}").then(() => true, () => false)`);
+
+          global.setTimeout(() => require('electron').app.quit());
+
+          return called;
+        }, defaultURL);
+        expect(called).to.be.false();
+      });
+
+      it('will call webRequest.onBeforeRequest for custom protocol URLs with <all_urls> filter', async () => {
+        const rc = await startRemoteControlApp(['--boot-eval="protocol.registerSchemesAsPrivileged([{ scheme: \'custom\', privileges: { allowExtensions: true } }]);"']);
+        const { called, responseText } = await rc.remotely(async () => {
+          const { net, protocol, session } = require('electron/main');
+
+          protocol.handle('custom', () => new Response('success'));
+
+          let called = false;
+
+          session.defaultSession.webRequest.onBeforeRequest({ urls: ['<all_urls>'] }, (_: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) => {
+            called = true;
+            callback({ cancel: false });
+          });
+
+          const response = await net.fetch('custom://app/test');
+          const responseText = await response.text();
+
+          global.setTimeout(() => require('electron').app.quit());
+
+          return { called, responseText };
+        });
+        expect(responseText).to.equal('success');
+        expect(called).to.be.true();
+      });
+
+      it('will not call webRequest.onBeforeRequest for custom protocol URLs that do not match the filter', async () => {
+        const rc = await startRemoteControlApp(['--boot-eval="protocol.registerSchemesAsPrivileged([{ scheme: \'custom\', privileges: { allowExtensions: true } }]);"']);
+        const { called, responseText } = await rc.remotely(async () => {
+          const { net, protocol, session } = require('electron/main');
+
+          protocol.handle('custom', () => new Response('success'));
+
+          let called = false;
+
+          session.defaultSession.webRequest.onBeforeRequest({ urls: ['http://*/*'] }, (_: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) => {
+            called = true;
+            callback({ cancel: false });
+          });
+
+          const response = await net.fetch('custom://app/test');
+          const responseText = await response.text();
+
+          global.setTimeout(() => require('electron').app.quit());
+
+          return { called, responseText };
+        });
+        expect(responseText).to.equal('success');
+        expect(called).to.be.false();
+      });
     });
 
     it('receives details object', async () => {
@@ -404,6 +556,35 @@ describe('webRequest module', () => {
       }));
       expect(onSendHeadersCalled).to.be.true();
     });
+
+    it('can inject Proxy-Authorization header for net module requests', async () => {
+      // Proxy-Authorization is normally rejected by Chromium's network service
+      // for security reasons. However, for Electron's trusted net module,
+      // webRequest.onBeforeSendHeaders should be able to inject it via the
+      // TrustedHeaderClient code path.
+      const proxyAuthValue = 'Basic test-credentials';
+      let receivedProxyAuth: string | undefined;
+
+      const server = http.createServer((req, res) => {
+        receivedProxyAuth = req.headers['proxy-authorization'];
+        res.end('ok');
+      });
+      const { url: serverUrl } = await listen(server);
+
+      try {
+        ses.webRequest.onBeforeSendHeaders((details, callback) => {
+          const requestHeaders = details.requestHeaders;
+          requestHeaders['Proxy-Authorization'] = proxyAuthValue;
+          callback({ requestHeaders });
+        });
+
+        const response = await net.fetch(serverUrl, { bypassCustomProtocolHandlers: true });
+        expect(response.ok).to.be.true();
+        expect(receivedProxyAuth).to.equal(proxyAuthValue);
+      } finally {
+        server.close();
+      }
+    });
   });
 
   describe('webRequest.onSendHeaders', () => {
@@ -681,6 +862,81 @@ describe('webRequest module', () => {
       expect(receivedHeaders['/'].foo1[0]).to.equal('bar1');
       expect(reqHeaders['/websocket'].foo).to.equal('bar');
       expect(reqHeaders['/'].foo).to.equal('bar');
+    });
+
+    it('authenticates a WebSocket via login event', async () => {
+      const authServer = http.createServer();
+      const wssAuth = new WebSocket.Server({ noServer: true });
+      const expected = 'Basic ' + Buffer.from('user:pass').toString('base64');
+
+      wssAuth.on('connection', ws => {
+        ws.send('Authenticated!');
+      });
+
+      authServer.on('upgrade', (req, socket, head) => {
+        const auth = req.headers.authorization || '';
+        if (auth !== expected) {
+          socket.write(
+            'HTTP/1.1 401 Unauthorized\r\n' +
+              'WWW-Authenticate: Basic realm="Test"\r\n' +
+              'Content-Length: 0\r\n' +
+              '\r\n'
+          );
+          socket.destroy();
+          return;
+        }
+
+        wssAuth.handleUpgrade(req, socket as Socket, head, ws => {
+          wssAuth.emit('connection', ws, req);
+        });
+      });
+
+      const { port } = await listen(authServer);
+      const ses = session.fromPartition(`WebRequestWSAuth-${Date.now()}`);
+
+      const contents = (webContents as typeof ElectronInternal.WebContents).create({
+        session: ses,
+        sandbox: true
+      });
+
+      defer(() => {
+        contents.destroy();
+        authServer.close();
+        wssAuth.close();
+      });
+
+      ses.webRequest.onBeforeRequest({ urls: ['ws://*/*'] }, (details, callback) => {
+        callback({});
+      });
+
+      contents.on('login', (event, details: any, _: any, callback: (u: string, p: string) => void) => {
+        if (details?.url?.startsWith(`ws://localhost:${port}`)) {
+          event.preventDefault();
+          callback('user', 'pass');
+        }
+      });
+
+      await contents.loadFile(path.join(fixturesPath, 'blank.html'));
+
+      const message = await contents.executeJavaScript(`new Promise((resolve, reject) => {
+        let attempts = 0;
+        function connect() {
+          attempts++;
+          const ws = new WebSocket('ws://localhost:${port}');
+          ws.onmessage = e => resolve(e.data);
+          ws.onerror = () => {
+            if (attempts < 3) {
+              setTimeout(connect, 50);
+            } else {
+              reject(new Error('WebSocket auth failed'));
+            }
+          };
+        }
+        connect();
+        setTimeout(() => reject(new Error('timeout')), 5000);
+      });`);
+
+      expect(message).to.equal('Authenticated!');
     });
   });
 });

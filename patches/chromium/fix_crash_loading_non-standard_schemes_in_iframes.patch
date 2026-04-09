@@ -9,7 +9,7 @@ ChildProcessSecurityPolicyImpl::CanAccessDataForOrigin contains explicit
 exceptions to allow built-in non-standard schemes, but does not check
 for non-standard schemes registered by the embedder.
 
-This patch adjusts the origin calculation for non-standard schemes in
+This patch adjusts the origin calculation for subframe non-standard schemes in
  - browser process at `NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo`
  - render process at `DocumentLoader::CalculateOrigin`
 
@@ -18,50 +18,50 @@ as `null` without any derivation. It is only in cases where there is a `initiato
 then the origin is derived from it, which is usually the case for renderer initiated
 navigations and iframes are no exceptions from this rule.
 
+The patch should be removed in favor of either:
+  - Remove support for non-standard custom schemes
+  - Register non-standard custom schemes as websafe schemes and update
+  CPSPI::CanAccessDataForOrigin to allow them for any navigation.
+  - Update the callsite to use RFHI::CanCommitOriginAndUrl in upstream, previous
+  effort to do this can be found at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
+
 Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 
-Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
-
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 8153ca434b396423ee36af27e8600be43e095c0f..8c1c72d7f3d4abef48bd0d3e632f427dec3ed88d 100644
+index 7532fbb742624d86c342df29a7621867fa99180b..45cbb6bcaf16307a6949473ddb62a2be95031199 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -10830,6 +10830,12 @@ NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo() {
-         "blob");
+@@ -11915,6 +11915,11 @@ url::Origin NavigationRequest::GetOriginForURLLoaderFactoryUnchecked() {
+             target_rph_id);
    }
  
-+  if (!common_params().url.IsStandard()) {
-+    return std::make_pair(url::Origin::Resolve(common_params().url,
-+                                               url::Origin()),
-+                          "url_non_standard");
++  if (!common_params().url.IsStandard() && !common_params().url.IsAboutBlank()) {
++    return url::Origin::Resolve(common_params().url,
++                                url::Origin());
 +  }
 +
    // In cases not covered above, URLLoaderFactory should be associated with the
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    url::Origin resolved_origin = url::Origin::Resolve(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index fb11dcea26684440b7b08fe5ca4da619ac4ccb5c..bd3591e3d6f1ee66c31897cdfd1994510a8ebe52 100644
+index 1fd466b975fc5347e01bf5f6368e0b4fe89f7c5f..b77eb4ae99103d84ac6f1cb53fd1fe94814c7d05 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
-@@ -2308,6 +2308,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
+@@ -2357,6 +2357,7 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
  scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      Document* owner_document) {
    scoped_refptr<SecurityOrigin> origin;
-+  bool is_standard = false;
-+  std::string protocol = url_.Protocol().Ascii();
-+  is_standard = url::IsStandard(
-+      protocol.data(), url::Component(0, static_cast<int>(protocol.size())));
-   StringBuilder debug_info_builder;
++  bool is_standard = url::IsStandard(url_.Protocol().Ascii().data());
    // Whether the origin is newly created within this call, instead of copied
    // from an existing document's origin or from `origin_to_commit_`. If this is
-@@ -2361,6 +2365,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+   // true, we won't try to compare the nonce of this origin (if it's opaque) to
+@@ -2393,6 +2394,9 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+     // non-renderer only origin bits will be the same, which will be asserted at
      // the end of this function.
      origin = origin_to_commit_;
-     debug_info_builder.Append("use_origin_to_commit");
 +  } else if (!SecurityOrigin::ShouldUseInnerURL(url_) &&
 +             !is_standard) {
-+    debug_info_builder.Append("use_url_with_non_standard_scheme");
 +    origin = SecurityOrigin::Create(url_);
    } else {
-     debug_info_builder.Append("use_url_with_precursor");
      // Otherwise, create an origin that propagates precursor information
+     // as needed. For non-opaque origins, this creates a standard tuple

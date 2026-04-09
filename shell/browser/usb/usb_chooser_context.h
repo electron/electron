@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_BROWSER_USB_USB_CHOOSER_CONTEXT_H_
 
 #include <map>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -20,6 +19,7 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/usb_manager.mojom.h"
 #include "services/device/public/mojom/usb_manager_client.mojom.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "url/origin.h"
 
 namespace mojo {
@@ -32,6 +32,8 @@ class PendingRemote;
 namespace electron {
 
 class ElectronBrowserContext;
+
+const char kDisableUSBBlocklist[] = "disable-usb-blocklist";
 
 class UsbChooserContext : public KeyedService,
                           public device::mojom::UsbDeviceManagerClient {
@@ -108,7 +110,7 @@ class UsbChooserContext : public KeyedService,
   base::queue<device::mojom::UsbDeviceManager::GetDevicesCallback>
       pending_get_devices_requests_;
 
-  std::map<url::Origin, std::set<std::string>> ephemeral_devices_;
+  std::map<url::Origin, absl::flat_hash_set<std::string>> ephemeral_devices_;
   std::map<std::string, device::mojom::UsbDeviceInfoPtr> devices_;
 
   // Connection to |device_manager_instance_|.

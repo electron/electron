@@ -21,24 +21,33 @@
 
 ### Step 1: Fork
 
-Fork the project [on GitHub](https://github.com/electron/electron) and clone your fork
-locally.
-
-```sh
-$ git clone git@github.com:username/electron.git
-$ cd electron
-$ git remote add upstream https://github.com/electron/electron.git
-$ git fetch upstream
-```
+Fork Electron's [GitHub repository](https://github.com/electron/electron).
 
 ### Step 2: Build
 
-Build steps and dependencies differ slightly depending on your operating system.
-See these detailed guides on building Electron locally:
+We recommend using [`@electron/build-tools`](https://github.com/electron/build-tools) to build
+Electron itself.
 
-* [Building on macOS](build-instructions-macos.md)
-* [Building on Linux](build-instructions-linux.md)
-* [Building on Windows](build-instructions-windows.md)
+```sh
+# Install build-tools package globally:
+npm install -g @electron/build-tools
+# Run the init script where you want to clone the project and point it to your fork:
+e init --fork my-org/electron --bootstrap testing
+```
+
+This will create a new `electron` folder in your working directory and initialize the project.
+Once the build completes, navigate to `electron/src/electron`, where your fork is actually cloned.
+
+> [!IMPORTANT]
+> Your Electron project has a complex folder structure with nested repositories.
+> See the [Build Instructions](./build-instructions-gn.md) docs for detailed Build Tools
+> usage instructions (e.g. how to sync dependencies or how to recompile the binary)
+> and platform-specific notices.
+
+There, you should have two `remote` URLs in git:
+
+* `origin` will point to `electron/electron`
+* `fork` will point to your fork (`my-org/electron`)
 
 Once you've built the project locally, you're ready to start making changes!
 
@@ -48,7 +57,7 @@ To keep your development environment organized, create local branches to
 hold your work. These should be branched directly off of the `main` branch.
 
 ```sh
-$ git checkout -b my-branch -t upstream/main
+git checkout -b my-branch
 ```
 
 ## Making Changes
@@ -60,7 +69,7 @@ changes to either the C/C++ code in the `shell/` folder,
 the JavaScript code in the `lib/` folder, the documentation in `docs/api/`
 or tests in the `spec/` folder.
 
-Please be sure to run `npm run lint` from time to time on any code changes
+Please be sure to run `yarn lint` from time to time on any code changes
 to ensure that they follow the project's code style.
 
 See [coding style](coding-style.md) for
@@ -75,11 +84,16 @@ across multiple commits. There is no limit to the number of commits in a
 pull request.
 
 ```sh
-$ git add my/changed/files
-$ git commit
+git add my/changed/files
+git commit
 ```
 
 Note that multiple commits get squashed when they are landed.
+
+#### Commit signing
+
+The `electron/electron` repo enforces [commit signatures](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) for all incoming PRs.
+To sign your commits, see GitHub's documentation on [Telling Git about your signing key](https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key).
 
 #### Commit message guidelines
 
@@ -133,8 +147,8 @@ Once you have committed your changes, it is a good idea to use `git rebase`
 (not `git merge`) to synchronize your work with the main repository.
 
 ```sh
-$ git fetch upstream
-$ git rebase upstream/main
+git fetch origin
+git rebase origin/main
 ```
 
 This ensures that your working branch has the latest changes from `electron/electron`
@@ -151,7 +165,7 @@ Before submitting your changes in a pull request, always run the full
 test suite. To run the tests:
 
 ```sh
-$ npm run test
+yarn test
 ```
 
 Make sure the linter does not report any issues and that all tests pass.
@@ -160,7 +174,7 @@ Please do not submit patches that fail either check.
 If you are updating tests and want to run a single spec to check it:
 
 ```sh
-$ npm run test -match=menu
+yarn test -match=menu
 ```
 
 The above would only run spec modules matching `menu`, which is useful for
@@ -174,13 +188,13 @@ begin the process of opening a pull request by pushing your working branch
 to your fork on GitHub.
 
 ```sh
-$ git push origin my-branch
+git push fork my-branch
 ```
 
 ### Step 9: Opening the Pull Request
 
 From within GitHub, opening a new pull request will present you with a template
-that should be filled out. It can be found [here](https://github.com/electron/electron/blob/main/.github/PULL_REQUEST_TEMPLATE.md).
+that should be filled out. It can be found [here](../../.github/PULL_REQUEST_TEMPLATE.md).
 
 If you do not adequately complete this template, your PR may be delayed in being merged as maintainers
 seek more information or clarify ambiguities.
@@ -198,9 +212,9 @@ branch, add a new commit with those changes, and push those to your fork.
 GitHub will automatically update the pull request.
 
 ```sh
-$ git add my/changed/files
-$ git commit
-$ git push origin my-branch
+git add my/changed/files
+git commit
+git push fork my-branch
 ```
 
 There are a number of more advanced mechanisms for managing commits using
@@ -208,13 +222,12 @@ There are a number of more advanced mechanisms for managing commits using
 
 Feel free to post a comment in the pull request to ping reviewers if you are
 awaiting an answer on something. If you encounter words or acronyms that
-seem unfamiliar, refer to this
-[glossary](https://sites.google.com/a/chromium.org/dev/glossary).
+seem unfamiliar, refer to the
+[Chromium glossary](https://sites.google.com/a/chromium.org/dev/glossary).
 
 #### Approval and Request Changes Workflow
 
-All pull requests require approval from a
-[Code Owner](https://github.com/electron/electron/blob/main/.github/CODEOWNERS)
+All pull requests require approval from a [Code Owner](../../.github/CODEOWNERS)
 of the area you modified in order to land. Whenever a maintainer reviews a pull
 request they may request changes. These may be small, such as fixing a typo, or
 may involve substantive changes. Such requests are intended to be helpful, but

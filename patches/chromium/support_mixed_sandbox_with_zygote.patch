@@ -22,10 +22,10 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 302c4cbed8b158257b7dfde14f591ad6bc971641..f4300e11c7dabb06fdd502cc96a83466e00d499f 100644
+index 3d7ccd3becf0ff3cc7003b9159dec7765d5f82c6..5cf51c7984697b1a79048338516e1d7e1cc9dc4b 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -1761,6 +1761,10 @@ bool RenderProcessHostImpl::Init() {
+@@ -1955,6 +1955,10 @@ bool RenderProcessHostImpl::Init() {
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegateWin>(
              *cmd_line, IsPdf(), IsJitDisabled());
@@ -37,7 +37,7 @@ index 302c4cbed8b158257b7dfde14f591ad6bc971641..f4300e11c7dabb06fdd502cc96a83466
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegate>();
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
-index 9f66bec84f6284d3f20e59342d3e0a7b2917f836..affaca4776178365fe5d3024d2f733c01da07e09 100644
+index 8397906e8d6685128097ef6f5b06f2b996aa1218..46fa9123a02489e91c8df3a685f5efa6e0d208f3 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 @@ -35,6 +35,9 @@ namespace content {
@@ -50,8 +50,8 @@ index 9f66bec84f6284d3f20e59342d3e0a7b2917f836..affaca4776178365fe5d3024d2f733c0
    const base::CommandLine& browser_command_line =
        *base::CommandLine::ForCurrentProcess();
    base::CommandLine::StringType renderer_prefix =
-@@ -70,6 +73,9 @@ RendererSandboxedProcessLauncherDelegateWin::
-       is_pdf_renderer_(is_pdf_renderer) {
+@@ -71,6 +74,9 @@ RendererSandboxedProcessLauncherDelegateWin::
+                                  ->ShouldRestrictCoreSharingOnRenderer()) {
    // PDF renderers must be jitless.
    CHECK(!is_pdf_renderer || is_jit_disabled);
 +#if BUILDFLAG(USE_ZYGOTE)
@@ -61,7 +61,7 @@ index 9f66bec84f6284d3f20e59342d3e0a7b2917f836..affaca4776178365fe5d3024d2f733c0
      dynamic_code_can_be_disabled_ = true;
      return;
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
-index e77326f149febfb1e236f221757fe24b989e01c0..4f621d8c36706557151560b2a6e0821a46f39c7f 100644
+index 96977b4d91e8062d49e69f3622c258f6610426bc..58544aa651f516c85cfc3ed6a4777595dd69e6a8 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 @@ -18,6 +18,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate

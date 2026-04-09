@@ -229,7 +229,7 @@ describe('debugger module', () => {
       w.webContents.debugger.attach();
       let debuggerSessionId: string;
 
-      w.webContents.debugger.on('message', (event, ...args) => {
+      w.webContents.debugger.on('message', (_event, ...args) => {
         const [method, params, sessionId] = args;
         if (method === 'Target.targetCreated') {
           w.webContents.debugger.sendCommand('Target.attachToTarget', { targetId: params.targetInfo.targetId, flatten: true }).then(result => {

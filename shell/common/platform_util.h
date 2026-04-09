@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_PLATFORM_UTIL_H_
 #define ELECTRON_SHELL_COMMON_PLATFORM_UTIL_H_
 
+#include <optional>
 #include <string>
 
 #include "base/files/file_path.h"
@@ -46,6 +47,9 @@ void Beep();
 #if BUILDFLAG(IS_WIN)
 // SHGetFolderPath calls not covered by Chromium
 bool GetFolderPath(int key, base::FilePath* result);
+
+// Check if nul device can be used.
+bool IsNulDeviceEnabled();
 #endif
 
 #if BUILDFLAG(IS_MAC)
@@ -57,13 +61,16 @@ bool SetLoginItemEnabled(const std::string& type,
 #endif
 
 #if BUILDFLAG(IS_LINUX)
-// Returns a success flag.
-// Unlike libgtkui, does *not* use "chromium-browser.desktop" as a fallback.
-bool GetDesktopName(std::string* setme);
+// Returns a desktop name (e.g. 'myapp.desktop') if available.
+// Unlike libgtkui, this does *not* use "chromium-browser.desktop" as a
+// fallback.
+// https://specifications.freedesktop.org/desktop-entry/latest/file-naming.html
+std::optional<std::string> GetDesktopName();
 
-// The XDG application ID must match the name of the desktop entry file without
-// the .desktop extension.
-std::string GetXdgAppId();
+// Returns the app id (e.g. 'myapp') if available.
+// This is equivalent to the basename of `GetDesktopName()`.
+// https://developer.gnome.org/documentation/tutorials/application-id.html
+std::optional<std::string> GetXdgAppId();
 #endif
 
 }  // namespace platform_util

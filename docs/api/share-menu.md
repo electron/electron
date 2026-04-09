@@ -9,9 +9,20 @@ For including the share menu as a submenu of other menus, please use the
 
 ## Class: ShareMenu
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/25629
+```
+-->
+
 > Create share menu on macOS.
 
 Process: [Main](../glossary.md#main-process)
+
+> [!WARNING]
+> Electron's built-in classes cannot be subclassed in user code.
+> For more information, see [the FAQ](../faq.md#class-inheritance-does-not-work-with-electron-built-in-modules).
 
 ### `new ShareMenu(sharingItem)`
 

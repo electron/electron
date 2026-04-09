@@ -16,12 +16,14 @@
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
+#include "net/ssl/ssl_info.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/websocket.mojom.h"
-#include "shell/browser/net/web_request_api_interface.h"
+#include "shell/browser/api/electron_api_web_request.h"
 #include "url/gurl.h"
 #include "url/origin.h"
+#include "v8/include/cppgc/persistent.h"
 
 namespace electron {
 
@@ -36,23 +38,8 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
  public:
   using WebSocketFactory = content::ContentBrowserClient::WebSocketFactory;
 
-  // AuthRequiredResponse indicates how an OnAuthRequired call is handled.
-  enum class AuthRequiredResponse {
-    // No credentials were provided.
-    kNoAction,
-    // AuthCredentials is filled in with a username and password, which should
-    // be used in a response to the provided auth challenge.
-    kSetAuth,
-    // The request should be canceled.
-    kCancelAuth,
-    // The action will be decided asynchronously. |callback| will be invoked
-    // when the decision is made, and one of the other AuthRequiredResponse
-    // values will be passed in with the same semantics as described above.
-    kIoPending,
-  };
-
   ProxyingWebSocket(
-      WebRequestAPI* web_request_api,
+      api::WebRequest* web_request,
       WebSocketFactory factory,
       const network::ResourceRequest& request,
       mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
@@ -94,10 +81,11 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
                            OnBeforeSendHeadersCallback callback) override;
   void OnHeadersReceived(const std::string& headers,
                          const net::IPEndPoint& endpoint,
+                         const std::optional<net::SSLInfo>& ssl_info,
                          OnHeadersReceivedCallback callback) override;
 
   static void StartProxying(
-      WebRequestAPI* web_request_api,
+      api::WebRequest* web_request,
       WebSocketFactory factory,
       const GURL& url,
       const net::SiteForCookies& site_for_cookies,
@@ -111,8 +99,6 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
       content::BrowserContext* browser_context,
       uint64_t* request_id_generator);
 
-  WebRequestAPI* web_request_api() { return web_request_api_; }
-
  private:
   void OnBeforeRequestComplete(int error_code);
   void OnBeforeSendHeadersComplete(const std::set<std::string>& removed_headers,
@@ -121,7 +107,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   void ContinueToStartRequest(int error_code);
   void OnHeadersReceivedComplete(int error_code);
   void ContinueToHeadersReceived();
-  void OnAuthRequiredComplete(AuthRequiredResponse rv);
+  void OnAuthRequiredComplete(api::WebRequest::AuthRequiredResponse rv);
   void OnHeadersReceivedCompleteForAuth(const net::AuthChallengeInfo& auth_info,
                                         int rv);
   void ContinueToCompleted();
@@ -138,7 +124,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   void OnMojoConnectionError();
 
   // Passed from api::WebRequest.
-  raw_ptr<WebRequestAPI> web_request_api_;
+  const cppgc::WeakPersistent<api::WebRequest> web_request_;
 
   // Saved to feed the api::WebRequest.
   network::ResourceRequest request_;

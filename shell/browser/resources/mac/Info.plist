@@ -50,6 +50,8 @@
     <string>This app needs access to the microphone</string>
     <key>NSCameraUsageDescription</key>
     <string>This app needs access to the camera</string>
+    <key>NSAudioCaptureUsageDescription</key>
+    <string>This app needs access to audio capture</string>
     <key>NSBluetoothAlwaysUsageDescription</key>
     <string>This app needs access to Bluetooth</string>
     <key>NSBluetoothPeripheralUsageDescription</key>
@@ -64,5 +66,7 @@
         <string>${DEFAULT_APP_ASAR_HEADER_SHA}</string>
       </dict>
     </dict>
+    <key>NSPrefersDisplaySafeAreaCompatibilityMode</key>
+    <false/>
   </dict>
 </plist>

@@ -1,3 +1,5 @@
+/// <reference types="webpack/module" />
+
 declare const BUILDFLAG: (flag: boolean) => boolean;
 
 declare namespace NodeJS {
@@ -21,12 +23,17 @@ declare namespace NodeJS {
     isComponentBuild(): boolean;
   }
 
-  interface IpcRendererBinding {
+  interface IpcRendererImpl {
     send(internal: boolean, channel: string, args: any[]): void;
     sendSync(internal: boolean, channel: string, args: any[]): any;
     sendToHost(channel: string, args: any[]): void;
     invoke<T>(internal: boolean, channel: string, args: any[]): Promise<{ error: string, result: T }>;
     postMessage(channel: string, message: any, transferables: MessagePort[]): void;
+  }
+
+  interface IpcRendererBinding {
+    createForRenderFrame(): IpcRendererImpl;
+    createForServiceWorker(): IpcRendererImpl;
   }
 
   interface V8UtilBinding {
@@ -101,14 +108,28 @@ declare namespace NodeJS {
     resolveHost(host: string, options?: Electron.ResolveHostOptions): Promise<Electron.ResolvedHost>;
   }
 
+  interface ActivationArgumentsInternal {
+    type: string;
+    arguments: string;
+    actionIndex?: number;
+    reply?: string;
+    userInputs?: Record<string, string>;
+  }
+
   interface NotificationBinding {
     isSupported(): boolean;
     Notification: typeof Electron.Notification;
+    // Windows-only callback for cold-start notification activation
+    handleActivation?: (callback: (details: ActivationArgumentsInternal) => void) => void;
   }
 
   interface PowerMonitorBinding extends Electron.PowerMonitor {
     createPowerMonitor(): PowerMonitorBinding;
     setListeningForShutdown(listening: boolean): void;
+  }
+
+  interface ServiceWorkerMainBinding {
+    ServiceWorkerMain: typeof Electron.ServiceWorkerMain;
   }
 
   interface SessionBinding {
@@ -124,7 +145,8 @@ declare namespace NodeJS {
 
   interface WebFrameMainBinding {
     WebFrameMain: typeof Electron.WebFrameMain;
-    fromId(processId: number, routingId: number): Electron.WebFrameMain;
+    fromId(processId: number, routingId: number): Electron.WebFrameMain | undefined;
+    fromFrameToken(processId: number, frameToken: string): Electron.WebFrameMain | null;
     _fromIdIfExists(processId: number, routingId: number): Electron.WebFrameMain | null;
     _fromFtnIdIfExists(frameTreeNodeId: number): Electron.WebFrameMain | null;
   }
@@ -138,12 +160,13 @@ declare namespace NodeJS {
 
   interface InternalWebFrame extends Electron.WebFrame {
     getWebPreference<K extends keyof InternalWebPreferences>(name: K): InternalWebPreferences[K];
-    getWebFrameId(window: Window): number;
+    _findFrameByWindow(window: Window): Electron.WebFrame | null;
     allowGuestViewElementDefinition(context: object, callback: Function): void;
   }
 
   interface WebFrameBinding {
     mainFrame: InternalWebFrame;
+    WebFrame: Electron.WebFrame;
   }
 
   type DataPipe = {
@@ -168,6 +191,8 @@ declare namespace NodeJS {
     mode?: string;
     destination?: string;
     bypassCustomProtocolHandlers?: boolean;
+    priority?: 'throttled' | 'idle' | 'lowest' | 'low' | 'medium' | 'highest';
+    priorityIncremental?: boolean;
   };
   type ResponseHead = {
     statusCode: number;
@@ -208,6 +233,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_common_environment'): EnvironmentBinding;
     _linkedBinding(name: 'electron_common_features'): FeaturesBinding;
     _linkedBinding(name: 'electron_common_native_image'): { nativeImage: typeof Electron.NativeImage };
+    _linkedBinding(name: 'electron_common_shared_texture'): Electron.SharedTextureSubtle;
     _linkedBinding(name: 'electron_common_net'): NetBinding;
     _linkedBinding(name: 'electron_common_shell'): Electron.Shell;
     _linkedBinding(name: 'electron_common_v8_util'): V8UtilBinding;
@@ -228,6 +254,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_safe_storage'): { safeStorage: Electron.SafeStorage };
     _linkedBinding(name: 'electron_browser_session'): SessionBinding;
     _linkedBinding(name: 'electron_browser_screen'): { createScreen(): Electron.Screen };
+    _linkedBinding(name: 'electron_browser_service_worker_main'): ServiceWorkerMainBinding;
     _linkedBinding(name: 'electron_browser_system_preferences'): { systemPreferences: Electron.SystemPreferences };
     _linkedBinding(name: 'electron_browser_tray'): { Tray: Electron.Tray };
     _linkedBinding(name: 'electron_browser_view'): { View: Electron.View };
@@ -235,7 +262,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_web_view_manager'): WebViewManagerBinding;
     _linkedBinding(name: 'electron_browser_web_frame_main'): WebFrameMainBinding;
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;
-    _linkedBinding(name: 'electron_renderer_ipc'): { ipc: IpcRendererBinding };
+    _linkedBinding(name: 'electron_renderer_ipc'): IpcRendererBinding;
     _linkedBinding(name: 'electron_renderer_web_frame'): WebFrameBinding;
     log: NodeJS.WriteStream['write'];
     activateUvLoop(): void;
@@ -245,7 +272,6 @@ declare namespace NodeJS {
     once(event: 'document-end', listener: () => any): this;
 
     // Additional properties
-    _firstFileName?: string;
     _serviceStartupScript: string;
     _getOrCreateArchive?: (path: string) => NodeJS.AsarArchive | null;
 
@@ -268,7 +294,7 @@ declare module NodeJS {
 interface ContextMenuItem {
   id: number;
   label: string;
-  type: 'normal' | 'separator' | 'subMenu' | 'checkbox';
+  type: 'normal' | 'separator' | 'subMenu' | 'checkbox' | 'header' | 'palette';
   checked: boolean;
   enabled: boolean;
   subItems: ContextMenuItem[];

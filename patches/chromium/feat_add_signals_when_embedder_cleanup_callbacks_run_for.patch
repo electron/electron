@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 29 Jan 2025 17:01:03 +0900
+Subject: feat: add signals when embedder cleanup callbacks run for
+ gin::wrappable
+
+Current setup of finalization callbacks does not work well with
+gin_helper::CleanedUpAtExit for wrappables specifically on environment
+shutdown leading to UAF in the second pass.
+
+Details at  https://github.com/microsoft/vscode/issues/192119#issuecomment-2375851531
+
+This patch is more of a bandaid fix to improve the lifetime
+management with existing finalizer callbacks. We should be able to
+remove this patch once gin::Wrappable can be managed by V8 Oilpan
+via https://github.com/electron/electron/issues/47922
+
+diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
+index 64edf6fe78d2478cb9e12e8767a09e2b6c7c6ad2..7c640559dc7a09730f0053be8798d10bc8ac1a1c 100644
+--- a/gin/isolate_holder.cc
++++ b/gin/isolate_holder.cc
+@@ -35,6 +35,8 @@ v8::ArrayBuffer::Allocator* g_array_buffer_allocator = nullptr;
+ const intptr_t* g_reference_table = nullptr;
+ v8::FatalErrorCallback g_fatal_error_callback = nullptr;
+ v8::OOMErrorCallback g_oom_error_callback = nullptr;
++bool g_initialized_microtasks_runner = false;
++bool g_destroyed_microtasks_runner = false;
+ 
+ std::unique_ptr<v8::Isolate::CreateParams> getModifiedIsolateParams(
+     std::unique_ptr<v8::Isolate::CreateParams> params,
+@@ -204,10 +206,26 @@ IsolateHolder::getDefaultIsolateParams() {
+   return params;
+ }
+ 
++// static
++bool IsolateHolder::DestroyedMicrotasksRunner() {
++  return g_initialized_microtasks_runner &&
++         g_destroyed_microtasks_runner;
++}
++
+ void IsolateHolder::EnableIdleTasks(
+     std::unique_ptr<V8IdleTaskRunner> idle_task_runner) {
+   DCHECK(isolate_data_.get());
+   isolate_data_->EnableIdleTasks(std::move(idle_task_runner));
+ }
+ 
++void IsolateHolder::WillCreateMicrotasksRunner() {
++  DCHECK(!g_initialized_microtasks_runner);
++  g_initialized_microtasks_runner = true;
++}
++
++void IsolateHolder::WillDestroyMicrotasksRunner() {
++  DCHECK(g_initialized_microtasks_runner);
++  g_destroyed_microtasks_runner = true;
++}
++
+ }  // namespace gin
+diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
+index 902ad13dad8df57325f6c74ee3da9ec3148751cb..d0de06b55937d36848664c3817d098182c67f570 100644
+--- a/gin/public/isolate_holder.h
++++ b/gin/public/isolate_holder.h
+@@ -133,6 +133,8 @@ class GIN_EXPORT IsolateHolder {
+   // Should only be called after v8::IsolateHolder::Initialize() is invoked.
+   static std::unique_ptr<v8::Isolate::CreateParams> getDefaultIsolateParams();
+ 
++  static bool DestroyedMicrotasksRunner();
++
+   v8::Isolate* isolate() { return isolate_; }
+ 
+   // This method returns if v8::Locker is needed to access isolate.
+@@ -146,6 +148,9 @@ class GIN_EXPORT IsolateHolder {
+ 
+   void EnableIdleTasks(std::unique_ptr<V8IdleTaskRunner> idle_task_runner);
+ 
++  void WillCreateMicrotasksRunner();
++  void WillDestroyMicrotasksRunner();
++
+   // This method returns V8IsolateMemoryDumpProvider of this isolate, used for
+   // testing.
+   V8IsolateMemoryDumpProvider* isolate_memory_dump_provider_for_testing()

@@ -10,6 +10,7 @@
 #include "base/memory/raw_ptr.h"
 #include "chrome/browser/ui/view_ids.h"
 #include "shell/browser/ui/views/frameless_view.h"
+#include "shell/browser/ui/views/linux_frame_layout.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/linux/window_button_order_observer.h"
 #include "ui/views/controls/button/button.h"
@@ -18,6 +19,10 @@
 #include "ui/views/window/non_client_view.h"
 
 class CaptionButtonPlaceholderContainer;
+
+namespace views {
+class FrameBackground;
+}
 
 namespace electron {
 
@@ -39,8 +44,10 @@ class OpaqueFrameView : public FramelessView {
   void Init(NativeWindowViews* window, views::Widget* frame) override;
   int ResizingBorderHitTest(const gfx::Point& point) override;
   void InvalidateCaptionButtons() override;
+  gfx::Insets RestoredFrameBorderInsets() const override;
+  LinuxFrameLayout* GetLinuxFrameLayout() const override;
 
-  // views::NonClientFrameView:
+  // views::FrameView:
   gfx::Rect GetBoundsForClientView() const override;
   gfx::Rect GetWindowBoundsForClientBounds(
       const gfx::Rect& client_bounds) const override;
@@ -98,11 +105,6 @@ class OpaqueFrameView : public FramelessView {
   // window is maximized. If true, the top frame is just the height of a tab,
   // rather than having extra vertical space above the tabs.
   bool IsFrameCondensed() const;
-
-  // The insets from the native window edge to the client view when the window
-  // is restored.  This goes all the way to the web contents on the left, right,
-  // and bottom edges.
-  gfx::Insets RestoredFrameBorderInsets() const;
 
   // The insets from the native window edge to the flat portion of the
   // window border.  That is, this function returns the "3D portion" of the
@@ -166,6 +168,9 @@ class OpaqueFrameView : public FramelessView {
   int GetWindowCaptionSpacing(views::FrameButton button_id,
                               bool leading_spacing,
                               bool is_leading_button) const;
+
+  std::unique_ptr<LinuxFrameLayout> linux_frame_layout_;
+  std::unique_ptr<views::FrameBackground> frame_background_;
 
   // Window controls.
   raw_ptr<views::Button> minimize_button_;

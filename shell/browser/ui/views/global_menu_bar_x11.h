@@ -10,7 +10,7 @@
 #include "base/memory/raw_ptr.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "ui/base/glib/scoped_gsignal.h"
-#include "ui/gfx/native_widget_types.h"
+#include "ui/gfx/native_ui_types.h"
 #include "ui/gfx/x/xproto.h"
 
 typedef struct _DbusmenuMenuitem DbusmenuMenuitem;
@@ -21,8 +21,6 @@ class Accelerator;
 }
 
 namespace electron {
-
-class NativeWindowViews;
 
 // Controls the Mac style menu bar on Unity.
 //
@@ -37,7 +35,7 @@ class NativeWindowViews;
 // from menu models instead, and it is also per-window specific.
 class GlobalMenuBarX11 {
  public:
-  explicit GlobalMenuBarX11(NativeWindowViews* window);
+  explicit GlobalMenuBarX11(gfx::AcceleratedWidget accelerated_widget);
   virtual ~GlobalMenuBarX11();
 
   // disable copy
@@ -68,7 +66,6 @@ class GlobalMenuBarX11 {
   void OnItemActivated(DbusmenuMenuitem* item, unsigned int timestamp);
   void OnSubMenuShow(DbusmenuMenuitem* item);
 
-  raw_ptr<NativeWindowViews> window_;
   x11::Window xwindow_;
 
   raw_ptr<DbusmenuServer> server_ = nullptr;

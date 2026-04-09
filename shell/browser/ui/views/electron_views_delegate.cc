@@ -8,6 +8,7 @@
 
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #include "ui/views/widget/native_widget_aura.h"
+#include "ui/views/window/default_frame_view.h"
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/environment.h"
@@ -60,9 +61,9 @@ gfx::ImageSkia* ViewsDelegate::GetDefaultWindowIcon() const {
 }
 #endif
 
-std::unique_ptr<views::NonClientFrameView>
-ViewsDelegate::CreateDefaultNonClientFrameView(views::Widget* widget) {
-  return nullptr;
+std::unique_ptr<views::FrameView> ViewsDelegate::CreateDefaultFrameView(
+    views::Widget* widget) {
+  return std::make_unique<views::DefaultFrameView>(widget);
 }
 
 void ViewsDelegate::OnBeforeWidgetInit(

@@ -176,6 +176,13 @@
     [button setHidden:hidden];
     [button setNeedsDisplay:YES];
   }
+
+  // On macOS 26, toggling the hidden state of the standard window buttons can
+  // cause AppKit to re-layout the title bar container and reset its frame,
+  // which loses the custom margin adjustments. Re-apply the calculated geometry
+  // after visibility changes to keep the buttons at the specified margin
+  // instead of snapping back to the default until the next manual resize.
+  [self redraw];
 }
 
 // Return the bounds of all 3 buttons.

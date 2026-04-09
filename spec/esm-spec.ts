@@ -7,6 +7,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { stripVTControlCharacters } from 'node:util';
 
 const runFixture = async (appPath: string, args: string[] = []) => {
   const result = cp.spawn(process.execPath, [appPath, ...args], {
@@ -27,8 +28,8 @@ const runFixture = async (appPath: string, args: string[] = []) => {
   return {
     code,
     signal,
-    stdout: Buffer.concat(stdout).toString().trim(),
-    stderr: Buffer.concat(stderr).toString().trim()
+    stdout: stripVTControlCharacters(Buffer.concat(stdout).toString().trim()),
+    stderr: stripVTControlCharacters(Buffer.concat(stderr).toString().trim())
   };
 };
 
@@ -63,6 +64,32 @@ describe('esm', () => {
       const result = await runFixture(path.resolve(fixturePath, 'dynamic.mjs'));
       expect(result.code).to.equal(0);
       expect(result.stdout).to.equal('Exit with app, ready: false');
+    });
+
+    it('import \'electron/lol\' should throw', async () => {
+      const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-lol.mjs'));
+      expect(result.code).to.equal(1);
+      expect(result.stderr).to.match(/Error \[ERR_MODULE_NOT_FOUND\]/);
+    });
+
+    it('import \'electron/main\' should not throw', async () => {
+      const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-main.mjs'));
+      expect(result.code).to.equal(0);
+    });
+
+    it('import \'electron/renderer\' should not throw', async () => {
+      const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-renderer.mjs'));
+      expect(result.code).to.equal(0);
+    });
+
+    it('import \'electron/common\' should not throw', async () => {
+      const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-common.mjs'));
+      expect(result.code).to.equal(0);
+    });
+
+    it('import \'electron/utility\' should not throw', async () => {
+      const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-utility.mjs'));
+      expect(result.code).to.equal(0);
     });
   });
 
@@ -103,6 +130,17 @@ describe('esm', () => {
     }
 
     describe('nodeIntegration', () => {
+      let badFilePath = '';
+
+      beforeEach(async () => {
+        badFilePath = path.resolve(path.resolve(os.tmpdir(), 'bad-file.badjs'));
+        await fs.promises.writeFile(badFilePath, 'const foo = "bar";');
+      });
+
+      afterEach(async () => {
+        await fs.promises.unlink(badFilePath);
+      });
+
       it('should support an esm entrypoint', async () => {
         const [webContents] = await loadWindowWithPreload('import { resolve } from "path"; window.resolvePath = resolve;', {
           nodeIntegration: true,
@@ -162,6 +200,18 @@ describe('esm', () => {
           expect(error?.message).to.include('Failed to fetch dynamically imported module');
         });
 
+        it('should use Node.js ESM dynamic loader in the preload', async () => {
+          const [, preloadError] = await loadWindowWithPreload(`await import(${JSON.stringify((pathToFileURL(badFilePath)))})`, {
+            nodeIntegration: true,
+            sandbox: false,
+            contextIsolation: false
+          });
+
+          expect(preloadError).to.not.equal(null);
+          // This is a node.js specific error message
+          expect(preloadError!.toString()).to.include('Unknown file extension');
+        });
+
         it('should use import.meta callback handling from Node.js for Node.js modules', async () => {
           const result = await runFixture(path.resolve(fixturePath, 'import-meta'));
           expect(result.code).to.equal(0);
@@ -169,17 +219,6 @@ describe('esm', () => {
       });
 
       describe('with context isolation', () => {
-        let badFilePath = '';
-
-        beforeEach(async () => {
-          badFilePath = path.resolve(path.resolve(os.tmpdir(), 'bad-file.badjs'));
-          await fs.promises.writeFile(badFilePath, 'const foo = "bar";');
-        });
-
-        afterEach(async () => {
-          await fs.promises.unlink(badFilePath);
-        });
-
         it('should use Node.js ESM dynamic loader in the isolated context', async () => {
           const [, preloadError] = await loadWindowWithPreload(`await import(${JSON.stringify((pathToFileURL(badFilePath)))})`, {
             nodeIntegration: true,
@@ -210,6 +249,44 @@ describe('esm', () => {
           // This is a blink specific error message
           expect(error?.message).to.include('Failed to fetch dynamically imported module');
         });
+      });
+    });
+
+    describe('electron modules', () => {
+      it('import \'electron/lol\' should throw', async () => {
+        const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/lol";', {
+          sandbox: false
+        });
+        expect(error).to.not.equal(null);
+        expect(error?.message).to.match(/Cannot find package 'electron'/);
+      });
+
+      it('import \'electron/main\' should not throw', async () => {
+        const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/main";', {
+          sandbox: false
+        });
+        expect(error).to.equal(null);
+      });
+
+      it('import \'electron/renderer\' should not throw', async () => {
+        const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/renderer";', {
+          sandbox: false
+        });
+        expect(error).to.equal(null);
+      });
+
+      it('import \'electron/common\' should not throw', async () => {
+        const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/common";', {
+          sandbox: false
+        });
+        expect(error).to.equal(null);
+      });
+
+      it('import \'electron/utility\' should not throw', async () => {
+        const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/utility";', {
+          sandbox: false
+        });
+        expect(error).to.equal(null);
       });
     });
   });

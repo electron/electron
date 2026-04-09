@@ -121,8 +121,9 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
           'electron/main$': electronAPIFile,
           'electron/renderer$': electronAPIFile,
           'electron/common$': electronAPIFile,
-          // Force timers to resolve to our dependency that doesn't use window.postMessage
-          timers: path.resolve(electronRoot, 'node_modules', 'timers-browserify', 'main.js')
+          'electron/utility$': electronAPIFile,
+          // Force timers to resolve to our own shim that doesn't use window.postMessage
+          timers: path.resolve(electronRoot, 'lib', 'common', 'timers-shim.ts')
         },
         extensions: ['.ts', '.js'],
         fallback: {
@@ -143,7 +144,9 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
             transpileOnly: onlyPrintingGraph,
             ignoreDiagnostics: [
               // File '{0}' is not under 'rootDir' '{1}'.
-              6059
+              6059,
+              // Private field '{0}' must be declared in an enclosing class.
+              1111
             ]
           }
         }]

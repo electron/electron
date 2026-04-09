@@ -12,14 +12,16 @@
 
 #include "ash/style/rounded_rect_cutout_path_builder.h"
 #include "gin/data_object_builder.h"
-#include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "ui/compositor/layer.h"
+#include "ui/views/animation/animation_builder.h"
 #include "ui/views/background.h"
 #include "ui/views/layout/flex_layout.h"
 #include "ui/views/layout/layout_manager_base.h"
@@ -38,7 +40,7 @@ struct Converter<views::ChildLayout> {
     gin_helper::Dictionary dict;
     if (!gin::ConvertFromV8(isolate, val, &dict))
       return false;
-    gin::Handle<electron::api::View> view;
+    gin_helper::Handle<electron::api::View> view;
     if (!dict.Get("view", &view))
       return false;
     out->child_view = view->view();
@@ -144,6 +146,27 @@ struct Converter<views::SizeBounds> {
         .Build();
   }
 };
+
+template <>
+struct Converter<gfx::Tween::Type> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     gfx::Tween::Type* out) {
+    std::string easing = base::ToLowerASCII(gin::V8ToString(isolate, val));
+    if (easing == "linear") {
+      *out = gfx::Tween::LINEAR;
+    } else if (easing == "ease-in") {
+      *out = gfx::Tween::EASE_IN;
+    } else if (easing == "ease-out") {
+      *out = gfx::Tween::EASE_OUT;
+    } else if (easing == "ease-in-out") {
+      *out = gfx::Tween::EASE_IN_OUT;
+    } else {
+      return false;
+    }
+    return true;
+  }
+};
 }  // namespace gin
 
 namespace electron::api {
@@ -155,7 +178,7 @@ class JSLayoutManager : public views::LayoutManagerBase {
  public:
   explicit JSLayoutManager(LayoutCallback layout_callback)
       : layout_callback_(std::move(layout_callback)) {}
-  ~JSLayoutManager() override {}
+  ~JSLayoutManager() override = default;
 
   // views::LayoutManagerBase
   views::ProposedLayout CalculateProposedLayout(
@@ -170,7 +193,7 @@ class JSLayoutManager : public views::LayoutManagerBase {
 };
 
 View::View(views::View* view) : view_(view) {
-  view_->set_owned_by_client();
+  view_->set_owned_by_client(views::View::OwnedByClientPassKey{});
   view_->AddObserver(this);
 }
 
@@ -184,7 +207,7 @@ View::~View() {
     view_.ClearAndDelete();
 }
 
-void View::ReorderChildView(gin::Handle<View> child, size_t index) {
+void View::ReorderChildView(gin_helper::Handle<View> child, size_t index) {
   view_->ReorderChildView(child->view(), index);
 
   const auto i =
@@ -207,7 +230,7 @@ void View::ReorderChildView(gin::Handle<View> child, size_t index) {
   }
 }
 
-void View::AddChildViewAt(gin::Handle<View> child,
+void View::AddChildViewAt(gin_helper::Handle<View> child,
                           std::optional<size_t> maybe_index) {
   // TODO(nornagon): !view_ is only for supporting the weird case of
   // WebContentsView's view being deleted when the underlying WebContents is
@@ -215,6 +238,12 @@ void View::AddChildViewAt(gin::Handle<View> child,
   // has a View, possibly a wrapper view around the underlying platform View.
   if (!view_)
     return;
+
+  if (!child->view()) {
+    gin_helper::ErrorThrower(isolate()).ThrowError(
+        "Can't add a destroyed child view to a parent view");
+    return;
+  }
 
   // This will CHECK and crash in View::AddChildViewAtImpl if not handled here.
   if (view_ == child->view()) {
@@ -252,7 +281,7 @@ void View::AddChildViewAt(gin::Handle<View> child,
   view_->AddChildViewAt(child->view(), index);
 }
 
-void View::RemoveChildView(gin::Handle<View> child) {
+void View::RemoveChildView(gin_helper::Handle<View> child) {
   if (!view_)
     return;
 
@@ -274,13 +303,119 @@ void View::RemoveChildView(gin::Handle<View> child) {
   }
 }
 
-void View::SetBounds(const gfx::Rect& bounds) {
+ui::Layer* View::GetLayer() {
   if (!view_)
-    return;
-  view_->SetBoundsRect(bounds);
+    return nullptr;
+
+  if (view_->layer())
+    return view_->layer();
+
+  view_->SetPaintToLayer();
+
+  ui::Layer* layer = view_->layer();
+
+  layer->SetFillsBoundsOpaquely(false);
+
+  return layer;
 }
 
-gfx::Rect View::GetBounds() {
+void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
+  bool animate = false;
+  int duration = 250;
+  gfx::Tween::Type easing = gfx::Tween::LINEAR;
+
+  gin_helper::Dictionary dict;
+  if (args->GetNext(&dict)) {
+    v8::Local<v8::Value> animate_value;
+
+    if (dict.Get("animate", &animate_value)) {
+      if (animate_value->IsBoolean()) {
+        animate = animate_value->BooleanValue(isolate());
+      } else {
+        animate = true;
+
+        gin_helper::Dictionary animate_dict;
+        if (gin::ConvertFromV8(isolate(), animate_value, &animate_dict)) {
+          animate_dict.Get("duration", &duration);
+          animate_dict.Get("easing", &easing);
+        }
+      }
+    }
+  }
+
+  if (duration < 0)
+    duration = 0;
+
+  if (!view_)
+    return;
+
+  if (!animate) {
+    view_->SetBoundsRect(bounds);
+    return;
+  }
+
+  ui::Layer* layer = GetLayer();
+
+  gfx::Rect current_bounds = view_->bounds();
+
+  if (bounds.size() == current_bounds.size()) {
+    // If the size isn't changing, we can just animate the bounds directly.
+
+    views::AnimationBuilder()
+        .SetPreemptionStrategy(
+            ui::LayerAnimator::IMMEDIATELY_ANIMATE_TO_NEW_TARGET)
+        .OnEnded(base::BindOnce(
+            [](views::View* view, const gfx::Rect& final_bounds) {
+              view->SetBoundsRect(final_bounds);
+            },
+            view_, bounds))
+        .Once()
+        .SetDuration(base::Milliseconds(duration))
+        .SetBounds(view_, bounds, easing);
+
+    return;
+  }
+
+  gfx::Rect target_size = gfx::Rect(0, 0, bounds.width(), bounds.height());
+  gfx::Rect max_size =
+      gfx::Rect(current_bounds.x(), current_bounds.y(),
+                std::max(current_bounds.width(), bounds.width()),
+                std::max(current_bounds.height(), bounds.height()));
+
+  // if the view's size is smaller than the target size, we need to set the
+  // view's bounds immediatley to the new size (not position) and set the
+  // layer's clip rect to animate from there.
+  if (view_->width() < bounds.width() || view_->height() < bounds.height()) {
+    view_->SetBoundsRect(max_size);
+
+    if (layer) {
+      layer->SetClipRect(
+          gfx::Rect(0, 0, current_bounds.width(), current_bounds.height()));
+    }
+  }
+
+  views::AnimationBuilder()
+      .SetPreemptionStrategy(
+          ui::LayerAnimator::IMMEDIATELY_ANIMATE_TO_NEW_TARGET)
+      .OnEnded(base::BindOnce(
+          [](views::View* view, const gfx::Rect& final_bounds,
+             ui::Layer* layer) {
+            view->SetBoundsRect(final_bounds);
+            if (layer)
+              layer->SetClipRect(gfx::Rect());
+          },
+          view_, bounds, layer))
+      .Once()
+      .SetDuration(base::Milliseconds(duration))
+      .SetBounds(view_, bounds, easing)
+      .SetClipRect(
+          view_, target_size,
+          easing);  // We have to set the clip rect independently of the
+                    // bounds, because animating the bounds of the layer
+                    // will not animate the underlying view's bounds.
+}
+
+gfx::Rect View::GetBounds() const {
   if (!view_)
     return {};
   return view_->bounds();
@@ -346,7 +481,8 @@ std::vector<v8::Local<v8::Value>> View::GetChildren() {
 void View::SetBackgroundColor(std::optional<WrappedSkColor> color) {
   if (!view_)
     return;
-  view_->SetBackground(color ? views::CreateSolidBackground(*color) : nullptr);
+  view_->SetBackground(color ? views::CreateSolidBackground({*color})
+                             : nullptr);
 }
 
 void View::SetBorderRadius(int radius) {
@@ -387,6 +523,10 @@ void View::SetVisible(bool visible) {
   view_->SetVisible(visible);
 }
 
+bool View::GetVisible() const {
+  return view_ ? view_->GetVisible() : false;
+}
+
 void View::OnViewBoundsChanged(views::View* observed_view) {
   ApplyBorderRadius();
   Emit("bounds-changed");
@@ -421,11 +561,11 @@ v8::Local<v8::Function> View::GetConstructor(v8::Isolate* isolate) {
 }
 
 // static
-gin::Handle<View> View::Create(v8::Isolate* isolate) {
+gin_helper::Handle<View> View::Create(v8::Isolate* isolate) {
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::Local<v8::Object> obj;
   if (GetConstructor(isolate)->NewInstance(context, 0, nullptr).ToLocal(&obj)) {
-    gin::Handle<View> view;
+    gin_helper::Handle<View> view;
     if (gin::ConvertFromV8(isolate, obj, &view))
       return view;
   }
@@ -445,7 +585,8 @@ void View::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setBackgroundColor", &View::SetBackgroundColor)
       .SetMethod("setBorderRadius", &View::SetBorderRadius)
       .SetMethod("setLayout", &View::SetLayout)
-      .SetMethod("setVisible", &View::SetVisible);
+      .SetMethod("setVisible", &View::SetVisible)
+      .SetMethod("getVisible", &View::GetVisible);
 }
 
 }  // namespace electron::api
@@ -458,9 +599,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.Set("View", View::GetConstructor(isolate));
 }
 

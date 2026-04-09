@@ -9,11 +9,11 @@ with node.js that allows exposing additional digests without patching,
 this patch is required to provide ripemd160 support in the nodejs crypto
 module.
 
-diff --git a/crypto/digest_extra/digest_extra.cc b/crypto/digest_extra/digest_extra.cc
-index 0b30897db59bdfc9ada43cf44af21bc54b6d8442..d6ecbc05d7beb6efea79166004137f7cab4ce425 100644
---- a/crypto/digest_extra/digest_extra.cc
-+++ b/crypto/digest_extra/digest_extra.cc
-@@ -87,6 +87,7 @@ static const struct nid_to_digest nid_to_digest_mapping[] = {
+diff --git a/crypto/digest/digest_extra.cc b/crypto/digest/digest_extra.cc
+index d38e0c1132da60ec96c3a5c2416ff07589f03b80..cd60baaf22a8d5dc20544d861d36b7d74d986e7b 100644
+--- a/crypto/digest/digest_extra.cc
++++ b/crypto/digest/digest_extra.cc
+@@ -48,6 +48,7 @@ static const struct nid_to_digest nid_to_digest_mapping[] = {
      {NID_sha512, EVP_sha512, SN_sha512, LN_sha512},
      {NID_sha512_256, EVP_sha512_256, SN_sha512_256, LN_sha512_256},
      {NID_md5_sha1, EVP_md5_sha1, SN_md5_sha1, LN_md5_sha1},
@@ -22,10 +22,10 @@ index 0b30897db59bdfc9ada43cf44af21bc54b6d8442..d6ecbc05d7beb6efea79166004137f7c
      // hash function when given a signature OID. To avoid unintended lax parsing
      // of hash OIDs, this is no longer supported for lookup by OID or NID.
 diff --git a/crypto/fipsmodule/digest/digests.cc.inc b/crypto/fipsmodule/digest/digests.cc.inc
-index e1b08fa2f2e2e3afca95b1f8b719220c5436903b..90a5d1895b9d5dff2748ef638c06c127ef84797b 100644
+index a246a51103701e0ac8a0722324350a462f95bcc9..ddf0a90337d4e40de09bc345cf959dffdb161ecb 100644
 --- a/crypto/fipsmodule/digest/digests.cc.inc
 +++ b/crypto/fipsmodule/digest/digests.cc.inc
-@@ -60,6 +60,7 @@
+@@ -18,6 +18,7 @@
  #include <string.h>
  
  #include <openssl/nid.h>
@@ -33,7 +33,7 @@ index e1b08fa2f2e2e3afca95b1f8b719220c5436903b..90a5d1895b9d5dff2748ef638c06c127
  
  #include "../../internal.h"
  #include "../bcm_interface.h"
-@@ -217,4 +218,27 @@ DEFINE_METHOD_FUNCTION(EVP_MD, EVP_sha512_256) {
+@@ -181,4 +182,27 @@ DEFINE_METHOD_FUNCTION(EVP_MD, EVP_sha512_256) {
    out->ctx_size = sizeof(SHA512_CTX);
  }
  
@@ -62,30 +62,30 @@ index e1b08fa2f2e2e3afca95b1f8b719220c5436903b..90a5d1895b9d5dff2748ef638c06c127
 +
  #undef CHECK
 diff --git a/decrepit/evp/evp_do_all.cc b/decrepit/evp/evp_do_all.cc
-index a3fb077b9b9e66d1bc524fd7987622e73aa4776a..852b76bea69988e0b3ac76a17b603128f239dde0 100644
+index 584b1390a841cc1b1dcb69e16d8242a88e4bb9cb..637aeccb8de8d793eabc38e32bef6834ac0e6ad3 100644
 --- a/decrepit/evp/evp_do_all.cc
 +++ b/decrepit/evp/evp_do_all.cc
-@@ -79,6 +79,7 @@ void EVP_MD_do_all_sorted(void (*callback)(const EVP_MD *cipher,
-   callback(EVP_sha384(), "SHA384", NULL, arg);
-   callback(EVP_sha512(), "SHA512", NULL, arg);
-   callback(EVP_sha512_256(), "SHA512-256", NULL, arg);
-+  callback(EVP_ripemd160(), "ripemd160", NULL, arg);
+@@ -82,6 +82,7 @@ void EVP_MD_do_all_sorted(void (*callback)(const EVP_MD *md,
+   callback(EVP_sha384(), "SHA384", nullptr, arg);
+   callback(EVP_sha512(), "SHA512", nullptr, arg);
+   callback(EVP_sha512_256(), "SHA512-256", nullptr, arg);
++  callback(EVP_ripemd160(), "ripemd160", nullptr, arg);
  
-   callback(EVP_md4(), "md4", NULL, arg);
-   callback(EVP_md5(), "md5", NULL, arg);
-@@ -88,6 +89,7 @@ void EVP_MD_do_all_sorted(void (*callback)(const EVP_MD *cipher,
-   callback(EVP_sha384(), "sha384", NULL, arg);
-   callback(EVP_sha512(), "sha512", NULL, arg);
-   callback(EVP_sha512_256(), "sha512-256", NULL, arg);
-+  callback(EVP_ripemd160(), "ripemd160", NULL, arg);
+   callback(EVP_md4(), "md4", nullptr, arg);
+   callback(EVP_md5(), "md5", nullptr, arg);
+@@ -91,6 +92,7 @@ void EVP_MD_do_all_sorted(void (*callback)(const EVP_MD *md,
+   callback(EVP_sha384(), "sha384", nullptr, arg);
+   callback(EVP_sha512(), "sha512", nullptr, arg);
+   callback(EVP_sha512_256(), "sha512-256", nullptr, arg);
++  callback(EVP_ripemd160(), "ripemd160", nullptr, arg);
  }
  
- void EVP_MD_do_all(void (*callback)(const EVP_MD *cipher, const char *name,
+ void EVP_MD_do_all(void (*callback)(const EVP_MD *md, const char *name,
 diff --git a/include/openssl/digest.h b/include/openssl/digest.h
-index c3130dc9baf4e28b9eef383a22707a561129ec16..2d046ece0705e8bec17aa1f164e1f9702b2f325b 100644
+index 62ad57368cb3059ee25df08bb07876fef499de2e..322daef194b3c7b73011419bb74bccb311eb03a5 100644
 --- a/include/openssl/digest.h
 +++ b/include/openssl/digest.h
-@@ -90,6 +90,9 @@ OPENSSL_EXPORT const EVP_MD *EVP_blake2b256(void);
+@@ -48,6 +48,9 @@ OPENSSL_EXPORT const EVP_MD *EVP_blake2b256(void);
  // MD5 and SHA-1, as used in TLS 1.1 and below.
  OPENSSL_EXPORT const EVP_MD *EVP_md5_sha1(void);
  

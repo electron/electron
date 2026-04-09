@@ -407,6 +407,41 @@ describe('asar package', function () {
       });
     });
 
+    describe('fs.cpSync', function () {
+      itremote('copies a normal file', function () {
+        if (!fs.cpSync) return;
+        const p = path.join(asarDir, 'a.asar', 'file1');
+        const temp = require('temp').track();
+        const dest = temp.path();
+        fs.cpSync(p, dest);
+        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true();
+      });
+    });
+
+    describe('fs.cp', function () {
+      itremote('copies a normal file', async function () {
+        if (!fs.cp) return;
+        const p = path.join(asarDir, 'a.asar', 'file1');
+        const temp = require('temp').track();
+        const dest = temp.path();
+        await new Promise<void>((resolve, reject) => {
+          fs.cp(p, dest, (err) => err ? reject(err) : resolve());
+        });
+        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true();
+      });
+    });
+
+    describe('fs.promises.cp', function () {
+      itremote('copies a normal file', async function () {
+        if (!fs.promises.cp) return;
+        const p = path.join(asarDir, 'a.asar', 'file1');
+        const temp = require('temp').track();
+        const dest = temp.path();
+        await fs.promises.cp(p, dest);
+        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true();
+      });
+    });
+
     describe('fs.lstatSync', function () {
       itremote('handles path with trailing slash correctly', function () {
         const p = path.join(asarDir, 'a.asar', 'link2', 'link2', 'file1');
@@ -1272,24 +1307,28 @@ describe('asar package', function () {
     describe('fs.exists', function () {
       itremote('handles an existing file', async function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
+        // eslint-disable-next-line n/no-deprecated-api
         const exists = await new Promise(resolve => fs.exists(p, resolve));
         expect(exists).to.be.true();
       });
 
       itremote('handles a non-existent file', async function () {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
+        // eslint-disable-next-line n/no-deprecated-api
         const exists = await new Promise(resolve => fs.exists(p, resolve));
         expect(exists).to.be.false();
       });
 
       itremote('promisified version handles an existing file', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
+        // eslint-disable-next-line n/no-deprecated-api
         const exists = await require('node:util').promisify(fs.exists)(p);
         expect(exists).to.be.true();
       });
 
       itremote('promisified version handles a non-existent file', async function () {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
+        // eslint-disable-next-line n/no-deprecated-api
         const exists = await require('node:util').promisify(fs.exists)(p);
         expect(exists).to.be.false();
       });

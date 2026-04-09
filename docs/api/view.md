@@ -9,6 +9,7 @@ module is emitted.
 
 ```js
 const { BaseWindow, View } = require('electron')
+
 const win = new BaseWindow()
 const view = new View()
 
@@ -24,6 +25,10 @@ win.contentView.addChildView(view)
 Process: [Main](../glossary.md#main-process)
 
 `View` is an [EventEmitter][event-emitter].
+
+> [!WARNING]
+> Electron's built-in classes cannot be subclassed in user code.
+> For more information, see [the FAQ](../faq.md#class-inheritance-does-not-work-with-electron-built-in-modules).
 
 ### `new View()`
 
@@ -57,9 +62,17 @@ it becomes the topmost view.
 
 If the view passed as a parameter is not a child of this view, this method is a no-op.
 
-#### `view.setBounds(bounds)`
+#### `view.setBounds(bounds[, options])`
 
 * `bounds` [Rectangle](structures/rectangle.md) - New bounds of the View.
+* `options` Object (optional) - Options for setting the bounds.
+  * `animate` boolean | Object (optional) - If true, the bounds change will be animated. If an object is passed, it can contain the following properties:
+    * `duration` Integer (optional) - Duration of the animation in milliseconds. Default is `250`.
+    * `easing` string (optional) - Easing function for the animation. Default is `linear`.
+      * `linear`
+      * `ease-in`
+      * `ease-out`
+      * `ease-in-out`
 
 #### `view.getBounds()`
 
@@ -94,17 +107,25 @@ Examples of valid `color` values:
   * Similar to CSS Color Module Level 3 keywords, but case-sensitive.
     * e.g. `blueviolet` or `red`
 
-**Note:** Hex format with alpha takes `AARRGGBB` or `ARGB`, _not_ `RRGGBBAA` or `RGB`.
+> [!NOTE]
+> Hex format with alpha takes `AARRGGBB` or `ARGB`, _not_ `RRGGBBAA` or `RGB`.
 
 #### `view.setBorderRadius(radius)`
 
 * `radius` Integer - Border radius size in pixels.
 
-**Note:** The area cutout of the view's border still captures clicks.
+> [!NOTE]
+> The area cutout of the view's border still captures clicks.
 
 #### `view.setVisible(visible)`
 
 * `visible` boolean - If false, the view will be hidden from display.
+
+#### `view.getVisible()`
+
+Returns `boolean` - Whether the view should be drawn. Note that this is
+different from whether the view is visible on screen—it may still be obscured
+or out of view.
 
 ### Instance Properties
 

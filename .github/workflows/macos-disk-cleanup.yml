@@ -1,0 +1,105 @@
+name: macOS Disk Space Cleanup
+
+# Description:
+# This workflow runs the disk space reclaimer on macOS runners every night
+# and logs disk space metrics to Datadog for monitoring.
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  macos-disk-cleanup:
+    if: github.repository == 'electron/electron'
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - macos-15
+          - macos-15-large
+          - macos-15-xlarge
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: |
+            .github/actions/free-space-macos
+          sparse-checkout-cone-mode: false
+
+      - name: Get Disk Space Before Cleanup
+        id: disk-before
+        shell: bash
+        run: |
+          echo "Disk space before cleanup:"
+          df -h /
+          FREE_SPACE_BEFORE=$(df -k / | tail -1 | awk '{print $4}')
+          echo "free_kb=$FREE_SPACE_BEFORE" >> $GITHUB_OUTPUT
+
+      - name: Free Space on macOS
+        uses: ./.github/actions/free-space-macos
+
+      - name: Get Disk Space After Cleanup
+        id: disk-after
+        shell: bash
+        run: |
+          echo "Disk space after cleanup:"
+          df -h /
+          FREE_SPACE_AFTER=$(df -k / | tail -1 | awk '{print $4}')
+          echo "free_kb=$FREE_SPACE_AFTER" >> $GITHUB_OUTPUT
+
+      - name: Log Disk Space to Datadog
+        if: ${{ env.DD_API_KEY != '' }}
+        shell: bash
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          FREE_BEFORE: ${{ steps.disk-before.outputs.free_kb }}
+          FREE_AFTER: ${{ steps.disk-after.outputs.free_kb }}
+          MATRIX_RUNNER: ${{ matrix.runner }}
+        run: |
+          TIMESTAMP=$(date +%s)
+          FREE_BEFORE_GB=$(echo "scale=2; $FREE_BEFORE / 1024 / 1024" | bc)
+          FREE_AFTER_GB=$(echo "scale=2; $FREE_AFTER / 1024 / 1024" | bc)
+          SPACE_FREED_GB=$(echo "scale=2; ($FREE_AFTER - $FREE_BEFORE) / 1024 / 1024" | bc)
+
+          echo "Free space before: ${FREE_BEFORE_GB}GB"
+          echo "Free space after: ${FREE_AFTER_GB}GB"
+          echo "Space freed: ${SPACE_FREED_GB}GB"
+
+          curl -s -X POST "https://api.datadoghq.com/api/v2/series" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${DD_API_KEY}" \
+            -d @- << EOF
+          {
+            "series": [
+              {
+                "metric": "electron.macos.disk.free_space_before_cleanup_gb",
+                "points": [{"timestamp": ${TIMESTAMP}, "value": ${FREE_BEFORE_GB}}],
+                "type": 3,
+                "unit": "gigabyte",
+                "tags": ["runner:${MATRIX_RUNNER}", "platform:macos"]
+              },
+              {
+                "metric": "electron.macos.disk.free_space_after_cleanup_gb",
+                "points": [{"timestamp": ${TIMESTAMP}, "value": ${FREE_AFTER_GB}}],
+                "type": 3,
+                "unit": "gigabyte",
+                "tags": ["runner:${MATRIX_RUNNER}", "platform:macos"]
+              },
+              {
+                "metric": "electron.macos.disk.space_freed_gb",
+                "points": [{"timestamp": ${TIMESTAMP}, "value": ${SPACE_FREED_GB}}],
+                "type": 3,
+                "unit": "gigabyte",
+                "tags": ["runner:${MATRIX_RUNNER}", "platform:macos"]
+              }
+            ]
+          }
+          EOF
+
+          echo "Disk space metrics logged to Datadog"

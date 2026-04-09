@@ -15,19 +15,13 @@
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/tray_icon_observer.h"
 #include "shell/common/gin_converters/guid_converter.h"
-#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
-#include "shell/common/gin_helper/pinnable.h"
+#include "shell/common/gin_helper/self_keep_alive.h"
 
 namespace gfx {
 class Image;
 class Image;
 }  // namespace gfx
-
-namespace gin {
-template <typename T>
-class Handle;
-}  // namespace gin
 
 namespace gin_helper {
 class Dictionary;
@@ -41,33 +35,34 @@ class Menu;
 class Tray final : public gin::Wrappable<Tray>,
                    public gin_helper::EventEmitterMixin<Tray>,
                    public gin_helper::Constructible<Tray>,
-                   public gin_helper::CleanedUpAtExit,
-                   public gin_helper::Pinnable<Tray>,
                    private TrayIconObserver {
  public:
   // gin_helper::Constructible
-  static gin::Handle<Tray> New(gin_helper::ErrorThrower thrower,
-                               v8::Local<v8::Value> image,
-                               std::optional<UUID> guid,
-                               gin::Arguments* args);
+  static Tray* New(gin_helper::ErrorThrower thrower,
+                   v8::Local<v8::Value> image,
+                   std::optional<base::Uuid> guid,
+                   gin::Arguments* args);
 
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   static const char* GetClassName() { return "Tray"; }
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
-  const char* GetTypeName() override;
+  static const gin::WrapperInfo kWrapperInfo;
+  void Trace(cppgc::Visitor*) const override;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
+
+  // Make public for cppgc::MakeGarbageCollected.
+  Tray(v8::Isolate* isolate,
+       v8::Local<v8::Value> image,
+       std::optional<base::Uuid> guid);
+  ~Tray() override;
 
   // disable copy
   Tray(const Tray&) = delete;
   Tray& operator=(const Tray&) = delete;
 
  private:
-  Tray(v8::Isolate* isolate,
-       v8::Local<v8::Value> image,
-       std::optional<UUID> guid);
-  ~Tray() override;
-
   // TrayIconObserver:
   void OnClicked(const gfx::Rect& bounds,
                  const gfx::Point& location,
@@ -111,11 +106,14 @@ class Tray final : public gin::Wrappable<Tray>,
   void SetContextMenu(gin_helper::ErrorThrower thrower,
                       v8::Local<v8::Value> arg);
   gfx::Rect GetBounds();
+  v8::Local<v8::Value> GetGUID();
 
   bool CheckAlive();
 
-  v8::Global<v8::Value> menu_;
+  cppgc::Member<Menu> menu_;
+  std::optional<base::Uuid> guid_;
   std::unique_ptr<TrayIcon> tray_icon_;
+  gin_helper::SelfKeepAlive<Tray> keep_alive_{this};
 };
 
 }  // namespace electron::api

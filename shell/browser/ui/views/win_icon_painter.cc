@@ -7,6 +7,7 @@
 #include "base/numerics/safe_conversions.h"
 #include "cc/paint/paint_flags.h"
 #include "third_party/skia/include/core/SkPath.h"
+#include "third_party/skia/include/core/SkPathBuilder.h"
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/geometry/rrect_f.h"
 
@@ -75,11 +76,12 @@ void WinIconPainter::PaintCloseIcon(gfx::Canvas* canvas,
   paint_flags.setAntiAlias(true);
 
   canvas->ClipRect(symbol_rect);
-  SkPath path;
-  path.moveTo(symbol_rect.x(), symbol_rect.y());
-  path.lineTo(symbol_rect.right(), symbol_rect.bottom());
-  path.moveTo(symbol_rect.right(), symbol_rect.y());
-  path.lineTo(symbol_rect.x(), symbol_rect.bottom());
+  const SkPath path = SkPathBuilder()
+                          .moveTo(symbol_rect.x(), symbol_rect.y())
+                          .lineTo(symbol_rect.right(), symbol_rect.bottom())
+                          .moveTo(symbol_rect.right(), symbol_rect.y())
+                          .lineTo(symbol_rect.x(), symbol_rect.bottom())
+                          .detach();
   canvas->DrawPath(path, flags);
 }
 

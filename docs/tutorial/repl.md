@@ -14,8 +14,9 @@ dependency, you should be able to access the REPL with the following command:
   ./node_modules/.bin/electron --interactive
   ```
 
-**Note:** `electron --interactive` is not available on Windows
-(see [electron/electron#5776](https://github.com/electron/electron/pull/5776) for more details).
+> [!NOTE]
+> `electron --interactive` is not available on Windows
+> (see [electron/electron#5776](https://github.com/electron/electron/pull/5776) for more details).
 
 ## Renderer process
 

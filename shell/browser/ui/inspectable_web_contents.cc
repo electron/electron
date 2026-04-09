@@ -12,6 +12,9 @@
 #include <utility>
 
 #include "base/base64.h"
+#include "base/containers/fixed_flat_set.h"
+#include "base/containers/span.h"
+#include "base/dcheck_is_on.h"
 #include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram.h"
 #include "base/strings/pattern.h"
@@ -20,6 +23,7 @@
 #include "base/timer/timer.h"
 #include "base/uuid.h"
 #include "base/values.h"
+#include "build/util/chromium_git_revision.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
@@ -34,8 +38,7 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
-#include "content/public/common/user_agent.h"
-#include "ipc/ipc_channel.h"
+#include "ipc/constants.mojom.h"
 #include "net/http/http_response_headers.h"
 #include "net/http/http_status_code.h"
 #include "services/network/public/cpp/simple_url_loader.h"
@@ -56,13 +59,15 @@
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
+#include "url/url_util.h"
 #include "v8/include/v8.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "chrome/common/extensions/chrome_manifest_url_handlers.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/render_process_host.h"
 #include "extensions/browser/extension_registry.h"
+#include "extensions/common/manifest_handlers/chrome_url_overrides_handler.h"
+#include "extensions/common/manifest_handlers/devtools_page_handler.h"
 #include "extensions/common/permissions/permissions_data.h"
 #endif
 
@@ -91,24 +96,24 @@ constexpr std::string_view kFrontendHostMethod = "method";
 constexpr std::string_view kFrontendHostParams = "params";
 constexpr std::string_view kTitleFormat = "Developer Tools - %s";
 
-const size_t kMaxMessageChunkSize = IPC::Channel::kMaximumMessageSize / 4;
+const size_t kMaxMessageChunkSize = IPC::mojom::kChannelMaximumMessageSize / 4;
 
-base::Value::Dict RectToDictionary(const gfx::Rect& bounds) {
-  return base::Value::Dict{}
+base::DictValue RectToDictionary(const gfx::Rect& bounds) {
+  return base::DictValue{}
       .Set("x", bounds.x())
       .Set("y", bounds.y())
       .Set("width", bounds.width())
       .Set("height", bounds.height());
 }
 
-gfx::Rect DictionaryToRect(const base::Value::Dict& dict) {
+gfx::Rect DictionaryToRect(const base::DictValue& dict) {
   return gfx::Rect{dict.FindInt("x").value_or(0), dict.FindInt("y").value_or(0),
                    dict.FindInt("width").value_or(800),
                    dict.FindInt("height").value_or(600)};
 }
 
 bool IsPointInScreen(const gfx::Point& point) {
-  return std::ranges::any_of(display::Screen::GetScreen()->GetAllDisplays(),
+  return std::ranges::any_of(display::Screen::Get()->GetAllDisplays(),
                              [&point](auto const& display) {
                                return display.bounds().Contains(point);
                              });
@@ -140,13 +145,12 @@ double GetNextZoomLevel(double level, bool out) {
 GURL GetRemoteBaseURL() {
   return GURL(absl::StrFormat("%s%s/%s/", kChromeUIDevToolsRemoteFrontendBase,
                               kChromeUIDevToolsRemoteFrontendPath,
-                              content::GetChromiumGitRevision().c_str()));
+                              CHROMIUM_GIT_REVISION));
 }
 
 GURL GetDevToolsURL(bool can_dock) {
-  auto url_string =
-      absl::StrFormat(kChromeUIDevToolsURL, GetRemoteBaseURL().spec().c_str(),
-                      can_dock ? "true" : "");
+  auto url_string = absl::StrFormat(
+      kChromeUIDevToolsURL, GetRemoteBaseURL().spec(), can_dock ? "true" : "");
   return GURL(url_string);
 }
 
@@ -156,6 +160,13 @@ void OnOpenItemComplete(const base::FilePath& path, const std::string& result) {
 
 constexpr base::TimeDelta kInitialBackoffDelay = base::Milliseconds(250);
 constexpr base::TimeDelta kMaxBackoffDelay = base::Seconds(10);
+
+constexpr auto kValidDockStates = base::MakeFixedFlatSet<std::string_view>(
+    {"bottom", "left", "right", "undocked"});
+
+bool IsValidDockState(const std::string& state) {
+  return kValidDockStates.contains(state);
+}
 
 }  // namespace
 
@@ -267,7 +278,7 @@ class InspectableWebContents::NetworkResourceLoader
           "statusCode", response_headers_ ? response_headers_->response_code()
                                           : net::HTTP_OK);
 
-      base::Value::Dict headers;
+      base::DictValue headers;
       size_t iterator = 0;
       std::string name;
       std::string value;
@@ -297,11 +308,6 @@ class InspectableWebContents::NetworkResourceLoader
   base::TimeDelta retry_delay_;
 };
 
-// Implemented separately on each platform.
-InspectableWebContentsView* CreateInspectableContentsView(
-    InspectableWebContents* inspectable_web_contents);
-
-// static
 // static
 void InspectableWebContents::RegisterPrefs(PrefRegistrySimple* registry) {
   registry->RegisterDictionaryPref(kDevToolsBoundsPref,
@@ -317,7 +323,7 @@ InspectableWebContents::InspectableWebContents(
     : pref_service_(pref_service),
       web_contents_(std::move(web_contents)),
       is_guest_(is_guest),
-      view_(CreateInspectableContentsView(this)) {
+      view_(new InspectableWebContentsView(this)) {
   const base::Value* bounds_dict =
       &pref_service_->GetValue(kDevToolsBoundsPref);
   if (bounds_dict->is_dict()) {
@@ -330,11 +336,11 @@ InspectableWebContents::InspectableWebContents(
     if (!IsPointInScreen(devtools_bounds_.origin())) {
       gfx::Rect display;
       if (!is_guest && web_contents_->GetNativeView()) {
-        display = display::Screen::GetScreen()
+        display = display::Screen::Get()
                       ->GetDisplayNearestView(web_contents_->GetNativeView())
                       .bounds();
       } else {
-        display = display::Screen::GetScreen()->GetPrimaryDisplay().bounds();
+        display = display::Screen::Get()->GetPrimaryDisplay().bounds();
       }
 
       devtools_bounds_.set_x(display.x() +
@@ -346,6 +352,10 @@ InspectableWebContents::InspectableWebContents(
 }
 
 InspectableWebContents::~InspectableWebContents() {
+  // Explicitly destroy the view first to ensure that any callbacks triggered
+  // during view teardown (like NonClientHitTest) does not access a
+  // partially-destroyed view.
+  view_.reset();
   // Unsubscribe from devtools and Clean up resources.
   if (GetDevToolsWebContents())
     WebContentsDestroyed();
@@ -392,7 +402,7 @@ void InspectableWebContents::SetDockState(const std::string& state) {
     can_dock_ = false;
   } else {
     can_dock_ = true;
-    dock_state_ = state;
+    dock_state_ = (state.empty() || IsValidDockState(state)) ? state : "right";
   }
 }
 
@@ -493,7 +503,7 @@ void InspectableWebContents::CallClientFunction(
   if (!GetDevToolsWebContents())
     return;
 
-  base::Value::List arguments;
+  base::ListValue arguments;
   if (!arg1.is_none()) {
     arguments.Append(std::move(arg1));
     if (!arg2.is_none()) {
@@ -524,6 +534,12 @@ void InspectableWebContents::UpdateDevToolsZoomLevel(double level) {
 }
 
 void InspectableWebContents::ActivateWindow() {
+  if (embedder_message_dispatcher_) {
+    if (managed_devtools_web_contents_ && view_) {
+      view_->ActivateDevTools();
+    }
+  }
+
   // Set the zoom level.
   SetZoomLevelForWebContents(GetDevToolsWebContents(), GetDevToolsZoomLevel());
 }
@@ -533,6 +549,8 @@ void InspectableWebContents::CloseWindow() {
 }
 
 void InspectableWebContents::LoadCompleted() {
+  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+
   frontend_loaded_ = true;
   if (managed_devtools_web_contents_)
     view_->ShowDevTools(activate_);
@@ -545,11 +563,17 @@ void InspectableWebContents::LoadCompleted() {
     }
   } else {
     if (dock_state_.empty()) {
-      const base::Value::Dict& prefs =
+      const base::DictValue& prefs =
           pref_service_->GetDict(kDevToolsPreferences);
       const std::string* current_dock_state =
           prefs.FindString("currentDockState");
-      base::RemoveChars(*current_dock_state, "\"", &dock_state_);
+      if (current_dock_state) {
+        std::string sanitized;
+        base::RemoveChars(*current_dock_state, "\"", &sanitized);
+        dock_state_ = IsValidDockState(sanitized) ? sanitized : "right";
+      } else {
+        dock_state_ = "right";
+      }
     }
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
     auto* api_web_contents = api::WebContents::From(GetWebContents());
@@ -592,7 +616,7 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
   if (!registry)
     return;
 
-  base::Value::List results;
+  base::ListValue results;
   for (auto& extension : registry->enabled_extensions()) {
     auto devtools_page_url =
         extensions::chrome_manifest_urls::GetDevToolsPage(extension.get());
@@ -603,10 +627,10 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
     // process. Grant the devtools process the ability to request URLs from the
     // extension.
     content::ChildProcessSecurityPolicy::GetInstance()->GrantRequestOrigin(
-        web_contents_->GetPrimaryMainFrame()->GetProcess()->GetID(),
+        web_contents_->GetPrimaryMainFrame()->GetProcess()->GetDeprecatedID(),
         url::Origin::Create(extension->url()));
 
-    base::Value::Dict extension_info;
+    base::DictValue extension_info;
     extension_info.Set("startPage", devtools_page_url.spec());
     extension_info.Set("name", extension->name());
     extension_info.Set("exposeExperimentalAPIs",
@@ -631,8 +655,7 @@ void InspectableWebContents::SetInspectedPageBounds(const gfx::Rect& rect) {
 void InspectableWebContents::InspectedURLChanged(const std::string& url) {
   if (managed_devtools_web_contents_) {
     if (devtools_title_.empty()) {
-      view_->SetTitle(
-          base::UTF8ToUTF16(absl::StrFormat(kTitleFormat, url.c_str())));
+      view_->SetTitle(base::UTF8ToUTF16(absl::StrFormat(kTitleFormat, url)));
     }
   }
 }
@@ -684,7 +707,7 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             std::move(pending_remote)));
   } else if (const auto* const protocol_handler =
-                 protocol_registry->FindRegistered(gurl.scheme_piece())) {
+                 protocol_registry->FindRegistered(gurl.scheme())) {
     url_loader_factory = network::SharedURLLoaderFactory::Create(
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             ElectronURLLoaderFactory::Create(protocol_handler->first,
@@ -820,12 +843,6 @@ void InspectableWebContents::DispatchProtocolMessageFromDevToolsFrontend(
     agent_host_->DispatchProtocolMessage(this, base::as_byte_span(message));
 }
 
-void InspectableWebContents::SendJsonRequest(DispatchCallback callback,
-                                             const std::string& browser_id,
-                                             const std::string& url) {
-  std::move(callback).Run(nullptr);
-}
-
 void InspectableWebContents::GetPreferences(DispatchCallback callback) {
   const base::Value& prefs = pref_service_->GetValue(kDevToolsPreferences);
   std::move(callback).Run(&prefs);
@@ -866,7 +883,14 @@ void InspectableWebContents::GetSyncInformation(DispatchCallback callback) {
 }
 
 void InspectableWebContents::GetHostConfig(DispatchCallback callback) {
-  base::Value::Dict response_dict;
+  base::DictValue response_dict;
+
+  base::ListValue extension_schemes;
+  for (const std::string& scheme : url::GetExtensionSchemes())
+    extension_schemes.Append(scheme + ":");
+  response_dict.Set("devToolsExtensionSchemes",
+                    base::Value(std::move(extension_schemes)));
+
   base::Value response = base::Value(std::move(response_dict));
   std::move(callback).Run(&response);
 }
@@ -877,7 +901,7 @@ void InspectableWebContents::RegisterExtensionsAPI(const std::string& origin,
 }
 
 void InspectableWebContents::HandleMessageFromDevToolsFrontend(
-    base::Value::Dict message) {
+    base::DictValue message) {
   // TODO(alexeykuzmin): Should we expect it to exist?
   if (!embedder_message_dispatcher_) {
     return;
@@ -891,8 +915,8 @@ void InspectableWebContents::HandleMessageFromDevToolsFrontend(
     return;
   }
 
-  const base::Value::List no_params;
-  const base::Value::List& params_list =
+  const base::ListValue no_params;
+  const base::ListValue& params_list =
       params != nullptr && params->is_list() ? params->GetList() : no_params;
 
   const int id = message.FindInt(kFrontendHostId).value_or(0);
@@ -908,8 +932,7 @@ void InspectableWebContents::DispatchProtocolMessage(
   if (!frontend_loaded_)
     return;
 
-  const std::string_view str_message{
-      reinterpret_cast<const char*>(message.data()), message.size()};
+  const std::string_view str_message = base::as_string_view(message);
   if (str_message.length() < kMaxMessageChunkSize) {
     CallClientFunction("DevToolsAPI", "dispatchMessage",
                        base::Value(std::string(str_message)));
@@ -959,6 +982,35 @@ bool InspectableWebContents::HandleKeyboardEvent(
     const input::NativeWebKeyboardEvent& event) {
   auto* delegate = web_contents_->GetDelegate();
   return !delegate || delegate->HandleKeyboardEvent(source, event);
+}
+
+bool InspectableWebContents::DidAddMessageToConsole(
+    content::WebContents* source,
+    blink::mojom::ConsoleMessageLevel log_level,
+    const std::u16string& message,
+    int32_t line_no,
+    const std::u16string& source_id) {
+  // Suppress Chromium's default logging of DevTools frontend console messages
+  // into native logs for the managed DevTools WebContents. Can be overridden by
+  // enabling verbose logging.
+  if (source == managed_devtools_web_contents_.get()) {
+#if DCHECK_IS_ON()
+    // In debug/testing builds, let logging through.
+    return false;
+#endif
+
+    if (VLOG_IS_ON(1)) {
+      // Match Chromium's `content::LogConsoleMessage()` output format, but emit
+      // it as a verbose log.
+      logging::LogMessage("CONSOLE", line_no, logging::LOGGING_VERBOSE).stream()
+          << "\"" << message << "\", source: " << source_id << " (" << line_no
+          << ")";
+    }
+
+    return true;  // Suppress the default logging.
+  }
+
+  return false;  // Allow the default logging.
 }
 
 void InspectableWebContents::CloseContents(content::WebContents* source) {
@@ -1031,9 +1083,9 @@ void InspectableWebContents::DidFinishNavigation(
   // most likely bug in chromium.
   base::ReplaceFirstSubstringAfterOffset(&it->second, 0, "var chrome",
                                          "var chrome = window.chrome ");
-  auto script = absl::StrFormat(
-      "%s(\"%s\")", it->second.c_str(),
-      base::Uuid::GenerateRandomV4().AsLowercaseString().c_str());
+  auto script =
+      absl::StrFormat("%s(\"%s\")", it->second,
+                      base::Uuid::GenerateRandomV4().AsLowercaseString());
   // Invoking content::DevToolsFrontendHost::SetupExtensionsAPI(frame, script);
   // should be enough, but it seems to be a noop currently.
   frame->ExecuteJavaScriptForTests(base::UTF8ToUTF16(script),

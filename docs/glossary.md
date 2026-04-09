@@ -12,6 +12,15 @@ The ASAR format was created primarily to improve performance on Windows when
 reading large quantities of small files (e.g. when loading your app's JavaScript
 dependency tree from `node_modules`).
 
+### ASAR integrity
+
+ASAR integrity is a security feature that validates the contents of your app's
+ASAR archives at runtime. When enabled, your Electron app will verify the
+header hash of its ASAR archive on runtime. If no hash is present or if there is a mismatch in the
+hashes, the app will forcefully terminate.
+
+See the [ASAR Integrity](./tutorial/asar-integrity.md) guide for more details.
+
 ### code signing
 
 Code signing is a process where an app developer digitally signs their code to
@@ -128,9 +137,9 @@ See also: [code signing](#code-signing)
 
 ### OSR
 
-OSR (offscreen rendering) can be used for loading heavy page in
+OSR (offscreen rendering) can be used for loading a heavy page in
 background and then displaying it after (it will be much faster).
-It allows you to render page without showing it on screen.
+It allows you to render a page without showing it on screen.
 
 For more information, read the [Offscreen Rendering][] tutorial.
 

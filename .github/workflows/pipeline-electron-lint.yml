@@ -8,25 +8,34 @@ on:
         description: 'Container to run lint in'
         type: string
 
+permissions: {}
+
 concurrency:
-  group: electron-lint-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
+  group: electron-lint-${{ github.ref_protected == true && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref_protected != true }}
+
+env:
+  CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}  
 
 jobs:
   lint:
     name: Lint
-    runs-on: electron-arc-linux-amd64-4core
+    runs-on: electron-arc-centralus-linux-amd64-4core
+    permissions:
+      contents: read
     timeout-minutes: 20
     container: ${{ fromJSON(inputs.container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Setup third_party Depot Tools
       shell: bash
       run: |
@@ -37,7 +46,11 @@ jobs:
       shell: bash
       run: |
         chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
-        gn_version="$(curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/DEPS?format=TEXT" | base64 -d | grep gn_version | head -n1 | cut -d\' -f4)"
+        if [[ ! "$chromium_revision" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+          echo "::error::Invalid chromium_revision: $chromium_revision"
+          exit 1
+        fi
+        gn_version="$(curl -sL "https://raw.githubusercontent.com/chromium/chromium/refs/tags/${chromium_revision}/DEPS" | grep gn_version | head -n1 | cut -d\' -f4)"
 
         cipd ensure -ensure-file - -root . <<-CIPD
         \$ServiceURL https://chrome-infra-packages.appspot.com/
@@ -51,11 +64,19 @@ jobs:
       shell: bash
       run: |
         chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
+        if [[ ! "$chromium_revision" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+          echo "::error::Invalid chromium_revision: $chromium_revision"
+          exit 1
+        fi
 
         mkdir -p src/buildtools
-        curl -sL "https://chromium.googlesource.com/chromium/src/+/${chromium_revision}/buildtools/DEPS?format=TEXT" | base64 -d > src/buildtools/DEPS
+        curl -sL "https://raw.githubusercontent.com/chromium/chromium/refs/tags/${chromium_revision}/buildtools/DEPS" > src/buildtools/DEPS
 
         gclient sync --spec="solutions=[{'name':'src/buildtools','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':True},'managed':False}]"
+    - name: Add problem matchers
+      shell: bash
+      run: |
+        echo "::add-matcher::src/electron/.github/problem-matchers/markdownlint.json"
     - name: Run Lint
       shell: bash
       run: |
@@ -66,11 +87,15 @@ jobs:
         # but then we would lint its contents (at least gn format), and it doesn't pass it.
 
         cd src/electron
-        node script/yarn install --frozen-lockfile
-        node script/yarn lint
+        node script/yarn.js install --immutable
+        node script/yarn.js lint
     - name: Run Script Typechecker
       shell: bash
       run: |
         cd src/electron
-        node script/yarn tsc -p tsconfig.script.json
-    
+        node script/yarn.js tsc -p tsconfig.script.json
+    - name: Check GHA Workflows
+      shell: bash
+      run: |
+        cd src/electron
+        node script/copy-pipeline-segment-publish.js --check

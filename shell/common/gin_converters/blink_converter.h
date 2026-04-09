@@ -57,6 +57,8 @@ struct Converter<blink::WebMouseEvent> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      blink::WebMouseEvent* out);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const blink::WebMouseEvent& in);
 };
 
 template <>
@@ -133,7 +135,9 @@ struct Converter<blink::mojom::ConsoleMessageLevel> {
                                    const blink::mojom::ConsoleMessageLevel& in);
 };
 
-v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags);
+v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate,
+                                   int editFlags,
+                                   bool is_paste_enabled);
 v8::Local<v8::Value> MediaFlagsToV8(v8::Isolate* isolate, int mediaFlags);
 
 }  // namespace gin

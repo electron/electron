@@ -135,7 +135,6 @@ void WebContentsPreferences::Clear() {
   default_encoding_ = std::nullopt;
   is_webview_ = false;
   custom_args_.clear();
-  custom_switches_.clear();
   enable_blink_features_ = std::nullopt;
   disable_blink_features_ = std::nullopt;
   disable_popups_ = false;
@@ -148,6 +147,8 @@ void WebContentsPreferences::Clear() {
       blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyAllowed;
   preload_path_ = std::nullopt;
   v8_cache_options_ = blink::mojom::V8CacheOptions::kDefault;
+  deprecated_paste_enabled_ = false;
+  focus_on_navigation_ = true;
 
 #if BUILDFLAG(IS_MAC)
   scroll_bounce_ = false;
@@ -202,7 +203,6 @@ void WebContentsPreferences::SetFromDictionary(
   if (web_preferences.Get("defaultEncoding", &encoding))
     default_encoding_ = encoding;
   web_preferences.Get(options::kCustomArgs, &custom_args_);
-  web_preferences.Get("commandLineSwitches", &custom_switches_);
   web_preferences.Get("disablePopups", &disable_popups_);
   web_preferences.Get("disableDialogs", &disable_dialogs_);
   web_preferences.Get("safeDialogs", &safe_dialogs_);
@@ -214,7 +214,7 @@ void WebContentsPreferences::SetFromDictionary(
   }
   std::string background_color;
   if (web_preferences.GetHidden(options::kBackgroundColor, &background_color))
-    background_color_ = ParseCSSColor(background_color);
+    background_color_ = ParseCSSColor(background_color).value_or(SK_ColorWHITE);
   std::string safe_dialogs_message;
   if (web_preferences.Get("safeDialogsMessage", &safe_dialogs_message))
     safe_dialogs_message_ = safe_dialogs_message;
@@ -244,6 +244,11 @@ void WebContentsPreferences::SetFromDictionary(
   }
 
   web_preferences.Get("v8CacheOptions", &v8_cache_options_);
+
+  web_preferences.Get(options::kEnableDeprecatedPaste,
+                      &deprecated_paste_enabled_);
+
+  web_preferences.Get(options::kFocusOnNavigation, &focus_on_navigation_);
 
 #if BUILDFLAG(IS_MAC)
   web_preferences.Get(options::kScrollBounce, &scroll_bounce_);
@@ -283,7 +288,7 @@ bool WebContentsPreferences::IsSandboxed() const {
 
 // static
 content::WebContents* WebContentsPreferences::GetWebContentsFromProcessID(
-    int process_id) {
+    content::ChildProcessId process_id) {
   for (WebContentsPreferences* preferences : Instances()) {
     content::WebContents* web_contents = preferences->web_contents_;
     if (web_contents->GetPrimaryMainFrame()->GetProcess()->GetID() ==
@@ -331,20 +336,12 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     if (!arg.empty())
       command_line->AppendArg(arg);
 
-  // Custom command line switches.
-  for (const auto& arg : custom_switches_)
-    if (!arg.empty())
-      command_line->AppendSwitch(arg);
-
   if (enable_blink_features_)
     command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures,
                                     *enable_blink_features_);
   if (disable_blink_features_)
     command_line->AppendSwitchASCII(::switches::kDisableBlinkFeatures,
                                     *disable_blink_features_);
-
-  if (node_integration_in_worker_)
-    command_line->AppendSwitch(switches::kNodeIntegrationInWorker);
 
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents
@@ -354,7 +351,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 }
 
 void WebContentsPreferences::SaveLastPreferences() {
-  base::Value::Dict dict;
+  base::DictValue dict;
   dict.Set(options::kNodeIntegration, node_integration_);
   dict.Set(options::kNodeIntegrationInSubFrames,
            node_integration_in_sub_frames_);
@@ -472,6 +469,8 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   prefs->webview_tag = webview_tag_;
 
   prefs->v8_cache_options = v8_cache_options_;
+
+  prefs->dom_paste_enabled = deprecated_paste_enabled_;
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPreferences);

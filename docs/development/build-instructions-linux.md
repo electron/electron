@@ -6,80 +6,17 @@ Follow the guidelines below for building **Electron itself** on Linux, for the p
 
 ## Prerequisites
 
-* At least 25GB disk space and 8GB RAM.
-* Python >= 3.7.
-* Node.js. There are various ways to install Node. You can download
-  source code from [nodejs.org](https://nodejs.org) and compile it.
-  Doing so permits installing Node on your own home directory as a standard user.
-  Or try repositories such as [NodeSource](https://nodesource.com/blog/nodejs-v012-iojs-and-the-nodesource-linux-repositories).
-* [clang](https://clang.llvm.org/get_started.html) 3.4 or later.
-* Development headers of GTK 3 and libnotify.
+Due to Electron's dependency on Chromium, prerequisites and dependencies for Electron change over time. [Chromium's documentation on building on Linux](https://chromium.googlesource.com/chromium/src/+/HEAD/docs/linux/build_instructions.md) has up to date information for building Chromium on Linux. This documentation can generally
+be followed for building Electron on Linux as well.
 
-On Ubuntu >= 20.04, install the following libraries:
-
-```sh
-$ sudo apt-get install build-essential clang libdbus-1-dev libgtk-3-dev \
-                       libnotify-dev libasound2-dev libcap-dev \
-                       libcups2-dev libxtst-dev \
-                       libxss1 libnss3-dev gcc-multilib g++-multilib curl \
-                       gperf bison python3-dbusmock openjdk-8-jre
-```
-
-On Ubuntu < 20.04, install the following libraries:
-
-```sh
-$ sudo apt-get install build-essential clang libdbus-1-dev libgtk-3-dev \
-                       libnotify-dev libgnome-keyring-dev \
-                       libasound2-dev libcap-dev libcups2-dev libxtst-dev \
-                       libxss1 libnss3-dev gcc-multilib g++-multilib curl \
-                       gperf bison python-dbusmock openjdk-8-jre
-```
-
-On RHEL / CentOS, install the following libraries:
-
-```sh
-$ sudo yum install clang dbus-devel gtk3-devel libnotify-devel \
-                   libgnome-keyring-devel xorg-x11-server-utils libcap-devel \
-                   cups-devel libXtst-devel alsa-lib-devel libXrandr-devel \
-                   nss-devel python-dbusmock openjdk-8-jre
-```
-
-On Fedora, install the following libraries:
-
-```sh
-$ sudo dnf install clang dbus-devel gperf gtk3-devel \
-                   libnotify-devel libgnome-keyring-devel libcap-devel \
-                   cups-devel libXtst-devel alsa-lib-devel libXrandr-devel \
-                   nss-devel python-dbusmock
-```
-
-On Arch Linux / Manjaro, install the following libraries:
-
-```sh
-$ sudo pacman -Syu base-devel clang libdbus gtk2 libnotify \
-                   libgnome-keyring alsa-lib libcap libcups libxtst \
-                   libxss nss gcc-multilib curl gperf bison \
-                   python2 python-dbusmock jdk8-openjdk
-```
-
-Other distributions may offer similar packages for installation via package
-managers such as pacman. Or one can compile from source code.
+Additionally, Electron's [Linux dependency installer](https://github.com/electron/build-images/blob/main/tools/install-deps.sh) can be referenced to get the current dependencies that Electron requires in addition to what Chromium installs via [build/install-deps.sh](https://chromium.googlesource.com/chromium/src/+/HEAD/build/install-build-deps.sh).
 
 ### Cross compilation
 
-If you want to build for an `arm` target you should also install the following
-dependencies:
+If you want to build for an `arm` target, you can use Electron's [Linux dependency installer](https://github.com/electron/build-images/blob/main/tools/install-deps.sh) to install the additional dependencies by passing the `--arm argument`:
 
 ```sh
-$ sudo apt-get install libc6-dev-armhf-cross linux-libc-dev-armhf-cross \
-                       g++-arm-linux-gnueabihf
-```
-
-Similarly for `arm64`, install the following:
-
-```sh
-$ sudo apt-get install libc6-dev-arm64-cross linux-libc-dev-arm64-cross \
-                       g++-aarch64-linux-gnu
+$ sudo install-deps.sh --arm
 ```
 
 And to cross-compile for `arm` or targets, you should pass the

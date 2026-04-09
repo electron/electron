@@ -2,15 +2,15 @@
 
 ## Overview
 
-[Online and offline event](https://developer.mozilla.org/en-US/docs/Online_and_offline_events)
-detection can be implemented in the Renderer process using the
-[`navigator.onLine`](http://html5index.org/Offline%20-%20NavigatorOnLine.html)
-attribute, part of standard HTML5 API.
+Online and offline event detection can be implemented in both the main and renderer processes:
+
+- **Renderer process**: Use the [`navigator.onLine`](http://html5index.org/Offline%20-%20NavigatorOnLine.html) attribute and [online/offline events](https://developer.mozilla.org/en-US/docs/Online_and_offline_events), part of standard HTML5 API.
+- **Main process**: Use the [`net.isOnline()`](../api/net.md#netisonline) method or the [`net.online`](../api/net.md#netonline-readonly) property.
 
 The `navigator.onLine` attribute returns:
 
-* `false` if all network requests are guaranteed to fail (e.g. when disconnected from the network).
-* `true` in all other cases.
+- `false` if all network requests are guaranteed to fail (e.g. when disconnected from the network).
+- `true` in all other cases.
 
 Since many cases return `true`, you should treat with care situations of
 getting false positives, as we cannot always assume that `true` value means
@@ -19,7 +19,27 @@ is running a virtualization software that has virtual Ethernet adapters in "alwa
 connected" state. Therefore, if you want to determine the Internet access
 status of Electron, you should develop additional means for this check.
 
-## Example
+## Main Process Detection
+
+In the main process, you can use the `net` module to detect online/offline status:
+
+```js
+const { net } = require('electron')
+
+// Method 1: Using net.isOnline()
+const isOnline = net.isOnline()
+console.log('Online status:', isOnline)
+
+// Method 2: Using net.online property
+console.log('Online status:', net.online)
+```
+
+Both `net.isOnline()` and `net.online` return the same boolean value with the same reliability characteristics as `navigator.onLine` - they provide a strong indicator when offline (`false`), but a `true` value doesn't guarantee successful internet connectivity.
+
+> [!NOTE]
+> The `net` module is only available after the app emits the `ready` event.
+
+## Renderer Process Example
 
 Starting with an HTML file `index.html`, this example will demonstrate how the `navigator.onLine` API can be used to build a connection status indicator.
 
@@ -57,10 +77,7 @@ Finally, create a `main.js` file for main process that creates the window.
 const { app, BrowserWindow } = require('electron')
 
 const createWindow = () => {
-  const onlineStatusWindow = new BrowserWindow({
-    width: 400,
-    height: 100
-  })
+  const onlineStatusWindow = new BrowserWindow()
 
   onlineStatusWindow.loadFile('index.html')
 }
@@ -86,4 +103,5 @@ After launching the Electron application, you should see the notification:
 
 ![Connection status](../images/connection-status.png)
 
-> Note: If you need to communicate the connection status to the main process, use the [IPC renderer](../api/ipc-renderer.md) API.
+> [!NOTE]
+> If you need to check the connection status in the main process, you can use [`net.isOnline()`](../api/net.md#netisonline) directly instead of communicating from the renderer process via [IPC](../api/ipc-renderer.md).

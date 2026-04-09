@@ -1,3 +1,4 @@
+import { clipboard } from 'electron/common';
 import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } from 'electron/main';
 
 import { expect } from 'chai';
@@ -200,6 +201,7 @@ describe('webFrameMain module', () => {
       expect(webFrame).to.have.property('osProcessId').that.is.a('number');
       expect(webFrame).to.have.property('processId').that.is.a('number');
       expect(webFrame).to.have.property('routingId').that.is.a('number');
+      expect(webFrame).to.have.property('frameToken').that.is.a('string');
     });
   });
 
@@ -295,8 +297,8 @@ describe('webFrameMain module', () => {
       const webFrame = w.webContents.mainFrame;
       const pongPromise = once(ipcMain, 'preload-pong');
       webFrame.send('preload-ping');
-      const [, routingId] = await pongPromise;
-      expect(routingId).to.equal(webFrame.routingId);
+      const [, frameToken] = await pongPromise;
+      expect(frameToken).to.equal(webFrame.frameToken);
     });
   });
 
@@ -313,6 +315,7 @@ describe('webFrameMain module', () => {
     beforeEach(async () => {
       w = new BrowserWindow({ show: false });
     });
+    afterEach(closeAllWindows);
 
     // TODO(jkleinsc) fix this flaky test on linux
     ifit(process.platform !== 'linux')('throws upon accessing properties when disposed', async () => {
@@ -340,6 +343,8 @@ describe('webFrameMain module', () => {
       const crashEvent = once(w.webContents, 'render-process-gone');
       w.webContents.forcefullyCrashRenderer();
       await crashEvent;
+      // A short wait seems to be required to reproduce the crash.
+      await setTimeout(100);
       await w.webContents.loadURL(server.url);
       // Log just to keep mainFrame in scope.
       console.log('mainFrame.url', mainFrame.url);
@@ -373,7 +378,9 @@ describe('webFrameMain module', () => {
       await w.webContents.loadURL(server.crossOriginUrl);
       // senderFrame now points to a disposed RenderFrameHost. It should
       // be null when attempting to access the lazily evaluated property.
-      expect(event.senderFrame).to.be.null();
+      waitUntil(() => {
+        return event.senderFrame === null;
+      });
     });
 
     it('is detached when unload handler sends IPC', async () => {
@@ -391,7 +398,6 @@ describe('webFrameMain module', () => {
             expect(senderFrame).to.not.be.null();
             expect(senderFrame!.detached).to.be.true();
             expect(senderFrame!.processId).to.equal(event.processId);
-            expect(senderFrame!.routingId).to.equal(event.frameId);
             resolve();
           } catch (error) {
             reject(error);
@@ -428,6 +434,47 @@ describe('webFrameMain module', () => {
       crossOriginPromise = w.webContents.loadURL(server.crossOriginUrl);
       await expect(unloadPromise).to.eventually.be.fulfilled();
     });
+
+    // Skip test as we don't have an offline repro yet
+    it.skip('should not crash due to dangling frames', async () => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: path.join(subframesPath, 'preload.js')
+        }
+      });
+
+      // Persist frame references so WebFrameMain is initialized for each
+      const frames: Electron.WebFrameMain[] = [];
+      w.webContents.on('frame-created', (_event, details) => {
+        console.log('frame-created');
+        frames.push(details.frame!);
+      });
+      w.webContents.on('will-frame-navigate', (event) => {
+        console.log('will-frame-navigate', event);
+        frames.push(event.frame!);
+      });
+
+      // Load document with several speculative subframes
+      await w.webContents.loadURL('https://www.ezcater.com/delivery/pizza-catering');
+
+      // Test that no frame will crash due to a dangling render frame host
+      const crashTest = () => {
+        for (const frame of frames) {
+          expect(frame._lifecycleStateForTesting).to.not.equal('Speculative');
+          try {
+            expect(frame.url).to.be.a('string');
+          } catch {
+            // Exceptions from non-dangling frames are expected
+          }
+        }
+      };
+
+      crashTest();
+      w.webContents.destroy();
+      await setTimeout(1);
+      crashTest();
+    });
   });
 
   describe('webFrameMain.fromId', () => {
@@ -452,6 +499,19 @@ describe('webFrameMain module', () => {
     });
   });
 
+  describe('webFrameMain.fromFrameToken', () => {
+    it('returns null for unknown IDs', () => {
+      expect(webFrameMain.fromFrameToken(0, '')).to.be.null();
+    });
+
+    it('can find existing frame', async () => {
+      const w = new BrowserWindow({ show: false });
+      const { mainFrame } = w.webContents;
+      const frame = webFrameMain.fromFrameToken(mainFrame.processId, mainFrame.frameToken);
+      expect(frame).to.equal(mainFrame);
+    });
+  });
+
   describe('webFrameMain.collectJavaScriptCallStack', () => {
     let server: Server;
     before(async () => {
@@ -472,6 +532,91 @@ describe('webFrameMain module', () => {
       w.webContents.mainFrame.executeJavaScript('"run a lil js"');
       const callStack = await callStackPromise;
       expect(callStack).to.be.a('string');
+    });
+  });
+
+  describe('webFrameMain.copyVideoFrameAt', () => {
+    const insertVideoInFrame = async (frame: WebFrameMain) => {
+      const videoFilePath = url.pathToFileURL(path.join(fixtures, 'cat-spin.mp4')).href;
+      await frame.executeJavaScript(`
+        const video = document.createElement('video');
+        video.src = '${videoFilePath}';
+        video.muted = true;
+        video.loop = true;
+        video.play();
+        document.body.appendChild(video);
+      `);
+    };
+
+    const getFramePosition = async (frame: WebFrameMain) => {
+      const point = await frame.executeJavaScript(`(${() => {
+        const iframe = document.querySelector('iframe');
+        if (!iframe) return;
+        const rect = iframe.getBoundingClientRect();
+        return { x: Math.floor(rect.x), y: Math.floor(rect.y) };
+      }})()`) as Electron.Point;
+      expect(point).to.be.an('object');
+      return point;
+    };
+
+    const copyVideoFrameInFrame = async (frame: WebFrameMain) => {
+      const point = await frame.executeJavaScript(`(${() => {
+        const video = document.querySelector('video');
+        if (!video) return;
+        const rect = video.getBoundingClientRect();
+        return {
+          x: Math.floor(rect.x + rect.width / 2),
+          y: Math.floor(rect.y + rect.height / 2)
+        };
+      }})()`) as Electron.Point;
+
+      expect(point).to.be.an('object');
+
+      // Translate coordinate to be relative of main frame
+      if (frame.parent) {
+        const framePosition = await getFramePosition(frame.parent);
+        point.x += framePosition.x;
+        point.y += framePosition.y;
+      }
+
+      expect(clipboard.readImage().isEmpty()).to.be.true();
+      // wait for video to load
+      await frame.executeJavaScript(`(${() => {
+        const video = document.querySelector('video');
+        if (!video) return;
+        return new Promise(resolve => {
+          if (video.readyState >= 4) resolve(null);
+          else video.addEventListener('canplaythrough', resolve, { once: true });
+        });
+      }})()`);
+      frame.copyVideoFrameAt(point.x, point.y);
+      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
+      expect(clipboard.readImage().isEmpty()).to.be.false();
+    };
+
+    beforeEach(() => {
+      clipboard.clear();
+    });
+
+    // TODO: Re-enable on Windows CI once Chromium fixes the intermittent
+    // backwards-time DCHECK hit while copying video frames:
+    // DCHECK failed: !delta.is_negative().
+    ifit(!(process.platform === 'win32' && process.env.CI))('copies video frame in main frame', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.webContents.loadFile(path.join(fixtures, 'blank.html'));
+      await insertVideoInFrame(w.webContents.mainFrame);
+      await copyVideoFrameInFrame(w.webContents.mainFrame);
+      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
+    });
+
+    ifit(!(process.platform === 'win32' && process.env.CI))('copies video frame in subframe', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.webContents.loadFile(path.join(subframesPath, 'frame-with-frame.html'));
+      const subframe = w.webContents.mainFrame.frames[0];
+      expect(subframe).to.exist();
+      await insertVideoInFrame(subframe);
+      await copyVideoFrameInFrame(subframe);
+      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
     });
   });
 

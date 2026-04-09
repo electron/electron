@@ -19,10 +19,7 @@ v8::Local<v8::Promise> PushNotifications::RegisterForAPNSNotifications(
   gin_helper::Promise<std::string> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  [[AtomApplication sharedApplication]
-      registerForRemoteNotificationTypes:NSRemoteNotificationTypeBadge |
-                                         NSRemoteNotificationTypeAlert |
-                                         NSRemoteNotificationTypeSound];
+  [[AtomApplication sharedApplication] registerForRemoteNotifications];
 
   PushNotifications::apns_promise_set_.emplace_back(std::move(promise));
   return handle;
@@ -30,8 +27,7 @@ v8::Local<v8::Promise> PushNotifications::RegisterForAPNSNotifications(
 
 void PushNotifications::ResolveAPNSPromiseSetWithToken(
     const std::string& token_string) {
-  std::vector<gin_helper::Promise<std::string>> promises =
-      std::move(PushNotifications::apns_promise_set_);
+  auto promises = std::move(PushNotifications::apns_promise_set_);
   for (auto& promise : promises) {
     promise.Resolve(token_string);
   }
@@ -39,8 +35,7 @@ void PushNotifications::ResolveAPNSPromiseSetWithToken(
 
 void PushNotifications::RejectAPNSPromiseSetWithError(
     const std::string& error_message) {
-  std::vector<gin_helper::Promise<std::string>> promises =
-      std::move(PushNotifications::apns_promise_set_);
+  auto promises = std::move(PushNotifications::apns_promise_set_);
   for (auto& promise : promises) {
     promise.RejectWithErrorMessage(error_message);
   }
@@ -51,7 +46,7 @@ void PushNotifications::UnregisterForAPNSNotifications() {
 }
 
 void PushNotifications::OnDidReceiveAPNSNotification(
-    const base::Value::Dict& user_info) {
+    const base::DictValue& user_info) {
   Emit("received-apns-notification", user_info);
 }
 

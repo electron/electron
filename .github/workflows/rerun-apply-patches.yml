@@ -1,0 +1,71 @@
+name: Rerun PR Apply Patches
+
+on:
+  push:
+    branches:
+      - main
+      - '[1-9][0-9]-x-y'
+    paths:
+      - 'DEPS'
+      - 'patches/**'
+
+permissions: {}
+
+jobs:
+  rerun-apply-patches:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      checks: read
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Find PRs and Rerun Apply Patches
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+
+          # Find all open PRs targeting this branch
+          PRS=$(gh pr list --base "$BRANCH" --state open --limit 250 --json number)
+
+          echo "$PRS" | jq -c '.[]' | while read -r pr; do
+            PR_NUMBER=$(echo "$pr" | jq -r '.number')
+            echo "Processing PR #${PR_NUMBER}"
+
+            # Find the Apply Patches workflow check for this PR
+            CHECK=$(gh pr view "$PR_NUMBER" --json statusCheckRollup --jq '[.statusCheckRollup[] | select(.workflowName == "Apply Patches" and .name == "apply-patches")] | first')
+
+            if [ -z "$CHECK" ] || [ "$CHECK" = "null" ]; then
+              echo "  No Apply Patches workflow found for PR #${PR_NUMBER}"
+              continue
+            fi
+
+            CONCLUSION=$(echo "$CHECK" | jq -r '.conclusion')
+            if [ "$CONCLUSION" = "SKIPPED" ]; then
+              echo "  apply-patches job was skipped for PR #${PR_NUMBER} (no patches)"
+              continue
+            fi
+
+            LINK=$(echo "$CHECK" | jq -r '.detailsUrl')
+
+            # Extract the run ID from the link (format: .../runs/RUN_ID/job/JOB_ID)
+            RUN_ID=$(echo "$LINK" | grep -oE 'runs/[0-9]+' | cut -d'/' -f2)
+
+            if [ -z "$RUN_ID" ]; then
+              echo "  Could not extract run ID from link: ${LINK}"
+              continue
+            fi
+
+            # Check if the workflow is currently in progress
+            RUN_STATUS=$(gh run view "$RUN_ID" --json status --jq '.status')
+
+            if [ "$RUN_STATUS" = "in_progress" ] || [ "$RUN_STATUS" = "queued" ] || [ "$RUN_STATUS" = "waiting" ]; then
+              echo "  Workflow run ${RUN_ID} is ${RUN_STATUS}, cancelling..."
+              gh run cancel "$RUN_ID" --force
+              gh run watch "$RUN_ID"
+            fi
+
+            gh run rerun "$RUN_ID"
+          done

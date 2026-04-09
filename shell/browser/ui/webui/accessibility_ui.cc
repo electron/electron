@@ -41,13 +41,17 @@
 #include "shell/browser/window_list.h"
 #include "ui/accessibility/accessibility_features.h"
 #include "ui/accessibility/ax_updates_and_events.h"
+#include "ui/accessibility/platform/ax_platform.h"
 #include "ui/accessibility/platform/ax_platform_node.h"
 #include "ui/accessibility/platform/ax_platform_node_delegate.h"
 #include "ui/base/webui/web_ui_util.h"
 #include "ui/views/accessibility/view_accessibility.h"
-#include "ui/views/accessibility/widget_ax_tree_id_map.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/widget/widget_delegate.h"
+
+#if BUILDFLAG(IS_WIN)
+#include "ui/accessibility/platform/ax_platform_node_win.h"
+#endif
 
 namespace {
 
@@ -68,47 +72,42 @@ constexpr std::string_view kSupportedApiTypesField = "supportedApiTypes";
 constexpr std::string_view kTreeField = "tree";
 constexpr std::string_view kTypeField = "type";
 constexpr std::string_view kUrlField = "url";
-constexpr std::string_view kWidgetsField = "widgets";
 constexpr std::string_view kApiTypeField = "apiType";
-
-#if defined(USE_AURA)
-constexpr std::string_view kWidgetIdField = "widgetId";
-constexpr std::string_view kWidget = "widget";
-#endif
 
 // Global flags
 constexpr std::string_view kBrowser = "browser";
+constexpr std::string_view kLockedPlatformModes = "lockedPlatformModes";
+constexpr std::string_view kIsolate = "isolate";
 constexpr std::string_view kCopyTree = "copyTree";
 constexpr std::string_view kHTML = "html";
 constexpr std::string_view kLocked = "locked";
 constexpr std::string_view kNative = "native";
 constexpr std::string_view kPage = "page";
 constexpr std::string_view kPDFPrinting = "pdfPrinting";
-constexpr std::string_view kScreenReader = "screenreader";
+constexpr std::string_view kExtendedProperties = "extendedProperties";
+constexpr std::string_view kScreenReader = "screenReader";
 constexpr std::string_view kShowOrRefreshTree = "showOrRefreshTree";
 constexpr std::string_view kText = "text";
-constexpr std::string_view kViewsAccessibility = "viewsAccessibility";
 constexpr std::string_view kWeb = "web";
 
-// Possible global flag values
-constexpr std::string_view kDisabled = "disabled";
-constexpr std::string_view kOff = "off";
-constexpr std::string_view kOn = "on";
+// Screen reader detection.
+static const char kDetectedATName[] = "detectedATName";
+static const char kIsScreenReaderActive[] = "isScreenReaderActive";
 
-base::Value::Dict BuildTargetDescriptor(
+base::DictValue BuildTargetDescriptor(
     const GURL& url,
     const std::string& name,
     const GURL& favicon_url,
     int process_id,
     int routing_id,
     ui::AXMode accessibility_mode,
-    base::ProcessHandle handle = base::kNullProcessHandle) {
-  base::Value::Dict target_data;
+    base::ProcessId pid = base::kNullProcessId) {
+  base::DictValue target_data;
   target_data.Set(kProcessIdField, process_id);
   target_data.Set(kRoutingIdField, routing_id);
   target_data.Set(kUrlField, url.spec());
   target_data.Set(kNameField, base::EscapeForHTML(name));
-  target_data.Set(kPidField, static_cast<int>(base::GetProcId(handle)));
+  target_data.Set(kPidField, static_cast<int>(pid));
   target_data.Set(kFaviconUrlField, favicon_url.spec());
   target_data.Set(kAccessibilityModeField,
                   static_cast<int>(accessibility_mode.flags()));
@@ -116,7 +115,7 @@ base::Value::Dict BuildTargetDescriptor(
   return target_data;
 }
 
-base::Value::Dict BuildTargetDescriptor(content::RenderViewHost* rvh) {
+base::DictValue BuildTargetDescriptor(content::RenderViewHost* rvh) {
   content::WebContents* web_contents =
       content::WebContents::FromRenderViewHost(rvh);
   ui::AXMode accessibility_mode;
@@ -139,75 +138,116 @@ base::Value::Dict BuildTargetDescriptor(content::RenderViewHost* rvh) {
     accessibility_mode = web_contents->GetAccessibilityMode();
   }
 
+  const auto& process = rvh->GetProcess()->GetProcess();
+  const auto pid = process.IsValid() ? process.Pid() : base::kNullProcessId;
+
   return BuildTargetDescriptor(url, title, favicon_url,
-                               rvh->GetProcess()->GetID(), rvh->GetRoutingID(),
-                               accessibility_mode);
+                               rvh->GetProcess()->GetDeprecatedID(),
+                               rvh->GetRoutingID(), accessibility_mode, pid);
 }
 
-base::Value::Dict BuildTargetDescriptor(electron::NativeWindow* window) {
-  base::Value::Dict target_data;
+base::DictValue BuildTargetDescriptor(electron::NativeWindow* window) {
+  base::DictValue target_data;
   target_data.Set(kSessionIdField, window->window_id());
   target_data.Set(kNameField, window->GetTitle());
   target_data.Set(kTypeField, kBrowser);
   return target_data;
 }
 
-#if defined(USE_AURA)
-base::Value::Dict BuildTargetDescriptor(views::Widget* widget) {
-  base::Value::Dict widget_data;
-  widget_data.Set(kNameField, widget->widget_delegate()->GetWindowTitle());
-  widget_data.Set(kTypeField, kWidget);
-
-  // Use the Widget's root view ViewAccessibility's unique ID for lookup.
-  int32_t id = widget->GetRootView()->GetViewAccessibility().GetUniqueId();
-  widget_data.Set(kWidgetIdField, id);
-  return widget_data;
-}
-#endif  // defined(USE_AURA)
-
 bool ShouldHandleAccessibilityRequestCallback(const std::string& path) {
   return path == kTargetsDataFile;
 }
 
+// Sets boolean values in `data` for each bit in `new_ax_mode` that differs from
+// that in `last_ax_mode`. Returns `true` if `data` was modified.
+void SetProcessModeBools(ui::AXMode ax_mode, base::DictValue& data) {
+  data.Set(kNative, ax_mode.has_mode(ui::AXMode::kNativeAPIs));
+  data.Set(kWeb, ax_mode.has_mode(ui::AXMode::kWebContents));
+  data.Set(kText, ax_mode.has_mode(ui::AXMode::kInlineTextBoxes));
+  data.Set(kExtendedProperties,
+           ax_mode.has_mode(ui::AXMode::kExtendedProperties));
+  data.Set(kHTML, ax_mode.has_mode(ui::AXMode::kHTML));
+  data.Set(kScreenReader, ax_mode.has_mode(ui::AXMode::kScreenReader));
+}
+
+#if BUILDFLAG(IS_WIN)
+// Sets values in `data` for the platform node counts in `counts`.
+void SetNodeCounts(const ui::AXPlatformNodeWin::Counts& counts,
+                   base::DictValue& data) {
+  data.Set("dormantCount", base::NumberToString(counts.dormant_nodes));
+  data.Set("liveCount", base::NumberToString(counts.live_nodes));
+  data.Set("ghostCount", base::NumberToString(counts.ghost_nodes));
+}
+#endif
+
 void HandleAccessibilityRequestCallback(
     content::BrowserContext* current_context,
+    ui::AXMode initial_process_mode,
     const std::string& path,
     content::WebUIDataSource::GotDataCallback callback) {
   DCHECK(ShouldHandleAccessibilityRequestCallback(path));
 
-  base::Value::Dict data;
+  auto& browser_accessibility_state =
+      *content::BrowserAccessibilityState::GetInstance();
+  base::DictValue data;
   PrefService* pref =
       static_cast<electron::ElectronBrowserContext*>(current_context)->prefs();
   ui::AXMode mode =
       content::BrowserAccessibilityState::GetInstance()->GetAccessibilityMode();
-  bool is_native_enabled = content::BrowserAccessibilityState::GetInstance()
-                               ->IsRendererAccessibilityEnabled();
   bool native = mode.has_mode(ui::AXMode::kNativeAPIs);
   bool web = mode.has_mode(ui::AXMode::kWebContents);
   bool text = mode.has_mode(ui::AXMode::kInlineTextBoxes);
-  bool screenreader = mode.has_mode(ui::AXMode::kScreenReader);
+  bool extended_properties = mode.has_mode(ui::AXMode::kExtendedProperties);
+  bool screen_reader = mode.has_mode(ui::AXMode::kScreenReader);
   bool html = mode.has_mode(ui::AXMode::kHTML);
   bool pdf_printing = mode.has_mode(ui::AXMode::kPDFPrinting);
+  bool allow_platform_activation =
+      browser_accessibility_state.IsActivationFromPlatformEnabled();
+
+  ui::AssistiveTech assistive_tech =
+      ui::AXPlatform::GetInstance().active_assistive_tech();
+  bool is_screen_reader_active =
+      ui::AXPlatform::GetInstance().IsScreenReaderActive();
 
   // The "native" and "web" flags are disabled if
   // --disable-renderer-accessibility is set.
-  data.Set(kNative, is_native_enabled ? (native ? kOn : kOff) : kDisabled);
-  data.Set(kWeb, is_native_enabled ? (web ? kOn : kOff) : kDisabled);
+  data.Set(kNative, native);
+  data.Set(kWeb, web);
 
-  // The "text", "screenreader" and "html" flags are only
+  // The "text", "extendedProperties" and "html" flags are only
   // meaningful if "web" is enabled.
-  bool is_web_enabled = is_native_enabled && web;
-  data.Set(kText, is_web_enabled ? (text ? kOn : kOff) : kDisabled);
-  data.Set(kScreenReader,
-           is_web_enabled ? (screenreader ? kOn : kOff) : kDisabled);
-  data.Set(kHTML, is_web_enabled ? (html ? kOn : kOff) : kDisabled);
+  data.Set(kText, text);
+  data.Set(kExtendedProperties, extended_properties);
+  data.Set(kScreenReader, screen_reader);
+  data.Set(kHTML, html);
 
   // The "pdfPrinting" flag is independent of the others.
-  data.Set(kPDFPrinting, pdf_printing ? kOn : kOff);
+  data.Set(kPDFPrinting, pdf_printing);
 
-  // The "Top Level Widgets" section is only relevant if views accessibility is
-  // enabled.
-  data.Set(kViewsAccessibility, features::IsAccessibilityTreeForViewsEnabled());
+  // Identify the mode checkboxes that were turned on via platform API
+  // interactions and therefore cannot be unchecked unless the #isolate checkbox
+  // is checked.
+  data.Set(
+      kLockedPlatformModes,
+      base::DictValue()
+          .Set(kNative,
+               allow_platform_activation && native &&
+                   initial_process_mode.has_mode(ui::AXMode::kNativeAPIs))
+          .Set(kWeb,
+               allow_platform_activation && web &&
+                   initial_process_mode.has_mode(ui::AXMode::kWebContents))
+          .Set(kText,
+               allow_platform_activation && text &&
+                   initial_process_mode.has_mode(ui::AXMode::kInlineTextBoxes))
+          .Set(kExtendedProperties, allow_platform_activation &&
+                                        extended_properties &&
+                                        initial_process_mode.has_mode(
+                                            ui::AXMode::kExtendedProperties))
+          .Set(kHTML, allow_platform_activation &&
+                          initial_process_mode.has_mode(ui::AXMode::kHTML)));
+
+  data.Set(kDetectedATName, ui::GetAssistiveTechString(assistive_tech));
+  data.Set(kIsScreenReaderActive, is_screen_reader_active);
 
   std::string pref_api_type =
       std::string(pref->GetString(prefs::kShownAccessibilityApiType));
@@ -215,7 +255,7 @@ void HandleAccessibilityRequestCallback(
 
   std::vector<ui::AXApiType::Type> supported_api_types =
       content::AXInspectFactory::SupportedApis();
-  base::Value::List supported_api_list;
+  base::ListValue supported_api_list;
   supported_api_list.reserve(supported_api_types.size());
   for (ui::AXApiType::Type type : supported_api_types) {
     supported_api_list.Append(std::string_view(type));
@@ -233,11 +273,11 @@ void HandleAccessibilityRequestCallback(
   }
   data.Set(kApiTypeField, pref_api_type);
 
-  bool is_mode_locked = !content::BrowserAccessibilityState::GetInstance()
-                             ->IsAXModeChangeAllowed();
-  data.Set(kLocked, is_mode_locked ? kOn : kOff);
+  data.Set(kIsolate, !allow_platform_activation);
 
-  base::Value::List page_list;
+  data.Set(kLocked, !browser_accessibility_state.IsAXModeChangeAllowed());
+
+  base::ListValue page_list;
   std::unique_ptr<content::RenderWidgetHostIterator> widget_iter(
       content::RenderWidgetHost::GetRenderWidgetHosts());
 
@@ -260,7 +300,7 @@ void HandleAccessibilityRequestCallback(
       continue;
     }
     // Ignore views that are never user-visible, like background pages.
-    if (delegate->IsNeverComposited(web_contents)) {
+    if (web_contents->IsNeverComposited()) {
       continue;
     }
     content::BrowserContext* context = rvh->GetProcess()->GetBrowserContext();
@@ -268,32 +308,24 @@ void HandleAccessibilityRequestCallback(
       continue;
     }
 
-    base::Value::Dict descriptor = BuildTargetDescriptor(rvh);
-    descriptor.Set(kNative, is_native_enabled);
-    descriptor.Set(kScreenReader, is_web_enabled && screenreader);
-    descriptor.Set(kWeb, is_web_enabled);
+    base::DictValue descriptor = BuildTargetDescriptor(rvh);
+    descriptor.Set(kNative, native);
+    descriptor.Set(kExtendedProperties, extended_properties);
+    descriptor.Set(kScreenReader, screen_reader);
+    descriptor.Set(kWeb, web);
     page_list.Append(std::move(descriptor));
   }
   data.Set(kPagesField, std::move(page_list));
 
-  base::Value::List window_list;
+  base::ListValue window_list;
   for (auto* window : electron::WindowList::GetWindows()) {
     window_list.Append(BuildTargetDescriptor(window));
   }
   data.Set(kBrowsersField, std::move(window_list));
 
-  base::Value::List widgets_list;
-#if defined(USE_AURA)
-  if (features::IsAccessibilityTreeForViewsEnabled()) {
-    views::WidgetAXTreeIDMap& manager_map =
-        views::WidgetAXTreeIDMap::GetInstance();
-    const std::vector<views::Widget*> widgets = manager_map.GetWidgets();
-    for (views::Widget* widget : widgets) {
-      widgets_list.Append(BuildTargetDescriptor(widget));
-    }
-  }
-#endif  // defined(USE_AURA)
-  data.Set(kWidgetsField, std::move(widgets_list));
+#if BUILDFLAG(IS_WIN)
+  SetNodeCounts(ui::AXPlatformNodeWin::GetCounts(), data);
+#endif
 
   std::move(callback).Run(base::MakeRefCounted<base::RefCountedString>(
       base::WriteJson(data).value_or("")));
@@ -307,18 +339,20 @@ std::string RecursiveDumpAXPlatformNodeAsString(
     return "";
   }
   std::string str(2 * indent, '+');
-  std::string line = node->GetDelegate()->GetData().ToString();
+  ui::AXPlatformNodeDelegate* const node_delegate = node->GetDelegate();
+  std::string line = node_delegate->GetData().ToString();
   std::vector<std::string> attributes = base::SplitString(
       line, " ", base::KEEP_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
-  for (std::string attribute : attributes) {
+  for (const std::string& attribute : attributes) {
     if (ui::AXTreeFormatter::MatchesPropertyFilters(property_filters, attribute,
                                                     false)) {
       str += attribute + " ";
     }
   }
   str += "\n";
-  for (size_t i = 0; i < node->GetDelegate()->GetChildCount(); i++) {
-    gfx::NativeViewAccessible child = node->GetDelegate()->ChildAtIndex(i);
+  for (size_t i = 0, child_count = node_delegate->GetChildCount();
+       i < child_count; i++) {
+    gfx::NativeViewAccessible child = node_delegate->ChildAtIndex(i);
     ui::AXPlatformNode* child_node =
         ui::AXPlatformNode::FromNativeViewAccessible(child);
     str += RecursiveDumpAXPlatformNodeAsString(child_node, indent + 1,
@@ -358,14 +392,18 @@ ElectronAccessibilityUI::ElectronAccessibilityUI(content::WebUI* web_ui)
       content::WebUIDataSource::CreateAndAdd(
           browser_context, chrome::kChromeUIAccessibilityHost);
 
+  // The process-wide accessibility mode when the UI page is initially launched.
+  ui::AXMode initial_process_mode =
+      content::BrowserAccessibilityState::GetInstance()->GetAccessibilityMode();
+
   // Add required resources.
   html_source->UseStringsJs();
   html_source->AddResourcePaths(kAccessibilityResources);
   html_source->SetDefaultResource(IDR_ACCESSIBILITY_ACCESSIBILITY_HTML);
   html_source->SetRequestFilter(
       base::BindRepeating(&ShouldHandleAccessibilityRequestCallback),
-      base::BindRepeating(&HandleAccessibilityRequestCallback,
-                          browser_context));
+      base::BindRepeating(&HandleAccessibilityRequestCallback, browser_context,
+                          initial_process_mode));
   html_source->OverrideContentSecurityPolicy(
       network::mojom::CSPDirectiveName::TrustedTypes,
       "trusted-types parse-html-subset sanitize-inner-html;");
@@ -376,11 +414,16 @@ ElectronAccessibilityUI::ElectronAccessibilityUI(content::WebUI* web_ui)
 
 ElectronAccessibilityUI::~ElectronAccessibilityUI() = default;
 
-ElectronAccessibilityUIMessageHandler::ElectronAccessibilityUIMessageHandler() =
-    default;
+ElectronAccessibilityUIMessageHandler::ElectronAccessibilityUIMessageHandler()
+    : update_display_timer_(
+          FROM_HERE,
+          base::Seconds(1),
+          base::BindRepeating(
+              &ElectronAccessibilityUIMessageHandler::OnUpdateDisplayTimer,
+              base::Unretained(this))) {}
 
 void ElectronAccessibilityUIMessageHandler::GetRequestTypeAndFilters(
-    const base::Value::Dict& data,
+    const base::DictValue& data,
     std::string& request_type,
     std::string& allow,
     std::string& allow_empty,
@@ -393,8 +436,8 @@ void ElectronAccessibilityUIMessageHandler::GetRequestTypeAndFilters(
 }
 
 void ElectronAccessibilityUIMessageHandler::RequestNativeUITree(
-    const base::Value::List& args) {
-  const base::Value::Dict& data = args.front().GetDict();
+    const base::ListValue& args) {
+  const base::DictValue& data = args.front().GetDict();
 
   std::string request_type, allow, allow_empty, deny;
   GetRequestTypeAndFilters(data, request_type, allow, allow_empty, deny);
@@ -411,7 +454,7 @@ void ElectronAccessibilityUIMessageHandler::RequestNativeUITree(
 
   for (auto* window : electron::WindowList::GetWindows()) {
     if (window->window_id() == window_id) {
-      base::Value::Dict result = BuildTargetDescriptor(window);
+      base::DictValue result = BuildTargetDescriptor(window);
       gfx::NativeWindow native_window = window->GetNativeWindow();
       ui::AXPlatformNode* node =
           ui::AXPlatformNode::FromNativeWindow(native_window);
@@ -423,7 +466,7 @@ void ElectronAccessibilityUIMessageHandler::RequestNativeUITree(
   }
 
   // No browser with the specified |id| was found.
-  base::Value::Dict result;
+  base::DictValue result;
   result.Set(kSessionIdField, window_id);
   result.Set(kTypeField, kBrowser);
   result.Set(kErrorField, "Window no longer exists.");
@@ -434,22 +477,26 @@ void ElectronAccessibilityUIMessageHandler::RegisterMessages() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   web_ui()->RegisterMessageCallback(
+      "initialize",
+      base::BindRepeating(&AccessibilityUIMessageHandler::HandleInitialize,
+                          base::Unretained(this)));
+  web_ui()->RegisterMessageCallback(
       "toggleAccessibility",
-      base::BindRepeating(
-          &AccessibilityUIMessageHandler::ToggleAccessibilityForWebContents,
-          base::Unretained(this)));
+      base::BindRepeating(&AccessibilityUIMessageHandler::
+                              HandleToggleAccessibilityForWebContents,
+                          base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
       "setGlobalFlag",
-      base::BindRepeating(&AccessibilityUIMessageHandler::SetGlobalFlag,
+      base::BindRepeating(&AccessibilityUIMessageHandler::HandleSetGlobalFlag,
                           base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
       "setGlobalString",
-      base::BindRepeating(&AccessibilityUIMessageHandler::SetGlobalString,
+      base::BindRepeating(&AccessibilityUIMessageHandler::HandleSetGlobalString,
                           base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
       "requestWebContentsTree",
       base::BindRepeating(
-          &AccessibilityUIMessageHandler::RequestWebContentsTree,
+          &AccessibilityUIMessageHandler::HandleRequestWebContentsTree,
           base::Unretained(this)));
   web_ui()->RegisterMessageCallback(
       "requestNativeUITree",
@@ -459,14 +506,19 @@ void ElectronAccessibilityUIMessageHandler::RegisterMessages() {
 #if defined(USE_AURA)
   web_ui()->RegisterMessageCallback(
       "requestWidgetsTree",
-      base::BindRepeating(&AccessibilityUIMessageHandler::RequestWidgetsTree,
-                          base::Unretained(this)));
+      base::BindRepeating(
+          &AccessibilityUIMessageHandler::HandleRequestWidgetsTree,
+          base::Unretained(this)));
 #endif
   web_ui()->RegisterMessageCallback(
       "requestAccessibilityEvents",
       base::BindRepeating(
-          &AccessibilityUIMessageHandler::RequestAccessibilityEvents,
+          &AccessibilityUIMessageHandler::HandleRequestAccessibilityEvents,
           base::Unretained(this)));
+
+  auto* web_contents = web_ui()->GetWebContents();
+  Observe(web_contents);
+  OnVisibilityChanged(web_contents->GetVisibility());
 }
 
 // static
@@ -476,4 +528,46 @@ void ElectronAccessibilityUIMessageHandler::RegisterPrefs(
       std::string_view(ui::AXApiType::Type(ui::AXApiType::kBlink));
   registry->RegisterStringPref(prefs::kShownAccessibilityApiType,
                                std::string(default_api_type));
+}
+
+void ElectronAccessibilityUIMessageHandler::OnVisibilityChanged(
+    content::Visibility visibility) {
+  if (visibility == content::Visibility::HIDDEN) {
+    update_display_timer_.Stop();
+  } else {
+    update_display_timer_.Reset();
+  }
+}
+
+void ElectronAccessibilityUIMessageHandler::OnUpdateDisplayTimer() {
+  // Collect the current state.
+  base::DictValue data;
+
+  SetProcessModeBools(
+      content::BrowserAccessibilityState::GetInstance()->GetAccessibilityMode(),
+      data);
+
+#if BUILDFLAG(IS_WIN)
+  SetNodeCounts(ui::AXPlatformNodeWin::GetCounts(), data);
+#endif  // BUILDFLAG(IS_WIN)
+
+  // Compute the delta from the last transmission.
+  for (auto scan = data.begin(); scan != data.end();) {
+    const auto& [new_key, new_value] = *scan;
+    if (const auto* old_value = last_data_.Find(new_key);
+        !old_value || *old_value != new_value) {
+      // This is a new value; remember it for the future.
+      last_data_.Set(new_key, new_value.Clone());
+      ++scan;
+    } else {
+      // This is the same as the last value; forget about it.
+      scan = data.erase(scan);
+    }
+  }
+
+  // Transmit any new values to the UI.
+  if (!data.empty()) {
+    AllowJavascript();
+    FireWebUIListener("updateDisplay", data);
+  }
 }

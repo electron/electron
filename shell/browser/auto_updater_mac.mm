@@ -18,7 +18,6 @@
 #include "shell/browser/browser.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/error_thrower.h"
 
 namespace auto_updater {
 
@@ -26,23 +25,12 @@ namespace {
 
 // The global SQRLUpdater object.
 SQRLUpdater* __strong g_updater = nil;
-
-}  // namespace
-
-namespace {
-
 bool g_update_available = false;
-std::string update_url_ = "";  // NOLINT(runtime/string)
 
 }  // namespace
-
-std::string AutoUpdater::GetFeedURL() {
-  return update_url_;
-}
 
 // static
-void AutoUpdater::SetFeedURL(gin::Arguments* args) {
-  gin_helper::ErrorThrower thrower(args->isolate());
+void AutoUpdater::SetFeedURL(gin::Arguments* const args) {
   gin_helper::Dictionary opts;
 
   std::string feed;
@@ -55,7 +43,7 @@ void AutoUpdater::SetFeedURL(gin::Arguments* args) {
     }
   } else if (args->GetNext(&opts)) {
     if (!opts.Get("url", &feed)) {
-      thrower.ThrowError(
+      args->ThrowTypeError(
           "Expected options object to contain a 'url' string property in "
           "setFeedUrl call");
       return;
@@ -63,11 +51,11 @@ void AutoUpdater::SetFeedURL(gin::Arguments* args) {
     opts.Get("headers", &requestHeaders);
     opts.Get("serverType", &serverType);
     if (serverType != "default" && serverType != "json") {
-      thrower.ThrowError("Expected serverType to be 'default' or 'json'");
+      args->ThrowTypeError("Expected serverType to be 'default' or 'json'");
       return;
     }
   } else {
-    thrower.ThrowError(
+    args->ThrowTypeError(
         "Expected an options object with a 'url' property to be provided");
     return;
   }
@@ -76,7 +64,7 @@ void AutoUpdater::SetFeedURL(gin::Arguments* args) {
   if (!delegate)
     return;
 
-  update_url_ = feed;
+  GetFeedURL() = feed;
 
   NSURL* url = [NSURL URLWithString:base::SysUTF8ToNSString(feed)];
   NSMutableURLRequest* urlRequest = [NSMutableURLRequest requestWithURL:url];

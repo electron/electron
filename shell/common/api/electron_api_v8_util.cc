@@ -66,10 +66,6 @@ void SetHiddenValue(v8::Isolate* isolate,
   object->SetPrivate(context, privateKey, value);
 }
 
-int32_t GetObjectHash(v8::Local<v8::Object> object) {
-  return object->GetIdentityHash();
-}
-
 void TakeHeapSnapshot(v8::Isolate* isolate) {
   isolate->GetHeapProfiler()->TakeHeapSnapshot();
 }
@@ -99,10 +95,10 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  gin_helper::Dictionary dict(context->GetIsolate(), exports);
+  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("getHiddenValue", &GetHiddenValue);
   dict.SetMethod("setHiddenValue", &SetHiddenValue);
-  dict.SetMethod("getObjectHash", &GetObjectHash);
   dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
   dict.SetMethod("requestGarbageCollectionForTesting",
                  &RequestGarbageCollectionForTesting);

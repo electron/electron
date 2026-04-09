@@ -16,6 +16,10 @@ export const moduleList: ElectronInternal.ModuleEntry[] = [
     loader: () => require('@electron/internal/common/api/native-image')
   },
   {
+    name: 'sharedTexture',
+    loader: () => require('@electron/internal/renderer/api/shared-texture')
+  },
+  {
     name: 'webFrame',
     loader: () => require('@electron/internal/renderer/api/web-frame')
   },

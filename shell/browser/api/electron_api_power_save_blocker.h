@@ -12,30 +12,33 @@
 
 namespace gin {
 class ObjectTemplateBuilder;
+}  // namespace gin
 
+namespace gin_helper {
 template <typename T>
 class Handle;
-}  // namespace gin
+}  // namespace gin_helper
 
 namespace electron::api {
 
 class PowerSaveBlocker final : public gin::Wrappable<PowerSaveBlocker> {
  public:
-  static gin::Handle<PowerSaveBlocker> Create(v8::Isolate* isolate);
+  static gin_helper::Handle<PowerSaveBlocker> Create(v8::Isolate* isolate);
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static const gin::WrapperInfo kWrapperInfo;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
+
+  // Make public for cppgc::MakeGarbageCollected.
+  explicit PowerSaveBlocker(v8::Isolate* isolate);
+  ~PowerSaveBlocker() override;
 
   // disable copy
   PowerSaveBlocker(const PowerSaveBlocker&) = delete;
   PowerSaveBlocker& operator=(const PowerSaveBlocker&) = delete;
-
- protected:
-  explicit PowerSaveBlocker(v8::Isolate* isolate);
-  ~PowerSaveBlocker() override;
 
  private:
   void UpdatePowerSaveBlocker();

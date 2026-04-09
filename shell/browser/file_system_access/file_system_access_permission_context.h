@@ -7,17 +7,19 @@
 
 #include "shell/browser/file_system_access/file_system_access_permission_context.h"
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "base/callback_list.h"
 #include "base/functional/callback_forward.h"
 #include "base/memory/weak_ptr.h"
 #include "base/time/clock.h"
 #include "base/time/default_clock.h"
 #include "base/values.h"
+#include "chrome/browser/file_system_access/chrome_file_system_access_permission_context.h"  // nogncheck
 #include "components/keyed_service/core/keyed_service.h"
-#include "content/public/browser/file_system_access_permission_context.h"
 
 class GURL;
 
@@ -100,6 +102,10 @@ class FileSystemAccessPermissionContext
   void NotifyEntryMoved(const url::Origin& origin,
                         const content::PathInfo& old_path,
                         const content::PathInfo& new_path) override;
+  void NotifyEntryModified(const url::Origin& origin,
+                           const content::PathInfo& path) override;
+  void NotifyEntryRemoved(const url::Origin& origin,
+                          const content::PathInfo& path) override;
 
   void OnFileCreatedFromShowSaveFilePicker(
       const GURL& file_picker_binding_context,
@@ -109,10 +115,6 @@ class FileSystemAccessPermissionContext
       std::vector<content::PathInfo> entries,
       content::GlobalRenderFrameHostId frame_id,
       EntriesAllowedByEnterprisePolicyCallback callback) override;
-
-  enum class Access { kRead, kWrite, kReadWrite };
-
-  enum class RequestType { kNewPermission, kRestorePermissions };
 
   void RevokeActiveGrants(const url::Origin& origin,
                           const base::FilePath& file_path = base::FilePath());
@@ -134,6 +136,19 @@ class FileSystemAccessPermissionContext
 
   void PermissionGrantDestroyed(PermissionGrantImpl* grant);
 
+  // Restores the read permission for `path` if it was previously downgraded,
+  // e.g. by a `remove()` call.
+  void MaybeRestoreReadPermission(const url::Origin& origin,
+                                  const base::FilePath& path);
+
+  void CheckShouldBlockAccessToPathAndReply(
+      base::FilePath path,
+      HandleType handle_type,
+      std::vector<ChromeFileSystemAccessPermissionContext::BlockPathRule>
+          extra_rules,
+      base::OnceCallback<void(bool)> callback,
+      ChromeFileSystemAccessPermissionContext::BlockPathRules block_path_rules);
+
   void CheckPathAgainstBlocklist(const content::PathInfo& path,
                                  HandleType handle_type,
                                  base::OnceCallback<void(bool)> callback);
@@ -144,17 +159,24 @@ class FileSystemAccessPermissionContext
                                     content::GlobalRenderFrameHostId frame_id,
                                     bool should_block);
 
-  void RunRestrictedPathCallback(SensitiveEntryResult result);
+  void RunRestrictedPathCallback(const base::FilePath& file_path,
+                                 SensitiveEntryResult result);
 
-  void OnRestrictedPathResult(gin::Arguments* args);
+  void OnRestrictedPathResult(const base::FilePath& file_path,
+                              gin::Arguments* args);
 
-  void MaybeEvictEntries(base::Value::Dict& dict);
+  void MaybeEvictEntries(base::DictValue& dict);
 
   void CleanupPermissions(const url::Origin& origin);
 
   bool AncestorHasActivePermission(const url::Origin& origin,
                                    const base::FilePath& path,
                                    GrantType grant_type) const;
+
+  void ResetBlockPaths();
+  void UpdateBlockPaths(
+      std::unique_ptr<ChromeFileSystemAccessPermissionContext::BlockPathRules>
+          block_path_rules);
 
   base::WeakPtr<FileSystemAccessPermissionContext> GetWeakPtr();
 
@@ -168,9 +190,19 @@ class FileSystemAccessPermissionContext
 
   const raw_ptr<const base::Clock> clock_;
 
-  std::map<url::Origin, base::Value::Dict> id_pathinfo_map_;
+  std::map<url::Origin, base::DictValue> id_pathinfo_map_;
 
-  base::OnceCallback<void(SensitiveEntryResult)> callback_;
+  std::map<base::FilePath,
+           std::vector<base::OnceCallback<void(SensitiveEntryResult)>>>
+      callback_map_;
+
+  std::unique_ptr<ChromeFileSystemAccessPermissionContext::BlockPathRules>
+      block_path_rules_;
+  bool is_block_path_rules_init_complete_ = false;
+  std::vector<base::CallbackListSubscription> block_rules_check_subscription_;
+  base::OnceCallbackList<void(
+      ChromeFileSystemAccessPermissionContext::BlockPathRules)>
+      block_rules_check_callbacks_;
 
   base::WeakPtrFactory<FileSystemAccessPermissionContext> weak_factory_{this};
 };

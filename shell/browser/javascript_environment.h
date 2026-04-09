@@ -7,15 +7,21 @@
 
 #include <memory>
 
-#include "base/memory/raw_ptr.h"
-#include "gin/public/isolate_holder.h"
 #include "uv.h"  // NOLINT(build/include_directory)
-#include "v8/include/v8-locker.h"
+
+namespace gin {
+class IsolateHolder;
+}  // namespace gin
 
 namespace node {
 class Environment;
 class MultiIsolatePlatform;
 }  // namespace node
+
+namespace v8 {
+class Isolate;
+class Locker;
+}  // namespace v8
 
 namespace electron {
 
@@ -35,21 +41,23 @@ class JavascriptEnvironment {
   void DestroyMicrotasksRunner();
 
   node::MultiIsolatePlatform* platform() const { return platform_.get(); }
-  v8::Isolate* isolate() const { return isolate_; }
 
-  static v8::Isolate* GetIsolate();
+  size_t max_young_generation_size_in_bytes() const {
+    return max_young_generation_size_;
+  }
+
+  [[nodiscard]] v8::Isolate* isolate() const;
+  [[nodiscard]] static v8::Isolate* GetIsolate();
 
  private:
   v8::Isolate* Initialize(uv_loop_t* event_loop, bool setup_wasm_streaming);
   std::unique_ptr<node::MultiIsolatePlatform> platform_;
 
-  gin::IsolateHolder isolate_holder_;
+  size_t max_young_generation_size_ = 0;
+  std::unique_ptr<gin::IsolateHolder> isolate_holder_;
 
-  // owned-by: isolate_holder_
-  const raw_ptr<v8::Isolate> isolate_;
-
-  // depends-on: isolate_
-  const v8::Locker locker_;
+  // depends-on: isolate_holder_'s isolate
+  std::unique_ptr<v8::Locker> locker_;
 
   std::unique_ptr<MicrotasksRunner> microtasks_runner_;
 };

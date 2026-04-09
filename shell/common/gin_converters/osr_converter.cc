@@ -1,7 +1,6 @@
-﻿
-// Copyright (c) 2024 GitHub, Inc.
-// Use of this source code is governed by the MIT license that can be found in
-// the LICENSE file.
+// Copyright (c) 2025 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
 
 #include "shell/common/gin_converters/osr_converter.h"
 
@@ -12,6 +11,10 @@
 #include <string>
 
 #include "base/containers/to_vector.h"
+#include "base/task/single_thread_task_runner.h"
+#if BUILDFLAG(IS_LINUX)
+#include "base/strings/string_number_conversions.h"
+#endif
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/node_includes.h"
@@ -26,6 +29,10 @@ std::string OsrVideoPixelFormatToString(media::VideoPixelFormat format) {
       return "bgra";
     case media::PIXEL_FORMAT_ABGR:
       return "rgba";
+    case media::PIXEL_FORMAT_RGBAF16:
+      return "rgbaf16";
+    case media::PIXEL_FORMAT_NV12:
+      return "nv12";
     default:
       NOTREACHED();
   }
@@ -82,12 +89,15 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
   // GC collects the object.
   auto* monitor = new OffscreenReleaseHolderMonitor(val.releaser_holder);
 
-  auto releaserHolder = v8::External::New(isolate, monitor);
+  auto releaserHolder =
+      v8::External::New(isolate, monitor, v8::kExternalPointerTypeTagDefault);
   auto releaserFunc = [](const v8::FunctionCallbackInfo<v8::Value>& info) {
-    auto* holder = static_cast<OffscreenReleaseHolderMonitor*>(
-        info.Data().As<v8::External>()->Value());
+    auto* mon = static_cast<OffscreenReleaseHolderMonitor*>(
+        info.Data().As<v8::External>()->Value(
+            v8::kExternalPointerTypeTagDefault));
     // Release the shared texture, so that future frames can be generated.
-    holder->ReleaseTexture();
+    mon->ReleaseTexture();
+    // Release the monitor happens at GC, don't release here.
   };
   auto releaser = v8::Function::New(isolate->GetCurrentContext(), releaserFunc,
                                     releaserHolder)
@@ -101,6 +111,7 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
   dict.Set("visibleRect", val.visible_rect);
   dict.Set("contentRect", val.content_rect);
   dict.Set("timestamp", val.timestamp);
+  dict.Set("colorSpace", val.color_space);
   dict.Set("widgetType", OsrWidgetTypeToString(val.widget_type));
 
   gin::Dictionary metadata(isolate, v8::Object::New(isolate));
@@ -110,14 +121,21 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
   metadata.Set("frameCount", val.frame_count);
   dict.Set("metadata", ConvertToV8(isolate, metadata));
 
-#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
-  auto handle_buf = node::Buffer::Copy(
-      isolate,
-      reinterpret_cast<char*>(
-          const_cast<uintptr_t*>(&val.shared_texture_handle)),
-      sizeof(val.shared_texture_handle));
-  dict.Set("sharedTextureHandle", handle_buf.ToLocalChecked());
+  gin::Dictionary sharedTexture(isolate, v8::Object::New(isolate));
+#if BUILDFLAG(IS_WIN)
+  sharedTexture.Set(
+      "ntHandle",
+      electron::Buffer::Copy(
+          isolate, base::byte_span_from_ref(val.shared_texture_handle))
+          .ToLocalChecked());
+#elif BUILDFLAG(IS_MAC)
+  sharedTexture.Set(
+      "ioSurface",
+      electron::Buffer::Copy(
+          isolate, base::byte_span_from_ref(val.shared_texture_handle))
+          .ToLocalChecked());
 #elif BUILDFLAG(IS_LINUX)
+  gin::Dictionary nativePixmap(isolate, v8::Object::New(isolate));
   auto v8_planes = base::ToVector(val.planes, [isolate](const auto& plane) {
     gin::Dictionary v8_plane(isolate, v8::Object::New(isolate));
     v8_plane.Set("stride", plane.stride);
@@ -126,16 +144,23 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
     v8_plane.Set("fd", plane.fd);
     return v8_plane;
   });
-  dict.Set("planes", v8_planes);
-  dict.Set("modifier", base::NumberToString(val.modifier));
+  nativePixmap.Set("planes", v8_planes);
+  nativePixmap.Set("modifier", base::NumberToString(val.modifier));
+  nativePixmap.Set("supportsZeroCopyWebGpuImport",
+                   val.supports_zero_copy_webgpu_import);
+  sharedTexture.Set("nativePixmap", ConvertToV8(isolate, nativePixmap));
 #endif
 
+  dict.Set("handle", ConvertToV8(isolate, sharedTexture));
   root.Set("textureInfo", ConvertToV8(isolate, dict));
   auto root_local = ConvertToV8(isolate, root);
 
-  // Create a persistent reference of the object, so that we can check the
-  // monitor again when GC collects this object.
-  auto* tex_persistent = monitor->CreatePersistent(isolate, root_local);
+  // Create a weak persistent that tracks the release function rather than the
+  // texture object. The release function holds a raw pointer to |monitor| via
+  // its v8::External data, so |monitor| must outlive it. Since the texture
+  // keeps |release| alive via its property, this also covers the case where
+  // the texture itself is leaked without calling release().
+  auto* tex_persistent = monitor->CreatePersistent(isolate, releaser);
   tex_persistent->SetWeak(
       monitor,
       [](const v8::WeakCallbackInfo<OffscreenReleaseHolderMonitor>& data) {
@@ -145,19 +170,21 @@ v8::Local<v8::Value> Converter<electron::OffscreenSharedTextureValue>::ToV8(
           // texture, output it in second pass callback.
           data.SetSecondPassCallback([](const v8::WeakCallbackInfo<
                                          OffscreenReleaseHolderMonitor>& data) {
-            auto* iso = data.GetIsolate();
             // Emit warning only once
             static std::once_flag flag;
             std::call_once(flag, [=] {
-              electron::util::EmitWarning(
-                  iso,
-                  "[OSR TEXTURE LEAKED] When using OSR with "
-                  "`useSharedTexture`, `texture.release()` "
-                  "must be called explicitly as soon as the texture is "
-                  "copied to your rendering system. "
-                  "Otherwise, it will soon drain the underlying "
-                  "framebuffer and prevent future frames from being generated.",
-                  "SharedTextureOSRNotReleased");
+              base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
+                  FROM_HERE, base::BindOnce([] {
+                    electron::util::EmitWarning(
+                        "Offscreen rendering shared texture was garbage "
+                        "collected before calling `release()`. When using OSR "
+                        "with `useSharedTexture: true`, `texture.release()` "
+                        "must be called explicitly as soon as the texture is "
+                        "copied to your rendering system. Otherwise, it will "
+                        "soon drain the underlying frame pool and prevent "
+                        "future frames from being sent.",
+                        "OSRSharedTextureNotReleased");
+                  }));
             });
           });
         }

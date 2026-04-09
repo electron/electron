@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "base/task/sequenced_task_runner.h"
+#include "content/public/browser/browser_thread.h"
 #include "gin/arguments.h"
 #include "gin/dictionary.h"
 #include "shell/browser/api/electron_api_app.h"
@@ -30,7 +31,7 @@ LoginHandler::LoginHandler(
     const GURL& url,
     scoped_refptr<net::HttpResponseHeaders> response_headers,
     bool first_auth_attempt,
-    LoginAuthRequiredCallback auth_required_callback)
+    content::LoginDelegate::LoginAuthRequiredCallback auth_required_callback)
     : auth_required_callback_(std::move(auth_required_callback)) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
@@ -41,6 +42,23 @@ LoginHandler::LoginHandler(
                      is_request_for_navigation, process_id, url,
                      response_headers, first_auth_attempt));
 }
+
+LoginHandler::LoginHandler(
+    const net::AuthChallengeInfo& auth_info,
+    content::WebContents* web_contents,
+    base::ProcessId process_id,
+    const GURL& url,
+    scoped_refptr<net::HttpResponseHeaders> response_headers,
+    content::LoginDelegate::LoginAuthRequiredCallback auth_required_callback)
+    : LoginHandler(auth_info,
+                   web_contents,
+                   /*is_request_for_primary_main_frame=*/false,
+                   /*is_request_for_navigation=*/false,
+                   process_id,
+                   url,
+                   std::move(response_headers),
+                   /*first_auth_attempt=*/false,
+                   std::move(auth_required_callback)) {}
 
 void LoginHandler::EmitEvent(
     net::AuthChallengeInfo auth_info,

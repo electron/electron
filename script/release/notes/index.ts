@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 import { Octokit } from '@octokit/rest';
-import { GitProcess } from 'dugite';
 import { valid, compare, gte, lte } from 'semver';
 
+import { spawnSync } from 'node:child_process';
 import { basename } from 'node:path';
 import { parseArgs } from 'node:util';
 
@@ -20,8 +20,12 @@ const semverify = (version: string) => version.replace(/^origin\//, '').replace(
 
 const runGit = async (args: string[]) => {
   console.info(`Running: git ${args.join(' ')}`);
-  const response = await GitProcess.exec(args, ELECTRON_DIR);
-  if (response.exitCode !== 0) {
+  const response = spawnSync('git', args, {
+    cwd: ELECTRON_DIR,
+    encoding: 'utf8',
+    stdio: ['inherit', 'pipe', 'pipe']
+  });
+  if (response.status !== 0) {
     throw new Error(response.stderr.trim());
   }
   return response.stdout.trim();

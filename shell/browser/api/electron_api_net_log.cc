@@ -15,13 +15,15 @@
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/storage_partition.h"
 #include "electron/electron_version.h"
-#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "net/log/net_log_capture_mode.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace gin {
 
@@ -79,9 +81,10 @@ void ResolvePromiseWithNetError(gin_helper::Promise<void> promise,
 
 namespace api {
 
-gin::WrapperInfo NetLog::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo NetLog::kWrapperInfo = {{gin::kEmbedderNativeGin},
+                                         gin::kElectronNetLog};
 
-NetLog::NetLog(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
+NetLog::NetLog(ElectronBrowserContext* const browser_context)
     : browser_context_(browser_context) {
   file_task_runner_ = CreateFileTaskRunner();
 }
@@ -130,7 +133,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
   auto command_line_string =
       base::CommandLine::ForCurrentProcess()->GetCommandLineString();
   auto channel_string = std::string("Electron " ELECTRON_VERSION);
-  base::Value::Dict custom_constants = net_log::GetPlatformConstantsForNetLog(
+  base::DictValue custom_constants = net_log::GetPlatformConstantsForNetLog(
       command_line_string, channel_string);
 
   auto* network_context =
@@ -152,7 +155,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
 
 void NetLog::StartNetLogAfterCreateFile(net::NetLogCaptureMode capture_mode,
                                         uint64_t max_file_size,
-                                        base::Value::Dict custom_constants,
+                                        base::DictValue custom_constants,
                                         base::File output_file) {
   if (!net_log_exporter_) {
     // Theoretically the mojo pipe could have been closed by the time we get
@@ -194,8 +197,8 @@ bool NetLog::IsCurrentlyLogging() const {
   return !!net_log_exporter_;
 }
 
-v8::Local<v8::Promise> NetLog::StopLogging(gin::Arguments* args) {
-  gin_helper::Promise<void> promise(args->isolate());
+v8::Local<v8::Promise> NetLog::StopLogging(v8::Isolate* const isolate) {
+  gin_helper::Promise<void> promise{isolate};
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (net_log_exporter_) {
@@ -203,7 +206,7 @@ v8::Local<v8::Promise> NetLog::StopLogging(gin::Arguments* args) {
     // pointer lives long enough to resolve the promise. Moving it into the
     // callback will cause the instance variable to become empty.
     net_log_exporter_->Stop(
-        base::Value::Dict(),
+        base::DictValue(),
         base::BindOnce(
             [](mojo::Remote<network::mojom::NetLogExporter>,
                gin_helper::Promise<void> promise, int32_t error) {
@@ -225,14 +228,19 @@ gin::ObjectTemplateBuilder NetLog::GetObjectTemplateBuilder(
       .SetMethod("stopLogging", &NetLog::StopLogging);
 }
 
-const char* NetLog::GetTypeName() {
-  return "NetLog";
+const gin::WrapperInfo* NetLog::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* NetLog::GetHumanReadableName() const {
+  return "Electron / NetLog";
 }
 
 // static
-gin::Handle<NetLog> NetLog::Create(v8::Isolate* isolate,
-                                   ElectronBrowserContext* browser_context) {
-  return gin::CreateHandle(isolate, new NetLog(isolate, browser_context));
+NetLog* NetLog::Create(v8::Isolate* isolate,
+                       ElectronBrowserContext* browser_context) {
+  return cppgc::MakeGarbageCollected<NetLog>(
+      isolate->GetCppHeap()->GetAllocationHandle(), browser_context);
 }
 
 }  // namespace api

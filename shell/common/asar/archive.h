@@ -8,7 +8,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include <uv.h>
@@ -17,6 +16,7 @@
 #include "base/files/file_path.h"
 #include "base/synchronization/lock.h"
 #include "base/values.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 
 namespace asar {
 
@@ -106,12 +106,12 @@ class Archive {
   base::File file_{base::File::FILE_OK};
   int fd_ = -1;
   uint32_t header_size_ = 0;
-  std::optional<base::Value::Dict> header_;
+  std::optional<base::DictValue> header_;
 
   // Cached external temporary files.
   base::Lock external_files_lock_;
-  std::unordered_map<base::FilePath::StringType,
-                     std::unique_ptr<ScopedTemporaryFile>>
+  absl::flat_hash_map<base::FilePath::StringType,
+                      std::unique_ptr<ScopedTemporaryFile>>
       external_files_;
 };
 

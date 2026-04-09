@@ -7,7 +7,7 @@
 
 #include <optional>
 
-#include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "shell/browser/api/electron_api_view.h"
 #include "shell/browser/draggable_region_provider.h"
@@ -25,7 +25,7 @@ class WebContentsView : public View,
                         public DraggableRegionProvider {
  public:
   // Create a new instance of WebContentsView.
-  static gin::Handle<WebContentsView> Create(
+  static gin_helper::Handle<WebContentsView> Create(
       v8::Isolate* isolate,
       const gin_helper::Dictionary& web_preferences);
 
@@ -37,7 +37,7 @@ class WebContentsView : public View,
                              v8::Local<v8::FunctionTemplate> prototype);
 
   // Public APIs.
-  gin::Handle<WebContents> GetWebContents(v8::Isolate* isolate);
+  gin_helper::Handle<WebContents> GetWebContents(v8::Isolate* isolate);
   void SetBackgroundColor(std::optional<WrappedSkColor> color);
   void SetBorderRadius(int radius);
 
@@ -45,7 +45,8 @@ class WebContentsView : public View,
 
  protected:
   // Takes an existing WebContents.
-  WebContentsView(v8::Isolate* isolate, gin::Handle<WebContents> web_contents);
+  WebContentsView(v8::Isolate* isolate,
+                  gin_helper::Handle<WebContents> web_contents);
   ~WebContentsView() override;
 
   // content::WebContentsObserver:
@@ -56,13 +57,13 @@ class WebContentsView : public View,
   void OnViewRemovedFromWidget(views::View* view) override;
 
  private:
-  static gin_helper::WrappableBase* New(gin_helper::Arguments* args);
+  static gin_helper::WrappableBase* New(gin::Arguments* args);
 
   void ApplyBorderRadius();
 
   // Keep a reference to v8 wrapper.
   v8::Global<v8::Value> web_contents_;
-  raw_ptr<api::WebContents> api_web_contents_;
+  base::WeakPtr<api::WebContents> api_web_contents_;
 };
 
 }  // namespace electron::api

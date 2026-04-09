@@ -7,10 +7,10 @@ This patch comes after Chromium removed the ScopedAllowIO API in favor
 of explicitly adding ScopedAllowBlocking calls as friends.
 
 diff --git a/base/threading/thread_restrictions.h b/base/threading/thread_restrictions.h
-index fcb8c33ad26b5137798ab7251346f9664192f7fe..af0c3e3d75bf241768574c95d5492e88ba78992a 100644
+index a1bb1a46029020d26d7bb88d314c5c5e5a967063..66c325724421c5315e89c0a02c19459f1dcb239d 100644
 --- a/base/threading/thread_restrictions.h
 +++ b/base/threading/thread_restrictions.h
-@@ -132,6 +132,7 @@ class KeyStorageLinux;
+@@ -133,6 +133,7 @@ class KeyStorageLinux;
  class NativeBackendKWallet;
  class NativeDesktopMediaList;
  class PartnerBookmarksReader;
@@ -18,7 +18,7 @@ index fcb8c33ad26b5137798ab7251346f9664192f7fe..af0c3e3d75bf241768574c95d5492e88
  class Profile;
  class ProfileImpl;
  class ScopedAllowBlockingForProfile;
-@@ -282,6 +283,9 @@ class BackendImpl;
+@@ -285,6 +286,9 @@ class BackendImpl;
  class InFlightIO;
  bool CleanupDirectorySync(const base::FilePath&);
  }  // namespace disk_cache
@@ -28,18 +28,18 @@ index fcb8c33ad26b5137798ab7251346f9664192f7fe..af0c3e3d75bf241768574c95d5492e88
  namespace enterprise_connectors {
  class LinuxKeyRotationCommand;
  }  // namespace enterprise_connectors
-@@ -579,6 +583,7 @@ class BASE_EXPORT ScopedAllowBlocking {
+@@ -585,6 +589,7 @@ class BASE_EXPORT ScopedAllowBlocking {
    friend class ::DesktopNotificationBalloon;
    friend class ::FirefoxProfileLock;
    friend class ::GaiaConfig;
 +  friend class ::ProcessSingleton;
    friend class ::ProfileImpl;
    friend class ::ScopedAllowBlockingForProfile;
-   friend class ::StartupTabProviderImpl;
-@@ -620,6 +625,7 @@ class BASE_EXPORT ScopedAllowBlocking {
+ #if BUILDFLAG(IS_WIN)
+@@ -630,6 +635,7 @@ class BASE_EXPORT ScopedAllowBlocking {
+   friend class cronet::CronetPrefsManager;
    friend class crypto::ScopedAllowBlockingForNSS;  // http://crbug.com/59847
    friend class drive::FakeDriveService;
-   friend class extensions::DesktopAndroidExtensionSystem;
 +  friend class electron::ScopedAllowBlockingForElectron;
    friend class extensions::InstalledLoader;
    friend class extensions::UnpackedInstaller;

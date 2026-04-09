@@ -1,0 +1,323 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Wed, 5 Nov 2025 16:41:23 -0500
+Subject: Promote deprecation of v8::Context and v8::Object API methods
+
+https://chromium-review.googlesource.com/c/v8/v8/+/7087956
+
+diff --git a/src/base_object-inl.h b/src/base_object-inl.h
+index 37d83e41b618a07aca98118260abe9618f11256d..26d5c1bd3c8191fce1d22b969996b6bf35ef6d3b 100644
+--- a/src/base_object-inl.h
++++ b/src/base_object-inl.h
+@@ -75,7 +75,7 @@ bool BaseObject::IsBaseObject(IsolateData* isolate_data,
+   }
+ 
+   uint16_t* ptr = static_cast<uint16_t*>(
+-      obj->GetAlignedPointerFromInternalField(BaseObject::kEmbedderType));
++      obj->GetAlignedPointerFromInternalField(BaseObject::kEmbedderType, v8::kEmbedderDataTypeTagDefault));
+   return ptr == isolate_data->embedder_id_for_non_cppgc();
+ }
+ 
+@@ -83,21 +83,21 @@ void BaseObject::TagBaseObject(IsolateData* isolate_data,
+                                v8::Local<v8::Object> object) {
+   DCHECK_GE(object->InternalFieldCount(), BaseObject::kInternalFieldCount);
+   object->SetAlignedPointerInInternalField(
+-      BaseObject::kEmbedderType, isolate_data->embedder_id_for_non_cppgc());
++      BaseObject::kEmbedderType, isolate_data->embedder_id_for_non_cppgc(), v8::kEmbedderDataTypeTagDefault);
+ }
+ 
+ void BaseObject::SetInternalFields(IsolateData* isolate_data,
+                                    v8::Local<v8::Object> object,
+                                    void* slot) {
+   TagBaseObject(isolate_data, object);
+-  object->SetAlignedPointerInInternalField(BaseObject::kSlot, slot);
++  object->SetAlignedPointerInInternalField(BaseObject::kSlot, slot, v8::kEmbedderDataTypeTagDefault);
+ }
+ 
+ BaseObject* BaseObject::FromJSObject(v8::Local<v8::Value> value) {
+   v8::Local<v8::Object> obj = value.As<v8::Object>();
+   DCHECK_GE(obj->InternalFieldCount(), BaseObject::kInternalFieldCount);
+   return static_cast<BaseObject*>(
+-      obj->GetAlignedPointerFromInternalField(BaseObject::kSlot));
++      obj->GetAlignedPointerFromInternalField(BaseObject::kSlot, v8::kEmbedderDataTypeTagDefault));
+ }
+ 
+ template <typename T>
+diff --git a/src/base_object.cc b/src/base_object.cc
+index 404e2aa8c88d0cc0e6717c01e0df68899c64cc32..16462f305a2ac6b6c3d7b85024f2e52648c4300c 100644
+--- a/src/base_object.cc
++++ b/src/base_object.cc
+@@ -45,7 +45,8 @@ BaseObject::~BaseObject() {
+ 
+   {
+     HandleScope handle_scope(realm()->isolate());
+-    object()->SetAlignedPointerInInternalField(BaseObject::kSlot, nullptr);
++    object()->SetAlignedPointerInInternalField(
++        BaseObject::kSlot, nullptr, v8::kEmbedderDataTypeTagDefault);
+   }
+ }
+ 
+diff --git a/src/env-inl.h b/src/env-inl.h
+index 74bbb9fb83246a90bc425e259150f0868020ac9e..a4b3a1c0907c9d50baf6c8cd473cb4c7369d0a5c 100644
+--- a/src/env-inl.h
++++ b/src/env-inl.h
+@@ -189,7 +189,8 @@ inline Environment* Environment::GetCurrent(v8::Local<v8::Context> context) {
+   }
+   return static_cast<Environment*>(
+       context->GetAlignedPointerFromEmbedderData(
+-          ContextEmbedderIndex::kEnvironment));
++          ContextEmbedderIndex::kEnvironment,
++          v8::kEmbedderDataTypeTagDefault));
+ }
+ 
+ inline Environment* Environment::GetCurrent(
+diff --git a/src/histogram.cc b/src/histogram.cc
+index 836a51b0e5aa4b1910604537c8b380038c27a7db..c4634e42fd2e5a27b0139a9b1716bc04875be469 100644
+--- a/src/histogram.cc
++++ b/src/histogram.cc
+@@ -136,7 +136,8 @@ HistogramBase::HistogramBase(
+   MakeWeak();
+   wrap->SetAlignedPointerInInternalField(
+       HistogramImpl::InternalFields::kImplField,
+-      static_cast<HistogramImpl*>(this));
++      static_cast<HistogramImpl*>(this),
++      v8::kEmbedderDataTypeTagDefault);
+ }
+ 
+ HistogramBase::HistogramBase(
+@@ -148,7 +149,8 @@ HistogramBase::HistogramBase(
+   MakeWeak();
+   wrap->SetAlignedPointerInInternalField(
+       HistogramImpl::InternalFields::kImplField,
+-      static_cast<HistogramImpl*>(this));
++      static_cast<HistogramImpl*>(this),
++      v8::kEmbedderDataTypeTagDefault);
+ }
+ 
+ void HistogramBase::MemoryInfo(MemoryTracker* tracker) const {
+@@ -362,7 +364,8 @@ IntervalHistogram::IntervalHistogram(
+   MakeWeak();
+   wrap->SetAlignedPointerInInternalField(
+       HistogramImpl::InternalFields::kImplField,
+-      static_cast<HistogramImpl*>(this));
++      static_cast<HistogramImpl*>(this),
++      v8::kEmbedderDataTypeTagDefault);
+   uv_timer_init(env->event_loop(), &timer_);
+ }
+ 
+@@ -601,7 +604,8 @@ HistogramImpl* HistogramImpl::FromJSObject(Local<Value> value) {
+   auto obj = value.As<Object>();
+   DCHECK_GE(obj->InternalFieldCount(), HistogramImpl::kInternalFieldCount);
+   return static_cast<HistogramImpl*>(
+-      obj->GetAlignedPointerFromInternalField(HistogramImpl::kImplField));
++      obj->GetAlignedPointerFromInternalField(HistogramImpl::kImplField,
++                                              v8::kEmbedderDataTypeTagDefault));
+ }
+ 
+ std::unique_ptr<worker::TransferData>
+diff --git a/src/js_udp_wrap.cc b/src/js_udp_wrap.cc
+index 51e4f8c45ffd38fcf925ab8d283b3b88f2a35832..0c30c8b4609e4870c0ccfc5e9e465248c20763b8 100644
+--- a/src/js_udp_wrap.cc
++++ b/src/js_udp_wrap.cc
+@@ -55,8 +55,9 @@ JSUDPWrap::JSUDPWrap(Environment* env, Local<Object> obj)
+   : AsyncWrap(env, obj, PROVIDER_JSUDPWRAP) {
+   MakeWeak();
+ 
+-  obj->SetAlignedPointerInInternalField(
+-      kUDPWrapBaseField, static_cast<UDPWrapBase*>(this));
++  obj->SetAlignedPointerInInternalField(kUDPWrapBaseField,
++                                        static_cast<UDPWrapBase*>(this),
++                                        v8::kEmbedderDataTypeTagDefault);
+ }
+ 
+ int JSUDPWrap::RecvStart() {
+diff --git a/src/node_context_data.h b/src/node_context_data.h
+index d81c75daaae47b8b0b489cf357a32e437e7a6cf7..b0aab2f7b2538b6e2cacc9ffd52473b7b4ffff38 100644
+--- a/src/node_context_data.h
++++ b/src/node_context_data.h
+@@ -135,7 +135,8 @@ class ContextEmbedderTag {
+     // context.
+     context->SetAlignedPointerInEmbedderData(
+         ContextEmbedderIndex::kContextTag,
+-        ContextEmbedderTag::kNodeContextTagPtr);
++        ContextEmbedderTag::kNodeContextTagPtr,
++        v8::kEmbedderDataTypeTagDefault);
+   }
+ 
+   static inline bool IsNodeContext(v8::Local<v8::Context> context) {
+@@ -147,7 +148,8 @@ class ContextEmbedderTag {
+       return false;
+     }
+     if (context->GetAlignedPointerFromEmbedderData(
+-            ContextEmbedderIndex::kContextTag) !=
++            ContextEmbedderIndex::kContextTag,
++            v8::kEmbedderDataTypeTagDefault) !=
+         ContextEmbedderTag::kNodeContextTagPtr) [[unlikely]] {
+       return false;
+     }
+diff --git a/src/node_object_wrap.h b/src/node_object_wrap.h
+index cb13d84388bcc6806d3b038a51e1cc2d1feccda1..687b2cf3e63b2a3306e2cbac67e3e216dac49aa6 100644
+--- a/src/node_object_wrap.h
++++ b/src/node_object_wrap.h
+@@ -49,7 +49,7 @@ class ObjectWrap {
+     assert(handle->InternalFieldCount() > 0);
+     // Cast to ObjectWrap before casting to T.  A direct cast from void
+     // to T won't work right when T has more than one base class.
+-    void* ptr = handle->GetAlignedPointerFromInternalField(0);
++    void* ptr = handle->GetAlignedPointerFromInternalField(0, v8::kEmbedderDataTypeTagDefault);
+     ObjectWrap* wrap = static_cast<ObjectWrap*>(ptr);
+     return static_cast<T*>(wrap);
+   }
+@@ -75,7 +75,7 @@ class ObjectWrap {
+   inline void Wrap(v8::Local<v8::Object> handle) {
+     assert(persistent().IsEmpty());
+     assert(handle->InternalFieldCount() > 0);
+-    handle->SetAlignedPointerInInternalField(0, this);
++    handle->SetAlignedPointerInInternalField(0, this, v8::kEmbedderDataTypeTagDefault);
+     persistent().Reset(v8::Isolate::GetCurrent(), handle);
+     MakeWeak();
+   }
+diff --git a/src/node_process_methods.cc b/src/node_process_methods.cc
+index 67278974199db46fed85b443e7cdd30accd7687f..e52c08541ec4180f16e4bceaac1bd6b97cf13e8b 100644
+--- a/src/node_process_methods.cc
++++ b/src/node_process_methods.cc
+@@ -680,8 +680,8 @@ void BindingData::RegisterExternalReferences(
+ 
+ BindingData* BindingData::FromV8Value(Local<Value> value) {
+   Local<Object> v8_object = value.As<Object>();
+-  return static_cast<BindingData*>(
+-      v8_object->GetAlignedPointerFromInternalField(BaseObject::kSlot));
++  return static_cast<BindingData*>(v8_object->GetAlignedPointerFromInternalField(
++      BaseObject::kSlot, v8::kEmbedderDataTypeTagDefault));
+ }
+ 
+ void BindingData::MemoryInfo(MemoryTracker* tracker) const {
+diff --git a/src/node_realm-inl.h b/src/node_realm-inl.h
+index 0af487a9abc9ee1783367ac86b0016ab89e02006..c01cef477aaba52f9894943acede7fb22ed17dcb 100644
+--- a/src/node_realm-inl.h
++++ b/src/node_realm-inl.h
+@@ -22,7 +22,8 @@ inline Realm* Realm::GetCurrent(v8::Local<v8::Context> context) {
+     return nullptr;
+   }
+   return static_cast<Realm*>(
+-      context->GetAlignedPointerFromEmbedderData(ContextEmbedderIndex::kRealm));
++      context->GetAlignedPointerFromEmbedderData(ContextEmbedderIndex::kRealm,
++                                                 v8::kEmbedderDataTypeTagDefault));
+ }
+ 
+ inline Realm* Realm::GetCurrent(
+diff --git a/src/node_snapshotable.cc b/src/node_snapshotable.cc
+index e34d24d51d5c090b560d06f727043f20924e6f46..07615933c858a17515836a29f7e27ace4b81e6ff 100644
+--- a/src/node_snapshotable.cc
++++ b/src/node_snapshotable.cc
+@@ -1400,7 +1400,8 @@ StartupData SerializeNodeContextInternalFields(Local<Object> holder,
+   // For the moment we do not set any internal fields in ArrayBuffer
+   // or ArrayBufferViews, so just return nullptr.
+   if (holder->IsArrayBuffer() || holder->IsArrayBufferView()) {
+-    CHECK_NULL(holder->GetAlignedPointerFromInternalField(index));
++    CHECK_NULL(holder->GetAlignedPointerFromInternalField(
++        index, v8::kEmbedderDataTypeTagDefault));
+     return StartupData{nullptr, 0};
+   }
+ 
+@@ -1420,7 +1421,8 @@ StartupData SerializeNodeContextInternalFields(Local<Object> holder,
+                      *holder);
+ 
+   BaseObject* object_ptr = static_cast<BaseObject*>(
+-      holder->GetAlignedPointerFromInternalField(BaseObject::kSlot));
++      holder->GetAlignedPointerFromInternalField(
++          BaseObject::kSlot, v8::kEmbedderDataTypeTagDefault));
+   // If the native object is already set to null, ignore it.
+   if (object_ptr == nullptr) {
+     return StartupData{nullptr, 0};
+diff --git a/src/stream_base-inl.h b/src/stream_base-inl.h
+index 29a4c29f3d3822394d23c453899cdd6aae280f3f..2a953d6390d5e4e251e54c1e847d4e5e25785065 100644
+--- a/src/stream_base-inl.h
++++ b/src/stream_base-inl.h
+@@ -19,22 +19,22 @@ StreamReq::StreamReq(
+ 
+ void StreamReq::AttachToObject(v8::Local<v8::Object> req_wrap_obj) {
+   CHECK_EQ(req_wrap_obj->GetAlignedPointerFromInternalField(
+-               StreamReq::kStreamReqField),
++               StreamReq::kStreamReqField, v8::kEmbedderDataTypeTagDefault),
+            nullptr);
+   req_wrap_obj->SetAlignedPointerInInternalField(
+-      StreamReq::kStreamReqField, this);
++      StreamReq::kStreamReqField, this, v8::kEmbedderDataTypeTagDefault);
+ }
+ 
+ StreamReq* StreamReq::FromObject(v8::Local<v8::Object> req_wrap_obj) {
+   return static_cast<StreamReq*>(
+       req_wrap_obj->GetAlignedPointerFromInternalField(
+-          StreamReq::kStreamReqField));
++          StreamReq::kStreamReqField, v8::kEmbedderDataTypeTagDefault));
+ }
+ 
+ void StreamReq::Dispose() {
+   BaseObjectPtr<AsyncWrap> destroy_me{GetAsyncWrap()};
+   object()->SetAlignedPointerInInternalField(
+-      StreamReq::kStreamReqField, nullptr);
++      StreamReq::kStreamReqField, nullptr, v8::kEmbedderDataTypeTagDefault);
+   destroy_me->Detach();
+ }
+ 
+@@ -120,16 +120,17 @@ SimpleWriteWrap<OtherBase>::SimpleWriteWrap(
+ 
+ void StreamBase::AttachToObject(v8::Local<v8::Object> obj) {
+   obj->SetAlignedPointerInInternalField(
+-      StreamBase::kStreamBaseField, this);
++      StreamBase::kStreamBaseField, this, v8::kEmbedderDataTypeTagDefault);
+ }
+ 
+ StreamBase* StreamBase::FromObject(v8::Local<v8::Object> obj) {
+-  if (obj->GetAlignedPointerFromInternalField(StreamBase::kSlot) == nullptr)
++  if (obj->GetAlignedPointerFromInternalField(
++          StreamBase::kSlot, v8::kEmbedderDataTypeTagDefault) == nullptr)
+     return nullptr;
+ 
+   return static_cast<StreamBase*>(
+       obj->GetAlignedPointerFromInternalField(
+-          StreamBase::kStreamBaseField));
++          StreamBase::kStreamBaseField, v8::kEmbedderDataTypeTagDefault));
+ }
+ 
+ WriteWrap* WriteWrap::FromObject(v8::Local<v8::Object> req_wrap_obj) {
+@@ -162,8 +163,10 @@ void WriteWrap::SetBackingStore(std::unique_ptr<v8::BackingStore> bs) {
+ void StreamReq::ResetObject(v8::Local<v8::Object> obj) {
+   DCHECK_GT(obj->InternalFieldCount(), StreamReq::kStreamReqField);
+ 
+-  obj->SetAlignedPointerInInternalField(StreamReq::kSlot, nullptr);
+-  obj->SetAlignedPointerInInternalField(StreamReq::kStreamReqField, nullptr);
++  obj->SetAlignedPointerInInternalField(
++      StreamReq::kSlot, nullptr, v8::kEmbedderDataTypeTagDefault);
++  obj->SetAlignedPointerInInternalField(
++      StreamReq::kStreamReqField, nullptr, v8::kEmbedderDataTypeTagDefault);
+ }
+ 
+ }  // namespace node
+diff --git a/src/udp_wrap.cc b/src/udp_wrap.cc
+index 150ef0f0400bed9df4f4b1a4c20ec4045ef7a5f6..2ca2ac177c6b5edc3b40712a40ff4a36e96904dc 100644
+--- a/src/udp_wrap.cc
++++ b/src/udp_wrap.cc
+@@ -126,8 +126,8 @@ void UDPWrapBase::set_listener(UDPListener* listener) {
+ 
+ UDPWrapBase* UDPWrapBase::FromObject(Local<Object> obj) {
+   CHECK_GT(obj->InternalFieldCount(), UDPWrapBase::kUDPWrapBaseField);
+-  return static_cast<UDPWrapBase*>(
+-      obj->GetAlignedPointerFromInternalField(UDPWrapBase::kUDPWrapBaseField));
++  return static_cast<UDPWrapBase*>(obj->GetAlignedPointerFromInternalField(
++      UDPWrapBase::kUDPWrapBaseField, v8::kEmbedderDataTypeTagDefault));
+ }
+ 
+ void UDPWrapBase::AddMethods(Environment* env, Local<FunctionTemplate> t) {
+@@ -147,7 +147,9 @@ UDPWrap::UDPWrap(Environment* env, Local<Object> object)
+                  reinterpret_cast<uv_handle_t*>(&handle_),
+                  AsyncWrap::PROVIDER_UDPWRAP) {
+   object->SetAlignedPointerInInternalField(
+-      UDPWrapBase::kUDPWrapBaseField, static_cast<UDPWrapBase*>(this));
++      UDPWrapBase::kUDPWrapBaseField,
++      static_cast<UDPWrapBase*>(this),
++      v8::kEmbedderDataTypeTagDefault);
+ 
+   int r = uv_udp_init(env->event_loop(), &handle_);
+   CHECK_EQ(r, 0);  // can't fail anyway

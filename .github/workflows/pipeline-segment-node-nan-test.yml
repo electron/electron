@@ -26,30 +26,39 @@ on:
         type: string
         default: testing
 
+permissions: {}
+
 concurrency:
-  group: electron-node-nan-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !endsWith(github.ref, '-x-y') }}
+  group: electron-node-nan-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref_protected != true }}
 
 env:
+  CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
   ELECTRON_OUT_DIR: Default
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
+  # @sentry/cli is only needed by release upload-symbols.py; skip the ~17MB CDN download on test jobs
+  SENTRYCLI_SKIP_DOWNLOAD: 1
 
 jobs:
   node-tests:
     name: Run Node.js Tests
-    runs-on: electron-arc-linux-amd64-8core
-    timeout-minutes: 20
+    runs-on: electron-arc-centralus-linux-amd64-8core
+    permissions:
+      contents: read
+    timeout-minutes: 30
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
       BUILD_TYPE: linux
     container: ${{ fromJSON(inputs.test-container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Init Build Tools
@@ -57,22 +66,13 @@ jobs:
         e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu ${{ inputs.target-arch }}
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
-    - name: Get Depot Tools
-      timeout-minutes: 5
-      run: |
-        git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-        # Ensure depot_tools does not update.
-        test -d depot_tools && cd depot_tools
-        touch .disable_auto_update
-    - name: Add Depot Tools to PATH
-      run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
     - name: Download Generated Artifacts
-      uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
         name: generated_artifacts_${{ env.BUILD_TYPE }}_${{ env.TARGET_ARCH }}
         path: ./generated_artifacts_${{ env.BUILD_TYPE }}_${{ env.TARGET_ARCH }}
     - name: Download Src Artifacts
-      uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
         name: src_artifacts_linux_${{ env.TARGET_ARCH }}
         path: ./src_artifacts_linux_${{ env.TARGET_ARCH }}
@@ -98,19 +98,23 @@ jobs:
         done
   nan-tests:
     name: Run Nan Tests
-    runs-on: electron-arc-linux-amd64-4core
-    timeout-minutes: 20
+    runs-on: electron-arc-centralus-linux-amd64-4core
+    permissions:
+      contents: read
+    timeout-minutes: 30
     env: 
       TARGET_ARCH: ${{ inputs.target-arch }}
       BUILD_TYPE: linux
     container: ${{ fromJSON(inputs.test-container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools
     - name: Init Build Tools
@@ -118,22 +122,13 @@ jobs:
         e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }}
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
-    - name: Get Depot Tools
-      timeout-minutes: 5
-      run: |
-        git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git
-        # Ensure depot_tools does not update.
-        test -d depot_tools && cd depot_tools
-        touch .disable_auto_update
-    - name: Add Depot Tools to PATH
-      run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
     - name: Download Generated Artifacts
-      uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
         name: generated_artifacts_${{ env.BUILD_TYPE }}_${{ env.TARGET_ARCH }}
         path: ./generated_artifacts_${{ env.BUILD_TYPE }}_${{ env.TARGET_ARCH }}
     - name: Download Src Artifacts
-      uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
         name: src_artifacts_linux_${{ env.TARGET_ARCH }}
         path: ./src_artifacts_linux_${{ env.TARGET_ARCH }}
@@ -145,10 +140,16 @@ jobs:
         unzip -:o dist.zip
     - name: Setup Linux for Headless Testing
       run: sh -e /etc/init.d/xvfb start
+    - name: Add Clang problem matcher
+      shell: bash
+      run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Run Nan Tests
       run: |
         cd src
         node electron/script/nan-spec-runner.js
+    - name: Remove Clang problem matcher
+      shell: bash
+      run: echo "::remove-matcher owner=clang::"
     - name: Wait for active SSH sessions
       shell: bash
       if: always() && !cancelled()

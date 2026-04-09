@@ -6,7 +6,7 @@ on:
       build-image-sha:
         type: string
         description: 'SHA for electron/build image'
-        default: 'bc2f48b2415a670de18d13605b1cf0eb5fdbaae1'
+        default: 'eac3529546ea8f3aa356d31e345715eef342233b'
         required: true
       upload-to-storage:
         description: 'Uploads to Azure storage'
@@ -18,9 +18,14 @@ on:
         type: boolean
         default: false
 
+permissions: {}
+
 jobs:
   checkout-macos:
-    runs-on: electron-arc-linux-amd64-32core
+    if: github.repository == 'electron/electron'
+    runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
     container:
       image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
       options: --user root
@@ -28,10 +33,11 @@ jobs:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
         - /var/run/sas:/var/run/sas
     env:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         path: src/electron
         fetch-depth: 0
@@ -39,13 +45,19 @@ jobs:
       uses: ./src/electron/.github/actions/checkout
       with:
         generate-sas-token: 'true'
+        target-platform: macos
 
   publish-x64-darwin:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
+    permissions:
+      artifact-metadata: write
+      attestations: write
+      contents: read
+      id-token: write
     needs: checkout-macos
     with:
       environment: production-release
-      build-runs-on: macos-14-xlarge
+      build-runs-on: macos-15-xlarge
       target-platform: macos
       target-arch: x64
       target-variant: darwin
@@ -56,11 +68,16 @@ jobs:
     secrets: inherit
 
   publish-x64-mas:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
+    permissions:
+      artifact-metadata: write
+      attestations: write
+      contents: read
+      id-token: write
     needs: checkout-macos
     with:
       environment: production-release
-      build-runs-on: macos-14-xlarge
+      build-runs-on: macos-15-xlarge
       target-platform: macos
       target-arch: x64
       target-variant: mas
@@ -71,11 +88,16 @@ jobs:
     secrets: inherit
 
   publish-arm64-darwin:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
+    permissions:
+      artifact-metadata: write
+      attestations: write
+      contents: read
+      id-token: write
     needs: checkout-macos
     with:
       environment: production-release
-      build-runs-on: macos-14-xlarge
+      build-runs-on: macos-15-xlarge
       target-platform: macos
       target-arch: arm64
       target-variant: darwin
@@ -86,11 +108,16 @@ jobs:
     secrets: inherit
 
   publish-arm64-mas:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
+    permissions:
+      artifact-metadata: write
+      attestations: write
+      contents: read
+      id-token: write
     needs: checkout-macos
     with:
       environment: production-release
-      build-runs-on: macos-14-xlarge
+      build-runs-on: macos-15-xlarge
       target-platform: macos
       target-arch: arm64
       target-variant: mas

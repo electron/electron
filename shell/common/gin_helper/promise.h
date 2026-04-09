@@ -15,8 +15,8 @@
 #include "base/memory/scoped_refptr.h"
 #include "base/task/task_runner.h"
 #include "shell/common/gin_converters/std_converter.h"
-#include "shell/common/gin_helper/microtasks_scope.h"
 #include "v8/include/v8-context.h"
+#include "v8/include/v8-microtask-queue.h"
 
 namespace gin_helper {
 
@@ -59,9 +59,10 @@ class PromiseBase {
     explicit SettleScope(const PromiseBase& base);
     ~SettleScope();
 
+    const raw_ptr<v8::Isolate> isolate_;
     v8::HandleScope handle_scope_;
     v8::Local<v8::Context> context_;
-    gin_helper::MicrotasksScope microtasks_scope_;
+    v8::MicrotasksScope microtasks_scope_;
     v8::Context::Scope context_scope_;
   };
 

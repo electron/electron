@@ -25,13 +25,44 @@ Menu.prototype._isCommandIdChecked = function (id) {
 };
 
 Menu.prototype._isCommandIdEnabled = function (id) {
-  return this.commandsMap[id] ? this.commandsMap[id].enabled : false;
+  const item = this.commandsMap[id];
+  if (!item) return false;
+
+  const focusedWindow = BaseWindow.getFocusedWindow();
+
+  if (item.role === 'minimize' && focusedWindow) {
+    return focusedWindow.isMinimizable();
+  }
+
+  if (item.role === 'togglefullscreen' && focusedWindow) {
+    return focusedWindow.isFullScreenable();
+  }
+
+  if (item.role === 'close' && focusedWindow) {
+    return focusedWindow.isClosable();
+  }
+
+  return item.enabled;
 };
+
 Menu.prototype._shouldCommandIdWorkWhenHidden = function (id) {
-  return this.commandsMap[id] ? !!this.commandsMap[id].acceleratorWorksWhenHidden : false;
+  return this.commandsMap[id]?.acceleratorWorksWhenHidden ?? false;
 };
+
 Menu.prototype._isCommandIdVisible = function (id) {
-  return this.commandsMap[id] ? this.commandsMap[id].visible : false;
+  return this.commandsMap[id]?.visible ?? false;
+};
+
+Menu.prototype._getLabelForCommandId = function (id) {
+  return this.commandsMap[id]?.label ?? '';
+};
+
+Menu.prototype._getSecondaryLabelForCommandId = function (id) {
+  return this.commandsMap[id]?.sublabel ?? '';
+};
+
+Menu.prototype._getIconForCommandId = function (id) {
+  return this.commandsMap[id]?.icon ?? null;
 };
 
 Menu.prototype._getAcceleratorForCommandId = function (id, useDefaultAccelerator) {
@@ -42,12 +73,12 @@ Menu.prototype._getAcceleratorForCommandId = function (id, useDefaultAccelerator
 };
 
 Menu.prototype._shouldRegisterAcceleratorForCommandId = function (id) {
-  return this.commandsMap[id] ? this.commandsMap[id].registerAccelerator : false;
+  return this.commandsMap[id]?.registerAccelerator ?? false;
 };
 
 if (process.platform === 'darwin') {
   Menu.prototype._getSharingItemForCommandId = function (id) {
-    return this.commandsMap[id] ? this.commandsMap[id].sharingItem : null;
+    return this.commandsMap[id]?.sharingItem ?? null;
   };
 }
 
@@ -93,7 +124,7 @@ Menu.prototype.popup = function (options = {}) {
     }
   }
 
-  this.popupAt(window as unknown as BaseWindow, x, y, positioningItem, sourceType, callback);
+  this.popupAt(window as unknown as BaseWindow, options.frame, x, y, positioningItem, sourceType, callback);
   return { browserWindow: window, x, y, position: positioningItem };
 };
 
@@ -139,10 +170,12 @@ Menu.prototype.insert = function (pos, item) {
   insertItemByType.call(this, item, pos);
 
   // set item properties
-  if (item.sublabel) this.setSublabel(pos, item.sublabel);
   if (item.toolTip) this.setToolTip(pos, item.toolTip);
   if (item.icon) this.setIcon(pos, item.icon);
   if (item.role) this.setRole(pos, item.role);
+  if (item.type === 'palette' || item.type === 'header') {
+    this.setCustomType(pos, item.type);
+  }
 
   // Make menu accessible to items.
   item.overrideReadOnlyProperty('menu', this);
@@ -264,9 +297,11 @@ function removeExtraSeparators (items: (MenuItemConstructorOptions | MenuItem)[]
 function insertItemByType (this: MenuType, item: MenuItem, pos: number) {
   const types = {
     normal: () => this.insertItem(pos, item.commandId, item.label),
+    header: () => this.insertItem(pos, item.commandId, item.label),
     checkbox: () => this.insertCheckItem(pos, item.commandId, item.label),
     separator: () => this.insertSeparator(pos),
     submenu: () => this.insertSubMenu(pos, item.commandId, item.label, item.submenu),
+    palette: () => this.insertSubMenu(pos, item.commandId, item.label, item.submenu),
     radio: () => {
       // Grouping radio menu items
       item.overrideReadOnlyProperty('groupId', generateGroupId(this.items, pos));

@@ -3,10 +3,10 @@
 // found in the LICENSE file.
 
 #include <cstdlib>
-#include <utility>
 
 #include "base/at_exit.h"
 #include "base/command_line.h"
+#include "base/compiler_specific.h"
 #include "base/i18n/icu_util.h"
 #include "base/strings/cstring_view.h"
 #include "content/public/app/content_main.h"
@@ -30,6 +30,9 @@ namespace {
 int main(int argc, char* argv[]) {
   FixStdioStreams();
 
+  // Chromium expects the original argv in its original memory location
+  // to update /proc/<pid>/cmdline.
+  const char** original_argv = UNSAFE_BUFFERS(const_cast<const char**>(argv));
   argv = uv_setup_args(argc, argv);
   base::CommandLine::Init(argc, argv);
   electron::ElectronCommandLine::Init(argc, argv);
@@ -41,5 +44,8 @@ int main(int argc, char* argv[]) {
   }
 
   electron::ElectronMainDelegate delegate;
-  return content::ContentMain(content::ContentMainParams{&delegate});
+  content::ContentMainParams params{&delegate};
+  params.argc = argc;
+  params.argv = original_argv;
+  return content::ContentMain(std::move(params));
 }

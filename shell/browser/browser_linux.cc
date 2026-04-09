@@ -79,11 +79,12 @@ bool SetDefaultWebClient(const std::string& protocol) {
     argv.emplace_back(kXdgSettingsDefaultSchemeHandler);
     argv.emplace_back(protocol);
   }
-  std::string desktop_name;
-  if (!env->GetVar("CHROME_DESKTOP", &desktop_name)) {
+
+  if (std::optional<std::string> desktop_name = env->GetVar("CHROME_DESKTOP")) {
+    argv.emplace_back(desktop_name.value());
+  } else {
     return false;
   }
-  argv.emplace_back(desktop_name);
 
   int exit_code;
   bool ran_ok = LaunchXdgUtility(argv, &exit_code);
@@ -94,26 +95,34 @@ bool SetDefaultWebClient(const std::string& protocol) {
 
 void Browser::AddRecentDocument(const base::FilePath& path) {}
 
+std::vector<std::string> Browser::GetRecentDocuments() {
+  return std::vector<std::string>();
+}
+
 void Browser::ClearRecentDocuments() {}
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
                                          gin::Arguments* args) {
+  if (!IsValidProtocolScheme(protocol))
+    return false;
+
   return SetDefaultWebClient(protocol);
 }
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
                                       gin::Arguments* args) {
+  if (!IsValidProtocolScheme(protocol))
+    return false;
+
   auto env = base::Environment::Create();
 
-  if (protocol.empty())
+  std::vector<std::string> argv = {kXdgSettings, "check",
+                                   kXdgSettingsDefaultSchemeHandler, protocol};
+  if (std::optional<std::string> desktop_name = env->GetVar("CHROME_DESKTOP")) {
+    argv.emplace_back(desktop_name.value());
+  } else {
     return false;
-
-  std::string desktop_name;
-  if (!env->GetVar("CHROME_DESKTOP", &desktop_name))
-    return false;
-  const std::vector<std::string> argv = {kXdgSettings, "check",
-                                         kXdgSettingsDefaultSchemeHandler,
-                                         protocol, desktop_name};
+  }
   // Allow any reply that starts with "yes".
   const std::optional<std::string> output = GetXdgAppOutput(argv);
   return output && output->starts_with("yes");
@@ -128,7 +137,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
   const std::vector<std::string> argv = {
       "xdg-mime", "query", "default",
-      base::StrCat({"x-scheme-handler/", url.scheme_piece()})};
+      base::StrCat({"x-scheme-handler/", url.scheme()})};
 
   return base::ASCIIToUTF16(GetXdgAppOutput(argv).value_or(std::string()));
 }
@@ -174,7 +183,7 @@ void Browser::ShowAboutPanel() {
   GtkAboutDialog* dialog = GTK_ABOUT_DIALOG(dialogWidget);
 
   const std::string* str;
-  const base::Value::List* list;
+  const base::ListValue* list;
 
   if ((str = opts.FindString("applicationName"))) {
     gtk_about_dialog_set_program_name(dialog, str->c_str());
@@ -197,7 +206,7 @@ void Browser::ShowAboutPanel() {
     GdkPixbuf* icon =
         gdk_pixbuf_new_from_file_at_size(str->c_str(), width, height, &error);
     if (error != nullptr) {
-      g_warning("%s", error->message);
+      LOG(INFO) << error->message;
       g_clear_error(&error);
     } else {
       gtk_about_dialog_set_logo(dialog, icon);
@@ -227,7 +236,7 @@ void Browser::ShowAboutPanel() {
   gtk_widget_show_all(dialogWidget);
 }
 
-void Browser::SetAboutPanelOptions(base::Value::Dict options) {
+void Browser::SetAboutPanelOptions(base::DictValue options) {
   about_panel_options_ = std::move(options);
 }
 

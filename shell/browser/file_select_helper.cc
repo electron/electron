@@ -241,14 +241,13 @@ void FileSelectHelper::SetFileSelectListenerForTesting(
 std::unique_ptr<ui::SelectFileDialog::FileTypeInfo>
 FileSelectHelper::GetFileTypesFromAcceptType(
     const std::vector<std::u16string>& accept_types) {
-  std::unique_ptr<ui::SelectFileDialog::FileTypeInfo> base_file_type(
-      new ui::SelectFileDialog::FileTypeInfo());
+  auto base_file_type = std::make_unique<ui::SelectFileDialog::FileTypeInfo>();
   if (accept_types.empty())
     return base_file_type;
 
   // Create FileTypeInfo and pre-allocate for the first extension list.
-  std::unique_ptr<ui::SelectFileDialog::FileTypeInfo> file_type(
-      new ui::SelectFileDialog::FileTypeInfo(*base_file_type));
+  auto file_type =
+      std::make_unique<ui::SelectFileDialog::FileTypeInfo>(*base_file_type);
   file_type->include_all_files = true;
   file_type->extensions.resize(1);
   std::vector<base::FilePath::StringType>* extensions =

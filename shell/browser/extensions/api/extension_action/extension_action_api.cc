@@ -6,7 +6,6 @@
 
 #include <stddef.h>
 
-#include <memory>
 #include <utility>
 
 #include "base/no_destructor.h"
@@ -30,16 +29,11 @@ void ExtensionActionAPI::Observer::OnExtensionActionUpdated(
 
 void ExtensionActionAPI::Observer::OnExtensionActionAPIShuttingDown() {}
 
-ExtensionActionAPI::Observer::~Observer() {}
-
 //
 // ExtensionActionAPI
 //
 
-ExtensionActionAPI::ExtensionActionAPI(content::BrowserContext* context)
-    : browser_context_(context), extension_prefs_(nullptr) {}
-
-ExtensionActionAPI::~ExtensionActionAPI() {}
+ExtensionActionAPI::ExtensionActionAPI(content::BrowserContext*) {}
 
 // static
 BrowserContextKeyedAPIFactory<ExtensionActionAPI>*
@@ -54,19 +48,13 @@ ExtensionActionAPI* ExtensionActionAPI::Get(content::BrowserContext* context) {
   return BrowserContextKeyedAPIFactory<ExtensionActionAPI>::Get(context);
 }
 
-ExtensionPrefs* ExtensionActionAPI::GetExtensionPrefs() {
-  return nullptr;
-}
-
 void ExtensionActionAPI::Shutdown() {}
 
 //
 // ExtensionActionFunction
 //
 
-ExtensionActionFunction::ExtensionActionFunction() {}
-
-ExtensionActionFunction::~ExtensionActionFunction() {}
+ExtensionActionFunction::ExtensionActionFunction() = default;
 
 ExtensionFunction::ResponseAction ExtensionActionFunction::Run() {
   return RunExtensionAction();
@@ -98,6 +86,13 @@ ExtensionActionSetIconFunction::RunExtensionAction() {
   LOG(INFO) << "chrome.action.setIcon is not supported in Electron";
 
   return RespondNow(NoArguments());
+}
+
+ExtensionFunction::ResponseAction
+ExtensionActionOpenPopupFunction::RunExtensionAction() {
+  LOG(INFO) << "chrome.action.openPopup is not supported in Electron";
+
+  return RespondNow(WithArguments(""));
 }
 
 ExtensionFunction::ResponseAction
@@ -162,7 +157,7 @@ ExtensionActionGetBadgeBackgroundColorFunction::RunExtensionAction() {
   LOG(INFO)
       << "chrome.action.getBadgeBackgroundColor is not supported in Electron";
 
-  base::Value::List list;
+  base::ListValue list;
   return RespondNow(WithArguments(std::move(list)));
 }
 
@@ -170,7 +165,7 @@ ExtensionFunction::ResponseAction
 ActionGetBadgeTextColorFunction::RunExtensionAction() {
   LOG(INFO) << "chrome.action.getBadgeTextColor is not supported in Electron";
 
-  base::Value::List list;
+  base::ListValue list;
   return RespondNow(WithArguments(std::move(list)));
 }
 
@@ -180,7 +175,7 @@ ActionGetUserSettingsFunction::~ActionGetUserSettingsFunction() = default;
 ExtensionFunction::ResponseAction ActionGetUserSettingsFunction::Run() {
   LOG(INFO) << "chrome.action.getUserSettings is not supported in Electron";
 
-  base::Value::Dict ui_settings;
+  base::DictValue ui_settings;
   return RespondNow(WithArguments(std::move(ui_settings)));
 }
 

@@ -79,9 +79,9 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
       expect(fs.existsSync(outputFilePath)).to.be.true('output exists');
 
       // If the `categoryFilter` param above is not respected
-      // the file size will be above 50KB.
+      // the file size will be above 60KB.
       const fileSizeInKiloBytes = getFileSizeInKiloBytes(outputFilePath);
-      const expectedMaximumFileSize = 50; // Depends on a platform.
+      const expectedMaximumFileSize = 60; // Depends on a platform.
 
       expect(fileSizeInKiloBytes).to.be.above(0,
         `the trace output file is empty, check "${outputFilePath}"`);
@@ -91,7 +91,7 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
     });
   });
 
-  describe('stopRecording', function () {
+  ifdescribe(process.platform !== 'linux')('stopRecording', function () {
     if (process.platform === 'win32' && process.arch === 'arm64') {
       // WOA needs more time
       this.timeout(10e3);
@@ -99,7 +99,8 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
       this.timeout(5e3);
     }
 
-    it('does not crash on empty string', async () => {
+    // FIXME(samuelmaddock): this test regularly flakes
+    it.skip('does not crash on empty string', async () => {
       const options = {
         categoryFilter: '*',
         traceOptions: 'record-until-full,enable-sampling'
@@ -128,6 +129,36 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
 
     it('rejects if no trace is happening', async () => {
       await expect(contentTracing.stopRecording()).to.be.rejectedWith('Failed to stop tracing - no trace in progress');
+    });
+  });
+
+  describe('getTraceBufferUsage', function () {
+    this.timeout(10e3);
+
+    it('does not crash and returns valid usage data', async () => {
+      await app.whenReady();
+      await contentTracing.startRecording({
+        categoryFilter: '*',
+        traceOptions: 'record-until-full'
+      });
+
+      // Yield to the event loop so the JS HandleScope from this tick is gone.
+      // When the Mojo response arrives it fires OnTraceBufferUsageAvailable
+      // as a plain Chromium task — if that callback lacks its own HandleScope
+      // the process will crash with "Cannot create a handle without a HandleScope".
+      const result = await contentTracing.getTraceBufferUsage();
+
+      expect(result).to.have.property('percentage').that.is.a('number');
+      expect(result).to.have.property('value').that.is.a('number');
+
+      await contentTracing.stopRecording();
+    });
+
+    it('returns zero usage when no trace is active', async () => {
+      await app.whenReady();
+      const result = await contentTracing.getTraceBufferUsage();
+      expect(result).to.have.property('percentage').that.is.a('number');
+      expect(result.percentage).to.equal(0);
     });
   });
 

@@ -5,9 +5,6 @@
 #ifndef SHELL_BROWSER_EXTENSIONS_API_EXTENSION_ACTION_EXTENSION_ACTION_API_H_
 #define SHELL_BROWSER_EXTENSIONS_API_EXTENSION_ACTION_EXTENSION_ACTION_API_H_
 
-#include <string>
-
-#include "base/memory/raw_ptr.h"
 #include "extensions/browser/browser_context_keyed_api_factory.h"
 #include "extensions/browser/extension_action.h"
 #include "extensions/browser/extension_function.h"
@@ -35,7 +32,7 @@ class ExtensionActionAPI : public BrowserContextKeyedAPI {
     virtual void OnExtensionActionAPIShuttingDown();
 
    protected:
-    virtual ~Observer();
+    virtual ~Observer() = default;
   };
 
   explicit ExtensionActionAPI(content::BrowserContext* context);
@@ -43,7 +40,7 @@ class ExtensionActionAPI : public BrowserContextKeyedAPI {
   ExtensionActionAPI(const ExtensionActionAPI&) = delete;
   ExtensionActionAPI& operator=(const ExtensionActionAPI&) = delete;
 
-  ~ExtensionActionAPI() override;
+  ~ExtensionActionAPI() override = default;
 
   // Convenience method to get the instance for a profile.
   static ExtensionActionAPI* Get(content::BrowserContext* context);
@@ -72,23 +69,17 @@ class ExtensionActionAPI : public BrowserContextKeyedAPI {
  private:
   friend class BrowserContextKeyedAPIFactory<ExtensionActionAPI>;
 
-  ExtensionPrefs* GetExtensionPrefs();
-
   // BrowserContextKeyedAPI implementation.
   void Shutdown() override;
   static const char* service_name() { return "ExtensionActionAPI"; }
   static const bool kServiceRedirectedInIncognito = true;
-
-  raw_ptr<content::BrowserContext> browser_context_;
-
-  raw_ptr<ExtensionPrefs> extension_prefs_;
 };
 
 // Implementation of the browserAction and pageAction APIs.
 class ExtensionActionFunction : public ExtensionFunction {
  protected:
   ExtensionActionFunction();
-  ~ExtensionActionFunction() override;
+  ~ExtensionActionFunction() override = default;
 
   // ExtensionFunction
   ResponseAction Run() override;

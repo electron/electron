@@ -9,6 +9,7 @@ An example of implementing a protocol that has the same effect as the
 
 ```js
 const { app, protocol, net } = require('electron')
+
 const path = require('node:path')
 const url = require('node:url')
 
@@ -20,8 +21,9 @@ app.whenReady().then(() => {
 })
 ```
 
-**Note:** All methods unless specified can only be used after the `ready` event
-of the `app` module gets emitted.
+> [!NOTE]
+> All methods unless specified can only be used after the `ready` event
+> of the `app` module gets emitted.
 
 ## Using `protocol` with a custom `partition` or `session`
 
@@ -37,8 +39,9 @@ to register it to that session explicitly.
 
 ```js
 const { app, BrowserWindow, net, protocol, session } = require('electron')
+
 const path = require('node:path')
-const url = require('url')
+const url = require('node:url')
 
 app.whenReady().then(() => {
   const partition = 'persist:example'
@@ -53,6 +56,15 @@ app.whenReady().then(() => {
 })
 ```
 
+## Protocol names
+
+[RFC 3986](https://www.rfc-editor.org/rfc/rfc3986#section-3.1) defines what a valid
+protocol name is:
+
+> Scheme names consist of a sequence of characters beginning with a letter and followed
+> by any combination of letters, digits, plus ("+"), period ("."), or hyphen ("-").
+> Although schemes are case-insensitive, the canonical form is lowercase […].
+
 ## Methods
 
 The `protocol` module has the following methods:
@@ -61,8 +73,9 @@ The `protocol` module has the following methods:
 
 * `customSchemes` [CustomScheme[]](structures/custom-scheme.md)
 
-**Note:** This method can only be used before the `ready` event of the `app`
-module gets emitted and can be called only once.
+> [!NOTE]
+> This method can only be used before the `ready` event of the `app`
+> module gets emitted and can be called only once.
 
 Registers the `scheme` as standard, secure, bypasses content security policy for
 resources, allows registering ServiceWorker, supports fetch API, streaming
@@ -74,6 +87,7 @@ Policy:
 
 ```js
 const { protocol } = require('electron')
+
 protocol.registerSchemesAsPrivileged([
   { scheme: 'foo', privileges: { bypassCSP: true } }
 ])
@@ -126,8 +140,9 @@ Example:
 
 ```js
 const { app, net, protocol } = require('electron')
+
 const path = require('node:path')
-const { pathToFileURL } = require('url')
+const { pathToFileURL } = require('node:url')
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -328,7 +343,8 @@ Example:
 
 ```js
 const { protocol } = require('electron')
-const { PassThrough } = require('stream')
+
+const { PassThrough } = require('node:stream')
 
 function createStream (text) {
   const rv = new PassThrough() // PassThrough is also a Readable stream

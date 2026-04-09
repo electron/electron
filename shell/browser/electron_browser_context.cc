@@ -12,13 +12,13 @@
 #include "base/barrier_closure.h"
 #include "base/base_paths.h"
 #include "base/command_line.h"
+#include "base/containers/to_vector.h"
 #include "base/files/file_path.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/strings/escape.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
-#include "chrome/browser/predictors/preconnect_manager.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
@@ -30,9 +30,11 @@
 #include "components/proxy_config/pref_proxy_config_tracker_impl.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"  // nogncheck
+#include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cors_origin_pattern_setter.h"
 #include "content/public/browser/host_zoom_map.h"
+#include "content/public/browser/preconnect_manager.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
@@ -40,15 +42,16 @@
 #include "gin/arguments.h"
 #include "media/audio/audio_device_description.h"
 #include "services/network/public/cpp/features.h"
-#include "services/network/public/cpp/url_loader_factory_builder.h"
+#include "services/network/public/cpp/originating_process_id.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
-#include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/browser/cookie_change_notifier.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_download_manager_delegate.h"
 #include "shell/browser/electron_permission_manager.h"
+#include "shell/browser/electron_preconnect_manager_delegate.h"
 #include "shell/browser/file_system_access/file_system_access_permission_context_factory.h"
+#include "shell/browser/media/media_device_id_salt.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/serial/serial_chooser_context.h"
@@ -63,7 +66,6 @@
 #include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/thread_restrictions.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
@@ -250,12 +252,8 @@ std::string MakePartitionName(const std::string& input) {
 bool DoesDeviceMatch(const base::Value& device,
                      const base::Value& device_to_compare,
                      const blink::PermissionType permission_type) {
-  if (permission_type ==
-          static_cast<blink::PermissionType>(
-              WebContentsPermissionHelper::PermissionType::HID) ||
-      permission_type ==
-          static_cast<blink::PermissionType>(
-              WebContentsPermissionHelper::PermissionType::USB)) {
+  if (permission_type == blink::PermissionType::HID ||
+      permission_type == blink::PermissionType::USB) {
     if (device.GetDict().FindInt(kDeviceVendorIdKey) !=
             device_to_compare.GetDict().FindInt(kDeviceVendorIdKey) ||
         device.GetDict().FindInt(kDeviceProductIdKey) !=
@@ -271,9 +269,7 @@ bool DoesDeviceMatch(const base::Value& device,
     if (serial_number && device_serial_number &&
         *device_serial_number == *serial_number)
       return true;
-  } else if (permission_type ==
-             static_cast<blink::PermissionType>(
-                 WebContentsPermissionHelper::PermissionType::SERIAL)) {
+  } else if (permission_type == blink::PermissionType::SERIAL) {
 #if BUILDFLAG(IS_WIN)
     const auto* instance_id = device.GetDict().FindString(kDeviceInstanceIdKey);
     const auto* port_instance_id =
@@ -308,20 +304,59 @@ bool DoesDeviceMatch(const base::Value& device,
   return false;
 }
 
+// partition_id => browser_context
+struct PartitionKey {
+  PartitionKey(const std::string_view partition, bool in_memory)
+      : type_{Type::Partition}, location_{partition}, in_memory_{in_memory} {}
+
+  explicit PartitionKey(const base::FilePath& file_path)
+      : type_{Type::Path},
+        location_{file_path.AsUTF8Unsafe()},
+        in_memory_{false} {}
+
+  friend auto operator<=>(const PartitionKey&, const PartitionKey&) = default;
+
+ private:
+  enum class Type { Partition, Path };
+
+  Type type_;
+  std::string location_;
+  bool in_memory_;
+};
+
+[[nodiscard]] auto& ContextMap() {
+  static base::NoDestructor<
+      std::map<PartitionKey, std::unique_ptr<ElectronBrowserContext>>>
+      map;
+  return *map;
+}
+
 }  // namespace
 
 // static
-ElectronBrowserContext::BrowserContextMap&
-ElectronBrowserContext::browser_context_map() {
-  static base::NoDestructor<ElectronBrowserContext::BrowserContextMap>
-      browser_context_map;
-  return *browser_context_map;
+std::vector<ElectronBrowserContext*> ElectronBrowserContext::BrowserContexts() {
+  return base::ToVector(ContextMap(),
+                        [](auto& iter) { return iter.second.get(); });
+}
+
+bool ElectronBrowserContext::IsValidContext(const void* context) {
+  return std::ranges::any_of(ContextMap(), [context](const auto& iter) {
+    return iter.second.get() == context;
+  });
+}
+
+// static
+void ElectronBrowserContext::DestroyAllContexts() {
+  auto& map = ContextMap();
+  // Avoid UAF by destroying the default context last. See ba629e3 for info.
+  const auto extracted = map.extract(PartitionKey{"", false});
+  map.clear();
 }
 
 ElectronBrowserContext::ElectronBrowserContext(
     const PartitionOrPath partition_location,
     bool in_memory,
-    base::Value::Dict options)
+    base::DictValue options)
     : in_memory_pref_store_(new ValueMapPrefStore),
       storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
       protocol_registry_(base::WrapUnique(new ProtocolRegistry)),
@@ -365,22 +400,25 @@ ElectronBrowserContext::ElectronBrowserContext(
     BrowserContextDependencyManager::GetInstance()
         ->CreateBrowserContextServices(this);
 
-    extension_system_ = static_cast<extensions::ElectronExtensionSystem*>(
+    auto* extension_system = static_cast<extensions::ElectronExtensionSystem*>(
         extensions::ExtensionSystem::Get(this));
-    extension_system_->InitForRegularProfile(true /* extensions_enabled */);
-    extension_system_->FinishInitialization();
+    extension_system->InitForRegularProfile(true /* extensions_enabled */);
+    extension_system->FinishInitialization();
   }
 #endif
+
+  // Subscribe to Network Service process gone notifications to reset the
+  // cached URLLoaderFactory when the Network Service crashes or restarts.
+  network_service_gone_subscription_ =
+      content::RegisterNetworkServiceProcessGoneHandler(base::BindRepeating(
+          &ElectronBrowserContext::OnNetworkServiceProcessGone,
+          weak_factory_.GetWeakPtr()));
 }
 
 ElectronBrowserContext::~ElectronBrowserContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  NotifyWillBeDestroyed();
 
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  // the DestroyBrowserContextServices() call below frees this.
-  extension_system_ = nullptr;
-#endif
+  NotifyWillBeDestroyed();
 
   // Notify any keyed services of browser context destruction.
   BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
@@ -451,20 +489,24 @@ void ElectronBrowserContext::InitPrefs() {
     std::string default_code = spellcheck::GetCorrespondingSpellCheckLanguage(
         base::i18n::GetConfiguredLocale());
     if (!default_code.empty()) {
-      base::Value::List language_codes;
+      base::ListValue language_codes;
       language_codes.Append(default_code);
       prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries,
                    base::Value(std::move(language_codes)));
     }
   }
 #endif
+
+  // Unique uuid for global shortcuts.
+  registry->RegisterStringPref(electron::kElectronGlobalShortcutsUuid,
+                               std::string());
 }
 
 void ElectronBrowserContext::SetUserAgent(const std::string& user_agent) {
   user_agent_ = user_agent;
 }
 
-base::FilePath ElectronBrowserContext::GetPath() {
+base::FilePath ElectronBrowserContext::GetPath() const {
   return path_;
 }
 
@@ -523,19 +565,25 @@ std::string ElectronBrowserContext::GetUserAgent() const {
   return user_agent_.value_or(ElectronBrowserClient::Get()->GetUserAgent());
 }
 
-predictors::PreconnectManager* ElectronBrowserContext::GetPreconnectManager() {
+content::PreconnectManager* ElectronBrowserContext::GetPreconnectManager() {
   if (!preconnect_manager_) {
-    preconnect_manager_ =
-        std::make_unique<predictors::PreconnectManager>(nullptr, this);
+    preconnect_manager_delegate_ =
+        std::make_unique<ElectronPreconnectManagerDelegate>();
+    preconnect_manager_ = content::PreconnectManager::Create(
+        preconnect_manager_delegate_->GetWeakPtr(), this);
   }
   return preconnect_manager_.get();
 }
 
-scoped_refptr<network::SharedURLLoaderFactory>
-ElectronBrowserContext::GetURLLoaderFactory() {
-  if (url_loader_factory_)
-    return url_loader_factory_;
+void ElectronBrowserContext::OnNetworkServiceProcessGone(bool /* crashed */) {
+  // Clear the cached URLLoaderFactory so the next request creates a new one
+  // from the new NetworkContext.
+  url_loader_factory_.reset();
+}
 
+std::pair<network::URLLoaderFactoryBuilder,
+          mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>>
+ElectronBrowserContext::CreateURLLoaderFactoryBuilder() {
   network::URLLoaderFactoryBuilder factory_builder;
 
   // Consult the embedder.
@@ -549,10 +597,20 @@ ElectronBrowserContext::GetURLLoaderFactory() {
           ukm::kInvalidSourceIdObj, factory_builder, &header_client, nullptr,
           nullptr, nullptr, nullptr);
 
+  return std::make_pair(std::move(factory_builder), std::move(header_client));
+}
+
+scoped_refptr<network::SharedURLLoaderFactory>
+ElectronBrowserContext::GetURLLoaderFactory() {
+  if (url_loader_factory_)
+    return url_loader_factory_;
+
+  auto [factory_builder, header_client] = CreateURLLoaderFactoryBuilder();
+
   network::mojom::URLLoaderFactoryParamsPtr params =
       network::mojom::URLLoaderFactoryParams::New();
   params->header_client = std::move(header_client);
-  params->process_id = network::mojom::kBrowserProcessId;
+  params->process_id = network::OriginatingProcessId::browser();
   params->is_trusted = true;
   params->is_orb_enabled = false;
   // The tests of net module would fail if this setting is true, it seems that
@@ -564,6 +622,12 @@ ElectronBrowserContext::GetURLLoaderFactory() {
       std::move(factory_builder)
           .Finish(storage_partition->GetNetworkContext(), std::move(params));
   return url_loader_factory_;
+}
+
+scoped_refptr<network::SharedURLLoaderFactory>
+ElectronBrowserContext::InterceptURLLoaderFactory(
+    scoped_refptr<network::SharedURLLoaderFactory> factory) {
+  return CreateURLLoaderFactoryBuilder().first.Finish(factory);
 }
 
 content::PushMessagingService*
@@ -644,25 +708,26 @@ void ElectronBrowserContext::SetDisplayMediaRequestHandler(
 void ElectronBrowserContext::DisplayMediaDeviceChosen(
     const content::MediaStreamRequest& request,
     content::MediaResponseCallback callback,
-    gin::Arguments* args) {
+    gin::Arguments* const args) {
   blink::mojom::StreamDevicesSetPtr stream_devices_set =
       blink::mojom::StreamDevicesSet::New();
   v8::Local<v8::Value> result;
   if (!args->GetNext(&result) || result->IsNullOrUndefined()) {
-    std::move(callback).Run(
-        blink::mojom::StreamDevicesSet(),
-        blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
+    std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                            blink::mojom::MediaStreamRequestResult::
+                                INVALID_DISPLAY_CAPTURE_CONSTRAINTS,
+                            nullptr);
     return;
   }
   gin_helper::Dictionary result_dict;
   if (!gin::ConvertFromV8(args->isolate(), result, &result_dict)) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowTypeError(
-            "Display Media Request streams callback must be called with null "
-            "or a valid object");
-    std::move(callback).Run(
-        blink::mojom::StreamDevicesSet(),
-        blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
+    args->ThrowTypeError(
+        "Display Media Request streams callback must be called with null "
+        "or a valid object");
+    std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                            blink::mojom::MediaStreamRequestResult::
+                                INVALID_DISPLAY_CAPTURE_CONSTRAINTS,
+                            nullptr);
     return;
   }
   stream_devices_set->stream_devices.emplace_back(
@@ -689,8 +754,8 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
       auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
       blink::MediaStreamDevice video_device(
           request.video_type,
-          content::WebContentsMediaCaptureId(rfh->GetProcess()->GetID(),
-                                             rfh->GetRoutingID())
+          content::WebContentsMediaCaptureId(
+              rfh->GetProcess()->GetDeprecatedID(), rfh->GetRoutingID())
               .ToString(),
           base::UTF16ToUTF8(web_contents->GetTitle()));
       video_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
@@ -698,12 +763,12 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
           content::DesktopMediaID::Parse(video_device.id));
       devices.video_device = video_device;
     } else {
-      gin_helper::ErrorThrower(args->isolate())
-          .ThrowTypeError(
-              "video must be a WebFrameMain or DesktopCapturerSource");
-      std::move(callback).Run(
-          blink::mojom::StreamDevicesSet(),
-          blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
+      args->ThrowTypeError(
+          "video must be a WebFrameMain or DesktopCapturerSource");
+      std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                              blink::mojom::MediaStreamRequestResult::
+                                  INVALID_DISPLAY_CAPTURE_CONSTRAINTS,
+                              nullptr);
       return;
     }
     has_video = true;
@@ -724,15 +789,15 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
           GetAudioDesktopMediaId(request.requested_audio_device_ids));
       devices.audio_device = audio_device;
     } else if (result_dict.Get("audio", &rfh)) {
-      bool enable_local_echo = false;
-      result_dict.Get("enableLocalEcho", &enable_local_echo);
-      bool disable_local_echo = !enable_local_echo;
+      const bool enable_local_echo =
+          result_dict.ValueOrDefault("enableLocalEcho", false);
+      const bool disable_local_echo = !enable_local_echo;
       auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
       blink::MediaStreamDevice audio_device(
           request.audio_type,
-          content::WebContentsMediaCaptureId(rfh->GetProcess()->GetID(),
-                                             rfh->GetRoutingID(),
-                                             disable_local_echo)
+          content::WebContentsMediaCaptureId(
+              rfh->GetProcess()->GetDeprecatedID(), rfh->GetRoutingID(),
+              disable_local_echo)
               .ToString(),
           "Tab audio");
       audio_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
@@ -747,24 +812,24 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
           GetAudioDesktopMediaId(request.requested_audio_device_ids));
       devices.audio_device = audio_device;
     } else {
-      gin_helper::ErrorThrower(args->isolate())
-          .ThrowTypeError(
-              "audio must be a WebFrameMain, \"loopback\" or "
-              "\"loopbackWithMute\"");
-      std::move(callback).Run(
-          blink::mojom::StreamDevicesSet(),
-          blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
+      args->ThrowTypeError(
+          "audio must be a WebFrameMain, \"loopback\" or "
+          "\"loopbackWithMute\"");
+      std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                              blink::mojom::MediaStreamRequestResult::
+                                  INVALID_DISPLAY_CAPTURE_CONSTRAINTS,
+                              nullptr);
       return;
     }
   }
 
   if ((video_requested && !has_video)) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowTypeError(
-            "Video was requested, but no video stream was provided");
-    std::move(callback).Run(
-        blink::mojom::StreamDevicesSet(),
-        blink::mojom::MediaStreamRequestResult::CAPTURE_FAILURE, nullptr);
+    args->ThrowTypeError(
+        "Video was requested, but no video stream was provided");
+    std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                            blink::mojom::MediaStreamRequestResult::
+                                INVALID_DISPLAY_CAPTURE_CONSTRAINTS,
+                            nullptr);
     return;
   }
 
@@ -833,35 +898,30 @@ bool ElectronBrowserContext::CheckDevicePermission(
 ElectronBrowserContext* ElectronBrowserContext::From(
     const std::string& partition,
     bool in_memory,
-    base::Value::Dict options) {
-  PartitionKey key(partition, in_memory);
-  ElectronBrowserContext* browser_context = browser_context_map()[key].get();
-  if (browser_context) {
-    return browser_context;
+    base::DictValue options) {
+  auto& context = ContextMap()[PartitionKey(partition, in_memory)];
+  if (!context) {
+    context.reset(new ElectronBrowserContext{std::cref(partition), in_memory,
+                                             std::move(options)});
   }
+  return context.get();
+}
 
-  auto* new_context = new ElectronBrowserContext(std::cref(partition),
-                                                 in_memory, std::move(options));
-  browser_context_map()[key] =
-      std::unique_ptr<ElectronBrowserContext>(new_context);
-  return new_context;
+// static
+ElectronBrowserContext* ElectronBrowserContext::GetDefaultBrowserContext(
+    base::DictValue options) {
+  return ElectronBrowserContext::From("", false, std::move(options));
 }
 
 ElectronBrowserContext* ElectronBrowserContext::FromPath(
     const base::FilePath& path,
-    base::Value::Dict options) {
-  PartitionKey key(path);
-
-  ElectronBrowserContext* browser_context = browser_context_map()[key].get();
-  if (browser_context) {
-    return browser_context;
+    base::DictValue options) {
+  auto& context = ContextMap()[PartitionKey(path)];
+  if (!context) {
+    context.reset(
+        new ElectronBrowserContext{std::cref(path), false, std::move(options)});
   }
-
-  auto* new_context =
-      new ElectronBrowserContext(std::cref(path), false, std::move(options));
-  browser_context_map()[key] =
-      std::unique_ptr<ElectronBrowserContext>(new_context);
-  return new_context;
+  return context.get();
 }
 
 }  // namespace electron

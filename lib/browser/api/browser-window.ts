@@ -54,7 +54,7 @@ BrowserWindow.prototype._init = function (this: BWT) {
   });
   this.on('close', (event) => {
     queueMicrotask(() => {
-      if (!unresponsiveEvent && !event.defaultPrevented) {
+      if (!unresponsiveEvent && !event?.defaultPrevented) {
         unresponsiveEvent = setTimeout(emitUnresponsiveEvent, 5000);
       }
     });
@@ -199,7 +199,14 @@ BrowserWindow.prototype.setBackgroundThrottling = function (allowed: boolean) {
 };
 
 BrowserWindow.prototype.addBrowserView = function (browserView: BrowserView) {
-  if (browserView.ownerWindow) { browserView.ownerWindow.removeBrowserView(browserView); }
+  if (this._browserViews.includes(browserView)) {
+    return;
+  }
+
+  const ownerWindow = browserView.ownerWindow;
+  if (ownerWindow && ownerWindow !== this) {
+    ownerWindow.removeBrowserView(browserView);
+  }
   this.contentView.addChildView(browserView.webContentsView);
   browserView.ownerWindow = this;
   browserView.webContents._setOwnerWindow(this);

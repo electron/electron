@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_USB_USB_CHOOSER_CONTROLLER_H_
 #define ELECTRON_SHELL_BROWSER_USB_USB_CHOOSER_CONTROLLER_H_
 
+#include <string>
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
@@ -22,7 +23,9 @@ class WebContents;
 
 namespace gin {
 class Arguments;
-}
+template <typename T>
+class WeakCell;
+}  // namespace gin
 
 namespace electron {
 class ElectronUsbDelegate;
@@ -57,7 +60,7 @@ class UsbChooserController final : private UsbChooserContext::DeviceObserver,
   void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
 
  private:
-  api::Session* GetSession();
+  gin::WeakCell<api::Session>* GetSession();
   void GotUsbDeviceList(std::vector<device::mojom::UsbDeviceInfoPtr> devices);
   bool DisplayDevice(const device::mojom::UsbDeviceInfo& device) const;
   void RunCallback(device::mojom::UsbDeviceInfoPtr device_info);
@@ -72,6 +75,9 @@ class UsbChooserController final : private UsbChooserContext::DeviceObserver,
       observation_{this};
 
   base::WeakPtr<ElectronUsbDelegate> usb_delegate_;
+
+  // Filtered list of devices that passed DisplayDevice()
+  std::vector<device::mojom::UsbDeviceInfoPtr> devices_;
 
   content::GlobalRenderFrameHostId render_frame_host_id_;
 

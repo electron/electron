@@ -6,7 +6,6 @@
 
 #include <memory>
 #include <string>
-#include <unordered_set>
 #include <utility>
 
 #include "base/allocator/partition_alloc_features.h"
@@ -18,12 +17,15 @@
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/initialization_util.h"
 #include "gin/array_buffer.h"
+#include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
 #include "shell/browser/microtasks_runner.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/node_includes.h"
 #include "third_party/blink/public/common/switches.h"
 #include "third_party/electron_node/src/node_wasm_web_api.h"
+#include "v8/include/v8-isolate.h"
+#include "v8/include/v8-locker.h"
 
 namespace {
 v8::Isolate* g_isolate;
@@ -33,21 +35,26 @@ namespace electron {
 
 namespace {
 
-gin::IsolateHolder CreateIsolateHolder(v8::Isolate* isolate) {
+std::unique_ptr<gin::IsolateHolder> CreateIsolateHolder(
+    v8::Isolate* isolate,
+    size_t* max_young_generation_size) {
   std::unique_ptr<v8::Isolate::CreateParams> create_params =
       gin::IsolateHolder::getDefaultIsolateParams();
+  // The value is needed to adjust heap limit when capturing
+  // snapshot via v8.setHeapSnapshotNearHeapLimit(limit) or
+  // --heapsnapshot-near-heap-limit=max_count.
+  *max_young_generation_size =
+      create_params->constraints.max_young_generation_size_in_bytes();
   // Align behavior with V8 Isolate default for Node.js.
   // This is necessary for important aspects of Node.js
   // including heap and cpu profilers to function properly.
 
-  return {base::SingleThreadTaskRunner::GetCurrentDefault(),
-          gin::IsolateHolder::kSingleThread,
-          gin::IsolateHolder::IsolateType::kUtility,
-          std::move(create_params),
-          gin::IsolateHolder::IsolateCreationMode::kNormal,
-          nullptr,
-          nullptr,
-          isolate};
+  return std::make_unique<gin::IsolateHolder>(
+      base::SingleThreadTaskRunner::GetCurrentDefault(),
+      gin::IsolateHolder::kSingleThread,
+      gin::IsolateHolder::IsolateType::kUtility, std::move(create_params),
+      gin::IsolateHolder::IsolateCreationMode::kNormal, nullptr, nullptr,
+      isolate);
 }
 
 }  // namespace
@@ -55,13 +62,14 @@ gin::IsolateHolder CreateIsolateHolder(v8::Isolate* isolate) {
 JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop,
                                              bool setup_wasm_streaming)
     : isolate_holder_{CreateIsolateHolder(
-          Initialize(event_loop, setup_wasm_streaming))},
-      isolate_{isolate_holder_.isolate()},
-      locker_{isolate_} {
-  isolate_->Enter();
+          Initialize(event_loop, setup_wasm_streaming),
+          &max_young_generation_size_)},
+      locker_{std::make_unique<v8::Locker>(isolate())} {
+  v8::Isolate* const isolate = this->isolate();
+  isolate->Enter();
 
-  v8::HandleScope scope(isolate_);
-  auto context = node::NewContext(isolate_);
+  v8::HandleScope scope{isolate};
+  auto context = node::NewContext(isolate);
   CHECK(!context.IsEmpty());
 
   context->Enter();
@@ -69,15 +77,23 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop,
 
 JavascriptEnvironment::~JavascriptEnvironment() {
   DCHECK_NE(platform_, nullptr);
+  v8::Isolate* isolate = this->isolate();
 
   {
-    v8::HandleScope scope(isolate_);
-    isolate_->GetCurrentContext()->Exit();
+    v8::HandleScope scope{isolate};
+    isolate->GetCurrentContext()->Exit();
   }
-  isolate_->Exit();
+  isolate->Exit();
   g_isolate = nullptr;
 
-  platform_->UnregisterIsolate(isolate_);
+  // Deinit gin::IsolateHolder prior to calling NodePlatform::UnregisterIsolate.
+  // Otherwise cppgc::internal::Sweeper::Start will try to request a task runner
+  // from the NodePlatform with an already unregistered isolate.
+  locker_.reset();
+  DCHECK(!microtasks_runner_);
+  isolate_holder_.reset();
+
+  platform_->UnregisterIsolate(isolate);
 }
 
 v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop,
@@ -90,20 +106,21 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop,
 
   // The V8Platform of gin relies on Chromium's task schedule, which has not
   // been started at this point, so we have to rely on Node's V8Platform.
-  auto* tracing_agent = node::CreateAgent();
+  auto* tracing_agent = new node::tracing::Agent();
   auto* tracing_controller = tracing_agent->GetTracingController();
   node::tracing::TraceEventHelper::SetAgent(tracing_agent);
   platform_ = node::MultiIsolatePlatform::Create(
       base::RecommendedMaxNumberOfThreadsInThreadGroup(3, 8, 0.1, 0),
-      tracing_controller, gin::V8Platform::GetCurrentPageAllocator());
+      tracing_controller, gin::V8Platform::Get()->GetPageAllocator());
 
   v8::V8::InitializePlatform(platform_.get());
-  gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
-                                 gin::ArrayBufferAllocator::SharedInstance(),
-                                 nullptr /* external_reference_table */,
-                                 js_flags, nullptr /* fatal_error_callback */,
-                                 nullptr /* oom_error_callback */,
-                                 false /* create_v8_platform */);
+  gin::IsolateHolder::Initialize(
+      gin::IsolateHolder::kNonStrictMode,
+      gin::ArrayBufferAllocator::SharedInstance(),
+      nullptr /* external_reference_table */, js_flags,
+      false /* disallow_v8_feature_flag_overrides */,
+      nullptr /* fatal_error_callback */, nullptr /* oom_error_callback */,
+      false /* create_v8_platform */);
 
   v8::Isolate* isolate = v8::Isolate::Allocate();
   platform_->RegisterIsolate(isolate, event_loop);
@@ -123,6 +140,10 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop,
   return isolate;
 }
 
+v8::Isolate* JavascriptEnvironment::isolate() const {
+  return isolate_holder_->isolate();
+}
+
 // static
 v8::Isolate* JavascriptEnvironment::GetIsolate() {
   CHECK(g_isolate);
@@ -132,16 +153,22 @@ v8::Isolate* JavascriptEnvironment::GetIsolate() {
 void JavascriptEnvironment::CreateMicrotasksRunner() {
   DCHECK(!microtasks_runner_);
   microtasks_runner_ = std::make_unique<MicrotasksRunner>(isolate());
+  isolate_holder_->WillCreateMicrotasksRunner();
   base::CurrentThread::Get()->AddTaskObserver(microtasks_runner_.get());
 }
 
 void JavascriptEnvironment::DestroyMicrotasksRunner() {
   DCHECK(microtasks_runner_);
+  // Should be called before running gin_helper::CleanedUpAtExit::DoCleanup.
+  // This helps to signal wrappable finalizer callbacks to not act on freed
+  // parameters.
+  isolate_holder_->WillDestroyMicrotasksRunner();
   {
-    v8::HandleScope scope(isolate_);
+    v8::HandleScope scope{isolate()};
     gin_helper::CleanedUpAtExit::DoCleanup();
   }
   base::CurrentThread::Get()->RemoveTaskObserver(microtasks_runner_.get());
+  microtasks_runner_.reset();
 }
 
 }  // namespace electron

@@ -25,7 +25,7 @@
 // To add a new component to this API, simply:
 // 1. Add your component to the Component enum in
 //      shell/common/extensions/api/resources_private.idl
-// 2. Create an AddStringsForMyComponent(base::Value::Dict* dict) method.
+// 2. Create an AddStringsForMyComponent(base::DictValue* dict) method.
 // 3. Tie in that method to the switch statement in Run()
 
 namespace extensions {
@@ -39,18 +39,15 @@ ResourcesPrivateGetStringsFunction::~ResourcesPrivateGetStringsFunction() =
     default;
 
 ExtensionFunction::ResponseAction ResourcesPrivateGetStringsFunction::Run() {
-  std::optional<get_strings::Params> params(
-      get_strings::Params::Create(args()));
-  base::Value::Dict dict;
+  get_strings::Params params = get_strings::Params::Create(args()).value();
+  base::DictValue dict;
 
-  api::resources_private::Component component = params->component;
-
-  switch (component) {
+  switch (params.component) {
     case api::resources_private::Component::kPdf:
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-      pdf_extension_util::AddStrings(
-          pdf_extension_util::PdfViewerContext::kPdfViewer, &dict);
-      pdf_extension_util::AddAdditionalData(true, false, &dict);
+      dict = pdf_extension_util::GetStrings(
+          pdf_extension_util::PdfViewerContext::kAll);
+      dict.Merge(pdf_extension_util::GetAdditionalData(browser_context()));
 #endif
       break;
     case api::resources_private::Component::kIdentity:

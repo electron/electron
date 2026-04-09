@@ -28,7 +28,7 @@ describe('node feature', () => {
         expect(msg).to.equal('message');
       });
 
-      it('Has its module searth paths restricted', async () => {
+      it('Has its module search paths restricted', async () => {
         const child = childProcess.fork(path.join(fixtures, 'module', 'module-paths.js'));
         const [msg] = await once(child, 'message');
         expect(msg.length).to.equal(2);
@@ -697,6 +697,27 @@ describe('node feature', () => {
       expect(code).to.equal(1);
     });
 
+    it('does allow --require in utility process of non-packaged apps', async () => {
+      const appPath = path.join(fixtures, 'apps', 'node-options-utility-process');
+      // App should exit with code 1.
+      const child = childProcess.spawn(process.execPath, [appPath]);
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(1);
+    });
+
+    it('does not allow --require in utility process of packaged apps', async () => {
+      const appPath = path.join(fixtures, 'apps', 'node-options-utility-process');
+      // App should exit with code 1.
+      const child = childProcess.spawn(process.execPath, [appPath], {
+        env: {
+          ...process.env,
+          ELECTRON_FORCE_IS_PACKAGED: 'true'
+        }
+      });
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
+    });
+
     it('does not allow --require in packaged apps', async () => {
       const appPath = path.join(fixtures, 'module', 'noop.js');
       const env = {
@@ -962,6 +983,17 @@ describe('node feature', () => {
     });
   });
 
+  itremote('handles assert module assertions as expected', () => {
+    const assert = require('node:assert');
+    try {
+      assert.ok(false);
+      expect.fail('assert.ok(false) should throw');
+    } catch (err) {
+      console.log(err);
+      expect(err).to.be.instanceOf(assert.AssertionError);
+    }
+  });
+
   it('Can find a module using a package.json main field', () => {
     const result = childProcess.spawnSync(process.execPath, [path.resolve(fixtures, 'api', 'electron-main-module', 'app.asar')], { stdio: 'inherit' });
     expect(result.status).to.equal(0);
@@ -996,6 +1028,28 @@ describe('node feature', () => {
         clearTimeout(timer);
         done();
       });
+    });
+  });
+
+  describe('type stripping', () => {
+    it('strips TypeScript types automatically in the main process', async () => {
+      const child = childProcess.spawn(process.execPath, [path.join(fixtures, 'type-stripping', 'basic.ts')]);
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('will not transform TypeScript types without --experimental-transform-types', async () => {
+      const child = childProcess.spawn(process.execPath, [path.join(fixtures, 'type-stripping', 'transform-types-node.ts')], {
+        env: { ELECTRON_RUN_AS_NODE: 'true' }
+      });
+      const [code] = await once(child, 'exit');
+      expect(code).to.not.equal(0);
+    });
+
+    it('transforms TypeScript types with --experimental-transform-types', async () => {
+      const child = childProcess.spawn(process.execPath, ['--experimental-transform-types', path.join(fixtures, 'type-stripping', 'transform-types.ts')]);
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
     });
   });
 });

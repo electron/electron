@@ -5,6 +5,8 @@
 #include "shell/browser/ui/views/frameless_view.h"
 
 #include "shell/browser/native_window_views.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
+#include "ui/aura/window.h"
 #include "ui/base/hit_test.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/views/widget/widget.h"
@@ -26,6 +28,10 @@ FramelessView::~FramelessView() = default;
 void FramelessView::Init(NativeWindowViews* window, views::Widget* frame) {
   window_ = window;
   frame_ = frame;
+}
+
+gfx::Insets FramelessView::RestoredFrameBorderInsets() const {
+  return gfx::Insets();
 }
 
 int FramelessView::ResizingBorderHitTest(const gfx::Point& point) {
@@ -94,7 +100,7 @@ views::View* FramelessView::TargetForRect(views::View* root,
   if (NonClientHitTest(rect.origin()) != HTCLIENT)
     return this;
 
-  return NonClientFrameView::TargetForRect(root, rect);
+  return FrameView::TargetForRect(root, rect);
 }
 
 gfx::Size FramelessView::CalculatePreferredSize(
@@ -106,15 +112,22 @@ gfx::Size FramelessView::CalculatePreferredSize(
 }
 
 gfx::Size FramelessView::GetMinimumSize() const {
-  return window_->GetContentMinimumSize();
+  if (!window_)
+    return gfx::Size();
+  return window_->GetMinimumSize();
 }
 
 gfx::Size FramelessView::GetMaximumSize() const {
-  gfx::Size size = window_->GetContentMaximumSize();
-  // Electron public APIs returns (0, 0) when maximum size is not set, but it
-  // would break internal window APIs like HWNDMessageHandler::SetAspectRatio.
-  return size.IsEmpty() ? gfx::Size(INT_MAX, INT_MAX) : size;
+  if (!window_)
+    return gfx::Size();
+  return window_->GetMaximumSize();
 }
+
+#if BUILDFLAG(IS_LINUX)
+LinuxFrameLayout* FramelessView::GetLinuxFrameLayout() const {
+  return nullptr;
+}
+#endif
 
 BEGIN_METADATA(FramelessView)
 END_METADATA

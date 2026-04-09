@@ -36,6 +36,8 @@ namespace electron {
 
 class ElectronBrowserContext;
 
+const char kDisableSerialBlocklist[] = "disable-serial-blocklist";
+
 inline constexpr std::string_view kPortNameKey = "name";
 inline constexpr std::string_view kTokenKey = "token";
 inline constexpr std::string_view kBluetoothDevicePathKey =

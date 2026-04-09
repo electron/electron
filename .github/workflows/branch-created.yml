@@ -14,7 +14,7 @@ permissions: {}
 jobs:
   release-branch-created:
     name: Release Branch Created
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.ref_type == 'branch' && endsWith(github.event.ref, '-x-y') && !startsWith(github.event.ref, 'roller')) }}
+    if: ${{ github.repository == 'electron/electron' && (github.event_name == 'workflow_dispatch' || (github.event.ref_type == 'branch' && endsWith(github.event.ref, '-x-y') && !startsWith(github.event.ref, 'roller'))) }}
     permissions:
       contents: read
       pull-requests: write
@@ -31,16 +31,46 @@ jobs:
           else
             echo "Not a release branch: $BRANCH_NAME"
           fi
+      - name: Determine Next Unsupported Major Version
+        id: determine-next-unsupported-major
+        if: ${{ steps.check-major-version.outputs.MAJOR }}
+        env:
+          MAJOR: ${{ steps.check-major-version.outputs.MAJOR }}
+        run: |
+          # Fetch the release schedule
+          SCHEDULE=$(curl -s https://releases.electronjs.org/schedule.json)
+
+          # Get the stableDate for the current major version
+          STABLE_DATE=$(echo "$SCHEDULE" | jq -r --arg major "${MAJOR}.0.0" '.[] | select(.version == $major) | .stableDate')
+
+          if [[ -z "$STABLE_DATE" || "$STABLE_DATE" == "null" ]]; then
+            echo "Could not find stableDate for version $MAJOR"
+            exit 1
+          fi
+
+          # Find the oldest version where eolDate >= stableDate of the new major
+          # This gives us the oldest supported version when the new major goes stable
+          NEXT_UNSUPPORTED_MAJOR=$(echo "$SCHEDULE" | jq -r --arg stableDate "$STABLE_DATE" '
+            [.[] | select(.eolDate != null and .eolDate >= $stableDate)] | sort_by(.version | split(".")[0] | tonumber) | first | .version | split(".")[0]
+          ')
+
+          if [[ -z "$NEXT_UNSUPPORTED_MAJOR" || "$NEXT_UNSUPPORTED_MAJOR" == "null" ]]; then
+            echo "Could not determine oldest supported version"
+            exit 1
+          fi
+
+          echo "SCHEDULE=$SCHEDULE" >> "$GITHUB_OUTPUT"
+          echo "NEXT_UNSUPPORTED_MAJOR=$NEXT_UNSUPPORTED_MAJOR" >> "$GITHUB_OUTPUT"
       - name: New Release Branch Tasks
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: electron/electron
           MAJOR: ${{ steps.check-major-version.outputs.MAJOR }}
-          NUM_SUPPORTED_VERSIONS: 3
+          NEXT_UNSUPPORTED_MAJOR: ${{ steps.determine-next-unsupported-major.outputs.NEXT_UNSUPPORTED_MAJOR }}
         run: |
           PREVIOUS_MAJOR=$((MAJOR - 1))
-          UNSUPPORTED_MAJOR=$((MAJOR - NUM_SUPPORTED_VERSIONS - 1))
+          UNSUPPORTED_MAJOR=$((NEXT_UNSUPPORTED_MAJOR - 1))
 
           # Create new labels
           gh label create $MAJOR-x-y --color 8d9ee8 || true
@@ -68,20 +98,44 @@ jobs:
           done
       - name: Generate GitHub App token
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: electron/github-app-auth-action@384fd19694fe7b6dcc9a684746c6976ad78228ae # v1.1.1
+        uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
         id: generate-token
         with:
           creds: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
           org: electron
       - name: Generate Release Project Board Metadata
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         id: generate-project-metadata
+        env:
+          MAJOR: ${{ steps.check-major-version.outputs.MAJOR }}
+          NEXT_UNSUPPORTED_MAJOR: ${{ steps.determine-next-unsupported-major.outputs.NEXT_UNSUPPORTED_MAJOR }}
+          SCHEDULE: ${{ steps.determine-next-unsupported-major.outputs.SCHEDULE }}
         with:
           script: |
-            const major = ${{ steps.check-major-version.outputs.MAJOR }}
+            const schedule = JSON.parse(process.env.SCHEDULE)
+
+            const major = parseInt(process.env.MAJOR)
             const nextMajor = major + 1
             const prevMajor = major - 1
+
+            const { betaDate, stableDate } = schedule.find(v => v.version === `${major}.0.0`)
+
+            const betaPrepWeek = new Date(betaDate)
+            betaPrepWeek.setDate(betaPrepWeek.getDate() - 8)
+            const betaPrepWeekEnd = new Date(betaPrepWeek)
+            betaPrepWeekEnd.setDate(betaPrepWeekEnd.getDate() + 4)
+
+            const stablePrepWeek = new Date(stableDate)
+            stablePrepWeek.setDate(stablePrepWeek.getDate() - 8)
+            const stablePrepWeekEnd = new Date(stablePrepWeek)
+            stablePrepWeekEnd.setDate(stablePrepWeekEnd.getDate() + 4)
+
+            const stableWeek = new Date(stableDate)
+            stableWeek.setDate(stableWeek.getDate() - 1)
+
+            const nextAlphaDate = new Date(stableDate)
+            nextAlphaDate.setDate(nextAlphaDate.getDate() + 2)
 
             core.setOutput("major", major)
             core.setOutput("next-major", nextMajor)
@@ -91,10 +145,19 @@ jobs:
                 major,
                 "next-major": nextMajor,
                 "prev-major": prevMajor,
+                "ending-support-major": parseInt(process.env.NEXT_UNSUPPORTED_MAJOR),
+                "beta-date": betaDate,
+                "beta-prep-week": betaPrepWeek.toISOString().split('T')[0],
+                "beta-prep-week-end": betaPrepWeekEnd.toISOString().split('T')[0],
+                "stable-week": stableWeek.toISOString().split('T')[0],
+                "stable-prep-week": stablePrepWeek.toISOString().split('T')[0],
+                "stable-prep-week-end": stablePrepWeekEnd.toISOString().split('T')[0],
+                "stable-date": stableDate,
+                "next-alpha-date": nextAlphaDate.toISOString().split('T')[0],
             }))
       - name: Create Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: dsanders11/project-actions/copy-project@438b25e007c2f4efec324497fadc6402e7cc61a6 # v1.4.0
+        uses: dsanders11/project-actions/copy-project@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
         id: create-release-board
         with:
           drafts: true
@@ -114,14 +177,15 @@ jobs:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
       - name: Find Previous Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: dsanders11/project-actions/find-project@438b25e007c2f4efec324497fadc6402e7cc61a6 # v1.4.0
+        uses: dsanders11/project-actions/find-project@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
         id: find-prev-release-board
         with:
+          fail-if-project-not-found: false
           title: ${{ steps.generate-project-metadata.outputs.prev-prev-major }}-x-y
           token: ${{ steps.generate-token.outputs.token }}
       - name: Close Previous Release Project Board
-        if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: dsanders11/project-actions/close-project@438b25e007c2f4efec324497fadc6402e7cc61a6 # v1.4.0
+        if: ${{ steps.find-prev-release-board.outputs.number }}
+        uses: dsanders11/project-actions/close-project@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
         with:
           project-number: ${{ steps.find-prev-release-board.outputs.number }}
           token: ${{ steps.generate-token.outputs.token }}

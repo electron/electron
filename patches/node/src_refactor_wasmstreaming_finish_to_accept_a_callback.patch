@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 15 Jan 2026 21:53:35 +0000
+Subject: src: refactor WasmStreaming::Finish to accept a callback
+
+Refactors WasmStreaming::Finish to accept a ModuleCachingCallback.
+
+See https://chromium-review.googlesource.com/c/v8/v8/+/7078551
+
+Patch can be removed after updating to a V8 version that includes this CL.
+
+diff --git a/src/node_wasm_web_api.cc b/src/node_wasm_web_api.cc
+index 365edbe3c2e1b4008507b6005371b2eb70ba2317..a1e52726f3a7d09081fcd79d94079c2ca98d112e 100644
+--- a/src/node_wasm_web_api.cc
++++ b/src/node_wasm_web_api.cc
+@@ -132,7 +132,7 @@ void WasmStreamingObject::Finish(const FunctionCallbackInfo<Value>& args) {
+   CHECK(obj->streaming_);
+ 
+   CHECK_EQ(args.Length(), 0);
+-  obj->streaming_->Finish();
++  obj->streaming_->Finish(WasmStreaming::ModuleCachingCallback{});
+ }
+ 
+ void WasmStreamingObject::Abort(const FunctionCallbackInfo<Value>& args) {

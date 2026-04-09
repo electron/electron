@@ -1,0 +1,83 @@
+name: 'Build Git Cache'
+description: 'Runs a gclient sync to build the git cache for Electron'
+inputs:
+  target-platform:
+    description: 'Target platform, should be linux, win, macos'    
+runs:
+  using: "composite"
+  steps:
+  - name: Set GIT_CACHE_PATH to make gclient to use the cache
+    shell: bash
+    run: |
+      echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
+  - name: Set Chromium Git Cookie
+    uses: ./src/electron/.github/actions/set-chromium-cookie
+  - name: Install Build Tools
+    uses: ./src/electron/.github/actions/install-build-tools
+  - name: Set up cache drive
+    shell: bash
+    run: |
+      if [ "${{ inputs.target-platform }}" = "win" ]; then
+        echo "CACHE_DRIVE=/mnt/win-cache" >> $GITHUB_ENV
+      else
+        echo "CACHE_DRIVE=/mnt/cross-instance-cache" >> $GITHUB_ENV
+      fi
+  - name: Check cross instance cache disk space
+    shell: bash
+    run: |    
+      # if there is less than 35 GB free space then creating the cache might fail so exit early
+      freespace=`df -m $CACHE_DRIVE | grep -w $CACHE_DRIVE | awk '{print $4}'`
+      freespace_human=`df -h $CACHE_DRIVE | grep -w $CACHE_DRIVE | awk '{print $4}'`
+      if [ $freespace -le 35000 ]; then
+        echo "The cross mount cache has $freespace_human free space which is not enough - exiting"
+        exit 1
+      else
+        echo "The cross mount cache has $freespace_human free space - continuing"
+      fi
+  - name: Restore gitcache
+    shell: bash
+    run: |
+      GIT_CACHE_TAR="$CACHE_DRIVE/gitcache.tar"
+      if [ ! -f "$GIT_CACHE_TAR" ]; then
+        echo "Git cache tar file does not exist, skipping restore"
+        exit 0
+      fi
+      echo "Restoring git cache from $GIT_CACHE_TAR to $GIT_CACHE_PATH"
+      mkdir -p $GIT_CACHE_PATH
+      tar -xf $GIT_CACHE_TAR -C $GIT_CACHE_PATH
+  - name: Gclient Sync
+    shell: bash
+    run: |
+      e d gclient config \
+        --name "src/electron" \
+        --unmanaged \
+        ${GCLIENT_EXTRA_ARGS} \
+        "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+
+      if [ "$TARGET_OS" != "" ]; then
+        echo "target_os=['$TARGET_OS']" >> ./.gclient
+      fi
+
+      ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 e d gclient sync --with_branch_heads --with_tags --nohooks -vv 
+  - name: Compress Git Cache Directory
+    shell: bash
+    run: |
+      echo "Uncompressed gitcache size: $(du -sh $GIT_CACHE_PATH | cut -f1 -d' ')"
+      cd $GIT_CACHE_PATH
+      tar -cf ../gitcache.tar .
+      cd ..
+      echo "Compressed gitcache to $(du -sh gitcache.tar | cut -f1 -d' ')"
+      # remove the old cache file if it exists 
+      if [ -f $CACHE_DRIVE/gitcache.tar ]; then
+        echo "Removing old gitcache.tar from $CACHE_DRIVE"
+        rm $CACHE_DRIVE/gitcache.tar
+      fi      
+      cp ./gitcache.tar $CACHE_DRIVE/
+  - name: Wait for active SSH sessions
+    shell: bash
+    if: always() && !cancelled()
+    run: |
+      while [ -f /var/.ssh-lock ]
+      do
+        sleep 60
+      done

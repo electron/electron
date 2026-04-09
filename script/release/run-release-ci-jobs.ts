@@ -1,5 +1,4 @@
 import { Octokit } from '@octokit/rest';
-import got, { OptionsOfTextResponseBody } from 'got';
 
 import * as assert from 'node:assert';
 
@@ -10,56 +9,16 @@ const octokit = new Octokit({
   authStrategy: createGitHubTokenStrategy(ELECTRON_REPO)
 });
 
-const BUILD_APPVEYOR_URL = 'https://ci.appveyor.com/api/builds';
 const GH_ACTIONS_PIPELINE_URL = 'https://github.com/electron/electron/actions';
-
 const GH_ACTIONS_WAIT_TIME = process.env.GH_ACTIONS_WAIT_TIME ? parseInt(process.env.GH_ACTIONS_WAIT_TIME, 10) : 30000;
-
-const appVeyorJobs = {
-  'electron-x64': 'electron-x64-release',
-  'electron-ia32': 'electron-ia32-release',
-  'electron-woa': 'electron-woa-release'
-};
 
 const ghActionsPublishWorkflows = [
   'linux-publish',
-  'macos-publish'
+  'macos-publish',
+  'windows-publish'
 ] as const;
 
 let jobRequestedCount = 0;
-
-type ReleaseBuildRequestOptions = {
-  auth?: {
-    bearer?: string;
-  };
-  url: string;
-  headers: Record<string, string>;
-  body: string,
-  method: 'GET' | 'POST';
-}
-
-async function makeRequest ({ auth, url, headers, body, method }: ReleaseBuildRequestOptions) {
-  const clonedHeaders = {
-    ...(headers || {})
-  };
-  if (auth?.bearer) {
-    clonedHeaders.Authorization = `Bearer ${auth.bearer}`;
-  }
-
-  const options: OptionsOfTextResponseBody = {
-    headers: clonedHeaders,
-    body,
-    method
-  };
-
-  const response = await got(url, options);
-
-  if (response.statusCode < 200 || response.statusCode >= 300) {
-    console.error('Error: ', `(status ${response.statusCode})`, response.body);
-    throw new Error(`Unexpected status code ${response.statusCode} from ${url}`);
-  }
-  return JSON.parse(response.body);
-}
 
 type GitHubActionsCallOptions = {
   ghRelease?: boolean;
@@ -175,73 +134,6 @@ async function getGitHubActionsRun (workflowName: string, headCommit: string) {
   return runNumber;
 }
 
-type AppVeyorCallOptions = {
-  ghRelease?: boolean;
-  commit?: string;
-}
-
-async function callAppVeyor (targetBranch: string, job: keyof typeof appVeyorJobs, options: AppVeyorCallOptions) {
-  console.log(`Triggering AppVeyor to run build job: ${job} on branch: ${targetBranch} with release flag.`);
-  const environmentVariables: Record<string, string | number> = {
-    ELECTRON_RELEASE: 1,
-    APPVEYOR_BUILD_WORKER_CLOUD: 'electronhq-16-core'
-  };
-
-  if (!options.ghRelease) {
-    environmentVariables.UPLOAD_TO_STORAGE = 1;
-  }
-
-  const requestOpts = {
-    url: BUILD_APPVEYOR_URL,
-    auth: {
-      bearer: process.env.APPVEYOR_CLOUD_TOKEN
-    },
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      accountName: 'electron-bot',
-      projectSlug: appVeyorJobs[job],
-      branch: targetBranch,
-      commitId: options.commit || undefined,
-      environmentVariables
-    }),
-    method: 'POST'
-  } as const;
-  jobRequestedCount++;
-
-  try {
-    const { version } = await makeRequest(requestOpts);
-    const buildUrl = `https://ci.appveyor.com/project/electron-bot/${appVeyorJobs[job]}/build/${version}`;
-    console.log(`AppVeyor release build request for ${job} successful.  Check build status at ${buildUrl}`);
-  } catch (err: any) {
-    if (err.response?.body) {
-      console.error('Could not call AppVeyor: ', {
-        statusCode: err.response.statusCode,
-        body: JSON.parse(err.response.body)
-      });
-    } else {
-      console.error('Error calling AppVeyor:', err);
-    }
-  }
-}
-
-type BuildAppVeyorOptions = {
-  job?: keyof typeof appVeyorJobs;
-} & AppVeyorCallOptions;
-
-async function buildAppVeyor (targetBranch: string, options: BuildAppVeyorOptions) {
-  const validJobs = Object.keys(appVeyorJobs) as (keyof typeof appVeyorJobs)[];
-  if (options.job) {
-    assert(validJobs.includes(options.job), `Unknown AppVeyor CI job name: ${options.job}.  Valid values are: ${validJobs}.`);
-    await callAppVeyor(targetBranch, options.job, options);
-  } else {
-    for (const job of validJobs) {
-      await callAppVeyor(targetBranch, job, options);
-    }
-  }
-}
-
 type BuildGHActionsOptions = {
   job?: typeof ghActionsPublishWorkflows[number];
   arch?: string;
@@ -263,20 +155,14 @@ async function buildGHActions (targetBranch: string, options: BuildGHActionsOpti
 type RunReleaseOptions = ({
   ci: 'GitHubActions'
 } & BuildGHActionsOptions) | ({
-  ci: 'AppVeyor'
-} & BuildAppVeyorOptions) | ({
   ci: undefined,
-} & BuildAppVeyorOptions & BuildGHActionsOptions);
+} & BuildGHActionsOptions);
 
 export async function runReleaseCIJobs (targetBranch: string, options: RunReleaseOptions) {
   if (options.ci) {
     switch (options.ci) {
       case 'GitHubActions': {
         await buildGHActions(targetBranch, options);
-        break;
-      }
-      case 'AppVeyor': {
-        await buildAppVeyor(targetBranch, options);
         break;
       }
       default: {
@@ -286,7 +172,6 @@ export async function runReleaseCIJobs (targetBranch: string, options: RunReleas
     }
   } else {
     await Promise.all([
-      buildAppVeyor(targetBranch, options),
       buildGHActions(targetBranch, options)
     ]);
   }

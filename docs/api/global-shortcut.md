@@ -8,12 +8,20 @@ The `globalShortcut` module can register/unregister a global keyboard shortcut
 with the operating system so that you can customize the operations for various
 shortcuts.
 
-**Note:** The shortcut is global; it will work even if the app does
-not have the keyboard focus. This module cannot be used before the `ready`
-event of the app module is emitted.
+> [!NOTE]
+> The shortcut is global; it will work even if the app does
+> not have the keyboard focus. This module cannot be used before the `ready`
+> event of the app module is emitted.
+> Please also note that it is also possible to use Chromium's
+> `GlobalShortcutsPortal` implementation, which allows apps to bind global
+> shortcuts when running within a Wayland session.
 
 ```js
 const { app, globalShortcut } = require('electron')
+
+// Enable usage of Portal's globalShortcuts. This is essential for cases when
+// the app runs in a Wayland session.
+app.commandLine.appendSwitch('enable-features', 'GlobalShortcutsPortal')
 
 app.whenReady().then(() => {
   // Register a 'CommandOrControl+X' shortcut listener.
@@ -38,13 +46,23 @@ app.on('will-quit', () => {
 })
 ```
 
+> [!TIP]
+> See also: [A detailed guide on Keyboard Shortcuts](../tutorial/keyboard-shortcuts.md).
+
 ## Methods
 
 The `globalShortcut` module has the following methods:
 
 ### `globalShortcut.register(accelerator, callback)`
 
-* `accelerator` [Accelerator](accelerator.md)
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/534
+```
+-->
+
+* `accelerator` string - An [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcut.
 * `callback` Function
 
 Returns `boolean` - Whether or not the shortcut was registered successfully.
@@ -66,7 +84,14 @@ the app has been authorized as a [trusted accessibility client](https://develope
 
 ### `globalShortcut.registerAll(accelerators, callback)`
 
-* `accelerators` [Accelerator](accelerator.md)[] - an array of [Accelerator](accelerator.md)s.
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/15542
+```
+-->
+
+* `accelerators` string[] - An array of [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcuts.
 * `callback` Function
 
 Registers a global shortcut of all `accelerator` items in `accelerators`. The `callback` is called when any of the registered shortcuts are pressed by the user.
@@ -85,7 +110,14 @@ the app has been authorized as a [trusted accessibility client](https://develope
 
 ### `globalShortcut.isRegistered(accelerator)`
 
-* `accelerator` [Accelerator](accelerator.md)
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/534
+```
+-->
+
+* `accelerator` string - An [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcut.
 
 Returns `boolean` - Whether this application has registered `accelerator`.
 
@@ -95,10 +127,55 @@ don't want applications to fight for global shortcuts.
 
 ### `globalShortcut.unregister(accelerator)`
 
-* `accelerator` [Accelerator](accelerator.md)
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/534
+```
+-->
+
+* `accelerator` string - An [accelerator](../tutorial/keyboard-shortcuts.md#accelerators) shortcut.
 
 Unregisters the global shortcut of `accelerator`.
 
 ### `globalShortcut.unregisterAll()`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/534
+```
+-->
+
 Unregisters all of the global shortcuts.
+
+### `globalShortcut.setSuspended(suspended)`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/50425
+```
+-->
+
+* `suspended` boolean - Whether global shortcut handling should be suspended.
+
+Suspends or resumes global shortcut handling. When suspended, all registered
+global shortcuts will stop listening for key presses. When resumed, all
+previously registered shortcuts will begin listening again. New shortcut
+registrations will fail while handling is suspended.
+
+This can be useful when you want to temporarily allow the user to press key
+combinations without your application intercepting them, for example while
+displaying a UI to rebind shortcuts.
+
+### `globalShortcut.isSuspended()`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/50425
+```
+-->
+
+Returns `boolean` - Whether global shortcut handling is currently suspended.

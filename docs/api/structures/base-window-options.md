@@ -58,8 +58,8 @@
   `false` on macOS. This option is not configurable on other platforms.
 * `disableAutoHideCursor` boolean (optional) - Whether to hide cursor when typing.
   Default is `false`.
-* `autoHideMenuBar` boolean (optional) - Auto hide the menu bar unless the `Alt`
-  key is pressed. Default is `false`.
+* `autoHideMenuBar` boolean (optional) _Linux_ _Windows_ - Auto hide the menu bar
+  unless the `Alt` key is pressed. Default is `false`.
 * `enableLargerThanScreen` boolean (optional) _macOS_ - Enable the window to
   be resized larger than screen. Only relevant for macOS, as other OSes
   allow larger-than-screen windows by default. Default is `false`.
@@ -72,6 +72,9 @@
   some GTK+3 desktop environments. Default is `false`.
 * `transparent` boolean (optional) - Makes the window [transparent](../../tutorial/custom-window-styles.md#transparent-windows).
   Default is `false`. On Windows, does not work unless the window is frameless.
+  When you add a [`View`](../view.md) to a `BaseWindow`, you'll need to call
+  [`view.setBackgroundColor`](../view.md#viewsetbackgroundcolorcolor) with a transparent
+  background color on that view to make its background transparent as well.
 * `type` string (optional) - The type of window, default is normal window. See more about
   this below.
 * `visualEffectState` string (optional) _macOS_ - Specify how the material
@@ -93,16 +96,19 @@
     **Note:** This option is currently experimental.
 * `titleBarOverlay` Object | Boolean (optional) -  When using a frameless window in conjunction with `win.setWindowButtonVisibility(true)` on macOS or using a `titleBarStyle` so that the standard window controls ("traffic lights" on macOS) are visible, this property enables the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars]. Specifying `true` will result in an overlay with default system colors. Default is `false`.
   * `color` String (optional) _Windows_ _Linux_ - The CSS color of the Window Controls Overlay when enabled. Default is the system color.
-  * `symbolColor` String (optional) _Windows_ - The CSS color of the symbols on the Window Controls Overlay when enabled. Default is the system color.
+  * `symbolColor` String (optional) _Windows_ _Linux_ - The CSS color of the symbols on the Window Controls Overlay when enabled. Default is the system color.
   * `height` Integer (optional) - The height of the title bar and Window Controls Overlay in pixels. Default is system height.
+* `accentColor` boolean | string (optional) _Windows_ - The accent color for the window. By default, follows user preference in System Settings. Set to `false` to explicitly disable, or set the color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. Alpha values will be ignored.
 * `trafficLightPosition` [Point](point.md) (optional) _macOS_ -
   Set a custom position for the traffic light buttons in frameless windows.
-* `roundedCorners` boolean (optional) _macOS_ - Whether frameless window
-  should have rounded corners on macOS. Default is `true`. Setting this property
-  to `false` will prevent the window from being fullscreenable.
-* `thickFrame` boolean (optional) - Use `WS_THICKFRAME` style for frameless windows on
-  Windows, which adds standard window frame. Setting it to `false` will remove
-  window shadow and window animations. Default is `true`.
+* `roundedCorners` boolean (optional) _macOS_ _Windows_ - Whether frameless window
+  should have rounded corners. Default is `true`. On Windows versions older than
+  Windows 11 Build 22000 this property has no effect, and frameless windows will
+  not have rounded corners.
+* `thickFrame` boolean (optional) _Windows_ - Use `WS_THICKFRAME` style for
+  frameless windows on Windows, which adds the standard window frame. Setting it
+  to `false` will remove window shadow and window animations, and disable window
+  resizing via dragging the window edges. Default is `true`.
 * `vibrancy` string (optional) _macOS_ - Add a type of vibrancy effect to
   the window, only on macOS. Can be `appearance-based`, `titlebar`, `selection`,
   `menu`, `popover`, `sidebar`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`,
@@ -149,7 +155,7 @@ Possible values are:
     focus, keyboard or mouse events, but you can use `globalShortcut` to receive
     input sparingly.
   * The `panel` type enables the window to float on top of full-screened apps
-    by adding the `NSWindowStyleMaskNonactivatingPanel` style mask,normally
+    by adding the `NSWindowStyleMaskNonactivatingPanel` style mask, normally
     reserved for NSPanel, at runtime. Also, the window will appear on all
     spaces (desktops).
 * On Windows, possible type is `toolbar`.

@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Calvin Watford <cwatford@slack-corp.com>
+Date: Wed, 4 Jun 2025 14:48:32 -0600
+Subject: Use UTType class instead of deprecated UTTypeConformsTo
+
+macOS 12 removed support for the deprecated UTTypeConformsTo function. Its replacement is the dedicated UTType class in the Uniform Type Identifiers framework.
+
+diff --git a/BUILD.gn b/BUILD.gn
+index a02e5f54d923513fd0676e91a99b8913bad6a57e..6f32c4b203a0efa2ccd515e3754494deef5b39f0 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -234,6 +234,7 @@ mac_framework_bundle("squirrel_framework") {
+     "IOKit.framework",
+     "Security.framework",
+     "ServiceManagement.framework",
++    "UniformTypeIdentifiers.framework",
+   ]
+   sources = squirrel_filenames.headers + squirrel_filenames.sources
+ 
+diff --git a/Squirrel/SQRLUpdater.m b/Squirrel/SQRLUpdater.m
+index 592c7ea51515aab96934e0117df3c8065494fa09..d156616e81e6f25a3bded30e6216b8fc311f31bc 100644
+--- a/Squirrel/SQRLUpdater.m
++++ b/Squirrel/SQRLUpdater.m
+@@ -21,6 +21,7 @@
+ #import <ReactiveObjC/EXTScope.h>
+ #import <ReactiveObjC/ReactiveObjC.h>
+ #import <sys/mount.h>
++#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
+ 
+ NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
+ NSString * const SQRLUpdaterServerDataErrorKey = @"SQRLUpdaterServerDataErrorKey";
+@@ -590,7 +591,8 @@ - (RACSignal *)updateBundleMatchingCurrentApplicationInDirectory:(NSURL *)direct
+ 					return NO;
+ 				}
+ 
+-				if (!UTTypeConformsTo((__bridge CFStringRef)type, kUTTypeApplicationBundle)) return NO;
++				UTType *uttype = [UTType typeWithIdentifier:type];
++				if (uttype == nil || ![uttype conformsToType:UTTypeApplicationBundle]) return NO;
+ 
+ 				NSBundle *bundle = [NSBundle bundleWithURL:URL];
+ 				if (bundle == nil) {

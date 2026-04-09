@@ -1,0 +1,166 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 7 Mar 2025 11:18:41 -0600
+Subject: refactor: attach cppgc heap on v8::Isolate creation
+
+Refs https://issues.chromium.org/issues/42203693
+
+v8/Node Commits by V8 Team:
+
+* https://github.com/v8/node/pull/208
+* https://github.com/v8/node/pull/209
+* https://github.com/v8/node/pull/210
+* https://github.com/v8/node/pull/211
+* https://github.com/v8/node/pull/212
+* https://github.com/v8/node/pull/213
+
+This can be removed when Node.js upgrades to a version of V8 containing CLs
+from the above issue.
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index 5f51ad205189bd75d0d9638b1104c12b537b4e9b..8974bac7dca43294cc5cc4570f8e2e78f42aefaa 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -323,6 +323,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
+                     MultiIsolatePlatform* platform,
+                     const SnapshotData* snapshot_data,
+                     const IsolateSettings& settings) {
++  if (params->cpp_heap == nullptr) {
++    params->cpp_heap =
++        v8::CppHeap::Create(platform, v8::CppHeapCreateParams{{}}).release();
++  }
+   IsolateGroup group = GetOrCreateIsolateGroup();
+   Isolate* isolate = Isolate::Allocate(group);
+   if (isolate == nullptr) return nullptr;
+@@ -373,9 +377,12 @@ Isolate* NewIsolate(ArrayBufferAllocator* allocator,
+                     uv_loop_t* event_loop,
+                     MultiIsolatePlatform* platform,
+                     const EmbedderSnapshotData* snapshot_data,
+-                    const IsolateSettings& settings) {
++                    const IsolateSettings& settings,
++                    std::unique_ptr<v8::CppHeap> cpp_heap) {
+   Isolate::CreateParams params;
+   if (allocator != nullptr) params.array_buffer_allocator = allocator;
++  if (cpp_heap)
++    params.cpp_heap = cpp_heap.release();
+   return NewIsolate(&params,
+                     event_loop,
+                     platform,
+diff --git a/src/cppgc_helpers-inl.h b/src/cppgc_helpers-inl.h
+index 745ecab746f7c7540733d31a94f52809dcddd5be..0e52bf5a6f4837d0f4bfed83987c6903796fda55 100644
+--- a/src/cppgc_helpers-inl.h
++++ b/src/cppgc_helpers-inl.h
+@@ -15,11 +15,12 @@ void CppgcMixin::Wrap(T* ptr, Realm* realm, v8::Local<v8::Object> obj) {
+   v8::Isolate* isolate = realm->isolate();
+   ptr->traced_reference_ = v8::TracedReference<v8::Object>(isolate, obj);
+   // Note that ptr must be of concrete type T in Wrap.
+-  v8::Object::Wrap<v8::CppHeapPointerTag::kDefaultTag>(isolate, obj, ptr);
++  auto* wrappable = static_cast<v8::Object::Wrappable*>(ptr);
++  v8::Object::Wrap<v8::CppHeapPointerTag::kDefaultTag>(isolate, obj, wrappable);
+   // Keep the layout consistent with BaseObjects.
+   obj->SetAlignedPointerInInternalField(
+-      kEmbedderType, realm->isolate_data()->embedder_id_for_cppgc());
+-  obj->SetAlignedPointerInInternalField(kSlot, ptr);
++      kEmbedderType, realm->isolate_data()->embedder_id_for_cppgc(), 0);
++  obj->SetAlignedPointerInInternalField(kSlot, ptr, 0);
+   realm->TrackCppgcWrapper(ptr);
+ }
+ 
+@@ -40,7 +41,7 @@ T* CppgcMixin::Unwrap(v8::Local<v8::Object> obj) {
+   if (obj->InternalFieldCount() != T::kInternalFieldCount) {
+     return nullptr;
+   }
+-  T* ptr = static_cast<T*>(obj->GetAlignedPointerFromInternalField(T::kSlot));
++  T* ptr = static_cast<T*>(obj->GetAlignedPointerFromInternalField(T::kSlot, 0));
+   return ptr;
+ }
+ 
+diff --git a/src/cppgc_helpers.h b/src/cppgc_helpers.h
+index fb2af584a4ae777022c9ef8c20ada1edcbbbefdc..fe6300a5d5d2d6602a84cbd33736c2133041d1b0 100644
+--- a/src/cppgc_helpers.h
++++ b/src/cppgc_helpers.h
+@@ -155,7 +155,7 @@ class CppgcMixin : public cppgc::GarbageCollectedMixin, public MemoryRetainer {
+  */
+ #define CPPGC_MIXIN(Klass)                                                     \
+   public /* NOLINT(whitespace/indent) */                                       \
+-  cppgc::GarbageCollected<Klass>, public cppgc::NameProvider, public CppgcMixin
++  v8::Object::Wrappable, public CppgcMixin
+ 
+ #endif  // defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
+ 
+diff --git a/src/env.cc b/src/env.cc
+index fdabe48dd7776c59298f7d972286d0d2ed062752..b5cf58cc953590493beb52abf249e33e486ffc46 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -611,7 +611,7 @@ IsolateData::~IsolateData() {}
+ // Deprecated API, embedders should use v8::Object::Wrap() directly instead.
+ void SetCppgcReference(Isolate* isolate,
+                        Local<Object> object,
+-                       void* wrappable) {
++                       v8::Object::Wrappable* wrappable) {
+   v8::Object::Wrap<v8::CppHeapPointerTag::kDefaultTag>(
+       isolate, object, wrappable);
+ }
+diff --git a/src/node.h b/src/node.h
+index b92a9d42da8419741c435643b7401efcb21a9e8b..bbe35c7a8f1bc0bcddf628af42b71efaef8a7759 100644
+--- a/src/node.h
++++ b/src/node.h
+@@ -78,6 +78,7 @@
+ #endif
+ 
+ #include "v8.h"  // NOLINT(build/include_order)
++#include "v8-cppgc.h"  // NOLINT(build/include_order)
+ 
+ #include "v8-platform.h"  // NOLINT(build/include_order)
+ #include "node_version.h"  // NODE_MODULE_VERSION
+@@ -603,7 +604,8 @@ NODE_EXTERN v8::Isolate* NewIsolate(
+     struct uv_loop_s* event_loop,
+     MultiIsolatePlatform* platform,
+     const EmbedderSnapshotData* snapshot_data = nullptr,
+-    const IsolateSettings& settings = {});
++    const IsolateSettings& settings = {},
++    std::unique_ptr<v8::CppHeap> cpp_heap = {});
+ NODE_EXTERN v8::Isolate* NewIsolate(
+     std::shared_ptr<ArrayBufferAllocator> allocator,
+     struct uv_loop_s* event_loop,
+@@ -1702,9 +1704,10 @@ void RegisterSignalHandler(int signal,
+ // work with only Node.js versions with v8::Object::Wrap() should use that
+ // instead.
+ NODE_DEPRECATED("Use v8::Object::Wrap()",
+-                NODE_EXTERN void SetCppgcReference(v8::Isolate* isolate,
+-                                                   v8::Local<v8::Object> object,
+-                                                   void* wrappable));
++                NODE_EXTERN void SetCppgcReference(
++                  v8::Isolate* isolate,
++                  v8::Local<v8::Object> object,
++                  v8::Object::Wrappable* wrappable));
+ 
+ }  // namespace node
+ 
+diff --git a/src/node_main_instance.cc b/src/node_main_instance.cc
+index 6f674df3ed0dc1b4e5cd3a249fb787a9fc98361d..90f9eb84b6835c36a91ce23d77722812ce173c0f 100644
+--- a/src/node_main_instance.cc
++++ b/src/node_main_instance.cc
+@@ -44,6 +44,8 @@ NodeMainInstance::NodeMainInstance(const SnapshotData* snapshot_data,
+       isolate_params_(std::make_unique<Isolate::CreateParams>()),
+       snapshot_data_(snapshot_data) {
+   isolate_params_->array_buffer_allocator = array_buffer_allocator_.get();
++  isolate_params_->cpp_heap =
++      v8::CppHeap::Create(platform_, v8::CppHeapCreateParams{{}}).release();
+ 
+   isolate_ =
+       NewIsolate(isolate_params_.get(), event_loop, platform, snapshot_data);
+diff --git a/src/node_worker.cc b/src/node_worker.cc
+index fa7dc52b19119ed3d2dc407c029f56107476bc39..1acc61af0c995ddefbc00fe232b2454de77a84a3 100644
+--- a/src/node_worker.cc
++++ b/src/node_worker.cc
+@@ -181,6 +181,9 @@ class WorkerThreadData {
+     SetIsolateCreateParamsForNode(&params);
+     w->UpdateResourceConstraints(&params.constraints);
+     params.array_buffer_allocator_shared = allocator;
++    params.cpp_heap =
++        v8::CppHeap::Create(w->platform_, v8::CppHeapCreateParams{{}})
++            .release();
+     Isolate* isolate =
+         NewIsolate(&params, &loop_, w->platform_, w->snapshot_data());
+     if (isolate == nullptr) {

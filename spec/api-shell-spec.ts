@@ -3,6 +3,7 @@ import { BrowserWindow, app } from 'electron/main';
 
 import { expect } from 'chai';
 
+import { execSync } from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -16,6 +17,15 @@ describe('shell module', () => {
   describe('shell.openExternal()', () => {
     let envVars: Record<string, string | undefined> = {};
     let server: http.Server;
+
+    after(function () {
+      this.timeout(60000);
+      if (process.env.CI && process.platform === 'win32') {
+        // Edge may cause issues with visibility tests, so make sure it is closed after testing.
+        const killEdge = 'Get-Process | Where Name -Like "msedge" | Stop-Process';
+        execSync(killEdge, { shell: 'powershell.exe' });
+      }
+    });
 
     beforeEach(function () {
       envVars = {
@@ -70,6 +80,11 @@ describe('shell module', () => {
         shell.openExternal(url),
         requestReceived
       ]);
+    });
+
+    ifit(process.platform === 'darwin')('throws when there is no application registered to open the URL', async () => {
+      const url = `unknownscheme-${Date.now()}://test`;
+      await expect(shell.openExternal(url)).to.eventually.be.rejectedWith(/No application found to open URL/);
     });
 
     it('opens an external link in the renderer', async () => {
@@ -155,6 +170,16 @@ describe('shell module', () => {
     it('writes the shortcut', () => {
       expect(shell.writeShortcutLink(tmpShortcut, { target: 'C:\\' })).to.be.true();
       expect(fs.existsSync(tmpShortcut)).to.be.true();
+    });
+
+    it('writes the shortcut with omitted operation (defaults to create)', () => {
+      expect(shell.writeShortcutLink(tmpShortcut, shortcutOptions)).to.be.true();
+      expect(fs.existsSync(tmpShortcut)).to.be.true();
+      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(shortcutOptions);
+
+      const newOptions = { ...shortcutOptions, description: 'new description' };
+      expect(shell.writeShortcutLink(tmpShortcut, newOptions)).to.be.true();
+      expect(shell.readShortcutLink(tmpShortcut)).to.deep.equal(newOptions);
     });
 
     it('correctly sets the fields', () => {

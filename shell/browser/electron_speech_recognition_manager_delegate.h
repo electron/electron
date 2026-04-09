@@ -29,8 +29,8 @@ class ElectronSpeechRecognitionManagerDelegate
       override;
   content::SpeechRecognitionEventListener* GetEventListener() override;
   void BindSpeechRecognitionContext(
-      mojo::PendingReceiver<media::mojom::SpeechRecognitionContext> receiver)
-      override;
+      mojo::PendingReceiver<media::mojom::SpeechRecognitionContext> receiver,
+      const std::string& language) override;
 };
 
 }  // namespace electron

@@ -5,6 +5,7 @@
 #include "shell/browser/osr/osr_web_contents_view.h"
 
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/native_window.h"
@@ -16,9 +17,14 @@ namespace electron {
 OffScreenWebContentsView::OffScreenWebContentsView(
     bool transparent,
     bool offscreen_use_shared_texture,
+    const std::string& offscreen_shared_texture_pixel_format,
+    float offscreen_device_scale_factor,
     const OnPaintCallback& callback)
     : transparent_(transparent),
       offscreen_use_shared_texture_(offscreen_use_shared_texture),
+      offscreen_shared_texture_pixel_format_(
+          offscreen_shared_texture_pixel_format),
+      offscreen_device_scale_factor_(offscreen_device_scale_factor),
       callback_(callback) {
 #if BUILDFLAG(IS_MAC)
   PlatformCreate();
@@ -40,6 +46,10 @@ void OffScreenWebContentsView::SetWebContents(
 
   if (auto* view = GetView())
     view->InstallTransparency();
+}
+
+void OffScreenWebContentsView::SetCallback(const OnPaintCallback& callback) {
+  callback_ = callback;
 }
 
 void OffScreenWebContentsView::SetNativeWindow(NativeWindow* window) {
@@ -67,7 +77,7 @@ void OffScreenWebContentsView::OnWindowClosed() {
   }
 }
 
-gfx::Size OffScreenWebContentsView::GetSize() {
+gfx::Size OffScreenWebContentsView::GetSize() const {
   return native_window_ ? native_window_->GetSize() : gfx::Size();
 }
 
@@ -112,8 +122,10 @@ OffScreenWebContentsView::CreateViewForWidget(
     return static_cast<content::RenderWidgetHostViewBase*>(rwhv);
 
   return new OffScreenRenderWidgetHostView(
-      transparent_, offscreen_use_shared_texture_, painting_, GetFrameRate(),
-      callback_, render_widget_host, nullptr, GetSize());
+      transparent_, offscreen_use_shared_texture_,
+      offscreen_shared_texture_pixel_format_, offscreen_device_scale_factor_,
+      painting_, GetFrameRate(), callback_, render_widget_host, nullptr,
+      GetSize());
 }
 
 content::RenderWidgetHostViewBase*
@@ -122,14 +134,20 @@ OffScreenWebContentsView::CreateViewForChildWidget(
   auto* web_contents_impl =
       static_cast<content::WebContentsImpl*>(web_contents_);
 
-  auto* view = static_cast<OffScreenRenderWidgetHostView*>(
-      web_contents_impl->GetOuterWebContents()
-          ? web_contents_impl->GetOuterWebContents()->GetRenderWidgetHostView()
-          : web_contents_impl->GetRenderWidgetHostView());
+  OffScreenRenderWidgetHostView* embedder_host_view = nullptr;
+  if (web_contents_impl->GetOuterWebContents()) {
+    embedder_host_view = static_cast<OffScreenRenderWidgetHostView*>(
+        web_contents_impl->GetOuterWebContents()->GetRenderWidgetHostView());
+  } else {
+    embedder_host_view = static_cast<OffScreenRenderWidgetHostView*>(
+        web_contents_impl->GetRenderWidgetHostView());
+  }
 
   return new OffScreenRenderWidgetHostView(
-      transparent_, offscreen_use_shared_texture_, painting_,
-      view->frame_rate(), callback_, render_widget_host, view, GetSize());
+      transparent_, offscreen_use_shared_texture_,
+      offscreen_shared_texture_pixel_format_, offscreen_device_scale_factor_,
+      painting_, embedder_host_view->frame_rate(), callback_,
+      render_widget_host, embedder_host_view, GetSize());
 }
 
 void OffScreenWebContentsView::RenderViewReady() {
@@ -144,17 +162,19 @@ bool OffScreenWebContentsView::CloseTabAfterEventTrackingIfNeeded() {
 #endif  // BUILDFLAG(IS_MAC)
 
 void OffScreenWebContentsView::StartDragging(
+    content::RenderFrameHost& source_rfh,
     const content::DropData& drop_data,
-    const url::Origin& source_origin,
     blink::DragOperationsMask allowed_ops,
     const gfx::ImageSkia& image,
     const gfx::Vector2d& cursor_offset,
     const gfx::Rect& drag_obj_rect,
-    const blink::mojom::DragEventSourceInfo& event_info,
-    content::RenderWidgetHostImpl* source_rwh) {
-  if (web_contents_)
+    const blink::mojom::DragEventSourceInfo& event_info) {
+  if (web_contents_) {
+    auto* source_rwh = static_cast<content::RenderWidgetHostImpl*>(
+        source_rfh.GetRenderWidgetHost());
     static_cast<content::WebContentsImpl*>(web_contents_)
         ->SystemDragEnded(source_rwh);
+  }
 }
 
 void OffScreenWebContentsView::SetPainting(bool painting) {

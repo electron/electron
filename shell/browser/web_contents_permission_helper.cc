@@ -10,6 +10,7 @@
 #include "components/content_settings/core/common/content_settings.h"
 #include "components/webrtc/media_stream_devices_controller.h"
 #include "content/public/browser/browser_context.h"
+#include "content/public/browser/permission_descriptor_util.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "shell/browser/electron_browser_context.h"
@@ -101,16 +102,20 @@ void HandleUserMediaRequest(const content::MediaStreamRequest& request,
             : "");
   }
 
-  if (request.video_type == MediaStreamType::GUM_TAB_VIDEO_CAPTURE ||
-      request.video_type == MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE) {
+  if (request.video_type == MediaStreamType::GUM_TAB_VIDEO_CAPTURE) {
+    devices_ref.video_device =
+        blink::MediaStreamDevice(request.video_type, "", "");
+  } else if (request.video_type == MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE) {
+    // If the DesktopMediaID can't be successfully parsed, throw an
+    // Invalid state error to match upstream.
+    auto dm_id = GetScreenId(request.requested_video_device_ids);
+    if (dm_id.is_null()) {
+      std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                              MediaStreamRequestResult::INVALID_STATE, nullptr);
+      return;
+    }
     devices_ref.video_device = blink::MediaStreamDevice(
-        request.video_type,
-        request.video_type == MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE
-            ? GetScreenId(request.requested_video_device_ids).ToString()
-            : "",
-        request.video_type == MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE
-            ? "Screen"
-            : "");
+        request.video_type, dm_id.ToString(), "Screen");
   }
 
   bool empty = !devices_ref.audio_device.has_value() &&
@@ -190,8 +195,8 @@ void MediaAccessAllowed(const content::MediaStreamRequest& request,
 }
 
 void OnPermissionResponse(base::OnceCallback<void(bool)> callback,
-                          blink::mojom::PermissionStatus status) {
-  if (status == blink::mojom::PermissionStatus::GRANTED)
+                          content::PermissionResult result) {
+  if (result.status == blink::mojom::PermissionStatus::GRANTED)
     std::move(callback).Run(true);
   else
     std::move(callback).Run(false);
@@ -211,33 +216,34 @@ void WebContentsPermissionHelper::RequestPermission(
     blink::PermissionType permission,
     base::OnceCallback<void(bool)> callback,
     bool user_gesture,
-    base::Value::Dict details) {
+    base::DictValue details) {
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
-  auto origin = web_contents_->GetLastCommittedURL();
+  auto origin = requesting_frame->GetLastCommittedOrigin().GetURL();
   permission_manager->RequestPermissionWithDetails(
-      permission, requesting_frame, origin, false, std::move(details),
+      content::PermissionDescriptorUtil::
+          CreatePermissionDescriptorForPermissionType(permission),
+      requesting_frame, origin, false, std::move(details),
       base::BindOnce(&OnPermissionResponse, std::move(callback)));
 }
 
 bool WebContentsPermissionHelper::CheckPermission(
+    content::RenderFrameHost* requesting_frame,
     blink::PermissionType permission,
-    base::Value::Dict details) const {
-  auto* rfh = web_contents_->GetPrimaryMainFrame();
+    base::DictValue details) const {
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
-  auto origin = web_contents_->GetLastCommittedURL();
-  return permission_manager->CheckPermissionWithDetails(permission, rfh, origin,
-                                                        std::move(details));
+  auto origin = requesting_frame->GetLastCommittedOrigin().GetURL();
+  return permission_manager->CheckPermissionWithDetails(
+      permission, requesting_frame, origin, std::move(details));
 }
 
 void WebContentsPermissionHelper::RequestFullscreenPermission(
     content::RenderFrameHost* requesting_frame,
     base::OnceCallback<void(bool)> callback) {
-  RequestPermission(
-      requesting_frame,
-      static_cast<blink::PermissionType>(PermissionType::FULLSCREEN),
-      std::move(callback));
+  RequestPermission(requesting_frame,
+                    blink::PermissionType::ELECTRON_FULLSCREEN,
+                    std::move(callback));
 }
 
 void WebContentsPermissionHelper::RequestMediaAccessPermission(
@@ -246,8 +252,8 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
   auto callback = base::BindOnce(&MediaAccessAllowed, request,
                                  std::move(response_callback));
 
-  base::Value::Dict details;
-  base::Value::List media_types;
+  base::DictValue details;
+  base::ListValue media_types;
   if (request.audio_type ==
       blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
     media_types.Append("audio");
@@ -300,33 +306,32 @@ void WebContentsPermissionHelper::RequestOpenExternalPermission(
     base::OnceCallback<void(bool)> callback,
     bool user_gesture,
     const GURL& url) {
-  base::Value::Dict details;
+  base::DictValue details;
   details.Set("externalURL", url.spec());
-  RequestPermission(
-      requesting_frame,
-      static_cast<blink::PermissionType>(PermissionType::OPEN_EXTERNAL),
-      std::move(callback), user_gesture, std::move(details));
+  RequestPermission(requesting_frame, blink::PermissionType::OPEN_EXTERNAL,
+                    std::move(callback), user_gesture, std::move(details));
 }
 
 bool WebContentsPermissionHelper::CheckMediaAccessPermission(
+    content::RenderFrameHost* requesting_frame,
     const url::Origin& security_origin,
     blink::mojom::MediaStreamType type) const {
-  base::Value::Dict details;
+  base::DictValue details;
   details.Set("securityOrigin", security_origin.GetURL().spec());
   details.Set("mediaType", MediaStreamTypeToString(type));
   auto blink_type = type == blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE
                         ? blink::PermissionType::AUDIO_CAPTURE
                         : blink::PermissionType::VIDEO_CAPTURE;
-  return CheckPermission(blink_type, std::move(details));
+  return CheckPermission(requesting_frame, blink_type, std::move(details));
 }
 
 bool WebContentsPermissionHelper::CheckSerialAccessPermission(
-    const url::Origin& embedding_origin) const {
-  base::Value::Dict details;
-  details.Set("securityOrigin", embedding_origin.GetURL().spec());
-  return CheckPermission(
-      static_cast<blink::PermissionType>(PermissionType::SERIAL),
-      std::move(details));
+    content::RenderFrameHost* requesting_frame) const {
+  base::DictValue details;
+  details.Set("securityOrigin",
+              requesting_frame->GetLastCommittedOrigin().GetURL().spec());
+  return CheckPermission(requesting_frame, blink::PermissionType::SERIAL,
+                         std::move(details));
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPermissionHelper);

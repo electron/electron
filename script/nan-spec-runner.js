@@ -6,10 +6,10 @@ const path = require('node:path');
 
 const BASE = path.resolve(__dirname, '../..');
 const NAN_DIR = path.resolve(BASE, 'third_party', 'nan');
-const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const NODE_GYP_BIN = path.join(NAN_DIR, 'node_modules', 'node-gyp', 'bin', 'node-gyp.js');
 
 const utils = require('./lib/utils');
-const { YARN_VERSION } = require('./yarn');
+const { YARN_SCRIPT_PATH } = require('./yarn');
 
 if (!require.main) {
   throw new Error('Must call the nan spec runner directly');
@@ -19,14 +19,6 @@ const args = minimist(process.argv.slice(2), {
   string: ['only']
 });
 
-const getNodeGypVersion = () => {
-  const nanPackageJSONPath = path.join(NAN_DIR, 'package.json');
-  const nanPackageJSON = JSON.parse(fs.readFileSync(nanPackageJSONPath, 'utf8'));
-  const { devDependencies } = nanPackageJSON;
-  const nodeGypVersion = devDependencies['node-gyp'];
-  return nodeGypVersion || 'latest';
-};
-
 async function main () {
   const outDir = utils.getOutDir({ shouldLog: true });
   const nodeDir = path.resolve(BASE, 'out', outDir, 'gen', 'node_headers');
@@ -34,8 +26,7 @@ async function main () {
     npm_config_msvs_version: '2022',
     ...process.env,
     npm_config_nodedir: nodeDir,
-    npm_config_arch: process.env.NPM_CONFIG_ARCH,
-    npm_config_yes: 'true'
+    npm_config_arch: process.env.NPM_CONFIG_ARCH
   };
 
   const clangDir = path.resolve(BASE, 'third_party', 'llvm-build', 'Release+Asserts', 'bin');
@@ -46,26 +37,31 @@ async function main () {
   const platformFlags = [];
   if (process.platform === 'darwin') {
     const sdkPath = path.resolve(BASE, 'out', outDir, 'sdk', 'xcode_links');
-    const sdks = (await fs.promises.readdir(sdkPath)).filter(fileName => fileName.endsWith('.sdk'));
-    const sdkToUse = sdks[0];
-    if (!sdkToUse) {
+    const sdks = (await fs.promises.readdir(sdkPath)).filter(f => f.endsWith('.sdk'));
+
+    if (!sdks.length) {
       console.error('Could not find an SDK to use for the NAN tests');
       process.exit(1);
     }
 
-    if (sdks.length) {
-      console.warn(`Multiple SDKs found in the xcode_links directory - using ${sdkToUse}`);
+    const sdkToUse = sdks.sort((a, b) => {
+      const getVer = s => s.match(/(\d+)\.?(\d*)/)?.[0] || '0';
+      return getVer(b).localeCompare(getVer(a), undefined, { numeric: true });
+    })[0];
+
+    if (sdks.length > 1) {
+      console.warn(`Multiple SDKs found - using ${sdkToUse}`);
     }
 
-    platformFlags.push(
-      `-isysroot ${path.resolve(sdkPath, sdkToUse)}`
-    );
+    platformFlags.push(`-isysroot ${path.resolve(sdkPath, sdkToUse)}`);
   }
 
-  // TODO(ckerr) this is cribbed from read obj/electron/electron_app.ninja.
-  // Maybe it would be better to have this script literally open up that
-  // file and pull cflags_cc from it instead of using bespoke code here?
-  // I think it's unlikely to work; but if it does, it would be more futureproof
+  const cflags = [
+    '-Wno-trigraphs',
+    '-fPIC',
+    ...platformFlags
+  ].join(' ');
+
   const cxxflags = [
     '-std=c++20',
     '-Wno-trigraphs',
@@ -93,45 +89,38 @@ async function main () {
 
   if (process.platform !== 'win32') {
     env.CC = cc;
-    env.CFLAGS = cxxflags;
+    env.CFLAGS = cflags;
     env.CXX = cxx;
-    env.LD = ld;
     env.CXXFLAGS = cxxflags;
+    env.LD = ld;
     env.LDFLAGS = ldflags;
   }
 
-  const nodeGypVersion = getNodeGypVersion();
-  const { status: buildStatus, signal } = cp.spawnSync(NPX_CMD, [`node-gyp@${nodeGypVersion}`, 'rebuild', '--verbose', '--directory', 'test', '-j', 'max'], {
+  const { status: installStatus, signal: installSignal } = cp.spawnSync(process.execPath, [YARN_SCRIPT_PATH, 'install'], {
     env,
     cwd: NAN_DIR,
-    stdio: 'inherit',
-    shell: process.platform === 'win32'
+    stdio: 'inherit'
   });
+  if (installStatus !== 0 || installSignal != null) {
+    console.error('Failed to install nan node_modules');
+    return process.exit(installStatus !== 0 ? installStatus : installSignal);
+  }
 
+  const { status: buildStatus, signal } = cp.spawnSync(process.execPath, [NODE_GYP_BIN, 'rebuild', '--verbose', '--directory', 'test', '-j', 'max'], {
+    env,
+    cwd: NAN_DIR,
+    stdio: 'inherit'
+  });
   if (buildStatus !== 0 || signal != null) {
     console.error('Failed to build nan test modules');
     return process.exit(buildStatus !== 0 ? buildStatus : signal);
   }
 
-  const { status: installStatus } = cp.spawnSync(NPX_CMD, [`yarn@${YARN_VERSION}`, 'install'], {
-    env,
-    cwd: NAN_DIR,
-    stdio: 'inherit',
-    shell: process.platform === 'win32'
-  });
-
-  if (installStatus !== 0 || signal != null) {
-    console.error('Failed to install nan node_modules');
-    return process.exit(installStatus !== 0 ? installStatus : signal);
-  }
-
-  const onlyTests = args.only && args.only.split(',');
+  const onlyTests = args.only?.split(',');
 
   const DISABLED_TESTS = new Set([
     'nannew-test.js',
-    'buffer-test.js',
-    // we can't patch this test because it uses CRLF line endings
-    'methodswithdata-test.js'
+    'buffer-test.js'
   ]);
   const testsToRun = fs.readdirSync(path.resolve(NAN_DIR, 'test', 'js'))
     .filter(test => !DISABLED_TESTS.has(test))

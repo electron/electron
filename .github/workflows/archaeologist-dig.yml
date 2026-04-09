@@ -3,31 +3,39 @@ name: Archaeologist
 on:
   pull_request:
 
+permissions: {}
+
 jobs:
    archaeologist-dig:
     name: Archaeologist Dig
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout Electron
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #v4.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
       - name: Setup Node.js/npm
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
         with:
-          node-version: 20.11.x
+          node-version: 24.12.x
       - name: Setting Up Dig Site
+        env:
+          CLONE_URL: ${{ github.event.pull_request.head.repo.clone_url }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
-          echo "remote: ${{ github.event.pull_request.head.repo.clone_url }}"
-          echo "sha ${{ github.event.pull_request.head.sha }}"
-          echo "base ref ${{ github.event.pull_request.base.ref }}"
-          git clone https://github.com/electron/electron.git electron          
+          echo "remote: $CLONE_URL"
+          echo "sha $HEAD_SHA"
+          echo "base ref $BASE_REF"
+          git clone https://github.com/electron/electron.git electron
           cd electron
           mkdir -p artifacts
-          git remote add fork ${{ github.event.pull_request.head.repo.clone_url }} && git fetch fork
-          git checkout  ${{ github.event.pull_request.head.sha }}
-          git merge-base origin/${{ github.event.pull_request.base.ref }} HEAD > .dig-old
-          echo  ${{ github.event.pull_request.head.sha }} > .dig-new
+          git remote add fork "$CLONE_URL" && git fetch fork
+          git checkout "$HEAD_SHA"
+          git merge-base "origin/$BASE_REF" HEAD > .dig-old
+          echo "$HEAD_SHA" > .dig-new
           cp .dig-old artifacts
 
       - name: Generating Types for SHA in .dig-new
@@ -41,7 +49,7 @@ jobs:
           sha-file: .dig-old
           filename: electron.old.d.ts
       - name: Upload artifacts
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 #v4.4.3
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
         with:
           name: artifacts
           path: electron/artifacts

@@ -6,7 +6,7 @@ This is not a comprehensive end-all guide to creating an Electron Browser API, r
 
 ## Add your files to Electron's project configuration
 
-Electron uses [GN](https://gn.googlesource.com/gn) as a meta build system to generate files for its compiler, [Ninja](https://ninja-build.org/). This means that in order to tell Electron to compile your code, we have to add your API's code and header file names into [`filenames.gni`](https://github.com/electron/electron/blob/main/filenames.gni).
+Electron uses [GN](https://gn.googlesource.com/gn) as a meta build system to generate files for its compiler, [Ninja](https://ninja-build.org/). This means that in order to tell Electron to compile your code, we have to add your API's code and header file names into [`filenames.gni`](../../filenames.gni).
 
 You will need to append your API file names alphabetically into the appropriate files like so:
 
@@ -60,12 +60,12 @@ namespace electron {
 
 namespace api {
 
-class ApiName : public gin::Wrappable<ApiName>  {
+class ApiName : public gin::DeprecatedWrappable<ApiName>  {
  public:
   static gin::Handle<ApiName> Create(v8::Isolate* isolate);
 
   // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
@@ -90,7 +90,7 @@ namespace electron {
 
 namespace api {
 
-gin::WrapperInfo ApiName::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::DeprecatedWrapperInfo ApiName::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 gin::ObjectTemplateBuilder ApiName::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
@@ -117,7 +117,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
+  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("apiName", electron::api::ApiName::Create(isolate));
 }
@@ -127,7 +127,7 @@ void Initialize(v8::Local<v8::Object> exports,
 
 ## Link your Electron API with Node
 
-In the [`typings/internal-ambient.d.ts`](https://github.com/electron/electron/blob/main/typings/internal-ambient.d.ts) file, we need to append a new property onto the `Process` interface like so:
+In the [`typings/internal-ambient.d.ts`](../../typings/internal-ambient.d.ts) file, we need to append a new property onto the `Process` interface like so:
 
 ```ts title='typings/internal-ambient.d.ts' @ts-nocheck
 interface Process {
@@ -141,14 +141,15 @@ At the very bottom of your `api_name.cc` file:
 NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_{api_name},Initialize)
 ```
 
-In your [`shell/common/node_bindings.cc`](https://github.com/electron/electron/blob/main/shell/common/node_bindings.cc) file, add your node binding name to Electron's built-in modules.
+In your [`shell/common/node_bindings.cc`](../../shell/common/node_bindings.cc) file, add your node binding name to Electron's built-in modules.
 
 ```cpp title='shell/common/node_bindings.cc'
 #define ELECTRON_BROWSER_MODULES(V)      \
   V(electron_browser_{api_name})
 ```
 
-> Note: More technical details on how Node links with Electron can be found on [our blog](https://www.electronjs.org/blog/electron-internals-using-node-as-a-library#link-node-with-electron).
+> [!NOTE]
+> More technical details on how Node links with Electron can be found on [our blog](https://www.electronjs.org/blog/electron-internals-using-node-as-a-library#link-node-with-electron).
 
 ## Expose your API to TypeScript
 
@@ -158,14 +159,16 @@ We will need to create a new TypeScript file in the path that follows:
 
 `"lib/browser/api/{electron_browser_{api_name}}.ts"`
 
-An example of the contents of this file can be found [here](https://github.com/electron/electron/blob/main/lib/browser/api/native-theme.ts).
+An example of the contents of this file can be found [here](../../lib/browser/api/native-theme.ts).
 
 ### Expose your module to TypeScript
 
 Add your module to the module list found at `"lib/browser/api/module-list.ts"` like so:
 
+<!-- eslint-disable semi -->
+
 ```ts title='lib/browser/api/module-list.ts' @ts-nocheck
 export const browserModuleList: ElectronInternal.ModuleEntry[] = [
-  { name: 'apiName', loader: () => require('./api-name') },
+  { name: 'apiName', loader: () => require('./api-name') }
 ];
 ```

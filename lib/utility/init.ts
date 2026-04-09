@@ -36,7 +36,7 @@ parentPort.on('removeListener', (name: string) => {
 });
 
 // Finally load entry script.
-const { runEntryPointWithESMLoader } = __non_webpack_require__('internal/modules/run_main');
+const { runEntryPointWithESMLoader } = __non_webpack_require__('internal/modules/run_main') as typeof import('@node/lib/internal/modules/run_main');
 const mainEntry = pathToFileURL(entryScript);
 
 runEntryPointWithESMLoader(async (cascadedLoader: any) => {

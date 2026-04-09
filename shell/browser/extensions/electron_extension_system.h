@@ -26,7 +26,6 @@ class BrowserContext;
 namespace extensions {
 
 class ElectronExtensionLoader;
-class ValueStoreFactory;
 
 // A simplified version of ExtensionSystem for app_shell. Allows
 // app_shell to skip initialization of services it doesn't need.
@@ -73,18 +72,14 @@ class ElectronExtensionSystem : public ExtensionSystem {
   const base::OneShotEvent& ready() const override;
   bool is_ready() const override;
   ContentVerifier* content_verifier() override;
-  std::unique_ptr<ExtensionSet> GetDependentExtensions(
-      const Extension* extension) override;
   void InstallUpdate(const std::string& extension_id,
                      const std::string& public_key,
                      const base::FilePath& temp_dir,
                      bool install_immediately,
                      InstallUpdateCallback install_update_callback) override;
-  bool FinishDelayedInstallationIfReady(const std::string& extension_id,
-                                        bool install_immediately) override;
   void PerformActionBasedOnOmahaAttributes(
       const std::string& extension_id,
-      const base::Value::Dict& attributes) override;
+      const base::DictValue& attributes) override;
 
  private:
   void OnExtensionRegisteredWithRequestContexts(

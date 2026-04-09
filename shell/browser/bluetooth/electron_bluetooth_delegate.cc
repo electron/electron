@@ -7,6 +7,7 @@
 #include <memory>
 #include <utility>
 
+#include "base/notimplemented.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_context.h"
@@ -190,7 +191,7 @@ void ElectronBluetoothDelegate::ShowDevicePairPrompt(
 
 void ElectronBluetoothDelegate::OnDevicePairPromptResponse(
     PairPromptCallback callback,
-    base::Value::Dict response) {
+    base::DictValue response) {
   BluetoothDelegate::PairPromptResult result;
   if (response.FindBool("confirmed").value_or(false)) {
     result.result_code = BluetoothDelegate::PairPromptStatus::kSuccess;

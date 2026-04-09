@@ -78,6 +78,7 @@ class WebContentsPreferences
   bool ShouldDisablePopups() const { return disable_popups_; }
   bool IsWebSecurityEnabled() const { return web_security_; }
   std::optional<base::FilePath> GetPreloadPath() const { return preload_path_; }
+  bool ShouldFocusOnNavigation() const { return focus_on_navigation_; }
   bool IsSandboxed() const;
 
  private:
@@ -85,7 +86,8 @@ class WebContentsPreferences
   friend class ElectronBrowserClient;
 
   // Get WebContents according to process ID.
-  static content::WebContents* GetWebContentsFromProcessID(int process_id);
+  static content::WebContents* GetWebContentsFromProcessID(
+      content::ChildProcessId process_id);
 
   void Clear();
   void SaveLastPreferences();
@@ -120,7 +122,6 @@ class WebContentsPreferences
   std::optional<std::string> default_encoding_;
   bool is_webview_;
   std::vector<std::string> custom_args_;
-  std::vector<std::string> custom_switches_;
   std::optional<std::string> enable_blink_features_;
   std::optional<std::string> disable_blink_features_;
   bool disable_popups_;
@@ -132,6 +133,8 @@ class WebContentsPreferences
   blink::mojom::ImageAnimationPolicy image_animation_policy_;
   std::optional<base::FilePath> preload_path_;
   blink::mojom::V8CacheOptions v8_cache_options_;
+  bool deprecated_paste_enabled_ = false;
+  bool focus_on_navigation_;
 
 #if BUILDFLAG(IS_MAC)
   bool scroll_bounce_;

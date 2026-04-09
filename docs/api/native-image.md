@@ -4,6 +4,12 @@
 
 Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)
 
+> [!IMPORTANT]
+> If you want to call this API from a renderer process with context isolation enabled,
+> place the API call in your preload script and
+> [expose](../tutorial/context-isolation.md#after-context-isolation-enabled) it using the
+> [`contextBridge`](context-bridge.md) API.
+
 The `nativeImage` module provides a unified interface for manipulating
 system images. These can be handy if you want to provide multiple scaled
 versions of the same icon or take advantage of macOS [template images][template-image].
@@ -86,6 +92,7 @@ images/
 
 ```js title='Main Process'
 const { Tray } = require('electron')
+
 const appTray = new Tray('/Users/somebody/images/icon.png')
 ```
 
@@ -134,7 +141,8 @@ Creates an empty `NativeImage` instance.
 
 Returns `Promise<NativeImage>` - fulfilled with the file's thumbnail preview image, which is a [NativeImage](native-image.md).
 
-Note: The Windows implementation will ignore `size.height` and scale the height according to `size.width`.
+> [!NOTE]
+> Windows implementation will ignore `size.height` and scale the height according to `size.width`.
 
 ### `nativeImage.createFromPath(path)`
 
@@ -142,8 +150,8 @@ Note: The Windows implementation will ignore `size.height` and scale the height 
 
 Returns `NativeImage`
 
-Creates a new `NativeImage` instance from a file located at `path`. This method
-returns an empty image if the `path` does not exist, cannot be read, or is not
+Creates a new `NativeImage` instance from an image file (e.g., PNG or JPEG) located at `path`.
+This method returns an empty image if the `path` does not exist, cannot be read, or is not
 a valid image.
 
 ```js
@@ -194,8 +202,7 @@ Creates a new `NativeImage` instance from `dataUrl`, a base 64 encoded [Data URL
 Returns `NativeImage`
 
 Creates a new `NativeImage` instance from the `NSImage` that maps to the
-given image name. See Apple's [`NSImageName`](https://developer.apple.com/documentation/appkit/nsimagename#2901388)
-documentation for a list of possible values.
+given image name. See Apple's [`NSImageName`](https://developer.apple.com/documentation/appkit/nsimagename#2901388) documentation and [SF Symbols](https://developer.apple.com/sf-symbols/) for a list of possible values.
 
 The `hslShift` is applied to the image with the following rules:
 
@@ -222,6 +229,15 @@ echo -e '#import <Cocoa/Cocoa.h>\nint main() { NSLog(@"%@", SYSTEM_IMAGE_NAME); 
 ```
 
 where `SYSTEM_IMAGE_NAME` should be replaced with any value from [this list](https://developer.apple.com/documentation/appkit/nsimagename?language=objc).
+
+For SF Symbols, usage looks as follows:
+
+```js
+const image = nativeImage.createFromNamedImage('square.and.pencil')
+```
+
+where `'square.and.pencil'` is the symbol name from the
+[SF Symbols app](https://developer.apple.com/sf-symbols/).
 
 ## Class: NativeImage
 
@@ -271,16 +287,12 @@ changes:
 
 Returns `string` - The [Data URL][data-url] of the image.
 
-#### `image.getBitmap([options])`
+#### `image.getBitmap([options])` _Deprecated_
 
 * `options` Object (optional)
   * `scaleFactor` Number (optional) - Defaults to 1.0.
 
-Returns `Buffer` - A [Buffer][buffer] that contains the image's raw bitmap pixel data.
-
-The difference between `getBitmap()` and `toBitmap()` is that `getBitmap()` does not
-copy the bitmap data, so you have to use the returned Buffer immediately in
-current event loop tick; otherwise the data might be changed or destroyed.
+Legacy alias for `image.toBitmap()`.
 
 #### `image.getNativeHandle()` _macOS_
 

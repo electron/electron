@@ -1,0 +1,34 @@
+{
+  "problemMatcher": [
+    {
+      "owner": "merge-conflict",
+      "pattern": [
+        {
+          "regexp": "^CONFLICT\\s\\(\\S+\\): (Merge conflict in \\S+)$",
+          "message": 1
+        }
+      ]
+    },
+    {
+      "owner": "patch-conflict",
+      "pattern": [
+        {
+          "regexp": "^error: (patch failed: (\\S+):(\\d+))$",
+          "message": 1,
+          "file": 2,
+          "line": 3
+        }
+      ]
+    },
+    {
+      "owner": "patch-needs-update",
+      "pattern": [
+        {
+          "regexp": "^((patches\/.*): needs update)$",
+          "message": 1,
+          "file": 2
+        }
+      ]
+    }
+  ]
+}

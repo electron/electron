@@ -65,7 +65,7 @@ The full list of certificate types can be found
 Apps signed with "Apple Development" and "Apple Distribution" certificates can
 only run under [App Sandbox][app-sandboxing], so they must use the MAS build of
 Electron. However, the "Developer ID Application" certificate does not have this
-restrictions, so apps signed with it can use either the normal build or the MAS
+restriction, so apps signed with it can use either the normal build or the MAS
 build of Electron.
 
 #### Legacy certificate names
@@ -208,7 +208,7 @@ signAsync({
 After signing the app with the "Apple Distribution" certificate, you can
 continue to submit it to Mac App Store.
 
-However, this guide do not ensure your app will be approved by Apple; you
+However, this guide does not ensure your app will be approved by Apple; you
 still need to read Apple's [Submitting Your App][submitting-your-app] guide on
 how to meet the Mac App Store requirements.
 

@@ -12,7 +12,7 @@ import * as https from 'node:https';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { defer, ifit, listen } from './lib/spec-helpers';
+import { defer, ifit, listen, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('session module', () => {
@@ -52,6 +52,26 @@ describe('session module', () => {
         await cookies.remove(url, c.name);
       }
     });
+
+    const collectCookieChanges = async (cookies: Electron.Cookies, action: () => Promise<void>, count: number) => {
+      const changes: Array<{ cause: string, cookie: Electron.Cookie, removed: boolean }> = [];
+      let listener: ((event: Electron.Event, cookie: Electron.Cookie, cause: string, removed: boolean) => void) | undefined;
+
+      const changesPromise = new Promise<typeof changes>(resolve => {
+        listener = (_event, cookie, cause, removed) => {
+          changes.push({ cause, cookie, removed });
+          if (changes.length === count) resolve(changes);
+        };
+        cookies.on('changed', listener);
+      });
+
+      try {
+        await action();
+        return await changesPromise;
+      } finally {
+        if (listener) cookies.removeListener('changed', listener);
+      }
+    };
 
     it('should get cookies', async () => {
       const server = http.createServer((req, res) => {
@@ -214,13 +234,67 @@ describe('session module', () => {
 
       expect(setEventCookie.name).to.equal(name);
       expect(setEventCookie.value).to.equal(value);
-      expect(setEventCause).to.equal('explicit');
+      expect(setEventCause).to.equal('inserted');
       expect(setEventRemoved).to.equal(false);
 
       expect(removeEventCookie.name).to.equal(name);
       expect(removeEventCookie.value).to.equal(value);
       expect(removeEventCause).to.equal('explicit');
       expect(removeEventRemoved).to.equal(true);
+    });
+
+    it('emits overwrite and inserted events when a cookie is overwritten with a new value', async () => {
+      const { cookies } = session.fromPartition('cookies-overwrite-changed');
+      const name = 'foo';
+      const oldVal = 'bar';
+      const newVal = 'baz';
+      const expected = [
+        { cause: 'overwrite', name, removed: true, value: oldVal },
+        { cause: 'inserted', name, removed: false, value: newVal }
+      ];
+
+      await cookies.set({ url, name, value: oldVal });
+      const changes = await collectCookieChanges(cookies, async () => {
+        await cookies.set({ url, name, value: newVal });
+      }, 2);
+
+      const actual = changes.map(({ cookie: { name, value }, cause, removed }) => ({ cause, name, removed, value }));
+      expect(actual).to.deep.equal(expected);
+    });
+
+    it('emits inserted-no-value-change-overwrite when a cookie is overwritten with the same value', async () => {
+      const { cookies } = session.fromPartition('cookies-same-value-overwrite-changed');
+      const name = 'foo';
+      const value = 'bar';
+      const nowSec = Date.now() / 1000;
+      const expected = [
+        { cause: 'overwrite', name, removed: true, value },
+        { cause: 'inserted-no-value-change-overwrite', name, removed: false, value }
+      ];
+
+      await cookies.set({ url, name, value, expirationDate: nowSec + 120 });
+      const changes = await collectCookieChanges(cookies, async () => {
+        await cookies.set({ url, name, value, expirationDate: nowSec + 240 });
+      }, 2);
+
+      const actual = changes.map(({ cookie: { name, value }, cause, removed }) => ({ cause, name, removed, value }));
+      expect(actual).to.deep.equal(expected);
+    });
+
+    it('emits expired-overwrite when a cookie is overwritten by an already-expired cookie', async () => {
+      const { cookies } = session.fromPartition('cookies-expired-overwrite-changed');
+      const name = 'foo';
+      const value = 'bar';
+      const nowSec = Date.now() / 1000;
+      const expected = [{ cause: 'expired-overwrite', name, removed: true, value }];
+
+      await cookies.set({ url, name, value, expirationDate: nowSec + 120 });
+      const changes = await collectCookieChanges(cookies, async () => {
+        await cookies.set({ url, name, value, expirationDate: nowSec - 10 });
+      }, 1);
+
+      const actual = changes.map(({ cookie: { name, value }, cause, removed }) => ({ cause, name, removed, value }));
+      expect(actual).to.deep.equal(expected);
     });
 
     describe('ses.cookies.flushStore()', async () => {
@@ -260,6 +334,165 @@ describe('session module', () => {
     });
   });
 
+  describe('domain matching', () => {
+    let testSession: Electron.Session;
+
+    beforeEach(() => {
+      testSession = session.fromPartition(`cookies-domain-test-${Date.now()}`);
+    });
+
+    afterEach(async () => {
+      // Clear cookies after each test
+      await testSession.clearStorageData({ storages: ['cookies'] });
+    });
+
+    // Helper to set a cookie and then test if it's retrieved with a domain filter
+    async function testDomainMatching (setCookieOpts: Electron.CookiesSetDetails,
+      domain: string,
+      expectMatch: boolean) {
+      await testSession.cookies.set(setCookieOpts);
+      const cookies = await testSession.cookies.get({ domain });
+
+      if (expectMatch) {
+        expect(cookies).to.have.lengthOf(1);
+        expect(cookies[0].name).to.equal(setCookieOpts.name);
+        expect(cookies[0].value).to.equal(setCookieOpts.value);
+      } else {
+        expect(cookies).to.have.lengthOf(0);
+      }
+    }
+
+    it('should match exact domain', async () => {
+      await testDomainMatching({
+        url: 'http://example.com',
+        name: 'exactMatch',
+        value: 'value1',
+        domain: 'example.com'
+      }, 'example.com', true);
+    });
+
+    it('should match subdomain when filter has leading dot', async () => {
+      await testDomainMatching({
+        url: 'http://sub.example.com',
+        name: 'subdomainMatch',
+        value: 'value2',
+        domain: '.example.com'
+      }, 'sub.example.com', true);
+    });
+
+    it('should match subdomain when filter has no leading dot (host-only normalization)', async () => {
+      await testDomainMatching({
+        url: 'http://sub.example.com',
+        name: 'hostOnlyNormalization',
+        value: 'value3',
+        domain: 'example.com'
+      }, 'sub.example.com', true);
+    });
+
+    it('should not match unrelated domain', async () => {
+      await testDomainMatching({
+        url: 'http://example.com',
+        name: 'noMatch',
+        value: 'value4',
+        domain: 'example.com'
+      }, 'other.com', false);
+    });
+
+    it('should match domain with a leading dot in both cookie and filter', async () => {
+      await testDomainMatching({
+        url: 'http://example.com',
+        name: 'leadingDotBoth',
+        value: 'value5',
+        domain: '.example.com'
+      }, '.example.com', true);
+    });
+
+    it('should handle case insensitivity in domain', async () => {
+      await testDomainMatching({
+        url: 'http://example.com',
+        name: 'caseInsensitive',
+        value: 'value7',
+        domain: 'Example.com'
+      }, 'example.com', true);
+    });
+
+    it('should handle IP address matching', async () => {
+      await testDomainMatching({
+        url: 'http://127.0.0.1',
+        name: 'ipExactMatch',
+        value: 'value8',
+        domain: '127.0.0.1'
+      }, '127.0.0.1', true);
+    });
+
+    it('should not match different IP addresses', async () => {
+      await testDomainMatching({
+        url: 'http://127.0.0.1',
+        name: 'ipMismatch',
+        value: 'value9',
+        domain: '127.0.0.1'
+      }, '127.0.0.2', false);
+    });
+
+    it('should handle complex subdomain matching properly', async () => {
+      // Set a cookie with domain .example.com
+      await testSession.cookies.set({
+        url: 'http://a.b.example.com',
+        name: 'complexSubdomain',
+        value: 'value11',
+        domain: '.example.com'
+      });
+
+      // This should match the cookie
+      const cookies1 = await testSession.cookies.get({ domain: 'a.b.example.com' });
+      expect(cookies1).to.have.lengthOf(1);
+      expect(cookies1[0].name).to.equal('complexSubdomain');
+
+      // This should also match
+      const cookies2 = await testSession.cookies.get({ domain: 'b.example.com' });
+      expect(cookies2).to.have.lengthOf(1);
+
+      // This should also match
+      const cookies3 = await testSession.cookies.get({ domain: 'example.com' });
+      expect(cookies3).to.have.lengthOf(1);
+
+      // This should not match
+      const cookies4 = await testSession.cookies.get({ domain: 'otherexample.com' });
+      expect(cookies4).to.have.lengthOf(0);
+    });
+
+    it('should handle multiple cookies with different domains', async () => {
+      // Set two cookies with different domains
+      await testSession.cookies.set({
+        url: 'http://example.com',
+        name: 'cookie1',
+        value: 'domain1',
+        domain: 'example.com'
+      });
+
+      await testSession.cookies.set({
+        url: 'http://other.com',
+        name: 'cookie2',
+        value: 'domain2',
+        domain: 'other.com'
+      });
+
+      // Filter for the first domain
+      const cookies1 = await testSession.cookies.get({ domain: 'example.com' });
+      expect(cookies1).to.have.lengthOf(1);
+      expect(cookies1[0].name).to.equal('cookie1');
+
+      // Filter for the second domain
+      const cookies2 = await testSession.cookies.get({ domain: 'other.com' });
+      expect(cookies2).to.have.lengthOf(1);
+      expect(cookies2[0].name).to.equal('cookie2');
+
+      // Get all cookies
+      const allCookies = await testSession.cookies.get({});
+      expect(allCookies).to.have.lengthOf(2);
+    });
+  });
+
   describe('ses.clearStorageData(options)', () => {
     afterEach(closeAllWindows);
     it('clears localstorage data', async () => {
@@ -267,8 +500,7 @@ describe('session module', () => {
       await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
       await w.webContents.session.clearStorageData({
         origin: 'file://',
-        storages: ['localstorage'],
-        quotas: ['temporary']
+        storages: ['localstorage']
       });
       while (await w.webContents.executeJavaScript('localStorage.length') !== 0) {
         // The storage clear isn't instantly visible to the renderer, so keep
@@ -687,6 +919,110 @@ describe('session module', () => {
       });
       const w = new BrowserWindow({ show: false });
       w.loadURL(url);
+    });
+  });
+
+  describe('ses.getBlobData() (gc)', () => {
+    const scheme = 'cors-blob';
+    const protocol = session.defaultSession.protocol;
+    const v8Util = process._linkedBinding('electron_common_v8_util');
+
+    const waitForBlobDataRejection = (uuid: string) => waitUntil(async () => {
+      const attempt = session.defaultSession.getBlobData(uuid)
+        .then(() => false)
+        .catch(error => String(error).includes('Could not get blob data handle'));
+      const deadline = setTimeout(1000).then(() => false);
+      const rejected = await Promise.race([attempt, deadline]);
+      return rejected;
+    });
+
+    const waitForGarbageCollection = (weak: WeakRef<object>) => waitUntil(() => {
+      v8Util.requestGarbageCollectionForTesting();
+      v8Util.runUntilIdle();
+      return weak.deref() === undefined;
+    });
+
+    const makeContent = (url: string, postData: string) => `<html>
+                       <script>
+                       let fd = new FormData();
+                       fd.append('file', new Blob(['${postData}'], {type:'application/json'}));
+                       fetch('${url}', {method:'POST', body: fd });
+                       </script>
+                       </html>`;
+
+    const registerPostHandler = (
+      scheme: string,
+      content: string,
+      onDataPipe: (dataPipe: unknown) => void
+    ) => new Promise<{ uuid: string }>((resolve, reject) => {
+      protocol.registerStringProtocol(scheme, (request, callback) => {
+        try {
+          if (request.method === 'GET') {
+            callback({ data: content, mimeType: 'text/html' });
+          } else if (request.method === 'POST') {
+            const uploadData = request.uploadData as any;
+            const uuid: string = uploadData[1].blobUUID;
+            const dataPipe = uploadData[1].dataPipe;
+            expect(dataPipe).to.be.ok();
+            onDataPipe(dataPipe);
+            resolve({ uuid });
+            callback('');
+          }
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+
+    afterEach(closeAllWindows);
+
+    it('keeps blob data alive while wrapper is referenced', async () => {
+      const url = `${scheme}://gc-alive-${Date.now()}`;
+      const postData = 'payload';
+      const content = makeContent(url, postData);
+
+      let heldDataPipe: unknown = null;
+      const postInfo = registerPostHandler(scheme, content, dataPipe => {
+        heldDataPipe = dataPipe;
+      });
+      try {
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL(url);
+
+        const { uuid } = await postInfo;
+        v8Util.requestGarbageCollectionForTesting();
+
+        const result = await session.defaultSession.getBlobData(uuid);
+        expect(result.toString()).to.equal(postData);
+        expect(heldDataPipe).to.be.ok();
+      } finally {
+        await protocol.unregisterProtocol(scheme);
+      }
+    });
+
+    it('rejects after wrapper is collected', async () => {
+      const url = `${scheme}://gc-released-${Date.now()}`;
+      const postData = 'payload';
+      const content = makeContent(url, postData);
+
+      let heldDataPipe: unknown = null;
+      const postInfo = registerPostHandler(scheme, content, dataPipe => {
+        heldDataPipe = dataPipe;
+      });
+      try {
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL(url);
+
+        const { uuid } = await postInfo;
+        expect(heldDataPipe).to.be.ok();
+        const weak = new WeakRef(heldDataPipe as object);
+        heldDataPipe = null;
+
+        await waitForGarbageCollection(weak);
+        await waitForBlobDataRejection(uuid);
+      } finally {
+        await protocol.unregisterProtocol(scheme);
+      }
     });
   });
 
@@ -1130,6 +1466,53 @@ describe('session module', () => {
         expect(item.getContentDisposition()).to.equal(contentDisposition);
       });
 
+      it('can perform a download with referer header', async () => {
+        const server = http.createServer((req, res) => {
+          const { referer } = req.headers;
+          if (!referer || !referer.startsWith('http://www.electronjs.org')) {
+            res.statusCode = 403;
+            res.end();
+          } else {
+            res.writeHead(200, {
+              'Content-Length': mockPDF.length,
+              'Content-Type': 'application/pdf',
+              'Content-Disposition': req.url === '/?testFilename' ? 'inline' : contentDisposition
+            });
+            res.end(mockPDF);
+          }
+        });
+
+        const { port } = await listen(server);
+
+        const w = new BrowserWindow({ show: false });
+        const downloadDone: Promise<Electron.DownloadItem> = new Promise((resolve) => {
+          w.webContents.session.once('will-download', (e, item) => {
+            item.savePath = downloadFilePath;
+            item.on('done', () => {
+              try {
+                resolve(item);
+              } catch { }
+            });
+          });
+        });
+
+        w.webContents.downloadURL(`${url}:${port}`, {
+          headers: {
+            // Setting a Referer header with HTTPS scheme while the download URL's
+            // scheme is HTTP might lead to download failure.
+            referer: 'http://www.electronjs.org'
+          }
+        });
+
+        const item = await downloadDone;
+        expect(item.getState()).to.equal('completed');
+        expect(item.getFilename()).to.equal('mock.pdf');
+        expect(item.getMimeType()).to.equal('application/pdf');
+        expect(item.getReceivedBytes()).to.equal(mockPDF.length);
+        expect(item.getTotalBytes()).to.equal(mockPDF.length);
+        expect(item.getContentDisposition()).to.equal(contentDisposition);
+      });
+
       it('throws when called with invalid headers', () => {
         const w = new BrowserWindow({ show: false });
         expect(() => {
@@ -1557,6 +1940,60 @@ describe('session module', () => {
       expect(handlerDetails!.requestingUrl).to.equal(loadUrl);
       expect(handlerDetails!.isMainFrame).to.be.false();
       expect(handlerDetails!.embeddingOrigin).to.equal('file:///');
+    });
+
+    it('provides iframe origin as requestingOrigin for media check from cross-origin subFrame', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'very-temp-permission-handler-media'
+        }
+      });
+      const ses = w.webContents.session;
+      const iframeUrl = 'https://myfakesite/';
+      let capturedOrigin: string | undefined;
+      let capturedIsMainFrame: boolean | undefined;
+      let capturedRequestingUrl: string | undefined;
+      let capturedSecurityOrigin: string | undefined;
+
+      ses.protocol.interceptStringProtocol('https', (req, cb) => {
+        cb('<html><body>iframe</body></html>');
+      });
+
+      ses.setPermissionCheckHandler((wc, permission, requestingOrigin, details) => {
+        if (permission === 'media') {
+          capturedOrigin = requestingOrigin;
+          capturedIsMainFrame = details.isMainFrame;
+          capturedRequestingUrl = details.requestingUrl;
+          capturedSecurityOrigin = (details as any).securityOrigin;
+        }
+        return false;
+      });
+
+      try {
+        await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        w.webContents.executeJavaScript(`
+          var iframe = document.createElement('iframe');
+          iframe.src = '${iframeUrl}';
+          iframe.allow = 'camera; microphone';
+          document.body.appendChild(iframe);
+          null;
+        `);
+        const [,, frameProcessId, frameRoutingId] = await once(w.webContents, 'did-frame-finish-load');
+        const frame = webFrameMain.fromId(frameProcessId, frameRoutingId)!;
+        await frame.executeJavaScript(
+          'navigator.mediaDevices.enumerateDevices().then(() => {}).catch(() => {});',
+          true
+        );
+
+        expect(capturedOrigin).to.equal(iframeUrl);
+        expect(capturedIsMainFrame).to.be.false();
+        expect(capturedRequestingUrl).to.equal(iframeUrl);
+        expect(capturedSecurityOrigin).to.equal(iframeUrl);
+      } finally {
+        ses.protocol.uninterceptProtocol('https');
+        ses.setPermissionCheckHandler(null);
+      }
     });
   });
 

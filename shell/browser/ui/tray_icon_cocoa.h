@@ -35,6 +35,7 @@ class TrayIconCocoa : public TrayIcon {
   void CloseContextMenu() override;
   void SetContextMenu(raw_ptr<ElectronMenuModel> menu_model) override;
   gfx::Rect GetBounds() override;
+  void SetAutoSaveName(const std::string& name) override;
 
   base::WeakPtr<TrayIconCocoa> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();

@@ -16,8 +16,7 @@
 #include "base/strings/string_util.h"
 #include "base/synchronization/lock.h"
 #include "base/threading/thread_local.h"
-#include "crypto/secure_hash.h"
-#include "crypto/sha2.h"
+#include "crypto/hash.h"
 #include "shell/common/asar/archive.h"
 #include "shell/common/thread_restrictions.h"
 
@@ -139,7 +138,7 @@ void ValidateIntegrityOrDie(base::span<const uint8_t> input,
                             const IntegrityPayload& integrity) {
   if (integrity.algorithm == HashAlgorithm::kSHA256) {
     const std::string hex_hash =
-        base::ToLowerASCII(base::HexEncode(crypto::SHA256Hash(input)));
+        base::ToLowerASCII(base::HexEncode(crypto::hash::Sha256(input)));
     if (integrity.hash != hex_hash) {
       LOG(FATAL) << "Integrity check failed for asar archive ("
                  << integrity.hash << " vs " << hex_hash << ")";

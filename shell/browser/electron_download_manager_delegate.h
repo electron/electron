@@ -48,12 +48,12 @@ class ElectronDownloadManagerDelegate
   void GetItemSaveDialogOptions(download::DownloadItem* item,
                                 file_dialog::DialogSettings* options);
 
-  void OnDownloadPathGenerated(uint32_t download_id,
+  void OnDownloadPathGenerated(const std::string& download_guid,
                                download::DownloadTargetCallback callback,
                                const base::FilePath& default_path);
 
   void OnDownloadSaveDialogDone(
-      uint32_t download_id,
+      const std::string& download_guid,
       download::DownloadTargetCallback download_callback,
       gin_helper::Dictionary result);
 

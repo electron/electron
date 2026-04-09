@@ -5,12 +5,8 @@
 Process: [Main](../glossary.md#main-process)<br />
 _This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
-The following example shows how to bounce your icon on the dock.
-
-```js
-const { app } = require('electron')
-app.dock.bounce()
-```
+> [!TIP]
+> See also: [A detailed guide about how to implement Dock menus](../tutorial/macos-dock.md).
 
 ### Instance Methods
 
@@ -28,7 +24,8 @@ When `informational` is passed, the dock icon will bounce for one second.
 However, the request remains active until either the application becomes active
 or the request is canceled.
 
-**Note:** This method can only be used while the app is not focused; when the app is focused it will return -1.
+> [!NOTE]
+> This method can only be used while the app is not focused; when the app is focused it will return -1.
 
 #### `dock.cancelBounce(id)` _macOS_
 
@@ -48,6 +45,9 @@ Bounces the Downloads stack if the filePath is inside the Downloads folder.
 
 Sets the string to be displayed in the dock’s badging area.
 
+> [!IMPORTANT]
+> You need to ensure that your application has the permission to display notifications for this method to work.
+
 #### `dock.getBadge()` _macOS_
 
 Returns `string` - The badge string of the dock.
@@ -55,6 +55,9 @@ Returns `string` - The badge string of the dock.
 #### `dock.hide()` _macOS_
 
 Hides the dock icon.
+
+> [!IMPORTANT]
+> **Known issue:** Calling `dock.hide()` within one second of a previous call will have no effect. As a workaround, ensure at least one second has elapsed between calls — for example, by deferring with a `setTimeout` of 1100ms or more after a previous call.
 
 #### `dock.show()` _macOS_
 

@@ -6,7 +6,7 @@ Subject: fix: expose the built-in electron module via the ESM loader
 This allows usage of `import { app } from 'electron'` and `import('electron')` natively in the browser + non-sandboxed renderer
 
 diff --git a/lib/internal/modules/esm/get_format.js b/lib/internal/modules/esm/get_format.js
-index a89446df710a941390c15171fea63c551776fc93..912f03bfa96c3aa12bfa6e709746642452568bb7 100644
+index 48ccb97a6244eab4bcfbee92feb9829ca32ad0c5..043d094540845228556b0f9837f48fbaddedfb47 100644
 --- a/lib/internal/modules/esm/get_format.js
 +++ b/lib/internal/modules/esm/get_format.js
 @@ -26,6 +26,7 @@ const protocolHandlers = {
@@ -18,19 +18,37 @@ index a89446df710a941390c15171fea63c551776fc93..912f03bfa96c3aa12bfa6e7097466424
  
  /**
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 8b157f0f461c7b92c567fffe4d99357dbc09aee7..605e812d515fc467001e4ab88fc15b4af3fd4aa2 100644
+index c284163fba86ec820af1996571fbd3d092d41d34..5f1921d15bc1d3a68c35990f85e36a0e8a5b3ec4 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
-@@ -121,7 +121,7 @@ async function defaultLoad(url, context = kEmptyObject) {
+@@ -77,7 +77,7 @@ function defaultLoad(url, context = kEmptyObject) {
+ 
+   throwIfUnsupportedURLScheme(urlInstance);
+ 
+-  if (urlInstance.protocol === 'node:') {
++  if (urlInstance.protocol === 'node:' || format === 'electron') {
+     source = null;
+     format ??= 'builtin';
+   } else if (format === 'addon') {
+@@ -93,7 +93,7 @@ function defaultLoad(url, context = kEmptyObject) {
        // Now that we have the source for the module, run `defaultGetFormat` to detect its format.
-       format = await defaultGetFormat(urlInstance, context);
+       format = defaultGetFormat(urlInstance, context);
  
 -      if (format === 'commonjs') {
 +      if (format === 'electron' || format === 'commonjs') {
          // For backward compatibility reasons, we need to discard the source in
          // order for the CJS loader to re-fetch it.
          source = null;
-@@ -218,12 +218,13 @@ function throwIfUnsupportedURLScheme(parsed) {
+@@ -142,7 +142,7 @@ function defaultLoadSync(url, context = kEmptyObject) {
+   throwIfUnsupportedURLScheme(urlInstance, false);
+ 
+   let shouldBeReloadedByCJSLoader = false;
+-  if (urlInstance.protocol === 'node:') {
++  if (urlInstance.protocol === 'node:' || format === 'electron') {
+     source = null;
+     format ??= 'builtin';
+   } else if (format === 'addon') {
+@@ -186,12 +186,13 @@ function throwIfUnsupportedURLScheme(parsed) {
      protocol !== 'file:' &&
      protocol !== 'data:' &&
      protocol !== 'node:' &&
@@ -45,20 +63,34 @@ index 8b157f0f461c7b92c567fffe4d99357dbc09aee7..605e812d515fc467001e4ab88fc15b4a
      throw new ERR_UNSUPPORTED_ESM_URL_SCHEME(parsed, schemes);
    }
  }
+diff --git a/lib/internal/modules/esm/loader.js b/lib/internal/modules/esm/loader.js
+index 22c1e9f1ae652b033903f56f394352806ddff754..961da666a233541203b5416909fd1ff0326e63e1 100644
+--- a/lib/internal/modules/esm/loader.js
++++ b/lib/internal/modules/esm/loader.js
+@@ -437,7 +437,7 @@ class ModuleLoader {
+     assert(wrap instanceof ModuleWrap, `Translator used for require(${url}) should not be async`);
+ 
+     const cjsModule = wrap[imported_cjs_symbol];
+-    if (cjsModule) {
++    if (cjsModule && translatorKey !== 'electron') {
+       // Check if the ESM initiating import CJS is being required by the same CJS module.
+       if (cjsModule?.[kIsExecuting]) {
+         const parentFilename = urlToFilename(parentURL);
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 1fbbb6773c9479128408fa1f27cf19f1a7786ba6..f05c6f99c0037193c5802024be46a967d6cf47a0 100644
+index cc1230648881d8d14ba3902fca78291c90fb79fb..edf347102fedbb28bce221defa99c37b5834024b 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -772,6 +772,8 @@ function parsePackageName(specifier, base) {
-   return { packageName, packageSubpath, isScoped };
+@@ -751,6 +751,9 @@ function packageImportsResolve(name, base, conditions) {
+   throw importNotDefined(name, packageJSONUrl, base);
  }
  
-+const electronTypes = ['electron', 'electron/main', 'electron/common', 'electron/renderer'];
-+
++const electronTypes = [
++  'electron', 'electron/main', 'electron/common', 'electron/renderer', 'electron/utility'
++];
+ 
  /**
   * Resolves a package specifier to a URL.
-  * @param {string} specifier - The package specifier to resolve.
-@@ -785,6 +787,11 @@ function packageResolve(specifier, base, conditions) {
+@@ -765,6 +768,11 @@ function packageResolve(specifier, base, conditions) {
      return new URL('node:' + specifier);
    }
  
@@ -67,49 +99,40 @@ index 1fbbb6773c9479128408fa1f27cf19f1a7786ba6..f05c6f99c0037193c5802024be46a967
 +    return new URL('electron:electron');
 +  }
 +
-   const { packageName, packageSubpath, isScoped } =
-     parsePackageName(specifier, base);
+   const { packageJSONUrl, packageJSONPath, packageSubpath } = packageJsonReader.getPackageJSONURL(specifier, base);
  
+   const packageConfig = packageJsonReader.read(packageJSONPath, { __proto__: null, specifier, base, isESM: true });
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 8f88214f558c52ef26000fb0e1ef4d391327e84e..d182eedf5e96039e0029d36e51f40b75c6fb2a39 100644
+index d6c96996a900da8e7d4f7f5104312e73e72c2d62..ec76d7ffa45f49721d395e8e33be79114daa0369 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
-@@ -246,7 +246,7 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
- 
-   const { exportNames, module } = cjsPreparseModuleExports(filename, source);
+@@ -214,7 +214,9 @@ function createCJSModuleWrap(url, translateContext, parentURL, loadCJS = loadCJS
+   const { exportNames, module } = cjsPreparseModuleExports(filename, source, sourceFormat);
    cjsCache.set(url, module);
--  const namesWithDefault = exportNames.has('default') ?
-+  const namesWithDefault = filename === 'electron' ? ['default', ...Object.keys(module.exports)] : exportNames.has('default') ?
-     [...exportNames] : ['default', ...exportNames];
  
-   if (isMain) {
-@@ -268,8 +268,8 @@ function createCJSModuleWrap(url, source, isMain, loadCJS = loadCJSModule) {
-       ({ exports } = module);
-     }
-     for (const exportName of exportNames) {
--      if (!ObjectPrototypeHasOwnProperty(exports, exportName) ||
--          exportName === 'default') {
-+      if (exportName === 'default' ||
-+          !ObjectPrototypeHasOwnProperty(exports, exportName)) {
-         continue;
-       }
-       // We might trigger a getter -> dont fail.
-@@ -304,6 +304,10 @@ translators.set('require-commonjs', (url, source, isMain) => {
-   return createCJSModuleWrap(url, source);
+-  const wrapperNames = [...exportNames];
++  const wrapperNames = filename === 'electron' ?
++    ['default', ...Object.keys(module.exports)] :
++    [...exportNames];
+   if (!exportNames.has('default')) {
+     ArrayPrototypePush(wrapperNames, 'default');
+   }
+@@ -313,6 +315,10 @@ translators.set('require-commonjs', (url, translateContext, parentURL) => {
+   return createCJSModuleWrap(url, translateContext, parentURL);
  });
  
 +translators.set('electron', () => {
-+  return createCJSModuleWrap('electron', '');
++  return createCJSModuleWrap('electron', { source: '' });
 +});
 +
  // Handle CommonJS modules referenced by `require` calls.
  // This translator function must be sync, as `require` is sync.
- translators.set('require-commonjs-typescript', (url, source, isMain) => {
+ translators.set('require-commonjs-typescript', (url, translateContext, parentURL) => {
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index 3cb186182947a14407e9d5c4d94ab0554298a658..e35ae9ac316ba2e5b8f562d353b2c5ae978abb63 100644
+index 813208f39e6622a43ae27ba0cc5d11d1e0de55c1..1c1e6075ebabbdbc29d811fcb9f911ee29b28f9e 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1495,6 +1495,8 @@ function fileURLToPath(path, options = kEmptyObject) {
+@@ -1604,6 +1604,8 @@ function fileURLToPath(path, options = kEmptyObject) {
      path = new URL(path);
    else if (!isURL(path))
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);

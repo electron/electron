@@ -7,7 +7,12 @@
 
 #include "base/memory/raw_ptr.h"
 #include "ui/base/metadata/metadata_header_macros.h"
+#include "ui/gfx/geometry/insets.h"
 #include "ui/views/window/non_client_view.h"
+
+#if BUILDFLAG(IS_LINUX)
+#include "shell/browser/ui/views/linux_frame_layout.h"
+#endif
 
 namespace views {
 class Widget;
@@ -17,8 +22,8 @@ namespace electron {
 
 class NativeWindowViews;
 
-class FramelessView : public views::NonClientFrameView {
-  METADATA_HEADER(FramelessView, views::NonClientFrameView)
+class FramelessView : public views::FrameView {
+  METADATA_HEADER(FramelessView, views::FrameView)
 
  public:
   FramelessView();
@@ -37,6 +42,14 @@ class FramelessView : public views::NonClientFrameView {
   // and forces a re-layout and re-paint.
   virtual void InvalidateCaptionButtons() {}
 
+  // Any insets from the (transparent) widget bounds to the logical/opaque
+  // bounds of the view, used for CSD and resize targets on some platforms.
+  virtual gfx::Insets RestoredFrameBorderInsets() const;
+
+#if BUILDFLAG(IS_LINUX)
+  virtual LinuxFrameLayout* GetLinuxFrameLayout() const;
+#endif
+
   NativeWindowViews* window() const { return window_; }
   views::Widget* frame() const { return frame_; }
 
@@ -46,7 +59,7 @@ class FramelessView : public views::NonClientFrameView {
   int ResizingBorderHitTestImpl(const gfx::Point& point,
                                 const gfx::Insets& resize_border);
 
-  // views::NonClientFrameView:
+  // views::FrameView:
   gfx::Rect GetBoundsForClientView() const override;
   gfx::Rect GetWindowBoundsForClientBounds(
       const gfx::Rect& client_bounds) const override;
@@ -69,8 +82,6 @@ class FramelessView : public views::NonClientFrameView {
   // Not owned.
   raw_ptr<NativeWindowViews> window_ = nullptr;
   raw_ptr<views::Widget> frame_ = nullptr;
-
-  friend class NativeWindowsViews;
 };
 
 }  // namespace electron

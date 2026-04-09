@@ -14,16 +14,15 @@ track down the source of this problem & figure out if we can fix it
 by changing something in Electron.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 242054584563ad8d6a6117556998dc8b43cac1dd..7f42a4609ce1d1da017591f4f10eb1685e7ea67b 100644
+index aaa2b2229dac8c5e8cf590300b436082f6c3773b..e12758010f5c243d2fb9c733b74bcb0eea89f5da 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4849,9 +4849,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
-   bool renderer_started_hidden =
-       params.disposition == WindowOpenDisposition::NEW_BACKGROUND_TAB;
- 
--  // While some guest types do not have a guest SiteInstance, the ones that
--  // don't all override WebContents creation above.
--  CHECK_EQ(source_site_instance->IsGuest(), IsGuest());
-   bool is_guest = IsGuest();
+@@ -5472,7 +5472,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+           : IsGuest();
+   // While some guest types do not have a guest SiteInstance, the ones that
+   // don't all override WebContents creation above.
+-  CHECK_EQ(source_site_instance->GetSecurityPrincipal().IsGuest(), is_guest);
++  // CHECK_EQ(source_site_instance->GetSecurityPrincipal().IsGuest(), is_guest);
  
    // We usually create the new window in the same BrowsingInstance (group of
+   // script-related windows), by passing in the current SiteInstance.  However,

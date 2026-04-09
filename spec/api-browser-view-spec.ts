@@ -90,7 +90,7 @@ describe('BrowserView module', () => {
       w.show();
       w.setBounds(display.bounds);
       w.setBackgroundColor(WINDOW_BACKGROUND_COLOR);
-      await w.loadURL('about:blank');
+      await w.loadURL('data:text/html,<html></html>');
 
       view = new BrowserView();
       view.setBounds(display.bounds);
@@ -109,7 +109,7 @@ describe('BrowserView module', () => {
       w.show();
       w.setBounds(display.bounds);
       w.setBackgroundColor(WINDOW_BACKGROUND_COLOR);
-      await w.loadURL('about:blank');
+      await w.loadURL('data:text/html,<html></html>');
 
       view = new BrowserView();
       view.setBounds(display.bounds);
@@ -470,6 +470,39 @@ describe('BrowserView module', () => {
 
       w.webContents.loadURL('about:blank');
       await once(w.webContents, 'did-finish-load');
+    });
+
+    it('document visibilitychange does not change when adding the same BrowserView multiple times', async () => {
+      w.show();
+      expect(w.isVisible()).to.be.true('w is visible');
+
+      const view = new BrowserView();
+      const [width, height] = w.getSize();
+      view.setBounds({ x: 0, y: 0, width, height });
+      w.addBrowserView(view);
+      expect(view.ownerWindow).to.equal(w);
+
+      await view.webContents.loadURL(`data:text/html,
+        <html>
+          <body>
+            <h1>HELLO BROWSERVIEW</h1>
+            <script>
+              document.visibilityChangeCount = 0;
+              document.addEventListener('visibilitychange', () => {
+                document.visibilityChangeCount++;
+              })
+            </script>
+          </body>
+        </html>
+      `);
+      const query = 'document.visibilityChangeCount';
+      const countBefore = await view.webContents.executeJavaScript(query);
+      expect(countBefore).to.equal(0);
+
+      w.addBrowserView(view);
+      w.addBrowserView(view);
+      const countAfter = await view.webContents.executeJavaScript(query);
+      expect(countAfter).to.equal(countBefore);
     });
   });
 

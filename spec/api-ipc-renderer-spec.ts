@@ -18,7 +18,7 @@ describe('ipcRenderer module', () => {
       }
     });
     await w.loadURL('about:blank');
-    w.webContents.on('console-message', (event, ...args) => console.error(...args));
+    w.webContents.on('console-message', (_event, ...args) => console.error(...args));
   });
   after(async () => {
     await closeWindow(w);

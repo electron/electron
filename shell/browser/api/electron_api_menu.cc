@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "shell/browser/api/electron_api_base_window.h"
+#include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/api/ui_event.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
@@ -16,6 +17,7 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
+#include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
@@ -48,7 +50,8 @@ struct Converter<SharingItem> {
 
 namespace electron::api {
 
-gin::WrapperInfo Menu::kWrapperInfo = {gin::kEmbedderNativeGin};
+const gin::WrapperInfo Menu::kWrapperInfo = {{gin::kEmbedderNativeGin},
+                                             gin::kElectronMenu};
 
 Menu::Menu(gin::Arguments* args)
     : model_(std::make_unique<ElectronMenuModel>(this)) {
@@ -65,6 +68,10 @@ Menu::Menu(gin::Arguments* args)
 }
 
 Menu::~Menu() {
+  RemoveModelObserver();
+}
+
+void Menu::RemoveModelObserver() {
   if (model_) {
     model_->RemoveObserver(this);
   }
@@ -94,6 +101,40 @@ bool Menu::IsCommandIdChecked(int command_id) const {
 
 bool Menu::IsCommandIdEnabled(int command_id) const {
   return InvokeBoolMethod(this, "_isCommandIdEnabled", command_id);
+}
+
+std::u16string Menu::GetLabelForCommandId(int command_id) const {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Value> val = gin_helper::CallMethod(
+      isolate, const_cast<Menu*>(this), "_getLabelForCommandId", command_id);
+  std::u16string label;
+  if (!gin::ConvertFromV8(isolate, val, &label))
+    label.clear();
+  return label;
+}
+
+std::u16string Menu::GetSecondaryLabelForCommandId(int command_id) const {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Value> val =
+      gin_helper::CallMethod(isolate, const_cast<Menu*>(this),
+                             "_getSecondaryLabelForCommandId", command_id);
+  std::u16string label;
+  if (!gin::ConvertFromV8(isolate, val, &label))
+    label.clear();
+  return label;
+}
+
+ui::ImageModel Menu::GetIconForCommandId(int command_id) const {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Value> val = gin_helper::CallMethod(
+      isolate, const_cast<Menu*>(this), "_getIconForCommandId", command_id);
+  gfx::Image icon;
+  if (!gin::ConvertFromV8(isolate, val, &icon))
+    icon = gfx::Image();
+  return ui::ImageModel::FromImage(icon);
 }
 
 bool Menu::IsCommandIdVisible(int command_id) const {
@@ -199,16 +240,16 @@ void Menu::SetIcon(int index, const gfx::Image& image) {
   model_->SetIcon(index, ui::ImageModel::FromImage(image));
 }
 
-void Menu::SetSublabel(int index, const std::u16string& sublabel) {
-  model_->SetSecondaryLabel(index, sublabel);
-}
-
 void Menu::SetToolTip(int index, const std::u16string& toolTip) {
   model_->SetToolTip(index, toolTip);
 }
 
 void Menu::SetRole(int index, const std::u16string& role) {
   model_->SetRole(index, role);
+}
+
+void Menu::SetCustomType(int index, const std::u16string& customType) {
+  model_->SetCustomType(index, customType);
 }
 
 void Menu::Clear() {
@@ -223,51 +264,19 @@ int Menu::GetItemCount() const {
   return model_->GetItemCount();
 }
 
-int Menu::GetCommandIdAt(int index) const {
-  return model_->GetCommandIdAt(index);
-}
-
-std::u16string Menu::GetLabelAt(int index) const {
-  return model_->GetLabelAt(index);
-}
-
-std::u16string Menu::GetSublabelAt(int index) const {
-  return model_->GetSecondaryLabelAt(index);
-}
-
-std::u16string Menu::GetToolTipAt(int index) const {
-  return model_->GetToolTipAt(index);
-}
-
 std::u16string Menu::GetAcceleratorTextAtForTesting(int index) const {
   ui::Accelerator accelerator;
   model_->GetAcceleratorAtWithParams(index, true, &accelerator);
   return accelerator.GetShortcutText();
 }
 
-bool Menu::IsItemCheckedAt(int index) const {
-  return model_->IsItemCheckedAt(index);
-}
-
-bool Menu::IsEnabledAt(int index) const {
-  return model_->IsEnabledAt(index);
-}
-
-bool Menu::IsVisibleAt(int index) const {
-  return model_->IsVisibleAt(index);
-}
-
-bool Menu::WorksWhenHiddenAt(int index) const {
-  return model_->WorksWhenHiddenAt(index);
-}
-
 void Menu::OnMenuWillClose() {
-  Unpin();
+  keep_alive_.Clear();
   Emit("menu-will-close");
 }
 
 void Menu::OnMenuWillShow() {
-  Pin(JavascriptEnvironment::GetIsolate());
+  keep_alive_ = this;
   Emit("menu-will-show");
 }
 
@@ -281,31 +290,28 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("insertSeparator", &Menu::InsertSeparatorAt)
       .SetMethod("insertSubMenu", &Menu::InsertSubMenuAt)
       .SetMethod("setIcon", &Menu::SetIcon)
-      .SetMethod("setSublabel", &Menu::SetSublabel)
       .SetMethod("setToolTip", &Menu::SetToolTip)
       .SetMethod("setRole", &Menu::SetRole)
+      .SetMethod("setCustomType", &Menu::SetCustomType)
       .SetMethod("clear", &Menu::Clear)
-      .SetMethod("getIndexOfCommandId", &Menu::GetIndexOfCommandId)
       .SetMethod("getItemCount", &Menu::GetItemCount)
-      .SetMethod("getCommandIdAt", &Menu::GetCommandIdAt)
-      .SetMethod("getLabelAt", &Menu::GetLabelAt)
-      .SetMethod("getSublabelAt", &Menu::GetSublabelAt)
-      .SetMethod("getToolTipAt", &Menu::GetToolTipAt)
-      .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
-      .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
-      .SetMethod("worksWhenHiddenAt", &Menu::WorksWhenHiddenAt)
-      .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
       .SetMethod("popupAt", &Menu::PopupAt)
       .SetMethod("closePopupAt", &Menu::ClosePopupAt)
       .SetMethod("_getAcceleratorTextAt", &Menu::GetAcceleratorTextAtForTesting)
 #if BUILDFLAG(IS_MAC)
       .SetMethod("_getUserAcceleratorAt", &Menu::GetUserAcceleratorAt)
+      .SetMethod("_simulateSubmenuCloseSequenceForTesting",
+                 &Menu::SimulateSubmenuCloseSequenceForTesting)
 #endif
       .Build();
 }
 
-const char* Menu::GetTypeName() {
-  return GetClassName();
+const gin::WrapperInfo* Menu::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* Menu::GetHumanReadableName() const {
+  return "Electron / Menu";
 }
 
 }  // namespace electron::api
@@ -318,10 +324,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-
-  gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("Menu", Menu::GetConstructor(context));
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
+  dict.Set("Menu", Menu::GetConstructor(isolate, context, &Menu::kWrapperInfo));
 #if BUILDFLAG(IS_MAC)
   dict.SetMethod("setApplicationMenu", &Menu::SetApplicationMenu);
   dict.SetMethod("sendActionToFirstResponder",

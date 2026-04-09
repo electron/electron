@@ -12,15 +12,22 @@
 
 #include "base/feature_list.h"
 #include "base/i18n/rtl.h"
+#include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/linux/x11_util.h"
 #include "shell/browser/native_window_features.h"
 #include "shell/browser/native_window_views.h"
-#include "shell/browser/ui/views/client_frame_view_linux.h"
+#include "shell/browser/ui/views/linux_frame_layout.h"
 #include "third_party/skia/include/core/SkRegion.h"
+#include "ui/aura/window_delegate.h"
+#include "ui/base/hit_test.h"
+#include "ui/display/screen.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/skia_conversions.h"
 #include "ui/linux/linux_ui.h"
 #include "ui/ozone/public/ozone_platform.h"
+#include "ui/platform_window/extensions/wayland_extension.h"
 #include "ui/platform_window/platform_window.h"
+#include "ui/platform_window/platform_window_init_properties.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
 
@@ -28,10 +35,10 @@ namespace electron {
 
 ElectronDesktopWindowTreeHostLinux::ElectronDesktopWindowTreeHostLinux(
     NativeWindowViews* native_window_view,
+    views::Widget* widget,
     views::DesktopNativeWidgetAura* desktop_native_widget_aura)
-    : views::DesktopWindowTreeHostLinux(native_window_view->widget(),
-                                        desktop_native_widget_aura),
-      native_window_view_(native_window_view) {}
+    : views::DesktopWindowTreeHostLinux{widget, desktop_native_widget_aura},
+      native_window_view_{native_window_view} {}
 
 ElectronDesktopWindowTreeHostLinux::~ElectronDesktopWindowTreeHostLinux() =
     default;
@@ -46,25 +53,78 @@ void ElectronDesktopWindowTreeHostLinux::OnWidgetInitDone() {
   UpdateFrameHints();
 }
 
+bool ElectronDesktopWindowTreeHostLinux::IsShowingFrame(
+    ui::PlatformWindowState window_state) const {
+  return window_state != ui::PlatformWindowState::kFullScreen &&
+         window_state != ui::PlatformWindowState::kMaximized &&
+         window_state != ui::PlatformWindowState::kMinimized;
+}
+
+void ElectronDesktopWindowTreeHostLinux::SetWindowIcons(
+    const gfx::ImageSkia& window_icon,
+    const gfx::ImageSkia& app_icon) {
+  DesktopWindowTreeHostLinux::SetWindowIcons(window_icon, app_icon);
+
+  if (ui::GetWaylandToplevelExtension(*platform_window()))
+    saved_window_icon_ = window_icon;
+}
+
+void ElectronDesktopWindowTreeHostLinux::Show(
+    ui::mojom::WindowShowState show_state,
+    const gfx::Rect& restore_bounds) {
+  DesktopWindowTreeHostLinux::Show(show_state, restore_bounds);
+
+  if (!saved_window_icon_.isNull())
+    DesktopWindowTreeHostLinux::SetWindowIcons(saved_window_icon_, {});
+}
+
 gfx::Insets ElectronDesktopWindowTreeHostLinux::CalculateInsetsInDIP(
     ui::PlatformWindowState window_state) const {
   // If we are not showing frame, the insets should be zero.
-  if (native_window_view_->IsFullscreen()) {
-    return {};
+  if (!IsShowingFrame(window_state)) {
+    return gfx::Insets();
   }
 
-  if (!native_window_view_->has_frame() ||
-      !native_window_view_->has_client_frame()) {
+  auto* const layout = native_window_view_->GetLinuxFrameLayout();
+  if (!layout)
     return {};
-  }
 
-  auto* view = static_cast<ClientFrameViewLinux*>(
-      native_window_view_->widget()->non_client_view()->frame_view());
-
-  gfx::Insets insets = view->GetBorderDecorationInsets();
-  if (base::i18n::IsRTL())
-    insets.set_left_right(insets.right(), insets.left());
+  gfx::Insets insets = layout->RestoredFrameBorderInsets();
   return insets;
+}
+
+// Electron treats min/max constraints as the logical window size, but Chromium
+// expects widget bounds including CSD insets (WaylandToplevelWindow::
+// SetSizeConstraints). So we inflate constraints by insets to avoid double
+// subtraction. This is still OK for SSD frames or X11 where the insets are 0.
+std::optional<gfx::Size>
+ElectronDesktopWindowTreeHostLinux::GetMinimumSizeForWindow() const {
+  auto min_size = views::DesktopWindowTreeHostLinux::GetMinimumSizeForWindow();
+  if (min_size.has_value()) {
+    auto* const layout = native_window_view_->GetLinuxFrameLayout();
+    if (layout) {
+      gfx::Insets insets = layout->RestoredFrameBorderInsets();
+      min_size->Enlarge(insets.width(), insets.height());
+    }
+  }
+  return min_size;
+}
+
+std::optional<gfx::Size>
+ElectronDesktopWindowTreeHostLinux::GetMaximumSizeForWindow() const {
+  auto max_size = views::DesktopWindowTreeHostLinux::GetMaximumSizeForWindow();
+  if (max_size.has_value()) {
+    auto* const layout = native_window_view_->GetLinuxFrameLayout();
+    if (layout) {
+      gfx::Insets insets = layout->RestoredFrameBorderInsets();
+      // 0 means no constraint, so don't inflate.
+      if (max_size->width() > 0)
+        max_size->set_width(max_size->width() + insets.width());
+      if (max_size->height() > 0)
+        max_size->set_height(max_size->height() + insets.height());
+    }
+  }
+  return max_size;
 }
 
 void ElectronDesktopWindowTreeHostLinux::OnBoundsChanged(
@@ -72,9 +132,7 @@ void ElectronDesktopWindowTreeHostLinux::OnBoundsChanged(
   views::DesktopWindowTreeHostLinux::OnBoundsChanged(change);
   UpdateFrameHints();
 
-  if (ui::OzonePlatform::GetInstance()
-          ->GetPlatformProperties()
-          .electron_can_call_x11) {
+  if (x11_util::IsX11()) {
     // The OnWindowStateChanged should receive all updates but currently under
     // X11 it doesn't receive changes to the fullscreen status because chromium
     // is handling the fullscreen state changes synchronously, see
@@ -93,16 +151,20 @@ void ElectronDesktopWindowTreeHostLinux::OnWindowStateChanged(
 
 void ElectronDesktopWindowTreeHostLinux::OnWindowTiledStateChanged(
     ui::WindowTiledEdges new_tiled_edges) {
-  // CreateNonClientFrameView creates `ClientFrameViewLinux` only when both
-  // frame and client_frame booleans are set, otherwise it is a different type
-  // of view.
-  if (native_window_view_->has_frame() &&
-      native_window_view_->has_client_frame()) {
-    static_cast<ClientFrameViewLinux*>(
-        native_window_view_->widget()->non_client_view()->frame_view())
-        ->set_tiled_edges(new_tiled_edges);
+  if (auto* layout = native_window_view_->GetLinuxFrameLayout()) {
+    // GNOME on Ubuntu reports all edges as tiled
+    // even if the window is only half-tiled so do not trust individual edge
+    // values.
+    bool maximized = native_window_view_->IsMaximized();
+    bool tiled = new_tiled_edges.top || new_tiled_edges.left ||
+                 new_tiled_edges.bottom || new_tiled_edges.right;
+    layout->set_tiled(tiled && !maximized);
   }
   UpdateFrameHints();
+  ScheduleRelayout();
+  if (GetWidget()->non_client_view()) {
+    GetWidget()->non_client_view()->SchedulePaint();
+  }
 }
 
 void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
@@ -152,17 +214,14 @@ void ElectronDesktopWindowTreeHostLinux::OnDeviceScaleFactorChanged() {
 
 void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
   if (base::FeatureList::IsEnabled(features::kWaylandWindowDecorations)) {
-    if (!native_window_view_->has_frame() ||
-        !native_window_view_->has_client_frame())
+    auto* const layout = native_window_view_->GetLinuxFrameLayout();
+    if (!layout)
       return;
 
     ui::PlatformWindow* window = platform_window();
     auto window_state = window->GetPlatformWindowState();
     float scale = device_scale_factor();
-    auto* view = static_cast<ClientFrameViewLinux*>(
-        native_window_view_->widget()->non_client_view()->frame_view());
-    const gfx::Size widget_size =
-        view->GetWidget()->GetWindowBoundsInScreen().size();
+    const gfx::Size widget_size = GetWidget()->GetWindowBoundsInScreen().size();
 
     if (SupportsClientFrameShadow()) {
       auto insets = CalculateInsetsInDIP(window_state);
@@ -170,7 +229,7 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
         window->SetInputRegion(std::nullopt);
       } else {
         gfx::Rect input_bounds(widget_size);
-        input_bounds.Inset(insets - view->GetInputInsets());
+        input_bounds.Inset(insets - layout->GetInputInsets());
         input_bounds = gfx::ScaleToEnclosingRect(input_bounds, scale);
         window->SetInputRegion(
             std::optional<std::vector<gfx::Rect>>({input_bounds}));
@@ -180,12 +239,14 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
     if (ui::OzonePlatform::GetInstance()->IsWindowCompositingSupported()) {
       // Set the opaque region.
       std::vector<gfx::Rect> opaque_region;
-      if (!native_window_view_->IsFullscreen()) {
+      if (native_window_view_->IsTranslucent()) {
+        // Leave opaque_region empty.
+      } else if (IsShowingFrame(window_state)) {
         // The opaque region is a list of rectangles that contain only fully
         // opaque pixels of the window.  We need to convert the clipping
         // rounded-rect into this format.
-        SkRRect rrect = view->GetRoundedWindowContentBounds();
-        gfx::RectF rectf(view->GetWindowContentBounds());
+        SkRRect rrect = layout->GetRoundedWindowBounds();
+        gfx::RectF rectf(layout->GetWindowBounds());
         rectf.Scale(scale);
         // It is acceptable to omit some pixels that are opaque, but the region
         // must not include any translucent pixels.  Therefore, we must
@@ -219,7 +280,8 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
 
         auto translucent_top_area_rect = SkIRect::MakeXYWH(
             rect.x(), rect.y(), rect.width(),
-            std::ceil(view->GetTranslucentTopAreaHeight() * scale - rect.y()));
+            std::ceil(layout->GetTranslucentTopAreaHeight() * scale -
+                      rect.y()));
         region.op(translucent_top_area_rect, SkRegion::kDifference_Op);
 
         // Convert the region to a list of rectangles.
@@ -230,7 +292,7 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
         // The entire window except for the translucent top is opaque.
         gfx::Rect opaque_region_dip(widget_size);
         gfx::Insets insets;
-        insets.set_top(view->GetTranslucentTopAreaHeight());
+        insets.set_top(layout->GetTranslucentTopAreaHeight());
         opaque_region_dip.Inset(insets);
         opaque_region.push_back(
             gfx::ScaleToEnclosingRect(opaque_region_dip, scale));
@@ -241,4 +303,65 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
     SizeConstraintsChanged();
   }
 }
+
+void ElectronDesktopWindowTreeHostLinux::DispatchEvent(ui::Event* event) {
+  if (event->IsMouseEvent()) {
+    auto* mouse_event = static_cast<ui::MouseEvent*>(event);
+    bool is_mousedown = mouse_event->type() == ui::EventType::kMousePressed;
+    bool is_system_menu_trigger =
+        is_mousedown &&
+        (mouse_event->IsRightMouseButton() ||
+         (mouse_event->IsLeftMouseButton() && mouse_event->IsControlDown()));
+
+    if (!is_system_menu_trigger) {
+      views::DesktopWindowTreeHostLinux::DispatchEvent(event);
+      return;
+    }
+
+    // Determine the non-client area and dispatch 'system-context-menu'.
+    if (GetContentWindow() && GetContentWindow()->delegate()) {
+      ui::LocatedEvent* located_event = event->AsLocatedEvent();
+      gfx::PointF location = located_event->location_f();
+      gfx::PointF location_in_dip =
+          GetRootTransform().InverseMapPoint(location).value_or(location);
+      int hit_test_code = GetContentWindow()->delegate()->GetNonClientComponent(
+          gfx::ToRoundedPoint(location_in_dip));
+      if (hit_test_code != HTCLIENT && hit_test_code != HTNOWHERE) {
+        bool prevent_default = false;
+        native_window_view_->NotifyWindowSystemContextMenu(
+            located_event->x(), located_event->y(), &prevent_default);
+
+        // If |prevent_default| is true, then the user might want to show a
+        // custom menu - proceed propagation and emit context-menu in the
+        // renderer. Otherwise, show the native system window controls menu.
+        if (prevent_default) {
+          electron::api::WebContents::SetDisableDraggableRegions(true);
+          views::DesktopWindowTreeHostLinux::DispatchEvent(event);
+          electron::api::WebContents::SetDisableDraggableRegions(false);
+        } else {
+          if (ui::OzonePlatform::GetInstance()
+                  ->GetPlatformRuntimeProperties()
+                  .supports_server_window_menus) {
+            views::DesktopWindowTreeHostLinux::ShowWindowControlsMenu(
+                display::Screen::Get()->GetCursorScreenPoint());
+          }
+        }
+        return;
+      }
+    }
+  }
+
+  views::DesktopWindowTreeHostLinux::DispatchEvent(event);
+}
+
+void ElectronDesktopWindowTreeHostLinux::AddAdditionalInitProperties(
+    const views::Widget::InitParams& params,
+    ui::PlatformWindowInitProperties* properties) {
+  views::DesktopWindowTreeHostLinux::AddAdditionalInitProperties(params,
+                                                                 properties);
+  const auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr);
+  properties->prefer_dark_theme =
+      linux_ui_theme && linux_ui_theme->PreferDarkTheme();
+}
+
 }  // namespace electron

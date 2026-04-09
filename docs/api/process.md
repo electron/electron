@@ -71,7 +71,7 @@ will disable the support for `asar` archives in Node's built-in modules.
 
 ### `process.noDeprecation`
 
-A `boolean` that controls whether or not deprecation warnings are printed to `stderr`.
+A `boolean` (optional) that controls whether or not deprecation warnings are printed to `stderr`.
 Setting this to `true` will silence deprecation warnings. This property is used
 instead of the `--no-deprecation` command line flag.
 
@@ -99,13 +99,13 @@ property is used instead of the `--throw-deprecation` command line flag.
 
 A `boolean` that controls whether or not deprecations printed to `stderr` include
  their stack trace. Setting this to `true` will print stack traces for deprecations.
- This property is instead of the `--trace-deprecation` command line flag.
+ This property is used instead of the `--trace-deprecation` command line flag.
 
 ### `process.traceProcessWarnings`
 
 A `boolean` that controls whether or not process warnings printed to `stderr` include
  their stack trace. Setting this to `true` will print stack traces for process warnings
- (including deprecations). This property is instead of the `--trace-warnings` command
+ (including deprecations). This property is used instead of the `--trace-warnings` command
  line flag.
 
 ### `process.type` _Readonly_
@@ -114,6 +114,7 @@ A `string` representing the current process's type, can be:
 
 * `browser` - The main process
 * `renderer` - A renderer process
+* `service-worker` - In a service worker
 * `worker` - In a web worker
 * `utility` - In a node process launched as a service
 
@@ -127,8 +128,8 @@ A `string` representing Electron's version string.
 
 ### `process.windowsStore` _Readonly_
 
-A `boolean`. If the app is running as a Windows Store app (appx), this property is `true`,
-for otherwise it is `undefined`.
+A `boolean`. If the app is running as an MSIX package (including AppX for Windows Store),
+this property is `true`, otherwise it is `undefined`.
 
 ### `process.contextId` _Readonly_
 
@@ -210,6 +211,10 @@ Returns `Object`:
   system.
 * `free` Integer - The total amount of memory not being used by applications or disk
   cache.
+* `fileBacked` Integer _macOS_ - The amount of memory that currently has been paged out to storage.
+  Includes memory for file caches, network buffers, and other system services.
+* `purgeable` Integer _macOS_ - The amount of memory that is marked as "purgeable". The system can reclaim it
+  if memory pressure increases.
 * `swapTotal` Integer _Windows_ _Linux_ - The total amount of swap memory in Kilobytes available to the
   system.
 * `swapFree` Integer _Windows_ _Linux_ - The free amount of swap memory in Kilobytes available to the
@@ -232,7 +237,8 @@ console.log(version)
 // On Linux -> '4.15.0-45-generic'
 ```
 
-**Note:** It returns the actual operating system version instead of kernel version on macOS unlike `os.release()`.
+> [!NOTE]
+> It returns the actual operating system version instead of kernel version on macOS unlike `os.release()`.
 
 ### `process.takeHeapSnapshot(filePath)`
 

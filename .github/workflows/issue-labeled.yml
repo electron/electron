@@ -4,46 +4,51 @@ on:
   issues:
     types: [labeled]
 
-permissions:  # added using https://github.com/step-security/secure-workflows
-  contents: read
+permissions: {}
 
 jobs:
   issue-labeled-with-status:
     name: status/{confirmed,reviewed} label added
     if: github.event.label.name == 'status/confirmed' || github.event.label.name == 'status/reviewed'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Generate GitHub App token
-        uses: electron/github-app-auth-action@384fd19694fe7b6dcc9a684746c6976ad78228ae # v1.1.1
+        uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
         id: generate-token
         with:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
           org: electron
       - name: Set status
-        uses: dsanders11/project-actions/edit-item@438b25e007c2f4efec324497fadc6402e7cc61a6 # v1.4.0
+        uses: dsanders11/project-actions/edit-item@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
         with:
           token: ${{ steps.generate-token.outputs.token }}
           project-number: 90
           field: Status
           field-value: ✅ Triaged
+          fail-if-item-not-found: false
   issue-labeled-blocked:
     name: blocked/* label added
     if: startsWith(github.event.label.name, 'blocked/')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Generate GitHub App token
-        uses: electron/github-app-auth-action@384fd19694fe7b6dcc9a684746c6976ad78228ae # v1.1.1
+        uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
         id: generate-token
         with:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
           org: electron
       - name: Set status
-        uses: dsanders11/project-actions/edit-item@438b25e007c2f4efec324497fadc6402e7cc61a6 # v1.4.0
+        uses: dsanders11/project-actions/edit-item@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
         with:
           token: ${{ steps.generate-token.outputs.token }}
           project-number: 90
           field: Status
           field-value: 🛑 Blocked
+          fail-if-item-not-found: false
   issue-labeled-blocked-need-repro:
     name: blocked/need-repro label added
     if: github.event.label.name == 'blocked/need-repro'
@@ -56,21 +61,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: electron/electron
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
           set -eo pipefail
-          COMMENT_COUNT=$(gh issue view ${{ github.event.issue.number }} --comments --json comments | jq '[ .comments[] | select(.author.login == "electron-issue-triage" or .authorAssociation == "OWNER" or .authorAssociation == "MEMBER") | select(.body | startswith("<!-- blocked/need-repro -->")) ] | length')
+          COMMENT_COUNT=$(gh issue view "$ISSUE_NUMBER" --comments --json comments | jq '[ .comments[] | select(.author.login == "electron-issue-triage" or .authorAssociation == "OWNER" or .authorAssociation == "MEMBER") | select(.body | startswith("<!-- blocked/need-repro -->")) ] | length')
           if [[ $COMMENT_COUNT -eq 0 ]]; then
             echo "SHOULD_COMMENT=1" >> "$GITHUB_OUTPUT"
           fi
       - name: Generate GitHub App token
         if: ${{ steps.check-for-comment.outputs.SHOULD_COMMENT }}
-        uses: electron/github-app-auth-action@384fd19694fe7b6dcc9a684746c6976ad78228ae # v1.1.1
+        uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
         id: generate-token
         with:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
       - name: Create comment
         if: ${{ steps.check-for-comment.outputs.SHOULD_COMMENT }}
-        uses: actions-cool/issues-helper@a610082f8ac0cf03e357eb8dd0d5e2ba075e017e # v3.6.0
+        uses: actions-cool/issues-helper@200c78641dbf33838311e5a1e0c31bbdb92d7cf0 # v3.8.0
         with:
           actions: 'create-comment'
           token: ${{ steps.generate-token.outputs.token }}

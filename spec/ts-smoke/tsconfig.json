@@ -15,6 +15,7 @@
   "files": [
     "electron/main.ts",
     "electron/renderer.ts",
+    "electron/utility.ts",
     "../../electron.d.ts"
   ]
 }

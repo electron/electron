@@ -32,10 +32,6 @@ class BrowserWindow : public BaseWindow,
   static v8::Local<v8::Value> From(v8::Isolate* isolate,
                                    NativeWindow* native_window);
 
-  base::WeakPtr<BrowserWindow> GetWeakPtr() {
-    return weak_factory_.GetWeakPtr();
-  }
-
   // disable copy
   BrowserWindow(const BrowserWindow&) = delete;
   BrowserWindow& operator=(const BrowserWindow&) = delete;
@@ -68,19 +64,22 @@ class BrowserWindow : public BaseWindow,
   void Focus() override;
   void Blur() override;
   void SetBackgroundColor(const std::string& color_name) override;
+  void SetBackgroundMaterial(const std::string& material) override;
   void OnWindowShow() override;
   void OnWindowHide() override;
+  void Show() override;
+  void ShowInactive() override;
 
   // BrowserWindow APIs.
   void FocusOnWebView();
   void BlurWebView();
-  bool IsWebViewFocused();
   v8::Local<v8::Value> GetWebContents(v8::Isolate* isolate);
 
  private:
   // Helpers.
 
   v8::Global<v8::Value> web_contents_;
+  bool web_contents_shown_ = false;
   v8::Global<v8::Value> web_contents_view_;
   base::WeakPtr<api::WebContents> api_web_contents_;
 

@@ -12,7 +12,7 @@ const { contextIsolationEnabled } = internalContextBridge;
 */
 window.onload = function () {
   if (contextIsolationEnabled) {
-    internalContextBridge.overrideGlobalValueFromIsolatedWorld([
+    internalContextBridge.tryOverrideGlobalValueFromIsolatedWorld([
       'InspectorFrontendHost', 'showContextMenuAtPoint'
     ], createMenu);
   } else {

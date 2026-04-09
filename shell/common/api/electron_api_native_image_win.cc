@@ -14,8 +14,8 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/skia_util.h"
 #include "third_party/skia/include/core/SkBitmap.h"
-#include "ui/gfx/icon_util.h"
 #include "ui/gfx/image/image_skia.h"
+#include "ui/gfx/win/icon_util.h"
 
 namespace electron::api {
 
@@ -90,7 +90,7 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   icon_info.hbmMask = hBitmap;
   icon_info.hbmColor = hBitmap;
 
-  base::win::ScopedHICON icon(CreateIconIndirect(&icon_info));
+  base::win::ScopedGDIObject<HICON> icon(CreateIconIndirect(&icon_info));
   SkBitmap skbitmap = IconUtil::CreateSkBitmapFromHICON(icon.get());
   gfx::ImageSkia image_skia =
       gfx::ImageSkia::CreateFromBitmap(skbitmap, 1.0 /*scale factor*/);

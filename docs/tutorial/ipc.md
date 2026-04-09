@@ -50,8 +50,9 @@ sections.
 
 In the main process, set an IPC listener on the `set-title` channel with the `ipcMain.on` API:
 
-```js {6-10,22} title='main.js (Main Process)'
+```js {7-11,23} title='main.js (Main Process)'
 const { app, BrowserWindow, ipcMain } = require('electron')
+
 const path = require('node:path')
 
 // ...
@@ -170,7 +171,7 @@ sections.
 
 In the main process, we'll be creating a `handleFileOpen()` function that calls
 `dialog.showOpenDialog` and returns the value of the file path selected by the user. This function
-is used as a callback whenever an `ipcRender.invoke` message is sent through the `dialog:openFile`
+is used as a callback whenever an `ipcRenderer.invoke` message is sent through the `dialog:openFile`
 channel from the renderer process. The return value is then returned as a Promise to the original
 `invoke` call.
 
@@ -183,6 +184,7 @@ provided to the renderer process. Please refer to
 
 ```js {6-13,25} title='main.js (Main Process)'
 const { app, BrowserWindow, dialog, ipcMain } = require('electron')
+
 const path = require('node:path')
 
 // ...
@@ -334,6 +336,7 @@ response.
 
 ```js title='main.js (Main Process)'
 const { ipcMain } = require('electron')
+
 ipcMain.on('synchronous-message', (event, arg) => {
   console.log(arg) // prints "ping" in the Node console
   event.returnValue = 'pong'
@@ -378,6 +381,7 @@ target renderer.
 
 ```js {11-26} title='main.js (Main Process)'
 const { app, BrowserWindow, Menu, ipcMain } = require('electron')
+
 const path = require('node:path')
 
 function createWindow () {
@@ -412,6 +416,8 @@ function createWindow () {
 For the purposes of the tutorial, it's important to note that the `click` handler
 sends a message (either `1` or `-1`) to the renderer process through the `update-counter` channel.
 
+<!-- eslint-skip -->
+
 ```js @ts-type={mainWindow:Electron.BrowserWindow}
 click: () => mainWindow.webContents.send('update-counter', -1)
 ```
@@ -440,7 +446,7 @@ After loading the preload script, your renderer process should have access to th
 We don't directly expose the whole `ipcRenderer.on` API for [security reasons][]. Make sure to
 limit the renderer's access to Electron APIs as much as possible.
 Also don't just pass the callback to `ipcRenderer.on` as this will leak `ipcRenderer` via `event.sender`.
-Use a custom handler that invoke the `callback` only with the desired arguments.
+Use a custom handler that invokes the `callback` only with the desired arguments.
 :::
 
 :::info

@@ -49,6 +49,20 @@ void PowerMonitor::InitPlatformSpecificMonitors() {
                                     DEVICE_NOTIFY_WINDOW_HANDLE);
 }
 
+void PowerMonitor::DestroyPlatformSpecificMonitors() {
+  if (window_) {
+    WTSUnRegisterSessionNotification(window_);
+    UnregisterSuspendResumeNotification(static_cast<HANDLE>(window_));
+    gfx::SetWindowUserData(window_, nullptr);
+    DestroyWindow(window_);
+    window_ = nullptr;
+  }
+  if (atom_) {
+    UnregisterClass(MAKEINTATOM(atom_), instance_);
+    atom_ = 0;
+  }
+}
+
 LRESULT CALLBACK PowerMonitor::WndProcStatic(HWND hwnd,
                                              UINT message,
                                              WPARAM wparam,
@@ -76,7 +90,7 @@ LRESULT CALLBACK PowerMonitor::WndProc(HWND hwnd,
     }
     if (should_treat_as_current_session) {
       if (wparam == WTS_SESSION_LOCK) {
-        // Unretained is OK because this object is eternally pinned.
+        // SelfKeepAlive prevents GC of this object, so Unretained is safe.
         content::GetUIThreadTaskRunner({})->PostTask(
             FROM_HERE,
             base::BindOnce([](PowerMonitor* pm) { pm->Emit("lock-screen"); },
@@ -87,18 +101,6 @@ LRESULT CALLBACK PowerMonitor::WndProc(HWND hwnd,
             base::BindOnce([](PowerMonitor* pm) { pm->Emit("unlock-screen"); },
                            base::Unretained(this)));
       }
-    }
-  } else if (message == WM_POWERBROADCAST) {
-    if (wparam == PBT_APMRESUMEAUTOMATIC) {
-      content::GetUIThreadTaskRunner({})->PostTask(
-          FROM_HERE,
-          base::BindOnce([](PowerMonitor* pm) { pm->Emit("resume"); },
-                         base::Unretained(this)));
-    } else if (wparam == PBT_APMSUSPEND) {
-      content::GetUIThreadTaskRunner({})->PostTask(
-          FROM_HERE,
-          base::BindOnce([](PowerMonitor* pm) { pm->Emit("suspend"); },
-                         base::Unretained(this)));
     }
   }
   return ::DefWindowProc(hwnd, message, wparam, lparam);

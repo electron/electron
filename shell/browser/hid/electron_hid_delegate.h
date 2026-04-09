@@ -7,13 +7,13 @@
 
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include "base/containers/flat_map.h"
 #include "content/public/browser/hid_chooser.h"
 #include "content/public/browser/hid_delegate.h"
 #include "services/device/public/mojom/hid.mojom-forward.h"
+#include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 #include "third_party/blink/public/mojom/hid/hid.mojom-forward.h"
 #include "url/origin.h"
 
@@ -87,8 +87,8 @@ class ElectronHidDelegate : public content::HidDelegate {
       std::vector<blink::mojom::HidDeviceFilterPtr> exclusion_filters,
       content::HidChooser::Callback callback);
 
-  std::unordered_map<content::RenderFrameHost*,
-                     std::unique_ptr<HidChooserController>>
+  absl::flat_hash_map<content::RenderFrameHost*,
+                      std::unique_ptr<HidChooserController>>
       controller_map_;
 
   base::WeakPtrFactory<ElectronHidDelegate> weak_factory_{this};

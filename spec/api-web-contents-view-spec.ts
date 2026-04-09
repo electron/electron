@@ -3,6 +3,7 @@ import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen }
 import { expect } from 'chai';
 
 import { once } from 'node:events';
+import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
 
 import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers';
 import { defer, ifdescribe, waitUntil } from './lib/spec-helpers';
@@ -55,6 +56,21 @@ describe('WebContentsView', () => {
     })).to.throw('options.webContents is already attached to a window');
   });
 
+  it('should throw an error when adding a destroyed child view to the parent view', async () => {
+    const browserWindow = new BrowserWindow();
+
+    const webContentsView = new WebContentsView();
+    const wc = webContentsView.webContents;
+    wc.loadURL('about:blank');
+    wc.destroy();
+
+    const destroyed = once(wc, 'destroyed');
+    await destroyed;
+    expect(() => browserWindow.contentView.addChildView(webContentsView)).to.throw(
+      'Can\'t add a destroyed child view to a parent view'
+    );
+  });
+
   it('should throw error when created with already attached webContents to other WebContentsView', () => {
     const browserWindow = new BrowserWindow();
 
@@ -76,13 +92,14 @@ describe('WebContentsView', () => {
     const w = new BaseWindow({ show: false });
     const v = new View();
     const wcv = new WebContentsView();
+    const wc = wcv.webContents;
     w.setContentView(v);
     v.addChildView(wcv);
-    await wcv.webContents.loadURL('about:blank');
-    const destroyed = once(wcv.webContents, 'destroyed');
-    wcv.webContents.executeJavaScript('window.close()');
+    await wc.loadURL('about:blank');
+    const destroyed = once(wc, 'destroyed');
+    wc.executeJavaScript('window.close()');
     await destroyed;
-    expect(wcv.webContents.isDestroyed()).to.be.true();
+    expect(wc.isDestroyed()).to.be.true();
     v.removeChildView(wcv);
   });
 
@@ -151,6 +168,27 @@ describe('WebContentsView', () => {
       triggerGCByAllocation();
       done();
     });
+  });
+
+  it('does not crash when closed via window.close()', async () => {
+    const bw = new BrowserWindow();
+    const wcv = new WebContentsView();
+    const wc = wcv.webContents;
+
+    await bw.loadURL('data:text/html,<h1>Main Window</h1>');
+    bw.contentView.addChildView(wcv);
+
+    const dto = new Promise<boolean>((resolve) => {
+      wc.on('blur', () => {
+        const devToolsOpen = !wc.isDestroyed() && wc.isDevToolsOpened();
+        resolve(devToolsOpen);
+      });
+    });
+
+    wc.loadURL('data:text/html,<script>window.close()</script>');
+
+    const open = await dto;
+    expect(open).to.be.false();
   });
 
   it('can be fullscreened', async () => {
@@ -272,6 +310,94 @@ describe('WebContentsView', () => {
       }
       expect(visibilityState).to.equal('visible');
     });
+
+    it('tracks visibility for multiple child WebContentsViews', async () => {
+      const w = new BaseWindow({ show: false });
+      const cv = new View();
+      w.setContentView(cv);
+
+      const v1 = new WebContentsView();
+      const v2 = new WebContentsView();
+      cv.addChildView(v1);
+      cv.addChildView(v2);
+      v1.setBounds({ x: 0, y: 0, width: 400, height: 300 });
+      v2.setBounds({ x: 0, y: 300, width: 400, height: 300 });
+
+      await v1.webContents.loadURL('about:blank');
+      await v2.webContents.loadURL('about:blank');
+
+      await expect(waitUntil(async () => await haveVisibilityState(v1, 'hidden'))).to.eventually.be.fulfilled();
+      await expect(waitUntil(async () => await haveVisibilityState(v2, 'hidden'))).to.eventually.be.fulfilled();
+
+      w.show();
+
+      await expect(waitUntil(async () => await haveVisibilityState(v1, 'visible'))).to.eventually.be.fulfilled();
+      await expect(waitUntil(async () => await haveVisibilityState(v2, 'visible'))).to.eventually.be.fulfilled();
+
+      w.hide();
+
+      await expect(waitUntil(async () => await haveVisibilityState(v1, 'hidden'))).to.eventually.be.fulfilled();
+      await expect(waitUntil(async () => await haveVisibilityState(v2, 'hidden'))).to.eventually.be.fulfilled();
+    });
+
+    it('tracks visibility independently when a child WebContentsView is hidden via setVisible', async () => {
+      const w = new BaseWindow();
+      const cv = new View();
+      w.setContentView(cv);
+
+      const v1 = new WebContentsView();
+      const v2 = new WebContentsView();
+      cv.addChildView(v1);
+      cv.addChildView(v2);
+      v1.setBounds({ x: 0, y: 0, width: 400, height: 300 });
+      v2.setBounds({ x: 0, y: 300, width: 400, height: 300 });
+
+      await v1.webContents.loadURL('about:blank');
+      await v2.webContents.loadURL('about:blank');
+
+      await expect(waitUntil(async () => await haveVisibilityState(v1, 'visible'))).to.eventually.be.fulfilled();
+      await expect(waitUntil(async () => await haveVisibilityState(v2, 'visible'))).to.eventually.be.fulfilled();
+
+      v1.setVisible(false);
+
+      await expect(waitUntil(async () => await haveVisibilityState(v1, 'hidden'))).to.eventually.be.fulfilled();
+      // v2 should remain visible while v1 is hidden
+      expect(await v2.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
+
+      v1.setVisible(true);
+
+      await expect(waitUntil(async () => await haveVisibilityState(v1, 'visible'))).to.eventually.be.fulfilled();
+    });
+
+    it('fires a single visibilitychange event per show/hide transition', async () => {
+      const w = new BaseWindow({ show: false });
+      const v = new WebContentsView();
+      w.setContentView(v);
+      await v.webContents.loadURL('about:blank');
+
+      await v.webContents.executeJavaScript(`
+        window.__visChanges = [];
+        document.addEventListener('visibilitychange', () => {
+          window.__visChanges.push(document.visibilityState);
+        });
+      `);
+
+      w.show();
+      await expect(waitUntil(async () => await haveVisibilityState(v, 'visible'))).to.eventually.be.fulfilled();
+
+      // Give any delayed/queued occlusion updates time to fire.
+      await setTimeoutAsync(1500);
+
+      w.hide();
+      await expect(waitUntil(async () => await haveVisibilityState(v, 'hidden'))).to.eventually.be.fulfilled();
+
+      await setTimeoutAsync(1500);
+
+      const changes = await v.webContents.executeJavaScript('window.__visChanges');
+      // Expect exactly one 'visible' followed by one 'hidden'. Extra events
+      // would indicate the occlusion checker is causing spurious transitions.
+      expect(changes).to.deep.equal(['visible', 'hidden']);
+    });
   });
 
   describe('setBorderRadius', () => {
@@ -303,9 +429,12 @@ describe('WebContentsView', () => {
         v.webContents.loadURL(backgroundUrl);
 
         const inset = 10;
+        // Adjust for macOS menu bar height which seems to be about 24px
+        // based on the results from accessibility inspector.
+        const platformInset = process.platform === 'darwin' ? 15 : 0;
         corners = [
-          { x: display.workArea.x + inset, y: display.workArea.y + inset }, // top-left
-          { x: display.workArea.x + display.workArea.width - inset, y: display.workArea.y + inset }, // top-right
+          { x: display.workArea.x + inset, y: display.workArea.y + inset + platformInset }, // top-left
+          { x: display.workArea.x + display.workArea.width - inset, y: display.workArea.y + inset + platformInset }, // top-right
           { x: display.workArea.x + display.workArea.width - inset, y: display.workArea.y + display.workArea.height - inset }, // bottom-right
           { x: display.workArea.x + inset, y: display.workArea.y + display.workArea.height - inset } // bottom-left
         ];
@@ -359,6 +488,40 @@ describe('WebContentsView', () => {
     it('should allow setting when not attached', async () => {
       const v = new WebContentsView();
       v.setBorderRadius(100);
+    });
+  });
+
+  describe('focusOnNavigation webPreference', () => {
+    it('focuses the webContents on navigation by default', async () => {
+      const w = new BrowserWindow();
+      await once(w, 'focus');
+      const v = new WebContentsView();
+      w.setContentView(v);
+      await v.webContents.loadURL('about:blank');
+      const devToolsFocused = once(v.webContents, 'devtools-focused');
+      v.webContents.openDevTools({ mode: 'right' });
+      await devToolsFocused;
+      expect(v.webContents.isFocused()).to.be.false();
+      await v.webContents.loadURL('data:text/html,<body>test</body>');
+      expect(v.webContents.isFocused()).to.be.true();
+    });
+
+    it('does not focus the webContents on navigation when focusOnNavigation is false', async () => {
+      const w = new BrowserWindow();
+      await once(w, 'focus');
+      const v = new WebContentsView({
+        webPreferences: {
+          focusOnNavigation: false
+        }
+      });
+      w.setContentView(v);
+      await v.webContents.loadURL('about:blank');
+      const devToolsFocused = once(v.webContents, 'devtools-focused');
+      v.webContents.openDevTools({ mode: 'right' });
+      await devToolsFocused;
+      expect(v.webContents.isFocused()).to.be.false();
+      await v.webContents.loadURL('data:text/html,<body>test</body>');
+      expect(v.webContents.isFocused()).to.be.false();
     });
   });
 });

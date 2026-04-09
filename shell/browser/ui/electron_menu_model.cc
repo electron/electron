@@ -37,6 +37,18 @@ std::u16string ElectronMenuModel::GetToolTipAt(size_t index) {
   return iter == std::end(toolTips_) ? std::u16string() : iter->second;
 }
 
+void ElectronMenuModel::SetCustomType(size_t index,
+                                      const std::u16string& customType) {
+  int command_id = GetCommandIdAt(index);
+  customTypes_[command_id] = customType;
+}
+
+std::u16string ElectronMenuModel::GetCustomTypeAt(size_t index) {
+  const int command_id = GetCommandIdAt(index);
+  const auto iter = customTypes_.find(command_id);
+  return iter == std::end(customTypes_) ? std::u16string() : iter->second;
+}
+
 void ElectronMenuModel::SetRole(size_t index, const std::u16string& role) {
   int command_id = GetCommandIdAt(index);
   roles_[command_id] = role;
@@ -48,16 +60,22 @@ std::u16string ElectronMenuModel::GetRoleAt(size_t index) {
   return iter == std::end(roles_) ? std::u16string() : iter->second;
 }
 
-void ElectronMenuModel::SetSecondaryLabel(size_t index,
-                                          const std::u16string& sublabel) {
-  int command_id = GetCommandIdAt(index);
-  sublabels_[command_id] = sublabel;
+std::u16string ElectronMenuModel::GetLabelAt(size_t index) const {
+  if (delegate_)
+    return delegate_->GetLabelForCommandId(GetCommandIdAt(index));
+  return std::u16string();
 }
 
 std::u16string ElectronMenuModel::GetSecondaryLabelAt(size_t index) const {
-  int command_id = GetCommandIdAt(index);
-  const auto iter = sublabels_.find(command_id);
-  return iter == std::end(sublabels_) ? std::u16string() : iter->second;
+  if (delegate_)
+    return delegate_->GetSecondaryLabelForCommandId(GetCommandIdAt(index));
+  return std::u16string();
+}
+
+ui::ImageModel ElectronMenuModel::GetIconAt(size_t index) const {
+  if (delegate_)
+    return delegate_->GetIconForCommandId(GetCommandIdAt(index));
+  return ui::ImageModel();
 }
 
 bool ElectronMenuModel::GetAcceleratorAtWithParams(
@@ -101,16 +119,12 @@ void ElectronMenuModel::SetSharingItem(SharingItem item) {
 
 void ElectronMenuModel::MenuWillClose() {
   ui::SimpleMenuModel::MenuWillClose();
-  for (Observer& observer : observers_) {
-    observer.OnMenuWillClose();
-  }
+  observers_.Notify(&Observer::OnMenuWillClose);
 }
 
 void ElectronMenuModel::MenuWillShow() {
   ui::SimpleMenuModel::MenuWillShow();
-  for (Observer& observer : observers_) {
-    observer.OnMenuWillShow();
-  }
+  observers_.Notify(&Observer::OnMenuWillShow);
 }
 
 ElectronMenuModel* ElectronMenuModel::GetSubmenuModelAt(size_t index) {

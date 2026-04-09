@@ -8,7 +8,7 @@ If your app doesn't use any native modules, then it's really easy to create an A
 
 1. Make sure that your app's `node_modules` directory is empty.
 2. Using a _Command Prompt_, run `set npm_config_arch=arm64` before running `npm install`/`yarn install` as usual.
-3. [If you have Electron installed as a development dependency](quick-start.md#prerequisites), npm will download and unpack the arm64 version. You can then package and distribute your app as normal.
+3. [If you have Electron installed as a development dependency](tutorial-2-first-app.md#initializing-your-npm-project), npm will download and unpack the arm64 version. You can then package and distribute your app as normal.
 
 ## General considerations
 
@@ -38,7 +38,7 @@ To test your app, use a Windows on Arm device running Windows 10 (version 1903 o
 
 ### Node.js/node-gyp
 
-[Node.js v12.9.0 or later is recommended.](https://nodejs.org/en/) If updating to a new version of Node is  undesirable, you can instead [update npm's copy of node-gyp manually](https://github.com/nodejs/node-gyp/wiki/Updating-npm's-bundled-node-gyp) to version 5.0.2 or later, which contains the required changes to compile native modules for Arm.
+[Node.js v12.9.0 or later is recommended.](https://nodejs.org/en/) If updating to a new version of Node is undesirable, you can instead [update npm's copy of node-gyp manually](https://github.com/nodejs/node-gyp/wiki/Updating-npm's-bundled-node-gyp) to version 5.0.2 or later, which contains the required changes to compile native modules for Arm.
 
 ### Visual Studio 2017
 

@@ -8,11 +8,10 @@
 #include <memory>
 
 #include "base/memory/raw_ptr.h"
+#include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/events/event.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/views/view.h"
-
-class SkBitmap;
 
 namespace electron {
 

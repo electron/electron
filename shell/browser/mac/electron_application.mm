@@ -8,14 +8,18 @@
 #include <utility>
 
 #include "base/auto_reset.h"
+#include "base/mac/mac_util.h"
 #include "base/observer_list.h"
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/native_event_processor_mac.h"
 #include "content/public/browser/native_event_processor_observer_mac.h"
+#include "content/public/browser/scoped_accessibility_mode.h"
+#include "content/public/common/content_features.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/mac/dict_util.h"
 #import "shell/browser/mac/electron_application_delegate.h"
+#include "ui/accessibility/ax_mode.h"
 
 namespace {
 
@@ -29,15 +33,56 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 }  // namespace
 
 @interface AtomApplication () <NativeEventProcessor> {
+  int _AXEnhancedUserInterfaceRequests;
+  BOOL _voiceOverEnabled;
+  BOOL _sonomaAccessibilityRefinementsAreActive;
   base::ObserverList<content::NativeEventProcessorObserver>::Unchecked
       observers_;
 }
+// Enables/disables screen reader support on changes to VoiceOver status.
+- (void)voiceOverStateChanged:(BOOL)voiceOverEnabled;
 @end
 
-@implementation AtomApplication
+@implementation AtomApplication {
+  std::unique_ptr<content::ScopedAccessibilityMode>
+      _scoped_accessibility_mode_voiceover;
+  std::unique_ptr<content::ScopedAccessibilityMode>
+      _scoped_accessibility_mode_general;
+}
 
 + (AtomApplication*)sharedApplication {
   return (AtomApplication*)[super sharedApplication];
+}
+
+- (void)finishLaunching {
+  [super finishLaunching];
+
+  _sonomaAccessibilityRefinementsAreActive =
+      base::mac::MacOSVersion() >= 14'00'00 &&
+      base::FeatureList::IsEnabled(
+          features::kSonomaAccessibilityActivationRefinements);
+}
+
+- (void)observeValueForKeyPath:(NSString*)keyPath
+                      ofObject:(id)object
+                        change:(NSDictionary*)change
+                       context:(void*)context {
+  if ([keyPath isEqualToString:@"voiceOverEnabled"] &&
+      context == content::BrowserAccessibilityState::GetInstance()) {
+    NSNumber* newValueNumber = [change objectForKey:NSKeyValueChangeNewKey];
+    DCHECK([newValueNumber isKindOfClass:[NSNumber class]]);
+
+    if ([newValueNumber isKindOfClass:[NSNumber class]]) {
+      [self voiceOverStateChanged:[newValueNumber boolValue]];
+    }
+
+    return;
+  }
+
+  [super observeValueForKeyPath:keyPath
+                       ofObject:object
+                         change:change
+                        context:context];
 }
 
 - (void)willPowerOff:(NSNotification*)notify {
@@ -118,7 +163,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   dispatch_sync_main(^{
     std::string activity_type(
         base::SysNSStringToUTF8(userActivity.activityType));
-    base::Value::Dict user_info =
+    base::DictValue user_info =
         electron::NSDictionaryToValue(userActivity.userInfo);
 
     electron::Browser* browser = electron::Browser::Get();
@@ -147,7 +192,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   dispatch_async(dispatch_get_main_queue(), ^{
     std::string activity_type(
         base::SysNSStringToUTF8(userActivity.activityType));
-    base::Value::Dict user_info =
+    base::DictValue user_info =
         electron::NSDictionaryToValue(userActivity.userInfo);
 
     electron::Browser* browser = electron::Browser::Get();
@@ -193,7 +238,9 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 - (id)accessibilityAttributeValue:(NSString*)attribute {
   if ([attribute isEqualToString:@"AXManualAccessibility"]) {
     auto* ax_state = content::BrowserAccessibilityState::GetInstance();
-    return [NSNumber numberWithBool:ax_state->IsAccessibleBrowser()];
+    bool is_accessible_browser =
+        ax_state->GetAccessibilityMode() == ui::kAXModeComplete;
+    return [NSNumber numberWithBool:is_accessible_browser];
   }
 
   return [super accessibilityAttributeValue:attribute];
@@ -207,13 +254,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
   bool is_manual_ax = [attribute isEqualToString:@"AXManualAccessibility"];
   if ([attribute isEqualToString:@"AXEnhancedUserInterface"] || is_manual_ax) {
-    auto* ax_state = content::BrowserAccessibilityState::GetInstance();
-    if ([value boolValue]) {
-      ax_state->OnScreenReaderDetected();
-    } else {
-      ax_state->DisableAccessibility();
-    }
-
+    [self enableScreenReaderCompleteModeAfterDelay:[value boolValue]];
     electron::Browser::Get()->OnAccessibilitySupportChanged();
 
     // Don't call the superclass function for AXManualAccessibility,
@@ -226,16 +267,101 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   return [super accessibilitySetValue:value forAttribute:attribute];
 }
 
+// FROM:
+// https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/chrome_browser_application_mac.mm;l=549;drc=4341cc4e529444bd201ad3aeeed0ec561e04103f
 - (NSAccessibilityRole)accessibilityRole {
-  // For non-VoiceOver AT, such as Voice Control, Apple recommends turning on
-  // a11y when an AT accesses the 'accessibilityRole' property. This function
-  // is accessed frequently so we only change the accessibility state when
-  // accessibility is disabled.
-  auto* ax_state = content::BrowserAccessibilityState::GetInstance();
-  if (!ax_state->GetAccessibilityMode().has_mode(ui::kAXModeBasic.flags())) {
-    ax_state->AddAccessibilityModeFlags(ui::kAXModeBasic);
+  // For non-VoiceOver assistive technology (AT), such as Voice Control, Apple
+  // recommends turning on a11y when an AT accesses the 'accessibilityRole'
+  // property. This function is accessed frequently, so we only change the
+  // accessibility state when accessibility is already disabled.
+  if (!_scoped_accessibility_mode_general &&
+      !_scoped_accessibility_mode_voiceover) {
+    ui::AXMode target_mode = _sonomaAccessibilityRefinementsAreActive
+                                 ? ui::AXMode::kNativeAPIs
+                                 : ui::kAXModeBasic;
+    _scoped_accessibility_mode_general =
+        content::BrowserAccessibilityState::GetInstance()
+            ->CreateScopedModeForProcess(target_mode |
+                                         ui::AXMode::kFromPlatform);
   }
+
   return [super accessibilityRole];
+}
+
+- (void)enableScreenReaderCompleteMode:(BOOL)enable {
+  if (enable) {
+    if (!_scoped_accessibility_mode_voiceover) {
+      _scoped_accessibility_mode_voiceover =
+          content::BrowserAccessibilityState::GetInstance()
+              ->CreateScopedModeForProcess(ui::kAXModeComplete |
+                                           ui::AXMode::kFromPlatform |
+                                           ui::AXMode::kScreenReader);
+    }
+  } else {
+    _scoped_accessibility_mode_voiceover.reset();
+  }
+}
+
+// We need to call enableScreenReaderCompleteMode:YES from performSelector:...
+// but there's no way to supply a BOOL as a parameter, so we have this
+// explicit enable... helper method.
+- (void)enableScreenReaderCompleteMode {
+  _AXEnhancedUserInterfaceRequests = 0;
+  [self enableScreenReaderCompleteMode:YES];
+}
+
+- (void)voiceOverStateChanged:(BOOL)voiceOverEnabled {
+  _voiceOverEnabled = voiceOverEnabled;
+
+  [self enableScreenReaderCompleteMode:voiceOverEnabled];
+}
+
+// Enables or disables screen reader support for non-VoiceOver assistive
+// technology (AT), possibly after a delay.
+//
+// Now that we directly monitor VoiceOver status, we no longer watch for
+// changes to AXEnhancedUserInterface for that signal from VO. However, other
+// AT can set a value for AXEnhancedUserInterface, so we can't ignore it.
+// Unfortunately, as of macOS Sonoma, we sometimes see spurious changes to
+// AXEnhancedUserInterface (quick on and off). We debounce by waiting for these
+// changes to settle down before updating the screen reader state.
+- (void)enableScreenReaderCompleteModeAfterDelay:(BOOL)enable {
+  // If VoiceOver is already explicitly enabled, ignore requests from other AT.
+  if (_voiceOverEnabled) {
+    return;
+  }
+
+  // If this is a request to disable screen reader support, and we haven't seen
+  // a corresponding enable request, go ahead and disable.
+  if (!enable && _AXEnhancedUserInterfaceRequests == 0) {
+    [self enableScreenReaderCompleteMode:NO];
+    return;
+  }
+
+  // Use a counter to track requests for changes to the screen reader state.
+  if (enable) {
+    _AXEnhancedUserInterfaceRequests++;
+  } else {
+    _AXEnhancedUserInterfaceRequests--;
+  }
+
+  DCHECK_GE(_AXEnhancedUserInterfaceRequests, 0);
+
+  // _AXEnhancedUserInterfaceRequests > 0 means we want to enable screen
+  // reader support, but we'll delay that action until there are no more state
+  // change requests within a two-second window. Cancel any pending
+  // performSelector:..., and schedule a new one to restart the countdown.
+  [NSObject cancelPreviousPerformRequestsWithTarget:self
+                                           selector:@selector
+                                           (enableScreenReaderCompleteMode)
+                                             object:nil];
+
+  if (_AXEnhancedUserInterfaceRequests > 0) {
+    const float kTwoSecondDelay = 2.0;
+    [self performSelector:@selector(enableScreenReaderCompleteMode)
+               withObject:nil
+               afterDelay:kTwoSecondDelay];
+  }
 }
 
 - (void)orderFrontStandardAboutPanel:(id)sender {

@@ -1,0 +1,164 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Niklas Wenzel <dev@nikwen.de>
+Date: Wed, 25 Feb 2026 16:24:03 +0100
+Subject: feat: allow enabling extensions on custom protocols
+
+This allows us to use Chrome extensions on custom protocols.
+
+The patch can't really be upstreamed, unfortunately, because there are
+other URLPattern functions that we don't patch that Chrome needs.
+
+Patching those properly would require replacing the bitmask logic in
+URLPattern with a more flexible solution. This would be a larger effort
+and Chromium might reject it for performance reasons.
+
+See: https://source.chromium.org/chromium/chromium/src/+/main:extensions/common/url_pattern.h;l=53-74;drc=50dbcddad2f8e36ddfcec21d4551f389df425c37
+
+This patch makes it work in the context of Electron.
+
+diff --git a/extensions/browser/api/content_settings/content_settings_helpers.cc b/extensions/browser/api/content_settings/content_settings_helpers.cc
+index ea484a282d820da78e8dc1db27ad0ba6e070ac2c..a0e361cf2d2960de4f429a9d37459e26614a17c4 100644
+--- a/extensions/browser/api/content_settings/content_settings_helpers.cc
++++ b/extensions/browser/api/content_settings/content_settings_helpers.cc
+@@ -37,7 +37,7 @@ ContentSettingsPattern ParseExtensionPattern(std::string_view pattern_str,
+                                              std::string* error) {
+   const int kAllowedSchemes =
+       URLPattern::SCHEME_HTTP | URLPattern::SCHEME_HTTPS |
+-      URLPattern::SCHEME_FILE;
++      URLPattern::SCHEME_FILE | URLPattern::SCHEME_ELECTRON_CUSTOM_PROTOCOLS;
+   URLPattern url_pattern(kAllowedSchemes);
+   URLPattern::ParseResult result = url_pattern.Parse(pattern_str);
+   if (result != URLPattern::ParseResult::kSuccess) {
+diff --git a/extensions/browser/api/web_request/extension_web_request_event_router.h b/extensions/browser/api/web_request/extension_web_request_event_router.h
+index 57ed3cf54b2921df09ad84906b3da7527c6080bb..ffe3a0894c612adaa429a783827c85038d959a95 100644
+--- a/extensions/browser/api/web_request/extension_web_request_event_router.h
++++ b/extensions/browser/api/web_request/extension_web_request_event_router.h
+@@ -53,7 +53,8 @@ inline constexpr int kWebRequestFilterValidSchemes =
+     URLPattern::SCHEME_HTTP | URLPattern::SCHEME_HTTPS |
+     URLPattern::SCHEME_FTP | URLPattern::SCHEME_FILE |
+     URLPattern::SCHEME_EXTENSION | URLPattern::SCHEME_WS |
+-    URLPattern::SCHEME_WSS | URLPattern::SCHEME_UUID_IN_PACKAGE;
++    URLPattern::SCHEME_WSS | URLPattern::SCHEME_UUID_IN_PACKAGE |
++    URLPattern::SCHEME_ELECTRON_CUSTOM_PROTOCOLS;
+ 
+ class WebRequestEventRouter : public KeyedService {
+  public:
+diff --git a/extensions/common/extension.cc b/extensions/common/extension.cc
+index 542bc99fbaace39351a6f991a7702d0c77c891eb..9fef3d7fe3108cca843100967489f1cc1b6b4589 100644
+--- a/extensions/common/extension.cc
++++ b/extensions/common/extension.cc
+@@ -223,7 +223,8 @@ const int Extension::kValidHostPermissionSchemes =
+     URLPattern::SCHEME_CHROMEUI | URLPattern::SCHEME_HTTP |
+     URLPattern::SCHEME_HTTPS | URLPattern::SCHEME_FILE |
+     URLPattern::SCHEME_FTP | URLPattern::SCHEME_WS | URLPattern::SCHEME_WSS |
+-    URLPattern::SCHEME_UUID_IN_PACKAGE;
++    URLPattern::SCHEME_UUID_IN_PACKAGE |
++    URLPattern::SCHEME_ELECTRON_CUSTOM_PROTOCOLS;
+ 
+ //
+ // Extension
+diff --git a/extensions/common/url_pattern.cc b/extensions/common/url_pattern.cc
+index d4328ca22fdeefd3dca88bfe959dfb849705b109..ba24e788d4a2e467d24f6369e2d93ea3b4a0c9d7 100644
+--- a/extensions/common/url_pattern.cc
++++ b/extensions/common/url_pattern.cc
+@@ -140,6 +140,11 @@ bool URLPattern::IsValidSchemeForExtensions(std::string_view scheme) {
+       return true;
+     }
+   }
++  for (auto& extension_scheme : url::GetExtensionSchemes()) {
++    if (scheme == extension_scheme) {
++      return true;
++    }
++  }
+   return false;
+ }
+ 
+@@ -401,6 +406,14 @@ bool URLPattern::IsValidScheme(std::string_view scheme) const {
+     }
+   }
+ 
++  if (valid_schemes_ & URLPattern::SCHEME_ELECTRON_CUSTOM_PROTOCOLS) {
++    for (auto& extension_scheme : url::GetExtensionSchemes()) {
++      if (scheme == extension_scheme) {
++        return true;
++      }
++    }
++  }
++
+   return false;
+ }
+ 
+diff --git a/extensions/common/url_pattern.h b/extensions/common/url_pattern.h
+index 4d09251b0160644d86682ad3db7c41b50f360e6f..8a626e14eff2d58d8218a7b0df820c6c0522b00f 100644
+--- a/extensions/common/url_pattern.h
++++ b/extensions/common/url_pattern.h
+@@ -64,6 +64,9 @@ class URLPattern {
+     SCHEME_DATA = 1 << 9,
+     SCHEME_UUID_IN_PACKAGE = 1 << 10,
+ 
++    // Represents the schemes returned by url::GetExtensionSchemes().
++    SCHEME_ELECTRON_CUSTOM_PROTOCOLS = 1 << 11,
++
+     // IMPORTANT!
+     // SCHEME_ALL will match every scheme, including chrome://, chrome-
+     // extension://, about:, etc. Because this has lots of security
+diff --git a/extensions/common/user_script.cc b/extensions/common/user_script.cc
+index f680ef4d31d580a285abe51387e3df043d4458f1..afde40d56d7874aa04ea2b1d881e5cab79fd7661 100644
+--- a/extensions/common/user_script.cc
++++ b/extensions/common/user_script.cc
+@@ -69,7 +69,8 @@ enum {
+   kValidUserScriptSchemes = URLPattern::SCHEME_CHROMEUI |
+                             URLPattern::SCHEME_HTTP | URLPattern::SCHEME_HTTPS |
+                             URLPattern::SCHEME_FILE | URLPattern::SCHEME_FTP |
+-                            URLPattern::SCHEME_UUID_IN_PACKAGE
++                            URLPattern::SCHEME_UUID_IN_PACKAGE |
++                            URLPattern::SCHEME_ELECTRON_CUSTOM_PROTOCOLS
+ };
+ 
+ // static
+diff --git a/url/url_util.cc b/url/url_util.cc
+index 1ee0feaad9be437914b101195e862965fcaccff4..7412af58409285fbe9b426c5b2bb8510d362091c 100644
+--- a/url/url_util.cc
++++ b/url/url_util.cc
+@@ -135,6 +135,9 @@ struct SchemeRegistry {
+   // Embedder schemes that have V8 code cache enabled in js and wasm scripts.
+   std::vector<std::string> code_cache_schemes = {};
+ 
++  // Embedder schemes on which Chrome extensions can be used.
++  std::vector<std::string> extension_schemes = {};
++
+   // Schemes with a predefined default custom handler.
+   std::vector<SchemeWithHandler> predefined_handler_schemes;
+ 
+@@ -679,6 +682,15 @@ const std::vector<std::string>& GetCodeCacheSchemes() {
+   return GetSchemeRegistry().code_cache_schemes;
+ }
+ 
++void AddExtensionScheme(std::string_view new_scheme) {
++  DoAddScheme(new_scheme,
++              &GetSchemeRegistryWithoutLocking()->extension_schemes);
++}
++
++const std::vector<std::string>& GetExtensionSchemes() {
++  return GetSchemeRegistry().extension_schemes;
++}
++
+ void AddPredefinedHandlerScheme(std::string_view new_scheme,
+                                 std::string_view handler) {
+   DoAddSchemeWithHandler(
+diff --git a/url/url_util.h b/url/url_util.h
+index 6906dd1c903209f3bb6d9ca346e845f1dfeef050..f1928796d5c8a01a51ac9237394bdf6236920998 100644
+--- a/url/url_util.h
++++ b/url/url_util.h
+@@ -124,6 +124,11 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetEmptyDocumentSchemes();
+ COMPONENT_EXPORT(URL) void AddCodeCacheScheme(std::string_view new_scheme);
+ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCodeCacheSchemes();
+ 
++// Adds an application-defined scheme to the list of schemes on which Chrome
++// extensions can be used.
++COMPONENT_EXPORT(URL) void AddExtensionScheme(std::string_view new_scheme);
++COMPONENT_EXPORT(URL) const std::vector<std::string>& GetExtensionSchemes();
++
+ // Adds a scheme with a predefined default handler.
+ //
+ // This pair of strings must be normalized protocol handler parameters as

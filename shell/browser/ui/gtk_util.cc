@@ -36,16 +36,6 @@ const char* GetCancelLabel() {
   return cancel;
 }
 
-const char* GetOpenLabel() {
-  static const char* open = GtkGettext("_Open");
-  return open;
-}
-
-const char* GetSaveLabel() {
-  static const char* save = GtkGettext("_Save");
-  return save;
-}
-
 const char* GetOkLabel() {
   static const char* ok = GtkGettext("_Ok");
   return ok;
@@ -82,11 +72,13 @@ GdkPixbuf* GdkPixbufFromSkBitmap(const SkBitmap& bitmap) {
   constexpr GdkColorspace kColorspace = GDK_COLORSPACE_RGB;
   constexpr gboolean kHasAlpha = true;
   constexpr int kBitsPerSample = 8;
-  return gdk_pixbuf_new_from_bytes(
-      g_bytes_new(std::data(bytes), std::size(bytes)), kColorspace, kHasAlpha,
-      kBitsPerSample, width, height,
+  GBytes* gbytes = g_bytes_new(std::data(bytes), std::size(bytes));
+  GdkPixbuf* pixbuf = gdk_pixbuf_new_from_bytes(
+      gbytes, kColorspace, kHasAlpha, kBitsPerSample, width, height,
       gdk_pixbuf_calculate_rowstride(kColorspace, kHasAlpha, kBitsPerSample,
                                      width, height));
+  g_bytes_unref(gbytes);
+  return pixbuf;
 }
 
 }  // namespace gtk_util

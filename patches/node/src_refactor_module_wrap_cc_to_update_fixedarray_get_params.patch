@@ -1,0 +1,83 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 15 Jan 2026 21:49:25 +0000
+Subject: src: refactor module_wrap.cc to update FixedArray::Get params
+
+Update to use the new FixedArray::Get signature that takes a single
+index parameter and no longer requires a v8::Context argument.
+
+See https://chromium-review.googlesource.com/c/v8/v8/+/7141498
+
+This can be removed once we update to a V8 version that includes this change.
+
+diff --git a/src/module_wrap.cc b/src/module_wrap.cc
+index 84d17a46efe146c1794a43963c41a4461eacfca2..2c95ac99be70b0750372e9c858753bf519498e3d 100644
+--- a/src/module_wrap.cc
++++ b/src/module_wrap.cc
+@@ -109,12 +109,12 @@ ModuleCacheKey ModuleCacheKey::From(Local<Context> context,
+ 
+   for (int i = 0; i < import_attributes->Length();
+        i += elements_per_attribute) {
+-    DCHECK(DataIsString(import_attributes->Get(context, i)));
+-    DCHECK(DataIsString(import_attributes->Get(context, i + 1)));
++    DCHECK(DataIsString(import_attributes->Get(i)));
++    DCHECK(DataIsString(import_attributes->Get(i + 1)));
+ 
+-    Local<String> v8_key = import_attributes->Get(context, i).As<String>();
++    Local<String> v8_key = import_attributes->Get(i).As<String>();
+     Local<String> v8_value =
+-        import_attributes->Get(context, i + 1).As<String>();
++        import_attributes->Get(i + 1).As<String>();
+     Utf8Value key_utf8(isolate, v8_key);
+     Utf8Value value_utf8(isolate, v8_value);
+ 
+@@ -171,7 +171,7 @@ ModuleWrap::ModuleWrap(Realm* realm,
+   Local<FixedArray> requests = module->GetModuleRequests();
+   for (int i = 0; i < requests->Length(); i++) {
+     ModuleCacheKey module_cache_key = ModuleCacheKey::From(
+-        context, requests->Get(context, i).As<ModuleRequest>());
++        context, requests->Get(i).As<ModuleRequest>());
+     resolve_cache_[module_cache_key] = i;
+   }
+ }
+@@ -579,8 +579,8 @@ static Local<Object> createImportAttributesContainer(
+   LocalVector<Value> values(isolate, num_attributes);
+ 
+   for (int i = 0; i < raw_attributes->Length(); i += elements_per_attribute) {
+-    Local<Data> key = raw_attributes->Get(realm->context(), i);
+-    Local<Data> value = raw_attributes->Get(realm->context(), i + 1);
++    Local<Data> key = raw_attributes->Get(i);
++    Local<Data> value = raw_attributes->Get(i + 1);
+     DCHECK(DataIsString(key));
+     DCHECK(DataIsString(value));
+ 
+@@ -603,9 +603,9 @@ static Local<Array> createModuleRequestsContainer(
+   LocalVector<Value> requests(isolate, raw_requests->Length());
+ 
+   for (int i = 0; i < raw_requests->Length(); i++) {
+-    DCHECK(raw_requests->Get(context, i)->IsModuleRequest());
++    DCHECK(raw_requests->Get(i)->IsModuleRequest());
+     Local<ModuleRequest> module_request =
+-        raw_requests->Get(realm->context(), i).As<ModuleRequest>();
++        raw_requests->Get(i).As<ModuleRequest>();
+ 
+     Local<String> specifier = module_request->GetSpecifier();
+ 
+@@ -669,7 +669,7 @@ void ModuleWrap::Link(const FunctionCallbackInfo<Value>& args) {
+ 
+   for (int i = 0; i < requests->Length(); i++) {
+     ModuleCacheKey module_cache_key = ModuleCacheKey::From(
+-        context, requests->Get(context, i).As<ModuleRequest>());
++        context, requests->Get(i).As<ModuleRequest>());
+     DCHECK(dependent->resolve_cache_.contains(module_cache_key));
+ 
+     Local<Value> module_i;
+@@ -1129,7 +1129,7 @@ MaybeLocal<Promise> ImportModuleDynamicallyWithPhase(
+   // If the host-defined options are empty, get the referrer id symbol
+   // from the realm global object.
+   if (options->Length() == HostDefinedOptions::kLength) {
+-    id = options->Get(context, HostDefinedOptions::kID).As<Symbol>();
++    id = options->Get(HostDefinedOptions::kID).As<Symbol>();
+   } else if (!context->Global()
+                   ->GetPrivate(context, env->host_defined_option_symbol())
+                   .ToLocal(&id)) {

@@ -5,16 +5,15 @@
 #include "shell/browser/api/electron_api_power_monitor.h"
 
 #include "base/power_monitor/power_monitor.h"
-#include "base/power_monitor/power_monitor_device_source.h"
 #include "base/power_monitor/power_observer.h"
 #include "gin/data_object_builder.h"
-#include "gin/handle.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
-#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "ui/base/idle/idle.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace gin {
 
@@ -60,9 +59,11 @@ struct Converter<base::PowerThermalObserver::DeviceThermalState> {
 
 namespace electron::api {
 
-gin::WrapperInfo PowerMonitor::kWrapperInfo = {gin::kEmbedderNativeGin};
+const gin::WrapperInfo PowerMonitor::kWrapperInfo = {
+    {gin::kEmbedderNativeGin},
+    gin::kElectronPowerMonitor};
 
-PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
+PowerMonitor::PowerMonitor() {
 #if BUILDFLAG(IS_MAC)
   Browser::Get()->SetShutdownHandler(base::BindRepeating(
       &PowerMonitor::ShouldShutdown, base::Unretained(this)));
@@ -79,6 +80,14 @@ PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
 }
 
 PowerMonitor::~PowerMonitor() {
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
+  DestroyPlatformSpecificMonitors();
+#endif
+
+#if BUILDFLAG(IS_MAC)
+  Browser::Get()->SetShutdownHandler(base::RepeatingCallback<bool()>());
+#endif
+
   auto* power_monitor = base::PowerMonitor::GetInstance();
   power_monitor->RemovePowerStateObserver(this);
   power_monitor->RemovePowerSuspendObserver(this);
@@ -141,11 +150,9 @@ void PowerMonitor::SetListeningForShutdown(bool is_listening) {
 #endif
 
 // static
-v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
-  auto* pm = new PowerMonitor(isolate);
-  auto handle = gin::CreateHandle(isolate, pm).ToV8();
-  pm->Pin(isolate);
-  return handle;
+PowerMonitor* PowerMonitor::Create(v8::Isolate* isolate) {
+  return cppgc::MakeGarbageCollected<PowerMonitor>(
+      isolate->GetCppHeap()->GetAllocationHandle());
 }
 
 gin::ObjectTemplateBuilder PowerMonitor::GetObjectTemplateBuilder(
@@ -160,8 +167,12 @@ gin::ObjectTemplateBuilder PowerMonitor::GetObjectTemplateBuilder(
   return builder;
 }
 
-const char* PowerMonitor::GetTypeName() {
-  return "PowerMonitor";
+const gin::WrapperInfo* PowerMonitor::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* PowerMonitor::GetHumanReadableName() const {
+  return "Electron / PowerMonitor";
 }
 
 }  // namespace electron::api
@@ -196,8 +207,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
-  v8::Isolate* isolate = context->GetIsolate();
-  gin_helper::Dictionary dict(isolate, exports);
+  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("createPowerMonitor",
                  base::BindRepeating(&PowerMonitor::Create));
   dict.SetMethod("getSystemIdleState",

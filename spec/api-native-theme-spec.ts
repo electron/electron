@@ -6,6 +6,7 @@ import { once } from 'node:events';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
+import { ifdescribe } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('nativeTheme module', () => {
@@ -102,6 +103,12 @@ describe('nativeTheme module', () => {
     });
   });
 
+  describe('nativeTheme.shouldUseDarkColorsForSystemIntegratedUI', () => {
+    it('returns a boolean', () => {
+      expect(nativeTheme.shouldUseDarkColorsForSystemIntegratedUI).to.be.a('boolean');
+    });
+  });
+
   describe('nativeTheme.inForcedColorsMode', () => {
     it('returns a boolean', () => {
       expect(nativeTheme.inForcedColorsMode).to.be.a('boolean');
@@ -111,6 +118,12 @@ describe('nativeTheme module', () => {
   describe('nativeTheme.prefersReducesTransparency', () => {
     it('returns a boolean', () => {
       expect(nativeTheme.prefersReducedTransparency).to.be.a('boolean');
+    });
+  });
+
+  ifdescribe(process.platform === 'darwin')('nativeTheme.shouldDifferentiateWithoutColor', () => {
+    it('returns a boolean', () => {
+      expect(nativeTheme.shouldDifferentiateWithoutColor).to.be.a('boolean');
     });
   });
 });

@@ -18,7 +18,7 @@
 NetworkHintsHandlerImpl::NetworkHintsHandlerImpl(
     content::RenderFrameHost* frame_host)
     : network_hints::SimpleNetworkHintsHandlerImpl(
-          frame_host->GetProcess()->GetID(),
+          frame_host->GetProcess()->GetDeprecatedID(),
           frame_host->GetRoutingID()),
       browser_context_(frame_host->GetProcess()->GetBrowserContext()) {}
 
@@ -31,9 +31,10 @@ void NetworkHintsHandlerImpl::Preconnect(const url::SchemeHostPort& url,
   if (!browser_context_) {
     return;
   }
-  auto* session = electron::api::Session::FromBrowserContext(browser_context_);
-  if (session) {
-    session->Emit("preconnect", url.GetURL(), allow_credentials);
+  gin::WeakCell<electron::api::Session>* session =
+      electron::api::Session::FromBrowserContext(browser_context_);
+  if (session && session->Get()) {
+    session->Get()->Emit("preconnect", url.GetURL(), allow_credentials);
   }
 }
 

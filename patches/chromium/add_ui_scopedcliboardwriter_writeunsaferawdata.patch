@@ -8,10 +8,10 @@ was removed as part of the Raw Clipboard API scrubbing.
 https://bugs.chromium.org/p/chromium/issues/detail?id=1217643
 
 diff --git a/ui/base/clipboard/scoped_clipboard_writer.cc b/ui/base/clipboard/scoped_clipboard_writer.cc
-index bbdd3598894f5455f890ffde1d3cf8076b9a9176..7b2724f8c2baa2461645e85c07b6487b93540251 100644
+index 12695bb8f3d2cc3f498e5c6e37e4729d9586962f..6bd7b6f2908d3c8316191e3106e50b2137068a0f 100644
 --- a/ui/base/clipboard/scoped_clipboard_writer.cc
 +++ b/ui/base/clipboard/scoped_clipboard_writer.cc
-@@ -227,6 +227,16 @@ void ScopedClipboardWriter::WriteData(const std::u16string& format,
+@@ -239,6 +239,16 @@ void ScopedClipboardWriter::WriteData(std::u16string_view format,
    }
  }
  
@@ -27,14 +27,14 @@ index bbdd3598894f5455f890ffde1d3cf8076b9a9176..7b2724f8c2baa2461645e85c07b6487b
 +
  void ScopedClipboardWriter::Reset() {
    objects_.clear();
-   platform_representations_.clear();
+   raw_objects_.clear();
 diff --git a/ui/base/clipboard/scoped_clipboard_writer.h b/ui/base/clipboard/scoped_clipboard_writer.h
-index af932ade8d50f304be850dc1ff4f77b618c12c1f..a907fdebfa901938abded0eae203c093d8387f5b 100644
+index 7d7d015f9725ef39b7d5e82b83ac5195e2cfe309..83565b6d73cbe30e3c24913468862173cfd3a83e 100644
 --- a/ui/base/clipboard/scoped_clipboard_writer.h
 +++ b/ui/base/clipboard/scoped_clipboard_writer.h
-@@ -88,6 +88,10 @@ class COMPONENT_EXPORT(UI_BASE_CLIPBOARD) ScopedClipboardWriter {
+@@ -91,6 +91,10 @@ class COMPONENT_EXPORT(UI_BASE_CLIPBOARD) ScopedClipboardWriter {
    // This is only used to write custom format data.
-   void WriteData(const std::u16string& format, mojo_base::BigBuffer data);
+   void WriteData(std::u16string_view format, mojo_base::BigBuffer data);
  
 +  // write raw (non-pickled) data to the clipboard
 +  void WriteUnsafeRawData(const std::u16string& format,

@@ -12,9 +12,9 @@
 
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
+#include "components/spellcheck/common/spelling_marker.h"
 #include "components/spellcheck/renderer/spellcheck_worditerator.h"
 #include "third_party/blink/public/platform/web_spell_check_panel_host_client.h"
-#include "third_party/blink/public/platform/web_vector.h"
 #include "third_party/blink/public/web/web_text_check_client.h"
 #include "v8/include/v8-context.h"
 #include "v8/include/v8-forward.h"
@@ -42,9 +42,12 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
  private:
   class SpellcheckRequest;
   // blink::WebTextCheckClient:
-  void RequestCheckingOfText(const blink::WebString& textToCheck,
-                             std::unique_ptr<blink::WebTextCheckingCompletion>
-                                 completionCallback) override;
+  void RequestCheckingOfText(
+      const blink::WebString& text_to_check,
+      const std::vector<blink::WebSpellingMarker>& spelling_markers,
+      ShouldForceRefreshTextCheckService should_force_refresh,
+      std::unique_ptr<blink::WebTextCheckingCompletion> completion_callback)
+      override;
   bool IsSpellCheckingEnabled() const override;
 
   // blink::WebSpellCheckPanelHostClient:

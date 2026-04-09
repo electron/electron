@@ -14,6 +14,7 @@ const args = minimist(process.argv.slice(2), {
 
 const BASE = path.resolve(__dirname, '../..');
 
+const ROOT_PACKAGE_JSON = path.resolve(BASE, 'package.json');
 const NODE_DIR = path.resolve(BASE, 'third_party', 'electron_node');
 const JUNIT_DIR = args.jUnitDir ? path.resolve(args.jUnitDir) : null;
 const TAP_FILE_NAME = 'test.tap';
@@ -37,6 +38,18 @@ const defaultOptions = [
   utils.getAbsoluteElectronExec(),
   '-J'
 ];
+
+// The root package.json is ESM, which breaks the test runner.
+// Temporarily change it to CommonJS while running the tests, then
+// change it back when done.
+const resetPackageJson = ({ useESM }) => {
+  // This won't always exist in CI.
+  if (!fs.existsSync(ROOT_PACKAGE_JSON)) { return; }
+
+  const packageJson = JSON.parse(fs.readFileSync(ROOT_PACKAGE_JSON, 'utf-8'));
+  packageJson.type = useESM ? 'module' : 'commonjs';
+  fs.writeFileSync(ROOT_PACKAGE_JSON, JSON.stringify(packageJson, null, 2) + '\n');
+};
 
 const getCustomOptions = () => {
   let customOptions = ['tools/test.py'];
@@ -73,10 +86,13 @@ async function main () {
       process.exit(1);
     }
 
+    console.log(`All ${DISABLED_TESTS.length} disabled specs exist.`);
     process.exit(0);
   }
 
   const options = args.default ? defaultOptions : getCustomOptions();
+
+  resetPackageJson({ useESM: false });
 
   const testChild = cp.spawn('python3', options, {
     env: {
@@ -87,7 +103,10 @@ async function main () {
     cwd: NODE_DIR,
     stdio: 'inherit'
   });
+
   testChild.on('exit', (testCode) => {
+    resetPackageJson({ useESM: true });
+
     if (JUNIT_DIR) {
       fs.mkdirSync(JUNIT_DIR);
       const converterStream = require('tap-xunit')();

@@ -14,8 +14,9 @@
 #include "shell/browser/osr/osr_view_proxy.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
+#include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/drag_controller.h"
-#include "ui/views/focus/widget_focus_manager.h"
+#include "ui/views/focus/native_view_focus_manager.h"
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/views/widget/widget_observer.h"
 
@@ -43,23 +44,23 @@ class AutofillPopupChildView : public views::View {
   explicit AutofillPopupChildView(const std::u16string& suggestion)
       : suggestion_(suggestion) {
     SetFocusBehavior(FocusBehavior::ALWAYS);
+
+    auto& view_a11y = GetViewAccessibility();
+    view_a11y.SetRole(ax::mojom::Role::kMenuItem);
+    view_a11y.SetName(suggestion);
   }
 
   // disable copy
   AutofillPopupChildView(const AutofillPopupChildView&) = delete;
   AutofillPopupChildView& operator=(const AutofillPopupChildView&) = delete;
 
- private:
   ~AutofillPopupChildView() override = default;
-
-  // views::Views implementation
-  void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
 
   std::u16string suggestion_;
 };
 
 class AutofillPopupView : public views::WidgetDelegateView,
-                          private views::WidgetFocusChangeListener,
+                          private views::NativeViewFocusChangeListener,
                           private views::WidgetObserver,
                           public views::DragController {
  public:
@@ -103,7 +104,6 @@ class AutofillPopupView : public views::WidgetDelegateView,
 
   // views::Views implementation.
   void OnPaint(gfx::Canvas* canvas) override;
-  void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
   void OnMouseCaptureLost() override;
   bool OnMouseDragged(const ui::MouseEvent& event) override;
   void OnMouseExited(const ui::MouseEvent& event) override;

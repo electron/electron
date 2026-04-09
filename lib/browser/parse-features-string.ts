@@ -26,7 +26,12 @@ const keysOfTypeNumberCompileTimeCheck: { [K in IntegerBrowserWindowOptionKeys] 
 };
 // Note `top` / `left` are special cases from the browser which we later convert
 // to y / x.
-const keysOfTypeNumber = new Set(['top', 'left', ...Object.keys(keysOfTypeNumberCompileTimeCheck)]);
+// NOTE(@mlaurencin) `innerWidth` / `innerHeight` are also special cases. The spec
+// states that `width` and `height` represent the window content size and are equivalent
+// to `innerWidth` / `innerHeight`. However, our implementation currently incorrectly maps
+// `width` and `height` to `outerWidth` and `outerHeight`, or the size of the window
+// with all border and related window chrome.
+const keysOfTypeNumber = new Set(['top', 'left', 'innerWidth', 'innerHeight', ...Object.keys(keysOfTypeNumberCompileTimeCheck)]);
 
 /**
  * Note that we only allow "0" and "1" boolean conversion when the type is known
@@ -84,6 +89,12 @@ export function parseFeatures (features: string) {
     if (parsed[key] === undefined) continue;
     webPreferences[key] = parsed[key];
     delete parsed[key];
+  }
+
+  // Per spec - https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-open-dev
+  // windows are always resizable.
+  if (parsed.resizable !== undefined) {
+    delete parsed.resizable;
   }
 
   if (parsed.left !== undefined) parsed.x = parsed.left;

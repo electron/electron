@@ -6,10 +6,10 @@ Subject: Revert "Remove the AllowAggressiveThrottlingWithWebSocket feature."
 This reverts commit 615c1810a187840ffeb04096087efff86edb37de.
 
 diff --git a/third_party/blink/renderer/modules/websockets/websocket_channel_impl.cc b/third_party/blink/renderer/modules/websockets/websocket_channel_impl.cc
-index 7a885de263f1c84fc676c62caa6c787983e47994..854d57812e99bb4668aa3bbf3f63bdb0219e658d 100644
+index 3868d8e54753e83a07843e78f542345e10365232..6a70d8542bfda6287bf3651e8a89863119fe9f19 100644
 --- a/third_party/blink/renderer/modules/websockets/websocket_channel_impl.cc
 +++ b/third_party/blink/renderer/modules/websockets/websocket_channel_impl.cc
-@@ -104,6 +104,17 @@ enum WebSocketOpCode {
+@@ -102,6 +102,17 @@ enum WebSocketOpCode {
    kOpCodeBinary = 0x2,
  };
  
@@ -27,15 +27,16 @@ index 7a885de263f1c84fc676c62caa6c787983e47994..854d57812e99bb4668aa3bbf3f63bdb0
  }  // namespace
  
  WebSocketChannelImpl::MessageDataDeleter::MessageDataDeleter(
-@@ -297,7 +308,10 @@ bool WebSocketChannelImpl::Connect(const KURL& url, const String& protocol) {
-     // even if the `WebSocketChannel` is closed.
-     feature_handle_for_scheduler_ = scheduler->RegisterFeature(
-         SchedulingPolicy::Feature::kWebSocket,
--        SchedulingPolicy{SchedulingPolicy::DisableBackForwardCache()});
-+        base::FeatureList::IsEnabled(kAllowAggressiveThrottlingWithWebSocket)
-+            ? SchedulingPolicy{SchedulingPolicy::DisableBackForwardCache()}
-+            : SchedulingPolicy{SchedulingPolicy::DisableAggressiveThrottling(),
-+                               SchedulingPolicy::DisableBackForwardCache()});
+@@ -298,7 +309,11 @@ bool WebSocketChannelImpl::Connect(const KURL& url, const String& protocol) {
+       // reset even if the `WebSocketChannel` is closed.
+       feature_handle_for_scheduler_ = scheduler->RegisterFeature(
+           SchedulingPolicy::Feature::kWebSocket,
+-          SchedulingPolicy{SchedulingPolicy::DisableBackForwardCache()});
++          base::FeatureList::IsEnabled(kAllowAggressiveThrottlingWithWebSocket)
++              ? SchedulingPolicy{SchedulingPolicy::DisableBackForwardCache()}
++              : SchedulingPolicy{
++                    SchedulingPolicy::DisableAggressiveThrottling(),
++                    SchedulingPolicy::DisableBackForwardCache()});
+     }
      scheduler->RegisterStickyFeature(
          SchedulingPolicy::Feature::kWebSocketSticky,
-         SchedulingPolicy{SchedulingPolicy::DisableBackForwardCache()});

@@ -8,10 +8,10 @@ This definition conflicts with libuv's: https://github.com/libuv/libuv/blob/bb0b
 Breaks the build on 32-bit windows.
 
 diff --git a/include/perfetto/ext/base/sys_types.h b/include/perfetto/ext/base/sys_types.h
-index 33ef5e7d652807f2607466287eadd053c9c0ab67..dc1197ba0d6e30e22ddab55c4a57de30193fb1f5 100644
+index 74cd1b734c162d0f48c653a501ded1522d24c387..a150109ca0dd3795d94c9ae8c976576439a3e3e4 100644
 --- a/include/perfetto/ext/base/sys_types.h
 +++ b/include/perfetto/ext/base/sys_types.h
-@@ -33,11 +33,7 @@ using uid_t = int;
+@@ -41,11 +41,7 @@ using gid_t = int;
  using pid_t = int;
  #endif  // !GCC
  
@@ -22,5 +22,5 @@ index 33ef5e7d652807f2607466287eadd053c9c0ab67..dc1197ba0d6e30e22ddab55c4a57de30
 -#endif  // _WIN64
 +using ssize_t = intptr_t;
  
- #endif  // OS_WIN
+ #endif  // __MINGW32__
  

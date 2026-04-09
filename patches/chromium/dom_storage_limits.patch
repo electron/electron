@@ -9,33 +9,32 @@ Previous versions of this patch attempted to circumvent
 the restriction altogether.
 However, this can lead to other problems, such as crashing
 the Dev Tools when attempting to read or write values that exceed
-`IPC::Channel::kMaximumMessageSize` (128MiB).
+`IPC::mojom::kChannelMaximumMessageSize` (128MiB).
 
 Increasing the quota rather than bypassing it reduces the
 amount of chromium code that needs to be changed for Electron
 as well as keeps these storage areas limited to a bounded
 size meanwhile giving application developers more space to work with.
 
-diff --git a/components/services/storage/dom_storage/dom_storage_constants.cc b/components/services/storage/dom_storage/dom_storage_constants.cc
-index aa5edd1d07d97bee4912b14996ff804351240e94..8334b7eb6a3293c068f5234508f8dca780ccb262 100644
---- a/components/services/storage/dom_storage/dom_storage_constants.cc
-+++ b/components/services/storage/dom_storage/dom_storage_constants.cc
-@@ -6,7 +6,9 @@
+diff --git a/components/services/storage/dom_storage/dom_storage_constants.h b/components/services/storage/dom_storage/dom_storage_constants.h
+index 2ded9daa5611d3121677f4d67d19fcdbbcc68d26..d5a9f43850d3d7c3a73873ebb24bf2ccb937a6ed 100644
+--- a/components/services/storage/dom_storage/dom_storage_constants.h
++++ b/components/services/storage/dom_storage/dom_storage_constants.h
+@@ -11,7 +11,8 @@ namespace storage {
  
- namespace storage {
- 
--const size_t kPerStorageAreaQuota = 10 * 1024 * 1024;
+ // The quota for each storage area.
+ // This value is enforced by clients and by the storage service.
+-inline constexpr size_t kPerStorageAreaQuota = 10 * 1024 * 1024;
 +// Electron's dom_storage_limits.patch increased this value from 10MiB to 100MiB
-+const size_t kPerStorageAreaQuota = 100 * 1024 * 1024;
-+
- const size_t kPerStorageAreaOverQuotaAllowance = 100 * 1024;
++inline constexpr size_t kPerStorageAreaQuota = 100 * 1024 * 1024;
  
- }  // namespace storage
+ // In the storage service we allow some overage to
+ // accommodate concurrent writes from different clients
 diff --git a/third_party/blink/public/mojom/dom_storage/storage_area.mojom b/third_party/blink/public/mojom/dom_storage/storage_area.mojom
-index 5902d8217c1b98d182f68f4199be4830c6177e68..2517c37be979cfe25ec8592cdbf8e53bab100c42 100644
+index 535d618c6cb99fea8116baf69f8056d40a15bbdd..d01c79fbc67cfb8e668a2282cb4c4ae48d71e3a3 100644
 --- a/third_party/blink/public/mojom/dom_storage/storage_area.mojom
 +++ b/third_party/blink/public/mojom/dom_storage/storage_area.mojom
-@@ -50,7 +50,8 @@ struct KeyValue {
+@@ -67,7 +67,8 @@ struct KeyValue {
  interface StorageArea {
    // The quota for each storage area.
    // This value is enforced in renderer processes and the browser process.

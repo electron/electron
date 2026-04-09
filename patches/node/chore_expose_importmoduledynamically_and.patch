@@ -11,24 +11,24 @@ its own blended handler between Node and Blink.
 Not upstreamable.
 
 diff --git a/lib/internal/modules/esm/utils.js b/lib/internal/modules/esm/utils.js
-index d393d4336a0c1e681e4f6b4e5c7cf2bcc5fc287e..807cb5172e0c2178b6c20e81f8175141d3a0284f 100644
+index 0af25ebbf6c3f2b790238e32f01addfb648e4e52..bd726088f7480853b8507c39668cc4716c4ce61f 100644
 --- a/lib/internal/modules/esm/utils.js
 +++ b/lib/internal/modules/esm/utils.js
-@@ -30,7 +30,7 @@ const {
+@@ -35,7 +35,7 @@ const {
    ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING,
    ERR_INVALID_ARG_VALUE,
  } = require('internal/errors').codes;
 -const { getOptionValue } = require('internal/options');
 +const { getOptionValue, getEmbedderOptions } = require('internal/options');
  const {
-   loadPreloadModules,
-   initializeFrozenIntrinsics,
-@@ -273,12 +273,13 @@ let _forceDefaultLoader = false;
-  * @param {boolean} [forceDefaultLoader=false] - A boolean indicating disabling custom loaders.
+   emitExperimentalWarning,
+   kEmptyObject,
+@@ -286,12 +286,13 @@ let _shouldSpawnLoaderHookWorker = true;
+  *   should be spawned later.
   */
- function initializeESM(forceDefaultLoader = false) {
+ function initializeESM(shouldSpawnLoaderHookWorker = true) {
 +  const shouldSetOnIsolate = !getEmbedderOptions().shouldNotRegisterESMLoader;
-   _forceDefaultLoader = forceDefaultLoader;
+   _shouldSpawnLoaderHookWorker = shouldSpawnLoaderHookWorker;
    initializeDefaultConditions();
    // Setup per-realm callbacks that locate data or callbacks that we keep
    // track of for different ESM modules.
@@ -40,19 +40,19 @@ index d393d4336a0c1e681e4f6b4e5c7cf2bcc5fc287e..807cb5172e0c2178b6c20e81f8175141
  
  /**
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 48b61e8b7600701c4992a98ff802614ce915faee..4e9835e502a8d078a448aa4253f37de0f49f4854 100644
+index 5703590b5ee2a91a504cf8491716773fc4a302bd..52483740bb377a2bc2a16af701615d9a4e448eae 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
-@@ -813,7 +813,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
-   return module->module_.Get(isolate);
+@@ -1099,7 +1099,7 @@ Maybe<ModuleWrap*> ModuleWrap::ResolveModule(
+   return Just(module_wrap);
  }
  
--static MaybeLocal<Promise> ImportModuleDynamically(
-+MaybeLocal<Promise> ImportModuleDynamically(
+-static MaybeLocal<Promise> ImportModuleDynamicallyWithPhase(
++MaybeLocal<Promise> ImportModuleDynamicallyWithPhase(
      Local<Context> context,
-     Local<v8::Data> host_defined_options,
+     Local<Data> host_defined_options,
      Local<Value> resource_name,
-@@ -878,12 +878,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
+@@ -1187,14 +1187,16 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
    Realm* realm = Realm::GetCurrent(args);
    HandleScope handle_scope(isolate);
  
@@ -63,12 +63,16 @@ index 48b61e8b7600701c4992a98ff802614ce915faee..4e9835e502a8d078a448aa4253f37de0
    realm->set_host_import_module_dynamically_callback(import_callback);
  
 -  isolate->SetHostImportModuleDynamicallyCallback(ImportModuleDynamically);
-+  if (args[1]->IsBoolean() && args[1]->BooleanValue(isolate))
+-  isolate->SetHostImportModuleWithPhaseDynamicallyCallback(
++  if (args[1]->IsBoolean() && args[1]->BooleanValue(isolate)) {
 +    isolate->SetHostImportModuleDynamicallyCallback(ImportModuleDynamically);
++    isolate->SetHostImportModuleWithPhaseDynamicallyCallback(
+       ImportModuleDynamicallyWithPhase);
++  }
  }
  
  void ModuleWrap::HostInitializeImportMetaObjectCallback(
-@@ -925,13 +926,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
+@@ -1236,13 +1238,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
    Realm* realm = Realm::GetCurrent(args);
    Isolate* isolate = realm->isolate();
  
@@ -87,7 +91,7 @@ index 48b61e8b7600701c4992a98ff802614ce915faee..4e9835e502a8d078a448aa4253f37de0
  
  MaybeLocal<Value> ModuleWrap::SyntheticModuleEvaluationStepsCallback(
 diff --git a/src/module_wrap.h b/src/module_wrap.h
-index 83b5793013cbc453cf92c0a006fc7be3c06ad276..90353954bc497cb4ae413dc134850f8abb4efc7c 100644
+index d81facabf8d80e967c5bff2bbd3a1ce9dd79cc76..93d47c7573da7e5824e9bc391dd1c2f5f2588822 100644
 --- a/src/module_wrap.h
 +++ b/src/module_wrap.h
 @@ -8,6 +8,7 @@
@@ -98,23 +102,24 @@ index 83b5793013cbc453cf92c0a006fc7be3c06ad276..90353954bc497cb4ae413dc134850f8a
  #include "v8-script.h"
  
  namespace node {
-@@ -33,7 +34,14 @@ enum HostDefinedOptions : int {
-   kLength = 9,
+@@ -92,7 +93,15 @@ struct ModuleCacheKey : public MemoryRetainer {
+         hash(hash) {}
  };
  
 -class ModuleWrap : public BaseObject {
-+NODE_EXTERN v8::MaybeLocal<v8::Promise> ImportModuleDynamically(
++NODE_EXTERN v8::MaybeLocal<v8::Promise> ImportModuleDynamicallyWithPhase(
 +    v8::Local<v8::Context> context,
 +    v8::Local<v8::Data> host_defined_options,
 +    v8::Local<v8::Value> resource_name,
 +    v8::Local<v8::String> specifier,
-+    v8::Local<v8::FixedArray> import_assertions);
++    v8::ModuleImportPhase phase,
++    v8::Local<v8::FixedArray> import_attributes);
 +
 +class NODE_EXTERN ModuleWrap : public BaseObject {
-  public:
-   enum InternalFields {
-     kModuleSlot = BaseObject::kInternalFieldCount,
-@@ -91,6 +99,8 @@ class ModuleWrap : public BaseObject {
+   using ResolveCache =
+       std::unordered_map<ModuleCacheKey, uint32_t, ModuleCacheKey::Hash>;
+ 
+@@ -156,6 +165,8 @@ class ModuleWrap : public BaseObject {
    static void CreateRequiredModuleFacade(
        const v8::FunctionCallbackInfo<v8::Value>& args);
  
@@ -123,11 +128,11 @@ index 83b5793013cbc453cf92c0a006fc7be3c06ad276..90353954bc497cb4ae413dc134850f8a
   private:
    ModuleWrap(Realm* realm,
               v8::Local<v8::Object> object,
-@@ -129,7 +139,6 @@ class ModuleWrap : public BaseObject {
+@@ -204,7 +215,6 @@ class ModuleWrap : public BaseObject {
        v8::Local<v8::String> specifier,
        v8::Local<v8::FixedArray> import_attributes,
        v8::Local<v8::Module> referrer);
 -  static ModuleWrap* GetFromModule(node::Environment*, v8::Local<v8::Module>);
  
-   v8::Global<v8::Module> module_;
-   std::unordered_map<std::string, v8::Global<v8::Object>> resolve_cache_;
+   // This method may throw a JavaScript exception, so the return type is
+   // wrapped in a Maybe.

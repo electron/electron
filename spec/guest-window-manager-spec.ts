@@ -4,6 +4,7 @@ import { expect, assert } from 'chai';
 
 import { once } from 'node:events';
 import * as http from 'node:http';
+import * as nodePath from 'node:path';
 
 import { HexColors, ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
 import { ifit, listen } from './lib/spec-helpers';
@@ -185,6 +186,39 @@ describe('webContents.setWindowOpenHandler', () => {
       await once(browserWindow.webContents, 'did-create-window');
     });
 
+    it('reuses an existing window when window.open is called with the same frame name', async () => {
+      let handlerCallCount = 0;
+      browserWindow.webContents.setWindowOpenHandler(() => {
+        handlerCallCount++;
+        return { action: 'allow' };
+      });
+
+      const didCreateWindow = once(browserWindow.webContents, 'did-create-window') as Promise<[BrowserWindow, Electron.DidCreateWindowDetails]>;
+      await browserWindow.webContents.executeJavaScript("window.open('about:blank?one', 'named-target', 'show=no') && true");
+      const [childWindow] = await didCreateWindow;
+      expect(handlerCallCount).to.equal(1);
+      expect(childWindow.webContents.getURL()).to.equal('about:blank?one');
+
+      browserWindow.webContents.on('did-create-window', () => {
+        assert.fail('did-create-window should not fire when reusing a named window');
+      });
+
+      const didNavigate = once(childWindow.webContents, 'did-navigate');
+      const sameWindow = await browserWindow.webContents.executeJavaScript(`
+        (() => {
+          const first = window.open('about:blank?one', 'named-target', 'show=no');
+          const second = window.open('about:blank?two', 'named-target', 'show=no');
+          return first === second;
+        })()
+      `);
+      await didNavigate;
+
+      expect(sameWindow).to.be.true('window.open with matching frame name should return the same window proxy');
+      expect(handlerCallCount).to.equal(1, 'setWindowOpenHandler should not be called when Blink resolves the named target');
+      expect(childWindow.webContents.getURL()).to.equal('about:blank?two');
+      expect(BrowserWindow.getAllWindows()).to.have.lengthOf(2);
+    });
+
     it('can change webPreferences of child windows', async () => {
       browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { defaultFontSize: 30 } } }));
 
@@ -201,6 +235,66 @@ describe('webContents.setWindowOpenHandler', () => {
       browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
       browserWindow.webContents.executeJavaScript("window.open('https://127.0.0.1')");
       expect(await browserWindow.webContents.executeJavaScript('42')).to.equal(42);
+    });
+
+    it('can open an offscreen child window from an onscreen parent', async () => {
+      browserWindow.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          webPreferences: {
+            offscreen: true
+          }
+        }
+      }));
+
+      const didCreateWindow = once(browserWindow.webContents, 'did-create-window');
+      const url = `file://${nodePath.join('fixtures', 'pages', 'content.html')}`;
+      browserWindow.webContents.executeJavaScript(`window.open('${JSON.stringify(url)}') && true`);
+      const [childWindow] = await didCreateWindow;
+      expect(childWindow.webContents.isOffscreen()).to.be.true('Child window should be offscreen');
+    });
+
+    it('can open an onscreen child window from an offscreen parent', async () => {
+      const obw = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          offscreen: true
+        }
+      });
+
+      await obw.loadURL('about:blank');
+      obw.webContents.setWindowOpenHandler(() => ({ action: 'allow' }));
+
+      const didCreateWindow = once(obw.webContents, 'did-create-window');
+      const url = `file://${nodePath.join('fixtures', 'pages', 'content.html')}`;
+      obw.webContents.executeJavaScript(`window.open('${JSON.stringify(url)}') && true`);
+      const [childWindow] = await didCreateWindow;
+      expect(childWindow.webContents.isOffscreen()).to.be.false('Child window should not be offscreen');
+    });
+
+    it('can open an offscreen child window from an offscreen parent', async () => {
+      const obw = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          offscreen: true
+        }
+      });
+
+      await obw.loadURL('about:blank');
+      obw.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          webPreferences: {
+            offscreen: true
+          }
+        }
+      }));
+
+      const didCreateWindow = once(obw.webContents, 'did-create-window');
+      const url = `file://${nodePath.join('fixtures', 'pages', 'content.html')}`;
+      obw.webContents.executeJavaScript(`window.open('${JSON.stringify(url)}') && true`);
+      const [childWindow] = await didCreateWindow;
+      expect(childWindow.webContents.isOffscreen()).to.be.true('Child window should be offscreen');
     });
 
     ifit(hasCapturableScreen())('should not make child window background transparent', async () => {

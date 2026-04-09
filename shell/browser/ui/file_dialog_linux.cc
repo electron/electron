@@ -13,12 +13,12 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/file_dialog.h"
+#include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "ui/shell_dialogs/select_file_dialog.h"
-#include "ui/shell_dialogs/select_file_dialog_linux_portal.h"
 #include "ui/shell_dialogs/select_file_policy.h"
 #include "ui/shell_dialogs/selected_file_info.h"
 
@@ -44,14 +44,14 @@ ui::SelectFileDialog::FileTypeInfo GetFilterInfo(const Filters& filters) {
   ui::SelectFileDialog::FileTypeInfo file_type_info;
 
   for (const auto& [name, extension_group] : filters) {
-    file_type_info.extension_description_overrides.push_back(
-        base::UTF8ToUTF16(name));
-
     const bool has_all_files_wildcard = std::ranges::any_of(
         extension_group, [](const auto& ext) { return ext == "*"; });
+
     if (has_all_files_wildcard) {
       file_type_info.include_all_files = true;
     } else {
+      file_type_info.extension_description_overrides.push_back(
+          base::UTF8ToUTF16(name));
       file_type_info.extensions.emplace_back(extension_group);
     }
   }
@@ -60,11 +60,9 @@ ui::SelectFileDialog::FileTypeInfo GetFilterInfo(const Filters& filters) {
 }
 
 void LogIfNeededAboutUnsupportedPortalFeature(const DialogSettings& settings) {
-  if (!settings.default_path.empty() &&
-      ui::SelectFileDialogLinuxPortal::IsPortalAvailable() &&
-      ui::SelectFileDialogLinuxPortal::GetPortalVersion() < 4) {
-    LOG(INFO) << "Available portal version "
-              << ui::SelectFileDialogLinuxPortal::GetPortalVersion()
+  if (!settings.default_path.empty() && IsPortalAvailable() &&
+      GetPortalVersion() < 4) {
+    LOG(INFO) << "Available portal version " << GetPortalVersion()
               << " does not support defaultPath option, try the non-portal"
               << " file chooser dialogs by launching with"
               << " --xdg-portal-required-version";
@@ -84,14 +82,18 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     ui::SelectFileDialog::FileTypeInfo file_info =
         GetFilterInfo(settings.filters);
     ApplySettings(settings);
-    dialog_->SelectFile(
-        ui::SelectFileDialog::SELECT_SAVEAS_FILE,
-        base::UTF8ToUTF16(settings.title), settings.default_path,
-        &file_info /* file_types */, 0 /* file_type_index */,
-        base::FilePath::StringType() /* default_extension */,
-        settings.parent_window ? settings.parent_window->GetNativeWindow()
-                               : nullptr,
-        nullptr);
+    base::FilePath default_path = settings.default_path.empty()
+                                      ? electron::GetDefaultPath()
+                                      : settings.default_path;
+
+    dialog_->SelectFile(ui::SelectFileDialog::SELECT_SAVEAS_FILE,
+                        base::UTF8ToUTF16(settings.title), default_path,
+                        &file_info /* file_types */, 0 /* file_type_index */,
+                        base::FilePath::StringType() /* default_extension */,
+                        settings.parent_window
+                            ? settings.parent_window->GetNativeWindow()
+                            : nullptr,
+                        nullptr);
   }
 
   void RunSaveDialog(gin_helper::Promise<gin_helper::Dictionary> promise,
@@ -111,9 +113,13 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     ui::SelectFileDialog::FileTypeInfo file_info =
         GetFilterInfo(settings.filters);
     ApplySettings(settings);
+    base::FilePath default_path = settings.default_path.empty()
+                                      ? electron::GetDefaultPath()
+                                      : settings.default_path;
+
     dialog_->SelectFile(
         GetDialogType(settings.properties), base::UTF8ToUTF16(settings.title),
-        settings.default_path, &file_info, 0 /* file_type_index */,
+        default_path, &file_info, 0 /* file_type_index */,
         base::FilePath::StringType() /* default_extension */,
         settings.parent_window ? settings.parent_window->GetNativeWindow()
                                : nullptr,
@@ -236,20 +242,25 @@ void ShowOpenDialog(const DialogSettings& settings,
   dialog->RunOpenDialog(std::move(promise), settings);
 }
 
-bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
-  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-  auto cb = base::BindOnce(
-      [](base::RepeatingClosure cb, base::FilePath* file_path,
-         gin_helper::Dictionary result) {
-        result.Get("filePath", file_path);
-        std::move(cb).Run();
-      },
-      run_loop.QuitClosure(), path);
+std::optional<base::FilePath> ShowSaveDialogSync(
+    const DialogSettings& settings) {
+  std::optional<base::FilePath> path;
 
-  FileChooserDialog* dialog = new FileChooserDialog();
-  dialog->RunSaveDialog(std::move(cb), settings);
+  base::RunLoop run_loop{base::RunLoop::Type::kNestableTasksAllowed};
+  auto on_chooser_dialog_done = base::BindOnce(
+      [](base::RepeatingClosure run_loop_closure,
+         std::optional<base::FilePath>* path, gin_helper::Dictionary result) {
+        if (base::FilePath val; result.Get("filePath", &val))
+          *path = std::move(val);
+        std::move(run_loop_closure).Run();
+      },
+      run_loop.QuitClosure(), &path);
+
+  auto* const dialog = new FileChooserDialog{};
+  dialog->RunSaveDialog(std::move(on_chooser_dialog_done), settings);
   run_loop.Run();
-  return !path->empty();
+
+  return path;
 }
 
 void ShowSaveDialog(const DialogSettings& settings,

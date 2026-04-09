@@ -1,8 +1,26 @@
 # clipboard
 
+<!--
+```YAML history
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/48877
+    description: "Using the `clipboard` API directly in the renderer process is deprecated."
+    breaking-changes-header: deprecated-clipboard-api-access-from-renderer-processes
+```
+-->
+
 > Perform copy and paste operations on the system clipboard.
 
-Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process) (non-sandboxed only)
+Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process) _Deprecated_ (non-sandboxed only)
+
+> [!NOTE]
+> Using the `clipboard` API from the renderer process is deprecated.
+
+> [!IMPORTANT]
+> If you want to call this API from a renderer process,
+> place the API call in your preload script and
+> [expose](../tutorial/context-isolation.md#after-context-isolation-enabled) it using the
+> [`contextBridge`](context-bridge.md) API.
 
 On Linux, there is also a `selection` clipboard. To manipulate it
 you need to pass `selection` to each method:
@@ -18,7 +36,8 @@ console.log(clipboard.readText('selection'))
 
 The `clipboard` module has the following methods:
 
-**Note:** Experimental APIs are marked as such and could be removed in future.
+> [!NOTE]
+> Experimental APIs are marked as such and could be removed in future.
 
 ### `clipboard.readText([type])`
 
@@ -141,9 +160,10 @@ bookmark is unavailable.  The `title` value will always be empty on Windows.
 
 Writes the `title` (macOS only) and `url` into the clipboard as a bookmark.
 
-**Note:** Most apps on Windows don't support pasting bookmarks into them so
-you can use `clipboard.write` to write both a bookmark and fallback text to the
-clipboard.
+> [!NOTE]
+> Most apps on Windows don't support pasting bookmarks into them so
+> you can use `clipboard.write` to write both a bookmark and fallback text to the
+> clipboard.
 
 ```js
 const { clipboard } = require('electron')

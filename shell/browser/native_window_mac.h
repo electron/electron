@@ -33,10 +33,13 @@ class NativeWindowMac : public NativeWindow,
                         public ui::NativeThemeObserver,
                         public display::DisplayObserver {
  public:
-  NativeWindowMac(const gin_helper::Dictionary& options, NativeWindow* parent);
+  NativeWindowMac(int32_t base_window_id,
+                  const gin_helper::Dictionary& options,
+                  NativeWindow* parent);
   ~NativeWindowMac() override;
 
   // NativeWindow:
+  void OnTitleChanged() override;
   void SetContentView(views::View* view) override;
   void Close() override;
   void CloseImmediately() override;
@@ -85,8 +88,6 @@ class NativeWindowMac : public NativeWindow,
   ui::ZOrderLevel GetZOrderLevel() const override;
   void Center() override;
   void Invalidate() override;
-  void SetTitle(const std::string& title) override;
-  std::string GetTitle() const override;
   void FlashFrame(bool flash) override;
   void SetSkipTaskbar(bool skip) override;
   void SetExcludedFromShownWindowsMenu(bool excluded) override;
@@ -110,6 +111,7 @@ class NativeWindowMac : public NativeWindow,
   bool IsHiddenInMissionControl() const override;
   void SetHiddenInMissionControl(bool hidden) override;
   void SetContentProtection(bool enable) override;
+  bool IsContentProtected() const override;
   void SetFocusable(bool focusable) override;
   bool IsFocusable() const override;
   void SetParentWindow(NativeWindow* parent) override;
@@ -169,13 +171,18 @@ class NativeWindowMac : public NativeWindow,
   void NotifyWindowDidFailToEnterFullScreen();
   void NotifyWindowWillLeaveFullScreen();
 
-  // views::WidgetDelegate:
-  views::View* GetContentsView() override;
+  // Hide/show traffic light buttons around miniaturize/deminiaturize to
+  // prevent them from flashing at the default position during the restore
+  // animation when a custom trafficLightPosition is configured.
+  void HideTrafficLights();
+  void RestoreTrafficLights();
 
   // Cleanup observers when window is getting closed. Note that the destructor
   // can be called much later after window gets closed, so we should not do
   // cleanup in destructor.
   void Cleanup();
+
+  void SetBorderless(bool borderless);
 
   void UpdateVibrancyRadii(bool fullscreen);
 
@@ -223,9 +230,11 @@ class NativeWindowMac : public NativeWindow,
 
  protected:
   // views::WidgetDelegate:
+  views::View* GetContentsView() override;
   bool CanMaximize() const override;
-  std::unique_ptr<views::NonClientFrameView> CreateNonClientFrameView(
+  std::unique_ptr<views::FrameView> CreateFrameView(
       views::Widget* widget) override;
+  void OnWidgetInitialized() override;
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
@@ -243,6 +252,8 @@ class NativeWindowMac : public NativeWindow,
   void SetForwardMouseMessages(bool forward);
 
   void UpdateZoomButton();
+
+  std::optional<int> FrameViewNonClientHitTest(const gfx::Point& point);
 
   ElectronNSWindow* window_;  // Weak ref, managed by widget_.
 

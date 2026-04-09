@@ -21,7 +21,9 @@
   associated with the window, making it compatible with the Chromium
   OS-level sandbox and disabling the Node.js engine. This is not the same as
   the `nodeIntegration` option and the APIs available to the preload script
-  are more limited. Read more about the option [here](../../tutorial/sandbox.md).
+  are more limited. Default is `true` since Electron 20. The sandbox will
+  automatically be disabled when `nodeIntegration` is set to `true`.
+  Read more about the option [here](../../tutorial/sandbox.md).
 * `session` [Session](../session.md#class-session) (optional) - Sets the session used by the
   page. Instead of passing the Session object directly, you can also choose to
   use the `partition` option instead, which accepts a partition string. When
@@ -38,7 +40,7 @@
 * `javascript` boolean (optional) - Enables JavaScript support. Default is `true`.
 * `webSecurity` boolean (optional) - When `false`, it will disable the
   same-origin policy (usually using testing websites by people), and set
-  `allowRunningInsecureContent` to `true` if this options has not been set
+  `allowRunningInsecureContent` to `true` if this option has not been set
   by user. Default is `true`.
 * `allowRunningInsecureContent` boolean (optional) - Allow an https page to run
   JavaScript, CSS or plugins from http URLs. Default is `false`.
@@ -87,6 +89,13 @@
      paint event. Defaults to `false`. See the
     [offscreen rendering tutorial](../../tutorial/offscreen-rendering.md) for
     more details.
+  * `sharedTexturePixelFormat` string (optional) _Experimental_ - The requested output format of the shared texture. Defaults to `argb`.
+    The name is originated from Chromium [`media::VideoPixelFormat`](https://source.chromium.org/chromium/chromium/src/+/main:media/base/video_types.h) enum suffix and only subset of them are supported.
+    The actual output pixel format and color space of the texture should refer to [`OffscreenSharedTexture`](../structures/offscreen-shared-texture.md) object in the `paint` event.
+    * `argb` - The requested output texture format is 8-bit unorm RGBA, with SRGB SDR color space.
+    * `rgbaf16` - The requested output texture format is 16-bit float RGBA, with scRGB HDR color space.
+    * `nv12` - The requested output texture format is 12bpp with Y plane followed by a 2x2 interleaved UV plane, with REC709 color space.
+  * `deviceScaleFactor` number (optional) _Experimental_ - The device scale factor of the offscreen rendering output. If not set, will use `1` as default.
 * `contextIsolation` boolean (optional) - Whether to run Electron APIs and
   the specified `preload` script in a separate JavaScript context. Defaults
   to `true`. The context that the `preload` script runs in will only have
@@ -148,6 +157,9 @@
   this will cause the `preferred-size-changed` event to be emitted on the
   `WebContents` when the preferred size changes. Default is `false`.
 * `transparent` boolean (optional) - Whether to enable background transparency for the guest page. Default is `true`. **Note:** The guest page's text and background colors are derived from the [color scheme](https://developer.mozilla.org/en-US/docs/Web/CSS/color-scheme) of its root element. When transparency is enabled, the text color will still change accordingly but the background will remain transparent.
+* `enableDeprecatedPaste` boolean (optional) _Deprecated_ - Whether to enable the `paste` [execCommand](https://developer.mozilla.org/en-US/docs/Web/API/Document/execCommand). Default is `false`.
+* `focusOnNavigation` boolean (optional) - Whether to focus the WebContents
+  when navigating. Default is `true`.
 
 [chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
 [runtime-enabled-features]: https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/platform/runtime_enabled_features.json5

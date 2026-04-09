@@ -1,0 +1,13 @@
+{
+  "name": "@electron-ci/is-valid-window",
+  "version": "0.0.5",
+  "main": "./lib/is-valid-window.js",
+  "private": true,
+  "licenses": "MIT",
+  "dependencies": {
+    "nan": "2.x"
+  },
+  "scripts": {
+    "install": "node-gyp configure && node-gyp build"
+  }
+}

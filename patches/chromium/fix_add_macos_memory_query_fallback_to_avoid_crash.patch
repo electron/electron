@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Calvin Watford <watfordcalvin@gmail.com>
+Date: Tue, 15 Jul 2025 21:06:52 -0600
+Subject: fix: add macos memory query fallback to avoid crash
+
+In https://crrev.com/c/6274964 the implementation for querying the physical memory on macOS was changed to use a sysctl call. In that same change the sysctl call was added to the sanbox allowlist.
+
+This causes a problematic behavior: if an app that's running the old implementation (no sandbox exclusion for that sysctl call) gets swapped with the new implementation (uses new sysctl call) while it's running, then new child processes will trigger a sandbox permission error when calling the new method.
+
+While this "hot-swapping" behavior isn't supported, many enterprise update scripts may do this anyways, triggering an unfortunate user experience where child processes can never spawn but the browser process continues to live and terminate them (untl the app is restarted).
+
+This patch should be removed after the new implementation has been present since the beginning of a stable release. The new implementation was released with Electron 37.0.0, but this fallback was not added until after 37.2.2. That means 38.0.0 would be the first safe release to remove this fallback, giving developers a 1-major-version buffer to safely transition implementations.
+
+diff --git a/base/system/sys_info_apple.mm b/base/system/sys_info_apple.mm
+index 7410cd2e187180808cbb86c53a538cd7a80c0eeb..1f884118c8ecefe11f010cb13daed6094ee56ceb 100644
+--- a/base/system/sys_info_apple.mm
++++ b/base/system/sys_info_apple.mm
+@@ -6,11 +6,31 @@
+ 
+ #include <sys/sysctl.h>
+ 
++#include "base/apple/scoped_mach_port.h"
+ #include "base/strings/stringprintf.h"
+ #include "base/system/sys_info_internal.h"
+ 
+ namespace base {
+ 
++namespace {
++
++// Implementation of AmountOfPhysicalMemoryImpl before https://crrev.com/c/6274964.
++// See Electron patch adding this fallback for more details.
++ByteSize AmountOfPhysicalMemoryFallback() {
++  struct host_basic_info hostinfo;
++  mach_msg_type_number_t count = HOST_BASIC_INFO_COUNT;
++  base::apple::ScopedMachSendRight host(mach_host_self());
++  int result = host_info(host.get(), HOST_BASIC_INFO,
++                         reinterpret_cast<host_info_t>(&hostinfo), &count);
++  if (result != KERN_SUCCESS) {
++    NOTREACHED();
++  }
++  DCHECK_EQ(HOST_BASIC_INFO_COUNT, count);
++  return ByteSize::FromDeprecatedByteCount(ByteCount::FromUnsigned(hostinfo.max_mem));
++}
++
++}
++
+ namespace internal {
+ 
+ // Queries sysctlbyname() for the given key and returns the 32 bit integer value
+@@ -54,8 +74,10 @@
+   uint64_t physical_memory;
+   size_t size = sizeof(physical_memory);
+   int rv = sysctlbyname("hw.memsize", &physical_memory, &size, nullptr, 0);
+-  PCHECK(rv == 0) << "sysctlbyname(\"hw.memsize\")";
+-  return ByteSize(physical_memory);
+-}
++  // Instead of crashing, fallback to the old implementation.
++  if (rv != 0) {
++    return AmountOfPhysicalMemoryFallback();
++  }
++  return ByteSize(physical_memory);}
+ 
+ }  // namespace base

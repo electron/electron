@@ -4,6 +4,7 @@ export const rendererModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'contextBridge', loader: () => require('./context-bridge') },
   { name: 'crashReporter', loader: () => require('./crash-reporter') },
   { name: 'ipcRenderer', loader: () => require('./ipc-renderer') },
+  { name: 'sharedTexture', loader: () => require('./shared-texture') },
   { name: 'webFrame', loader: () => require('./web-frame') },
   { name: 'webUtils', loader: () => require('./web-utils') }
 ];

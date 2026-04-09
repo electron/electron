@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <khammond@slack-corp.com>
+Date: Wed, 19 Feb 2025 11:18:44 -0800
+Subject: fix: re-enable synchronous spellcheck on Windows
+
+This fix partially reverts 6109477: Code Health:
+Clean up stale base::Feature "WinRetrieveSuggestionsOnlyOnDemand"
+https://chromium-review.googlesource.com/c/chromium/src/+/6109477
+by re-adding a synchronous call to FillSuggestionList.
+
+This patch can be removed when an asynchronous spellcheck API
+option is added to Electron.
+
+diff --git a/components/spellcheck/browser/windows_spell_checker.cc b/components/spellcheck/browser/windows_spell_checker.cc
+index 319029fc962eb73f0dcf8604ccd342b0e381496e..eff60d66c3762722e56743abba60e1aafa19b774 100644
+--- a/components/spellcheck/browser/windows_spell_checker.cc
++++ b/components/spellcheck/browser/windows_spell_checker.cc
+@@ -241,6 +241,11 @@ std::vector<SpellCheckResult> BackgroundHelper::RequestTextCheckForAllLanguages(
+             (action == CORRECTIVE_ACTION_GET_SUGGESTIONS ||
+              action == CORRECTIVE_ACTION_REPLACE)) {
+           std::vector<std::u16string> suggestions;
++          // TODO (vertedinde): Perform the synchronous operation of retrieving
++          // suggestions for all misspelled words while performing a text check.
++          FillSuggestionList(it->first,
++            text.substr(start_index, error_length),
++            &suggestions);
+           result_map[std::tuple<ULONG, ULONG>(start_index, error_length)]
+               .push_back(suggestions);
+         }

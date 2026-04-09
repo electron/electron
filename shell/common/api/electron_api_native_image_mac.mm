@@ -16,8 +16,8 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/bind_post_task.h"
 #include "gin/arguments.h"
-#include "gin/handle.h"
 #include "shell/common/gin_converters/image_converter.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/mac_util.h"
 #include "ui/gfx/color_utils.h"
@@ -36,7 +36,7 @@ NSData* bufferFromNSImage(NSImage* image) {
 }
 
 double safeShift(double in, double def) {
-  if (in >= 0 || in <= 1 || in == def)
+  if ((in >= 0 && in <= 1) || in == def)
     return in;
   return def;
 }
@@ -103,8 +103,9 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   return handle;
 }
 
-gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
-                                                           std::string name) {
+gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
+    gin::Arguments* args,
+    std::string name) {
   @autoreleasepool {
     std::vector<double> hsl_shift;
 
@@ -119,9 +120,18 @@ gin::Handle<NativeImage> NativeImage::CreateFromNamedImage(gin::Arguments* args,
       name.erase(pos, to_remove.length());
     }
 
-    NSImage* image = [NSImage imageNamed:base::SysUTF8ToNSString(name)];
+    NSImage* image = nil;
+    NSString* ns_name = base::SysUTF8ToNSString(name);
 
-    if (!image.valid) {
+    // Treat non-Cocoa-prefixed names as SF Symbols first.
+    if (!base::StartsWith(name, "NS") && !base::StartsWith(name, "NX")) {
+      image = [NSImage imageWithSystemSymbolName:ns_name
+                        accessibilityDescription:nil];
+    } else {
+      image = [NSImage imageNamed:ns_name];
+    }
+
+    if (!image || !image.valid) {
       return CreateEmpty(args->isolate());
     }
 

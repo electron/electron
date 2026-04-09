@@ -48,11 +48,11 @@ void ElectronCrashReporterClient::Create() {
   // By setting the BREAKPAD_DUMP_LOCATION environment variable, an alternate
   // location to write crash dumps can be set.
   auto env = base::Environment::Create();
-  std::string alternate_crash_dump_location;
   base::FilePath crash_dumps_dir_path;
-  if (env->GetVar("BREAKPAD_DUMP_LOCATION", &alternate_crash_dump_location)) {
+  if (std::optional<std::string> alternate_crash_dump_location =
+          env->GetVar("BREAKPAD_DUMP_LOCATION")) {
     crash_dumps_dir_path =
-        base::FilePath::FromUTF8Unsafe(alternate_crash_dump_location);
+        base::FilePath::FromUTF8Unsafe(alternate_crash_dump_location.value());
   }
   if (!crash_dumps_dir_path.empty()) {
     electron::ScopedAllowBlockingForElectron allow_blocking;

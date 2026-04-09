@@ -27,6 +27,7 @@ control our application lifecycle and create a native browser window.
 
 ```js
 const { app, BrowserWindow, shell } = require('electron')
+
 const path = require('node:path')
 ```
 
@@ -61,9 +62,9 @@ const createWindow = () => {
 }
 ```
 
-In this next step, we will create our  `BrowserWindow` and tell our application how to handle an event in which an external protocol is clicked.
+In this next step, we will create our `BrowserWindow` and tell our application how to handle an event in which an external protocol is clicked.
 
-This code will be different in Windows and Linux compared to MacOS. This is due to both platforms emitting the `second-instance` event rather than the `open-url` event and Windows requiring additional code in order to open the contents of the protocol link within the same Electron instance. Read more about this [here](../api/app.md#apprequestsingleinstancelockadditionaldata).
+This code will be different in Windows and Linux compared to macOS. This is due to both platforms emitting the `second-instance` event rather than the `open-url` event and Windows requiring additional code in order to open the contents of the protocol link within the same Electron instance. Read more about this [here](../api/app.md#apprequestsingleinstancelockadditionaldata).
 
 #### Windows and Linux code:
 
@@ -86,11 +87,18 @@ if (!gotTheLock) {
   // Create mainWindow, load the rest of the app, etc...
   app.whenReady().then(() => {
     createWindow()
+    // Check for deep link on cold start
+    if (process.argv.length >= 2) {
+      const lastArg = process.argv[process.argv.length - 1]
+      if (lastArg.startsWith('electron-fiddle://')) {
+        dialog.showErrorBox('Welcome Back', `You arrived from: ${lastArg}`)
+      }
+    }
   })
 }
 ```
 
-#### MacOS code:
+#### macOS code:
 
 ```js @ts-type={createWindow:()=>void}
 // This method will be called when Electron has finished

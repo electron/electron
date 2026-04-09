@@ -78,7 +78,9 @@ export const roleList: Record<RoleId, Role> = {
   minimize: {
     label: 'Minimize',
     accelerator: 'CommandOrControl+M',
-    windowMethod: w => w.minimize()
+    windowMethod: w => {
+      if (w.minimizable) w.minimize();
+    }
   },
   paste: {
     label: 'Paste',
@@ -351,6 +353,7 @@ export function shouldOverrideCheckStatus (role: RoleId) {
 
 export function getDefaultAccelerator (role: RoleId) {
   if (hasRole(role)) return roleList[role].accelerator;
+  return undefined;
 }
 
 export function shouldRegisterAccelerator (role: RoleId) {

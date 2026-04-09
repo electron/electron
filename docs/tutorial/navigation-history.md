@@ -69,8 +69,24 @@ if (navigationHistory.canGoToOffset(2)) {
 }
 ```
 
+## Restoring history
+
+A common flow is that you want to restore the history of a webContents - for instance to implement an "undo close tab" feature. To do so, you can call `navigationHistory.restore({ index, entries })`. This will restore the webContent's navigation history and the webContents location in said history, meaning that `goBack()` and `goForward()` navigate you through the stack as expected.
+
+```js @ts-type={navigationHistory:Electron.NavigationHistory}
+const firstWindow = new BrowserWindow()
+
+// Later, you want a second window to have the same history and navigation position
+async function restore () {
+  const entries = firstWindow.webContents.navigationHistory.getAllEntries()
+  const index = firstWindow.webContents.navigationHistory.getActiveIndex()
+
+  const secondWindow = new BrowserWindow()
+  await secondWindow.webContents.navigationHistory.restore({ index, entries })
+}
+```
+
 Here's a full example that you can open with Electron Fiddle:
 
 ```fiddle docs/fiddles/features/navigation-history
-
 ```

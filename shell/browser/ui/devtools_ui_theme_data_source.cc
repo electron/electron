@@ -4,7 +4,6 @@
 
 #include "shell/browser/ui/devtools_ui_theme_data_source.h"
 
-#include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -23,6 +22,7 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_ui.h"
 #include "net/base/url_util.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "ui/base/webui/web_ui_util.h"
 #include "ui/color/color_provider.h"
 #include "ui/color/color_provider_utils.h"
@@ -149,7 +149,7 @@ void ThemeDataSource::SendColorsCss(
           std::string set_name, ui::ColorId start, ui::ColorId end,
           ColorIdCSSCallback color_css_name) {
         // Only return these mappings if specified in the query parameter.
-        auto it = base::ranges::find(color_id_sets, set_name);
+        auto it = std::ranges::find(color_id_sets, set_name);
         if (it == color_id_sets.end()) {
           return std::string();
         }
@@ -158,17 +158,16 @@ void ThemeDataSource::SendColorsCss(
         for (ui::ColorId id = start; id < end; ++id) {
           const SkColor color = color_provider.GetColor(id);
           std::string css_id_to_color_mapping =
-              base::StringPrintf("%s:%s;", color_css_name.Run(id).c_str(),
-                                 ui::ConvertSkColorToCSSColor(color).c_str());
+              absl::StrFormat("%s:%s;", color_css_name.Run(id),
+                              ui::ConvertSkColorToCSSColor(color));
           base::StrAppend(&css_string, {css_id_to_color_mapping});
           if (generate_rgb_vars) {
             // Also generate a r,g,b string for each color so apps can construct
             // colors with their own opacities in css.
             const std::string css_rgb_color_str =
                 color_utils::SkColorToRgbString(color);
-            const std::string css_id_to_rgb_color_mapping =
-                base::StringPrintf("%s-rgb:%s;", color_css_name.Run(id).c_str(),
-                                   css_rgb_color_str.c_str());
+            const std::string css_id_to_rgb_color_mapping = absl::StrFormat(
+                "%s-rgb:%s;", color_css_name.Run(id), css_rgb_color_str);
             base::StrAppend(&css_string, {css_id_to_rgb_color_mapping});
           }
         }
@@ -195,7 +194,7 @@ void ThemeDataSource::SendColorsCss(
     css_selector = ":host";
   } else {
     // This selector requires more specificity than other existing CSS
-    // selectors that define variables. We increase the specifity by adding
+    // selectors that define variables. We increase the specificity by adding
     // a pseudoselector.
     css_selector = "html:not(#z)";
   }

@@ -60,7 +60,7 @@ at once, consider the [Chrome Tracing](https://www.chromium.org/developers/how-t
 ## Checklist: Performance recommendations
 
 Chances are that your app could be a little leaner, faster, and generally less
-resource-hungry if you attempt these steps.
+resource-hungry if you avoid the following common pitfalls.
 
 1. [Carelessly including modules](#1-carelessly-including-modules)
 2. [Loading and running code too soon](#2-loading-and-running-code-too-soon)
@@ -175,6 +175,7 @@ you might write code that eagerly loads dependencies:
 
 ```js title='parser.js' @ts-expect-error=[2]
 const fs = require('node:fs')
+
 const fooParser = require('foo-parser')
 
 class Parser {
@@ -293,7 +294,7 @@ particularly useful if users complain about your app sometimes "stuttering".
 
 Generally speaking, all advice for building performant web apps for modern
 browsers apply to Electron's renderers, too. The two primary tools at your
-disposal  are currently `requestIdleCallback()` for small operations and
+disposal are currently `requestIdleCallback()` for small operations and
 `Web Workers` for long-running operations.
 
 _`requestIdleCallback()`_ allows developers to queue up a function to be
@@ -359,7 +360,7 @@ turning into a desktop application. As web developers, we are used to loading
 resources from a variety of content delivery networks. Now that you are
 shipping a proper desktop application, attempt to "cut the cord" where possible
 and avoid letting your users wait for resources that never change and could
-easily be included  in your app.
+easily be included in your app.
 
 A typical example is Google Fonts. Many developers make use of Google's
 impressive collection of free fonts, which comes with a content delivery

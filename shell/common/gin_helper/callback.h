@@ -12,14 +12,15 @@
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/function_template.h"
 #include "shell/common/gin_helper/locker.h"
-#include "shell/common/gin_helper/microtasks_scope.h"
+#include "v8/include/cppgc/persistent.h"
+#include "v8/include/v8-context.h"
 #include "v8/include/v8-function.h"
+#include "v8/include/v8-microtask-queue.h"
 // Implements safe conversions between JS functions and base::RepeatingCallback.
 
 namespace gin_helper {
 
-template <typename T>
-class RefCountedGlobal;
+class SafeV8FunctionHandle;
 
 // Manages the V8 function with RAII.
 class SafeV8Function {
@@ -32,7 +33,7 @@ class SafeV8Function {
   v8::Local<v8::Function> NewHandle(v8::Isolate* isolate) const;
 
  private:
-  scoped_refptr<RefCountedGlobal<v8::Function>> v8_function_;
+  cppgc::Persistent<SafeV8FunctionHandle> v8_function_;
 };
 
 // Helper to invoke a V8 function with C++ parameters.
@@ -49,10 +50,9 @@ struct V8FunctionInvoker<v8::Local<v8::Value>(ArgTypes...)> {
     if (!function.IsAlive())
       return v8::Null(isolate);
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
-    v8::Local<v8::Context> context = holder->GetCreationContextChecked();
-    gin_helper::MicrotasksScope microtasks_scope{
-        isolate, context->GetMicrotaskQueue(), true,
-        v8::MicrotasksScope::kRunMicrotasks};
+    v8::Local<v8::Context> context = holder->GetCreationContextChecked(isolate);
+    v8::MicrotasksScope microtasks_scope(context,
+                                         v8::MicrotasksScope::kRunMicrotasks);
     v8::Context::Scope context_scope(context);
     std::array<v8::Local<v8::Value>, sizeof...(raw)> args{
         gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
@@ -75,10 +75,9 @@ struct V8FunctionInvoker<void(ArgTypes...)> {
     if (!function.IsAlive())
       return;
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
-    v8::Local<v8::Context> context = holder->GetCreationContextChecked();
-    gin_helper::MicrotasksScope microtasks_scope{
-        isolate, context->GetMicrotaskQueue(), true,
-        v8::MicrotasksScope::kRunMicrotasks};
+    v8::Local<v8::Context> context = holder->GetCreationContextChecked(isolate);
+    v8::MicrotasksScope microtasks_scope(context,
+                                         v8::MicrotasksScope::kRunMicrotasks);
     v8::Context::Scope context_scope(context);
     std::array<v8::Local<v8::Value>, sizeof...(raw)> args{
         gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
@@ -100,10 +99,9 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
     if (!function.IsAlive())
       return ret;
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
-    v8::Local<v8::Context> context = holder->GetCreationContextChecked();
-    gin_helper::MicrotasksScope microtasks_scope{
-        isolate, context->GetMicrotaskQueue(), true,
-        v8::MicrotasksScope::kRunMicrotasks};
+    v8::Local<v8::Context> context = holder->GetCreationContextChecked(isolate);
+    v8::MicrotasksScope microtasks_scope(context,
+                                         v8::MicrotasksScope::kRunMicrotasks);
     v8::Context::Scope context_scope(context);
     std::array<v8::Local<v8::Value>, sizeof...(raw)> args{
         gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};

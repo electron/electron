@@ -43,11 +43,10 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
 
   using USBProtectedClasses = std::vector<uint8_t>;
 
-  using StatusCallback =
-      base::OnceCallback<void(blink::mojom::PermissionStatus)>;
-  using StatusesCallback = base::OnceCallback<void(
-      const std::vector<blink::mojom::PermissionStatus>&)>;
-  using PairCallback = base::OnceCallback<void(base::Value::Dict)>;
+  using StatusCallback = base::OnceCallback<void(content::PermissionResult)>;
+  using StatusesCallback =
+      base::OnceCallback<void(const std::vector<content::PermissionResult>&)>;
+  using PairCallback = base::OnceCallback<void(base::DictValue)>;
   using RequestHandler = base::RepeatingCallback<void(content::WebContents*,
                                                       blink::PermissionType,
                                                       StatusCallback,
@@ -67,12 +66,15 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   using BluetoothPairingHandler =
       base::RepeatingCallback<void(gin_helper::Dictionary, PairCallback)>;
 
-  void RequestPermissionWithDetails(blink::PermissionType permission,
-                                    content::RenderFrameHost* render_frame_host,
-                                    const GURL& requesting_origin,
-                                    bool user_gesture,
-                                    base::Value::Dict details,
-                                    StatusCallback response_callback);
+  static bool IsGeolocationDisabledViaCommandLine();
+
+  void RequestPermissionWithDetails(
+      blink::mojom::PermissionDescriptorPtr permission,
+      content::RenderFrameHost* render_frame_host,
+      const GURL& requesting_origin,
+      bool user_gesture,
+      base::DictValue details,
+      StatusCallback response_callback);
 
   // Handler to dispatch permission requests in JS.
   void SetPermissionRequestHandler(const RequestHandler& handler);
@@ -81,13 +83,18 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   void SetProtectedUSBHandler(const ProtectedUSBHandler& handler);
   void SetBluetoothPairingHandler(const BluetoothPairingHandler& handler);
 
+  bool HasPermissionRequestHandler() const;
+  bool HasPermissionCheckHandler() const;
+
+  void CancelPendingRequests(content::WebContents* web_contents);
+
   void CheckBluetoothDevicePair(gin_helper::Dictionary details,
                                 PairCallback pair_callback) const;
 
   bool CheckPermissionWithDetails(blink::PermissionType permission,
                                   content::RenderFrameHost* render_frame_host,
                                   const GURL& requesting_origin,
-                                  base::Value::Dict details) const;
+                                  base::DictValue details) const;
 
   bool CheckDevicePermission(blink::PermissionType permission,
                              const url::Origin& origin,
@@ -110,40 +117,35 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
  protected:
   void OnPermissionResponse(int request_id,
                             int permission_id,
-                            blink::mojom::PermissionStatus status);
+                            content::PermissionResult result);
 
   // content::PermissionControllerDelegate:
-  void RequestPermissions(
-      content::RenderFrameHost* render_frame_host,
-      const content::PermissionRequestDescription& request_description,
-      StatusesCallback callback) override;
   void ResetPermission(blink::PermissionType permission,
                        const GURL& requesting_origin,
                        const GURL& embedding_origin) override;
   blink::mojom::PermissionStatus GetPermissionStatus(
-      blink::PermissionType permission,
+      const blink::mojom::PermissionDescriptorPtr& permission_descriptor,
       const GURL& requesting_origin,
       const GURL& embedding_origin) override;
   void RequestPermissionsFromCurrentDocument(
       content::RenderFrameHost* render_frame_host,
       const content::PermissionRequestDescription& request_description,
-      base::OnceCallback<
-          void(const std::vector<blink::mojom::PermissionStatus>&)> callback)
-      override;
+      base::OnceCallback<void(const std::vector<content::PermissionResult>&)>
+          callback) override;
   content::PermissionResult GetPermissionResultForOriginWithoutContext(
-      blink::PermissionType permission,
+      const blink::mojom::PermissionDescriptorPtr& permission_descriptor,
       const url::Origin& requesting_origin,
       const url::Origin& embedding_origin) override;
-  blink::mojom::PermissionStatus GetPermissionStatusForCurrentDocument(
-      blink::PermissionType permission,
+  content::PermissionResult GetPermissionResultForCurrentDocument(
+      const blink::mojom::PermissionDescriptorPtr& permission_descriptor,
       content::RenderFrameHost* render_frame_host,
       bool should_include_device_status) override;
-  blink::mojom::PermissionStatus GetPermissionStatusForWorker(
-      blink::PermissionType permission,
+  content::PermissionResult GetPermissionResultForWorker(
+      const blink::mojom::PermissionDescriptorPtr& permission_descriptor,
       content::RenderProcessHost* render_process_host,
       const GURL& worker_origin) override;
-  blink::mojom::PermissionStatus GetPermissionStatusForEmbeddedRequester(
-      blink::PermissionType permission,
+  content::PermissionResult GetPermissionResultForEmbeddedRequester(
+      const blink::mojom::PermissionDescriptorPtr& permission_descriptor,
       content::RenderFrameHost* render_frame_host,
       const url::Origin& requesting_origin) override;
 
@@ -154,7 +156,7 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   void RequestPermissionsWithDetails(
       content::RenderFrameHost* render_frame_host,
       const content::PermissionRequestDescription& request_description,
-      base::Value::Dict details,
+      base::DictValue details,
       StatusesCallback callback);
 
   RequestHandler request_handler_;

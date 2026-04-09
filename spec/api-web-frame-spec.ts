@@ -162,29 +162,29 @@ describe('webFrame module', () => {
       });
     });
 
-    describe('findFrameByRoutingId()', () => {
+    describe('findFrameByToken()', () => {
       it('does not crash when not found', async () => {
-        const equal = await w.executeJavaScript('webFrame.findFrameByRoutingId(-1) === null');
+        const equal = await w.executeJavaScript('webFrame.findFrameByToken("unknown") === null');
         expect(equal).to.be.true();
       });
 
       it('returns the webFrame when found', async () => {
-        const equal = await w.executeJavaScript('isSameWebFrame(webFrame.findFrameByRoutingId(childFrame.routingId), childFrame)');
+        const equal = await w.executeJavaScript('isSameWebFrame(webFrame.findFrameByToken(childFrame.frameToken), childFrame)');
         expect(equal).to.be.true();
       });
     });
 
     describe('setZoomFactor()', () => {
       it('works', async () => {
-        const equal = await w.executeJavaScript('childFrame.setZoomFactor(2.0); childFrame.getZoomFactor() === 2.0');
-        expect(equal).to.be.true();
+        const zoom = await w.executeJavaScript('childFrame.setZoomFactor(2.0); childFrame.getZoomFactor()');
+        expect(zoom).to.equal(2.0);
       });
     });
 
     describe('setZoomLevel()', () => {
       it('works', async () => {
-        const equal = await w.executeJavaScript('childFrame.setZoomLevel(5); childFrame.getZoomLevel() === 5');
-        expect(equal).to.be.true();
+        const zoom = await w.executeJavaScript('childFrame.setZoomLevel(5); childFrame.getZoomLevel()');
+        expect(zoom).to.equal(5);
       });
     });
 

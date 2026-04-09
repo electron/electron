@@ -15,12 +15,22 @@
 
 namespace electron {
 
+extern const bool debug_notifications;
+
 class NotificationDelegate;
 class NotificationPresenter;
 
 struct NotificationAction {
   std::u16string type;
   std::u16string text;
+  std::vector<std::u16string> items;
+
+  NotificationAction();
+  ~NotificationAction();
+  NotificationAction(const NotificationAction&);
+  NotificationAction& operator=(const NotificationAction&);
+  NotificationAction(NotificationAction&&) noexcept;
+  NotificationAction& operator=(NotificationAction&&) noexcept;
 };
 
 struct NotificationOptions {
@@ -35,12 +45,17 @@ struct NotificationOptions {
   std::u16string timeout_type;
   std::u16string reply_placeholder;
   std::u16string sound;
-  std::u16string urgency;  // Linux
+  std::u16string urgency;  // Linux/Windows
   std::vector<NotificationAction> actions;
   std::u16string close_button_text;
   std::u16string toast_xml;
+  std::string group_id;
 
   NotificationOptions();
+  NotificationOptions(const NotificationOptions&);
+  NotificationOptions& operator=(const NotificationOptions&);
+  NotificationOptions(NotificationOptions&&);
+  NotificationOptions& operator=(NotificationOptions&&);
   ~NotificationOptions();
 };
 
@@ -62,7 +77,8 @@ class Notification {
 
   // Should be called by derived classes.
   void NotificationClicked();
-  void NotificationDismissed(bool should_destroy = true);
+  void NotificationDismissed(bool should_destroy = true,
+                             const std::string& close_reason = "");
   void NotificationFailed(const std::string& error = "");
 
   // delete this.

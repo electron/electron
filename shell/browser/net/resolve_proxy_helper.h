@@ -5,10 +5,10 @@
 #ifndef ELECTRON_SHELL_BROWSER_NET_RESOLVE_PROXY_HELPER_H_
 #define ELECTRON_SHELL_BROWSER_NET_RESOLVE_PROXY_HELPER_H_
 
-#include <deque>
 #include <optional>
 #include <string>
 
+#include "base/containers/circular_deque.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"
 #include "mojo/public/cpp/bindings/receiver.h"
@@ -66,7 +66,7 @@ class ResolveProxyHelper
   // Self-reference. Owned as long as there's an outstanding proxy lookup.
   scoped_refptr<ResolveProxyHelper> owned_self_;
 
-  std::deque<PendingRequest> pending_requests_;
+  base::circular_deque<PendingRequest> pending_requests_;
   // Receiver for the currently in-progress request, if any.
   mojo::Receiver<network::mojom::ProxyLookupClient> receiver_{this};
 

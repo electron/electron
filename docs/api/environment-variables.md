@@ -104,7 +104,7 @@ you would when running the normal Node.js executable, with the exception of the 
 These flags are disabled owing to the fact that Electron uses BoringSSL instead of OpenSSL when building Node.js'
 `crypto` module, and so will not work as designed.
 
-If the [`runAsNode` fuse](../tutorial/fuses.md#L13) is disabled, `ELECTRON_RUN_AS_NODE` will be ignored.
+If the [`runAsNode` fuse](../tutorial/fuses.md#runasnode) is disabled, `ELECTRON_RUN_AS_NODE` will be ignored.
 
 ### `ELECTRON_NO_ATTACH_CONSOLE` _Windows_
 
@@ -124,16 +124,6 @@ Options:
 * `trash-cli`
 * `kioclient5`
 * `kioclient`
-
-### `ELECTRON_OZONE_PLATFORM_HINT` _Linux_
-
-Selects the preferred platform backend used on Linux. The default one is `x11`. `auto` selects Wayland if possible, X11 otherwise.
-
-Options:
-
-* `auto`
-* `wayland`
-* `x11`
 
 ## Development Variables
 
@@ -169,6 +159,22 @@ Notification activated (com.github.Electron:notification:EAF7B87C-A113-43D7-8E76
 Notification replied to (com.github.Electron:notification:EAF7B87C-A113-43D7-8E76-F88EC9D73D44)
 ```
 
+### `ELECTRON_DEBUG_MSIX_UPDATER`
+
+Adds extra logs to MSIX updater operations on Windows to aid in debugging. Extra logging will be displayed when MSIX update operations are initiated, including package updates, package registration, and restart registration. This helps diagnose issues with MSIX package updates and deployments.
+
+Sample output:
+
+```sh
+UpdateMsix called with URI: https://example.com/app.msix
+DoUpdateMsix: Starting
+Calling AddPackageByUriAsync... URI: https://example.com/app.msix
+Update options - deferRegistration: true, developerMode: false, forceShutdown: false, forceTargetShutdown: false, forceUpdateFromAnyVersion: false
+Waiting for deployment...
+Deployment finished.
+MSIX Deployment completed.
+```
+
 ### `ELECTRON_LOG_ASAR_READS`
 
 When Electron reads from an ASAR file, log the read offset and file path to
@@ -197,13 +203,13 @@ the one downloaded by `npm install`. Usage:
 export ELECTRON_OVERRIDE_DIST_PATH=/Users/username/projects/electron/out/Testing
 ```
 
-## Set By Electron
+### `ELECTRON_SKIP_BINARY_DOWNLOAD`
 
-Electron sets some variables in your environment at runtime.
+If you want to install your project's dependencies but don't need to use Electron functionality,
+you can set the `ELECTRON_SKIP_BINARY_DOWNLOAD` environment variable to prevent the binary from being
+downloaded. For instance, this feature can be useful in continuous integration environments when
+running unit tests that mock out the `electron` module.
 
-### `ORIGINAL_XDG_CURRENT_DESKTOP`
-
-This variable is set to the value of `XDG_CURRENT_DESKTOP` that your application
-originally launched with.  Electron sometimes modifies the value of `XDG_CURRENT_DESKTOP`
-to affect other logic within Chromium so if you want access to the _original_ value
-you should look up this environment variable instead.
+```sh
+ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm install
+```

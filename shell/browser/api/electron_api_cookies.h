@@ -11,16 +11,14 @@
 #include "base/memory/raw_ptr.h"
 #include "base/values.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/wrappable.h"
 
 class GURL;
 
-namespace gin {
-template <typename T>
-class Handle;
-}  // namespace gin
-
 namespace gin_helper {
 class Dictionary;
+template <typename T>
+class Handle;
 }  // namespace gin_helper
 
 namespace net {
@@ -33,14 +31,15 @@ class ElectronBrowserContext;
 
 namespace api {
 
-class Cookies final : public gin::Wrappable<Cookies>,
+class Cookies final : public gin_helper::DeprecatedWrappable<Cookies>,
                       public gin_helper::EventEmitterMixin<Cookies> {
  public:
-  static gin::Handle<Cookies> Create(v8::Isolate* isolate,
-                                     ElectronBrowserContext* browser_context);
+  static gin_helper::Handle<Cookies> Create(
+      v8::Isolate* isolate,
+      ElectronBrowserContext* browser_context);
 
-  // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
+  // gin_helper::Wrappable
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
@@ -55,7 +54,7 @@ class Cookies final : public gin::Wrappable<Cookies>,
 
   v8::Local<v8::Promise> Get(v8::Isolate*,
                              const gin_helper::Dictionary& filter);
-  v8::Local<v8::Promise> Set(v8::Isolate*, base::Value::Dict details);
+  v8::Local<v8::Promise> Set(v8::Isolate*, base::DictValue details);
   v8::Local<v8::Promise> Remove(v8::Isolate*,
                                 const GURL& url,
                                 const std::string& name);

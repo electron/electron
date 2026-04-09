@@ -1,0 +1,20 @@
+<html>
+
+<body>
+  <input type="text" id="input" autofocus />
+  <script type="text/javascript" charset="utf-8">
+    const { ipcRenderer } = require('electron')
+
+    document.onmousedown = function (e) {
+      ipcRenderer.send('mousedown', e.button, e.x, e.screenX, e.y, e.screenY)
+    }
+    document.onmouseup = function (e) {
+      ipcRenderer.send('mouseup', e.button, e.x, e.screenX, e.y, e.screenY)
+    }
+    document.onmousemove = function (e) {
+      ipcRenderer.send('mousemove', e.button, e.x, e.screenX, e.y, e.screenY)
+    }
+  </script>
+</body>
+
+</html>

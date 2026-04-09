@@ -1,12 +1,14 @@
 const chalk = require('chalk');
-const { GitProcess } = require('dugite');
 
+const childProcess = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
 const ELECTRON_DIR = path.resolve(__dirname, '..', '..');
 const SRC_DIR = path.resolve(ELECTRON_DIR, '..');
+
+const CHROMIUM_VERSION_DEPS_REGEX = /chromium_version':\n +'(.+?)',/m;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const pass = chalk.green('✓');
@@ -61,13 +63,16 @@ function getAbsoluteElectronExec () {
   return path.resolve(SRC_DIR, getElectronExec());
 }
 
-async function handleGitCall (args, gitDir) {
-  const details = await GitProcess.exec(args, gitDir);
-  if (details.exitCode === 0) {
-    return details.stdout.replace(/^\*|\s+|\s+$/, '');
+function handleGitCall (args, gitDir) {
+  const result = childProcess.spawnSync('git', args, {
+    cwd: gitDir,
+    encoding: 'utf8',
+    stdio: ['inherit', 'pipe', 'pipe']
+  });
+  if (result.status === 0) {
+    return result.stdout.replace(/^\*|\s+|\s+$/, '');
   } else {
-    const error = GitProcess.parseError(details.stderr);
-    console.log(`${fail} couldn't parse git process call: `, error);
+    console.log(`${fail} couldn't parse git process call: `, result.stderr);
     process.exit(1);
   }
 }
@@ -139,9 +144,35 @@ async function findMatchingFiles (top, test) {
     });
 }
 
+function compareVersions (v1, v2) {
+  const [split1, split2] = [v1.split('.'), v2.split('.')];
+
+  if (split1.length !== split2.length) {
+    throw new Error(
+      `Expected version strings to have same number of sections: ${split1} and ${split2}`
+    );
+  }
+  for (let i = 0; i < split1.length; i++) {
+    const p1 = parseInt(split1[i], 10);
+    const p2 = parseInt(split2[i], 10);
+
+    if (p1 > p2) return 1;
+    else if (p1 < p2) return -1;
+    // Continue checking the value if this portion is equal
+  }
+
+  return 0;
+}
+
+function getChromiumVersionFromDEPS (depsContent) {
+  return CHROMIUM_VERSION_DEPS_REGEX.exec(depsContent)?.[1] ?? null;
+}
+
 module.exports = {
   chunkFilenames,
+  compareVersions,
   findMatchingFiles,
+  getChromiumVersionFromDEPS,
   getCurrentBranch,
   getElectronExec,
   getOutDir,

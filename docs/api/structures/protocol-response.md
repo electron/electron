@@ -25,9 +25,8 @@
   and URL responses.
 * `method` string (optional) - The HTTP `method`. This is only used for file
   and URL responses.
-* `session` Session (optional) - The session used for requesting URL, by default
-  the HTTP request will reuse the current session. Setting `session` to `null`
-  would use a random independent session. This is only used for URL responses.
+* `session` Session (optional) - The session used for requesting URL.
+  The HTTP request will reuse the current session by default.
 * `uploadData` [ProtocolResponseUploadData](protocol-response-upload-data.md) (optional) - The data used as upload data. This is only
   used for URL responses when `method` is `"POST"`.
 
