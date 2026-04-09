@@ -23,11 +23,20 @@ jobs:
         with:
           go-version: '1.26'
           cache: false
-      - name: Double-open repro at scale (synthetic, empty emptyDir)
+      - name: Build repro
+        shell: powershell
+        run: |
+          cd script/windows-io-repro
+          go build -o repro.exe .
+      - name: Writer process — create 1.1M files in deep tree
         shell: powershell
         env:
           REPRO_DIR: ${{ github.workspace }}\repro-files
         run: |
-          cd script/windows-io-repro
-          go build -o repro.exe .
-          .\repro.exe -dir "$env:REPRO_DIR" -files 1100000 -scan-first 60000 -rounds 12
+          script\windows-io-repro\repro.exe -dir "$env:REPRO_DIR" -files 1100000 -write-only
+      - name: Scanner process — double-open scan 60k subset
+        shell: powershell
+        env:
+          REPRO_DIR: ${{ github.workspace }}\repro-files
+        run: |
+          script\windows-io-repro\repro.exe -dir "$env:REPRO_DIR" -files 1100000 -no-create -scan-first 60000 -rounds 12

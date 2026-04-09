@@ -158,7 +158,8 @@ func main() {
 	rounds := flag.Int("rounds", 10, "scan rounds per strategy")
 	workers := flag.Int("workers", runtime.NumCPU(), "concurrent openers per scan")
 	writeOnly := flag.Bool("write-only", false, "create files then exit (for cross-process write→scan mode)")
-	skipCreate := flag.Bool("skip-create", false, "scan existing files in -dir instead of creating new ones")
+	skipCreate := flag.Bool("skip-create", false, "scan existing .ninja files in -dir (walks the tree)")
+	noCreate := flag.Bool("no-create", false, "regenerate the deterministic path list from -dir/-files but do not write files")
 	scanFirst := flag.Int("scan-first", 0, "if >0, scan only the first N files (create all, scan a subset)")
 	flag.Parse()
 
@@ -209,6 +210,10 @@ func main() {
 		files = make([]string, *nfiles)
 		for i := range *nfiles {
 			files[i] = filepath.Join(*dir, leafDir(i%leaves), fmt.Sprintf("some_build_target_name_%07d.ninja", i))
+		}
+		if *noCreate {
+			fmt.Printf("regenerated %d paths (no-create)\n", len(files))
+			goto scan
 		}
 		fmt.Printf("creating %d leaf dirs (depth %d, fanout %d)...\n", leaves, depth, fanout)
 		{
@@ -262,6 +267,7 @@ func main() {
 		fmt.Println("write-only mode; exiting")
 		return
 	}
+scan:
 	if *scanFirst > 0 && *scanFirst < len(files) {
 		files = files[:*scanFirst]
 		fmt.Printf("scanning first %d of %d files\n", len(files), *nfiles)
