@@ -158,7 +158,8 @@ func main() {
 	rounds := flag.Int("rounds", 10, "scan rounds per strategy")
 	workers := flag.Int("workers", runtime.NumCPU(), "concurrent openers per scan")
 	writeOnly := flag.Bool("write-only", false, "create files then exit (for cross-process write→scan mode)")
-	skipCreate := flag.Bool("skip-create", false, "scan existing .ninja files in -dir (walks the tree)")
+	skipCreate := flag.Bool("skip-create", false, "scan existing files in -dir (walks the tree)")
+	ext := flag.String("ext", "", "with -skip-create, only scan files with this extension (e.g. .ninja); empty = all")
 	noCreate := flag.Bool("no-create", false, "regenerate the deterministic path list from -dir/-files but do not write files")
 	scanFirst := flag.Int("scan-first", 0, "if >0, scan only the first N files (create all, scan a subset)")
 	flag.Parse()
@@ -176,7 +177,7 @@ func main() {
 	var files []string
 	if *skipCreate {
 		err := filepath.WalkDir(*dir, func(p string, d os.DirEntry, err error) error {
-			if err == nil && !d.IsDir() && filepath.Ext(p) == ".ninja" {
+			if err == nil && !d.IsDir() && (*ext == "" || filepath.Ext(p) == *ext) {
 				files = append(files, p)
 			}
 			return nil
