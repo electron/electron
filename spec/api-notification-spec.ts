@@ -99,6 +99,7 @@ describe('Notification module', () => {
     const n = new Notification({
       title: 'title',
       body: 'body',
+      groupId: 'my-group',
       groupTitle: 'My Group Title'
     });
 
