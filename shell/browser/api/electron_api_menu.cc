@@ -308,6 +308,7 @@ void Menu::OnMenuWillClose() {
 }
 
 void Menu::OnMenuWillShow() {
+  keep_alive_ = this;
   Emit("menu-will-show");
 }
 
