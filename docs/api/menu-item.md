@@ -63,7 +63,7 @@ See [`Menu`](menu.md) for examples.
   * `afterGroupContaining` string[] (optional) - Provides a means for a single context menu to declare
     the placement of their containing group after the containing group of the item
     with the specified id.
-  * `badge` Object (optional) _macOS_
+  * `badge` Object (optional) _macOS_ - Only available on macOS 14 and up.
     * `type` string (optional) - Can be one of `alerts`, `updates`, `new-items` or `none`. Default is `none`.
     * `count` number (optional) - The number of items the badge displays. Cannot be used with `type: 'none'`.
     * `content` string (optional) - A custom string to display in the badge. Only usable with `type: 'none'`.
@@ -193,4 +193,4 @@ A [`Menu`](menu.md) that the item is a part of.
 
 An [`MenuItemBadge`](structures/menu-item-badge.md) indicating the badge for the menu item.
 
-This property can be dynamically changed.
+This property can be dynamically changed. Only available on macOS 14 and up.
