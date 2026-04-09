@@ -11,10 +11,9 @@ const path = require('node:path');
 
 const args = minimist(process.argv.slice(2), { string: ['outDir'] });
 
-const { getOutDir } = require('./lib/utils');
+const { getDepotToolsEnv, getOutDir } = require('./lib/utils');
 
 const SOURCE_ROOT = path.normalize(path.dirname(__dirname));
-const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, '..', 'third_party', 'depot_tools');
 
 const OUT_DIR = getOutDir({ outDir: args.outDir });
 if (!OUT_DIR) {
@@ -22,12 +21,10 @@ if (!OUT_DIR) {
 }
 
 const env = {
+  ...getDepotToolsEnv(),
   CHROMIUM_BUILDTOOLS_PATH: path.resolve(SOURCE_ROOT, '..', 'buildtools'),
   DEPOT_TOOLS_WIN_TOOLCHAIN: '0',
-  ...process.env
 };
-// Users may not have depot_tools in PATH.
-env.PATH = `${env.PATH}${path.delimiter}${DEPOT_TOOLS}`;
 
 const gnCheckDirs = [
   '//electron:electron_lib',
