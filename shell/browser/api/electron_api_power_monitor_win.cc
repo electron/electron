@@ -92,7 +92,7 @@ LRESULT CALLBACK PowerMonitor::WndProc(HWND hwnd,
     }
     if (should_treat_as_current_session) {
       if (wparam == WTS_SESSION_LOCK) {
-        // SelfKeepAlive prevents GC of this object, so Unretained is safe.
+        // JS module reference prevents GC of this object, so Unretained is safe.
         content::GetUIThreadTaskRunner({})->PostTask(
             FROM_HERE,
             base::BindOnce([](PowerMonitor* pm) { pm->Emit("lock-screen"); },

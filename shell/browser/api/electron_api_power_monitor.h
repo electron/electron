@@ -8,7 +8,6 @@
 #include "base/power_monitor/power_observer.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
-#include "shell/common/gin_helper/self_keep_alive.h"
 
 #if BUILDFLAG(IS_LINUX)
 #include "shell/browser/lib/power_observer_linux.h"
@@ -97,8 +96,6 @@ class PowerMonitor final : public gin::Wrappable<PowerMonitor>,
 #if BUILDFLAG(IS_LINUX)
   PowerObserverLinux power_observer_linux_{this};
 #endif
-
-  gin_helper::SelfKeepAlive<PowerMonitor> keep_alive_{this};
 };
 
 }  // namespace electron::api
