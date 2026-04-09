@@ -41,7 +41,7 @@ this has the additional effect of removing the menu bar from the window.
 
 > [!NOTE]
 > The default menu will be created automatically if the app does not set one.
-> It contains standard items such as `File`, `Edit`, `View`, `Window` and `Help`.
+> It contains standard items such as `File`, `Edit`, `View`, and `Window`.
 
 #### `Menu.getApplicationMenu()`
 
