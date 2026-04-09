@@ -26,28 +26,34 @@ jobs:
           [System.Environment]::OSVersion | Format-List
           Write-Host "CONTAINER_SANDBOX_MOUNT_POINT = '$env:CONTAINER_SANDBOX_MOUNT_POINT'"
           cmd /c ver
-          Write-Host "`n--- whoami ---"
           whoami
-          Write-Host "`n--- fltmc filters ---"
-          fltmc filters
-          Write-Host "`n--- fltmc instances ---"
-          fltmc instances
-          Write-Host "`n--- fltmc volumes ---"
-          fltmc volumes
+          Write-Host "`n--- loaded FS filter services (registry) ---"
+          Get-ChildItem HKLM:\SYSTEM\CurrentControlSet\Services |
+            Where-Object { @('bindflt','wcifs','wcnfs','wof','luafv','npsvctrig','fileinfo','cldflt','unionfs') -contains $_.PSChildName } |
+            ForEach-Object { $p = Get-ItemProperty $_.PSPath; "{0,-10} Start={1} Type={2} Group={3}" -f $_.PSChildName,$p.Start,$p.Type,$p.Group }
           Write-Host "`n--- logical disks ---"
           Get-CimInstance Win32_LogicalDisk | Format-Table DeviceID,DriveType,FileSystem,Size,FreeSpace
-          Write-Host "`n--- hotfixes (last 10) ---"
+          Write-Host "`n--- hotfixes ---"
           try { Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 10 | Format-Table } catch { Write-Host "Get-HotFix unavailable: $_" }
-          Write-Host "`n--- workspace reparse info ---"
+          Write-Host "`n--- dir attributes under workspace ---"
           Write-Host "GITHUB_WORKSPACE = $env:GITHUB_WORKSPACE"
-          cmd /c "fsutil reparsepoint query `"$env:GITHUB_WORKSPACE`"" 2>&1
-          $p = Split-Path $env:GITHUB_WORKSPACE -Parent
-          while ($p -and $p -ne (Split-Path $p -Parent)) {
-            cmd /c "fsutil reparsepoint query `"$p`"" 2>&1 | ForEach-Object { "  [$p] $_" }
-            $p = Split-Path $p -Parent
+          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\src\out" | Out-Null
+          foreach ($p in @("$env:GITHUB_WORKSPACE", "$env:GITHUB_WORKSPACE\src", "$env:GITHUB_WORKSPACE\src\out", "C:\actions-runner\_work", "C:\actions-runner")) {
+            $a = (Get-Item $p -Force -ErrorAction SilentlyContinue).Attributes
+            Write-Host ("  {0,-60} attrs={1}" -f $p, $a)
+            cmd /c "fsutil reparsepoint query `"$p`"" 2>&1 | ForEach-Object { "    $_" }
           }
-          Write-Host "`n--- mountvol ---"
-          mountvol
+          Write-Host "`n--- free-space probe: where does src\out land? ---"
+          $before = (Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'").FreeSpace
+          $probe = "$env:GITHUB_WORKSPACE\src\out\probe.bin"
+          $bytes = New-Object byte[] (512MB)
+          [System.IO.File]::WriteAllBytes($probe, $bytes)
+          $after = (Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'").FreeSpace
+          $delta = $before - $after
+          Write-Host ("  wrote 512MB to src\out; C: free {0} -> {1}, delta {2} bytes" -f $before,$after,$delta)
+          if ($delta -gt 256MB) { Write-Host "  => src\out consumes C: (container scratch)" }
+          else { Write-Host "  => src\out does NOT consume C: (mapped to host storage)" }
+          Remove-Item $probe
 
       - name: Set up Go
         uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
@@ -63,10 +69,19 @@ jobs:
           go build -v -o repro.exe .
           Get-Item repro.exe | Format-List FullName,Length
 
-      - name: Run repro (on workspace bind mount)
+      - name: Run repro — same-process write+scan (src\out)
         shell: powershell
         env:
-          REPRO_DIR: ${{ github.workspace }}\repro-files
+          REPRO_DIR: ${{ github.workspace }}\src\out\repro-a
         run: |
-          Write-Host "target dir: $env:REPRO_DIR"
-          script/windows-io-repro/repro.exe -dir "$env:REPRO_DIR" -files 60000 -rounds 12
+          script/windows-io-repro/repro.exe -dir "$env:REPRO_DIR" -files 60000 -rounds 8
+
+      - name: Run repro — cross-process write then scan (src\out)
+        shell: powershell
+        env:
+          REPRO_DIR: ${{ github.workspace }}\src\out\repro-b
+        run: |
+          Write-Host "writer process: creating files then exiting"
+          script/windows-io-repro/repro.exe -dir "$env:REPRO_DIR" -files 90000 -write-only
+          Write-Host "scanner process: opening immediately after writer exited"
+          script/windows-io-repro/repro.exe -dir "$env:REPRO_DIR" -skip-create -rounds 8

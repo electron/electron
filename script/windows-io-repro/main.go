@@ -108,6 +108,8 @@ func main() {
 	nfiles := flag.Int("files", 50000, "number of test files to create")
 	rounds := flag.Int("rounds", 10, "scan rounds per strategy")
 	workers := flag.Int("workers", runtime.NumCPU(), "concurrent openers per scan")
+	writeOnly := flag.Bool("write-only", false, "create files then exit (for cross-process write→scan mode)")
+	skipCreate := flag.Bool("skip-create", false, "scan existing files in -dir instead of creating new ones")
 	flag.Parse()
 
 	fmt.Printf("GOOS=%s GOARCH=%s NumCPU=%d GOMAXPROCS=%d workers=%d\n",
@@ -120,22 +122,41 @@ func main() {
 	abs, _ := filepath.Abs(*dir)
 	fmt.Printf("test dir: %s\n", abs)
 
-	fmt.Printf("creating %d files...\n", *nfiles)
-	payload := make([]byte, 256)
-	files := make([]string, 0, *nfiles)
-	for i := range *nfiles {
-		sub := filepath.Join(*dir, fmt.Sprintf("d%03d", i%512))
-		if i < 512 {
-			_ = os.MkdirAll(sub, 0o755)
-		}
-		p := filepath.Join(sub, fmt.Sprintf("f%06d.ninja", i))
-		if err := os.WriteFile(p, payload, 0o644); err != nil {
-			fmt.Fprintln(os.Stderr, "write:", err)
+	var files []string
+	if *skipCreate {
+		err := filepath.WalkDir(*dir, func(p string, d os.DirEntry, err error) error {
+			if err == nil && !d.IsDir() {
+				files = append(files, p)
+			}
+			return nil
+		})
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "walk:", err)
 			os.Exit(1)
 		}
-		files = append(files, p)
+		fmt.Printf("scanning %d existing files\n", len(files))
+	} else {
+		fmt.Printf("creating %d files...\n", *nfiles)
+		payload := make([]byte, 256)
+		files = make([]string, 0, *nfiles)
+		for i := range *nfiles {
+			sub := filepath.Join(*dir, fmt.Sprintf("d%03d", i%512))
+			if i < 512 {
+				_ = os.MkdirAll(sub, 0o755)
+			}
+			p := filepath.Join(sub, fmt.Sprintf("f%06d.ninja", i))
+			if err := os.WriteFile(p, payload, 0o644); err != nil {
+				fmt.Fprintln(os.Stderr, "write:", err)
+				os.Exit(1)
+			}
+			files = append(files, p)
+		}
+		fmt.Printf("created %d files in %d subdirs\n", len(files), 512)
 	}
-	fmt.Printf("created %d files in %d subdirs\n", len(files), 512)
+	if *writeOnly {
+		fmt.Println("write-only mode; exiting")
+		return
+	}
 
 	type strat struct {
 		name string
