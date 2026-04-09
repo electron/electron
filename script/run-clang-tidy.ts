@@ -217,9 +217,15 @@ async function main(): Promise<boolean> {
     filenames.push(...opts._.map((filename) => path.resolve(filename)));
   } else {
     filenames.push(
-      ...(await findMatchingFiles(path.resolve(SOURCE_ROOT, 'shell'), (filename: string) =>
-        /.*\.(?:cc|mm)$/.test(filename)
-      ))
+      ...(await findMatchingFiles(path.resolve(SOURCE_ROOT, 'shell'), (filename: string) => {
+        // TODO(dsanders11): This file has clang-tidy compilation errors in CI that don't
+        //                   appear locally, so exclude it for now until that's resolved
+        if (process.env.CI && filename.endsWith('/electron_smooth_round_rect.cc')) {
+          return false;
+        }
+
+        return /.*\.(?:cc|mm)$/.test(filename);
+      }))
     );
   }
 
