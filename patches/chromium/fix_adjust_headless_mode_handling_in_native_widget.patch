@@ -23,10 +23,10 @@ additional headless changes from breaking macOS window behavior.
 https://chromium-review.googlesource.com/c/chromium/src/+/7487666
 
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index b4554165e3c5344c7ff0b21ccc3986c3e5edf593..4a9e866b57333cbaf8f8e9b415572e9da953e9a8 100644
+index f200710faa973822367f5e12037126fef31cac85..f57b9fc71cd803737d76a157e2a573e7ef61520d 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-@@ -251,6 +251,7 @@ @implementation NativeWidgetMacNSWindow {
+@@ -235,6 +235,7 @@ @implementation NativeWidgetMacNSWindow {
    BOOL _isEnforcingNeverMadeVisible;
    BOOL _activationIndependence;
    BOOL _isTooltip;
@@ -34,7 +34,7 @@ index b4554165e3c5344c7ff0b21ccc3986c3e5edf593..4a9e866b57333cbaf8f8e9b415572e9d
    BOOL _isShufflingForOrdering;
    BOOL _miniaturizationInProgress;
    std::unique_ptr<NativeWidgetMacNSWindowHeadlessInfo> _headless_info;
-@@ -258,6 +259,7 @@ @implementation NativeWidgetMacNSWindow {
+@@ -242,6 +243,7 @@ @implementation NativeWidgetMacNSWindow {
  @synthesize bridgedNativeWidgetId = _bridgedNativeWidgetId;
  @synthesize bridge = _bridge;
  @synthesize isTooltip = _isTooltip;
@@ -42,7 +42,7 @@ index b4554165e3c5344c7ff0b21ccc3986c3e5edf593..4a9e866b57333cbaf8f8e9b415572e9d
  @synthesize isShufflingForOrdering = _isShufflingForOrdering;
  @synthesize preventKeyWindow = _preventKeyWindow;
  @synthesize childWindowAddedHandler = _childWindowAddedHandler;
-@@ -279,23 +281,6 @@ - (instancetype)initWithContentRect:(NSRect)contentRect
+@@ -263,23 +265,6 @@ - (instancetype)initWithContentRect:(NSRect)contentRect
    return self;
  }
  
@@ -80,7 +80,7 @@ index 94ee727830545ff1576685722c0fd0dd215131cf..ba70aca429e33c12215dfd67d3855245
    }
  
 diff --git a/components/remote_cocoa/common/native_widget_ns_window.mojom b/components/remote_cocoa/common/native_widget_ns_window.mojom
-index a1cdcdd45fc05c8e1456bf7c33f94bf0aa9dcf1b..9aab9244b6387c1d49c2ff6d7c1d3dd2b3737d05 100644
+index 2ab3386c5391f77da36158d67e894dcd84c273f4..faadcb76a9fd1947604eca83b384964fefe8c9c2 100644
 --- a/components/remote_cocoa/common/native_widget_ns_window.mojom
 +++ b/components/remote_cocoa/common/native_widget_ns_window.mojom
 @@ -98,6 +98,9 @@ struct NativeWidgetNSWindowInitParams {

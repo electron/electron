@@ -8,10 +8,10 @@ where callsites that deal with multiple contexts need to distinguish
 the current isolate.
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index d64fef6bfc37264dcdc1bbea22eb5c4e099553dd..41d40326505c4ced9837df7f03b791c9435124bf 100644
+index cde924d79c67e9312f393c54c45bd6fc92509d0f..72c4d2f042afd428f2bf945bf54de873f256ca21 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -382,6 +382,7 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -381,6 +381,7 @@ class CONTENT_EXPORT ContentRendererClient {
    // WillDestroyServiceWorkerContextOnWorkerThread() is called.
    virtual void WillEvaluateServiceWorkerOnWorkerThread(
        blink::WebServiceWorkerContextProxy* context_proxy,
@@ -34,10 +34,10 @@ index 1d03dc809d4c18f24314d94811e0bf527aa7b5b4..16030bcecb2e39b8870144ce7c3d11dd
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index b3a8f4ec26238c44d17d28ce2aea918a556d037d..282e8d0f5245f8c81fd20decbd87c4930d88282a 100644
+index fe7c1bac2048a14f5930fee68b3b46e07504a706..0b21a13484163131a32a6ed13542887dc7148f02 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4739,10 +4739,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4738,10 +4738,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
      observer.DidInstallConditionalFeatures(context, world_id);
  }
  
@@ -52,10 +52,10 @@ index b3a8f4ec26238c44d17d28ce2aea918a556d037d..282e8d0f5245f8c81fd20decbd87c493
  
  void RenderFrameImpl::DidChangeScrollOffset() {
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 2ce05bce0a02338aba018c18f0a808a4eb392ff4..2736b65de7f0a6e4cd2d56970d35687da8fcab6b 100644
+index 4fa41ab51e326b10c661353cd6b209c25270d6d2..25c4148acc0486c2c7d829f3bf720c78dcf182f7 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -609,7 +609,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -608,7 +608,8 @@ class CONTENT_EXPORT RenderFrameImpl
                                int world_id) override;
    void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
                                       int world_id) override;
@@ -167,10 +167,10 @@ index f96781a047056876b030581b539be0507acc3a1c..cd9be80be2500a001b1895c81ee597dd
    // Called when initial script evaluation finished for the main script.
    // |success| is true if the evaluation completed with no uncaught exception.
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index 27b21f02d2dbfd60cb64f09be393b0e50928756f..c8da817ffab883573ae2dcfb6fb02d2baf8bcdaf 100644
+index 9fd34fac309228c7700372f792d375debf36d097..25267a02bbf7c751c55f773c671343622dec27df 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
-@@ -679,7 +679,8 @@ class BLINK_EXPORT WebLocalFrameClient {
+@@ -678,7 +678,8 @@ class BLINK_EXPORT WebLocalFrameClient {
                                               int32_t world_id) {}
  
    // WebKit is about to release its reference to a v8 context for a frame.

@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index cccf164d978761dac8148d11fbddfbeb9ecfb048..295a16cd4f1e369c78d34b4da24ea3c830ce20e4 100644
+index cff0f6e772bac73b3f8c2a5b93ab3f8b9caee8d8..5cc6c65ce29579bdcbeee3f3a4edc2ae5f80dbb0 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -20,7 +20,7 @@ index cccf164d978761dac8148d11fbddfbeb9ecfb048..295a16cd4f1e369c78d34b4da24ea3c8
  #include "chrome/browser/picture_in_picture/picture_in_picture_bounds_cache.h"
  #include "chrome/browser/ui/browser_navigator_params.h"
  #include "content/public/browser/document_picture_in_picture_window_controller.h"
-@@ -31,8 +32,10 @@
+@@ -32,8 +33,10 @@
  #include "base/task/sequenced_task_runner.h"
  // TODO(crbug.com/421608904): include auto_picture_in_picture_tab_helper for
  // Android when supporting document PiP.
@@ -31,7 +31,7 @@ index cccf164d978761dac8148d11fbddfbeb9ecfb048..295a16cd4f1e369c78d34b4da24ea3c8
  #include "chrome/browser/picture_in_picture/picture_in_picture_occlusion_tracker.h"
  #include "chrome/browser/picture_in_picture/picture_in_picture_window.h"
  #include "media/base/media_switches.h"
-@@ -71,6 +74,7 @@ constexpr double kMaxWindowSizeRatio = 0.8;
+@@ -72,6 +75,7 @@ constexpr double kMaxWindowSizeRatio = 0.8;
  // `kMaxWindowSizeRatio`.
  constexpr double kMaxSiteRequestedWindowSizeRatio = 0.25;
  
@@ -39,7 +39,7 @@ index cccf164d978761dac8148d11fbddfbeb9ecfb048..295a16cd4f1e369c78d34b4da24ea3c8
  // Returns true if a document picture-in-picture window should be focused upon
  // opening it.
  bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
-@@ -87,6 +91,7 @@ bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
+@@ -88,6 +92,7 @@ bool ShouldFocusPictureInPictureWindow(const NavigateParams& params) {
    // AutoPictureInPictureTabHelper.
    return !auto_picture_in_picture_tab_helper->IsInAutoPictureInPicture();
  }
@@ -47,7 +47,7 @@ index cccf164d978761dac8148d11fbddfbeb9ecfb048..295a16cd4f1e369c78d34b4da24ea3c8
  
  // Returns the maximum area in pixels that the site can request a
  // picture-in-picture window to be.
-@@ -220,7 +225,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
+@@ -221,7 +226,7 @@ bool PictureInPictureWindowManager::ExitPictureInPictureViaWindowUi(
      return false;
    }
  
@@ -56,7 +56,7 @@ index cccf164d978761dac8148d11fbddfbeb9ecfb048..295a16cd4f1e369c78d34b4da24ea3c8
    // The user manually closed the pip window, so let the tab helper know in case
    // the auto-pip permission dialog was visible.
    if (auto* tab_helper = AutoPictureInPictureTabHelper::FromWebContents(
-@@ -572,7 +577,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
+@@ -573,7 +578,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
  
  // static
  void PictureInPictureWindowManager::SetWindowParams(NavigateParams& params) {
@@ -65,7 +65,7 @@ index cccf164d978761dac8148d11fbddfbeb9ecfb048..295a16cd4f1e369c78d34b4da24ea3c8
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
    params.window_action =
-@@ -681,6 +686,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -682,6 +687,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -73,7 +73,7 @@ index cccf164d978761dac8148d11fbddfbeb9ecfb048..295a16cd4f1e369c78d34b4da24ea3c8
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -719,6 +725,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -720,6 +726,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;

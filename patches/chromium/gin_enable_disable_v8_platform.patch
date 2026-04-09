@@ -41,7 +41,7 @@ index 3909e70dc1425c2cb02624f4b3017784a2ae6c9d..a57b92f02085d6392e6d9d0cc037df6b
    // Returns whether `Initialize` has already been invoked in the process.
    // Initialization is a one-way operation (i.e., this method cannot return
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index f32f4077d56ff38e96ff825633fd908242b2ab7a..cd1f308815685d28c506b5c9eb87b24107fa220b 100644
+index 028b9b0a10dc2e315295413c0c7459166ba492ca..1b9a620d1f125cf86b8910e6e35b9915f8b148bc 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
 @@ -525,7 +525,8 @@ void SetFeatureFlags() {

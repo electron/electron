@@ -129,10 +129,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index 51a9d1fef7b2dbfef69f8474d74d45b69f16219d..cd61d8ae6ac772f8b8c28157e21b439cdb87dcca 100644
+index 993992980f7b72cbd8266ee6aa54a973077e04b5..50a5b6f87c67d0c2508c697104a4ee1a29fe0238 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -978,6 +978,7 @@ if (is_clang_or_gcc) {
+@@ -979,6 +979,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -640,10 +640,10 @@ index 48f47bf3eeb8464d1c3925f0f73f62c790cac2f0..b7b2b7c1b7e99927012ce1676cc753b2
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index a5fc9193711a7cc2eee45171178c070321177ca2..b4554165e3c5344c7ff0b21ccc3986c3e5edf593 100644
+index 7b9d0983563148493a32b60fe2154b6d6fa6100c..f200710faa973822367f5e12037126fef31cac85 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-@@ -22,6 +22,7 @@
+@@ -23,6 +23,7 @@
  #import "components/remote_cocoa/app_shim/views_nswindow_delegate.h"
  #import "components/remote_cocoa/app_shim/window_touch_bar_delegate.h"
  #include "components/remote_cocoa/common/native_widget_ns_window_host.mojom.h"
@@ -651,7 +651,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..b4554165e3c5344c7ff0b21ccc3986c3
  #include "ui/accessibility/platform/ax_platform_node.h"
  #import "ui/base/cocoa/user_interface_item_command_handler.h"
  #import "ui/base/cocoa/window_size_constants.h"
-@@ -109,20 +110,24 @@ void OrderChildWindow(NSWindow* child_window,
+@@ -110,20 +111,24 @@ void OrderChildWindow(NSWindow* child_window,
  
  }  // namespace
  
@@ -677,7 +677,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..b4554165e3c5344c7ff0b21ccc3986c3
  @end
  
  struct NSEdgeAndCornerThicknesses {
-@@ -159,13 +164,50 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event;
+@@ -163,13 +168,30 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event;
  @implementation NSView (CRFrameViewAdditions)
  // If a mouseDown: falls through to the frame view, turn it into a window drag.
  - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
@@ -688,33 +688,13 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..b4554165e3c5344c7ff0b21ccc3986c3
 +#else
 +  // For MAS builds, approximate the resize direction check.
 +  if (self.window.styleMask & NSWindowStyleMaskResizable) {
-+    // Match Electron's frameless resize affordances:
-+    // - 5pt resize handles along edges
-+    // - 16pt resize hot-zone at corners
-+    //
-+    // If we misclassify a resize as a drag, we can end up with a window that
-+    // moves while it is being resized (most noticeable near corners).
-+    constexpr CGFloat kResizeInsideBoundsSize = 5.0;
-+    constexpr CGFloat kResizeAreaCornerSize = 16.0;
++    constexpr CGFloat kResizeThreshold = 5.0;
 +    NSPoint location = event.locationInWindow;
 +    NSRect frame = self.window.frame;
 +    CGFloat width = NSWidth(frame);
 +    CGFloat height = NSHeight(frame);
-+
-+    const bool in_left_edge = location.x < kResizeInsideBoundsSize;
-+    const bool in_right_edge = location.x > width - kResizeInsideBoundsSize;
-+    const bool in_bottom_edge = location.y < kResizeInsideBoundsSize;
-+    const bool in_top_edge = location.y > height - kResizeInsideBoundsSize;
-+
-+    const bool in_left_corner_zone = location.x < kResizeAreaCornerSize;
-+    const bool in_right_corner_zone = location.x > width - kResizeAreaCornerSize;
-+    const bool in_bottom_corner_zone = location.y < kResizeAreaCornerSize;
-+    const bool in_top_corner_zone = location.y > height - kResizeAreaCornerSize;
-+    const bool in_corner = (in_left_corner_zone || in_right_corner_zone) &&
-+                           (in_bottom_corner_zone || in_top_corner_zone);
-+
-+    if (in_left_edge || in_right_edge || in_bottom_edge || in_top_edge ||
-+        in_corner) {
++    if (location.x < kResizeThreshold || location.x > width - kResizeThreshold ||
++        location.y < kResizeThreshold || location.y > height - kResizeThreshold) {
 +      return;
 +    }
 +  }
@@ -728,7 +708,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..b4554165e3c5344c7ff0b21ccc3986c3
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (self.window.isMovable)
-@@ -193,6 +235,8 @@ - (BOOL)usesCustomDrawing {
+@@ -197,6 +219,8 @@ - (BOOL)usesCustomDrawing {
  }
  @end
  
@@ -737,7 +717,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..b4554165e3c5344c7ff0b21ccc3986c3
  @implementation NativeWidgetMacNSWindow {
   @private
    CommandDispatcher* __strong _commandDispatcher;
-@@ -268,6 +312,7 @@ - (BOOL)invokeOriginalIsVisibleForTesting {
+@@ -272,6 +296,7 @@ - (BOOL)invokeOriginalIsVisibleForTesting {
  // bubbles and the find bar, but these should not be movable.
  // Instead, let's push this up to the parent window which should be
  // the browser.
@@ -745,7 +725,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..b4554165e3c5344c7ff0b21ccc3986c3
  - (void)_zoomToScreenEdge:(NSUInteger)edge {
    if (self.parentWindow) {
      [self.parentWindow _zoomToScreenEdge:edge];
-@@ -275,6 +320,7 @@ - (void)_zoomToScreenEdge:(NSUInteger)edge {
+@@ -279,6 +304,7 @@ - (void)_zoomToScreenEdge:(NSUInteger)edge {
      [super _zoomToScreenEdge:edge];
    }
  }
@@ -753,7 +733,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..b4554165e3c5344c7ff0b21ccc3986c3
  
  // This override helps diagnose lifetime issues in crash stacktraces by
  // inserting a symbol on NativeWidgetMacNSWindow and should be kept even if it
-@@ -407,6 +453,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -411,6 +437,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -762,7 +742,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..b4554165e3c5344c7ff0b21ccc3986c3
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -418,6 +466,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -422,6 +450,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
@@ -771,7 +751,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..b4554165e3c5344c7ff0b21ccc3986c3
  - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
    if (self.isHeadless || self.parentWindow) {
      // AppKit's default implementation moves child windows down to avoid
-@@ -455,12 +505,14 @@ - (BOOL)_usesCustomDrawing {
+@@ -478,12 +508,14 @@ - (BOOL)_usesCustomDrawing {
  // if it were valid to set that style for windows, setting the window style
  // recalculates and re-caches a bunch of stuff, so a surgical override is the
  // cleanest approach.
@@ -786,7 +766,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..b4554165e3c5344c7ff0b21ccc3986c3
  
  + (void)_getExteriorResizeEdgeThicknesses:
              (NSEdgeAndCornerThicknesses*)outThicknesses
-@@ -714,9 +766,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
+@@ -763,9 +795,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
  }
  
  - (void)saveRestorableState {
@@ -798,7 +778,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..b4554165e3c5344c7ff0b21ccc3986c3
  
    // Certain conditions, such as in the Speedometer 3 benchmark, can trigger a
    // rapid succession of calls to saveRestorableState. If there's no pending
-@@ -783,6 +837,7 @@ - (void)reallySaveRestorableState {
+@@ -832,6 +866,7 @@ - (void)reallySaveRestorableState {
  // affects its restorable state changes.
  - (void)invalidateRestorableState {
    [super invalidateRestorableState];
@@ -806,7 +786,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..b4554165e3c5344c7ff0b21ccc3986c3
    if ([self _isConsideredOpenForPersistentState]) {
      if (_willUpdateRestorableState)
        return;
-@@ -795,6 +850,7 @@ - (void)invalidateRestorableState {
+@@ -844,6 +879,7 @@ - (void)invalidateRestorableState {
      _willUpdateRestorableState = NO;
      [NSObject cancelPreviousPerformRequestsWithTarget:self];
    }
@@ -814,7 +794,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..b4554165e3c5344c7ff0b21ccc3986c3
  }
  
  // On newer SDKs, _canMiniaturize respects NSWindowStyleMaskMiniaturizable in
-@@ -971,6 +1027,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -1020,6 +1056,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
    // Since _removeFromGroups: is not documented it could go away in newer
    // versions of macOS. If the selector does not exist, DumpWithoutCrashing() so
    // we hear about the change.
@@ -822,7 +802,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..b4554165e3c5344c7ff0b21ccc3986c3
    if (![NSWindow instancesRespondToSelector:@selector(_removeFromGroups:)]) {
      base::debug::DumpWithoutCrashing();
      return;
-@@ -988,6 +1045,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -1037,6 +1074,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
        [currentWindow _removeFromGroups:child];
      }
    }
@@ -889,7 +869,7 @@ index d58c5eff9f8fbca96d0912ab9a19d06974fd8016..94ee727830545ff1576685722c0fd0dd
  
  void NativeWidgetNSWindowBridge::SetColorMode(
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 42a96534b0d6ec220626b888bfc97f382dfc1210..3f9d9afc88b7622c28ba2167c305e2a54affb8d3 100644
+index 668242b6712cbf11a2eb665956186baadd03cd5e..1cb64b8a359f2761e75e7b43391734bde0d40054 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -390,6 +390,7 @@ viz_component("service") {
@@ -1006,7 +986,7 @@ index 3c17f3f83cf886428efade520dd04cb69cef56c6..7281285c0d447ccfaf1ee122f9cb1109
  
    public_deps = [
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index d4320df856533ef75f943deeac82119c746f5e20..c6e9cc8fd3b3e152493086a6f401d1c6ce318725 100644
+index 4cecf7a28fbf85f6e4ed2290b872b5d3e8e0c008..d49abe8b6a867407ef5442a4e45efc18e75cd7ce 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -25,6 +25,7 @@
@@ -1027,7 +1007,7 @@ index d4320df856533ef75f943deeac82119c746f5e20..c6e9cc8fd3b3e152493086a6f401d1c6
  @class RenderWidgetHostViewCocoa;
  
  namespace content {
-@@ -680,9 +683,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+@@ -681,9 +684,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
    // EnsureSurfaceSynchronizedForWebTest().
    uint32_t latest_capture_sequence_number_ = 0u;
  
@@ -1040,7 +1020,7 @@ index d4320df856533ef75f943deeac82119c746f5e20..c6e9cc8fd3b3e152493086a6f401d1c6
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 63041c4311293c53d370522646012cde803e0a99..886b3e87e9041931d3cb59ef775b5012e8e2f908 100644
+index aa34fd7b4720e549e0f66e72bf0753e86c2e7510..2e0b9fe4f4825125b1f8fc46b713fbc7f15bce1e 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -53,6 +53,7 @@
@@ -1062,7 +1042,7 @@ index 63041c4311293c53d370522646012cde803e0a99..886b3e87e9041931d3cb59ef775b5012
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1720,10 +1723,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1725,10 +1728,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -1075,7 +1055,7 @@ index 63041c4311293c53d370522646012cde803e0a99..886b3e87e9041931d3cb59ef775b5012
    return gfx::NativeViewAccessible([GetInProcessNSView() window]);
  }
  
-@@ -1775,9 +1780,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1780,9 +1785,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -1087,7 +1067,7 @@ index 63041c4311293c53d370522646012cde803e0a99..886b3e87e9041931d3cb59ef775b5012
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2307,20 +2314,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2312,20 +2319,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -1209,7 +1189,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 80713000fd5321e99860d6c75e9dc15f21744943..6ea61eb47fcde420261a9dd7e7e3feefa31f87d2 100644
+index 12eea20bd3e726c6a243c5bdb9e49187881e777a..2c88ae5f10d96b647ff3291eb5854cf6c4b2f2dd 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -701,6 +701,7 @@ static_library("test_support") {
@@ -1237,7 +1217,7 @@ index 80713000fd5321e99860d6c75e9dc15f21744943..6ea61eb47fcde420261a9dd7e7e3feef
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3447,6 +3451,7 @@ test("content_unittests") {
+@@ -3454,6 +3458,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",

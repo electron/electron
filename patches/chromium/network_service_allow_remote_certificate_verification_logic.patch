@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 1f070b2d00e2b0848939433172066b735702c596..f19c3cf6e7e50098c6fe3cda1f6db3bcc1fe7e90 100644
+index b6cf243568c963082197249abb2476c05e79e00e..d9e986a12363a0b6a0eb10e7d4e6f15c67d248ce 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -173,6 +173,11 @@
@@ -134,7 +134,7 @@ index 1f070b2d00e2b0848939433172066b735702c596..f19c3cf6e7e50098c6fe3cda1f6db3bc
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -1081,6 +1191,13 @@ void NetworkContext::SetClient(
+@@ -1079,6 +1189,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -148,7 +148,7 @@ index 1f070b2d00e2b0848939433172066b735702c596..f19c3cf6e7e50098c6fe3cda1f6db3bc
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2799,6 +2916,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2797,6 +2914,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      cert_verifier = std::make_unique<net::CachingCertVerifier>(
          std::make_unique<net::CoalescingCertVerifier>(
              std::move(cert_verifier)));
@@ -190,7 +190,7 @@ index 911b03040d084dc14c9b1f4b8ebe79dfff3e4ead..8d0a055792936286c96047b9a70670f9
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 152bffb4e6565437e867b79364c594305350047f..6c43c2985123525793dd6b60c9d7d7c1db7fdf04 100644
+index 8492c7cd90f67cca2b04790ea6f3dbda517c1a2a..fd933a5da345b7c93f385a8470f2ceba269f819d 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -325,6 +325,17 @@ struct SocketBrokerRemotes {

@@ -19,10 +19,10 @@ that clearly establishes the worker script is ready for evaluation with the scop
 initialized.
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index d4d9c10d3420a5ff998aeb593ea6a25556d1215e..d64fef6bfc37264dcdc1bbea22eb5c4e099553dd 100644
+index b5c28e5502debe2a4458c74deff5516cba69d3f3..cde924d79c67e9312f393c54c45bd6fc92509d0f 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -414,6 +414,11 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -413,6 +413,11 @@ class CONTENT_EXPORT ContentRendererClient {
    virtual void DidInitializeWorkerContextOnWorkerThread(
        v8::Local<v8::Context> context) {}
  
@@ -35,7 +35,7 @@ index d4d9c10d3420a5ff998aeb593ea6a25556d1215e..d64fef6bfc37264dcdc1bbea22eb5c4e
    // from the worker thread.
    virtual void WillDestroyWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index cd0e4d7ea77ffe9fd09982ef2d9f5d57df8e2995..3a96f5f084061c30344552a01b3d3a7260dad65e 100644
+index cc16456f73c2981af6ade270ef6878666b6dd43b..753c030f2155a8909d8bf06891fb3866407721b6 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
 @@ -947,6 +947,12 @@ void RendererBlinkPlatformImpl::WorkerContextCreated(
