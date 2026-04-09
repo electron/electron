@@ -250,6 +250,34 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         expect(crash.addedThenRemoved).to.be.undefined();
       });
 
+      // Regression: base::circular_deque relocates elements on growth,
+      // corrupting crashpad::Annotation's self-referential pointers and
+      // causing missing crash keys or a hung handler. See crash_keys.cc.
+      it('does not corrupt the crashpad annotation list after deque reallocation', async function () {
+        // Tight timeout so a hanging handler fails fast instead of waiting
+        // for the mocha default of 120s.
+        this.timeout(45000);
+        const { port, waitForCrash } = await startServer();
+        runCrashApp('renderer-dynamic-keys', port);
+        const crash = await Promise.race([
+          waitForCrash(),
+          new Promise<never>((_resolve, reject) => {
+            global.setTimeout(
+              () => reject(new Error('crashpad handler hung walking corrupted annotation list; crash upload did not arrive within 30s')),
+              30000
+            );
+          })
+        ]);
+        expect(crash.process_type).to.equal('renderer');
+        const missing: string[] = [];
+        for (let i = 0; i < 50; i++) {
+          if ((crash as any)[`dyn-key-${i}`] !== `val-${i}`) {
+            missing.push(`dyn-key-${i}`);
+          }
+        }
+        expect(missing, `missing dynamic crash keys: ${missing.join(', ')}`).to.be.empty();
+      });
+
       it('contains v8 crash keys when a v8 crash occurs', async () => {
         const { remotely } = await startRemoteControlApp();
         const { port, waitForCrash } = await startServer();
