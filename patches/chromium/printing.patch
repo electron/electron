@@ -512,10 +512,10 @@ index aa79c324af2cec50019bca3bccff5d420fb30ffd..0b85598f87673537eccdd0b310e8462e
      scoped_refptr<base::RefCountedMemory> print_data,
      const gfx::Size& page_size,
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index db3b04ba3353831ec766f48450b6dce40909bc59..d6fd0d304dffa71be42547a3f6ee6cdb7546de8b 100644
+index b6bbf0f1829a6759f65535679aafb8e407242166..f355b8981e8fc672b1ad165b3b770d3f17b3e13c 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
-@@ -46,6 +46,8 @@ namespace printing {
+@@ -48,6 +48,8 @@ namespace printing {
  class PrintQueriesQueue;
  class PrinterQuery;
  
@@ -524,7 +524,7 @@ index db3b04ba3353831ec766f48450b6dce40909bc59..d6fd0d304dffa71be42547a3f6ee6cdb
  // Base class for managing the print commands for a WebContents.
  class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
   public:
-@@ -76,7 +78,9 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+@@ -78,7 +80,9 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
    // Prints the current document immediately. Since the rendering is
    // asynchronous, the actual printing will not be completed on the return of
    // this function. Returns false if printing is impossible at the moment.
@@ -535,7 +535,7 @@ index db3b04ba3353831ec766f48450b6dce40909bc59..d6fd0d304dffa71be42547a3f6ee6cdb
  
    // Like PrintNow(), but for the node under the context menu, instead of the
    // entire frame.
-@@ -130,8 +134,10 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+@@ -132,8 +136,10 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
    void IsPrintingEnabled(IsPrintingEnabledCallback callback) override;
    void ScriptedPrint(mojom::ScriptedPrintParamsPtr params,
                       ScriptedPrintCallback callback) override;
@@ -546,7 +546,7 @@ index db3b04ba3353831ec766f48450b6dce40909bc59..d6fd0d304dffa71be42547a3f6ee6cdb
  
    // Adds and removes observers for `PrintViewManagerBase` events. The order in
    // which notifications are sent to observers is undefined. Observers must be
-@@ -139,6 +145,14 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+@@ -141,6 +147,14 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
    void AddTestObserver(TestObserver& observer);
    void RemoveTestObserver(TestObserver& observer);
  
@@ -561,7 +561,7 @@ index db3b04ba3353831ec766f48450b6dce40909bc59..d6fd0d304dffa71be42547a3f6ee6cdb
   protected:
  #if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
    using PrintDocumentCallback =
-@@ -218,7 +232,7 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+@@ -220,7 +234,7 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
                                       mojom::ScriptedPrintParamsPtr params,
                                       ScriptedPrintCallback callback);
  
@@ -570,7 +570,7 @@ index db3b04ba3353831ec766f48450b6dce40909bc59..d6fd0d304dffa71be42547a3f6ee6cdb
    // Helper method bound to `content_analysis_before_printing_document_` when
    // content analysis should happen right before the document is to be printed.
    // This method is virtual for testing purposes.
-@@ -282,6 +296,7 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+@@ -284,6 +298,7 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
                                  bool success);
  #endif
    void CompleteUpdatePrintSettings(
@@ -578,7 +578,7 @@ index db3b04ba3353831ec766f48450b6dce40909bc59..d6fd0d304dffa71be42547a3f6ee6cdb
        base::DictValue job_settings,
        std::unique_ptr<PrintSettings> print_settings,
        UpdatePrintSettingsCallback callback);
-@@ -376,8 +391,11 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+@@ -378,8 +393,11 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
    // The current RFH that is printing with a system printing dialog.
    raw_ptr<content::RenderFrameHost> printing_rfh_ = nullptr;
  

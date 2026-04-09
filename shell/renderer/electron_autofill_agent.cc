@@ -206,7 +206,7 @@ void AutofillAgent::AcceptDataListSuggestion(const std::u16string& suggestion) {
     blink::WebInputElement input_element =
         element.DynamicTo<blink::WebInputElement>();
     if (!input_element.IsNull())
-      input_element.SetAutofillValue(blink::WebString::FromUTF16(suggestion));
+      input_element.SetAutofillValue(blink::WebString::FromUtf16(suggestion));
   }
 }
 

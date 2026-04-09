@@ -15,7 +15,6 @@
 #include "base/task/cancelable_task_tracker.h"
 #include "base/values.h"
 #include "shell/browser/window_list_observer.h"
-#include "shell/common/gin_helper/promise.h"
 
 #if BUILDFLAG(IS_WIN)
 #include <windows.h>
@@ -35,7 +34,17 @@ class Arguments;
 
 namespace gin_helper {
 class Arguments;
-}
+template <typename T>
+class Promise;
+}  // namespace gin_helper
+
+namespace v8 {
+template <typename T>
+class Local;
+class Isolate;
+class Promise;
+class Value;
+}  // namespace v8
 
 namespace electron {
 
