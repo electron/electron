@@ -8,7 +8,9 @@ from pathlib import Path
 
 SRC_DIR = Path(__file__).resolve().parents[3]
 sys.path.append(os.path.join(SRC_DIR, 'third_party/electron_node/tools'))
+sys.path.append(str(Path(__file__).resolve().parents[1]))  # electron/script/
 
+from lib.util import get_out_dir
 import install
 
 class LoadPythonDictionaryError(Exception):
@@ -30,13 +32,6 @@ def LoadPythonDictionary(path):
                 f"{path} does not eval to a dictionary"
             )
         return file_data
-
-def get_out_dir():
-    out_dir = 'Testing'
-    override = os.environ.get('ELECTRON_OUT_DIR')
-    if override is not None:
-        out_dir = override
-    return os.path.join(SRC_DIR, 'out', out_dir)
 
 if __name__ == '__main__':
     node_root_dir = os.path.join(SRC_DIR, 'third_party/electron_node')
