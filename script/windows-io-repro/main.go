@@ -186,19 +186,50 @@ func main() {
 		}
 		fmt.Printf("scanning %d existing files\n", len(files))
 	} else {
-		const subdirs = 4096
+		// Deep tree: 6 levels, fanout 7 → 7^6 = 117,649 leaf dirs (~137k dirs
+		// total), long-ish component names so full paths are ~120 chars — closer
+		// to the real src/out tree (~99k dirs, depth 5–10, long paths).
+		const depth = 6
+		const fanout = 7
+		leafDir := func(i int) string {
+			parts := make([]string, depth)
+			n := i
+			for d := depth - 1; d >= 0; d-- {
+				parts[d] = fmt.Sprintf("lvl%d_component_%02d", d, n%fanout)
+				n /= fanout
+			}
+			return filepath.Join(parts...)
+		}
+		leaves := 1
+		for range depth {
+			leaves *= fanout
+		}
 		payload := make([]byte, 512)
 		_, _ = rand.Read(payload)
 		files = make([]string, *nfiles)
 		for i := range *nfiles {
-			sub := filepath.Join(*dir, fmt.Sprintf("a%02d", (i/256)%16), fmt.Sprintf("b%03d", i%256))
-			files[i] = filepath.Join(sub, fmt.Sprintf("f%07d.ninja", i))
+			files[i] = filepath.Join(*dir, leafDir(i%leaves), fmt.Sprintf("some_build_target_name_%07d.ninja", i))
 		}
-		fmt.Printf("creating %d dirs...\n", subdirs)
-		for a := range 16 {
-			for b := range 256 {
-				_ = os.MkdirAll(filepath.Join(*dir, fmt.Sprintf("a%02d", a), fmt.Sprintf("b%03d", b)), 0o755)
+		fmt.Printf("creating %d leaf dirs (depth %d, fanout %d)...\n", leaves, depth, fanout)
+		{
+			start := time.Now()
+			ch := make(chan int, *workers)
+			var wg sync.WaitGroup
+			for range *workers {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					for i := range ch {
+						_ = os.MkdirAll(filepath.Join(*dir, leafDir(i)), 0o755)
+					}
+				}()
 			}
+			for i := range leaves {
+				ch <- i
+			}
+			close(ch)
+			wg.Wait()
+			fmt.Printf("dirs created in %s\n", time.Since(start).Round(time.Second))
 		}
 		fmt.Printf("creating %d files (%d-byte random payload, %d parallel writers)...\n", *nfiles, len(payload), *workers)
 		start := time.Now()
@@ -225,7 +256,7 @@ func main() {
 		}
 		close(ch)
 		wg.Wait()
-		fmt.Printf("created %d files in %d subdirs in %s\n", len(files), subdirs, time.Since(start).Round(time.Second))
+		fmt.Printf("created %d files across %d leaf dirs in %s\n", len(files), leaves, time.Since(start).Round(time.Second))
 	}
 	if *writeOnly {
 		fmt.Println("write-only mode; exiting")
