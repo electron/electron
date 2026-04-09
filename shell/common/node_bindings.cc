@@ -56,10 +56,6 @@
 #include "shell/common/crash_keys.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include <windows.h>
-#endif
-
 #define ELECTRON_BROWSER_BINDINGS(V)      \
   V(electron_browser_app)                 \
   V(electron_browser_auto_updater)        \
@@ -533,36 +529,7 @@ NodeBindings::NodeBindings(BrowserEnvironment browser_env)
       uv_loop_{InitEventLoop(browser_env, &worker_loop_)} {}
 
 NodeBindings::~NodeBindings() {
-  // Quit the embed thread.
-  embed_closed_ = true;
-  uv_sem_post(&embed_sem_);
-
-  WakeupEmbedThread();
-
-#if BUILDFLAG(IS_WIN)
-  // On Windows the embed thread parks in GetQueuedCompletionStatus inside
-  // PollEvents, and the WakeupEmbedThread() call above wakes it via
-  // uv_async_send -> POST_COMPLETION_FOR_REQ. However, libuv's
-  // uv_async_send is a no-op when its internal `async_sent` flag is
-  // already set, and that flag is only cleared by uv_run processing the
-  // pending async. If something has called set_uv_env(nullptr) before
-  // this destructor runs (e.g. WebWorkerObserver::ContextWillDestroy
-  // ahead of a deferred ~NodeBindings on a pooled worklet thread),
-  // UvRunOnce early-returns and the flag is never cleared, so the
-  // wakeup above is silently dropped and uv_thread_join blocks forever.
-  //
-  // Post a dummy completion packet directly to the loop's IOCP so the
-  // embed thread breaks out of GetQueuedCompletionStatus regardless of
-  // libuv's internal state. PollEvents will return with overlapped ==
-  // nullptr, the embed loop will see embed_closed_ and exit cleanly.
-  // Linux/Mac don't need this because uv_async_send writes to a real
-  // file descriptor that epoll/kqueue is watching, so the wakeup is
-  // observable at the OS level regardless of libuv-internal flags.
-  PostQueuedCompletionStatus(uv_loop_->iocp, 0, 0, nullptr);
-#endif
-
-  // Wait for everything to be done.
-  uv_thread_join(&embed_thread_);
+  StopPolling();
 
   // Clear uv.
   uv_sem_destroy(&embed_sem_);
@@ -571,6 +538,26 @@ NodeBindings::~NodeBindings() {
   // Clean up worker loop
   if (in_worker_loop())
     stop_and_close_uv_loop(uv_loop_);
+}
+
+void NodeBindings::StopPolling() {
+  if (!initialized_)
+    return;
+
+  // Tell the embed thread to quit.
+  embed_closed_ = true;
+
+  // The embed thread alternates between uv_sem_wait (waiting for UvRunOnce
+  // to finish) and PollEvents (waiting for I/O). Wake it from both.
+  uv_sem_post(&embed_sem_);
+  WakeupEmbedThread();
+
+  // Wait for it to exit.
+  uv_thread_join(&embed_thread_);
+
+  // Allow PrepareEmbedThread + StartPolling to restart.
+  embed_closed_ = false;
+  initialized_ = false;
 }
 
 node::IsolateData* NodeBindings::isolate_data(
@@ -959,12 +946,21 @@ void NodeBindings::PrepareEmbedThread() {
   if (initialized_)
     return;
 
-  // Add dummy handle for libuv, otherwise libuv would quit when there is
-  // nothing to do.
-  uv_async_init(uv_loop_, dummy_uv_handle_.get(), nullptr);
+  // The async handle and semaphore live for the lifetime of this
+  // NodeBindings instance (destroyed in ~NodeBindings), but the embed
+  // thread itself may be stopped and restarted via StopPolling /
+  // PrepareEmbedThread for pooled worklet contexts. Only init the
+  // handles once.
+  if (!embed_thread_prepared_) {
+    // Add dummy handle for libuv, otherwise libuv would quit when there is
+    // nothing to do.
+    uv_async_init(uv_loop_, dummy_uv_handle_.get(), nullptr);
 
-  // Start worker that will interrupt main loop when having uv events.
-  uv_sem_init(&embed_sem_, 0);
+    // Start worker that will interrupt main loop when having uv events.
+    uv_sem_init(&embed_sem_, 0);
+    embed_thread_prepared_ = true;
+  }
+
   uv_thread_create(&embed_thread_, EmbedThreadRunner, this);
 }
 
