@@ -45,14 +45,16 @@ void PowerMonitor::InitPlatformSpecificMonitors() {
 
   // For Windows 8 and later, a new "connected standby" mode has been added and
   // we must explicitly register for its notifications.
-  RegisterSuspendResumeNotification(static_cast<HANDLE>(window_),
-                                    DEVICE_NOTIFY_WINDOW_HANDLE);
+  power_notify_handle_ = RegisterSuspendResumeNotification(
+      static_cast<HANDLE>(window_), DEVICE_NOTIFY_WINDOW_HANDLE);
 }
 
 void PowerMonitor::DestroyPlatformSpecificMonitors() {
   if (window_) {
     WTSUnRegisterSessionNotification(window_);
-    UnregisterSuspendResumeNotification(static_cast<HANDLE>(window_));
+    if (power_notify_handle_) {
+      UnregisterSuspendResumeNotification(power_notify_handle_);
+    }
     gfx::SetWindowUserData(window_, nullptr);
     DestroyWindow(window_);
     window_ = nullptr;
