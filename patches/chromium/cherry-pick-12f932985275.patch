@@ -10,26 +10,27 @@ Commit-Queue: Geoff Lang <geofflang@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1583241}
 
 diff --git a/gpu/command_buffer/service/context_group.cc b/gpu/command_buffer/service/context_group.cc
-index f439b95a7435c9974fddfd3c1f23c758eab5a112..d6dbb2eea434a36457fdd6f88678fd95d2a9bee1 100644
+index f439b95a7435c9974fddfd3c1f23c758eab5a112..1b7d6e63ebef33ed092d3a3da2b314b44fb02204 100644
 --- a/gpu/command_buffer/service/context_group.cc
 +++ b/gpu/command_buffer/service/context_group.cc
-@@ -133,6 +133,15 @@ gpu::ContextResult ContextGroup::Initialize(
+@@ -133,6 +133,16 @@ gpu::ContextResult ContextGroup::Initialize(
      DecoderContext* decoder,
      ContextType context_type,
      const DisallowedFeatures& disallowed_features) {
 +  return InitializeWithCompleteFramebufferForWorkarounds(decoder, context_type,
-+                                                         0);
++                                                         disallowed_features, 0);
 +}
 +
 +gpu::ContextResult
 +ContextGroup::InitializeWithCompleteFramebufferForWorkarounds(
 +    DecoderContext* decoder,
 +    ContextType context_type,
++    const DisallowedFeatures& disallowed_features,
 +    uint32_t complete_fbo_for_workarounds) {
    switch (context_type) {
      case CONTEXT_TYPE_WEBGL1:
        if (kGpuFeatureStatusBlocklisted ==
-@@ -166,8 +175,9 @@ gpu::ContextResult ContextGroup::Initialize(
+@@ -166,8 +176,9 @@ gpu::ContextResult ContextGroup::Initialize(
    DisallowedFeatures adjusted_disallowed_features =
        AdjustDisallowedFeatures(context_type, disallowed_features);
  
@@ -42,16 +43,17 @@ index f439b95a7435c9974fddfd3c1f23c758eab5a112..d6dbb2eea434a36457fdd6f88678fd95
    // Fail early if ES3 is requested and driver does not support it.
    if ((context_type == CONTEXT_TYPE_WEBGL2 ||
 diff --git a/gpu/command_buffer/service/context_group.h b/gpu/command_buffer/service/context_group.h
-index d04740296bbef3b861434ba7eef32126ae2440bf..1c8a3f084a7ccf6fe8c3d23013404c630aee29f3 100644
+index d04740296bbef3b861434ba7eef32126ae2440bf..f8d38a5e52cad71c1b1e77b17983ea12c71775dc 100644
 --- a/gpu/command_buffer/service/context_group.h
 +++ b/gpu/command_buffer/service/context_group.h
-@@ -78,6 +78,11 @@ class GPU_GLES2_EXPORT ContextGroup : public base::RefCounted<ContextGroup> {
+@@ -78,6 +78,12 @@ class GPU_GLES2_EXPORT ContextGroup : public base::RefCounted<ContextGroup> {
                                  ContextType context_type,
                                  const DisallowedFeatures& disallowed_features);
  
 +  gpu::ContextResult InitializeWithCompleteFramebufferForWorkarounds(
 +      DecoderContext* decoder,
 +      ContextType context_type,
++      const DisallowedFeatures& disallowed_features,
 +      uint32_t complete_fbo_for_workarounds);
 +
    // Destroys all the resources when called for the last context in the group.
@@ -75,7 +77,7 @@ index f00ad2459ff2b4993af37ac6fe0a5aa661fee692..96edc25e2d1ce364470b75ec1a3658ed
    // Methods required by Texture.
    //
 diff --git a/gpu/command_buffer/service/feature_info.cc b/gpu/command_buffer/service/feature_info.cc
-index 94fd62c3244e1ae4720ff77b90715d8ef84c186a..abca32885d8c2ce1a6a114ece124b49f89ca9925 100644
+index 94fd62c3244e1ae4720ff77b90715d8ef84c186a..1dd375dfb86ccba165be7f1305eaffeb8c7d5cf5 100644
 --- a/gpu/command_buffer/service/feature_info.cc
 +++ b/gpu/command_buffer/service/feature_info.cc
 @@ -70,7 +70,8 @@ class ScopedPixelUnpackBufferOverride {
@@ -108,7 +110,24 @@ index 94fd62c3244e1ae4720ff77b90715d8ef84c186a..abca32885d8c2ce1a6a114ece124b49f
    glBindFramebufferEXT(GL_FRAMEBUFFER, static_cast<GLuint>(fb_binding));
    glDeleteFramebuffersEXT(1, &fbo);
  
-@@ -250,9 +257,36 @@ void FeatureInfo::Initialize(ContextType context_type,
+@@ -239,6 +246,16 @@ void FeatureInfo::Initialize(ContextType context_type,
+                              bool is_passthrough_cmd_decoder,
+                              const DisallowedFeatures& disallowed_features,
+                              bool force_reinitialize) {
++  InitializeWithCompleteFramebufferForWorkarounds(
++      context_type, is_passthrough_cmd_decoder, disallowed_features, 0, force_reinitialize);
++}
++
++void FeatureInfo::InitializeWithCompleteFramebufferForWorkarounds(
++    ContextType context_type,
++    bool is_passthrough_cmd_decoder,
++    const DisallowedFeatures& disallowed_features,
++    unsigned complete_fbo_for_workarounds,
++    bool force_reinitialize) {
+   if (initialized_) {
+     DCHECK_EQ(context_type, context_type_);
+     DCHECK_EQ(is_passthrough_cmd_decoder, is_passthrough_cmd_decoder_);
+@@ -250,7 +267,7 @@ void FeatureInfo::Initialize(ContextType context_type,
    disallowed_features_ = disallowed_features;
    context_type_ = context_type;
    is_passthrough_cmd_decoder_ = is_passthrough_cmd_decoder;
@@ -116,37 +135,8 @@ index 94fd62c3244e1ae4720ff77b90715d8ef84c186a..abca32885d8c2ce1a6a114ece124b49f
 +  InitializeFeatures(complete_fbo_for_workarounds);
    initialized_ = true;
  }
-+}
-+
-+void FeatureInfo::InitializeWithCompleteFramebufferForWorkarounds(
-+    ContextType context_type,
-+    bool is_passthrough_cmd_decoder,
-+    const DisallowedFeatures& disallowed_features,
-+    unsigned complete_fbo_for_workarounds) {
-+  if (initialized_) {
-+    DCHECK_EQ(context_type, context_type_);
-+    DCHECK_EQ(is_passthrough_cmd_decoder, is_passthrough_cmd_decoder_);
-+    DCHECK(disallowed_features == disallowed_features_);
-+    if (!force_reinitialize)
-+      return;
-+  }
-+
-+  disallowed_features_ = disallowed_features;
-+  context_type_ = context_type;
-+  is_passthrough_cmd_decoder_ = is_passthrough_cmd_decoder;
-+  InitializeFeatures(complete_fbo_for_workarounds);
-+  initialized_ = true;
-+}
-+
-+void FeatureInfo::ForceReinitialize() {
-+  CHECK(initialized_);
-+  CHECK(is_passthrough_cmd_decoder_);
-+  InitializeFeatures(0);
-+}
  
- void FeatureInfo::InitializeForTesting(
-     const DisallowedFeatures& disallowed_features) {
-@@ -273,7 +307,7 @@ void FeatureInfo::InitializeForTesting(ContextType context_type) {
+@@ -273,7 +290,7 @@ void FeatureInfo::InitializeForTesting(ContextType context_type) {
               DisallowedFeatures());
  }
  
@@ -155,7 +145,7 @@ index 94fd62c3244e1ae4720ff77b90715d8ef84c186a..abca32885d8c2ce1a6a114ece124b49f
  #if BUILDFLAG(IS_MAC)
    // The glTexImage2D call below can hang on Mac so skip this since it's only
    // really needed to workaround a Mesa issue. See https://crbug.com/1158744.
-@@ -307,6 +341,9 @@ bool IsGL_REDSupportedOnFBOs() {
+@@ -307,6 +324,9 @@ bool IsGL_REDSupportedOnFBOs() {
                 GL_UNSIGNED_BYTE, nullptr);
    GLuint textureFBOID = 0;
    glGenFramebuffersEXT(1, &textureFBOID);
@@ -165,7 +155,7 @@ index 94fd62c3244e1ae4720ff77b90715d8ef84c186a..abca32885d8c2ce1a6a114ece124b49f
    glBindFramebufferEXT(GL_FRAMEBUFFER, textureFBOID);
    glFramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
                              textureId, 0);
-@@ -315,6 +352,9 @@ bool IsGL_REDSupportedOnFBOs() {
+@@ -315,6 +335,9 @@ bool IsGL_REDSupportedOnFBOs() {
    glDeleteFramebuffersEXT(1, &textureFBOID);
    glDeleteTextures(1, &textureId);
  
@@ -175,7 +165,7 @@ index 94fd62c3244e1ae4720ff77b90715d8ef84c186a..abca32885d8c2ce1a6a114ece124b49f
    glBindFramebufferEXT(GL_FRAMEBUFFER, static_cast<GLuint>(fb_binding));
    glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(tex_binding));
  
-@@ -472,7 +512,7 @@ void FeatureInfo::EnableWEBGLMultiDrawIfPossible(
+@@ -472,7 +495,7 @@ void FeatureInfo::EnableWEBGLMultiDrawIfPossible(
    }
  }
  
@@ -184,7 +174,7 @@ index 94fd62c3244e1ae4720ff77b90715d8ef84c186a..abca32885d8c2ce1a6a114ece124b49f
    // Figure out what extensions to turn on.
    std::string extensions_string(gl::GetGLExtensionsFromCurrentContext());
    gfx::ExtensionSet extensions(gfx::MakeExtensionSet(extensions_string));
-@@ -1260,9 +1300,9 @@ void FeatureInfo::InitializeFeatures() {
+@@ -1260,9 +1283,9 @@ void FeatureInfo::InitializeFeatures() {
         can_emulate_es2_draw_buffers_on_es3_nv) &&
        (context_type_ == CONTEXT_TYPE_OPENGLES2 ||
         (context_type_ == CONTEXT_TYPE_WEBGL1 &&
@@ -197,7 +187,7 @@ index 94fd62c3244e1ae4720ff77b90715d8ef84c186a..abca32885d8c2ce1a6a114ece124b49f
    if (have_es2_draw_buffers) {
      AddExtensionString("GL_EXT_draw_buffers");
      feature_flags_.ext_draw_buffers = true;
-@@ -1383,7 +1423,7 @@ void FeatureInfo::InitializeFeatures() {
+@@ -1383,7 +1406,7 @@ void FeatureInfo::InitializeFeatures() {
  
    if ((gl_version_info_->is_es3 ||
         gfx::HasExtension(extensions, "GL_EXT_texture_rg")) &&
@@ -207,10 +197,10 @@ index 94fd62c3244e1ae4720ff77b90715d8ef84c186a..abca32885d8c2ce1a6a114ece124b49f
      AddExtensionString("GL_EXT_texture_rg");
  
 diff --git a/gpu/command_buffer/service/feature_info.h b/gpu/command_buffer/service/feature_info.h
-index 09d1a29e1ead2fc62668a834c308090b245ee10c..504fcf96f87cadd765e38b9a52262ad5194c0763 100644
+index 09d1a29e1ead2fc62668a834c308090b245ee10c..ea0d11b0eadf6442bc2def564398f031c5826bbb 100644
 --- a/gpu/command_buffer/service/feature_info.h
 +++ b/gpu/command_buffer/service/feature_info.h
-@@ -164,6 +164,17 @@ class GPU_GLES2_EXPORT FeatureInfo : public base::RefCounted<FeatureInfo> {
+@@ -164,6 +164,15 @@ class GPU_GLES2_EXPORT FeatureInfo : public base::RefCounted<FeatureInfo> {
                    const DisallowedFeatures& disallowed_features,
                    bool force_reinitialize = false);
  
@@ -220,15 +210,13 @@ index 09d1a29e1ead2fc62668a834c308090b245ee10c..504fcf96f87cadd765e38b9a52262ad5
 +      ContextType context_type,
 +      bool is_passthrough_cmd_decoder,
 +      const DisallowedFeatures& disallowed_features,
-+      uint32_t complete_fbo_for_workarounds);
-+
-+  // Same as above, but allows reinitialization.
-+  void ForceReinitialize();
++      uint32_t complete_fbo_for_workarounds,
++      bool force_reinitialize = false);
 +
    // Helper that defaults to no disallowed features and a GLES2 context.
    void InitializeForTesting();
    // Helper that defaults to no disallowed Features.
-@@ -248,7 +259,7 @@ class GPU_GLES2_EXPORT FeatureInfo : public base::RefCounted<FeatureInfo> {
+@@ -248,7 +257,7 @@ class GPU_GLES2_EXPORT FeatureInfo : public base::RefCounted<FeatureInfo> {
  
    void AddExtensionString(std::string_view s);
    void InitializeBasicState(const base::CommandLine* command_line);
@@ -319,7 +307,7 @@ index e441c8feae18104bc6a20810d5a8e56bb89836a7..cfae851740cf1bc46725c1db2e22186d
  #ifndef NDEBUG
      // glValidateProgram of MACOSX validates FBO unlike other platforms, so
 diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-index a7131ef3a34e86d44ce5af5bb8bfab8853c32a50..88e1ad8782f732c4e381410bd9c65eb7dd12fa05 100644
+index a7131ef3a34e86d44ce5af5bb8bfab8853c32a50..0cabd98ecdaf4cbb927e2c3a890540ecf3533660 100644
 --- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
 +++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
 @@ -680,6 +680,9 @@ class GLES2DecoderImpl : public GLES2Decoder,
@@ -376,7 +364,7 @@ index a7131ef3a34e86d44ce5af5bb8bfab8853c32a50..88e1ad8782f732c4e381410bd9c65eb7
 +  CHECK_GL_ERROR();
 +
 +  auto result = group_->InitializeWithCompleteFramebufferForWorkarounds(
-+      this, context_type, complete_fbo_);
++      this, context_type, DisallowedFeatures(), complete_fbo_);
 +
    if (result != gpu::ContextResult::kSuccess) {
      // Must not destroy ContextGroup if it is not initialized.
