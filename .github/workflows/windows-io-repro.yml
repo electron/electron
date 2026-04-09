@@ -1,0 +1,72 @@
+name: windows-io-repro
+
+on:
+  push:
+    branches:
+      - sam/windows-io-repro
+
+permissions: {}
+
+jobs:
+  repro:
+    permissions:
+      contents: read
+    runs-on: electron-arc-centralus-windows-amd64-32core
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Platform diagnostics
+        shell: powershell
+        run: |
+          Write-Host "--- OS / container ---"
+          [System.Environment]::OSVersion | Format-List
+          Write-Host "CONTAINER_SANDBOX_MOUNT_POINT = '$env:CONTAINER_SANDBOX_MOUNT_POINT'"
+          cmd /c ver
+          Write-Host "`n--- whoami ---"
+          whoami
+          Write-Host "`n--- fltmc filters ---"
+          fltmc filters
+          Write-Host "`n--- fltmc instances ---"
+          fltmc instances
+          Write-Host "`n--- fltmc volumes ---"
+          fltmc volumes
+          Write-Host "`n--- logical disks ---"
+          Get-CimInstance Win32_LogicalDisk | Format-Table DeviceID,DriveType,FileSystem,Size,FreeSpace
+          Write-Host "`n--- hotfixes (last 10) ---"
+          try { Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 10 | Format-Table } catch { Write-Host "Get-HotFix unavailable: $_" }
+          Write-Host "`n--- workspace reparse info ---"
+          Write-Host "GITHUB_WORKSPACE = $env:GITHUB_WORKSPACE"
+          cmd /c "fsutil reparsepoint query `"$env:GITHUB_WORKSPACE`"" 2>&1
+          $p = Split-Path $env:GITHUB_WORKSPACE -Parent
+          while ($p -and $p -ne (Split-Path $p -Parent)) {
+            cmd /c "fsutil reparsepoint query `"$p`"" 2>&1 | ForEach-Object { "  [$p] $_" }
+            $p = Split-Path $p -Parent
+          }
+          Write-Host "`n--- mountvol ---"
+          mountvol
+
+      - name: Set up Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+        with:
+          go-version: '1.26'
+          cache: false
+
+      - name: Build repro
+        shell: powershell
+        run: |
+          cd script/windows-io-repro
+          go version
+          go build -v -o repro.exe .
+          Get-Item repro.exe | Format-List FullName,Length
+
+      - name: Run repro (on workspace bind mount)
+        shell: powershell
+        env:
+          REPRO_DIR: ${{ github.workspace }}\repro-files
+        run: |
+          Write-Host "target dir: $env:REPRO_DIR"
+          script/windows-io-repro/repro.exe -dir "$env:REPRO_DIR" -files 60000 -rounds 12
