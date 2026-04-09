@@ -140,7 +140,7 @@ class Menu : public gin::Wrappable<Menu>,
   bool IsVisibleAt(int index) const;
   bool WorksWhenHiddenAt(int index) const;
 
-  gin_helper::SelfKeepAlive<Menu> keep_alive_{this};
+  gin_helper::SelfKeepAlive<Menu> keep_alive_{nullptr};
 };
 
 }  // namespace electron::api
