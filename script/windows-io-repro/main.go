@@ -221,12 +221,27 @@ func main() {
 			start := time.Now()
 			ch := make(chan int, *workers)
 			var wg sync.WaitGroup
+			var mkdirErr87 atomic.Int64
 			for range *workers {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
 					for i := range ch {
-						_ = os.MkdirAll(filepath.Join(*dir, leafDir(i)), 0o755)
+						p := filepath.Join(*dir, leafDir(i))
+						for attempt := 0; ; attempt++ {
+							err := os.MkdirAll(p, 0o755)
+							if err == nil {
+								break
+							}
+							if errors.Is(err, errnoInvalidParameter) {
+								mkdirErr87.Add(1)
+							}
+							if attempt >= 4 {
+								fmt.Fprintf(os.Stderr, "mkdirall %s: %v (giving up)\n", p, err)
+								break
+							}
+							time.Sleep(5 * time.Millisecond)
+						}
 					}
 				}()
 			}
@@ -235,7 +250,7 @@ func main() {
 			}
 			close(ch)
 			wg.Wait()
-			fmt.Printf("dirs created in %s\n", time.Since(start).Round(time.Second))
+			fmt.Printf("dirs created in %s (mkdir err87=%d)\n", time.Since(start).Round(time.Second), mkdirErr87.Load())
 		}
 		fmt.Printf("creating %d files (%d-byte random payload, %d parallel writers)...\n", *nfiles, len(payload), *workers)
 		start := time.Now()
