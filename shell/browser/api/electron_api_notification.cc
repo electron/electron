@@ -111,37 +111,31 @@ gin_helper::Handle<Notification> Notification::New(
     return {};
   }
 
+  auto handle =
+      gin_helper::CreateHandle(thrower.isolate(), new Notification(args));
+
 #if BUILDFLAG(IS_WIN)
-  // Validate id and groupId length before constructing.
-  // Windows toast API has limits on Tag (64) and Group (64) lengths.
-  // Check the UTF-16 length since that's what Windows uses.
-  constexpr size_t kMaxIdLength = 64;
-  constexpr size_t kMaxGroupIdLength = 64;
-
-  gin::Dictionary opts(nullptr);
-  if (args->PeekNext().IsEmpty() || args->PeekNext()->IsUndefined() ||
-      gin::ConvertFromV8(thrower.isolate(), args->PeekNext(), &opts)) {
-    std::string id;
-    std::string group_id;
-    opts.Get("id", &id);
-    opts.Get("groupId", &group_id);
-
-    if (!id.empty() && base::UTF8ToWide(id).length() > kMaxIdLength) {
-      thrower.ThrowError("Notification id must be " +
-                         std::to_string(kMaxIdLength) + " characters or less");
-      return {};
-    }
-    if (!group_id.empty() &&
-        base::UTF8ToWide(group_id).length() > kMaxGroupIdLength) {
-      thrower.ThrowError("Notification groupId must be " +
-                         std::to_string(kMaxGroupIdLength) +
-                         " characters or less");
-      return {};
-    }
+  constexpr size_t kMaxTagLength = 64;
+  auto* notif = handle.get();
+  if (!notif->id_.empty() &&
+      base::UTF8ToWide(notif->id_).length() > kMaxTagLength) {
+    thrower.ThrowError(
+        "Notification id exceeds Windows limit of 64 UTF-16 characters");
+    return {};
+  }
+  if (!notif->group_id_.empty() &&
+      base::UTF8ToWide(notif->group_id_).length() > kMaxTagLength) {
+    thrower.ThrowError(
+        "Notification groupId exceeds Windows limit of 64 UTF-16 characters");
+    return {};
+  }
+  if (!notif->group_title_.empty() && notif->group_id_.empty()) {
+    thrower.ThrowError("Notification groupTitle requires groupId to be set");
+    return {};
   }
 #endif
 
-  return gin_helper::CreateHandle(thrower.isolate(), new Notification(args));
+  return handle;
 }
 
 // Setters
