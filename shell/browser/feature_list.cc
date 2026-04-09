@@ -34,10 +34,6 @@
 #include "printing/printing_features.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/views/views_features.h"
-#endif
-
 namespace electron {
 
 void InitializeFeatureList() {
@@ -71,13 +67,6 @@ void InitializeFeatureList() {
       blink::features::kDropInputEventsWhilePaintHolding.name;
 
 #if BUILDFLAG(IS_WIN)
-  // Refs https://issues.chromium.org/issues/401996981
-  // TODO(deepak1556): Remove this once test added in
-  // https://github.com/electron/electron/pull/12904
-  // can work without this feature.
-  enable_features += std::string(",") +
-                     views::features::kEnableTransparentHwndEnlargement.name;
-
   // See https://chromium-review.googlesource.com/c/chromium/src/+/7204292
   // This feature causes the following sandbox failure on Windows:
   // sandbox\policy\win\sandbox_win.cc:777 Sandbox cannot access executable
