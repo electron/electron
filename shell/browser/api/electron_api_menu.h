@@ -132,7 +132,7 @@ class Menu : public gin::Wrappable<Menu>,
   int GetIndexOfCommandId(int command_id) const;
   int GetItemCount() const;
 
-  gin_helper::SelfKeepAlive<Menu> keep_alive_{this};
+  gin_helper::SelfKeepAlive<Menu> keep_alive_{nullptr};
 };
 
 }  // namespace electron::api
