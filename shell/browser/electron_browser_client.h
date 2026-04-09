@@ -30,6 +30,7 @@ class FilePath;
 
 namespace content {
 class ClientCertificateDelegate;
+class NavigationHandle;
 class PlatformNotificationService;
 class NavigationThrottleRegistry;
 class QuotaPermissionContext;
@@ -82,6 +83,14 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   // content::ContentBrowserClient:
   std::string GetApplicationLocale() override;
   bool ShouldEnableStrictSiteIsolation() override;
+  bool ShouldEnableSubframeZoom() override;
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  std::optional<network::CrossOriginEmbedderPolicy>
+  MaybeOverrideLocalURLCrossOriginEmbedderPolicy(
+      content::NavigationHandle* navigation_handle) override;
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+  bool DoesSiteRequireDedicatedProcess(content::BrowserContext* browser_context,
+                                       const GURL& effective_site_url) override;
   void BindHostReceiverForRenderer(
       content::RenderProcessHost* render_process_host,
       mojo::GenericPendingReceiver receiver) override;
