@@ -1630,7 +1630,9 @@ describe('chromium features', () => {
       // Blink pools the AudioWorklet backing thread (Chromium CL:5270028) so
       // the Nth+ AudioWorklet on a page reuses the same thread; the page
       // creates several AudioWorklet contexts in sequence and asserts node
-      // integration is wired up in every one of them.
+      // integration is wired up in every one of them. Must match the value
+      // hardcoded in spec/fixtures/pages/audio-worklet.html.
+      const NUM_AUDIO_WORKLET_CONTEXTS = 6;
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -1642,7 +1644,7 @@ describe('chromium features', () => {
 
       w.loadURL(`file://${fixturesPath}/pages/audio-worklet.html`);
       const [, results] = await once(ipcMain, 'audio-worklet-result');
-      expect(results).to.be.an('array').with.length.greaterThan(0);
+      expect(results).to.be.an('array').with.lengthOf(NUM_AUDIO_WORKLET_CONTEXTS);
       for (const r of results) expect(r).to.equal('ok');
     });
 
