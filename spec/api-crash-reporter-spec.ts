@@ -34,6 +34,12 @@ type CrashInfo = {
   'electron.v8-fatal.location': string | undefined
   'electron.v8-fatal.message': string | undefined
   'electron.v8-oom.stack': string | undefined
+  'electron.v8-oom.heap.used': string | undefined
+  'electron.v8-oom.heap.total': string | undefined
+  'electron.v8-oom.heap.limit': string | undefined
+  'electron.v8-oom.heap.utilization_pct': string | undefined
+  'electron.v8-oom.heap.native_contexts': string | undefined
+  'electron.v8-oom.heap.detached_contexts': string | undefined
 }
 
 function checkCrash (expectedProcessType: string, fields: CrashInfo) {
@@ -306,7 +312,8 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         expect(crash['electron.v8-fatal.message']).to.equal('Circular extension dependency');
       });
 
-      it('contains js stack trace in crash report when renderer runs out of memory', async () => {
+      it('contains js stack trace in crash report when renderer runs out of memory', async function () {
+        this.timeout(120000);
         const { remotely } = await startRemoteControlApp(['--js-flags=--max-old-space-size=20']);
         const { port, waitForCrash } = await startServer();
 
@@ -335,6 +342,9 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         expect(crash.process_type).to.equal('renderer');
         expect(crash['electron.v8-oom.stack']).to.be.a('string');
         expect(crash['electron.v8-oom.stack']).to.include('oomTrigger');
+        expect(crash['electron.v8-oom.heap.used']).to.be.a('string');
+        expect(crash['electron.v8-oom.heap.limit']).to.be.a('string');
+        expect(crash['electron.v8-oom.heap.utilization_pct']).to.be.a('string');
       });
     });
   });

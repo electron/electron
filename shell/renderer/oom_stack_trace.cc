@@ -7,8 +7,10 @@
 #include <atomic>
 #include <limits>
 #include <string>
+#include <string_view>
 
 #include "base/logging.h"
+#include "base/strings/string_number_conversions.h"
 #include "electron/mas.h"
 #include "shell/common/crash_keys.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
@@ -113,6 +115,51 @@ size_t NearHeapLimitCallback(void* data,
 #if !IS_MAS_BUILD()
   crash_keys::SetCrashKey("electron.v8-oom.stack",
                           heap_info + " (stack pending)");
+
+  crash_keys::SetCrashKey("electron.v8-oom.heap.used",
+                          base::NumberToString(stats.used_heap_size()));
+  crash_keys::SetCrashKey("electron.v8-oom.heap.total",
+                          base::NumberToString(stats.total_heap_size()));
+  crash_keys::SetCrashKey("electron.v8-oom.heap.limit",
+                          base::NumberToString(stats.heap_size_limit()));
+  crash_keys::SetCrashKey("electron.v8-oom.heap.total_available",
+                          base::NumberToString(stats.total_available_size()));
+  crash_keys::SetCrashKey("electron.v8-oom.heap.total_physical",
+                          base::NumberToString(stats.total_physical_size()));
+  crash_keys::SetCrashKey("electron.v8-oom.heap.malloced_memory",
+                          base::NumberToString(stats.malloced_memory()));
+  crash_keys::SetCrashKey("electron.v8-oom.heap.external_memory",
+                          base::NumberToString(stats.external_memory()));
+  crash_keys::SetCrashKey(
+      "electron.v8-oom.heap.native_contexts",
+      base::NumberToString(stats.number_of_native_contexts()));
+  crash_keys::SetCrashKey(
+      "electron.v8-oom.heap.detached_contexts",
+      base::NumberToString(stats.number_of_detached_contexts()));
+
+  double utilization = static_cast<double>(stats.used_heap_size()) /
+                       stats.heap_size_limit() * 100.0;
+  crash_keys::SetCrashKey("electron.v8-oom.heap.utilization_pct",
+                          absl::StrFormat("%.1f", utilization));
+
+  v8::HeapSpaceStatistics space_stats;
+  for (size_t i = 0; i < isolate->NumberOfHeapSpaces(); i++) {
+    isolate->GetHeapSpaceStatistics(&space_stats, i);
+    if (std::string_view(space_stats.space_name()) == "old_space") {
+      crash_keys::SetCrashKey(
+          "electron.v8-oom.old_space.used",
+          base::NumberToString(space_stats.space_used_size()));
+      crash_keys::SetCrashKey("electron.v8-oom.old_space.size",
+                              base::NumberToString(space_stats.space_size()));
+    } else if (std::string_view(space_stats.space_name()) ==
+               "large_object_space") {
+      crash_keys::SetCrashKey(
+          "electron.v8-oom.lo_space.used",
+          base::NumberToString(space_stats.space_used_size()));
+      crash_keys::SetCrashKey("electron.v8-oom.lo_space.size",
+                              base::NumberToString(space_stats.space_size()));
+    }
+  }
 #endif
 
   isolate->RequestInterrupt(CaptureStackOnInterrupt, nullptr);

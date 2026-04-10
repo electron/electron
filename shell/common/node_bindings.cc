@@ -51,6 +51,7 @@
 #include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
 #include "third_party/electron_node/src/debug_utils.h"
 #include "third_party/electron_node/src/module_wrap.h"
+#include "v8/include/v8-statistics.h"
 
 #if !IS_MAS_BUILD()
 #include "shell/common/crash_keys.h"
@@ -199,6 +200,25 @@ void V8OOMErrorCallback(const char* location, const v8::OOMDetails& details) {
   }
   if (details.detail) {
     electron::crash_keys::SetCrashKey("electron.v8-oom.detail", details.detail);
+  }
+
+  // TryGetCurrent() instead of GetCurrent() to avoid FATAL if no isolate.
+  v8::Isolate* isolate = v8::Isolate::TryGetCurrent();
+  if (isolate) {
+    v8::HeapStatistics stats;
+    isolate->GetHeapStatistics(&stats);
+    electron::crash_keys::SetCrashKey(
+        "electron.v8-oom.heap.used",
+        base::NumberToString(stats.used_heap_size()));
+    electron::crash_keys::SetCrashKey(
+        "electron.v8-oom.heap.total",
+        base::NumberToString(stats.total_heap_size()));
+    electron::crash_keys::SetCrashKey(
+        "electron.v8-oom.heap.limit",
+        base::NumberToString(stats.heap_size_limit()));
+    electron::crash_keys::SetCrashKey(
+        "electron.v8-oom.heap.total_available",
+        base::NumberToString(stats.total_available_size()));
   }
 #endif
 
