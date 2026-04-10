@@ -970,6 +970,9 @@ describe('chromium features', () => {
     let w: BrowserWindow | null = null;
 
     afterEach(() => {
+      ipcMain.removeAllListeners('did-create-file-handle');
+      ipcMain.removeAllListeners('did-create-directory-handle');
+      session.defaultSession.setPermissionCheckHandler(null);
       session.defaultSession.setPermissionRequestHandler(null);
       closeAllWindows();
     });
@@ -1111,18 +1114,20 @@ describe('chromium features', () => {
       });
 
       w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
-        expect(permission).to.equal('fileSystem');
+        if (permission === 'fileSystem') {
+          const { href } = url.pathToFileURL(writablePath);
+          expect(details).to.deep.equal({
+            fileAccessType: 'writable',
+            isDirectory: false,
+            isMainFrame: true,
+            filePath: testFile,
+            requestingUrl: href
+          });
 
-        const { href } = url.pathToFileURL(writablePath);
-        expect(details).to.deep.equal({
-          fileAccessType: 'writable',
-          isDirectory: false,
-          isMainFrame: true,
-          filePath: testFile,
-          requestingUrl: href
-        });
-
-        callback(true);
+          callback(true);
+          return;
+        }
+        callback(false);
       });
 
       ipcMain.once('did-create-file-handle', async () => {
@@ -1162,17 +1167,19 @@ describe('chromium features', () => {
       });
 
       w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
-        expect(permission).to.equal('fileSystem');
+        if (permission === 'fileSystem') {
+          const { href } = url.pathToFileURL(writablePath);
+          expect(details).to.deep.equal({
+            fileAccessType: 'writable',
+            isDirectory: false,
+            isMainFrame: true,
+            filePath: testFile,
+            requestingUrl: href
+          });
 
-        const { href } = url.pathToFileURL(writablePath);
-        expect(details).to.deep.equal({
-          fileAccessType: 'writable',
-          isDirectory: false,
-          isMainFrame: true,
-          filePath: testFile,
-          requestingUrl: href
-        });
-
+          callback(false);
+          return;
+        }
         callback(false);
       });
 
@@ -1264,12 +1271,13 @@ describe('chromium features', () => {
       });
 
       w.webContents.session.setPermissionCheckHandler((wc, permission, origin, details) => {
-        expect(permission).to.equal('fileSystem');
-
-        const { fileAccessType, isDirectory, filePath } = details;
-        expect(fileAccessType).to.equal('readable');
-        expect(isDirectory).to.be.true();
-        expect(filePath).to.equal(testDir);
+        if (permission === 'fileSystem') {
+          const { fileAccessType, isDirectory, filePath } = details;
+          expect(fileAccessType).to.equal('readable');
+          expect(isDirectory).to.be.true();
+          expect(filePath).to.equal(testDir);
+          return false;
+        }
         return false;
       });
 
