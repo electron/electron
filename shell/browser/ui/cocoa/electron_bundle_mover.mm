@@ -155,10 +155,9 @@ bool AuthorizedInstall(NSString* srcPath, NSString* dstPath, bool* canceled) {
 
   AuthorizationItem myItems = {kAuthorizationRightExecute, 0, nullptr, 0};
   AuthorizationRights myRights = {1, &myItems};
-  AuthorizationFlags myFlags =
-      (AuthorizationFlags)(kAuthorizationFlagInteractionAllowed |
-                           kAuthorizationFlagExtendRights |
-                           kAuthorizationFlagPreAuthorize);
+  AuthorizationFlags myFlags = kAuthorizationFlagInteractionAllowed |
+                               kAuthorizationFlagExtendRights |
+                               kAuthorizationFlagPreAuthorize;
 
   err = AuthorizationCopyRights(myAuthorizationRef, &myRights, nullptr, myFlags,
                                 nullptr);

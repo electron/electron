@@ -76,7 +76,7 @@ struct Converter<UUID> {
       if (guid[0] == '{' && guid[guid.length() - 1] == '}') {
         guid = guid.substr(1, guid.length() - 2);
       }
-      unsigned char* uid_cstr = (unsigned char*)guid.c_str();
+      auto* uid_cstr = reinterpret_cast<unsigned char*>(guid.data());
       RPC_STATUS result = UuidFromStringA(uid_cstr, &uid);
       if (result == RPC_S_INVALID_STRING_UUID) {
         return false;

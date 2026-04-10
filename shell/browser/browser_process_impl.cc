@@ -458,9 +458,9 @@ void BrowserProcessImpl::CreateOSCryptAsync() {
   // The DPAPI key provider requires OSCrypt::Init to have already been called
   // to initialize the key storage. This happens in
   // BrowserMainPartsWin::PreCreateMainMessageLoop.
-  providers.emplace_back(std::make_pair(
+  providers.emplace_back(
       /*precedence=*/10u,
-      std::make_unique<os_crypt_async::DPAPIKeyProvider>(local_state())));
+      std::make_unique<os_crypt_async::DPAPIKeyProvider>(local_state()));
 #endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_LINUX)
@@ -502,9 +502,9 @@ void BrowserProcessImpl::CreateOSCryptAsync() {
 
 #if BUILDFLAG(IS_MAC)
   if (base::FeatureList::IsEnabled(features::kUseKeychainKeyProvider)) {
-    providers.emplace_back(std::make_pair(
+    providers.emplace_back(
         /*precedence=*/10u,
-        std::make_unique<os_crypt_async::KeychainKeyProvider>()));
+        std::make_unique<os_crypt_async::KeychainKeyProvider>());
   }
 #endif  // BUILDFLAG(IS_MAC)
 
