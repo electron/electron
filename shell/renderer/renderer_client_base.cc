@@ -36,6 +36,7 @@
 #include "shell/renderer/content_settings_observer.h"
 #include "shell/renderer/electron_api_service_impl.h"
 #include "shell/renderer/electron_autofill_agent.h"
+#include "shell/renderer/oom_stack_trace.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
@@ -360,6 +361,13 @@ void RendererClientBase::GetInterface(
       mojo::GenericPendingReceiver(interface_name, std::move(interface_pipe)));
 }
 #endif
+
+void RendererClientBase::DidCreateScriptContext(
+    v8::Isolate* isolate,
+    v8::Local<v8::Context> context,
+    content::RenderFrame* render_frame) {
+  RegisterOomStackTraceCallback(isolate);
+}
 
 void RendererClientBase::DidClearWindowObject(
     content::RenderFrame* render_frame) {
