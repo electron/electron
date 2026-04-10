@@ -61,13 +61,9 @@ GlobalShortcut::GlobalShortcut(v8::Isolate* isolate) {
   data->AddDisposeObserver(this);
 }
 
-GlobalShortcut::~GlobalShortcut() {
-  Dispose();
-}
+GlobalShortcut::~GlobalShortcut() = default;
 
 void GlobalShortcut::Dispose() {
-  if (is_disposed_)
-    return;
   is_disposed_ = true;
 
   auto* instance = ui::GlobalAcceleratorListener::GetInstance();
@@ -83,8 +79,7 @@ void GlobalShortcut::Dispose() {
 
 void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
   if (auto* cb = base::FindOrNull(accelerator_callback_map_, accelerator)) {
-    auto callback = *cb;
-    callback.Run();
+    cb->Run();
   } else {
     // This should never occur, because if it does,
     // ui::GlobalAcceleratorListener notifies us with wrong accelerator.
@@ -97,8 +92,7 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
 void GlobalShortcut::ExecuteCommand(const extensions::ExtensionId& extension_id,
                                     const std::string& command_id) {
   if (auto* cb = base::FindOrNull(command_callback_map_, command_id)) {
-    auto callback = *cb;
-    callback.Run();
+    cb->Run();
   } else {
     // This should never occur, because if it does, GlobalAcceleratorListener
     // notifies us with wrong command.
@@ -327,7 +321,6 @@ void GlobalShortcut::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
   gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
   data->RemoveDisposeObserver(this);
   Dispose();
-  keep_alive_.Clear();
 }
 
 }  // namespace electron::api

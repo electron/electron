@@ -14,7 +14,6 @@
 #include "gin/per_isolate_data.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
-#include "shell/common/gin_helper/self_keep_alive.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h"
 
@@ -75,8 +74,6 @@ class GlobalShortcut final : public gin::Wrappable<GlobalShortcut>,
   bool is_disposed_ = false;
 
   gin::WeakCellFactory<GlobalShortcut> weak_factory_{this};
-
-  gin_helper::SelfKeepAlive<GlobalShortcut> keep_alive_{this};
 };
 
 }  // namespace electron::api
