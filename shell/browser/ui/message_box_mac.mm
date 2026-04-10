@@ -80,7 +80,7 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
 
     // TODO(@codebytere): This behavior violates HIG & should be deprecated.
     if (settings.cancel_id == settings.default_id) {
-      [(NSButton*)[ns_buttons objectAtIndex:settings.default_id] highlight:YES];
+      [[ns_buttons objectAtIndex:settings.default_id] highlight:YES];
     }
   }
 

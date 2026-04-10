@@ -83,8 +83,7 @@ MouseDownImpl g_nsnextstepframe_mousedown;
 @implementation SwizzledMethodsClass
 - (void)swiz_nsthemeframe_mouseDown:(NSEvent*)event {
   if ([self.window respondsToSelector:@selector(shell)]) {
-    electron::NativeWindowMac* shell =
-        (electron::NativeWindowMac*)[(id)self.window shell];
+    electron::NativeWindowMac* shell = [(id)self.window shell];
     if (shell && !shell->has_frame())
       [self cr_mouseDownOnFrameView:event];
   }
@@ -93,8 +92,7 @@ MouseDownImpl g_nsnextstepframe_mousedown;
 
 - (void)swiz_nsnextstepframe_mouseDown:(NSEvent*)event {
   if ([self.window respondsToSelector:@selector(shell)]) {
-    electron::NativeWindowMac* shell =
-        (electron::NativeWindowMac*)[(id)self.window shell];
+    electron::NativeWindowMac* shell = [(id)self.window shell];
     if (shell && !shell->has_frame()) {
       [self cr_mouseDownOnFrameView:event];
     }
@@ -104,8 +102,7 @@ MouseDownImpl g_nsnextstepframe_mousedown;
 
 - (void)swiz_nsview_swipeWithEvent:(NSEvent*)event {
   if ([self.window respondsToSelector:@selector(shell)]) {
-    electron::NativeWindowMac* shell =
-        (electron::NativeWindowMac*)[(id)self.window shell];
+    electron::NativeWindowMac* shell = [(id)self.window shell];
     if (shell) {
       if (event.deltaY == 1.0) {
         shell->NotifyWindowSwipe("up");
