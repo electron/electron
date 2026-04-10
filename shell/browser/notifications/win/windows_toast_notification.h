@@ -98,7 +98,6 @@ class WindowsToastNotification : public Notification {
       ComPtr<ABI::Windows::Data::Xml::Dom::IXmlDocument> toast_xml,
       const NotificationOptions& options,
       const std::string& notification_id,
-      const std::string& group_id,
       base::WeakPtr<Notification> weak_notification,
       scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner,
       ComPtr<ABI::Windows::UI::Notifications::IToastNotification>*

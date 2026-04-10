@@ -281,8 +281,8 @@ void WindowsToastNotification::CreateToastNotificationOnBackgroundThread(
   ComPtr<ABI::Windows::UI::Notifications::IToastNotification>
       toast_notification;
   if (!CreateToastNotification(toast_xml, options, notification_id,
-                               options.group_id, weak_notification,
-                               ui_task_runner, &toast_notification)) {
+                               weak_notification, ui_task_runner,
+                               &toast_notification)) {
     return;  // Error already posted to UI thread
   }
 
@@ -353,7 +353,6 @@ bool WindowsToastNotification::CreateToastNotification(
     ComPtr<ABI::Windows::Data::Xml::Dom::IXmlDocument> toast_xml,
     const NotificationOptions& options,
     const std::string& notification_id,
-    const std::string& group_id,
     base::WeakPtr<Notification> weak_notification,
     scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner,
     ComPtr<ABI::Windows::UI::Notifications::IToastNotification>*
@@ -402,10 +401,11 @@ bool WindowsToastNotification::CreateToastNotification(
 
   // Use provided group_id if non-empty, otherwise fall back to default
   std::wstring group_str =
-      group_id.empty() ? kGroup : base::UTF8ToWide(group_id);
+      options.group_id.empty() ? kGroup : base::UTF8ToWide(options.group_id);
   ScopedHString group(group_str);
-  DebugLog(base::StrCat({"Setting group: ", base::WideToUTF8(group_str),
-                         group_id.empty() ? " (default)" : " (custom)"}));
+  DebugLog(
+      base::StrCat({"Setting group: ", base::WideToUTF8(group_str),
+                    options.group_id.empty() ? " (default)" : " (custom)"}));
   hr = toast2->put_Group(group);
   if (FAILED(hr)) {
     std::string err = base::StrCat(
