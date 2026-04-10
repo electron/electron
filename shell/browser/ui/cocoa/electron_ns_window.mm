@@ -49,7 +49,7 @@ static StartGridAnimationIMP g_orig_startGridAnimation = nullptr;
 static void Patched_startGridAnimation(id self,
                                        SEL _cmd,
                                        id animation,
-                                       void (^completionHandler)(void)) {
+                                       void (^completionHandler)()) {
   if (completionHandler)
     completionHandler();
 }
