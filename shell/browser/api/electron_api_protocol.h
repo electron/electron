@@ -9,19 +9,13 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
-#include "content/public/browser/content_browser_client.h"
+#include "gin/wrappable.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
 #include "shell/common/gin_helper/constructible.h"
-#include "shell/common/gin_helper/wrappable.h"
 
 namespace gin {
 class Arguments;
 }  // namespace gin
-
-namespace gin_helper {
-template <typename T>
-class Handle;
-}  // namespace gin_helper
 
 namespace electron {
 
@@ -38,23 +32,25 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
                                  v8::Local<v8::Value> val);
 
 // Protocol implementation based on network services.
-class Protocol final : public gin_helper::DeprecatedWrappable<Protocol>,
+class Protocol final : public gin::Wrappable<Protocol>,
                        public gin_helper::Constructible<Protocol> {
  public:
-  static gin_helper::Handle<Protocol> Create(
-      v8::Isolate* isolate,
-      ProtocolRegistry* protocol_registry);
+  static Protocol* Create(v8::Isolate* isolate,
+                          ProtocolRegistry* protocol_registry);
 
   // gin_helper::Constructible
-  static gin_helper::Handle<Protocol> New(gin_helper::ErrorThrower thrower);
-  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
-      v8::Isolate* isolate,
-      v8::Local<v8::ObjectTemplate> tmpl);
+  static Protocol* New(gin_helper::ErrorThrower thrower);
+  static void FillObjectTemplate(v8::Isolate* isolate,
+                                 v8::Local<v8::ObjectTemplate> tmpl);
   static const char* GetClassName() { return "Protocol"; }
 
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
-  const char* GetTypeName() override;
+  // gin::Wrappable
+  static const gin::WrapperInfo kWrapperInfo;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
+
+  explicit Protocol(ProtocolRegistry* protocol_registry);
+  ~Protocol() override;
 
  private:
   // Possible errors.
@@ -69,9 +65,6 @@ class Protocol final : public gin_helper::DeprecatedWrappable<Protocol>,
   // Callback types.
   using CompletionCallback =
       base::RepeatingCallback<void(v8::Local<v8::Value>)>;
-
-  explicit Protocol(ProtocolRegistry* protocol_registry);
-  ~Protocol() override;
 
   [[nodiscard]] static std::string_view ErrorCodeToString(Error error);
 
