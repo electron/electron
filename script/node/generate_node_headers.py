@@ -61,7 +61,7 @@ if __name__ == '__main__':
                 hs = {'files': sorted(files), 'dest_dir': dest_dir}
                 out['headers'].append(hs)
 
-    root_gen_dir = os.path.join(get_out_dir(), 'gen')
+    root_gen_dir = os.path.abspath(sys.argv[1])
     config_gypi_path = os.path.join(root_gen_dir, 'config.gypi')
     node_headers_dir = os.path.join(root_gen_dir, 'node_headers')
 
