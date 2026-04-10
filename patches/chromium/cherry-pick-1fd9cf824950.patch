@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 31 Mar 2026 14:10:01 -0700
+Subject: Limit file size for GTK3 file chooser preview images
+
+The GTK3 file chooser preview loads selected files via
+gdk_pixbuf_new_from_file_at_size(), which decodes the entire file into
+memory before scaling. For very large images (e.g. uncompressed TIFFs
+over 1 GB), this causes excessive memory allocation and can crash the
+process.
+
+Add a 100 MB file size limit to OnUpdatePreview() so that oversized
+files are skipped rather than decoded. The limit is applied alongside
+the existing regular-file check using the stat result already available.
+
+Bug: none
+Change-Id: I4cf6f7e03b5d26af82b0f1fd2742108aa8883db3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7715599
+Reviewed-by: Thomas Anderson <thomasanderson@chromium.org>
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1608089}
+
+diff --git a/ui/gtk/select_file_dialog_linux_gtk.cc b/ui/gtk/select_file_dialog_linux_gtk.cc
+index 6674bd0e8aeabf1d2c356239ce874181b230f085..9eaec5331bde260824ffa73cf044783fef274233 100644
+--- a/ui/gtk/select_file_dialog_linux_gtk.cc
++++ b/ui/gtk/select_file_dialog_linux_gtk.cc
+@@ -16,6 +16,7 @@
+ #include <utility>
+ #include <vector>
+ 
++#include "base/byte_size.h"
+ #include "base/logging.h"
+ #include "base/memory/ptr_util.h"
+ #include "base/no_destructor.h"
+@@ -679,8 +680,12 @@ void SelectFileDialogLinuxGtk::OnUpdatePreview(GtkWidget* chooser) {
+ 
+   // Don't attempt to open anything which isn't a regular file. If a named pipe,
+   // this may hang. See https://crbug.com/534754.
++  // Don't attempt to preview files over 100MB to avoid excessive memory use
++  // and crashes when decoding very large images.
+   struct stat stat_buf;
+-  if (stat(filename, &stat_buf) != 0 || !S_ISREG(stat_buf.st_mode)) {
++  constexpr base::ByteSize kMaxPreviewFileSize = base::MiBU(100);
++  if (stat(filename, &stat_buf) != 0 || !S_ISREG(stat_buf.st_mode) ||
++      static_cast<uint64_t>(stat_buf.st_size) > kMaxPreviewFileSize.InBytes()) {
+     g_free(filename);
+     gtk_file_chooser_set_preview_widget_active(GTK_FILE_CHOOSER(chooser),
+                                                FALSE);
