@@ -19,7 +19,7 @@ index 2c95ac99be70b0750372e9c858753bf519498e3d..5ab30502fd232196739ca2b450e35cc9
    Local<Module> module = obj->module_.Get(isolate);
    if (module->GetStatus() < Module::kInstantiated) {
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index fe8e2ebed1e69cd947f48913787c99e58d56043d..daa4cb39a80ab298370bf0b91750f617bd6cc719 100644
+index 9f11d32c70366524cf3b7c1cfdfd24f31e438e7b..3f1772b62aa0300540d25fb93012c49bce9d8134 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
 @@ -460,7 +460,7 @@ ContextifyContext* ContextifyContext::Get(const PropertyCallbackInfo<T>& args) {
