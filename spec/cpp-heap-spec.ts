@@ -77,6 +77,52 @@ describe('cpp heap', () => {
     });
   });
 
+  describe('menu module', () => {
+    // Regression test for https://github.com/electron/electron/issues/50791
+    it('should not leak when rebuilding application menu', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(async () => {
+        const { Menu } = require('electron');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+        const { getCppHeapStatistics } = require('node:v8');
+
+        function buildLargeMenu () {
+          return Menu.buildFromTemplate(
+            Array.from({ length: 10 }, (_, i) => ({
+              label: `Menu ${i}`,
+              submenu: Array.from({ length: 20 }, (_, j) => ({
+                label: `Item ${i}-${j}`,
+                click: () => {}
+              }))
+            }))
+          );
+        }
+
+        async function rebuildAndMeasure (n: number) {
+          for (let i = 0; i < n; i++) {
+            Menu.setApplicationMenu(buildLargeMenu());
+          }
+          for (let i = 0; i < 10; i++) {
+            await new Promise(resolve => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+          return getCppHeapStatistics('brief').used_size_bytes;
+        }
+
+        await rebuildAndMeasure(50);
+        const after1 = await rebuildAndMeasure(50);
+        const after2 = await rebuildAndMeasure(50);
+        return { after1, after2 };
+      });
+
+      const growth = result.after2 - result.after1;
+      expect(growth).to.be.at.most(
+        result.after1 * 0.1,
+        `C++ heap grew by ${growth} bytes between two identical rounds of 100 menu rebuilds — likely a leak`
+      );
+    });
+  });
+
   describe('internal event', () => {
     it('should record as node in heap snapshot', async () => {
       const { remotely } = await startRemoteControlApp(['--expose-internals']);
