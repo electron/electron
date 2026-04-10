@@ -1268,7 +1268,7 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
       SetClassLongPtr(GetAcceleratedWidget(), GCLP_HBRBACKGROUND,
                       reinterpret_cast<LONG_PTR>(brush));
   if (previous_brush)
-    DeleteObject((HBRUSH)previous_brush);
+    DeleteObject(reinterpret_cast<HBRUSH>(previous_brush));
   InvalidateRect(GetAcceleratedWidget(), nullptr, 1);
 #endif
   SkColor compositor_color = background_color;
@@ -1467,11 +1467,11 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   //  the ::GetWindowLongPtr or ::SetWindowLongPtr functions with "nIndex" set
   //  to "GWLP_HWNDPARENT" which actually means the window owner.
   HWND hwndParent = parent ? parent->GetAcceleratedWidget() : nullptr;
-  if (hwndParent ==
-      (HWND)::GetWindowLongPtr(GetAcceleratedWidget(), GWLP_HWNDPARENT))
+  if (hwndParent == reinterpret_cast<HWND>(::GetWindowLongPtr(
+                        GetAcceleratedWidget(), GWLP_HWNDPARENT)))
     return;
   ::SetWindowLongPtr(GetAcceleratedWidget(), GWLP_HWNDPARENT,
-                     (LONG_PTR)hwndParent);
+                     reinterpret_cast<LONG_PTR>(hwndParent));
   // Ensures the visibility
   if (IsVisible()) {
     WINDOWPLACEMENT wp;

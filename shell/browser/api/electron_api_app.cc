@@ -988,17 +988,15 @@ std::string App::GetLocaleCountryCode() {
   WCHAR locale_name[LOCALE_NAME_MAX_LENGTH] = {0};
 
   if (GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SISO3166CTRYNAME,
-                      (LPWSTR)&locale_name,
-                      sizeof(locale_name) / sizeof(WCHAR)) ||
+                      locale_name, std::size(locale_name)) ||
       GetLocaleInfoEx(LOCALE_NAME_SYSTEM_DEFAULT, LOCALE_SISO3166CTRYNAME,
-                      (LPWSTR)&locale_name,
-                      sizeof(locale_name) / sizeof(WCHAR))) {
+                      locale_name, std::size(locale_name))) {
     base::WideToUTF8(locale_name, wcslen(locale_name), &region);
   }
 #elif BUILDFLAG(IS_MAC)
   CFLocaleRef locale = CFLocaleCopyCurrent();
-  CFStringRef value = CFStringRef(
-      static_cast<CFTypeRef>(CFLocaleGetValue(locale, kCFLocaleCountryCode)));
+  auto value =
+      static_cast<CFStringRef>(CFLocaleGetValue(locale, kCFLocaleCountryCode));
   if (value != nil) {
     char temporaryCString[3];
     const CFIndex kCStringSize = sizeof(temporaryCString);

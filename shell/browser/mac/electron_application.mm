@@ -208,7 +208,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
         forEventClass:kInternetEventClass
            andEventID:kAEGetURL];
 
-  handoffLock_ = [NSCondition new];
+  handoffLock_ = [[NSCondition alloc] init];
 }
 
 - (void)handleURLEvent:(NSAppleEventDescriptor*)event
