@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/command_line.h"
+#include "base/functional/callback_helpers.h"
 #include "base/strings/string_split.h"
 #include "components/network_hints/renderer/web_prescient_networking_impl.h"
 #include "content/common/buildflags.h"

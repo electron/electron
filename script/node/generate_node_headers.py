@@ -8,9 +8,7 @@ from pathlib import Path
 
 SRC_DIR = Path(__file__).resolve().parents[3]
 sys.path.append(os.path.join(SRC_DIR, 'third_party/electron_node/tools'))
-sys.path.append(str(Path(__file__).resolve().parents[1]))  # electron/script/
 
-from lib.util import get_out_dir
 import install
 
 class LoadPythonDictionaryError(Exception):
@@ -56,7 +54,7 @@ if __name__ == '__main__':
                 hs = {'files': sorted(files), 'dest_dir': dest_dir}
                 out['headers'].append(hs)
 
-    root_gen_dir = os.path.join(get_out_dir(), 'gen')
+    root_gen_dir = os.path.abspath(sys.argv[1])
     config_gypi_path = os.path.join(root_gen_dir, 'config.gypi')
     node_headers_dir = os.path.join(root_gen_dir, 'node_headers')
 

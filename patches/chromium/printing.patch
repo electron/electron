@@ -620,7 +620,7 @@ index 2a477e820d9f0126a05f86cd44f02c2189275bad..a2e9442ff9f5acf8e301f457b1806251
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/chrome/browser/printing/printer_query_oop.cc b/chrome/browser/printing/printer_query_oop.cc
-index dc2a15ab4d784b0b6c85b84a30c3c08a17ed8e3d..e197026e8a7f132c1bf90a0f5f1eabb4f5f064ee 100644
+index dc2a15ab4d784b0b6c85b84a30c3c08a17ed8e3d..5ca7920c8525c3c72fd96b14709fb35a9cc28daf 100644
 --- a/chrome/browser/printing/printer_query_oop.cc
 +++ b/chrome/browser/printing/printer_query_oop.cc
 @@ -126,7 +126,7 @@ void PrinterQueryOop::OnDidAskUserForSettings(
@@ -632,7 +632,7 @@ index dc2a15ab4d784b0b6c85b84a30c3c08a17ed8e3d..e197026e8a7f132c1bf90a0f5f1eabb4
      // Want the same PrintBackend service as the query so that we use the same
      // device context.
      print_document_client_id_ =
-@@ -189,6 +189,21 @@ void PrinterQueryOop::GetSettingsWithUI(uint32_t document_page_count,
+@@ -189,6 +189,28 @@ void PrinterQueryOop::GetSettingsWithUI(uint32_t document_page_count,
    //       browser process.
    //   - Other platforms don't have a system print UI or do not use OOP
    //     printing, so this does not matter.
@@ -643,12 +643,19 @@ index dc2a15ab4d784b0b6c85b84a30c3c08a17ed8e3d..e197026e8a7f132c1bf90a0f5f1eabb4
 +  // remote service context, not the local one used by the native dialog.
 +  if (settings().dpi()) {
 +    printing_context()->SetPrintSettings(settings());
-+    printing_context()->UpdatePrinterSettings(PrintingContext::PrinterSettings{
++    if (printing_context()->UpdatePrinterSettings(
++            PrintingContext::PrinterSettings{
 +#if BUILDFLAG(IS_MAC)
-+        .external_preview = false,
++                .external_preview = false,
 +#endif
-+        .show_system_dialog = false,
-+    });
++                .show_system_dialog = false,
++            }) != mojom::ResultCode::kSuccess) {
++      // Prefilling failed (e.g. the printer does not support the requested
++      // resolution).  Reinitialize with defaults so that AskUserForSettings
++      // does not crash due to a null print_info_.  The dialog will simply
++      // open without prefilled values.
++      printing_context()->UseDefaultSettings();
++    }
 +  }
 +
    PrinterQuery::GetSettingsWithUI(

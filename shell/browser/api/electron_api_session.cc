@@ -17,6 +17,7 @@
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/memory/weak_ptr.h"
 #include "base/scoped_observation.h"
 #include "base/strings/string_util.h"
 #include "base/types/pass_key.h"
@@ -76,6 +77,7 @@
 #include "shell/browser/media/media_device_id_salt.h"
 #include "shell/browser/net/cert_verifier_client.h"
 #include "shell/browser/net/resolve_host_function.h"
+#include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
@@ -558,9 +560,7 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
 
   SessionPreferences::CreateForBrowserContext(browser_context);
 
-  protocol_.Reset(
-      isolate,
-      Protocol::Create(isolate, browser_context->protocol_registry()).ToV8());
+  protocol_ = Protocol::Create(isolate, browser_context->protocol_registry());
 
   browser_context->SetUserData(
       kElectronApiSessionKey,
@@ -1354,8 +1354,8 @@ v8::Local<v8::Value> Session::Extensions(v8::Isolate* isolate) {
   return extensions_.Get(isolate);
 }
 
-v8::Local<v8::Value> Session::Protocol(v8::Isolate* isolate) {
-  return protocol_.Get(isolate);
+api::Protocol* Session::Protocol() {
+  return protocol_.Get();
 }
 
 v8::Local<v8::Value> Session::ServiceWorkerContext(v8::Isolate* isolate) {

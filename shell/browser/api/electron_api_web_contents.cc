@@ -972,11 +972,12 @@ WebContents::WebContents(v8::Isolate* isolate,
 
 void WebContents::InitZoomController(content::WebContents* web_contents,
                                      const gin_helper::Dictionary& options) {
-  WebContentsZoomController::CreateForWebContents(web_contents);
-  zoom_controller_ = WebContentsZoomController::FromWebContents(web_contents);
+  WebContentsZoomController* const zoom_controller =
+      WebContentsZoomController::GetOrCreateForWebContents(web_contents);
+
   double zoom_factor;
   if (options.Get(options::kZoomFactor, &zoom_factor))
-    zoom_controller_->SetDefaultZoomFactor(zoom_factor);
+    zoom_controller->SetDefaultZoomFactor(zoom_factor);
 
   // Nothing to do with ZoomController, but this function gets called in all
   // init cases!
@@ -3152,16 +3153,18 @@ void OnGetDeviceNameToUse(base::WeakPtr<content::WebContents> web_contents,
         .Set(printing::kSettingMediaSizeIsDefault, true);
   };
 
-  const bool use_default_size =
-      print_settings.FindBool(kUseDefaultPrinterPageSize).value_or(false);
-  std::optional<gfx::Size> paper_size;
-  if (use_default_size)
-    paper_size = GetPrinterDefaultPaperSize(base::UTF16ToUTF8(info.second));
+  if (!print_settings.Find(printing::kSettingMediaSize)) {
+    const bool use_default_size =
+        print_settings.FindBool(kUseDefaultPrinterPageSize).value_or(false);
+    std::optional<gfx::Size> paper_size;
+    if (use_default_size)
+      paper_size = GetPrinterDefaultPaperSize(base::UTF16ToUTF8(info.second));
 
-  print_settings.Set(
-      printing::kSettingMediaSize,
-      paper_size ? make_media_size(paper_size->height(), paper_size->width())
-                 : make_media_size(297000, 210000));
+    print_settings.Set(
+        printing::kSettingMediaSize,
+        paper_size ? make_media_size(paper_size->height(), paper_size->width())
+                   : make_media_size(297000, 210000));
+  }
 
   content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents.get());
   if (!rfh)
@@ -3867,12 +3870,16 @@ gfx::Size WebContents::GetSizeForNewRenderView(content::WebContents* wc) {
   return {};
 }
 
+WebContentsZoomController* WebContents::GetZoomController() const {
+  return WebContentsZoomController::FromWebContents(web_contents());
+}
+
 void WebContents::SetZoomLevel(double level) {
-  zoom_controller_->SetZoomLevel(level);
+  GetZoomController()->SetZoomLevel(level);
 }
 
 double WebContents::GetZoomLevel() const {
-  return zoom_controller_->GetZoomLevel();
+  return GetZoomController()->GetZoomLevel();
 }
 
 void WebContents::SetZoomFactor(gin_helper::ErrorThrower thrower,
@@ -3892,7 +3899,7 @@ double WebContents::GetZoomFactor() const {
 }
 
 void WebContents::SetTemporaryZoomLevel(double level) {
-  zoom_controller_->SetTemporaryZoomLevel(level);
+  GetZoomController()->SetTemporaryZoomLevel(level);
 }
 
 std::optional<PreloadScript> WebContents::GetPreloadScript() const {

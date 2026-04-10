@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
-#include "base/memory/weak_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/download_manager.h"
 #include "electron/buildflags/buildflags.h"
@@ -20,7 +19,6 @@
 #include "services/network/public/mojom/ssl_config.mojom-forward.h"
 #include "shell/browser/api/ipc_dispatcher.h"
 #include "shell/browser/event_emitter_mixin.h"
-#include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
 
@@ -60,6 +58,7 @@ struct PreloadScript;
 namespace api {
 
 class NetLog;
+class Protocol;
 class WebRequest;
 
 class Session final : public gin::Wrappable<Session>,
@@ -167,7 +166,7 @@ class Session final : public gin::Wrappable<Session>,
       const gin_helper::Dictionary& options);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> Extensions(v8::Isolate* isolate);
-  v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
+  api::Protocol* Protocol();
   v8::Local<v8::Value> ServiceWorkerContext(v8::Isolate* isolate);
   WebRequest* WebRequest(v8::Isolate* isolate);
   api::NetLog* NetLog(v8::Isolate* isolate);
@@ -214,7 +213,7 @@ class Session final : public gin::Wrappable<Session>,
   // Cached gin_helper::Wrappable objects.
   v8::TracedReference<v8::Value> cookies_;
   v8::TracedReference<v8::Value> extensions_;
-  v8::TracedReference<v8::Value> protocol_;
+  cppgc::Member<api::Protocol> protocol_;
   cppgc::Member<api::NetLog> net_log_;
   v8::TracedReference<v8::Value> service_worker_context_;
   cppgc::Member<api::WebRequest> web_request_;
