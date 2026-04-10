@@ -205,11 +205,37 @@ def get_buildtools_executable(name):
     path += '.exe'
   return path
 
-def get_depot_tools_executable(name):
-  buildtools = os.path.realpath(
-    os.path.join(ELECTRON_DIR, '..', 'third_party', 'depot_tools'))
+def get_depot_tools_env():
+  def find_depot_tools_on_path():
+    cmd = 'where' if sys.platform == 'win32' else 'which'
+    try:
+      subprocess.check_call([cmd, 'gclient'])
+      return os.environ.copy()
+    except subprocess.CalledProcessError:
+      return None
 
-  path = os.path.join(buildtools, name)
-  if sys.platform == 'win32':
-    path += '.bat'
-  return path
+  def check_for_build_tools():
+    try:
+      output = subprocess.check_output(
+        'electron-build-tools show env --json',
+        shell=True, stderr=subprocess.DEVNULL
+      )
+      env = os.environ.copy()
+      env.update(json.loads(output.decode().strip()))
+      return env
+    except subprocess.CalledProcessError:
+      return None
+
+  depot_tools_env = check_for_build_tools()
+  if depot_tools_env is None:
+    depot_tools_env = find_depot_tools_on_path()
+
+  if depot_tools_env is None:
+    raise RuntimeError("Couldn't find depot_tools, ensure it's on your PATH")
+
+  if 'CHROMIUM_BUILDTOOLS_PATH' not in depot_tools_env:
+    raise RuntimeError(
+      'CHROMIUM_BUILDTOOLS_PATH environment variable must be set'
+    )
+
+  return depot_tools_env
