@@ -559,7 +559,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   if (process_type == ::switches::kUtilityProcess ||
       process_type == ::switches::kRendererProcess) {
     // Copy following switches to child process.
-    static constexpr std::array<const char*, 11U> kCommonSwitchNames = {
+    static constexpr const char* const kCommonSwitchNames[] = {
         switches::kStandardSchemes.c_str(),
         switches::kEnableSandbox.c_str(),
         sandbox::policy::switches::kNoSandbox,
