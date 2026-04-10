@@ -69,6 +69,51 @@ struct Converter<electron::TaskbarHost::ThumbarButton> {
 }  // namespace gin
 #endif
 
+#if BUILDFLAG(IS_MAC)
+namespace gin {
+
+template <>
+struct Converter<electron::GlassEffectStyle> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::GlassEffectStyle* out) {
+    std::string s;
+    if (!ConvertFromV8(isolate, val, &s))
+      return false;
+    if (s == "regular")
+      *out = electron::GlassEffectStyle::kRegular;
+    else if (s == "clear")
+      *out = electron::GlassEffectStyle::kClear;
+    else
+      return false;
+    return true;
+  }
+};
+
+template <>
+struct Converter<electron::GlassEffectRegion> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     electron::GlassEffectRegion* out) {
+    gin_helper::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+    dict.Get("style", &out->style);
+    dict.Get("cornerRadius", &out->corner_radius);
+    WrappedSkColor tint;
+    if (dict.Get("tintColor", &tint))
+      out->tint_color = tint;
+    dict.Get("contentImage", &out->content_image);
+    // Accept either flat x/y/width/height or a nested bounds object.
+    if (!dict.Get("bounds", &out->bounds))
+      ConvertFromV8(isolate, val, &out->bounds);
+    return true;
+  }
+};
+
+}  // namespace gin
+#endif
+
 namespace electron::api {
 
 namespace {
@@ -854,6 +899,20 @@ void BaseWindow::SetBackgroundMaterial(const std::string& material) {
 }
 
 #if BUILDFLAG(IS_MAC)
+void BaseWindow::SetGlassEffect(std::optional<GlassEffectRegion> options) {
+  window_->SetGlassEffect(std::move(options));
+}
+
+void BaseWindow::SetGlassEffectRegions(
+    std::optional<std::vector<GlassEffectRegion>> regions) {
+  window_->SetGlassEffectRegions(regions ? std::move(*regions)
+                                         : std::vector<GlassEffectRegion>{});
+}
+
+bool BaseWindow::IsGlassEffectSupported() const {
+  return window_->IsGlassEffectSupported();
+}
+
 std::string BaseWindow::GetAlwaysOnTopLevel() const {
   return window_->GetAlwaysOnTopLevel();
 }
@@ -1266,6 +1325,9 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setBackgroundMaterial", &BaseWindow::SetBackgroundMaterial)
 
 #if BUILDFLAG(IS_MAC)
+      .SetMethod("setGlassEffect", &BaseWindow::SetGlassEffect)
+      .SetMethod("setGlassEffectRegions", &BaseWindow::SetGlassEffectRegions)
+      .SetMethod("isGlassEffectSupported", &BaseWindow::IsGlassEffectSupported)
       .SetMethod("isHiddenInMissionControl",
                  &BaseWindow::IsHiddenInMissionControl)
       .SetMethod("setHiddenInMissionControl",

@@ -20,6 +20,7 @@
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
+#include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/persistent_dictionary.h"
 #include "shell/common/options_switches.h"
@@ -209,6 +210,17 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
 #if BUILDFLAG(IS_MAC)
   if (std::string val; options.Get(options::kVibrancyType, &val))
     SetVibrancy(val, 0);
+
+  if (gin_helper::Dictionary glass;
+      options.Get(options::kGlassEffect, &glass)) {
+    GlassEffectRegion opts;
+    if (std::string s; glass.Get("style", &s) && s == "clear")
+      opts.style = GlassEffectStyle::kClear;
+    glass.Get("cornerRadius", &opts.corner_radius);
+    if (WrappedSkColor c; glass.Get("tintColor", &c))
+      opts.tint_color = c;
+    SetGlassEffect(std::move(opts));
+  }
 #elif BUILDFLAG(IS_WIN)
   if (std::string val; options.Get(options::kBackgroundMaterial, &val))
     SetBackgroundMaterial(val);
@@ -419,6 +431,27 @@ void NativeWindow::SetVibrancy(const std::string& type, int duration) {
 void NativeWindow::SetBackgroundMaterial(const std::string& type) {
   background_material_ = type;
 }
+
+#if BUILDFLAG(IS_MAC)
+GlassEffectRegion::GlassEffectRegion() = default;
+GlassEffectRegion::GlassEffectRegion(const GlassEffectRegion&) = default;
+GlassEffectRegion::GlassEffectRegion(GlassEffectRegion&&) = default;
+GlassEffectRegion& GlassEffectRegion::operator=(const GlassEffectRegion&) =
+    default;
+GlassEffectRegion& GlassEffectRegion::operator=(GlassEffectRegion&&) = default;
+GlassEffectRegion::~GlassEffectRegion() = default;
+
+void NativeWindow::SetGlassEffect(std::optional<GlassEffectRegion> options) {
+  has_glass_effect_ = options.has_value();
+}
+
+void NativeWindow::SetGlassEffectRegions(
+    std::vector<GlassEffectRegion> regions) {}
+
+bool NativeWindow::IsGlassEffectSupported() const {
+  return false;
+}
+#endif
 
 void NativeWindow::SetTouchBar(
     std::vector<gin_helper::PersistentDictionary> items) {}
@@ -754,6 +787,9 @@ bool NativeWindow::IsTranslucent() const {
 #if BUILDFLAG(IS_MAC)
   // Windows with vibrancy set are translucent
   if (!vibrancy_.empty())
+    return true;
+
+  if (has_glass_effect_)
     return true;
 #endif
 

@@ -14,6 +14,7 @@
 
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "shell/browser/native_window.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/gin_helper/trackable_object.h"
@@ -203,6 +204,10 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   virtual void SetBackgroundMaterial(const std::string& material);
 
 #if BUILDFLAG(IS_MAC)
+  void SetGlassEffect(std::optional<GlassEffectRegion> options);
+  void SetGlassEffectRegions(
+      std::optional<std::vector<GlassEffectRegion>> regions);
+  bool IsGlassEffectSupported() const;
   std::string GetAlwaysOnTopLevel() const;
   void SetWindowButtonVisibility(bool visible);
   bool GetWindowButtonVisibility() const;
