@@ -11,7 +11,9 @@
 
 #include "base/logging.h"
 #include "base/memory/raw_ptr.h"
+#include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/threading/thread_local.h"
 #include "electron/mas.h"
 #include "shell/common/crash_keys.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
@@ -31,7 +33,10 @@ struct OomState {
   std::atomic<bool> is_in_oom{false};
 };
 
-constinit thread_local OomState* g_oom_state = nullptr;
+base::ThreadLocalOwnedPointer<OomState>& GetOomState() {
+  static base::NoDestructor<base::ThreadLocalOwnedPointer<OomState>> instance;
+  return *instance;
+}
 
 std::string FormatStackTrace(v8::Isolate* isolate,
                              v8::Local<v8::StackTrace> stack) {
@@ -85,7 +90,7 @@ void CaptureStackOnInterrupt(v8::Isolate* isolate, void* data) {
   // used_heap_size can transiently exceed heap_size_limit.
   constexpr size_t kMinHeadroom = 2 * 1024 * 1024;  // 2 MB
   if (stats.used_heap_size() + kMinHeadroom > stats.heap_size_limit()) {
-    LOG(ERROR) << "Skipping JS stack capture: insufficient heap headroom";
+    LOG(INFO) << "Skipping JS stack capture: insufficient heap headroom";
     return;
   }
 
@@ -209,7 +214,7 @@ size_t NearHeapLimitCallback(void* data,
     crash_keys::SetCrashKey("electron.v8-oom.stack",
                             heap_info + " (at cage limit, stack unavailable)");
 #endif
-    LOG(ERROR) << "Near V8 cage limit; stack trace capture may not succeed";
+    LOG(INFO) << "Near V8 cage limit; stack trace capture may not succeed";
   }
 
   return new_limit;
@@ -218,20 +223,25 @@ size_t NearHeapLimitCallback(void* data,
 }  // namespace
 
 void RegisterOomStackTraceCallback(v8::Isolate* isolate) {
-  if (g_oom_state)
+  auto& tls = GetOomState();
+  if (tls.Get())
     return;
-  g_oom_state = new OomState{isolate};
-  isolate->AddNearHeapLimitCallback(NearHeapLimitCallback, g_oom_state);
+  auto state = std::make_unique<OomState>();
+  state->isolate = isolate;
+  OomState* raw = state.get();
+  tls.Set(std::move(state));
+  isolate->AddNearHeapLimitCallback(NearHeapLimitCallback, raw);
 }
 
 void UnregisterOomStackTraceCallback(v8::Isolate* isolate) {
-  if (!g_oom_state || g_oom_state->isolate != isolate)
+  auto& tls = GetOomState();
+  OomState* state = tls.Get();
+  if (!state || state->isolate != isolate)
     return;
-  if (!g_oom_state->is_in_oom.load()) {
+  if (!state->is_in_oom.load()) {
     isolate->RemoveNearHeapLimitCallback(NearHeapLimitCallback, 0);
   }
-  delete g_oom_state;
-  g_oom_state = nullptr;
+  tls.Set(nullptr);
 }
 
 }  // namespace electron

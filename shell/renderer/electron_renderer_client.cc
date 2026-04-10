@@ -252,6 +252,8 @@ void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
       current->ContextWillDestroy(context);
   }
 
+  // Call base class last: OOM callback deregistration must happen after
+  // all other cleanup that might still trigger V8 heap operations.
   RendererClientBase::WillDestroyWorkerContextOnWorkerThread(context);
 }
 
