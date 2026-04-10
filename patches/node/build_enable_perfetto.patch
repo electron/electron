@@ -194,50 +194,41 @@ index f5cd416b5fe7a51084bc4af9a4427a8e62599fd8..b7072ce74354495bec49357f962f4ef2
        'src/tracing/traced_value.h',
        'src/timer_wrap.h',
 diff --git a/src/async_wrap.cc b/src/async_wrap.cc
-index 301f77c419f178c4eea258e0896327f69389dda7..ce68398fc2d071db10ac1aa2093f67da1586f1ae 100644
+index 301f77c419f178c4eea258e0896327f69389dda7..d5068a18392a6128ceee7f0146f8f9c77f9924bb 100644
 --- a/src/async_wrap.cc
 +++ b/src/async_wrap.cc
-@@ -110,8 +110,12 @@ void AsyncWrap::EmitPromiseResolve(Environment* env, double async_id) {
+@@ -110,8 +110,7 @@ void AsyncWrap::EmitPromiseResolve(Environment* env, double async_id) {
  }
  
  void AsyncWrap::EmitTraceAsyncStart() const {
-+#if defined(V8_USE_PERFETTO)
-+  if (TRACE_EVENT_CATEGORY_ENABLED(TRACING_CATEGORY_NODE1(async_hooks))) {
-+#else
-   if (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
-           TRACING_CATEGORY_NODE1(async_hooks))) {
-+#endif
+-  if (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
+-          TRACING_CATEGORY_NODE1(async_hooks))) {
++  if (NODE_TRACE_CATEGORY_ENABLED(TRACING_CATEGORY_NODE1(async_hooks))) {
      tracing::AsyncWrapArgs data(env()->execution_async_id(),
                                  get_trigger_async_id());
      TRACE_EVENT_NESTABLE_ASYNC_BEGIN1(TRACING_CATEGORY_NODE1(async_hooks),
 diff --git a/src/env.cc b/src/env.cc
-index fdabe48dd7776c59298f7d972286d0d2ed062752..6610147d21df510e5badbc6f83d506abc807c4eb 100644
+index fdabe48dd7776c59298f7d972286d0d2ed062752..c185d822b29c0b691bbf5f724f71f59638c6184d 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -650,8 +650,13 @@ void TrackingTraceStateObserver::UpdateTraceCategoryState() {
+@@ -650,8 +650,8 @@ void TrackingTraceStateObserver::UpdateTraceCategoryState() {
      return;
    }
  
-+#if defined(V8_USE_PERFETTO)
+-  bool async_hooks_enabled = (*(TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
+-                                 TRACING_CATEGORY_NODE1(async_hooks)))) != 0;
 +  bool async_hooks_enabled =
-+      TRACE_EVENT_CATEGORY_ENABLED(TRACING_CATEGORY_NODE1(async_hooks));
-+#else
-   bool async_hooks_enabled = (*(TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
-                                  TRACING_CATEGORY_NODE1(async_hooks)))) != 0;
-+#endif
++      NODE_TRACE_CATEGORY_ENABLED(TRACING_CATEGORY_NODE1(async_hooks));
  
    Isolate* isolate = env_->isolate();
    HandleScope handle_scope(isolate);
-@@ -893,8 +898,12 @@ Environment::Environment(IsolateData* isolate_data,
+@@ -893,8 +893,7 @@ Environment::Environment(IsolateData* isolate_data,
        time_origin_timestamp_,
        MAYBE_FIELD_PTR(env_info, performance_state));
  
-+#if defined(V8_USE_PERFETTO)
-+  if (TRACE_EVENT_CATEGORY_ENABLED(TRACING_CATEGORY_NODE1(environment))) {
-+#else
-   if (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
-           TRACING_CATEGORY_NODE1(environment)) != 0) {
-+#endif
+-  if (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
+-          TRACING_CATEGORY_NODE1(environment)) != 0) {
++  if (NODE_TRACE_CATEGORY_ENABLED(TRACING_CATEGORY_NODE1(environment))) {
      tracing::EnvironmentArgs traced_value(args, exec_args);
      TRACE_EVENT_NESTABLE_ASYNC_BEGIN1(TRACING_CATEGORY_NODE1(environment),
                                        "Environment",
@@ -294,38 +285,30 @@ index 0bc086ccd1ff449c0f3fb08a972a0c45d3178f1c..ca74e83ef6f7b0e8b8496457af3813f0
    bool use_wasm_trap_handler =
        !per_process::cli_options->disable_wasm_trap_handler;
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 3c234205e89be7e976dae5c3fcc73ca67953e034..d54ef53c9b58017673dc22c84d41ca9682b7a7cd 100644
+index 3c234205e89be7e976dae5c3fcc73ca67953e034..986a2d8da7fd04b5d4060d9c8d44c61a231dcce6 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
-@@ -1026,8 +1026,12 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {
+@@ -1026,8 +1026,7 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {
  
    ContextifyScript* contextify_script = New(env, args.This());
  
-+#if defined(V8_USE_PERFETTO)
-+  if (TRACE_EVENT_CATEGORY_ENABLED(TRACING_CATEGORY_NODE2(vm, script))) {
-+#else
-   if (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
-           TRACING_CATEGORY_NODE2(vm, script)) != 0) {
-+#endif
+-  if (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
+-          TRACING_CATEGORY_NODE2(vm, script)) != 0) {
++  if (NODE_TRACE_CATEGORY_ENABLED(TRACING_CATEGORY_NODE2(vm, script))) {
      Utf8Value fn(isolate, filename);
      TRACE_EVENT_BEGIN1(TRACING_CATEGORY_NODE2(vm, script),
                         "ContextifyScript::New",
 diff --git a/src/node_dir.cc b/src/node_dir.cc
-index c9173d404c79a69743fc75ddb6bba0ac9579c1ef..39963ed01cd8c86a9524a2ef87768c9256116d55 100644
+index c9173d404c79a69743fc75ddb6bba0ac9579c1ef..8ffac047a69b3900f37d712334c504a1c65c83fd 100644
 --- a/src/node_dir.cc
 +++ b/src/node_dir.cc
-@@ -60,19 +60,32 @@ static const char* get_dir_func_name_by_type(uv_fs_type req_type) {
- }
+@@ -61,18 +61,25 @@ static const char* get_dir_func_name_by_type(uv_fs_type req_type) {
  
  #define TRACE_NAME(name) "fs_dir.sync." #name
-+#if defined(V8_USE_PERFETTO)
-+#define GET_TRACE_ENABLED                                                      \
-+  TRACE_EVENT_CATEGORY_ENABLED(TRACING_CATEGORY_NODE2(fs_dir, sync))
-+#else
  #define GET_TRACE_ENABLED                                                      \
-   (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(                                \
-        TRACING_CATEGORY_NODE2(fs_dir, sync)) != 0)
-+#endif
+-  (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(                                \
+-       TRACING_CATEGORY_NODE2(fs_dir, sync)) != 0)
++  NODE_TRACE_CATEGORY_ENABLED(TRACING_CATEGORY_NODE2(fs_dir, sync))
  #define FS_DIR_SYNC_TRACE_BEGIN(syscall, ...)                                  \
    if (GET_TRACE_ENABLED)                                                       \
      TRACE_EVENT_BEGIN(TRACING_CATEGORY_NODE2(fs_dir, sync),                    \
@@ -348,21 +331,16 @@ index c9173d404c79a69743fc75ddb6bba0ac9579c1ef..39963ed01cd8c86a9524a2ef87768c92
  #define FS_DIR_ASYNC_TRACE_BEGIN0(fs_type, id)                                 \
    TRACE_EVENT_NESTABLE_ASYNC_BEGIN0(TRACING_CATEGORY_NODE2(fs_dir, async),     \
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 96aac2d86695732bf6805f2ad2168a62241b5045..fed1a6754b3c636e0eb1150c3ef6a720d9b4a439 100644
+index 96aac2d86695732bf6805f2ad2168a62241b5045..c7a9648b0f83e910190dc620f4b72577ffde6c44 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -146,17 +146,30 @@ static const char* get_fs_func_name_by_type(uv_fs_type req_type) {
- }
+@@ -147,16 +147,23 @@ static const char* get_fs_func_name_by_type(uv_fs_type req_type) {
  
  #define TRACE_NAME(name) "fs.sync." #name
-+#if defined(V8_USE_PERFETTO)
-+#define GET_TRACE_ENABLED                                                      \
-+  TRACE_EVENT_CATEGORY_ENABLED(TRACING_CATEGORY_NODE2(fs, sync))
-+#else
  #define GET_TRACE_ENABLED                                                      \
-   (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(                                \
-        TRACING_CATEGORY_NODE2(fs, sync)) != 0)
-+#endif
+-  (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(                                \
+-       TRACING_CATEGORY_NODE2(fs, sync)) != 0)
++  NODE_TRACE_CATEGORY_ENABLED(TRACING_CATEGORY_NODE2(fs, sync))
  #define FS_SYNC_TRACE_BEGIN(syscall, ...)                                      \
    if (GET_TRACE_ENABLED)                                                       \
      TRACE_EVENT_BEGIN(                                                         \
@@ -383,10 +361,10 @@ index 96aac2d86695732bf6805f2ad2168a62241b5045..fed1a6754b3c636e0eb1150c3ef6a720
  #define FS_ASYNC_TRACE_BEGIN0(fs_type, id)                                     \
    TRACE_EVENT_NESTABLE_ASYNC_BEGIN0(TRACING_CATEGORY_NODE2(fs, async),         \
 diff --git a/src/node_internals.h b/src/node_internals.h
-index 8e930a6fecd6589b858293d91b2454ea14ae7c73..d3eb6898bc7a2b6a17f5a529854ee8fb5e490d0a 100644
+index 8e930a6fecd6589b858293d91b2454ea14ae7c73..a95dd02d4149a02ff40c759010e130c89ad1d848 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
-@@ -315,6 +315,12 @@ class ThreadPoolWork {
+@@ -315,6 +315,14 @@ class ThreadPoolWork {
    const char* type_;
  };
  
@@ -395,14 +373,18 @@ index 8e930a6fecd6589b858293d91b2454ea14ae7c73..d3eb6898bc7a2b6a17f5a529854ee8fb
 +#define TRACING_CATEGORY_NODE "node"
 +#define TRACING_CATEGORY_NODE1(one) "node." #one
 +#define TRACING_CATEGORY_NODE2(one, two) "node." #one "." #two
++#define NODE_TRACE_CATEGORY_ENABLED(category) \
++    TRACE_EVENT_CATEGORY_ENABLED(category)
 +#else
  #define TRACING_CATEGORY_NODE "node"
  #define TRACING_CATEGORY_NODE1(one)                                           \
      TRACING_CATEGORY_NODE ","                                                 \
-@@ -323,6 +329,7 @@ class ThreadPoolWork {
+@@ -323,6 +331,9 @@ class ThreadPoolWork {
      TRACING_CATEGORY_NODE ","                                                 \
      TRACING_CATEGORY_NODE "." #one ","                                        \
      TRACING_CATEGORY_NODE "." #one "." #two
++#define NODE_TRACE_CATEGORY_ENABLED(category) \
++    (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(category) != 0)
 +#endif
  
  // Functions defined in node.cc that are exposed via the bootstrapper object
