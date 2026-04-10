@@ -63,6 +63,7 @@
 #include "mojo/public/cpp/bindings/self_owned_associated_receiver.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "net/ssl/ssl_private_key.h"
+#include "pdf/pdf_features.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
@@ -1589,6 +1590,46 @@ std::string ElectronBrowserClient::GetApplicationLocale() {
 bool ElectronBrowserClient::ShouldEnableStrictSiteIsolation() {
   // Enable site isolation. It is off by default in Chromium <= 69.
   return true;
+}
+
+bool ElectronBrowserClient::ShouldEnableSubframeZoom() {
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  return chrome_pdf::features::IsOopifPdfEnabled();
+#else
+  return false;
+#endif
+}
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+std::optional<network::CrossOriginEmbedderPolicy>
+ElectronBrowserClient::MaybeOverrideLocalURLCrossOriginEmbedderPolicy(
+    content::NavigationHandle* navigation_handle) {
+  if (!chrome_pdf::features::IsOopifPdfEnabled() ||
+      !navigation_handle->IsPdf()) {
+    return std::nullopt;
+  }
+
+  content::RenderFrameHost* pdf_extension = navigation_handle->GetParentFrame();
+  if (!pdf_extension) {
+    return std::nullopt;
+  }
+
+  content::RenderFrameHost* pdf_embedder = pdf_extension->GetParent();
+  CHECK(pdf_embedder);
+  return pdf_embedder->GetCrossOriginEmbedderPolicy();
+}
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+
+bool ElectronBrowserClient::DoesSiteRequireDedicatedProcess(
+    content::BrowserContext* browser_context,
+    const GURL& effective_site_url) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  return GetEnabledExtensionFromEffectiveURL(browser_context,
+                                             effective_site_url) != nullptr;
+#else
+  return content::ContentBrowserClient::DoesSiteRequireDedicatedProcess(
+      browser_context, effective_site_url);
+#endif
 }
 
 void ElectronBrowserClient::BindHostReceiverForRenderer(
