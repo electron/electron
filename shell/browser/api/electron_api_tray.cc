@@ -342,7 +342,7 @@ void Tray::Focus() {
 void Tray::PopUpContextMenu(gin::Arguments* args) {
   if (!CheckAlive())
     return;
-  gin_helper::Handle<Menu> menu;
+  Menu* menu = nullptr;
   gfx::Point pos;
 
   v8::Local<v8::Value> first_arg;
@@ -360,8 +360,8 @@ void Tray::PopUpContextMenu(gin::Arguments* args) {
     }
   }
 
-  tray_icon_->PopUpContextMenu(
-      pos, menu.IsEmpty() ? nullptr : menu->model()->GetWeakPtr());
+  tray_icon_->PopUpContextMenu(pos,
+                               menu ? menu->model()->GetWeakPtr() : nullptr);
 }
 
 void Tray::CloseContextMenu() {

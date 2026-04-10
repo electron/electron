@@ -54,6 +54,7 @@
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "shell/common/application_info.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/platform_util.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/common/logging/logging_utils.h"

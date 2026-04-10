@@ -18,6 +18,7 @@
 #include "shell/browser/native_window_observer.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/gin_helper/trackable_object.h"
+#include "v8/include/cppgc/persistent.h"
 
 namespace gin {
 class Arguments;
@@ -35,6 +36,7 @@ class NativeWindow;
 
 namespace api {
 
+class Menu;
 class View;
 
 class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
@@ -288,7 +290,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 #endif
 
   v8::Global<v8::Value> content_view_;
-  v8::Global<v8::Value> menu_;
+  cppgc::Persistent<Menu> menu_;
   v8::Global<v8::Value> parent_window_;
   KeyWeakMap<int> child_windows_;
 
