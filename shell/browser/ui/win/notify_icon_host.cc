@@ -198,7 +198,7 @@ NotifyIcon* NotifyIconHost::CreateNotifyIcon(std::optional<base::Uuid> guid) {
       guid_str = guid_str.substr(1, guid_str.length() - 2);
     }
 
-    unsigned char* uid_cstr = (unsigned char*)guid_str.c_str();
+    auto* uid_cstr = reinterpret_cast<unsigned char*>(guid_str.data());
     RPC_STATUS result = UuidFromStringA(uid_cstr, &uid);
     if (result != RPC_S_INVALID_STRING_UUID) {
       for (NotifyIcons::const_iterator i(notify_icons_.begin());
