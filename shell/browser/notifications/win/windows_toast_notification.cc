@@ -327,7 +327,8 @@ bool WindowsToastNotification::CreateToastXmlDocument(
     std::u16string toast_xml_str =
         GetToastXml(notification_id, options.title, options.msg, icon_path,
                     options.timeout_type, options.silent, options.actions,
-                    options.has_reply, options.reply_placeholder);
+                    options.has_reply, options.reply_placeholder,
+                    options.group_id, options.group_title);
 
     DebugLog("Toast XML (generated) id=" + notification_id + ": " +
              base::UTF16ToUTF8(toast_xml_str));
@@ -575,7 +576,9 @@ std::u16string WindowsToastNotification::GetToastXml(
     bool silent,
     const std::vector<NotificationAction>& actions,
     bool has_reply,
-    const std::u16string& reply_placeholder) {
+    const std::u16string& reply_placeholder,
+    const std::string& group_id,
+    const std::u16string& group_title) {
   XmlWriter xml_writer;
   xml_writer.StartWriting();
 
@@ -585,6 +588,15 @@ std::u16string WindowsToastNotification::GetToastXml(
   const bool is_reminder = (timeout_type == u"never");
   if (is_reminder) {
     xml_writer.AddAttribute(kScenario, kReminder);
+  }
+
+  // Add header element if both groupId and groupTitle are present
+  if (!group_id.empty() && !group_title.empty()) {
+    xml_writer.StartElement("header");
+    xml_writer.AddAttribute("id", group_id);
+    xml_writer.AddAttribute("title", base::UTF16ToUTF8(group_title));
+    xml_writer.AddAttribute("arguments", "");
+    xml_writer.EndElement();  // </header>
   }
 
   // <visual>
