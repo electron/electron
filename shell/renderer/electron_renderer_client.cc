@@ -85,6 +85,9 @@ void ElectronRendererClient::DidCreateScriptContext(
     v8::Isolate* const isolate,
     v8::Local<v8::Context> renderer_context,
     content::RenderFrame* render_frame) {
+  RendererClientBase::DidCreateScriptContext(isolate, renderer_context,
+                                             render_frame);
+
   // TODO(zcbenz): Do not create Node environment if node integration is not
   // enabled.
 
@@ -228,6 +231,8 @@ bool WorkerHasNodeIntegration(blink::ExecutionContext* ec) {
 
 void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
     v8::Local<v8::Context> context) {
+  RendererClientBase::WorkerScriptReadyForEvaluationOnWorkerThread(context);
+
   auto* ec = blink::ExecutionContext::From(context);
   if (!WorkerHasNodeIntegration(ec))
     return;
@@ -241,12 +246,15 @@ void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
 void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
     v8::Local<v8::Context> context) {
   auto* ec = blink::ExecutionContext::From(context);
-  if (!WorkerHasNodeIntegration(ec))
-    return;
+  if (WorkerHasNodeIntegration(ec)) {
+    auto* current = WebWorkerObserver::GetCurrent();
+    if (current)
+      current->ContextWillDestroy(context);
+  }
 
-  auto* current = WebWorkerObserver::GetCurrent();
-  if (current)
-    current->ContextWillDestroy(context);
+  // Call base class last: OOM callback deregistration must happen after
+  // all other cleanup that might still trigger V8 heap operations.
+  RendererClientBase::WillDestroyWorkerContextOnWorkerThread(context);
 }
 
 void ElectronRendererClient::SetUpWebAssemblyTrapHandler() {
