@@ -50,6 +50,7 @@
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_security_policy.h"
 #include "third_party/blink/public/web/web_view.h"
+#include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 #include "third_party/blink/renderer/platform/media/multi_buffer_data_source.h"  // nogncheck
 #include "third_party/blink/renderer/platform/weborigin/scheme_registry.h"  // nogncheck
 #include "third_party/widevine/cdm/buildflags.h"
@@ -546,11 +547,18 @@ void RendererClientBase::WillDestroyServiceWorkerContextOnWorkerThread(
 
 void RendererClientBase::WorkerScriptReadyForEvaluationOnWorkerThread(
     v8::Local<v8::Context> context) {
+  // Worklets can share a thread and isolate (via WorkletThreadHolder), so the
+  // per-thread OOM state would be prematurely removed when the first worklet
+  // is destroyed. Skip worklets for now; can be revisited with ref-counting.
+  if (blink::ExecutionContext::From(context)->IsWorkletGlobalScope())
+    return;
   RegisterOomStackTraceCallback(v8::Isolate::GetCurrent());
 }
 
 void RendererClientBase::WillDestroyWorkerContextOnWorkerThread(
     v8::Local<v8::Context> context) {
+  if (blink::ExecutionContext::From(context)->IsWorkletGlobalScope())
+    return;
   UnregisterOomStackTraceCallback(v8::Isolate::GetCurrent());
 }
 
