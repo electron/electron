@@ -5,11 +5,11 @@
 #include "shell/common/crash_keys.h"
 
 #include <cstdint>
+#include <deque>
 #include <map>
 #include <string>
 
 #include "base/command_line.h"
-#include "base/containers/circular_deque.h"
 #include "base/environment.h"
 #include "base/no_destructor.h"
 #include "base/strings/strcat.h"
@@ -28,17 +28,22 @@ namespace electron::crash_keys {
 
 namespace {
 
+// Do NOT replace with base::circular_deque. CrashKeyString wraps a
+// crashpad::Annotation that holds self-referential pointers and registers
+// in a process-global linked list; relocating elements (as circular_deque
+// does on growth) corrupts that list and hangs the crashpad handler.
+// std::deque never relocates existing elements. See #50795.
 auto& GetExtraCrashKeys() {
   constexpr size_t kMaxCrashKeyValueSize = 20320;
   static_assert(kMaxCrashKeyValueSize < crashpad::Annotation::kValueMaxSize,
                 "max crash key value length above what crashpad supports");
   using CrashKeyString = crash_reporter::CrashKeyString<kMaxCrashKeyValueSize>;
-  static base::NoDestructor<base::circular_deque<CrashKeyString>> extra_keys;
+  static base::NoDestructor<std::deque<CrashKeyString>> extra_keys;
   return *extra_keys;
 }
 
 auto& GetExtraCrashKeyNames() {
-  static base::NoDestructor<base::circular_deque<std::string>> crash_key_names;
+  static base::NoDestructor<std::deque<std::string>> crash_key_names;
   return *crash_key_names;
 }
 

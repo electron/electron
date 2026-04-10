@@ -51,6 +51,19 @@ app.whenReady().then(() => {
     });
     w.loadURL(`about:blank?set_extra=${setExtraParameters ? 1 : 0}`);
     w.webContents.on('render-process-gone', () => process.exit(0));
+  } else if (crashType === 'renderer-dynamic-keys') {
+    const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+    w.webContents.on('render-process-gone', () => process.exit(0));
+    w.webContents.on('did-finish-load', () => {
+      w.webContents.executeJavaScript(`
+        const { crashReporter } = require('electron');
+        for (let i = 0; i < 50; i++) {
+          crashReporter.addExtraParameter('dyn-key-' + i, 'val-' + i);
+        }
+        process.crash();
+      `);
+    });
+    w.loadURL('about:blank');
   } else if (crashType === 'node') {
     const crashPath = path.join(__dirname, 'node-crash.js');
     const child = childProcess.fork(crashPath, { silent: true });
