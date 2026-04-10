@@ -122,7 +122,7 @@ describe('Notification module', () => {
         title: 'title',
         body: 'body'
       });
-    }).to.throw(/id must be 64 characters or less/);
+    }).to.throw(/id exceeds Windows limit of 64 UTF-16 characters/);
   });
 
   ifit(process.platform === 'win32')('throws when groupId exceeds 64 characters', () => {
@@ -133,7 +133,18 @@ describe('Notification module', () => {
         title: 'title',
         body: 'body'
       });
-    }).to.throw(/groupId must be 64 characters or less/);
+    }).to.throw(/groupId exceeds Windows limit of 64 UTF-16 characters/);
+  });
+
+  ifit(process.platform === 'win32')('throws when groupTitle is set without groupId', () => {
+    expect(() => {
+      // eslint-disable-next-line no-new
+      new Notification({
+        groupTitle: 'My Group',
+        title: 'title',
+        body: 'body'
+      });
+    }).to.throw(/groupTitle requires groupId to be set/);
   });
 
   ifit(process.platform === 'win32')('accepts id and groupId at 64 characters', () => {
