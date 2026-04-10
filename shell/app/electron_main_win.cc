@@ -222,7 +222,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   CHECK_EQ(fiber_status, FiberStatus::kSuccess);
 #endif  // defined(ARCH_CPU_32_BITS)
 
-  if (!electron::CheckCommandLineArguments(command_line->argv()))
+  if (!electron::CheckCommandLineArguments(
+          electron::ElectronCommandLine::argv()))
     return -1;
 
   sandbox::SandboxInterfaceInfo sandbox_info = {nullptr};
