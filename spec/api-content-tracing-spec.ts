@@ -293,4 +293,23 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
       expect(asyncEvents).to.have.lengthOf.at.least(1, 'should have node.fs.async events from wildcard pattern');
     });
   });
+
+  describe('trace metadata', () => {
+    // These are necessary to be able to symbolicate heap dumps with third_party/catapult/tracing/bin/symbolize_trace.
+    it('includes product version and OS arch metadata in JSON output', async () => {
+      const config = {
+        excluded_categories: ['*']
+      };
+      await record(config, outputFilePath);
+
+      const content = fs.readFileSync(outputFilePath).toString();
+      const parsed = JSON.parse(content);
+
+      expect(parsed.metadata).to.be.an('object');
+      expect(parsed.metadata['product-version']).to.be.a('string');
+      expect(parsed.metadata['product-version'].startsWith(process.versions.chrome)).to.be.true();
+      expect(parsed.metadata['os-arch']).to.be.a('string');
+      expect(parsed.metadata['os-arch']).to.not.be.empty();
+    });
+  });
 });
