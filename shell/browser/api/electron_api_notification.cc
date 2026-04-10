@@ -102,12 +102,6 @@ Notification::~Notification() {
     notification_->set_delegate(nullptr);
 }
 
-namespace {
-// Windows toast Tag/Group limits (in wchar_t units)
-constexpr size_t kMaxIdLength = 64;
-constexpr size_t kMaxGroupIdLength = 64;
-}  // namespace
-
 // static
 gin_helper::Handle<Notification> Notification::New(
     gin_helper::ErrorThrower thrower,
@@ -121,6 +115,9 @@ gin_helper::Handle<Notification> Notification::New(
   // Validate id and groupId length before constructing.
   // Windows toast API has limits on Tag (64) and Group (64) lengths.
   // Check the UTF-16 length since that's what Windows uses.
+  constexpr size_t kMaxIdLength = 64;
+  constexpr size_t kMaxGroupIdLength = 64;
+
   gin::Dictionary opts(nullptr);
   if (args->PeekNext().IsEmpty() || args->PeekNext()->IsUndefined() ||
       gin::ConvertFromV8(thrower.isolate(), args->PeekNext(), &opts)) {
