@@ -47,6 +47,8 @@ void PowerMonitor::InitPlatformSpecificMonitors() {
   // we must explicitly register for its notifications.
   power_notify_handle_ = RegisterSuspendResumeNotification(
       static_cast<HANDLE>(window_), DEVICE_NOTIFY_WINDOW_HANDLE);
+  PLOG_IF(ERROR, !power_notify_handle_)
+      << "RegisterSuspendResumeNotification failed";
 }
 
 void PowerMonitor::DestroyPlatformSpecificMonitors() {
@@ -54,6 +56,7 @@ void PowerMonitor::DestroyPlatformSpecificMonitors() {
     WTSUnRegisterSessionNotification(window_);
     if (power_notify_handle_) {
       UnregisterSuspendResumeNotification(power_notify_handle_);
+      power_notify_handle_ = nullptr;
     }
     gfx::SetWindowUserData(window_, nullptr);
     DestroyWindow(window_);
