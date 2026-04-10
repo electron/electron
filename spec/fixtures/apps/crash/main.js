@@ -64,6 +64,53 @@ app.whenReady().then(() => {
       `);
     });
     w.loadURL('about:blank');
+  } else if (crashType === 'renderer-oom') {
+    const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+    w.webContents.on('render-process-gone', () => process.exit(0));
+    w.webContents.on('did-finish-load', () => {
+      w.webContents.executeJavaScript(`
+        function oomTrigger() {
+          const arr = [];
+          while (true) arr.push(new Array(10000).fill('x'.repeat(100)));
+        }
+        oomTrigger();
+      `);
+    });
+    w.loadURL('about:blank');
+  } else if (crashType === 'renderer-oom-json') {
+    const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+    w.webContents.on('render-process-gone', () => process.exit(0));
+    w.webContents.on('did-finish-load', () => {
+      w.webContents.executeJavaScript(`
+        function serializeData() {
+          const results = [];
+          while (true) {
+            const chunk = {};
+            for (let i = 0; i < 1000; i++) chunk['k' + i] = 'x'.repeat(500);
+            results.push(JSON.stringify(chunk));
+          }
+        }
+        serializeData();
+      `);
+    });
+    w.loadURL('about:blank');
+  } else if (crashType === 'renderer-oom-worker') {
+    const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+    w.webContents.on('render-process-gone', () => process.exit(0));
+    w.webContents.on('did-finish-load', () => {
+      w.webContents.executeJavaScript(`
+        const blob = new Blob([\`
+          function workerLeakMemory() {
+            const arr = [];
+            while (true) { arr.push(new Array(1000).fill("x".repeat(1000))); }
+          }
+          function triggerWorkerOom() { workerLeakMemory(); }
+          triggerWorkerOom();
+        \`], { type: 'application/javascript' });
+        const worker = new Worker(URL.createObjectURL(blob));
+      `);
+    });
+    w.loadURL('about:blank');
   } else if (crashType === 'node') {
     const crashPath = path.join(__dirname, 'node-crash.js');
     const child = childProcess.fork(crashPath, { silent: true });
