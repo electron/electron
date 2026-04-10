@@ -38,6 +38,9 @@ class WinFrameView : public FramelessView {
   gfx::Size GetMinimumSize() const override;
   gfx::Size GetMaximumSize() const override;
 
+  // views::FramelessView:
+  gfx::Insets RestoredFrameBorderInsets() const override;
+
   WinCaptionButtonContainer* caption_button_container() {
     return caption_button_container_;
   }
