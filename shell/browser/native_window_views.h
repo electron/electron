@@ -193,6 +193,7 @@ class NativeWindowViews : public NativeWindow,
   TaskbarHost& taskbar_host() { return taskbar_host_; }
   void UpdateThickFrame();
   void SetLayered();
+  bool has_thick_frame() const { return thick_frame_; }
 #endif
 
   SkColor overlay_button_color() const { return overlay_button_color_; }

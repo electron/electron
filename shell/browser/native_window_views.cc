@@ -439,13 +439,11 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (window)
     window->AddPreTargetHandler(this);
 
-#if BUILDFLAG(IS_LINUX)
-  // We need to set bounds again after widget init for two reasons:
-  // 1. For CSD windows, user-specified bounds need  to be inflated by frame
-  //    insets, but the frame view isn't available at first.
-  // 2. The widget clamps bounds to fit the screen, but we want to allow
-  //    windows larger than the display.
-  SetBounds(gfx::Rect(GetPosition(), size), false);
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
+  // The initial params.bounds was applied before the frame view existed, so
+  // non-client insets weren't accounted for and bounds need to be set again.
+  if (!GetRestoredFrameBorderInsets().IsEmpty())
+    SetBounds(gfx::Rect(GetPosition(), size), false);
 #endif
 }
 
@@ -905,7 +903,9 @@ gfx::Rect NativeWindowViews::GetNormalBounds() const {
   if (IsMaximized() && transparent())
     return restore_bounds_;
 #endif
-  return WidgetToLogicalBounds(widget()->GetRestoredBounds());
+  gfx::Rect bounds = widget()->GetRestoredBounds();
+  bounds.Inset(GetRestoredFrameBorderInsets());
+  return bounds;
 }
 
 void NativeWindowViews::SetContentSizeConstraints(
@@ -1675,17 +1675,24 @@ NativeWindowHandle NativeWindowViews::GetNativeWindowHandle() const {
 
 gfx::Rect NativeWindowViews::LogicalToWidgetBounds(
     const gfx::Rect& bounds) const {
+  // Use widget() directly since NativeWindowViews::IsMaximized() can
+  // call GetBounds and end up in a loop.
+  if (widget()->IsMaximized() || widget()->IsFullscreen())
+    return bounds;
+
   gfx::Rect widget_bounds(bounds);
   const gfx::Insets frame_insets = GetRestoredFrameBorderInsets();
   widget_bounds.Outset(
       gfx::Outsets::TLBR(frame_insets.top(), frame_insets.left(),
                          frame_insets.bottom(), frame_insets.right()));
-
   return widget_bounds;
 }
 
 gfx::Rect NativeWindowViews::WidgetToLogicalBounds(
     const gfx::Rect& bounds) const {
+  if (widget()->IsMaximized() || widget()->IsFullscreen())
+    return bounds;
+
   gfx::Rect logical_bounds(bounds);
   logical_bounds.Inset(GetRestoredFrameBorderInsets());
   return logical_bounds;
