@@ -10,6 +10,7 @@
 #include <string_view>
 
 #include "base/logging.h"
+#include "base/memory/raw_ptr.h"
 #include "base/strings/string_number_conversions.h"
 #include "electron/mas.h"
 #include "shell/common/crash_keys.h"
@@ -25,8 +26,12 @@ namespace electron {
 
 namespace {
 
-std::atomic<bool> g_is_in_oom{false};
-std::atomic<v8::Isolate*> g_registered_isolate{nullptr};
+struct OomState {
+  raw_ptr<v8::Isolate> isolate;
+  std::atomic<bool> is_in_oom{false};
+};
+
+constinit thread_local OomState* g_oom_state = nullptr;
 
 std::string FormatStackTrace(v8::Isolate* isolate,
                              v8::Local<v8::StackTrace> stack) {
@@ -62,6 +67,9 @@ std::string FormatStackTrace(v8::Isolate* isolate,
   return result;
 }
 
+// Runs at the next V8 safe point after the heap limit was hit.
+// At a safe point, all frames have deoptimization data available,
+// so CurrentStackTrace won't FATAL on optimized frames.
 void CaptureStackOnInterrupt(v8::Isolate* isolate, void* data) {
   if (!isolate->InContext()) {
     return;
@@ -69,6 +77,12 @@ void CaptureStackOnInterrupt(v8::Isolate* isolate, void* data) {
 
   v8::HeapStatistics stats;
   isolate->GetHeapStatistics(&stats);
+  // CurrentStackTrace allocates StackTraceInfo + StackFrameInfo objects on the
+  // V8 managed heap. If the 20 MB bump from NearHeapLimitCallback has been
+  // partially consumed by the time this interrupt fires, these allocations
+  // could trigger a secondary OOM. Check headroom before proceeding.
+  // Note: use addition form to avoid unsigned underflow -- in OOM scenarios,
+  // used_heap_size can transiently exceed heap_size_limit.
   constexpr size_t kMinHeadroom = 2 * 1024 * 1024;  // 2 MB
   if (stats.used_heap_size() + kMinHeadroom > stats.heap_size_limit()) {
     LOG(ERROR) << "Skipping JS stack capture: insufficient heap headroom";
@@ -93,15 +107,18 @@ void CaptureStackOnInterrupt(v8::Isolate* isolate, void* data) {
 }
 
 // V8's pointer compression cage limits the heap to kPtrComprCageReservationSize
-// (~4 GB). After this callback returns a new limit, V8 clamps it to at most
-// that cage size. If current_heap_limit is already near the ceiling the bump
-// is effectively zero and the interrupt never fires. Fall back to heap info.
+// (~4 GB). After this callback returns a new limit, V8 clamps it via
+// Heap::AllocatorLimitOnMaxOldGenerationSize() to at most that cage size.
+// If current_heap_limit is already near the ceiling the bump is effectively
+// zero, the interrupt never gets enough headroom to fire, and we never capture
+// a stack trace. When that happens we fall back to recording heap info only.
 size_t NearHeapLimitCallback(void* data,
                              size_t current_heap_limit,
                              size_t initial_heap_limit) {
-  auto* isolate = static_cast<v8::Isolate*>(data);
+  auto* state = static_cast<OomState*>(data);
+  v8::Isolate* isolate = state->isolate;
 
-  if (g_is_in_oom.exchange(true)) {
+  if (state->is_in_oom.exchange(true)) {
     return current_heap_limit;
   }
 
@@ -162,7 +179,14 @@ size_t NearHeapLimitCallback(void* data,
   }
 #endif
 
-  isolate->RequestInterrupt(CaptureStackOnInterrupt, nullptr);
+  // Request an interrupt to capture the JS stack at the next safe point,
+  // where optimized frames have deoptimization data available.
+  // CurrentStackTrace is unsafe to call directly here because V8 may
+  // FATAL on optimized frames missing deopt info during OOM.
+  isolate->RequestInterrupt(CaptureStackOnInterrupt, state);
+
+  // Remove ourselves and bump the limit to give V8 room to reach a safe
+  // point where the interrupt can fire and capture the stack trace.
   isolate->RemoveNearHeapLimitCallback(NearHeapLimitCallback, 0);
 
   constexpr size_t kHeapBump = 20 * 1024 * 1024;
@@ -175,6 +199,8 @@ size_t NearHeapLimitCallback(void* data,
 #endif
 
   if (current_heap_limit >= kCageLimit - kHeapBump) {
+    // The bump will be clamped by V8 to the cage ceiling, leaving no
+    // headroom for the interrupt to fire. Record what we can now.
 #if !IS_MAS_BUILD()
     crash_keys::SetCrashKey("electron.v8-oom.stack",
                             heap_info + " (at cage limit, stack unavailable)");
@@ -188,11 +214,20 @@ size_t NearHeapLimitCallback(void* data,
 }  // namespace
 
 void RegisterOomStackTraceCallback(v8::Isolate* isolate) {
-  v8::Isolate* expected = nullptr;
-  if (!g_registered_isolate.compare_exchange_strong(expected, isolate)) {
+  if (g_oom_state)
     return;
+  g_oom_state = new OomState{isolate};
+  isolate->AddNearHeapLimitCallback(NearHeapLimitCallback, g_oom_state);
+}
+
+void UnregisterOomStackTraceCallback(v8::Isolate* isolate) {
+  if (!g_oom_state || g_oom_state->isolate != isolate)
+    return;
+  if (!g_oom_state->is_in_oom.load()) {
+    isolate->RemoveNearHeapLimitCallback(NearHeapLimitCallback, 0);
   }
-  isolate->AddNearHeapLimitCallback(NearHeapLimitCallback, isolate);
+  delete g_oom_state;
+  g_oom_state = nullptr;
 }
 
 }  // namespace electron

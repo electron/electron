@@ -32,6 +32,17 @@ app.whenReady().then(() => {
           JSON.stringify(big);
         }
         serializeData();
+      `,
+      'worker-leak': `
+        const blob = new Blob([\`
+          function workerLeakMemory() {
+            const arr = [];
+            while (true) { arr.push(new Array(1000).fill("x".repeat(1000))); }
+          }
+          function triggerWorkerOom() { workerLeakMemory(); }
+          triggerWorkerOom();
+        \`], { type: 'application/javascript' });
+        const worker = new Worker(URL.createObjectURL(blob));
       `
     };
     w.webContents.executeJavaScript(scripts[scenario] || scripts.leak).catch(() => {});
