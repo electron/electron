@@ -997,7 +997,7 @@ std::string App::GetLocaleCountryCode() {
   }
 #elif BUILDFLAG(IS_MAC)
   CFLocaleRef locale = CFLocaleCopyCurrent();
-  CFStringRef value =
+  auto value =
       static_cast<CFStringRef>(CFLocaleGetValue(locale, kCFLocaleCountryCode));
   if (value != nil) {
     char temporaryCString[3];
