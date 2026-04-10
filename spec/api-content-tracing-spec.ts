@@ -185,4 +185,112 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
       expect(parsed.traceEvents.some((x: any) => x.cat === 'disabled-by-default-v8.cpu_profiler' && x.name === 'ProfileChunk')).to.be.true();
     });
   });
+
+  describe('node trace categories', () => {
+    it('captures performance.mark() as instant trace events', async function () {
+      const { performance } = require('node:perf_hooks');
+
+      await contentTracing.startRecording({
+        included_categories: ['node.perf.usertiming']
+      });
+
+      performance.mark('test-trace-mark');
+
+      const resultPath = await contentTracing.stopRecording();
+      const data = fs.readFileSync(resultPath, 'utf8');
+      const parsed = JSON.parse(data);
+
+      const markEvents = parsed.traceEvents.filter(
+        (x: any) => x.cat === 'node.perf.usertiming' && x.name === 'test-trace-mark'
+      );
+      expect(markEvents).to.have.lengthOf.at.least(1, 'should have node.perf.usertiming events for performance.mark()');
+      expect(markEvents[0].ph).to.equal('I', 'performance.mark() should emit instant (I) phase events');
+    });
+
+    it('captures performance.measure() as nestable async begin/end trace events', async function () {
+      const { performance } = require('node:perf_hooks');
+
+      await contentTracing.startRecording({
+        included_categories: ['node.perf.usertiming']
+      });
+
+      performance.mark('trace-measure-start');
+      await setTimeout(100);
+      performance.mark('trace-measure-end');
+      performance.measure('test-trace-measure', 'trace-measure-start', 'trace-measure-end');
+
+      const resultPath = await contentTracing.stopRecording();
+      const data = fs.readFileSync(resultPath, 'utf8');
+      const parsed = JSON.parse(data);
+
+      const measureEvents = parsed.traceEvents.filter(
+        (x: any) => x.cat === 'node.perf.usertiming' && x.name === 'test-trace-measure'
+      );
+      expect(measureEvents.some((x: any) => x.ph === 'b')).to.be.true('should have nestable async begin (b) event');
+      expect(measureEvents.some((x: any) => x.ph === 'e')).to.be.true('should have nestable async end (e) event');
+    });
+
+    it('captures node.fs.sync trace events for file operations', async function () {
+      await contentTracing.startRecording({
+        included_categories: ['node.fs.sync']
+      });
+
+      fs.readFileSync(__filename, 'utf8');
+
+      const resultPath = await contentTracing.stopRecording();
+      const data = fs.readFileSync(resultPath, 'utf8');
+      const parsed = JSON.parse(data);
+
+      const fsEvents = parsed.traceEvents.filter(
+        (x: any) => typeof x.cat === 'string' && x.cat.includes('node.fs.sync')
+      );
+      expect(fsEvents).to.have.lengthOf.at.least(1, 'should have node.fs.sync trace events');
+    });
+
+    it('captures multiple node categories simultaneously', async function () {
+      const vm = require('node:vm');
+
+      await contentTracing.startRecording({
+        included_categories: ['node.async_hooks', 'node.vm.script']
+      });
+
+      vm.runInNewContext('1 + 1');
+      await fs.promises.readFile(__filename, 'utf8');
+
+      const resultPath = await contentTracing.stopRecording();
+      const data = fs.readFileSync(resultPath, 'utf8');
+      const parsed = JSON.parse(data);
+
+      const asyncHooksEvents = parsed.traceEvents.filter(
+        (x: any) => typeof x.cat === 'string' && x.cat.includes('node.async_hooks')
+      );
+      const vmEvents = parsed.traceEvents.filter(
+        (x: any) => typeof x.cat === 'string' && x.cat.includes('node.vm.script')
+      );
+      expect(asyncHooksEvents).to.have.lengthOf.at.least(1, 'should have node.async_hooks events');
+      expect(vmEvents).to.have.lengthOf.at.least(1, 'should have node.vm.script events');
+    });
+
+    it('captures events using wildcard category pattern node.fs.*', async function () {
+      await contentTracing.startRecording({
+        included_categories: ['node.fs.*']
+      });
+
+      fs.readFileSync(__filename, 'utf8');
+      await fs.promises.readFile(__filename, 'utf8');
+
+      const resultPath = await contentTracing.stopRecording();
+      const data = fs.readFileSync(resultPath, 'utf8');
+      const parsed = JSON.parse(data);
+
+      const syncEvents = parsed.traceEvents.filter(
+        (x: any) => typeof x.cat === 'string' && x.cat.includes('node.fs.sync')
+      );
+      const asyncEvents = parsed.traceEvents.filter(
+        (x: any) => typeof x.cat === 'string' && x.cat.includes('node.fs.async')
+      );
+      expect(syncEvents).to.have.lengthOf.at.least(1, 'should have node.fs.sync events from wildcard pattern');
+      expect(asyncEvents).to.have.lengthOf.at.least(1, 'should have node.fs.async events from wildcard pattern');
+    });
+  });
 });
