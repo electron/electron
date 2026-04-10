@@ -176,4 +176,44 @@ describe('cpp heap', () => {
       expect(result).to.equal(true);
     });
   });
+
+  describe('powerMonitor module', () => {
+    it('should retain native PowerMonitor via JS module reference', async () => {
+      const rc = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await rc.remotely(async (heap: string) => {
+        const { powerMonitor, app } = require('electron');
+        const { recordState } = require(heap);
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        // Register a listener to trigger native PowerMonitor creation.
+        const listener = () => {};
+        powerMonitor.on('suspend', listener);
+
+        // Add and remove several listeners to exercise the path,
+        // then GC to ensure no duplicate native objects are created.
+        for (let i = 0; i < 5; i++) {
+          const tmp = () => {};
+          powerMonitor.on('resume', tmp);
+          powerMonitor.removeListener('resume', tmp);
+        }
+
+        v8Util.requestGarbageCollectionForTesting();
+
+        const state = recordState();
+        const nodes = state.snapshot.filter(
+          (node: any) => node.name === 'Electron / PowerMonitor'
+        );
+        const found = nodes.length > 0;
+        const noDuplicates = nodes.length === 1;
+
+        setTimeout(() => app.quit());
+        return { found, noDuplicates };
+      }, path.join(__dirname, '../../third_party/electron_node/test/common/heap'));
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+      expect(result.found).to.equal(true, 'PowerMonitor should be in snapshot (held by JS module)');
+      expect(result.noDuplicates).to.equal(true, 'should have exactly one PowerMonitor instance');
+    });
+  });
 });
