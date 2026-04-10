@@ -6,10 +6,9 @@ import { streamArray as streamJsonStreamArray } from 'stream-json/streamers/Stre
 
 import * as childProcess from 'node:child_process';
 import * as fs from 'node:fs';
-import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { chunkFilenames, findMatchingFiles } from './lib/utils';
+import { chunkFilenames, findMatchingFiles, getDepotToolsEnv } from './lib/utils';
 
 const SOURCE_ROOT = path.normalize(path.dirname(__dirname));
 const LLVM_BIN = path.resolve(
@@ -20,7 +19,6 @@ const LLVM_BIN = path.resolve(
   'Release+Asserts',
   'bin'
 );
-const PLATFORM = os.platform();
 
 type SpawnAsyncResult = {
   stdout: string;
@@ -61,53 +59,6 @@ async function spawnAsync (
       reject(err);
     }
   });
-}
-
-function getDepotToolsEnv (): NodeJS.ProcessEnv {
-  let depotToolsEnv;
-
-  const findDepotToolsOnPath = () => {
-    const result = childProcess.spawnSync(
-      PLATFORM === 'win32' ? 'where' : 'which',
-      ['gclient']
-    );
-
-    if (result.status === 0) {
-      return process.env;
-    }
-  };
-
-  const checkForBuildTools = () => {
-    const result = childProcess.spawnSync(
-      'electron-build-tools',
-      ['show', 'env', '--json'],
-      { shell: true }
-    );
-
-    if (result.status === 0) {
-      return {
-        ...process.env,
-        ...JSON.parse(result.stdout.toString().trim())
-      };
-    }
-  };
-
-  try {
-    depotToolsEnv = findDepotToolsOnPath();
-    if (!depotToolsEnv) depotToolsEnv = checkForBuildTools();
-  } catch {}
-
-  if (!depotToolsEnv) {
-    throw new Error("Couldn't find depot_tools, ensure it's on your PATH");
-  }
-
-  if (!('CHROMIUM_BUILDTOOLS_PATH' in depotToolsEnv)) {
-    throw new Error(
-      'CHROMIUM_BUILDTOOLS_PATH environment variable must be set'
-    );
-  }
-
-  return depotToolsEnv;
 }
 
 async function runClangTidy (
