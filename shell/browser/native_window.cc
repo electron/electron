@@ -31,11 +31,6 @@
 #include "shell/browser/ui/views/frameless_view.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/display/win/screen_win.h"
-#include "ui/views/views_features.h"
-#endif
-
 #if defined(USE_OZONE)
 #include "ui/base/ui_base_features.h"
 #include "ui/ozone/public/ozone_platform.h"
@@ -70,31 +65,6 @@ struct Converter<electron::NativeWindow::TitleBarStyle> {
 }  // namespace gin
 
 namespace electron {
-
-namespace {
-
-#if BUILDFLAG(IS_WIN)
-gfx::Size GetExpandedWindowSize(const NativeWindow* window,
-                                bool transparent,
-                                gfx::Size size) {
-  if (!base::FeatureList::IsEnabled(
-          views::features::kEnableTransparentHwndEnlargement) ||
-      !transparent) {
-    return size;
-  }
-
-  gfx::Size min_size = display::win::GetScreenWin()->ScreenToDIPSize(
-      window->GetAcceleratedWidget(), gfx::Size{64, 64});
-
-  // Some AMD drivers can't display windows that are less than 64x64 pixels,
-  // so expand them to be at least that size. http://crbug.com/286609
-  gfx::Size expanded(std::max(size.width(), min_size.width()),
-                     std::max(size.height(), min_size.height()));
-  return expanded;
-}
-#endif
-
-}  // namespace
 
 NativeWindow::NativeWindow(const int32_t base_window_id,
                            const gin_helper::Dictionary& options,
@@ -398,15 +368,7 @@ gfx::Size NativeWindow::GetContentMinimumSize() const {
 }
 
 gfx::Size NativeWindow::GetContentMaximumSize() const {
-  const auto size_constraints = GetContentSizeConstraints();
-  gfx::Size maximum_size = size_constraints.GetMaximumSize();
-
-#if BUILDFLAG(IS_WIN)
-  if (size_constraints.HasMaximumSize())
-    maximum_size = GetExpandedWindowSize(this, transparent(), maximum_size);
-#endif
-
-  return maximum_size;
+  return GetContentSizeConstraints().GetMaximumSize();
 }
 
 void NativeWindow::SetSheetOffset(const double offsetX, const double offsetY) {
