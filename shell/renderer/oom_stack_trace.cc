@@ -5,9 +5,9 @@
 #include "shell/renderer/oom_stack_trace.h"
 
 #include <atomic>
-#include <cstdio>
 #include <string>
 
+#include "base/logging.h"
 #include "electron/mas.h"
 #include "shell/common/crash_keys.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
@@ -78,9 +78,8 @@ void CaptureStackOnInterrupt(v8::Isolate* isolate, void* data) {
 #if !IS_MAS_BUILD()
     crash_keys::SetCrashKey("electron.v8-oom.stack", js_stack);
 #endif
-    fprintf(stderr, "\n<--- JS stacktrace (captured at safe point) --->\n%s\n",
-            js_stack.c_str());
-    fflush(stderr);
+    LOG(ERROR) << "\n<--- JS stacktrace (captured at safe point) --->\n"
+               << js_stack;
   }
 }
 
@@ -98,8 +97,7 @@ size_t NearHeapLimitCallback(void* data,
   std::string heap_info = absl::StrFormat("Heap: used=%.1fMB limit=%.1fMB",
                                           stats.used_heap_size() / 1048576.0,
                                           stats.heap_size_limit() / 1048576.0);
-  fprintf(stderr, "\n<--- Near heap limit --->\n%s\n", heap_info.c_str());
-  fflush(stderr);
+  LOG(ERROR) << "\n<--- Near heap limit --->\n" << heap_info;
 
 #if !IS_MAS_BUILD()
   crash_keys::SetCrashKey("electron.v8-oom.stack",
