@@ -133,10 +133,10 @@ index 6fe4f0492dc1f3eaf576c8ff7866080a54cb81c1..41e8e052ff81df78ece87163b0499966
    // Recreate the buffer in the constructor.
    InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
 diff --git a/src/env.cc b/src/env.cc
-index b5cf58cc953590493beb52abf249e33e486ffc46..347ec5c42e098186ff489dff199ac5989961f6e3 100644
+index a0ea0d9c331086df688cb1fbcfe0071af0653548..e4b9f29ebfb7599a106c8e209950caf18b59d2a3 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -1765,10 +1765,10 @@ void AsyncHooks::Deserialize(Local<Context> context) {
+@@ -1774,10 +1774,10 @@ void AsyncHooks::Deserialize(Local<Context> context) {
          context->GetDataFromSnapshotOnce<Array>(
              info_->js_execution_async_resources).ToLocalChecked();
    } else {
@@ -149,7 +149,7 @@ index b5cf58cc953590493beb52abf249e33e486ffc46..347ec5c42e098186ff489dff199ac598
  
    // The native_execution_async_resources_ field requires v8::Local<> instances
    // for async calls whose resources were on the stack as JS objects when they
-@@ -1808,7 +1808,7 @@ AsyncHooks::SerializeInfo AsyncHooks::Serialize(Local<Context> context,
+@@ -1817,7 +1817,7 @@ AsyncHooks::SerializeInfo AsyncHooks::Serialize(Local<Context> context,
    info.async_id_fields = async_id_fields_.Serialize(context, creator);
    if (!js_execution_async_resources_.IsEmpty()) {
      info.js_execution_async_resources = creator->AddData(
@@ -458,7 +458,7 @@ index fea0426496978c0003fe1481afcf93fc9c23edca..c9588880d05435ab9f4e23fcff74c933
  
    CHECK(
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 3c234205e89be7e976dae5c3fcc73ca67953e034..e66d4fcb0c064f96cdb819c783027d864fe88d12 100644
+index d54ef53c9b58017673dc22c84d41ca9682b7a7cd..fe8e2ebed1e69cd947f48913787c99e58d56043d 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
 @@ -113,7 +113,7 @@ namespace {
@@ -479,7 +479,7 @@ index 3c234205e89be7e976dae5c3fcc73ca67953e034..e66d4fcb0c064f96cdb819c783027d86
  
    PropertyAttribute attributes = PropertyAttribute::None;
    bool is_declared =
-@@ -1666,7 +1666,7 @@ static MaybeLocal<Function> CompileFunctionForCJSLoader(
+@@ -1670,7 +1670,7 @@ static MaybeLocal<Function> CompileFunctionForCJSLoader(
      bool* cache_rejected,
      bool is_cjs_scope,
      ScriptCompiler::CachedData* cached_data) {
@@ -533,10 +533,10 @@ index 55a0c986c5b6989ee9ce277bb6a9778abb2ad2ee..809d88f21e5572807e38132d40ee7587
    READONLY_PROPERTY(target, "exitCodes", exit_codes);
  
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 96aac2d86695732bf6805f2ad2168a62241b5045..547455bb5011677719a8de1f98cb447561bce6aa 100644
+index fed1a6754b3c636e0eb1150c3ef6a720d9b4a439..5619c1691fb3e14176c7e11a6d6f4f014dd86fb4 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -3850,7 +3850,7 @@ void BindingData::Deserialize(Local<Context> context,
+@@ -3863,7 +3863,7 @@ void BindingData::Deserialize(Local<Context> context,
                                int index,
                                InternalFieldInfoBase* info) {
    DCHECK_IS_SNAPSHOT_SLOT(index);
