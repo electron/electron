@@ -458,6 +458,14 @@ describe('asar package', function () {
         expect(stats.size).to.equal(0);
       });
 
+      itremote('returns stat properties with types matching a real file', function () {
+        const asarStats = fs.lstatSync(path.join(asarDir, 'a.asar', 'file1'));
+        const realStats = fs.lstatSync(path.join(fixtures, 'test.asar', 'a.asar'));
+        for (const key of Object.keys(realStats) as (keyof typeof realStats)[]) {
+          expect(typeof asarStats[key]).to.equal(typeof realStats[key], `typeof stats.${key}`);
+        }
+      });
+
       itremote('returns information of root with stats as bigint', function () {
         const p = path.join(asarDir, 'a.asar');
         const stats = fs.lstatSync(p, { bigint: false });

@@ -135,10 +135,10 @@ const asarStatsToFsStats = function (stats: NodeJS.AsarFileStat) {
     uid,
     gid,
     0, // rdev
-    undefined, // blksize
+    4096, // blksize
     ++nextInode, // ino
     stats.size,
-    undefined, // blocks,
+    Math.ceil(stats.size / 512), // blocks (512-byte units)
     fakeTime.getTime(), // atim_msec
     fakeTime.getTime(), // mtim_msec
     fakeTime.getTime(), // ctim_msec
