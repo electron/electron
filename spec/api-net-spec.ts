@@ -927,6 +927,18 @@ describe('net module', () => {
         await once(urlRequest, 'error');
       });
 
+      test('should emit an error when redirected from http to file:', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          response.statusCode = 302;
+          response.setHeader('Location', 'file:///');
+          response.end();
+        });
+        const urlRequest = net.request({ url: serverUrl });
+        urlRequest.end();
+        const [err] = await once(urlRequest, 'error');
+        expect(String(err)).to.match(/ERR_UNSAFE_REDIRECT/);
+      });
+
       test('should follow redirect when handler calls callback', async () => {
         const serverUrl = await respondOnce.toRoutes({
           '/redirectChain': (request, response) => {
@@ -1596,6 +1608,56 @@ describe('net module', () => {
         test('should reject promise on DNS failure', async () => {
           const r = net.fetch('https://i.do.not.exist');
           await expect(r).to.be.rejectedWith(/ERR_NAME_NOT_RESOLVED/);
+        });
+
+        test('should follow a redirect to another http origin', async () => {
+          const targetUrl = await respondOnce.toSingleURL((req, res) => {
+            res.end('redirected');
+          });
+          const serverUrl = await respondOnce.toSingleURL((req, res) => {
+            res.statusCode = 302;
+            res.setHeader('Location', targetUrl);
+            res.end();
+          });
+          const resp = await net.fetch(serverUrl);
+          expect(resp.status).to.equal(200);
+          expect(await resp.text()).to.equal('redirected');
+        });
+
+        test('should reject a redirect from http to file:', async () => {
+          const serverUrl = await respondOnce.toSingleURL((req, res) => {
+            res.statusCode = 302;
+            res.setHeader('Location', 'file:///');
+            res.end();
+          });
+          await expect(net.fetch(serverUrl)).to.be.rejectedWith(/ERR_UNSAFE_REDIRECT/);
+        });
+
+        test('should reject a redirect from http to data:', async () => {
+          const serverUrl = await respondOnce.toSingleURL((req, res) => {
+            res.statusCode = 302;
+            res.setHeader('Location', 'data:text/plain,hello');
+            res.end();
+          });
+          await expect(net.fetch(serverUrl)).to.be.rejectedWith(/ERR_UNSAFE_REDIRECT/);
+        });
+
+        test('should reject a redirect from http to about:', async () => {
+          const serverUrl = await respondOnce.toSingleURL((req, res) => {
+            res.statusCode = 302;
+            res.setHeader('Location', 'about:blank');
+            res.end();
+          });
+          await expect(net.fetch(serverUrl)).to.be.rejectedWith(/ERR_UNSAFE_REDIRECT/);
+        });
+
+        test('should reject a redirect from http to blob:', async () => {
+          const serverUrl = await respondOnce.toSingleURL((req, res) => {
+            res.statusCode = 302;
+            res.setHeader('Location', 'blob:https://example.com/00000000-0000-0000-0000-000000000000');
+            res.end();
+          });
+          await expect(net.fetch(serverUrl)).to.be.rejectedWith(/ERR_UNSAFE_REDIRECT/);
         });
 
         test('should reject body promise when stream fails', async () => {
