@@ -133,7 +133,12 @@ int NodeMain() {
   }
 
 #if BUILDFLAG(IS_MAC)
-  if (!ProcessSignatureIsSameWithCurrentApp(getppid())) {
+  // Capture the parent's audit token as early as possible. The audit token
+  // (unlike a raw PID) is bound to a single process instance.
+  std::optional<audit_token_t> parent_audit_token =
+      GetParentProcessAuditToken();
+  if (!parent_audit_token ||
+      !ProcessSignatureIsSameWithCurrentApp(*parent_audit_token)) {
     // On macOS, it is forbidden to run sandboxed app with custom arguments
     // from another app, i.e. args are discarded in following call:
     //   exec("Sandboxed.app", ["--custom-args-will-be-discarded"])
