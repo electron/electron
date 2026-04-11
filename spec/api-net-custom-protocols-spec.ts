@@ -55,6 +55,31 @@ describe('net module custom protocols', () => {
     expect(body).to.equal('hello electron-test://bar');
   });
 
+  it('can be redirected from http to a custom scheme', async () => {
+    protocol.interceptStringProtocol('http', (req, cb) => { cb({ statusCode: 302, headers: { location: 'electron-test://bar' } }); });
+    defer(() => {
+      protocol.uninterceptProtocol('http');
+    });
+    protocol.registerStringProtocol('electron-test', (req, cb) => { cb('hello ' + req.url); });
+    defer(() => {
+      protocol.unregisterProtocol('electron-test');
+    });
+    const body = await net.fetch('http://foo').then(r => r.text());
+    expect(body).to.equal('hello electron-test://bar');
+  });
+
+  it('can be redirected from file to file', async () => {
+    protocol.interceptStringProtocol('file', (req, cb) => {
+      if (/\/redirect-me$/.test(req.url)) return cb({ statusCode: 302, headers: { location: 'file:///target' } });
+      cb('redirected-to ' + req.url);
+    });
+    defer(() => {
+      protocol.uninterceptProtocol('file');
+    });
+    const body = await net.fetch('file:///redirect-me').then(r => r.text());
+    expect(body).to.equal('redirected-to file:///target');
+  });
+
   it('should not follow redirect when redirect: error', async () => {
     protocol.registerStringProtocol('electron-test', (req, cb) => {
       if (/redirect/.test(req.url)) return cb({ statusCode: 302, headers: { location: 'electron-test://bar' } });
