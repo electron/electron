@@ -372,6 +372,33 @@ describe('contextBridge', () => {
         expect(result).to.equal(123);
       });
 
+      it('should proxy promises correctly when Function.prototype has been overridden in the main world', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            getPromise: () => Promise.resolve('proxied-ok')
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          return new Promise(resolve => {
+            let observed = false;
+            const original = Function.prototype.bind;
+            // eslint-disable-next-line no-extend-native
+            Function.prototype.bind = new Proxy(original, {
+              apply (target, thisArg, args) {
+                observed = true;
+                return Reflect.apply(target, thisArg, args);
+              }
+            });
+            root.example.getPromise().then((v: string) => {
+              // eslint-disable-next-line no-extend-native
+              Function.prototype.bind = original;
+              resolve({ observed, value: v });
+            });
+          });
+        });
+        expect(result).to.deep.equal({ observed: false, value: 'proxied-ok' });
+      });
+
       it('should proxy methods', async () => {
         await makeBindingWindow(() => {
           contextBridge.exposeInMainWorld('example', {
