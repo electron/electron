@@ -1343,15 +1343,12 @@ v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   return cookies_.Get(isolate);
 }
 
-v8::Local<v8::Value> Session::Extensions(v8::Isolate* isolate) {
+api::Extensions* Session::Extensions(v8::Isolate* isolate) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  if (extensions_.IsEmptyThreadSafe()) {
-    v8::Local<v8::Value> handle;
-    handle = Extensions::Create(isolate, browser_context()).ToV8();
-    extensions_.Reset(isolate, handle);
-  }
+  if (!extensions_)
+    extensions_ = Extensions::Create(isolate, browser_context());
 #endif
-  return extensions_.Get(isolate);
+  return extensions_.Get();
 }
 
 api::Protocol* Session::Protocol() {

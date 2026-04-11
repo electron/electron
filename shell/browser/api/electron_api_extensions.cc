@@ -8,7 +8,6 @@
 #include "extensions/browser/extension_registry.h"
 #include "gin/data_object_builder.h"
 #include "gin/object_template_builder.h"
-#include "shell/browser/api/electron_api_extensions.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/browser/javascript_environment.h"
@@ -17,17 +16,17 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_util.h"
+#include "v8/include/cppgc/allocation.h"
 
 namespace electron::api {
 
-gin::DeprecatedWrapperInfo Extensions::kWrapperInfo = {gin::kEmbedderNativeGin};
+const gin::WrapperInfo Extensions::kWrapperInfo = {{gin::kEmbedderNativeGin},
+                                                   gin::kElectronExtensions};
 
-Extensions::Extensions(v8::Isolate* isolate,
-                       ElectronBrowserContext* browser_context)
-    : browser_context_(browser_context) {
+Extensions::Extensions(ElectronBrowserContext* browser_context)
+    : browser_context_{browser_context} {
   extensions::ExtensionRegistry::Get(browser_context)->AddObserver(this);
 }
 
@@ -36,11 +35,10 @@ Extensions::~Extensions() {
 }
 
 // static
-gin_helper::Handle<Extensions> Extensions::Create(
-    v8::Isolate* isolate,
-    ElectronBrowserContext* browser_context) {
-  return gin_helper::CreateHandle(isolate,
-                                  new Extensions(isolate, browser_context));
+Extensions* Extensions::Create(v8::Isolate* isolate,
+                               ElectronBrowserContext* browser_context) {
+  return cppgc::MakeGarbageCollected<Extensions>(
+      isolate->GetCppHeap()->GetAllocationHandle(), browser_context);
 }
 
 v8::Local<v8::Promise> Extensions::LoadExtension(
@@ -152,8 +150,12 @@ gin::ObjectTemplateBuilder Extensions::GetObjectTemplateBuilder(
       .SetMethod("getAllExtensions", &Extensions::GetAllExtensions);
 }
 
-const char* Extensions::GetTypeName() {
-  return "Extensions";
+const gin::WrapperInfo* Extensions::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* Extensions::GetHumanReadableName() const {
+  return "Electron / Extensions";
 }
 
 }  // namespace electron::api
