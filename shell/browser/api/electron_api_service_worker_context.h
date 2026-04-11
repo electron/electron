@@ -11,8 +11,9 @@
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/service_worker_context_observer.h"
 #include "content/public/browser/storage_partition_config.h"
+#include "gin/weak_cell.h"
+#include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
-#include "shell/common/gin_helper/wrappable.h"
 #include "third_party/blink/public/common/service_worker/embedded_worker_status.h"
 #include "third_party/blink/public/common/tokens/tokens.h"
 
@@ -32,13 +33,12 @@ namespace api {
 class ServiceWorkerMain;
 
 class ServiceWorkerContext final
-    : public gin_helper::DeprecatedWrappable<ServiceWorkerContext>,
+    : public gin::Wrappable<ServiceWorkerContext>,
       public gin_helper::EventEmitterMixin<ServiceWorkerContext>,
       private content::ServiceWorkerContextObserver {
  public:
-  static gin_helper::Handle<ServiceWorkerContext> Create(
-      v8::Isolate* isolate,
-      ElectronBrowserContext* browser_context);
+  static ServiceWorkerContext* Create(v8::Isolate* isolate,
+                                      ElectronBrowserContext* browser_context);
 
   v8::Local<v8::Value> GetAllRunningWorkerInfo(v8::Isolate* isolate);
   v8::Local<v8::Value> GetInfoFromVersionID(gin_helper::ErrorThrower thrower,
@@ -77,17 +77,19 @@ class ServiceWorkerContext final
   void OnVersionRedundant(int64_t version_id, const GURL& scope) override;
   void OnDestruct(content::ServiceWorkerContext* context) override;
 
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  // gin::Wrappable
+  static const gin::WrapperInfo kWrapperInfo;
+  static const char* GetClassName() { return "ServiceWorkerContext"; }
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
+  void Trace(cppgc::Visitor*) const override;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
 
   // disable copy
   ServiceWorkerContext(const ServiceWorkerContext&) = delete;
   ServiceWorkerContext& operator=(const ServiceWorkerContext&) = delete;
 
- protected:
   explicit ServiceWorkerContext(v8::Isolate* isolate,
                                 ElectronBrowserContext* browser_context);
   ~ServiceWorkerContext() override;
@@ -106,7 +108,7 @@ class ServiceWorkerContext final
   // Used in ServiceWorkerMain lookups.
   const content::StoragePartitionConfig storage_partition_config_;
 
-  base::WeakPtrFactory<ServiceWorkerContext> weak_ptr_factory_{this};
+  gin::WeakCellFactory<ServiceWorkerContext> weak_factory_{this};
 };
 
 }  // namespace api
