@@ -14,6 +14,7 @@
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
 #include "third_party/skia/include/core/SkRegion.h"
+#include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/skbitmap_operations.h"
 
 namespace {
@@ -167,6 +168,27 @@ void OffScreenVideoConsumer::OnFrameCaptured(
     return;
   }
 
+  // |content_rect| and |info->coded_size| arrive from the GPU process over
+  // Mojo. The bitmap below is sized from |content_rect| but backed by the
+  // shared-memory mapping, so a hostile peer could send a tiny region with an
+  // oversized |content_rect| and have us read past the mapping. Clamp both the
+  // geometry and the resulting byte size to the mapping before wrapping it.
+  const size_t row_bytes =
+      media::VideoFrame::RowBytes(media::VideoFrame::Plane::kARGB,
+                                  info->pixel_format, info->coded_size.width());
+  const SkImageInfo image_info = SkImageInfo::MakeN32(
+      content_rect.width(), content_rect.height(), kPremul_SkAlphaType);
+  const size_t required_bytes = image_info.computeByteSize(row_bytes);
+  if (!gfx::Rect(info->coded_size).Contains(content_rect) ||
+      SkImageInfo::ByteSizeOverflowed(required_bytes) ||
+      required_bytes > mapping.size()) {
+    DLOG(ERROR) << "content_rect " << content_rect.ToString()
+                << " is not bounded by coded_size "
+                << info->coded_size.ToString() << " / mapping size "
+                << mapping.size();
+    return;
+  }
+
   // The SkBitmap's pixels will be marked as immutable, but the installPixels()
   // API requires a non-const pointer. So, cast away the const.
   void* const pixels = const_cast<void*>(mapping.memory());
@@ -185,11 +207,7 @@ void OffScreenVideoConsumer::OnFrameCaptured(
 
   SkBitmap bitmap;
   bitmap.installPixels(
-      SkImageInfo::MakeN32(content_rect.width(), content_rect.height(),
-                           kPremul_SkAlphaType),
-      pixels,
-      media::VideoFrame::RowBytes(media::VideoFrame::Plane::kARGB,
-                                  info->pixel_format, info->coded_size.width()),
+      image_info, pixels, row_bytes,
       [](void* addr, void* context) {
         delete static_cast<FramePinner*>(context);
       },
