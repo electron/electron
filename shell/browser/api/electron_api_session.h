@@ -59,6 +59,7 @@ namespace api {
 
 class NetLog;
 class Protocol;
+class ServiceWorkerContext;
 class WebRequest;
 
 class Session final : public gin::Wrappable<Session>,
@@ -167,7 +168,7 @@ class Session final : public gin::Wrappable<Session>,
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
   v8::Local<v8::Value> Extensions(v8::Isolate* isolate);
   api::Protocol* Protocol();
-  v8::Local<v8::Value> ServiceWorkerContext(v8::Isolate* isolate);
+  api::ServiceWorkerContext* ServiceWorkerContext();
   WebRequest* WebRequest(v8::Isolate* isolate);
   api::NetLog* NetLog(v8::Isolate* isolate);
   void Preconnect(const gin_helper::Dictionary& options, gin::Arguments* args);
@@ -215,7 +216,7 @@ class Session final : public gin::Wrappable<Session>,
   v8::TracedReference<v8::Value> extensions_;
   cppgc::Member<api::Protocol> protocol_;
   cppgc::Member<api::NetLog> net_log_;
-  v8::TracedReference<v8::Value> service_worker_context_;
+  cppgc::Member<api::ServiceWorkerContext> service_worker_context_;
   cppgc::Member<api::WebRequest> web_request_;
 
   raw_ptr<v8::Isolate> isolate_;
