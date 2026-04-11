@@ -237,6 +237,32 @@ describe('webContents.setWindowOpenHandler', () => {
       expect(await browserWindow.webContents.executeJavaScript('42')).to.equal(42);
     });
 
+    it('does not propagate non-allowlisted features-string options like icon to the BrowserWindow', async () => {
+      browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow' }));
+
+      const didCreateWindow = once(browserWindow.webContents, 'did-create-window') as Promise<[BrowserWindow, Electron.DidCreateWindowDetails]>;
+      browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no,width=400,icon=/tmp/does-not-exist.png') && true");
+      const [, details] = await didCreateWindow;
+
+      expect(details.options).to.not.have.property('icon');
+      expect(details.options.width).to.equal(400);
+      expect(details.options.show).to.equal(false);
+    });
+
+    it('still allows the main process to set icon via overrideBrowserWindowOptions', async () => {
+      const iconPath = nodePath.join(__dirname, 'fixtures', 'assets', 'icon.ico');
+      browserWindow.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: { icon: iconPath }
+      }));
+
+      const didCreateWindow = once(browserWindow.webContents, 'did-create-window') as Promise<[BrowserWindow, Electron.DidCreateWindowDetails]>;
+      browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no,icon=/tmp/attacker.png') && true");
+      const [, details] = await didCreateWindow;
+
+      expect((details.options as any).icon).to.equal(iconPath);
+    });
+
     it('can open an offscreen child window from an onscreen parent', async () => {
       browserWindow.webContents.setWindowOpenHandler(() => ({
         action: 'allow',
