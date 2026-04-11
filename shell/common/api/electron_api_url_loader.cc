@@ -18,11 +18,13 @@
 #include "base/notreached.h"
 #include "base/sequence_checker.h"
 #include "content/public/browser/global_request_id.h"
+#include "content/public/common/url_utils.h"
 #include "gin/object_template_builder.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "net/base/auth.h"
 #include "net/base/load_flags.h"
+#include "net/base/net_errors.h"
 #include "net/http/http_util.h"
 #include "net/url_request/redirect_util.h"
 #include "services/network/public/cpp/resource_request.h"
@@ -780,6 +782,15 @@ void SimpleURLLoaderWrapper::OnRedirect(
   if (!loader_)
     // The redirect was aborted by JS.
     return;
+
+  if (!content::IsSafeRedirectTarget(url_before_redirect,
+                                     redirect_info.new_url)) {
+    auto self = weak_factory_.GetWeakPtr();
+    Emit("error", net::ErrorToString(net::ERR_UNSAFE_REDIRECT));
+    if (self)
+      Cancel();
+    return;
+  }
 
   // Optimization: if both the old and new URLs are handled by the network
   // service, just FollowRedirect.
