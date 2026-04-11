@@ -1358,13 +1358,12 @@ api::Protocol* Session::Protocol() {
   return protocol_.Get();
 }
 
-v8::Local<v8::Value> Session::ServiceWorkerContext(v8::Isolate* isolate) {
-  if (service_worker_context_.IsEmptyThreadSafe()) {
-    v8::Local<v8::Value> handle;
-    handle = ServiceWorkerContext::Create(isolate, browser_context()).ToV8();
-    service_worker_context_.Reset(isolate, handle);
+api::ServiceWorkerContext* Session::ServiceWorkerContext() {
+  if (!service_worker_context_) {
+    service_worker_context_ = ServiceWorkerContext::Create(
+        JavascriptEnvironment::GetIsolate(), browser_context());
   }
-  return service_worker_context_.Get(isolate);
+  return service_worker_context_.Get();
 }
 
 WebRequest* Session::WebRequest(v8::Isolate* isolate) {
