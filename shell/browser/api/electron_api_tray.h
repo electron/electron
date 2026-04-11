@@ -18,6 +18,7 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "shell/common/gin_helper/wrappable.h"
+#include "v8/include/cppgc/persistent.h"
 
 namespace gfx {
 class Image;
@@ -115,7 +116,7 @@ class Tray final : public gin_helper::DeprecatedWrappable<Tray>,
 
   bool CheckAlive();
 
-  v8::Global<v8::Value> menu_;
+  cppgc::Persistent<Menu> menu_;
   std::optional<base::Uuid> guid_;
   std::unique_ptr<TrayIcon> tray_icon_;
 };
