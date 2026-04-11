@@ -777,6 +777,8 @@ filenames = {
     "shell/browser/extensions/electron_extension_system_factory.h",
     "shell/browser/extensions/electron_extension_system.cc",
     "shell/browser/extensions/electron_extension_system.h",
+    "shell/browser/extensions/electron_extension_tab_util.cc",
+    "shell/browser/extensions/electron_extension_tab_util.h",
     "shell/browser/extensions/electron_extension_web_contents_observer.cc",
     "shell/browser/extensions/electron_extension_web_contents_observer.h",
     "shell/browser/extensions/electron_extensions_api_client.cc",
