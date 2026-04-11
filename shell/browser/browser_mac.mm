@@ -184,7 +184,7 @@ std::vector<std::string> Browser::GetRecentDocuments() {
   std::vector<std::string> documents;
   documents.reserve([recentURLs count]);
   for (NSURL* url in recentURLs)
-    documents.push_back(std::string([url.path UTF8String]));
+    documents.emplace_back([url.path UTF8String]);
   return documents;
 }
 
