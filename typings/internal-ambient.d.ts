@@ -123,6 +123,11 @@ declare namespace NodeJS {
     handleActivation?: (callback: (details: ActivationArgumentsInternal) => void) => void;
   }
 
+  interface ConnectionCostMonitorBinding {
+    createConnectionCostMonitor(): Electron.EventEmitter & { emit: Function };
+    isConnectionMetered(): boolean;
+  }
+
   interface PowerMonitorBinding extends Electron.PowerMonitor {
     createPowerMonitor(): PowerMonitorBinding;
     setListeningForShutdown(listening: boolean): void;
