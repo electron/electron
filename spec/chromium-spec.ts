@@ -4581,3 +4581,81 @@ describe('navigator.usb', () => {
     }
   });
 });
+
+describe('iframe sandbox external protocols', () => {
+  let server: http.Server;
+  let serverUrl: string;
+  let w: BrowserWindow;
+  let openExternalRequests: string[];
+
+  before(async () => {
+    server = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      if (req.url === '/child') {
+        res.end('<script>location.href = "magnet:sandbox-test"</script>');
+      } else {
+        const sandbox = new URL(req.url!, serverUrl).searchParams.get('sandbox') ?? '';
+        res.end(`<iframe sandbox="${sandbox}" src="/child"></iframe>`);
+      }
+    });
+    serverUrl = (await listen(server)).url;
+  });
+
+  after(() => {
+    server.close();
+  });
+
+  beforeEach(() => {
+    openExternalRequests = [];
+    w = new BrowserWindow({ show: false });
+    w.webContents.session.setPermissionRequestHandler((_wc, permission, callback, details) => {
+      if (permission === 'openExternal') {
+        openExternalRequests.push((details as any).externalURL);
+      }
+      callback(false);
+    });
+  });
+
+  afterEach(() => {
+    w.webContents.session.setPermissionRequestHandler(null);
+    return closeAllWindows();
+  });
+
+  it('blocks navigation to external protocol from a sandboxed iframe', async () => {
+    const consoleMessage = once(w.webContents, 'console-message');
+    await w.loadURL(`${serverUrl}/?sandbox=${encodeURIComponent('allow-scripts')}`);
+    const [{ message }] = await consoleMessage;
+    expect(message).to.match(/external protocol blocked by sandbox/);
+    expect(openExternalRequests).to.be.empty();
+  });
+
+  it('allows navigation to external protocol with allow-top-navigation-to-custom-protocols', async () => {
+    const requested = new Promise<void>(resolve => {
+      w.webContents.session.setPermissionRequestHandler((_wc, permission, callback, details) => {
+        if (permission === 'openExternal') {
+          openExternalRequests.push((details as any).externalURL);
+          resolve();
+        }
+        callback(false);
+      });
+    });
+    await w.loadURL(`${serverUrl}/?sandbox=${encodeURIComponent('allow-scripts allow-top-navigation-to-custom-protocols')}`);
+    await requested;
+    expect(openExternalRequests).to.deep.equal(['magnet:sandbox-test']);
+  });
+
+  it('allows navigation to external protocol with allow-popups', async () => {
+    const requested = new Promise<void>(resolve => {
+      w.webContents.session.setPermissionRequestHandler((_wc, permission, callback, details) => {
+        if (permission === 'openExternal') {
+          openExternalRequests.push((details as any).externalURL);
+          resolve();
+        }
+        callback(false);
+      });
+    });
+    await w.loadURL(`${serverUrl}/?sandbox=${encodeURIComponent('allow-scripts allow-popups')}`);
+    await requested;
+    expect(openExternalRequests).to.deep.equal(['magnet:sandbox-test']);
+  });
+});
