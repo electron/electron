@@ -427,4 +427,130 @@ describe('cpp heap', () => {
       expect(result.noDuplicates).to.equal(true, 'should have exactly one PowerMonitor instance');
     });
   });
+
+  describe('utilityProcess module', () => {
+    it('should appear in heap snapshot while process is running', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(async (heap: string, snapshotHelper: string, fixturePath: string) => {
+        const { utilityProcess } = require('electron');
+        const { once } = require('node:events');
+        const { recordState } = require(heap);
+        const { containsRetainingPath } = require(snapshotHelper);
+
+        const child = utilityProcess.fork(fixturePath);
+        await once(child, 'spawn');
+
+        const state = recordState();
+        const found = containsRetainingPath(state.snapshot,
+          ['C++ Persistent roots', 'Electron / UtilityProcess']);
+
+        child.kill();
+        await once(child, 'exit');
+        return found;
+      }, path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+      path.join(__dirname, 'lib', 'heapsnapshot-helpers.js'),
+      path.join(__dirname, 'fixtures/api/utility-process/endless.js'));
+      expect(result).to.equal(true);
+    });
+
+    it('should be released from heap snapshot after process exits', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(async (heap: string, snapshotHelper: string, fixturePath: string) => {
+        const { utilityProcess } = require('electron');
+        const { once } = require('node:events');
+        const { recordState } = require(heap);
+        const { containsRetainingPath } = require(snapshotHelper);
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        let child: any = utilityProcess.fork(fixturePath);
+        await once(child, 'exit');
+        child = null;
+
+        for (let i = 0; i < 10; i++) {
+          await new Promise(resolve => setTimeout(resolve, 0));
+          v8Util.requestGarbageCollectionForTesting();
+        }
+
+        const state = recordState();
+        const found = containsRetainingPath(state.snapshot,
+          ['C++ Persistent roots', 'Electron / UtilityProcess']);
+        return !found;
+      }, path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+      path.join(__dirname, 'lib', 'heapsnapshot-helpers.js'),
+      path.join(__dirname, 'fixtures/api/utility-process/empty.js'));
+      expect(result).to.equal(true, 'UtilityProcess should be released after exit and GC');
+    });
+
+    it('should survive GC when JS reference is dropped but process is still running', async () => {
+      const rc = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await rc.remotely(async (heap: string, snapshotHelper: string, fixturePath: string) => {
+        const { utilityProcess, app } = require('electron');
+        const { once } = require('node:events');
+        const { recordState } = require(heap);
+        const { containsRetainingPath } = require(snapshotHelper);
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        let child: any = utilityProcess.fork(fixturePath);
+        await once(child, 'spawn');
+        child = null;
+
+        // Force GC — the process should still be alive because
+        // SelfKeepAlive roots the C++ wrapper.
+        for (let i = 0; i < 10; i++) {
+          await new Promise(resolve => setTimeout(resolve, 0));
+          v8Util.requestGarbageCollectionForTesting();
+        }
+
+        const state = recordState();
+        const stillAlive = containsRetainingPath(state.snapshot,
+          ['C++ Persistent roots', 'Electron / UtilityProcess']);
+
+        setTimeout(() => app.quit());
+        return stillAlive;
+      }, path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+      path.join(__dirname, 'lib', 'heapsnapshot-helpers.js'),
+      path.join(__dirname, 'fixtures/api/utility-process/endless.js'));
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+      expect(result).to.equal(true, 'UtilityProcess should survive GC while process is running');
+    });
+
+    it('should not leak when forking multiple processes', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(async (fixturePath: string) => {
+        const { utilityProcess } = require('electron');
+        const { once } = require('node:events');
+        const { getCppHeapStatistics } = require('node:v8');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        async function forkAndWait () {
+          const child = utilityProcess.fork(fixturePath);
+          await once(child, 'exit');
+        }
+
+        async function measure (n: number) {
+          for (let i = 0; i < n; i++) {
+            await forkAndWait();
+          }
+          for (let i = 0; i < 10; i++) {
+            await new Promise(resolve => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+          return getCppHeapStatistics('brief').used_size_bytes;
+        }
+
+        await measure(5);
+        const after1 = await measure(10);
+        const after2 = await measure(10);
+        return { after1, after2 };
+      }, path.join(__dirname, 'fixtures/api/utility-process/empty.js'));
+
+      const growth = result.after2 - result.after1;
+      expect(growth).to.be.at.most(
+        result.after1 * 0.1,
+        `C++ heap grew by ${growth} bytes between rounds — likely a leak`
+      );
+    });
+  });
 });
