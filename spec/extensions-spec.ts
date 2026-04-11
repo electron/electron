@@ -1337,5 +1337,64 @@ describe('chrome extensions', () => {
         expect(bgAfter).to.equal('rgb(255, 0, 0)');
       });
     });
+
+    describe('cross-session isolation', () => {
+      let extSession: Session;
+      let otherSession: Session;
+      let driver: BrowserWindow;
+      let victim: BrowserWindow;
+
+      before(async () => {
+        extSession = session.fromPartition(`persist:${uuid.v4()}`);
+        otherSession = session.fromPartition(`persist:${uuid.v4()}`);
+        await extSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'tabs-cross-session'));
+      });
+
+      beforeEach(async () => {
+        driver = new BrowserWindow({ show: false, webPreferences: { session: extSession } });
+        victim = new BrowserWindow({ show: false, webPreferences: { session: otherSession } });
+        await driver.loadURL(url);
+        await victim.loadURL(url);
+      });
+
+      afterEach(closeAllWindows);
+
+      const callExtension = async (method: string, tabId: number, args: any[] = []) => {
+        const message = JSON.stringify({ method, tabId, args });
+        const p = once(driver.webContents, 'console-message');
+        await driver.webContents.executeJavaScript(`window.postMessage('${message}', '*')`);
+        const [{ message: responseString }] = await p;
+        return JSON.parse(responseString);
+      };
+
+      it('chrome.tabs.get cannot resolve a tab from another session', async () => {
+        const sameSession = await callExtension('get', driver.webContents.id);
+        expect(sameSession.ok).to.be.true();
+        expect(sameSession.result.id).to.equal(driver.webContents.id);
+
+        const crossSession = await callExtension('get', victim.webContents.id);
+        expect(crossSession.ok).to.be.false();
+        expect(crossSession.error).to.match(/No such tab|No tab with id/);
+      });
+
+      it('chrome.tabs.update cannot navigate a tab in another session', async () => {
+        const before = victim.webContents.getURL();
+        const crossSession = await callExtension('update', victim.webContents.id, [{ url }]);
+        expect(crossSession.ok).to.be.false();
+        expect(crossSession.error).to.match(/No such tab|No tab with id/);
+        expect(victim.webContents.getURL()).to.equal(before);
+      });
+
+      it('chrome.scripting.executeScript cannot target a tab in another session', async () => {
+        const crossSession = await callExtension('executeScript', victim.webContents.id);
+        expect(crossSession.ok).to.be.false();
+        expect(crossSession.error).to.match(/No tab with id/);
+      });
+
+      it('chrome.tabs.sendMessage cannot reach a tab in another session', async () => {
+        const crossSession = await callExtension('sendMessage', victim.webContents.id, ['ping']);
+        expect(crossSession.ok).to.be.false();
+      });
+    });
   });
 });
