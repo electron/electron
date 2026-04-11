@@ -118,11 +118,6 @@ using Translator = base::RepeatingCallback<void(gin::Arguments* args)>;
 v8::Local<v8::Value> CreateFunctionFromTranslator(v8::Isolate* isolate,
                                                   const Translator& translator,
                                                   bool one_time);
-v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
-                                      v8::Local<v8::Context> context,
-                                      v8::Local<v8::Function> func,
-                                      v8::Local<v8::Value> arg1,
-                                      v8::Local<v8::Value> arg2);
 
 // Calls callback with Arguments.
 template <typename Sig>
