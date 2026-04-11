@@ -22,6 +22,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
@@ -82,8 +83,8 @@ struct Converter<CustomScheme> {
 
 namespace electron::api {
 
-const gin::WrapperInfo Protocol::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                                 gin::kElectronProtocol};
+const gin::WrapperInfo Protocol::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronProtocol);
 
 std::vector<std::string>& GetStandardSchemes() {
   static base::NoDestructor<std::vector<std::string>> g_standard_schemes;

@@ -22,7 +22,7 @@
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/handle.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
 
@@ -82,8 +82,8 @@ void ResolvePromiseWithNetError(gin_helper::Promise<void> promise,
 
 namespace api {
 
-gin::WrapperInfo NetLog::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                         gin::kElectronNetLog};
+gin::WrapperInfo NetLog::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronNetLog);
 
 NetLog::NetLog(ElectronBrowserContext* const browser_context)
     : browser_context_(browser_context) {

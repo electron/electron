@@ -79,6 +79,7 @@
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/language_util.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
@@ -371,8 +372,8 @@ struct Converter<net::SecureDnsMode> {
 
 namespace electron::api {
 
-gin::WrapperInfo App::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                      gin::kElectronApp};
+gin::WrapperInfo App::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronApp);
 
 namespace {
 
