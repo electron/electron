@@ -21,7 +21,6 @@
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/node_includes.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
@@ -345,7 +344,7 @@ void Tray::Focus() {
 void Tray::PopUpContextMenu(gin::Arguments* args) {
   if (!CheckAlive())
     return;
-  gin_helper::Handle<Menu> menu;
+  Menu* menu = nullptr;
   gfx::Point pos;
 
   v8::Local<v8::Value> first_arg;
@@ -363,8 +362,8 @@ void Tray::PopUpContextMenu(gin::Arguments* args) {
     }
   }
 
-  tray_icon_->PopUpContextMenu(
-      pos, menu.IsEmpty() ? nullptr : menu->model()->GetWeakPtr());
+  tray_icon_->PopUpContextMenu(pos,
+                               menu ? menu->model()->GetWeakPtr() : nullptr);
 }
 
 void Tray::CloseContextMenu() {
