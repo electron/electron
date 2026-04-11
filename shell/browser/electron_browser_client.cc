@@ -74,6 +74,7 @@
 #include "services/network/public/cpp/resource_request_body.h"
 #include "services/network/public/cpp/self_deleting_url_loader_factory.h"
 #include "services/network/public/cpp/url_loader_factory_builder.h"
+#include "services/network/public/cpp/web_sandbox_flags.h"
 #include "shell/app/electron_crash_reporter_client.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_crash_reporter.h"
@@ -131,6 +132,7 @@
 #include "third_party/blink/public/common/tokens/tokens.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/mojom/badging/badging.mojom.h"
+#include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/native_theme/native_theme.h"
 #include "v8/include/v8.h"
@@ -930,7 +932,9 @@ void HandleExternalProtocolInUI(
     const GURL& url,
     content::WeakDocumentPtr document_ptr,
     content::WebContents::OnceGetter web_contents_getter,
-    bool has_user_gesture) {
+    bool has_user_gesture,
+    bool is_primary_main_frame,
+    network::mojom::WebSandboxFlags sandbox_flags) {
   content::WebContents* web_contents = std::move(web_contents_getter).Run();
   if (!web_contents)
     return;
@@ -947,6 +951,30 @@ void HandleExternalProtocolInUI(
     // take the current main frame and declare it responsible for the
     // transition.
     rfh = web_contents->GetPrimaryMainFrame();
+  }
+
+  // Sandboxed iframes without one of the appropriate sandbox-escape tokens
+  // must not be able to launch external protocol handlers. This mirrors
+  // chrome/browser/chrome_content_browser_client.cc; see crbug.com/1148777.
+  if (!is_primary_main_frame) {
+    using SandboxFlags = network::mojom::WebSandboxFlags;
+    auto allow = [sandbox_flags](SandboxFlags flag) {
+      return (sandbox_flags & flag) == SandboxFlags::kNone;
+    };
+    const bool allowed = allow(SandboxFlags::kTopNavigationToCustomProtocols) ||
+                         (allow(SandboxFlags::kTopNavigationByUserActivation) &&
+                          has_user_gesture);
+    if (!allowed) {
+      rfh->AddMessageToConsole(
+          blink::mojom::ConsoleMessageLevel::kError,
+          "Navigation to external protocol blocked by sandbox, because it "
+          "doesn't contain any of: "
+          "'allow-top-navigation-to-custom-protocols', "
+          "'allow-top-navigation-by-user-activation', "
+          "'allow-top-navigation', or 'allow-popups'. See "
+          "https://chromestatus.com/feature/5680742077038592");
+      return;
+    }
   }
 
   GURL escaped_url(base::EscapeExternalHandlerValue(url.spec()));
@@ -977,7 +1005,8 @@ bool ElectronBrowserClient::HandleExternalProtocol(
                      initiator_document
                          ? initiator_document->GetWeakDocumentPtr()
                          : content::WeakDocumentPtr(),
-                     std::move(web_contents_getter), has_user_gesture));
+                     std::move(web_contents_getter), has_user_gesture,
+                     is_primary_main_frame, sandbox_flags));
   return true;
 }
 
