@@ -361,10 +361,10 @@ index 96aac2d86695732bf6805f2ad2168a62241b5045..c7a9648b0f83e910190dc620f4b72577
  #define FS_ASYNC_TRACE_BEGIN0(fs_type, id)                                     \
    TRACE_EVENT_NESTABLE_ASYNC_BEGIN0(TRACING_CATEGORY_NODE2(fs, async),         \
 diff --git a/src/node_internals.h b/src/node_internals.h
-index 8e930a6fecd6589b858293d91b2454ea14ae7c73..a95dd02d4149a02ff40c759010e130c89ad1d848 100644
+index fe6229ea33198e3f093be68f57aec6e612c02f34..7adfcf5222dbbaf5e98f719de0f4348ed679f3ee 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
-@@ -315,6 +315,14 @@ class ThreadPoolWork {
+@@ -319,6 +319,14 @@ class ThreadPoolWork {
    const char* type_;
  };
  
@@ -379,7 +379,7 @@ index 8e930a6fecd6589b858293d91b2454ea14ae7c73..a95dd02d4149a02ff40c759010e130c8
  #define TRACING_CATEGORY_NODE "node"
  #define TRACING_CATEGORY_NODE1(one)                                           \
      TRACING_CATEGORY_NODE ","                                                 \
-@@ -323,6 +331,9 @@ class ThreadPoolWork {
+@@ -327,6 +335,9 @@ class ThreadPoolWork {
      TRACING_CATEGORY_NODE ","                                                 \
      TRACING_CATEGORY_NODE "." #one ","                                        \
      TRACING_CATEGORY_NODE "." #one "." #two
