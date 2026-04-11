@@ -165,8 +165,9 @@ export const roleList: Record<RoleId, Role> = {
     accelerator: isMac ? 'Alt+Command+I' : 'Ctrl+Shift+I',
     nonNativeMacOSRole: true,
     webContentsMethod: wc => {
-      const bw = wc.getOwnerBrowserWindow();
-      if (bw) bw.webContents.toggleDevTools();
+      if (wc && !wc.isDestroyed()) {
+        wc.toggleDevTools();
+      }
     }
   },
   togglefullscreen: {
