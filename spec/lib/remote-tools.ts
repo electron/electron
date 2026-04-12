@@ -12,12 +12,28 @@ export * as url from 'node:url';
 export * as util from 'node:util';
 export * as os from 'node:os';
 export * as cp from 'node:child_process';
+export * as http from 'node:http';
 export { once } from 'node:events';
 export { setTimeout } from 'node:timers/promises';
 export { expect } from 'chai';
-export { BrowserWindow, nativeImage, webContents } from 'electron/main';
+export { BrowserWindow, nativeImage, net, session, webContents } from 'electron/main';
+export { defer } from './defer-helpers';
+export {
+  collectStreamBody,
+  collectStreamBodyBuffer,
+  getResponse,
+  kOneKiloByte,
+  kOneMegaByte,
+  randomBuffer,
+  randomString,
+  respondNTimes,
+  respondOnce
+} from './net-helpers';
 
 // Renderer-side mirror of the exports above. Keep the keys in sync.
+// Context-specific targets (e.g. the api-net utility-process fixture) can
+// declare their own __rt with additional keys for helpers that aren't
+// require()-able from a renderer.
 export const REMOTE_TOOLS_SHIM = `{
   path: require('node:path'),
   fs: require('node:fs'),
@@ -25,11 +41,14 @@ export const REMOTE_TOOLS_SHIM = `{
   util: require('node:util'),
   os: require('node:os'),
   cp: require('node:child_process'),
+  http: require('node:http'),
   once: require('node:events').once,
   setTimeout: require('node:timers/promises').setTimeout,
   expect: require('chai').expect,
   BrowserWindow: require('electron').BrowserWindow,
   nativeImage: require('electron').nativeImage,
+  net: require('electron').net,
+  session: require('electron').session,
   webContents: require('electron').webContents,
 }`;
 

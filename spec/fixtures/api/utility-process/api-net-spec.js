@@ -18,6 +18,21 @@ v8.setFlagsFromString('--expose_gc');
 chai_1.use(require('chai-as-promised'));
 chai_1.use(require('dirty-chai'));
 
+// Mirror of spec/lib/remote-tools.ts for closures rewritten by
+// rewriteForRemoteEval() — each __vite_ssr_import_N__ becomes __rt.
+const __rt = {
+  ...net_helpers_1,
+  ...main_1,
+  expect: chai_1.expect,
+  once: node_events_1.once,
+  setTimeout: promises_1.setTimeout,
+  defer: require('../../../lib/defer-helpers').defer,
+  path: require('node:path'),
+  fs: require('node:fs'),
+  url,
+  http
+};
+
 function fail(message) {
   process.parentPort.postMessage({ ok: false, message });
 }

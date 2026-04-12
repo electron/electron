@@ -1,38 +1,43 @@
-import { net, session, ClientRequest, ClientRequestConstructorOptions, utilityProcess } from 'electron/main';
+import { ClientRequest, ClientRequestConstructorOptions, utilityProcess } from 'electron/main';
 
-import { expect } from 'chai';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, it, type TestFunction } from 'vitest';
 
-import { once } from 'node:events';
 import * as fs from 'node:fs';
-import * as http from 'node:http';
 import * as http2 from 'node:http2';
 import * as path from 'node:path';
-import { setTimeout } from 'node:timers/promises';
 
 import {
   collectStreamBody,
   collectStreamBodyBuffer,
+  defer,
+  expect,
   getResponse,
+  http,
   kOneKiloByte,
   kOneMegaByte,
+  net,
+  once,
   randomBuffer,
   randomString,
   respondNTimes,
-  respondOnce
-} from './lib/net-helpers';
-import { listen, defer, ifdescribe, isTestingBindingAvailable } from './lib/spec-helpers';
+  respondOnce,
+  rewriteForRemoteEval,
+  session,
+  setTimeout
+} from './lib/remote-tools';
+import { listen, ifdescribe, isTestingBindingAvailable } from './lib/spec-helpers';
 
 const utilityFixturePath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process', 'api-net-spec.js');
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
+/** @remote */
 async function itUtility(name: string, fn?: Function, args?: { [key: string]: any }) {
   it(`${name} in utility process`, async () => {
     const child = utilityProcess.fork(utilityFixturePath, [], {
       execArgv: ['--expose-gc']
     });
     if (fn) {
-      child.postMessage({ fn: `(${fn})()`, args });
+      child.postMessage({ fn: `(${rewriteForRemoteEval(fn)})()`, args });
     } else {
       child.postMessage({ fn: '(() => {})()', args });
     }
@@ -94,6 +99,7 @@ describe('net module', () => {
     h2server.close();
   });
 
+  /** @remote — `test` may be itUtility, which stringifies its closure */
   for (const test of [itIgnoringArgs, itUtility]) {
     describe('HTTP basics', () => {
       test('should be able to issue a basic GET request', async () => {

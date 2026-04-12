@@ -5,8 +5,14 @@
 // remote-tools instead lets runRemote()'s __rt shim resolve them.
 
 const REMOTE_TOOLS_RE = /[./]lib\/remote-tools(\.ts)?$/;
+const REMOTE_TAG_RE = /@remote\b/;
 
-function isRemoteCall(callee) {
+function hasRemoteTag(node, sourceCode) {
+  const comments = sourceCode.getCommentsBefore?.(node) ?? node.leadingComments ?? [];
+  return comments.some((c) => REMOTE_TAG_RE.test(c.value));
+}
+
+function isRemoteCall(callee, taggedCallees) {
   // itremote(name, fn), itremote.only(name, fn), itremote.skip(name, fn)
   if (callee.type === 'Identifier' && callee.name === 'itremote') return { fnArg: 1 };
   if (
@@ -25,6 +31,12 @@ function isRemoteCall(callee) {
     callee.property.name === 'remotely'
   ) {
     return { fnArg: 0 };
+  }
+  // Calls to identifiers tagged /** @remote */ (function decls, const bindings,
+  // or for-of loop vars). fn arg is assumed to be the first function-expression
+  // argument, resolved at the call site.
+  if (callee.type === 'Identifier' && taggedCallees.has(callee.name)) {
+    return { fnArg: 'firstFunction' };
   }
   return null;
 }
@@ -110,6 +122,15 @@ export default {
         // Map of import-binding name -> { source, node } for everything NOT
         // from remote-tools.
         const foreignImports = new Map();
+        // Names of functions/bindings tagged /** @remote */ in this file.
+        const taggedCallees = new Set();
+        const sourceCode = context.sourceCode ?? context.getSourceCode?.();
+
+        const collectTagged = (idNode, commentTarget) => {
+          if (idNode?.type === 'Identifier' && hasRemoteTag(commentTarget, sourceCode)) {
+            taggedCallees.add(idNode.name);
+          }
+        };
 
         return {
           ImportDeclaration(node) {
@@ -121,10 +142,29 @@ export default {
               foreignImports.set(spec.local.name, { source, node: spec.local });
             }
           },
+          FunctionDeclaration(node) {
+            collectTagged(node.id, node);
+          },
+          VariableDeclaration(node) {
+            if (!hasRemoteTag(node, sourceCode)) return;
+            for (const d of node.declarations) collectTagged(d.id, node);
+          },
+          ForOfStatement(node) {
+            if (!hasRemoteTag(node, sourceCode)) return;
+            const decl = node.left;
+            if (decl.type === 'VariableDeclaration') {
+              for (const d of decl.declarations) collectTagged(d.id, node);
+            }
+          },
           CallExpression(node) {
-            const match = isRemoteCall(node.callee);
+            const match = isRemoteCall(node.callee, taggedCallees);
             if (!match) return;
-            const fnArg = node.arguments[match.fnArg];
+            const fnArg =
+              match.fnArg === 'firstFunction'
+                ? node.arguments.find(
+                    (a) => a && (a.type === 'FunctionExpression' || a.type === 'ArrowFunctionExpression')
+                  )
+                : node.arguments[match.fnArg];
             if (!fnArg || (fnArg.type !== 'FunctionExpression' && fnArg.type !== 'ArrowFunctionExpression')) {
               return;
             }
