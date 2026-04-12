@@ -51,9 +51,11 @@ class ElectronPoolWorker extends ForksPoolWorker {
       ELECTRON_VITEST_USER_DATA_DIR: this.userDataDir
     };
 
+    const extraArgs = process.env.ELECTRON_EXTRA_ARGS ? process.env.ELECTRON_EXTRA_ARGS.split(' ').filter(Boolean) : [];
+
     // spawn() + an 'ipc' stdio slot gives the child process.send/on('message'),
     // which is what vitest's fork worker protocol relies on.
-    const child: ChildProcess = spawn(electronExec, [path.resolve(__dirname)], {
+    const child: ChildProcess = spawn(electronExec, [path.resolve(__dirname), ...extraArgs], {
       env,
       execArgv: (this as any).execArgv,
       stdio: ['pipe', 'pipe', 'pipe', 'ipc'],

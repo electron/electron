@@ -46,9 +46,9 @@ app.commandLine.appendSwitch(
 app.commandLine.appendSwitch(
   'enable-features',
   [
-    // spec/api-web-frame-main-spec.ts
+    // spec/api-web-frame-main.spec.ts
     'DocumentPolicyIncludeJSCallStacksInCrashReports',
-    // spec/spellchecker-spec.ts
+    // spec/spellchecker.spec.ts
     'UnrestrictSpellingAndGrammarForTesting'
   ].join(',')
 );

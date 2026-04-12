@@ -23,7 +23,7 @@ function fail(message) {
 }
 
 process.parentPort.on('message', async (e) => {
-  // Equivalent of beforeEach in spec/api-net-spec.ts
+  // Equivalent of beforeEach in spec/api-net.spec.ts
   net_helpers_1.respondNTimes.routeFailure = false;
 
   try {
@@ -40,7 +40,7 @@ process.parentPort.on('message', async (e) => {
     process.exit(1);
   }
 
-  // Equivalent of afterEach in spec/api-net-spec.ts
+  // Equivalent of afterEach in spec/api-net.spec.ts
   if (net_helpers_1.respondNTimes.routeFailure) {
     fail(
       'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'

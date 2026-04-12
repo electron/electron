@@ -6,7 +6,7 @@ const path = require('node:path');
 const currentShard = parseInt(process.argv[2], 10);
 const shardCount = parseInt(process.argv[3], 10);
 
-const specFiles = glob.sync('spec/*-spec.ts');
+const specFiles = glob.sync('spec/*.spec.ts');
 
 const buckets = [];
 

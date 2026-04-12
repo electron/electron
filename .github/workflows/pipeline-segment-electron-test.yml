@@ -218,14 +218,13 @@ jobs:
       shell: bash
       timeout-minutes: 60
       env:
-        MOCHA_REPORTER: mocha-multi-reporters
-        MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         DISPLAY: ':99.0'
         NPM_CONFIG_MSVS_VERSION: '2022'
       run: |
         cd src/electron
-        export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
+        export ELECTRON_EXTRA_ARGS="--trace-uncaught --enable-logging"
+        JUNIT_ARGS="--reporter=default --reporter=junit --outputFile.junit=junit/test-results-main.xml"
         # Get which tests are on this shard
         tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ case(inputs.display-server == 'wayland', 1, inputs.target-platform == 'linux', 3, inputs.target-platform == 'macos' && inputs.target-arch == 'x64', 3, 2) }})
         if [ "${{ inputs.display-server }}" = "wayland" ]; then
@@ -252,7 +251,7 @@ jobs:
               export npm_config_arch="ia32"
             fi
           fi
-          node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
+          node script/yarn.js test $JUNIT_ARGS $tests_files
         else
           chown :builduser .. && chmod g+w ..
           chown -R :builduser . && chmod -R g+w .
@@ -266,21 +265,19 @@ jobs:
             export NSS_DISABLE_ARENA_FREE_LIST=1
             export NSS_DISABLE_UNLOAD=1
             export LLVM_SYMBOLIZER_PATH=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer
-            export MOCHA_TIMEOUT=180000
             echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
             cd electron
-            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
+            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --testTimeout=180000 $JUNIT_ARGS $tests_files | $ASAN_SYMBOLIZE
           else
             if [ "${{ inputs.target-arch }}" = "arm" ]; then
-              runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --skipYarnInstall --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
-            else 
+              runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --skipYarnInstall $JUNIT_ARGS $tests_files
+            else
               if [ "${{ inputs.display-server }}" = "wayland" ]; then
-                runuser -u builduser -- script/actions/run-tests-wayland.sh script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
+                runuser -u builduser -- script/actions/run-tests-wayland.sh script/yarn.js test $JUNIT_ARGS $tests_files
               else
-                runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
+                runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test $JUNIT_ARGS $tests_files
               fi
             fi
-            
           fi
         fi
     - name: Take screenshot on timeout or cancellation

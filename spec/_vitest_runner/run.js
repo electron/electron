@@ -1,25 +1,111 @@
 #!/usr/bin/env node
 
-const { spawnSync } = require('node:child_process');
+const childProcess = require('node:child_process');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
 const path = require('node:path');
 
-const { getAbsoluteElectronExec } = require('../../script/lib/utils');
+const { getAbsoluteElectronExec, getOutDir } = require('../../script/lib/utils');
+const { YARN_SCRIPT_PATH } = require('../../script/yarn');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const vitestBin = path.join(ROOT, 'node_modules', '.bin', 'vitest');
+const SPEC_DIR = path.resolve(ROOT, 'spec');
+const SPEC_HASH_PATH = path.resolve(SPEC_DIR, '.hash');
+const VITEST_BIN = path.join(ROOT, 'node_modules', '.bin', 'vitest');
+
+const rawArgs = process.argv.slice(2);
+const skipYarnInstall = rawArgs.includes('--skipYarnInstall');
+const vitestArgs = rawArgs.filter((a) => a !== '--skipYarnInstall');
+
+function getSpecHash() {
+  const hasher = crypto.createHash('SHA256');
+  hasher.update(fs.readFileSync(path.resolve(ROOT, 'yarn.lock')));
+  hasher.update(fs.readFileSync(path.resolve(SPEC_DIR, 'package.json')));
+  hasher.update(fs.readFileSync(__filename));
+  return hasher.digest('hex');
+}
+
+function installSpecModules() {
+  const env = {
+    npm_config_msvs_version: '2022',
+    ...process.env,
+    npm_config_nodedir: path.resolve(ROOT, '..', `out/${getOutDir({ shouldLog: true })}/gen/node_headers`),
+    npm_config_yes: 'true'
+  };
+  const nodeModules = path.resolve(SPEC_DIR, 'node_modules');
+  if (fs.existsSync(nodeModules)) {
+    fs.rmSync(nodeModules, { force: true, recursive: true });
+  }
+  const { status } = childProcess.spawnSync(process.execPath, [YARN_SCRIPT_PATH, 'install', '--immutable'], {
+    env,
+    cwd: SPEC_DIR,
+    stdio: 'inherit',
+    shell: process.platform === 'win32'
+  });
+  if (status !== 0 && !process.env.IGNORE_YARN_INSTALL_ERROR) {
+    console.error(`Failed to yarn install in '${SPEC_DIR}'`);
+    process.exit(1);
+  }
+  if (process.platform === 'linux') {
+    const { status: rebuildStatus } = childProcess.spawnSync('npm', ['rebuild', 'abstract-socket'], {
+      env,
+      cwd: SPEC_DIR,
+      stdio: 'inherit'
+    });
+    if (rebuildStatus !== 0) {
+      console.error('Failed to rebuild abstract-socket native module');
+      process.exit(1);
+    }
+  }
+}
+
+function generateTypeDefinitions() {
+  const { status } = childProcess.spawnSync('npm', ['run', 'create-typescript-definitions'], {
+    cwd: ROOT,
+    stdio: 'inherit',
+    shell: true
+  });
+  if (status !== 0) {
+    throw new Error(`Electron typescript definition generation failed with exit code: ${status}.`);
+  }
+}
+
+if (!skipYarnInstall) {
+  const currentHash = getSpecHash();
+  const lastHash = fs.existsSync(SPEC_HASH_PATH) ? fs.readFileSync(SPEC_HASH_PATH, 'utf8') : null;
+  if (currentHash !== lastHash || !fs.existsSync(path.resolve(SPEC_DIR, 'node_modules'))) {
+    installSpecModules();
+    fs.writeFileSync(SPEC_HASH_PATH, getSpecHash());
+  }
+}
+
+if (!fs.existsSync(path.resolve(ROOT, 'electron.d.ts'))) {
+  console.log('Generating electron.d.ts as it is missing');
+  generateTypeDefinitions();
+}
 
 const exe = process.env.ELECTRON_TESTS_EXECUTABLE || getAbsoluteElectronExec();
 console.log(`Electron binary: ${exe}`);
 
-const args = ['run', '--config', path.join(__dirname, 'vitest.config.ts'), ...process.argv.slice(2)];
+const env = {
+  ...process.env,
+  ELECTRON_TESTS_EXECUTABLE: exe
+};
 
-const result = spawnSync(vitestBin, args, {
+let command = VITEST_BIN;
+let args = ['run', '--config', path.join(__dirname, 'vitest.config.ts'), ...vitestArgs];
+
+// On Linux, run vitest under a mocked D-Bus so every spawned Electron worker
+// inherits the session/system bus addresses.
+if (process.platform === 'linux') {
+  args = [path.resolve(ROOT, 'script', 'dbus_mock.py'), command, ...args];
+  command = 'python3';
+}
+
+const result = childProcess.spawnSync(command, args, {
   cwd: ROOT,
   stdio: 'inherit',
-  env: {
-    ...process.env,
-    ELECTRON_TESTS_EXECUTABLE: exe
-  }
+  env
 });
 
 process.exit(result.status ?? 1);

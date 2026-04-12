@@ -21,8 +21,7 @@ const disabledTests = new Set(JSON.parse(fs.readFileSync(path.join(__dirname, '.
 beforeEach((ctx) => {
   // Run defer()-ed cleanup functions immediately after the test body, before any
   // afterEach hooks registered by the test file. onTestFinished fires before
-  // afterEach, matching how spec/index.js attached this as the first afterEach
-  // on every suite.
+  // afterEach, so defer() cleanups precede test-file afterEach hooks.
   ctx.onTestFinished(runCleanupFunctions);
 
   const parts: string[] = [ctx.task.name];

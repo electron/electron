@@ -57,8 +57,6 @@ jobs:
     - name: Run Electron Tests in QEMU 64k Container
       shell: bash
       env:
-        MOCHA_REPORTER: mocha-multi-reporters
-        MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         DISPLAY: ':99.0'
       run: |
