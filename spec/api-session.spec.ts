@@ -3,6 +3,7 @@ import { app, session, BrowserWindow, net, ipcMain, Session, webFrameMain, WebFr
 import * as auth from 'basic-auth';
 import { expect } from 'chai';
 import * as send from 'send';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import * as ChildProcess from 'node:child_process';
 import { once } from 'node:events';
@@ -12,7 +13,7 @@ import * as https from 'node:https';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { defer, ifit, listen, waitUntil } from './lib/spec-helpers';
+import { defer, ifit, listen, waitUntil, withDone } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('session module', () => {
@@ -324,8 +325,7 @@ describe('session module', () => {
       });
     });
 
-    it('should survive an app restart for persistent partition', async function () {
-      this.timeout(60000);
+    it('should survive an app restart for persistent partition', { timeout: 60000 }, async () => {
       const appPath = path.join(fixtures, 'api', 'cookie-app');
 
       const runAppWithPhase = (phase: string) => {
@@ -936,17 +936,19 @@ describe('session module', () => {
     const scheme = 'cors-blob';
     const protocol = session.defaultSession.protocol;
     const url = `${scheme}://host`;
-    after(async () => {
+    afterAll(async () => {
       await protocol.unregisterProtocol(scheme);
     });
     afterEach(closeAllWindows);
 
-    it('returns blob data for uuid', (done) => {
-      const postData = JSON.stringify({
-        type: 'blob',
-        value: 'hello'
-      });
-      const content = `<html>
+    it(
+      'returns blob data for uuid',
+      withDone((done) => {
+        const postData = JSON.stringify({
+          type: 'blob',
+          value: 'hello'
+        });
+        const content = `<html>
                        <script>
                        let fd = new FormData();
                        fd.append('file', new Blob(['${postData}'], {type:'application/json'}));
@@ -954,29 +956,30 @@ describe('session module', () => {
                        </script>
                        </html>`;
 
-      protocol.registerStringProtocol(scheme, (request, callback) => {
-        try {
-          if (request.method === 'GET') {
-            callback({ data: content, mimeType: 'text/html' });
-          } else if (request.method === 'POST') {
-            const uuid = request.uploadData![1].blobUUID;
-            expect(uuid).to.be.a('string');
-            session.defaultSession.getBlobData(uuid!).then((result) => {
-              try {
-                expect(result.toString()).to.equal(postData);
-                done();
-              } catch (e) {
-                done(e);
-              }
-            });
+        protocol.registerStringProtocol(scheme, (request, callback) => {
+          try {
+            if (request.method === 'GET') {
+              callback({ data: content, mimeType: 'text/html' });
+            } else if (request.method === 'POST') {
+              const uuid = request.uploadData![1].blobUUID;
+              expect(uuid).to.be.a('string');
+              session.defaultSession.getBlobData(uuid!).then((result) => {
+                try {
+                  expect(result.toString()).to.equal(postData);
+                  done();
+                } catch (e) {
+                  done(e);
+                }
+              });
+            }
+          } catch (e) {
+            done(e);
           }
-        } catch (e) {
-          done(e);
-        }
-      });
-      const w = new BrowserWindow({ show: false });
-      w.loadURL(url);
-    });
+        });
+        const w = new BrowserWindow({ show: false });
+        w.loadURL(url);
+      })
+    );
   });
 
   describe('ses.getBlobData() (gc)', () => {
@@ -1087,13 +1090,15 @@ describe('session module', () => {
     const scheme = 'cors-blob';
     const protocol = session.defaultSession.protocol;
     const url = `${scheme}://host`;
-    after(async () => {
+    afterAll(async () => {
       await protocol.unregisterProtocol(scheme);
     });
     afterEach(closeAllWindows);
 
-    it('returns blob data for uuid', (done) => {
-      const content = `<html>
+    it(
+      'returns blob data for uuid',
+      withDone((done) => {
+        const content = `<html>
                        <script>
                        let fd = new FormData();
                        fd.append("data", new Blob(new Array(65_537).fill('a')));
@@ -1101,30 +1106,31 @@ describe('session module', () => {
                        </script>
                        </html>`;
 
-      protocol.registerStringProtocol(scheme, (request, callback) => {
-        try {
-          if (request.method === 'GET') {
-            callback({ data: content, mimeType: 'text/html' });
-          } else if (request.method === 'POST') {
-            const uuid = request.uploadData![1].blobUUID;
-            expect(uuid).to.be.a('string');
-            session.defaultSession.getBlobData(uuid!).then((result) => {
-              try {
-                const data = new Array(65_537).fill('a');
-                expect(result.toString()).to.equal(data.join(''));
-                done();
-              } catch (e) {
-                done(e);
-              }
-            });
+        protocol.registerStringProtocol(scheme, (request, callback) => {
+          try {
+            if (request.method === 'GET') {
+              callback({ data: content, mimeType: 'text/html' });
+            } else if (request.method === 'POST') {
+              const uuid = request.uploadData![1].blobUUID;
+              expect(uuid).to.be.a('string');
+              session.defaultSession.getBlobData(uuid!).then((result) => {
+                try {
+                  const data = new Array(65_537).fill('a');
+                  expect(result.toString()).to.equal(data.join(''));
+                  done();
+                } catch (e) {
+                  done(e);
+                }
+              });
+            }
+          } catch (e) {
+            done(e);
           }
-        } catch (e) {
-          done(e);
-        }
-      });
-      const w = new BrowserWindow({ show: false });
-      w.loadURL(url);
-    });
+        });
+        const w = new BrowserWindow({ show: false });
+        w.loadURL(url);
+      })
+    );
   });
 
   describe('ses.setCertificateVerifyProc(callback)', () => {
@@ -1150,9 +1156,11 @@ describe('session module', () => {
       serverUrl = (await listen(server)).url;
     });
 
-    afterEach((done) => {
-      server.close(done);
-    });
+    afterEach(
+      withDone((done) => {
+        server.close(done);
+      })
+    );
     afterEach(closeAllWindows);
 
     it('accepts the request when the callback is called with 0', async () => {
@@ -1310,7 +1318,7 @@ describe('session module', () => {
     let port: number;
     let downloadServer: http.Server;
 
-    before(async () => {
+    beforeAll(async () => {
       downloadServer = http.createServer((req, res) => {
         res.writeHead(200, {
           'Content-Length': mockPDF.length,
@@ -1322,7 +1330,7 @@ describe('session module', () => {
       port = (await listen(downloadServer)).port;
     });
 
-    after(async () => {
+    afterAll(async () => {
       await new Promise((resolve) => downloadServer.close(resolve));
     });
 
@@ -1854,14 +1862,14 @@ describe('session module', () => {
     // requires a secure context.
     let server: http.Server;
     let serverUrl: string;
-    before(async () => {
+    beforeAll(async () => {
       server = http.createServer((req, res) => {
         res.setHeader('Content-Type', 'text/html');
         res.end('');
       });
       serverUrl = (await listen(server)).url;
     });
-    after(() => {
+    afterAll(() => {
       server.close();
     });
 
