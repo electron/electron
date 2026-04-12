@@ -19,7 +19,7 @@ export const ifdescribe = (condition: boolean) => describe.runIf(condition);
 type DoneCallback = (err?: unknown) => void;
 
 /**
- * Adapts a mocha-style callback test (receiving a `done` function) into a
+ * Adapts a callback-style test (receiving a `done` function) into a
  * vitest-compatible test that returns a Promise. `done()` resolves,
  * `done(err)` rejects.
  */

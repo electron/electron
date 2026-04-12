@@ -24,7 +24,7 @@ export default defineConfig({
     // Run test *files* in parallel across workers...
     fileParallelism: true,
     isolate: true,
-    // ...but keep tests *within* a file sequential, matching current mocha behaviour.
+    // ...but keep tests *within* a file sequential.
     sequence: { concurrent: false },
     allowOnly: !process.env.CI,
     retry: process.env.CI ? 3 : 0,
