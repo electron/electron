@@ -2,6 +2,7 @@ import { app } from 'electron';
 
 import { expect } from 'chai';
 import * as uuid from 'uuid';
+import { it } from 'vitest';
 
 import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
