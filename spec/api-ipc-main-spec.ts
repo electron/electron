@@ -15,7 +15,9 @@ describe('ipc main module', () => {
   afterEach(closeAllWindows);
 
   describe('ipc.sendSync', () => {
-    afterEach(() => { ipcMain.removeAllListeners('send-sync-message'); });
+    afterEach(() => {
+      ipcMain.removeAllListeners('send-sync-message');
+    });
 
     it('does not crash when reply is not sent and browser is destroyed', (done) => {
       const w = new BrowserWindow({
@@ -58,7 +60,9 @@ describe('ipc main module', () => {
       const appProcess = cp.spawn(electronPath, [appPath]);
 
       let output = '';
-      appProcess.stdout.on('data', (data) => { output += data; });
+      appProcess.stdout.on('data', (data) => {
+        output += data;
+      });
 
       await once(appProcess.stdout, 'end');
 
@@ -94,8 +98,12 @@ describe('ipc main module', () => {
   });
 
   describe('ipcMain.removeAllListeners', () => {
-    beforeEach(() => { ipcMain.removeAllListeners(); });
-    beforeEach(() => { ipcMain.removeAllListeners(); });
+    beforeEach(() => {
+      ipcMain.removeAllListeners();
+    });
+    beforeEach(() => {
+      ipcMain.removeAllListeners();
+    });
 
     it('removes only the given channel', () => {
       ipcMain.on('channel1', () => {});

@@ -8,7 +8,7 @@ import { setTimeout } from 'node:timers/promises';
 import { ifdescribe, ifit } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
-function getSourceTypes (): ('window' | 'screen')[] {
+function getSourceTypes(): ('window' | 'screen')[] {
   if (process.platform === 'linux') {
     return ['screen'];
   }
@@ -72,14 +72,16 @@ describe('desktopCapturer', () => {
     w2.show();
     await wShown;
 
-    const isNonEmpties: boolean[] = (await desktopCapturer.getSources({
-      types: getSourceTypes(),
-      thumbnailSize: { width: 100, height: 100 }
-    })).map(s => s.thumbnail.constructor.name === 'NativeImage' && !s.thumbnail.isEmpty());
+    const isNonEmpties: boolean[] = (
+      await desktopCapturer.getSources({
+        types: getSourceTypes(),
+        thumbnailSize: { width: 100, height: 100 }
+      })
+    ).map((s) => s.thumbnail.constructor.name === 'NativeImage' && !s.thumbnail.isEmpty());
 
     w2.destroy();
     expect(isNonEmpties).to.be.an('array').that.is.not.empty();
-    expect(isNonEmpties.every(e => e === true)).to.be.true();
+    expect(isNonEmpties.every((e) => e === true)).to.be.true();
   });
 
   it('disabling thumbnail should return empty images', async () => {
@@ -88,14 +90,16 @@ describe('desktopCapturer', () => {
     w2.show();
     await wShown;
 
-    const isEmpties: boolean[] = (await desktopCapturer.getSources({
-      types: getSourceTypes(),
-      thumbnailSize: { width: 0, height: 0 }
-    })).map(s => s.thumbnail.constructor.name === 'NativeImage' && s.thumbnail.isEmpty());
+    const isEmpties: boolean[] = (
+      await desktopCapturer.getSources({
+        types: getSourceTypes(),
+        thumbnailSize: { width: 0, height: 0 }
+      })
+    ).map((s) => s.thumbnail.constructor.name === 'NativeImage' && s.thumbnail.isEmpty());
 
     w2.destroy();
     expect(isEmpties).to.be.an('array').that.is.not.empty();
-    expect(isEmpties.every(e => e === true)).to.be.true();
+    expect(isEmpties.every((e) => e === true)).to.be.true();
   });
 
   // Linux doesn't return any window sources.
@@ -221,8 +225,7 @@ describe('desktopCapturer', () => {
       // If they're not, skip remaining checks because either focus or
       // window placement are not reliable in the running test environment.
       const wListReversed = wList.slice().reverse();
-      const proceed = sources.every(
-        (source, index) => source.id === wListReversed[index].getMediaSourceId());
+      const proceed = sources.every((source, index) => source.id === wListReversed[index].getMediaSourceId());
       if (!proceed) return;
 
       // Move windows so wList is sorted from foreground to background.
@@ -275,9 +278,7 @@ describe('desktopCapturer', () => {
         types: ['window'],
         fetchWindowIcons: true
       });
-      testSource = sources.find(
-        s => s.name === 'desktop-capturer-test-window'
-      );
+      testSource = sources.find((s) => s.name === 'desktop-capturer-test-window');
       appIcon = testSource?.appIcon;
     });
 

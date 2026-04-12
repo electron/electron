@@ -14,15 +14,18 @@ class Timeout {
   _id: ReturnType<typeof globalThis.setTimeout>;
   _clearFn: (id: ReturnType<typeof globalThis.setTimeout>) => void;
 
-  constructor (id: ReturnType<typeof globalThis.setTimeout>, clearFn: (id: ReturnType<typeof globalThis.setTimeout>) => void) {
+  constructor(
+    id: ReturnType<typeof globalThis.setTimeout>,
+    clearFn: (id: ReturnType<typeof globalThis.setTimeout>) => void
+  ) {
     this._id = id;
     this._clearFn = clearFn;
   }
 
-  unref () {}
-  ref () {}
+  unref() {}
+  ref() {}
 
-  close () {
+  close() {
     this._clearFn.call(globalThis, this._id);
   }
 }
@@ -64,7 +67,7 @@ export const active = function (item: EnrollableItem) {
 
   const msecs = item._idleTimeout;
   if (msecs !== undefined && msecs >= 0) {
-    item._idleTimeoutId = setTimeout(function onTimeout () {
+    item._idleTimeoutId = setTimeout(function onTimeout() {
       if (item._onTimeout) item._onTimeout();
     }, msecs);
   }
@@ -80,23 +83,23 @@ const clearImmediateFallback = function (id: number) {
   delete immediateIds[id];
 };
 
-export const setImmediate = typeof globalThis.setImmediate === 'function'
-  ? globalThis.setImmediate
-  : function (fn: (...args: unknown[]) => void, ...rest: unknown[]) {
-    const id = nextImmediateId++;
+export const setImmediate =
+  typeof globalThis.setImmediate === 'function'
+    ? globalThis.setImmediate
+    : function (fn: (...args: unknown[]) => void, ...rest: unknown[]) {
+        const id = nextImmediateId++;
 
-    immediateIds[id] = true;
+        immediateIds[id] = true;
 
-    Promise.resolve().then(function onMicrotask () {
-      if (immediateIds[id]) {
-        fn(...rest);
-        clearImmediateFallback(id);
-      }
-    });
+        Promise.resolve().then(function onMicrotask() {
+          if (immediateIds[id]) {
+            fn(...rest);
+            clearImmediateFallback(id);
+          }
+        });
 
-    return id;
-  };
+        return id;
+      };
 
-export const clearImmediate = typeof globalThis.clearImmediate === 'function'
-  ? globalThis.clearImmediate
-  : clearImmediateFallback;
+export const clearImmediate =
+  typeof globalThis.clearImmediate === 'function' ? globalThis.clearImmediate : clearImmediateFallback;

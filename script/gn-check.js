@@ -23,7 +23,7 @@ if (!OUT_DIR) {
 const env = {
   ...getDepotToolsEnv(),
   CHROMIUM_BUILDTOOLS_PATH: path.resolve(SOURCE_ROOT, '..', 'buildtools'),
-  DEPOT_TOOLS_WIN_TOOLCHAIN: '0',
+  DEPOT_TOOLS_WIN_TOOLCHAIN: '0'
 };
 
 const gnCheckDirs = [

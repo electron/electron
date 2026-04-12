@@ -23,23 +23,9 @@ if (!process.env.ELECTRON_NPM_OTP) {
 let tempDir: string;
 temp.track(); // track and cleanup files at exit
 
-const files = [
-  'cli.js',
-  'index.js',
-  'install.js',
-  'package.json',
-  'README.md',
-  'LICENSE'
-];
+const files = ['cli.js', 'index.js', 'install.js', 'package.json', 'README.md', 'LICENSE'];
 
-const jsonFields = [
-  'name',
-  'repository',
-  'description',
-  'license',
-  'author',
-  'keywords'
-];
+const jsonFields = ['name', 'repository', 'description', 'license', 'author', 'keywords'];
 
 let npmTag = '';
 
@@ -52,7 +38,7 @@ const octokit = new Octokit({
   authStrategy: createGitHubTokenStrategy(targetRepo)
 });
 
-function getRepo (): ElectronReleaseRepo {
+function getRepo(): ElectronReleaseRepo {
   return isNightlyElectronVersion ? NIGHTLY_REPO : ELECTRON_REPO;
 }
 
@@ -81,10 +67,7 @@ new Promise<string>((resolve, reject) => {
       packageJson[fieldName] = rootPackageJson[fieldName];
     }
     packageJson.version = currentElectronVersion;
-    fs.writeFileSync(
-      path.join(tempDir, 'package.json'),
-      JSON.stringify(packageJson, null, 2)
-    );
+    fs.writeFileSync(path.join(tempDir, 'package.json'), JSON.stringify(packageJson, null, 2));
 
     return octokit.repos.listReleases({
       owner: ELECTRON_ORG,
@@ -92,10 +75,8 @@ new Promise<string>((resolve, reject) => {
     });
   })
   .then((releases) => {
-  // download electron.d.ts from release
-    const release = releases.data.find(
-      (release) => release.tag_name === `v${currentElectronVersion}`
-    );
+    // download electron.d.ts from release
+    const release = releases.data.find((release) => release.tag_name === `v${currentElectronVersion}`);
     if (!release) {
       throw new Error(`cannot find release with tag v${currentElectronVersion}`);
     }
@@ -107,10 +88,7 @@ new Promise<string>((resolve, reject) => {
       throw new Error(`cannot find electron.d.ts from v${currentElectronVersion} release assets`);
     }
 
-    const typingsContent = await getAssetContents(
-      targetRepo,
-      tsdAsset.id
-    );
+    const typingsContent = await getAssetContents(targetRepo, tsdAsset.id);
 
     fs.writeFileSync(path.join(tempDir, 'electron.d.ts'), typingsContent);
 
@@ -122,10 +100,7 @@ new Promise<string>((resolve, reject) => {
       throw new Error(`cannot find SHASUMS256.txt from v${currentElectronVersion} release assets`);
     }
 
-    const checksumsContent = await getAssetContents(
-      targetRepo,
-      checksumsAsset.id
-    );
+    const checksumsContent = await getAssetContents(targetRepo, checksumsAsset.id);
 
     const checksumsObject: Record<string, string> = Object.create(null);
     for (const line of checksumsContent.trim().split('\n')) {
@@ -162,15 +137,12 @@ new Promise<string>((resolve, reject) => {
       currentJson.name = 'electron-nightly';
       rootPackageJson.name = 'electron-nightly';
 
-      fs.writeFileSync(
-        path.join(tempDir, 'package.json'),
-        JSON.stringify(currentJson, null, 2)
-      );
+      fs.writeFileSync(path.join(tempDir, 'package.json'), JSON.stringify(currentJson, null, 2));
     } else {
       if (currentBranch === 'main') {
         // This should never happen, main releases should be nightly releases
         // this is here just-in-case
-        throw new Error('Unreachable release phase, can\'t tag a non-nightly release on the main branch');
+        throw new Error("Unreachable release phase, can't tag a non-nightly release on the main branch");
       } else if (!release.prerelease) {
         // Tag the release with a `2-0-x` style tag
         npmTag = currentBranch;
@@ -185,7 +157,7 @@ new Promise<string>((resolve, reject) => {
   })
   .then(() => childProcess.execSync('npm pack', { cwd: tempDir }))
   .then(() => {
-  // test that the package can install electron prebuilt from github release
+    // test that the package can install electron prebuilt from github release
     const tarballPath = path.join(tempDir, `${rootPackageJson.name}-${currentElectronVersion}.tgz`);
     return new Promise((resolve, reject) => {
       const result = childProcess.spawnSync('npm', ['install', tarballPath, '--force', '--silent'], {
@@ -199,10 +171,18 @@ new Promise<string>((resolve, reject) => {
       try {
         const electronPath = require(path.resolve(tempDir, 'node_modules', rootPackageJson.name));
         if (typeof electronPath !== 'string') {
-          return reject(new Error(`path to electron binary (${electronPath}) returned by the ${rootPackageJson.name} module is not a string`));
+          return reject(
+            new Error(
+              `path to electron binary (${electronPath}) returned by the ${rootPackageJson.name} module is not a string`
+            )
+          );
         }
         if (!fs.existsSync(electronPath)) {
-          return reject(new Error(`path to electron binary (${electronPath}) returned by the ${rootPackageJson.name} module does not exist on disk`));
+          return reject(
+            new Error(
+              `path to electron binary (${electronPath}) returned by the ${rootPackageJson.name} module does not exist on disk`
+            )
+          );
         }
       } catch (e) {
         console.error(e);
@@ -230,17 +210,20 @@ new Promise<string>((resolve, reject) => {
     if (rootPackageJson.name === 'electron') {
       // We should only customly add dist tags for non-nightly releases where the package name is still
       // "electron"
-      if (parsedLocalVersion.prerelease.length === 0 &&
-            semver.gt(currentElectronVersion, currentTags.latest)) {
-        childProcess.execSync(`npm dist-tag add electron@${currentElectronVersion} latest --otp=${process.env.ELECTRON_NPM_OTP}`);
+      if (parsedLocalVersion.prerelease.length === 0 && semver.gt(currentElectronVersion, currentTags.latest)) {
+        childProcess.execSync(
+          `npm dist-tag add electron@${currentElectronVersion} latest --otp=${process.env.ELECTRON_NPM_OTP}`
+        );
       }
-      if (parsedLocalVersion.prerelease[0] === 'beta' &&
-            semver.gt(currentElectronVersion, currentTags.beta)) {
-        childProcess.execSync(`npm dist-tag add electron@${currentElectronVersion} beta --otp=${process.env.ELECTRON_NPM_OTP}`);
+      if (parsedLocalVersion.prerelease[0] === 'beta' && semver.gt(currentElectronVersion, currentTags.beta)) {
+        childProcess.execSync(
+          `npm dist-tag add electron@${currentElectronVersion} beta --otp=${process.env.ELECTRON_NPM_OTP}`
+        );
       }
-      if (parsedLocalVersion.prerelease[0] === 'alpha' &&
-            semver.gt(currentElectronVersion, currentTags.alpha)) {
-        childProcess.execSync(`npm dist-tag add electron@${currentElectronVersion} alpha --otp=${process.env.ELECTRON_NPM_OTP}`);
+      if (parsedLocalVersion.prerelease[0] === 'alpha' && semver.gt(currentElectronVersion, currentTags.alpha)) {
+        childProcess.execSync(
+          `npm dist-tag add electron@${currentElectronVersion} alpha --otp=${process.env.ELECTRON_NPM_OTP}`
+        );
       }
     }
   })

@@ -5,7 +5,7 @@ const handleESModule = (loader: ElectronInternal.ModuleLoader) => () => {
 };
 
 // Attaches properties to |targetExports|.
-export function defineProperties (targetExports: Object, moduleList: ElectronInternal.ModuleEntry[]) {
+export function defineProperties(targetExports: Object, moduleList: ElectronInternal.ModuleEntry[]) {
   const descriptors: PropertyDescriptorMap = {};
   for (const module of moduleList) {
     descriptors[module.name] = {

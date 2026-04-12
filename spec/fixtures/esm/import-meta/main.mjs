@@ -3,7 +3,7 @@ import { app, BrowserWindow } from 'electron';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-async function createWindow () {
+async function createWindow() {
   const mainWindow = new BrowserWindow({
     show: false,
     webPreferences: {

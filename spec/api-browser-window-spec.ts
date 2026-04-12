@@ -1,4 +1,20 @@
-import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, net, protocol, screen, webContents, webFrameMain, session, systemPreferences, WebContents, WebFrameMain } from 'electron/main';
+import {
+  app,
+  BrowserWindow,
+  BrowserView,
+  dialog,
+  ipcMain,
+  OnBeforeSendHeadersListenerDetails,
+  net,
+  protocol,
+  screen,
+  webContents,
+  webFrameMain,
+  session,
+  systemPreferences,
+  WebContents,
+  WebFrameMain
+} from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -48,7 +64,7 @@ const expectBoundsEqual = (actual: any, expected: any) => {
 };
 
 const isBeforeUnload = (event: Event, level: number, message: string) => {
-  return (message === 'beforeunload');
+  return message === 'beforeunload';
 };
 
 describe('BrowserWindow module', () => {
@@ -221,7 +237,7 @@ describe('BrowserWindow module', () => {
       for (const { name, path } of events) {
         it(`should not crash when closed during ${name}`, async () => {
           const w = new BrowserWindow({ show: false });
-          w.webContents.once((name as any), () => {
+          w.webContents.once(name as any, () => {
             w.close();
           });
           const destroyed = once(w.webContents, 'destroyed');
@@ -307,7 +323,7 @@ describe('BrowserWindow module', () => {
       }).to.throw('Object has been destroyed');
     });
     it('should not crash when destroying windows with pending events', () => {
-      const focusListener = () => { };
+      const focusListener = () => {};
       app.on('browser-window-focus', focusListener);
       const windowCount = 3;
       const windowOptions = {
@@ -403,7 +419,7 @@ describe('BrowserWindow module', () => {
         }
       ];
       server = http.createServer((req, res) => {
-        function respond () {
+        function respond() {
           if (req.method === 'POST') {
             let body = '';
             req.on('data', (data) => {
@@ -413,8 +429,7 @@ describe('BrowserWindow module', () => {
               const parsedData = qs.parse(body);
               fs.readFile(filePath, (err, data) => {
                 if (err) return;
-                if (parsedData.username === 'test' &&
-                  parsedData.file === data.toString()) {
+                if (parsedData.username === 'test' && parsedData.file === data.toString()) {
                   res.end();
                 }
               });
@@ -518,14 +533,16 @@ describe('BrowserWindow module', () => {
     });
 
     describe('POST navigations', () => {
-      afterEach(() => { w.webContents.session.webRequest.onBeforeSendHeaders(null); });
+      afterEach(() => {
+        w.webContents.session.webRequest.onBeforeSendHeaders(null);
+      });
 
       it('supports specifying POST data', async () => {
         await w.loadURL(url, { postData });
       });
       it('sets the content type header on URL encoded forms', async () => {
         await w.loadURL(url);
-        const requestDetails: Promise<OnBeforeSendHeadersListenerDetails> = new Promise(resolve => {
+        const requestDetails: Promise<OnBeforeSendHeadersListenerDetails> = new Promise((resolve) => {
           w.webContents.session.webRequest.onBeforeSendHeaders((details) => {
             resolve(details);
           });
@@ -541,7 +558,7 @@ describe('BrowserWindow module', () => {
       });
       it('sets the content type header on multi part forms', async () => {
         await w.loadURL(url);
-        const requestDetails: Promise<OnBeforeSendHeadersListenerDetails> = new Promise(resolve => {
+        const requestDetails: Promise<OnBeforeSendHeadersListenerDetails> = new Promise((resolve) => {
           w.webContents.session.webRequest.onBeforeSendHeaders((details) => {
             resolve(details);
           });
@@ -558,7 +575,9 @@ describe('BrowserWindow module', () => {
           form.submit()
         `);
         const details = await requestDetails;
-        expect(details.requestHeaders['Content-Type'].startsWith('multipart/form-data; boundary=----WebKitFormBoundary')).to.equal(true);
+        expect(
+          details.requestHeaders['Content-Type'].startsWith('multipart/form-data; boundary=----WebKitFormBoundary')
+        ).to.equal(true);
       });
     });
 
@@ -691,7 +710,7 @@ describe('BrowserWindow module', () => {
         it('is triggered when navigating from file: to http:', async () => {
           await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
           w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`);
-          const navigatedTo = await new Promise(resolve => {
+          const navigatedTo = await new Promise((resolve) => {
             w.webContents.once('will-navigate', (e, url) => {
               e.preventDefault();
               resolve(url);
@@ -704,7 +723,7 @@ describe('BrowserWindow module', () => {
         it('is triggered when navigating from about:blank to http:', async () => {
           await w.loadURL('about:blank');
           w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`);
-          const navigatedTo = await new Promise(resolve => {
+          const navigatedTo = await new Promise((resolve) => {
             w.webContents.once('will-navigate', (e, url) => {
               e.preventDefault();
               resolve(url);
@@ -715,7 +734,9 @@ describe('BrowserWindow module', () => {
         });
 
         it('is triggered when a cross-origin iframe navigates _top', async () => {
-          w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-top"></iframe>`);
+          w.loadURL(
+            `data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-top"></iframe>`
+          );
           await emittedUntil(w.webContents, 'did-frame-finish-load', (e: any, isMainFrame: boolean) => !isMainFrame);
           let initiator: WebFrameMain | null | undefined;
           w.webContents.on('will-navigate', (e) => {
@@ -731,7 +752,7 @@ describe('BrowserWindow module', () => {
         it('is triggered when navigating from chrome: to http:', async () => {
           let hasEmittedWillNavigate = false;
           const willNavigatePromise = new Promise((resolve) => {
-            w.webContents.once('will-navigate', e => {
+            w.webContents.once('will-navigate', (e) => {
               e.preventDefault();
               hasEmittedWillNavigate = true;
               resolve(e.url);
@@ -809,35 +830,40 @@ describe('BrowserWindow module', () => {
 
         it('can be prevented when navigating subframe', (done) => {
           let willNavigate = false;
-          w.webContents.on('did-frame-navigate', (_event, _url, _httpResponseCode, _httpStatusText, isMainFrame, frameProcessId, frameRoutingId) => {
-            if (isMainFrame) return;
+          w.webContents.on(
+            'did-frame-navigate',
+            (_event, _url, _httpResponseCode, _httpStatusText, isMainFrame, frameProcessId, frameRoutingId) => {
+              if (isMainFrame) return;
 
-            w.webContents.once('will-frame-navigate', (e) => {
-              willNavigate = true;
-              e.preventDefault();
-            });
+              w.webContents.once('will-frame-navigate', (e) => {
+                willNavigate = true;
+                e.preventDefault();
+              });
 
-            w.webContents.on('did-stop-loading', () => {
-              const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
-              expect(frame).to.not.be.undefined();
-              if (willNavigate) {
-                // i.e. it shouldn't have had '?navigated' appended to it.
-                try {
-                  expect(frame!.url.endsWith('/navigate-iframe-immediately')).to.be.true();
-                  done();
-                } catch (e) {
-                  done(e);
+              w.webContents.on('did-stop-loading', () => {
+                const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
+                expect(frame).to.not.be.undefined();
+                if (willNavigate) {
+                  // i.e. it shouldn't have had '?navigated' appended to it.
+                  try {
+                    expect(frame!.url.endsWith('/navigate-iframe-immediately')).to.be.true();
+                    done();
+                  } catch (e) {
+                    done(e);
+                  }
                 }
-              }
-            });
-          });
-          w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-iframe-immediately"></iframe>`);
+              });
+            }
+          );
+          w.loadURL(
+            `data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-iframe-immediately"></iframe>`
+          );
         });
 
         it('is triggered when navigating from file: to http:', async () => {
           await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
           w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`);
-          const navigatedTo = await new Promise(resolve => {
+          const navigatedTo = await new Promise((resolve) => {
             w.webContents.once('will-frame-navigate', (e) => {
               e.preventDefault();
               resolve(e.url);
@@ -850,7 +876,7 @@ describe('BrowserWindow module', () => {
         it('is triggered when navigating from about:blank to http:', async () => {
           await w.loadURL('about:blank');
           w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`);
-          const navigatedTo = await new Promise(resolve => {
+          const navigatedTo = await new Promise((resolve) => {
             w.webContents.once('will-frame-navigate', (e) => {
               e.preventDefault();
               resolve(e.url);
@@ -861,7 +887,9 @@ describe('BrowserWindow module', () => {
         });
 
         it('is triggered when a cross-origin iframe navigates _top', async () => {
-          await w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-top"></iframe>`);
+          await w.loadURL(
+            `data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-top"></iframe>`
+          );
           await setTimeout(1000);
 
           let willFrameNavigateEmitted = false;
@@ -879,20 +907,28 @@ describe('BrowserWindow module', () => {
             targetId: iframeTarget.targetId,
             flatten: true
           });
-          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
-            type: 'mousePressed',
-            x: 10,
-            y: 10,
-            clickCount: 1,
-            button: 'left'
-          }, sessionId);
-          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
-            type: 'mouseReleased',
-            x: 10,
-            y: 10,
-            clickCount: 1,
-            button: 'left'
-          }, sessionId);
+          await w.webContents.debugger.sendCommand(
+            'Input.dispatchMouseEvent',
+            {
+              type: 'mousePressed',
+              x: 10,
+              y: 10,
+              clickCount: 1,
+              button: 'left'
+            },
+            sessionId
+          );
+          await w.webContents.debugger.sendCommand(
+            'Input.dispatchMouseEvent',
+            {
+              type: 'mouseReleased',
+              x: 10,
+              y: 10,
+              clickCount: 1,
+              button: 'left'
+            },
+            sessionId
+          );
 
           await didNavigatePromise;
 
@@ -901,7 +937,9 @@ describe('BrowserWindow module', () => {
         });
 
         it('is triggered when a cross-origin iframe navigates itself', async () => {
-          await w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-iframe"></iframe>`);
+          await w.loadURL(
+            `data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-iframe"></iframe>`
+          );
           await setTimeout(1000);
 
           let willNavigateEmitted = false;
@@ -919,20 +957,28 @@ describe('BrowserWindow module', () => {
             targetId: iframeTarget.targetId,
             flatten: true
           });
-          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
-            type: 'mousePressed',
-            x: 10,
-            y: 10,
-            clickCount: 1,
-            button: 'left'
-          }, sessionId);
-          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
-            type: 'mouseReleased',
-            x: 10,
-            y: 10,
-            clickCount: 1,
-            button: 'left'
-          }, sessionId);
+          await w.webContents.debugger.sendCommand(
+            'Input.dispatchMouseEvent',
+            {
+              type: 'mousePressed',
+              x: 10,
+              y: 10,
+              clickCount: 1,
+              button: 'left'
+            },
+            sessionId
+          );
+          await w.webContents.debugger.sendCommand(
+            'Input.dispatchMouseEvent',
+            {
+              type: 'mouseReleased',
+              x: 10,
+              y: 10,
+              clickCount: 1,
+              button: 'left'
+            },
+            sessionId
+          );
 
           await didNavigatePromise;
 
@@ -940,9 +986,7 @@ describe('BrowserWindow module', () => {
           expect(isMainFrameValue).to.be.false();
         });
 
-        it('can cancel when a cross-origin iframe navigates itself', async () => {
-
-        });
+        it('can cancel when a cross-origin iframe navigates itself', async () => {});
       });
 
       describe('will-redirect event', () => {
@@ -1066,14 +1110,10 @@ describe('BrowserWindow module', () => {
         });
         it('for initial navigation, event order is consistent', async () => {
           const firedEvents: string[] = [];
-          const expectedEventOrder = [
-            'did-start-navigation',
-            'did-frame-navigate',
-            'did-navigate'
-          ];
-          const allEvents = Promise.all(expectedEventOrder.map(event =>
-            once(w.webContents, event).then(() => firedEvents.push(event))
-          ));
+          const expectedEventOrder = ['did-start-navigation', 'did-frame-navigate', 'did-navigate'];
+          const allEvents = Promise.all(
+            expectedEventOrder.map((event) => once(w.webContents, event).then(() => firedEvents.push(event)))
+          );
           w.loadURL(url);
           await allEvents;
           expect(firedEvents).to.deep.equal(expectedEventOrder);
@@ -1091,9 +1131,7 @@ describe('BrowserWindow module', () => {
           w.loadURL(url + '/navigate');
           await once(w.webContents, 'did-navigate');
           await setTimeout(2000);
-          Promise.all(navigationEvents.map(event =>
-            once(w.webContents, event).then(() => firedEvents.push(event))
-          ));
+          Promise.all(navigationEvents.map((event) => once(w.webContents, event).then(() => firedEvents.push(event))));
           const navigationFinished = once(w.webContents, 'did-navigate');
           w.webContents.debugger.attach('1.1');
           const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
@@ -1102,20 +1140,28 @@ describe('BrowserWindow module', () => {
             targetId: pageTarget.targetId,
             flatten: true
           });
-          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
-            type: 'mousePressed',
-            x: 10,
-            y: 10,
-            clickCount: 1,
-            button: 'left'
-          }, sessionId);
-          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
-            type: 'mouseReleased',
-            x: 10,
-            y: 10,
-            clickCount: 1,
-            button: 'left'
-          }, sessionId);
+          await w.webContents.debugger.sendCommand(
+            'Input.dispatchMouseEvent',
+            {
+              type: 'mousePressed',
+              x: 10,
+              y: 10,
+              clickCount: 1,
+              button: 'left'
+            },
+            sessionId
+          );
+          await w.webContents.debugger.sendCommand(
+            'Input.dispatchMouseEvent',
+            {
+              type: 'mouseReleased',
+              x: 10,
+              y: 10,
+              clickCount: 1,
+              button: 'left'
+            },
+            sessionId
+          );
           await navigationFinished;
           expect(firedEvents).to.deep.equal(expectedEventOrder);
         });
@@ -1134,9 +1180,7 @@ describe('BrowserWindow module', () => {
           w.loadURL(url + '/redirect');
           await once(w.webContents, 'did-navigate');
           await setTimeout(2000);
-          Promise.all(navigationEvents.map(event =>
-            once(w.webContents, event).then(() => firedEvents.push(event))
-          ));
+          Promise.all(navigationEvents.map((event) => once(w.webContents, event).then(() => firedEvents.push(event))));
           const navigationFinished = once(w.webContents, 'did-navigate');
           w.webContents.debugger.attach('1.1');
           const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
@@ -1145,36 +1189,39 @@ describe('BrowserWindow module', () => {
             targetId: pageTarget.targetId,
             flatten: true
           });
-          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
-            type: 'mousePressed',
-            x: 10,
-            y: 10,
-            clickCount: 1,
-            button: 'left'
-          }, sessionId);
-          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
-            type: 'mouseReleased',
-            x: 10,
-            y: 10,
-            clickCount: 1,
-            button: 'left'
-          }, sessionId);
+          await w.webContents.debugger.sendCommand(
+            'Input.dispatchMouseEvent',
+            {
+              type: 'mousePressed',
+              x: 10,
+              y: 10,
+              clickCount: 1,
+              button: 'left'
+            },
+            sessionId
+          );
+          await w.webContents.debugger.sendCommand(
+            'Input.dispatchMouseEvent',
+            {
+              type: 'mouseReleased',
+              x: 10,
+              y: 10,
+              clickCount: 1,
+              button: 'left'
+            },
+            sessionId
+          );
           await navigationFinished;
           expect(firedEvents).to.deep.equal(expectedEventOrder);
         });
 
         it('when navigating in-page, event order is consistent', async () => {
           const firedEvents: string[] = [];
-          const expectedEventOrder = [
-            'did-start-navigation',
-            'did-navigate-in-page'
-          ];
+          const expectedEventOrder = ['did-start-navigation', 'did-navigate-in-page'];
           w.loadURL(url + '/in-page');
           await once(w.webContents, 'did-navigate');
           await setTimeout(2000);
-          Promise.all(navigationEvents.map(event =>
-            once(w.webContents, event).then(() => firedEvents.push(event))
-          ));
+          Promise.all(navigationEvents.map((event) => once(w.webContents, event).then(() => firedEvents.push(event))));
           const navigationFinished = once(w.webContents, 'did-navigate-in-page');
           w.webContents.debugger.attach('1.1');
           const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
@@ -1183,20 +1230,28 @@ describe('BrowserWindow module', () => {
             targetId: pageTarget.targetId,
             flatten: true
           });
-          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
-            type: 'mousePressed',
-            x: 10,
-            y: 10,
-            clickCount: 1,
-            button: 'left'
-          }, sessionId);
-          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
-            type: 'mouseReleased',
-            x: 10,
-            y: 10,
-            clickCount: 1,
-            button: 'left'
-          }, sessionId);
+          await w.webContents.debugger.sendCommand(
+            'Input.dispatchMouseEvent',
+            {
+              type: 'mousePressed',
+              x: 10,
+              y: 10,
+              clickCount: 1,
+              button: 'left'
+            },
+            sessionId
+          );
+          await w.webContents.debugger.sendCommand(
+            'Input.dispatchMouseEvent',
+            {
+              type: 'mouseReleased',
+              x: 10,
+              y: 10,
+              clickCount: 1,
+              button: 'left'
+            },
+            sessionId
+          );
           await navigationFinished;
           expect(firedEvents).to.deep.equal(expectedEventOrder);
         });
@@ -1437,7 +1492,8 @@ describe('BrowserWindow module', () => {
         await isShow;
         await isFocus;
 
-        const getActiveAppOsa = 'tell application "System Events" to get the name of the first process whose frontmost is true';
+        const getActiveAppOsa =
+          'tell application "System Events" to get the name of the first process whose frontmost is true';
         const activeApp = childProcess.execSync(`osascript -e '${getActiveAppOsa}'`).toString().trim();
 
         expect(activeApp).to.equal('Finder');
@@ -1573,15 +1629,15 @@ describe('BrowserWindow module', () => {
         await shown;
 
         const child = new BrowserWindow({ modal: true, parent: w });
-        expect(() => { child.moveTop(); }).to.not.throw();
+        expect(() => {
+          child.moveTop();
+        }).to.not.throw();
       });
     });
 
     describe('BrowserWindow.moveAbove(mediaSourceId)', () => {
       it('should throw an exception if wrong formatting', async () => {
-        const fakeSourceIds = [
-          'none', 'screen:0', 'window:fake', 'window:1234', 'foobar:1:2'
-        ];
+        const fakeSourceIds = ['none', 'screen:0', 'window:fake', 'window:1234', 'foobar:1:2'];
         for (const sourceId of fakeSourceIds) {
           expect(() => {
             w.moveAbove(sourceId);
@@ -1600,8 +1656,7 @@ describe('BrowserWindow module', () => {
 
       it('should throw an exception if invalid window', async () => {
         // It is very unlikely that these window id exist.
-        const fakeSourceIds = ['window:99999999:0', 'window:123456:1',
-          'window:123456:9'];
+        const fakeSourceIds = ['window:99999999:0', 'window:123456:1', 'window:123456:9'];
         for (const sourceId of fakeSourceIds) {
           expect(() => {
             w.moveAbove(sourceId);
@@ -1699,7 +1754,7 @@ describe('BrowserWindow module', () => {
       });
 
       ifit(process.platform === 'darwin')('on macOS', () => {
-        it('emits \'resized\' event after animating', async () => {
+        it("emits 'resized' event after animating", async () => {
           const fullBounds = { x: 440, y: 225, width: 500, height: 400 };
           w.setBounds(fullBounds, true);
 
@@ -1741,7 +1796,7 @@ describe('BrowserWindow module', () => {
       });
 
       ifit(process.platform === 'darwin')('on macOS', () => {
-        it('emits \'resized\' event after animating', async () => {
+        it("emits 'resized' event after animating", async () => {
           const size = [300, 400];
           w.setSize(size[0], size[1], true);
 
@@ -1822,7 +1877,7 @@ describe('BrowserWindow module', () => {
         expectBoundsEqual(w.getSize(), size);
       });
 
-      it('doesn\'t change bounds when maximum size is set', () => {
+      it("doesn't change bounds when maximum size is set", () => {
         w.setMenu(null);
         w.setMaximumSize(400, 400);
         // Without https://github.com/electron/electron/pull/29101
@@ -2091,12 +2146,20 @@ describe('BrowserWindow module', () => {
           let count = 0;
 
           w.on('maximize', () => {
-            if (count === 0) syncSetTimeout(() => { w.minimize(); });
+            if (count === 0) {
+              syncSetTimeout(() => {
+                w.minimize();
+              });
+            }
             count++;
           });
 
           w.on('minimize', () => {
-            if (count === 1) syncSetTimeout(() => { w.restore(); });
+            if (count === 1) {
+              syncSetTimeout(() => {
+                w.restore();
+              });
+            }
             count++;
           });
 
@@ -2282,7 +2345,7 @@ describe('BrowserWindow module', () => {
             expect(w.fullScreen).to.be.true();
           });
 
-          it('checks normal bounds when fullscreen\'ed', async () => {
+          it("checks normal bounds when fullscreen'ed", async () => {
             const bounds = w.getBounds();
             const enterFullScreen = once(w, 'enter-full-screen');
             w.show();
@@ -2335,7 +2398,7 @@ describe('BrowserWindow module', () => {
             await close;
           });
 
-          it('checks normal bounds when unfullscreen\'ed', async () => {
+          it("checks normal bounds when unfullscreen'ed", async () => {
             const bounds = w.getBounds();
             w.once('enter-full-screen', () => {
               w.fullScreen = false;
@@ -2361,7 +2424,7 @@ describe('BrowserWindow module', () => {
             expect(w.isFullScreen()).to.be.true();
           });
 
-          it('checks normal bounds when fullscreen\'ed', async () => {
+          it("checks normal bounds when fullscreen'ed", async () => {
             const bounds = w.getBounds();
             w.show();
 
@@ -2416,7 +2479,7 @@ describe('BrowserWindow module', () => {
             await close;
           });
 
-          it('checks normal bounds when unfullscreen\'ed', async () => {
+          it("checks normal bounds when unfullscreen'ed", async () => {
             const bounds = w.getBounds();
             w.show();
 
@@ -2883,7 +2946,9 @@ describe('BrowserWindow module', () => {
         }
         res.end();
       });
-      server.on('connection', () => { connections++; });
+      server.on('connection', () => {
+        connections++;
+      });
       url = (await listen(server)).url;
     });
     afterEach(async () => {
@@ -3190,7 +3255,7 @@ describe('BrowserWindow module', () => {
       // https://github.com/electron/electron/issues/25413, and is not integral
       // to the test.
       const p = once(w.webContents, 'did-attach-webview');
-      const [, webviewContents] = await once(app, 'web-contents-created') as [any, WebContents];
+      const [, webviewContents] = (await once(app, 'web-contents-created')) as [any, WebContents];
       expect(BrowserWindow.fromWebContents(webviewContents)!.id).to.equal(w.id);
       await p;
     });
@@ -3258,7 +3323,7 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow.setOpacity(opacity)', () => {
     afterEach(closeAllWindows);
 
-    ifdescribe(process.platform !== 'linux')(('Windows and Mac'), () => {
+    ifdescribe(process.platform !== 'linux')('Windows and Mac', () => {
       it('make window with initial opacity', () => {
         const w = new BrowserWindow({ show: false, opacity: 0.5 });
         expect(w.getOpacity()).to.equal(0.5);
@@ -3284,7 +3349,7 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    ifdescribe(process.platform === 'linux')(('Linux'), () => {
+    ifdescribe(process.platform === 'linux')('Linux', () => {
       it('sets 1 regardless of parameter', () => {
         const w = new BrowserWindow({ show: false });
         w.setOpacity(0);
@@ -3302,7 +3367,10 @@ describe('BrowserWindow module', () => {
       expect(() => {
         w.setShape([]);
         w.setShape([{ x: 0, y: 0, width: 100, height: 100 }]);
-        w.setShape([{ x: 0, y: 0, width: 100, height: 100 }, { x: 0, y: 200, width: 1000, height: 100 }]);
+        w.setShape([
+          { x: 0, y: 0, width: 100, height: 100 },
+          { x: 0, y: 200, width: 1000, height: 100 }
+        ]);
         w.setShape([]);
       }).to.not.throw();
     });
@@ -3696,11 +3764,16 @@ describe('BrowserWindow module', () => {
   });
 
   describe('"webPreferences" option', () => {
-    afterEach(() => { ipcMain.removeAllListeners('answer'); });
+    afterEach(() => {
+      ipcMain.removeAllListeners('answer');
+    });
     afterEach(closeAllWindows);
 
     describe('"preload" option', () => {
-      const doesNotLeakSpec = (name: string, webPrefs: { nodeIntegration: boolean, sandbox: boolean, contextIsolation: boolean }) => {
+      const doesNotLeakSpec = (
+        name: string,
+        webPrefs: { nodeIntegration: boolean; sandbox: boolean; contextIsolation: boolean }
+      ) => {
         it(name, async () => {
           const w = new BrowserWindow({
             webPreferences: {
@@ -3973,9 +4046,7 @@ describe('BrowserWindow module', () => {
         const pageUrl = 'file://' + htmlPath;
         w.loadURL(pageUrl);
         const [, url] = await once(ipcMain, 'answer');
-        const expectedUrl = process.platform === 'win32'
-          ? 'file:///' + htmlPath.replaceAll('\\', '/')
-          : pageUrl;
+        const expectedUrl = process.platform === 'win32' ? 'file:///' + htmlPath.replaceAll('\\', '/') : pageUrl;
         expect(url).to.equal(expectedUrl);
       });
 
@@ -4022,10 +4093,11 @@ describe('BrowserWindow module', () => {
         const pageUrl = 'file://' + htmlPath;
         const answer = once(ipcMain, 'answer');
         w.loadURL(pageUrl);
-        const [, { url, frameName, options }] = await once(w.webContents, 'did-create-window') as [BrowserWindow, Electron.DidCreateWindowDetails];
-        const expectedUrl = process.platform === 'win32'
-          ? 'file:///' + htmlPath.replaceAll('\\', '/')
-          : pageUrl;
+        const [, { url, frameName, options }] = (await once(w.webContents, 'did-create-window')) as [
+          BrowserWindow,
+          Electron.DidCreateWindowDetails
+        ];
+        const expectedUrl = process.platform === 'win32' ? 'file:///' + htmlPath.replaceAll('\\', '/') : pageUrl;
         expect(url).to.equal(expectedUrl);
         expect(frameName).to.equal('popup!');
         expect(options.width).to.equal(500);
@@ -4053,10 +4125,7 @@ describe('BrowserWindow module', () => {
           }
         }));
 
-        w.loadFile(
-          path.join(__dirname, 'fixtures', 'api', 'sandbox.html'),
-          { search: 'window-open-external' }
-        );
+        w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'window-open-external' });
 
         // Wait for a message from the main window saying that it's ready.
         await once(ipcMain, 'opener-loaded');
@@ -4068,7 +4137,7 @@ describe('BrowserWindow module', () => {
 
         // The page is going to open a popup that it won't be able to close.
         // We have to close it from here later.
-        const [, popupWindow] = await once(app, 'browser-window-created') as [any, BrowserWindow];
+        const [, popupWindow] = (await once(app, 'browser-window-created')) as [any, BrowserWindow];
 
         // Ask the popup window for details.
         const detailsAnswer = once(ipcMain, 'child-loaded');
@@ -4091,12 +4160,11 @@ describe('BrowserWindow module', () => {
         // so let's close it from here before we run any checks.
         await closeWindow(popupWindow, { assertNotWindows: false });
 
-        const errorPattern = /Failed to read a named property 'document' from 'Window': Blocked a frame with origin "(.*?)" from accessing a cross-origin frame./;
-        expect(popupAccessMessage).to.be.a('string',
-          'child\'s .document is accessible from its parent window');
+        const errorPattern =
+          /Failed to read a named property 'document' from 'Window': Blocked a frame with origin "(.*?)" from accessing a cross-origin frame./;
+        expect(popupAccessMessage).to.be.a('string', "child's .document is accessible from its parent window");
         expect(popupAccessMessage).to.match(errorPattern);
-        expect(openerAccessMessage).to.be.a('string',
-          'opener .document is accessible from a popup window');
+        expect(openerAccessMessage).to.be.a('string', 'opener .document is accessible from a popup window');
         expect(openerAccessMessage).to.match(errorPattern);
       });
 
@@ -4109,7 +4177,10 @@ describe('BrowserWindow module', () => {
         });
 
         const preloadPath = path.join(mainFixtures, 'api', 'new-window-preload.js');
-        w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { preload: preloadPath } } }));
+        w.webContents.setWindowOpenHandler(() => ({
+          action: 'allow',
+          overrideBrowserWindowOptions: { webPreferences: { preload: preloadPath } }
+        }));
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
         const [, { argv }] = await once(ipcMain, 'answer');
         expect(argv).to.include('--enable-sandbox');
@@ -4124,7 +4195,10 @@ describe('BrowserWindow module', () => {
         });
 
         const preloadPath = path.join(mainFixtures, 'api', 'new-window-preload.js');
-        w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { preload: preloadPath, contextIsolation: false } } }));
+        w.webContents.setWindowOpenHandler(() => ({
+          action: 'allow',
+          overrideBrowserWindowOptions: { webPreferences: { preload: preloadPath, contextIsolation: false } }
+        }));
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
         const [[, childWebContents]] = await Promise.all([
           once(app, 'web-contents-created') as Promise<[any, WebContents]>,
@@ -4151,7 +4225,7 @@ describe('BrowserWindow module', () => {
           }
         }));
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
-        const [childWindow] = await once(w.webContents, 'did-create-window') as [BrowserWindow, any];
+        const [childWindow] = (await once(w.webContents, 'did-create-window')) as [BrowserWindow, any];
         await once(childWindow.webContents, 'did-finish-load');
         expect(childWindow.webContents.getZoomFactor()).to.be.closeTo(2.0, 0.1);
       });
@@ -4166,7 +4240,10 @@ describe('BrowserWindow module', () => {
           }
         });
         let childWc: WebContents | null = null;
-        w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { preload, contextIsolation: false } } }));
+        w.webContents.setWindowOpenHandler(() => ({
+          action: 'allow',
+          overrideBrowserWindowOptions: { webPreferences: { preload, contextIsolation: false } }
+        }));
 
         w.webContents.on('did-create-window', (win) => {
           childWc = win.webContents;
@@ -4183,10 +4260,7 @@ describe('BrowserWindow module', () => {
           event.sender.send('verified');
         });
 
-        const done = Promise.all([
-          'parent-answer',
-          'child-answer'
-        ].map(name => once(ipcMain, name)));
+        const done = Promise.all(['parent-answer', 'child-answer'].map((name) => once(ipcMain, name)));
         w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'verify-ipc-sender' });
         await done;
       });
@@ -4209,26 +4283,26 @@ describe('BrowserWindow module', () => {
         });
 
         it('works for stop events', async () => {
-          const done = Promise.all([
-            'did-navigate',
-            'did-fail-load',
-            'did-stop-loading'
-          ].map(name => once(w.webContents, name)));
+          const done = Promise.all(
+            ['did-navigate', 'did-fail-load', 'did-stop-loading'].map((name) => once(w.webContents, name))
+          );
           w.loadURL('data:text/html,<script>stop()</script>');
           await done;
         });
 
         it('works for web contents events', async () => {
-          const done = Promise.all([
-            'did-finish-load',
-            'did-frame-finish-load',
-            'did-navigate-in-page',
-            'will-navigate',
-            'did-start-loading',
-            'did-stop-loading',
-            'did-frame-finish-load',
-            'dom-ready'
-          ].map(name => once(w.webContents, name)));
+          const done = Promise.all(
+            [
+              'did-finish-load',
+              'did-frame-finish-load',
+              'did-navigate-in-page',
+              'will-navigate',
+              'did-start-loading',
+              'did-stop-loading',
+              'did-frame-finish-load',
+              'dom-ready'
+            ].map((name) => once(w.webContents, name))
+          );
           w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'webcontents-events' });
           await done;
         });
@@ -4331,7 +4405,9 @@ describe('BrowserWindow module', () => {
         const answer = once(ipcMain, 'answer');
         w.loadFile(path.join(fixtures, 'api', 'native-window-open-cross-origin.html'));
         const [, content] = await answer;
-        expect(content).to.equal('Failed to read a named property \'toString\' from \'Location\': Blocked a frame with origin "file://" from accessing a cross-origin frame.');
+        expect(content).to.equal(
+          "Failed to read a named property 'toString' from 'Location': Blocked a frame with origin \"file://\" from accessing a cross-origin frame."
+        );
       });
       it('opens window from <iframe> tags', async () => {
         const answer = once(ipcMain, 'answer');
@@ -4510,7 +4586,10 @@ describe('BrowserWindow module', () => {
           }
         });
         await w.loadFile(path.join(fixtures, 'pages', 'content.html'));
-        const fontFamily = await w.webContents.executeJavaScript("window.getComputedStyle(document.getElementsByTagName('p')[0])['font-family']", true);
+        const fontFamily = await w.webContents.executeJavaScript(
+          "window.getComputedStyle(document.getElementsByTagName('p')[0])['font-family']",
+          true
+        );
         expect(fontFamily).to.equal('Impact');
       });
     });
@@ -4547,7 +4626,9 @@ describe('BrowserWindow module', () => {
     it('emits for each close attempt', async () => {
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
 
-      const destroyListener = () => { expect.fail('Close was not prevented'); };
+      const destroyListener = () => {
+        expect.fail('Close was not prevented');
+      };
       w.webContents.once('destroyed', destroyListener);
 
       w.webContents.executeJavaScript('installBeforeUnload(2)', true);
@@ -4569,7 +4650,9 @@ describe('BrowserWindow module', () => {
     it('emits for each reload attempt', async () => {
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
 
-      const navigationListener = () => { expect.fail('Reload was not prevented'); };
+      const navigationListener = () => {
+        expect.fail('Reload was not prevented');
+      };
       w.webContents.once('did-start-navigation', navigationListener);
 
       w.webContents.executeJavaScript('installBeforeUnload(2)', true);
@@ -4593,7 +4676,9 @@ describe('BrowserWindow module', () => {
     it('emits for each navigation attempt', async () => {
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
 
-      const navigationListener = () => { expect.fail('Reload was not prevented'); };
+      const navigationListener = () => {
+        expect.fail('Reload was not prevented');
+      };
       w.webContents.once('did-start-navigation', navigationListener);
 
       w.webContents.executeJavaScript('installBeforeUnload(2)', true);
@@ -4904,8 +4989,7 @@ describe('BrowserWindow module', () => {
             // page load.
             return;
           }
-          if (rect.height === contentHeight && rect.width === contentWidth &&
-            !gotInitialFullSizeFrame) {
+          if (rect.height === contentHeight && rect.width === contentWidth && !gotInitialFullSizeFrame) {
             // The initial frame is full-size, but we're looking for a call
             // with just the dirty-rect. The next frame should be a smaller
             // rect.
@@ -4959,24 +5043,24 @@ describe('BrowserWindow module', () => {
         fs.unlinkSync(savePageHtmlPath);
         fs.rmdirSync(path.join(savePageDir, 'save_page_files'));
         fs.rmdirSync(savePageDir);
-      } catch { }
+      } catch {}
     });
 
     it('should throw when passing relative paths', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
 
-      await expect(
-        w.webContents.savePage('save_page.html', 'HTMLComplete')
-      ).to.eventually.be.rejectedWith('Path must be absolute');
+      await expect(w.webContents.savePage('save_page.html', 'HTMLComplete')).to.eventually.be.rejectedWith(
+        'Path must be absolute'
+      );
 
-      await expect(
-        w.webContents.savePage('save_page.html', 'HTMLOnly')
-      ).to.eventually.be.rejectedWith('Path must be absolute');
+      await expect(w.webContents.savePage('save_page.html', 'HTMLOnly')).to.eventually.be.rejectedWith(
+        'Path must be absolute'
+      );
 
-      await expect(
-        w.webContents.savePage('save_page.html', 'MHTML')
-      ).to.eventually.be.rejectedWith('Path must be absolute');
+      await expect(w.webContents.savePage('save_page.html', 'MHTML')).to.eventually.be.rejectedWith(
+        'Path must be absolute'
+      );
     });
 
     it('should save page to disk with HTMLOnly', async () => {
@@ -5007,7 +5091,7 @@ describe('BrowserWindow module', () => {
       try {
         await fs.promises.unlink(savePageMHTMLPath);
         await fs.promises.rmdir(tmpDir);
-      } catch { }
+      } catch {}
     });
 
     it('should save page to disk with HTMLComplete', async () => {
@@ -5053,20 +5137,23 @@ describe('BrowserWindow module', () => {
     // TODO(zcbenz):
     // This test does not run on Linux CI. See:
     // https://github.com/electron/electron/issues/28699
-    ifit(process.platform === 'linux' && !process.env.CI)('should bring a minimized maximized window back to maximized state', async () => {
-      const w = new BrowserWindow({});
-      const maximize = once(w, 'maximize');
-      w.maximize();
-      await maximize;
-      const minimize = once(w, 'minimize');
-      w.minimize();
-      await minimize;
-      expect(w.isMaximized()).to.equal(false);
-      const restore = once(w, 'restore');
-      w.restore();
-      await restore;
-      expect(w.isMaximized()).to.equal(true);
-    });
+    ifit(process.platform === 'linux' && !process.env.CI)(
+      'should bring a minimized maximized window back to maximized state',
+      async () => {
+        const w = new BrowserWindow({});
+        const maximize = once(w, 'maximize');
+        w.maximize();
+        await maximize;
+        const minimize = once(w, 'minimize');
+        w.minimize();
+        await minimize;
+        expect(w.isMaximized()).to.equal(false);
+        const restore = once(w, 'restore');
+        w.restore();
+        await restore;
+        expect(w.isMaximized()).to.equal(true);
+      }
+    );
 
     ifit(process.platform !== 'linux')('should not break fullscreen state', async () => {
       const w = new BrowserWindow({ show: false });
@@ -5149,21 +5236,24 @@ describe('BrowserWindow module', () => {
       expectBoundsEqual(w.getPosition(), initialPosition);
     });
 
-    ifit(process.platform === 'darwin')('should not change size or position of a window which is functionally maximized', async () => {
-      const { workArea } = screen.getPrimaryDisplay();
+    ifit(process.platform === 'darwin')(
+      'should not change size or position of a window which is functionally maximized',
+      async () => {
+        const { workArea } = screen.getPrimaryDisplay();
 
-      const bounds = {
-        x: workArea.x,
-        y: workArea.y,
-        width: workArea.width,
-        height: workArea.height
-      };
+        const bounds = {
+          x: workArea.x,
+          y: workArea.y,
+          width: workArea.width,
+          height: workArea.height
+        };
 
-      const w = new BrowserWindow(bounds);
-      w.unmaximize();
-      await setTimeout(1000);
-      expectBoundsEqual(w.getBounds(), bounds);
-    });
+        const w = new BrowserWindow(bounds);
+        w.unmaximize();
+        await setTimeout(1000);
+        expectBoundsEqual(w.getBounds(), bounds);
+      }
+    );
   });
 
   describe('setFullScreen(false)', () => {
@@ -5286,52 +5376,58 @@ describe('BrowserWindow module', () => {
         w.close();
       });
 
-      ifit(process.platform === 'darwin')('only shows the intended window when a child with siblings is shown', async () => {
-        const w = new BrowserWindow({ show: false });
-        const childOne = new BrowserWindow({ show: false, parent: w });
-        const childTwo = new BrowserWindow({ show: false, parent: w });
+      ifit(process.platform === 'darwin')(
+        'only shows the intended window when a child with siblings is shown',
+        async () => {
+          const w = new BrowserWindow({ show: false });
+          const childOne = new BrowserWindow({ show: false, parent: w });
+          const childTwo = new BrowserWindow({ show: false, parent: w });
 
-        const parentShown = once(w, 'show');
-        w.show();
-        await parentShown;
+          const parentShown = once(w, 'show');
+          w.show();
+          await parentShown;
 
-        expect(childOne.isVisible()).to.be.false('childOne is visible');
-        expect(childTwo.isVisible()).to.be.false('childTwo is visible');
+          expect(childOne.isVisible()).to.be.false('childOne is visible');
+          expect(childTwo.isVisible()).to.be.false('childTwo is visible');
 
-        const childOneShown = once(childOne, 'show');
-        childOne.show();
-        await childOneShown;
+          const childOneShown = once(childOne, 'show');
+          childOne.show();
+          await childOneShown;
 
-        expect(childOne.isVisible()).to.be.true('childOne is not visible');
-        expect(childTwo.isVisible()).to.be.false('childTwo is visible');
-      });
+          expect(childOne.isVisible()).to.be.true('childOne is not visible');
+          expect(childTwo.isVisible()).to.be.false('childTwo is visible');
+        }
+      );
 
-      ifit(process.platform === 'darwin')('child matches parent visibility when parent visibility changes', async () => {
-        const w = new BrowserWindow({ show: false });
-        const c = new BrowserWindow({ show: false, parent: w });
+      ifit(process.platform === 'darwin')(
+        'child matches parent visibility when parent visibility changes',
+        async () => {
+          const w = new BrowserWindow({ show: false });
+          const c = new BrowserWindow({ show: false, parent: w });
 
-        const wShow = once(w, 'show');
-        const cShow = once(c, 'show');
+          const wShow = once(w, 'show');
+          const cShow = once(c, 'show');
 
-        w.show();
-        c.show();
+          w.show();
+          c.show();
 
-        await Promise.all([wShow, cShow]);
+          await Promise.all([wShow, cShow]);
 
-        const minimized = once(w, 'minimize');
-        w.minimize();
-        await minimized;
+          const minimized = once(w, 'minimize');
+          w.minimize();
+          await minimized;
 
-        expect(w.isVisible()).to.be.false('parent is visible');
-        expect(c.isVisible()).to.be.false('child is visible');
+          expect(w.isVisible()).to.be.false('parent is visible');
+          expect(c.isVisible()).to.be.false('child is visible');
 
-        const restored = once(w, 'restore');
-        w.restore();
-        await restored;
+          const restored = once(w, 'restore');
+          w.restore();
+          await restored;
 
-        expect(w.isVisible()).to.be.true('parent is visible');
-        expect(c.isVisible()).to.be.true('child is visible');
-      });
+          expect(w.isVisible()).to.be.true('parent is visible');
+          expect(c.isVisible()).to.be.true('child is visible');
+        }
+      );
 
       ifit(process.platform === 'darwin')('parent matches child visibility when child visibility changes', async () => {
         const w = new BrowserWindow({ show: false });
@@ -5374,7 +5470,9 @@ describe('BrowserWindow module', () => {
           window.close();
           await closed;
 
-          expect(() => { BrowserWindow.getFocusedWindow(); }).to.not.throw();
+          expect(() => {
+            BrowserWindow.getFocusedWindow();
+          }).to.not.throw();
         });
       });
 
@@ -6504,7 +6602,7 @@ describe('BrowserWindow module', () => {
         let enterCount = 0;
         let exitCount = 0;
 
-        const done = new Promise<void>(resolve => {
+        const done = new Promise<void>((resolve) => {
           const checkDone = () => {
             if (enterCount === 2 && exitCount === 2) resolve();
           };
@@ -6715,146 +6813,149 @@ describe('BrowserWindow module', () => {
   });
 
   // TODO (jkleinsc) renable these tests on mas arm64
-  ifdescribe(!process.mas || process.arch !== 'arm64')('contextIsolation option with and without sandbox option', () => {
-    const expectedContextData = {
-      preloadContext: {
-        preloadProperty: 'number',
-        pageProperty: 'undefined',
-        typeofRequire: 'function',
-        typeofProcess: 'object',
-        typeofArrayPush: 'function',
-        typeofFunctionApply: 'function',
-        typeofPreloadExecuteJavaScriptProperty: 'undefined'
-      },
-      pageContext: {
-        preloadProperty: 'undefined',
-        pageProperty: 'string',
-        typeofRequire: 'undefined',
-        typeofProcess: 'undefined',
-        typeofArrayPush: 'number',
-        typeofFunctionApply: 'boolean',
-        typeofPreloadExecuteJavaScriptProperty: 'number',
-        typeofOpenedWindow: 'object'
-      }
-    };
+  ifdescribe(!process.mas || process.arch !== 'arm64')(
+    'contextIsolation option with and without sandbox option',
+    () => {
+      const expectedContextData = {
+        preloadContext: {
+          preloadProperty: 'number',
+          pageProperty: 'undefined',
+          typeofRequire: 'function',
+          typeofProcess: 'object',
+          typeofArrayPush: 'function',
+          typeofFunctionApply: 'function',
+          typeofPreloadExecuteJavaScriptProperty: 'undefined'
+        },
+        pageContext: {
+          preloadProperty: 'undefined',
+          pageProperty: 'string',
+          typeofRequire: 'undefined',
+          typeofProcess: 'undefined',
+          typeofArrayPush: 'number',
+          typeofFunctionApply: 'boolean',
+          typeofPreloadExecuteJavaScriptProperty: 'number',
+          typeofOpenedWindow: 'object'
+        }
+      };
 
-    afterEach(closeAllWindows);
+      afterEach(closeAllWindows);
 
-    it('separates the page context from the Electron/preload context', async () => {
-      const iw = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-preload.js')
-        }
+      it('separates the page context from the Electron/preload context', async () => {
+        const iw = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            contextIsolation: true,
+            preload: path.join(fixtures, 'api', 'isolated-preload.js')
+          }
+        });
+        const p = once(ipcMain, 'isolated-world');
+        iw.loadFile(path.join(fixtures, 'api', 'isolated.html'));
+        const [, data] = await p;
+        expect(data).to.deep.equal(expectedContextData);
       });
-      const p = once(ipcMain, 'isolated-world');
-      iw.loadFile(path.join(fixtures, 'api', 'isolated.html'));
-      const [, data] = await p;
-      expect(data).to.deep.equal(expectedContextData);
-    });
-    it('recreates the contexts on reload', async () => {
-      const iw = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-preload.js')
-        }
+      it('recreates the contexts on reload', async () => {
+        const iw = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            contextIsolation: true,
+            preload: path.join(fixtures, 'api', 'isolated-preload.js')
+          }
+        });
+        await iw.loadFile(path.join(fixtures, 'api', 'isolated.html'));
+        const isolatedWorld = once(ipcMain, 'isolated-world');
+        iw.webContents.reload();
+        const [, data] = await isolatedWorld;
+        expect(data).to.deep.equal(expectedContextData);
       });
-      await iw.loadFile(path.join(fixtures, 'api', 'isolated.html'));
-      const isolatedWorld = once(ipcMain, 'isolated-world');
-      iw.webContents.reload();
-      const [, data] = await isolatedWorld;
-      expect(data).to.deep.equal(expectedContextData);
-    });
-    it('enables context isolation on child windows', async () => {
-      const iw = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-preload.js')
-        }
+      it('enables context isolation on child windows', async () => {
+        const iw = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            contextIsolation: true,
+            preload: path.join(fixtures, 'api', 'isolated-preload.js')
+          }
+        });
+        const browserWindowCreated = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
+        iw.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
+        const [, window] = await browserWindowCreated;
+        expect(window.webContents.getLastWebPreferences()!.contextIsolation).to.be.true('contextIsolation');
       });
-      const browserWindowCreated = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
-      iw.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
-      const [, window] = await browserWindowCreated;
-      expect(window.webContents.getLastWebPreferences()!.contextIsolation).to.be.true('contextIsolation');
-    });
-    it('separates the page context from the Electron/preload context with sandbox on', async () => {
-      const ws = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          sandbox: true,
-          contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-preload.js')
-        }
+      it('separates the page context from the Electron/preload context with sandbox on', async () => {
+        const ws = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            contextIsolation: true,
+            preload: path.join(fixtures, 'api', 'isolated-preload.js')
+          }
+        });
+        const p = once(ipcMain, 'isolated-world');
+        ws.loadFile(path.join(fixtures, 'api', 'isolated.html'));
+        const [, data] = await p;
+        expect(data).to.deep.equal(expectedContextData);
       });
-      const p = once(ipcMain, 'isolated-world');
-      ws.loadFile(path.join(fixtures, 'api', 'isolated.html'));
-      const [, data] = await p;
-      expect(data).to.deep.equal(expectedContextData);
-    });
-    it('recreates the contexts on reload with sandbox on', async () => {
-      const ws = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          sandbox: true,
-          contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-preload.js')
-        }
+      it('recreates the contexts on reload with sandbox on', async () => {
+        const ws = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            contextIsolation: true,
+            preload: path.join(fixtures, 'api', 'isolated-preload.js')
+          }
+        });
+        await ws.loadFile(path.join(fixtures, 'api', 'isolated.html'));
+        const isolatedWorld = once(ipcMain, 'isolated-world');
+        ws.webContents.reload();
+        const [, data] = await isolatedWorld;
+        expect(data).to.deep.equal(expectedContextData);
       });
-      await ws.loadFile(path.join(fixtures, 'api', 'isolated.html'));
-      const isolatedWorld = once(ipcMain, 'isolated-world');
-      ws.webContents.reload();
-      const [, data] = await isolatedWorld;
-      expect(data).to.deep.equal(expectedContextData);
-    });
-    it('supports fetch api', async () => {
-      const fetchWindow = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-fetch-preload.js')
-        }
+      it('supports fetch api', async () => {
+        const fetchWindow = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            contextIsolation: true,
+            preload: path.join(fixtures, 'api', 'isolated-fetch-preload.js')
+          }
+        });
+        const p = once(ipcMain, 'isolated-fetch-error');
+        fetchWindow.loadURL('about:blank');
+        const [, error] = await p;
+        expect(error).to.equal('Failed to fetch');
       });
-      const p = once(ipcMain, 'isolated-fetch-error');
-      fetchWindow.loadURL('about:blank');
-      const [, error] = await p;
-      expect(error).to.equal('Failed to fetch');
-    });
-    it('doesn\'t break ipc serialization', async () => {
-      const iw = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-preload.js')
-        }
-      });
-      const p = once(ipcMain, 'isolated-world');
-      iw.loadURL('about:blank');
-      iw.webContents.executeJavaScript(`
+      it("doesn't break ipc serialization", async () => {
+        const iw = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            contextIsolation: true,
+            preload: path.join(fixtures, 'api', 'isolated-preload.js')
+          }
+        });
+        const p = once(ipcMain, 'isolated-world');
+        iw.loadURL('about:blank');
+        iw.webContents.executeJavaScript(`
         const opened = window.open()
         openedLocation = opened.location.href
         opened.close()
         window.postMessage({openedLocation}, '*')
       `);
-      const [, data] = await p;
-      expect(data.pageContext.openedLocation).to.equal('about:blank');
-    });
-    it('reports process.contextIsolated', async () => {
-      const iw = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-process.js')
-        }
+        const [, data] = await p;
+        expect(data.pageContext.openedLocation).to.equal('about:blank');
       });
-      const p = once(ipcMain, 'context-isolation');
-      iw.loadURL('about:blank');
-      const [, contextIsolation] = await p;
-      expect(contextIsolation).to.be.true('contextIsolation');
-    });
-  });
+      it('reports process.contextIsolated', async () => {
+        const iw = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            contextIsolation: true,
+            preload: path.join(fixtures, 'api', 'isolated-process.js')
+          }
+        });
+        const p = once(ipcMain, 'context-isolation');
+        iw.loadURL('about:blank');
+        const [, contextIsolation] = await p;
+        expect(contextIsolation).to.be.true('contextIsolation');
+      });
+    }
+  );
 
   it('reloading does not cause Node.js module API hangs after reload', (done) => {
     const w = new BrowserWindow({
@@ -6978,7 +7079,7 @@ describe('BrowserWindow module', () => {
         w.webContents.stopPainting();
         w.webContents.startPainting();
 
-        await once(w.webContents, 'paint') as [any, Electron.Rectangle, Electron.NativeImage];
+        (await once(w.webContents, 'paint')) as [any, Electron.Rectangle, Electron.NativeImage];
         expect(w.webContents.isPainting()).to.be.true('isPainting');
       });
     });
@@ -6986,13 +7087,13 @@ describe('BrowserWindow module', () => {
     describe('frameRate APIs', () => {
       it('has default frame rate (function)', async () => {
         w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
-        await once(w.webContents, 'paint') as [any, Electron.Rectangle, Electron.NativeImage];
+        (await once(w.webContents, 'paint')) as [any, Electron.Rectangle, Electron.NativeImage];
         expect(w.webContents.getFrameRate()).to.equal(60);
       });
 
       it('has default frame rate (property)', async () => {
         w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
-        await once(w.webContents, 'paint') as [any, Electron.Rectangle, Electron.NativeImage];
+        (await once(w.webContents, 'paint')) as [any, Electron.Rectangle, Electron.NativeImage];
         expect(w.webContents.frameRate).to.equal(60);
       });
 
@@ -7003,7 +7104,7 @@ describe('BrowserWindow module', () => {
 
         w.webContents.setFrameRate(30);
 
-        await once(w.webContents, 'paint') as [any, Electron.Rectangle, Electron.NativeImage];
+        (await once(w.webContents, 'paint')) as [any, Electron.Rectangle, Electron.NativeImage];
         expect(w.webContents.getFrameRate()).to.equal(30);
       });
 
@@ -7014,7 +7115,7 @@ describe('BrowserWindow module', () => {
 
         w.webContents.frameRate = 30;
 
-        await once(w.webContents, 'paint') as [any, Electron.Rectangle, Electron.NativeImage];
+        (await once(w.webContents, 'paint')) as [any, Electron.Rectangle, Electron.NativeImage];
         expect(w.webContents.frameRate).to.equal(30);
       });
     });
@@ -7131,23 +7232,26 @@ describe('BrowserWindow module', () => {
   describe('"transparent" option', () => {
     afterEach(closeAllWindows);
 
-    ifit(process.platform !== 'linux')('correctly returns isMaximized() when the window is maximized then minimized', async () => {
-      const w = new BrowserWindow({
-        frame: false,
-        transparent: true
-      });
+    ifit(process.platform !== 'linux')(
+      'correctly returns isMaximized() when the window is maximized then minimized',
+      async () => {
+        const w = new BrowserWindow({
+          frame: false,
+          transparent: true
+        });
 
-      const maximize = once(w, 'maximize');
-      w.maximize();
-      await maximize;
+        const maximize = once(w, 'maximize');
+        w.maximize();
+        await maximize;
 
-      const minimize = once(w, 'minimize');
-      w.minimize();
-      await minimize;
+        const minimize = once(w, 'minimize');
+        w.minimize();
+        await minimize;
 
-      expect(w.isMaximized()).to.be.false();
-      expect(w.isMinimized()).to.be.true();
-    });
+        expect(w.isMaximized()).to.be.false();
+        expect(w.isMinimized()).to.be.true();
+      }
+    );
 
     // Only applicable on Windows where transparent windows can't be maximized.
     ifit(process.platform === 'win32')('can show maximized frameless window', async () => {
@@ -7174,76 +7278,76 @@ describe('BrowserWindow module', () => {
     });
 
     // FIXME(codebytere): figure out why these are failing on MAS arm64.
-    ifit(hasCapturableScreen() && !(process.mas && process.arch === 'arm64'))('should not display a visible background', async () => {
-      const display = screen.getPrimaryDisplay();
+    ifit(hasCapturableScreen() && !(process.mas && process.arch === 'arm64'))(
+      'should not display a visible background',
+      async () => {
+        const display = screen.getPrimaryDisplay();
 
-      const backgroundWindow = new BrowserWindow({
-        ...display.bounds,
-        frame: false,
-        backgroundColor: HexColors.GREEN,
-        hasShadow: false
-      });
+        const backgroundWindow = new BrowserWindow({
+          ...display.bounds,
+          frame: false,
+          backgroundColor: HexColors.GREEN,
+          hasShadow: false
+        });
 
-      await backgroundWindow.loadURL('data:text/html,<html></html>');
+        await backgroundWindow.loadURL('data:text/html,<html></html>');
 
-      const foregroundWindow = new BrowserWindow({
-        ...display.bounds,
-        show: true,
-        transparent: true,
-        frame: false,
-        hasShadow: false
-      });
+        const foregroundWindow = new BrowserWindow({
+          ...display.bounds,
+          show: true,
+          transparent: true,
+          frame: false,
+          hasShadow: false
+        });
 
-      const colorFile = path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html');
-      await foregroundWindow.loadFile(colorFile);
+        const colorFile = path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html');
+        await foregroundWindow.loadFile(colorFile);
 
-      const screenCapture = new ScreenCapture(display);
-      await screenCapture.expectColorAtPointOnDisplayMatches(
-        HexColors.GREEN,
-        (size) => ({
+        const screenCapture = new ScreenCapture(display);
+        await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.GREEN, (size) => ({
           x: size.width / 4,
           y: size.height / 2
-        })
-      );
-      await screenCapture.expectColorAtPointOnDisplayMatches(
-        HexColors.RED,
-        (size) => ({
-          x: size.width * 3 / 4,
+        }));
+        await screenCapture.expectColorAtPointOnDisplayMatches(HexColors.RED, (size) => ({
+          x: (size.width * 3) / 4,
           y: size.height / 2
-        })
-      );
-    });
+        }));
+      }
+    );
 
     // FIXME(codebytere): figure out why these are failing on MAS arm64.
-    ifit(hasCapturableScreen() && !(process.mas && process.arch === 'arm64'))('Allows setting a transparent window via CSS', async () => {
-      const display = screen.getPrimaryDisplay();
+    ifit(hasCapturableScreen() && !(process.mas && process.arch === 'arm64'))(
+      'Allows setting a transparent window via CSS',
+      async () => {
+        const display = screen.getPrimaryDisplay();
 
-      const backgroundWindow = new BrowserWindow({
-        ...display.bounds,
-        frame: false,
-        backgroundColor: HexColors.PURPLE,
-        hasShadow: false
-      });
+        const backgroundWindow = new BrowserWindow({
+          ...display.bounds,
+          frame: false,
+          backgroundColor: HexColors.PURPLE,
+          hasShadow: false
+        });
 
-      await backgroundWindow.loadURL('data:text/html,<html></html>');
+        await backgroundWindow.loadURL('data:text/html,<html></html>');
 
-      const foregroundWindow = new BrowserWindow({
-        ...display.bounds,
-        frame: false,
-        transparent: true,
-        hasShadow: false,
-        webPreferences: {
-          contextIsolation: false,
-          nodeIntegration: true
-        }
-      });
+        const foregroundWindow = new BrowserWindow({
+          ...display.bounds,
+          frame: false,
+          transparent: true,
+          hasShadow: false,
+          webPreferences: {
+            contextIsolation: false,
+            nodeIntegration: true
+          }
+        });
 
-      foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'css-transparent.html'));
-      await once(ipcMain, 'set-transparent');
+        foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'css-transparent.html'));
+        await once(ipcMain, 'set-transparent');
 
-      const screenCapture = new ScreenCapture(display);
-      await screenCapture.expectColorAtCenterMatches(HexColors.PURPLE);
-    });
+        const screenCapture = new ScreenCapture(display);
+        await screenCapture.expectColorAtCenterMatches(HexColors.PURPLE);
+      }
+    );
 
     ifit(hasCapturableScreen())('should not make background transparent if falsy', async () => {
       const display = screen.getPrimaryDisplay();

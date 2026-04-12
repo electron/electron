@@ -1,10 +1,6 @@
 const { app } = require('electron');
 
-const sets = [
-  'https://fps-member1.glitch.me',
-  'https://fps-member2.glitch.me',
-  'https://fps-member3.glitch.me'
-];
+const sets = ['https://fps-member1.glitch.me', 'https://fps-member2.glitch.me', 'https://fps-member3.glitch.me'];
 
 app.commandLine.appendSwitch('use-first-party-set', sets.join(','));
 

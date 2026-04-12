@@ -5,7 +5,7 @@ import { ElectronReleaseRepo } from './types';
 
 const cachedTokens = Object.create(null);
 
-async function ensureToken (repo: ElectronReleaseRepo) {
+async function ensureToken(repo: ElectronReleaseRepo) {
   if (!cachedTokens[repo]) {
     cachedTokens[repo] = await (async () => {
       const { ELECTRON_GITHUB_TOKEN, SUDOWOODO_EXCHANGE_URL, SUDOWOODO_EXCHANGE_TOKEN } = process.env;
@@ -40,7 +40,7 @@ async function ensureToken (repo: ElectronReleaseRepo) {
 export const createGitHubTokenStrategy = (repo: ElectronReleaseRepo) => () => {
   let tokenAuth: ReturnType<typeof createTokenAuth> | null = null;
 
-  async function ensureTokenAuth (): Promise<ReturnType<typeof createTokenAuth>> {
+  async function ensureTokenAuth(): Promise<ReturnType<typeof createTokenAuth>> {
     if (!tokenAuth) {
       await ensureToken(repo);
       tokenAuth = createTokenAuth(cachedTokens[repo]);
@@ -48,11 +48,13 @@ export const createGitHubTokenStrategy = (repo: ElectronReleaseRepo) => () => {
     return tokenAuth;
   }
 
-  async function auth () {
-    return await (await ensureTokenAuth())();
+  async function auth() {
+    return await (
+      await ensureTokenAuth()
+    )();
   }
   const hook: ReturnType<typeof createTokenAuth>['hook'] = async (...args) => {
-    const a = (await ensureTokenAuth());
+    const a = await ensureTokenAuth();
     return (a as any).hook(...args);
   };
   auth.hook = hook;
