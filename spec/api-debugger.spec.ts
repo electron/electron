@@ -8,7 +8,7 @@ import * as http from 'node:http';
 import * as path from 'node:path';
 
 import { emittedUntil } from './lib/events-helpers';
-import { listen, withDone } from './lib/spec-helpers';
+import { listen } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('debugger module', () => {
@@ -237,36 +237,38 @@ describe('debugger module', () => {
       w.webContents.debugger.detach();
     });
 
-    it(
-      'creates unique session id for each target',
-      withDone((done) => {
-        w.webContents.loadFile(path.join(__dirname, 'fixtures', 'sub-frames', 'debug-frames.html'));
-        w.webContents.debugger.attach();
-        let debuggerSessionId: string;
+    it('creates unique session id for each target', async () => {
+      await w.webContents.loadFile(path.join(__dirname, 'fixtures', 'sub-frames', 'debug-frames.html'));
+      w.webContents.debugger.attach();
 
-        w.webContents.debugger.on('message', (_event, ...args) => {
-          const [method, params, sessionId] = args;
+      const targetCreated = new Promise<{ targetId: string }>((resolve) => {
+        w.webContents.debugger.on('message', (_event, method, params) => {
           if (method === 'Target.targetCreated') {
-            w.webContents.debugger
-              .sendCommand('Target.attachToTarget', { targetId: params.targetInfo.targetId, flatten: true })
-              .then((result) => {
-                debuggerSessionId = result.sessionId;
-                w.webContents.debugger.sendCommand('Debugger.enable', {}, result.sessionId);
-
-                // Ensure debugger finds a script to pause to possibly reduce flaky
-                // tests.
-                w.webContents.mainFrame.executeJavaScript('void 0;');
-              });
-          }
-          if (method === 'Debugger.scriptParsed') {
-            if (sessionId === debuggerSessionId) {
-              w.webContents.debugger.detach();
-              done();
-            }
+            resolve({ targetId: params.targetInfo.targetId });
           }
         });
-        w.webContents.debugger.sendCommand('Target.setDiscoverTargets', { discover: true });
-      })
-    );
+      });
+      await w.webContents.debugger.sendCommand('Target.setDiscoverTargets', { discover: true });
+      const { targetId } = await targetCreated;
+
+      const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
+        targetId,
+        flatten: true
+      });
+      expect(sessionId).to.be.a('string').and.not.be.empty();
+
+      const scriptParsed = new Promise<string>((resolve) => {
+        w.webContents.debugger.on('message', (_event, method, _params, messageSessionId) => {
+          if (method === 'Debugger.scriptParsed') resolve(messageSessionId);
+        });
+      });
+      await w.webContents.debugger.sendCommand('Debugger.enable', {}, sessionId);
+      // Evaluate via CDP on the attached session so a script is parsed after
+      // Debugger.enable has been acknowledged, regardless of page load timing.
+      await w.webContents.debugger.sendCommand('Runtime.evaluate', { expression: 'void 0;' }, sessionId);
+
+      expect(await scriptParsed).to.equal(sessionId);
+      w.webContents.debugger.detach();
+    });
   });
 });
