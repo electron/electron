@@ -1,6 +1,7 @@
 import { screen, desktopCapturer, BrowserWindow } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
@@ -259,14 +260,13 @@ describe('desktopCapturer', () => {
   });
 
   // Linux doesn't return any window sources.
-  ifdescribe(process.platform !== 'linux')('fetchWindowIcons', function () {
-    // Tests are sequentially dependent
-    this.bail(true);
+  // Tests are sequentially dependent; later tests will fail if an earlier one does.
+  ifdescribe(process.platform !== 'linux')('fetchWindowIcons', () => {
     let w: BrowserWindow;
     let testSource: Electron.DesktopCapturerSource | undefined;
     let appIcon: Electron.NativeImage | undefined;
 
-    before(async () => {
+    beforeAll(async () => {
       w = new BrowserWindow({
         width: 200,
         height: 200,
@@ -282,7 +282,7 @@ describe('desktopCapturer', () => {
       appIcon = testSource?.appIcon;
     });
 
-    after(() => {
+    afterAll(() => {
       if (w) w.destroy();
     });
 
