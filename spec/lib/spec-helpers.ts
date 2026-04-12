@@ -10,6 +10,7 @@ import { setTimeout } from 'node:timers/promises';
 import * as v8 from 'node:v8';
 
 import { defer } from './defer-helpers';
+import { REMOTE_TOOLS_SHIM, rewriteForRemoteEval } from './remote-tools';
 
 export { defer, runCleanupFunctions } from './defer-helpers';
 export { listen } from './net-helpers';
@@ -79,7 +80,9 @@ class RemoteControlApp {
   };
 
   remotely = (script: Function, ...args: any[]): Promise<any> => {
-    return this.remoteEval(`(${script})(...${JSON.stringify(args)})`);
+    return this.remoteEval(
+      `(() => { const __rt = ${REMOTE_TOOLS_SHIM}; return (${rewriteForRemoteEval(script)})(...${JSON.stringify(args)}); })()`
+    );
   };
 }
 
@@ -193,6 +196,7 @@ export function useRemoteContext(opts?: any) {
 }
 
 async function runRemote(type: 'skip' | 'none' | 'only', name: string, fn: Function, args?: any[]) {
+  const src = rewriteForRemoteEval(fn);
   const wrapped = async () => {
     const w = await getRemoteContext();
     const { ok, message } = await w.webContents.executeJavaScript(`(async () => {
@@ -201,7 +205,8 @@ async function runRemote(type: 'skip' | 'none' | 'only', name: string, fn: Funct
         const promises_1 = require('node:timers/promises')
         chai_1.use(require('chai-as-promised'))
         chai_1.use(require('dirty-chai'))
-        await (${fn})(...${JSON.stringify(args ?? [])})
+        const __rt = ${REMOTE_TOOLS_SHIM};
+        await (${src})(...${JSON.stringify(args ?? [])})
         return {ok: true};
       } catch (e) {
         return {ok: false, message: e.message}

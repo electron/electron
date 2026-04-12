@@ -1,14 +1,11 @@
 import { BrowserWindow, ipcMain } from 'electron/main';
 
-import { expect } from 'chai';
 import { afterEach, beforeEach, describe, it } from 'vitest';
 
 import { once } from 'node:events';
-import * as importedFs from 'node:fs';
-import * as path from 'node:path';
-import * as url from 'node:url';
 import { Worker } from 'node:worker_threads';
 
+import { expect, fs, path, url } from './lib/remote-tools';
 import { defer, getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext, withDone } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
@@ -147,7 +144,6 @@ function promisify(_f: Function): any {
 describe('asar package', function () {
   const fixtures = path.join(__dirname, 'fixtures');
   const asarDir = path.join(fixtures, 'test.asar');
-  const fs = require('node:fs') as typeof importedFs; // dummy, to fool typescript
 
   useRemoteContext({
     url: url.pathToFileURL(path.join(fixtures, 'pages', 'blank.html')),
