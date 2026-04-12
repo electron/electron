@@ -8,10 +8,12 @@
 
 #include <utility>
 
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
+#include "ui/gfx/geometry/rect_f.h"
 
 namespace electron {
 
@@ -43,11 +45,29 @@ void AutofillDriver::ShowAutofillPopup(
   if (!owner_window)
     return;
 
+  // |bounds| is supplied by the renderer in the calling frame's RenderWidget
+  // coordinate space. Convert to the root view's space and clamp to the
+  // calling frame's visible viewport so a (potentially compromised) subframe
+  // cannot position the native popup over arbitrary application UI.
+  auto* frame_view = render_frame_host_->GetView();
+  if (!frame_view)
+    return;
+  gfx::RectF popup_bounds(bounds);
+  popup_bounds.set_origin(
+      frame_view->TransformPointToRootCoordSpaceF(popup_bounds.origin()));
+  const gfx::Size frame_size = frame_view->GetViewBounds().size();
+  const gfx::RectF frame_clip = gfx::BoundingRect(
+      frame_view->TransformPointToRootCoordSpaceF(gfx::PointF()),
+      frame_view->TransformPointToRootCoordSpaceF(
+          gfx::PointF(frame_size.width(), frame_size.height())));
+  popup_bounds.Intersect(frame_clip);
+  if (popup_bounds.IsEmpty())
+    return;
+
   auto* embedder = web_contents->embedder();
 
   bool osr =
       web_contents->IsOffScreen() || (embedder && embedder->IsOffScreen());
-  gfx::RectF popup_bounds(bounds);
   content::RenderFrameHost* embedder_frame_host = nullptr;
   if (embedder) {
     auto* embedder_view =
