@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import { describe, it } from 'vitest';
 
 import { parseCommaSeparatedKeyValue, parseFeatures } from '../lib/browser/parse-features-string';
 
