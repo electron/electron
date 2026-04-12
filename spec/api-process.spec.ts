@@ -2,6 +2,7 @@ import { BrowserWindow } from 'electron';
 import { app } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -108,11 +109,11 @@ describe('process module', () => {
 
   describe('renderer process', () => {
     let w: BrowserWindow;
-    before(async () => {
+    beforeAll(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await w.loadURL('about:blank');
     });
-    after(closeAllWindows);
+    afterAll(closeAllWindows);
 
     generateSpecs((fn, ...args) => {
       const jsonArgs = args.map((value) => JSON.stringify(value)).join(',');
