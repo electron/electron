@@ -1,6 +1,7 @@
 import { BrowserWindow, screen } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterEach, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as path from 'node:path';
@@ -15,7 +16,7 @@ const display = screen.getPrimaryDisplay();
 const fixtures = path.resolve(__dirname, 'fixtures');
 
 // Try to load robotjs
-let robot: typeof import('@hurdlegroup/robotjs');
+let robot: typeof import('@hurdlegroup/robotjs') | undefined;
 try {
   robot = require('@hurdlegroup/robotjs');
 } catch {
@@ -51,6 +52,8 @@ const performDrag = async (
 
   const start = w.getPosition() as [number, number];
   const moved = once(w, 'move');
+
+  if (!robot) throw new Error('robotjs is not available');
 
   // Extra events based on research from https://github.com/octalmage/robotjs/issues/389
   robot.moveMouse(winCenter.x, winCenter.y);
@@ -92,12 +95,8 @@ const loadDraggableSubframe = async (w: BrowserWindow): Promise<void> => {
   `);
 };
 
-describe('draggable regions', function () {
-  before(async function () {
-    if (!robot || !robot.moveMouse || !hasCapturableScreen()) {
-      this.skip();
-    }
-
+describe.runIf(!!robot?.moveMouse && hasCapturableScreen())('draggable regions', () => {
+  beforeAll(async () => {
     // The first window may not properly receive events due to UI transitions or
     // focus management. To mitigate this, warm up with a test run.
     const w = new BrowserWindow(testWindowOpts);
