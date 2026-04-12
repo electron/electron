@@ -3,6 +3,7 @@ import { safeStorage } from 'electron/main';
 import * as chai from 'chai';
 import { expect } from 'chai';
 import * as chaiAsPromised from 'chai-as-promised';
+import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -14,13 +15,13 @@ import { ifdescribe } from './lib/spec-helpers';
 chai.use(chaiAsPromised);
 
 describe('safeStorage module', () => {
-  before(() => {
+  beforeAll(() => {
     if (process.platform === 'linux') {
       safeStorage.setUsePlainTextEncryption(true);
     }
   });
 
-  after(async () => {
+  afterAll(async () => {
     const pathToEncryptedString = path.resolve(__dirname, 'fixtures', 'api', 'safe-storage', 'encrypted.txt');
     if (fs.existsSync(pathToEncryptedString)) {
       await fs.promises.rm(pathToEncryptedString, { force: true, recursive: true });
