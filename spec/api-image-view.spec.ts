@@ -2,6 +2,7 @@ import { nativeImage } from 'electron/common';
 import { BaseWindow, BrowserWindow, ImageView } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterEach, describe, it } from 'vitest';
 
 import * as path from 'node:path';
 
