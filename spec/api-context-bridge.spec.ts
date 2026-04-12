@@ -2,6 +2,7 @@ import { BrowserWindow, ipcMain } from 'electron/main';
 import { contextBridge } from 'electron/renderer';
 
 import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, describe, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -21,7 +22,7 @@ describe('contextBridge', () => {
   let server: http.Server;
   let serverUrl: string;
 
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer((req, res) => {
       res.setHeader('Content-Type', 'text/html');
       res.end('');
@@ -29,7 +30,7 @@ describe('contextBridge', () => {
     serverUrl = (await listen(server)).url;
   });
 
-  after(async () => {
+  afterAll(async () => {
     if (server) await new Promise((resolve) => server.close(resolve));
     server = null as any;
   });
