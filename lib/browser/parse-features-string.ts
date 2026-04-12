@@ -78,6 +78,27 @@ export function parseWebViewWebPreferences (preferences: string) {
 const allowedWebPreferences = ['zoomFactor', 'nodeIntegration', 'javascript', 'contextIsolation', 'webviewTag'] as const;
 type AllowedWebPreference = (typeof allowedWebPreferences)[number];
 
+// Top-level BrowserWindow options that may be set via the window.open()
+// features string. Options not listed here are silently dropped; apps that
+// need to pass other options should use setWindowOpenHandler in the main
+// process.
+const allowedWindowOptions = new Set<string>([
+  // standard window.open() position/size features
+  'top', 'left', 'innerWidth', 'innerHeight',
+  // numeric
+  'x', 'y', 'width', 'height',
+  'minWidth', 'minHeight', 'maxWidth', 'maxHeight', 'opacity',
+  // presentational booleans
+  'show', 'center', 'useContentSize', 'frame', 'transparent', 'hasShadow',
+  'movable', 'closable', 'focusable', 'minimizable', 'maximizable',
+  'fullscreenable', 'alwaysOnTop', 'skipTaskbar', 'modal', 'acceptFirstMouse',
+  'autoHideMenuBar', 'enableLargerThanScreen', 'paintWhenInitiallyHidden',
+  'roundedCorners', 'thickFrame', 'disableAutoHideCursor', 'hiddenInMissionControl',
+  // presentational strings (no filesystem/network side effects)
+  'title', 'backgroundColor', 'tabbingIdentifier', 'titleBarStyle', 'vibrancy',
+  'visualEffectState', 'backgroundMaterial'
+]);
+
 /**
  * Parses a feature string that has the format used in window.open().
  */
@@ -100,8 +121,15 @@ export function parseFeatures (features: string) {
   if (parsed.left !== undefined) parsed.x = parsed.left;
   if (parsed.top !== undefined) parsed.y = parsed.top;
 
+  const options: { [key: string]: CoercedValue } = {};
+  for (const key of Object.keys(parsed)) {
+    if (allowedWindowOptions.has(key)) {
+      options[key] = parsed[key];
+    }
+  }
+
   return {
-    options: parsed as Omit<BrowserWindowConstructorOptions, 'webPreferences'>,
+    options: options as Omit<BrowserWindowConstructorOptions, 'webPreferences'>,
     webPreferences
   };
 }
