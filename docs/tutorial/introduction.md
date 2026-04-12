@@ -1,76 +1,141 @@
----
-title: 'Introduction'
-description: 'Welcome to the Electron documentation! If this is your first time developing an Electron app, read through this Getting Started section to get familiar with the basics. Otherwise, feel free to explore our guides and API documentation!'
-slug: /latest/
-hide_title: false
----
+import { useState, useEffect, useRef, useCallback } from "react";
+import { motion } from "framer-motion";
+import { Settings2, Info, Play, Square, Zap } from "lucide-react";
+import KeyCapture from "../components/KeyCapture";
+import CpsSlider from "../components/CpsSlider";
 
-# What is Electron?
+export default function Macro() {
+  const [activationKey, setActivationKey] = useState("F6");
+  const [spamKey, setSpamKey] = useState("e");
+  const [cps, setCps] = useState(10);
+  const [active, setActive] = useState(false);
+  const [totalClicks, setTotalClicks] = useState(0);
+  const workerRef = useRef(null);
+  const clickCountRef = useRef(0);
+  const spamKeyRef = useRef(spamKey);
+  spamKeyRef.current = spamKey;
 
-Electron is a framework for building desktop applications using JavaScript,
-HTML, and CSS. By embedding [Chromium][chromium] and [Node.js][node] into its
-binary, Electron allows you to maintain one JavaScript codebase and create
-cross-platform apps that work on Windows, macOS, and Linux — no native development
-experience required.
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const key = e.key === " " ? "Space" : e.key;
+      if (key === activationKey) {
+        e.preventDefault();
+        setActive((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activationKey]);
 
-## Getting started
+  // Init worker once
+  useEffect(() => {
+    workerRef.current = new Worker("/macro-worker.js");
+    workerRef.current.onmessage = () => {
+      const key = spamKeyRef.current;
+      const keyValue = key === "Space" ? " " : key;
+      if (key.startsWith("Mouse")) {
+        const btn = key === "Mouse4" ? 3 : 4;
+        document.dispatchEvent(new MouseEvent("mousedown", { button: btn, bubbles: true }));
+        document.dispatchEvent(new MouseEvent("mouseup", { button: btn, bubbles: true }));
+      } else {
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: keyValue, bubbles: true }));
+        document.dispatchEvent(new KeyboardEvent("keyup", { key: keyValue, bubbles: true }));
+      }
+      clickCountRef.current += 1;
+      if (clickCountRef.current % 10 === 0) setTotalClicks(clickCountRef.current);
+    };
+    return () => workerRef.current?.terminate();
+  }, []);
 
-We recommend you to start with the [tutorial][], which guides you through the
-process of developing an Electron app and distributing it to users.
-The [examples][] and [API documentation][] are also good places to browse around
-and discover new things.
+  useEffect(() => {
+    if (!workerRef.current) return;
+    if (active) {
+      workerRef.current.postMessage({ type: "start", cps });
+    } else {
+      workerRef.current.postMessage({ type: "stop" });
+    }
+  }, [active, cps]);
 
-## Running examples with Electron Fiddle
+  const handleToggle = useCallback(() => setActive((prev) => !prev), []);
 
-[Electron Fiddle][fiddle] is a sandbox app written with Electron and supported by
-Electron's maintainers. We highly recommend installing it as a learning tool to
-experiment with Electron's APIs or to prototype features during development.
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-3">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="w-full max-w-xs"
+      >
+        {/* Header */}
+        <div className="text-center mb-4">
+          <div className="inline-flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+            <h1 className="text-xl font-bold tracking-widest font-rajdhani uppercase">
+              Zequ Macro
+            </h1>
+            <div className="w-1.5 h-1.5 rounded-full bg-accent" />
+          </div>
+          <p className="text-xs text-muted-foreground font-mono mt-0.5">key spammer</p>
+        </div>
 
-Fiddle also integrates nicely with our documentation. When browsing through examples
-in our tutorials, you'll frequently see an "Open in Electron Fiddle" button underneath
-a code block. If you have Fiddle installed, this button will open a
-`fiddle.electronjs.org` link that will automatically load the example into Fiddle,
-no copy-pasting required.
+        {/* Card */}
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          {/* Status row */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${active ? "bg-primary animate-pulse" : "bg-muted-foreground/40"}`} />
+              <span className={`text-xs font-semibold uppercase tracking-widest font-rajdhani ${active ? "text-primary" : "text-muted-foreground"}`}>
+                {active ? "Running" : "Idle"}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
+              <Zap className="w-3 h-3" />
+              <span>{totalClicks.toLocaleString()}</span>
+            </div>
+          </div>
 
-```fiddle docs/fiddles/quick-start
-```
+          {/* Toggle */}
+          <div className="px-4 py-3">
+            <button
+              onClick={handleToggle}
+              className={`w-full py-2.5 rounded-lg font-bold text-xs uppercase tracking-widest font-rajdhani transition-all duration-300 flex items-center justify-center gap-2
+                ${active
+                  ? "bg-destructive/20 border border-destructive text-destructive hover:bg-destructive/30"
+                  : "bg-primary/20 border border-primary text-primary hover:bg-primary/30"
+                }`}
+            >
+              {active ? <Square className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+              {active ? "Stop" : "Start"}
+            </button>
+          </div>
 
-## What is in the docs?
+          <div className="h-px bg-border" />
 
-All the official documentation is available from the sidebar. These
-are the different categories and what you can expect on each one:
+          {/* Settings */}
+          <div className="p-4 space-y-4">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Settings2 className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground font-rajdhani">Config</span>
+            </div>
 
-- **Tutorial**: An end-to-end guide on how to create and publish your first Electron
-  application.
-- **Processes in Electron**: In-depth reference on Electron processes and how to work with them.
-- **Best Practices**: Important checklists to keep in mind when developing an Electron app.
-- **Examples**: Quick references to add features to your Electron app.
-- **Development**: Miscellaneous development guides.
-- **Distribution**: Learn how to distribute your app to end users.
-- **Testing And Debugging**: How to debug JavaScript, write tests, and other tools used
-  to create quality Electron applications.
-- **References**: Useful links to better understand how the Electron project works
-  and is organized.
-- **Contributing**: Compiling Electron and making contributions can be daunting.
-  We try to make it easier in this section.
+            <KeyCapture value={activationKey} onChange={setActivationKey} label="Activation Key" />
+            <KeyCapture value={spamKey} onChange={setSpamKey} label="Spam Key" allowMouse />
+            <CpsSlider value={cps} onChange={setCps} />
+          </div>
 
-## Getting help
+          {/* Info */}
+          <div className="px-4 pb-4">
+            <div className="flex items-start gap-2 bg-secondary/50 rounded-lg p-2.5 border border-border">
+              <Info className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+              <p className="text-xs text-muted-foreground leading-relaxed font-mono">
+                <span className="text-foreground bg-secondary px-1 rounded">{activationKey}</span> toggles &bull; spam: <span className="text-foreground bg-secondary px-1 rounded">{spamKey}</span> &bull; <span className="text-primary">{cps} CPS</span>
+              </p>
+            </div>
+          </div>
+        </div>
 
-Are you getting stuck anywhere? Here are a few links to places to look:
-
-- If you need help with developing your app, our [community Discord server][discord]
-  is a great place to get advice from other Electron app developers.
-- If you suspect you're running into a bug with the `electron` package, please check
-  the [GitHub issue tracker][issue-tracker] to see if any existing issues match your
-  problem. If not, feel free to fill out our bug report template and submit a new issue.
-
-<!-- Links -->
-
-[tutorial]: tutorial-1-prerequisites.md
-[api documentation]: ../api/app.md
-[chromium]: https://www.chromium.org/
-[discord]: https://discord.gg/electronjs
-[examples]: examples.md
-[fiddle]: https://www.electronjs.org/fiddle
-[issue-tracker]: https://github.com/electron/electron/issues
-[node]: https://nodejs.org/
+        <p className="text-center text-xs text-muted-foreground/30 mt-4 font-mono">zequ v1.0</p>
+      </motion.div>
+    </div>
+  );
+}
