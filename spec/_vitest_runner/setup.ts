@@ -4,7 +4,7 @@ import { beforeEach } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { runCleanupFunctions } from '../lib/spec-helpers';
+import { runCleanupFunctions } from '../lib/defer-helpers';
 
 import chaiAsPromised = require('chai-as-promised');
 import dirtyChai = require('dirty-chai');

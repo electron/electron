@@ -8,12 +8,7 @@ const electronShim = path.resolve(__dirname, 'electron-shim.cjs');
 
 export default defineConfig({
   resolve: {
-    alias: {
-      electron: electronShim,
-      'electron/main': electronShim,
-      'electron/common': electronShim,
-      'electron/renderer': electronShim
-    }
+    alias: [{ find: /^electron(\/(main|common|renderer))?$/, replacement: electronShim }]
   },
   test: {
     include: ['spec/**/*.spec.ts'],

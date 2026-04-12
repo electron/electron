@@ -13,6 +13,10 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 import * as v8 from 'node:v8';
 
+import { defer } from './defer-helpers';
+
+export { defer, runCleanupFunctions } from './defer-helpers';
+
 export const ifit = (condition: boolean) => it.runIf(condition);
 export const ifdescribe = (condition: boolean) => describe.runIf(condition);
 
@@ -39,22 +43,6 @@ export const isWayland =
   (process.env.XDG_SESSION_TYPE === 'wayland' ||
     !!process.env.WAYLAND_DISPLAY ||
     process.argv.includes('--ozone-platform=wayland'));
-
-type CleanupFunction = (() => void) | (() => Promise<void>);
-const cleanupFunctions: CleanupFunction[] = [];
-export async function runCleanupFunctions() {
-  for (const cleanup of cleanupFunctions) {
-    const r = cleanup();
-    if (r instanceof Promise) {
-      await r;
-    }
-  }
-  cleanupFunctions.length = 0;
-}
-
-export function defer(f: CleanupFunction) {
-  cleanupFunctions.unshift(f);
-}
 
 class RemoteControlApp {
   process: childProcess.ChildProcess;
