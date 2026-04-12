@@ -1,6 +1,7 @@
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain, WebContents } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, describe, it } from 'vitest';
 
 import { EventEmitter, once } from 'node:events';
 import * as http from 'node:http';
@@ -16,11 +17,11 @@ describe('ipc module', () => {
   describe('invoke', () => {
     let w: BrowserWindow;
 
-    before(async () => {
+    beforeAll(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await w.loadURL('about:blank');
     });
-    after(async () => {
+    afterAll(async () => {
       w.destroy();
     });
 
@@ -147,11 +148,11 @@ describe('ipc module', () => {
   describe('ordering', () => {
     let w: BrowserWindow;
 
-    before(async () => {
+    beforeAll(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await w.loadURL('about:blank');
     });
-    after(async () => {
+    afterAll(async () => {
       w.destroy();
     });
 
