@@ -48,10 +48,10 @@ export const closeWindow = async (
   }
 };
 
-export async function closeAllWindows(assertNotWindows = false) {
+export async function closeAllWindows() {
   let windowsClosed = 0;
   for (const w of BaseWindow.getAllWindows()) {
-    await closeWindow(w, { assertNotWindows });
+    await closeWindow(w, { assertNotWindows: false });
     windowsClosed++;
   }
   return windowsClosed;
