@@ -17,6 +17,9 @@ export { once } from 'node:events';
 export { setTimeout } from 'node:timers/promises';
 export { expect } from 'chai';
 export { BrowserWindow, nativeImage, net, session, webContents } from 'electron/main';
+// Renderer-only; undefined when this module is loaded in the main process,
+// but typed correctly for closures stringified into preload scripts.
+export { contextBridge, ipcRenderer, webFrame } from 'electron/renderer';
 export { defer } from './defer-helpers';
 export {
   collectStreamBody,

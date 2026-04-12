@@ -1,5 +1,4 @@
 import { BrowserWindow, ipcMain } from 'electron/main';
-import { contextBridge } from 'electron/renderer';
 
 import { expect } from 'chai';
 import { afterAll, afterEach, beforeAll, describe, it } from 'vitest';
@@ -11,6 +10,7 @@ import * as http from 'node:http';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
+import { contextBridge, rewriteForRemoteEval } from './lib/remote-tools';
 import { listen } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 
@@ -68,8 +68,11 @@ describe('contextBridge', () => {
 
   const generateTests = (useSandbox: boolean) => {
     describe(`with sandbox=${useSandbox}`, () => {
+      /** @remote */
       const makeBindingWindow = async (bindingCreator: Function, worldId: number = 0) => {
+        const bindingSrc = rewriteForRemoteEval(bindingCreator);
         const preloadContentForMainWorld = `const renderer_1 = require('electron');
+        const __rt = renderer_1;
         ${
           useSandbox
             ? ''
@@ -79,9 +82,10 @@ describe('contextBridge', () => {
           run: () => gc()
         });`
         }
-        (${bindingCreator.toString()})();`;
+        (${bindingSrc})();`;
 
         const preloadContentForIsolatedWorld = `const renderer_1 = require('electron');
+        const __rt = renderer_1;
         ${
           useSandbox
             ? ''
@@ -94,7 +98,7 @@ describe('contextBridge', () => {
           run: () => gc()
         });`
         }
-        (${bindingCreator.toString()})();`;
+        (${bindingSrc})();`;
 
         const tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-spec-preload-'));
         dir = tmpDir;
