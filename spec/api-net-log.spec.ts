@@ -1,6 +1,7 @@
 import { session, net } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import * as ChildProcess from 'node:child_process';
 import { once } from 'node:events';
@@ -10,7 +11,7 @@ import { Socket } from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { ifit, listen } from './lib/spec-helpers';
+import { ifit, listen, withDone } from './lib/spec-helpers';
 
 const appPath = path.join(__dirname, 'fixtures', 'api', 'net-log');
 const dumpFile = path.join(os.tmpdir(), 'net_log.json');
@@ -23,7 +24,7 @@ describe('netLog module', () => {
   let serverUrl: string;
   const connections: Set<Socket> = new Set();
 
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer();
     server.on('connection', (connection) => {
       connections.add(connection);
@@ -37,15 +38,17 @@ describe('netLog module', () => {
     serverUrl = (await listen(server)).url;
   });
 
-  after((done) => {
-    for (const connection of connections) {
-      connection.destroy();
-    }
-    server.close(() => {
-      server = null as any;
-      done();
-    });
-  });
+  afterAll(
+    withDone((done) => {
+      for (const connection of connections) {
+        connection.destroy();
+      }
+      server.close(() => {
+        server = null as any;
+        done();
+      });
+    })
+  );
 
   beforeEach(() => {
     expect(testNetLog().currentlyLogging).to.be.false('currently logging');
