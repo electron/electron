@@ -1541,15 +1541,17 @@ void ElectronBrowserClient::
           },
           &render_frame_host));
 
-  associated_registry.AddInterface<mojom::ElectronAutofillDriver>(
-      base::BindRepeating(
-          [](content::RenderFrameHost* render_frame_host,
-             mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>
-                 receiver) {
-            AutofillDriverFactory::BindAutofillDriver(std::move(receiver),
-                                                      render_frame_host);
-          },
-          &render_frame_host));
+  if (render_frame_host.IsInPrimaryMainFrame()) {
+    associated_registry.AddInterface<mojom::ElectronAutofillDriver>(
+        base::BindRepeating(
+            [](content::RenderFrameHost* render_frame_host,
+               mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>
+                   receiver) {
+              AutofillDriverFactory::BindAutofillDriver(std::move(receiver),
+                                                        render_frame_host);
+            },
+            &render_frame_host));
+  }
 #if BUILDFLAG(ENABLE_PLUGINS)
   associated_registry.AddInterface<mojom::ElectronPluginInfoHost>(
       base::BindRepeating(

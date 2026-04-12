@@ -45,6 +45,9 @@ void AutofillDriver::ShowAutofillPopup(
   if (!owner_window)
     return;
 
+  if (!render_frame_host_->IsInPrimaryMainFrame())
+    return;
+
   // |bounds| is supplied by the renderer in the calling frame's RenderWidget
   // coordinate space. Convert to the root view's space and clamp to the
   // calling frame's visible viewport so a (potentially compromised) subframe

@@ -61,6 +61,8 @@ void AutofillDriverFactory::DidFinishNavigation(
 
 AutofillDriver* AutofillDriverFactory::DriverForFrame(
     content::RenderFrameHost* render_frame_host) {
+  if (!render_frame_host->IsInPrimaryMainFrame())
+    return nullptr;
   auto insertion_result = driver_map_.emplace(render_frame_host, nullptr);
   std::unique_ptr<AutofillDriver>& driver = insertion_result.first->second;
   bool insertion_happened = insertion_result.second;
