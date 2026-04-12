@@ -1,6 +1,7 @@
 import { BrowserWindow, session, desktopCapturer } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, describe, it } from 'vitest';
 
 import * as http from 'node:http';
 
@@ -13,20 +14,20 @@ describe('setDisplayMediaRequestHandler', () => {
   // requires a secure context.
   let server: http.Server;
   let serverUrl: string;
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer((req, res) => {
       res.setHeader('Content-Type', 'text/html');
       res.end('');
     });
     serverUrl = (await listen(server)).url;
   });
-  after(() => {
+  afterAll(() => {
     server.close();
   });
 
-  ifit(process.platform !== 'darwin')('works when calling getDisplayMedia', async function () {
+  ifit(process.platform !== 'darwin')('works when calling getDisplayMedia', async (ctx) => {
     if ((await desktopCapturer.getSources({ types: ['screen'] })).length === 0) {
-      return this.skip();
+      return ctx.skip();
     }
     const ses = session.fromPartition('' + Math.random());
     let requestHandlerCalled = false;
