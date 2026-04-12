@@ -1,6 +1,7 @@
 import { webContents } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterAll, afterEach, beforeEach, describe, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
@@ -17,7 +18,7 @@ import {
   spawn
 } from './lib/codesign-helpers';
 import { withTempDirectory } from './lib/fs-helpers';
-import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
+import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext, withDone } from './lib/spec-helpers';
 
 const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -277,31 +278,40 @@ describe('node feature', () => {
 
   describe('contexts', () => {
     describe('setTimeout called under Chromium event loop in browser process', () => {
-      it('Can be scheduled in time', (done) => {
-        setTimeout(done, 0);
-      });
+      it(
+        'Can be scheduled in time',
+        withDone((done) => {
+          setTimeout(done, 0);
+        })
+      );
 
-      it('Can be promisified', (done) => {
-        util.promisify(setTimeout)(0).then(done);
-      });
+      it(
+        'Can be promisified',
+        withDone((done) => {
+          util.promisify(setTimeout)(0).then(done);
+        })
+      );
     });
 
     describe('setInterval called under Chromium event loop in browser process', () => {
-      it('can be scheduled in time', (done) => {
-        let interval: any = null;
-        let clearing = false;
-        const clear = () => {
-          if (interval === null || clearing) return;
+      it(
+        'can be scheduled in time',
+        withDone((done) => {
+          let interval: any = null;
+          let clearing = false;
+          const clear = () => {
+            if (interval === null || clearing) return;
 
-          // interval might trigger while clearing (remote is slow sometimes)
-          clearing = true;
-          clearInterval(interval);
-          clearing = false;
-          interval = null;
-          done();
-        };
-        interval = setInterval(clear, 10);
-      });
+            // interval might trigger while clearing (remote is slow sometimes)
+            clearing = true;
+            clearInterval(interval);
+            clearing = false;
+            interval = null;
+            done();
+          };
+          interval = setInterval(clear, 10);
+        })
+      );
     });
 
     const suspendListeners = (emitter: EventEmitter, eventName: string, callback: (...args: any[]) => void) => {
@@ -712,72 +722,78 @@ describe('node feature', () => {
     let child: childProcess.ChildProcessWithoutNullStreams;
     let exitPromise: Promise<any[]>;
 
-    it('Fails for options disallowed by Node.js itself', (done) => {
-      after(async () => {
-        const [code, signal] = await exitPromise;
-        expect(signal).to.equal(null);
+    it(
+      'Fails for options disallowed by Node.js itself',
+      withDone((done) => {
+        afterAll(async () => {
+          const [code, signal] = await exitPromise;
+          expect(signal).to.equal(null);
 
-        // Exit code 9 indicates cli flag parsing failure
-        expect(code).to.equal(9);
-        child.kill();
-      });
+          // Exit code 9 indicates cli flag parsing failure
+          expect(code).to.equal(9);
+          child.kill();
+        });
 
-      const env = { ...process.env, NODE_OPTIONS: '--v8-options' };
-      child = childProcess.spawn(process.execPath, { env });
-      exitPromise = once(child, 'exit');
+        const env = { ...process.env, NODE_OPTIONS: '--v8-options' };
+        child = childProcess.spawn(process.execPath, { env });
+        exitPromise = once(child, 'exit');
 
-      let output = '';
-      let success = false;
-      const cleanup = () => {
-        child.stderr.removeListener('data', listener);
-        child.stdout.removeListener('data', listener);
-      };
+        let output = '';
+        let success = false;
+        const cleanup = () => {
+          child.stderr.removeListener('data', listener);
+          child.stdout.removeListener('data', listener);
+        };
 
-      const listener = (data: Buffer) => {
-        output += data;
-        if (/electron: --v8-options is not allowed in NODE_OPTIONS/m.test(output)) {
-          success = true;
-          cleanup();
-          done();
-        }
-      };
+        const listener = (data: Buffer) => {
+          output += data;
+          if (/electron: --v8-options is not allowed in NODE_OPTIONS/m.test(output)) {
+            success = true;
+            cleanup();
+            done();
+          }
+        };
 
-      child.stderr.on('data', listener);
-      child.stdout.on('data', listener);
-      child.on('exit', () => {
-        if (!success) {
-          cleanup();
-          done(new Error(`Unexpected output: ${output.toString()}`));
-        }
-      });
-    });
+        child.stderr.on('data', listener);
+        child.stdout.on('data', listener);
+        child.on('exit', () => {
+          if (!success) {
+            cleanup();
+            done(new Error(`Unexpected output: ${output.toString()}`));
+          }
+        });
+      })
+    );
 
-    it('Disallows crypto-related options', (done) => {
-      after(() => {
-        child.kill();
-      });
+    it(
+      'Disallows crypto-related options',
+      withDone((done) => {
+        afterAll(() => {
+          child.kill();
+        });
 
-      const appPath = path.join(fixtures, 'module', 'noop.js');
-      const env = { ...process.env, NODE_OPTIONS: '--use-openssl-ca' };
-      child = childProcess.spawn(process.execPath, ['--enable-logging', appPath], { env });
+        const appPath = path.join(fixtures, 'module', 'noop.js');
+        const env = { ...process.env, NODE_OPTIONS: '--use-openssl-ca' };
+        child = childProcess.spawn(process.execPath, ['--enable-logging', appPath], { env });
 
-      let output = '';
-      const cleanup = () => {
-        child.stderr.removeListener('data', listener);
-        child.stdout.removeListener('data', listener);
-      };
+        let output = '';
+        const cleanup = () => {
+          child.stderr.removeListener('data', listener);
+          child.stdout.removeListener('data', listener);
+        };
 
-      const listener = (data: Buffer) => {
-        output += data;
-        if (/The NODE_OPTION --use-openssl-ca is not supported in Electron/m.test(output)) {
-          cleanup();
-          done();
-        }
-      };
+        const listener = (data: Buffer) => {
+          output += data;
+          if (/The NODE_OPTION --use-openssl-ca is not supported in Electron/m.test(output)) {
+            cleanup();
+            done();
+          }
+        };
 
-      child.stderr.on('data', listener);
-      child.stdout.on('data', listener);
-    });
+        child.stderr.on('data', listener);
+        child.stdout.on('data', listener);
+      })
+    );
 
     it('does allow --require in non-packaged apps', async () => {
       const appPath = path.join(fixtures, 'module', 'noop.js');
@@ -829,10 +845,10 @@ describe('node feature', () => {
   ifdescribe(shouldRunCodesignTests)('NODE_OPTIONS in signed app', function () {
     let identity = '';
 
-    beforeEach(function () {
+    beforeEach((ctx) => {
       const result = getCodesignIdentity();
       if (result === null) {
-        this.skip();
+        ctx.skip();
       } else {
         identity = result;
       }
@@ -855,14 +871,14 @@ describe('node feature', () => {
       });
     });
 
-    it('is disabled when invoked by alien binary in app bundle in ELECTRON_RUN_AS_NODE mode', async function () {
+    it('is disabled when invoked by alien binary in app bundle in ELECTRON_RUN_AS_NODE mode', async (ctx) => {
       await withTempDirectory(async (dir) => {
         const appPath = await copyMacOSFixtureApp(dir);
         await signApp(appPath, identity);
         // Find system node and copy it to app bundle.
         const nodePath = process.env.PATH?.split(path.delimiter).find((dir) => fs.existsSync(path.join(dir, 'node')));
         if (!nodePath) {
-          this.skip();
+          ctx.skip();
           return;
         }
         const alienBinary = path.join(appPath, 'Contents/MacOS/node');
@@ -891,36 +907,39 @@ describe('node feature', () => {
     let child: childProcess.ChildProcessWithoutNullStreams;
     let exitPromise: Promise<any[]>;
 
-    it('Prohibits crypto-related flags in ELECTRON_RUN_AS_NODE mode', (done) => {
-      after(async () => {
-        const [code, signal] = await exitPromise;
-        expect(signal).to.equal(null);
-        expect(code).to.equal(9);
-        child.kill();
-      });
+    it(
+      'Prohibits crypto-related flags in ELECTRON_RUN_AS_NODE mode',
+      withDone((done) => {
+        afterAll(async () => {
+          const [code, signal] = await exitPromise;
+          expect(signal).to.equal(null);
+          expect(code).to.equal(9);
+          child.kill();
+        });
 
-      child = childProcess.spawn(process.execPath, ['--force-fips'], {
-        env: { ELECTRON_RUN_AS_NODE: 'true' }
-      });
-      exitPromise = once(child, 'exit');
+        child = childProcess.spawn(process.execPath, ['--force-fips'], {
+          env: { ELECTRON_RUN_AS_NODE: 'true' }
+        });
+        exitPromise = once(child, 'exit');
 
-      let output = '';
-      const cleanup = () => {
-        child.stderr.removeListener('data', listener);
-        child.stdout.removeListener('data', listener);
-      };
+        let output = '';
+        const cleanup = () => {
+          child.stderr.removeListener('data', listener);
+          child.stdout.removeListener('data', listener);
+        };
 
-      const listener = (data: Buffer) => {
-        output += data;
-        if (/.*The Node.js cli flag --force-fips is not supported in Electron/m.test(output)) {
-          cleanup();
-          done();
-        }
-      };
+        const listener = (data: Buffer) => {
+          output += data;
+          if (/.*The Node.js cli flag --force-fips is not supported in Electron/m.test(output)) {
+            cleanup();
+            done();
+          }
+        };
 
-      child.stderr.on('data', listener);
-      child.stdout.on('data', listener);
-    });
+        child.stderr.on('data', listener);
+        child.stdout.on('data', listener);
+      })
+    );
   });
 
   describe('process.stdout', () => {
@@ -956,28 +975,35 @@ describe('node feature', () => {
       exitPromise = null as any;
     });
 
-    it('Supports starting the v8 inspector with --inspect/--inspect-brk', (done) => {
-      child = childProcess.spawn(process.execPath, ['--inspect-brk', path.join(fixtures, 'module', 'run-as-node.js')], {
-        env: { ELECTRON_RUN_AS_NODE: 'true' }
-      });
+    it(
+      'Supports starting the v8 inspector with --inspect/--inspect-brk',
+      withDone((done) => {
+        child = childProcess.spawn(
+          process.execPath,
+          ['--inspect-brk', path.join(fixtures, 'module', 'run-as-node.js')],
+          {
+            env: { ELECTRON_RUN_AS_NODE: 'true' }
+          }
+        );
 
-      let output = '';
-      const cleanup = () => {
-        child.stderr.removeListener('data', listener);
-        child.stdout.removeListener('data', listener);
-      };
+        let output = '';
+        const cleanup = () => {
+          child.stderr.removeListener('data', listener);
+          child.stdout.removeListener('data', listener);
+        };
 
-      const listener = (data: Buffer) => {
-        output += data;
-        if (/Debugger listening on ws:/m.test(output)) {
-          cleanup();
-          done();
-        }
-      };
+        const listener = (data: Buffer) => {
+          output += data;
+          if (/Debugger listening on ws:/m.test(output)) {
+            cleanup();
+            done();
+          }
+        };
 
-      child.stderr.on('data', listener);
-      child.stdout.on('data', listener);
-    });
+        child.stderr.on('data', listener);
+        child.stdout.on('data', listener);
+      })
+    );
 
     it('Supports starting the v8 inspector with --inspect and a provided port', async () => {
       child = childProcess.spawn(
@@ -1026,53 +1052,56 @@ describe('node feature', () => {
     });
 
     // IPC Electron child process not supported on Windows.
-    ifit(process.platform !== 'win32')('does not crash when quitting with the inspector connected', function (done) {
-      child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'delay-exit'), '--inspect=0'], {
-        stdio: ['ipc']
-      }) as childProcess.ChildProcessWithoutNullStreams;
-      exitPromise = once(child, 'exit');
+    ifit(process.platform !== 'win32')(
+      'does not crash when quitting with the inspector connected',
+      withDone((done) => {
+        child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'delay-exit'), '--inspect=0'], {
+          stdio: ['ipc']
+        }) as childProcess.ChildProcessWithoutNullStreams;
+        exitPromise = once(child, 'exit');
 
-      const cleanup = () => {
-        child.stderr.removeListener('data', listener);
-        child.stdout.removeListener('data', listener);
-      };
+        const cleanup = () => {
+          child.stderr.removeListener('data', listener);
+          child.stdout.removeListener('data', listener);
+        };
 
-      let output = '';
-      const success = false;
-      function listener(data: Buffer) {
-        output += data;
-        console.log(data.toString()); // NOTE: temporary debug logging to try to catch flake.
-        const match = /^Debugger listening on (ws:\/\/.+:\d+\/.+)\n/m.exec(output.trim());
-        if (match) {
-          cleanup();
-          // NOTE: temporary debug logging to try to catch flake.
-          child.stderr.on('data', (m) => console.log(m.toString()));
-          child.stdout.on('data', (m) => console.log(m.toString()));
-          const w = (webContents as typeof ElectronInternal.WebContents).create();
-          w.loadURL('about:blank')
-            .then(() =>
-              w.executeJavaScript(`new Promise(resolve => {
+        let output = '';
+        const success = false;
+        function listener(data: Buffer) {
+          output += data;
+          console.log(data.toString()); // NOTE: temporary debug logging to try to catch flake.
+          const match = /^Debugger listening on (ws:\/\/.+:\d+\/.+)\n/m.exec(output.trim());
+          if (match) {
+            cleanup();
+            // NOTE: temporary debug logging to try to catch flake.
+            child.stderr.on('data', (m) => console.log(m.toString()));
+            child.stdout.on('data', (m) => console.log(m.toString()));
+            const w = (webContents as typeof ElectronInternal.WebContents).create();
+            w.loadURL('about:blank')
+              .then(() =>
+                w.executeJavaScript(`new Promise(resolve => {
               const connection = new WebSocket(${JSON.stringify(match[1])})
               connection.onopen = () => {
                 connection.onclose = () => resolve()
                 connection.close()
               }
             })`)
-            )
-            .then(() => {
-              w.destroy();
-              child.send('plz-quit');
-              done();
-            });
+              )
+              .then(() => {
+                w.destroy();
+                child.send('plz-quit');
+                done();
+              });
+          }
         }
-      }
 
-      child.stderr.on('data', listener);
-      child.stdout.on('data', listener);
-      child.on('exit', () => {
-        if (!success) cleanup();
-      });
-    });
+        child.stderr.on('data', listener);
+        child.stdout.on('data', listener);
+        child.on('exit', () => {
+          if (!success) cleanup();
+        });
+      })
+    );
 
     it('Supports js binding', async () => {
       child = childProcess.spawn(
@@ -1123,26 +1152,29 @@ describe('node feature', () => {
     child.kill();
   });
 
-  it('performs microtask checkpoint correctly', (done) => {
-    let timer: NodeJS.Timeout;
-    const listener = () => {
-      done(new Error('catch block is delayed to next tick'));
-    };
+  it(
+    'performs microtask checkpoint correctly',
+    withDone((done) => {
+      let timer: NodeJS.Timeout;
+      const listener = () => {
+        done(new Error('catch block is delayed to next tick'));
+      };
 
-    const f3 = async () => {
-      return new Promise((resolve, reject) => {
-        timer = setTimeout(listener);
-        reject(new Error('oops'));
-      });
-    };
+      const f3 = async () => {
+        return new Promise((resolve, reject) => {
+          timer = setTimeout(listener);
+          reject(new Error('oops'));
+        });
+      };
 
-    setTimeout(() => {
-      f3().catch(() => {
-        clearTimeout(timer);
-        done();
+      setTimeout(() => {
+        f3().catch(() => {
+          clearTimeout(timer);
+          done();
+        });
       });
-    });
-  });
+    })
+  );
 
   describe('type stripping', () => {
     it('strips TypeScript types automatically in the main process', async () => {
