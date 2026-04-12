@@ -251,9 +251,6 @@ jobs:
             if [ "${{ inputs.target-arch }}" = "x86" ]; then
               export npm_config_arch="ia32"
             fi
-            if [ "${{ inputs.target-arch }}" = "arm64" ]; then
-              export ELECTRON_FORCE_TEST_SUITE_EXIT="true"
-            fi
           fi
           node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
         else

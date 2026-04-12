@@ -18,8 +18,6 @@ const unknownFlags = [];
 const pass = chalk.green('✓');
 const fail = chalk.red('✗');
 
-const FAILURE_STATUS_KEY = 'Electron_Spec_Runner_Failures';
-
 const args = minimist(process.argv, {
   boolean: ['skipYarnInstall'],
   string: ['runners', 'target', 'electronVersion'],
@@ -157,7 +155,6 @@ async function runElectronTests() {
 
 async function asyncSpawn(exe, runnerArgs) {
   return new Promise((resolve, reject) => {
-    let forceExitResult = 0;
     const child = childProcess.spawn(exe, runnerArgs, {
       cwd: path.resolve(__dirname, '../..')
     });
@@ -166,24 +163,9 @@ async function asyncSpawn(exe, runnerArgs) {
     }
     child.stdout.pipe(process.stdout);
     child.stderr.pipe(process.stderr);
-    if (process.env.ELECTRON_FORCE_TEST_SUITE_EXIT) {
-      child.stdout.on('data', (data) => {
-        const failureRE = RegExp(`${FAILURE_STATUS_KEY}: (\\d.*)`);
-        const failures = data.toString().match(failureRE);
-        if (failures) {
-          forceExitResult = parseInt(failures[1], 10);
-        }
-      });
-    }
     child.on('error', (error) => reject(error));
     child.on('close', (status, signal) => {
-      let returnStatus = 0;
-      if (process.env.ELECTRON_FORCE_TEST_SUITE_EXIT) {
-        returnStatus = forceExitResult;
-      } else {
-        returnStatus = status;
-      }
-      resolve({ status: returnStatus, signal });
+      resolve({ status, signal });
     });
   });
 }
