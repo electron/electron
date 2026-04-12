@@ -1,6 +1,7 @@
 import { net, protocol } from 'electron/main';
 
 import { expect } from 'chai';
+import { describe, it } from 'vitest';
 
 import * as path from 'node:path';
 import * as url from 'node:url';
