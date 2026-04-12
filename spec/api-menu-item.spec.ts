@@ -1,9 +1,10 @@
 import { BrowserWindow, app, Menu, MenuItem, MenuItemConstructorOptions } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterEach, beforeEach, describe, it } from 'vitest';
 
 import { roleList, execute } from '../lib/browser/api/menu-item-roles';
-import { ifit, ifdescribe } from './lib/spec-helpers';
+import { ifit, ifdescribe, withDone } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 function keys<Key extends string, Value>(record: Record<Key, Value>) {
@@ -108,23 +109,26 @@ describe('MenuItems', () => {
   });
 
   describe('MenuItem.click', () => {
-    it('should be called with the item object passed', (done) => {
-      const menu = Menu.buildFromTemplate([
-        {
-          label: 'text',
-          click: (item) => {
-            try {
-              expect(item.constructor.name).to.equal('MenuItem');
-              expect(item.label).to.equal('text');
-              done();
-            } catch (e) {
-              done(e);
+    it(
+      'should be called with the item object passed',
+      withDone((done) => {
+        const menu = Menu.buildFromTemplate([
+          {
+            label: 'text',
+            click: (item) => {
+              try {
+                expect(item.constructor.name).to.equal('MenuItem');
+                expect(item.label).to.equal('text');
+                done();
+              } catch (e) {
+                done(e);
+              }
             }
           }
-        }
-      ]);
-      menu._executeCommand({}, menu.items[0].commandId);
-    });
+        ]);
+        menu._executeCommand({}, menu.items[0].commandId);
+      })
+    );
   });
 
   describe('MenuItem with checked/radio property', () => {
