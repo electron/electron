@@ -8,12 +8,13 @@
 // python-dbusmock.
 import { expect } from 'chai';
 import * as dbus from 'dbus-native';
+import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
-import { ifdescribe, startRemoteControlApp } from './lib/spec-helpers';
+import { ifdescribe, startRemoteControlApp, withDone } from './lib/spec-helpers';
 
 describe('powerMonitor', () => {
   let logindMock: any, dbusMockPowerMonitor: any, getCalls: any, emitSignal: any, reset: any;
@@ -21,7 +22,7 @@ describe('powerMonitor', () => {
   ifdescribe(process.platform === 'linux' && process.env.DBUS_SYSTEM_BUS_ADDRESS != null)(
     'when powerMonitor module is loaded with dbus mock',
     () => {
-      before(async () => {
+      beforeAll(async () => {
         const systemBus = dbus.systemBus();
         const loginService = systemBus.getService('org.freedesktop.login1');
         const getInterface = promisify(loginService.getInterface.bind(loginService));
@@ -31,7 +32,7 @@ describe('powerMonitor', () => {
         reset = promisify(logindMock.Reset.bind(logindMock));
       });
 
-      after(async () => {
+      afterAll(async () => {
         await reset();
       });
 
@@ -43,11 +44,13 @@ describe('powerMonitor', () => {
         return cb;
       }
 
-      before((done) => {
-        logindMock.on('MethodCalled', onceMethodCalled(done));
-        // lazy load powerMonitor after we listen to MethodCalled mock signal
-        dbusMockPowerMonitor = require('electron').powerMonitor;
-      });
+      beforeAll(
+        withDone((done) => {
+          logindMock.on('MethodCalled', onceMethodCalled(done));
+          // lazy load powerMonitor after we listen to MethodCalled mock signal
+          dbusMockPowerMonitor = require('electron').powerMonitor;
+        })
+      );
 
       it('should call Inhibit to delay suspend once a listener is added', async () => {
         // No calls to dbus until a listener is added
@@ -113,7 +116,7 @@ describe('powerMonitor', () => {
       });
 
       describe('when a listener is added to shutdown event', () => {
-        before(async () => {
+        beforeAll(async () => {
           const calls = await getCalls();
           expect(calls).to.be.an('array').that.has.lengthOf(2);
           dbusMockPowerMonitor.once('shutdown', () => {});
@@ -134,12 +137,15 @@ describe('powerMonitor', () => {
         });
 
         describe('when PrepareForShutdown(true) signal is sent by logind', () => {
-          it('should emit "shutdown" event', (done) => {
-            dbusMockPowerMonitor.once('shutdown', () => {
-              done();
-            });
-            emitSignal('org.freedesktop.login1.Manager', 'PrepareForShutdown', 'b', [['b', true]]);
-          });
+          it(
+            'should emit "shutdown" event',
+            withDone((done) => {
+              dbusMockPowerMonitor.once('shutdown', () => {
+                done();
+              });
+              emitSignal('org.freedesktop.login1.Manager', 'PrepareForShutdown', 'b', [['b', true]]);
+            })
+          );
         });
       });
     }
@@ -154,7 +160,7 @@ describe('powerMonitor', () => {
 
   describe('when powerMonitor module is loaded', () => {
     let powerMonitor: typeof Electron.powerMonitor;
-    before(() => {
+    beforeAll(() => {
       powerMonitor = require('electron').powerMonitor;
     });
     describe('powerMonitor.getSystemIdleState', () => {
