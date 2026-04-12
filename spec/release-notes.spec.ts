@@ -1,11 +1,13 @@
 import { expect } from 'chai';
-import * as sinon from 'sinon';
-import { afterEach, beforeAll, beforeEach, describe, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, it, vi } from 'vitest';
 
+import * as cp from 'node:child_process';
 import { SpawnSyncReturns } from 'node:child_process';
 import * as path from 'node:path';
 
 import * as notes from '../script/release/notes/notes';
+
+vi.mock('node:child_process', { spy: true });
 
 /* Fake a git spawnSync that only returns the specific
    commits that we want to test */
@@ -89,7 +91,6 @@ class GitFake {
 }
 
 describe('release notes', () => {
-  const sandbox = sinon.createSandbox();
   const gitFake = new GitFake();
 
   const oldBranch = '8-x-y';
@@ -149,13 +150,13 @@ describe('release notes', () => {
       // Default behavior for non-git commands
       return { status: 0, stdout: '', stderr: '', pid: 0, output: [null, '', ''], signal: null };
     };
-    sandbox.stub(require('node:child_process'), 'spawnSync').callsFake(wrapper);
+    vi.mocked(cp.spawnSync).mockImplementation(wrapper as typeof cp.spawnSync);
 
     gitFake.setBranch(oldBranch, [...sharedHistory, oldFix]);
   });
 
   afterEach(() => {
-    sandbox.restore();
+    vi.mocked(cp.spawnSync).mockRestore();
   });
 
   describe('trop annotations', () => {
