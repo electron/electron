@@ -1,6 +1,7 @@
 import { dialog, BaseWindow, BrowserWindow } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterEach, beforeAll, describe, it } from 'vitest';
 
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
@@ -253,7 +254,7 @@ describe('dialog module', () => {
     () => {
       let dialogHelper: any;
 
-      before(() => {
+      beforeAll(() => {
         dialogHelper = require('@electron-ci/dialog-helper');
       });
 
