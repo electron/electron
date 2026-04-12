@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import * as express from 'express';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import * as http from 'node:http';
 import { AddressInfo } from 'node:net';
@@ -17,7 +18,7 @@ import {
   uninstallMsixPackage,
   unregisterExecutableWithIdentity
 } from './lib/msix-helpers';
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe, withDone } from './lib/spec-helpers';
 
 const ELECTRON_MSIX_ALIAS = 'ElectronMSIX.exe';
 const MAIN_JS_PATH = getMainJsFixturePath();
@@ -25,17 +26,15 @@ const MSIX_V1 = getMsixFixturePath('v1');
 const MSIX_V2 = getMsixFixturePath('v2');
 
 // We can only test the MSIX updater on Windows
-ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
-  this.timeout(120000);
-
-  before(async function () {
+ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', { timeout: 120000 }, () => {
+  beforeAll(async function () {
     await installMsixCertificate();
 
     const electronExec = getElectronExecutable();
     await registerExecutableWithIdentity(electronExec);
   });
 
-  after(async function () {
+  afterAll(async function () {
     await unregisterExecutableWithIdentity();
   });
 
@@ -75,18 +74,20 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
     let httpServer: http.Server = null as any;
     let requests: express.Request[] = [];
 
-    beforeEach((done) => {
-      requests = [];
-      server = express();
-      server.use((req, res, next) => {
-        requests.push(req);
-        next();
-      });
-      httpServer = server.listen(0, '127.0.0.1', () => {
-        port = (httpServer.address() as AddressInfo).port;
-        done();
-      });
-    });
+    beforeEach(
+      withDone((done) => {
+        requests = [];
+        server = express();
+        server.use((req, res, next) => {
+          requests.push(req);
+          next();
+        });
+        httpServer = server.listen(0, '127.0.0.1', () => {
+          port = (httpServer.address() as AddressInfo).port;
+          done();
+        });
+      })
+    );
 
     afterEach(async () => {
       if (httpServer) {
