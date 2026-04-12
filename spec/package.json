@@ -21,7 +21,6 @@
     "@types/dirty-chai": "^2.0.5",
     "@types/express": "^4.17.13",
     "@types/send": "^0.14.5",
-    "@types/sinon": "^9.0.4",
     "@types/uuid": "^3.4.6",
     "@types/w3c-web-serial": "^1.0.7",
     "@types/ws": "^7.2.0",
@@ -40,7 +39,6 @@
     "ps-list": "^7.0.0",
     "q": "^1.5.1",
     "send": "^0.19.0",
-    "sinon": "^9.0.1",
     "uuid": "^3.3.3",
     "winreg": "1.2.4",
     "ws": "^7.5.10"

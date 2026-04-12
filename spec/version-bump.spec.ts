@@ -1,11 +1,13 @@
 import { expect } from 'chai';
-import * as sinon from 'sinon';
-import { afterEach, beforeEach, describe, it } from 'vitest';
+import { afterEach, beforeEach, describe, it, vi } from 'vitest';
 
+import * as cp from 'node:child_process';
 import { SpawnSyncReturns } from 'node:child_process';
 
 import { nextVersion } from '../script/release/version-bumper';
 import { ifdescribe } from './lib/spec-helpers';
+
+vi.mock('node:child_process', { spy: true });
 
 class GitFake {
   branches: {
@@ -160,7 +162,6 @@ describe('version-bumper', () => {
     const alphaPattern = /[0-9.]*(-alpha[0-9.]*)/g;
     const betaPattern = /[0-9.]*(-beta[0-9.]*)/g;
 
-    const sandbox = sinon.createSandbox();
     const gitFake = new GitFake();
 
     beforeEach(() => {
@@ -171,12 +172,12 @@ describe('version-bumper', () => {
         // Default behavior for non-git commands
         return { status: 0, stdout: '', stderr: '', pid: 0, output: [null, '', ''], signal: null };
       };
-      sandbox.stub(require('node:child_process'), 'spawnSync').callsFake(wrapper);
+      vi.mocked(cp.spawnSync).mockImplementation(wrapper as typeof cp.spawnSync);
     });
 
     afterEach(() => {
       gitFake.branches = {};
-      sandbox.restore();
+      vi.mocked(cp.spawnSync).mockRestore();
     });
 
     it('bumps to alpha from nightly', async () => {
