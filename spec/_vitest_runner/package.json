@@ -1,6 +1,6 @@
 {
-  "name": "electron-vitest-poc",
-  "productName": "Electron Vitest POC",
+  "name": "electron-test-main",
+  "productName": "Electron Test Main",
   "version": "0.1.0",
   "main": "worker-entry.js"
 }

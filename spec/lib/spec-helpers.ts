@@ -5,17 +5,14 @@ import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import * as http from 'node:http';
-import * as http2 from 'node:http2';
-import * as https from 'node:https';
-import * as net from 'node:net';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
-import * as url from 'node:url';
 import * as v8 from 'node:v8';
 
 import { defer } from './defer-helpers';
 
 export { defer, runCleanupFunctions } from './defer-helpers';
+export { listen } from './net-helpers';
 
 export const ifit = (condition: boolean) => it.runIf(condition);
 export const ifdescribe = (condition: boolean) => describe.runIf(condition);
@@ -239,14 +236,6 @@ export const itremote = Object.assign(
     }
   }
 );
-
-export async function listen(server: http.Server | https.Server | http2.Http2SecureServer) {
-  const hostname = '127.0.0.1';
-  await new Promise<void>((resolve) => server.listen(0, hostname, () => resolve()));
-  const { port } = server.address() as net.AddressInfo;
-  const protocol = server instanceof http.Server ? 'http' : 'https';
-  return { port, hostname, url: url.format({ protocol, hostname, port }) };
-}
 
 export function isTestingBindingAvailable() {
   try {

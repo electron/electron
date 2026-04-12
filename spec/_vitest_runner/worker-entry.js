@@ -4,6 +4,7 @@
 
 const { app, protocol } = require('electron');
 
+const fs = require('node:fs');
 const path = require('node:path');
 const v8 = require('node:v8');
 
@@ -18,12 +19,15 @@ if (process.env.ELECTRON_TEST_DISABLE_HARDWARE_ACCELERATION) {
   app.disableHardwareAcceleration();
 }
 
-// The pool allocates (mkdtemp) and cleans up this directory; the worker just
-// points Electron at it before app ready.
-const userDataDir = process.env.ELECTRON_VITEST_USER_DATA_DIR;
-if (!userDataDir) {
+// The pool allocates (mkdtemp) and cleans up the parent directory; the worker
+// adds app.name so tests that assert getPath('userData') contains the app name
+// still hold.
+const userDataBase = process.env.ELECTRON_VITEST_USER_DATA_DIR;
+if (!userDataBase) {
   throw new Error('ELECTRON_VITEST_USER_DATA_DIR was not provided by the pool');
 }
+const userDataDir = path.join(userDataBase, app.name);
+fs.mkdirSync(userDataDir, { recursive: true });
 app.setPath('userData', userDataDir);
 
 v8.setFlagsFromString('--expose_gc');
