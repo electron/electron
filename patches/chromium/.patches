@@ -152,3 +152,4 @@ extensions_return_early_from_urlpattern_isvalidscheme.patch
 feat_allow_enabling_extensions_on_custom_protocols.patch
 cherry-pick-1fd9cf824950.patch
 cherry-pick-fc10b0d6304d.patch
+cherry-pick-41c622eea273.patch
