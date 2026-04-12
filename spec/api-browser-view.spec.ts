@@ -1,12 +1,13 @@
 import { BrowserView, BrowserWindow, screen, session, webContents } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterEach, beforeEach, describe, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as path from 'node:path';
 
 import { ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
-import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers';
+import { defer, ifit, startRemoteControlApp, withDone } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 
 describe('BrowserView module', () => {
@@ -742,17 +743,20 @@ describe('BrowserView module', () => {
   });
 
   describe('window.open()', () => {
-    it('works in BrowserView', (done) => {
-      view = new BrowserView();
-      w.setBrowserView(view);
-      view.webContents.setWindowOpenHandler(({ url, frameName }) => {
-        expect(url).to.equal('http://host/');
-        expect(frameName).to.equal('host');
-        done();
-        return { action: 'deny' };
-      });
-      view.webContents.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
-    });
+    it(
+      'works in BrowserView',
+      withDone((done) => {
+        view = new BrowserView();
+        w.setBrowserView(view);
+        view.webContents.setWindowOpenHandler(({ url, frameName }) => {
+          expect(url).to.equal('http://host/');
+          expect(frameName).to.equal('host');
+          done();
+          return { action: 'deny' };
+        });
+        view.webContents.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
+      })
+    );
   });
 
   describe('BrowserView.capturePage(rect)', () => {
@@ -778,7 +782,7 @@ describe('BrowserView module', () => {
       expect(image.isEmpty()).to.equal(true);
     });
 
-    xit('resolves after the window is hidden and capturer count is non-zero', async () => {
+    it.skip('resolves after the window is hidden and capturer count is non-zero', async () => {
       view = new BrowserView({
         webPreferences: {
           backgroundThrottling: false
