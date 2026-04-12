@@ -1,6 +1,7 @@
 import { BrowserWindow } from 'electron';
 
 import { expect } from 'chai';
+import { describe, it } from 'vitest';
 
 import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
