@@ -3,20 +3,14 @@ From: Shelley Vohr <shelley.vohr@gmail.com>
 Date: Wed, 17 Apr 2024 08:17:49 -0400
 Subject: build: enable perfetto
 
-Enable perfetto by default in Node.js. Node.js disables perfetto by
-default but is broken on build - they don't currently add guards for
-`V8_USE_PERFETTO` and upstream only defines certain functions
-on `v8::TracingController` if perfetto is disabled. Electron already
-had minimal to no support for Node.js trace events, so the impact of
-adding associated guards there should be relatively small.
-
-We should upstream this as it will eventually impact Node.js as well.
+Enable perfetto by default in Node.js and wire track events
+through legacy shim.
 
 diff --git a/lib/internal/constants.js b/lib/internal/constants.js
-index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..a154559a56bf383d3c26af523c9bb07b564ef600 100644
+index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..8061013fcfe3c3b02aabaca0447069423ac853b2 100644
 --- a/lib/internal/constants.js
 +++ b/lib/internal/constants.js
-@@ -5,12 +5,15 @@ const isWindows = process.platform === 'win32';
+@@ -5,12 +5,16 @@ const isWindows = process.platform === 'win32';
  module.exports = {
    // Alphabet chars.
    CHAR_UPPERCASE_A: 65, /* A */
@@ -28,61 +22,216 @@ index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..a154559a56bf383d3c26af523c9bb07b
    CHAR_LOWERCASE_B: 98, /* b */
 +  CHAR_UPPERCASE_E: 69, /* E */
    CHAR_LOWERCASE_E: 101, /* e */
++  CHAR_UPPERCASE_I: 73, /* I */
 +
    CHAR_LOWERCASE_N: 110, /* n */
  
    // Non-alphabetic chars.
 diff --git a/lib/internal/http.js b/lib/internal/http.js
-index f8b4fd7c4ca5a0907806c7e804de8c951675a36a..209e3bcf8be5a23ac528dcd673bed82cbad709ca 100644
+index f8b4fd7c4ca5a0907806c7e804de8c951675a36a..0f924a5cc6718415226ffef5f8bc40a51043be04 100644
 --- a/lib/internal/http.js
 +++ b/lib/internal/http.js
-@@ -11,8 +11,8 @@ const {
- const { setUnrefTimeout } = require('internal/timers');
- const { getCategoryEnabledBuffer, trace } = internalBinding('trace_events');
- const {
--  CHAR_LOWERCASE_B,
--  CHAR_LOWERCASE_E,
-+  CHAR_UPPERCASE_B,
-+  CHAR_UPPERCASE_E,
- } = require('internal/constants');
+@@ -9,7 +9,7 @@ const {
+ } = primordials;
  
- const { URL } = require('internal/url');
-@@ -51,11 +51,13 @@ function isTraceHTTPEnabled() {
- const traceEventCategory = 'node,node.http';
+ const { setUnrefTimeout } = require('internal/timers');
+-const { getCategoryEnabledBuffer, trace } = internalBinding('trace_events');
++const { isTraceCategoryEnabled, trace } = internalBinding('trace_events');
+ const {
+   CHAR_LOWERCASE_B,
+   CHAR_LOWERCASE_E,
+@@ -42,13 +42,11 @@ function getNextTraceEventId() {
+   return ++traceEventId;
+ }
+ 
+-const httpEnabled = getCategoryEnabledBuffer('node.http');
+-
+ function isTraceHTTPEnabled() {
+-  return httpEnabled[0] > 0;
++  return isTraceCategoryEnabled('node.http');
+ }
+ 
+-const traceEventCategory = 'node,node.http';
++const traceEventCategory = 'node.http';
  
  function traceBegin(...args) {
--  trace(CHAR_LOWERCASE_B, traceEventCategory, ...args);
-+  // See v8/src/builtins/builtins-trace.cc - must be uppercase for perfetto
-+  trace(CHAR_UPPERCASE_B, traceEventCategory, ...args);
+   trace(CHAR_LOWERCASE_B, traceEventCategory, ...args);
+diff --git a/lib/internal/perf/usertiming.js b/lib/internal/perf/usertiming.js
+index 88bb63ead2d3d620dea6b54db043a404b484ead9..a37386bbf51b55b26a140cd81fbaf26d78015f21 100644
+--- a/lib/internal/perf/usertiming.js
++++ b/lib/internal/perf/usertiming.js
+@@ -13,6 +13,12 @@ const { PerformanceEntry, kSkipThrow } = require('internal/perf/performance_entr
+ const { now } = require('internal/perf/utils');
+ const { enqueue, bufferUserTiming } = require('internal/perf/observe');
+ const nodeTiming = require('internal/perf/nodetiming');
++const { isTraceCategoryEnabled, trace } = internalBinding('trace_events');
++const {
++  CHAR_LOWERCASE_B,
++  CHAR_LOWERCASE_E,
++  CHAR_UPPERCASE_I
++} = require('internal/constants');
+ 
+ const {
+   validateNumber,
+@@ -41,6 +47,9 @@ const kDetail = Symbol('kDetail');
+ 
+ const markTimings = new SafeMap();
+ 
++const traceEventCategory = 'node.perf.usertiming';
++let traceEventId = 0;
++
+ const nodeTimingReadOnlyAttributes = new SafeSet(new SafeArrayIterator([
+   'nodeStart',
+   'v8Start',
+@@ -168,6 +177,10 @@ function mark(name, options) {
+   const mark = new PerformanceMark(name, options);
+   enqueue(mark);
+   bufferUserTiming(mark);
++  if (isTraceCategoryEnabled(traceEventCategory)) {
++    trace(CHAR_UPPERCASE_I, traceEventCategory, name, undefined,
++          { startTime: mark.startTime });
++  }
+   return mark;
  }
  
- function traceEnd(...args) {
--  trace(CHAR_LOWERCASE_E, traceEventCategory, ...args);
-+  // See v8/src/builtins/builtins-trace.cc - must be uppercase for perfetto
-+  trace(CHAR_UPPERCASE_E, traceEventCategory, ...args);
+@@ -233,6 +246,13 @@ function measure(name, startOrMeasureOptions, endMark) {
+   const measure = createPerformanceMeasure(name, start, duration, detail);
+   enqueue(measure);
+   bufferUserTiming(measure);
++  if (isTraceCategoryEnabled(traceEventCategory)) {
++    const id = ++traceEventId;
++    trace(CHAR_LOWERCASE_B, traceEventCategory, name, id,
++          { startTime: start });
++    trace(CHAR_LOWERCASE_E, traceEventCategory, name, id,
++          { startTime: start, duration });
++  }
+   return measure;
  }
  
- function ipToInt(ip) {
+diff --git a/lib/internal/trace_events_async_hooks.js b/lib/internal/trace_events_async_hooks.js
+index a9f517ffc9e4eea5bc68997ffadc85d43dde2a52..e85bcd2f500ff3f5bbd2b25922c13cb29de50993 100644
+--- a/lib/internal/trace_events_async_hooks.js
++++ b/lib/internal/trace_events_async_hooks.js
+@@ -20,7 +20,7 @@ const {
+ // the specific C++ macros.
+ const kBeforeEvent = CHAR_LOWERCASE_B;
+ const kEndEvent = CHAR_LOWERCASE_E;
+-const kTraceEventCategory = 'node,node.async_hooks';
++const kTraceEventCategory = 'node.async_hooks';
+ 
+ const kEnabled = Symbol('enabled');
+ 
+diff --git a/lib/internal/util/debuglog.js b/lib/internal/util/debuglog.js
+index 06a4f8a239855571dcc67cd81e7da7a255a9ebfd..1fa9e314ad796cdf74f718f0eb2a15530f5833d3 100644
+--- a/lib/internal/util/debuglog.js
++++ b/lib/internal/util/debuglog.js
+@@ -20,7 +20,7 @@ const {
+   CHAR_LOWERCASE_N: kTraceInstant,
+ } = require('internal/constants');
+ const { inspect, format, formatWithOptions } = require('internal/util/inspect');
+-const { getCategoryEnabledBuffer, trace } = internalBinding('trace_events');
++const { isTraceCategoryEnabled, trace } = internalBinding('trace_events');
+ 
+ // `debugImpls` and `testEnabled` are deliberately not initialized so any call
+ // to `debuglog()` before `initializeDebugEnv()` is called will throw.
+@@ -386,14 +386,13 @@ function debugWithTimer(set, cb) {
+   }
+ 
+   const traceCategory = `node,node.${StringPrototypeToLowerCase(set)}`;
+-  let traceCategoryBuffer;
+   let debugLogCategoryEnabled = false;
+   let timerFlags = kNone;
+ 
+   function ensureTimerFlagsAreUpdated() {
+     timerFlags &= ~kSkipTrace;
+ 
+-    if (traceCategoryBuffer[0] === 0) {
++    if (!isTraceCategoryEnabled(traceCategory)) {
+       timerFlags |= kSkipTrace;
+     }
+   }
+@@ -467,7 +466,6 @@ function debugWithTimer(set, cb) {
+     }
+     emitWarningIfNeeded(set);
+     debugLogCategoryEnabled = testEnabled(set);
+-    traceCategoryBuffer = getCategoryEnabledBuffer(traceCategory);
+ 
+     timerFlags = kNone;
+ 
+@@ -475,7 +473,7 @@ function debugWithTimer(set, cb) {
+       timerFlags |= kSkipLog;
+     }
+ 
+-    if (traceCategoryBuffer[0] === 0) {
++    if (!isTraceCategoryEnabled(traceCategory)) {
+       timerFlags |= kSkipTrace;
+     }
+ 
 diff --git a/node.gyp b/node.gyp
-index f5cd416b5fe7a51084bc4af9a4427a8e62599fd8..5eb70ce3820f2b82121bc102c5182ab768cbef36 100644
+index f5cd416b5fe7a51084bc4af9a4427a8e62599fd8..b7072ce74354495bec49357f962f4ef2999bf727 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -182,7 +182,6 @@
+@@ -182,9 +182,9 @@
        'src/timers.cc',
        'src/timer_wrap.cc',
        'src/tracing/agent.cc',
 -      'src/tracing/node_trace_buffer.cc',
        'src/tracing/node_trace_writer.cc',
        'src/tracing/trace_event.cc',
++      'src/tracing/trace_categories.cc',
        'src/tracing/traced_value.cc',
-@@ -314,7 +313,6 @@
+       'src/tty_wrap.cc',
+       'src/udp_wrap.cc',
+@@ -314,9 +314,9 @@
        'src/tcp_wrap.h',
        'src/timers.h',
        'src/tracing/agent.h',
 -      'src/tracing/node_trace_buffer.h',
        'src/tracing/node_trace_writer.h',
        'src/tracing/trace_event.h',
++      'src/tracing/trace_categories.h',
        'src/tracing/trace_event_common.h',
+       'src/tracing/traced_value.h',
+       'src/timer_wrap.h',
+diff --git a/src/async_wrap.cc b/src/async_wrap.cc
+index 301f77c419f178c4eea258e0896327f69389dda7..d5068a18392a6128ceee7f0146f8f9c77f9924bb 100644
+--- a/src/async_wrap.cc
++++ b/src/async_wrap.cc
+@@ -110,8 +110,7 @@ void AsyncWrap::EmitPromiseResolve(Environment* env, double async_id) {
+ }
+ 
+ void AsyncWrap::EmitTraceAsyncStart() const {
+-  if (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
+-          TRACING_CATEGORY_NODE1(async_hooks))) {
++  if (NODE_TRACE_CATEGORY_ENABLED(TRACING_CATEGORY_NODE1(async_hooks))) {
+     tracing::AsyncWrapArgs data(env()->execution_async_id(),
+                                 get_trigger_async_id());
+     TRACE_EVENT_NESTABLE_ASYNC_BEGIN1(TRACING_CATEGORY_NODE1(async_hooks),
+diff --git a/src/env.cc b/src/env.cc
+index fdabe48dd7776c59298f7d972286d0d2ed062752..c185d822b29c0b691bbf5f724f71f59638c6184d 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -650,8 +650,8 @@ void TrackingTraceStateObserver::UpdateTraceCategoryState() {
+     return;
+   }
+ 
+-  bool async_hooks_enabled = (*(TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
+-                                 TRACING_CATEGORY_NODE1(async_hooks)))) != 0;
++  bool async_hooks_enabled =
++      NODE_TRACE_CATEGORY_ENABLED(TRACING_CATEGORY_NODE1(async_hooks));
+ 
+   Isolate* isolate = env_->isolate();
+   HandleScope handle_scope(isolate);
+@@ -893,8 +893,7 @@ Environment::Environment(IsolateData* isolate_data,
+       time_origin_timestamp_,
+       MAYBE_FIELD_PTR(env_info, performance_state));
+ 
+-  if (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
+-          TRACING_CATEGORY_NODE1(environment)) != 0) {
++  if (NODE_TRACE_CATEGORY_ENABLED(TRACING_CATEGORY_NODE1(environment))) {
+     tracing::EnvironmentArgs traced_value(args, exec_args);
+     TRACE_EVENT_NESTABLE_ASYNC_BEGIN1(TRACING_CATEGORY_NODE1(environment),
+                                       "Environment",
 diff --git a/src/inspector/tracing_agent.cc b/src/inspector/tracing_agent.cc
 index 40c8aea35c931c46fc62b717c978eab0659645fd..348cdfb0b42aa18f352c220cea0b896c09f67753 100644
 --- a/src/inspector/tracing_agent.cc
@@ -104,6 +253,156 @@ index 40c8aea35c931c46fc62b717c978eab0659645fd..348cdfb0b42aa18f352c220cea0b896c
    void Flush(bool) override {
      if (!json_writer_)
        return;
+diff --git a/src/node.cc b/src/node.cc
+index 0bc086ccd1ff449c0f3fb08a972a0c45d3178f1c..ca74e83ef6f7b0e8b8496457af3813f07f52eb37 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -78,6 +78,11 @@
+ 
+ #include "large_pages/node_large_page.h"
+ 
++#if defined(V8_USE_PERFETTO)
++#include "perfetto/tracing/tracing.h"
++#include "tracing/trace_categories.h"
++#endif
++
+ #if defined(__APPLE__) || defined(__linux__) || defined(_WIN32)
+ #define NODE_USE_V8_WASM_TRAP_HANDLER 1
+ #else
+@@ -1261,6 +1266,14 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+     absl::SetMutexDeadlockDetectionMode(absl::OnDeadlockCycle::kIgnore);
+   }
+ 
++#if defined(V8_USE_PERFETTO)
++  // Register Node's Perfetto TrackEvent data source so that trace
++  // categories are available.
++  if (perfetto::Tracing::IsInitialized()) {
++    node::perfetto_track_event::TrackEvent::Register();
++  }
++#endif
++
+ #if NODE_USE_V8_WASM_TRAP_HANDLER
+   bool use_wasm_trap_handler =
+       !per_process::cli_options->disable_wasm_trap_handler;
+diff --git a/src/node_contextify.cc b/src/node_contextify.cc
+index 3c234205e89be7e976dae5c3fcc73ca67953e034..986a2d8da7fd04b5d4060d9c8d44c61a231dcce6 100644
+--- a/src/node_contextify.cc
++++ b/src/node_contextify.cc
+@@ -1026,8 +1026,7 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {
+ 
+   ContextifyScript* contextify_script = New(env, args.This());
+ 
+-  if (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
+-          TRACING_CATEGORY_NODE2(vm, script)) != 0) {
++  if (NODE_TRACE_CATEGORY_ENABLED(TRACING_CATEGORY_NODE2(vm, script))) {
+     Utf8Value fn(isolate, filename);
+     TRACE_EVENT_BEGIN1(TRACING_CATEGORY_NODE2(vm, script),
+                        "ContextifyScript::New",
+diff --git a/src/node_dir.cc b/src/node_dir.cc
+index c9173d404c79a69743fc75ddb6bba0ac9579c1ef..8ffac047a69b3900f37d712334c504a1c65c83fd 100644
+--- a/src/node_dir.cc
++++ b/src/node_dir.cc
+@@ -61,18 +61,25 @@ static const char* get_dir_func_name_by_type(uv_fs_type req_type) {
+ 
+ #define TRACE_NAME(name) "fs_dir.sync." #name
+ #define GET_TRACE_ENABLED                                                      \
+-  (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(                                \
+-       TRACING_CATEGORY_NODE2(fs_dir, sync)) != 0)
++  NODE_TRACE_CATEGORY_ENABLED(TRACING_CATEGORY_NODE2(fs_dir, sync))
+ #define FS_DIR_SYNC_TRACE_BEGIN(syscall, ...)                                  \
+   if (GET_TRACE_ENABLED)                                                       \
+     TRACE_EVENT_BEGIN(TRACING_CATEGORY_NODE2(fs_dir, sync),                    \
+                       TRACE_NAME(syscall),                                     \
+                       ##__VA_ARGS__);
++#if defined(V8_USE_PERFETTO)
++// Perfetto's TRACE_EVENT_END does not accept a name; it matches the prior
++// TRACE_EVENT_BEGIN on the same thread.
++#define FS_DIR_SYNC_TRACE_END(syscall, ...)                                    \
++  if (GET_TRACE_ENABLED)                                                       \
++    TRACE_EVENT_END(TRACING_CATEGORY_NODE2(fs_dir, sync), ##__VA_ARGS__);
++#else
+ #define FS_DIR_SYNC_TRACE_END(syscall, ...)                                    \
+   if (GET_TRACE_ENABLED)                                                       \
+     TRACE_EVENT_END(TRACING_CATEGORY_NODE2(fs_dir, sync),                      \
+                     TRACE_NAME(syscall),                                       \
+                     ##__VA_ARGS__);
++#endif
+ 
+ #define FS_DIR_ASYNC_TRACE_BEGIN0(fs_type, id)                                 \
+   TRACE_EVENT_NESTABLE_ASYNC_BEGIN0(TRACING_CATEGORY_NODE2(fs_dir, async),     \
+diff --git a/src/node_file.cc b/src/node_file.cc
+index 96aac2d86695732bf6805f2ad2168a62241b5045..c7a9648b0f83e910190dc620f4b72577ffde6c44 100644
+--- a/src/node_file.cc
++++ b/src/node_file.cc
+@@ -147,16 +147,23 @@ static const char* get_fs_func_name_by_type(uv_fs_type req_type) {
+ 
+ #define TRACE_NAME(name) "fs.sync." #name
+ #define GET_TRACE_ENABLED                                                      \
+-  (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(                                \
+-       TRACING_CATEGORY_NODE2(fs, sync)) != 0)
++  NODE_TRACE_CATEGORY_ENABLED(TRACING_CATEGORY_NODE2(fs, sync))
+ #define FS_SYNC_TRACE_BEGIN(syscall, ...)                                      \
+   if (GET_TRACE_ENABLED)                                                       \
+     TRACE_EVENT_BEGIN(                                                         \
+         TRACING_CATEGORY_NODE2(fs, sync), TRACE_NAME(syscall), ##__VA_ARGS__);
++#if defined(V8_USE_PERFETTO)
++// Perfetto's TRACE_EVENT_END does not accept a name; it matches the prior
++// TRACE_EVENT_BEGIN on the same thread.
++#define FS_SYNC_TRACE_END(syscall, ...)                                        \
++  if (GET_TRACE_ENABLED)                                                       \
++    TRACE_EVENT_END(TRACING_CATEGORY_NODE2(fs, sync), ##__VA_ARGS__);
++#else
+ #define FS_SYNC_TRACE_END(syscall, ...)                                        \
+   if (GET_TRACE_ENABLED)                                                       \
+     TRACE_EVENT_END(                                                           \
+         TRACING_CATEGORY_NODE2(fs, sync), TRACE_NAME(syscall), ##__VA_ARGS__);
++#endif
+ 
+ #define FS_ASYNC_TRACE_BEGIN0(fs_type, id)                                     \
+   TRACE_EVENT_NESTABLE_ASYNC_BEGIN0(TRACING_CATEGORY_NODE2(fs, async),         \
+diff --git a/src/node_internals.h b/src/node_internals.h
+index fe6229ea33198e3f093be68f57aec6e612c02f34..7adfcf5222dbbaf5e98f719de0f4348ed679f3ee 100644
+--- a/src/node_internals.h
++++ b/src/node_internals.h
+@@ -319,6 +319,14 @@ class ThreadPoolWork {
+   const char* type_;
+ };
+ 
++#if defined(V8_USE_PERFETTO)
++// Perfetto categories must be single strings (not comma-separated).
++#define TRACING_CATEGORY_NODE "node"
++#define TRACING_CATEGORY_NODE1(one) "node." #one
++#define TRACING_CATEGORY_NODE2(one, two) "node." #one "." #two
++#define NODE_TRACE_CATEGORY_ENABLED(category) \
++    TRACE_EVENT_CATEGORY_ENABLED(category)
++#else
+ #define TRACING_CATEGORY_NODE "node"
+ #define TRACING_CATEGORY_NODE1(one)                                           \
+     TRACING_CATEGORY_NODE ","                                                 \
+@@ -327,6 +335,9 @@ class ThreadPoolWork {
+     TRACING_CATEGORY_NODE ","                                                 \
+     TRACING_CATEGORY_NODE "." #one ","                                        \
+     TRACING_CATEGORY_NODE "." #one "." #two
++#define NODE_TRACE_CATEGORY_ENABLED(category) \
++    (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(category) != 0)
++#endif
+ 
+ // Functions defined in node.cc that are exposed via the bootstrapper object
+ 
+diff --git a/src/node_trace_events.cc b/src/node_trace_events.cc
+index 225b1465b7c97d972a38968faf6d685017a80bf0..4a53a07f4d5e79354e647ba3ff6e2e1095a5b684 100644
+--- a/src/node_trace_events.cc
++++ b/src/node_trace_events.cc
+@@ -127,7 +127,8 @@ static void GetCategoryEnabledBuffer(const FunctionCallbackInfo<Value>& args) {
+   node::Utf8Value category_name(isolate, args[0]);
+ 
+   const uint8_t* enabled_pointer =
+-      TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(category_name.out());
++      tracing::TraceEventHelper::GetCategoryGroupEnabled(
++          category_name.out());
+   uint8_t* enabled_pointer_cast = const_cast<uint8_t*>(enabled_pointer);
+   uint8_t size = sizeof(*enabled_pointer_cast);
+ 
 diff --git a/src/tracing/agent.cc b/src/tracing/agent.cc
 index eddcf6c3bf91b730d6ca72960e3048ceed7e7844..184e8647b2148bc597d9d3eb63f86ae99917c642 100644
 --- a/src/tracing/agent.cc
@@ -297,48 +596,138 @@ index cd965d77b7859ff2edcf781a934594b5a9b6d251..fe1714ba77fddef693d37eeb8c7a196d
    void Flush(bool blocking) override;
  
    static const int kTracesPerFile = 1 << 19;
+diff --git a/src/tracing/trace_categories.cc b/src/tracing/trace_categories.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..4abc4dc5d9ef9c2a9b2e3d85d858f4bbf5ac6432
+--- /dev/null
++++ b/src/tracing/trace_categories.cc
+@@ -0,0 +1,5 @@
++#include "tracing/trace_categories.h"
++
++#if defined(V8_USE_PERFETTO)
++PERFETTO_TRACK_EVENT_STATIC_STORAGE_IN_NAMESPACE(node);
++#endif
+diff --git a/src/tracing/trace_categories.h b/src/tracing/trace_categories.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..b28d4baa7bf766301c9281b80e0d29729ef9832e
+--- /dev/null
++++ b/src/tracing/trace_categories.h
+@@ -0,0 +1,66 @@
++#ifndef SRC_TRACING_TRACE_CATEGORIES_H_
++#define SRC_TRACING_TRACE_CATEGORIES_H_
++
++#if defined(V8_USE_PERFETTO)
++
++#ifdef BASE_TRACE_EVENT_BUILTIN_CATEGORIES_H_
++// Compiling mode where Chromium's Perfetto TrackEvent
++// is already set up (via PERFETTO_USE_CATEGORIES_FROM_NAMESPACE(base)).
++// Node trace categories (node.perf, node.async_hooks, etc.) will be treated
++// as dynamic categories.
++#else
++// Set up Node's own Perfetto TrackEvent data source with its trace categories,
++// following the same pattern V8 uses (PERFETTO_DEFINE_CATEGORIES_IN_NAMESPACE).
++#define PERFETTO_ENABLE_LEGACY_TRACE_EVENTS 1
++
++#include "perfetto/tracing/track_event.h"
++#include "perfetto/tracing/track_event_legacy.h"
++
++// Register Node.js trace categories as static Perfetto categories in the
++// 'node' namespace.
++PERFETTO_DEFINE_CATEGORIES_IN_NAMESPACE(
++    node,
++    perfetto::Category("__metadata"),
++    perfetto::Category("node"),
++    perfetto::Category("node.perf"),
++    perfetto::Category("node.perf.timerify"),
++    perfetto::Category("node.perf.usertiming"),
++    perfetto::Category("node.perf.event_loop"),
++    perfetto::Category("node.async_hooks"),
++    perfetto::Category("node.bootstrap"),
++    perfetto::Category("node.dns.native"),
++    perfetto::Category("node.environment"),
++    perfetto::Category("node.fs.async"),
++    perfetto::Category("node.fs.sync"),
++    perfetto::Category("node.fs_dir.async"),
++    perfetto::Category("node.fs_dir.sync"),
++    perfetto::Category("node.http"),
++    perfetto::Category("node.net.native"),
++    perfetto::Category("node.promises.rejections"),
++    perfetto::Category("node.realm"),
++    perfetto::Category("node.threadpoolwork.async"),
++    perfetto::Category("node.threadpoolwork.sync"),
++    perfetto::Category("node.vm.script"),
++    perfetto::Category("v8"));
++
++// Make Node's categories available through the default TrackEvent namespace
++// so that TRACE_EVENT macros work without qualification.
++PERFETTO_USE_CATEGORIES_FROM_NAMESPACE(node);
++
++// These deprecated phase constants are not defined by Perfetto's legacy shim
++// but are still exported to JavaScript by node_constants.cc.
++#ifndef TRACE_EVENT_PHASE_ENTER_CONTEXT
++#define TRACE_EVENT_PHASE_ENTER_CONTEXT ('(')
++#endif
++#ifndef TRACE_EVENT_PHASE_LEAVE_CONTEXT
++#define TRACE_EVENT_PHASE_LEAVE_CONTEXT (')')
++#endif
++#ifndef TRACE_EVENT_PHASE_LINK_IDS
++#define TRACE_EVENT_PHASE_LINK_IDS ('=')
++#endif
++
++#endif  // BASE_TRACE_EVENT_BUILTIN_CATEGORIES_H_
++
++#endif  // defined(V8_USE_PERFETTO)
++
++#endif  // SRC_TRACING_TRACE_CATEGORIES_H_
 diff --git a/src/tracing/trace_event.h b/src/tracing/trace_event.h
-index a662a081dc3bf356bf93e4063fcb043e4d8df07b..c89cdfe2b2681fbf9946200a03d7d1f7bad21226 100644
+index a662a081dc3bf356bf93e4063fcb043e4d8df07b..a7d0363e15a260feaaa5c7826a3b3137be531934 100644
 --- a/src/tracing/trace_event.h
 +++ b/src/tracing/trace_event.h
-@@ -69,8 +69,16 @@ enum CategoryGroupEnabledFlags {
- // for best performance when tracing is disabled.
- // const uint8_t*
- //     TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(const char* category_group)
-+#ifndef V8_USE_PERFETTO
- #define TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED              \
-   node::tracing::TraceEventHelper::GetCategoryGroupEnabled
-+#else
-+#define TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(category_group) \
-+  ([](const char*) -> const uint8_t* { \
-+    static uint8_t no = 0; \
-+    return &no; \
-+  })(category_group)
-+#endif
+@@ -7,13 +7,23 @@
  
- // Get the number of times traces have been recorded. This is used to implement
- // the TRACE_EVENT_IS_NEW_TRACE facility.
-@@ -114,10 +122,15 @@ enum CategoryGroupEnabledFlags {
- //     const uint8_t* category_group_enabled,
- //     const char* name,
- //     uint64_t id)
-+#ifndef V8_USE_PERFETTO
- #define TRACE_EVENT_API_UPDATE_TRACE_EVENT_DURATION                           \
-   if (auto controller =                                                       \
-          node::tracing::TraceEventHelper::GetTracingController())             \
-       controller->UpdateTraceEventDuration
-+#else
-+#define TRACE_EVENT_API_UPDATE_TRACE_EVENT_DURATION(category_group_enabled, name, event_handle) \
-+  (void)(category_group_enabled), (void)(name), (void)(event_handle)
-+#endif
+ #include "v8-platform.h"
+ #include "tracing/agent.h"
+-#include "trace_event_common.h"
+ #include <atomic>
  
- // Adds a metadata event to the trace log. The |AppendValueAsTraceFormat| method
- // on the convertable value will be called at flush time.
-@@ -319,12 +332,15 @@ class TraceEventHelper {
++#if defined(V8_USE_PERFETTO)
++#include "tracing/trace_categories.h"
++#else
++#include "trace_event_common.h"
++#endif
++
+ // This header file defines implementation details of how the trace macros in
+ // trace_event_common.h collect and store trace events. Anything not
+ // implementation-specific should go in trace_macros_common.h instead of here.
+ 
++#if !defined(V8_USE_PERFETTO)
++// When Perfetto is enabled, all trace event macros and their internal
++// implementation are provided by Perfetto's track event legacy shim
++// (included via trace_categories.h). The following definitions are only
++// needed for the non-Perfetto tracing backend.
+ 
+ // The pointer returned from GetCategoryGroupEnabled() points to a
+ // value with zero or more of the following bits. Used in this class only.
+@@ -301,6 +311,8 @@ enum CategoryGroupEnabledFlags {
+   INTERNAL_TRACE_EVENT_UID(ScopedContext)                                  \
+   INTERNAL_TRACE_EVENT_UID(scoped_context)(context);
+ 
++#endif  // !defined(V8_USE_PERFETTO)
++
+ namespace node {
+ namespace tracing {
+ 
+@@ -319,15 +331,24 @@ class TraceEventHelper {
    static void SetAgent(Agent* agent);
  
    static inline const uint8_t* GetCategoryGroupEnabled(const char* group) {
-+#ifndef V8_USE_PERFETTO
++#if defined(V8_USE_PERFETTO)
++    // Under Perfetto, callers should use TRACE_EVENT_CATEGORY_ENABLED()
++    // instead. This function exists only for backward compatibility with
++    // non-Perfetto builds.
++    static const uint8_t disabled = 0;
++    return &disabled;
++#else
      v8::TracingController* controller = GetTracingController();
      static const uint8_t disabled = 0;
      if (controller == nullptr) [[unlikely]] {
@@ -346,56 +735,90 @@ index a662a081dc3bf356bf93e4063fcb043e4d8df07b..c89cdfe2b2681fbf9946200a03d7d1f7
      }
      return controller->GetCategoryGroupEnabled(group);
 +#endif
-+    return 0;
    }
  };
  
-@@ -462,6 +478,7 @@ static inline uint64_t AddTraceEventImpl(
-     const char* scope, uint64_t id, uint64_t bind_id, int32_t num_args,
-     const char** arg_names, const uint8_t* arg_types,
-     const uint64_t* arg_values, unsigned int flags) {
-+#ifndef V8_USE_PERFETTO
-   std::unique_ptr<v8::ConvertableToTraceFormat> arg_convertibles[2];
-   if (num_args > 0 && arg_types[0] == TRACE_VALUE_TYPE_CONVERTABLE) {
-     arg_convertibles[0].reset(reinterpret_cast<v8::ConvertableToTraceFormat*>(
-@@ -478,6 +495,8 @@ static inline uint64_t AddTraceEventImpl(
++#if !defined(V8_USE_PERFETTO)
+ // TraceID encapsulates an ID that can either be an integer or pointer. Pointers
+ // are by default mangled with the Process ID so that they are unlikely to
+ // collide when the same pointer is used on different processes.
+@@ -478,6 +499,7 @@ static inline uint64_t AddTraceEventImpl(
    return controller->AddTraceEvent(phase, category_group_enabled, name, scope, id,
                                     bind_id, num_args, arg_names, arg_types,
                                     arg_values, arg_convertibles, flags);
-+#endif
 +  return 0;
  }
  
  static V8_INLINE uint64_t AddTraceEventWithTimestampImpl(
-@@ -485,6 +504,7 @@ static V8_INLINE uint64_t AddTraceEventWithTimestampImpl(
-     const char* scope, uint64_t id, uint64_t bind_id, int32_t num_args,
-     const char** arg_names, const uint8_t* arg_types,
-     const uint64_t* arg_values, unsigned int flags, int64_t timestamp) {
-+#ifndef V8_USE_PERFETTO
-   std::unique_ptr<v8::ConvertableToTraceFormat> arg_convertibles[2];
-   if (num_args > 0 && arg_types[0] == TRACE_VALUE_TYPE_CONVERTABLE) {
-     arg_convertibles[0].reset(reinterpret_cast<v8::ConvertableToTraceFormat*>(
-@@ -501,12 +521,15 @@ static V8_INLINE uint64_t AddTraceEventWithTimestampImpl(
+@@ -501,6 +523,7 @@ static V8_INLINE uint64_t AddTraceEventWithTimestampImpl(
    return controller->AddTraceEventWithTimestamp(
        phase, category_group_enabled, name, scope, id, bind_id, num_args,
        arg_names, arg_types, arg_values, arg_convertibles, flags, timestamp);
-+#endif
 +  return 0;
  }
  
  static V8_INLINE void AddMetadataEventImpl(
-     const uint8_t* category_group_enabled, const char* name, int32_t num_args,
-     const char** arg_names, const uint8_t* arg_types,
-     const uint64_t* arg_values, unsigned int flags) {
-+#ifndef V8_USE_PERFETTO
-   std::unique_ptr<v8::ConvertableToTraceFormat> arg_convertibles[2];
-   if (num_args > 0 && arg_types[0] == TRACE_VALUE_TYPE_CONVERTABLE) {
-     arg_convertibles[0].reset(reinterpret_cast<v8::ConvertableToTraceFormat*>(
-@@ -522,6 +545,7 @@ static V8_INLINE void AddMetadataEventImpl(
-   return agent->GetTracingController()->AddMetadataEvent(
-       category_group_enabled, name, num_args, arg_names, arg_types, arg_values,
-       arg_convertibles, flags);
-+#endif
- }
+@@ -716,6 +739,8 @@ class ScopedTracer {
+   Data data_;
+ };
  
- // Define SetTraceValue for each allowed type. It stores the type and
++#endif  // !defined(V8_USE_PERFETTO)
++
+ }  // namespace tracing
+ }  // namespace node
+ 
+diff --git a/src/tracing/traced_value.h b/src/tracing/traced_value.h
+index 0bc9df81d87562243817a6618641a49b602654e3..b6dd8b9a9c21051f3d385d5ecea9c50c8b8b1629 100644
+--- a/src/tracing/traced_value.h
++++ b/src/tracing/traced_value.h
+@@ -11,6 +11,26 @@
+ #include <span>
+ #include <string>
+ 
++#if defined(V8_USE_PERFETTO)
++#include "perfetto/tracing/traced_value.h"
++
++namespace perfetto {
++
++template <>
++struct TraceFormatTraits<
++    std::unique_ptr<v8::ConvertableToTraceFormat>> {
++  static void WriteIntoTrace(
++      TracedValue context,
++      const std::unique_ptr<v8::ConvertableToTraceFormat>& value) {
++    std::string json;
++    value->AppendAsTraceFormat(&json);
++    std::move(context).WriteString(json);
++  }
++};
++
++}  // namespace perfetto
++#endif  // defined(V8_USE_PERFETTO)
++
+ namespace node {
+ namespace tracing {
+ 
+diff --git a/unofficial.gni b/unofficial.gni
+index bff7b0650cfe8578a044e45d0f9e352859909695..a773152813376bef1fa227c331241a1d944c9317 100644
+--- a/unofficial.gni
++++ b/unofficial.gni
+@@ -143,7 +143,10 @@ template("node_gn_build") {
+                             [ "node.gyp" ])
+ 
+   source_set("libnode") {
+-    configs += [ ":node_internal_config" ]
++    configs += [
++      ":node_internal_config",
++      "$node_v8_path:v8_tracing_config",
++    ]
+     public_configs = [
+       ":node_external_config",
+       "deps/googletest:googletest_config",
+@@ -173,6 +176,7 @@ template("node_gn_build") {
+       "//third_party/zstd:headers",
+       "$node_simdutf_path",
+       "$node_v8_path:v8_libplatform",
++      "$node_v8_path:v8_tracing",
+     ]
+ 
+     cflags_cc = [
