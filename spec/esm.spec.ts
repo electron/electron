@@ -1,6 +1,7 @@
 import { BrowserWindow } from 'electron';
 
 import { expect } from 'chai';
+import { afterEach, beforeEach, describe, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
