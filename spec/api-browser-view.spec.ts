@@ -1,4 +1,4 @@
-import { BrowserView, BrowserWindow, screen, session, webContents } from 'electron/main';
+import { BrowserView, BrowserWindow, session, webContents } from 'electron/main';
 
 import { expect } from 'chai';
 import { afterEach, beforeEach, describe, it } from 'vitest';
@@ -6,8 +6,7 @@ import { afterEach, beforeEach, describe, it } from 'vitest';
 import { once } from 'node:events';
 import * as path from 'node:path';
 
-import { ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
-import { defer, ifit, runCleanupFunctions, startRemoteControlApp, withDone } from './lib/spec-helpers';
+import { defer, runCleanupFunctions, startRemoteControlApp, withDone } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 
 describe('BrowserView module', () => {
@@ -84,43 +83,8 @@ describe('BrowserView module', () => {
       }).not.to.throw();
     });
 
-    ifit(hasCapturableScreen())('sets the background color to transparent if none is set', async () => {
-      const display = screen.getPrimaryDisplay();
-      const WINDOW_BACKGROUND_COLOR = '#55ccbb';
-
-      w.show();
-      w.setBounds(display.bounds);
-      w.setBackgroundColor(WINDOW_BACKGROUND_COLOR);
-      await w.loadURL('data:text/html,<html></html>');
-
-      view = new BrowserView();
-      view.setBounds(display.bounds);
-      w.setBrowserView(view);
-      await view.webContents.loadURL('data:text/html,hello there');
-
-      const screenCapture = new ScreenCapture(display);
-      await screenCapture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
-    });
-
-    ifit(hasCapturableScreen())('successfully applies the background color', async () => {
-      const WINDOW_BACKGROUND_COLOR = '#55ccbb';
-      const VIEW_BACKGROUND_COLOR = '#ff00ff';
-      const display = screen.getPrimaryDisplay();
-
-      w.show();
-      w.setBounds(display.bounds);
-      w.setBackgroundColor(WINDOW_BACKGROUND_COLOR);
-      await w.loadURL('data:text/html,<html></html>');
-
-      view = new BrowserView();
-      view.setBounds(display.bounds);
-      w.setBrowserView(view);
-      w.setBackgroundColor(VIEW_BACKGROUND_COLOR);
-      await view.webContents.loadURL('data:text/html,hello there');
-
-      const screenCapture = new ScreenCapture(display);
-      await screenCapture.expectColorAtCenterMatches(VIEW_BACKGROUND_COLOR);
-    });
+    // Screen-capture tests for setBackgroundColor live in
+    // spec/serial/browser-view-background-color.spec.ts.
   });
 
   describe('BrowserView.setAutoResize()', () => {
