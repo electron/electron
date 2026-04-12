@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
+import { afterEach, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { SpawnSyncReturns } from 'node:child_process';
 import * as path from 'node:path';
@@ -134,7 +135,7 @@ describe('release notes', () => {
     'fix: client area inset calculation when maximized for frameless windows (#25052) (#25216)'
   );
 
-  before(() => {
+  beforeAll(() => {
     // location of release-notes' octokit reply cache
     const fixtureDir = path.resolve(__dirname, 'fixtures', 'release-notes');
     process.env.NOTES_CACHE_PATH = path.resolve(fixtureDir, 'cache');
