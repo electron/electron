@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as http from 'node:http';
@@ -253,7 +254,7 @@ ifdescribe(process.platform !== 'linux')('cross-site frame sandboxing', () => {
   let crossSiteUrl: string;
   let serverUrl: string;
 
-  before(async function () {
+  beforeAll(async function () {
     server = http.createServer((req, res) => {
       res.end(`<iframe name="frame" src="${crossSiteUrl}" />`);
     });
@@ -261,7 +262,7 @@ ifdescribe(process.platform !== 'linux')('cross-site frame sandboxing', () => {
     crossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
   });
 
-  after(() => {
+  afterAll(() => {
     server.close();
     server = null as unknown as http.Server;
   });
