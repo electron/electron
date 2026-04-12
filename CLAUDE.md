@@ -171,6 +171,10 @@ e test                    # Run full test suite
 
 When working on the `roller/chromium/main` branch to upgrade Chromium activate the "Electron Chromium Upgrade" skill.
 
+## Node.js Upgrade Workflow
+
+When working on the `roller/node/main` branch to upgrade Node.js activate the "Electron Node.js Upgrade" skill.
+
 ## Pull Requests
 
 PR bodies must always include a `Notes:` section as the **last line** of the body. This is a consumer-facing release note for Electron app developers — describe the user-visible fix or change, not internal implementation details. Use `Notes: none` if there is no user-facing change.
