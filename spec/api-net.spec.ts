@@ -30,22 +30,41 @@ import { listen, ifdescribe, isTestingBindingAvailable } from './lib/spec-helper
 const utilityFixturePath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process', 'api-net-spec.js');
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
+let sharedUtilityChild: Electron.UtilityProcess | null = null;
+
+async function getUtilityChild() {
+  if (sharedUtilityChild) return sharedUtilityChild;
+  const child = utilityProcess.fork(utilityFixturePath, [], { execArgv: ['--expose-gc'] });
+  const [ready] = await once(child, 'message');
+  expect(ready?.type).to.equal('ready');
+  child.once('exit', (code) => {
+    if (sharedUtilityChild === child && code !== 0) {
+      console.error(`api-net utility process exited unexpectedly with code ${code}`);
+    }
+    if (sharedUtilityChild === child) sharedUtilityChild = null;
+  });
+  sharedUtilityChild = child;
+  return child;
+}
+
+async function closeUtilityChild() {
+  const child = sharedUtilityChild;
+  if (!child) return;
+  sharedUtilityChild = null;
+  const exited = once(child, 'exit');
+  child.postMessage({ type: 'shutdown' });
+  await exited;
+}
+
 /** @remote */
 async function itUtility(name: string, fn?: Function, args?: { [key: string]: any }) {
   it(`${name} in utility process`, async () => {
-    const child = utilityProcess.fork(utilityFixturePath, [], {
-      execArgv: ['--expose-gc']
-    });
-    if (fn) {
-      child.postMessage({ fn: `(${rewriteForRemoteEval(fn)})()`, args });
-    } else {
-      child.postMessage({ fn: '(() => {})()', args });
-    }
-    const [data] = await once(child, 'message');
+    const child = await getUtilityChild();
+    const body = fn ? `(${rewriteForRemoteEval(fn)})()` : '(() => {})()';
+    const result = once(child, 'message');
+    child.postMessage({ fn: body, args });
+    const [data] = await result;
     expect(data.ok).to.be.true(data.message);
-    // Cleanup.
-    const [code] = await once(child, 'exit');
-    expect(code).to.equal(0);
   });
 }
 
@@ -95,8 +114,9 @@ describe('net module', () => {
     http2URL = (await listen(h2server)).url + '/';
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     h2server.close();
+    await closeUtilityChild();
   });
 
   /** @remote — `test` may be itUtility, which stringifies its closure */

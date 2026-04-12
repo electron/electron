@@ -38,6 +38,10 @@ function fail(message) {
 }
 
 process.parentPort.on('message', async (e) => {
+  if (e.data?.type === 'shutdown') {
+    process.exit(0);
+  }
+
   // Equivalent of beforeEach in spec/api-net.spec.ts
   net_helpers_1.respondNTimes.routeFailure = false;
 
@@ -52,7 +56,7 @@ process.parentPort.on('message', async (e) => {
     await eval(e.data.fn);
   } catch (err) {
     fail(`${err}`);
-    process.exit(1);
+    return;
   }
 
   // Equivalent of afterEach in spec/api-net.spec.ts
@@ -60,10 +64,11 @@ process.parentPort.on('message', async (e) => {
     fail(
       'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
     );
-    process.exit(1);
+    return;
   }
 
   // Test passed
   process.parentPort.postMessage({ ok: true });
-  process.exit(0);
 });
+
+process.parentPort.postMessage({ type: 'ready' });
