@@ -11,6 +11,7 @@ import {
 } from 'electron/main';
 
 import { assert, expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -22,7 +23,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
-import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
+import { ifdescribe, defer, waitUntil, listen, ifit, withDone } from './lib/spec-helpers';
 import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -217,25 +218,28 @@ describe('webContents module', () => {
       }).to.throw('Missing required channel argument');
     });
 
-    it('does not block node async APIs when sent before document is ready', (done) => {
-      // Please reference https://github.com/electron/electron/issues/19368 if
-      // this test fails.
-      ipcMain.once('async-node-api-done', () => {
-        done();
-      });
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true,
-          sandbox: false,
-          contextIsolation: false
-        }
-      });
-      w.loadFile(path.join(fixturesPath, 'pages', 'send-after-node.html'));
-      setTimeout(50).then(() => {
-        w.webContents.send('test');
-      });
-    });
+    it(
+      'does not block node async APIs when sent before document is ready',
+      withDone((done) => {
+        // Please reference https://github.com/electron/electron/issues/19368 if
+        // this test fails.
+        ipcMain.once('async-node-api-done', () => {
+          done();
+        });
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            sandbox: false,
+            contextIsolation: false
+          }
+        });
+        w.loadFile(path.join(fixturesPath, 'pages', 'send-after-node.html'));
+        setTimeout(50).then(() => {
+          w.webContents.send('test');
+        });
+      })
+    );
   });
 
   ifdescribe(features.isPrintingEnabled())('webContents.print()', () => {
@@ -296,13 +300,16 @@ describe('webContents module', () => {
       }).to.throw('webContents.print(): Invalid optional callback provided.');
     });
 
-    it('fails when an invalid deviceName is passed', (done) => {
-      w.webContents.print({ deviceName: 'i-am-a-nonexistent-printer' }, (success, reason) => {
-        expect(success).to.equal(false);
-        expect(reason).to.match(/Invalid deviceName provided/);
-        done();
-      });
-    });
+    it(
+      'fails when an invalid deviceName is passed',
+      withDone((done) => {
+        w.webContents.print({ deviceName: 'i-am-a-nonexistent-printer' }, (success, reason) => {
+          expect(success).to.equal(false);
+          expect(reason).to.match(/Invalid deviceName provided/);
+          done();
+        });
+      })
+    );
 
     it('throws when an invalid pageSize is passed', () => {
       expect(() => {
@@ -386,14 +393,14 @@ describe('webContents module', () => {
       let server: http.Server;
       let serverUrl: string;
 
-      before(async () => {
+      beforeAll(async () => {
         server = http.createServer((request, response) => {
           response.end();
         });
         serverUrl = (await listen(server)).url;
       });
 
-      after(() => {
+      afterAll(() => {
         server.close();
       });
 
@@ -421,12 +428,12 @@ describe('webContents module', () => {
   describe('webContents.executeJavaScriptInIsolatedWorld', () => {
     let w: BrowserWindow;
 
-    before(async () => {
+    beforeAll(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
       await w.loadURL('about:blank');
     });
 
-    after(() => w.close());
+    afterAll(() => w.close());
 
     it('resolves the returned promise with the result', async () => {
       await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code: 'window.X = 123' }]);
@@ -441,7 +448,7 @@ describe('webContents module', () => {
     let w: BrowserWindow;
     let s: http.Server;
 
-    before(function () {
+    beforeAll(function () {
       session
         .fromPartition('loadurl-webcontents-spec')
         .setPermissionRequestHandler((webContents, permission, callback) => {
@@ -469,7 +476,7 @@ describe('webContents module', () => {
     });
     afterEach(closeAllWindows);
 
-    after(async () => {
+    afterAll(async () => {
       session.fromPartition('loadurl-webcontents-spec').setPermissionRequestHandler(null);
     });
 
@@ -544,18 +551,21 @@ describe('webContents module', () => {
       }
     });
 
-    it('fails if loadURL is called inside did-start-loading', (done) => {
-      w.webContents.once('did-fail-load', (_event, _errorCode, _errorDescription, validatedURL) => {
-        expect(validatedURL).to.contain('blank.html');
-        done();
-      });
+    it(
+      'fails if loadURL is called inside did-start-loading',
+      withDone((done) => {
+        w.webContents.once('did-fail-load', (_event, _errorCode, _errorDescription, validatedURL) => {
+          expect(validatedURL).to.contain('blank.html');
+          done();
+        });
 
-      w.webContents.once('did-start-loading', () => {
-        w.loadURL(`file://${fixturesPath}/pages/blank.html`);
-      });
+        w.webContents.once('did-start-loading', () => {
+          w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+        });
 
-      w.loadURL('data:text/html,<h1>HELLO</h1>');
-    });
+        w.loadURL('data:text/html,<h1>HELLO</h1>');
+      })
+    );
 
     it('fails if loadurl is called after the navigation is ready to commit', () => {
       w.webContents.once('did-fail-load', (_event, _errorCode, _errorDescription, validatedURL) => {
@@ -570,37 +580,40 @@ describe('webContents module', () => {
       w.loadURL('data:text/html,<h1>HELLO</h1>');
     });
 
-    it('fails if loadURL is called inside did-redirect-navigation', (done) => {
-      const server = http.createServer((req, res) => {
-        if (req.url === '/302') {
-          res.statusCode = 302;
-          res.setHeader('Location', '/200');
-          res.end();
-        } else if (req.url === '/200') {
-          res.end('ok');
-        } else {
-          res.end();
-        }
-      });
-
-      w.webContents.once('did-fail-load', (_event, _errorCode, _errorDescription, validatedURL) => {
-        expect(validatedURL).to.contain('blank.html');
-        server.close();
-        done();
-      });
-
-      listen(server)
-        .then(({ url }) => {
-          w.webContents.once('did-redirect-navigation', () => {
-            w.loadURL(`file://${fixturesPath}/pages/blank.html`);
-          });
-          w.loadURL(`${url}/302`);
-        })
-        .catch((e) => {
-          server.close();
-          done(e);
+    it(
+      'fails if loadURL is called inside did-redirect-navigation',
+      withDone((done) => {
+        const server = http.createServer((req, res) => {
+          if (req.url === '/302') {
+            res.statusCode = 302;
+            res.setHeader('Location', '/200');
+            res.end();
+          } else if (req.url === '/200') {
+            res.end('ok');
+          } else {
+            res.end();
+          }
         });
-    });
+
+        w.webContents.once('did-fail-load', (_event, _errorCode, _errorDescription, validatedURL) => {
+          expect(validatedURL).to.contain('blank.html');
+          server.close();
+          done();
+        });
+
+        listen(server)
+          .then(({ url }) => {
+            w.webContents.once('did-redirect-navigation', () => {
+              w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+            });
+            w.loadURL(`${url}/302`);
+          })
+          .catch((e) => {
+            server.close();
+            done(e);
+          });
+      })
+    );
 
     it('sets appropriate error information on rejection', async () => {
       let err: any;
@@ -985,7 +998,7 @@ describe('webContents module', () => {
       let server: http.Server;
       let serverUrl: string;
 
-      before(async () => {
+      beforeAll(async () => {
         server = http.createServer((req, res) => {
           res.setHeader('Content-Type', 'text/html');
           res.end(
@@ -995,7 +1008,7 @@ describe('webContents module', () => {
         serverUrl = (await listen(server)).url;
       });
 
-      after(async () => {
+      afterAll(async () => {
         if (server) await new Promise((resolve) => server.close(resolve));
         server = null as any;
       });
@@ -1882,7 +1895,7 @@ describe('webContents module', () => {
       host3: 0.2
     };
 
-    before(() => {
+    beforeAll(() => {
       const protocol = session.defaultSession.protocol;
       protocol.registerStringProtocol(standardScheme, (request, callback) => {
         const response = `<script>
@@ -1896,7 +1909,7 @@ describe('webContents module', () => {
       });
     });
 
-    after(() => {
+    afterAll(() => {
       const protocol = session.defaultSession.protocol;
       protocol.unregisterProtocol(standardScheme);
     });
@@ -1974,41 +1987,47 @@ describe('webContents module', () => {
       }
     });
 
-    it('can persist zoom level across navigation', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      let finalNavigation = false;
-      ipcMain.on('set-zoom', (e, host) => {
-        const zoomLevel = hostZoomMap[host];
-        if (!finalNavigation) w.webContents.zoomLevel = zoomLevel;
-        e.sender.send(`${host}-zoom-set`);
-      });
-      ipcMain.on('host1-zoom-level', (e) => {
-        try {
-          const zoomLevel = e.sender.getZoomLevel();
-          const expectedZoomLevel = hostZoomMap.host1;
-          expect(zoomLevel).to.equal(expectedZoomLevel);
-          if (finalNavigation) {
-            done();
-          } else {
-            w.loadURL(`${standardScheme}://host2`);
+    it(
+      'can persist zoom level across navigation',
+      withDone((done) => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: { nodeIntegration: true, contextIsolation: false }
+        });
+        let finalNavigation = false;
+        ipcMain.on('set-zoom', (e, host) => {
+          const zoomLevel = hostZoomMap[host];
+          if (!finalNavigation) w.webContents.zoomLevel = zoomLevel;
+          e.sender.send(`${host}-zoom-set`);
+        });
+        ipcMain.on('host1-zoom-level', (e) => {
+          try {
+            const zoomLevel = e.sender.getZoomLevel();
+            const expectedZoomLevel = hostZoomMap.host1;
+            expect(zoomLevel).to.equal(expectedZoomLevel);
+            if (finalNavigation) {
+              done();
+            } else {
+              w.loadURL(`${standardScheme}://host2`);
+            }
+          } catch (e) {
+            done(e);
           }
-        } catch (e) {
-          done(e);
-        }
-      });
-      ipcMain.once('host2-zoom-level', (e) => {
-        try {
-          const zoomLevel = e.sender.getZoomLevel();
-          const expectedZoomLevel = hostZoomMap.host2;
-          expect(zoomLevel).to.equal(expectedZoomLevel);
-          finalNavigation = true;
-          w.webContents.goBack();
-        } catch (e) {
-          done(e);
-        }
-      });
-      w.loadURL(`${standardScheme}://host1`);
-    });
+        });
+        ipcMain.once('host2-zoom-level', (e) => {
+          try {
+            const zoomLevel = e.sender.getZoomLevel();
+            const expectedZoomLevel = hostZoomMap.host2;
+            expect(zoomLevel).to.equal(expectedZoomLevel);
+            finalNavigation = true;
+            w.webContents.goBack();
+          } catch (e) {
+            done(e);
+          }
+        });
+        w.loadURL(`${standardScheme}://host1`);
+      })
+    );
 
     it('can propagate zoom level across same session', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
@@ -2062,37 +2081,40 @@ describe('webContents module', () => {
       expect(zoomLevel1).to.not.equal(zoomLevel2);
     });
 
-    it('can persist when it contains iframe', (done) => {
-      const w = new BrowserWindow({ show: false });
-      const server = http.createServer((req, res) => {
-        setTimeout(200).then(() => {
-          res.end();
+    it(
+      'can persist when it contains iframe',
+      withDone((done) => {
+        const w = new BrowserWindow({ show: false });
+        const server = http.createServer((req, res) => {
+          setTimeout(200).then(() => {
+            res.end();
+          });
         });
-      });
-      defer(() => {
-        server.close();
-      });
-      listen(server).then(({ url }) => {
-        const content = `<iframe src=${url}></iframe>`;
-        w.webContents.on('did-frame-finish-load', (e, isMainFrame) => {
-          if (!isMainFrame) {
-            try {
-              const zoomLevel = w.webContents.zoomLevel;
-              expect(zoomLevel).to.equal(2.0);
+        defer(() => {
+          server.close();
+        });
+        listen(server).then(({ url }) => {
+          const content = `<iframe src=${url}></iframe>`;
+          w.webContents.on('did-frame-finish-load', (e, isMainFrame) => {
+            if (!isMainFrame) {
+              try {
+                const zoomLevel = w.webContents.zoomLevel;
+                expect(zoomLevel).to.equal(2.0);
 
-              w.webContents.zoomLevel = 0;
-              done();
-            } catch (e) {
-              done(e);
+                w.webContents.zoomLevel = 0;
+                done();
+              } catch (e) {
+                done(e);
+              }
             }
-          }
+          });
+          w.webContents.on('dom-ready', () => {
+            w.webContents.zoomLevel = 2.0;
+          });
+          w.loadURL(`data:text/html,${content}`);
         });
-        w.webContents.on('dom-ready', () => {
-          w.webContents.zoomLevel = 2.0;
-        });
-        w.loadURL(`data:text/html,${content}`);
-      });
-    });
+      })
+    );
 
     it('cannot propagate when used with webframe', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
@@ -2120,7 +2142,7 @@ describe('webContents module', () => {
       let serverUrl: string;
       let crossSiteUrl: string;
 
-      before(async () => {
+      beforeAll(async () => {
         server = http.createServer((req, res) => {
           setTimeout().then(() => res.end('hey'));
         });
@@ -2128,7 +2150,7 @@ describe('webContents module', () => {
         crossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
       });
 
-      after(() => {
+      afterAll(() => {
         server.close();
       });
 
@@ -2316,7 +2338,7 @@ describe('webContents module', () => {
     let serverUrl: string;
     let crossSiteUrl: string;
 
-    before(async () => {
+    beforeAll(async () => {
       server = http.createServer((req, res) => {
         const respond = () => {
           if (req.url === '/redirect-cross-site') {
@@ -2339,7 +2361,7 @@ describe('webContents module', () => {
       crossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
     });
 
-    after(() => {
+    afterAll(() => {
       server.close();
     });
 
@@ -2490,26 +2512,28 @@ describe('webContents module', () => {
     let server: http.Server;
     let serverUrl: string;
 
-    before((done) => {
-      server = http.createServer((request, response) => {
-        switch (request.url) {
-          case '/net-error':
-            response.destroy();
-            break;
-          case '/200':
-            response.end();
-            break;
-          default:
-            done(new Error('unsupported endpoint'));
-        }
-      });
-      listen(server).then(({ url }) => {
-        serverUrl = url;
-        done();
-      });
-    });
+    beforeAll(
+      withDone((done) => {
+        server = http.createServer((request, response) => {
+          switch (request.url) {
+            case '/net-error':
+              response.destroy();
+              break;
+            case '/200':
+              response.end();
+              break;
+            default:
+              done(new Error('unsupported endpoint'));
+          }
+        });
+        listen(server).then(({ url }) => {
+          serverUrl = url;
+          done();
+        });
+      })
+    );
 
-    after(() => {
+    afterAll(() => {
       server.close();
     });
 
@@ -2525,12 +2549,10 @@ describe('webContents module', () => {
       { name: 'did-fail-load', url: '/net-error' }
     ];
     for (const e of events) {
-      it(`should not crash when invoked synchronously inside ${e.name} handler`, async function () {
-        // This test is flaky on Windows CI and we don't know why, but the
-        // purpose of this test is to make sure Electron does not crash so it
-        // is fine to retry this test for a few times.
-        this.retries(3);
-
+      // This test is flaky on Windows CI and we don't know why, but the
+      // purpose of this test is to make sure Electron does not crash so it
+      // is fine to retry this test for a few times.
+      it(`should not crash when invoked synchronously inside ${e.name} handler`, { retry: 3 }, async () => {
         const contents = (webContents as typeof ElectronInternal.WebContents).create();
         const originalEmit = contents.emit.bind(contents);
         contents.emit = (...args) => {
@@ -2546,39 +2568,45 @@ describe('webContents module', () => {
 
   describe('did-change-theme-color event', () => {
     afterEach(closeAllWindows);
-    it('is triggered with correct theme color', (done) => {
-      const w = new BrowserWindow({ show: true });
-      let count = 0;
-      w.webContents.on('did-change-theme-color', (e, color) => {
-        try {
-          if (count === 0) {
-            count += 1;
-            expect(color).to.equal('#FFEEDD');
-            w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
-          } else if (count === 1) {
-            expect(color).to.be.null();
-            done();
+    it(
+      'is triggered with correct theme color',
+      withDone((done) => {
+        const w = new BrowserWindow({ show: true });
+        let count = 0;
+        w.webContents.on('did-change-theme-color', (e, color) => {
+          try {
+            if (count === 0) {
+              count += 1;
+              expect(color).to.equal('#FFEEDD');
+              w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+            } else if (count === 1) {
+              expect(color).to.be.null();
+              done();
+            }
+          } catch (e) {
+            done(e);
           }
-        } catch (e) {
-          done(e);
-        }
-      });
-      w.loadFile(path.join(fixturesPath, 'pages', 'theme-color.html'));
-    });
+        });
+        w.loadFile(path.join(fixturesPath, 'pages', 'theme-color.html'));
+      })
+    );
   });
 
   describe('console-message event', () => {
     afterEach(closeAllWindows);
-    it('is triggered with correct log message', (done) => {
-      const w = new BrowserWindow({ show: true });
-      w.webContents.on('console-message', (e) => {
-        // Don't just assert as Chromium might emit other logs that we should ignore.
-        if (e.message === 'a') {
-          done();
-        }
-      });
-      w.loadFile(path.join(fixturesPath, 'pages', 'a.html'));
-    });
+    it(
+      'is triggered with correct log message',
+      withDone((done) => {
+        const w = new BrowserWindow({ show: true });
+        w.webContents.on('console-message', (e) => {
+          // Don't just assert as Chromium might emit other logs that we should ignore.
+          if (e.message === 'a') {
+            done();
+          }
+        });
+        w.loadFile(path.join(fixturesPath, 'pages', 'a.html'));
+      })
+    );
   });
 
   describe('ipc-message event', () => {
@@ -2620,63 +2648,69 @@ describe('webContents module', () => {
 
   describe('referrer', () => {
     afterEach(closeAllWindows);
-    it('propagates referrer information to new target=_blank windows', (done) => {
-      const w = new BrowserWindow({ show: false });
-      const server = http.createServer((req, res) => {
-        if (req.url === '/should_have_referrer') {
-          try {
-            expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
-            return done();
-          } catch (e) {
-            return done(e);
+    it(
+      'propagates referrer information to new target=_blank windows',
+      withDone((done) => {
+        const w = new BrowserWindow({ show: false });
+        const server = http.createServer((req, res) => {
+          if (req.url === '/should_have_referrer') {
+            try {
+              expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
+              return done();
+            } catch (e) {
+              return done(e);
+            }
           }
-        }
-        res.end('<a id="a" href="/should_have_referrer" target="_blank">link</a>');
-      });
-      defer(() => {
-        server.close();
-      });
-      listen(server).then(({ url }) => {
-        w.webContents.once('did-finish-load', () => {
-          w.webContents.setWindowOpenHandler((details) => {
-            expect(details.referrer.url).to.equal(url + '/');
-            expect(details.referrer.policy).to.equal('strict-origin-when-cross-origin');
-            return { action: 'allow' };
-          });
-          w.webContents.executeJavaScript('a.click()');
+          res.end('<a id="a" href="/should_have_referrer" target="_blank">link</a>');
         });
-        w.loadURL(url);
-      });
-    });
+        defer(() => {
+          server.close();
+        });
+        listen(server).then(({ url }) => {
+          w.webContents.once('did-finish-load', () => {
+            w.webContents.setWindowOpenHandler((details) => {
+              expect(details.referrer.url).to.equal(url + '/');
+              expect(details.referrer.policy).to.equal('strict-origin-when-cross-origin');
+              return { action: 'allow' };
+            });
+            w.webContents.executeJavaScript('a.click()');
+          });
+          w.loadURL(url);
+        });
+      })
+    );
 
-    it('propagates referrer information to windows opened with window.open', (done) => {
-      const w = new BrowserWindow({ show: false });
-      const server = http.createServer((req, res) => {
-        if (req.url === '/should_have_referrer') {
-          try {
-            expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
-            return done();
-          } catch (e) {
-            return done(e);
+    it(
+      'propagates referrer information to windows opened with window.open',
+      withDone((done) => {
+        const w = new BrowserWindow({ show: false });
+        const server = http.createServer((req, res) => {
+          if (req.url === '/should_have_referrer') {
+            try {
+              expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
+              return done();
+            } catch (e) {
+              return done(e);
+            }
           }
-        }
-        res.end('');
-      });
-      defer(() => {
-        server.close();
-      });
-      listen(server).then(({ url }) => {
-        w.webContents.once('did-finish-load', () => {
-          w.webContents.setWindowOpenHandler((details) => {
-            expect(details.referrer.url).to.equal(url + '/');
-            expect(details.referrer.policy).to.equal('strict-origin-when-cross-origin');
-            return { action: 'allow' };
-          });
-          w.webContents.executeJavaScript('window.open(location.href + "should_have_referrer")');
+          res.end('');
         });
-        w.loadURL(url);
-      });
-    });
+        defer(() => {
+          server.close();
+        });
+        listen(server).then(({ url }) => {
+          w.webContents.once('did-finish-load', () => {
+            w.webContents.setWindowOpenHandler((details) => {
+              expect(details.referrer.url).to.equal(url + '/');
+              expect(details.referrer.policy).to.equal('strict-origin-when-cross-origin');
+              return { action: 'allow' };
+            });
+            w.webContents.executeJavaScript('window.open(location.href + "should_have_referrer")');
+          });
+          w.loadURL(url);
+        });
+      })
+    );
   });
 
   describe('webframe messages in sandboxed contents', () => {
@@ -3260,7 +3294,7 @@ describe('webContents module', () => {
     let proxyServer: http.Server;
     let proxyServerPort: number;
 
-    before(async () => {
+    beforeAll(async () => {
       server = http.createServer((request, response) => {
         if (request.url === '/no-auth') {
           return response.end('ok');
@@ -3274,7 +3308,7 @@ describe('webContents module', () => {
       ({ port: serverPort, url: serverUrl } = await listen(server));
     });
 
-    before(async () => {
+    beforeAll(async () => {
       proxyServer = http.createServer((request, response) => {
         if (request.headers['proxy-authorization']) {
           response.writeHead(200, { 'Content-type': 'text/plain' });
@@ -3289,7 +3323,7 @@ describe('webContents module', () => {
       await session.defaultSession.clearAuthCache();
     });
 
-    after(() => {
+    afterAll(() => {
       server.close();
       proxyServer.close();
     });
