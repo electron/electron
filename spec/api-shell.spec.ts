@@ -2,6 +2,7 @@ import { shell } from 'electron/common';
 import { BrowserWindow, app } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterAll, afterEach, beforeEach, describe, it } from 'vitest';
 
 import { execSync } from 'node:child_process';
 import { once } from 'node:events';
@@ -18,14 +19,13 @@ describe('shell module', () => {
     let envVars: Record<string, string | undefined> = {};
     let server: http.Server;
 
-    after(function () {
-      this.timeout(60000);
+    afterAll(() => {
       if (process.env.CI && process.platform === 'win32') {
         // Edge may cause issues with visibility tests, so make sure it is closed after testing.
         const killEdge = 'Get-Process | Where Name -Like "msedge" | Stop-Process';
         execSync(killEdge, { shell: 'powershell.exe' });
       }
-    });
+    }, 60000);
 
     beforeEach(function () {
       envVars = {
