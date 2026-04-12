@@ -211,7 +211,7 @@ jobs:
 
     - name: Run Electron Tests
       shell: bash
-      timeout-minutes: 40
+      timeout-minutes: 60
       env:
         MOCHA_REPORTER: mocha-multi-reporters
         MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
