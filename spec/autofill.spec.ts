@@ -1,6 +1,7 @@
 import { BrowserWindow } from 'electron';
 
 import { expect } from 'chai';
+import { afterEach, describe, it } from 'vitest';
 
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
