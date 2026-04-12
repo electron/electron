@@ -1,6 +1,7 @@
 import { BrowserWindow } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterEach, describe, it } from 'vitest';
 
 import { closeAllWindows } from './lib/window-helpers';
 
