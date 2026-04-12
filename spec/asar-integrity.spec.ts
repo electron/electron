@@ -3,6 +3,7 @@ import { flipFuses, FuseV1Config, FuseV1Options, FuseVersion } from '@electron/f
 import { resedit } from '@electron/packager/dist/resedit';
 
 import { expect } from 'chai';
+import { afterEach, beforeEach, describe, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import * as nodeCrypto from 'node:crypto';
@@ -60,9 +61,7 @@ const expectToHaveCrashed = (res: SpawnResult) => {
   }
 };
 
-describe('fuses', function () {
-  this.timeout(120000);
-
+describe('fuses', { timeout: 120000 }, () => {
   let tmpDir: string;
   let appPath: string;
 
