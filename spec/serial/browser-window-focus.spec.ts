@@ -104,7 +104,7 @@ describe('BrowserWindow module (serial)', () => {
         expect(w.isVisible()).to.be.true('parent is visible');
         expect(c.isVisible()).to.be.true('child is visible');
 
-        closeWindow(c);
+        await closeWindow(c, { assertNotWindows: false });
       });
     });
 
