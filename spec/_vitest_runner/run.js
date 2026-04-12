@@ -92,20 +92,64 @@ const env = {
   ELECTRON_TESTS_EXECUTABLE: exe
 };
 
-let command = VITEST_BIN;
-let args = ['run', '--config', path.join(__dirname, 'vitest.config.ts'), ...vitestArgs];
+const configPath = path.join(__dirname, 'vitest.config.ts');
 
-// On Linux, run vitest under a mocked D-Bus so every spawned Electron worker
-// inherits the session/system bus addresses.
-if (process.platform === 'linux') {
-  args = [path.resolve(ROOT, 'script', 'dbus_mock.py'), command, ...args];
-  command = 'python3';
+function runVitest(extraArgs) {
+  let command = VITEST_BIN;
+  let args = ['run', '--config', configPath, ...extraArgs];
+  // On Linux, run vitest under a mocked D-Bus so every spawned Electron worker
+  // inherits the session/system bus addresses.
+  if (process.platform === 'linux') {
+    args = [path.resolve(ROOT, 'script', 'dbus_mock.py'), command, ...args];
+    command = 'python3';
+  }
+  const result = childProcess.spawnSync(command, args, { cwd: ROOT, stdio: 'inherit', env });
+  return result.status ?? 1;
 }
 
-const result = childProcess.spawnSync(command, args, {
-  cwd: ROOT,
-  stdio: 'inherit',
-  env
-});
+const SERIAL_DIR = path.join('spec', 'serial');
 
-process.exit(result.status ?? 1);
+function isSerialPath(a) {
+  const rel = path.relative(ROOT, path.resolve(ROOT, a));
+  return rel === SERIAL_DIR || rel.startsWith(SERIAL_DIR + path.sep);
+}
+
+function isTestPath(a) {
+  return !a.startsWith('-') && (a.includes('/') || a.includes(path.sep) || /\.spec\.[cm]?[tj]s$/.test(a));
+}
+
+function serialArgs(args) {
+  const out = [];
+  let hasPositional = false;
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a.startsWith('--outputFile.junit=')) {
+      out.push(a.replace(/\.xml$/, '-serial.xml'));
+    } else if (a === '--outputFile.junit') {
+      out.push(a, args[++i].replace(/\.xml$/, '-serial.xml'));
+    } else if (!isTestPath(a)) {
+      out.push(a);
+    } else {
+      hasPositional = true;
+      if (isSerialPath(a)) out.push(a);
+    }
+  }
+  return { args: out, hasPositional };
+}
+
+const { args: sArgs, hasPositional } = serialArgs(vitestArgs);
+const positionalSerial = hasPositional && sArgs.some((a) => isTestPath(a));
+const positionalParallel = hasPositional && vitestArgs.some((a) => isTestPath(a) && !isSerialPath(a));
+
+let parallelStatus = 0;
+if (!hasPositional || positionalParallel) {
+  parallelStatus = runVitest(['--exclude', 'spec/serial/**', ...vitestArgs]);
+}
+
+let serialStatus = 0;
+if (!hasPositional || positionalSerial) {
+  console.log('\nRunning spec/serial/** without file parallelism...');
+  serialStatus = runVitest(['--no-file-parallelism', ...sArgs, ...(hasPositional ? [] : ['spec/serial/**/*.spec.ts'])]);
+}
+
+process.exit(parallelStatus || serialStatus);

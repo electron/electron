@@ -3,8 +3,8 @@ import { globalShortcut } from 'electron/main';
 import { expect } from 'chai';
 import { afterEach, beforeEach, describe, it } from 'vitest';
 
-import { singleModifierCombinations, doubleModifierCombinations } from './lib/accelerator-helpers';
-import { ifdescribe } from './lib/spec-helpers';
+import { singleModifierCombinations, doubleModifierCombinations } from '../lib/accelerator-helpers';
+import { ifdescribe } from '../lib/spec-helpers';
 
 ifdescribe(process.platform !== 'win32')('globalShortcut module', () => {
   beforeEach(() => {

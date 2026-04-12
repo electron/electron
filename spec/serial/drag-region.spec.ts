@@ -8,12 +8,12 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 
-import { hasCapturableScreen } from './lib/screen-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { hasCapturableScreen } from '../lib/screen-helpers';
+import { closeAllWindows } from '../lib/window-helpers';
 
 const display = screen.getPrimaryDisplay();
 
-const fixtures = path.resolve(__dirname, 'fixtures');
+const fixtures = path.resolve(__dirname, '..', 'fixtures');
 
 // Try to load robotjs
 let robot: typeof import('@hurdlegroup/robotjs') | undefined;

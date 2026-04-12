@@ -14,8 +14,8 @@ import * as cp from 'node:child_process';
 import { once } from 'node:events';
 import * as path from 'node:path';
 
-import { ifdescribe, waitUntil } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { ifdescribe, waitUntil } from '../lib/spec-helpers';
+import { closeAllWindows } from '../lib/window-helpers';
 
 // visibilityState specs pass on linux with a real window manager but on CI
 // the environment does not let these specs pass
@@ -35,7 +35,8 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     existingWCS.forEach((contents) => contents.close());
   });
 
-  const load = () => w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'chromium', 'visibilitystate.html'));
+  const load = () =>
+    w.webContents.loadFile(path.resolve(__dirname, '..', 'fixtures', 'chromium', 'visibilitystate.html'));
 
   async function haveVisibilityState(state: string) {
     const docVisState = await w.webContents.executeJavaScript('document.visibilityState');
@@ -161,7 +162,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
 
     const makeOtherWindow = (opts: { x: number; y: number; width: number; height: number }) => {
       child = cp.spawn(process.execPath, [
-        path.resolve(__dirname, 'fixtures', 'chromium', 'other-window.js'),
+        path.resolve(__dirname, '..', 'fixtures', 'chromium', 'other-window.js'),
         `${opts.x}`,
         `${opts.y}`,
         `${opts.width}`,

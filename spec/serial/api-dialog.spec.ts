@@ -6,8 +6,8 @@ import { afterEach, beforeAll, describe, it } from 'vitest';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { ifdescribe, ifit } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { ifdescribe, ifit } from '../lib/spec-helpers';
+import { closeAllWindows } from '../lib/window-helpers';
 
 describe('dialog module', () => {
   describe('showOpenDialog', () => {
@@ -733,7 +733,7 @@ describe('dialog module', () => {
         });
 
         it('sets the default path directory', async () => {
-          const defaultDir = path.join(__dirname, 'fixtures');
+          const defaultDir = path.join(__dirname, '..', 'fixtures');
           const w = new BrowserWindow({ show: false });
           const p = dialog.showOpenDialog(w, {
             defaultPath: defaultDir,
@@ -786,7 +786,7 @@ describe('dialog module', () => {
         });
 
         it('can accept an open dialog and return a file path', async () => {
-          const targetDir = path.join(__dirname, 'fixtures');
+          const targetDir = path.join(__dirname, '..', 'fixtures');
           const w = new BrowserWindow({ show: false });
           const p = dialog.showOpenDialog(w, {
             defaultPath: targetDir,
@@ -825,7 +825,7 @@ describe('dialog module', () => {
         });
 
         it('can accept a save dialog with a filename', async () => {
-          const defaultDir = path.join(__dirname, 'fixtures');
+          const defaultDir = path.join(__dirname, '..', 'fixtures');
           const filename = 'test-save-output.txt';
           const w = new BrowserWindow({ show: false });
           const p = dialog.showSaveDialog(w, {
@@ -891,7 +891,7 @@ describe('dialog module', () => {
         it('sets the default filename from defaultPath', async () => {
           const w = new BrowserWindow({ show: false });
           const p = dialog.showSaveDialog(w, {
-            defaultPath: path.join(__dirname, 'fixtures', 'my-document.txt')
+            defaultPath: path.join(__dirname, '..', 'fixtures', 'my-document.txt')
           });
 
           await waitForSheet(w);
@@ -904,7 +904,7 @@ describe('dialog module', () => {
         });
 
         it('sets the default directory from defaultPath', async () => {
-          const defaultDir = path.join(__dirname, 'fixtures');
+          const defaultDir = path.join(__dirname, '..', 'fixtures');
           const w = new BrowserWindow({ show: false });
           const p = dialog.showSaveDialog(w, {
             defaultPath: path.join(defaultDir, 'some-file.txt')
@@ -1006,7 +1006,7 @@ describe('dialog module', () => {
         });
 
         it('applies multiple options simultaneously', async () => {
-          const defaultDir = path.join(__dirname, 'fixtures');
+          const defaultDir = path.join(__dirname, '..', 'fixtures');
           const w = new BrowserWindow({ show: false });
           const p = dialog.showSaveDialog(w, {
             buttonLabel: 'Save Now',
