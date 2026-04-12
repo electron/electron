@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
+import { afterEach, beforeEach, describe, it } from 'vitest';
 
 import { SpawnSyncReturns } from 'node:child_process';
 
