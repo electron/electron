@@ -1,12 +1,13 @@
 import { ipcMain, BrowserWindow } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterEach, beforeEach, describe, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
 import * as path from 'node:path';
 
-import { defer } from './lib/spec-helpers';
+import { defer, withDone } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('ipc main module', () => {
@@ -19,38 +20,44 @@ describe('ipc main module', () => {
       ipcMain.removeAllListeners('send-sync-message');
     });
 
-    it('does not crash when reply is not sent and browser is destroyed', (done) => {
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true,
-          contextIsolation: false
-        }
-      });
-      ipcMain.once('send-sync-message', (event) => {
-        event.returnValue = null;
-        done();
-      });
-      w.loadFile(path.join(fixtures, 'api', 'send-sync-message.html'));
-    });
+    it(
+      'does not crash when reply is not sent and browser is destroyed',
+      withDone((done) => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+          }
+        });
+        ipcMain.once('send-sync-message', (event) => {
+          event.returnValue = null;
+          done();
+        });
+        w.loadFile(path.join(fixtures, 'api', 'send-sync-message.html'));
+      })
+    );
 
-    it('does not crash when reply is sent by multiple listeners', (done) => {
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true,
-          contextIsolation: false
-        }
-      });
-      ipcMain.on('send-sync-message', (event) => {
-        event.returnValue = null;
-      });
-      ipcMain.on('send-sync-message', (event) => {
-        event.returnValue = null;
-        done();
-      });
-      w.loadFile(path.join(fixtures, 'api', 'send-sync-message.html'));
-    });
+    it(
+      'does not crash when reply is sent by multiple listeners',
+      withDone((done) => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+          }
+        });
+        ipcMain.on('send-sync-message', (event) => {
+          event.returnValue = null;
+        });
+        ipcMain.on('send-sync-message', (event) => {
+          event.returnValue = null;
+          done();
+        });
+        w.loadFile(path.join(fixtures, 'api', 'send-sync-message.html'));
+      })
+    );
   });
 
   describe('ipcMain.on', () => {
