@@ -106,11 +106,17 @@ export async function startRemoteControlApp(extraArgs: string[] = [], options?: 
   return new RemoteControlApp(appProcess, port);
 }
 
-export function waitUntil(callback: () => boolean | Promise<boolean>, opts: { rate?: number; timeout?: number } = {}) {
+export function waitUntil(
+  callback: () => boolean | Promise<boolean>,
+  signal: AbortSignal,
+  opts: { rate?: number; timeout?: number } = {}
+) {
   const { rate = 10, timeout = 10000 } = opts;
   return (async () => {
+    signal.throwIfAborted();
+
     const ac = new AbortController();
-    const signal = ac.signal;
+    const combined = AbortSignal.any([signal, ac.signal]);
     let checkCompleted = false;
     let timedOut = false;
 
@@ -127,19 +133,25 @@ export function waitUntil(callback: () => boolean | Promise<boolean>, opts: { ra
       return result;
     };
 
-    setTimeout(timeout, { signal }).then(() => {
-      timedOut = true;
-      checkCompleted = true;
-    });
+    setTimeout(timeout, undefined, { signal: combined })
+      .then(() => {
+        timedOut = true;
+        checkCompleted = true;
+      })
+      .catch(() => {});
 
     while (checkCompleted === false) {
+      if (signal.aborted) {
+        ac.abort();
+        throw signal.reason ?? new Error('waitUntil aborted');
+      }
       const checkSatisfied = await check();
       if (checkSatisfied === true) {
         ac.abort();
         checkCompleted = true;
         return;
       } else {
-        await setTimeout(rate);
+        await setTimeout(rate, undefined, { signal: combined }).catch(() => {});
       }
     }
 

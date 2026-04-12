@@ -418,10 +418,10 @@ describe('chrome extensions', () => {
         return false;
       }
 
-      it('can cancel http requests', async () => {
+      it('can cancel http requests', async (ctx) => {
         await w.loadURL(url);
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
-        await expect(waitUntil(haveRejectedFetch)).to.eventually.be.fulfilled();
+        await expect(waitUntil(haveRejectedFetch, ctx.signal)).to.eventually.be.fulfilled();
       });
 
       it('does not cancel http requests when no extension loaded', async () => {

@@ -63,11 +63,11 @@ const shouldRunCase = (crashCase: string) => {
 };
 
 describe('crash cases', () => {
-  afterEach(async () => {
+  afterEach(async (ctx) => {
     for (const child of children) {
       child.kill();
     }
-    await waitUntil(() => children.length === 0);
+    await waitUntil(() => children.length === 0, ctx.signal);
     children.length = 0;
   });
   const cases = fs.readdirSync(fixturePath);

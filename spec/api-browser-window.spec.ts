@@ -3875,7 +3875,7 @@ describe('BrowserWindow module', () => {
         beforeEach(() => {
           w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
         });
-        it('works for window events', async () => {
+        it('works for window events', async (ctx) => {
           const pageTitleUpdated = once(w, 'page-title-updated');
           const newTitle = 'changed';
           w.loadURL(`data:text/html,<script>document.title = '${newTitle}'</script>`);
@@ -3884,7 +3884,7 @@ describe('BrowserWindow module', () => {
           // w.title should update after 'page-title-updated'.
           // It happens right *after* the event fires though,
           // so we have to waitUntil it changes
-          waitUntil(() => w.title === newTitle);
+          waitUntil(() => w.title === newTitle, ctx.signal);
         });
 
         it('works for stop events', async () => {
@@ -6242,7 +6242,7 @@ describe('BrowserWindow module', () => {
         await done;
       });
 
-      it('handles HTML fullscreen transitions when fullscreenable is false', async () => {
+      it('handles HTML fullscreen transitions when fullscreenable is false', async (ctx) => {
         const w = new BrowserWindow({ fullscreenable: false });
         await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
 
@@ -6262,7 +6262,7 @@ describe('BrowserWindow module', () => {
             await waitUntil(async () => {
               const isFS = await w.webContents.executeJavaScript('!!document.fullscreenElement');
               return isFS === true;
-            });
+            }, ctx.signal);
             checkDone();
           });
 

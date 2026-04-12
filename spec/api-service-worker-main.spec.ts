@@ -160,12 +160,12 @@ describe('ServiceWorkerMain module', () => {
       expect(serviceWorker).to.not.be.undefined();
     });
 
-    it('does not find unregistered service worker', async () => {
+    it('does not find unregistered service worker', async (ctx) => {
       loadWorkerScript();
       const runningServiceWorker = await waitForServiceWorker('running');
       const { versionId } = runningServiceWorker;
       unregisterAllServiceWorkers();
-      await waitUntil(() => runningServiceWorker.isDestroyed());
+      await waitUntil(() => runningServiceWorker.isDestroyed(), ctx.signal);
       const serviceWorker = serviceWorkers.getWorkerFromVersionID(versionId);
       expect(serviceWorker).to.be.undefined();
     });
@@ -178,20 +178,20 @@ describe('ServiceWorkerMain module', () => {
       expect(serviceWorker.isDestroyed()).to.be.false();
     });
 
-    it('is destroyed after being unregistered', async () => {
+    it('is destroyed after being unregistered', async (ctx) => {
       loadWorkerScript();
       const serviceWorker = await waitForServiceWorker();
       expect(serviceWorker.isDestroyed()).to.be.false();
       await unregisterAllServiceWorkers();
-      await waitUntil(() => serviceWorker.isDestroyed());
+      await waitUntil(() => serviceWorker.isDestroyed(), ctx.signal);
     });
   });
 
   describe('"running-status-changed" event', () => {
-    it('handles when content::ServiceWorkerVersion has been destroyed', async () => {
+    it('handles when content::ServiceWorkerVersion has been destroyed', async (ctx) => {
       loadWorkerScript('sw-unregister-self.js');
       const serviceWorker = await waitForServiceWorker('running');
-      await waitUntil(() => serviceWorker.isDestroyed());
+      await waitUntil(() => serviceWorker.isDestroyed(), ctx.signal);
     });
   });
 
@@ -280,20 +280,20 @@ describe('ServiceWorkerMain module', () => {
       expect(serviceWorker._countExternalRequests()).to.equal(0);
     });
 
-    it('throws when starting task after destroyed', async () => {
+    it('throws when starting task after destroyed', async (ctx) => {
       loadWorkerScript();
       const serviceWorker = await waitForServiceWorker();
       await unregisterAllServiceWorkers();
-      await waitUntil(() => serviceWorker.isDestroyed());
+      await waitUntil(() => serviceWorker.isDestroyed(), ctx.signal);
       expect(() => serviceWorker.startTask()).to.throw();
     });
 
-    it('throws when ending task after destroyed', async () => {
+    it('throws when ending task after destroyed', async (ctx) => {
       loadWorkerScript();
       const serviceWorker = await waitForServiceWorker();
       const task = serviceWorker.startTask();
       await unregisterAllServiceWorkers();
-      await waitUntil(() => serviceWorker.isDestroyed());
+      await waitUntil(() => serviceWorker.isDestroyed(), ctx.signal);
       expect(() => task.end()).to.throw();
     });
   });

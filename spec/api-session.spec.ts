@@ -987,7 +987,7 @@ describe('session module', () => {
     const protocol = session.defaultSession.protocol;
     const v8Util = process._linkedBinding('electron_common_v8_util');
 
-    const waitForBlobDataRejection = (uuid: string) =>
+    const waitForBlobDataRejection = (uuid: string, signal: AbortSignal) =>
       waitUntil(async () => {
         const attempt = session.defaultSession
           .getBlobData(uuid)
@@ -996,14 +996,14 @@ describe('session module', () => {
         const deadline = setTimeout(1000).then(() => false);
         const rejected = await Promise.race([attempt, deadline]);
         return rejected;
-      });
+      }, signal);
 
-    const waitForGarbageCollection = (weak: WeakRef<object>) =>
+    const waitForGarbageCollection = (weak: WeakRef<object>, signal: AbortSignal) =>
       waitUntil(() => {
         v8Util.requestGarbageCollectionForTesting();
         v8Util.runUntilIdle();
         return weak.deref() === undefined;
-      });
+      }, signal);
 
     const makeContent = (url: string, postData: string) => `<html>
                        <script>
@@ -1060,7 +1060,7 @@ describe('session module', () => {
       }
     });
 
-    it('rejects after wrapper is collected', async () => {
+    it('rejects after wrapper is collected', async (ctx) => {
       const url = `${scheme}://gc-released-${Date.now()}`;
       const postData = 'payload';
       const content = makeContent(url, postData);
@@ -1078,8 +1078,8 @@ describe('session module', () => {
         const weak = new WeakRef(heldDataPipe as object);
         heldDataPipe = null;
 
-        await waitForGarbageCollection(weak);
-        await waitForBlobDataRejection(uuid);
+        await waitForGarbageCollection(weak, ctx.signal);
+        await waitForBlobDataRejection(uuid, ctx.signal);
       } finally {
         await protocol.unregisterProtocol(scheme);
       }

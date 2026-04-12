@@ -1879,7 +1879,7 @@ describe('app module', () => {
     describe('app.isActive', () => {
       afterEach(closeAllWindows);
 
-      it('returns true when the app becomes active', async () => {
+      it('returns true when the app becomes active', async (ctx) => {
         expect(app.isActive()).to.equal(false);
 
         const w = new BrowserWindow({
@@ -1890,7 +1890,7 @@ describe('app module', () => {
 
         w.show();
 
-        await expect(waitUntil(() => app.isActive())).to.eventually.be.fulfilled();
+        await expect(waitUntil(() => app.isActive(), ctx.signal)).to.eventually.be.fulfilled();
 
         w.close();
         app.hide();
@@ -1900,13 +1900,13 @@ describe('app module', () => {
 
   ifdescribe(process.platform === 'darwin')('app hide and show API', () => {
     describe('app.isHidden', () => {
-      it('returns true when the app is hidden', async () => {
+      it('returns true when the app is hidden', async (ctx) => {
         app.hide();
-        await expect(waitUntil(() => app.isHidden())).to.eventually.be.fulfilled();
+        await expect(waitUntil(() => app.isHidden(), ctx.signal)).to.eventually.be.fulfilled();
       });
-      it('returns false when the app is shown', async () => {
+      it('returns false when the app is shown', async (ctx) => {
         app.show();
-        await expect(waitUntil(() => !app.isHidden())).to.eventually.be.fulfilled();
+        await expect(waitUntil(() => !app.isHidden(), ctx.signal)).to.eventually.be.fulfilled();
       });
     });
   });

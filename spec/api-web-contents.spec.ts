@@ -79,11 +79,11 @@ describe('webContents module', () => {
       const contents = (webContents as typeof ElectronInternal.WebContents).create();
       expect(webContents.fromFrame(contents.mainFrame)).to.equal(contents);
     });
-    it('returns undefined for disposed frame', async () => {
+    it('returns undefined for disposed frame', async (ctx) => {
       const contents = (webContents as typeof ElectronInternal.WebContents).create();
       const { mainFrame } = contents;
       contents.destroy();
-      await waitUntil(() => typeof webContents.fromFrame(mainFrame) === 'undefined');
+      await waitUntil(() => typeof webContents.fromFrame(mainFrame) === 'undefined', ctx.signal);
     });
     it('throws when passing invalid argument', async () => {
       let errored = false;
@@ -836,22 +836,22 @@ describe('webContents module', () => {
         expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(2);
       });
 
-      it('should be able to go to a valid earlier index', async () => {
+      it('should be able to go to a valid earlier index', async (ctx) => {
         w.webContents.navigationHistory.goToIndex(0);
 
-        await waitUntil(() => w.webContents.navigationHistory.getActiveIndex() === 0);
-        await waitUntil(() => w.webContents.getTitle() === 'Page 1');
+        await waitUntil(() => w.webContents.navigationHistory.getActiveIndex() === 0, ctx.signal);
+        await waitUntil(() => w.webContents.getTitle() === 'Page 1', ctx.signal);
       });
 
-      it('should be able to go to a valid later index', async () => {
+      it('should be able to go to a valid later index', async (ctx) => {
         w.webContents.navigationHistory.goToIndex(0);
-        await waitUntil(() => w.webContents.navigationHistory.getActiveIndex() === 0);
-        await waitUntil(() => w.webContents.getTitle() === 'Page 1');
+        await waitUntil(() => w.webContents.navigationHistory.getActiveIndex() === 0, ctx.signal);
+        await waitUntil(() => w.webContents.getTitle() === 'Page 1', ctx.signal);
 
         w.webContents.navigationHistory.goToIndex(2);
 
-        await waitUntil(() => w.webContents.navigationHistory.getActiveIndex() === 2);
-        await waitUntil(() => w.webContents.getTitle() === 'Page 3');
+        await waitUntil(() => w.webContents.navigationHistory.getActiveIndex() === 2, ctx.signal);
+        await waitUntil(() => w.webContents.getTitle() === 'Page 3', ctx.signal);
       });
 
       const expectNoEffect = async (fn: () => void) => {
@@ -1013,7 +1013,7 @@ describe('webContents module', () => {
         server = null as any;
       });
 
-      it('should restore navigation history with PageState', async () => {
+      it('should restore navigation history with PageState', async (ctx) => {
         await w.loadURL(urlPage1);
         await w.loadURL(urlPage2);
         await w.loadURL(serverUrl);
@@ -1043,7 +1043,7 @@ describe('webContents module', () => {
           return w.webContents.navigationHistory.restore({ index: 2, entries });
         });
 
-        await waitUntil(() => formValue === 'Hi!');
+        await waitUntil(() => formValue === 'Hi!', ctx.signal);
       });
 
       it('should handle invalid base64 pageState', async () => {
@@ -1158,12 +1158,15 @@ describe('webContents module', () => {
   describe('DevTools showItemInFolder embedder message', () => {
     afterEach(closeAllWindows);
 
-    async function openDevTools(w: BrowserWindow) {
+    async function openDevTools(w: BrowserWindow, signal: AbortSignal) {
       await w.loadURL('about:blank');
       const devtoolsOpened = once(w.webContents, 'devtools-opened');
       w.webContents.openDevTools({ mode: 'detach', activate: false });
       await devtoolsOpened;
-      await waitUntil(() => w.webContents.devToolsWebContents!.executeJavaScript('typeof DevToolsAPI !== "undefined"'));
+      await waitUntil(
+        () => w.webContents.devToolsWebContents!.executeJavaScript('typeof DevToolsAPI !== "undefined"'),
+        signal
+      );
     }
 
     async function sendShowItemInFolder(w: BrowserWindow, target: string) {
@@ -1172,9 +1175,9 @@ describe('webContents module', () => {
       );
     }
 
-    it('does not open or execute paths outside registered workspace folders', async () => {
+    it('does not open or execute paths outside registered workspace folders', async (ctx) => {
       const w = new BrowserWindow({ show: false });
-      await openDevTools(w);
+      await openDevTools(w, ctx.signal);
 
       const candidates =
         process.platform === 'win32'
@@ -1199,9 +1202,9 @@ describe('webContents module', () => {
     // above.
     ifit(process.platform !== 'linux')(
       'reveals paths under a registered workspace folder without executing them',
-      async () => {
+      async (ctx) => {
         const w = new BrowserWindow({ show: false });
-        await openDevTools(w);
+        await openDevTools(w, ctx.signal);
 
         const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'devtools-workspace-'));
         const target = path.join(workspace, 'file.txt');
@@ -2080,19 +2083,19 @@ describe('webContents module', () => {
       expect(w.webContents.focusedFrame).to.be.null();
     });
 
-    it('is set when main frame is focused', async () => {
+    it('is set when main frame is focused', async (ctx) => {
       const w = new BrowserWindow({ show: true });
       await w.loadURL('about:blank');
       w.webContents.focus();
-      await waitUntil(() => w.webContents.focusedFrame === w.webContents.mainFrame);
+      await waitUntil(() => w.webContents.focusedFrame === w.webContents.mainFrame, ctx.signal);
     });
 
-    it('is set to child frame when focused', async () => {
+    it('is set to child frame when focused', async (ctx) => {
       const w = new BrowserWindow({ show: true });
       await w.loadFile(path.join(fixturesPath, 'sub-frames', 'frame-with-frame-container.html'));
       const childFrame = w.webContents.mainFrame.frames[0];
       await focusFrame(childFrame);
-      await waitUntil(() => w.webContents.focusedFrame === childFrame);
+      await waitUntil(() => w.webContents.focusedFrame === childFrame, ctx.signal);
     });
   });
 

@@ -42,7 +42,7 @@ describe('webFrameMain (serial)', () => {
       return point;
     };
 
-    const copyVideoFrameInFrame = async (frame: WebFrameMain) => {
+    const copyVideoFrameInFrame = async (frame: WebFrameMain, signal: AbortSignal) => {
       const point = (await frame.executeJavaScript(
         `(${() => {
           const video = document.querySelector('video');
@@ -77,7 +77,7 @@ describe('webFrameMain (serial)', () => {
         }})()`
       );
       frame.copyVideoFrameAt(point.x, point.y);
-      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
+      await waitUntil(() => clipboard.availableFormats().includes('image/png'), signal);
       expect(clipboard.readImage().isEmpty()).to.be.false();
     };
 
@@ -88,22 +88,22 @@ describe('webFrameMain (serial)', () => {
     // TODO: Re-enable on Windows CI once Chromium fixes the intermittent
     // backwards-time DCHECK hit while copying video frames:
     // DCHECK failed: !delta.is_negative().
-    ifit(!(process.platform === 'win32' && process.env.CI))('copies video frame in main frame', async () => {
+    ifit(!(process.platform === 'win32' && process.env.CI))('copies video frame in main frame', async (ctx) => {
       const w = new BrowserWindow({ show: false });
       await w.webContents.loadFile(path.join(fixtures, 'blank.html'));
       await insertVideoInFrame(w.webContents.mainFrame);
-      await copyVideoFrameInFrame(w.webContents.mainFrame);
-      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
+      await copyVideoFrameInFrame(w.webContents.mainFrame, ctx.signal);
+      await waitUntil(() => clipboard.availableFormats().includes('image/png'), ctx.signal);
     });
 
-    ifit(!(process.platform === 'win32' && process.env.CI))('copies video frame in subframe', async () => {
+    ifit(!(process.platform === 'win32' && process.env.CI))('copies video frame in subframe', async (ctx) => {
       const w = new BrowserWindow({ show: false });
       await w.webContents.loadFile(path.join(subframesPath, 'frame-with-frame.html'));
       const subframe = w.webContents.mainFrame.frames[0];
       expect(subframe).to.exist();
       await insertVideoInFrame(subframe);
-      await copyVideoFrameInFrame(subframe);
-      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
+      await copyVideoFrameInFrame(subframe, ctx.signal);
+      await waitUntil(() => clipboard.availableFormats().includes('image/png'), ctx.signal);
     });
   });
 });

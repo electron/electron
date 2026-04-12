@@ -206,14 +206,14 @@ describe('webFrameMain module', () => {
 
   describe('WebFrame.visibilityState', () => {
     // DISABLED-FIXME(MarshallOfSound): Fix flaky test
-    it('should match window state', async () => {
+    it('should match window state', async (ctx) => {
       const w = new BrowserWindow({ show: true });
       await w.loadURL('about:blank');
       const webFrame = w.webContents.mainFrame;
 
       expect(webFrame.visibilityState).to.equal('visible');
       w.hide();
-      await expect(waitUntil(() => webFrame.visibilityState === 'hidden')).to.eventually.be.fulfilled();
+      await expect(waitUntil(() => webFrame.visibilityState === 'hidden', ctx.signal)).to.eventually.be.fulfilled();
     });
   });
 
@@ -355,7 +355,7 @@ describe('webFrameMain module', () => {
       console.log('mainFrame.url', mainFrame.url);
     });
 
-    it('returns null upon accessing senderFrame after cross-origin navigation', async () => {
+    it('returns null upon accessing senderFrame after cross-origin navigation', async (ctx) => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -370,7 +370,7 @@ describe('webFrameMain module', () => {
       // be null when attempting to access the lazily evaluated property.
       waitUntil(() => {
         return event.senderFrame === null;
-      });
+      }, ctx.signal);
     });
 
     it('is detached when unload handler sends IPC', async () => {

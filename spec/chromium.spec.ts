@@ -793,7 +793,7 @@ describe('chromium features', () => {
       expect(size).to.be.a('number');
     });
 
-    ifit(process.platform !== 'darwin')('should lock the keyboard', async () => {
+    ifit(process.platform !== 'darwin')('should lock the keyboard', async (ctx) => {
       const w = new BrowserWindow({ show: true });
       await w.loadFile(path.join(fixturesPath, 'pages', 'modal.html'));
 
@@ -813,7 +813,7 @@ describe('chromium features', () => {
       await expect(
         waitUntil(async () => {
           return await w.webContents.executeJavaScript("document.getElementById('favDialog').open");
-        })
+        }, ctx.signal)
       ).to.eventually.be.fulfilled();
       expect(w.isFullScreen()).to.be.false();
 
@@ -848,7 +848,7 @@ describe('chromium features', () => {
         waitUntil(async () => {
           const openAfter2 = await w.webContents.executeJavaScript("document.getElementById('favDialog').open");
           return openAfter2 === false;
-        })
+        }, ctx.signal)
       ).to.eventually.be.fulfilled();
       expect(w.isFullScreen()).to.be.true();
     });
@@ -3335,7 +3335,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     server.close();
   });
 
-  ifit(process.platform !== 'darwin')('can fullscreen from out-of-process iframes (non-macOS)', async () => {
+  ifit(process.platform !== 'darwin')('can fullscreen from out-of-process iframes (non-macOS)', async (ctx) => {
     const fullscreenChange = once(ipcMain, 'fullscreenChange');
     const html = `<iframe style="width: 0" frameborder=0 src="${crossSiteUrl}" allowfullscreen></iframe>`;
     w.loadURL(`data:text/html,${html}`);
@@ -3352,11 +3352,11 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
       waitUntil(async () => {
         const width = await w.webContents.executeJavaScript("document.querySelector('iframe').offsetWidth");
         return width === 0;
-      })
+      }, ctx.signal)
     ).to.eventually.be.fulfilled();
   });
 
-  ifit(process.platform === 'darwin')('can fullscreen from out-of-process iframes (macOS)', async () => {
+  ifit(process.platform === 'darwin')('can fullscreen from out-of-process iframes (macOS)', async (ctx) => {
     await once(w, 'enter-full-screen');
     const fullscreenChange = once(ipcMain, 'fullscreenChange');
     const html = `<iframe style="width: 0" frameborder=0 src="${crossSiteUrl}" allowfullscreen></iframe>`;
@@ -3375,7 +3375,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
       waitUntil(async () => {
         const width = await w.webContents.executeJavaScript("document.querySelector('iframe').offsetWidth");
         return width === 0;
-      })
+      }, ctx.signal)
     ).to.eventually.be.fulfilled();
 
     w.setFullScreen(false);
