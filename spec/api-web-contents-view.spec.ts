@@ -1,12 +1,13 @@
 import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterEach, beforeEach, describe, it } from 'vitest';
 
 import { once } from 'node:events';
 import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
 
 import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers';
-import { defer, ifdescribe, waitUntil } from './lib/spec-helpers';
+import { defer, ifdescribe, waitUntil, withDone } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('WebContentsView', () => {
@@ -163,21 +164,24 @@ describe('WebContentsView', () => {
     return arr;
   }
 
-  it("doesn't crash when GCed during allocation", (done) => {
-    // eslint-disable-next-line no-new
-    new WebContentsView();
-    setTimeout(() => {
-      // NB. the crash we're testing for is the lack of a current `v8::Context`
-      // when emitting an event in WebContents's destructor. V8 is inconsistent
-      // about whether or not there's a current context during garbage
-      // collection, and it seems that `v8Util.requestGarbageCollectionForTesting`
-      // causes a GC in which there _is_ a current context, so the crash isn't
-      // triggered. Thus, we force a GC by other means: namely, by allocating a
-      // bunch of stuff.
-      triggerGCByAllocation();
-      done();
-    });
-  });
+  it(
+    "doesn't crash when GCed during allocation",
+    withDone((done) => {
+      // eslint-disable-next-line no-new
+      new WebContentsView();
+      setTimeout(() => {
+        // NB. the crash we're testing for is the lack of a current `v8::Context`
+        // when emitting an event in WebContents's destructor. V8 is inconsistent
+        // about whether or not there's a current context during garbage
+        // collection, and it seems that `v8Util.requestGarbageCollectionForTesting`
+        // causes a GC in which there _is_ a current context, so the crash isn't
+        // triggered. Thus, we force a GC by other means: namely, by allocating a
+        // bunch of stuff.
+        triggerGCByAllocation();
+        done();
+      });
+    })
+  );
 
   it('does not crash when closed via window.close()', async () => {
     const bw = new BrowserWindow();
