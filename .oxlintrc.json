@@ -11,6 +11,10 @@
     {
       "name": "no-only-tests",
       "specifier": "./script/lint-plugins/no-only-tests.mjs"
+    },
+    {
+      "name": "remote-tools-imports",
+      "specifier": "./script/lint-plugins/remote-tools-imports.mjs"
     }
   ],
   "categories": {
@@ -315,7 +319,8 @@
     {
       "files": ["spec/**/*.ts", "spec/**/*.js", "spec/**/*.mjs"],
       "rules": {
-        "no-only-tests/no-only-tests": "error"
+        "no-only-tests/no-only-tests": "error",
+        "remote-tools-imports/no-foreign-imports-in-remote-closure": "error"
       }
     },
     {

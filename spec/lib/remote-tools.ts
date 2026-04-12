@@ -13,8 +13,9 @@ export * as util from 'node:util';
 export * as os from 'node:os';
 export * as cp from 'node:child_process';
 export { once } from 'node:events';
-export { setTimeout as delay } from 'node:timers/promises';
+export { setTimeout } from 'node:timers/promises';
 export { expect } from 'chai';
+export { BrowserWindow, nativeImage, webContents } from 'electron/main';
 
 // Renderer-side mirror of the exports above. Keep the keys in sync.
 export const REMOTE_TOOLS_SHIM = `{
@@ -25,8 +26,11 @@ export const REMOTE_TOOLS_SHIM = `{
   os: require('node:os'),
   cp: require('node:child_process'),
   once: require('node:events').once,
-  delay: require('node:timers/promises').setTimeout,
+  setTimeout: require('node:timers/promises').setTimeout,
   expect: require('chai').expect,
+  BrowserWindow: require('electron').BrowserWindow,
+  nativeImage: require('electron').nativeImage,
+  webContents: require('electron').webContents,
 }`;
 
 const SSR_IMPORT_RE = /__vite_ssr_import_\d+__/g;
