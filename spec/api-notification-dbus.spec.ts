@@ -11,12 +11,13 @@ import { app } from 'electron/main';
 
 import { expect } from 'chai';
 import * as dbus from 'dbus-native';
+import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
 
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe, withDone } from './lib/spec-helpers';
 
 const fixturesPath = path.join(__dirname, 'fixtures');
 
@@ -33,7 +34,7 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
   const appName = 'api-notification-dbus-spec';
   const serviceName = 'org.freedesktop.Notifications';
 
-  before(async () => {
+  beforeAll(async () => {
     // init app
     app.name = appName;
     app.setDesktopName(`${appName}.desktop`);
@@ -63,7 +64,7 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
     );
   });
 
-  after(async () => {
+  afterAll(async () => {
     // cleanup dbus
     if (reset) await reset();
     // cleanup app
@@ -106,21 +107,23 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
       };
     }
 
-    before((done) => {
-      mock.on('MethodCalled', onMethodCalled(done));
-      // lazy load Notification after we listen to MethodCalled mock signal
-      Notification = require('electron').Notification;
-      const n = new Notification({
-        title: 'title',
-        subtitle: 'subtitle',
-        body: 'body',
-        icon: nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'notification_icon.png')),
-        replyPlaceholder: 'replyPlaceholder',
-        sound: 'sound',
-        closeButtonText: 'closeButtonText'
-      });
-      n.show();
-    });
+    beforeAll(
+      withDone((done) => {
+        mock.on('MethodCalled', onMethodCalled(done));
+        // lazy load Notification after we listen to MethodCalled mock signal
+        Notification = require('electron').Notification;
+        const n = new Notification({
+          title: 'title',
+          subtitle: 'subtitle',
+          body: 'body',
+          icon: nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'notification_icon.png')),
+          replyPlaceholder: 'replyPlaceholder',
+          sound: 'sound',
+          closeButtonText: 'closeButtonText'
+        });
+        n.show();
+      })
+    );
 
     it(`should call ${serviceName} to show notifications`, async () => {
       const calls = await getCalls();
