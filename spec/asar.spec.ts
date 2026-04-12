@@ -1,6 +1,7 @@
 import { BrowserWindow, ipcMain } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterEach, beforeEach, describe, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as importedFs from 'node:fs';
@@ -8,7 +9,7 @@ import * as path from 'node:path';
 import * as url from 'node:url';
 import { Worker } from 'node:worker_threads';
 
-import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
+import { defer, getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext, withDone } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('asar package', () => {
@@ -18,8 +19,8 @@ describe('asar package', () => {
   afterEach(closeAllWindows);
 
   describe('asar protocol', () => {
-    it('sets __dirname correctly', async function () {
-      after(function () {
+    it('sets __dirname correctly', async () => {
+      defer(() => {
         ipcMain.removeAllListeners('dirname');
       });
 
@@ -39,8 +40,8 @@ describe('asar package', () => {
       expect(dirname).to.equal(path.dirname(p));
     });
 
-    it('loads script tag in html', async function () {
-      after(function () {
+    it('loads script tag in html', async () => {
+      defer(() => {
         ipcMain.removeAllListeners('ping');
       });
 
@@ -60,10 +61,8 @@ describe('asar package', () => {
       expect(message).to.equal('pong');
     });
 
-    it('loads video tag in html', async function () {
-      this.timeout(60000);
-
-      after(function () {
+    it('loads video tag in html', { timeout: 60000 }, async () => {
+      defer(() => {
         ipcMain.removeAllListeners('asar-video');
       });
 
@@ -117,18 +116,21 @@ describe('asar package', () => {
 
   describe('worker threads', function () {
     // DISABLED-FIXME(#38192): only disabled for ASan.
-    ifit(!process.env.IS_ASAN)('should start worker thread from asar file', function (callback) {
-      const p = path.join(asarDir, 'worker_threads.asar', 'worker.js');
-      const w = new Worker(p);
+    ifit(!process.env.IS_ASAN)(
+      'should start worker thread from asar file',
+      withDone((done) => {
+        const p = path.join(asarDir, 'worker_threads.asar', 'worker.js');
+        const w = new Worker(p);
 
-      w.on('error', (err) => callback(err));
-      w.on('message', (message) => {
-        expect(message).to.equal('ping');
-        w.terminate();
+        w.on('error', (err) => done(err));
+        w.on('message', (message) => {
+          expect(message).to.equal('ping');
+          w.terminate();
 
-        callback(null);
-      });
-    });
+          done();
+        });
+      })
+    );
   });
 });
 
@@ -1171,31 +1173,37 @@ describe('asar package', function () {
         expect(err.code).to.equal('ENOENT');
       });
 
-      it('handles null for options', function (done) {
-        const p = path.join(asarDir, 'a.asar', 'dir1');
-        fs.readdir(p, null, function (err, dirs) {
-          try {
-            expect(err).to.be.null();
-            expect(dirs).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2']);
-            done();
-          } catch (e) {
-            done(e);
-          }
-        });
-      });
+      it(
+        'handles null for options',
+        withDone((done) => {
+          const p = path.join(asarDir, 'a.asar', 'dir1');
+          fs.readdir(p, null, function (err, dirs) {
+            try {
+              expect(err).to.be.null();
+              expect(dirs).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2']);
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
+        })
+      );
 
-      it('handles undefined for options', function (done) {
-        const p = path.join(asarDir, 'a.asar', 'dir1');
-        fs.readdir(p, undefined, function (err, dirs) {
-          try {
-            expect(err).to.be.null();
-            expect(dirs).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2']);
-            done();
-          } catch (e) {
-            done(e);
-          }
-        });
-      });
+      it(
+        'handles undefined for options',
+        withDone((done) => {
+          const p = path.join(asarDir, 'a.asar', 'dir1');
+          fs.readdir(p, undefined, function (err, dirs) {
+            try {
+              expect(err).to.be.null();
+              expect(dirs).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2']);
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
+        })
+      );
     });
 
     describe('fs.promises.readdir', function () {
@@ -1707,7 +1715,7 @@ describe('asar package', function () {
 
     /*
     describe('process.env.ELECTRON_NO_ASAR', function () {
-      itremote('disables asar support in forked processes', function (done) {
+      itremote('disables asar support in forked processes', withDone((done) => {
         const forked = ChildProcess.fork(path.join(__dirname, 'fixtures', 'module', 'no-asar.js'), [], {
           env: {
             ELECTRON_NO_ASAR: true
@@ -1722,9 +1730,9 @@ describe('asar package', function () {
             done(e);
           }
         });
-      });
+      }));
 
-      itremote('disables asar support in spawned processes', function (done) {
+      itremote('disables asar support in spawned processes', withDone((done) => {
         const spawned = ChildProcess.spawn(process.execPath, [path.join(__dirname, 'fixtures', 'module', 'no-asar.js')], {
           env: {
             ELECTRON_NO_ASAR: true,
@@ -1746,7 +1754,7 @@ describe('asar package', function () {
             done(e);
           }
         });
-      });
+      }));
     });
     */
   });
