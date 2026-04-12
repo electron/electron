@@ -8,6 +8,7 @@ import {
 } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterEach, beforeAll, it, type TestFunction, type TestOptions } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -21,7 +22,7 @@ import { closeAllWindows } from './lib/window-helpers';
 ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
   let w: BaseWindow & { webContents: WebContents };
 
-  before(() => {
+  beforeAll(() => {
     for (const checkWin of BaseWindow.getAllWindows()) {
       console.log('WINDOW EXISTS BEFORE TEST STARTED:', checkWin.title, checkWin.id);
     }
@@ -41,8 +42,13 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     return docVisState === state;
   }
 
-  const itWithOptions = (name: string, options: BrowserWindowConstructorOptions, fn: Mocha.Func) => {
-    it(name, async function (...args) {
+  const itWithOptions = (
+    name: string,
+    options: BrowserWindowConstructorOptions,
+    fn: TestFunction,
+    testOptions: TestOptions = {}
+  ) => {
+    it(name, testOptions, async (ctx) => {
       w = new BrowserWindow({
         ...options,
         paintWhenInitiallyHidden: false,
@@ -55,10 +61,10 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
       if (options.show && process.platform === 'darwin') {
         await once(w, 'show');
       }
-      await Promise.resolve(fn.apply(this, args));
+      await fn(ctx);
     });
 
-    it(name + ' with BaseWindow', async function (...args) {
+    it(name + ' with BaseWindow', testOptions, async (ctx) => {
       const baseWindow = new BaseWindow({
         ...options
       });
@@ -70,7 +76,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
       if (options.show && process.platform === 'darwin') {
         await once(w, 'show');
       }
-      await Promise.resolve(fn.apply(this, args));
+      await fn(ctx);
     });
   };
 
@@ -222,8 +228,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
         width: 50,
         height: 50
       },
-      async function () {
-        this.timeout(240000);
+      async () => {
         load();
         await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
         makeOtherWindow({
@@ -233,7 +238,8 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
           height: 300
         });
         await expect(waitUntil(async () => await haveVisibilityState('hidden'))).to.eventually.be.fulfilled();
-      }
+      },
+      { timeout: 240000 }
     );
   });
 });
