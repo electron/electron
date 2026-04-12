@@ -1,7 +1,9 @@
 import { BaseWindow, View } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterEach, describe, it } from 'vitest';
 
+import { withDone } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 
 describe('View', () => {
@@ -136,20 +138,23 @@ describe('View', () => {
       expect(child.getBounds()).to.deep.equal({ x: 10, y: 15, width: 25, height: 30 });
     });
 
-    it('can set bounds with animation', (done) => {
-      const v = new View();
-      v.setBounds(
-        { x: 0, y: 0, width: 100, height: 100 },
-        {
-          animate: {
-            duration: 300
+    it(
+      'can set bounds with animation',
+      withDone((done) => {
+        const v = new View();
+        v.setBounds(
+          { x: 0, y: 0, width: 100, height: 100 },
+          {
+            animate: {
+              duration: 300
+            }
           }
-        }
-      );
-      setTimeout(() => {
-        expect(v.getBounds()).to.deep.equal({ x: 0, y: 0, width: 100, height: 100 });
-        done();
-      }, 350);
-    });
+        );
+        setTimeout(() => {
+          expect(v.getBounds()).to.deep.equal({ x: 0, y: 0, width: 100, height: 100 });
+          done();
+        }, 350);
+      })
+    );
   });
 });
