@@ -12,6 +12,7 @@ import {
 } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, it } from 'vitest';
 import * as WebSocket from 'ws';
 
 import { spawn } from 'node:child_process';
@@ -37,7 +38,7 @@ describe('chrome extensions', () => {
   let url: string;
   let port: number;
   let wss: WebSocket.Server;
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer((req, res) => {
       if (req.url === '/cors') {
         res.setHeader('Access-Control-Allow-Origin', 'http://example.com');
@@ -56,7 +57,7 @@ describe('chrome extensions', () => {
 
     ({ port, url } = await listen(server));
   });
-  after(async () => {
+  afterAll(async () => {
     server.close();
     wss.close();
     await cleanupWebContents();
@@ -471,7 +472,7 @@ describe('chrome extensions', () => {
 
   describe('chrome.tabs', () => {
     let customSession: Session;
-    before(async () => {
+    beforeAll(async () => {
       customSession = session.fromPartition(`persist:${uuid.v4()}`);
       await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
     });
@@ -750,7 +751,7 @@ describe('chrome extensions', () => {
 
           let server: http.Server;
           let port: number;
-          before(async () => {
+          beforeAll(async () => {
             server = http.createServer(async (_, res) => {
               try {
                 const content = await fs.readFile(contentPath, 'utf-8');
@@ -767,7 +768,7 @@ describe('chrome extensions', () => {
             session.defaultSession.extensions.loadExtension(contentScript);
           });
 
-          after(() => {
+          afterAll(() => {
             session.defaultSession.extensions.removeExtension('content-script-test');
             server.close();
           });
@@ -991,7 +992,7 @@ describe('chrome extensions', () => {
       let customSession: Session;
       let w = null as unknown as BrowserWindow;
 
-      before(async () => {
+      beforeAll(async () => {
         customSession = session.fromPartition(`persist:${uuid.v4()}`);
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-i18n', 'v3'));
       });
@@ -1083,7 +1084,7 @@ describe('chrome extensions', () => {
       let customSession: Session;
       let w = null as unknown as BrowserWindow;
 
-      before(async () => {
+      beforeAll(async () => {
         customSession = session.fromPartition(`persist:${uuid.v4()}`);
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-action-fail'));
       });
@@ -1140,7 +1141,7 @@ describe('chrome extensions', () => {
       let customSession: Session;
       let w = null as unknown as BrowserWindow;
 
-      before(async () => {
+      beforeAll(async () => {
         customSession = session.fromPartition(`persist:${uuid.v4()}`);
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-tabs', 'api-async'));
       });
@@ -1423,7 +1424,7 @@ describe('chrome extensions', () => {
       let customSession: Session;
       let w = null as unknown as BrowserWindow;
 
-      before(async () => {
+      beforeAll(async () => {
         customSession = session.fromPartition(`persist:${uuid.v4()}`);
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-scripting'));
       });
@@ -1507,7 +1508,7 @@ describe('chrome extensions', () => {
       let driver: BrowserWindow;
       let victim: BrowserWindow;
 
-      before(async () => {
+      beforeAll(async () => {
         extSession = session.fromPartition(`persist:${uuid.v4()}`);
         otherSession = session.fromPartition(`persist:${uuid.v4()}`);
         await extSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'tabs-cross-session'));
