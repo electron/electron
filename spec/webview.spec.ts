@@ -2,6 +2,7 @@ import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main
 
 import * as auth from 'basic-auth';
 import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as http from 'node:http';
@@ -78,11 +79,11 @@ describe('<webview> tag', function () {
     }));
   }
 
-  before(() => {
+  beforeAll(() => {
     app.on('web-contents-created', hideChildWindows);
   });
 
-  after(() => {
+  afterAll(() => {
     app.off('web-contents-created', hideChildWindows);
   });
 
@@ -168,7 +169,7 @@ describe('<webview> tag', function () {
   });
 
   // FIXME(deepak1556): Ch69 follow up.
-  xdescribe('document.visibilityState/hidden', () => {
+  describe.skip('document.visibilityState/hidden', () => {
     afterEach(() => {
       ipcMain.removeAllListeners('pong');
     });
@@ -346,14 +347,14 @@ describe('<webview> tag', function () {
 
     afterEach(closeAllWindows);
 
-    before(() => {
+    beforeAll(() => {
       const protocol = webviewSession.protocol;
       protocol.registerStringProtocol(zoomScheme, (request, respond) => {
         respond('hello');
       });
     });
 
-    after(() => {
+    afterAll(() => {
       const protocol = webviewSession.protocol;
       protocol.unregisterProtocol(zoomScheme);
     });
@@ -806,7 +807,7 @@ describe('<webview> tag', function () {
     const WINDOW_BACKGROUND_COLOR = '#55ccbb';
 
     let w: BrowserWindow;
-    before(async () => {
+    beforeAll(async () => {
       w = new BrowserWindow({
         webPreferences: {
           webviewTag: true,
@@ -822,7 +823,7 @@ describe('<webview> tag', function () {
         for (const el of document.querySelectorAll('webview')) el.remove();
       }`);
     });
-    after(() => w.close());
+    afterAll(() => w.close());
 
     ifit(hasCapturableScreen())('is transparent by default', async () => {
       await loadWebView(w.webContents, {
@@ -897,7 +898,7 @@ describe('<webview> tag', function () {
     // so Chrome responds with "NotFoundError" instead of
     // "PermissionDeniedError". It should be re-enabled if we find a way to mock
     // the presence of a microphone & camera.
-    xit('emits when using navigator.getUserMedia api', async () => {
+    it.skip('emits when using navigator.getUserMedia api', async () => {
       const errorFromRenderer = once(ipcMain, 'message');
       loadWebView(w.webContents, {
         src: `file://${fixtures}/pages/permissions/media.html`,
@@ -1025,7 +1026,7 @@ describe('<webview> tag', function () {
 
   describe('attributes', () => {
     let w: WebContents;
-    before(async () => {
+    beforeAll(async () => {
       const window = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -1042,7 +1043,7 @@ describe('<webview> tag', function () {
         for (const el of document.querySelectorAll('webview')) el.remove();
       }`);
     });
-    after(closeAllWindows);
+    afterAll(closeAllWindows);
 
     describe('src attribute', () => {
       it('specifies the page to load', async () => {
@@ -1527,7 +1528,7 @@ describe('<webview> tag', function () {
   describe('events', () => {
     useRemoteContext({ webPreferences: { webviewTag: true } });
     let w: WebContents;
-    before(async () => {
+    beforeAll(async () => {
       const window = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -1544,7 +1545,7 @@ describe('<webview> tag', function () {
         for (const el of document.querySelectorAll('webview')) el.remove();
       }`);
     });
-    after(closeAllWindows);
+    afterAll(closeAllWindows);
 
     describe('ipc-message event', () => {
       it('emits when guest sends an ipc message to browser', async () => {
@@ -1946,9 +1947,9 @@ describe('<webview> tag', function () {
     });
 
     describe('media-started-playing and media-paused events', () => {
-      it('emits when audio starts and stops playing', async function () {
+      it('emits when audio starts and stops playing', async (ctx) => {
         if (!(await w.executeJavaScript("document.createElement('audio').canPlayType('audio/wav')"))) {
-          return this.skip();
+          return ctx.skip();
         }
 
         await loadWebView(w, { src: blankPageUrl });
@@ -1977,7 +1978,7 @@ describe('<webview> tag', function () {
 
   describe('methods', () => {
     let w: WebContents;
-    before(async () => {
+    beforeAll(async () => {
       const window = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -1994,7 +1995,7 @@ describe('<webview> tag', function () {
         for (const el of document.querySelectorAll('webview')) el.remove();
       }`);
     });
-    after(closeAllWindows);
+    afterAll(closeAllWindows);
 
     describe('<webview>.reload()', () => {
       it('should emit beforeunload handler', async () => {
@@ -2013,9 +2014,8 @@ describe('<webview> tag', function () {
         expect(channel).to.equal('onbeforeunload');
       });
 
-      it('does not crash when renderer process crashes', async function () {
-        // It takes more time to wait for the rendering process to crash
-        this.timeout(120000);
+      // It takes more time to wait for the rendering process to crash
+      it('does not crash when renderer process crashes', { timeout: 120000 }, async () => {
         await loadWebView(w, {
           nodeintegration: 'on',
           webpreferences: 'contextIsolation=no',
@@ -2262,10 +2262,8 @@ describe('<webview> tag', function () {
     });
 
     // FIXME: This test is flaking constantly on Linux and macOS.
-    xdescribe('<webview>.capturePage()', () => {
-      it('returns a Promise with a NativeImage', async function () {
-        this.retries(5);
-
+    describe.skip('<webview>.capturePage()', () => {
+      it('returns a Promise with a NativeImage', { retry: 5 }, async () => {
         const src = 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E';
         await loadWebViewAndWaitForEvent(w, { src }, 'did-stop-loading');
 
@@ -2278,9 +2276,7 @@ describe('<webview> tag', function () {
         expect(imgBuffer[25]).to.equal(6);
       });
 
-      it('returns a Promise with a NativeImage in the renderer', async function () {
-        this.retries(5);
-
+      it('returns a Promise with a NativeImage in the renderer', { retry: 5 }, async () => {
         const src = 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E';
         await loadWebViewAndWaitForEvent(w, { src }, 'did-stop-loading');
 
@@ -2295,7 +2291,7 @@ describe('<webview> tag', function () {
     });
 
     // FIXME(zcbenz): Disabled because of moving to OOPIF webview.
-    xdescribe('setDevToolsWebContents() API', () => {
+    describe.skip('setDevToolsWebContents() API', () => {
       /*
       it('sets webContents of webview as devtools', async () => {
         const webview2 = new WebView();
@@ -2326,7 +2322,7 @@ describe('<webview> tag', function () {
 
   describe('basic auth', () => {
     let w: WebContents;
-    before(async () => {
+    beforeAll(async () => {
       const window = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -2343,7 +2339,7 @@ describe('<webview> tag', function () {
         for (const el of document.querySelectorAll('webview')) el.remove();
       }`);
     });
-    after(closeAllWindows);
+    afterAll(closeAllWindows);
 
     it('should authenticate with correct credentials', async () => {
       const message = 'Authenticated';
