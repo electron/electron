@@ -4,6 +4,8 @@ import { expect } from 'chai';
 
 import { once } from 'node:events';
 
+import { runCleanupFunctions } from './defer-helpers';
+
 async function ensureWindowIsClosed(window: BaseWindow | null) {
   if (window && !window.isDestroyed()) {
     if (window instanceof BrowserWindow && window.webContents && !window.webContents.isDestroyed()) {
@@ -49,6 +51,10 @@ export const closeWindow = async (
 };
 
 export async function closeAllWindows() {
+  // Under vitest, setupFiles-level hooks run after test-file afterEach hooks,
+  // so defer()ed cleanups would see already-destroyed windows. Running them
+  // here (the innermost afterEach in practice) preserves the mocha ordering.
+  await runCleanupFunctions();
   let windowsClosed = 0;
   for (const w of BaseWindow.getAllWindows()) {
     await closeWindow(w, { assertNotWindows: false });
@@ -61,6 +67,7 @@ export async function cleanupWebContents() {
   let webContentsDestroyed = 0;
   const existingWCS = webContents.getAllWebContents();
   for (const contents of existingWCS) {
+    if (contents.isDestroyed()) continue;
     const isDestroyed = once(contents, 'destroyed');
     contents.destroy();
     await isDestroyed;

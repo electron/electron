@@ -19,9 +19,10 @@ chai.config.truncateThreshold = 0;
 // Skip any tests listed in disabled-tests.json.
 const disabledTests = new Set(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'disabled-tests.json'), 'utf8')));
 beforeEach((ctx) => {
-  // Run defer()-ed cleanup functions immediately after the test body, before any
-  // afterEach hooks registered by the test file. onTestFinished fires before
-  // afterEach, so defer() cleanups precede test-file afterEach hooks.
+  // Fallback drain for defer()ed cleanups. Most tests use afterEach(closeAllWindows)
+  // which already runs these first; this catches tests that defer() without it.
+  // Note: onTestFinished runs *after* afterEach, so callbacks reaching here must
+  // not assume windows still exist.
   ctx.onTestFinished(runCleanupFunctions);
 
   const parts: string[] = [ctx.task.name];
