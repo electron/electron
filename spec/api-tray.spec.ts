@@ -2,6 +2,7 @@ import { nativeImage } from 'electron/common';
 import { Menu, Tray } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterEach, beforeEach, describe, it } from 'vitest';
 
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
