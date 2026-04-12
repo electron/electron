@@ -1,6 +1,7 @@
 import { Display, screen, desktopCapturer } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterEach, beforeEach, describe, it } from 'vitest';
 
 describe('screen module', () => {
   describe('methods reassignment', () => {
