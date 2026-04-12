@@ -1,8 +1,6 @@
 import { safeStorage } from 'electron/main';
 
-import * as chai from 'chai';
 import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
 import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import * as cp from 'node:child_process';
@@ -11,8 +9,6 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import { ifdescribe } from './lib/spec-helpers';
-
-chai.use(chaiAsPromised);
 
 describe('safeStorage module', () => {
   beforeAll(() => {

@@ -1355,7 +1355,7 @@ describe('BrowserWindow module', () => {
         expectBoundsEqual(w.getBounds(), expectedBounds);
       });
 
-      ifit(process.platform === 'darwin')('on macOS', () => {
+      ifdescribe(process.platform === 'darwin')('on macOS', () => {
         it("emits 'resized' event after animating", async () => {
           const fullBounds = { x: 440, y: 225, width: 500, height: 400 };
           w.setBounds(fullBounds, true);
@@ -1397,7 +1397,7 @@ describe('BrowserWindow module', () => {
         expectBoundsEqual(w.getSize(), size);
       });
 
-      ifit(process.platform === 'darwin')('on macOS', () => {
+      ifdescribe(process.platform === 'darwin')('on macOS', () => {
         it("emits 'resized' event after animating", async () => {
           const size = [300, 400];
           w.setSize(size[0], size[1], true);
@@ -2598,7 +2598,7 @@ describe('BrowserWindow module', () => {
       w = null as unknown as BrowserWindow;
     });
 
-    ifit(process.platform === 'darwin')('on macOS', () => {
+    ifdescribe(process.platform === 'darwin')('on macOS', () => {
       it('allows changing cursor auto-hiding', () => {
         expect(() => {
           w.setAutoHideCursor(false);
@@ -2607,7 +2607,7 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    ifit(process.platform !== 'darwin')('on non-macOS platforms', () => {
+    ifdescribe(process.platform !== 'darwin')('on non-macOS platforms', () => {
       it('is not available', () => {
         expect(w.setAutoHideCursor).to.be.undefined('setAutoHideCursor function');
       });
@@ -5280,7 +5280,7 @@ describe('BrowserWindow module', () => {
     });
 
     describe('resizable state', () => {
-      it('with properties', () => {
+      describe('with properties', () => {
         it('can be set with resizable constructor option', () => {
           const w = new BrowserWindow({ show: false, resizable: false });
           expect(w.resizable).to.be.false('resizable');
@@ -5300,7 +5300,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      it('with functions', () => {
+      describe('with functions', () => {
         it('can be set with resizable constructor option', () => {
           const w = new BrowserWindow({ show: false, resizable: false });
           expect(w.isResizable()).to.be.false('resizable');
@@ -5629,7 +5629,7 @@ describe('BrowserWindow module', () => {
     });
 
     ifdescribe(process.platform === 'darwin')('representedFilename', () => {
-      it('with properties', () => {
+      describe('with properties', () => {
         it('can be changed', () => {
           const w = new BrowserWindow({ show: false });
           expect(w.representedFilename).to.eql('');
@@ -5638,7 +5638,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      it('with functions', () => {
+      describe('with functions', () => {
         it('can be changed', () => {
           const w = new BrowserWindow({ show: false });
           expect(w.getRepresentedFilename()).to.eql('');
@@ -5683,7 +5683,7 @@ describe('BrowserWindow module', () => {
     });
 
     describe('maximizable state (property)', () => {
-      it('with properties', () => {
+      describe('with properties', () => {
         it('can be set with maximizable constructor option', () => {
           const w = new BrowserWindow({ show: false, maximizable: false });
           expect(w.maximizable).to.be.false('maximizable');
@@ -5716,7 +5716,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      it('with functions', () => {
+      describe('with functions', () => {
         it('can be set with maximizable constructor option', () => {
           const w = new BrowserWindow({ show: false, maximizable: false });
           expect(w.isMaximizable()).to.be.false('isMaximizable');
