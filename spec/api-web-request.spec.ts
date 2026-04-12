@@ -1,6 +1,7 @@
 import { ipcMain, net, protocol, session, WebContents, webContents } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, describe, it } from 'vitest';
 import * as WebSocket from 'ws';
 
 import { once } from 'node:events';
@@ -60,14 +61,14 @@ describe('webRequest module', () => {
     }
   );
 
-  before(async () => {
+  beforeAll(async () => {
     protocol.registerStringProtocol('cors', (req, cb) => cb(''));
     defaultURL = (await listen(server)).url + '/';
     http2URL = (await listen(h2server)).url + '/';
     console.log(http2URL);
   });
 
-  after(() => {
+  afterAll(() => {
     server.close();
     h2server.close();
     protocol.unregisterProtocol('cors');
@@ -75,13 +76,13 @@ describe('webRequest module', () => {
 
   let contents: WebContents;
   // NB. sandbox: true is used because it makes navigations much (~8x) faster.
-  before(async () => {
+  beforeAll(async () => {
     contents = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
     // const w = new BrowserWindow({webPreferences: {sandbox: true}})
     // contents = w.webContents
     await contents.loadFile(path.join(fixturesPath, 'pages', 'fetch.html'));
   });
-  after(() => contents.destroy());
+  afterAll(() => contents.destroy());
 
   async function ajax(url: string, options = {}) {
     return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`);
