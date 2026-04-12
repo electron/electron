@@ -368,7 +368,7 @@ describe('webFrameMain module', () => {
       await w.webContents.loadURL(server.crossOriginUrl);
       // senderFrame now points to a disposed RenderFrameHost. It should
       // be null when attempting to access the lazily evaluated property.
-      waitUntil(() => {
+      await waitUntil(() => {
         return event.senderFrame === null;
       }, ctx.signal);
     });
