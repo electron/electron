@@ -1,13 +1,14 @@
 import { BrowserWindow, utilityProcess } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterEach, describe, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { ifdescribe, ifit } from './lib/spec-helpers';
+import { ifdescribe, ifit, withDone } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 const Module = require('node:module') as NodeJS.ModuleInternal;
@@ -69,13 +70,16 @@ describe('modules support', () => {
 
     describe('q', () => {
       describe('Q.when', () => {
-        it('emits the fulfil callback', (done) => {
-          const Q = require('q');
-          Q(true).then((val: boolean) => {
-            expect(val).to.be.true();
-            done();
-          });
-        });
+        it(
+          'emits the fulfil callback',
+          withDone((done) => {
+            const Q = require('q');
+            Q(true).then((val: boolean) => {
+              expect(val).to.be.true();
+              done();
+            });
+          })
+        );
       });
     });
 
