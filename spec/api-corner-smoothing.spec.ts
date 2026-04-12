@@ -2,6 +2,7 @@ import { NativeImage, nativeImage } from 'electron/common';
 import { BrowserWindow } from 'electron/main';
 
 import { AssertionError, expect } from 'chai';
+import { afterEach, describe, it } from 'vitest';
 
 import path = require('node:path');
 
