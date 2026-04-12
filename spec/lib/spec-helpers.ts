@@ -13,17 +13,8 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 import * as v8 from 'node:v8';
 
-const addOnly = <T>(fn: Function): T => {
-  const wrapped = (...args: any[]) => {
-    return fn(...args);
-  };
-  (wrapped as any).only = wrapped;
-  (wrapped as any).skip = wrapped;
-  return wrapped as any;
-};
-
-export const ifit = (condition: boolean) => (condition ? it : addOnly<typeof it>(it.skip));
-export const ifdescribe = (condition: boolean) => (condition ? describe : addOnly<typeof describe>(describe.skip));
+export const ifit = (condition: boolean) => it.runIf(condition);
+export const ifdescribe = (condition: boolean) => describe.runIf(condition);
 
 type DoneCallback = (err?: unknown) => void;
 

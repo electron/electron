@@ -10,7 +10,7 @@ import chaiAsPromised = require('chai-as-promised');
 import dirtyChai = require('dirty-chai');
 
 chai.use(chaiAsPromised);
-chai.use(dirtyChai as any);
+chai.use(dirtyChai);
 
 // Show full object diff.
 // https://github.com/chaijs/chai/issues/469
