@@ -2,6 +2,7 @@ import { app, BrowserWindow, Menu, session, net as electronNet, WebContents, uti
 
 import { assert, expect } from 'chai';
 import * as semver from 'semver';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -15,7 +16,7 @@ import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers';
-import { ifdescribe, ifit, isWayland, listen, waitUntil } from './lib/spec-helpers';
+import { ifdescribe, ifit, isWayland, listen, waitUntil, withDone } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -41,7 +42,7 @@ describe('app module', () => {
   let secureUrl: string;
   const certPath = path.join(fixturesPath, 'certificates');
 
-  before(async () => {
+  beforeAll(async () => {
     const options = {
       key: fs.readFileSync(path.join(certPath, 'server.key')),
       cert: fs.readFileSync(path.join(certPath, 'server.pem')),
@@ -66,9 +67,11 @@ describe('app module', () => {
     secureUrl = (await listen(server)).url;
   });
 
-  after((done) => {
-    server.close(() => done());
-  });
+  afterAll(
+    withDone((done) => {
+      server.close(() => done());
+    })
+  );
 
   describe('app.getVersion()', () => {
     it('returns the version field of package.json', () => {
@@ -244,8 +247,7 @@ describe('app module', () => {
       expectedAdditionalData: unknown;
     }
 
-    it('prevents the second launch of app', async function () {
-      this.timeout(120000);
+    it('prevents the second launch of app', { timeout: 120000 }, async () => {
       const appPath = path.join(fixturesPath, 'api', 'singleton-data');
       const first = cp.spawn(process.execPath, [appPath]);
       await once(first.stdout, 'data');
@@ -425,53 +427,60 @@ describe('app module', () => {
     const socketPath =
       process.platform === 'win32' ? '\\\\.\\pipe\\electron-app-relaunch' : '/tmp/electron-app-relaunch';
 
-    beforeEach((done) => {
-      fs.unlink(socketPath, () => {
-        server = net.createServer();
-        server.listen(socketPath);
-        done();
-      });
-    });
-
-    afterEach((done) => {
-      server!.close(() => {
-        if (process.platform === 'win32') {
+    beforeEach(
+      withDone((done) => {
+        fs.unlink(socketPath, () => {
+          server = net.createServer();
+          server.listen(socketPath);
           done();
-        } else {
-          fs.unlink(socketPath, () => done());
-        }
-      });
-    });
+        });
+      })
+    );
 
-    it('relaunches the app', function (done) {
-      this.timeout(120000);
-
-      let state = 'none';
-      server!.once('error', (error) => done(error));
-      server!.on('connection', (client) => {
-        client.once('data', (data) => {
-          if (String(data) === '--first' && state === 'none') {
-            state = 'first-launch';
-          } else if (String(data) === '--second' && state === 'first-launch') {
-            state = 'second-launch';
-          } else if (String(data) === '--third' && state === 'second-launch') {
+    afterEach(
+      withDone((done) => {
+        server!.close(() => {
+          if (process.platform === 'win32') {
             done();
           } else {
-            done(`Unexpected state: "${state}", data: "${data}"`);
+            fs.unlink(socketPath, () => done());
           }
         });
-      });
+      })
+    );
 
-      const appPath = path.join(fixturesPath, 'api', 'relaunch');
-      const child = cp.spawn(process.execPath, [appPath, '--first']);
-      child.stdout.on('data', (c) => console.log(c.toString()));
-      child.stderr.on('data', (c) => console.log(c.toString()));
-      child.on('exit', (code, signal) => {
-        if (code !== 0) {
-          console.log(`Process exited with code "${code}" signal "${signal}"`);
-        }
-      });
-    });
+    it(
+      'relaunches the app',
+      { timeout: 120000 },
+      () =>
+        new Promise<void>((resolve, reject) => {
+          let state = 'none';
+          server!.once('error', (error) => reject(error));
+          server!.on('connection', (client) => {
+            client.once('data', (data) => {
+              if (String(data) === '--first' && state === 'none') {
+                state = 'first-launch';
+              } else if (String(data) === '--second' && state === 'first-launch') {
+                state = 'second-launch';
+              } else if (String(data) === '--third' && state === 'second-launch') {
+                resolve();
+              } else {
+                reject(new Error(`Unexpected state: "${state}", data: "${data}"`));
+              }
+            });
+          });
+
+          const appPath = path.join(fixturesPath, 'api', 'relaunch');
+          const child = cp.spawn(process.execPath, [appPath, '--first']);
+          child.stdout.on('data', (c) => console.log(c.toString()));
+          child.stderr.on('data', (c) => console.log(c.toString()));
+          child.on('exit', (code, signal) => {
+            if (code !== 0) {
+              console.log(`Process exited with code "${code}" signal "${signal}"`);
+            }
+          });
+        })
+    );
   });
 
   ifdescribe(process.platform === 'darwin')('app.setUserActivity(type, userInfo)', () => {
@@ -490,13 +499,13 @@ describe('app module', () => {
     });
 
     describe('when denied', () => {
-      before(() => {
+      beforeAll(() => {
         app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
           callback(false);
         });
       });
 
-      after(() => {
+      afterAll(() => {
         app.removeAllListeners('certificate-error');
       });
 
@@ -508,12 +517,12 @@ describe('app module', () => {
     });
   });
 
-  // xdescribe('app.importCertificate', () => {
+  // describe.skip('app.importCertificate', () => {
   //   let w = null
 
-  //   before(function () {
+  //   beforeAll((ctx) => {
   //     if (process.platform !== 'linux') {
-  //       this.skip()
+  //       ctx.skip()
   //     }
   //   })
 
@@ -629,7 +638,7 @@ describe('app module', () => {
 
     const expectedBadgeCount = 42;
 
-    after(() => {
+    afterAll(() => {
       app.badgeCount = 0;
     });
 
@@ -1354,7 +1363,7 @@ describe('app module', () => {
   ifdescribe(process.platform !== 'linux')('select-client-certificate event', () => {
     let w: BrowserWindow;
 
-    before(function () {
+    beforeAll(function () {
       session.fromPartition('empty-certificate').setCertificateVerifyProc((req, cb) => {
         cb(0);
       });
@@ -1376,7 +1385,7 @@ describe('app module', () => {
       })
     );
 
-    after(() => session.fromPartition('empty-certificate').setCertificateVerifyProc(null));
+    afterAll(() => session.fromPartition('empty-certificate').setCertificateVerifyProc(null));
 
     it('can respond with empty certificate list', async () => {
       app.once('select-client-certificate', function (event, webContents, url, list, callback) {
@@ -1402,7 +1411,7 @@ describe('app module', () => {
     let Winreg: any;
     let classesKey: any;
 
-    before(function () {
+    beforeAll(function () {
       Winreg = require('winreg');
 
       classesKey = new Winreg({
@@ -1411,20 +1420,22 @@ describe('app module', () => {
       });
     });
 
-    after(function (done) {
-      if (process.platform !== 'win32') {
-        done();
-      } else {
-        const protocolKey = new Winreg({
-          hive: Winreg.HKCU,
-          key: `\\Software\\Classes\\${protocol}`
-        });
+    afterAll(
+      withDone((done) => {
+        if (process.platform !== 'win32') {
+          done();
+        } else {
+          const protocolKey = new Winreg({
+            hive: Winreg.HKCU,
+            key: `\\Software\\Classes\\${protocol}`
+          });
 
-        // The last test leaves the registry dirty,
-        // delete the protocol key for those of us who test at home
-        protocolKey.destroy(() => done());
-      }
-    });
+          // The last test leaves the registry dirty,
+          // delete the protocol key for those of us who test at home
+          protocolKey.destroy(() => done());
+        }
+      })
+    );
 
     beforeEach(() => {
       app.removeAsDefaultProtocolClient(protocol);
@@ -1766,82 +1777,92 @@ describe('app module', () => {
       const socketPath =
         process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox';
 
-      beforeEach(function (done) {
-        fs.unlink(socketPath, () => {
-          server = net.createServer();
-          server.listen(socketPath);
-          done();
-        });
-      });
-
-      afterEach((done) => {
-        if (appProcess != null) appProcess.kill();
-
-        if (server) {
-          server.close(() => {
-            if (process.platform === 'win32') {
-              done();
-            } else {
-              fs.unlink(socketPath, () => done());
-            }
+      beforeEach(
+        withDone((done) => {
+          fs.unlink(socketPath, () => {
+            server = net.createServer();
+            server.listen(socketPath);
+            done();
           });
-        } else {
-          done();
-        }
-      });
+        })
+      );
+
+      afterEach(
+        withDone((done) => {
+          if (appProcess != null) appProcess.kill();
+
+          if (server) {
+            server.close(() => {
+              if (process.platform === 'win32') {
+                done();
+              } else {
+                fs.unlink(socketPath, () => done());
+              }
+            });
+          } else {
+            done();
+          }
+        })
+      );
 
       describe('when app.enableSandbox() is called', () => {
-        it('adds --enable-sandbox to all renderer processes', (done) => {
-          const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-          appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox'], { stdio: 'inherit' });
+        it(
+          'adds --enable-sandbox to all renderer processes',
+          withDone((done) => {
+            const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
+            appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox'], { stdio: 'inherit' });
 
-          server.once('error', (error) => {
-            done(error);
-          });
-
-          server.on('connection', (client) => {
-            client.once('data', (data) => {
-              const argv = JSON.parse(data.toString());
-              expect(argv.sandbox).to.include('--enable-sandbox');
-              expect(argv.sandbox).to.not.include('--no-sandbox');
-
-              expect(argv.noSandbox).to.include('--enable-sandbox');
-              expect(argv.noSandbox).to.not.include('--no-sandbox');
-
-              expect(argv.noSandboxDevtools).to.equal(true);
-              expect(argv.sandboxDevtools).to.equal(true);
-
-              done();
+            server.once('error', (error) => {
+              done(error);
             });
-          });
-        });
+
+            server.on('connection', (client) => {
+              client.once('data', (data) => {
+                const argv = JSON.parse(data.toString());
+                expect(argv.sandbox).to.include('--enable-sandbox');
+                expect(argv.sandbox).to.not.include('--no-sandbox');
+
+                expect(argv.noSandbox).to.include('--enable-sandbox');
+                expect(argv.noSandbox).to.not.include('--no-sandbox');
+
+                expect(argv.noSandboxDevtools).to.equal(true);
+                expect(argv.sandboxDevtools).to.equal(true);
+
+                done();
+              });
+            });
+          })
+        );
       });
 
       describe('when the app is launched with --enable-sandbox', () => {
-        it('adds --enable-sandbox to all renderer processes', (done) => {
-          const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-          appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox'], { stdio: 'inherit' });
+        it(
+          'adds --enable-sandbox to all renderer processes',
+          withDone((done) => {
+            const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
+            appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox'], { stdio: 'inherit' });
 
-          server.once('error', (error) => {
-            done(error);
-          });
-
-          server.on('connection', (client) => {
-            client.once('data', (data) => {
-              const argv = JSON.parse(data.toString());
-              expect(argv.sandbox).to.include('--enable-sandbox');
-              expect(argv.sandbox).to.not.include('--no-sandbox');
-
-              expect(argv.noSandbox).to.include('--enable-sandbox');
-              expect(argv.noSandbox).to.not.include('--no-sandbox');
-
-              expect(argv.noSandboxDevtools).to.equal(true);
-              expect(argv.sandboxDevtools).to.equal(true);
-
-              done();
+            server.once('error', (error) => {
+              done(error);
             });
-          });
-        });
+
+            server.on('connection', (client) => {
+              client.once('data', (data) => {
+                const argv = JSON.parse(data.toString());
+                expect(argv.sandbox).to.include('--enable-sandbox');
+                expect(argv.sandbox).to.not.include('--no-sandbox');
+
+                expect(argv.noSandbox).to.include('--enable-sandbox');
+                expect(argv.noSandbox).to.not.include('--no-sandbox');
+
+                expect(argv.noSandboxDevtools).to.equal(true);
+                expect(argv.sandboxDevtools).to.equal(true);
+
+                done();
+              });
+            });
+          })
+        );
       });
     }
   );
@@ -1891,7 +1912,7 @@ describe('app module', () => {
   });
 
   ifdescribe(process.platform === 'darwin')('dock APIs', () => {
-    after(async () => {
+    afterAll(async () => {
       await app.dock?.show();
     });
 
@@ -1944,7 +1965,7 @@ describe('app module', () => {
     });
 
     describe('dock.setBadge', () => {
-      after(() => {
+      afterAll(() => {
         app.dock?.setBadge('');
       });
 
@@ -2083,7 +2104,7 @@ describe('app module', () => {
   });
 
   describe('configureHostResolver', () => {
-    after(() => {
+    afterAll(() => {
       // Returns to the default configuration.
       app.configureHostResolver({});
     });
@@ -2350,7 +2371,7 @@ describe('default behavior', () => {
   describe('user agent fallback', () => {
     let initialValue: string;
 
-    before(() => {
+    beforeAll(() => {
       initialValue = app.userAgentFallback!;
     });
 
@@ -2376,7 +2397,7 @@ describe('default behavior', () => {
     let server: http.Server;
     let serverUrl: string;
 
-    before(async () => {
+    beforeAll(async () => {
       server = http.createServer((request, response) => {
         if (request.headers.authorization) {
           return response.end('ok');
@@ -2387,7 +2408,7 @@ describe('default behavior', () => {
       serverUrl = (await listen(server)).url;
     });
 
-    after(() => {
+    afterAll(() => {
       server.close();
     });
 
