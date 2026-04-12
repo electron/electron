@@ -3386,6 +3386,8 @@ describe('BrowserWindow module', () => {
       expect(overlayRect.y).to.equal(0);
       if (process.platform === 'darwin') {
         expect(overlayRect.x).to.be.greaterThan(0);
+      } else if (process.platform === 'linux') {
+        expect(overlayRect.x).to.be.at.least(0);
       } else {
         expect(overlayRect.x).to.equal(0);
       }
@@ -3503,6 +3505,8 @@ describe('BrowserWindow module', () => {
       expect(overlayRectPreMax.y).to.equal(0);
       if (process.platform === 'darwin') {
         expect(overlayRectPreMax.x).to.be.greaterThan(0);
+      } else if (process.platform === 'linux') {
+        expect(overlayRectPreMax.x).to.be.at.least(0);
       } else {
         expect(overlayRectPreMax.x).to.equal(0);
       }
