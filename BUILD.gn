@@ -1429,6 +1429,25 @@ if (is_mac) {
       ]
     }
   }
+
+  if (is_linux) {
+    executable("electron_linux_ui_unittests") {
+      testonly = true
+      output_name = "electron_linux_ui_unittests"
+      include_dirs = [ "." ]
+      sources = [
+        "shell/browser/ui/run_all_unittests.cc",
+        "shell/browser/ui/views/linux_window_controls_overlay_utils_unittest.cc",
+      ]
+      deps = [
+        ":electron_lib",
+        "//base/test:test_support",
+        "//ui/gfx:test_support",
+        "//testing/gtest",
+        "//ui/views",
+      ]
+    }
+  }
 }
 
 template("dist_zip") {

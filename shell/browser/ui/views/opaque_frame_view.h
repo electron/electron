@@ -28,7 +28,8 @@ namespace electron {
 
 class NativeWindowViews;
 
-class OpaqueFrameView : public FramelessView {
+class OpaqueFrameView : public FramelessView,
+                        private ui::WindowButtonOrderObserver {
   METADATA_HEADER(OpaqueFrameView, FramelessView)
 
  public:
@@ -68,6 +69,7 @@ class OpaqueFrameView : public FramelessView {
   };
 
   void PaintAsActiveChanged();
+  void OnWindowButtonOrderingChange() override;
 
   void UpdateCaptionButtonPlaceholderContainerBackground();
   void UpdateFrameCaptionButtons();
@@ -188,9 +190,9 @@ class OpaqueFrameView : public FramelessView {
   bool placed_leading_button_ = false;
   bool placed_trailing_button_ = false;
 
-  // The size of the window buttons. This does not count labels or other
-  // elements that should be counted in a minimal frame.
-  int minimum_size_for_buttons_ = 0;
+  // Width reserved for the button banks on each side of the titlebar.
+  int leading_reserved_width_ = 0;
+  int trailing_reserved_width_ = 0;
 
   std::vector<views::FrameButton> leading_buttons_;
   std::vector<views::FrameButton> trailing_buttons_{
@@ -198,10 +200,13 @@ class OpaqueFrameView : public FramelessView {
       views::FrameButton::kClose};
 
   base::CallbackListSubscription paint_as_active_changed_subscription_;
+  bool window_button_order_observing_ = false;
 
-  // PlaceholderContainer beneath the controls button for WCO.
+  // Placeholder containers beneath the native control banks for WCO.
   raw_ptr<CaptionButtonPlaceholderContainer>
-      caption_button_placeholder_container_;
+      leading_caption_button_placeholder_container_;
+  raw_ptr<CaptionButtonPlaceholderContainer>
+      trailing_caption_button_placeholder_container_;
 };
 
 }  // namespace electron
