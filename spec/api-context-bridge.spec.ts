@@ -33,10 +33,10 @@ describe('contextBridge', () => {
   afterAll(async () => {
     if (server) await new Promise((resolve) => server.close(resolve));
     server = null as any;
+    await closeWindow(w);
   });
 
   afterEach(async () => {
-    await closeWindow(w);
     if (dir) await fs.promises.rm(dir, { force: true, recursive: true });
   });
 
@@ -51,6 +51,9 @@ describe('contextBridge', () => {
     w.loadFile(path.resolve(fixturesPath, 'empty.html'));
     const [, bound] = await once(ipcMain, 'context-bridge-bound');
     expect(bound).to.equal(false);
+
+    await closeWindow(w);
+    w = null as unknown as BrowserWindow;
   });
 
   it('should be accessible when contextIsolation is enabled', async () => {
@@ -64,10 +67,26 @@ describe('contextBridge', () => {
     w.loadFile(path.resolve(fixturesPath, 'empty.html'));
     const [, bound] = await once(ipcMain, 'context-bridge-bound');
     expect(bound).to.equal(true);
+
+    await closeWindow(w);
+    w = null as unknown as BrowserWindow;
   });
 
   const generateTests = (useSandbox: boolean) => {
     describe(`with sandbox=${useSandbox}`, () => {
+      let registeredPreloads: string[] = [];
+      afterEach(() => {
+        for (const registeredPreload of registeredPreloads) {
+          w.webContents.session.unregisterPreloadScript(registeredPreload);
+        }
+        registeredPreloads = [];
+      });
+
+      afterAll(async () => {
+        await closeWindow(w);
+        w = null as unknown as BrowserWindow;
+      });
+
       /** @remote */
       const makeBindingWindow = async (bindingCreator: Function, worldId: number = 0) => {
         const bindingSrc = rewriteForRemoteEval(bindingCreator);
@@ -106,17 +125,24 @@ describe('contextBridge', () => {
           path.resolve(tmpDir, 'preload.js'),
           worldId === 0 ? preloadContentForMainWorld : preloadContentForIsolatedWorld
         );
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            contextIsolation: true,
-            nodeIntegration: true,
-            sandbox: useSandbox,
-            preload: path.resolve(tmpDir, 'preload.js'),
-            additionalArguments: ['--unsafely-expose-electron-internals-for-testing']
-          }
-        });
-        await w.loadURL(serverUrl);
+        w =
+          w ||
+          new BrowserWindow({
+            show: false,
+            webPreferences: {
+              contextIsolation: true,
+              nodeIntegration: true,
+              sandbox: useSandbox,
+              additionalArguments: ['--unsafely-expose-electron-internals-for-testing']
+            }
+          });
+        registeredPreloads.push(
+          w.webContents.session.registerPreloadScript({
+            filePath: path.resolve(tmpDir, 'preload.js'),
+            type: 'frame'
+          })
+        );
+        await w.loadURL(serverUrl).catch(() => {});
       };
 
       /** @remote no-locals */
