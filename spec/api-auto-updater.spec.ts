@@ -1,6 +1,7 @@
 import { autoUpdater } from 'electron/main';
 
 import { expect } from 'chai';
+import { describe, it } from 'vitest';
 
 import { once } from 'node:events';
 
