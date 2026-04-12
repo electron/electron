@@ -2279,8 +2279,15 @@ describe('app module', () => {
 
     it('impacts proxy for requests made from utility process', async () => {
       const utilityFixturePath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process', 'api-net-spec.js');
+      // This closure is stringified and evaluated inside the utility process
+      // fixture, so it must not capture any imports from this file (vite's SSR
+      // transform rewrites those to __vite_ssr_import_N__ bindings that don't
+      // exist in the fixture). Use inline require() instead.
       const fn = async () => {
-        const urlRequest = electronNet.request('http://example.com/');
+        const { net } = require('electron');
+        const { expect } = require('chai');
+        const { getResponse, collectStreamBody } = require('../../../lib/net-helpers');
+        const urlRequest = net.request('http://example.com/');
         const response = await getResponse(urlRequest);
         expect(response.statusCode).to.equal(200);
         const message = await collectStreamBody(response);
