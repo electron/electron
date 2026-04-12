@@ -1,6 +1,7 @@
 import { net, session, ClientRequest, ClientRequestConstructorOptions, utilityProcess } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, it, type TestFunction } from 'vitest';
 
 import { once } from 'node:events';
 import * as fs from 'node:fs';
@@ -44,7 +45,7 @@ async function itUtility(name: string, fn?: Function, args?: { [key: string]: an
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function itIgnoringArgs(name: string, fn?: Mocha.Func | Mocha.AsyncFunc, args?: { [key: string]: any }) {
+async function itIgnoringArgs(name: string, fn?: TestFunction, args?: { [key: string]: any }) {
   it(name, fn);
 }
 
@@ -52,13 +53,11 @@ describe('net module', () => {
   beforeEach(() => {
     respondNTimes.routeFailure = false;
   });
-  afterEach(async function () {
-    if (respondNTimes.routeFailure && this.test) {
-      if (!this.test.isFailed()) {
-        throw new Error(
-          'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
-        );
-      }
+  afterEach(async (ctx) => {
+    if (respondNTimes.routeFailure && ctx.task.result?.state !== 'fail') {
+      throw new Error(
+        'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
+      );
     }
   });
 
@@ -87,11 +86,11 @@ describe('net module', () => {
     }
   );
 
-  before(async () => {
+  beforeAll(async () => {
     http2URL = (await listen(h2server)).url + '/';
   });
 
-  after(() => {
+  afterAll(() => {
     h2server.close();
   });
 
