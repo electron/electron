@@ -1,6 +1,5 @@
 import { webContents } from 'electron/main';
 
-import { expect } from 'chai';
 import { afterAll, afterEach, beforeEach, describe, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
@@ -18,6 +17,7 @@ import {
   spawn
 } from './lib/codesign-helpers';
 import { withTempDirectory } from './lib/fs-helpers';
+import { expect } from './lib/remote-tools';
 import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext, withDone } from './lib/spec-helpers';
 
 const mainFixturesPath = path.resolve(__dirname, 'fixtures');

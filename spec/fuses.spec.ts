@@ -1,5 +1,3 @@
-import { BrowserWindow } from 'electron';
-
 import { expect } from 'chai';
 import { describe, it } from 'vitest';
 
@@ -7,6 +5,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
 import path = require('node:path');
 
+import { BrowserWindow } from './lib/remote-tools';
 import { startRemoteControlApp } from './lib/spec-helpers';
 
 describe('fuses', () => {

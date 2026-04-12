@@ -1,10 +1,10 @@
 import { nativeImage } from 'electron/common';
 
-import { expect } from 'chai';
 import { describe, it } from 'vitest';
 
 import * as path from 'node:path';
 
+import { expect } from './lib/remote-tools';
 import { ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
 import { expectDeprecationMessages } from './lib/warning-helpers';
 

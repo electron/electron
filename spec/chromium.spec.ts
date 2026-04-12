@@ -12,7 +12,6 @@ import {
   MessageBoxOptions
 } from 'electron/main';
 
-import { expect } from 'chai';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, it } from 'vitest';
 import * as ws from 'ws';
 
@@ -26,6 +25,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
+import { expect } from './lib/remote-tools';
 import {
   ifit,
   ifdescribe,

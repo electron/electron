@@ -1,16 +1,15 @@
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 
 import * as auth from 'basic-auth';
-import { expect } from 'chai';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as http from 'node:http';
 import * as path from 'node:path';
-import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
 import { emittedUntil } from './lib/events-helpers';
+import { expect, setTimeout } from './lib/remote-tools';
 import { HexColors, ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
 import { ifit, ifdescribe, defer, itremote, useRemoteContext, listen } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
