@@ -119,6 +119,7 @@ describe('contextBridge', () => {
         await w.loadURL(serverUrl);
       };
 
+      /** @remote no-locals */
       const callWithBindings = (fn: Function, worldId: number = 0) =>
         worldId === 0
           ? w.webContents.executeJavaScript(`(${fn.toString()})(window)`)

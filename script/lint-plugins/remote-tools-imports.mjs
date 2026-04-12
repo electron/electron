@@ -5,11 +5,15 @@
 // remote-tools instead lets runRemote()'s __rt shim resolve them.
 
 const REMOTE_TOOLS_RE = /[./]lib\/remote-tools(\.ts)?$/;
-const REMOTE_TAG_RE = /@remote\b/;
+const REMOTE_TAG_RE = /@remote\b([^\n*]*)/;
 
-function hasRemoteTag(node, sourceCode) {
+function getRemoteTag(node, sourceCode) {
   const comments = sourceCode.getCommentsBefore?.(node) ?? node.leadingComments ?? [];
-  return comments.some((c) => REMOTE_TAG_RE.test(c.value));
+  for (const c of comments) {
+    const m = REMOTE_TAG_RE.exec(c.value);
+    if (m) return { noLocals: /\bno-locals\b/.test(m[1]) };
+  }
+  return null;
 }
 
 function isRemoteCall(callee, taggedCallees) {
@@ -36,7 +40,7 @@ function isRemoteCall(callee, taggedCallees) {
   // or for-of loop vars). fn arg is assumed to be the first function-expression
   // argument, resolved at the call site.
   if (callee.type === 'Identifier' && taggedCallees.has(callee.name)) {
-    return { fnArg: 'firstFunction' };
+    return { fnArg: 'firstFunction', noLocals: taggedCallees.get(callee.name).noLocals };
   }
   return null;
 }
@@ -122,19 +126,28 @@ export default {
         // Map of import-binding name -> { source, node } for everything NOT
         // from remote-tools.
         const foreignImports = new Map();
-        // Names of functions/bindings tagged /** @remote */ in this file.
-        const taggedCallees = new Set();
+        // Every identifier declared in this file (imports from anywhere,
+        // plus const/let/var/function/class at any scope). Used by no-locals.
+        const fileLocals = new Set();
+        // Names of functions/bindings tagged /** @remote */ in this file,
+        // mapped to {noLocals:boolean}.
+        const taggedCallees = new Map();
         const sourceCode = context.sourceCode ?? context.getSourceCode?.();
 
+        const addLocal = (idNode) => {
+          if (idNode?.type === 'Identifier') fileLocals.add(idNode.name);
+        };
+
         const collectTagged = (idNode, commentTarget) => {
-          if (idNode?.type === 'Identifier' && hasRemoteTag(commentTarget, sourceCode)) {
-            taggedCallees.add(idNode.name);
-          }
+          if (idNode?.type !== 'Identifier') return;
+          const tag = getRemoteTag(commentTarget, sourceCode);
+          if (tag) taggedCallees.set(idNode.name, tag);
         };
 
         return {
           ImportDeclaration(node) {
             const source = node.source.value;
+            for (const spec of node.specifiers) addLocal(spec.local);
             if (REMOTE_TOOLS_RE.test(source)) return;
             if (node.importKind === 'type') return;
             for (const spec of node.specifiers) {
@@ -143,14 +156,19 @@ export default {
             }
           },
           FunctionDeclaration(node) {
+            addLocal(node.id);
             collectTagged(node.id, node);
           },
+          ClassDeclaration(node) {
+            addLocal(node.id);
+          },
           VariableDeclaration(node) {
-            if (!hasRemoteTag(node, sourceCode)) return;
+            for (const d of node.declarations) collectDeclared(d.id, fileLocals);
+            if (!getRemoteTag(node, sourceCode)) return;
             for (const d of node.declarations) collectTagged(d.id, node);
           },
           ForOfStatement(node) {
-            if (!hasRemoteTag(node, sourceCode)) return;
+            if (!getRemoteTag(node, sourceCode)) return;
             const decl = node.left;
             if (decl.type === 'VariableDeclaration') {
               for (const d of decl.declarations) collectTagged(d.id, node);
@@ -172,8 +190,22 @@ export default {
             walkClosure(
               fnArg,
               (id) => {
+                if (reported.has(id.name)) return;
+                if (match.noLocals) {
+                  if (!fileLocals.has(id.name)) return;
+                  reported.add(id.name);
+                  context.report({
+                    node: id,
+                    message:
+                      `'${id.name}' is declared in this file but referenced inside a ` +
+                      `/** @remote no-locals */ closure. These closures are stringified and ` +
+                      `evaluated with no access to the enclosing scope; use only parameters ` +
+                      `and JS/DOM globals.`
+                  });
+                  return;
+                }
                 const hit = foreignImports.get(id.name);
-                if (hit && !reported.has(id.name)) {
+                if (hit) {
                   reported.add(id.name);
                   context.report({
                     node: id,
