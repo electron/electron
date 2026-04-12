@@ -1,3 +1,5 @@
+import { describe, it } from 'vitest';
+
 import * as cp from 'node:child_process';
 import * as path from 'node:path';
 
@@ -108,9 +110,7 @@ ifdescribe(process.platform === 'darwin' && process.mas)('Mac App Store build', 
       return foundPrivateAPIs;
     };
 
-    it('should not use private macOS APIs in main process', function () {
-      this.timeout(60000);
-
+    it('should not use private macOS APIs in main process', { timeout: 60000 }, () => {
       const binaries = getElectronBinaries();
       const foundPrivateAPIs = checkBinaryForPrivateAPIs(binaries.mainProcess, 'Electron main process');
 
@@ -139,9 +139,7 @@ ifdescribe(process.platform === 'darwin' && process.mas)('Mac App Store build', 
       }
     });
 
-    it('should not use private macOS APIs in Electron Framework', function () {
-      this.timeout(60000);
-
+    it('should not use private macOS APIs in Electron Framework', { timeout: 60000 }, () => {
       // Check the Electron Framework binary (mentioned in issue #49616)
       const binaries = getElectronBinaries();
       const foundAPIs = checkBinaryForPrivateAPIs(binaries.framework, 'Electron Framework');
@@ -155,9 +153,7 @@ ifdescribe(process.platform === 'darwin' && process.mas)('Mac App Store build', 
       }
     });
 
-    it('should not use private macOS APIs in helper processes', function () {
-      this.timeout(60000);
-
+    it('should not use private macOS APIs in helper processes', { timeout: 60000 }, () => {
       const binaries = getElectronBinaries();
       const allFoundAPIs: Record<string, string[]> = {};
 
@@ -180,9 +176,7 @@ ifdescribe(process.platform === 'darwin' && process.mas)('Mac App Store build', 
       }
     });
 
-    it('should not reference private Objective-C classes', function () {
-      this.timeout(60000);
-
+    it('should not reference private Objective-C classes', { timeout: 60000 }, () => {
       // Check for private Objective-C classes (appear as _OBJC_CLASS_$_ClassName)
       const privateClasses = ['NSAccessibilityRemoteUIElement', 'CAContext'];
 
