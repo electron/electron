@@ -26,6 +26,8 @@ export default defineConfig({
     isolate: true,
     // ...but keep tests *within* a file sequential, matching current mocha behaviour.
     sequence: { concurrent: false },
+    allowOnly: !process.env.CI,
+    retry: process.env.CI ? 3 : 0,
     testTimeout: 30_000,
     hookTimeout: 30_000,
     server: {

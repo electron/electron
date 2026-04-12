@@ -1,5 +1,5 @@
 import * as chai from 'chai';
-import { afterEach, beforeEach } from 'vitest';
+import { beforeEach } from 'vitest';
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -19,6 +19,12 @@ chai.config.truncateThreshold = 0;
 // Skip any tests listed in disabled-tests.json.
 const disabledTests = new Set(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'disabled-tests.json'), 'utf8')));
 beforeEach((ctx) => {
+  // Run defer()-ed cleanup functions immediately after the test body, before any
+  // afterEach hooks registered by the test file. onTestFinished fires before
+  // afterEach, matching how spec/index.js attached this as the first afterEach
+  // on every suite.
+  ctx.onTestFinished(runCleanupFunctions);
+
   const parts: string[] = [ctx.task.name];
   let suite = ctx.task.suite;
   while (suite) {
@@ -28,11 +34,4 @@ beforeEach((ctx) => {
   if (disabledTests.has(parts.join(' '))) {
     ctx.skip();
   }
-});
-
-// Run defer()-ed cleanup functions after each test, before other afterEach hooks
-// registered by the test file (vitest runs hooks in registration order, and
-// setupFiles are loaded first).
-afterEach(async () => {
-  await runCleanupFunctions();
 });
