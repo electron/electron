@@ -2,6 +2,7 @@ import { systemPreferences } from 'electron';
 import { BrowserWindow, MessageChannelMain, utilityProcess, app } from 'electron/main';
 
 import { expect } from 'chai';
+import { describe, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
@@ -12,7 +13,7 @@ import { setImmediate } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 
 import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers';
-import { ifit, startRemoteControlApp } from './lib/spec-helpers';
+import { ifit, startRemoteControlApp, withDone } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
@@ -60,21 +61,27 @@ describe('utilityProcess module', () => {
       await once(child, 'spawn');
     });
 
-    it("emits 'exit' when child process exits gracefully", (done) => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
-      child.on('exit', (code) => {
-        expect(code).to.equal(0);
-        done();
-      });
-    });
+    it(
+      "emits 'exit' when child process exits gracefully",
+      withDone((done) => {
+        const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
+        child.on('exit', (code) => {
+          expect(code).to.equal(0);
+          done();
+        });
+      })
+    );
 
-    it("emits 'exit' when the child process file does not exist", (done) => {
-      const child = utilityProcess.fork('nonexistent');
-      child.on('exit', (code) => {
-        expect(code).to.equal(1);
-        done();
-      });
-    });
+    it(
+      "emits 'exit' when the child process file does not exist",
+      withDone((done) => {
+        const child = utilityProcess.fork('nonexistent');
+        child.on('exit', (code) => {
+          expect(code).to.equal(1);
+          done();
+        });
+      })
+    );
 
     ifit(!isWindows32Bit)('emits the correct error code when child process exits nonzero', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
@@ -457,86 +464,95 @@ describe('utilityProcess module', () => {
   });
 
   describe('behavior', () => {
-    it('supports starting the v8 inspector with --inspect-brk', (done) => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
-        stdio: 'pipe',
-        execArgv: ['--inspect-brk']
-      });
-
-      let output = '';
-      const cleanup = () => {
-        child.stderr!.removeListener('data', listener);
-        child.stdout!.removeListener('data', listener);
-        child.once('exit', () => {
-          done();
+    it(
+      'supports starting the v8 inspector with --inspect-brk',
+      withDone((done) => {
+        const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
+          stdio: 'pipe',
+          execArgv: ['--inspect-brk']
         });
-        child.kill();
-      };
 
-      const listener = (data: Buffer) => {
-        output += data;
-        if (/Debugger listening on ws:/m.test(output)) {
+        let output = '';
+        const cleanup = () => {
+          child.stderr!.removeListener('data', listener);
+          child.stdout!.removeListener('data', listener);
+          child.once('exit', () => {
+            done();
+          });
+          child.kill();
+        };
+
+        const listener = (data: Buffer) => {
+          output += data;
+          if (/Debugger listening on ws:/m.test(output)) {
+            cleanup();
+          }
+        };
+
+        child.stderr!.on('data', listener);
+        child.stdout!.on('data', listener);
+      })
+    );
+
+    it(
+      'supports starting the v8 inspector with --inspect and a provided port',
+      withDone((done) => {
+        const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
+          stdio: 'pipe',
+          execArgv: ['--inspect=17364']
+        });
+
+        let output = '';
+        const cleanup = () => {
+          child.stderr!.removeListener('data', listener);
+          child.stdout!.removeListener('data', listener);
+          child.once('exit', () => {
+            done();
+          });
+          child.kill();
+        };
+
+        const listener = (data: Buffer) => {
+          output += data;
+          if (/Debugger listening on ws:/m.test(output)) {
+            expect(output.trim()).to.contain(':17364', 'should be listening on port 17364');
+            cleanup();
+          }
+        };
+
+        child.stderr!.on('data', listener);
+        child.stdout!.on('data', listener);
+      })
+    );
+
+    it(
+      'supports changing dns verbatim with --dns-result-order',
+      withDone((done) => {
+        const child = utilityProcess.fork(path.join(fixturesPath, 'dns-result-order.js'), [], {
+          stdio: 'pipe',
+          execArgv: ['--dns-result-order=ipv4first']
+        });
+
+        let output = '';
+        const cleanup = () => {
+          child.stderr!.removeListener('data', listener);
+          child.stdout!.removeListener('data', listener);
+          child.once('exit', () => {
+            done();
+          });
+          child.kill();
+        };
+
+        const listener = (data: Buffer) => {
+          output += data;
+          expect(output.trim()).to.contain('ipv4first', 'default verbatim should be ipv4first');
           cleanup();
-        }
-      };
+        };
 
-      child.stderr!.on('data', listener);
-      child.stdout!.on('data', listener);
-    });
-
-    it('supports starting the v8 inspector with --inspect and a provided port', (done) => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
-        stdio: 'pipe',
-        execArgv: ['--inspect=17364']
-      });
-
-      let output = '';
-      const cleanup = () => {
-        child.stderr!.removeListener('data', listener);
-        child.stdout!.removeListener('data', listener);
-        child.once('exit', () => {
-          done();
-        });
-        child.kill();
-      };
-
-      const listener = (data: Buffer) => {
-        output += data;
-        if (/Debugger listening on ws:/m.test(output)) {
-          expect(output.trim()).to.contain(':17364', 'should be listening on port 17364');
-          cleanup();
-        }
-      };
-
-      child.stderr!.on('data', listener);
-      child.stdout!.on('data', listener);
-    });
-
-    it('supports changing dns verbatim with --dns-result-order', (done) => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'dns-result-order.js'), [], {
-        stdio: 'pipe',
-        execArgv: ['--dns-result-order=ipv4first']
-      });
-
-      let output = '';
-      const cleanup = () => {
-        child.stderr!.removeListener('data', listener);
-        child.stdout!.removeListener('data', listener);
-        child.once('exit', () => {
-          done();
-        });
-        child.kill();
-      };
-
-      const listener = (data: Buffer) => {
-        output += data;
-        expect(output.trim()).to.contain('ipv4first', 'default verbatim should be ipv4first');
-        cleanup();
-      };
-
-      child.stderr!.on('data', listener);
-      child.stdout!.on('data', listener);
-    });
+        child.stderr!.on('data', listener);
+        child.stdout!.on('data', listener);
+      })
+    );
 
     ifit(process.platform !== 'win32')('supports redirecting stdout to parent process', async () => {
       const result = 'Output from utility process';
