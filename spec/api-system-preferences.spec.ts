@@ -1,6 +1,7 @@
 import { systemPreferences } from 'electron/main';
 
 import { expect } from 'chai';
+import { describe, it } from 'vitest';
 
 import { ifdescribe, ifit } from './lib/spec-helpers';
 
