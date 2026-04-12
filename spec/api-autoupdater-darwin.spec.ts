@@ -4,6 +4,7 @@ import { expect } from 'chai';
 import * as express from 'express';
 import * as psList from 'ps-list';
 import * as uuid from 'uuid';
+import { afterAll, afterEach, beforeEach, describe, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
@@ -21,18 +22,16 @@ import {
   unsignApp
 } from './lib/codesign-helpers';
 import { withTempDirectory } from './lib/fs-helpers';
-import { ifdescribe, ifit } from './lib/spec-helpers';
+import { ifdescribe, ifit, withDone } from './lib/spec-helpers';
 
 // We can only test the auto updater on darwin non-component builds
-ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
-  this.timeout(120000);
-
+ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', { timeout: 120000 }, () => {
   let identity = '';
 
-  beforeEach(function () {
+  beforeEach((ctx) => {
     const result = getCodesignIdentity();
     if (result === null) {
-      this.skip();
+      ctx.skip();
     } else {
       identity = result;
     }
@@ -154,7 +153,7 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
     return cachedZips[key];
   };
 
-  after(() => {
+  afterAll(() => {
     for (const version of Object.keys(cachedZips)) {
       cp.spawnSync('rm', ['-r', path.dirname(cachedZips[version])]);
     }
@@ -226,18 +225,20 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
     let httpServer: http.Server = null as any;
     let requests: express.Request[] = [];
 
-    beforeEach((done) => {
-      requests = [];
-      server = express();
-      server.use((req, res, next) => {
-        requests.push(req);
-        next();
-      });
-      httpServer = server.listen(0, '127.0.0.1', () => {
-        port = (httpServer.address() as AddressInfo).port;
-        done();
-      });
-    });
+    beforeEach(
+      withDone((done) => {
+        requests = [];
+        server = express();
+        server.use((req, res, next) => {
+          requests.push(req);
+          next();
+        });
+        httpServer = server.listen(0, '127.0.0.1', () => {
+          port = (httpServer.address() as AddressInfo).port;
+          done();
+        });
+      })
+    );
 
     afterEach(async () => {
       if (httpServer) {
