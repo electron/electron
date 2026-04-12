@@ -7,7 +7,7 @@ import { once } from 'node:events';
 import * as path from 'node:path';
 
 import { ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
-import { defer, ifit, startRemoteControlApp, withDone } from './lib/spec-helpers';
+import { defer, ifit, runCleanupFunctions, startRemoteControlApp, withDone } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 
 describe('BrowserView module', () => {
@@ -33,6 +33,7 @@ describe('BrowserView module', () => {
   });
 
   afterEach(async () => {
+    await runCleanupFunctions();
     if (w && !w.isDestroyed()) {
       const p = once(w.webContents, 'destroyed');
       await closeWindow(w);

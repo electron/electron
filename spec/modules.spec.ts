@@ -316,14 +316,32 @@ describe('modules support', () => {
   });
 
   describe('esm', () => {
+    // These run in a child Electron process because the test runner aliases
+    // 'electron' through a CJS shim, which changes what `import('electron')`
+    // returns.
+    const runFixture = async () => {
+      const child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'electron-esm-vs-cjs.mjs')], {
+        stdio: ['ignore', 'pipe', 'inherit']
+      });
+      let out = '';
+      child.stdout.on('data', (d) => {
+        out += d;
+      });
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
+      return JSON.parse(out) as { esm: string[]; cjs: string[] };
+    };
+
     it('can load the built-in "electron" module via ESM import', async () => {
-      await expect(import('electron')).to.eventually.be.ok();
+      const { esm } = await runFixture();
+      expect(esm.length).to.be.greaterThan(0);
     });
 
     it('the built-in "electron" module loaded via ESM import has the same exports as the CJS module', async () => {
-      const esmElectron = await import('electron');
-      const cjsElectron = require('electron');
-      expect(Object.keys(esmElectron)).to.deep.equal(Object.keys(cjsElectron));
+      const { esm, cjs } = await runFixture();
+      // Node's CJS→ESM interop adds these wrapper keys; they're not API exports.
+      const interopKeys = new Set(['default', 'module.exports']);
+      expect(esm.filter((k) => !interopKeys.has(k))).to.deep.equal(cjs);
     });
   });
 });
