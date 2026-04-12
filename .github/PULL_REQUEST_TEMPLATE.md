@@ -14,6 +14,7 @@ NOTE: PRS submitted without this template will be automatically closed.
 
 - [ ] PR description included
 - [ ] I have built and tested this PR
+- [ ] [Commits are signed](https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key)
 - [ ] `npm test` passes
 - [ ] tests are [changed or added](https://github.com/electron/electron/blob/main/docs/development/testing.md)
 - [ ] relevant API documentation, tutorials, and examples are updated and follow the [documentation style guide](https://github.com/electron/electron/blob/main/docs/development/style-guide.md)
