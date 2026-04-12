@@ -2,7 +2,8 @@
 <body>
 <script type="text/javascript" charset="utf-8">
   window.addEventListener('unload', function (e) {
-    require('node:fs').writeFileSync(__dirname + '/unload', 'unload');
+    const out = new URLSearchParams(location.search).get('out');
+    require('node:fs').writeFileSync(out, 'unload');
   }, false);
 </script>
 </body>
