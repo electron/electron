@@ -1,13 +1,12 @@
 import { inAppPurchase } from 'electron/main';
 
 import { expect } from 'chai';
+import { describe, it } from 'vitest';
 
 import { ifdescribe } from './lib/spec-helpers';
 
-describe('inAppPurchase module', function () {
+describe('inAppPurchase module', { timeout: 3 * 60 * 1000 }, () => {
   if (process.platform !== 'darwin') return;
-
-  this.timeout(3 * 60 * 1000);
 
   it('canMakePayments() returns a boolean', () => {
     const canMakePayments = inAppPurchase.canMakePayments();
