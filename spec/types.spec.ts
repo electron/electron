@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import { describe, it } from 'vitest';
 
 describe('bundled @types/node', () => {
   it('should match the major version of bundled node', () => {
