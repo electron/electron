@@ -10,6 +10,7 @@
 
 #include "base/command_line.h"
 #include "base/files/file_path.h"
+#include "base/files/file_util.h"
 #include "base/functional/bind.h"
 #include "base/notimplemented.h"
 #include "base/path_service.h"
@@ -20,7 +21,6 @@
 #include "components/os_crypt/sync/os_crypt.h"
 #include "components/prefs/in_memory_pref_store.h"
 #include "components/prefs/json_pref_store.h"
-#include "components/prefs/overlay_user_pref_store.h"
 #include "components/prefs/pref_registry.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
@@ -153,16 +153,19 @@ void BrowserProcessImpl::PostEarlyInitialization() {
   ApplyProxyModeFromCommandLine(in_memory_pref_store());
   prefs_factory.set_command_line_prefs(in_memory_pref_store());
 
-  // Only use a persistent prefs store when cookie encryption is enabled as that
-  // is the only key that needs it
   base::FilePath prefs_path;
   CHECK(base::PathService::Get(electron::DIR_SESSION_DATA, &prefs_path));
+  if (!base::DirectoryExists(prefs_path))
+    base::CreateDirectory(prefs_path);
   prefs_path = prefs_path.Append(FILE_PATH_LITERAL("Local State"));
+
   electron::ScopedAllowBlockingForElectron allow_blocking;
   scoped_refptr<JsonPrefStore> user_pref_store =
       base::MakeRefCounted<JsonPrefStore>(prefs_path);
   user_pref_store->ReadPrefs();
   prefs_factory.set_user_prefs(user_pref_store);
+  DCHECK(user_pref_store->IsInitializationComplete());
+
   local_state_ = prefs_factory.Create(std::move(pref_registry));
 }
 
