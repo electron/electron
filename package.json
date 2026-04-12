@@ -46,6 +46,7 @@
     "ts-node": "6.2.0",
     "typescript": "^5.8.3",
     "url": "^0.11.4",
+    "vitest": "^4.1.2",
     "webpack": "^5.104.1",
     "webpack-cli": "^6.0.1",
     "wrapper-webpack-plugin": "^2.2.0",
@@ -87,6 +88,7 @@
     "repl": "node ./script/start.js --interactive",
     "start": "node ./script/start.js",
     "test": "node ./script/spec-runner.js",
+    "test:vitest": "node ./spec/_vitest_runner/run.js",
     "tsc": "tsc",
     "webpack": "webpack"
   },
