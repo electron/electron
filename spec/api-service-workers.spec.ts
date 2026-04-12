@@ -2,6 +2,7 @@ import { session, webContents, WebContents } from 'electron/main';
 
 import { expect } from 'chai';
 import { v4 } from 'uuid';
+import { afterEach, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { on, once } from 'node:events';
 import * as fs from 'node:fs';
@@ -18,7 +19,7 @@ describe('session.serviceWorkers', () => {
   let baseUrl: string;
   let w: WebContents;
 
-  before(async () => {
+  beforeAll(async () => {
     ses = session.fromPartition(partition);
     await ses.clearStorageData();
   });
