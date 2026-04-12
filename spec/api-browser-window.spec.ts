@@ -166,8 +166,8 @@ describe('BrowserWindow module', () => {
     });
 
     it('should emit unload handler', async () => {
-      const out = path.join(os.tmpdir(), `electron-unload-${Date.now()}-${process.pid}`);
-      await w.loadFile(path.join(fixtures, 'api', 'unload.html'), { search: `out=${out}` });
+      const out = path.join(app.getPath('userData'), `unload-${Date.now()}`);
+      await w.loadFile(path.join(fixtures, 'api', 'unload.html'), { query: { out } });
       const closed = once(w, 'closed');
       w.close();
       await closed;
@@ -290,8 +290,8 @@ describe('BrowserWindow module', () => {
     });
 
     it('should emit unload event', async () => {
-      const out = path.join(os.tmpdir(), `electron-close-${Date.now()}-${process.pid}`);
-      w.loadFile(path.join(fixtures, 'api', 'close.html'), { search: `out=${out}` });
+      const out = path.join(app.getPath('userData'), `close-${Date.now()}`);
+      w.loadFile(path.join(fixtures, 'api', 'close.html'), { query: { out } });
       await once(w, 'closed');
       const content = fs.readFileSync(out).toString();
       fs.unlinkSync(out);
