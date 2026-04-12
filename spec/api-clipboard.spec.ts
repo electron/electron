@@ -1,6 +1,7 @@
 import { clipboard, nativeImage } from 'electron/common';
 
 import { expect } from 'chai';
+import { describe, it } from 'vitest';
 
 import { Buffer } from 'node:buffer';
 import * as path from 'node:path';
