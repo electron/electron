@@ -2,6 +2,7 @@ import { clipboard } from 'electron/common';
 import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as http from 'node:http';
@@ -108,12 +109,12 @@ describe('webFrameMain module', () => {
       let serverA: Server;
       let serverB: Server;
 
-      before(async () => {
+      beforeAll(async () => {
         serverA = await createServer();
         serverB = await createServer();
       });
 
-      after(() => {
+      afterAll(() => {
         serverA.server.close();
         serverB.server.close();
       });
@@ -296,10 +297,10 @@ describe('webFrameMain module', () => {
     let server: Awaited<ReturnType<typeof createServer>>;
     let w: BrowserWindow;
 
-    before(async () => {
+    beforeAll(async () => {
       server = await createServer();
     });
-    after(() => {
+    afterAll(() => {
       server.server.close();
     });
     beforeEach(async () => {
@@ -504,14 +505,14 @@ describe('webFrameMain module', () => {
 
   describe('webFrameMain.collectJavaScriptCallStack', () => {
     let server: Server;
-    before(async () => {
+    beforeAll(async () => {
       server = await createServer({
         headers: {
           'Document-Policy': 'include-js-call-stacks-in-crash-reports'
         }
       });
     });
-    after(() => {
+    afterAll(() => {
       server.server.close();
     });
 
