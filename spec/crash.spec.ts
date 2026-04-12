@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import { afterEach, describe } from 'vitest';
 
 import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
