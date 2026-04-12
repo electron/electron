@@ -1,6 +1,7 @@
 import { BaseWindow } from 'electron';
 
 import { expect } from 'chai';
+import { afterEach, describe, it } from 'vitest';
 
 import { randomUUID } from 'node:crypto';
 import * as path from 'node:path';
@@ -31,8 +32,7 @@ ifdescribe(!skip)('sharedTexture module', () => {
       }
     });
 
-    it('successfully imported and rendered with subtle api', async function () {
-      this.timeout(debugSpec ? 100000 : 10000);
+    it('successfully imported and rendered with subtle api', { timeout: debugSpec ? 100000 : 10000 }, async () => {
       type CapturedTextureHolder = {
         importedSubtle: Electron.SharedTextureImportedSubtle;
         texture: Electron.OffscreenSharedTexture;
@@ -266,12 +266,20 @@ ifdescribe(!skip)('sharedTexture module', () => {
       });
     };
 
-    it('successfully imported and rendered with managed api, without iframe', async () => {
-      return runSharedTextureManagedTest(false);
-    }).timeout(debugSpec ? 100000 : 10000);
+    it(
+      'successfully imported and rendered with managed api, without iframe',
+      { timeout: debugSpec ? 100000 : 10000 },
+      async () => {
+        return runSharedTextureManagedTest(false);
+      }
+    );
 
-    it('successfully imported and rendered with managed api, with iframe', async () => {
-      return runSharedTextureManagedTest(true);
-    }).timeout(debugSpec ? 100000 : 10000);
+    it(
+      'successfully imported and rendered with managed api, with iframe',
+      { timeout: debugSpec ? 100000 : 10000 },
+      async () => {
+        return runSharedTextureManagedTest(true);
+      }
+    );
   });
 });
