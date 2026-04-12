@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron/main';
 
 import { AssertionError } from 'chai';
-import { SuiteFunction, TestFunction } from 'mocha';
+import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import * as http from 'node:http';
@@ -22,8 +22,26 @@ const addOnly = <T>(fn: Function): T => {
   return wrapped as any;
 };
 
-export const ifit = (condition: boolean) => (condition ? it : addOnly<TestFunction>(it.skip));
-export const ifdescribe = (condition: boolean) => (condition ? describe : addOnly<SuiteFunction>(describe.skip));
+export const ifit = (condition: boolean) => (condition ? it : addOnly<typeof it>(it.skip));
+export const ifdescribe = (condition: boolean) => (condition ? describe : addOnly<typeof describe>(describe.skip));
+
+type DoneCallback = (err?: unknown) => void;
+
+/**
+ * Adapts a mocha-style callback test (receiving a `done` function) into a
+ * vitest-compatible test that returns a Promise. `done()` resolves,
+ * `done(err)` rejects.
+ */
+export function withDone(fn: (done: DoneCallback) => void): () => Promise<void> {
+  return () =>
+    new Promise<void>((resolve, reject) => {
+      const done: DoneCallback = (err) => {
+        if (err != null) reject(err instanceof Error ? err : new Error(String(err)));
+        else resolve();
+      };
+      fn(done);
+    });
+}
 
 export const isWayland =
   process.platform === 'linux' &&
@@ -189,10 +207,10 @@ export async function getRemoteContext() {
 }
 
 export function useRemoteContext(opts?: any) {
-  before(async () => {
+  beforeAll(async () => {
     remoteContext.unshift(await makeRemoteContext(opts));
   });
-  after(() => {
+  afterAll(() => {
     const w = remoteContext.shift();
     w!.close();
   });

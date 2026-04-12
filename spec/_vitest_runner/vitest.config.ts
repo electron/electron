@@ -4,14 +4,21 @@ import * as path from 'node:path';
 
 import electronPool from './electron-pool';
 
+const electronShim = path.resolve(__dirname, 'electron-shim.cjs');
+
 export default defineConfig({
   resolve: {
     alias: {
-      electron: path.resolve(__dirname, 'electron-shim.cjs')
+      electron: electronShim,
+      'electron/main': electronShim,
+      'electron/common': electronShim,
+      'electron/renderer': electronShim
     }
   },
   test: {
     include: ['spec/**/*.spec.ts'],
+    exclude: ['spec/fixtures/**', 'spec/node_modules/**'],
+    setupFiles: ['./spec/_vitest_runner/setup.ts'],
     // Custom pool: each worker is a real Electron main process.
     pool: electronPool as any,
     // Run test *files* in parallel across workers...
