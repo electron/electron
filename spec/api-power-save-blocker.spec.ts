@@ -1,6 +1,7 @@
 import { powerSaveBlocker } from 'electron/main';
 
 import { expect } from 'chai';
+import { describe, it } from 'vitest';
 
 describe('powerSaveBlocker module', () => {
   it('can be started and stopped', () => {
