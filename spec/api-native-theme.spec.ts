@@ -1,6 +1,7 @@
 import { nativeTheme, BrowserWindow, ipcMain } from 'electron/main';
 
 import { expect } from 'chai';
+import { afterEach, describe, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as path from 'node:path';
