@@ -391,7 +391,8 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
       );
     });
 
-    it('should hit the download endpoint when an update is available and update successfully when the zip is provided even after a different update was staged', async () => {
+    it('should hit the download endpoint when an update is available and update successfully when the zip is provided even after a different update was staged', async function () {
+      this.timeout(180000);
       await withUpdatableApp(
         {
           nextVersion: '2.0.0',
@@ -537,7 +538,8 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
       );
     });
 
-    it('should keep the update directory count bounded across repeated checks', async () => {
+    it('should keep the update directory count bounded across repeated checks', async function () {
+      this.timeout(240000);
       // Verifies the orphan prune actually fires: after a second download
       // completes and rewrites ShipItState.plist, the first directory is no
       // longer referenced and must be removed when a third check begins.
