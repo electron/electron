@@ -2313,11 +2313,15 @@ describe('app module', () => {
       const child = utilityProcess.fork(utilityFixturePath, [], {
         execArgv: ['--expose-gc']
       });
+      const [ready] = await once(child, 'message');
+      expect(ready?.type).to.equal('ready');
       child.postMessage({ fn: `(${fn})()` });
       const [data] = await once(child, 'message');
       expect(data.ok).to.be.true(data.message);
       // Cleanup.
-      const [code] = await once(child, 'exit');
+      const exited = once(child, 'exit');
+      child.postMessage({ type: 'shutdown' });
+      const [code] = await exited;
       expect(code).to.equal(0);
     });
 
