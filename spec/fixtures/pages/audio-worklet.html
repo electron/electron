@@ -1,0 +1,44 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+  const { ipcRenderer } = require('electron');
+
+  // Create a number of AudioContext + AudioWorklet pairs in sequence so
+  // that Blink's WorkletThreadHolder pools and reuses the underlying
+  // worker thread (Chromium CL:5270028). For each context we ask the
+  // worklet to report whether `require` is a function and post that back
+  // via its MessagePort. The bug being guarded is that the Nth+ pooled
+  // worklet would silently lose its Node.js environment, so the test
+  // must run enough iterations to exercise thread reuse.
+  const NUM_CONTEXTS = 6;
+
+  async function runOne(index) {
+    const audioCtx = new AudioContext();
+    try {
+      await audioCtx.audioWorklet.addModule('../workers/audio_worklet_node.js');
+      const node = new AudioWorkletNode(audioCtx, 'node-integration-probe');
+      const reply = new Promise((resolve) => {
+        node.port.onmessage = (e) => resolve(e.data);
+      });
+      node.port.postMessage('probe');
+      node.connect(audioCtx.destination);
+      return await reply;
+    } finally {
+      await audioCtx.close();
+    }
+  }
+
+  (async () => {
+    const results = [];
+    for (let i = 0; i < NUM_CONTEXTS; i++) {
+      try {
+        results.push(await runOne(i));
+      } catch (err) {
+        results.push(`error: ${err && err.message ? err.message : err}`);
+      }
+    }
+    ipcRenderer.send('audio-worklet-result', results);
+  })();
+</script>
+</body>
+</html>
