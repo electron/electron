@@ -17,8 +17,6 @@
 #include "services/network/public/mojom/fetch_api.mojom.h"
 #include "url/origin.h"
 
-class PrefService;
-
 namespace extensions {
 class ExtensionsAPIClient;
 class KioskDelegate;
@@ -101,8 +99,6 @@ class ElectronExtensionsBrowserClient
       const extensions::ExtensionSet& extensions,
       const extensions::ProcessMap& process_map,
       const GURL& upstream_url) override;
-  PrefService* GetPrefServiceForContext(
-      content::BrowserContext* context) override;
   void GetEarlyExtensionPrefsObservers(
       content::BrowserContext* context,
       std::vector<extensions::EarlyExtensionPrefsObserver*>* observers)
