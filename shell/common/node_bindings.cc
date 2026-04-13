@@ -555,6 +555,16 @@ void NodeBindings::StopPolling() {
   // Wait for it to exit.
   uv_thread_join(&embed_thread_);
 
+  // Drain any leftover semaphore posts so the next embed thread starts
+  // in a clean lock-step state. A stale count can occur if UvRunOnce
+  // posted sem_post concurrently with our StopPolling sem_post — the
+  // embed thread consumed one to see embed_closed_ and exited, leaving
+  // the other unconsumed. Without draining, the next EmbedThreadRunner
+  // would fall through uv_sem_wait immediately, breaking the intended
+  // one-post-per-UvRunOnce protocol.
+  while (uv_sem_trywait(&embed_sem_) == 0) {
+  }
+
   // Allow PrepareEmbedThread + StartPolling to restart.
   embed_closed_ = false;
   initialized_ = false;
