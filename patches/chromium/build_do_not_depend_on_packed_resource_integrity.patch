@@ -11,7 +11,7 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index eb121183530dae62809900bda8c72f96bad736d7..91f8c927e1ea91ccabc25c55a2abcab96bae2fa8 100644
+index 04e423aed6a182448e06d3366c8157cddada4bee..2b6e3bbefd1034882d1c2a6671a64576874c415c 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
 @@ -201,6 +201,12 @@ if (!is_android && !is_mac) {
@@ -28,10 +28,10 @@ index eb121183530dae62809900bda8c72f96bad736d7..91f8c927e1ea91ccabc25c55a2abcab9
          ":chrome_dll",
          ":chrome_exe_version",
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 9bd443bd2f5868a87bfe71610c33b8edd2ea86fd..46d4cf4242782ca40b81fd3ea0428a7ee2b46c4a 100644
+index 7641496bd3e59beec28fc36818c832b98d22c84c..50991e2ad83a30ce1403480ae036346db9d71e80 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -7718,6 +7718,10 @@ test("unit_tests") {
+@@ -7708,6 +7708,10 @@ test("unit_tests") {
        "//chrome/notification_helper",
      ]
  
@@ -42,7 +42,7 @@ index 9bd443bd2f5868a87bfe71610c33b8edd2ea86fd..46d4cf4242782ca40b81fd3ea0428a7e
      deps += [
        "//chrome:other_version",
        "//chrome//services/util_win:unit_tests",
-@@ -8682,6 +8686,10 @@ test("unit_tests") {
+@@ -8670,6 +8674,10 @@ test("unit_tests") {
        "../browser/performance_manager/policies/background_tab_loading_policy_unittest.cc",
      ]
  
@@ -53,7 +53,7 @@ index 9bd443bd2f5868a87bfe71610c33b8edd2ea86fd..46d4cf4242782ca40b81fd3ea0428a7e
      sources += [
        # The importer code is not used on Android.
        "../common/importer/firefox_importer_utils_unittest.cc",
-@@ -8738,7 +8746,7 @@ test("unit_tests") {
+@@ -8726,7 +8734,7 @@ test("unit_tests") {
      # TODO(crbug.com/417513088): Maybe merge with the non-android `deps` declaration above?
      deps += [
        "../browser/screen_ai:screen_ai_install_state",

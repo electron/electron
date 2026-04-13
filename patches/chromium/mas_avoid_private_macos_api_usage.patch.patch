@@ -50,10 +50,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index a49715162bf8518915d7ef8c598e3cd7537ad12f..bc870988fced9279dd00906f522b4747ba7ca535 100644
+index 93d39dd432702f26f29c802ef8148e06808aaf0d..5759b061f39924c48cde8f956a57f1417b174dac 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1086,6 +1086,7 @@ component("base") {
+@@ -1083,6 +1083,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -62,10 +62,10 @@ index a49715162bf8518915d7ef8c598e3cd7537ad12f..bc870988fced9279dd00906f522b4747
  
    # Used by metrics/crc32
 diff --git a/base/allocator/BUILD.gn b/base/allocator/BUILD.gn
-index 2cc49d83a83c6c64780da3f2caa009908a36dd7c..e2941ac5177d3ca59859482b668b716f58d6f5d4 100644
+index f2e33bd815cb93747e20d6591068dc7d1e1789a8..51a4eb83881d83122408787a4f002a4c114ccaec 100644
 --- a/base/allocator/BUILD.gn
 +++ b/base/allocator/BUILD.gn
-@@ -28,6 +28,7 @@ if (is_apple) {
+@@ -29,6 +29,7 @@ if (is_apple) {
      deps = [
        ":buildflags",
        "//base/allocator/partition_allocator:buildflags",
@@ -974,10 +974,10 @@ index 664e12c07204feeb5be16581fe51e8adc4b898dd..38159d146cdf71f84611d58e2983418a
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 3c17f3f83cf886428efade520dd04cb69cef56c6..7281285c0d447ccfaf1ee122f9cb1109dbf15ff1 100644
+index 41634a9509f07b5dccdcb1061a5a3f2e40ba5b25..432f8bcab075bacb71cd8db797b4db9128fed829 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -363,6 +363,7 @@ source_set("browser") {
+@@ -361,6 +361,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -1189,10 +1189,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 12eea20bd3e726c6a243c5bdb9e49187881e777a..2c88ae5f10d96b647ff3291eb5854cf6c4b2f2dd 100644
+index 5e2e37ad868e650ab606bda8f18b62b609356b90..462fde8c9b20b9a7af11230f84b99fc9930ae0ca 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -701,6 +701,7 @@ static_library("test_support") {
+@@ -700,6 +700,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -1200,7 +1200,7 @@ index 12eea20bd3e726c6a243c5bdb9e49187881e777a..2c88ae5f10d96b647ff3291eb5854cf6
    ]
  
    data_deps = [
-@@ -1176,6 +1177,8 @@ static_library("browsertest_support") {
+@@ -1175,6 +1176,8 @@ static_library("browsertest_support") {
    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
    # enable the diagnostic by removing this line.
    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -1209,7 +1209,7 @@ index 12eea20bd3e726c6a243c5bdb9e49187881e777a..2c88ae5f10d96b647ff3291eb5854cf6
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2078,6 +2081,7 @@ test("content_browsertests") {
+@@ -2072,6 +2075,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1217,7 +1217,7 @@ index 12eea20bd3e726c6a243c5bdb9e49187881e777a..2c88ae5f10d96b647ff3291eb5854cf6
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3454,6 +3458,7 @@ test("content_unittests") {
+@@ -3448,6 +3452,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -2046,10 +2046,10 @@ index dcf493d62990018040a3f84b6f875af737bd2214..3d1c4dcc9ee0bbfdac15f40d9c74e9f3
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index 54d483d6b3f1a56573e21b1f873b8dee8fc25a0f..33bc8c9ef097a907060ed347dca2ad46b6d081f5 100644
+index e4c468ce0b80be767613fbe6aad8f405334689c8..6c9faa61b18ca61edc097dd31fba4122a031a5eb 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -299,6 +299,7 @@ component("platform") {
+@@ -301,6 +301,7 @@ component("platform") {
          "AppKit.framework",
          "Foundation.framework",
        ]
@@ -2140,7 +2140,7 @@ index ef031ba14e4c649f6f3a5718ac521e6b424d64cb..38e528450196b4dbd5fa6a25b96baa10
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index e4b9053c9333598ec0347ec84a4d898d8eedca6a..f08d8343a6bb665be57c9e6766476c71efa47143 100644
+index fc7c0b77d85b32c7eb9ca3508c181e6d0b6fd7f3..65140c3f06f3d838d5ed92c013b1ceeffb7e88c1 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -355,6 +355,13 @@ component("base") {

@@ -32,7 +32,7 @@ index e58e056d116330f57c0a146081362fd15a1c718a..05cbbdff63bd488bca043cc21ea98e40
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index b58c86645894688893c94107bbc092ec4f8bcdef..6a24619a8372979c12d2ec54097c0aa0d0dd69b3 100644
+index 9f38bec1c8f5d3c01582fea21d8f3cb3cdf0f555..4c41bc2b834a01dcf45ad58009afb4baa050462b 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -10,6 +10,7 @@
@@ -43,7 +43,7 @@ index b58c86645894688893c94107bbc092ec4f8bcdef..6a24619a8372979c12d2ec54097c0aa0
  #include "build/build_config.h"
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
-@@ -490,6 +491,19 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+@@ -491,6 +492,19 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    // Consumed only in chrome/renderer/ (not by Blink).
    bool is_indigo_onboarding = false;
  
@@ -64,7 +64,7 @@ index b58c86645894688893c94107bbc092ec4f8bcdef..6a24619a8372979c12d2ec54097c0aa0
    // chrome, except for the cases where it would require lots of extra work for
    // the embedder to use the same default value.
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index 259d4c618e2ad998390f2efb4396736027778470..5b7c9232668744d95d30a4e59d399be845068ce3 100644
+index 60ae03245533f5ebf8a4508443e7ed22e003ea35..477c82498dcef2c470070152de4eaff46408a4e5 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -8,6 +8,7 @@
@@ -129,7 +129,7 @@ index 259d4c618e2ad998390f2efb4396736027778470..5b7c9232668744d95d30a4e59d399be8
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index 1d7c9735f9e7e7f99d3d97d9d0fb5839c69ac05e..c820a7abf8b8641a0975d9fe0864908ce8343274 100644
+index 0c739fb8c2f29205cc3837cff5019980e8eb9f9c..2e2f06faa822530805abe00d322ecad1f1823c53 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 @@ -4,6 +4,7 @@

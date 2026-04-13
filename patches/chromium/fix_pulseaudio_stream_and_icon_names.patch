@@ -44,7 +44,7 @@ index 70615782c50d18606c3baa42a223e54f8619bc07..fb67e69f9ff46b432236b46913a1b10d
    // On Mac, the audio service requires a CFRunLoop provided by a
    // UI MessageLoop type, to run AVFoundation and CoreAudio code.
 diff --git a/media/audio/pulse/pulse_util.cc b/media/audio/pulse/pulse_util.cc
-index a08e42a464a3894cbf2b8e3cf8a320a33423b719..e5d69506e1585710a2540c91ca51cba7a4692575 100644
+index beaf50810e7071e8b7d95ed204e196a578f87f54..400e8f07417972a241d1152599796afe92e049cc 100644
 --- a/media/audio/pulse/pulse_util.cc
 +++ b/media/audio/pulse/pulse_util.cc
 @@ -10,6 +10,7 @@
@@ -74,7 +74,7 @@ index a08e42a464a3894cbf2b8e3cf8a320a33423b719..e5d69506e1585710a2540c91ca51cba7
  #define PRODUCT_STRING "Chromium"
  #endif
  
-@@ -236,7 +236,7 @@ bool InitPulse(pa_threaded_mainloop** mainloop, pa_context** context) {
+@@ -250,7 +250,7 @@ bool InitPulse(pa_threaded_mainloop** mainloop, pa_context** context) {
  
    pa_mainloop_api* pa_mainloop_api = pa_threaded_mainloop_get_api(pa_mainloop);
    pa_context* pa_context =
@@ -83,7 +83,7 @@ index a08e42a464a3894cbf2b8e3cf8a320a33423b719..e5d69506e1585710a2540c91ca51cba7
    if (!pa_context) {
      pa_threaded_mainloop_free(pa_mainloop);
      return false;
-@@ -464,8 +464,11 @@ bool CreateInputStream(pa_threaded_mainloop* mainloop,
+@@ -478,8 +478,11 @@ bool CreateInputStream(pa_threaded_mainloop* mainloop,
    // Create a new recording stream and
    // tells PulseAudio what the stream icon should be.
    ScopedPropertyList property_list;
@@ -96,7 +96,7 @@ index a08e42a464a3894cbf2b8e3cf8a320a33423b719..e5d69506e1585710a2540c91ca51cba7
    *stream = pa_stream_new_with_proplist(context, "RecordStream",
                                          &sample_specifications, map,
                                          property_list.get());
-@@ -526,7 +529,7 @@ bool CreateOutputStream(raw_ptr<pa_threaded_mainloop>* mainloop,
+@@ -540,7 +543,7 @@ bool CreateOutputStream(raw_ptr<pa_threaded_mainloop>* mainloop,
  
    pa_mainloop_api* pa_mainloop_api = pa_threaded_mainloop_get_api(*mainloop);
    *context = pa_context_new(
@@ -105,7 +105,7 @@ index a08e42a464a3894cbf2b8e3cf8a320a33423b719..e5d69506e1585710a2540c91ca51cba7
    RETURN_ON_FAILURE(*context, "Failed to create PulseAudio context.");
  
    // A state callback must be set before calling pa_threaded_mainloop_lock() or
-@@ -574,8 +577,11 @@ bool CreateOutputStream(raw_ptr<pa_threaded_mainloop>* mainloop,
+@@ -588,8 +591,11 @@ bool CreateOutputStream(raw_ptr<pa_threaded_mainloop>* mainloop,
    // Open playback stream and
    // tell PulseAudio what the stream icon should be.
    ScopedPropertyList property_list;

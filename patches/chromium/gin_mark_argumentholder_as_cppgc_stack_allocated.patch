@@ -15,7 +15,7 @@ Disallow any heap allocations and make the lifetime explicit.
 Backports https://chromium-review.googlesource.com/c/chromium/src/+/7728865
 
 diff --git a/gin/function_template.h b/gin/function_template.h
-index 873015289db9709c00c32080e5387d9cdfea1f69..bc84040952b79f02df783833005cc9583f3378a5 100644
+index 747fc36ce7be8816018890eabc86b9d3d63f5943..70c882dfa6f0493164f8706090fb215139b7f258 100644
 --- a/gin/function_template.h
 +++ b/gin/function_template.h
 @@ -20,6 +20,7 @@
@@ -26,7 +26,7 @@ index 873015289db9709c00c32080e5387d9cdfea1f69..bc84040952b79f02df783833005cc958
  #include "v8/include/v8-external.h"
  #include "v8/include/v8-forward.h"
  #include "v8/include/v8-persistent-handle.h"
-@@ -162,6 +163,9 @@ GIN_EXPORT void ThrowConversionError(Arguments* args,
+@@ -174,6 +175,9 @@ GIN_EXPORT void ThrowConversionError(Arguments* args,
  // at position |index|.
  template <size_t index, typename ArgType, typename = void>
  struct ArgumentHolder {
@@ -36,7 +36,7 @@ index 873015289db9709c00c32080e5387d9cdfea1f69..bc84040952b79f02df783833005cc958
    using ArgLocalType = typename CallbackParamTraits<ArgType>::LocalType;
  
    ArgLocalType value;
-@@ -184,6 +188,9 @@ template <size_t index, typename ArgType>
+@@ -197,6 +201,9 @@ template <size_t index, typename ArgType>
        std::is_constructible_v<typename CallbackParamTraits<ArgType>::LocalType,
                                v8::Isolate*>)
  struct ArgumentHolder<index, ArgType> {
