@@ -1,10 +1,11 @@
 import { autoUpdater, systemPreferences } from 'electron';
 
 import { expect } from 'chai';
-import * as express from 'express';
-import * as psList from 'ps-list';
 import * as uuid from 'uuid';
 import { afterAll, afterEach, beforeEach, describe, it } from 'vitest';
+
+import express = require('express');
+import psList = require('ps-list');
 
 import * as cp from 'node:child_process';
 import * as fs from 'node:fs';

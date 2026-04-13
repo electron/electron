@@ -3,6 +3,7 @@ import { afterEach, describe } from 'vitest';
 
 import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { ifit, waitUntil } from './lib/spec-helpers';
@@ -10,10 +11,16 @@ import { ifit, waitUntil } from './lib/spec-helpers';
 const fixturePath = path.resolve(__dirname, 'fixtures', 'crash-cases');
 
 let children: cp.ChildProcessWithoutNullStreams[] = [];
+const userDataDirs: string[] = [];
 
 const runFixtureAndEnsureCleanExit = async (args: string[], customEnv: NodeJS.ProcessEnv) => {
   let out = '';
-  const child = cp.spawn(process.execPath, args, {
+  // Give each fixture child its own profile so parallel workers (and the
+  // multiple crash cases within this worker) don't contend on the default
+  // Chromium userData singleton lock.
+  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-crash-case-'));
+  userDataDirs.push(userDataDir);
+  const child = cp.spawn(process.execPath, [...args, `--user-data-dir=${userDataDir}`], {
     env: {
       ...process.env,
       ...customEnv
@@ -69,6 +76,9 @@ describe('crash cases', () => {
     }
     await waitUntil(() => children.length === 0, ctx.signal);
     children.length = 0;
+    for (const dir of userDataDirs.splice(0, userDataDirs.length)) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
   const cases = fs.readdirSync(fixturePath);
 
