@@ -217,7 +217,9 @@ export function useRemoteContext(opts?: any) {
   });
   afterAll(() => {
     const w = remoteContext.shift();
-    w!.close();
+    if (!w?.isDestroyed()) {
+      w!.close();
+    }
   });
 }
 
