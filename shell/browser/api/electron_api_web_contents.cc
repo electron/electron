@@ -4390,7 +4390,8 @@ void WebContents::OnDevToolsSearchCompleted(
 
 void WebContents::SetHtmlApiFullscreen(bool enter_fullscreen) {
   // Window is already in fullscreen mode, save the state.
-  if (enter_fullscreen && owner_window()->IsFullscreen()) {
+  if (enter_fullscreen && (owner_window()->IsFullscreen() ||
+                           owner_window()->IsSimpleFullScreen())) {
     native_fullscreen_ = true;
     UpdateHtmlApiFullscreen(true);
     return;
