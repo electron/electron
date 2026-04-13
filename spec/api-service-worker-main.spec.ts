@@ -76,7 +76,9 @@ describe('ServiceWorkerMain module', () => {
 
   async function loadWorkerScript(scriptUrl?: string) {
     const scriptParams = scriptUrl ? `?scriptUrl=${scriptUrl}` : '';
-    return wc.loadURL(`${baseUrl}/index.html${scriptParams}`);
+    // Call sites never await this (they await waitForServiceWorker instead),
+    // so a load aborted by teardown would otherwise reject unhandled.
+    return dangerouslyIgnoreWebContentsLoadResult(wc.loadURL(`${baseUrl}/index.html${scriptParams}`));
   }
 
   async function unregisterAllServiceWorkers() {
@@ -361,9 +363,11 @@ describe('ServiceWorkerMain module', () => {
         const abortController = new AbortController();
         try {
           let pingReceived = false;
-          once(ipcMain, 'ping', { signal: abortController.signal }).then(() => {
-            pingReceived = true;
-          });
+          once(ipcMain, 'ping', { signal: abortController.signal })
+            .then(() => {
+              pingReceived = true;
+            })
+            .catch(() => {});
           runTest(serviceWorker, { name: 'testSend', args: ['ping'] });
           await once(ses, '-ipc-message');
           await new Promise<void>(queueMicrotask);

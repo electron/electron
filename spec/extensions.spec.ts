@@ -438,6 +438,9 @@ describe('chrome extensions', () => {
 
     it('does not take precedence over Electron webRequest - http', async () => {
       return new Promise<void>((resolve) => {
+        // onBeforeRequest fires (and cancels) on the navigation itself, so the
+        // outer promise resolves before loadURL settles; the IIFE then rejects
+        // with ERR_FAILED.
         (async () => {
           customSession.webRequest.onBeforeRequest((details, callback) => {
             resolve();
@@ -447,7 +450,7 @@ describe('chrome extensions', () => {
 
           await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
           fetch(w.webContents, url);
-        })();
+        })().catch(() => {});
       });
     });
 
@@ -459,7 +462,7 @@ describe('chrome extensions', () => {
           });
           await w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port: `${port}` } });
           await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest-wss'));
-        })();
+        })().catch(() => {});
       });
     });
 

@@ -790,7 +790,7 @@ describe('paste execCommand', () => {
     const childPromise = once(w.webContents, 'did-create-window') as Promise<
       [BrowserWindow, Electron.DidCreateWindowDetails]
     >;
-    w.webContents.executeJavaScript('window.open("about:blank")', true);
+    w.webContents.executeJavaScript('window.open("about:blank"); null', true);
     const [childWindow] = await childPromise;
     expect(childWindow.webContents.opener).to.equal(w.webContents.mainFrame);
     const text = 'Sync Clipboard Test for Child Window';
