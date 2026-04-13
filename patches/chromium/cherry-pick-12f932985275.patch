@@ -706,119 +706,27 @@ index 043d85e7bcaf29f1e2f2803a180ddde8a03e5908..d51bdf3c8c4f4a638ed4f133f18e4dea
    bool ClearLevel(gles2::Texture* texture,
                    unsigned target,
 diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
-index 900b5fa1decf4c1895f32eb5ab05fd54a806669c..346da114dc46e882bb71b048ac859ee88601818d 100644
+index 900b5fa1decf4c1895f32eb5ab05fd54a806669c..fefff9635827d575975d347f1427deedb94567a6 100644
 --- a/gpu/config/gpu_driver_bug_list.json
 +++ b/gpu/config/gpu_driver_bug_list.json
-@@ -3774,14 +3774,106 @@
+@@ -3773,6 +3773,17 @@
+         "disable_d3d12_av1_multi_ref_encoding"
        ]
      },
-     {
--      "id": 472,
--      "description": "Validate GL_MAX_*_UNIFORM_BLOCKS at compile time instead of link time to work around compiler bugs.",
-+      "id": 465,
-+      "cr_bugs": [394698156],
-+      "description": "Older (2020) intel iris driver seems to have an elevated crash rate when using HW accelerated video decode.",
-+      "os": {
-+        "type": "win"
-+      },
-+      "vendor_id": "0x8086",
-+      "driver_version": {
-+        "op": "=",
-+        "value": "27.20.100.8439"
-+      },
-+      "features": [
-+        "disable_d3d11_video_decoder"
-+      ],
-+      "device_id": ["0x9a49", "0x9a78"]
-+    },
 +    {
-+      "id": 466,
-+      "description": "Program binaries don't contain transform feedback varyings on Imagination GPUs",
-+      "cr_bugs": [442879525],
++      "id": 471,
++      "description": "IMG drivers can sometimes reference previously bound complete framebuffers.",
 +      "os": {
 +        "type": "android"
 +      },
 +      "gl_vendor": "Imagination.*",
-+      "gl_renderer": "PowerVR.*",
 +      "features": [
-+        "disable_program_caching_for_transform_feedback"
-+      ]
-+    },
-+    {
-+      "id": 467,
-+      "cr_bugs": [417604761],
-+      "description": "Share nv12 texture from D3D11 to D3D12 may show corruption on some Intel GPUs.",
-+      "os": {
-+        "type": "win"
-+      },
-+      "vendor_id": "0x8086",
-+      "intel_gpu_series": [
-+        "meteorlake",
-+        "arrowlake"
-+      ],
-+      "features": [
-+        "disable_sharing_nv12_from_d3d11_to_d3d12"
-+      ]
-+    },
-+    {
-+      "id": 468,
-+      "cr_bugs": [453890655],
-+      "description": "D3D12 video encode may cause heap corruption on legacy Intel GPUs.",
-+      "os": {
-+        "type": "win"
-+      },
-+      "vendor_id": "0x8086",
-+      "intel_gpu_generation": {
-+        "op": "<=",
-+        "value": "10"
-+      },
-+      "features": [
-+        "disable_d3d12_video_encoder"
-+      ]
-+    },
-+    {
-+      "id": 469,
-+      "cr_bugs": [453890655],
-+      "description": "D3D12 video encode may cause heap corruption on legacy Intel drivers.",
-+      "os": {
-+        "type": "win"
-+      },
-+      "vendor_id": "0x8086",
-+      "driver_version": {
-+        "op": "<",
-+        "value": "30.0.100.9955"
-+      },
-+      "features": [
-+        "disable_d3d12_video_encoder"
-+      ]
-+    },
-+    {
-+      "id": 470,
-+      "description": "Disable D3D12 video encoder on Windows versions older 11 24H2",
-+      "os": {
-+        "type": "win",
-+        "version": {
-+          "op": "<",
-+          "value": "10.0.26100.2033"
-+        }
-+      },
-+      "features": [
-+        "disable_d3d12_video_encoder"
-+      ]
-+    },
-+    {
-+      "id": 471,
-+      "description": "IMG drivers can sometimes reference previously bound complete framebuffers.",
-       "os": {
-         "type": "android"
-       },
-       "gl_vendor": "Imagination.*",
-       "features": [
--        "validate_max_per_stage_uniform_blocks_at_compile_time"
 +        "ensure_previous_framebuffer_not_deleted"
-       ]
-     }
-   ]
++      ]
++    },
+     {
+       "id": 472,
+       "description": "Validate GL_MAX_*_UNIFORM_BLOCKS at compile time instead of link time to work around compiler bugs.",
 diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
 index 300586499f496d25c571adcb90cb066b4e778899..c4e9766cd991f6b8e311a60555ce7fa8f6f87b8e 100644
 --- a/gpu/config/gpu_workaround_list.txt
