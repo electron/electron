@@ -66,7 +66,7 @@ jobs:
       fail-fast: false
       matrix:
         build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
-        shard: ${{ case(inputs.display-server == 'wayland', fromJSON('[1]'), inputs.is-asan == true, fromJSON('[1, 2]'), inputs.target-platform == 'linux', fromJSON('[1]'), inputs.target-platform == 'macos' && inputs.target-arch == 'x64', fromJSON('[1, 2, 3]'), fromJSON('[1, 2]')) }}
+        shard: ${{ case(inputs.display-server == 'wayland', fromJSON('[1]'), inputs.is-asan == true, fromJSON('[1, 2]'), inputs.target-platform == 'linux', fromJSON('[1]'), fromJSON('[1, 2]')) }}
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
@@ -226,7 +226,7 @@ jobs:
         export ELECTRON_EXTRA_ARGS="--trace-uncaught --enable-logging"
         JUNIT_ARGS="--reporter=default --reporter=junit --outputFile.junit=junit/test-results-main.xml"
         # Get which tests are on this shard
-        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ case(inputs.display-server == 'wayland', 1, inputs.is-asan == true, 2, inputs.target-platform == 'linux', 1, inputs.target-platform == 'macos' && inputs.target-arch == 'x64', 3, 2) }})
+        tests_files=$(node script/split-tests ${{ matrix.shard }} ${{ case(inputs.display-server == 'wayland', 1, inputs.is-asan == true, 2, inputs.target-platform == 'linux', 1, 2) }})
         if [ "${{ inputs.display-server }}" = "wayland" ]; then
           allowlist_file=script/wayland-test-allowlist.txt
           filtered_tests=""
