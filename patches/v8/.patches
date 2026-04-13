@@ -4,3 +4,4 @@ runtime_setprototypeproperties_handling_of.patch
 runtime_correcting_setprototypeproperties.patch
 reduce_stack_memory_consumption_in_bytecodegenerator.patch
 cherry-pick-d5b0cb2acffe.patch
+maglev_fix_deopt_use_counting_for_deopt_scope_data.patch
