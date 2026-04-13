@@ -58,8 +58,10 @@ ui::NavButtonProvider::ButtonState ButtonStateToNavButtonProviderState(
 
 }  // namespace
 
-ClientFrameViewLinux::ClientFrameViewLinux()
-    : theme_(ui::NativeTheme::GetInstanceForNativeUi()),
+ClientFrameViewLinux::ClientFrameViewLinux(NativeWindowViews* window,
+                                           views::Widget* frame)
+    : FramelessView{window, frame},
+      theme_{ui::NativeTheme::GetInstanceForNativeUi()},
       nav_button_provider_(
           ui::LinuxUiTheme::GetForProfile(nullptr)->CreateNavButtonProvider()),
       nav_buttons_{
@@ -101,23 +103,12 @@ ClientFrameViewLinux::ClientFrameViewLinux()
     ui->AddWindowButtonOrderObserver(this);
     OnWindowButtonOrderingChange();
   }
-}
-
-ClientFrameViewLinux::~ClientFrameViewLinux() {
-  if (auto* ui = ui::LinuxUi::instance())
-    ui->RemoveWindowButtonOrderObserver(this);
-  theme_->RemoveObserver(this);
-}
-
-void ClientFrameViewLinux::Init(NativeWindowViews* window,
-                                views::Widget* frame) {
-  FramelessView::Init(window, frame);
   linux_frame_layout_ = std::make_unique<LinuxCSDNativeFrameLayout>(window);
 
   // Unretained() is safe because the subscription is saved into an instance
   // member and thus will be cancelled upon the instance's destruction.
   paint_as_active_changed_subscription_ =
-      frame_->RegisterPaintAsActiveChangedCallback(base::BindRepeating(
+      frame->RegisterPaintAsActiveChangedCallback(base::BindRepeating(
           &ClientFrameViewLinux::PaintAsActiveChanged, base::Unretained(this)));
 
   UpdateWindowTitle();
@@ -132,6 +123,12 @@ void ClientFrameViewLinux::Init(NativeWindowViews* window,
   }
 
   UpdateThemeValues();
+}
+
+ClientFrameViewLinux::~ClientFrameViewLinux() {
+  if (auto* ui = ui::LinuxUi::instance())
+    ui->RemoveWindowButtonOrderObserver(this);
+  theme_->RemoveObserver(this);
 }
 
 gfx::Insets ClientFrameViewLinux::RestoredFrameBorderInsets() const {

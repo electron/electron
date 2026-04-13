@@ -26,14 +26,12 @@ class FramelessView : public views::FrameView {
   METADATA_HEADER(FramelessView, views::FrameView)
 
  public:
-  FramelessView();
+  FramelessView(NativeWindowViews* window, views::Widget* frame);
   ~FramelessView() override;
 
   // disable copy
   FramelessView(const FramelessView&) = delete;
   FramelessView& operator=(const FramelessView&) = delete;
-
-  virtual void Init(NativeWindowViews* window, views::Widget* frame);
 
   // Returns whether the |point| is on frameless window's resizing border.
   virtual int ResizingBorderHitTest(const gfx::Point& point);
