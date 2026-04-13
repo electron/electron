@@ -58,13 +58,6 @@ app.whenReady().then(() => {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 });
 
-function decorateURL (url: string) {
-  // safely add `?utm_source=default_app
-  const parsedUrl = new URL(url);
-  parsedUrl.searchParams.append('utm_source', 'default_app');
-  return parsedUrl.toString();
-}
-
 // Find the shortest path to the electron binary
 const absoluteElectronPath = process.execPath;
 const relativeElectronPath = path.relative(process.cwd(), absoluteElectronPath);
@@ -116,7 +109,7 @@ async function createWindow (backgroundColor?: string) {
   mainWindow.on('ready-to-show', () => mainWindow!.show());
 
   mainWindow.webContents.setWindowOpenHandler(details => {
-    shell.openExternal(decorateURL(details.url));
+    shell.openExternal(details.url);
     return { action: 'deny' };
   });
 
