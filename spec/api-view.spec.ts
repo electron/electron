@@ -41,7 +41,7 @@ describe('View', () => {
   });
 
   it('can be added as a child of another View', async () => {
-    const w = new BaseWindow();
+    w = new BaseWindow();
     const v1 = new View();
     const v2 = new View();
 

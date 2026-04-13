@@ -6,6 +6,7 @@ import { describe, it } from 'vitest';
 import * as path from 'node:path';
 
 import { defer } from './lib/spec-helpers';
+import { closeWindow } from './lib/window-helpers';
 
 // import { once } from 'node:events';
 
@@ -22,7 +23,7 @@ describe('webUtils module', () => {
           sandbox: false
         }
       });
-      defer(() => w.close());
+      defer(() => closeWindow(w));
       await w.loadFile(path.resolve(fixtures, 'pages', 'file-input.html'));
       const pathFromWebUtils = await w.webContents.executeJavaScript(
         'require("electron").webUtils.getPathForFile(new Blob([1, 2, 3]))'
@@ -39,7 +40,7 @@ describe('webUtils module', () => {
           sandbox: false
         }
       });
-      defer(() => w.close());
+      defer(() => closeWindow(w));
       await w.loadFile(path.resolve(fixtures, 'pages', 'file-input.html'));
       const { debugger: debug } = w.webContents;
       debug.attach();

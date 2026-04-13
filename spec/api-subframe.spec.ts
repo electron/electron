@@ -8,7 +8,7 @@ import * as http from 'node:http';
 import * as path from 'node:path';
 
 import { emittedNTimes } from './lib/events-helpers';
-import { ifdescribe, listen, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
+import { defer, ifdescribe, listen, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 
 describe('renderer nodeIntegrationInSubFrames', () => {
@@ -235,6 +235,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
 describe('subframe with non-standard schemes', () => {
   it('should not crash when changing subframe src to about:blank and back', async () => {
     const w = new BrowserWindow({ show: false, width: 400, height: 400 });
+    defer(() => closeWindow(w));
 
     const fwfPath = path.resolve(__dirname, 'fixtures/sub-frames/frame-with-frame.html');
     await w.loadFile(fwfPath);

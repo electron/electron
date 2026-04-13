@@ -7,6 +7,7 @@ import { once } from 'node:events';
 import * as path from 'node:path';
 
 import { defer, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
+import { closeWindow } from './lib/window-helpers';
 
 describe('webFrame module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -20,7 +21,7 @@ describe('webFrame module', () => {
         preload: path.join(fixtures, 'pages', 'world-safe-preload.js')
       }
     });
-    defer(() => w.close());
+    defer(() => closeWindow(w));
     const isSafe = once(ipcMain, 'executejs-safe');
     dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
     const [, wasSafe] = await isSafe;
@@ -36,7 +37,7 @@ describe('webFrame module', () => {
         preload: path.join(fixtures, 'pages', 'world-safe-preload-error.js')
       }
     });
-    defer(() => w.close());
+    defer(() => closeWindow(w));
     const execError = once(ipcMain, 'executejs-safe');
     dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
     const [, error] = await execError;
@@ -52,7 +53,7 @@ describe('webFrame module', () => {
         contextIsolation: false
       }
     });
-    defer(() => w.close());
+    defer(() => closeWindow(w));
     await w.loadFile(path.join(fixtures, 'pages', 'webframe-spell-check.html'));
     w.focus();
     await w.webContents.executeJavaScript('document.querySelector("input").focus()', true);
@@ -90,8 +91,8 @@ describe('webFrame module', () => {
       `);
     });
 
-    afterAll(() => {
-      win.close();
+    afterAll(async () => {
+      await closeWindow(win);
       win = null as unknown as BrowserWindow;
     });
 
