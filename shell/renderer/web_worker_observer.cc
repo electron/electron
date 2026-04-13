@@ -276,6 +276,15 @@ void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
     // Prevent UvRunOnce from using the environment after it's destroyed.
     node_bindings_->set_uv_env(nullptr);
 
+    // Stop the embed thread before destroying environments. The embed
+    // thread's PollEvents and FreeEnvironment's uv_run both compete for
+    // completions on the same libuv event loop; on Windows (IOCP) this
+    // race can deadlock. Joining the embed thread first eliminates the
+    // contention so FreeEnvironment's uv_run can drain handles cleanly.
+    // For pooled worklets the thread is restarted in
+    // InitializeNewEnvironment via PrepareEmbedThread + StartPolling.
+    node_bindings_->StopPolling();
+
     // Destroying the node environment will also run the uv loop.
     {
       util::ExplicitMicrotasksScope microtasks_scope(
@@ -287,22 +296,16 @@ void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
     electron_bindings_->EnvironmentDestroyed(env);
 
     // For non-pooled worker contexts (e.g., dedicated workers) Blink does
-    // not reuse the worker thread, so tear down the observer synchronously
-    // while the worker thread is still in a clean state. Deferring teardown
-    // to the thread-exit TLS callback hangs on Windows: after
-    // set_uv_env(nullptr) the embed thread parks in
-    // GetQueuedCompletionStatus and the later WakeupEmbedThread() from
-    // ~NodeBindings can be lost, causing uv_thread_join to block forever
-    // and the renderer to deadlock during navigation.
+    // not reuse the worker thread, so tear down the observer completely.
     //
     // For pooled worklet contexts (AudioWorklet, PaintWorklet,
     // AnimationWorklet, SharedStorageWorklet — see
-    // blink::WorkletThreadHolder) the same NodeBindings/embed thread must
-    // be reused for the next context on the thread because Node.js cannot
-    // be re-initialized on the same thread (the allocator shim only loads
-    // once). In that case we keep the observer alive and let the next
-    // WorkerScriptReadyForEvaluation call InitializeNewEnvironment on the
-    // (now empty) environments_ set.
+    // blink::WorkletThreadHolder) the same NodeBindings must be reused
+    // for the next context on the thread because Node.js cannot be
+    // re-initialized on the same thread. Keep the observer alive and let
+    // the next WorkerScriptReadyForEvaluation call
+    // InitializeNewEnvironment, which restarts the embed thread via
+    // PrepareEmbedThread + StartPolling.
     if (!is_pooled_worklet) {
       lazy_tls->Set(nullptr);  // destroys *this; do not access members below
       return;
