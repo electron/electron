@@ -1,0 +1,115 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Mon, 23 Feb 2026 16:14:11 +0100
+Subject: [*lev] Correctly update use counts for nested builtin continuations
+
+Fixed: 484527367
+Change-Id: I4cda8c1bbb2788fca06b564eae509511aec0957e
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7593054
+Reviewed-by: Victor Gomes <victorgomes@chromium.org>
+Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#105381}
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 0cb626f1fe54a40425aa9269941f56f9d0791b96..ae4d46ff6e17d4087d20f5cf6c7b6731aaa687d4 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -1528,19 +1528,19 @@ DeoptFrame* MaglevGraphBuilder::GetCallerDeoptFrame() {
+   return caller_details_->deopt_frame;
+ }
+ 
+-namespace {
+-DeoptFrame* RecursivelyWrapDeoptFrameWithContinuations(
+-    Zone* zone, const DeoptFrame& frame,
++DeoptFrame* MaglevGraphBuilder::RecursivelyWrapDeoptFrameWithContinuations(
++    const DeoptFrame& frame,
+     const MaglevGraphBuilder::LazyDeoptFrameScope* parent_scope) {
+   if (!parent_scope) {
+-    return zone->New<DeoptFrame>(frame);
++    return zone()->New<DeoptFrame>(frame);
+   }
+ 
+-  return zone->New<DeoptFrame>(parent_scope->data(),
+-                               RecursivelyWrapDeoptFrameWithContinuations(
+-                                   zone, frame, parent_scope->parent()));
++  AddDeoptUseToScopeData(parent_scope->data());
++
++  return zone()->New<DeoptFrame>(parent_scope->data(),
++                                 RecursivelyWrapDeoptFrameWithContinuations(
++                                     frame, parent_scope->parent()));
+ }
+-}  // namespace
+ 
+ DeoptFrame* MaglevGraphBuilder::GetLatestCheckpointedFrame() {
+   if (in_prologue_) {
+@@ -1567,7 +1567,7 @@ DeoptFrame* MaglevGraphBuilder::GetLatestCheckpointedFrame() {
+       latest_checkpointed_frame_ = zone()->New<DeoptFrame>(
+           deopt_scope->data(),
+           RecursivelyWrapDeoptFrameWithContinuations(
+-              zone(), *latest_checkpointed_frame_, deopt_scope->parent()));
++              *latest_checkpointed_frame_, deopt_scope->parent()));
+     }
+   }
+   return latest_checkpointed_frame_;
+@@ -1589,7 +1589,8 @@ MaglevGraphBuilder::GetDeoptFrameForLazyDeopt(bool can_throw) {
+                          result_location, result_size);
+ }
+ 
+-void MaglevGraphBuilder::AddDeoptUseToScopeData(DeoptFrame::FrameData& data) {
++void MaglevGraphBuilder::AddDeoptUseToScopeData(
++    const DeoptFrame::FrameData& data) {
+   switch (data.tag()) {
+     case DeoptFrame::FrameType::kInterpretedFrame:
+     case DeoptFrame::FrameType::kInlinedArgumentsFrame:
+diff --git a/src/maglev/maglev-graph-builder.h b/src/maglev/maglev-graph-builder.h
+index f468d3aeb5955ea1fdfcbce6990a8523f9316e3c..da74fcc24abeb0d769719e78011cbac2c6bd4fe3 100644
+--- a/src/maglev/maglev-graph-builder.h
++++ b/src/maglev/maglev-graph-builder.h
+@@ -1556,7 +1556,11 @@ class MaglevGraphBuilder {
+   void AddDeoptUse(VirtualObject* alloc);
+   void AddNonEscapingUses(InlinedAllocation* allocation, int use_count);
+ 
+-  void AddDeoptUseToScopeData(DeoptFrame::FrameData& data);
++  void AddDeoptUseToScopeData(const DeoptFrame::FrameData& data);
++
++  DeoptFrame* RecursivelyWrapDeoptFrameWithContinuations(
++      const DeoptFrame& frame,
++      const MaglevGraphBuilder::LazyDeoptFrameScope* parent_scope);
+ 
+   std::optional<VirtualObject*> TryGetNonEscapingArgumentsObject(
+       ValueNode* value);
+diff --git a/test/mjsunit/turbolev/regress-484527367.js b/test/mjsunit/turbolev/regress-484527367.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..5766d960b23aab0587fdc332aae5a8301ca8be0c
+--- /dev/null
++++ b/test/mjsunit/turbolev/regress-484527367.js
+@@ -0,0 +1,28 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --turbolev
++
++function __wrapTC(f, permissive = true) {
++  try {
++    return f();
++  } catch (e) {
++  }
++}
++
++function foo() {
++  const arr = __wrapTC(() => []);
++  function bar(arr1) {
++    const arr2 = [null,,];
++    arr1.forEach(Array.prototype.forEach, arr2);
++  }
++  __wrapTC(() => bar(arr));
++}
++
++%PrepareFunctionForOptimization(foo);
++foo.apply();
++foo();
++
++%OptimizeFunctionOnNextCall(foo);
++foo();
