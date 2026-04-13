@@ -1,4 +1,4 @@
-import { ForksPoolWorker, type PoolOptions } from 'vitest/node';
+import { ForksPoolWorker, type PoolOptions, type WorkerRequest } from 'vitest/node';
 
 import { spawn, type ChildProcess } from 'node:child_process';
 import * as fs from 'node:fs';
@@ -74,9 +74,28 @@ class ElectronPoolWorker extends ForksPoolWorker {
       stderr.setMaxListeners(1 + stderr.getMaxListeners());
       child.stderr.pipe(stderr);
     }
+
+    child.once('exit', (code, signal) => {
+      if (!this.stopping && (code !== 0 || signal)) {
+        console.error(
+          `[electron-pool] worker pid=${child.pid} exited unexpectedly (code=${code} signal=${signal}) ` +
+            `while running: ${this.lastFiles.join(', ') || '<no files assigned yet>'}`
+        );
+      }
+    });
+  }
+
+  private lastFiles: string[] = [];
+  private stopping = false;
+
+  override send(message: WorkerRequest) {
+    const files = (message as { files?: string[] } | undefined)?.files;
+    if (Array.isArray(files)) this.lastFiles = files;
+    super.send(message);
   }
 
   override async stop() {
+    this.stopping = true;
     try {
       await super.stop();
     } finally {
