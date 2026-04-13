@@ -25,6 +25,27 @@ included in the `electron` package:
 npx install-electron --no
 ```
 
+## Installing prereleases
+
+Electron [distributes experimental releases of future major versions](./electron-timelines.md)
+via npm as well.
+
+Nightly builds contain the latest build from the `main` branch:
+
+```sh
+npm install electron-nightly --save-dev
+```
+
+Alpha and beta builds contain changes slated for the next major version:
+
+```sh
+npm install electron@alpha --save-dev
+npm install electron@beta --save-dev
+```
+
+> [!TIP]
+> For more information on available Electron releases, see the [Release Status dashboard](https://releases.electronjs.org).
+
 ## Running Electron ad-hoc
 
 If you're in a pinch and would prefer to not use `npm install` in your local
