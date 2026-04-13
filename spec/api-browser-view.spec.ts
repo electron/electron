@@ -381,13 +381,15 @@ describe('BrowserView module', () => {
       w.addBrowserView(view);
     });
 
-    it('does not crash if the webContents is destroyed after a URL is loaded', () => {
+    it('does not crash if the webContents is destroyed after a URL is loaded', async () => {
       view = new BrowserView();
-      expect(async () => {
-        view.setBounds({ x: 0, y: 0, width: 400, height: 300 });
-        await view.webContents.loadURL('data:text/html,hello there');
-        view.webContents.destroy();
-      }).to.not.throw();
+      await expect(
+        (async () => {
+          view.setBounds({ x: 0, y: 0, width: 400, height: 300 });
+          await view.webContents.loadURL('data:text/html,hello there');
+          view.webContents.destroy();
+        })()
+      ).to.not.be.rejected();
     });
 
     it('can handle BrowserView reparenting', async () => {
